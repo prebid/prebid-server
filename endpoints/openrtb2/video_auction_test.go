@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http/httptest"
 	"strings"
@@ -633,6 +634,19 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 		Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"1NYY","existing":"any","consent":"anyConsent"}`),
 	}
 
+	videoReq.User = openrtb_ext.SimplifiedUser{
+		Buyeruids: map[string]string{
+			"appnexus": "buyeruid",
+		},
+		Gdpr: openrtb_ext.Gdpr{
+			ConsentRequired: true,
+			ConsentString:   "gdpr consent",
+		},
+		Yob:      1980,
+		Gender:   "M",
+		Keywords: "some,interests",
+	}
+
 	mergeData(videoReq, bidReq)
 
 	assert.Equal(t, videoReq.BCat, bidReq.BCat, "BCat is incorrect")
@@ -647,6 +661,15 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 	assert.Equal(t, videoReq.Site.Page, bidReq.Site.Page, "Device.Site.Page is incorrect")
 
 	assert.Equal(t, videoReq.Regs, bidReq.Regs, "Regs is incorrect")
+
+	assert.Equal(t, videoReq.User.Buyeruids["appnexus"], bidReq.User.BuyerUID, "User.BuyerUID is incorrect")
+	assert.Equal(t, videoReq.User.Yob, bidReq.User.Yob, "User.Yob is incorrect")
+	assert.Equal(t, videoReq.User.Gender, bidReq.User.Gender, "User.Gender is incorrect")
+	assert.Equal(t, videoReq.User.Keywords, bidReq.User.Keywords, "User.Keywords is incorrect")
+
+	consentString := fmt.Sprintf(`{"consent":"%s"}`, videoReq.User.Gdpr.ConsentString)
+	expectedUserExt := json.RawMessage([]byte(consentString))
+	assert.Equal(t, expectedUserExt, bidReq.User.Ext, "User.Ext is incorrect")
 }
 
 func TestHandleError(t *testing.T) {

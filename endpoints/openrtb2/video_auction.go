@@ -478,6 +478,11 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 			Gender:   videoRequest.User.Gender,
 			Keywords: videoRequest.User.Keywords,
 		}
+		if videoRequest.User.Gdpr.ConsentRequired {
+			consentString := fmt.Sprintf(`{"consent":"%s"}`, videoRequest.User.Gdpr.ConsentString)
+			userExt := json.RawMessage([]byte(consentString))
+			bidRequest.User.Ext = userExt
+		}
 	}
 
 	if len(videoRequest.BCat) != 0 {
