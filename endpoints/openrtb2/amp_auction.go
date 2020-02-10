@@ -380,10 +380,10 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		req.Imp[0].TagID = slot
 	}
 
-	privacyConsent := readConsentString(httpRequest.URL)
-	if privacyConsent != "" {
-		if policies, ok := privacy.ReadPoliciesFromConsent(privacyConsent); ok {
-			if err := privacyPolicies.Write(req); err != nil {
+	consent := readConsent(httpRequest.URL)
+	if consent != "" {
+		if policies, ok := privacy.ReadPoliciesFromConsent(consent); ok {
+			if err := policies.Write(req); err != nil {
 				return err
 			}
 		} else {
@@ -530,7 +530,7 @@ func setAmpExt(site *openrtb.Site, value string) {
 	}
 }
 
-func readConsentString(url *url.URL) string {
+func readConsent(url *url.URL) string {
 	if v := url.Query().Get("consent_string"); v != "" {
 		return v
 	}
