@@ -14,7 +14,8 @@
         },
         "ext": {
           "bidder": {
-            "seatId": 1927
+            "seatId": 1927,
+            "tagId": "demo1"
           }
         }
       }
