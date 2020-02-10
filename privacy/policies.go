@@ -34,13 +34,14 @@ func writePolicies(req *openrtb.BidRequest, writers []policyWriter) error {
 	return nil
 }
 
-func ReadPoliciesFromConsent(consent string) Policies {
+// ReadPoliciesFromConsent inspects the consent string kind and sets the corresponding values in a new Policies object.
+func ReadPoliciesFromConsent(consent string) (Policies, bool) {
 	if err := ccpa.ValidateConsent(consent); err == nil {
 		return Policies{
 			CCPA: ccpa.Policy{
 				Value: consent,
 			},
-		}
+		}, true
 	}
 
 	if err := gdpr.ValidateConsent(consent); err == nil {
@@ -48,8 +49,8 @@ func ReadPoliciesFromConsent(consent string) Policies {
 			GDPR: gdpr.Policy{
 				Consent: consent,
 			},
-		}
+		}, true
 	}
 
-	return Policies{}
+	return Policies{}, false
 }

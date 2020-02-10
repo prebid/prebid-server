@@ -80,34 +80,40 @@ func (m *mockPolicyWriter) Write(req *openrtb.BidRequest) error {
 
 func TestReadPoliciesFromConsent(t *testing.T) {
 	testCases := []struct {
-		description    string
-		consent        string
-		expectedResult Policies
+		description         string
+		consent             string
+		expectedResultValue Policies
+		expectedResultOK    bool
 	}{
 		{
-			description:    "Empty String",
-			consent:        "",
-			expectedResult: Policies{},
+			description:         "Empty String",
+			consent:             "",
+			expectedResultValue: Policies{},
+			expectedResultOK:    false,
 		},
 		{
-			description:    "CCPA",
-			consent:        "1NYN",
-			expectedResult: Policies{CCPA: ccpa.Policy{Value: "1NYN"}},
+			description:         "CCPA",
+			consent:             "1NYN",
+			expectedResultValue: Policies{CCPA: ccpa.Policy{Value: "1NYN"}},
+			expectedResultOK:    true,
 		},
 		{
-			description:    "GDPR TCF 1.0",
-			consent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
-			expectedResult: Policies{GDPR: gdpr.Policy{Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY"}},
+			description:         "GDPR TCF 1.0",
+			consent:             "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			expectedResultValue: Policies{GDPR: gdpr.Policy{Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY"}},
+			expectedResultOK:    true,
 		},
 		{
-			description:    "Invalid",
-			consent:        "any invalid",
-			expectedResult: Policies{},
+			description:         "Invalid",
+			consent:             "any invalid",
+			expectedResultValue: Policies{},
+			expectedResultOK:    false,
 		},
 	}
 
 	for _, test := range testCases {
-		result := ReadPoliciesFromConsent(test.consent)
-		assert.Equal(t, test.expectedResult, result, test.description)
+		resultValue, resultOK := ReadPoliciesFromConsent(test.consent)
+		assert.Equal(t, test.expectedResultValue, resultValue, test.description+":value")
+		assert.Equal(t, test.expectedResultOK, resultOK, test.description+":ok")
 	}
 }

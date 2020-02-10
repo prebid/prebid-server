@@ -381,9 +381,14 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 	}
 
 	privacyConsent := readConsentString(httpRequest.URL)
-	privacyPolicies := privacy.ReadPoliciesFromConsent(privacyConsent)
-	if err := privacyPolicies.Write(req); err != nil {
-		return err
+	if privacyConsent != "" {
+		if policies, ok := privacy.ReadPoliciesFromConsent(privacyConsent); ok {
+			if err := privacyPolicies.Write(req); err != nil {
+				return err
+			}
+		} else {
+			// TODO: Send warning to caller.
+		}
 	}
 
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
