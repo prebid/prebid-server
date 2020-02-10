@@ -85,7 +85,7 @@ func TestValidateConsent(t *testing.T) {
 			expectError: true,
 		},
 		{
-			description: "Invalid",
+			description: "Valid",
 			consent:     "BONV8oqONXwgmADACHENAO7pqzAAppY",
 			expectError: false,
 		},
