@@ -23,7 +23,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -385,9 +384,6 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 	privacyPolicies := privacy.Policies{
 		GDPR: gdpr.Policy{
 			Consent: httpRequest.URL.Query().Get("gdpr_consent"),
-		},
-		CCPA: ccpa.Policy{
-			Value: httpRequest.URL.Query().Get("us_privacy"),
 		},
 	}
 	if err := privacyPolicies.Write(req); err != nil {
