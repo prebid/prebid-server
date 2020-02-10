@@ -383,7 +383,7 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 
 	privacyPolicies := privacy.Policies{
 		GDPR: gdpr.Policy{
-			Consent: httpRequest.URL.Query().Get("gdpr_consent"),
+			Consent: readConsentString(httpRequest.URL),
 		},
 	}
 	if err := privacyPolicies.Write(req); err != nil {
@@ -527,4 +527,13 @@ func setAmpExt(site *openrtb.Site, value string) {
 	} else {
 		site.Ext = json.RawMessage(`{"amp":` + value + `}`)
 	}
+}
+
+func readConsentString(url *url.URL) string {
+	if v := url.Query().Get("consent_string"); v != "" {
+		return v
+	}
+
+	// Fallback to 'gdpr_consent' for compatability until it's no longer used by AMP.
+	return url.Query().Get("gdpr_consent")
 }
