@@ -205,10 +205,12 @@ func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) []error {
 		for bidderName, topBidPerBidder := range topBidsPerImp {
 			bidderString := bidderName.String()
 
-			if validateDealTier(impDeal[bidderString]) {
-				updateCatDur(topBidPerBidder, impDeal[bidderString].Info)
-			} else {
-				errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", bidderString, impID))
+			if topBidPerBidder.dealPriority > 0 {
+				if validateDealTier(impDeal[bidderString]) {
+					updateCatDur(topBidPerBidder, impDeal[bidderString].Info)
+				} else {
+					errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", bidderString, impID))
+				}
 			}
 		}
 	}
