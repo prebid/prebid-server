@@ -8,23 +8,16 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"net/url"
 )
 
 type UcfunnelAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	URI string
 }
 
-func NewUcfunnelAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *UcfunnelAdapter {
-	return NewUcfunnelBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
-}
-
-func NewUcfunnelBidder(client *http.Client, endpoint string) *UcfunnelAdapter {
-	clientAdapter := &adapters.HTTPAdapter{Client: client}
+func NewUcfunnelBidder(endpoint string) *UcfunnelAdapter {
 	return &UcfunnelAdapter{
-		http: clientAdapter,
-		URI:  endpoint,
-	}
+		URI: endpoint}
 }
 
 func (a *UcfunnelAdapter) Name() string {
@@ -63,15 +56,17 @@ func (a *UcfunnelAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 		return nil, []error{err}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidType := getBidType(bidReq, sb.Bid[i].ImpID)
-			b := &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: bidType,
+			if (bidType == openrtb_ext.BidTypeBanner) || (bidType == openrtb_ext.BidTypeVideo) {
+				b := &adapters.TypedBid{
+					Bid:     &sb.Bid[i],
+					BidType: bidType,
+				}
+				bidResponse.Bids = append(bidResponse.Bids, b)
 			}
-			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
 	return bidResponse, errs
@@ -82,24 +77,25 @@ func (a *UcfunnelAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 	// If all the requests were malformed, don't bother making a server call with no impressions.
 	if len(request.Imp) == 0 {
-		return nil, errs
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("No impression in the bid request\n"),
+		}}
 	}
 
-	partnerId := getPartnerId(request)
-	if len(partnerId) == 0 {
-		return nil, []error{}
+	partnerId, partnerErr := getPartnerId(request)
+	if partnerErr != nil {
+		return nil, partnerErr
 	}
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{err}
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
 
-	uri := a.URI + partnerId + "/request"
+	uri := a.URI + "/" + url.PathEscape(partnerId) + "/request"
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     uri,
@@ -108,20 +104,28 @@ func (a *UcfunnelAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	}}, errs
 }
 
-func getPartnerId(request *openrtb.BidRequest) string {
+func getPartnerId(request *openrtb.BidRequest) (string, []error) {
 	var ext ExtBidderUcfunnel
+	var errs = []error{}
 	err := json.Unmarshal(request.Imp[0].Ext, &ext)
 	if err != nil {
-		return ""
+		errs = append(errs, err)
+		return "", errs
 	}
-	return ext.Bidder.PartnerId
+	errs = checkBidderParameter(ext)
+	if errs != nil {
+		return "", errs
+	}
+	return ext.Bidder.PartnerId, nil
 }
 
-func AddHeadersToRequest() http.Header {
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	return headers
+func checkBidderParameter(ext ExtBidderUcfunnel) []error {
+	var errs = []error{}
+	if len(ext.Bidder.PartnerId) == 0 || len(ext.Bidder.AdUnitId) == 0 {
+		errs = append(errs, fmt.Errorf("No PartnerId or AdUnitId in the bid request\n"))
+		return errs
+	}
+	return nil
 }
 
 func getBidType(bidReq openrtb.BidRequest, impid string) openrtb_ext.BidType {
@@ -131,10 +135,14 @@ func getBidType(bidReq openrtb.BidRequest, impid string) openrtb_ext.BidType {
 				return openrtb_ext.BidTypeBanner
 			} else if bidReq.Imp[i].Video != nil {
 				return openrtb_ext.BidTypeVideo
+			} else if bidReq.Imp[i].Audio != nil {
+				return openrtb_ext.BidTypeAudio
+			} else if bidReq.Imp[i].Native != nil {
+				return openrtb_ext.BidTypeNative
 			}
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+	return openrtb_ext.BidTypeNative
 }
 
 type ExtBidderUcfunnel struct {

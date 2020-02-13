@@ -22,7 +22,7 @@ var request = &openrtb.BidRequest{
 				},
 			},
 			Instl: 1,
-			Ext:   json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
+			Ext:   json.RawMessage(`{"appnexus": {"placementId": 12883451}}`),
 		},
 	},
 	Device: &openrtb.Device{

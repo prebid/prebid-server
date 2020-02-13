@@ -13,5 +13,5 @@
         "description": "ID for partner"
       }
     },
-  "required": ["adunitid"]
+    "required": ["partnerid"]
 }

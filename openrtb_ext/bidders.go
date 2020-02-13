@@ -27,11 +27,13 @@ const (
 	BidderAdpone           BidderName = "adpone"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
+	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
 	BidderBeachfront       BidderName = "beachfront"
 	BidderBrightroll       BidderName = "brightroll"
 	BidderConsumable       BidderName = "consumable"
 	BidderConversant       BidderName = "conversant"
+	BidderCpmstar          BidderName = "cpmstar"
 	BidderDatablocks       BidderName = "datablocks"
 	BidderEmxDigital       BidderName = "emx_digital"
 	BidderEngageBDR        BidderName = "engagebdr"
@@ -56,6 +58,7 @@ const (
 	BidderRTBHouse         BidderName = "rtbhouse"
 	BidderRubicon          BidderName = "rubicon"
 	BidderSharethrough     BidderName = "sharethrough"
+	BidderSmartRTB         BidderName = "smartrtb"
 	BidderSomoaudience     BidderName = "somoaudience"
 	BidderSonobi           BidderName = "sonobi"
 	BidderSovrn            BidderName = "sovrn"
@@ -80,11 +83,13 @@ var BidderMap = map[string]BidderName{
 	"adpone":            BidderAdpone,
 	"adtelligent":       BidderAdtelligent,
 	"advangelists":      BidderAdvangelists,
+	"applogy":           BidderApplogy,
 	"appnexus":          BidderAppnexus,
 	"beachfront":        BidderBeachfront,
 	"brightroll":        BidderBrightroll,
 	"consumable":        BidderConsumable,
 	"conversant":        BidderConversant,
+	"cpmstar":           BidderCpmstar,
 	"datablocks":        BidderDatablocks,
 	"emx_digital":       BidderEmxDigital,
 	"engagebdr":         BidderEngageBDR,
@@ -109,6 +114,7 @@ var BidderMap = map[string]BidderName{
 	"rtbhouse":          BidderRTBHouse,
 	"rubicon":           BidderRubicon,
 	"sharethrough":      BidderSharethrough,
+	"smartrtb":          BidderSmartRTB,
 	"somoaudience":      BidderSomoaudience,
 	"sonobi":            BidderSonobi,
 	"sovrn":             BidderSovrn,

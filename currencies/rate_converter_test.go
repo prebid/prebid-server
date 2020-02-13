@@ -66,6 +66,7 @@ func TestFetch_Success(t *testing.T) {
 	rates := currencyConverter.Rates()
 	assert.NotNil(t, rates, "Rates() should not return nil")
 	assert.Equal(t, expectedRates, rates, "Rates() doesn't return expected rates")
+	assert.NotNil(t, currencyConverter.GetInfo(), "GetInfo() should not return nil")
 }
 
 func TestFetch_Fail404(t *testing.T) {
@@ -92,6 +93,7 @@ func TestFetch_Fail404(t *testing.T) {
 	assert.Equal(t, 1, len(calledURLs), "sync URL should have been called %d times but was %d", 1, len(calledURLs))
 	assert.Equal(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated() shouldn't return a time set")
 	assert.Nil(t, currencyConverter.Rates(), "Rates() should return nil")
+	assert.NotNil(t, currencyConverter.GetInfo(), "GetInfo() should not return nil")
 }
 
 func TestFetch_FailErrorHttpClient(t *testing.T) {
@@ -118,6 +120,7 @@ func TestFetch_FailErrorHttpClient(t *testing.T) {
 	assert.Equal(t, 1, len(calledURLs), "sync URL should have been called %d times but was %d", 1, len(calledURLs))
 	assert.Equal(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated() shouldn't return a time set")
 	assert.Nil(t, currencyConverter.Rates(), "Rates() should return nil")
+	assert.NotNil(t, currencyConverter.GetInfo(), "GetInfo() should not return nil")
 }
 
 func TestFetch_FailBadSyncURL(t *testing.T) {
@@ -134,6 +137,7 @@ func TestFetch_FailBadSyncURL(t *testing.T) {
 	// Verify:
 	assert.Equal(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated() shouldn't return a time set")
 	assert.Nil(t, currencyConverter.Rates(), "Rates() should return nil")
+	assert.NotNil(t, currencyConverter.GetInfo(), "GetInfo() should not return nil")
 }
 
 func TestFetch_FailBadJSON(t *testing.T) {
@@ -174,6 +178,7 @@ func TestFetch_FailBadJSON(t *testing.T) {
 	assert.Equal(t, 1, len(calledURLs), "sync URL should have been called %d times but was %d", 1, len(calledURLs))
 	assert.Equal(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated() shouldn't return a time set")
 	assert.Nil(t, currencyConverter.Rates(), "Rates() should return nil")
+	assert.NotNil(t, currencyConverter.GetInfo(), "GetInfo() should not return nil")
 }
 
 func TestFetch_InvalidRemoteResponseContent(t *testing.T) {
@@ -201,6 +206,7 @@ func TestFetch_InvalidRemoteResponseContent(t *testing.T) {
 	assert.Equal(t, 1, len(calledURLs), "sync URL should have been called %d times but was %d", 1, len(calledURLs))
 	assert.Equal(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated() shouldn't return a time set")
 	assert.Nil(t, currencyConverter.Rates(), "Rates() should return nil")
+	assert.NotNil(t, currencyConverter.GetInfo(), "GetInfo() should not return nil")
 }
 
 func TestInit(t *testing.T) {
@@ -264,6 +270,7 @@ func TestInit(t *testing.T) {
 		assert.NotEqual(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated should be set")
 		rates := currencyConverter.Rates()
 		assert.Equal(t, expectedRates, rates, "Conversions.Rates weren't the expected ones")
+		assert.NotNil(t, currencyConverter.GetInfo(), "GetInfo() should not return nil")
 
 		if ticksCount == expectedTicks {
 			currencyConverter.StopPeriodicFetching()
@@ -361,6 +368,7 @@ func TestInitWithZeroDuration(t *testing.T) {
 	assert.Equal(t, (time.Time{}), currencyConverter.LastUpdated(), "LastUpdated() shouldn't be set")
 	_, ok := currencyConverter.Rates().(*currencies.ConstantRates)
 	assert.True(t, ok, "Rates should be type of `currencies.ConstantRates`")
+	assert.NotNil(t, currencyConverter.GetInfo(), "GetInfo() should not return nil")
 }
 
 func TestRates(t *testing.T) {
@@ -379,6 +387,7 @@ func TestRates(t *testing.T) {
 		{from: "", to: "EUR", expectedRate: 0, hasError: true},
 		{from: "CNY", to: "", expectedRate: 0, hasError: true},
 		{from: "", to: "", expectedRate: 0, hasError: true},
+		{from: "USD", to: "USD", expectedRate: 1, hasError: false},
 	}
 
 	mockedHttpServer := httptest.NewServer(http.HandlerFunc(

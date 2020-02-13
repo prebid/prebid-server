@@ -32,7 +32,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderUcfunnel, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderUcfunnel, json.RawMessage(invalidParam)); err != nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
@@ -43,5 +43,5 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
-	`{"unit": "123"}`,
+	`{"adunitid": "","partnerid": ""}`,
 }

@@ -184,8 +184,17 @@ func (this *FacebookAdapter) modifyImp(out *openrtb.Imp) error {
 		}
 
 		if out.Banner.H == nil {
-			return &errortypes.BadInput{
-				Message: fmt.Sprintf("imp #%s: banner height required", out.ID),
+			for _, f := range out.Banner.Format {
+				if _, ok := supportedBannerHeights[f.H]; ok {
+					h := f.H
+					out.Banner.H = &h
+					break
+				}
+			}
+			if out.Banner.H == nil {
+				return &errortypes.BadInput{
+					Message: fmt.Sprintf("imp #%s: banner height required", out.ID),
+				}
 			}
 		}
 
@@ -437,4 +446,21 @@ func NewFacebookBidder(client *http.Client, platformID string, appSecret string)
 		platformID:   platformID,
 		appSecret:    appSecret,
 	}
+}
+
+func (fa *FacebookAdapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+	// Note, facebook creates one request per imp, so all these requests will only have one imp in them
+	auction_id, err := jsonparser.GetString(req.Body, "imp", "[0]", "id")
+	if err != nil {
+		return &adapters.RequestData{}, []error{err}
+	}
+
+	uri := fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&app=%s&auction=%s&ortb_loss_code=2", fa.platformID, fa.platformID, auction_id)
+	timeoutReq := adapters.RequestData{
+		Method:  "GET",
+		Uri:     uri,
+		Body:    nil,
+		Headers: http.Header{},
+	}
+	return &timeoutReq, nil
 }
