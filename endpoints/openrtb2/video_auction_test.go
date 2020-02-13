@@ -533,7 +533,7 @@ func TestVideoEndpointValidationsMissingVideo(t *testing.T) {
 	errors, podErrors := deps.validateVideoRequest(&req)
 	assert.Len(t, podErrors, 0, "Pod errors should be empty")
 	assert.Len(t, errors, 1, "Errors array should contain 1 error message")
-	assert.Equal(t, "request missing required field: Video", errors[0].Error(), "Errors array should message regarding missing Video field")
+	assert.Equal(t, "request missing required field: Video", errors[0].Error(), "Errors array should contain message regarding missing Video field")
 }
 
 func TestVideoBuildVideoResponseMissedCacheForOneBid(t *testing.T) {
