@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http/httptest"
 	"strings"
@@ -234,8 +233,8 @@ func TestVideoEndpointValidationsPositive(t *testing.T) {
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
-		Video: openrtb_ext.SimplifiedVideo{
-			Mimes:     mimes,
+		Video: &openrtb.Video{
+			MIMEs:     mimes,
 			Protocols: videoProtocols,
 		},
 	}
@@ -272,8 +271,8 @@ func TestVideoEndpointValidationsCritical(t *testing.T) {
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 0,
 		},
-		Video: openrtb_ext.SimplifiedVideo{
-			Mimes:     mimes,
+		Video: &openrtb.Video{
+			MIMEs:     mimes,
 			Protocols: videoProtocols,
 		},
 	}
@@ -346,8 +345,8 @@ func TestVideoEndpointValidationsPodErrors(t *testing.T) {
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
-		Video: openrtb_ext.SimplifiedVideo{
-			Mimes:     mimes,
+		Video: &openrtb.Video{
+			MIMEs:     mimes,
 			Protocols: videoProtocols,
 		},
 	}
@@ -419,8 +418,8 @@ func TestVideoEndpointValidationsSiteAndApp(t *testing.T) {
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
-		Video: openrtb_ext.SimplifiedVideo{
-			Mimes:     mimes,
+		Video: &openrtb.Video{
+			MIMEs:     mimes,
 			Protocols: videoProtocols,
 		},
 	}
@@ -474,8 +473,8 @@ func TestVideoEndpointValidationsSiteMissingRequiredField(t *testing.T) {
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
-		Video: openrtb_ext.SimplifiedVideo{
-			Mimes:     mimes,
+		Video: &openrtb.Video{
+			MIMEs:     mimes,
 			Protocols: videoProtocols,
 		},
 	}
@@ -483,6 +482,58 @@ func TestVideoEndpointValidationsSiteMissingRequiredField(t *testing.T) {
 	errors, podErrors := deps.validateVideoRequest(&req)
 	assert.Equal(t, "request.site missing required field: id or page", errors[0].Error(), "Site required fields error should be present")
 	assert.Len(t, podErrors, 0, "Pod errors should be empty")
+}
+
+func TestVideoEndpointValidationsMissingVideo(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	deps := mockDeps(t, ex)
+	deps.cfg.VideoStoredRequestRequired = true
+
+	durationRange := make([]int, 0)
+	durationRange = append(durationRange, 15)
+	durationRange = append(durationRange, 30)
+
+	pods := make([]openrtb_ext.Pod, 0)
+	pod1 := openrtb_ext.Pod{
+		PodId:            1,
+		AdPodDurationSec: 30,
+		ConfigId:         "qwerty",
+	}
+	pod2 := openrtb_ext.Pod{
+		PodId:            2,
+		AdPodDurationSec: 30,
+		ConfigId:         "qwerty",
+	}
+	pods = append(pods, pod1)
+	pods = append(pods, pod2)
+
+	mimes := make([]string, 0)
+	mimes = append(mimes, "mp4")
+	mimes = append(mimes, "")
+
+	videoProtocols := make([]openrtb.Protocol, 0)
+	videoProtocols = append(videoProtocols, 15)
+	videoProtocols = append(videoProtocols, 30)
+
+	req := openrtb_ext.BidRequestVideo{
+		StoredRequestId: "123",
+		PodConfig: openrtb_ext.PodConfig{
+			DurationRangeSec:     durationRange,
+			RequireExactDuration: true,
+			Pods:                 pods,
+		},
+		App: &openrtb.App{
+			Bundle: "pbs.com",
+		},
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
+			PrimaryAdserver: 1,
+		},
+	}
+
+	errors, podErrors := deps.validateVideoRequest(&req)
+	assert.Len(t, podErrors, 0, "Pod errors should be empty")
+	assert.Len(t, errors, 1, "Errors array should contain 1 error message")
+	assert.Equal(t, "request missing required field: Video", errors[0].Error(), "Errors array should message regarding missing Video field")
 }
 
 func TestVideoBuildVideoResponseMissedCacheForOneBid(t *testing.T) {
@@ -634,17 +685,11 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 		Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"1NYY","existing":"any","consent":"anyConsent"}`),
 	}
 
-	videoReq.User = openrtb_ext.SimplifiedUser{
-		Buyeruids: map[string]string{
-			"appnexus": "buyeruid",
-		},
-		Gdpr: openrtb_ext.Gdpr{
-			ConsentRequired: true,
-			ConsentString:   "gdpr consent",
-		},
+	videoReq.User = &openrtb.User{
+		BuyerUID: "test UID",
 		Yob:      1980,
-		Gender:   "M",
-		Keywords: "some,interests",
+		Keywords: "test keywords",
+		Ext:      json.RawMessage(`{"consent":"test string"}`),
 	}
 
 	mergeData(videoReq, bidReq)
@@ -662,14 +707,7 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 
 	assert.Equal(t, videoReq.Regs, bidReq.Regs, "Regs is incorrect")
 
-	assert.Equal(t, videoReq.User.Buyeruids["appnexus"], bidReq.User.BuyerUID, "User.BuyerUID is incorrect")
-	assert.Equal(t, videoReq.User.Yob, bidReq.User.Yob, "User.Yob is incorrect")
-	assert.Equal(t, videoReq.User.Gender, bidReq.User.Gender, "User.Gender is incorrect")
-	assert.Equal(t, videoReq.User.Keywords, bidReq.User.Keywords, "User.Keywords is incorrect")
-
-	consentString := fmt.Sprintf(`{"consent":"%s"}`, videoReq.User.Gdpr.ConsentString)
-	expectedUserExt := json.RawMessage([]byte(consentString))
-	assert.Equal(t, expectedUserExt, bidReq.User.Ext, "User.Ext is incorrect")
+	assert.Equal(t, videoReq.User, bidReq.User, "User is incorrect")
 }
 
 func TestHandleError(t *testing.T) {
