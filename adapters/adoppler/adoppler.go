@@ -12,6 +12,12 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+var bidHeaders http.Header = map[string][]string{
+	"Accept":            {"application/json"},
+	"Content-Type":      {"application/json;charset=utf-8"},
+	"X-OpenRTB-Version": {"2.5"},
+}
+
 type adsVideoExt struct {
 	Duration int `json:"duration"`
 }
@@ -40,10 +46,12 @@ func (ads *Adoppler) MakeRequests(
 	}
 
 	var datas []*adapters.RequestData
+	var errs []error
 	for _, imp := range req.Imp {
 		ext, err := unmarshalExt(imp.Ext)
 		if err != nil {
-			return nil, []error{&errortypes.BadInput{err.Error()}}
+			errs = append(errs, &errortypes.BadInput{err.Error()})
+			continue
 		}
 
 		var r openrtb.BidRequest = *req
@@ -52,25 +60,22 @@ func (ads *Adoppler) MakeRequests(
 
 		body, err := json.Marshal(r)
 		if err != nil {
-			return nil, []error{err}
+			errs = append(errs, err)
+			continue
 		}
 
 		uri := fmt.Sprintf("%s/processHeaderBid/%s",
 			ads.endpoint, ext.AdUnit)
-		headers := http.Header{}
-		headers.Add("Accept", "application/json")
-		headers.Add("Content-Type", "application/json;charset=utf-8")
-		headers.Add("X-OpenRTB-Version", "2.5")
 		data := &adapters.RequestData{
 			Method:  "POST",
 			Uri:     uri,
 			Body:    body,
-			Headers: headers,
+			Headers: bidHeaders,
 		}
 		datas = append(datas, data)
 	}
 
-	return datas, nil
+	return datas, errs
 }
 
 func (ads *Adoppler) MakeBids(
@@ -105,6 +110,11 @@ func (ads *Adoppler) MakeBids(
 
 	impTypes := make(map[string]openrtb_ext.BidType)
 	for _, imp := range intReq.Imp {
+		if _, ok := impTypes[imp.ID]; ok {
+			return nil, []error{&errortypes.BadInput{
+				fmt.Sprintf("duplicate $.imp.id %s", imp.ID),
+			}}
+		}
 		if imp.Banner != nil {
 			impTypes[imp.ID] = openrtb_ext.BidTypeBanner
 		} else if imp.Video != nil {
@@ -113,6 +123,10 @@ func (ads *Adoppler) MakeBids(
 			impTypes[imp.ID] = openrtb_ext.BidTypeAudio
 		} else if imp.Native != nil {
 			impTypes[imp.ID] = openrtb_ext.BidTypeNative
+		} else {
+			return nil, []error{&errortypes.BadInput{
+				"one of $.imp.banner, $.imp.video, $.imp.audio and $.imp.native field required",
+			}}
 		}
 	}
 
@@ -133,7 +147,7 @@ func (ads *Adoppler) MakeBids(
 				if err != nil {
 					return nil, []error{&errortypes.BadServerResponse{err.Error()}}
 				}
-				if adsExt.Video == nil {
+				if adsExt == nil || adsExt.Video == nil {
 					return nil, []error{&errortypes.BadServerResponse{
 						"$.seatbid.bid.ext.ads.video required",
 					}}
@@ -143,12 +157,11 @@ func (ads *Adoppler) MakeBids(
 					PrimaryCategory: head(bid.Cat),
 				}
 			}
-			tb := &adapters.TypedBid{
+			bids = append(bids, &adapters.TypedBid{
 				Bid:      &bid,
 				BidType:  tp,
 				BidVideo: bidVideo,
-			}
-			bids = append(bids, tb)
+			})
 		}
 	}
 
