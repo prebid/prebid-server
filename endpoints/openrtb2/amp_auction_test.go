@@ -409,6 +409,85 @@ func TestNoConsent(t *testing.T) {
 	assert.Nil(t, result.Regs, "lastRequest.Regs")
 }
 
+func TestNewAndLegacyConsentBothProvided(t *testing.T) {
+	validConsentGDPR1 := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
+	validConsentGDPR2 := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+
+	testCases := []struct {
+		description     string
+		consent         string
+		consentLegacy   string
+		userExt         *openrtb_ext.ExtUser
+		expectedUserExt openrtb_ext.ExtUser
+	}{
+		{
+			description:   "New Consent Wins",
+			consent:       validConsentGDPR1,
+			consentLegacy: validConsentGDPR2,
+			expectedUserExt: openrtb_ext.ExtUser{
+				Consent: validConsentGDPR1,
+			},
+		},
+		{
+			description:   "New Consent Wins - Reverse",
+			consent:       validConsentGDPR2,
+			consentLegacy: validConsentGDPR1,
+			expectedUserExt: openrtb_ext.ExtUser{
+				Consent: validConsentGDPR2,
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		// Build Request
+		bid, err := getTestBidRequest(false, nil, true, nil)
+		if err != nil {
+			t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+		}
+
+		// Simulated Stored Request Backend
+		stored := map[string]json.RawMessage{"1": json.RawMessage(bid)}
+
+		// Build Exchange Endpoint
+		mockExchange := &mockAmpExchange{}
+		metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+		endpoint, _ := NewAmpEndpoint(
+			mockExchange,
+			newParamsValidator(t),
+			&mockAmpStoredReqFetcher{stored},
+			empty_fetcher.EmptyFetcher{},
+			&config.Configuration{MaxRequestSize: maxSize},
+			metrics,
+			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			map[string]string{},
+			[]byte{},
+			openrtb_ext.BidderMap,
+		)
+
+		// Invoke Endpoint
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s&gdpr_consent=%s", test.consent, test.consentLegacy), nil)
+		endpoint(httptest.NewRecorder(), request, nil)
+
+		// Assert Result
+		result := mockExchange.lastRequest
+		if !assert.NotNil(t, result, test.description+":lastRequest") {
+			return
+		}
+		if !assert.NotNil(t, result.User, test.description+":lastRequest.User") {
+			return
+		}
+		if !assert.NotNil(t, result.User.Ext, test.description+":lastRequest.User.Ext") {
+			return
+		}
+		var ue openrtb_ext.ExtUser
+		err = json.Unmarshal(result.User.Ext, &ue)
+		if !assert.NoError(t, err, test.description+":deserialize") {
+			return
+		}
+		assert.Equal(t, test.expectedUserExt, ue, test.description)
+	}
+}
+
 func TestAMPSiteExt(t *testing.T) {
 	stored := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
