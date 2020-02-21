@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -26,15 +27,15 @@ type adsImpExt struct {
 	Video *adsVideoExt `json:"video"`
 }
 
-type Adoppler struct {
+type AdopplerAdapter struct {
 	endpoint string
 }
 
-func NewAdopplerBidder(endpoint string) *Adoppler {
-	return &Adoppler{endpoint}
+func NewAdopplerBidder(endpoint string) *AdopplerAdapter {
+	return &AdopplerAdapter{endpoint}
 }
 
-func (ads *Adoppler) MakeRequests(
+func (ads *AdopplerAdapter) MakeRequests(
 	req *openrtb.BidRequest,
 	info *adapters.ExtraRequestInfo,
 ) (
@@ -65,7 +66,7 @@ func (ads *Adoppler) MakeRequests(
 		}
 
 		uri := fmt.Sprintf("%s/processHeaderBid/%s",
-			ads.endpoint, ext.AdUnit)
+			ads.endpoint, url.PathEscape(ext.AdUnit))
 		data := &adapters.RequestData{
 			Method:  "POST",
 			Uri:     uri,
@@ -78,7 +79,7 @@ func (ads *Adoppler) MakeRequests(
 	return datas, errs
 }
 
-func (ads *Adoppler) MakeBids(
+func (ads *AdopplerAdapter) MakeBids(
 	intReq *openrtb.BidRequest,
 	extReq *adapters.RequestData,
 	resp *adapters.ResponseData,
@@ -136,7 +137,7 @@ func (ads *Adoppler) MakeBids(
 			tp, ok := impTypes[bid.ImpID]
 			if !ok {
 				err := &errortypes.BadServerResponse{
-					fmt.Sprintf("uknown impid: %s", bid.ImpID),
+					fmt.Sprintf("unknown impid: %s", bid.ImpID),
 				}
 				return nil, []error{err}
 			}

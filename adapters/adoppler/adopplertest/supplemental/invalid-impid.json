@@ -16,5 +16,5 @@
                                                                 "adm": "<b>a banner</b>"}]}],
                                           "cur": "USD"}}}],
  "expectedBidResponses": [],
- "expectedMakeBidsErrors": [{"value": "uknown impid: invalid",
+ "expectedMakeBidsErrors": [{"value": "unknown impid: invalid",
                              "comparison": "literal"}]}
