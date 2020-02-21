@@ -72,20 +72,20 @@ func TestExchangeMap(t *testing.T) {
 
 // Prevents #648
 func TestCORSSupport(t *testing.T) {
-	const origin = "https://publisher-domain.com"
+	const anyCrossOriginResource = "*"
 	handler := func(w http.ResponseWriter, r *http.Request) {}
 	cors := SupportCORS(http.HandlerFunc(handler))
 	rr := httptest.NewRecorder()
 	req, err := http.NewRequest("OPTIONS", "http://some-domain.com/openrtb2/auction", nil)
 	req.Header.Set("Access-Control-Request-Method", "POST")
 	req.Header.Set("Access-Control-Request-Headers", "origin")
-	req.Header.Set("Origin", origin)
+	req.Header.Set("Origin", anyCrossOriginResource)
 
 	if !assert.NoError(t, err) {
 		return
 	}
 	cors.ServeHTTP(rr, req)
-	assert.Equal(t, origin, rr.Header().Get("Access-Control-Allow-Origin"))
+	assert.Equal(t, anyCrossOriginResource, rr.Header().Get("Access-Control-Allow-Origin"))
 }
 
 func TestNoCache(t *testing.T) {

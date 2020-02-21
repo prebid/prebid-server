@@ -304,7 +304,7 @@ func SupportCORS(handler http.Handler) http.Handler {
 		AllowOriginFunc: func(string) bool {
 			return true
 		},
-		AllowedOrigins: []string{"*", "https://prebid.adnxs.com/pbs/v1/cookie_sync"},
+		AllowedOrigins: []string{"*"},
 		AllowedHeaders: []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
 	return c.Handler(handler)
 }
