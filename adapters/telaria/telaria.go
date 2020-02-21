@@ -1,25 +1,14 @@
 package telaria
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
-
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/pbs"
-
-	"golang.org/x/net/context/ctxhttp"
-
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/http"
+	"strconv"
 )
 
 const Endpoint = "fubarTodoChange"
@@ -37,12 +26,39 @@ func (a *TelariaAdapter) SkipNoCookies() bool {
 	return false
 }
 
-func (a *TelariaAdapter) fetchEndpoint(adCode string) (string, error) {
+func (a *TelariaAdapter) FetchEndpoint(adCode string) (string, error) {
 	if adCode == "" {
 		return "", &errortypes.BadInput{Message: "Invalid ad Code" }
 	}
 
 	return a.URI + "?adCode=" + adCode, nil
+}
+
+func (a *TelariaAdapter) GetHeaders(request *openrtb.BidRequest) http.Header {
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	headers.Add("x-openrtb-version", "2.5")
+
+	if request.Device != nil {
+		if len(request.Device.UA) > 0 {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+
+		if len(request.Device.IP) > 0 {
+			headers.Add("x-Forwarded-For", request.Device.IP)
+		}
+
+		if len(request.Device.Language) > 0 {
+			headers.Add("Accept-Language", request.Device.Language)
+		}
+
+		if request.Device.DNT != nil {
+			headers.Add("DNT", strconv.Itoa(int(*request.Device.DNT)))
+		}
+	}
+
+	return headers
 }
 
 func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -78,6 +94,7 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 		errors = append(errors, err)
 		return nil, errors
 	}
+
 	if telariaExt.AdCode == "" {
 		err = &errortypes.BadInput{
 			Message: "adCode is empty",
@@ -87,56 +104,34 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 	}
 	validImpExists := false
 	for i := 0; i < len(request.Imp); i++ {
-		validImpExists = request.Imp[i].Video != nil
+		validImpExists = validImpExists || request.Imp[i].Video != nil
 	}
+
 	if !validImpExists {
 		err := &errortypes.BadInput{
 			Message: fmt.Sprintf("No valid impression in the bid request"),
 		}
-		errs = append(errs, err)
-		return nil, errs
+		errors = append(errors, err)
+		return nil, errors
 	}
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		errors = append(errors, err)
+		return nil, errors
 	}
 
-	thisURI, err := a.fetchEndpoint(telariaExt.AdCode)
+	thisURI, err := a.FetchEndpoint(telariaExt.AdCode)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
-
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	headers.Add("x-openrtb-version", "2.5")
-
-	if request.Device != nil {
-		if len(request.Device.UA) > 0 {
-			headers.Add("User-Agent", request.Device.UA)
-		}
-
-		if len(request.Device.IP) > 0 {
-			headers.Add("x-Forwarded-For", request.Device.IP)
-		}
-
-		if len(request.Device.Language) > 0 {
-			headers.Add("Accept-Language", request.Device.Language)
-		}
-
-		if request.Device.DNT != nil {
-			headers.Add("DNT", strconv.Itoa(int(*request.Device.DNT)))
-		}
+		errors = append(errors, err)
+		return nil, errors
 	}
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     thisURI,
 		Body:    reqJSON,
-		Headers: headers,
+		Headers: a.GetHeaders(request),
 	}}, errors
 }
 

@@ -29,3 +29,6 @@ func TestTelariaAdapterEndpoint(t *testing.T) {
 	adapterstest.VerifyStringValue(adapter.URI, "fubarTodoChange", t)
 }
 
+func testJsonSamples(t *testing.T) {
+	adapterstest.RunJSONBidderTest(t, "telariatest", new(TelariaAdapter))
+}
