@@ -20,41 +20,17 @@ func (rcv *OrbidderAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
-	b, err := request.Ext.MarshalJSON()
-	if err != nil {
-		badInputErr := &errortypes.BadInput{
-			Message: err.Error(),
-		}
-		errs = append(errs, badInputErr)
-	}
-	//fmt.Printf("User Id: %s, buyerId: %s", request.User.ID, request.User.BuyerUID)
-	fmt.Printf("\nExtReq: %s\n", string(b))
-
-	for _, imp := range request.Imp {
-		extImp, err := UnmarshalOrbidderExtImp(imp.Ext)
-		if err != nil {
-			badInputErr := &errortypes.BadInput{
-				Message: err.Error(),
-			}
-			errs = append(errs, badInputErr)
-		}
-		fmt.Printf("Req: ID %s\n", request.ID)
-		fmt.Printf("Imp-Banner witdh: %d, height: %d \n", imp.Banner.Format[0].W, imp.Banner.Format[0].H)
-		fmt.Printf("ExtImp: %#v\n", extImp)
-		fmt.Printf("Site: %s\n", request.Site.Page)
-
-	}
-
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	buf := bytes.NewBufferString(`{"id":"test-id"}`)
+	body := new(bytes.Buffer)
+	json.NewEncoder(body).Encode(request)
 
 	reqData := &adapters.RequestData{
 		Method:  "POST",
 		Uri:     rcv.endpoint,
-		Body:    buf.Bytes(),
+		Body:    body.Bytes(),
 		Headers: headers,
 	}
 	adapterRequests = append(adapterRequests, reqData)
@@ -87,9 +63,10 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
 	for _, sb := range bidResp.SeatBid {
-		for _, b := range sb.Bid {
+		for i := 0; i < len(sb.Bid); i++ {
+			bid := &sb.Bid[i]
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &b,
+				Bid:     bid,
 				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
