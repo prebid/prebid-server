@@ -298,7 +298,7 @@ func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVide
 
 		impsArray := make([]openrtb.Imp, numImps)
 		for impInd := range impsArray {
-			newImp := createImpressionTemplate(storedImp, *videoData)
+			newImp := createImpressionTemplate(storedImp, videoData)
 			impsArray[impInd] = newImp
 			if reqExactDur {
 				//floor := int(math.Floor(ind/impDivNumber))
@@ -328,7 +328,7 @@ func max(a, b int) int {
 	return b
 }
 
-func createImpressionTemplate(imp openrtb.Imp, video openrtb.Video) openrtb.Imp {
+func createImpressionTemplate(imp openrtb.Imp, video *openrtb.Video) openrtb.Imp {
 	imp.Video = &openrtb.Video{}
 	imp.Video.W = video.W
 	imp.Video.H = video.H
@@ -471,9 +471,7 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 		bidRequest.Device = &videoRequest.Device
 	}
 
-	if &videoRequest.User != nil {
-		bidRequest.User = videoRequest.User
-	}
+	bidRequest.User = videoRequest.User
 
 	if len(videoRequest.BCat) != 0 {
 		bidRequest.BCat = videoRequest.BCat
@@ -669,9 +667,7 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 				err := errors.New("request missing required field: Video.Mimes, mime types contains empty strings only")
 				errL = append(errL, err)
 			}
-			if len(mimes) > 0 {
-				req.Video.MIMEs = mimes
-			}
+			req.Video.MIMEs = mimes
 		}
 
 		if len(req.Video.Protocols) == 0 {

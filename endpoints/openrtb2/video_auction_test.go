@@ -489,31 +489,23 @@ func TestVideoEndpointValidationsMissingVideo(t *testing.T) {
 	deps := mockDeps(t, ex)
 	deps.cfg.VideoStoredRequestRequired = true
 
-	durationRange := make([]int, 0)
-	durationRange = append(durationRange, 15)
-	durationRange = append(durationRange, 30)
-
-	pods := make([]openrtb_ext.Pod, 0)
-	pod1 := openrtb_ext.Pod{
-		PodId:            1,
-		AdPodDurationSec: 30,
-		ConfigId:         "qwerty",
+	durationRange := []int{
+		15,
+		30,
 	}
-	pod2 := openrtb_ext.Pod{
-		PodId:            2,
-		AdPodDurationSec: 30,
-		ConfigId:         "qwerty",
+
+	pods := []openrtb_ext.Pod{
+		{
+			PodId:            1,
+			AdPodDurationSec: 30,
+			ConfigId:         "qwerty",
+		},
+		{
+			PodId:            2,
+			AdPodDurationSec: 30,
+			ConfigId:         "qwerty",
+		},
 	}
-	pods = append(pods, pod1)
-	pods = append(pods, pod2)
-
-	mimes := make([]string, 0)
-	mimes = append(mimes, "mp4")
-	mimes = append(mimes, "")
-
-	videoProtocols := make([]openrtb.Protocol, 0)
-	videoProtocols = append(videoProtocols, 15)
-	videoProtocols = append(videoProtocols, 30)
 
 	req := openrtb_ext.BidRequestVideo{
 		StoredRequestId: "123",
