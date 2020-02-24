@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"regexp"
 	"runtime/debug"
 	"sort"
 	"strings"
@@ -172,9 +171,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		if requestExt.Prebid.SupportDeals {
 			dealErrs := applyDealSupport(bidRequest, auc)
-			if len(dealErrs) > 0 {
-				errs = append(errs, dealErrs...)
-			}
+			errs = append(errs, dealErrs...)
 		}
 	}
 
@@ -202,12 +199,12 @@ func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) []error {
 
 	for impID, topBidsPerImp := range auc.winningBidsByBidder {
 		impDeal := impDealMap[impID].DealInfo
-		for bidderName, topBidPerBidder := range topBidsPerImp {
-			bidderString := bidderName.String()
+		for bidder, topBidPerBidder := range topBidsPerImp {
+			bidderString := bidder.String()
 
 			if topBidPerBidder.dealPriority > 0 {
 				if validateDealTier(impDeal[bidderString]) {
-					updateCatDur(topBidPerBidder, impDeal[bidderString].Info)
+					updateHbPbCatDur(topBidPerBidder, impDeal[bidderString].Info)
 				} else {
 					errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", bidderString, impID))
 				}
@@ -218,7 +215,7 @@ func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) []error {
 	return errs
 }
 
-// Creates map of impression to bidder deal tier configuration
+// getDealTiers creates map of impression to bidder deal tier configuration
 func getDealTiers(bidRequest *openrtb.BidRequest) map[string]*BidderDealTier {
 	impDealMap := make(map[string]*BidderDealTier)
 
@@ -236,21 +233,21 @@ func getDealTiers(bidRequest *openrtb.BidRequest) map[string]*BidderDealTier {
 }
 
 func validateDealTier(impDeal *DealTier) bool {
-	if impDeal.Info != nil {
-		// Remove whitespace from prefix before checking if it can be used
-		impDeal.Info.Prefix = regexp.MustCompile(`\s+`).ReplaceAllString(impDeal.Info.Prefix, "")
-		return len(impDeal.Info.Prefix) > 0 && impDeal.Info.MinDealTier > 0
+	if impDeal.Info == nil {
+		return false
 	}
-	return false
+	// Remove whitespace from prefix before checking if it can be used
+	impDeal.Info.Prefix = strings.ReplaceAll(impDeal.Info.Prefix, " ", "")
+	return len(impDeal.Info.Prefix) > 0 && impDeal.Info.MinDealTier > 0
 }
 
-func updateCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo) {
+func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo) {
 	if bid.dealPriority >= dealTierInfo.MinDealTier {
-		newPb := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
+		prefixTier := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
 
 		if oldCatDur, ok := bid.bidTargets["hb_pb_cat_dur"]; ok {
 			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
-			oldCatDurSplit[0] = newPb
+			oldCatDurSplit[0] = prefixTier
 
 			newCatDur := strings.Join(oldCatDurSplit, "")
 			bid.bidTargets["hb_pb_cat_dur"] = newCatDur

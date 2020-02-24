@@ -1326,130 +1326,116 @@ func TestUpdateRejections(t *testing.T) {
 }
 
 func TestApplyDealSupport(t *testing.T) {
-	bidderName1 := openrtb_ext.BidderName("validbase")
-	bidderName2 := openrtb_ext.BidderName("validmultiple2")
-	bidderName3 := openrtb_ext.BidderName("minnotmet")
-	bidderName4 := openrtb_ext.BidderName("invalidconfig")
-	bidderName5 := openrtb_ext.BidderName("nodeal")
-	bidderName6 := openrtb_ext.BidderName("invalidconfig2")
-
-	bidRequest := &openrtb.BidRequest{
-		ID: "some-request-id",
-		Imp: []openrtb.Imp{
-			{
-				ID:  "imp_id1",
-				Ext: json.RawMessage(`{"validbase": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+	testCases := []struct {
+		description        string
+		dealPriority       int
+		impExt             json.RawMessage
+		targ               map[string]string
+		expectedHbPbCatDur string
+		expectedDealErr    string
+	}{
+		{
+			description:  "hb_pb_cat_dur should be modified",
+			dealPriority: 5,
+			impExt:       json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+			targ: map[string]string{
+				"hb_pb_cat_dur": "12.00_movies_30s",
 			},
-			{
-				ID:  "imp_id2",
-				Ext: json.RawMessage(`{"validmultiple1": {"dealTier": {"minDealTier": 5, "prefix": "first"}, "placementId": 10433394}, "validmultiple2": {"dealTier": {"minDealTier": 5, "prefix": "second"}, "placementId": 10433394}}`),
+			expectedHbPbCatDur: "tier5_movies_30s",
+			expectedDealErr:    "",
+		},
+		{
+			description:  "hb_pb_cat_dur should not be modified due to priority not exceeding min",
+			dealPriority: 9,
+			impExt:       json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 10, "prefix": "tier"}, "placementId": 10433394}}`),
+			targ: map[string]string{
+				"hb_pb_cat_dur": "12.00_medicine_30s",
 			},
-			{
-				ID:  "imp_id3",
-				Ext: json.RawMessage(`{"minnotmet": {"dealTier": {"minDealTier": 10, "prefix": "tier"}, "placementId": 10433394}}`),
+			expectedHbPbCatDur: "12.00_medicine_30s",
+			expectedDealErr:    "",
+		},
+		{
+			description:  "hb_pb_cat_dur should not be modified due to invalid config",
+			dealPriority: 5,
+			impExt:       json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": ""}, "placementId": 10433394}}`),
+			targ: map[string]string{
+				"hb_pb_cat_dur": "12.00_games_30s",
 			},
-			{
-				ID:  "imp_id4",
-				Ext: json.RawMessage(`{"invalidconfig": {"dealTier": {"minDealTier": 5, "prefix": ""}, "placementId": 10433394}}`),
+			expectedHbPbCatDur: "12.00_games_30s",
+			expectedDealErr:    "dealTier configuration invalid for bidder 'appnexus', imp ID 'imp_id1'",
+		},
+		{
+			description:  "hb_pb_cat_dur should not be modified due to deal priority of 0",
+			dealPriority: 0,
+			impExt:       json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+			targ: map[string]string{
+				"hb_pb_cat_dur": "12.00_auto_30s",
 			},
-			{
-				ID:  "imp_id5",
-				Ext: json.RawMessage(`{"nodeal": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
-			},
-			{
-				ID:  "imp_id6",
-				Ext: json.RawMessage(`{"invalidconfig2": {"dealTier": {"minDealTier": 0, "prefix": "tier"}, "placementId": 10433394}}`),
-			},
+			expectedHbPbCatDur: "12.00_auto_30s",
+			expectedDealErr:    "",
 		},
 	}
 
-	targ1 := map[string]string{
-		"hb_pb":         "12.00",
-		"hb_pb_cat_dur": "12.00_movies_30s",
-	}
-	targ2 := map[string]string{
-		"hb_pb":         "12.00",
-		"hb_pb_cat_dur": "12.00_15s",
-	}
-	targ3 := map[string]string{
-		"hb_pb":         "12.00",
-		"hb_pb_cat_dur": "12.00_medicine_30s",
-	}
-	targ4 := map[string]string{
-		"hb_pb":         "12.00",
-		"hb_pb_cat_dur": "12.00_30s",
-	}
-	targ5 := map[string]string{
-		"hb_pb":         "12.00",
-		"hb_pb_cat_dur": "12.00_auto_30s",
-	}
-	targ6 := map[string]string{
-		"hb_pb":         "12.00",
-		"hb_pb_cat_dur": "12.00_beauty_30s",
-	}
+	bidderName := openrtb_ext.BidderName("appnexus")
+	for _, test := range testCases {
+		bidRequest := &openrtb.BidRequest{
+			ID: "some-request-id",
+			Imp: []openrtb.Imp{
+				{
+					ID:  "imp_id1",
+					Ext: test.impExt,
+				},
+			},
+		}
 
-	bid1_1 := pbsOrtbBid{&openrtb.Bid{}, "video", targ1, &openrtb_ext.ExtBidPrebidVideo{}, 5}
-	bid1_2 := pbsOrtbBid{&openrtb.Bid{}, "video", targ2, &openrtb_ext.ExtBidPrebidVideo{}, 6}
-	bid1_3 := pbsOrtbBid{&openrtb.Bid{}, "video", targ3, &openrtb_ext.ExtBidPrebidVideo{}, 7}
-	bid1_4 := pbsOrtbBid{&openrtb.Bid{}, "video", targ4, &openrtb_ext.ExtBidPrebidVideo{}, 8}
-	bid1_5 := pbsOrtbBid{&openrtb.Bid{}, "video", targ5, &openrtb_ext.ExtBidPrebidVideo{}, 0}
-	bid1_6 := pbsOrtbBid{&openrtb.Bid{}, "video", targ6, &openrtb_ext.ExtBidPrebidVideo{}, 9}
+		bid := pbsOrtbBid{&openrtb.Bid{}, "video", test.targ, &openrtb_ext.ExtBidPrebidVideo{}, test.dealPriority}
 
-	auc := &auction{
-		winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
-			"imp_id1": {
-				bidderName1: &bid1_1,
+		auc := &auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				"imp_id1": {
+					bidderName: &bid,
+				},
 			},
-			"imp_id2": {
-				bidderName2: &bid1_2,
-			},
-			"imp_id3": {
-				bidderName3: &bid1_3,
-			},
-			"imp_id4": {
-				bidderName4: &bid1_4,
-			},
-			"imp_id5": {
-				bidderName5: &bid1_5,
-			},
-			"imp_id6": {
-				bidderName6: &bid1_6,
-			},
-		},
+		}
+
+		dealErrs := applyDealSupport(bidRequest, auc)
+
+		assert.Equal(t, test.expectedHbPbCatDur, auc.winningBidsByBidder["imp_id1"][bidderName].bidTargets["hb_pb_cat_dur"], test.description)
+		if len(test.expectedDealErr) > 0 {
+			assert.Containsf(t, dealErrs, errors.New(test.expectedDealErr), "Expected error message not found in deal errors")
+		}
 	}
-
-	dealErrs := applyDealSupport(bidRequest, auc)
-
-	assert.Equal(t, 2, len(dealErrs), "Deal errors should contain 2 errors")
-	assert.Containsf(t, dealErrs, errors.New("dealTier configuration invalid for bidder 'invalidconfig', imp ID 'imp_id4'"), "Expected error message not found in deal errors")
-	assert.Containsf(t, dealErrs, errors.New("dealTier configuration invalid for bidder 'invalidconfig2', imp ID 'imp_id6'"), "Expected error message not found in deal errors")
-	assert.Equal(t, "tier5_movies_30s", auc.winningBidsByBidder["imp_id1"][bidderName1].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur was not updated correctly")
-	assert.Equal(t, "second6_15s", auc.winningBidsByBidder["imp_id2"][bidderName2].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur was not updated correctly")
-	assert.Equal(t, "12.00_medicine_30s", auc.winningBidsByBidder["imp_id3"][bidderName3].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should not have been changed")
-	assert.Equal(t, "12.00_30s", auc.winningBidsByBidder["imp_id4"][bidderName4].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should not have been changed")
-	assert.Equal(t, "12.00_auto_30s", auc.winningBidsByBidder["imp_id5"][bidderName5].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should not have been changed")
-	assert.Equal(t, "12.00_beauty_30s", auc.winningBidsByBidder["imp_id6"][bidderName6].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should not have been changed")
 }
 
 func TestGetDealTiers(t *testing.T) {
-	bidRequest := &openrtb.BidRequest{
-		ID: "some-request-id",
-		Imp: []openrtb.Imp{
-			{
-				ID:  "imp_id1",
-				Ext: json.RawMessage(`{"validbase": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+	testCases := []struct {
+		impExt       json.RawMessage
+		bidderResult map[string]bool // true indicates bidder had valid config, false indicates invalid
+	}{
+		{
+			impExt: json.RawMessage(`{"validbase": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+			bidderResult: map[string]bool{
+				"validbase": true,
 			},
-			{
-				ID:  "imp_id2",
-				Ext: json.RawMessage(`{"validmultiple1": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}, "validmultiple2": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+		},
+		{
+			impExt: json.RawMessage(`{"validmultiple1": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}, "validmultiple2": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+			bidderResult: map[string]bool{
+				"validmultiple1": true,
+				"validmultiple2": true,
 			},
-			{
-				ID:  "imp_id3",
-				Ext: json.RawMessage(`{"nodealtier": {"placementId": 10433394}}`),
+		},
+		{
+			impExt: json.RawMessage(`{"nodealtier": {"placementId": 10433394}}`),
+			bidderResult: map[string]bool{
+				"nodealtier": false,
 			},
-			{
-				ID:  "imp_id4",
-				Ext: json.RawMessage(`{"validbase": {"placementId": 10433394}, "onedealTier2": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+		},
+		{
+			impExt: json.RawMessage(`{"validbase": {"placementId": 10433394}, "onedealTier2": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+			bidderResult: map[string]bool{
+				"onedealTier2": true,
+				"validbase":    false,
 			},
 		},
 	}
@@ -1462,128 +1448,139 @@ func TestGetDealTiers(t *testing.T) {
 	}
 	emptyDealTier := DealTier{}
 
-	impDealMap := getDealTiers(bidRequest)
+	for _, test := range testCases {
+		bidRequest := &openrtb.BidRequest{
+			ID: "some-request-id",
+			Imp: []openrtb.Imp{
+				{
+					ID:  "imp_id1",
+					Ext: test.impExt,
+				},
+			},
+		}
 
-	assert.Equal(t, &filledDealTier, impDealMap["imp_id1"].DealInfo["validbase"], "DealTier should be filled with config data")
-	assert.Equal(t, &filledDealTier, impDealMap["imp_id2"].DealInfo["validmultiple1"], "DealTier should be filled with config data")
-	assert.Equal(t, &filledDealTier, impDealMap["imp_id2"].DealInfo["validmultiple2"], "DealTier should be filled with config data")
-	assert.Equal(t, &emptyDealTier, impDealMap["imp_id3"].DealInfo["nodealtier"], "DealTier should be empty")
-	assert.Equal(t, &emptyDealTier, impDealMap["imp_id4"].DealInfo["validbase"], "DealTier should be empty")
-	assert.Equal(t, &filledDealTier, impDealMap["imp_id4"].DealInfo["onedealTier2"], "DealTier should be filled with config data")
+		impDealMap := getDealTiers(bidRequest)
 
-	_, ok := impDealMap["imp_id4"].DealInfo["validmultiple1"]
-	assert.Equal(t, false, ok, "DealTier should not be initialized")
+		for bidder, valid := range test.bidderResult {
+			if valid {
+				assert.Equal(t, &filledDealTier, impDealMap["imp_id1"].DealInfo[bidder], "DealTier should be filled with config data")
+			} else {
+				assert.Equal(t, &emptyDealTier, impDealMap["imp_id1"].DealInfo[bidder], "DealTier should be empty")
+			}
+		}
+	}
 }
 
 func TestValidateDealTier(t *testing.T) {
-	rawParams1 := json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`)
-	var bidderDealTier1 BidderDealTier
-	err := json.Unmarshal(rawParams1, &bidderDealTier1.DealInfo)
-	if err != nil {
-		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
+	testCases := []struct {
+		description    string
+		params         json.RawMessage
+		expectedResult bool
+	}{
+		{
+			description:    "BidderDealTier should be valid",
+			params:         json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+			expectedResult: true,
+		},
+		{
+			description:    "BidderDealTier should be invalid due to empty prefix",
+			params:         json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": ""}, "placementId": 10433394}}`),
+			expectedResult: false,
+		},
+		{
+			description:    "BidderDealTier should be invalid due to empty dealTier",
+			params:         json.RawMessage(`{"appnexus": {"dealTier": {}, "placementId": 10433394}}`),
+			expectedResult: false,
+		},
+		{
+			description:    "BidderDealTier should be invalid due to missing minDealTier",
+			params:         json.RawMessage(`{"appnexus": {"dealTier": {"prefix": "tier"}, "placementId": 10433394}}`),
+			expectedResult: false,
+		},
+		{
+			description:    "BidderDealTier should be invalid due to missing dealTier",
+			params:         json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
+			expectedResult: false,
+		},
+		{
+			description:    "BidderDealTier should be invalid due to prefix containing all whitespace",
+			params:         json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "    "}, "placementId": 10433394}}`),
+			expectedResult: false,
+		},
+		{
+			description:    "BidderDealTier should be valid after removing whitespace",
+			params:         json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "    prefixwith  sp aces "}, "placementId": 10433394}}`),
+			expectedResult: true,
+		},
 	}
 
-	rawParams2 := json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": ""}, "placementId": 10433394}}`)
-	var bidderDealTier2 BidderDealTier
-	err = json.Unmarshal(rawParams2, &bidderDealTier2.DealInfo)
-	if err != nil {
-		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
-	}
+	for _, test := range testCases {
+		var bidderDealTier BidderDealTier
+		err := json.Unmarshal(test.params, &bidderDealTier.DealInfo)
+		if err != nil {
+			assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
+		}
 
-	rawParams3 := json.RawMessage(`{"appnexus": {"dealTier": {}, "placementId": 10433394}}`)
-	var bidderDealTier3 BidderDealTier
-	err = json.Unmarshal(rawParams3, &bidderDealTier3.DealInfo)
-	if err != nil {
-		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
+		assert.Equal(t, test.expectedResult, validateDealTier(bidderDealTier.DealInfo["appnexus"]), test.description)
 	}
-
-	rawParams4 := json.RawMessage(`{"appnexus": {"dealTier": {"prefix": "tier"}, "placementId": 10433394}}`)
-	var bidderDealTier4 BidderDealTier
-	err = json.Unmarshal(rawParams4, &bidderDealTier4.DealInfo)
-	if err != nil {
-		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
-	}
-
-	rawParams5 := json.RawMessage(`{"appnexus": {"placementId": 10433394}}`)
-	var bidderDealTier5 BidderDealTier
-	err = json.Unmarshal(rawParams5, &bidderDealTier5.DealInfo)
-	if err != nil {
-		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
-	}
-
-	rawParams6 := json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "  \t   \n"}, "placementId": 10433394}}`)
-	var bidderDealTier6 BidderDealTier
-	err = json.Unmarshal(rawParams6, &bidderDealTier6.DealInfo)
-	if err != nil {
-		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
-	}
-
-	rawParams7 := json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "   \n prefix\twith  sp aces "}, "placementId": 10433394}}`)
-	var bidderDealTier7 BidderDealTier
-	err = json.Unmarshal(rawParams7, &bidderDealTier7.DealInfo)
-	if err != nil {
-		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
-	}
-
-	assert.Equal(t, true, validateDealTier(bidderDealTier1.DealInfo["appnexus"]), "BidderDealTier should be valid")
-	assert.Equal(t, false, validateDealTier(bidderDealTier2.DealInfo["appnexus"]), "BidderDealTier should be invalid due to empty prefix")
-	assert.Equal(t, false, validateDealTier(bidderDealTier3.DealInfo["appnexus"]), "BidderDealTier should be invalid due to empty dealTier")
-	assert.Equal(t, false, validateDealTier(bidderDealTier4.DealInfo["appnexus"]), "BidderDealTier should be invalid due to missing minDealTier")
-	assert.Equal(t, false, validateDealTier(bidderDealTier5.DealInfo["appnexus"]), "BidderDealTier should be invalid due to missing dealTier")
-	assert.Equal(t, false, validateDealTier(bidderDealTier6.DealInfo["appnexus"]), "BidderDealTier should be invalid due to prefix containing all whitespace")
-	assert.Equal(t, true, validateDealTier(bidderDealTier7.DealInfo["appnexus"]), "BidderDealTier should be valid after removing whitespace")
-	assert.Equal(t, "prefixwithspaces", bidderDealTier7.DealInfo["appnexus"].Info.Prefix, "Prefix should have whitespace removed")
 }
 
-func TestUpdateCatDur(t *testing.T) {
-	targ1 := map[string]string{
-		"hb_pb":         "12.00",
-		"hb_pb_cat_dur": "12.00_movies_30s",
-	}
-	targ2 := map[string]string{
-		"hb_pb":         "12.00",
-		"hb_pb_cat_dur": "12.00_auto_30s",
-	}
-	targ3 := map[string]string{
-		"hb_pb":         "12.00",
-		"hb_pb_cat_dur": "12.00_medicine_30s",
-	}
-	targ4 := map[string]string{
-		"hb_pb":         "12.00",
-		"hb_pb_cat_dur": "12.00_30s",
+func TestUpdateHbPbCatDur(t *testing.T) {
+	testCases := []struct {
+		description        string
+		targ               map[string]string
+		dealTier           *DealTierInfo
+		dealPriority       int
+		expectedHbPbCatDur string
+	}{
+		{
+			description: "hb_pb_cat_dur should be updated with prefix and tier",
+			targ: map[string]string{
+				"hb_pb":         "12.00",
+				"hb_pb_cat_dur": "12.00_movies_30s",
+			},
+			dealTier: &DealTierInfo{
+				Prefix:      "tier",
+				MinDealTier: 5,
+			},
+			dealPriority:       5,
+			expectedHbPbCatDur: "tier5_movies_30s",
+		},
+		{
+			description: "hb_pb_cat_dur should not be updated due to bid priority",
+			targ: map[string]string{
+				"hb_pb":         "12.00",
+				"hb_pb_cat_dur": "12.00_auto_30s",
+			},
+			dealTier: &DealTierInfo{
+				Prefix:      "tier",
+				MinDealTier: 10,
+			},
+			dealPriority:       6,
+			expectedHbPbCatDur: "12.00_auto_30s",
+		},
+		{
+			description: "hb_pb_cat_dur should be updated with prefix and tier",
+			targ: map[string]string{
+				"hb_pb":         "12.00",
+				"hb_pb_cat_dur": "12.00_medicine_30s",
+			},
+			dealTier: &DealTierInfo{
+				Prefix:      "tier",
+				MinDealTier: 1,
+			},
+			dealPriority:       7,
+			expectedHbPbCatDur: "tier7_medicine_30s",
+		},
 	}
 
-	bid1_1 := pbsOrtbBid{&openrtb.Bid{}, "video", targ1, &openrtb_ext.ExtBidPrebidVideo{}, 5}
-	bid1_2 := pbsOrtbBid{&openrtb.Bid{}, "video", targ2, &openrtb_ext.ExtBidPrebidVideo{}, 6}
-	bid1_3 := pbsOrtbBid{&openrtb.Bid{}, "video", targ3, &openrtb_ext.ExtBidPrebidVideo{}, 7}
-	bid1_4 := pbsOrtbBid{&openrtb.Bid{}, "video", targ4, &openrtb_ext.ExtBidPrebidVideo{}, 8}
+	for _, test := range testCases {
+		bid := pbsOrtbBid{&openrtb.Bid{}, "video", test.targ, &openrtb_ext.ExtBidPrebidVideo{}, test.dealPriority}
 
-	deal1 := &DealTierInfo{
-		Prefix:      "tier",
-		MinDealTier: 5,
-	}
-	deal2 := &DealTierInfo{
-		Prefix:      "tier",
-		MinDealTier: 10,
-	}
-	deal3 := &DealTierInfo{
-		Prefix:      "tier",
-		MinDealTier: 1,
-	}
-	deal4 := &DealTierInfo{
-		Prefix:      "tier",
-		MinDealTier: 5,
-	}
+		updateHbPbCatDur(&bid, test.dealTier)
 
-	updateCatDur(&bid1_1, deal1)
-	updateCatDur(&bid1_2, deal2)
-	updateCatDur(&bid1_3, deal3)
-	updateCatDur(&bid1_4, deal4)
-
-	assert.Equal(t, "tier5_movies_30s", bid1_1.bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should be updated with prefix and tier")
-	assert.Equal(t, "12.00_auto_30s", bid1_2.bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should not be updated due to bid priority")
-	assert.Equal(t, "tier7_medicine_30s", bid1_3.bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should be updated with prefix and tier")
-	assert.Equal(t, "tier8_30s", bid1_4.bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should be updated with prefix and tier")
+		assert.Equal(t, test.expectedHbPbCatDur, bid.bidTargets["hb_pb_cat_dur"], test.description)
+	}
 }
 
 type exchangeSpec struct {
