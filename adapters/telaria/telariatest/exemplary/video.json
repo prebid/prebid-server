@@ -1,0 +1,29 @@
+
+{
+  "description": "This uses Telaria to fetch the sample ad",
+
+  "requestPayload": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.com"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "ssp-!demo!-lufip",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
+        },
+        "ext": {
+          "telaria": {
+            "adCode": "ssp-!demo!-lufip"
+          }
+        }
+      }
+    ]
+  }
+}

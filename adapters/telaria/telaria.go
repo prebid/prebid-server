@@ -17,6 +17,10 @@ type TelariaAdapter struct {
 	URI string
 }
 
+type TagIDExt struct {
+	OriginalTagID string `json:"originalTagid"`
+}
+
 // used for cookies and such
 func (a *TelariaAdapter) Name() string {
 	return "telaria"
@@ -26,12 +30,8 @@ func (a *TelariaAdapter) SkipNoCookies() bool {
 	return false
 }
 
-func (a *TelariaAdapter) FetchEndpoint(adCode string) (string, error) {
-	if adCode == "" {
-		return "", &errortypes.BadInput{Message: "Invalid ad Code" }
-	}
-
-	return a.URI + "?adCode=" + adCode, nil
+func (a *TelariaAdapter) FetchEndpoint() string {
+	return a.URI
 }
 
 func (a *TelariaAdapter) GetHeaders(request *openrtb.BidRequest) http.Header {
@@ -39,6 +39,7 @@ func (a *TelariaAdapter) GetHeaders(request *openrtb.BidRequest) http.Header {
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
+	headers.Add("Accept-Encoding", "gzip")
 
 	if request.Device != nil {
 		if len(request.Device.UA) > 0 {
@@ -103,8 +104,15 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 		return nil, errors
 	}
 	validImpExists := false
-	for i := 0; i < len(request.Imp); i++ {
-		validImpExists = validImpExists || request.Imp[i].Video != nil
+
+	for i, imp := range request.Imp {
+		validImpExists = validImpExists || imp.Video != nil
+		var impExt = &TagIDExt{request.Imp[i].TagID}
+		request.Imp[i].TagID = telariaExt.AdCode
+		if impExt.OriginalTagID != "" {
+			request.Imp[i].Ext, _ = json.Marshal(impExt)
+		}
+
 	}
 
 	if !validImpExists {
@@ -121,17 +129,11 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 		return nil, errors
 	}
 
-	thisURI, err := a.FetchEndpoint(telariaExt.AdCode)
-	if err != nil {
-		errors = append(errors, err)
-		return nil, errors
-	}
-
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     thisURI,
+		Uri:     a.FetchEndpoint(),
 		Body:    reqJSON,
-		Headers: a.GetHeaders(request),
+		Headers: a.GetHeaders(&request),
 	}}, errors
 }
 
@@ -162,15 +164,12 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 	sb := bidResp.SeatBid[0]
 
-	for i := 0; i < len(sb.Bid); i++ {
-		bid := sb.Bid[i]
-
+	for _, bid := range sb.Bid {
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
 			BidType: openrtb_ext.BidTypeVideo,
 		})
 	}
-
 	return bidResponse, nil
 }
 
