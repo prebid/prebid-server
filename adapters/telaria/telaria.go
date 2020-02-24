@@ -173,7 +173,7 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	return bidResponse, nil
 }
 
-func NewTelariaBidder() *TelariaAdapter {
+func NewTelariaBidder(endpoint string) *TelariaAdapter {
 	return &TelariaAdapter{
 		URI: Endpoint,
 	}

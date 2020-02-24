@@ -1,0 +1,9 @@
+maintainer:
+  email: "github@telaria.com"
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video
