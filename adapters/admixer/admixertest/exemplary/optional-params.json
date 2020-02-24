@@ -5,19 +5,48 @@
       {
         "id": "test-imp-id",
         "banner": {
-          "format": [{"w": 728, "h": 90}]
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
         },
         "ext": {
           "bidder": {
             "zone": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
             "customFloor": 0.1,
-            "customParams": {"foo": "bar"}
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      },
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zone": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+            "customFloor": 0.1,
+            "customParams": {
+              "foo": [
+                "bar",
+                "baz"
+              ]
+            }
           }
         }
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -26,14 +55,42 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id":"test-imp-id",
+              "id": "test-imp-id",
               "banner": {
-                "format": [{"w": 728, "h": 90}]
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
               },
               "tagid": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
               "bidfloor": 0.1,
               "ext": {
-                "customParams": {"foo": "bar"}
+                "customParams": {
+                  "foo": "bar"
+                }
+              }
+            },
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "tagid": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+              "bidfloor": 0.1,
+              "ext": {
+                "customParams": {
+                  "foo": [
+                    "bar",
+                    "baz"
+                  ]
+                }
               }
             }
           ]

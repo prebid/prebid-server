@@ -24,11 +24,13 @@ type admixerImpExt struct {
 
 func (a *AdmixerAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requests []*adapters.RequestData, errors []error) {
 	rq, errs := a.makeRequest(request)
+
 	if len(errs) > 0 {
 		errors = append(errors, errs...)
 		return
 	}
-	if request != nil {
+
+	if rq != nil {
 		requests = append(requests, rq)
 	}
 
@@ -38,6 +40,12 @@ func (a *AdmixerAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 func (a *AdmixerAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 	var validImps []openrtb.Imp
+
+	if len(request.Imp) == 0 {
+		return nil, []error{&errortypes.BadInput{
+			Message: "No impressions in request",
+		}}
+	}
 
 	for _, imp := range request.Imp {
 		if err := preprocess(&imp); err != nil {
@@ -81,7 +89,14 @@ func preprocess(imp *openrtb.Imp) error {
 	var admixerExt openrtb_ext.ExtImpAdmixer
 	if err := json.Unmarshal(bidderExt.Bidder, &admixerExt); err != nil {
 		return &errortypes.BadInput{
-			Message: err.Error(),
+			Message: "Wrong Admixer bidder ext",
+		}
+	}
+
+	//don't use regexp due to possible performance reduce
+	if len(admixerExt.ZoneId) != 36 {
+		return &errortypes.BadInput{
+			Message: "ZoneId must be UUID/GUID",
 		}
 	}
 
@@ -91,15 +106,13 @@ func preprocess(imp *openrtb.Imp) error {
 	imp.Ext = nil
 
 	if admixerExt.CustomParams != nil {
-		if admixerExt.CustomParams != nil {
-			impExt := admixerImpExt{
-				CustomParams: admixerExt.CustomParams,
-			}
-			var err error
-			if imp.Ext, err = json.Marshal(impExt); err != nil {
-				return &errortypes.BadInput{
-					Message: err.Error(),
-				}
+		impExt := admixerImpExt{
+			CustomParams: admixerExt.CustomParams,
+		}
+		var err error
+		if imp.Ext, err = json.Marshal(impExt); err != nil {
+			return &errortypes.BadInput{
+				Message: err.Error(),
 			}
 		}
 	}
@@ -112,15 +125,21 @@ func (a *AdmixerAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		return nil, nil
 	}
 
-	if response.StatusCode == http.StatusBadRequest {
+	if response.StatusCode >= http.StatusInternalServerError {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Dsp server internal error", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode >= http.StatusBadRequest {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d. Bad request to dsp", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d", response.StatusCode),
 		}}
 	}
 
