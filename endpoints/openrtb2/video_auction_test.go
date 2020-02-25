@@ -489,30 +489,23 @@ func TestVideoEndpointValidationsMissingVideo(t *testing.T) {
 	deps := mockDeps(t, ex)
 	deps.cfg.VideoStoredRequestRequired = true
 
-	durationRange := []int{
-		15,
-		30,
-	}
-
-	pods := []openrtb_ext.Pod{
-		{
-			PodId:            1,
-			AdPodDurationSec: 30,
-			ConfigId:         "qwerty",
-		},
-		{
-			PodId:            2,
-			AdPodDurationSec: 30,
-			ConfigId:         "qwerty",
-		},
-	}
-
 	req := openrtb_ext.BidRequestVideo{
 		StoredRequestId: "123",
 		PodConfig: openrtb_ext.PodConfig{
-			DurationRangeSec:     durationRange,
+			DurationRangeSec:     []int{15, 30},
 			RequireExactDuration: true,
-			Pods:                 pods,
+			Pods: []openrtb_ext.Pod{
+				{
+					PodId:            1,
+					AdPodDurationSec: 30,
+					ConfigId:         "qwerty",
+				},
+				{
+					PodId:            2,
+					AdPodDurationSec: 30,
+					ConfigId:         "qwerty",
+				},
+			},
 		},
 		App: &openrtb.App{
 			Bundle: "pbs.com",
