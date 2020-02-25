@@ -192,7 +192,7 @@ type BidderDealTier struct {
 	DealInfo map[string]*DealTier
 }
 
-// Updates targeting keys with deal prefixes if minimum deal tier exceeded
+// applyDealSupport updates targeting keys with deal prefixes if minimum deal tier exceeded
 func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) []error {
 	errs := []error{}
 	impDealMap := getDealTiers(bidRequest)
@@ -203,7 +203,7 @@ func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) []error {
 			bidderString := bidder.String()
 
 			if topBidPerBidder.dealPriority > 0 {
-				if validateDealTier(impDeal[bidderString]) {
+				if validateAndNormalizeDealTier(impDeal[bidderString]) {
 					updateHbPbCatDur(topBidPerBidder, impDeal[bidderString].Info)
 				} else {
 					errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", bidderString, impID))
@@ -232,8 +232,8 @@ func getDealTiers(bidRequest *openrtb.BidRequest) map[string]*BidderDealTier {
 	return impDealMap
 }
 
-func validateDealTier(impDeal *DealTier) bool {
-	if impDeal.Info == nil {
+func validateAndNormalizeDealTier(impDeal *DealTier) bool {
+	if impDeal == nil || impDeal.Info == nil {
 		return false
 	}
 	// Remove whitespace from prefix before checking if it can be used

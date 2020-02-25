@@ -1471,7 +1471,7 @@ func TestGetDealTiers(t *testing.T) {
 	}
 }
 
-func TestValidateDealTier(t *testing.T) {
+func TestValidateAndNormalizeDealTier(t *testing.T) {
 	testCases := []struct {
 		description    string
 		params         json.RawMessage
@@ -1521,7 +1521,7 @@ func TestValidateDealTier(t *testing.T) {
 			assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
 		}
 
-		assert.Equal(t, test.expectedResult, validateDealTier(bidderDealTier.DealInfo["appnexus"]), test.description)
+		assert.Equal(t, test.expectedResult, validateAndNormalizeDealTier(bidderDealTier.DealInfo["appnexus"]), test.description)
 	}
 }
 
