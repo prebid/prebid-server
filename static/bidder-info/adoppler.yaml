@@ -1,9 +1,11 @@
 maintainer:
-  email: "service@yoc.com"
+  email: info@adoppler.com
 capabilities:
-  site:
-    mediaTypes:
-      - banner
   app:
     mediaTypes:
       - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
