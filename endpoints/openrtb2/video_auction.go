@@ -657,7 +657,7 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 			err := errors.New("request missing required field: Video.Mimes")
 			errL = append(errL, err)
 		} else {
-			mimes := make([]string, 0, 0)
+			mimes := make([]string, 0, len(req.Video.MIMEs))
 			for _, mime := range req.Video.MIMEs {
 				if mime != "" {
 					mimes = append(mimes, mime)
