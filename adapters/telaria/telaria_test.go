@@ -26,7 +26,7 @@ func TestTelariaAdapterSkipNoCookiesFlag(t *testing.T) {
  */
 func TestTelariaAdapterEndpoint(t *testing.T) {
 	adapter := NewTelariaBidder("https://{{.Host}}")
-	adapterstest.VerifyStringValue(adapter.URI, "fubarTodoChange", t)
+	adapterstest.VerifyStringValue(adapter.URI, "https://ads.vhfp.net/ad/rtb/prebid", t)
 }
 
 func testJsonSamples(t *testing.T) {

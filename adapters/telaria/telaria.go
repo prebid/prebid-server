@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-const Endpoint = "fubarTodoChange"
+const Endpoint = "https://ads.vhfp.net/ad/rtb/prebid"
 
 type TelariaAdapter struct {
 	URI string
@@ -39,7 +39,7 @@ func (a *TelariaAdapter) GetHeaders(request *openrtb.BidRequest) http.Header {
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
-	headers.Add("Accept-Encoding", "gzip")
+	//headers.Add("Accept-Encoding", "gzip, deflate")
 
 	if request.Device != nil {
 		if len(request.Device.UA) > 0 {
