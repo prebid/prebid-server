@@ -25,6 +25,12 @@ func processImp(imp *openrtb.Imp) error {
 	if err := json.Unmarshal(ext.Bidder, &gridExt); err != nil {
 		return err
 	}
+	if gridExt.Uid == 0 {
+		err := &errortypes.BadInput{
+			Message: "uid is empty",
+		}
+		return err
+	}
 	// no error
 	return nil
 }
