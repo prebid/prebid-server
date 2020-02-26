@@ -1,0 +1,11 @@
+maintainer:
+  email: "info@valueimpression.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

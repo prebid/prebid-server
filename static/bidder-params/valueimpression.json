@@ -1,0 +1,15 @@
+
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "ValueImpression Adapter Params",
+    "description": "Schema to validate params accepted by the ValueImpression adapter",
+  
+    "type": "object",
+    "properties": {
+      "siteId": {
+        "type": "string",
+        "description": "Site ID"
+      }
+    },
+    "required": ["siteId"]
+  }
