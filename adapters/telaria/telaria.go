@@ -1,6 +1,8 @@
 package telaria
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
@@ -34,12 +36,12 @@ func (a *TelariaAdapter) FetchEndpoint() string {
 	return a.URI
 }
 
-func (a *TelariaAdapter) GetHeaders(request *openrtb.BidRequest) http.Header {
+func GetHeaders(request *openrtb.BidRequest) *http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
-	//headers.Add("Accept-Encoding", "gzip, deflate")
+	headers.Add("Accept-Encoding", "gzip")
 
 	if request.Device != nil {
 		if len(request.Device.UA) > 0 {
@@ -59,7 +61,7 @@ func (a *TelariaAdapter) GetHeaders(request *openrtb.BidRequest) http.Header {
 		}
 	}
 
-	return headers
+	return &headers
 }
 
 func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -133,8 +135,34 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 		Method:  "POST",
 		Uri:     a.FetchEndpoint(),
 		Body:    reqJSON,
-		Headers: a.GetHeaders(&request),
+		Headers: *GetHeaders(&request),
 	}}, errors
+}
+
+// response isn't automatically decompressed. This method unzips the response if Content-Encoding is gzip
+func GetResponseBody(response *adapters.ResponseData) (*[]byte, error) {
+	responseBody := response.Body
+
+	if "gzip" == response.Headers.Get("Content-Encoding") {
+		body := bytes.NewBuffer(response.Body)
+		r, readerErr := gzip.NewReader(body)
+		if readerErr != nil {
+			return nil, &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Error while trying to unzip data [ %d ]", response.StatusCode),
+			}
+		}
+		var resB bytes.Buffer
+		var err error
+		_, err = resB.ReadFrom(r)
+		if err != nil {
+			return nil, &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Error while trying to unzip data [ %d ]", response.StatusCode),
+			}
+		}
+		responseBody = resB.Bytes()
+	}
+
+	return &responseBody, nil
 }
 
 func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -144,20 +172,26 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 
 	if response.StatusCode == http.StatusBadRequest {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. ", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: [ %d ] . ", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+			Message: fmt.Sprintf("unexpected status code:[ %d ]. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
+	responseBody, err := GetResponseBody(response)
+
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	var bidResp openrtb.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := json.Unmarshal(*responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("bad server response: %d. ", err),
+			Message: fmt.Sprintf("bad server response: [ %d ]. ", err),
 		}}
 	}
 
