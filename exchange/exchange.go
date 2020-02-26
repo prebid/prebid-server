@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/prebid/prebid-server/stored_requests"
@@ -167,10 +168,91 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 			targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
 		}
+
+		if requestExt.Prebid.SupportDeals {
+			dealErrs := applyDealSupport(bidRequest, auc)
+			errs = append(errs, dealErrs...)
+		}
 	}
 
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
+}
+
+type DealTierInfo struct {
+	Prefix      string `json:"prefix"`
+	MinDealTier int    `json:"minDealTier"`
+}
+
+type DealTier struct {
+	Info *DealTierInfo `json:"dealTier,omitempty"`
+}
+
+type BidderDealTier struct {
+	DealInfo map[string]*DealTier
+}
+
+// applyDealSupport updates targeting keys with deal prefixes if minimum deal tier exceeded
+func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) []error {
+	errs := []error{}
+	impDealMap := getDealTiers(bidRequest)
+
+	for impID, topBidsPerImp := range auc.winningBidsByBidder {
+		impDeal := impDealMap[impID].DealInfo
+		for bidder, topBidPerBidder := range topBidsPerImp {
+			bidderString := bidder.String()
+
+			if topBidPerBidder.dealPriority > 0 {
+				if validateAndNormalizeDealTier(impDeal[bidderString]) {
+					updateHbPbCatDur(topBidPerBidder, impDeal[bidderString].Info)
+				} else {
+					errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", bidderString, impID))
+				}
+			}
+		}
+	}
+
+	return errs
+}
+
+// getDealTiers creates map of impression to bidder deal tier configuration
+func getDealTiers(bidRequest *openrtb.BidRequest) map[string]*BidderDealTier {
+	impDealMap := make(map[string]*BidderDealTier)
+
+	for _, imp := range bidRequest.Imp {
+		var bidderDealTier BidderDealTier
+		err := json.Unmarshal(imp.Ext, &bidderDealTier.DealInfo)
+		if err != nil {
+			continue
+		}
+
+		impDealMap[imp.ID] = &bidderDealTier
+	}
+
+	return impDealMap
+}
+
+func validateAndNormalizeDealTier(impDeal *DealTier) bool {
+	if impDeal == nil || impDeal.Info == nil {
+		return false
+	}
+	// Remove whitespace from prefix before checking if it can be used
+	impDeal.Info.Prefix = strings.ReplaceAll(impDeal.Info.Prefix, " ", "")
+	return len(impDeal.Info.Prefix) > 0 && impDeal.Info.MinDealTier > 0
+}
+
+func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo) {
+	if bid.dealPriority >= dealTierInfo.MinDealTier {
+		prefixTier := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
+
+		if oldCatDur, ok := bid.bidTargets["hb_pb_cat_dur"]; ok {
+			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
+			oldCatDurSplit[0] = prefixTier
+
+			newCatDur := strings.Join(oldCatDurSplit, "")
+			bid.bidTargets["hb_pb_cat_dur"] = newCatDur
+		}
+	}
 }
 
 func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {

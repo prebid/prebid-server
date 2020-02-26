@@ -136,6 +136,14 @@ type BidRequestVideo struct {
 	// Description:
 	//   Contains the OpenRTB Regs object to be passed to OpenRTB request
 	Regs *openrtb.Regs `json:"regs,omitempty"`
+
+	// Attribute:
+	//   supportdeals
+	// Type:
+	//   bool; optional
+	// Description:
+	//   Indicates that the response should update key to include prefix and tier
+	SupportDeals bool `json:"supportdeals,omitempty"`
 }
 
 type PodConfig struct {
