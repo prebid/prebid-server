@@ -64,19 +64,17 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 	return &headers
 }
 
-func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	request := *requestIn
-	errs := make([]error, 0, len(request.Imp))
+func (a *TelariaAdapter) CheckHasImps(request *openrtb.BidRequest) error {
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
 			Message: "No imp object in the bid request",
 		}
-		errs = append(errs, err)
-		return nil, errs
+		return err
 	}
+	return nil
+}
 
-	errors := make([]error, 0, 1)
-
+func (a *TelariaAdapter) FetchBidderExt(request *openrtb.BidRequest) (*adapters.ExtImpBidder, error) {
 	var bidderExt adapters.ExtImpBidder
 	err := json.Unmarshal(request.Imp[0].Ext, &bidderExt)
 
@@ -84,8 +82,17 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 		err = &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
-		errors = append(errors, err)
-		return nil, errors
+
+		return nil, err
+	}
+
+	return &bidderExt, nil
+}
+
+func (a *TelariaAdapter) FetchTelariaParams(request *openrtb.BidRequest) (*openrtb_ext.ExtImpTelaria, error) {
+	bidderExt, err := a.FetchBidderExt(request)
+	if err != nil {
+		return nil, err
 	}
 
 	var telariaExt openrtb_ext.ExtImpTelaria
@@ -94,49 +101,72 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 		err = &errortypes.BadInput{
 			Message: "ext.bidder.adCode not provided",
 		}
-		errors = append(errors, err)
-		return nil, errors
+
+		return nil, err
 	}
 
 	if telariaExt.AdCode == "" {
 		err = &errortypes.BadInput{
 			Message: "adCode is empty",
 		}
-		errors = append(errors, err)
-		return nil, errors
-	}
-	validImpExists := false
 
-	for i, imp := range request.Imp {
-		validImpExists = validImpExists || imp.Video != nil
-		var impExt = &TagIDExt{request.Imp[i].TagID}
+		return nil, err
+	}
+
+	return &telariaExt, nil
+}
+
+func (a *TelariaAdapter) CheckHasVideoObject(request *openrtb.BidRequest) error {
+	hasVideoObject := false
+
+	for _, imp := range request.Imp {
+		hasVideoObject = hasVideoObject || imp.Video != nil
+	}
+
+	if !hasVideoObject {
+		return &errortypes.BadInput{
+			Message: "Telaria only supports Video",
+		}
+	}
+
+	return nil
+}
+
+func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+
+	if noImps := a.CheckHasImps(request); noImps != nil {
+		return nil, []error{noImps}
+	}
+
+	if noVideoObject := a.CheckHasVideoObject(request); noVideoObject != nil {
+		return nil, []error{noVideoObject}
+	}
+
+	telariaExt, err := a.FetchTelariaParams(request)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	for i, _ := range request.Imp {
+		impExt := &TagIDExt{request.Imp[i].TagID}
 		request.Imp[i].TagID = telariaExt.AdCode
+
 		if impExt.OriginalTagID != "" {
 			request.Imp[i].Ext, _ = json.Marshal(impExt)
 		}
-
-	}
-
-	if !validImpExists {
-		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("No valid impression in the bid request"),
-		}
-		errors = append(errors, err)
-		return nil, errors
 	}
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errors = append(errors, err)
-		return nil, errors
+		return nil, []error{err}
 	}
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     a.FetchEndpoint(),
 		Body:    reqJSON,
-		Headers: *GetHeaders(&request),
-	}}, errors
+		Headers: *GetHeaders(request),
+	}}, nil
 }
 
 // response isn't automatically decompressed. This method unzips the response if Content-Encoding is gzip
