@@ -9,5 +9,5 @@
       "description": "An ID which identifies this placement of the impression"
     }
   },
-  "required": ["uid"]
+  "required": []
 }
