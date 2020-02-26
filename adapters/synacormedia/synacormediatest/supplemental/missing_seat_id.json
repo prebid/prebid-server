@@ -14,6 +14,7 @@
         },
         "ext": {
           "bidder": {
+            "tagId": "demo1"
           }
         }
       }
@@ -22,7 +23,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Impression missing seat id",
+      "value": "Invalid Impression",
       "comparison": "literal"
     }
   ]

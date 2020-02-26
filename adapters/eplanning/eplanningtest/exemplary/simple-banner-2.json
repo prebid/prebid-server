@@ -28,7 +28,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://ads.us.e-planning.net/hb/1/12345/1/FILE/ROS?r=pbs&ncb=1&ur=FILE&e=300x250:300x250",
+        "uri": "https://ads.us.e-planning.net/hb/1/12345/1/FILE/ROS?r=pbs&ncb=1&ur=FILE&e=300x250:300x250",
         "body": {}
       },
       "mockResponse": {
