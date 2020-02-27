@@ -13,7 +13,7 @@ import (
 	"strconv"
 )
 
-const Endpoint = "https://ads.vhfp.net/ad/rtb/prebid"
+const Endpoint = "https://ads.tremorhub.com/ad/rtb/prebid"
 
 type TelariaAdapter struct {
 	URI string
