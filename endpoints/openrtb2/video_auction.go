@@ -550,8 +550,9 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 	}
 
 	prebid := openrtb_ext.ExtRequestPrebid{
-		Cache:     &cache,
-		Targeting: &targeting,
+		Cache:        &cache,
+		Targeting:    &targeting,
+		SupportDeals: videoRequest.SupportDeals,
 	}
 	extReq := openrtb_ext.ExtRequest{Prebid: prebid}
 
