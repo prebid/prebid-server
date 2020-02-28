@@ -4,6 +4,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/analytics/filesystem"
+	"github.com/prebid/prebid-server/analytics/pubstack"
 	"github.com/prebid/prebid-server/config"
 )
 
@@ -16,6 +17,10 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 		} else {
 			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
 		}
+	}
+	if analytics.Pubstack.Enabled {
+		pbstck, _ := pubstack.NewPubstackModule(analytics.Pubstack.ScopeId, analytics.Pubstack.IntakeUrl)
+		modules = append(modules, pbstck)
 	}
 	return modules
 }

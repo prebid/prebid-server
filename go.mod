@@ -56,6 +56,7 @@ require (
 	github.com/spf13/pflag v1.0.2 // indirect
 	github.com/spf13/viper v1.1.0
 	github.com/stretchr/testify v1.3.0
+	github.com/ua-parser/uap-go v0.0.0-20190826212731-daf92ba38329
 	github.com/valyala/fasthttp v1.9.0
 	github.com/vrischmann/go-metrics-influxdb v0.0.0-20160917065939-43af8332c303
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
