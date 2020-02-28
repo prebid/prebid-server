@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	owortb "github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
@@ -302,7 +303,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func getBidderParam(request *openrtb.BidRequest, key string) ([]byte, error) {
+func getBidderParam(request *owortb.BidRequest, key string) ([]byte, error) {
 	var reqExt openrtb_ext.ExtRequest
 	if len(request.Ext) <= 0 {
 		return nil, nil
@@ -337,7 +338,7 @@ func getBidderParam(request *openrtb.BidRequest, key string) ([]byte, error) {
 	return bytes, nil
 }
 
-func getCookiesFromRequest(request *openrtb.BidRequest) ([]string, error) {
+func getCookiesFromRequest(request *owortb.BidRequest) ([]string, error) {
 	cbytes, err := getBidderParam(request, "Cookie")
 	if err != nil {
 		return nil, err
@@ -358,6 +359,15 @@ func getCookiesFromRequest(request *openrtb.BidRequest) ([]string, error) {
 }
 
 func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var newRequest *owortb.BidRequest
+	reqBytes, _ := json.Marshal(request)
+	if reqBytes != nil {
+		json.Unmarshal(reqBytes, &newRequest)
+	}
+	return a.newMakeRequests(newRequest, reqInfo)
+}
+
+func (a *PubmaticAdapter) newMakeRequests(request *owortb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var err error
@@ -391,7 +401,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 			publisherCopy.ID = pubID
 			siteCopy.Publisher = &publisherCopy
 		} else {
-			siteCopy.Publisher = &openrtb.Publisher{ID: pubID}
+			siteCopy.Publisher = &owortb.Publisher{ID: pubID}
 		}
 		request.Site = &siteCopy
 	} else if request.App != nil {
@@ -401,9 +411,34 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 			publisherCopy.ID = pubID
 			appCopy.Publisher = &publisherCopy
 		} else {
-			appCopy.Publisher = &openrtb.Publisher{ID: pubID}
+			appCopy.Publisher = &owortb.Publisher{ID: pubID}
 		}
 		request.App = &appCopy
+	}
+
+	if request.User != nil && request.User.Ext != nil {
+		var userExt *openrtb_ext.ExtUser
+		if err = json.Unmarshal(request.User.Ext, &userExt); err == nil {
+			if userExt != nil && userExt.Eids != nil {
+				/*for _, eid := range userExt.Eids {
+					var newEid openrtb.ExtUserEid
+					newEid.ID = eid.ID
+					newEid.Source = eid.Source
+
+					for _, uid := range eid.Uids {
+						newUids := openrtb.ExtUserEidUid(uid)
+					}
+
+				}*/
+				eidsBytes, _ := json.Marshal(userExt.Eids)
+				if eidsBytes != nil {
+					var newEids []owortb.Eid
+					json.Unmarshal(eidsBytes, &newEids)
+					request.User.Eids = newEids
+				}
+
+			}
+		}
 	}
 
 	//adding hack to support DNT, since hbopenbid does not support lmt
@@ -440,7 +475,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 // validateAdslot validate the optional adslot string
 // valid formats are 'adslot@WxH', 'adslot' and no adslot
-func validateAdSlot(adslot string, imp *openrtb.Imp) error {
+func validateAdSlot(adslot string, imp *owortb.Imp) error {
 	adSlotStr := strings.TrimSpace(adslot)
 
 	if len(adSlotStr) == 0 {
@@ -484,7 +519,7 @@ func validateAdSlot(adslot string, imp *openrtb.Imp) error {
 	return nil
 }
 
-func assignBannerSize(banner *openrtb.Banner) error {
+func assignBannerSize(banner *owortb.Banner) error {
 	if banner == nil {
 		return nil
 	}
@@ -506,7 +541,7 @@ func assignBannerSize(banner *openrtb.Banner) error {
 }
 
 // parseImpressionObject parse the imp to get it ready to send to pubmatic
-func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) error {
+func parseImpressionObject(imp *owortb.Imp, wrapExt *string, pubID *string) error {
 	// PubMatic supports banner and video impressions.
 	if imp.Banner == nil && imp.Video == nil {
 		return fmt.Errorf("Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=%s", imp.ID)
