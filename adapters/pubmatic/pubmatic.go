@@ -359,15 +359,21 @@ func getCookiesFromRequest(request *owortb.BidRequest) ([]string, error) {
 }
 
 func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	// convert mxmcherry.openrtb.BidRequest object to PubMatic-OpenWrap.openrtb.BidRequest object
 	var newRequest *owortb.BidRequest
-	reqBytes, _ := json.Marshal(request)
-	if reqBytes != nil {
-		json.Unmarshal(reqBytes, &newRequest)
+	reqBytes, err := json.Marshal(request)
+	if reqBytes, err = json.Marshal(request); err == nil {
+		if err = json.Unmarshal(reqBytes, &newRequest); err == nil {
+			return a.internalMakeRequests(newRequest, reqInfo)
+		}
 	}
-	return a.newMakeRequests(newRequest, reqInfo)
+	errs := make([]error, 0, 1)
+	err1 := fmt.Errorf("%s Error occurred while parsing the request", PUBMATIC)
+	errs = append(errs, err1)
+	return nil, errs
 }
 
-func (a *PubmaticAdapter) newMakeRequests(request *owortb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *PubmaticAdapter) internalMakeRequests(request *owortb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var err error
@@ -416,27 +422,23 @@ func (a *PubmaticAdapter) newMakeRequests(request *owortb.BidRequest, reqInfo *a
 		request.App = &appCopy
 	}
 
+	// move user.ext.eids to user.eids
 	if request.User != nil && request.User.Ext != nil {
 		var userExt *openrtb_ext.ExtUser
 		if err = json.Unmarshal(request.User.Ext, &userExt); err == nil {
 			if userExt != nil && userExt.Eids != nil {
-				/*for _, eid := range userExt.Eids {
-					var newEid openrtb.ExtUserEid
-					newEid.ID = eid.ID
-					newEid.Source = eid.Source
-
-					for _, uid := range eid.Uids {
-						newUids := openrtb.ExtUserEidUid(uid)
-					}
-
-				}*/
 				eidsBytes, _ := json.Marshal(userExt.Eids)
 				if eidsBytes != nil {
 					var newEids []owortb.Eid
-					json.Unmarshal(eidsBytes, &newEids)
-					request.User.Eids = newEids
+					if err = json.Unmarshal(eidsBytes, &newEids); err == nil {
+						request.User.Eids = newEids
+						userExt.Eids = nil
+						updatedUserExt, err1 := json.Marshal(userExt)
+						if err1 == nil {
+							request.User.Ext = updatedUserExt
+						}
+					}
 				}
-
 			}
 		}
 	}
