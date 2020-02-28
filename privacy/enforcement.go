@@ -1,7 +1,7 @@
 package privacy
 
 import (
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 )
 
 // Enforcement represents the privacy policies to enforce for an OpenRTB bid request.

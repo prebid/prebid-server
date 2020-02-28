@@ -10,9 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
-	"github.com/mssola/user_agent"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/cache"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
@@ -26,6 +23,9 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
 	gdprPolicy "github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
+	"github.com/mssola/user_agent"
 )
 
 type bidResult struct {

@@ -5,7 +5,7 @@ import (
 
 	"encoding/json"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"

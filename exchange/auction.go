@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"strings"
 
-	uuid "github.com/gofrs/uuid"
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
+	uuid "github.com/gofrs/uuid"
+	"github.com/golang/glog"
 )
 
 func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int) *auction {

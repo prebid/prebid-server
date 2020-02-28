@@ -3,9 +3,9 @@ package endpoints
 import (
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/julienschmidt/httprouter"
 
 	"encoding/json"
 )
