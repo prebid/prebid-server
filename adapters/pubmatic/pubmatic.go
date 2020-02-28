@@ -422,6 +422,38 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	}
 
 	// move user.ext.eids to user.eids
+	if request.User != nil && request.User.Ext != nil {
+		var userExt *openrtb_ext.ExtUser
+		if err = json.Unmarshal(request.User.Ext, &userExt); err == nil {
+			if userExt != nil && userExt.Eids != nil {
+				var eidArr []openrtb.Eid
+				for _, eid := range userExt.Eids {
+					//var newEid openrtb.Eid
+					newEid := &openrtb.Eid{
+						ID:     eid.ID,
+						Source: eid.Source,
+						Ext:    eid.Ext,
+					}
+					var uidArr []openrtb.Uid
+					for _, uid := range eid.Uids {
+						newUID := &openrtb.Uid{
+							ID:    uid.ID,
+							AType: uid.AType,
+							Ext:   uid.Ext,
+						}
+						uidArr = append(uidArr, *newUID)
+					}
+					eidArr = append(eidArr, *newEid)
+				}
+				request.User.Eids = eidArr
+				userExt.Eids = nil
+				updatedUserExt, err1 := json.Marshal(userExt)
+				if err1 == nil {
+					request.User.Ext = updatedUserExt
+				}
+			}
+		}
+	}
 	/*if request.User != nil && request.User.Ext != nil {
 		var userExt *openrtb_ext.ExtUser
 		if err = json.Unmarshal(request.User.Ext, &userExt); err == nil {
