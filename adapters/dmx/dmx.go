@@ -155,7 +155,6 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		request.App.Publisher = &openrtb.Publisher{ID: dmxImp.Bidder.PublisherId}
 	}
 
-
 	oJson, _ := json.Marshal(request)
 	headers := http.Header{}
 	headers.Add("Content-Type", "Application/json;charset=utf-8")
@@ -165,7 +164,6 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		Body:    oJson,
 		Headers: headers,
 	}
-
 
 	if request.User == nil {
 		if request.App == nil {
@@ -241,7 +239,6 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, 
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
 	}
 }
-
 
 func getCookieInfo(request *pbs.PBSRequest) {
 
