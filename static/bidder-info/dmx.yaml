@@ -1,0 +1,6 @@
+maintainer:
+  email: "steve.alliance@gmail.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
