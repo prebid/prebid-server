@@ -3,8 +3,8 @@ package gdpr
 import (
 	"encoding/json"
 
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
 )
 
 // Policy represents the GDPR regulation for an OpenRTB bid request.

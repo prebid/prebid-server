@@ -3,7 +3,7 @@ package privacy
 import (
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

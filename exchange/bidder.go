@@ -9,9 +9,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
-	nativeRequests "github.com/mxmCherry/openrtb/native/request"
-	nativeResponse "github.com/mxmCherry/openrtb/native/response"
+	"github.com/PubMatic-OpenWrap/openrtb"
+	nativeRequests "github.com/PubMatic-OpenWrap/openrtb/native/request"
+	nativeResponse "github.com/PubMatic-OpenWrap/openrtb/native/response"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"

@@ -1,7 +1,7 @@
 package consumable
 
 import (
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"strconv"
 )
 
