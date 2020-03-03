@@ -7,6 +7,6 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-func NewZeroclickfraudSyncer(temp *template.Template) usersync.Usersyncer {
+func NewZeroClickFraudSyncer(temp *template.Template) usersync.Usersyncer {
 	return adapters.NewSyncer("zeroclickfraud", 0, temp, adapters.SyncTypeIframe)
 }

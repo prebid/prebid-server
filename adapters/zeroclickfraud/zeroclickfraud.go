@@ -77,7 +77,11 @@ func (a *ZeroclickfraudAdapter) MakeBids(
 		return nil, nil
 	}
 
-	if response.StatusCode != http.StatusOK {
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("ERR, bad input %d", response.StatusCode),
+		}}
+	} else if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("ERR, response with status %d", response.StatusCode),
 		}}
@@ -115,12 +119,7 @@ func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpZeroclickfraud]
 			return nil, err
 		}
 
-		v, ok := m[*bidderParams]
-		if ok {
-			m[*bidderParams] = append(v, imp)
-		} else {
-			m[*bidderParams] = []openrtb.Imp{imp}
-		}
+		m[*bidderParams] = append(m[*bidderParams], imp)
 	}
 
 	return m, nil

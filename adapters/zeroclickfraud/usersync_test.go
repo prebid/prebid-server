@@ -16,7 +16,7 @@ func TestZeroclickfraudSyncer(t *testing.T) {
 		template.New("sync-template").Parse(syncURL),
 	)
 
-	syncer := NewZeroclickfraudSyncer(syncURLTemplate)
+	syncer := NewZeroClickFraudSyncer(syncURLTemplate)
 	syncInfo, err := syncer.GetUsersyncInfo(privacy.Policies{
 		GDPR: gdpr.Policy{
 			Signal:  "1",
