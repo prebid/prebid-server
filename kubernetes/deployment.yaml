@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prebid
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: prebid-server
+  namespace: prebid
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: prebid
+        component: server
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: prebid-server
+        image: gcr.io/newscorp-newsiq-dev/prebid-server:latest
+        args:
+        - webserver
+        env:
+        - name: GUNICORN_CMD_ARGS
+          value: --forwarded-allow-ips=*
+        ports:
+        - containerPort: 8000
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 1
+          limits:
+            memory: 2Gi
+            cpu: 4                  
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prebid-server-service1
+  namespace: prebid
+  labels:
+    app: prebid
+    component: server
+spec:
+  type: NodePort
+  ports:
+  - port: 8000
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    app: prebid
+    component: server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: prebid
+    component: server
+  name: prebid-server-loadbalancer
+  namespace: prebid
+spec:
+  externalTrafficPolicy: Cluster
+  ports:
+  - nodePort: 31113
+    port: 8000
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    app: prebid
+    component: server
+  sessionAffinity: None
+  type: LoadBalancer
