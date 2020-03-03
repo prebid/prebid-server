@@ -27,11 +27,11 @@ GOGLOB="${GOGLOB/ docs/}"
 GOGLOB="${GOGLOB/ vendor/}"
 
 # Check that there are no formatting issues
-GOFMT_LINES=`gofmt -s -l $GOGLOB | wc -l | xargs`
+GOFMT_LINES=`gofmt -s -l $GOGLOB | tr '\\\\' '/' | wc -l | xargs`
 if $AUTOFMT; then
   # if there are files with formatting issues, they will be automatically corrected using the gofmt -w <file> command
   if [[ $GOFMT_LINES -ne 0 ]]; then
-    FMT_FILES=`gofmt -s -l $GOGLOB | xargs`
+    FMT_FILES=`gofmt -s -l $GOGLOB | tr '\\\\' '/' | xargs`
     for FILE in $FMT_FILES; do
         echo "Running: gofmt -s -w $FILE"
         `gofmt -s -w $FILE`
