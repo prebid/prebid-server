@@ -25,6 +25,7 @@ func processImp(imp *openrtb.Imp) error {
 	if err := json.Unmarshal(ext.Bidder, &gridExt); err != nil {
 		return err
 	}
+
 	if gridExt.Uid == 0 {
 		err := &errortypes.BadInput{
 			Message: "uid is empty",
@@ -52,7 +53,9 @@ func (a *GridAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapter
 		}
 	}
 	if len(validImps) == 0 {
-		err := fmt.Errorf("No valid impressions for grid")
+		err := &errortypes.BadInput{
+			Message: "No valid impressions for grid",
+		}
 		errors = append(errors, err)
 		return nil, errors
 	}
