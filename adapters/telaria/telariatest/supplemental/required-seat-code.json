@@ -22,7 +22,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "imp[0].ext.bidder.telaria.adCode required",
+      "value": "imp[0].ext.bidder.telaria.seatCode required",
       "comparison": "literal"
     }
   ]

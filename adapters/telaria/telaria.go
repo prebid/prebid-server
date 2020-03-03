@@ -19,8 +19,26 @@ type TelariaAdapter struct {
 	URI string
 }
 
-type TagIDExt struct {
+// This will be part of Imp[i].Ext when this adapter calls out the Telaria Ad Server
+type ImpressionExtOut struct {
 	OriginalTagID string `json:"originalTagid"`
+}
+
+// This will be part of Request.Ext when this adapter calls out the Telaria Ad Server
+type BidExtOut struct {
+	openrtb_ext.ExtRequest
+	OriginalPublisherID string `json:"originalPublisherId"`
+}
+
+// Publishers must send this information as part of the Request under the Ext object
+type ReqExtTelariaIn struct {
+	SeatCode string `json:"seatCode,omitempty"`
+}
+
+// Full request extension including Telaria extension object
+type ReqExtIn struct {
+	openrtb_ext.ExtRequest
+	Telaria *ReqExtTelariaIn `json:"telaria,omitempty"`
 }
 
 // used for cookies and such
@@ -32,10 +50,46 @@ func (a *TelariaAdapter) SkipNoCookies() bool {
 	return false
 }
 
+// Endpoint for Telaria Ad server
 func (a *TelariaAdapter) FetchEndpoint() string {
 	return a.URI
 }
 
+// Checker method to ensure len(request.Imp) > 0
+func (a *TelariaAdapter) CheckHasImps(request *openrtb.BidRequest) error {
+	if len(request.Imp) == 0 {
+		err := &errortypes.BadInput{
+			Message: "No imp object in the bid request",
+		}
+		return err
+	}
+	return nil
+}
+
+// Checking if Imp[i].Video exists and Imp[i].Banner doesn't exist
+func (a *TelariaAdapter) CheckHasVideoObject(request *openrtb.BidRequest) error {
+	hasVideoObject := false
+
+	for _, imp := range request.Imp {
+		if imp.Banner != nil {
+			return &errortypes.BadInput{
+				Message: "Telaria doesn't support banner",
+			}
+		}
+
+		hasVideoObject = hasVideoObject || imp.Video != nil
+	}
+
+	if !hasVideoObject {
+		return &errortypes.BadInput{
+			Message: "No Video object present in Imp object",
+		}
+	}
+
+	return nil
+}
+
+// Fetches the populated header object
 func GetHeaders(request *openrtb.BidRequest) *http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -64,19 +118,10 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 	return &headers
 }
 
-func (a *TelariaAdapter) CheckHasImps(request *openrtb.BidRequest) error {
-	if len(request.Imp) == 0 {
-		err := &errortypes.BadInput{
-			Message: "No imp object in the bid request",
-		}
-		return err
-	}
-	return nil
-}
-
-func (a *TelariaAdapter) FetchBidderExt(request *openrtb.BidRequest) (*adapters.ExtImpBidder, error) {
+// Checks the imp[i].ext object and returns a imp.ext object as per ExtImpTelaria format
+func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpTelaria, error) {
 	var bidderExt adapters.ExtImpBidder
-	err := json.Unmarshal(request.Imp[0].Ext, &bidderExt)
+	err := json.Unmarshal(imp.Ext, &bidderExt)
 
 	if err != nil {
 		err = &errortypes.BadInput{
@@ -86,28 +131,11 @@ func (a *TelariaAdapter) FetchBidderExt(request *openrtb.BidRequest) (*adapters.
 		return nil, err
 	}
 
-	return &bidderExt, nil
-}
-
-func (a *TelariaAdapter) FetchTelariaParams(request *openrtb.BidRequest) (*openrtb_ext.ExtImpTelaria, error) {
-	bidderExt, err := a.FetchBidderExt(request)
-	if err != nil {
-		return nil, err
-	}
-
 	var telariaExt openrtb_ext.ExtImpTelaria
 	err = json.Unmarshal(bidderExt.Bidder, &telariaExt)
 	if err != nil {
 		err = &errortypes.BadInput{
-			Message: "ext.bidder.adCode not provided",
-		}
-
-		return nil, err
-	}
-
-	if telariaExt.AdCode == "" {
-		err = &errortypes.BadInput{
-			Message: "adCode is empty",
+			Message: "error while unwrapping the JSON",
 		}
 
 		return nil, err
@@ -116,16 +144,61 @@ func (a *TelariaAdapter) FetchTelariaParams(request *openrtb.BidRequest) (*openr
 	return &telariaExt, nil
 }
 
-func (a *TelariaAdapter) CheckHasVideoObject(request *openrtb.BidRequest) error {
-	hasVideoObject := false
+// Fetch the id from the appropriate publisher object
+func (a *TelariaAdapter) FetchPublisherId(request *openrtb.BidRequest) string {
 
-	for _, imp := range request.Imp {
-		hasVideoObject = hasVideoObject || imp.Video != nil
+	if request.Site != nil {
+		if request.Site.Publisher != nil {
+			if request.Site.Publisher.ID != "" {
+				return request.Site.Publisher.ID
+			}
+		}
 	}
 
-	if !hasVideoObject {
-		return &errortypes.BadInput{
-			Message: "Telaria only supports Video",
+	if request.App != nil {
+		if request.App.Publisher != nil {
+			if request.App.Publisher.ID != "" {
+				return request.App.Publisher.ID
+			}
+		}
+	}
+
+	return ""
+}
+
+// This method changes <site/app>.publisher.id to request.ext.telaria.seatCode
+// And moves the publisher.id to request.ext.originalPublisherId
+func (a *TelariaAdapter) PopulateRequestExtAndPubId(request *openrtb.BidRequest) error {
+	var requestExtIncoming ReqExtIn
+	if err := json.Unmarshal(request.Ext, &requestExtIncoming); err != nil {
+		return err
+	}
+
+	if requestExtIncoming.Telaria == nil {
+		requestExtIncoming.Telaria = &ReqExtTelariaIn{}
+	}
+
+	if requestExtIncoming.Telaria.SeatCode == "" {
+		return &errortypes.BadInput{Message: "Seat Code is required"}
+	}
+
+	request.Ext, _ = json.Marshal(&BidExtOut{requestExtIncoming.ExtRequest, a.FetchPublisherId(request)})
+
+	publisherObject := &openrtb.Publisher{ID: requestExtIncoming.Telaria.SeatCode}
+
+	if request.Site != nil {
+		if request.Site.Publisher != nil {
+			request.Site.Publisher.ID = requestExtIncoming.Telaria.SeatCode
+		} else {
+			request.Site.Publisher = publisherObject
+		}
+	}
+
+	if request.App != nil {
+		if request.App.Publisher != nil {
+			request.App.Publisher.ID = requestExtIncoming.Telaria.SeatCode
+		} else {
+			request.App.Publisher = publisherObject
 		}
 	}
 
@@ -138,22 +211,28 @@ func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		return nil, []error{noImps}
 	}
 
-	if noVideoObject := a.CheckHasVideoObject(request); noVideoObject != nil {
-		return nil, []error{noVideoObject}
+	if noVideoObjectError := a.CheckHasVideoObject(request); noVideoObjectError != nil {
+		return nil, []error{noVideoObjectError}
 	}
 
-	telariaExt, err := a.FetchTelariaParams(request)
-	if err != nil {
-		return nil, []error{err}
+	if noSeatCodeError := a.PopulateRequestExtAndPubId(request); noSeatCodeError != nil {
+		return nil, []error{noSeatCodeError}
 	}
 
-	for i, _ := range request.Imp {
-		impExt := &TagIDExt{request.Imp[i].TagID}
-		request.Imp[i].TagID = telariaExt.AdCode
+	var errors []error
+	for i, imp := range request.Imp {
+		telariaExt, err := a.FetchTelariaExtImpParams(&imp)
 
-		if impExt.OriginalTagID != "" {
-			request.Imp[i].Ext, _ = json.Marshal(impExt)
+		if err != nil {
+			errors = append(errors, err)
 		}
+
+		request.Imp[i].TagID = telariaExt.AdCode
+		request.Imp[i].Ext, _ = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID})
+	}
+
+	if len(errors) > 0 {
+		return nil, errors
 	}
 
 	reqJSON, err := json.Marshal(request)
@@ -195,21 +274,37 @@ func GetResponseBody(response *adapters.ResponseData) (*[]byte, error) {
 	return &responseBody, nil
 }
 
-func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *TelariaAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusNoContent {
-		return nil, nil
+		return &errortypes.BadInput{Message: "Invalid Bid Request received by the server"}
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
+		return &errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: [ %d ] . ", response.StatusCode),
-		}}
+		}
 	}
 
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unexpected status code:[ %d ]. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
+	if response.StatusCode == http.StatusServiceUnavailable {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
+		}
+	}
+
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
+		}
+	}
+
+	return nil
+}
+
+func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+
+	httpStatusError := a.CheckResponseStatusCodes(response)
+	if httpStatusError != nil {
+		return nil, []error{httpStatusError}
 	}
 
 	responseBody, err := GetResponseBody(response)

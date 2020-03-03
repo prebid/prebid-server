@@ -5,7 +5,10 @@
   "requestPayload": {
     "id": "some-request-id",
     "site": {
-      "page": "test.com"
+      "page": "test.com",
+      "publisher": {
+        "id": "someother-publisher-id"
+      }
     },
     "imp": [
       {
@@ -20,7 +23,8 @@
         },
         "ext": {
           "telaria": {
-            "adCode": "ssp-!demo!-lufip"
+            "adCode": "ssp-!demo!-lufip",
+            "seatCode": "test-code"
           }
         }
       }
