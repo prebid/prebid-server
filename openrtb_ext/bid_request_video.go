@@ -43,7 +43,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//   Container object for the user of of the actual device
-	User SimplifiedUser `json:"user,omitempty"`
+	User *openrtb.User `json:"user,omitempty"`
 
 	// Attribute:
 	//   device
@@ -67,7 +67,7 @@ type BidRequestVideo struct {
 	//   object; required
 	// Description:
 	//   Player container object
-	Video SimplifiedVideo `json:"video,omitempty"`
+	Video *openrtb.Video `json:"video,omitempty"`
 
 	// Attribute:
 	//   content
@@ -136,6 +136,14 @@ type BidRequestVideo struct {
 	// Description:
 	//   Contains the OpenRTB Regs object to be passed to OpenRTB request
 	Regs *openrtb.Regs `json:"regs,omitempty"`
+
+	// Attribute:
+	//   supportdeals
+	// Type:
+	//   bool; optional
+	// Description:
+	//   Indicates that the response should update key to include prefix and tier
+	SupportDeals bool `json:"supportdeals,omitempty"`
 }
 
 type PodConfig struct {
@@ -216,87 +224,4 @@ type Cacheconfig struct {
 	//   int; optional
 	//  Time to Live for a cache entry specified in seconds
 	Ttl int `json:"ttl"`
-}
-
-type Gdpr struct {
-	// Attribute:
-	//   consentrequired
-	// Type:
-	//   boolean; optional
-	//  Indicates whether GDPR is in effect
-	ConsentRequired bool `json:"consentrequired"`
-
-	// Attribute:
-	//   consentstring
-	// Type:
-	//   string; optional
-	//  Contains the data structure developed by the GDPR
-	ConsentString string `json:"consentstring"`
-}
-
-type SimplifiedUser struct {
-	// Attribute:
-	//   buyeruids
-	// Type:
-	//   map; optional
-	//  ID of the stored config that corresponds to a single pod request
-	Buyeruids map[string]string `json:"buyeruids"`
-
-	// Attribute:
-	//   gdpr
-	// Type:
-	//   object; optional
-	//  Container object for GDPR
-	Gdpr Gdpr `json:"gdpr"`
-
-	// Attribute:
-	//   yob
-	// Type:
-	//   int; optional
-	//  Year of birth as a 4-digit integer
-	Yob int64 `json:"yob"`
-
-	// Attribute:
-	//   gender
-	// Type:
-	//   string; optional
-	//  Gender, where “M” = male, “F” = female, “O” = known to be other
-	Gender string `json:"gender"`
-
-	// Attribute:
-	//   keywords
-	// Type:
-	//   string; optional
-	//  Comma separated list of keywords, interests, or intent.
-	Keywords string `json:"keywords"`
-}
-
-type SimplifiedVideo struct {
-	// Attribute:
-	//   w
-	// Type:
-	//   uint64; optional
-	//  Width of video
-	W uint64 `json:"w"`
-
-	// Attribute:
-	//   h
-	// Type:
-	//   uint64; optional
-	//  Height of video
-	H uint64 `json:"h"`
-
-	// Attribute:
-	//   mimes
-	// Type:
-	//   array of strings; optional
-	//  Video mime types
-	Mimes []string `json:"mimes"`
-
-	// Attribute:
-	//   protocols
-	// Type:
-	//   array of objects; optional
-	//  protocols
-	Protocols []openrtb.Protocol `json:"protocols"`
 }
