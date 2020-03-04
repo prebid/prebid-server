@@ -20,6 +20,8 @@ func (a *KidozAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ext
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	headers.Add("x-openrtb-version", "2.5")
+
 	impressions := request.Imp
 	result := make([]*adapters.RequestData, 0, len(impressions))
 	errs := make([]error, 0, len(impressions))
