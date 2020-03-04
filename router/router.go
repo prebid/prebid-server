@@ -23,6 +23,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	"github.com/prebid/prebid-server/aspects"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
@@ -257,7 +258,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 
 	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
 	r.POST("/openrtb2/auction", openrtbEndpoint)
-	r.POST("/openrtb2/video", videoEndpoint)
+	r.POST("/openrtb2/video", aspects.QueuedRequestTimeout(videoEndpoint))
 	r.GET("/openrtb2/amp", ampEndpoint)
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(defaultAliases))
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos, defaultAliases))
