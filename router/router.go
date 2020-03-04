@@ -256,9 +256,14 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
 	}
 
+	customHeaders := config.CustomHeaders{}
+	if cfg.CustomHeaders != customHeaders {
+		videoEndpoint = aspects.QueuedRequestTimeout(videoEndpoint, cfg.CustomHeaders)
+	}
+
 	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
 	r.POST("/openrtb2/auction", openrtbEndpoint)
-	r.POST("/openrtb2/video", aspects.QueuedRequestTimeout(videoEndpoint))
+	r.POST("/openrtb2/video", videoEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(defaultAliases))
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos, defaultAliases))

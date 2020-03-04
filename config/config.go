@@ -64,6 +64,8 @@ type Configuration struct {
 	AccountRequired bool `mapstructure:"account_required"`
 	// Local private file containing SSL certificates
 	PemCertsFile string `mapstructure:"certificates_file"`
+
+	CustomHeaders CustomHeaders `mapstructure:"custom_headers"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -197,6 +199,11 @@ type HostCookie struct {
 	OptOutCookie       Cookie `mapstructure:"optout_cookie"`
 	// Cookie timeout in days
 	TTL int64 `mapstructure:"ttl_days"`
+}
+
+type CustomHeaders struct {
+	RequestTimeInQueue    string `mapstructure:"request_time_in_queue"`
+	RequestTimeoutInQueue string `mapstructure:"request_timeout_in_queue"`
 }
 
 func (cfg *HostCookie) TTLDuration() time.Duration {

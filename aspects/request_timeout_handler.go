@@ -2,21 +2,22 @@ package aspects
 
 import (
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 	"strconv"
 )
 
-var headerName = "X-Ngx-Request-Time"
-var queuedReqTimeout = 5.0 //seconds
-
-func QueuedRequestTimeout(f httprouter.Handle) httprouter.Handle {
+func QueuedRequestTimeout(f httprouter.Handle, custHeaders config.CustomHeaders) httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 
-		reqTimeInQueue := r.Header.Get(headerName)
-		reqTime, _ := strconv.ParseFloat(reqTimeInQueue, 64)
+		reqTimeInQueue := r.Header.Get(custHeaders.RequestTimeInQueue)
+		reqTimeFloat, _ := strconv.ParseFloat(reqTimeInQueue, 64)
 
-		if reqTime >= queuedReqTimeout {
+		reqTimeout := r.Header.Get(custHeaders.RequestTimeoutInQueue)
+		reqTimeoutFloat, _ := strconv.ParseFloat(reqTimeout, 64)
+
+		if reqTimeFloat >= reqTimeoutFloat {
 			w.WriteHeader(http.StatusRequestTimeout)
 			return
 		}
