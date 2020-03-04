@@ -2,6 +2,7 @@ package kidoz
 
 import (
 	"math"
+	"net/http"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -15,32 +16,55 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "kidoztest", NewKidozBidder("http://example.com/prebid"))
 }
 
+func makeBidRequest() *openrtb.BidRequest {
+	request := &openrtb.BidRequest{
+		ID: "test-req-id-0",
+		Imp: []openrtb.Imp{
+			{
+				ID: "test-imp-id-0",
+				Banner: &openrtb.Banner{
+					Format: []openrtb.Format{
+						{
+							W: 320,
+							H: 50,
+						},
+					},
+				},
+				Ext: []byte(`{"bidder":{"access_token":"token-0","publisher_id":"pub-0"}}`),
+			},
+		},
+	}
+	return request
+}
+
 func TestMakeRequests(t *testing.T) {
 	kidoz := NewKidozBidder("http://example.com/prebid")
 
 	t.Run("Handles Request marshal failure", func(t *testing.T) {
-		request := &openrtb.BidRequest{
-			ID: "test-req-id-0",
-			Imp: []openrtb.Imp{
-				{
-					ID: "test-imp-id-0",
-					Banner: &openrtb.Banner{
-						Format: []openrtb.Format{
-							{
-								W: 320,
-								H: 50,
-							},
-						},
-					},
-					Ext:      []byte(`{"bidder":{"access_token":"token-0","publisher_id":"pub-0"}}`),
-					BidFloor: math.Inf(1), // cant be marshalled
-				},
-			},
-		}
+		request := makeBidRequest()
+		request.Imp[0].BidFloor = math.Inf(1) // cant be marshalled
 		extra := &adapters.ExtraRequestInfo{}
 		reqs, errs := kidoz.MakeRequests(request, extra)
+		// cant assert message its different on different versions of go
 		assert.Equal(t, 1, len(errs))
 		assert.Equal(t, 0, len(reqs))
+	})
+}
+
+func TestMakeBids(t *testing.T) {
+	kidoz := NewKidozBidder("http://example.com/prebid")
+
+	t.Run("Handles response marshal failure", func(t *testing.T) {
+		request := makeBidRequest()
+		requestData := &adapters.RequestData{}
+		responseData := &adapters.ResponseData{
+			StatusCode: http.StatusOK,
+		}
+
+		resp, errs := kidoz.MakeBids(request, requestData, responseData)
+		// cant assert message its different on different versions of go
+		assert.Equal(t, 1, len(errs))
+		assert.Nil(t, resp)
 	})
 }
 
