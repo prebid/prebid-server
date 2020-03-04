@@ -75,3 +75,19 @@ spec:
     component: server
   sessionAffinity: None
   type: LoadBalancer
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: prebid-server
+  labels:
+    app: prebid
+    component: server    
+  name: prebid-ingress
+  namespace: prebid
+spec:
+  backend:
+    serviceName: prebid-server-service1
+    servicePort: 8000
+
