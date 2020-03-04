@@ -53,6 +53,7 @@ const (
 	BidderLockerDome       BidderName = "lockerdome"
 	BidderMarsmedia        BidderName = "marsmedia"
 	BidderMgid             BidderName = "mgid"
+	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderOpenx            BidderName = "openx"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
@@ -114,6 +115,7 @@ var BidderMap = map[string]BidderName{
 	"lockerdome":        BidderLockerDome,
 	"marsmedia":         BidderMarsmedia,
 	"mgid":              BidderMgid,
+	"nanointeractive":   BidderNanoInteractive,
 	"openx":             BidderOpenx,
 	"pubmatic":          BidderPubmatic,
 	"pubnative":         BidderPubnative,
