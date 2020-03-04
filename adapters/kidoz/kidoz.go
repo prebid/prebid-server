@@ -165,7 +165,7 @@ func NewKidozBidder(endpoint string) *KidozAdapter {
 const UndefinedMediaType = openrtb_ext.BidType("")
 
 func GetMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
-	var bidType openrtb_ext.BidType
+	var bidType openrtb_ext.BidType = UndefinedMediaType
 	for _, impression := range imps {
 		if impression.ID != impID {
 			continue
