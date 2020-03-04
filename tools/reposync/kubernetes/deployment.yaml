@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: reposync
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: prebid-reposync
+  namespace: reposync
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: reposync
+        component: prebid
+    spec:
+      containers:
+      - name: reposync
+        image: gcr.io/newscorp-newsiq-dev/prebid-reposync:latest
+        command: ["/sync-forever.sh"]
+        volumeMounts:
+        - name: secrets-reposync
+          mountPath: "/secrets/reposync"
+          readOnly: true
+        resources:
+          requests:
+            cpu: 0.1
+            memory: 0.4Gi
+          limits:
+            cpu: 0.2
+            memory: 0.7Gi
+      volumes:
+      - name: secrets-reposync
+        secret:
+          secretName: prebid-reposync
+          defaultMode: 256 # 0400 in decimal
