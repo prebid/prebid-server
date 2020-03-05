@@ -322,7 +322,7 @@ func generateAdUnits(request *openrtb.BidRequest, response *openrtb.BidResponse)
 					Value: fmt.Sprint(impressionObj.Banner.ID),
 				}, &Param{
 					Key:   "extension",
-					Value: fmt.Sprint(impressionObj.Video.Ext),
+					Value: fmt.Sprint(impressionObj.Banner.Ext),
 				})
 		} else if impressionObj.Native != nil {
 			paramsArray = append(paramsArray,
@@ -337,7 +337,7 @@ func generateAdUnits(request *openrtb.BidRequest, response *openrtb.BidResponse)
 					Value: impressionObj.Native.Ver,
 				}, &Param{
 					Key:   "extension",
-					Value: fmt.Sprint(impressionObj.Video.Ext),
+					Value: fmt.Sprint(impressionObj.Native.Ext),
 				})
 		} else if impressionObj.Video != nil {
 			paramsArray = append(paramsArray,
@@ -373,10 +373,10 @@ func generateAdUnits(request *openrtb.BidRequest, response *openrtb.BidResponse)
 					Value: "audio",
 				}, &Param{
 					Key:   "min_duration",
-					Value: fmt.Sprint(impressionObj.Video.MinDuration),
+					Value: fmt.Sprint(impressionObj.Audio.MinDuration),
 				}, &Param{
 					Key:   "max_duration",
-					Value: fmt.Sprint(impressionObj.Video.MaxDuration),
+					Value: fmt.Sprint(impressionObj.Audio.MaxDuration),
 				}, &Param{
 					Key:   "sequence",
 					Value: fmt.Sprint(impressionObj.Audio.Sequence),
