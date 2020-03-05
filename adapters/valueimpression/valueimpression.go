@@ -11,11 +11,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type Adapter struct {
+type ValueImpressionAdapter struct {
 	endpoint string
 }
 
-func (a *Adapter) MakeRequests(request *openrtb.BidRequest, unused *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *ValueImpressionAdapter) MakeRequests(request *openrtb.BidRequest, unused *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
@@ -35,7 +35,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest, unused *adapters.Ext
 	return adapterRequests, errs
 }
 
-func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, error) {
+func (a *ValueImpressionAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, error) {
 	var err error
 
 	jsonBody, err := json.Marshal(request)
@@ -70,10 +70,6 @@ func preprocess(request *openrtb.BidRequest) error {
 			}
 		}
 
-		if err := validateImp(imp); err != nil {
-			return err
-		}
-
 		var extImp openrtb_ext.ExtImpValueImpression
 		if err := json.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
 			return &errortypes.BadInput{
@@ -87,24 +83,21 @@ func preprocess(request *openrtb.BidRequest) error {
 	return nil
 }
 
-func validateImp(imp *openrtb.Imp) error {
-	if imp.Banner == nil && imp.Video == nil {
-		return &errortypes.BadInput{
-			Message: "Only Banner and Video bid-types are supported at this time",
-		}
-	}
-	return nil
-}
-
 // MakeBids based on valueimpression server response
-func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *ValueImpressionAdapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
+	if responseData.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Bad user input: HTTP status %d", responseData.StatusCode),
+		}}
+	}
+
 	if responseData.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected HTTP status code: %d. Run with request.debug = 1 for more info", responseData.StatusCode),
+			Message: fmt.Sprintf("Bad server response: HTTP status %d", responseData.StatusCode),
 		}}
 	}
 
@@ -154,8 +147,8 @@ func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.Requ
 	return rv, errors
 }
 
-func NewValueImpressionBidder(endpoint string) *Adapter {
-	return &Adapter{
+func NewValueImpressionBidder(endpoint string) *ValueImpressionAdapter {
+	return &ValueImpressionAdapter{
 		endpoint: endpoint,
 	}
 }
