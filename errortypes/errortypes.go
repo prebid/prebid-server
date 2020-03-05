@@ -1,5 +1,7 @@
 package errortypes
 
+//if errCode != errortypes.BidderTemporarilyDisabledCode && errCode != errortypes.WarningCode {
+
 // These define the error codes for all the errors enumerated in this package
 // NoErrorCode is to reserve 0 for non error states.
 const (
@@ -39,6 +41,10 @@ func (err *Timeout) Code() int {
 	return TimeoutCode
 }
 
+func (err *Timeout) SeverityLevel() SeverityLevel {
+	return SeverityLevelFatal
+}
+
 // BadInput should be used when returning errors which are caused by bad input.
 // It should _not_ be used if the error is a server-side issue (e.g. failed to send the external request).
 //
@@ -53,6 +59,10 @@ func (err *BadInput) Error() string {
 
 func (err *BadInput) Code() int {
 	return BadInputCode
+}
+
+func (err *BadInput) SeverityLevel() SeverityLevel {
+	return SeverityLevelFatal
 }
 
 // BlacklistedApp should be used when a request App.ID matches an entry in the BlacklistedApps
@@ -71,6 +81,10 @@ func (err *BlacklistedApp) Code() int {
 	return BlacklistedAppCode
 }
 
+func (err *BlacklistedApp) SeverityLevel() SeverityLevel {
+	return SeverityLevelFatal
+}
+
 // BlacklistedAcct should be used when a request account ID matches an entry in the BlacklistedAccts
 // environment variable array
 //
@@ -87,6 +101,10 @@ func (err *BlacklistedAcct) Code() int {
 	return BlacklistedAcctCode
 }
 
+func (err *BlacklistedAcct) SeverityLevel() SeverityLevel {
+	return SeverityLevelFatal
+}
+
 // AcctRequired should be used when the environment variable ACCOUNT_REQUIRED has been set to not
 // process requests that don't come with a valid account ID
 //
@@ -101,6 +119,10 @@ func (err *AcctRequired) Error() string {
 
 func (err *AcctRequired) Code() int {
 	return AcctRequiredCode
+}
+
+func (err *AcctRequired) SeverityLevel() SeverityLevel {
+	return SeverityLevelFatal
 }
 
 // BadServerResponse should be used when returning errors which are caused by bad/unexpected behavior on the remote server.
@@ -124,6 +146,10 @@ func (err *BadServerResponse) Code() int {
 	return BadServerResponseCode
 }
 
+func (err *BadServerResponse) SeverityLevel() SeverityLevel {
+	return SeverityLevelFatal
+}
+
 // FailedToRequestBids is an error to cover the case where an adapter failed to generate any http requests to get bids,
 // but did not generate any error messages. This should not happen in practice and will signal that an adapter is poorly
 // coded. If there was something wrong with a request such that an adapter could not generate a bid, then it should
@@ -141,6 +167,10 @@ func (err *FailedToRequestBids) Code() int {
 	return FailedToRequestBidsCode
 }
 
+func (err *FailedToRequestBids) SeverityLevel() SeverityLevel {
+	return SeverityLevelFatal
+}
+
 // BidderTemporarilyDisabled is used at the request validation step, where we want to continue processing as best we
 // can rather than returning a 4xx, and still return an error message.
 // The initial usecase is to flag deprecated bidders.
@@ -156,6 +186,10 @@ func (err *BidderTemporarilyDisabled) Code() int {
 	return BidderTemporarilyDisabledCode
 }
 
+func (err *BidderTemporarilyDisabled) SeverityLevel() SeverityLevel {
+	return SeverityLevelWarning
+}
+
 // Warning is a generic warning type, not a serious error
 type Warning struct {
 	Message string
@@ -168,6 +202,10 @@ func (err *Warning) Error() string {
 // Code returns the error code
 func (err *Warning) Code() int {
 	return WarningCode
+}
+
+func (err *Warning) SeverityLevel() SeverityLevel {
+	return SeverityLevelWarning
 }
 
 // DecodeError provides the error code for an error, as defined above

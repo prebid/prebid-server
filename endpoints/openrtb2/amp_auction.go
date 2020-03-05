@@ -34,6 +34,7 @@ type AmpResponse struct {
 	Targeting map[string]string                                       `json:"targeting"`
 	Debug     *openrtb_ext.ExtResponseDebug                           `json:"debug,omitempty"`
 	Errors    map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError `json:"errors,omitempty"`
+	Warnings  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError `json:"warnings,omitempty"`
 }
 
 // NewAmpEndpoint modifies the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
@@ -117,7 +118,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 
-	req, errL := deps.parseAmpRequest(r)
+	req, errL := deps.parseAmpRequest(r) // can send back erros and warnings.. warning is just a high priority error
 
 	if fatalError(errL) {
 		w.WriteHeader(http.StatusBadRequest)
@@ -203,6 +204,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			}
 		}
 	}
+
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
 	eRErr := json.Unmarshal(response.Ext, &extResponse)
@@ -214,6 +216,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	ampResponse := AmpResponse{
 		Targeting: targets,
 		Errors:    extResponse.Errors,
+		Warnings:  nil, // these will be all non-fatal errors
 	}
 
 	ao.AmpTargetingValues = targets
@@ -387,7 +390,7 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 				return err
 			}
 		} else {
-			// TODO: Send warning to caller.
+			// TODONOW: Send warning to caller.
 		}
 	}
 

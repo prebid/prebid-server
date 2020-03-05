@@ -1191,14 +1191,14 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 	return rc
 }
 
-// Checks to see if an error in an error list is a fatal error
-func fatalError(errL []error) bool {
-	for _, err := range errL {
-		errCode := errortypes.DecodeError(err)
-		if errCode != errortypes.BidderTemporarilyDisabledCode && errCode != errortypes.WarningCode {
+// fatalError checks if the error list contains a fatal error.
+func fatalError(errors []error) bool {
+	for _, err := range errors {
+		if s, ok := err.(errortypes.SeverityLeveler); ok && s.SeverityLevel() == errortypes.SeverityLevelFatal {
 			return true
 		}
 	}
+
 	return false
 }
 
