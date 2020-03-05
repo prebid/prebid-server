@@ -11,4 +11,6 @@ RUN apt-key add /tmp/apt-key.gpg && apt-get update && apt-get install --yes goog
 ADD files/ssh/known_hosts /root/.ssh/known_hosts
 
 ADD files/sync.sh files/sync-forever.sh /
+RUN ssh-keygen -f "/root/.ssh/known_hosts" -R github.com
+RUN ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 CMD /sync.sh
