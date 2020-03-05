@@ -328,12 +328,12 @@ func max(a, b int) int {
 	return b
 }
 
-func createImpressionTemplate(imp openrtb.Imp, video openrtb_ext.SimplifiedVideo) openrtb.Imp {
+func createImpressionTemplate(imp openrtb.Imp, video *openrtb.Video) openrtb.Imp {
 	imp.Video = &openrtb.Video{}
 	imp.Video.W = video.W
 	imp.Video.H = video.H
 	imp.Video.Protocols = video.Protocols
-	imp.Video.MIMEs = video.Mimes
+	imp.Video.MIMEs = video.MIMEs
 	return imp
 }
 
@@ -471,14 +471,7 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 		bidRequest.Device = &videoRequest.Device
 	}
 
-	if &videoRequest.User != nil {
-		bidRequest.User = &openrtb.User{
-			BuyerUID: videoRequest.User.Buyeruids["appnexus"], //TODO: map to string merging
-			Yob:      videoRequest.User.Yob,
-			Gender:   videoRequest.User.Gender,
-			Keywords: videoRequest.User.Keywords,
-		}
-	}
+	bidRequest.User = videoRequest.User
 
 	if len(videoRequest.BCat) != 0 {
 		bidRequest.BCat = videoRequest.BCat
@@ -660,27 +653,30 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 		}
 	}
 
-	if len(req.Video.Mimes) == 0 {
-		err := errors.New("request missing required field: Video.Mimes")
-		errL = append(errL, err)
-	} else {
-		mimes := make([]string, 0, 0)
-		for _, mime := range req.Video.Mimes {
-			if mime != "" {
-				mimes = append(mimes, mime)
+	if req.Video != nil {
+		if len(req.Video.MIMEs) == 0 {
+			err := errors.New("request missing required field: Video.Mimes")
+			errL = append(errL, err)
+		} else {
+			mimes := make([]string, 0, len(req.Video.MIMEs))
+			for _, mime := range req.Video.MIMEs {
+				if mime != "" {
+					mimes = append(mimes, mime)
+				}
 			}
+			if len(mimes) == 0 {
+				err := errors.New("request missing required field: Video.Mimes, mime types contains empty strings only")
+				errL = append(errL, err)
+			}
+			req.Video.MIMEs = mimes
 		}
-		if len(mimes) == 0 {
-			err := errors.New("request missing required field: Video.Mimes, mime types contains empty strings only")
+
+		if len(req.Video.Protocols) == 0 {
+			err := errors.New("request missing required field: Video.Protocols")
 			errL = append(errL, err)
 		}
-		if len(mimes) > 0 {
-			req.Video.Mimes = mimes
-		}
-	}
-
-	if len(req.Video.Protocols) == 0 {
-		err := errors.New("request missing required field: Video.Protocols")
+	} else {
+		err := errors.New("request missing required field: Video")
 		errL = append(errL, err)
 	}
 
