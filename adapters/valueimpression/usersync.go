@@ -7,7 +7,6 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-//NewValueImpressionSyncer :
 func NewValueImpressionSyncer(temp *template.Template) usersync.Usersyncer {
 	return adapters.NewSyncer("valueimpression", 0, temp, adapters.SyncTypeRedirect)
 }
