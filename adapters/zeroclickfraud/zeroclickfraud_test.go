@@ -7,5 +7,5 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "zeroclickfraudtest", NewZeroclickfraudBidder("http://{{.Host}}/openrtb2?sid={{.SourceId}}"))
+	adapterstest.RunJSONBidderTest(t, "zeroclickfraudtest", NewZeroClickFraudBidder("http://{{.Host}}/openrtb2?sid={{.SourceId}}"))
 }

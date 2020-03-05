@@ -1,7 +1,7 @@
 package openrtb_ext
 
-// ExtImpZeroclickfraud defines the contract for bidrequest.imp[i].ext.datablocks
-type ExtImpZeroclickfraud struct {
+// ExtImpZeroClickFraud defines the contract for bidrequest.imp[i].ext.datablocks
+type ExtImpZeroClickFraud struct {
 	SourceId int    `json:"sourceId"`
 	Host     string `json:"host"`
 }

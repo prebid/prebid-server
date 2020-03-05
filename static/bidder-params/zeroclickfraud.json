@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Zeroclickfraud Adapter Params",
-  "description": "A schema which validates params accepted by the Zeroclickfraud adapter",
+  "title": "ZeroClickFraud Adapter Params",
+  "description": "A schema which validates params accepted by the ZeroClickFraud adapter",
 
   "type": "object",
   "properties": {

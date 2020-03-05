@@ -127,7 +127,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderVisx:             visx.NewVisxBidder(cfg.Adapters[string(openrtb_ext.BidderVisx)].Endpoint),
 		openrtb_ext.BidderVrtcal:           vrtcal.NewVrtcalBidder(cfg.Adapters[string(openrtb_ext.BidderVrtcal)].Endpoint),
 		openrtb_ext.BidderYieldmo:          yieldmo.NewYieldmoBidder(cfg.Adapters[string(openrtb_ext.BidderYieldmo)].Endpoint),
-		openrtb_ext.BidderZeroclickfraud:   zeroclickfraud.NewZeroclickfraudBidder(cfg.Adapters[string(openrtb_ext.BidderZeroclickfraud)].Endpoint),
+		openrtb_ext.BidderZeroClickFraud:   zeroclickfraud.NewZeroClickFraudBidder(cfg.Adapters[string(openrtb_ext.BidderZeroClickFraud)].Endpoint),
 	}
 
 	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{

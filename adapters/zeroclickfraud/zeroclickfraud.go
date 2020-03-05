@@ -14,11 +14,11 @@ import (
 	"text/template"
 )
 
-type ZeroclickfraudAdapter struct {
+type ZeroClickFraudAdapter struct {
 	EndpointTemplate template.Template
 }
 
-func (a *ZeroclickfraudAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *ZeroClickFraudAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	errs := make([]error, 0, len(request.Imp))
 	headers := http.Header{
@@ -67,7 +67,7 @@ func (a *ZeroclickfraudAdapter) MakeRequests(request *openrtb.BidRequest, reqInf
 /*
 internal original request in OpenRTB, external = result of us having converted it (what comes out of MakeRequests)
 */
-func (a *ZeroclickfraudAdapter) MakeBids(
+func (a *ZeroClickFraudAdapter) MakeBids(
 	internalRequest *openrtb.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
@@ -109,9 +109,9 @@ func (a *ZeroclickfraudAdapter) MakeBids(
 	return bidResponse, nil
 }
 
-func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpZeroclickfraud][]openrtb.Imp, error) {
+func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpZeroClickFraud][]openrtb.Imp, error) {
 
-	var m = make(map[openrtb_ext.ExtImpZeroclickfraud][]openrtb.Imp)
+	var m = make(map[openrtb_ext.ExtImpZeroClickFraud][]openrtb.Imp)
 
 	for _, imp := range imps {
 		bidderParams, err := getBidderParams(&imp)
@@ -125,14 +125,14 @@ func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpZeroclickfraud]
 	return m, nil
 }
 
-func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpZeroclickfraud, error) {
+func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpZeroClickFraud, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Missing bidder ext: %s", err.Error()),
 		}
 	}
-	var zeroclickfraudExt openrtb_ext.ExtImpZeroclickfraud
+	var zeroclickfraudExt openrtb_ext.ExtImpZeroClickFraud
 	if err := json.Unmarshal(bidderExt.Bidder, &zeroclickfraudExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Cannot Resolve host or sourceId: %s", err.Error()),
@@ -176,12 +176,12 @@ func getMediaType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return bidType
 }
 
-func NewZeroclickfraudBidder(endpoint string) *ZeroclickfraudAdapter {
+func NewZeroClickFraudBidder(endpoint string) *ZeroClickFraudAdapter {
 	template, err := template.New("endpointTemplate").Parse(endpoint)
 	if err != nil {
 		glog.Fatal("Unable to parse endpoint url template")
 		return nil
 	}
 
-	return &ZeroclickfraudAdapter{EndpointTemplate: *template}
+	return &ZeroClickFraudAdapter{EndpointTemplate: *template}
 }

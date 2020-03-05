@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestZeroclickfraudSyncer(t *testing.T) {
+func TestZeroClickFraudSyncer(t *testing.T) {
 	syncURL := "https://s.0cf.io/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r=https%3A%2F%2Flocalhost%3A8888%2Fsetuid%3Fbidder%3Dzeroclickfraud%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7Buid%7D"
 	syncURLTemplate := template.Must(
 		template.New("sync-template").Parse(syncURL),
