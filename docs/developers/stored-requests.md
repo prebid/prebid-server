@@ -34,7 +34,7 @@ Add the file `stored_requests/data/by_id/stored_imps/{id}.json` and populate it 
   },
   "ext": {
     "appnexus": {
-      "placementId": 10433394
+      "placementId": 12883451
     }
   }
 }
@@ -88,7 +88,7 @@ You can also store _part_ of the Imp on the server. For example:
   },
   "ext": {
     "appnexus": {
-      "placementId": 10433394
+      "placementId": 12883451
     }
   }
 }

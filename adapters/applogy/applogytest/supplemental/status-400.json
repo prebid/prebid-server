@@ -1,0 +1,45 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"imp": [{
+			"id": "test-impression-id-1",
+			"banner": {
+				"w": 300,
+				"h": 250
+			},
+			"ext": {
+				"bidder": {
+					"token": "test-token-1"
+				}
+			}
+		}]
+	},
+	"httpCalls": [{
+		"expectedRequest": {
+			"uri": "http://example.com/prebid/test-token-1",
+			"body": {
+				"id": "test-request-id",
+				"imp": [{
+					"id": "test-impression-id-1",
+					"banner": {
+						"h": 250,
+						"w": 300
+					},
+					"ext": {
+						"bidder": {
+							"token": "test-token-1"
+						}
+					}
+				}]
+			}
+		},
+		"mockResponse": {
+			"status": 400,
+			"body": {}
+		}
+	}],
+	"expectedMakeBidsErrors": [{
+		"value": "unexpected status code: 400",
+		"comparison": "literal"
+	}]
+}

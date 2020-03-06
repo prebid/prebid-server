@@ -16,7 +16,7 @@
         },
         "ext": {
           "bidder": {
-            "placementId": 10433394
+            "placementId": 1
           }
         }
       }
@@ -49,7 +49,7 @@
               },
               "ext": {
                 "appnexus": {
-                  "placement_id": 10433394
+                  "placement_id": 1
                 }
               }
             }

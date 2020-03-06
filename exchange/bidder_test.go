@@ -39,13 +39,15 @@ func TestSingleBidder(t *testing.T) {
 				Bid: &openrtb.Bid{
 					Price: firstInitialPrice,
 				},
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType:      openrtb_ext.BidTypeBanner,
+				DealPriority: 4,
 			},
 			{
 				Bid: &openrtb.Bid{
 					Price: secondInitialPrice,
 				},
-				BidType: openrtb_ext.BidTypeVideo,
+				BidType:      openrtb_ext.BidTypeVideo,
+				DealPriority: 5,
 			},
 		},
 	}
@@ -87,6 +89,9 @@ func TestSingleBidder(t *testing.T) {
 		}
 		if typedBid.BidType != seatBid.bids[index].bidType {
 			t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
+		}
+		if typedBid.DealPriority != seatBid.bids[index].dealPriority {
+			t.Errorf("Bid %d did not have the right deal priority. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
 		}
 	}
 	if mockBidderResponse.Bids[0].Bid.Price != bidAdjustment*firstInitialPrice {

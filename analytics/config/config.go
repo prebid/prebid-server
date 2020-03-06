@@ -29,6 +29,12 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {
 	}
 }
 
+func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject) {
+	for _, module := range ea {
+		module.LogVideoObject(vo)
+	}
+}
+
 func (ea enabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	for _, module := range ea {
 		module.LogCookieSyncObject(cso)

@@ -21,6 +21,8 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -596,4 +598,78 @@ func TestPriceTypeUrlParameterCreation(t *testing.T) {
 			t.Fatalf("Unexpected result for price type parameter. Got '%s'. Expected '%s'", parameter, expected)
 		}
 	}
+}
+
+// Asserts that toOpenRtbBidResponse() creates a *adapters.BidderResponse with
+// the currency of the last valid []*adformBid element and the expected number of bids
+func TestToOpenRtbBidResponse(t *testing.T) {
+	expectedBids := 3
+	lastCurrency, anotherCurrency, emptyCurrency := "EUR", "USD", ""
+
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{
+			{
+				ID:     "banner-imp-no1",
+				Ext:    json.RawMessage(`{"bidder1": { "mid": "32341" }}`),
+				Banner: &openrtb.Banner{},
+			},
+			{
+				ID:     "banner-imp-no2",
+				Ext:    json.RawMessage(`{"bidder1": { "mid": "32342" }}`),
+				Banner: &openrtb.Banner{},
+			},
+			{
+				ID:     "banner-imp-no3",
+				Ext:    json.RawMessage(`{"bidder1": { "mid": "32343" }}`),
+				Banner: &openrtb.Banner{},
+			},
+			{
+				ID:     "banner-imp-no4",
+				Ext:    json.RawMessage(`{"bidder1": { "mid": "32344" }}`),
+				Banner: &openrtb.Banner{},
+			},
+		},
+		Device: &openrtb.Device{UA: "ua", IP: "ip"},
+		User:   &openrtb.User{BuyerUID: "buyerUID"},
+	}
+
+	testAdformBids := []*adformBid{
+		{
+			ResponseType: "banner",
+			Banner:       "banner-content1",
+			Price:        1.23,
+			Currency:     anotherCurrency,
+			Width:        300,
+			Height:       200,
+			DealId:       "dealId1",
+			CreativeId:   "creativeId1",
+		},
+		{},
+		{
+			ResponseType: "banner",
+			Banner:       "banner-content3",
+			Price:        1.24,
+			Currency:     emptyCurrency,
+			Width:        300,
+			Height:       200,
+			DealId:       "dealId3",
+			CreativeId:   "creativeId3",
+		},
+		{
+			ResponseType: "banner",
+			Banner:       "banner-content4",
+			Price:        1.25,
+			Currency:     lastCurrency,
+			Width:        300,
+			Height:       200,
+			DealId:       "dealId4",
+			CreativeId:   "creativeId4",
+		},
+	}
+
+	actualBidResponse := toOpenRtbBidResponse(testAdformBids, request)
+
+	assert.Equalf(t, expectedBids, len(actualBidResponse.Bids), "bid count")
+	assert.Equalf(t, lastCurrency, actualBidResponse.Currency, "currency")
 }

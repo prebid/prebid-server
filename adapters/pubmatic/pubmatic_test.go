@@ -23,7 +23,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "pubmatictest", NewPubmaticBidder(nil, "http://hbopenbid.pubmatic.com/translator?source=prebid-server"))
+	adapterstest.RunJSONBidderTest(t, "pubmatictest", NewPubmaticBidder(nil, "https://hbopenbid.pubmatic.com/translator?source=prebid-server"))
 }
 
 // ----------------------------------------------------------------------------
