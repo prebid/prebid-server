@@ -51,7 +51,7 @@ resource "google_container_node_pool" "prebid-node-pool" {
   count   = "${var.enabled ? 1 : 0}"
   name    = "prebid-node-pool"
   zone    = "${var.primary_zone}"
-  cluster = "${google_container_cluster.kubernetes-newsiq.name}"
+  cluster = "${google_container_cluster.kubernetes-prebid-cloudops.name}"
 
   management {
     auto_upgrade = true
