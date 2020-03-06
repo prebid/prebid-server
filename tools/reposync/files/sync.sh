@@ -4,12 +4,11 @@ set -ex
 
 BRANCHES=( "master" "development" )
 
-cp /secrets/reposync/github_id_rsa ~/.ssh/github_id_rsa
 # Configure SSH key
 mkdir -p ~/.ssh
 cat << EOF > ~/.ssh/config
 Host github.com
- IdentityFile ~/.ssh/github_id_rsa
+ IdentityFile /secrets/reposync/github_id_rsa
 EOF
 
 cat ~/.ssh/config
@@ -28,9 +27,6 @@ git fetch origin
 
 # Add github remote & fetch latest
 git remote add github git@github.com:newscorp-ghfb/prebid-server.git || true
-chmod 0400 ~/.ssh/github_id_rsa
-ls -ltr ~/.ssh/github_id_rsa
-
 git fetch github
 
 # Mirror branches
