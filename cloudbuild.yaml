@@ -6,7 +6,7 @@ steps:
   args: ['build',
     '--cache-from', 'gcr.io/$PROJECT_ID/prebid-cloudops/prebid-server:latest',
     '-t', 'gcr.io/$PROJECT_ID/prebid-cloudops/prebid-server:$COMMIT_SHA', '.']
-  dir: 'newsiq-metrics-exporter'
+  dir: 'prebid-server'
 # Tag the image
 - name: 'gcr.io/cloud-builders/docker'
   args: ['tag', 'gcr.io/$PROJECT_ID/prebid-cloudops/prebid-server:$COMMIT_SHA', 'gcr.io/$PROJECT_ID/prebid-cloudops/prebid-server:latest']
