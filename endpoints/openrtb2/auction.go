@@ -103,7 +103,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, errL := deps.parseRequest(r)
 
-	if fatalError(errL) && writeError(errL, w, &labels) {
+	if containsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
 
@@ -323,7 +323,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
-		if fatalError(errs) {
+		if containsFatalError(errs) {
 			return errL
 		}
 	}
@@ -1174,7 +1174,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 		httpStatus := http.StatusBadRequest
 		metricsStatus := pbsmetrics.RequestStatusBadInput
 		for _, err := range errs {
-			erVal := errortypes.DecodeError(err)
+			erVal := errortypes.ReadErrorCode(err)
 			if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
 				httpStatus = http.StatusServiceUnavailable
 				metricsStatus = pbsmetrics.RequestStatusBlacklisted
@@ -1191,8 +1191,8 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 	return rc
 }
 
-// fatalError checks if the error list contains a fatal error.
-func fatalError(errors []error) bool {
+// containsFatalError checks if the error list contains a fatal error.
+func containsFatalError(errors []error) bool {
 	for _, err := range errors {
 		if s, ok := err.(errortypes.SeverityLeveler); ok && s.SeverityLevel() == errortypes.SeverityLevelFatal {
 			return true

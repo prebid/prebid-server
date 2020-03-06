@@ -247,7 +247,7 @@ func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error,
 	var errors string
 	var status int = http.StatusInternalServerError
 	for _, er := range errL {
-		erVal := errortypes.DecodeError(er)
+		erVal := errortypes.ReadErrorCode(er)
 		if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
 			status = http.StatusServiceUnavailable
 			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted

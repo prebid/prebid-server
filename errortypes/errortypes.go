@@ -1,30 +1,5 @@
 package errortypes
 
-//if errCode != errortypes.BidderTemporarilyDisabledCode && errCode != errortypes.WarningCode {
-
-// These define the error codes for all the errors enumerated in this package
-// NoErrorCode is to reserve 0 for non error states.
-const (
-	NoErrorCode = iota
-	TimeoutCode
-	BadInputCode
-	BlacklistedAppCode
-	BadServerResponseCode
-	FailedToRequestBidsCode
-	BidderTemporarilyDisabledCode
-	BlacklistedAcctCode
-	AcctRequiredCode
-	WarningCode
-)
-
-// We should use this code for any Error interface that is not in this package
-const UnknownErrorCode = 999
-
-// Coder provides an interface to use if we want to check the code of an error type created in this package.
-type Coder interface {
-	Code() int
-}
-
 // Timeout should be used to flag that a bidder failed to return a response because the PBS timeout timer
 // expired before a result was received.
 //
@@ -190,7 +165,7 @@ func (err *BidderTemporarilyDisabled) SeverityLevel() SeverityLevel {
 	return SeverityLevelWarning
 }
 
-// Warning is a generic warning type, not a serious error
+// Warning is a generic non-fatal error.
 type Warning struct {
 	Message string
 }
@@ -199,19 +174,6 @@ func (err *Warning) Error() string {
 	return err.Message
 }
 
-// Code returns the error code
-func (err *Warning) Code() int {
-	return WarningCode
-}
-
 func (err *Warning) SeverityLevel() SeverityLevel {
 	return SeverityLevelWarning
-}
-
-// DecodeError provides the error code for an error, as defined above
-func DecodeError(err error) int {
-	if ce, ok := err.(Coder); ok {
-		return ce.Code()
-	}
-	return UnknownErrorCode
 }

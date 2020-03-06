@@ -120,7 +120,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	req, errL := deps.parseAmpRequest(r) // can send back erros and warnings.. warning is just a high priority error
 
-	if fatalError(errL) {
+	if containsFatalError(errL) {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
@@ -149,7 +149,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Blacklist account now that we have resolved the value
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
 		errL = append(errL, acctIdErr)
-		erVal := errortypes.DecodeError(acctIdErr)
+		erVal := errortypes.ReadErrorCode(acctIdErr)
 		if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted

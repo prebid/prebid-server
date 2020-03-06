@@ -281,7 +281,7 @@ func errorsToMetric(errs []error) map[pbsmetrics.AdapterError]struct{} {
 	ret := make(map[pbsmetrics.AdapterError]struct{}, len(errs))
 	var s struct{}
 	for _, err := range errs {
-		switch errortypes.DecodeError(err) {
+		switch errortypes.ReadErrorCode(err) {
 		case errortypes.TimeoutCode:
 			ret[pbsmetrics.AdapterErrorTimeout] = s
 		case errortypes.BadInputCode:
@@ -300,7 +300,7 @@ func errorsToMetric(errs []error) map[pbsmetrics.AdapterError]struct{} {
 func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderError {
 	serr := make([]openrtb_ext.ExtBidderError, len(errs))
 	for i := 0; i < len(errs); i++ {
-		serr[i].Code = errortypes.DecodeError(errs[i])
+		serr[i].Code = errortypes.ReadErrorCode(errs[i])
 		serr[i].Message = errs[i].Error()
 	}
 	return serr
@@ -560,7 +560,7 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 		ext, err := json.Marshal(sbExt)
 		if err != nil {
 			extError := openrtb_ext.ExtBidderError{
-				Code:    errortypes.DecodeError(err),
+				Code:    errortypes.ReadErrorCode(err),
 				Message: fmt.Sprintf("Error writing SeatBid.Ext: %s", err.Error()),
 			}
 			adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, extError)
