@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var reqTimeInQueueHeaderName = "X-Ngx-Request-Time"
-var reqTimeoutHeaderName = "X-Ngx-Request-Timeout"
+const reqTimeInQueueHeaderName = "X-Ngx-Request-Time"
+const reqTimeoutHeaderName = "X-Ngx-Request-Timeout"
 
 func TestQueuedRequestTimeoutWithTimeout(t *testing.T) {
 
@@ -35,13 +35,13 @@ func MockEndpoint() httprouter.Handle {
 
 func MockHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {}
 
-func ExecuteAspectRequest(t *testing.T, timeout string) *httptest.ResponseRecorder {
+func ExecuteAspectRequest(t *testing.T, timeInQueue string) *httptest.ResponseRecorder {
 	rw := httptest.NewRecorder()
 	req, err := http.NewRequest("POST", "/test", nil)
 	if err != nil {
 		assert.Fail(t, "Unable create mock http request")
 	}
-	req.Header.Set(reqTimeInQueueHeaderName, timeout)
+	req.Header.Set(reqTimeInQueueHeaderName, timeInQueue)
 	req.Header.Set(reqTimeoutHeaderName, "5")
 
 	customHeaders := config.CustomHeaders{reqTimeInQueueHeaderName, reqTimeoutHeaderName}
