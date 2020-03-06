@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+message LogPrebidEvents {
+    fixed64 timestamp = 1;
+    string remote_addr_macro = 2;
+    string user_agent_macro = 3;
+    string referer_url = 4;
+    uint32 seller_member_id = 5;
+    string domain = 6;
+    string device = 7;
+    repeated Auction auctions = 8;
+    string news_id = 9;
+    string duid = 10;
+    string sid = 11;
+
+}
+
+message Auction {
+    string version = 1;
+    fixed64 auction_init_timestamp = 2;
+    string prebid_auction_id = 3;
+    uint32 configured_timeout_ms = 4;
+    repeated AdUnit ad_units = 5;
+    uint32 msg_type = 6;
+}
+
+message AdUnit {
+    string ad_unit_code = 1;
+    repeated Bid bids = 2;
+    repeated Param params = 3;
+}
+
+message Bid {
+    string bid_id = 1;
+    double price = 2;
+    string bidder_code = 3;
+    string bidder_ad_unit_id = 4;
+    fixed64 request_timestamp = 5;
+    fixed64 response_timestamp = 6;
+    uint32 status_code = 7;
+    Creative creative = 8;
+    string source = 9;
+}
+
+message Creative {
+    string creative_id = 1;
+    uint32 width = 2;
+    uint32 height = 3;
+    string brand = 4;
+}
+
+message Param {
+    string key = 1;
+    string value = 2;
+}

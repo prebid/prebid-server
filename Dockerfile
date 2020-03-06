@@ -21,6 +21,7 @@ RUN go mod tidy
 ARG TEST="true"
 RUN if [ "$TEST" != "false" ]; then ./validate.sh ; fi
 RUN go build -mod=vendor .
+RUN go build
 
 FROM ubuntu:18.04 AS release
 LABEL maintainer="hans.hjort@xandr.com" 

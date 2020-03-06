@@ -18,6 +18,7 @@ require (
 	github.com/evanphx/json-patch v0.0.0-20180720181644-f195058310bd
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/golang/protobuf v1.3.2
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/influxdata/influxdb v1.6.1 // indirect
 	github.com/julienschmidt/httprouter v1.1.0
@@ -56,7 +57,6 @@ require (
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/text v0.3.0
 	gopkg.in/yaml.v2 v2.2.1
 )

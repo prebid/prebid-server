@@ -16,6 +16,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/analytics/newsiq"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/errortypes"
@@ -24,6 +25,12 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
+
+/**** PROD Variables ****/
+
+const DebugLogging = true
+
+/**** PROD Variables ****/
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
@@ -46,6 +53,7 @@ type exchange struct {
 	currencyConverter   *currencies.RateConverter
 	UsersyncIfAmbiguous bool
 	defaultTTLs         config.DefaultTTLs
+	dataLogger          newsiq.DataLogger
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -71,6 +79,9 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e.currencyConverter = currencyConverter
 	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
 	e.defaultTTLs = cfg.CacheURL.DefaultTTLs
+	e.dataLogger = newsiq.InitDataLogger()
+	e.dataLogger.StartDataTaskWorker()
+
 	return e
 }
 
@@ -79,6 +90,16 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	resolvedRequest, err := buildResolvedRequest(bidRequest)
 	if err != nil {
 		glog.Errorf("Error marshalling bid request for debug: %v", err)
+	}
+
+	// NewsIQ : Auction Init call
+	auctionInitDataTask := newsiq.DataTask{
+		Request:  bidRequest,
+		Response: nil,
+		Msg:      newsiq.AuctionInit,
+	}
+	if !e.dataLogger.EnqueueDataTask(auctionInitDataTask) {
+		fmt.Println("TEST : Data enqueue failure")
 	}
 
 	for _, impInRequest := range bidRequest.Imp {
@@ -162,7 +183,23 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// Build the response
-	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errs)
+	bidResponseObj, reponseError := e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errs)
+	if DebugLogging {
+		fmt.Println("TEST Bid Responded here")
+		// fmt.Println("TEST Bid Response Object Created: ", bidResponseObj)
+	}
+
+	// NewsIQ : Bids Response from bidder
+	bidResponseDataTask := newsiq.DataTask{
+		Request:  bidRequest,
+		Response: bidResponseObj,
+		Msg:      newsiq.BidResponse,
+	}
+	if !e.dataLogger.EnqueueDataTask(bidResponseDataTask) {
+		fmt.Println("TEST : Data enqueue failure")
+	}
+
+	return bidResponseObj, reponseError
 }
 
 func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {
@@ -198,6 +235,19 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			// Defer basic metrics to insure we capture them after all the values have been set
 			defer func() {
 				e.me.RecordAdapterRequest(*bidlabels)
+				// NewsIQ : Bids Requested from Bidder
+				if DebugLogging {
+					fmt.Println("TEST : Bid Requested here")
+				}
+
+				bidRequestedDataTask := newsiq.DataTask{
+					Request:  request,
+					Response: nil,
+					Msg:      newsiq.BidRequested,
+				}
+				if !e.dataLogger.EnqueueDataTask(bidRequestedDataTask) {
+					fmt.Println("TEST : Data enqueue failure")
+				}
 			}()
 			start := time.Now()
 
@@ -347,7 +397,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 
 	dedupe := make(map[string]bidDedupe)
 
-	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
+	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory // TODO : Include in the parameters and Test
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
 	var includeBrandCategory = brandCatExt != nil //if not present - category will no be appended
@@ -611,10 +661,16 @@ func listBiddersWithRequests(cleanRequests map[openrtb_ext.BidderName]*openrtb.B
 	i := 0
 	for a := range cleanRequests {
 		liveAdapters[i] = a
+		if DebugLogging {
+			fmt.Println("TEST LiveAdapters name: ", a)
+		}
 		i++
 	}
 	// Randomize the list of adapters to make the auction more fair
 	randomizeList(liveAdapters)
+	if DebugLogging {
+		fmt.Println("TEST LiveAdapters length: ", len(liveAdapters))
+	}
 
 	return liveAdapters
 }
