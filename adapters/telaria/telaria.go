@@ -249,7 +249,7 @@ func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 }
 
 // response isn't automatically decompressed. This method unzips the response if Content-Encoding is gzip
-func GetResponseBody(response *adapters.ResponseData) (*[]byte, error) {
+func GetResponseBody(response *adapters.ResponseData) ([]byte, error) {
 	responseBody := response.Body
 
 	if "gzip" == response.Headers.Get("Content-Encoding") {
@@ -271,7 +271,7 @@ func GetResponseBody(response *adapters.ResponseData) (*[]byte, error) {
 		responseBody = resB.Bytes()
 	}
 
-	return &responseBody, nil
+	return responseBody, nil
 }
 
 func (a *TelariaAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
@@ -314,7 +314,7 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	}
 
 	var bidResp openrtb.BidResponse
-	if err := json.Unmarshal(*responseBody, &bidResp); err != nil {
+	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: [ %d ]. ", err),
 		}}
