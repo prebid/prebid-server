@@ -20,11 +20,33 @@ type SeverityLeveler interface {
 	SeverityLevel() SeverityLevel
 }
 
+func isFatal(err error) bool {
+	s, ok := err.(SeverityLeveler)
+	return !ok || s.SeverityLevel() == SeverityLevelFatal
+}
+
+func isWarning(err error) bool {
+	s, ok := err.(SeverityLeveler)
+	return ok && s.SeverityLevel() == SeverityLevelWarning
+}
+
+// ContainsFatalError checks if the error list contains a fatal error.
+func ContainsFatalError(errors []error) bool {
+	for _, err := range errors {
+		if isFatal(err) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// FatalOnly returns a new error list with only the fatal severity errors.
 func FatalOnly(errs []error) []error {
 	errsFatal := make([]error, 0, len(errs))
 
 	for _, err := range errs {
-		if s, ok := err.(SeverityLeveler); !ok || s.SeverityLevel() == SeverityLevelFatal {
+		if isFatal(err) {
 			errsFatal = append(errsFatal, err)
 		}
 	}
@@ -32,11 +54,12 @@ func FatalOnly(errs []error) []error {
 	return errsFatal
 }
 
+// WarningOnly returns a new error list with only the warning severity errors.
 func WarningOnly(errs []error) []error {
 	errsWarning := make([]error, 0, len(errs))
 
 	for _, err := range errs {
-		if s, ok := err.(SeverityLeveler); ok && s.SeverityLevel() == SeverityLevelWarning {
+		if isWarning(err) {
 			errsWarning = append(errsWarning, err)
 		}
 	}

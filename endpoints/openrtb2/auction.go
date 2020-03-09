@@ -103,7 +103,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, errL := deps.parseRequest(r)
 
-	if containsFatalError(errL) && writeError(errL, w, &labels) {
+	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
 
@@ -323,7 +323,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
-		if containsFatalError(errs) {
+		if errortypes.ContainsFatalError(errs) {
 			return errL
 		}
 	}
@@ -1189,17 +1189,6 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 		rc = true
 	}
 	return rc
-}
-
-// containsFatalError checks if the error list contains a fatal error.
-func containsFatalError(errors []error) bool {
-	for _, err := range errors {
-		if s, ok := err.(errortypes.SeverityLeveler); !ok || s.SeverityLevel() == errortypes.SeverityLevelFatal {
-			return true
-		}
-	}
-
-	return false
 }
 
 // Returns the effective publisher ID

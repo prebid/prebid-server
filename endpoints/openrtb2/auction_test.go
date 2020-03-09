@@ -948,54 +948,6 @@ func TestCCPAInvalidValueWarning(t *testing.T) {
 	assert.ElementsMatch(t, errL, []error{&expectedError})
 }
 
-func TestContainsFatalError(t *testing.T) {
-	fatalError := &stubError{severityLevel: errortypes.SeverityLevelFatal}
-	nonFatalError := &stubError{severityLevel: errortypes.SeverityLevelWarning}
-	unknownError := errors.New("anyError")
-
-	testCases := []struct {
-		description   string
-		errors        []error
-		shouldBeFatal bool
-	}{
-		{
-			description:   "no errors",
-			errors:        []error{},
-			shouldBeFatal: false,
-		},
-		{
-			description:   "single fatal error",
-			errors:        []error{fatalError},
-			shouldBeFatal: true,
-		},
-		{
-			description:   "single non-fatal error",
-			errors:        []error{nonFatalError},
-			shouldBeFatal: false,
-		},
-		{
-			description:   "single unknown error is same as fatal",
-			errors:        []error{unknownError},
-			shouldBeFatal: true,
-		},
-		{
-			description:   "mixed errors",
-			errors:        []error{fatalError, nonFatalError},
-			shouldBeFatal: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		result := containsFatalError(tc.errors)
-		assert.Equal(t, tc.shouldBeFatal, result)
-	}
-}
-
-type stubError struct{ severityLevel errortypes.SeverityLevel }
-
-func (e *stubError) Error() string                           { return "anyMessage" }
-func (e *stubError) SeverityLevel() errortypes.SeverityLevel { return e.severityLevel }
-
 // nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {
 	gotRequest *openrtb.BidRequest

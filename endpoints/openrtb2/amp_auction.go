@@ -121,7 +121,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	req, errL := deps.parseAmpRequest(r)
 	ao.Errors = append(ao.Errors, errL...)
 
-	if containsFatalError(errL) {
+	if errortypes.ContainsFatalError(errL) {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errortypes.FatalOnly(errL) {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
@@ -214,11 +214,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	warnings := make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError)
 	for _, v := range errortypes.WarningOnly(errL) {
-		w := openrtb_ext.ExtBidderError{
+		bidderErr := openrtb_ext.ExtBidderError{
 			Code:    errortypes.ReadErrorCode(v),
 			Message: v.Error(),
 		}
-		warnings[openrtb_ext.BidderNameGeneral] = append(warnings[openrtb_ext.BidderNameGeneral], w)
+		warnings[openrtb_ext.BidderNameGeneral] = append(warnings[openrtb_ext.BidderNameGeneral], bidderErr)
 	}
 
 	// Now JSONify the targets for the AMP response.
@@ -262,7 +262,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb.BidRequest, errs []error) {
 	// Load the stored request for the AMP ID.
 	req, e := deps.loadRequestJSONForAmp(httpRequest)
-	if errs = append(errs, e...); containsFatalError(errs) {
+	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
 		return
 	}
 
@@ -271,7 +271,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 
 	// Need to ensure cache and targeting are turned on
 	e = defaultRequestExt(req)
-	if errs = append(errs, e...); containsFatalError(errs) {
+	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
 		return
 	}
 
