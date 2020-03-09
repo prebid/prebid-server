@@ -1,0 +1,25 @@
+#!/bin/bash -e
+
+# Wrapper script for invoking terraform with the correct project etc selected
+
+# Force the script to run with "bash" as interpreter
+if [ -z "$BASH" ]; then
+  bash "$(basename "$0")" "$@"
+  exit $?
+fi
+
+# Per-environment settings
+PROJECTID="newscorp-newsiq"
+BRANCH="master"
+CLOUDSDK_CONTAINER_CLUSTER="kubernetes-prebid-cloudops"
+CLOUDSDK_COMPUTE_ZONE="us-east1-c"
+PREBID_ENV="prod"
+
+# Ensure we're using the correct gcloud project & k8s cluster
+gcloud config set project ${PROJECTID}
+if [[ $2 != '-target=module.gke' ]]; then
+    gcloud config set container/cluster ${CLOUDSDK_CONTAINER_CLUSTER}
+    gcloud container clusters get-credentials ${CLOUDSDK_CONTAINER_CLUSTER} --zone ${CLOUDSDK_COMPUTE_ZONE}
+fi
+
+terraform "$@"

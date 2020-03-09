@@ -1,0 +1,5 @@
+# Contents changed by running get-secrets and terraform init
+
+.terraform/
+secrets-repo/
+*.backup
