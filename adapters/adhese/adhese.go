@@ -38,11 +38,11 @@ func (a *AdheseAdapter) SkipNoCookies() bool {
 	return false
 }
 
-func extractSlotParameter(parameters AdheseParams) string {
+func extractSlotParameter(parameters openrtb_ext.ExtImpAdhese) string {
 	return fmt.Sprintf("/sl%s-%s", parameters.Location, parameters.Format)
 }
 
-func extractTargetParameters(parameters AdheseParams) string {
+func extractTargetParameters(parameters openrtb_ext.ExtImpAdhese) string {
 	if parameters.Keywords == nil || len(parameters.Keywords) == 0 {
 		return ""
 	}
@@ -100,7 +100,7 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		return nil, errs
 	}
 
-	var params AdheseParams
+	var params openrtb_ext.ExtImpAdhese
 	if err := json.Unmarshal(bidderExt.Bidder, &params); err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -150,12 +150,12 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{WrapError(fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode))}
+		return nil, []error{WrapError(fmt.Sprintf("Unexpected status code: %d.", response.StatusCode))}
 	}
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{err}
+		return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed.", string(response.Body)))}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
