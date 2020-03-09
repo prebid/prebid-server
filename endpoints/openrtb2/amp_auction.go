@@ -118,14 +118,14 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 
-	req, errL := deps.parseAmpRequest(r) // can send back erros and warnings.. warning is just a high priority error
+	req, errL := deps.parseAmpRequest(r)
+	ao.Errors = append(ao.Errors, errL...)
 
 	if containsFatalError(errL) {
 		w.WriteHeader(http.StatusBadRequest)
-		for _, err := range errL {
+		for _, err := range errortypes.FatalOnly(errL) {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		ao.Errors = append(ao.Errors, errL...)
 		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
@@ -149,18 +149,18 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Blacklist account now that we have resolved the value
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
 		errL = append(errL, acctIdErr)
-		erVal := errortypes.ReadErrorCode(acctIdErr)
-		if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
+		errCode := errortypes.ReadErrorCode(acctIdErr)
+		if errCode == errortypes.BlacklistedAppCode || errCode == errortypes.BlacklistedAcctCode {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
-		} else { //erVal == errortypes.AcctRequiredCode
+		} else {
 			w.WriteHeader(http.StatusBadRequest)
 			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		}
-		for _, err := range errL {
+		for _, err := range errortypes.FatalOnly(errL) {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		ao.Errors = append(ao.Errors, errL...)
+		ao.Errors = append(ao.Errors, acctIdErr)
 		return
 	}
 
@@ -212,11 +212,20 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
 	}
 
+	warnings := make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError)
+	for _, v := range errortypes.WarningOnly(errL) {
+		w := openrtb_ext.ExtBidderError{
+			Code:    errortypes.ReadErrorCode(v),
+			Message: v.Error(),
+		}
+		warnings["general"] = append(warnings["general"], w)
+	}
+
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{
 		Targeting: targets,
 		Errors:    extResponse.Errors,
-		Warnings:  nil, // these will be all non-fatal errors
+		Warnings:  warnings,
 	}
 
 	ao.AmpTargetingValues = targets
@@ -252,8 +261,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 // If the errors list has at least one element, then no guarantees are made about the returned request.
 func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb.BidRequest, errs []error) {
 	// Load the stored request for the AMP ID.
-	req, errs = deps.loadRequestJSONForAmp(httpRequest)
-	if len(errs) > 0 {
+	req, e := deps.loadRequestJSONForAmp(httpRequest)
+	if errs = append(errs, e...); containsFatalError(errs) {
 		return
 	}
 
@@ -261,18 +270,15 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	deps.setFieldsImplicitly(httpRequest, req)
 
 	// Need to ensure cache and targeting are turned on
-	errs = defaultRequestExt(req)
-	if len(errs) > 0 {
+	e = defaultRequestExt(req)
+	if errs = append(errs, e...); containsFatalError(errs) {
 		return
 	}
 
 	// At this point, we should have a valid request that definitely has Targeting and Cache turned on
 
-	errL := deps.validateRequest(req)
-	if len(errL) > 0 {
-		errs = append(errs, errL...)
-	}
-
+	e = deps.validateRequest(req)
+	errs = append(errs, e...)
 	return
 }
 
@@ -286,9 +292,6 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		errs = []error{errors.New("AMP requests require an AMP tag_id")}
 		return
 	}
-
-	debugParam := httpRequest.FormValue("debug")
-	debug := debugParam == "1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
@@ -309,7 +312,8 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
-	if debug {
+	debugParam := httpRequest.FormValue("debug")
+	if debugParam == "1" {
 		req.Test = 1
 	}
 
@@ -336,18 +340,15 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		*req.Imp[0].Secure = 1
 	}
 
-	err := deps.overrideWithParams(httpRequest, req)
-	if err != nil {
-		errs = []error{err}
-	}
-
+	errs = deps.overrideWithParams(httpRequest, req)
 	return
 }
 
-func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) error {
+func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) []error {
 	if req.Site == nil {
 		req.Site = &openrtb.Site{}
 	}
+
 	// Override the stored request sizes with AMP ones, if they exist.
 	if req.Imp[0].Banner != nil {
 		width := parseFormInt(httpRequest, "w", 0)
@@ -387,10 +388,12 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 	if consent != "" {
 		if policies, ok := privacy.ReadPoliciesFromConsent(consent); ok {
 			if err := policies.Write(req); err != nil {
-				return err
+				return []error{err}
 			}
 		} else {
-			// TODONOW: Send warning to caller.
+			return []error{&errortypes.InvalidPrivacyConsent{
+				Message: fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF.", consent),
+			}}
 		}
 	}
 

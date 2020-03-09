@@ -11,6 +11,7 @@ const (
 	BidderTemporarilyDisabledCode
 	BlacklistedAcctCode
 	AcctRequiredCode
+	InvalidPrivacyConsentCode
 	UnknownErrorCode = 999
 )
 

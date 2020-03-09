@@ -81,9 +81,8 @@ func TestGoodAmpRequests(t *testing.T) {
 		if response.Debug != nil {
 			t.Errorf("Debug present but not requested")
 		}
-		if _, ok := response.Errors[openrtb_ext.BidderOpenx]; !ok {
-			t.Errorf("OpenX error message is not present. (%v)", response.Errors)
-		}
+
+		assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors, "errors")
 	}
 }
 
@@ -123,7 +122,8 @@ func TestAMPPageInfo(t *testing.T) {
 }
 
 func TestGDPRConsent(t *testing.T) {
-	validConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	consent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
 
 	digitrust := &openrtb_ext.ExtUserDigiTrust{
 		ID:   "anyDigitrustID",
@@ -140,39 +140,39 @@ func TestGDPRConsent(t *testing.T) {
 	}{
 		{
 			description: "Nil User",
-			consent:     validConsent,
+			consent:     consent,
 			nilUser:     true,
 			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: validConsent,
+				Consent: consent,
 			},
 		},
 		{
 			description: "Nil User Ext",
-			consent:     validConsent,
+			consent:     consent,
 			userExt:     nil,
 			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: validConsent,
+				Consent: consent,
 			},
 		},
 		{
 			description: "Overrides Existing Consent",
-			consent:     validConsent,
+			consent:     consent,
 			userExt: &openrtb_ext.ExtUser{
-				Consent: "existingConset",
+				Consent: existingConsent,
 			},
 			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: validConsent,
+				Consent: consent,
 			},
 		},
 		{
 			description: "Overrides Existing Consent - With Sibling Data",
-			consent:     validConsent,
+			consent:     consent,
 			userExt: &openrtb_ext.ExtUser{
-				Consent:   "existingConset",
+				Consent:   existingConsent,
 				DigiTrust: digitrust,
 			},
 			expectedUserExt: openrtb_ext.ExtUser{
-				Consent:   validConsent,
+				Consent:   consent,
 				DigiTrust: digitrust,
 			},
 		},
@@ -180,10 +180,10 @@ func TestGDPRConsent(t *testing.T) {
 			description: "Does Not Override Existing Consent If Empty",
 			consent:     "",
 			userExt: &openrtb_ext.ExtUser{
-				Consent: "existingConset",
+				Consent: existingConsent,
 			},
 			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: "existingConset",
+				Consent: existingConsent,
 			},
 		},
 	}
@@ -216,7 +216,14 @@ func TestGDPRConsent(t *testing.T) {
 
 		// Invoke Endpoint
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s", test.consent), nil)
-		endpoint(httptest.NewRecorder(), request, nil)
+		responseRecorder := httptest.NewRecorder()
+		endpoint(responseRecorder, request, nil)
+
+		// Parse Resonse
+		var response AmpResponse
+		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
 
 		// Assert Result
 		result := mockExchange.lastRequest
@@ -235,10 +242,19 @@ func TestGDPRConsent(t *testing.T) {
 			return
 		}
 		assert.Equal(t, test.expectedUserExt, ue, test.description)
+		assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors, test.description+":errors")
+		assert.Empty(t, response.Warnings, test.description+":warnings")
 
 		// Invoke Endpoint With Legacy Param
 		requestLegacy := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", test.consent), nil)
-		endpoint(httptest.NewRecorder(), requestLegacy, nil)
+		responseRecorderLegacy := httptest.NewRecorder()
+		endpoint(responseRecorderLegacy, requestLegacy, nil)
+
+		// Parse Resonse
+		var responseLegacy AmpResponse
+		if err := json.Unmarshal(responseRecorderLegacy.Body.Bytes(), &responseLegacy); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
 
 		// Assert Result With Legacy Param
 		resultLegacy := mockExchange.lastRequest
@@ -257,11 +273,14 @@ func TestGDPRConsent(t *testing.T) {
 			return
 		}
 		assert.Equal(t, test.expectedUserExt, ueLegacy, test.description+":legacy")
+		assert.Equal(t, expectedErrorsFromHoldAuction, responseLegacy.Errors, test.description+":legacy:errors")
+		assert.Empty(t, responseLegacy.Warnings, test.description+":legacy:warnings")
 	}
 }
 
 func TestCCPAConsent(t *testing.T) {
-	validConsent := "1NYN"
+	consent := "1NYN"
+	existingConsent := "1NNN"
 
 	var gdpr int8 = 1
 
@@ -274,39 +293,39 @@ func TestCCPAConsent(t *testing.T) {
 	}{
 		{
 			description: "Nil Regs",
-			consent:     validConsent,
+			consent:     consent,
 			nilRegs:     true,
 			expectedRegExt: openrtb_ext.ExtRegs{
-				USPrivacy: validConsent,
+				USPrivacy: consent,
 			},
 		},
 		{
 			description: "Nil Regs Ext",
-			consent:     validConsent,
+			consent:     consent,
 			regsExt:     nil,
 			expectedRegExt: openrtb_ext.ExtRegs{
-				USPrivacy: validConsent,
+				USPrivacy: consent,
 			},
 		},
 		{
 			description: "Overrides Existing Consent",
-			consent:     validConsent,
+			consent:     consent,
 			regsExt: &openrtb_ext.ExtRegs{
-				USPrivacy: "existing",
+				USPrivacy: existingConsent,
 			},
 			expectedRegExt: openrtb_ext.ExtRegs{
-				USPrivacy: validConsent,
+				USPrivacy: consent,
 			},
 		},
 		{
 			description: "Overrides Existing Consent - With Sibling Data",
-			consent:     validConsent,
+			consent:     consent,
 			regsExt: &openrtb_ext.ExtRegs{
-				USPrivacy: "existing",
+				USPrivacy: existingConsent,
 				GDPR:      &gdpr,
 			},
 			expectedRegExt: openrtb_ext.ExtRegs{
-				USPrivacy: validConsent,
+				USPrivacy: consent,
 				GDPR:      &gdpr,
 			},
 		},
@@ -314,10 +333,10 @@ func TestCCPAConsent(t *testing.T) {
 			description: "Does Not Override Existing Consent If Empty",
 			consent:     "",
 			regsExt: &openrtb_ext.ExtRegs{
-				USPrivacy: "existing",
+				USPrivacy: existingConsent,
 			},
 			expectedRegExt: openrtb_ext.ExtRegs{
-				USPrivacy: "existing",
+				USPrivacy: existingConsent,
 			},
 		},
 	}
@@ -350,7 +369,14 @@ func TestCCPAConsent(t *testing.T) {
 
 		// Invoke Endpoint
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s", test.consent), nil)
-		endpoint(httptest.NewRecorder(), request, nil)
+		responseRecorder := httptest.NewRecorder()
+		endpoint(responseRecorder, request, nil)
+
+		// Parse Resonse
+		var response AmpResponse
+		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
 
 		// Assert Result
 		result := mockExchange.lastRequest
@@ -369,6 +395,8 @@ func TestCCPAConsent(t *testing.T) {
 			return
 		}
 		assert.Equal(t, test.expectedRegExt, re, test.description)
+		assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors)
+		assert.Empty(t, response.Warnings)
 	}
 }
 
@@ -400,13 +428,77 @@ func TestNoConsent(t *testing.T) {
 
 	// Invoke Endpoint
 	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
-	endpoint(httptest.NewRecorder(), request, nil)
+	responseRecorder := httptest.NewRecorder()
+	endpoint(responseRecorder, request, nil)
+
+	// Parse Resonse
+	var response AmpResponse
+	if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Error unmarshalling response: %s", err.Error())
+	}
 
 	// Assert Result
 	result := mockExchange.lastRequest
 	assert.NotNil(t, result, "lastRequest")
 	assert.Nil(t, result.User, "lastRequest.User")
 	assert.Nil(t, result.Regs, "lastRequest.Regs")
+	assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors)
+	assert.Empty(t, response.Warnings)
+}
+
+func TestInvalidConsent(t *testing.T) {
+	// Build Request
+	bid, err := getTestBidRequest(true, nil, true, nil)
+	if err != nil {
+		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	}
+
+	// Simulated Stored Request Backend
+	stored := map[string]json.RawMessage{"1": json.RawMessage(bid)}
+
+	// Build Exchange Endpoint
+	mockExchange := &mockAmpExchange{}
+	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	endpoint, _ := NewAmpEndpoint(
+		mockExchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{stored},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		metrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BidderMap,
+	)
+
+	// Invoke Endpoint
+	invalidConsent := "invalid"
+	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&consent_string="+invalidConsent, nil)
+	responseRecorder := httptest.NewRecorder()
+	endpoint(responseRecorder, request, nil)
+
+	// Parse Resonse
+	var response AmpResponse
+	if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Error unmarshalling response: %s", err.Error())
+	}
+
+	// Assert Result
+	expectedWarnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError{
+		openrtb_ext.BidderName("general"): {
+			{
+				Code:    9,
+				Message: "Consent '" + invalidConsent + "' is not recognized as either CCPA or GDPR TCF.",
+			},
+		},
+	}
+	result := mockExchange.lastRequest
+	assert.NotNil(t, result, "lastRequest")
+	assert.Nil(t, result.User, "lastRequest.User")
+	assert.Nil(t, result.Regs, "lastRequest.Regs")
+	assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors)
+	assert.Equal(t, expectedWarnings, response.Warnings)
 }
 
 func TestNewAndLegacyConsentBothProvided(t *testing.T) {
@@ -466,7 +558,14 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 
 		// Invoke Endpoint
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s&gdpr_consent=%s", test.consent, test.consentLegacy), nil)
-		endpoint(httptest.NewRecorder(), request, nil)
+		responseRecorder := httptest.NewRecorder()
+		endpoint(responseRecorder, request, nil)
+
+		// Parse Resonse
+		var response AmpResponse
+		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
 
 		// Assert Result
 		result := mockExchange.lastRequest
@@ -485,6 +584,8 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			return
 		}
 		assert.Equal(t, test.expectedUserExt, ue, test.description)
+		assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors)
+		assert.Empty(t, response.Warnings)
 	}
 }
 
@@ -817,6 +918,15 @@ func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs
 
 type mockAmpExchange struct {
 	lastRequest *openrtb.BidRequest
+}
+
+var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError = map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError{
+	openrtb_ext.BidderName("openx"): {
+		{
+			Code:    1,
+			Message: "The request exceeded the timeout allocated",
+		},
+	},
 }
 
 func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {

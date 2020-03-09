@@ -89,7 +89,7 @@ func TestReadPoliciesFromConsent(t *testing.T) {
 			description:         "Empty String",
 			consent:             "",
 			expectedResultValue: Policies{},
-			expectedResultOK:    false,
+			expectedResultOK:    true,
 		},
 		{
 			description:         "CCPA",

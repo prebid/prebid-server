@@ -19,3 +19,27 @@ const (
 type SeverityLeveler interface {
 	SeverityLevel() SeverityLevel
 }
+
+func FatalOnly(errs []error) []error {
+	errsFatal := make([]error, 0, len(errs))
+
+	for _, err := range errs {
+		if s, ok := err.(SeverityLeveler); !ok || s.SeverityLevel() == SeverityLevelFatal {
+			errsFatal = append(errsFatal, err)
+		}
+	}
+
+	return errsFatal
+}
+
+func WarningOnly(errs []error) []error {
+	errsWarning := make([]error, 0, len(errs))
+
+	for _, err := range errs {
+		if s, ok := err.(SeverityLeveler); ok && s.SeverityLevel() == SeverityLevelWarning {
+			errsWarning = append(errsWarning, err)
+		}
+	}
+
+	return errsWarning
+}

@@ -52,10 +52,6 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 
 // Validate returns an error if the CCPA policy does not adhere to the IAB spec.
 func (p Policy) Validate() error {
-	if p.Value == "" {
-		return nil
-	}
-
 	if err := ValidateConsent(p.Value); err != nil {
 		return fmt.Errorf("request.regs.ext.us_privacy %s", err.Error())
 	}
@@ -65,6 +61,10 @@ func (p Policy) Validate() error {
 
 // ValidateConsent returns an error if the CCPA consent string does not adhere to the IAB spec.
 func ValidateConsent(consent string) error {
+	if consent == "" {
+		return nil
+	}
+
 	if len(consent) != 4 {
 		return errors.New("must contain 4 characters")
 	}

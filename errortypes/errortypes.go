@@ -177,3 +177,20 @@ func (err *Warning) Error() string {
 func (err *Warning) SeverityLevel() SeverityLevel {
 	return SeverityLevelWarning
 }
+
+// InvalidPrivacyConsent is a warning for when the privacy consent string is invalid and is ignored.
+type InvalidPrivacyConsent struct {
+	Message string
+}
+
+func (err *InvalidPrivacyConsent) Error() string {
+	return err.Message
+}
+
+func (err *InvalidPrivacyConsent) Code() int {
+	return InvalidPrivacyConsentCode
+}
+
+func (err *InvalidPrivacyConsent) SeverityLevel() SeverityLevel {
+	return SeverityLevelWarning
+}

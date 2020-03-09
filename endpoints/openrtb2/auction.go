@@ -1194,7 +1194,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 // containsFatalError checks if the error list contains a fatal error.
 func containsFatalError(errors []error) bool {
 	for _, err := range errors {
-		if s, ok := err.(errortypes.SeverityLeveler); ok && s.SeverityLevel() == errortypes.SeverityLevelFatal {
+		if s, ok := err.(errortypes.SeverityLeveler); !ok || s.SeverityLevel() == errortypes.SeverityLevelFatal {
 			return true
 		}
 	}
