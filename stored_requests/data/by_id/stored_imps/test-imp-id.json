@@ -1,0 +1,20 @@
+{
+  "id": "test-imp-id",
+  "banner": {
+    "format": [
+      {
+        "w": 300,
+        "h": 250
+      },
+      {
+        "w": 300,
+        "h": 600
+      }
+    ]
+  },
+  "ext": {
+    "appnexus": {
+      "placementId": 10433394
+    }
+  }
+}
