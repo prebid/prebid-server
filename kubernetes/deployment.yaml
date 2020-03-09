@@ -20,8 +20,6 @@ spec:
       containers:
       - name: prebid-server
         image: gcr.io/newscorp-newsiq-dev/prebid-server:latest
-        args:
-        - webserver
         env:
         - name: GUNICORN_CMD_ARGS
           value: --forwarded-allow-ips=*
