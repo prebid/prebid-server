@@ -22,6 +22,7 @@ type BidderName string
 const (
 	Bidder33Across         BidderName = "33across"
 	BidderAdform           BidderName = "adform"
+	BidderAdhese           BidderName = "adhese"
 	BidderAdkernel         BidderName = "adkernel"
 	BidderAdkernelAdn      BidderName = "adkernelAdn"
 	BidderAdpone           BidderName = "adpone"

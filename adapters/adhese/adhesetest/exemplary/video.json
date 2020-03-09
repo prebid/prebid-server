@@ -1,0 +1,98 @@
+{
+    "mockBidRequest": {
+        "imp": [{
+            "ext": {
+                "bidder": {
+                    "account": "demo",
+                    "location": "_adhese_prebid_demo_",
+                    "format": "leaderboard",
+                    "targets": [{
+                        "key": "ci",
+                        "value": ["gent", "brussels"]
+                      },
+                      {
+                         "key": "ag",
+                         "value": ["55"]
+                      },
+                      {
+                         "key": "tl",
+                         "value": ["all"]
+                      }
+                    ]
+                }
+            }
+        }]
+     },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://ads-demo.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/cigent;brussels/ag55/tlall?t=20200306",
+          "body": {
+            "id": "",
+            "imp": [
+              {
+                "id": "",
+            "ext": {
+              "bidder": {
+                  "account": "demo",
+                  "location": "_adhese_prebid_demo_",
+                  "format": "leaderboard",
+                  "targets": [{
+                      "key": "ci",
+                      "value": ["gent", "brussels"]
+                    },
+                    {
+                       "key": "ag",
+                       "value": ["55"]
+                    },
+                    {
+                       "key": "tl",
+                       "value": ["all"]
+                    }
+                  ]
+              }
+          }
+              }
+            ]
+          }
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "origin": "RUBICON",
+            "ext": "js",
+            "slotName": "_main_page_-leaderboard",
+            "adType": "leaderboard",
+            "width": "640",
+            "height": "350",
+            "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" version=\"2.0\" xsi:noNamespaceSchemaLocation=\"vast.xsd\"></VAST>",
+            "extension": {
+                "prebid": {
+                    "cpm": {
+                        "amount": "2.1", 
+                        "currency": "USD"
+                        }
+                    }
+                }
+            }
+        }
+      }
+    ],
+  
+    "expectedBidResponses": [
+      {
+      "requestId": 456,
+      "vastXml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" version=\"2.0\" xsi:noNamespaceSchemaLocation=\"vast.xsd\"></VAST>",
+      "cpm": 2.1,
+      "currency": "USD",
+      "creativeId": "RUBICON",
+      "dealId": "",
+      "width": 640,
+      "height": 350,
+      "mediaType": "video",
+      "netRevenue": true,
+      "ttl": 360
+    }
+  ]
+  }

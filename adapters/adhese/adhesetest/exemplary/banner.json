@@ -1,0 +1,107 @@
+{
+    "mockBidRequest": {
+        "imp": [{
+            "ext": {
+                "bidder": {
+                    "account": "demo",
+                    "location": "_adhese_prebid_demo_",
+                    "format": "leaderboard",
+                    "targets": [{
+                        "key": "ci",
+                        "value": ["gent", "brussels"]
+                      },
+                      {
+                         "key": "ag",
+                         "value": ["55"]
+                      },
+                      {
+                         "key": "tl",
+                         "value": ["all"]
+                      }
+                    ]
+                }
+            }
+        }]
+     },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://ads-demo.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/cigent;brussels/ag55/tlall?t=20200306",
+          "body": {
+            "id": "",
+            "imp": [
+              {
+                "id": "",
+            "ext": {
+              "bidder": {
+                  "account": "demo",
+                  "location": "_adhese_prebid_demo_",
+                  "format": "leaderboard",
+                  "targets": [{
+                      "key": "ci",
+                      "value": ["gent", "brussels"]
+                    },
+                    {
+                       "key": "ag",
+                       "value": ["55"]
+                    },
+                    {
+                       "key": "tl",
+                       "value": ["all"]
+                    }
+                  ]
+              }
+          }
+              }
+            ]
+          }
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "origin": "APPNEXUS",
+            "originInstance": "",
+            "ext": "js",
+            "slotName": "_main_page_-leaderboard",
+            "adType": "leaderboard",
+            "originData": {
+              "seatbid": [{
+                "bid": [{
+                  "crid": "60613369",
+                  "dealid": null
+                }],
+                "seat": "958"
+              }]
+            },
+            "width": "728",
+            "height": "90",
+            "body": "<div style=\"background-color:red; height:250px; width:300px\"></div>",
+            "tracker": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
+            "impressionCounter": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
+            "extension": {
+              "prebid": {
+                "cpm": {
+                  "amount": "1.000000", 
+                  "currency": "USD"}}}
+          }
+        }
+      }
+    ],
+  
+    "expectedBidResponses": [
+      {
+      "requestId": 456,
+      "ad": "<div style='background-color:red; height:250px; width:300px'></div><img src='https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a' style='height:1px; width:1px; margin: -1px -1px; display:none;'/>",
+      "cpm": 1,
+      "currency": "USD",
+      "creativeId": "60613369",
+      "dealId": "",
+      "width": 728,
+      "height": 90,
+      "mediaType": "banner",
+      "netRevenue": true,
+      "ttl": 360
+    }
+  ]
+  }
