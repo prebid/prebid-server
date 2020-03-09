@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -50,10 +51,15 @@ func TestInvalidParams(t *testing.T) {
 }
 
 func TestBidderList(t *testing.T) {
-	list := BidderList()
+	bidders := BidderList()
 	for _, bidderName := range BidderMap {
-		adapterInList(t, bidderName, list)
+		adapterInList(t, bidderName, bidders)
 	}
+}
+
+func TestBidderListDoesNotDefineGeneral(t *testing.T) {
+	bidders := BidderList()
+	assert.NotContains(t, bidders, BidderNameGeneral)
 }
 
 func adapterInList(t *testing.T, a BidderName, l []BidderName) {
