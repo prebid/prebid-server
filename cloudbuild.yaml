@@ -19,12 +19,12 @@ steps:
 # Update the prebid-server deployment to use the image we just built
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
-    - --namespace=airflow
+    - --namespace=prebid
     - set
     - image
     - deployment
-    - airflow-worker
-    - airflow=gcr.io/$PROJECT_ID/prebid-cloudops/prebid-server:$COMMIT_SHA
+    - prebid-server
+    - prebid-server=gcr.io/$PROJECT_ID/prebid-cloudops/prebid-server:$COMMIT_SHA
   env:
   - 'CLOUDSDK_COMPUTE_ZONE=$_CLOUDSDK_COMPUTE_ZONE'
   - 'CLOUDSDK_CONTAINER_CLUSTER=$_CLOUDSDK_CONTAINER_CLUSTER'
