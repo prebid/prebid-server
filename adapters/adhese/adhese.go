@@ -14,6 +14,7 @@ import (
 
 type AdheseAdapter struct {
 	http             *adapters.HTTPAdapter
+	URI              string
 	dummyCacheBuster int
 }
 
@@ -207,11 +208,11 @@ func WrapError(errorStr string) *errortypes.BadInput {
 	return &errortypes.BadInput{Message: errorStr}
 }
 
-func NewAdheseAdapter(config *adapters.HTTPAdapterConfig) *AdheseAdapter {
-	return NewAdheseBidder(adapters.NewHTTPAdapter(config).Client, 0)
+func NewAdheseAdapter(config *adapters.HTTPAdapterConfig, uri string) *AdheseAdapter {
+	return NewAdheseBidder(adapters.NewHTTPAdapter(config).Client, uri, 0)
 }
 
 // Set dummyCacheBuster to 0 in order to generate a cache buster
-func NewAdheseBidder(client *http.Client, dummyCacheBuster int) *AdheseAdapter {
-	return &AdheseAdapter{http: &adapters.HTTPAdapter{Client: client}, dummyCacheBuster: dummyCacheBuster}
+func NewAdheseBidder(client *http.Client, uri string, dummyCacheBuster int) *AdheseAdapter {
+	return &AdheseAdapter{http: &adapters.HTTPAdapter{Client: client}, URI: uri, dummyCacheBuster: dummyCacheBuster}
 }

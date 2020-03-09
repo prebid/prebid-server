@@ -79,6 +79,7 @@ const (
 var BidderMap = map[string]BidderName{
 	"33across":          Bidder33Across,
 	"adform":            BidderAdform,
+	"adhese":            BidderAdhese,
 	"adkernel":          BidderAdkernel,
 	"adkernelAdn":       BidderAdkernelAdn,
 	"adpone":            BidderAdpone,
