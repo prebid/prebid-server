@@ -1,9 +1,9 @@
 {
   "mockBidRequest": {
-    "id": "sander",
+    "id": "test-req",
     "imp": [
       {
-        "id": "sander",
+        "id": "test-req",
         "banner": {
           "format": [
             {
