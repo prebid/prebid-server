@@ -183,6 +183,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 func (e *exchange) CacheLogs(cacheID string, origReq []byte, bidResponse *openrtb_ext.BidResponseVideo, ctx context.Context) {
 	if len(cacheID) == 0 {
 		if bidResponse != nil && len(bidResponse.AdPods) > 0 {
+			// All pods should have the same cache ID
 			if bidResponse.AdPods[0].Targeting[0].HbCacheID != "" {
 				cacheID = bidResponse.AdPods[0].Targeting[0].HbCacheID
 			}
@@ -192,30 +193,28 @@ func (e *exchange) CacheLogs(cacheID string, origReq []byte, bidResponse *openrt
 	if len(cacheID) == 0 {
 		if rawUUID, _ := uuid.NewV4(); len(rawUUID) > 0 {
 			cacheID = rawUUID.String()
-		} else {
-			return
 		}
 	}
 
-	sim, _ := json.Marshal(bidResponse)
-	origStr := ""
-	if len(origReq) == 0 {
-		origStr = "Unable to read request"
-	} else {
-		origStr = string(origReq)
-		origStr = strings.Replace(origStr, "\n", "", -1)
+	reqStr := ""
+	reqStr = string(origReq)
+	reqStr = strings.Replace(reqStr, "\n", "", -1)
+
+	respStr := ""
+	if bidResponse != nil {
+		respBytes, _ := json.Marshal(bidResponse)
+		respStr = string(respBytes)
 	}
 
-	record := fmt.Sprintf("<!--\n%s\n\n%s\n-->", origStr, sim)
-	record = strings.Replace(record, " ", "", -1)
+	formattedStr := fmt.Sprintf("<!--\n%s\n\n%s\n-->", reqStr, respStr)
+	formattedStr = strings.Replace(formattedStr, " ", "", -1)
 
-	final, _ := json.Marshal(record)
+	data, _ := json.Marshal(formattedStr)
 	toCache := []prebid_cache_client.Cacheable{
 		{
-			Type: prebid_cache_client.TypeXML,
-			Data: final,
-			// TODO maybe set to default value from config
-			TTLSeconds: int64(600),
+			Type:       prebid_cache_client.TypeXML,
+			Data:       data,
+			TTLSeconds: int64(e.defaultTTLs.Video),
 			Key:        cacheID,
 		},
 	}
