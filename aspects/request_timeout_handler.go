@@ -12,12 +12,25 @@ func QueuedRequestTimeout(f httprouter.Handle, custHeaders config.CustomHeaders)
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 
 		reqTimeInQueue := r.Header.Get(custHeaders.RequestTimeInQueue)
-		reqTimeFloat, _ := strconv.ParseFloat(reqTimeInQueue, 64)
-
 		reqTimeout := r.Header.Get(custHeaders.RequestTimeoutInQueue)
-		reqTimeoutFloat, _ := strconv.ParseFloat(reqTimeout, 64)
 
-		if reqTimeInQueue != "" && reqTimeout != "" && reqTimeFloat >= reqTimeoutFloat {
+		//If request timeout headers are not specified - process request as usual
+		if reqTimeInQueue == "" && reqTimeout == "" {
+			f(w, r, params)
+			return
+		}
+
+		reqTimeFloat, reqTimeFloatErr := strconv.ParseFloat(reqTimeInQueue, 64)
+		reqTimeoutFloat, reqTimeoutFloatErr := strconv.ParseFloat(reqTimeout, 64)
+
+		//Return HTTP 400 if request timeout headers are incorrect (wrong format)
+		if reqTimeFloatErr != nil || reqTimeoutFloatErr != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		//Return HTTP 408 if requests stays too long in queue
+		if reqTimeFloat >= reqTimeoutFloat {
 			w.WriteHeader(http.StatusRequestTimeout)
 			return
 		}
