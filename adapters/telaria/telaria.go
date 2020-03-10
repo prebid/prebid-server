@@ -250,7 +250,6 @@ func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 // response isn't automatically decompressed. This method unzips the response if Content-Encoding is gzip
 func GetResponseBody(response *adapters.ResponseData) ([]byte, error) {
-	responseBody := response.Body
 
 	if "gzip" == response.Headers.Get("Content-Encoding") {
 		body := bytes.NewBuffer(response.Body)
@@ -268,10 +267,13 @@ func GetResponseBody(response *adapters.ResponseData) ([]byte, error) {
 				Message: fmt.Sprintf("Error while trying to unzip data [ %d ]", response.StatusCode),
 			}
 		}
-		responseBody = resB.Bytes()
-	}
 
-	return responseBody, nil
+		response.Headers.Del("Content-Encoding")
+
+		return resB.Bytes(), nil
+	} else {
+		return response.Body, nil
+	}
 }
 
 func (a *TelariaAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
