@@ -15,7 +15,7 @@ func QueuedRequestTimeout(f httprouter.Handle, custHeaders config.CustomHeaders)
 		reqTimeout := r.Header.Get(custHeaders.RequestTimeoutInQueue)
 
 		//If request timeout headers are not specified - process request as usual
-		if reqTimeInQueue == "" && reqTimeout == "" {
+		if reqTimeInQueue == "" || reqTimeout == "" {
 			f(w, r, params)
 			return
 		}
