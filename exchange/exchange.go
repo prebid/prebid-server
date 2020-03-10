@@ -13,8 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/stored_requests"
-
+	uuid "github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -25,12 +24,14 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/stored_requests"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
 	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error)
+	CacheLogs(cacheID string, origReq []byte, bidResponse *openrtb_ext.BidResponseVideo, ctx context.Context)
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -177,6 +178,49 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
+}
+
+func (e *exchange) CacheLogs(cacheID string, origReq []byte, bidResponse *openrtb_ext.BidResponseVideo, ctx context.Context) {
+	if len(cacheID) == 0 {
+		if bidResponse != nil && len(bidResponse.AdPods) > 0 {
+			if bidResponse.AdPods[0].Targeting[0].HbCacheID != "" {
+				cacheID = bidResponse.AdPods[0].Targeting[0].HbCacheID
+			}
+		}
+	}
+
+	if len(cacheID) == 0 {
+		if rawUUID, _ := uuid.NewV4(); len(rawUUID) > 0 {
+			cacheID = rawUUID.String()
+		} else {
+			return
+		}
+	}
+
+	sim, _ := json.Marshal(bidResponse)
+	origStr := ""
+	if len(origReq) == 0 {
+		origStr = "Unable to read request"
+	} else {
+		origStr = string(origReq)
+		origStr = strings.Replace(origStr, "\n", "", -1)
+	}
+
+	record := fmt.Sprintf("<!--\n%s\n\n%s\n-->", origStr, sim)
+	record = strings.Replace(record, " ", "", -1)
+
+	final, _ := json.Marshal(record)
+	toCache := []prebid_cache_client.Cacheable{
+		{
+			Type: prebid_cache_client.TypeXML,
+			Data: final,
+			// TODO maybe set to default value from config
+			TTLSeconds: int64(600),
+			Key:        cacheID,
+		},
+	}
+
+	e.cache.PutJson(ctx, toCache)
 }
 
 type DealTierInfo struct {
