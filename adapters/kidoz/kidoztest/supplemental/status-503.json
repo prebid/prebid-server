@@ -50,8 +50,9 @@
 			},
 			"mockResponse": {
 				"status": 503,
-				"body": {}
+				"body": "server text here"
 			}
 		}
-	]
+	],
+	"expectedMakeBidsErrors": []
 }

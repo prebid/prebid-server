@@ -49,14 +49,14 @@
 				}
 			},
 			"mockResponse": {
-				"status": 502,
-				"body": {}
+				"status": 500,
+				"body": "server text here"
 			}
 		}
 	],
 	"expectedMakeBidsErrors": [
 		{
-			"value": "unexpected status code: 502",
+			"value": "unexpected status code: 500 \"server text here\"",
 			"comparison": "literal"
 		}
 	]

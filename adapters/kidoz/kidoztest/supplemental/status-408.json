@@ -50,13 +50,13 @@
 			},
 			"mockResponse": {
 				"status": 408,
-				"body": {}
+				"body": "server text here"
 			}
 		}
 	],
 	"expectedMakeBidsErrors": [
 		{
-			"value": "unexpected status code: 408",
+			"value": "unexpected status code: 408 \"server text here\"",
 			"comparison": "literal"
 		}
 	]

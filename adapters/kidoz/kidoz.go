@@ -116,7 +116,7 @@ func (a *KidozAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.Request
 		fallthrough
 	case http.StatusForbidden:
 		return nil, []error{&errortypes.BadInput{
-			Message: "unexpected status code: " + strconv.Itoa(responseData.StatusCode),
+			Message: "unexpected status code: " + strconv.Itoa(responseData.StatusCode) + " " + string(responseData.Body),
 		}}
 
 	case http.StatusOK:
@@ -124,7 +124,7 @@ func (a *KidozAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.Request
 
 	default:
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: "unexpected status code: " + strconv.Itoa(responseData.StatusCode),
+			Message: "unexpected status code: " + strconv.Itoa(responseData.StatusCode) + " " + string(responseData.Body),
 		}}
 	}
 

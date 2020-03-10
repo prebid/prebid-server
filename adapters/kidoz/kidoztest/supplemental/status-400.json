@@ -50,13 +50,13 @@
 			},
 			"mockResponse": {
 				"status": 400,
-				"body": {}
+				"body": "server text here"
 			}
 		}
 	],
 	"expectedMakeBidsErrors": [
 		{
-			"value": "unexpected status code: 400",
+			"value": "unexpected status code: 400 \"server text here\"",
 			"comparison": "literal"
 		}
 	]
