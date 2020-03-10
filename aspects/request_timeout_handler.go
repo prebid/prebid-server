@@ -17,7 +17,7 @@ func QueuedRequestTimeout(f httprouter.Handle, custHeaders config.CustomHeaders)
 		reqTimeout := r.Header.Get(custHeaders.RequestTimeoutInQueue)
 		reqTimeoutFloat, _ := strconv.ParseFloat(reqTimeout, 64)
 
-		if reqTimeFloat >= reqTimeoutFloat {
+		if reqTimeInQueue != "" && reqTimeout != "" && reqTimeFloat >= reqTimeoutFloat {
 			w.WriteHeader(http.StatusRequestTimeout)
 			return
 		}
