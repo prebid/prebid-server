@@ -140,6 +140,14 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	//create full open rtb req from full video request
 	mergeData(videoBidReq, bidReq)
 
+	//if Device.UA is not present in request body, init it with user-agent from request header if it's present
+	if videoBidReq.Device.UA == "" {
+		userAgent := r.Header.Get("User-Agent")
+		if userAgent != "" {
+			videoBidReq.Device.UA = userAgent
+		}
+	}
+
 	initialPodNumber := len(videoBidReq.PodConfig.Pods)
 	if len(podErrors) > 0 {
 		//remove incorrect pods
