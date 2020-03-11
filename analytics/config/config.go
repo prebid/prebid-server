@@ -19,8 +19,10 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 		}
 	}
 	if analytics.Pubstack.Enabled {
-		pbstck, _ := pubstack.NewPubstackModule(analytics.Pubstack.ScopeId, analytics.Pubstack.IntakeUrl)
-		modules = append(modules, pbstck)
+		pbstck, err := pubstack.NewPubstackModule(analytics.Pubstack.ScopeId, analytics.Pubstack.IntakeUrl)
+		if err == nil {
+			modules = append(modules, pbstck)
+		}
 	}
 	return modules
 }

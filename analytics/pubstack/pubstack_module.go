@@ -2,61 +2,73 @@ package pubstack
 
 import (
 	"fmt"
+	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb"
+	"net/http"
 
 	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/analytics/pubstack/forwarder"
-	"github.com/prebid/prebid-server/analytics/pubstack/parser"
 )
 
-type RequestType string
-
-const (
-	COOKIE_SYNC RequestType = "/cookie_sync"
-	AUCTION     RequestType = "/openrtb2/auction"
-	VIDEO       RequestType = "/openrtb2/video"
-	SETUID      RequestType = "/set_uid"
-	AMP         RequestType = "/openrtb2/amp"
-)
-
+type payload struct {
+	request openrtb.BidRequest
+	response openrtb.BidResponse
+}
 //Module that can perform transactional logging
 type PubstackModule struct {
-	parser    *parser.Parser
-	forwarder *forwarder.Forwarder
+	intake	string
+	scope string
+	client *http.Client
 }
 
 //Writes AuctionObject to file
-func (pf *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
-	pf.parser.Feed(ao.Request, ao.Response)
-	fmt.Println("Receiving an auction")
+func (p *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
+	// send openrtb request
+	payload, err := jsonifyAuctionObject(ao, p.scope)
+	if err != nil {
+		fmt.Println("Cannot serialize auction, aborting, ...")
+		return
+	}
+
+	err = sendPayloadToTarget(p.client, payload, p.intake)
+	if err != nil {
+		fmt.Println("Issues while sending auction object to the intake")
+	}
 }
 
 //Writes VideoObject to file
-func (pf *PubstackModule) LogVideoObject(vo *analytics.VideoObject) {
-	fmt.Println("This function is not yet implemented")
+func (p *PubstackModule) LogVideoObject(vo *analytics.VideoObject) {
+	return
 }
 
 //Logs SetUIDObject to file
-func (pf *PubstackModule) LogSetUIDObject(so *analytics.SetUIDObject) {
-	fmt.Println("This function is not yet implemented")
-	//Code to parse the object and log in a way required
+func (p *PubstackModule) LogSetUIDObject(so *analytics.SetUIDObject) {
+	return
 }
 
 //Logs CookieSyncObject to file
-func (pf *PubstackModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
-	fmt.Println("This function is not yet implemented")
-	//Code to parse the object and log in a way required
+func (p *PubstackModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
+	return
 }
 
 //Logs AmpObject to file
-func (pf *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
-	fmt.Println("This function is not yet implemented")
+func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
+	return
 }
 
 //Method to initialize the analytic module
-func NewPubstackModule(scopeid, intake string) (analytics.PBSAnalyticsModule, error) {
-	fmt.Println("[PBSTCK] Initializing listener ...")
+func NewPubstackModule(scope, intake string) (analytics.PBSAnalyticsModule, error) {
+	glog.Info("Initializing listener")
+	glog.Infof("scope: %s intake %s\n", scope, intake)
+	client := http.Client{}
+
+	if err := testEndpoint(&client, intake); err != nil {
+		glog.Errorf("Fail to initialize pubstack analytics: %s", err.Error())
+		return nil, fmt.Errorf("fail to reach endpoint")
+	}
+
 	return &PubstackModule{
-		parser:    parser.NewParser(scopeid),
-		forwarder: forwarder.NewForwarder(intake),
+		intake,
+		scope,
+		&client,
 	}, nil
 }
