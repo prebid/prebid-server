@@ -120,7 +120,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 	}
 	//unmarshal and validate combined result
-	videoBidReq, errL, podErrors := deps.parseVideoRequest(resolvedRequest)
+	videoBidReq, errL, podErrors := deps.parseVideoRequest(resolvedRequest, r.Header)
 	if len(errL) > 0 {
 		handleError(&labels, w, errL, &vo)
 		return
@@ -139,14 +139,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	//create full open rtb req from full video request
 	mergeData(videoBidReq, bidReq)
-
-	//if Device.UA is not present in request body, init it with user-agent from request header if it's present
-	if videoBidReq.Device.UA == "" {
-		userAgent := r.Header.Get("User-Agent")
-		if userAgent != "" {
-			videoBidReq.Device.UA = userAgent
-		}
-	}
 
 	initialPodNumber := len(videoBidReq.PodConfig.Pods)
 	if len(podErrors) > 0 {
@@ -564,12 +556,20 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 	return reqJSON, nil
 }
 
-func (deps *endpointDeps) parseVideoRequest(request []byte) (req *openrtb_ext.BidRequestVideo, errs []error, podErrors []PodError) {
+func (deps *endpointDeps) parseVideoRequest(request []byte, headers http.Header) (req *openrtb_ext.BidRequestVideo, errs []error, podErrors []PodError) {
 	req = &openrtb_ext.BidRequestVideo{}
 
 	if err := json.Unmarshal(request, &req); err != nil {
 		errs = []error{err}
 		return
+	}
+
+	//if Device.UA is not present in request body, init it with user-agent from request header if it's present
+	if req.Device.UA == "" {
+		userAgent := headers.Get("User-Agent")
+		if userAgent != "" {
+			req.Device.UA = userAgent
+		}
 	}
 
 	errL, podErrors := deps.validateVideoRequest(req)
