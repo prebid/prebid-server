@@ -10,13 +10,14 @@ import (
 )
 
 type payload struct {
-	request openrtb.BidRequest
+	request  openrtb.BidRequest
 	response openrtb.BidResponse
 }
+
 //Module that can perform transactional logging
 type PubstackModule struct {
-	intake	string
-	scope string
+	intake string
+	scope  string
 	client *http.Client
 }
 

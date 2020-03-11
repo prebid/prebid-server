@@ -14,7 +14,7 @@ import (
 
 var IntakeURL = "https://openrtb.preview.pubstack.io/v1/openrtb2/auction"
 
-func loadJsonFromFile() (*analytics.AuctionObject, error){
+func loadJsonFromFile() (*analytics.AuctionObject, error) {
 	req, err := os.Open("mocks/mock_openrtb_request.json")
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func loadJsonFromFile() (*analytics.AuctionObject, error){
 	fmt.Println(resCtn, reqCtn)
 
 	return &analytics.AuctionObject{
-		Request: &reqCtn,
+		Request:  &reqCtn,
 		Response: &resCtn,
 	}, nil
 }
@@ -63,7 +63,6 @@ func TestPubstackModule(t *testing.T) {
 
 	payload, err := jsonifyAuctionObject(ao, "test-scope")
 	assert.Equal(t, err, nil)
-
 
 	c := http.Client{}
 	err = sendPayloadToTarget(&c, payload, IntakeURL)

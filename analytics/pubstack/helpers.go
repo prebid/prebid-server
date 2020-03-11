@@ -12,7 +12,7 @@ type RequestType string
 
 var HEALTH = "/v1/health"
 
-func testEndpoint(c *http.Client, endpoint string) (error) {
+func testEndpoint(c *http.Client, endpoint string) error {
 	r, err := c.Get(fmt.Sprintf("%s%s", endpoint, HEALTH))
 	if err != nil {
 		return err
@@ -36,7 +36,6 @@ func sendPayloadToTarget(c *http.Client, payload []byte, target string) error {
 	return nil
 }
 
-
 func jsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, error) {
 	type alias analytics.AuctionObject
 	b, err := json.Marshal(&struct {
@@ -53,4 +52,3 @@ func jsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, er
 		return []byte(""), fmt.Errorf("transactional logs error: auction object badly formed %v", err)
 	}
 }
-
