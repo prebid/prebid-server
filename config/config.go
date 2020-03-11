@@ -65,7 +65,7 @@ type Configuration struct {
 	// Local private file containing SSL certificates
 	PemCertsFile string `mapstructure:"certificates_file"`
 	// Custom headers set by Nginx to handle request timeout in queue or any other custom headers
-	CustomHeaders CustomHeaders `mapstructure:"custom_headers"`
+	RequestTimeoutHeaders RequestTimeoutHeaders `mapstructure:"request_timeout_headers"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -201,7 +201,7 @@ type HostCookie struct {
 	TTL int64 `mapstructure:"ttl_days"`
 }
 
-type CustomHeaders struct {
+type RequestTimeoutHeaders struct {
 	RequestTimeInQueue    string `mapstructure:"request_time_in_queue"`
 	RequestTimeoutInQueue string `mapstructure:"request_timeout_in_queue"`
 }
@@ -750,6 +750,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("blacklisted_accts", []string{""})
 	v.SetDefault("account_required", false)
 	v.SetDefault("certificates_file", "")
+
+	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
+	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

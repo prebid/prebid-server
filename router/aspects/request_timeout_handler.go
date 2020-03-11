@@ -7,12 +7,12 @@ import (
 	"strconv"
 )
 
-func QueuedRequestTimeout(f httprouter.Handle, custHeaders config.CustomHeaders) httprouter.Handle {
+func QueuedRequestTimeout(f httprouter.Handle, reqTimeoutHeaders config.RequestTimeoutHeaders) httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 
-		reqTimeInQueue := r.Header.Get(custHeaders.RequestTimeInQueue)
-		reqTimeout := r.Header.Get(custHeaders.RequestTimeoutInQueue)
+		reqTimeInQueue := r.Header.Get(reqTimeoutHeaders.RequestTimeInQueue)
+		reqTimeout := r.Header.Get(reqTimeoutHeaders.RequestTimeoutInQueue)
 
 		//If request timeout headers are not specified - process request as usual
 		if reqTimeInQueue == "" || reqTimeout == "" {
