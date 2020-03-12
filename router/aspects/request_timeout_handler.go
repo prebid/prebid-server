@@ -23,7 +23,7 @@ func QueuedRequestTimeout(f httprouter.Handle, reqTimeoutHeaders config.RequestT
 		reqTimeFloat, reqTimeFloatErr := strconv.ParseFloat(reqTimeInQueue, 64)
 		reqTimeoutFloat, reqTimeoutFloatErr := strconv.ParseFloat(reqTimeout, 64)
 
-		//Return HTTP 400 if request timeout headers are incorrect (wrong format)
+		//Return HTTP 500 if request timeout headers are incorrect (wrong format)
 		if reqTimeFloatErr != nil || reqTimeoutFloatErr != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("Request timeout headers are incorrect (wrong format)"))
