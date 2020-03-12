@@ -93,7 +93,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 				{
 					Type:       prebid_cache_client.TypeXML,
 					Data:       data,
-					TTLSeconds: int64(3600),
+					TTLSeconds: int64(deps.cfg.CacheURL.DefaultTTLs.Video),
 					Key:        errorCacheID,
 				},
 			}
