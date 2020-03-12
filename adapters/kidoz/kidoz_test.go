@@ -47,6 +47,7 @@ func TestMakeRequests(t *testing.T) {
 		reqs, errs := kidoz.MakeRequests(request, extra)
 		// cant assert message its different on different versions of go
 		assert.Equal(t, 1, len(errs))
+		assert.Contains(t, errs[0].Error(), "json")
 		assert.Equal(t, 0, len(reqs))
 	})
 }
@@ -64,6 +65,7 @@ func TestMakeBids(t *testing.T) {
 		resp, errs := kidoz.MakeBids(request, requestData, responseData)
 		// cant assert message its different on different versions of go
 		assert.Equal(t, 1, len(errs))
+		assert.Contains(t, errs[0].Error(), "JSON")
 		assert.Nil(t, resp)
 	})
 }
