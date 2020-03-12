@@ -188,7 +188,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 		winningBidsByBidder: winningBidsByBidder,
 		roundedPrices:       roundedPrices,
 	}
-	_ = testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
+	_ = testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory, []byte{})
 
 	if len(specData.ExpectedCacheables) > len(cache.items) {
 		t.Errorf("%s:  [CACHE_ERROR] Less elements were cached than expected \n", fileDisplayName)

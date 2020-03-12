@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	metrics "github.com/rcrowley/go-metrics"
@@ -714,7 +715,7 @@ func TestHandleError(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	err1 := errors.New("Error for testing handleError 1")
 	err2 := errors.New("Error for testing handleError 2")
-	handleError(&labels, recorder, []error{err1, err2}, &vo)
+	handleError(&labels, recorder, []error{err1, err2}, &vo, false)
 
 	assert.Equal(t, pbsmetrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
 	assert.Equal(t, 500, recorder.Code, "Error status should be written to writer")
@@ -891,7 +892,7 @@ type mockExchangeVideo struct {
 	lastRequest *openrtb.BidRequest
 }
 
-func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
+func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, videoReq []byte) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
 	ext := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"20.00","hb_pb_cat_dur":"20.00_395_30s","hb_size":"1x1", "hb_uuid":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"},"type":"video"},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
 	return &openrtb.BidResponse{
@@ -916,6 +917,10 @@ func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb
 			},
 		}},
 	}, nil
+}
+
+func (m *mockExchangeVideo) GetCache() prebid_cache_client.Client {
+	return nil
 }
 
 var testVideoStoredImpData = map[string]json.RawMessage{

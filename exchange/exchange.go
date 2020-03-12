@@ -30,7 +30,8 @@ import (
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error)
+	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, videoReq []byte) (*openrtb.BidResponse, error)
+	GetCache() prebid_cache_client.Client
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -78,7 +79,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	return e
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, videoReq []byte) (*openrtb.BidResponse, error) {
 	// Snapshot of resolved bid request for debug if test request
 	resolvedRequest, err := buildResolvedRequest(bidRequest)
 	if err != nil {
@@ -162,7 +163,13 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		if targData != nil {
 			auc.setRoundedPrices(targData.priceGranularity)
-			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory)
+			if len(videoReq) > 0 {
+				// Build the response so far
+				debugBidResp, _ := e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
+				bidRespBytes, _ := json.Marshal(debugBidResp)
+				videoReq = append(videoReq, bidRespBytes...)
+			}
+			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory, videoReq)
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}
@@ -177,6 +184,10 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
+}
+
+func (e *exchange) GetCache() prebid_cache_client.Client {
+	return e.cache
 }
 
 type DealTierInfo struct {
