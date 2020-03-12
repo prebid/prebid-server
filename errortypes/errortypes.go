@@ -188,7 +188,7 @@ func (err *InvalidPrivacyConsent) Error() string {
 }
 
 func (err *InvalidPrivacyConsent) Code() int {
-	return InvalidPrivacyConsentCode
+	return InvalidPrivacyConsentWarningCode
 }
 
 func (err *InvalidPrivacyConsent) SeverityLevel() SeverityLevel {

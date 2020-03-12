@@ -20,5 +20,5 @@ func TestReadErrorCodeWithCodeNotDefined(t *testing.T) {
 
 	result := ReadErrorCode(err)
 
-	assert.Equal(t, result, UnknownErrorCode)
+	assert.Equal(t, result, UnknownCode)
 }

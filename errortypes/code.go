@@ -1,9 +1,13 @@
 package errortypes
 
-// Defines numeric codes for well-known errors in this package.
+// Defines numeric codes for non-specific errors or warnings.
 const (
-	NoErrorCode = iota
-	TimeoutCode
+	UnknownCode = 999
+)
+
+// Defines numeric codes for well-known errors.
+const (
+	TimeoutCode = iota + 1
 	BadInputCode
 	BlacklistedAppCode
 	BadServerResponseCode
@@ -11,19 +15,22 @@ const (
 	BidderTemporarilyDisabledCode
 	BlacklistedAcctCode
 	AcctRequiredCode
-	InvalidPrivacyConsentCode
-	UnknownErrorCode = 999
 )
 
-// Coder provides an error code.
+// Defines numeric codes for well-known warnings.
+const (
+	InvalidPrivacyConsentWarningCode = iota + 10001
+)
+
+// Coder provides an error or warning code.
 type Coder interface {
 	Code() int
 }
 
-// ReadErrorCode returns the error code, or UnknownErrorCode if unavailable.
+// ReadErrorCode returns the error or warning code, or UnknownCode if unavailable.
 func ReadErrorCode(err error) int {
 	if e, ok := err.(Coder); ok {
 		return e.Code()
 	}
-	return UnknownErrorCode
+	return UnknownCode
 }
