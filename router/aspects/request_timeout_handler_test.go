@@ -30,8 +30,8 @@ func TestAny(t *testing.T) {
 			setHeaders:              true,
 			extectedRespCode:        http.StatusRequestTimeout,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 408",
-			expectedRespBody:        "",
-			expectedRespBodyMessage: "Body should not be present in response",
+			expectedRespBody:        "Queued request processing time exceeded maximum",
+			expectedRespBodyMessage: "Body should have error message",
 		},
 		{
 			//TestQueuedRequestTimeoutNoTimeout
@@ -68,20 +68,20 @@ func TestAny(t *testing.T) {
 			reqTimeInQueue:          "test1",
 			reqTimeOut:              "test2",
 			setHeaders:              true,
-			extectedRespCode:        http.StatusBadRequest,
+			extectedRespCode:        http.StatusInternalServerError,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 400",
-			expectedRespBody:        "",
-			expectedRespBodyMessage: "Body should not be present in response",
+			expectedRespBody:        "Request timeout headers are incorrect (wrong format)",
+			expectedRespBodyMessage: "Body should have error message",
 		},
 		{
 			//TestQueuedRequestSomeHeadersIncorrect
 			reqTimeInQueue:          "test1",
 			reqTimeOut:              "123",
 			setHeaders:              true,
-			extectedRespCode:        http.StatusBadRequest,
+			extectedRespCode:        http.StatusInternalServerError,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 400",
-			expectedRespBody:        "",
-			expectedRespBodyMessage: "Body should not be present in response",
+			expectedRespBody:        "Request timeout headers are incorrect (wrong format)",
+			expectedRespBodyMessage: "Body should have error message",
 		},
 	}
 
