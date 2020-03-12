@@ -1,7 +1,6 @@
 package usersyncers
 
 import (
-	"fmt"
 	"strings"
 	"text/template"
 
@@ -59,7 +58,7 @@ import (
 // The same keys should exist in this map as in the exchanges map.
 // Static syncer map will be removed when adapter isolation is complete.
 func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync.Usersyncer {
-	fmt.Println("TEST syncer.go - NewSyncerMap")
+	// fmt.Println("TEST syncer.go - NewSyncerMap")
 	syncers := make(map[openrtb_ext.BidderName]usersync.Usersyncer, len(cfg.Adapters))
 
 	insertIntoMap(cfg, syncers, openrtb_ext.Bidder33Across, ttx.New33AcrossSyncer)

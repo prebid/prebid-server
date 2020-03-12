@@ -265,6 +265,7 @@ func validateAdapterEndpoint(endpoint string, adapterName string, errs configErr
 
 // validateAdapterUserSyncURL validates an adapter's user sync URL if it is set
 func validateAdapterUserSyncURL(userSyncURL string, adapterName string, errs configErrors) configErrors {
+	// fmt.Println("TEST config.go - validateAdapterUserSyncURL")
 	if userSyncURL != "" {
 		// Create user_sync URL template
 		userSyncTemplate, err := template.New("userSyncTemplate").Parse(userSyncURL)
@@ -293,6 +294,7 @@ func validateAdapterUserSyncURL(userSyncURL string, adapterName string, errs con
 
 // validateAdapters validates adapter's endpoint and user sync URL
 func validateAdapters(adapterMap map[string]Adapter, errs configErrors) configErrors {
+	// fmt.Println("TEST config.go - validateAdapters")
 	for adapterName, adapter := range adapterMap {
 		if !adapter.Disabled {
 			// Verify that every adapter has a valid endpoint associated with it
@@ -406,9 +408,12 @@ type DefReqFiles struct {
 
 // New uses viper to get our server configurations.
 func New(v *viper.Viper) (*Configuration, error) {
+	// fmt.Println("TEST config.go - New viper configuration")
 	var c Configuration
 	if err := v.Unmarshal(&c); err != nil {
-		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
+		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err) // TODO : Log this
+	} else {
+		// fmt.Println("TEST configuration: ", c)
 	}
 	c.setDerivedDefaults()
 

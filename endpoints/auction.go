@@ -199,6 +199,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 				a.metricsEngine.RecordAdapterTime(aLabels, time.Since(start))
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
 				if err != nil {
+					// fmt.Println("TEST Auction.go - auction error: ", err)
 					var s struct{}
 					switch err {
 					case context.DeadlineExceeded:
@@ -219,6 +220,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 						}
 					}
 				} else if bidList != nil {
+					// fmt.Println("TEST Auction.go - auction Bidlist: ", bidList)
 					bidList = checkForValidBidSize(bidList, bidder)
 					bidder.NumBids = len(bidList)
 					for _, bid := range bidList {
@@ -233,6 +235,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 						bid.ResponseTime = bidder.ResponseTime
 					}
 				} else {
+					// fmt.Println("TEST Auction.go - auction No Bid")
 					bidder.NoBid = true
 					aLabels.AdapterBids = pbsmetrics.AdapterBidNone
 				}

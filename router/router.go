@@ -144,6 +144,7 @@ func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 }
 
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
+	// fmt.Println("TEST router.go - newExchangeMap")
 	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
 	return map[string]adapters.Adapter{
 		"appnexus":   appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
@@ -169,6 +170,9 @@ type Router struct {
 }
 
 func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r *Router, err error) {
+
+	// fmt.Println("TEST router.go - New()")
+
 	const schemaDirectory = "./static/bidder-params"
 	const infoDirectory = "./static/bidder-info"
 
