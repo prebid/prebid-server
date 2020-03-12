@@ -120,7 +120,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 	}
 	//unmarshal and validate combined result
-	videoBidReq, errL, podErrors := deps.parseVideoRequest(resolvedRequest)
+	videoBidReq, errL, podErrors := deps.parseVideoRequest(resolvedRequest, r.Header)
 	if len(errL) > 0 {
 		handleError(&labels, w, errL, &vo)
 		return
@@ -556,12 +556,17 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 	return reqJSON, nil
 }
 
-func (deps *endpointDeps) parseVideoRequest(request []byte) (req *openrtb_ext.BidRequestVideo, errs []error, podErrors []PodError) {
+func (deps *endpointDeps) parseVideoRequest(request []byte, headers http.Header) (req *openrtb_ext.BidRequestVideo, errs []error, podErrors []PodError) {
 	req = &openrtb_ext.BidRequestVideo{}
 
 	if err := json.Unmarshal(request, &req); err != nil {
 		errs = []error{err}
 		return
+	}
+
+	//if Device.UA is not present in request body, init it with user-agent from request header if it's present
+	if req.Device.UA == "" {
+		req.Device.UA = headers.Get("User-Agent")
 	}
 
 	errL, podErrors := deps.validateVideoRequest(req)

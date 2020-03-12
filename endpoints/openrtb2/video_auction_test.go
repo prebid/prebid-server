@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -743,6 +744,80 @@ func TestHandleErrorMetrics(t *testing.T) {
 	assert.Equal(t, 2, len(mod.videoObjects[0].Errors), "AnalyticsObject should have Errors length of 2")
 	assert.Equal(t, "request missing required field: PodConfig.DurationRangeSec", mod.videoObjects[0].Errors[0].Error(), "First error in AnalyticsObject should have message regarding DurationRangeSec")
 	assert.Equal(t, "request missing required field: PodConfig.Pods", mod.videoObjects[0].Errors[1].Error(), "Second error in AnalyticsObject should have message regarding Pods")
+}
+
+func TestParseVideoRequestWithUserAgentAndHeader(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_with_device_user_agent.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	headers := http.Header{}
+	headers.Add("User-Agent", "TestHeader")
+
+	deps := mockDeps(t, ex)
+	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+
+	assert.Equal(t, "TestHeaderSample", req.Device.UA, "Header should be taken from original request")
+	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
+	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
+
+}
+
+func TestParseVideoRequestWithUserAgentAndEmptyHeader(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_with_device_user_agent.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	headers := http.Header{}
+
+	deps := mockDeps(t, ex)
+	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+
+	assert.Equal(t, "TestHeaderSample", req.Device.UA, "Header should be taken from original request")
+	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
+	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
+
+}
+
+func TestParseVideoRequestWithoutUserAgentWithHeader(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_without_device_user_agent.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	headers := http.Header{}
+	headers.Add("User-Agent", "TestHeader")
+
+	deps := mockDeps(t, ex)
+	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+
+	assert.Equal(t, "TestHeader", req.Device.UA, "Device.ua should be taken from request header")
+	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
+	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
+
+}
+
+func TestParseVideoRequestWithoutUserAgentAndEmptyHeader(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_without_device_user_agent.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	headers := http.Header{}
+
+	deps := mockDeps(t, ex)
+	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+
+	assert.Equal(t, "", req.Device.UA, "Device.ua should be empty")
+	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
+	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
+
 }
 
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
