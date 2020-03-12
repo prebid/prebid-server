@@ -6,14 +6,19 @@ import (
 	"fmt"
 	"github.com/prebid/prebid-server/analytics"
 	"net/http"
+	"net/url"
 )
 
 type RequestType string
 
-var HEALTH = "/v1/health"
+const (
+	HEALTH = "/v1/health"
+)
 
-func testEndpoint(c *http.Client, endpoint string) error {
-	r, err := c.Get(fmt.Sprintf("%s%s", endpoint, HEALTH))
+func testEndpoint(endpoint *url.URL) error {
+	endpoint.Path = HEALTH
+
+	r, err := http.Get(endpoint.String())
 	if err != nil {
 		return err
 	}
@@ -24,8 +29,8 @@ func testEndpoint(c *http.Client, endpoint string) error {
 	return nil
 }
 
-func sendPayloadToTarget(c *http.Client, payload []byte, target string) error {
-	resp, err := c.Post(target, "application/json", bytes.NewBuffer(payload))
+func sendPayloadToTarget(payload []byte, endpoint string) error {
+	resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(payload))
 	if err != nil {
 		return err
 	}

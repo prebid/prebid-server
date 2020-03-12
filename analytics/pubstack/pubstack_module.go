@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
-	"net/http"
+	"net/url"
 
 	"github.com/prebid/prebid-server/analytics"
 )
@@ -14,11 +14,14 @@ type payload struct {
 	response openrtb.BidResponse
 }
 
+const (
+	AUCTION = "/v1/openrtb2/auction"
+)
+
 //Module that can perform transactional logging
 type PubstackModule struct {
-	intake string
+	intake *url.URL
 	scope  string
-	client *http.Client
 }
 
 //Writes AuctionObject to file
@@ -30,7 +33,9 @@ func (p *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
 		return
 	}
 
-	err = sendPayloadToTarget(p.client, payload, p.intake)
+	p.intake.Path = AUCTION
+
+	err = sendPayloadToTarget(payload, p.intake.String())
 	if err != nil {
 		fmt.Println("Issues while sending auction object to the intake")
 	}
@@ -60,16 +65,20 @@ func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
 func NewPubstackModule(scope, intake string) (analytics.PBSAnalyticsModule, error) {
 	glog.Info("Initializing listener")
 	glog.Infof("scope: %s intake %s\n", scope, intake)
-	client := http.Client{}
 
-	if err := testEndpoint(&client, intake); err != nil {
+	URL, err := url.Parse(intake)
+	if err != nil {
+		glog.Errorf("Fail to initialize pubstack analytics: %s", err.Error())
+		return nil, fmt.Errorf("endpoint url is invalid")
+	}
+
+	if err := testEndpoint(URL); err != nil {
 		glog.Errorf("Fail to initialize pubstack analytics: %s", err.Error())
 		return nil, fmt.Errorf("fail to reach endpoint")
 	}
 
 	return &PubstackModule{
-		intake,
+		URL,
 		scope,
-		&client,
 	}, nil
 }
