@@ -16,16 +16,12 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV CGO_ENABLED 0
 COPY ./ ./
-RUN go mod vendor
-RUN go mod tidy
-ARG TEST="true"
-RUN if [ "$TEST" != "false" ]; then ./validate.sh ; fi
-RUN go build -mod=vendor .
+RUN go build
 
 FROM ubuntu:18.04 AS release
 LABEL maintainer="hans.hjort@xandr.com" 
 WORKDIR /usr/local/bin/
-COPY --from=build /app/prebid-server/prebid-server .
+COPY --from=build /app/prebid-server/ .
 COPY static static/
 COPY stored_requests/data stored_requests/data
 RUN apt-get update && \
