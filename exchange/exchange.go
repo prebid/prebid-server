@@ -30,7 +30,7 @@ import (
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, videoReq []byte) (*openrtb.BidResponse, error)
+	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog string) (*openrtb.BidResponse, error)
 	GetCache() prebid_cache_client.Client
 }
 
@@ -79,7 +79,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	return e
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, videoReq []byte) (*openrtb.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog string) (*openrtb.BidResponse, error) {
 	// Snapshot of resolved bid request for debug if test request
 	resolvedRequest, err := buildResolvedRequest(bidRequest)
 	if err != nil {
@@ -163,13 +163,20 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		if targData != nil {
 			auc.setRoundedPrices(targData.priceGranularity)
-			if len(videoReq) > 0 {
+			if len(debugLog) > 0 {
 				// Build the response so far
 				debugBidResp, _ := e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
+
+				// Remove the resolved request due to including duplicate info
+				var respExt openrtb_ext.ExtBidResponse
+				json.Unmarshal(debugBidResp.Ext, &respExt)
+				respExt.Debug.ResolvedRequest = nil
+				debugBidResp.Ext, _ = json.Marshal(respExt)
+
 				bidRespBytes, _ := json.Marshal(debugBidResp)
-				videoReq = append(videoReq, bidRespBytes...)
+				debugLog = fmt.Sprintf("<!--\n%s\n\nResponse:\n%s\n-->", debugLog, string(bidRespBytes))
 			}
-			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory, videoReq)
+			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}

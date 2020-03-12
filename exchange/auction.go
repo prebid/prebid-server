@@ -60,7 +60,7 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string, videoDebug []byte) []error {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string, debugLog string) []error {
 	var bids, vast, includeBidderKeys, includeWinners bool = targData.includeCacheBids, targData.includeCacheVast, targData.includeBidderKeys, targData.includeWinners
 	if !((bids || vast) && (includeBidderKeys || includeWinners)) {
 		return nil
@@ -124,9 +124,6 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 			}
 			if vast && topBidPerBidder.bidType == openrtb_ext.BidTypeVideo {
 				vast := makeVAST(topBidPerBidder.bid)
-				if len(videoDebug) > 0 {
-					vast = fmt.Sprintf("%s\n<!--\n%s\n-->", vast, string(videoDebug))
-				}
 				if jsonBytes, err := json.Marshal(vast); err == nil {
 					if useCustomCacheKey {
 						toCache = append(toCache, prebid_cache_client.Cacheable{
@@ -147,6 +144,17 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 					errs = append(errs, err)
 				}
 			}
+		}
+	}
+
+	if len(debugLog) > 0 {
+		if jsonBytes, err := json.Marshal(debugLog); err == nil {
+			toCache = append(toCache, prebid_cache_client.Cacheable{
+				Type:       prebid_cache_client.TypeXML,
+				Data:       jsonBytes,
+				TTLSeconds: defTTL(openrtb_ext.BidTypeVideo, defaultTTLs),
+				Key:        fmt.Sprintf("log_%s", hbCacheID),
+			})
 		}
 	}
 

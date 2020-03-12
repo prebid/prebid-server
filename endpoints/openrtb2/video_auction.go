@@ -81,20 +81,23 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
-	var videoReq []byte
+
 	debugQuery := r.URL.Query().Get("debug")
 	enableDebug := debugQuery == "true"
+	debugString := ""
 	errorCacheID := ""
+
 	defer func() {
 		if enableDebug && vo.VideoResponse == nil {
 			cache := deps.ex.GetCache()
-			data, _ := json.Marshal(string(videoReq))
+			debugString = fmt.Sprintf("<!--\n%s\n-->", debugString)
+			data, _ := json.Marshal(debugString)
 			toCache := []prebid_cache_client.Cacheable{
 				{
 					Type:       prebid_cache_client.TypeXML,
 					Data:       data,
 					TTLSeconds: int64(deps.cfg.CacheURL.DefaultTTLs.Video),
-					Key:        errorCacheID,
+					Key:        fmt.Sprintf("log_%s", errorCacheID),
 				},
 			}
 			cache.PutJson(context.Background(), toCache)
@@ -116,7 +119,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	resolvedRequest := requestJson
 	if enableDebug {
-		videoReq = requestJson
+		debugString = fmt.Sprintf("Request:\n%s", string(requestJson))
+		headerBytes, _ := json.Marshal(r.Header)
+		debugString = fmt.Sprintf("%s\n\nHeaders:\n%s", debugString, string(headerBytes))
 	}
 
 	//load additional data - stored simplified req
@@ -161,6 +166,10 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	//create full open rtb req from full video request
 	mergeData(videoBidReq, bidReq)
+	// If debug query param is set, force the response to enable test flag
+	if enableDebug {
+		bidReq.Test = 1
+	}
 
 	initialPodNumber := len(videoBidReq.PodConfig.Pods)
 	if len(podErrors) > 0 {
@@ -222,7 +231,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 	//execute auction logic
-	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories, videoReq)
+	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories, debugString)
 	vo.Request = bidReq
 	vo.Response = response
 	if err != nil {
