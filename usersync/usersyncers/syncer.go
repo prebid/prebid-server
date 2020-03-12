@@ -54,6 +54,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
 	"github.com/prebid/prebid-server/adapters/yieldmo"
+	"github.com/prebid/prebid-server/adapters/zeroclickfraud"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
@@ -114,6 +115,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderVisx, visx.NewVisxSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderVrtcal, vrtcal.NewVrtcalSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderYieldmo, yieldmo.NewYieldmoSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderZeroClickFraud, zeroclickfraud.NewZeroClickFraudSyncer)
 
 	return syncers
 }

@@ -61,6 +61,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
 	"github.com/prebid/prebid-server/adapters/yieldmo"
+	"github.com/prebid/prebid-server/adapters/zeroclickfraud"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -130,6 +131,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderVisx:             visx.NewVisxBidder(cfg.Adapters[string(openrtb_ext.BidderVisx)].Endpoint),
 		openrtb_ext.BidderVrtcal:           vrtcal.NewVrtcalBidder(cfg.Adapters[string(openrtb_ext.BidderVrtcal)].Endpoint),
 		openrtb_ext.BidderYieldmo:          yieldmo.NewYieldmoBidder(cfg.Adapters[string(openrtb_ext.BidderYieldmo)].Endpoint),
+		openrtb_ext.BidderZeroClickFraud:   zeroclickfraud.NewZeroClickFraudBidder(cfg.Adapters[string(openrtb_ext.BidderZeroClickFraud)].Endpoint),
 	}
 
 	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{
