@@ -64,7 +64,7 @@ type Configuration struct {
 	AccountRequired bool `mapstructure:"account_required"`
 	// Local private file containing SSL certificates
 	PemCertsFile string `mapstructure:"certificates_file"`
-	// Custom headers set by Nginx to handle request timeout in queue or any other custom headers
+	// Custom headers to handle request timeouts from queueing infrastructure
 	RequestTimeoutHeaders RequestTimeoutHeaders `mapstructure:"request_timeout_headers"`
 }
 
