@@ -84,13 +84,13 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	debugQuery := r.URL.Query().Get("debug")
 	enableDebug := debugQuery == "true"
-	debugString := ""
-	errorCacheID := ""
+	var debugString string
+	var errorCacheID string
 
 	defer func() {
-		if enableDebug && vo.VideoResponse == nil {
+		if len(errorCacheID) > 0 && vo.VideoResponse == nil {
 			cache := deps.ex.GetCache()
-			debugString = fmt.Sprintf("<!--\n%s\n-->", debugString)
+			debugString = fmt.Sprintf("<!--\n%s\n\nNo response created\n-->", debugString)
 			data, _ := json.Marshal(debugString)
 			toCache := []prebid_cache_client.Cacheable{
 				{
@@ -113,7 +113,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 	requestJson, err := ioutil.ReadAll(lr)
 	if err != nil {
-		errorCacheID = handleError(&labels, w, []error{err}, &vo, enableDebug)
+		handleError(&labels, w, []error{err}, &vo, enableDebug, &errorCacheID)
 		return
 	}
 
@@ -129,27 +129,27 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	if err != nil {
 		if deps.cfg.VideoStoredRequestRequired {
-			errorCacheID = handleError(&labels, w, []error{err}, &vo, enableDebug)
+			handleError(&labels, w, []error{err}, &vo, enableDebug, &errorCacheID)
 			return
 		}
 	} else {
 		storedRequest, errs := deps.loadStoredVideoRequest(context.Background(), storedRequestId)
 		if len(errs) > 0 {
-			errorCacheID = handleError(&labels, w, errs, &vo, enableDebug)
+			handleError(&labels, w, errs, &vo, enableDebug, &errorCacheID)
 			return
 		}
 
 		//merge incoming req with stored video req
 		resolvedRequest, err = jsonpatch.MergePatch(storedRequest, requestJson)
 		if err != nil {
-			errorCacheID = handleError(&labels, w, []error{err}, &vo, enableDebug)
+			handleError(&labels, w, []error{err}, &vo, enableDebug, &errorCacheID)
 			return
 		}
 	}
 	//unmarshal and validate combined result
 	videoBidReq, errL, podErrors := deps.parseVideoRequest(resolvedRequest, r.Header)
 	if len(errL) > 0 {
-		errorCacheID = handleError(&labels, w, errL, &vo, enableDebug)
+		handleError(&labels, w, errL, &vo, enableDebug, &errorCacheID)
 		return
 	}
 
@@ -159,7 +159,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if deps.defaultRequest {
 		if err := json.Unmarshal(deps.defReqJSON, bidReq); err != nil {
 			err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", err)
-			errorCacheID = handleError(&labels, w, []error{err}, &vo, enableDebug)
+			handleError(&labels, w, []error{err}, &vo, enableDebug, &errorCacheID)
 			return
 		}
 	}
@@ -187,7 +187,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 		err := errors.New(fmt.Sprintf("all pods are incorrect: %s", strings.Join(resPodErr, "; ")))
 		errL = append(errL, err)
-		errorCacheID = handleError(&labels, w, errL, &vo, enableDebug)
+		handleError(&labels, w, errL, &vo, enableDebug, &errorCacheID)
 		return
 	}
 
@@ -199,7 +199,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	errL = deps.validateRequest(bidReq)
 	if len(errL) > 0 {
-		errorCacheID = handleError(&labels, w, errL, &vo, enableDebug)
+		handleError(&labels, w, errL, &vo, enableDebug, &errorCacheID)
 		return
 	}
 
@@ -227,7 +227,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
 		errL = append(errL, acctIdErr)
-		errorCacheID = handleError(&labels, w, errL, &vo, enableDebug)
+		handleError(&labels, w, errL, &vo, enableDebug, &errorCacheID)
 		return
 	}
 	//execute auction logic
@@ -236,7 +236,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	vo.Response = response
 	if err != nil {
 		errL := []error{err}
-		errorCacheID = handleError(&labels, w, errL, &vo, enableDebug)
+		handleError(&labels, w, errL, &vo, enableDebug, &errorCacheID)
 		return
 	}
 
@@ -244,7 +244,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	bidResp, err := buildVideoResponse(response, podErrors)
 	if err != nil {
 		errL := []error{err}
-		errorCacheID = handleError(&labels, w, errL, &vo, enableDebug)
+		handleError(&labels, w, errL, &vo, enableDebug, &errorCacheID)
 		return
 	}
 	if bidReq.Test == 1 {
@@ -257,7 +257,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	//resp, err := json.Marshal(response)
 	if err != nil {
 		errL := []error{err}
-		errorCacheID = handleError(&labels, w, errL, &vo, enableDebug)
+		handleError(&labels, w, errL, &vo, enableDebug, &errorCacheID)
 		return
 	}
 
@@ -273,13 +273,12 @@ func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []P
 	return videoReq
 }
 
-func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error, vo *analytics.VideoObject, enableDebug bool) string {
-	cacheID := ""
+func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error, vo *analytics.VideoObject, enableDebug bool, errorCacheID *string) {
 	if enableDebug {
 		if rawUUID, _ := uuid.NewV4(); len(rawUUID) > 0 {
-			cacheID = rawUUID.String()
+			*errorCacheID = rawUUID.String()
 		}
-		errL = append(errL, fmt.Errorf("Debug cache ID: [%s]", cacheID))
+		errL = append(errL, fmt.Errorf("Debug cache ID: [%s]", *errorCacheID))
 	}
 	labels.RequestStatus = pbsmetrics.RequestStatusErr
 	var errors string
@@ -302,7 +301,6 @@ func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error,
 	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
 	glog.Errorf("/openrtb2/video Critical error: %v", errors)
 	vo.Errors = append(vo.Errors, errL...)
-	return cacheID
 }
 
 func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) ([]openrtb.Imp, []PodError) {

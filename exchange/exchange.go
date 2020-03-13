@@ -167,6 +167,13 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				// Build the response so far
 				debugBidResp, _ := e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
 
+				// Remove the VAST object from the request
+				for i := 0; i < len(debugBidResp.SeatBid); i++ {
+					for j := 0; j < len(debugBidResp.SeatBid[i].Bid); j++ {
+						debugBidResp.SeatBid[i].Bid[j].AdM = ""
+					}
+				}
+
 				// Remove the resolved request due to including duplicate info
 				var respExt openrtb_ext.ExtBidResponse
 				json.Unmarshal(debugBidResp.Ext, &respExt)

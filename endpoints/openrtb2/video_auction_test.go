@@ -715,7 +715,8 @@ func TestHandleError(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	err1 := errors.New("Error for testing handleError 1")
 	err2 := errors.New("Error for testing handleError 2")
-	handleError(&labels, recorder, []error{err1, err2}, &vo, false)
+	errorCacheID := ""
+	handleError(&labels, recorder, []error{err1, err2}, &vo, false, &errorCacheID)
 
 	assert.Equal(t, pbsmetrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
 	assert.Equal(t, 500, recorder.Code, "Error status should be written to writer")
