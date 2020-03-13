@@ -64,6 +64,8 @@ type Configuration struct {
 	AccountRequired bool `mapstructure:"account_required"`
 	// Local private file containing SSL certificates
 	PemCertsFile string `mapstructure:"certificates_file"`
+	// Custom headers to handle request timeouts from queueing infrastructure
+	RequestTimeoutHeaders RequestTimeoutHeaders `mapstructure:"request_timeout_headers"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -197,6 +199,11 @@ type HostCookie struct {
 	OptOutCookie       Cookie `mapstructure:"optout_cookie"`
 	// Cookie timeout in days
 	TTL int64 `mapstructure:"ttl_days"`
+}
+
+type RequestTimeoutHeaders struct {
+	RequestTimeInQueue    string `mapstructure:"request_time_in_queue"`
+	RequestTimeoutInQueue string `mapstructure:"request_timeout_in_queue"`
 }
 
 func (cfg *HostCookie) TTLDuration() time.Duration {
@@ -747,6 +754,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("blacklisted_accts", []string{""})
 	v.SetDefault("account_required", false)
 	v.SetDefault("certificates_file", "")
+
+	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
+	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
