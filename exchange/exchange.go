@@ -31,7 +31,6 @@ import (
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
 	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog string) (*openrtb.BidResponse, error)
-	GetCache() prebid_cache_client.Client
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -143,6 +142,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 
 	var auc *auction = nil
+	var bidResponseExt *openrtb_ext.ExtBidResponse = nil
 	if anyBidsReturned {
 
 		var bidCategory map[string]string
@@ -164,24 +164,9 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		if targData != nil {
 			auc.setRoundedPrices(targData.priceGranularity)
 			if len(debugLog) > 0 {
-				// Build the response so far
-				debugBidResp, _ := e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
-
-				// Remove the VAST object from the request
-				for i := 0; i < len(debugBidResp.SeatBid); i++ {
-					for j := 0; j < len(debugBidResp.SeatBid[i].Bid); j++ {
-						debugBidResp.SeatBid[i].Bid[j].AdM = ""
-					}
-				}
-
-				// Remove the resolved request due to including duplicate info
-				var respExt openrtb_ext.ExtBidResponse
-				json.Unmarshal(debugBidResp.Ext, &respExt)
-				respExt.Debug.ResolvedRequest = nil
-				debugBidResp.Ext, _ = json.Marshal(respExt)
-
-				bidRespBytes, _ := json.Marshal(debugBidResp)
-				debugLog = fmt.Sprintf("<!--\n%s\n\nResponse:\n%s\n-->", debugLog, string(bidRespBytes))
+				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errs)
+				bidRespExtBytes, _ := json.Marshal(bidResponseExt)
+				debugLog = fmt.Sprintf("<!--\n%s\n\nResponse:\n%s\n-->", debugLog, string(bidRespExtBytes))
 			}
 			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
@@ -197,11 +182,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// Build the response
-	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
-}
-
-func (e *exchange) GetCache() prebid_cache_client.Client {
-	return e.cache
+	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, bidResponseExt, errs)
 }
 
 type DealTierInfo struct {
@@ -419,7 +400,7 @@ func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderError {
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, errList []error) (*openrtb.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, errList []error) (*openrtb.BidResponse, error) {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -442,7 +423,9 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 
 	bidResponse.SeatBid = seatBids
 
-	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errList)
+	if bidResponseExt == nil {
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errList)
+	}
 	buffer := &bytes.Buffer{}
 	enc := json.NewEncoder(buffer)
 	enc.SetEscapeHTML(false)

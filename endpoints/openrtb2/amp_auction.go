@@ -71,7 +71,8 @@ func NewAmpEndpoint(
 		disabledBidders,
 		defRequest,
 		defReqJSON,
-		bidderMap}).AmpAuction), nil
+		bidderMap,
+		nil}).AmpAuction), nil
 
 }
 
