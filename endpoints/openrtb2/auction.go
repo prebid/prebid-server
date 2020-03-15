@@ -140,7 +140,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories, "")
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories, nil)
 	ao.Request = req
 	ao.Response = response
 	if err != nil {

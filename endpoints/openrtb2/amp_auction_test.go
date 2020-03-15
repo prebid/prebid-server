@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 
@@ -903,7 +902,7 @@ type mockAmpExchange struct {
 	lastRequest *openrtb.BidRequest
 }
 
-func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog string) (*openrtb.BidResponse, error) {
+func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
 
 	response := &openrtb.BidResponse{
@@ -925,10 +924,6 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 	}
 
 	return response, nil
-}
-
-func (m *mockAmpExchange) GetCache() prebid_cache_client.Client {
-	return nil
 }
 
 func getTestBidRequest(nilUser bool, nilExt bool, consentString string, digitrustID string) ([]byte, error) {

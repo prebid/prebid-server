@@ -32,14 +32,6 @@ import (
 
 var defaultRequestTimeout int64 = 5000
 
-type DebugLog struct {
-	enableDebug bool
-	data        string
-	ttl         int64
-	cacheType   prebid_cache_client.PayloadType
-	cacheKey    string
-}
-
 func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, videoFetcher stored_requests.Fetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, cache prebid_cache_client.Client) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
@@ -95,29 +87,29 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if deps.cfg.CacheURL.DefaultTTLs.Video > 0 {
 		cacheTTL = int64(deps.cfg.CacheURL.DefaultTTLs.Video)
 	}
-	debugLog := DebugLog{
-		enableDebug: strings.EqualFold(debugQuery, "true"),
-		cacheType:   prebid_cache_client.TypeXML,
-		ttl:         cacheTTL,
+	debugLog := exchange.DebugLog{
+		EnableDebug: strings.EqualFold(debugQuery, "true"),
+		CacheType:   prebid_cache_client.TypeXML,
+		TTL:         cacheTTL,
 	}
 
 	defer func() {
-		if len(debugLog.cacheKey) > 0 && vo.VideoResponse == nil {
-			debugLog.data = fmt.Sprintf("<!--\n%s\n\nNo response created\n-->", debugLog.data)
-			data, err := json.Marshal(debugLog.data)
+		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
+			debugLog.Data = fmt.Sprintf("<!--\n%s\n\nNo response created\n-->", debugLog.Data)
+			data, err := json.Marshal(debugLog.Data)
 			if err == nil {
 				toCache := []prebid_cache_client.Cacheable{
 					{
-						Type:       debugLog.cacheType,
+						Type:       debugLog.CacheType,
 						Data:       data,
-						TTLSeconds: debugLog.ttl,
-						Key:        "log_" + debugLog.cacheKey,
+						TTLSeconds: debugLog.TTL,
+						Key:        "log_" + debugLog.CacheKey,
 					},
 				}
 				if deps.cache != nil {
 					ctx := context.Background()
 					var cancel context.CancelFunc
-					ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultRequestTimeout)*time.Millisecond))
+					ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(100)*time.Millisecond))
 					defer cancel()
 					deps.cache.PutJson(ctx, toCache)
 				}
@@ -139,10 +131,10 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	resolvedRequest := requestJson
-	if debugLog.enableDebug {
-		debugLog.data = fmt.Sprintf("Request:\n%s", string(requestJson))
+	if debugLog.EnableDebug {
+		debugLog.Data = fmt.Sprintf("Request:\n%s", string(requestJson))
 		headerBytes, _ := json.Marshal(r.Header)
-		debugLog.data = fmt.Sprintf("%s\n\nHeaders:\n%s", debugLog.data, string(headerBytes))
+		debugLog.Data = fmt.Sprintf("%s\n\nHeaders:\n%s", debugLog.Data, string(headerBytes))
 	}
 
 	//load additional data - stored simplified req
@@ -188,7 +180,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	//create full open rtb req from full video request
 	mergeData(videoBidReq, bidReq)
 	// If debug query param is set, force the response to enable test flag
-	if debugLog.enableDebug {
+	if debugLog.EnableDebug {
 		bidReq.Test = 1
 	}
 
@@ -252,7 +244,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 	//execute auction logic
-	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories, debugLog.data)
+	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories, &debugLog)
 	vo.Request = bidReq
 	vo.Response = response
 	if err != nil {
@@ -294,12 +286,12 @@ func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []P
 	return videoReq
 }
 
-func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error, vo *analytics.VideoObject, debugLog *DebugLog) {
-	if debugLog != nil && debugLog.enableDebug {
+func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error, vo *analytics.VideoObject, debugLog *exchange.DebugLog) {
+	if debugLog != nil && debugLog.EnableDebug {
 		if rawUUID, _ := uuid.NewV4(); len(rawUUID) > 0 {
-			debugLog.cacheKey = rawUUID.String()
+			debugLog.CacheKey = rawUUID.String()
 		}
-		errL = append(errL, fmt.Errorf("Debug cache ID: [%s]", debugLog.cacheKey))
+		errL = append(errL, fmt.Errorf("[Debug cache ID: %s]", debugLog.CacheKey))
 	}
 	labels.RequestStatus = pbsmetrics.RequestStatusErr
 	var errors string

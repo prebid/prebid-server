@@ -489,7 +489,7 @@ func TestRaceIntegration(t *testing.T) {
 	}
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics, adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault())
-	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{}, pbsmetrics.Labels{}, &categoriesFetcher, "")
+	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{}, pbsmetrics.Labels{}, &categoriesFetcher, nil)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -666,7 +666,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
-	_, err := e.HoldAuction(context.Background(), request, &emptyUsersync{}, pbsmetrics.Labels{}, &categoriesFetcher, "")
+	_, err := e.HoldAuction(context.Background(), request, &emptyUsersync{}, pbsmetrics.Labels{}, &categoriesFetcher, nil)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -732,7 +732,11 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
-	bid, err := ex.HoldAuction(context.Background(), &spec.IncomingRequest.OrtbRequest, mockIdFetcher(spec.IncomingRequest.Usersyncs), pbsmetrics.Labels{}, &categoriesFetcher, "")
+	debugLog := &DebugLog{}
+	if spec.DebugLog != nil {
+		*debugLog = *spec.DebugLog
+	}
+	bid, err := ex.HoldAuction(context.Background(), &spec.IncomingRequest.OrtbRequest, mockIdFetcher(spec.IncomingRequest.Usersyncs), pbsmetrics.Labels{}, &categoriesFetcher, debugLog)
 	responseTimes := extractResponseTimes(t, filename, bid)
 	for _, bidderName := range biddersInAuction {
 		if _, ok := responseTimes[bidderName]; !ok {
@@ -748,6 +752,17 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		} else {
 			if err.Error() != spec.Response.Error {
 				t.Errorf("%s: Exchange returned different errors. Expected %s, got %s", filename, spec.Response.Error, err.Error())
+			}
+		}
+	}
+	if spec.DebugLog != nil {
+		if spec.DebugLog.EnableDebug {
+			if len(debugLog.Data) <= len(spec.DebugLog.Data) {
+				t.Errorf("%s: DebugLog was not modified when it should have been", filename)
+			}
+		} else {
+			if !strings.EqualFold(spec.DebugLog.Data, debugLog.Data) {
+				t.Errorf("%s: DebugLog was modified when it shouldn't have been", filename)
 			}
 		}
 	}
@@ -1588,6 +1603,7 @@ type exchangeSpec struct {
 	OutgoingRequests map[string]*bidderSpec `json:"outgoingRequests"`
 	Response         exchangeResponse       `json:"response,omitempty"`
 	EnforceCCPA      bool                   `json:"enforceCcpa"`
+	DebugLog         *DebugLog              `json:"debuglog,omitempty"`
 }
 
 type exchangeRequest struct {

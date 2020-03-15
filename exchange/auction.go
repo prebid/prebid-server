@@ -60,7 +60,7 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string, debugLog string) []error {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string, debugLog *DebugLog) []error {
 	var bids, vast, includeBidderKeys, includeWinners bool = targData.includeCacheBids, targData.includeCacheVast, targData.includeBidderKeys, targData.includeWinners
 	if !((bids || vast) && (includeBidderKeys || includeWinners)) {
 		return nil
@@ -147,13 +147,14 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 
-	if len(debugLog) > 0 {
-		if jsonBytes, err := json.Marshal(debugLog); err == nil {
+	if debugLog != nil && debugLog.EnableDebug {
+		debugLog.CacheKey = hbCacheID
+		if jsonBytes, err := json.Marshal(debugLog.Data); err == nil {
 			toCache = append(toCache, prebid_cache_client.Cacheable{
-				Type:       prebid_cache_client.TypeXML,
+				Type:       debugLog.CacheType,
 				Data:       jsonBytes,
-				TTLSeconds: defTTL(openrtb_ext.BidTypeVideo, defaultTTLs),
-				Key:        fmt.Sprintf("log_%s", hbCacheID),
+				TTLSeconds: debugLog.TTL,
+				Key:        "log_" + debugLog.CacheKey,
 			})
 		}
 	}

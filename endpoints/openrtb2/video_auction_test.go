@@ -172,6 +172,90 @@ func TestCreateBidExtensionExactDurTrueNoPriceRange(t *testing.T) {
 	assert.Equal(t, resExt.Prebid.Targeting.PriceGranularity, openrtb_ext.PriceGranularityFromString("med"), "Price granularity is incorrect")
 }
 
+func TestVideoEndpointDebugQueryTrue(t *testing.T) {
+	ex := &mockExchangeVideo{
+		cache: &mockCacheClient{},
+	}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+	reqBody := string(getRequestPayload(t, reqData))
+	req := httptest.NewRequest("POST", "/openrtb2/video?debug=true", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps := mockDeps(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	if ex.lastRequest == nil {
+		t.Fatalf("The request never made it into the Exchange.")
+	}
+	if !ex.cache.called {
+		t.Fatalf("Cache was not called when it should have been")
+	}
+
+	respBytes := recorder.Body.Bytes()
+	resp := &openrtb_ext.BidResponseVideo{}
+	if err := json.Unmarshal(respBytes, resp); err != nil {
+		t.Fatalf("Unable to umarshal response.")
+	}
+
+	assert.Len(t, ex.lastRequest.Imp, 11, "Incorrect number of impressions in request")
+	assert.Equal(t, string(ex.lastRequest.Site.Page), "prebid.com", "Incorrect site page in request")
+	assert.Equal(t, ex.lastRequest.Site.Content.Series, "TvName", "Incorrect site content series in request")
+
+	assert.Len(t, resp.AdPods, 5, "Incorrect number of Ad Pods in response")
+	assert.Len(t, resp.AdPods[0].Targeting, 4, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[1].Targeting, 3, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[2].Targeting, 5, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[3].Targeting, 1, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[4].Targeting, 3, "Incorrect Targeting data in response")
+
+	assert.Equal(t, resp.AdPods[4].Targeting[0].HbPbCatDur, "20.00_395_30s", "Incorrect number of Ad Pods in response")
+}
+
+func TestVideoEndpointDebugQueryFalse(t *testing.T) {
+	ex := &mockExchangeVideo{
+		cache: &mockCacheClient{},
+	}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+	reqBody := string(getRequestPayload(t, reqData))
+	req := httptest.NewRequest("POST", "/openrtb2/video?debug=123", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps := mockDeps(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	if ex.lastRequest == nil {
+		t.Fatalf("The request never made it into the Exchange.")
+	}
+	if ex.cache.called {
+		t.Fatalf("Cache was called when it shouldn't have been")
+	}
+
+	respBytes := recorder.Body.Bytes()
+	resp := &openrtb_ext.BidResponseVideo{}
+	if err := json.Unmarshal(respBytes, resp); err != nil {
+		t.Fatalf("Unable to umarshal response.")
+	}
+
+	assert.Len(t, ex.lastRequest.Imp, 11, "Incorrect number of impressions in request")
+	assert.Equal(t, string(ex.lastRequest.Site.Page), "prebid.com", "Incorrect site page in request")
+	assert.Equal(t, ex.lastRequest.Site.Content.Series, "TvName", "Incorrect site content series in request")
+
+	assert.Len(t, resp.AdPods, 5, "Incorrect number of Ad Pods in response")
+	assert.Len(t, resp.AdPods[0].Targeting, 4, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[1].Targeting, 3, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[2].Targeting, 5, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[3].Targeting, 1, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[4].Targeting, 3, "Incorrect Targeting data in response")
+
+	assert.Equal(t, resp.AdPods[4].Targeting[0].HbPbCatDur, "20.00_395_30s", "Incorrect number of Ad Pods in response")
+}
+
 func TestVideoEndpointNoPods(t *testing.T) {
 	ex := &mockExchangeVideo{}
 	reqData, err := ioutil.ReadFile("sample-requests/video/video_invalid_sample.json")
@@ -821,6 +905,41 @@ func TestParseVideoRequestWithoutUserAgentAndEmptyHeader(t *testing.T) {
 
 }
 
+func TestHandleErrorDebugLog(t *testing.T) {
+	vo := analytics.VideoObject{
+		Status: 200,
+		Errors: make([]error, 0),
+	}
+
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeVideo,
+		PubID:         pbsmetrics.PublisherUnknown,
+		Browser:       "test browser",
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+
+	recorder := httptest.NewRecorder()
+	err1 := errors.New("Error for testing handleError 1")
+	err2 := errors.New("Error for testing handleError 2")
+	debugLog := exchange.DebugLog{
+		EnableDebug: true,
+		CacheType:   prebid_cache_client.TypeXML,
+		Data:        "test debug data",
+		TTL:         int64(3600),
+	}
+	handleError(&labels, recorder, []error{err1, err2}, &vo, &debugLog)
+
+	assert.Equal(t, pbsmetrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
+	assert.Equal(t, 500, recorder.Code, "Error status should be written to writer")
+	assert.Equal(t, 500, vo.Status, "Analytics object should have error status")
+	assert.Equal(t, 3, len(vo.Errors), "New errors including debug cache ID should be appended to Analytics object Errors")
+	assert.Equal(t, "Error for testing handleError 1", vo.Errors[0].Error(), "Error in Analytics object should have test error message for first error")
+	assert.Equal(t, "Error for testing handleError 2", vo.Errors[1].Error(), "Error in Analytics object should have test error message for second error")
+	assert.NotEmpty(t, debugLog.CacheKey, "DebugLog CacheKey value should have been set")
+}
+
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	mockModule := &mockAnalyticsModule{}
@@ -877,10 +996,22 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
-		nil,
+		ex.cache,
 	}
 
 	return edep
+}
+
+type mockCacheClient struct {
+	called bool
+}
+
+func (m *mockCacheClient) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
+	return []string{}, []error{}
+}
+
+func (m *mockCacheClient) GetExtCacheData() (string, string) {
+	return "", ""
 }
 
 type mockVideoStoredReqFetcher struct {
@@ -892,10 +1023,14 @@ func (cf mockVideoStoredReqFetcher) FetchRequests(ctx context.Context, requestID
 
 type mockExchangeVideo struct {
 	lastRequest *openrtb.BidRequest
+	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog string) (*openrtb.BidResponse, error) {
+func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
+	if debugLog != nil && debugLog.EnableDebug {
+		m.cache.called = true
+	}
 	ext := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"20.00","hb_pb_cat_dur":"20.00_395_30s","hb_size":"1x1", "hb_uuid":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"},"type":"video"},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
 	return &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{
@@ -919,10 +1054,6 @@ func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb
 			},
 		}},
 	}, nil
-}
-
-func (m *mockExchangeVideo) GetCache() prebid_cache_client.Client {
-	return nil
 }
 
 var testVideoStoredImpData = map[string]json.RawMessage{
