@@ -32,7 +32,18 @@ spec:
             memory: 512Mi
           requests:
             cpu: 500m
-            memory: 200Mi                 
+            memory: 200Mi   
+        env:
+        - name: PREBID_ENV
+          valueFrom:
+            secretKeyRef:
+              name: prebid-environment
+              key: environment  
+        - name: PBS_INSTANCE_ID
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name                                      
 
 ---
 apiVersion: v1
