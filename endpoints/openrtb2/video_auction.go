@@ -107,9 +107,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 					},
 				}
 				if deps.cache != nil {
-					ctx := context.Background()
-					var cancel context.CancelFunc
-					ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(100)*time.Millisecond))
+					ctx, cancel := context.WithDeadline(context.Background(), start.Add(time.Duration(100)*time.Millisecond))
 					defer cancel()
 					deps.cache.PutJson(ctx, toCache)
 				}
@@ -133,8 +131,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	resolvedRequest := requestJson
 	if debugLog.EnableDebug {
 		debugLog.Data = fmt.Sprintf("Request:\n%s", string(requestJson))
-		headerBytes, _ := json.Marshal(r.Header)
-		debugLog.Data = fmt.Sprintf("%s\n\nHeaders:\n%s", debugLog.Data, string(headerBytes))
+		if headerBytes, err := json.Marshal(r.Header); err == nil {
+			debugLog.Data = fmt.Sprintf("%s\n\nHeaders:\n%s", debugLog.Data, string(headerBytes))
+		} else {
+			debugLog.Data = fmt.Sprintf("%s\n\nUnable to marshal headers data\n", debugLog.Data)
+		}
 	}
 
 	//load additional data - stored simplified req

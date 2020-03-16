@@ -173,8 +173,11 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			auc.setRoundedPrices(targData.priceGranularity)
 			if debugLog != nil && debugLog.EnableDebug {
 				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errs)
-				bidRespExtBytes, _ := json.Marshal(bidResponseExt)
-				debugLog.Data = fmt.Sprintf("<!--\n%s\n\nResponse:\n%s\n-->", debugLog.Data, string(bidRespExtBytes))
+				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+					debugLog.Data = fmt.Sprintf("<!--\n%s\n\nResponse:\n%s\n-->", debugLog.Data, string(bidRespExtBytes))
+				} else {
+					errs = append(errs, errors.New("Unable to marshal response ext for debugging"))
+				}
 			}
 			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
