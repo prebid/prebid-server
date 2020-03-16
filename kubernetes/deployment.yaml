@@ -99,4 +99,38 @@ spec:
   backend:
     serviceName: prebid-server-service1
     servicePort: 8000
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    networking.gke.io/managed-certificates: prebid
+    kubernetes.io/ingress.allow-http: "false"
+  labels:
+    app: prebid
+    component: server    
+  name: prebid-ingress-https
+  namespace: prebid
+spec:
+  backend:
+    serviceName: prebid-server-r4lcl
+    servicePort: 443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prebid-server-r4lcl
+  namespace: prebid
+  labels:
+    app: prebid
+    component: server
+spec:
+  type: NodePort
+  ports:
+  - port: 443
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    app: prebid
+    component: server    
 
