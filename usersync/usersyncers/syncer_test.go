@@ -59,6 +59,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderTripleliftNative): syncConfig,
 			string(openrtb_ext.BidderUcfunnel):         syncConfig,
 			string(openrtb_ext.BidderUnruly):           syncConfig,
+			string(openrtb_ext.BidderValueImpression):  syncConfig,
 			string(openrtb_ext.BidderVerizonMedia):     syncConfig,
 			string(openrtb_ext.BidderVisx):             syncConfig,
 			string(openrtb_ext.BidderVrtcal):           syncConfig,
