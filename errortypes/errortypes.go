@@ -13,11 +13,11 @@ func (err *Timeout) Error() string {
 }
 
 func (err *Timeout) Code() int {
-	return TimeoutCode
+	return TimeoutErrorCode
 }
 
-func (err *Timeout) SeverityLevel() SeverityLevel {
-	return SeverityLevelFatal
+func (err *Timeout) Severity() Severity {
+	return SeverityFatal
 }
 
 // BadInput should be used when returning errors which are caused by bad input.
@@ -33,11 +33,11 @@ func (err *BadInput) Error() string {
 }
 
 func (err *BadInput) Code() int {
-	return BadInputCode
+	return BadInputErrorCode
 }
 
-func (err *BadInput) SeverityLevel() SeverityLevel {
-	return SeverityLevelFatal
+func (err *BadInput) Severity() Severity {
+	return SeverityFatal
 }
 
 // BlacklistedApp should be used when a request App.ID matches an entry in the BlacklistedApps
@@ -53,11 +53,11 @@ func (err *BlacklistedApp) Error() string {
 }
 
 func (err *BlacklistedApp) Code() int {
-	return BlacklistedAppCode
+	return BlacklistedAppErrorCode
 }
 
-func (err *BlacklistedApp) SeverityLevel() SeverityLevel {
-	return SeverityLevelFatal
+func (err *BlacklistedApp) Severity() Severity {
+	return SeverityFatal
 }
 
 // BlacklistedAcct should be used when a request account ID matches an entry in the BlacklistedAccts
@@ -73,11 +73,11 @@ func (err *BlacklistedAcct) Error() string {
 }
 
 func (err *BlacklistedAcct) Code() int {
-	return BlacklistedAcctCode
+	return BlacklistedAcctErrorCode
 }
 
-func (err *BlacklistedAcct) SeverityLevel() SeverityLevel {
-	return SeverityLevelFatal
+func (err *BlacklistedAcct) Severity() Severity {
+	return SeverityFatal
 }
 
 // AcctRequired should be used when the environment variable ACCOUNT_REQUIRED has been set to not
@@ -93,11 +93,11 @@ func (err *AcctRequired) Error() string {
 }
 
 func (err *AcctRequired) Code() int {
-	return AcctRequiredCode
+	return AcctRequiredErrorCode
 }
 
-func (err *AcctRequired) SeverityLevel() SeverityLevel {
-	return SeverityLevelFatal
+func (err *AcctRequired) Severity() Severity {
+	return SeverityFatal
 }
 
 // BadServerResponse should be used when returning errors which are caused by bad/unexpected behavior on the remote server.
@@ -118,11 +118,11 @@ func (err *BadServerResponse) Error() string {
 }
 
 func (err *BadServerResponse) Code() int {
-	return BadServerResponseCode
+	return BadServerResponseErrorCode
 }
 
-func (err *BadServerResponse) SeverityLevel() SeverityLevel {
-	return SeverityLevelFatal
+func (err *BadServerResponse) Severity() Severity {
+	return SeverityFatal
 }
 
 // FailedToRequestBids is an error to cover the case where an adapter failed to generate any http requests to get bids,
@@ -139,11 +139,11 @@ func (err *FailedToRequestBids) Error() string {
 }
 
 func (err *FailedToRequestBids) Code() int {
-	return FailedToRequestBidsCode
+	return FailedToRequestBidsErrorCode
 }
 
-func (err *FailedToRequestBids) SeverityLevel() SeverityLevel {
-	return SeverityLevelFatal
+func (err *FailedToRequestBids) Severity() Severity {
+	return SeverityFatal
 }
 
 // BidderTemporarilyDisabled is used at the request validation step, where we want to continue processing as best we
@@ -158,11 +158,11 @@ func (err *BidderTemporarilyDisabled) Error() string {
 }
 
 func (err *BidderTemporarilyDisabled) Code() int {
-	return BidderTemporarilyDisabledCode
+	return BidderTemporarilyDisabledErrorCode
 }
 
-func (err *BidderTemporarilyDisabled) SeverityLevel() SeverityLevel {
-	return SeverityLevelWarning
+func (err *BidderTemporarilyDisabled) Severity() Severity {
+	return SeverityWarning
 }
 
 // Warning is a generic non-fatal error.
@@ -174,8 +174,12 @@ func (err *Warning) Error() string {
 	return err.Message
 }
 
-func (err *Warning) SeverityLevel() SeverityLevel {
-	return SeverityLevelWarning
+func (err *Warning) Code() int {
+	return UnknownWarningCode
+}
+
+func (err *Warning) Severity() Severity {
+	return SeverityWarning
 }
 
 // InvalidPrivacyConsent is a warning for when the privacy consent string is invalid and is ignored.
@@ -191,6 +195,6 @@ func (err *InvalidPrivacyConsent) Code() int {
 	return InvalidPrivacyConsentWarningCode
 }
 
-func (err *InvalidPrivacyConsent) SeverityLevel() SeverityLevel {
-	return SeverityLevelWarning
+func (err *InvalidPrivacyConsent) Severity() Severity {
+	return SeverityWarning
 }

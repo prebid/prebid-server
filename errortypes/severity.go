@@ -1,33 +1,28 @@
 package errortypes
 
-// SeverityLevel represents the severity level of a bid processing error.
-type SeverityLevel int
+// Severity represents the severity level of a bid processing error.
+type Severity int
 
 const (
-	// SeverityLevelUnknown represents an unknown severity level.
-	SeverityLevelUnknown SeverityLevel = iota
+	// SeverityUnknown represents an unknown severity level.
+	SeverityUnknown Severity = iota
 
-	// SeverityLevelFatal represents a fatal bid processing error which prevents a bid response.
-	SeverityLevelFatal
+	// SeverityFatal represents a fatal bid processing error which prevents a bid response.
+	SeverityFatal
 
-	// SeverityLevelWarning represents a non-fatal bid processing error where invalid or ambiguous
+	// SeverityWarning represents a non-fatal bid processing error where invalid or ambiguous
 	// data in the bid request was ignored.
-	SeverityLevelWarning
+	SeverityWarning
 )
 
-// SeverityLeveler provides a bid processing error severity level.
-type SeverityLeveler interface {
-	SeverityLevel() SeverityLevel
-}
-
 func isFatal(err error) bool {
-	s, ok := err.(SeverityLeveler)
-	return !ok || s.SeverityLevel() == SeverityLevelFatal
+	s, ok := err.(Coder)
+	return !ok || s.Severity() == SeverityFatal
 }
 
 func isWarning(err error) bool {
-	s, ok := err.(SeverityLeveler)
-	return ok && s.SeverityLevel() == SeverityLevelWarning
+	s, ok := err.(Coder)
+	return ok && s.Severity() == SeverityWarning
 }
 
 // ContainsFatalError checks if the error list contains a fatal error.

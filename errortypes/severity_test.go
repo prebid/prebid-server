@@ -7,14 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type stubError struct{ severityLevel SeverityLevel }
+type stubError struct{ severity Severity }
 
-func (e *stubError) Error() string                { return "anyMessage" }
-func (e *stubError) SeverityLevel() SeverityLevel { return e.severityLevel }
+func (e *stubError) Error() string      { return "anyMessage" }
+func (e *stubError) Code() int          { return 42 }
+func (e *stubError) Severity() Severity { return e.severity }
 
 func TestContainsFatalError(t *testing.T) {
-	fatalError := &stubError{severityLevel: SeverityLevelFatal}
-	notFatalError := &stubError{severityLevel: SeverityLevelWarning}
+	fatalError := &stubError{severity: SeverityFatal}
+	notFatalError := &stubError{severity: SeverityWarning}
 	unknownSeverityError := errors.New("anyError")
 
 	testCases := []struct {
@@ -56,8 +57,8 @@ func TestContainsFatalError(t *testing.T) {
 }
 
 func TestFatalOnly(t *testing.T) {
-	fatalError := &stubError{severityLevel: SeverityLevelFatal}
-	notFatalError := &stubError{severityLevel: SeverityLevelWarning}
+	fatalError := &stubError{severity: SeverityFatal}
+	notFatalError := &stubError{severity: SeverityWarning}
 	unknownSeverityError := errors.New("anyError")
 
 	testCases := []struct {
@@ -99,8 +100,8 @@ func TestFatalOnly(t *testing.T) {
 }
 
 func TestWarningOnly(t *testing.T) {
-	warningError := &stubError{severityLevel: SeverityLevelWarning}
-	notWarningError := &stubError{severityLevel: SeverityLevelFatal}
+	warningError := &stubError{severity: SeverityWarning}
+	notWarningError := &stubError{severity: SeverityFatal}
 	unknownSeverityError := errors.New("anyError")
 
 	testCases := []struct {

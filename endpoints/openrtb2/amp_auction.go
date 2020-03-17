@@ -149,8 +149,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Blacklist account now that we have resolved the value
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
 		errL = append(errL, acctIdErr)
-		errCode := errortypes.ReadErrorCode(acctIdErr)
-		if errCode == errortypes.BlacklistedAppCode || errCode == errortypes.BlacklistedAcctCode {
+		errCode := errortypes.ReadCode(acctIdErr)
+		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
 		} else {
@@ -215,7 +215,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	warnings := make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError)
 	for _, v := range errortypes.WarningOnly(errL) {
 		bidderErr := openrtb_ext.ExtBidderError{
-			Code:    errortypes.ReadErrorCode(v),
+			Code:    errortypes.ReadCode(v),
 			Message: v.Error(),
 		}
 		warnings[openrtb_ext.BidderNameGeneral] = append(warnings[openrtb_ext.BidderNameGeneral], bidderErr)

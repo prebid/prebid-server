@@ -7,18 +7,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReadErrorCodeWithCodeDefined(t *testing.T) {
+func TestReadCodeWithCodeDefined(t *testing.T) {
 	err := &Timeout{Message: "code is defined"}
 
-	result := ReadErrorCode(err)
+	result := ReadCode(err)
 
-	assert.Equal(t, result, TimeoutCode)
+	assert.Equal(t, result, TimeoutErrorCode)
 }
 
-func TestReadErrorCodeWithCodeNotDefined(t *testing.T) {
+func TestReadCodeWithCodeNotDefined(t *testing.T) {
 	err := errors.New("missing error code")
 
-	result := ReadErrorCode(err)
+	result := ReadCode(err)
 
-	assert.Equal(t, result, UnknownCode)
+	assert.Equal(t, result, UnknownErrorCode)
 }
