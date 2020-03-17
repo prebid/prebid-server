@@ -289,7 +289,7 @@ func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []P
 
 func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error, vo *analytics.VideoObject, debugLog *exchange.DebugLog) {
 	if debugLog != nil && debugLog.EnableDebug {
-		if rawUUID, _ := uuid.NewV4(); len(rawUUID) > 0 {
+		if rawUUID, err := uuid.NewV4(); err == nil {
 			debugLog.CacheKey = rawUUID.String()
 		}
 		errL = append(errL, fmt.Errorf("[Debug cache ID: %s]", debugLog.CacheKey))
