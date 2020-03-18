@@ -336,7 +336,7 @@ Bids can be temporarily cached on the server by sending the following data as `r
 }
 ```
 
-Both `bids` and `vastxml` are optional, but one of the two is required. Thils property will have no effect
+Both `bids` and `vastxml` are optional, but one of the two is required. This property will have no effect
 unless `request.ext.prebid.targeting` is also set in the request.
 
 If `bids` is present, Prebid Server will make a _best effort_ to include these extra
