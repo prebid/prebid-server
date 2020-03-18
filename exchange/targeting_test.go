@@ -106,7 +106,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
-	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{}, &categoriesFetcher)
+	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{}, &categoriesFetcher, nil)
 
 	if err != nil {
 		t.Fatalf("Unexpected errors running auction: %v", err)
