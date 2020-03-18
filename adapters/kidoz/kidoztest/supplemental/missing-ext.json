@@ -1,0 +1,24 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"imp": [
+			{
+				"id": "test-impression-id-1",
+				"banner": {
+					"format": [
+						{
+							"w": 320,
+							"h": 50
+						}
+					]
+				}
+			}
+		]
+	},
+	"expectedMakeRequestsErrors": [
+		{
+			"value": "impression extensions required",
+			"comparison": "literal"
+		}
+	]
+}
