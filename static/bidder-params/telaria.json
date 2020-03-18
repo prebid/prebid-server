@@ -8,8 +8,12 @@
     "adCode": {
       "type": "string",
       "description": "The Ad Unit Code."
+    },
+    "seatCode": {
+      "type": "string",
+      "description": "Your Seat Code."
     }
   },
 
-  "required": ["adCode"]
+  "required": ["seatCode"]
 }
