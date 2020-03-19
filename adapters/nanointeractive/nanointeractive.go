@@ -10,32 +10,37 @@ import (
 	"net/http"
 )
 
-type NanointeractiveAdapter struct {
+type NanoInteractiveAdapter struct {
 	endpoint string
 }
 
-// used for cookies and such
-func (a *NanointeractiveAdapter) Name() string {
+func (a *NanoInteractiveAdapter) Name() string {
 	return "Nano"
 }
 
-func (a *NanointeractiveAdapter) SkipNoCookies() bool {
+func (a *NanoInteractiveAdapter) SkipNoCookies() bool {
 	return false
 }
 
-func (a *NanointeractiveAdapter) MakeRequests(bidRequest *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *NanoInteractiveAdapter) MakeRequests(bidRequest *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	var errs []error
 	var validImps []openrtb.Imp
 
 	var adapterRequests []*adapters.RequestData
+	var referer string = ""
 
 	for i := 0; i < len(bidRequest.Imp); i++ {
-		err := checkImp(&bidRequest.Imp[i])
+
+		ref, err := checkImp(&bidRequest.Imp[i])
+
 		// If the parsing is failed, remove imp and add the error.
 		if err != nil {
 			errs = append(errs, err)
 			continue
+		}
+		if referer == "" && ref != "" {
+			referer = ref
 		}
 		validImps = append(validImps, bidRequest.Imp[i])
 	}
@@ -45,12 +50,12 @@ func (a *NanointeractiveAdapter) MakeRequests(bidRequest *openrtb.BidRequest, re
 		return nil, errs
 	}
 
-	// set referrer origin
-	if refO := getRefererOrigin(&bidRequest.Imp[0]); refO != "" {
+	// set referer origin
+	if referer != "" {
 		if bidRequest.Site == nil {
 			bidRequest.Site = &openrtb.Site{}
 		}
-		bidRequest.Site.Ref = refO
+		bidRequest.Site.Ref = referer
 	}
 
 	bidRequest.Imp = validImps
@@ -58,15 +63,20 @@ func (a *NanointeractiveAdapter) MakeRequests(bidRequest *openrtb.BidRequest, re
 	reqJSON, err := json.Marshal(bidRequest)
 	if err != nil {
 		errs = append(errs, err)
+		return nil, errs
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
-	headers.Add("User-Agent", getSafeUa(bidRequest.Device))
-	headers.Add("X-Forwarded-For", getSafeIp(bidRequest.Device))
-	headers.Add("Referer", getSafeReferrer(bidRequest.Site))
+	if bidRequest.Device != nil {
+		headers.Add("User-Agent", bidRequest.Device.UA)
+		headers.Add("X-Forwarded-For", bidRequest.Device.IP)
+	}
+	if bidRequest.Site != nil {
+		headers.Add("Referer", bidRequest.Site.Page)
+	}
 
 	// set user's cookie
 	if bidRequest.User != nil && bidRequest.User.BuyerUID != "" {
@@ -83,7 +93,7 @@ func (a *NanointeractiveAdapter) MakeRequests(bidRequest *openrtb.BidRequest, re
 	return adapterRequests, errs
 }
 
-func (a *NanointeractiveAdapter) MakeBids(
+func (a *NanoInteractiveAdapter) MakeBids(
 	internalRequest *openrtb.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -123,77 +133,40 @@ func (a *NanointeractiveAdapter) MakeBids(
 	return bidResponse, nil
 }
 
-func checkImp(imp *openrtb.Imp) error {
+func checkImp(imp *openrtb.Imp) (string, error) {
 	// We support only banner impression
 	if imp.Banner == nil {
-		return fmt.Errorf("invalid MediaType. NanoInteractive only supports Banner type. ImpID=%s", imp.ID)
+		return "", fmt.Errorf("invalid MediaType. NanoInteractive only supports Banner type. ImpID=%s", imp.ID)
 	}
 
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return fmt.Errorf("ext not provided; ImpID=%s", imp.ID)
+		return "", fmt.Errorf("ext not provided; ImpID=%s", imp.ID)
 	}
 
 	var nanoExt openrtb_ext.ExtImpNanoInteractive
 	if err := json.Unmarshal(bidderExt.Bidder, &nanoExt); err != nil {
-		return fmt.Errorf("ext.bidder not provided; ImpID=%s", imp.ID)
+		return "", fmt.Errorf("ext.bidder not provided; ImpID=%s", imp.ID)
 	}
-
 	if nanoExt.Pid == "" {
-		return fmt.Errorf("pid is empty; ImpID=%s", imp.ID)
+		return "", fmt.Errorf("pid is empty; ImpID=%s", imp.ID)
 	}
 
-	return nil
+	if nanoExt.Ref != "" {
+		return string(nanoExt.Ref), nil
+	}
+
+	return "", nil
 }
 
-func NewNanoIneractiveBidder(endpoint string) *NanointeractiveAdapter {
-	return &NanointeractiveAdapter{
+func NewNanoIneractiveBidder(endpoint string) *NanoInteractiveAdapter {
+	return &NanoInteractiveAdapter{
 		endpoint: endpoint,
 	}
 }
 
-func getSafeIp(device *openrtb.Device) string {
-	if device == nil {
-		return ""
-	}
-	return device.IP
-}
-
-func getSafeUa(device *openrtb.Device) string {
-	if device == nil {
-		return ""
-	}
-	return device.UA
-}
-
-func getSafeReferrer(site *openrtb.Site) string {
-	if site == nil {
-		return ""
-	}
-	return site.Page
-}
-
-func NewNanoInteractiveAdapter(uri string) *NanointeractiveAdapter {
-	return &NanointeractiveAdapter{
+func NewNanoInteractiveAdapter(uri string) *NanoInteractiveAdapter {
+	return &NanoInteractiveAdapter{
 		endpoint: uri,
 	}
-}
-
-func getRefererOrigin(imp *openrtb.Imp) string {
-
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return ""
-	}
-
-	var nanoExt openrtb_ext.ExtImpNanoInteractive
-	if err := json.Unmarshal(bidderExt.Bidder, &nanoExt); err != nil {
-		return ""
-	}
-
-	if nanoExt.Ref != "" {
-		return string(nanoExt.Ref)
-	}
-
-	return ""
 }

@@ -22,6 +22,10 @@
     "subId": {
       "type": "string",
       "description": "any segment value provided by publisher"
+    },
+    "ref" : {
+      "type": "string",
+      "description": "referer"
     }
   },
   "required": ["pid"]
