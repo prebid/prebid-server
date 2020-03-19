@@ -3,6 +3,7 @@ package gdpr
 import (
 	"context"
 
+	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	"github.com/prebid/go-gdpr/vendorlist"
@@ -18,7 +19,7 @@ import (
 type permissionsImpl struct {
 	cfg             config.GDPR
 	vendorIDs       map[openrtb_ext.BidderName]uint16
-	fetchVendorList func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
+	fetchVendorList []func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
 }
 
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
@@ -71,10 +72,10 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 		return false, nil
 	}
 
+	// InfoStorageAccess is the same across TCF 1 and TCF 2
 	if vendor.Purpose(consentconstants.InfoStorageAccess) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && parsedConsent.VendorConsent(vendorID) {
 		return true, nil
 	}
-
 	return false, nil
 }
 
@@ -93,14 +94,20 @@ func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent 
 		return false, nil
 	}
 
-	if (vendor.Purpose(consentconstants.InfoStorageAccess) || vendor.LegitimateInterest(consentconstants.InfoStorageAccess)) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && (vendor.Purpose(consentconstants.AdSelectionDeliveryReporting) || vendor.LegitimateInterest(consentconstants.AdSelectionDeliveryReporting)) && parsedConsent.PurposeAllowed(consentconstants.AdSelectionDeliveryReporting) && parsedConsent.VendorConsent(vendorID) {
-		return true, nil
+	if parsedConsent.Version() == 2 {
+		// Need to add the location special purpose once the library supports it.
+		if (vendor.Purpose(consentconstants.InfoStorageAccess) || vendor.LegitimateInterest(consentconstants.InfoStorageAccess)) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && (vendor.Purpose(consentconstants.PersonalizationProfile) || vendor.LegitimateInterest(consentconstants.PersonalizationProfile)) && parsedConsent.PurposeAllowed(consentconstants.PersonalizationProfile) && parsedConsent.VendorConsent(vendorID) {
+			return true, nil
+		}
+	} else {
+		if (vendor.Purpose(consentconstants.InfoStorageAccess) || vendor.LegitimateInterest(consentconstants.InfoStorageAccess)) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && (vendor.Purpose(consentconstants.AdSelectionDeliveryReporting) || vendor.LegitimateInterest(consentconstants.AdSelectionDeliveryReporting)) && parsedConsent.PurposeAllowed(consentconstants.AdSelectionDeliveryReporting) && parsedConsent.VendorConsent(vendorID) {
+			return true, nil
+		}
 	}
-
 	return false, nil
 }
 
-func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string) (parsedConsent vendorconsent.VendorConsents, vendor vendorlist.Vendor, err error) {
+func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string) (parsedConsent api.VendorConsents, vendor api.Vendor, err error) {
 	parsedConsent, err = vendorconsent.ParseString(consent)
 	if err != nil {
 		err = &ErrorMalformedConsent{
@@ -110,7 +117,7 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 		return
 	}
 
-	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
+	vendorList, err := p.fetchVendorList[parsedConsent.Version()-1](ctx, parsedConsent.VendorListVersion())
 	if err != nil {
 		return
 	}

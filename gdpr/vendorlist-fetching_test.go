@@ -132,9 +132,11 @@ func TestMissingVendorlistFetch(t *testing.T) {
 }
 
 func TestVendorListMaker(t *testing.T) {
-	assertStringsEqual(t, "https://vendorlist.consensu.org/vendorlist.json", vendorListURLMaker(0))
-	assertStringsEqual(t, "https://vendorlist.consensu.org/v-2/vendorlist.json", vendorListURLMaker(2))
-	assertStringsEqual(t, "https://vendorlist.consensu.org/v-12/vendorlist.json", vendorListURLMaker(12))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/vendorlist.json", vendorListURLMaker(0, 1))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/v-2/vendorlist.json", vendorListURLMaker(2, 1))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/v-12/vendorlist.json", vendorListURLMaker(12, 1))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/v2/vendor-list.json", vendorListURLMaker(0, 2))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/v2/archives/vendor-list-v7.json", vendorListURLMaker(7, 2))
 }
 
 // mockServer returns a handler which returns the given response for each global vendor list version.

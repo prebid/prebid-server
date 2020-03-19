@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -33,9 +34,11 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 	}
 
 	return &permissionsImpl{
-		cfg:             cfg,
-		vendorIDs:       vendorIDs,
-		fetchVendorList: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker),
+		cfg:       cfg,
+		vendorIDs: vendorIDs,
+		fetchVendorList: []func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, 1),
+			newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, 2)},
 	}
 }
 
