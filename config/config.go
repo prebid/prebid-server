@@ -649,9 +649,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	// If you're using one of these, make sure you check out the documentation (https://github.com/prebid/prebid-server/tree/master/docs/bidders)
 	// for them and specify all the parameters they need for them to work correctly.
 	v.SetDefault("adapters.audiencenetwork.disabled", true)
-	v.SetDefault("adapters.rubicon.disabled", false)
+	v.SetDefault("adapters.rubicon.disabled", true)
 
-	// Rubicon Adapter Config - TODO : Fix the parameters i the URL and update based on request using StringF
+	// Rubicon Adapter Config - TODO : Fix the parameters in the URL and update based on request using StringF
 	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=PARTNERCODE&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}")
 	v.SetDefault("adapters.rubicon.xapi.username", "pb_nypost")
 	v.SetDefault("adapters.rubicon.xapi.password", "ZQAAALEE90")
