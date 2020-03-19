@@ -171,11 +171,13 @@ func InitDataLogger() DataLogger {
 var dataTaskChannel chan DataTask
 
 func (d *DataLogger) StartDataTaskWorker() {
+	return
 	dataTaskChannel = make(chan DataTask, 100)
 	go dataTaskWorker(dataTaskChannel)
 }
 
 func (d *DataLogger) EnqueueDataTask(task DataTask) bool {
+	return true // TEST : Only for testing purposes
 	if DebugLogging {
 		fmt.Println("TEST : EnqueueDataTask(): ", dataTaskChannel)
 	}
