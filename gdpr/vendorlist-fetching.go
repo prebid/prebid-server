@@ -26,7 +26,7 @@ type saveVendors func(uint16, api.VendorList)
 //
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
-func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16, int) string, tCFVer int) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16, int) string, TCFVer int) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
 	// These save and load functions can be used to store & retrieve lists from our cache.
 	save, load := newVendorListCache()
 
@@ -34,14 +34,14 @@ func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http
 	defer cancel()
 	populateCache(withTimeout, client, urlMaker, save)
 
-	saveOneSometimes := newOccasionalSaver(cfg.Timeouts.ActiveTimeout(), ctfVer)
+	saveOneSometimes := newOccasionalSaver(cfg.Timeouts.ActiveTimeout(), TCFVer)
 
 	return func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
 		list := load(id)
 		if list != nil {
 			return list, nil
 		}
-		saveOneSometimes(ctx, client, urlMaker(id, tCFVer), save)
+		saveOneSometimes(ctx, client, urlMaker(id, TCFVer), save)
 		list = load(id)
 		if list != nil {
 			return list, nil

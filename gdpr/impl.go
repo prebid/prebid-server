@@ -117,7 +117,11 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 		return
 	}
 
-	vendorList, err := p.fetchVendorList[parsedConsent.Version()-1](ctx, parsedConsent.VendorListVersion())
+	version := parsedConsent.Version()
+	if version < 1 || version > 2 {
+		return
+	}
+	vendorList, err := p.fetchVendorList[version-1](ctx, parsedConsent.VendorListVersion())
 	if err != nil {
 		return
 	}
