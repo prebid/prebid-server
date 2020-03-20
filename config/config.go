@@ -649,14 +649,15 @@ func SetupViper(v *viper.Viper, filename string) {
 	// If you're using one of these, make sure you check out the documentation (https://github.com/prebid/prebid-server/tree/master/docs/bidders)
 	// for them and specify all the parameters they need for them to work correctly.
 	v.SetDefault("adapters.audiencenetwork.disabled", true)
-	v.SetDefault("adapters.rubicon.disabled", true)
+	v.SetDefault("adapters.rubicon.disabled", false)
 
 	// Rubicon Adapter Config - TODO : Fix the parameters in the URL and update based on request using StringF
-	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=PARTNERCODE&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}")
+	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=pbs-NYPost&gdpr=false&gdpr_consent=false&us_privacy=false")
 	v.SetDefault("adapters.rubicon.xapi.username", "pb_nypost")
 	v.SetDefault("adapters.rubicon.xapi.password", "ZQAAALEE90")
 	v.SetDefault("adapters.rubicon.xapi.tracker", "pb_nypost")
 
+	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json?tk_sdc=us-east")
 	v.SetDefault("adapters.adtelligent.endpoint", "http://hb.adtelligent.com/auction")
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
@@ -677,7 +678,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.openx.endpoint", "http://rtb.openx.net/prebid")
 	v.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json") // TODO : http://exapi-REGION.rubiconproject.com/a/api/exchange.json?tk_sdc=REGION
 	v.SetDefault("adapters.rtbhouse.endpoint", "http://prebidserver-s2s-ams.creativecdn.com/bidder/prebidserver/bids")
 	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
