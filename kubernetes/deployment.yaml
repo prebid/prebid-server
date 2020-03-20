@@ -28,10 +28,10 @@ spec:
         - containerPort: 8080
         resources:
           limits:
-            cpu: 1500m
+            cpu: 000m
             memory: 512Mi
           requests:
-            cpu: 900m
+            cpu: 600m
             memory: 400Mi   
         env:
         - name: PREBID_ENV
