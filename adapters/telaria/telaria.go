@@ -335,7 +335,11 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 }
 
 func NewTelariaBidder(endpoint string) *TelariaAdapter {
+	if endpoint == "" {
+		endpoint = Endpoint
+	}
+
 	return &TelariaAdapter{
-		URI: Endpoint,
+		URI: endpoint,
 	}
 }

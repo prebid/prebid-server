@@ -13,7 +13,5 @@
       "type": "string",
       "description": "Your Seat Code."
     }
-  },
-
-  "required": ["seatCode"]
+  }
 }

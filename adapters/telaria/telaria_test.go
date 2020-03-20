@@ -9,7 +9,7 @@ import (
  * Verify adapter names are setup correctly.
  */
 func TestTelariaAdapterNames(t *testing.T) {
-	adapter := NewTelariaBidder("https://{{.Host}}")
+	adapter := NewTelariaBidder("")
 	adapterstest.VerifyStringValue(adapter.Name(), "telaria", t)
 }
 
@@ -17,7 +17,7 @@ func TestTelariaAdapterNames(t *testing.T) {
  * Verify adapter SkipNoCookie is correct.
  */
 func TestTelariaAdapterSkipNoCookiesFlag(t *testing.T) {
-	adapter := NewTelariaBidder("https://{{.Host}}")
+	adapter := NewTelariaBidder("")
 	adapterstest.VerifyBoolValue(adapter.SkipNoCookies(), false, t)
 }
 
@@ -25,7 +25,7 @@ func TestTelariaAdapterSkipNoCookiesFlag(t *testing.T) {
  * Verify bidder has the proper URL
  */
 func TestTelariaAdapterEndpoint(t *testing.T) {
-	adapter := NewTelariaBidder("https://{{.Host}}")
+	adapter := NewTelariaBidder("")
 	adapterstest.VerifyStringValue(adapter.URI, "https://ads.tremorhub.com/ad/rtb/prebid", t)
 }
 

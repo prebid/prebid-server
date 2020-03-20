@@ -11,7 +11,7 @@ import (
 
 func TestTelariaSyncer(t *testing.T) {
 
-	syncURL := "http://partners.tremorhub.com/unwrap?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}"
+	syncURL := "https://pbs.publishers.tremorhub.com/pubsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}"
 	syncURLTemplate := template.Must(
 		template.New("sync-template").Parse(syncURL),
 	)
@@ -24,7 +24,7 @@ func TestTelariaSyncer(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, "http://partners.tremorhub.com/unwrap?gdpr=0&gdpr_consent=", syncInfo.URL)
+	assert.Equal(t, "https://pbs.publishers.tremorhub.com/pubsync?gdpr=0&gdpr_consent=", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
 	assert.EqualValues(t, 202, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
