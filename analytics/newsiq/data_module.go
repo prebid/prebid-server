@@ -171,16 +171,21 @@ func InitDataLogger() DataLogger {
 var dataTaskChannel chan DataTask
 
 func (d *DataLogger) StartDataTaskWorker() {
-	return
+	if DebugLogging {
+		fmt.Println("TEST : StartDataTaskWorker() ")
+	}
+	// return // TEST : Only for testing purposes
+
 	dataTaskChannel = make(chan DataTask, 100)
 	go dataTaskWorker(dataTaskChannel)
 }
 
 func (d *DataLogger) EnqueueDataTask(task DataTask) bool {
-	return true // TEST : Only for testing purposes
 	if DebugLogging {
 		fmt.Println("TEST : EnqueueDataTask(): ", dataTaskChannel)
 	}
+	// return true // TEST : Only for testing purposes
+
 	select {
 	case dataTaskChannel <- task:
 		return true

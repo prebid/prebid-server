@@ -70,7 +70,9 @@ type bidResponseWrapper struct {
 
 func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) Exchange {
 	e := new(exchange)
-
+	if DebugLogging {
+		fmt.Println("TEST : NewExchange() ")
+	}
 	e.adapterMap = newAdapterMap(client, cfg, infos)
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
@@ -93,14 +95,19 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// NewsIQ : Auction Init call
-	auctionInitDataTask := newsiq.DataTask{
+	e.dataLogger.EnqueueDataTask(newsiq.DataTask{
 		Request:  bidRequest,
 		Response: nil,
 		Msg:      newsiq.AuctionInit,
-	}
-	if !e.dataLogger.EnqueueDataTask(auctionInitDataTask) {
-		fmt.Println("TEST : Data enqueue failure")
-	}
+	})
+	// auctionInitDataTask := newsiq.DataTask{
+	// 	Request:  bidRequest,
+	// 	Response: nil,
+	// 	Msg:      newsiq.AuctionInit,
+	// }
+	// if !e.dataLogger.EnqueueDataTask(auctionInitDataTask) {
+	// 	fmt.Println("TEST : Data enqueue failure")
+	// }
 
 	for _, impInRequest := range bidRequest.Imp {
 		var impLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
@@ -190,14 +197,19 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// NewsIQ : Bids Response from bidder
-	bidResponseDataTask := newsiq.DataTask{
+	e.dataLogger.EnqueueDataTask(newsiq.DataTask{
 		Request:  bidRequest,
 		Response: bidResponseObj,
 		Msg:      newsiq.BidResponse,
-	}
-	if !e.dataLogger.EnqueueDataTask(bidResponseDataTask) {
-		fmt.Println("TEST : Data enqueue failure")
-	}
+	})
+	// bidResponseDataTask := newsiq.DataTask{
+	// 	Request:  bidRequest,
+	// 	Response: bidResponseObj,
+	// 	Msg:      newsiq.BidResponse,
+	// }
+	// if !e.dataLogger.EnqueueDataTask(bidResponseDataTask) {
+	// 	fmt.Println("TEST : Data enqueue failure")
+	// }
 
 	return bidResponseObj, reponseError
 }
@@ -240,14 +252,19 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 					fmt.Println("TEST : Bid Requested here")
 				}
 
-				bidRequestedDataTask := newsiq.DataTask{
+				e.dataLogger.EnqueueDataTask(newsiq.DataTask{
 					Request:  request,
 					Response: nil,
 					Msg:      newsiq.BidRequested,
-				}
-				if !e.dataLogger.EnqueueDataTask(bidRequestedDataTask) {
-					fmt.Println("TEST : Data enqueue failure")
-				}
+				})
+				// bidRequestedDataTask := newsiq.DataTask{
+				// 	Request:  request,
+				// 	Response: nil,
+				// 	Msg:      newsiq.BidRequested,
+				// }
+				// if !e.dataLogger.EnqueueDataTask(bidRequestedDataTask) {
+				// 	fmt.Println("TEST : Data enqueue failure")
+				// }
 			}()
 			start := time.Now()
 
