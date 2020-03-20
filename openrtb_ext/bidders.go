@@ -76,6 +76,7 @@ const (
 	BidderVisx             BidderName = "visx"
 	BidderVrtcal           BidderName = "vrtcal"
 	BidderYieldmo          BidderName = "yieldmo"
+	BidderYieldone         BidderName = "yieldone"
 	BidderZeroClickFraud   BidderName = "zeroclickfraud"
 )
 
@@ -137,6 +138,7 @@ var BidderMap = map[string]BidderName{
 	"visx":              BidderVisx,
 	"vrtcal":            BidderVrtcal,
 	"yieldmo":           BidderYieldmo,
+	"yieldone":          BidderYieldone,
 	"zeroclickfraud":    BidderZeroClickFraud,
 }
 
