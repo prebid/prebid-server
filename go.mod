@@ -39,7 +39,7 @@ require (
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
-	github.com/prebid/go-gdpr v0.6.0
+	github.com/prebid/go-gdpr v0.7.0
 	github.com/prebid/prebid-cache v0.0.0-20200218152159-6d6d678c1caf
 	github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed
 	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
@@ -61,6 +61,7 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v0.0.0-20180816142147-da425ebb7609
+	github.com/xorcare/pointer v1.1.0
 	github.com/yudai/gojsondiff v0.0.0-20170107030110-7b1b7adf999d
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect

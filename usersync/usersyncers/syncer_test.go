@@ -57,11 +57,14 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderSynacormedia):     syncConfig,
 			string(openrtb_ext.BidderTriplelift):       syncConfig,
 			string(openrtb_ext.BidderTripleliftNative): syncConfig,
+			string(openrtb_ext.BidderUcfunnel):         syncConfig,
 			string(openrtb_ext.BidderUnruly):           syncConfig,
+			string(openrtb_ext.BidderValueImpression):  syncConfig,
 			string(openrtb_ext.BidderVerizonMedia):     syncConfig,
 			string(openrtb_ext.BidderVisx):             syncConfig,
 			string(openrtb_ext.BidderVrtcal):           syncConfig,
 			string(openrtb_ext.BidderYieldmo):          syncConfig,
+			string(openrtb_ext.BidderZeroClickFraud):   syncConfig,
 		},
 	}
 
@@ -71,6 +74,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderTappx:     true,
 		openrtb_ext.BidderKubient:   true,
 		openrtb_ext.BidderPubnative: true,
+		openrtb_ext.BidderKidoz:     true,
 	}
 
 	for bidder, config := range cfg.Adapters {
