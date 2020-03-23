@@ -8,9 +8,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
 	"net/http"
-	"sort"
 )
 
 type DmxAdapter struct {
@@ -18,132 +16,59 @@ type DmxAdapter struct {
 	publisherId string
 }
 
-func New(text string) error {
-	return &errorString{text}
-}
-
-// errorString is a trivial implementation of error.
-type errorString struct {
-	s string
-}
-
-func (e *errorString) Error() string {
-	return e.s
-}
 
 func NewDmxBidder(endpoint string, publisher_id string) *DmxAdapter {
 	return &DmxAdapter{endpoint: endpoint, publisherId: publisher_id}
 }
 
-type dmxBidder struct {
-	Bidder dmxExt `json:"bidder"`
-}
-
-type dmxUser struct {
-	User *openrtb.User `json:"user"`
-}
-
 type dmxExt struct {
-	PublisherId string `json:"publisher_id,omitempty"`
+	Bidder dmxParams `json:"bidder"`
 }
 
-type dmxBanner struct {
-	Banner *openrtb.Banner `json:"banner"`
+type dmxParams struct {
+	TagId		string `json:"tagid,omitempty"`
+	DmxId		string `json:"dmxid,omitempty"`
+	MemberId 	string `json:"memberid,omitempty"`
+	PublisherId string `json:"publisher_id"`
 }
 
-type dmxSize struct {
-	W uint64
-	H uint64
-	S uint64
-}
 
-type DmxSize []dmxSize
-
-func (a DmxSize) Len() int {
-	return len(a)
-}
-
-func (a DmxSize) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-
-func (a DmxSize) Less(i, j int) bool {
-	return a[i].S > a[j].S
-}
-
-func Remove(toBeRemove []openrtb.Format, a DmxSize) (dmx DmxSize) {
-	for _, value := range toBeRemove {
-		for _, dmxValue := range a {
-			if dmxValue.H == value.H && dmxValue.W == value.W {
-				//fmt.Println("true")
-				dmx = append(dmx, dmxValue)
-			}
-		}
+func ReturnPubId(str1, str2 string) string {
+	if str1 != "" {
+		return str1
 	}
-	return
-}
+	if str2 != "" {
+		return str2
+	}
+	return ""
 
-var CheckTopSizes = []dmxSize{
-	{300, 250, 100},
-	{728, 90, 95},
-	{320, 50, 90},
-	{160, 600, 88},
-	{300, 600, 85},
-	{300, 50, 80},
-	{970, 250, 75},
-	{970, 90, 70},
 }
 
 func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
-	var dmxImp dmxBidder
+	var dmxBidderStaticInfo dmxExt
 	var imps []openrtb.Imp
-	//var userParams *dmxUser
-	if err := json.Unmarshal(request.Imp[0].Ext, &dmxImp); err != nil {
+	var rootExtInfo dmxExt
+	var publisherId string
+	if len(request.Imp) < 1 {
+		errs = append(errs, errors.New("imp is empty no auction possible"))
+		return nil, errs
+	}
+
+	if len(request.Imp) >= 1 {
+		err := json.Unmarshal(request.Imp[0].Ext, &rootExtInfo)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			publisherId = ReturnPubId(rootExtInfo.Bidder.PublisherId, rootExtInfo.Bidder.MemberId)
+
+		}
+	}
+	if err := json.Unmarshal(request.Ext, &dmxBidderStaticInfo); err != nil {
 		errs = append(errs, err)
 	}
 
-	//fmt.Println(request.User)
-	if request.User != nil {
-		if request.User.BuyerUID != "" {
-			request.User.ID = request.User.BuyerUID
-
-		}
-	}
-
-	for _, inst := range request.Imp {
-		var banner openrtb.Banner
-		var ins openrtb.Imp
-		//for _, insbanner := range inst.Banner.Format {
-		banner = openrtb.Banner{
-			W:      &inst.Banner.Format[0].W,
-			H:      &inst.Banner.Format[0].H,
-			Format: inst.Banner.Format,
-		}
-		nSize := Remove(inst.Banner.Format, CheckTopSizes)
-		sort.Sort(DmxSize(nSize))
-		if inst.Banner.Format[0].W != 0 {
-			banner.W = &nSize[0].W
-		}
-		if inst.Banner.Format[0].H != 0 {
-			banner.H = &nSize[0].H
-		}
-
-		var intVal int8
-		intVal = 1
-		ins = openrtb.Imp{
-			ID:     inst.ID,
-			Banner: &banner,
-			Ext:    inst.Ext,
-			Secure: &intVal,
-		}
-		imps = append(imps, ins)
-
-	}
-
-	request.Imp = imps
-
-	if dmxImp.Bidder.PublisherId != "" {
-		request.Site.Publisher = &openrtb.Publisher{ID: dmxImp.Bidder.PublisherId}
+	if dmxBidderStaticInfo.Bidder.PublisherId != "" && publisherId == "" {
+		request.Site.Publisher = &openrtb.Publisher{ID: dmxBidderStaticInfo.Bidder.PublisherId}
 	} else {
 		if request.Site.Publisher != nil {
 			request.Site.Publisher.ID = adapter.publisherId
@@ -152,8 +77,49 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 
 	if request.App != nil {
 		request.Site = nil
-		request.App.Publisher = &openrtb.Publisher{ID: dmxImp.Bidder.PublisherId}
+		request.App.Publisher = &openrtb.Publisher{ID: publisherId}
 	}
+	if request.Site != nil {
+
+		request.Site.Publisher.ID = publisherId
+	}
+
+	for _, inst := range request.Imp {
+		var banner openrtb.Banner
+		var ins openrtb.Imp
+
+		if len(inst.Banner.Format) != 0 {
+			banner = openrtb.Banner{
+				W:      &inst.Banner.Format[0].W,
+				H:      &inst.Banner.Format[0].H,
+				Format: inst.Banner.Format,
+			}
+
+			var intVal int8
+			intVal = 1
+			var params dmxExt
+
+			source := (*json.RawMessage)(&inst.Ext)
+			if err := json.Unmarshal(*source, &params); err != nil {
+				errs = append(errs, err)
+			}
+			if params.Bidder.PublisherId == "" && params.Bidder.MemberId == "" {
+				var failedParams dmxParams
+				if err := json.Unmarshal(inst.Ext, &failedParams); err != nil {
+					errs = append(errs, err)
+					return nil, errs
+				}
+				imps = fetchFailedParams(failedParams, inst, ins,imps, banner, intVal)
+			} else {
+				imps = fetchParams(params, inst, ins,imps, banner, intVal)
+			}
+
+		}
+
+	}
+
+	request.Imp = imps
+
 
 	oJson, _ := json.Marshal(request)
 	headers := http.Header{}
@@ -167,7 +133,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 
 	if request.User == nil {
 		if request.App == nil {
-			return nil, []error{errors.New("no user Id only app send request")}
+			return nil, []error{errors.New("no user Id found and AppID, no request to DMX")}
 		}
 	}
 
@@ -220,7 +186,54 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 	}
 	return bidResponse, errs
 
-	return nil, errs
+}
+
+func fetchFailedParams(params dmxParams, inst openrtb.Imp, ins openrtb.Imp,imps []openrtb.Imp, banner openrtb.Banner, intVal int8) []openrtb.Imp {
+	if params.TagId != "" {
+		ins = openrtb.Imp{
+			ID:     inst.ID,
+			TagID:  params.TagId,
+			Banner: &banner,
+			Ext:    inst.Ext,
+			Secure: &intVal,
+		}
+	}
+
+	if params.DmxId != "" {
+		ins = openrtb.Imp{
+			ID:     inst.ID,
+			TagID:  params.DmxId,
+			Banner: &banner,
+			Ext:    inst.Ext,
+			Secure: &intVal,
+		}
+	}
+	imps = append(imps, ins)
+	return imps
+}
+
+func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp,imps []openrtb.Imp, banner openrtb.Banner, intVal int8) []openrtb.Imp {
+	if params.Bidder.TagId != "" {
+		ins = openrtb.Imp{
+			ID:     inst.ID,
+			TagID:  params.Bidder.TagId,
+			Banner: &banner,
+			Ext:    inst.Ext,
+			Secure: &intVal,
+		}
+	}
+
+	if params.Bidder.DmxId != "" {
+		ins = openrtb.Imp{
+			ID:     inst.ID,
+			TagID:  params.Bidder.DmxId,
+			Banner: &banner,
+			Ext:    inst.Ext,
+			Secure: &intVal,
+		}
+	}
+	imps = append(imps, ins)
+	return imps
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
@@ -238,8 +251,4 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, 
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
 	}
-}
-
-func getCookieInfo(request *pbs.PBSRequest) {
-
 }
