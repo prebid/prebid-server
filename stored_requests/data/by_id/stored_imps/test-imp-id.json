@@ -1,5 +1,6 @@
 {
   "id": "test-imp-id",
+  "bidfloor": 0.00,
   "banner": {
     "format": [
       {
