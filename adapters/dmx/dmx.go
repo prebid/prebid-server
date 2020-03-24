@@ -16,7 +16,6 @@ type DmxAdapter struct {
 	publisherId string
 }
 
-
 func NewDmxBidder(endpoint string, publisher_id string) *DmxAdapter {
 	return &DmxAdapter{endpoint: endpoint, publisherId: publisher_id}
 }
@@ -26,12 +25,11 @@ type dmxExt struct {
 }
 
 type dmxParams struct {
-	TagId		string `json:"tagid,omitempty"`
-	DmxId		string `json:"dmxid,omitempty"`
-	MemberId 	string `json:"memberid,omitempty"`
+	TagId       string `json:"tagid,omitempty"`
+	DmxId       string `json:"dmxid,omitempty"`
+	MemberId    string `json:"memberid,omitempty"`
 	PublisherId string `json:"publisher_id"`
 }
-
 
 func ReturnPubId(str1, str2 string) string {
 	if str1 != "" {
@@ -109,9 +107,9 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 					errs = append(errs, err)
 					return nil, errs
 				}
-				imps = fetchFailedParams(failedParams, inst, ins,imps, banner, intVal)
+				imps = fetchFailedParams(failedParams, inst, ins, imps, banner, intVal)
 			} else {
-				imps = fetchParams(params, inst, ins,imps, banner, intVal)
+				imps = fetchParams(params, inst, ins, imps, banner, intVal)
 			}
 
 		}
@@ -119,7 +117,6 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	}
 
 	request.Imp = imps
-
 
 	oJson, _ := json.Marshal(request)
 	headers := http.Header{}
@@ -188,7 +185,7 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 
 }
 
-func fetchFailedParams(params dmxParams, inst openrtb.Imp, ins openrtb.Imp,imps []openrtb.Imp, banner openrtb.Banner, intVal int8) []openrtb.Imp {
+func fetchFailedParams(params dmxParams, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner openrtb.Banner, intVal int8) []openrtb.Imp {
 	if params.TagId != "" {
 		ins = openrtb.Imp{
 			ID:     inst.ID,
@@ -212,7 +209,7 @@ func fetchFailedParams(params dmxParams, inst openrtb.Imp, ins openrtb.Imp,imps 
 	return imps
 }
 
-func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp,imps []openrtb.Imp, banner openrtb.Banner, intVal int8) []openrtb.Imp {
+func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner openrtb.Banner, intVal int8) []openrtb.Imp {
 	if params.Bidder.TagId != "" {
 		ins = openrtb.Imp{
 			ID:     inst.ID,

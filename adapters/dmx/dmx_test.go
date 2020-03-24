@@ -4,16 +4,6 @@ import (
 	"encoding/json"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"testing"
-)
-
-package dmx
-
-import (
-	"encoding/json"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
 	"testing"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
@@ -23,16 +13,16 @@ var (
 	bidRequest string
 )
 
-func TestFetchParams(t *testing.T){
+func TestFetchParams(t *testing.T) {
 	var w, h int = 300, 250
 
 	var width, height uint64 = uint64(w), uint64(h)
 	var arrImp []openrtb.Imp
 	var imps = fetchParams(
-		dmxExt{ Bidder: dmxParams{
-			TagId: "222",
+		dmxExt{Bidder: dmxParams{
+			TagId:       "222",
 			PublisherId: "5555",
-		} },
+		}},
 		openrtb.Imp{ID: "32"},
 		openrtb.Imp{ID: "32"},
 		arrImp,
@@ -41,10 +31,10 @@ func TestFetchParams(t *testing.T){
 		}},
 		1)
 	var imps2 = fetchParams(
-		dmxExt{ Bidder: dmxParams{
-			DmxId: "222",
+		dmxExt{Bidder: dmxParams{
+			DmxId:    "222",
 			MemberId: "5555",
-		} },
+		}},
 		openrtb.Imp{ID: "32"},
 		openrtb.Imp{ID: "32"},
 		arrImp,
@@ -65,7 +55,6 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "dmxtest", new(DmxAdapter))
 }
 
-
 func TestMakeRequestsOtherPlacement(t *testing.T) {
 	var w, h int = 300, 250
 
@@ -73,7 +62,7 @@ func TestMakeRequestsOtherPlacement(t *testing.T) {
 
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2", "10007")
 	imp1 := openrtb.Imp{
-		ID: "imp1",
+		ID:  "imp1",
 		Ext: json.RawMessage("{\"tagid\": \"1007\", \"placement_id\": \"123456\"}"),
 		Banner: &openrtb.Banner{
 			W: &width,
@@ -81,7 +70,6 @@ func TestMakeRequestsOtherPlacement(t *testing.T) {
 			Format: []openrtb.Format{
 				{W: 300, H: 250},
 			},
-
 		}}
 
 	inputRequest := openrtb.BidRequest{
@@ -111,7 +99,7 @@ func TestMakeRequestsInvalid(t *testing.T) {
 
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2", "10007")
 	imp1 := openrtb.Imp{
-		ID: "imp1",
+		ID:  "imp1",
 		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
 		Banner: &openrtb.Banner{
 			W: &width,
@@ -119,7 +107,6 @@ func TestMakeRequestsInvalid(t *testing.T) {
 			Format: []openrtb.Format{
 				{W: 300, H: 250},
 			},
-
 		}}
 
 	inputRequest := openrtb.BidRequest{
@@ -142,7 +129,7 @@ func TestMakeRequestsInvalid(t *testing.T) {
 
 }
 
-func TestMakeRequestsNoImp(t *testing.T){
+func TestMakeRequestsNoImp(t *testing.T) {
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2", "10007")
 	inputRequest := openrtb.BidRequest{
 		Imp: []openrtb.Imp{},
@@ -151,8 +138,8 @@ func TestMakeRequestsNoImp(t *testing.T){
 				ID: "10007",
 			},
 		},
-		App: &openrtb.App{ID: "cansanuabnua", Publisher: &openrtb.Publisher{ID: "whatever"},},
-		ID: "1234",
+		App: &openrtb.App{ID: "cansanuabnua", Publisher: &openrtb.Publisher{ID: "whatever"}},
+		ID:  "1234",
 	}
 	actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 
@@ -164,14 +151,14 @@ func TestMakeRequestsNoImp(t *testing.T){
 	}
 }
 
-func TestMakeRequestsApp(t *testing.T){
+func TestMakeRequestsApp(t *testing.T) {
 	var w, h int = 300, 250
 
 	var width, height uint64 = uint64(w), uint64(h)
 
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2", "10007")
 	imp1 := openrtb.Imp{
-		ID: "imp1",
+		ID:  "imp1",
 		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
 		Banner: &openrtb.Banner{
 			W: &width,
@@ -179,7 +166,6 @@ func TestMakeRequestsApp(t *testing.T){
 			Format: []openrtb.Format{
 				{W: 300, H: 250},
 			},
-
 		}}
 
 	inputRequest := openrtb.BidRequest{
@@ -189,8 +175,8 @@ func TestMakeRequestsApp(t *testing.T){
 				ID: "10007",
 			},
 		},
-		App: &openrtb.App{ID: "cansanuabnua", Publisher: &openrtb.Publisher{ID: "whatever"},},
-		ID: "1234",
+		App: &openrtb.App{ID: "cansanuabnua", Publisher: &openrtb.Publisher{ID: "whatever"}},
+		ID:  "1234",
 	}
 
 	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
@@ -209,14 +195,14 @@ func TestMakeRequestsApp(t *testing.T){
 
 }
 
-func TestMakeRequestsNoUser(t *testing.T){
+func TestMakeRequestsNoUser(t *testing.T) {
 	var w, h int = 300, 250
 
 	var width, height uint64 = uint64(w), uint64(h)
 
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2", "10007")
 	imp1 := openrtb.Imp{
-		ID: "imp1",
+		ID:  "imp1",
 		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
 		Banner: &openrtb.Banner{
 			W: &width,
@@ -224,7 +210,6 @@ func TestMakeRequestsNoUser(t *testing.T){
 			Format: []openrtb.Format{
 				{W: 300, H: 250},
 			},
-
 		}}
 
 	inputRequest := openrtb.BidRequest{
@@ -243,7 +228,6 @@ func TestMakeRequestsNoUser(t *testing.T){
 		t.Errorf("openrtb type should be empty")
 	}
 
-
 }
 
 func TestMakeRequests(t *testing.T) {
@@ -254,7 +238,7 @@ func TestMakeRequests(t *testing.T) {
 
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2", "10007")
 	imp1 := openrtb.Imp{
-		ID: "imp1",
+		ID:  "imp1",
 		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
 		Banner: &openrtb.Banner{
 			W: &width,
@@ -262,10 +246,9 @@ func TestMakeRequests(t *testing.T) {
 			Format: []openrtb.Format{
 				{W: 300, H: 250},
 			},
-
 		}}
 	imp2 := openrtb.Imp{
-		ID: "imp2",
+		ID:  "imp2",
 		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
 		Banner: &openrtb.Banner{
 			W: &width,
@@ -273,10 +256,9 @@ func TestMakeRequests(t *testing.T) {
 			Format: []openrtb.Format{
 				{W: 300, H: 250},
 			},
-
 		}}
 	imp3 := openrtb.Imp{
-		ID: "imp3",
+		ID:  "imp3",
 		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
 		Banner: &openrtb.Banner{
 			W: &width,
@@ -284,10 +266,7 @@ func TestMakeRequests(t *testing.T) {
 			Format: []openrtb.Format{
 				{W: 300, H: 250},
 			},
-
 		}}
-
-
 
 	inputRequest := openrtb.BidRequest{
 		Imp: []openrtb.Imp{imp1, imp2, imp3},
@@ -297,7 +276,7 @@ func TestMakeRequests(t *testing.T) {
 			},
 		},
 		User: &openrtb.User{ID: "districtmID"},
-		ID: "1234",
+		ID:   "1234",
 	}
 
 	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
@@ -323,7 +302,7 @@ func TestMakeBidsNoContent(t *testing.T) {
 
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2", "10007")
 	imp1 := openrtb.Imp{
-		ID: "imp1",
+		ID:  "imp1",
 		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
 		Banner: &openrtb.Banner{
 			W: &width,
@@ -331,7 +310,6 @@ func TestMakeBidsNoContent(t *testing.T) {
 			Format: []openrtb.Format{
 				{W: 300, H: 250},
 			},
-
 		}}
 
 	inputRequest := openrtb.BidRequest{
@@ -342,7 +320,7 @@ func TestMakeBidsNoContent(t *testing.T) {
 			},
 		},
 		User: &openrtb.User{ID: "districtmID"},
-		ID: "1234",
+		ID:   "1234",
 	}
 
 	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
@@ -449,4 +427,3 @@ func TestMakeBidsNoContent(t *testing.T) {
 	}
 
 }
-
