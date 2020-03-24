@@ -32,7 +32,7 @@ func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http
 
 	withTimeout, cancel := context.WithTimeout(initCtx, cfg.Timeouts.InitTimeout())
 	defer cancel()
-	populateCache(withTimeout, client, urlMaker, save)
+	populateCache(withTimeout, client, urlMaker, save, TCFVer)
 
 	saveOneSometimes := newOccasionalSaver(cfg.Timeouts.ActiveTimeout(), TCFVer)
 
@@ -51,11 +51,11 @@ func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http
 }
 
 // populateCache saves all the known versions of the vendor list for future use.
-func populateCache(ctx context.Context, client *http.Client, urlMaker func(uint16, int) string, saver saveVendors) {
-	latestVersion := saveOne(ctx, client, urlMaker(0, 1), saver)
+func populateCache(ctx context.Context, client *http.Client, urlMaker func(uint16, int) string, saver saveVendors, TCFVer int) {
+	latestVersion := saveOne(ctx, client, urlMaker(0, 1), saver, TCFVer)
 
 	for i := uint16(1); i < latestVersion; i++ {
-		saveOne(ctx, client, urlMaker(i, 1), saver)
+		saveOne(ctx, client, urlMaker(i, 1), saver, TCFVer)
 	}
 }
 
@@ -79,7 +79,7 @@ func vendorListURLMaker(version uint16, tCFVersion int) string {
 // The goal here is to update quickly when new versions of the VendorList are released, but not wreck
 // server performance if a bad CMP starts sending us malformed consent strings that advertize a version
 // that doesn't exist yet.
-func newOccasionalSaver(timeout time.Duration, cTFVer int) func(ctx context.Context, client *http.Client, url string, saver saveVendors) {
+func newOccasionalSaver(timeout time.Duration, TCFVer int) func(ctx context.Context, client *http.Client, url string, saver saveVendors) {
 	lastSaved := &atomic.Value{}
 	lastSaved.Store(time.Time{})
 
@@ -88,7 +88,7 @@ func newOccasionalSaver(timeout time.Duration, cTFVer int) func(ctx context.Cont
 		if now.Sub(lastSaved.Load().(time.Time)).Minutes() > 10 {
 			withTimeout, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
-			saveOne(withTimeout, client, url, saver)
+			saveOne(withTimeout, client, url, saver, TCFVer)
 			lastSaved.Store(now)
 		}
 	}
@@ -119,9 +119,9 @@ func saveOne(ctx context.Context, client *http.Client, url string, saver saveVen
 	}
 	var newList api.VendorList
 	if cTFVer == 2 {
-		newList, err := vendorlist2.ParseEagerly(respBody)
+		newList, err = vendorlist2.ParseEagerly(respBody)
 	} else {
-		newList, err := vendorlist.ParseEagerly(respBody)
+		newList, err = vendorlist.ParseEagerly(respBody)
 	}
 	if err != nil {
 		glog.Errorf("GET %s returned malformed JSON. Cookie syncs may be affected. Error was %v. Body was %s", url, err, string(respBody))
@@ -135,10 +135,10 @@ func saveOne(ctx context.Context, client *http.Client, url string, saver saveVen
 func newVendorListCache() (save func(id uint16, list api.VendorList), load func(id uint16) api.VendorList) {
 	cache := &sync.Map{}
 
-	save = func(id uint16, list vendorlist.VendorList) {
+	save = func(id uint16, list api.VendorList) {
 		cache.Store(id, list)
 	}
-	load = func(id uint16) vendorlist.VendorList {
+	load = func(id uint16) api.VendorList {
 		list, ok := cache.Load(id)
 		if ok {
 			return list.(vendorlist.VendorList)

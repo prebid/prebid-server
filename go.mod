@@ -39,7 +39,7 @@ require (
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
-	github.com/prebid/go-gdpr v0.6.0
+	github.com/prebid/go-gdpr v0.7.0
 	github.com/prebid/prebid-cache v0.0.0-20200218152159-6d6d678c1caf
 	github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed
 	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
