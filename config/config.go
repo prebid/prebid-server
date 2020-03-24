@@ -652,7 +652,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.rubicon.disabled", false)
 
 	// Rubicon Adapter Config - TODO : Fix the parameters in the URL and update based on request using StringF
-	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=pbs-NYPost&gdpr=false&gdpr_consent=false&us_privacy=false")
+	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=pbs-NYPost&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}")
 	v.SetDefault("adapters.rubicon.xapi.username", "pb_nypost")
 	v.SetDefault("adapters.rubicon.xapi.password", "ZQAAALEE90")
 	v.SetDefault("adapters.rubicon.xapi.tracker", "pb_nypost")
