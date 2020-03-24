@@ -13,7 +13,7 @@
           ]
         },
         "ext": {
-          "adhese": {
+          "bidder": {
             "account": "demo",
             "location": "_adhese_prebid_demo_",
             "format": "leaderboard",
@@ -52,13 +52,21 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads-demo.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/cigent;brussels/ag55/tlall?t=20200306",
+        "uri": "https://ads-demo.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/ag55/cigent;brussels/tlall?t=20200306",
         "body": {
-          "id": "",
+          "id": "test-req",
           "imp": [
             {
-              "id": "",
-              "ext": {
+              "id": "test-req",
+              "banner": {
+                "format": [
+                  {
+                    "h": 250,
+                    "w": 300
+                  }
+                ]
+                },
+                "ext": {
                 "bidder": {
                   "account": "demo",
                   "location": "_adhese_prebid_demo_",
@@ -87,13 +95,19 @@
                 }
               }
             }
-          ]
+          ],
+          "site": {
+              "id": "test",
+              "publisher": {
+                "id": "123"
+              }
+          }
         }
       },
       "mockResponse": {
         "status": 200,
-        "body": {
-          "origin": "APPNEXUS",
+        "body": [{
+          "origin": "DALE",
           "originInstance": "",
           "ext": "js",
           "slotName": "_main_page_-leaderboard",
@@ -113,34 +127,50 @@
           },
           "width": "728",
           "height": "90",
-          "body": "<div style=\"background-color:red; height:250px; width:300px\"></div>",
+          "body": "<div style='background-color:red; height:250px; width:300px'></div>",
           "tracker": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
           "impressionCounter": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
           "extension": {
             "prebid": {
               "cpm": {
-                "amount": "1.000000",
+                "amount": "1",
                 "currency": "USD"
               }
             }
           }
-        }
+        }]
       }
     }
   ],
   "expectedBidResponses": [
     {
-      "requestId": 456,
-      "ad": "<div style='background-color:red; height:250px; width:300px'></div><img src='https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a' style='height:1px; width:1px; margin: -1px -1px; display:none;'/>",
-      "cpm": 1,
       "currency": "USD",
-      "creativeId": "60613369",
-      "dealId": "",
-      "width": 728,
-      "height": 90,
-      "mediaType": "banner",
-      "netRevenue": true,
-      "ttl": 360
+        "bids": [
+          {
+            "bid": {
+              "adm": "<div style='background-color:red; height:250px; width:300px'></div><img src='https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a' style='height:1px; width:1px; margin: -1px -1px; display:none;'/>",
+              "w": 728,
+              "h": 90,
+              "id": "",
+              "impid": "",
+              "burl": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
+              "nurl": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
+              "price": 1.000000,
+              "ext": {
+                    "adFormat": "",
+                    "adType": "leaderboard",
+                    "adspaceId": "",
+                    "creativeId": "",
+                    "dealId": "",
+                    "libId": "",
+                    "orderProperty": "",
+                    "priority": "",
+                    "viewableImpressionCounter": ""
+                  }
+            },
+            "type": "banner"
+          }
+        ]
     }
   ]
 }
