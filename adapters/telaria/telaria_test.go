@@ -29,6 +29,6 @@ func TestTelariaAdapterEndpoint(t *testing.T) {
 	adapterstest.VerifyStringValue(adapter.URI, "https://ads.tremorhub.com/ad/rtb/prebid", t)
 }
 
-func testJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "telariatest", new(TelariaAdapter))
+func TestJsonSamples(t *testing.T) {
+	adapterstest.RunJSONBidderTest(t, "telariatest", NewTelariaBidder(""))
 }

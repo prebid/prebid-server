@@ -1,0 +1,48 @@
+
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Telaria doesn't support banner",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "someother-publisher-id"
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "ssp-!demo!-lufip",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "telaria": {
+              "adCode": "ssp-!demo!-lufip"
+            }
+          }
+        }
+      }
+    ],
+    "ext": {
+      "telaria": {
+        "seatCode": "awesome-seat"
+      }
+    }
+  }
+}

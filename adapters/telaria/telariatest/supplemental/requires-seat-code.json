@@ -1,4 +1,10 @@
 {
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Seat Code is required",
+      "comparison": "literal"
+    }
+  ],
   "mockBidRequest": {
     "id": "test-request-id",
     "imp": [
@@ -11,19 +17,21 @@
         },
         "ext": {
           "bidder": {
-
+            "telaria": {
+              "adCode": "ssp-!demo!-lufip"
+            }
           }
         }
       }
     ],
     "site": {
       "page": "test.com"
+    },
+    "ext": {
+      "telaria": {
+
+      }
     }
   },
-  "expectedMakeRequestsErrors": [
-    {
-      "value": "imp[0].ext.bidder.telaria.seatCode required",
-      "comparison": "literal"
-    }
-  ]
+  "httpCalls": []
 }

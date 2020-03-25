@@ -1,0 +1,21 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No imp object in the bid request",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [],
+    "site": {
+      "page": "test.com"
+    },
+    "ext": {
+      "telaria": {
+        "seatCode": "awesome-seat"
+      }
+    }
+  },
+  "httpCalls": []
+}

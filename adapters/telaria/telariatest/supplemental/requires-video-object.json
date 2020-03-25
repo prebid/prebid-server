@@ -1,0 +1,32 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No Video object present in Imp object",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-impression-1",
+        "ext": {
+          "bidder": {
+            "telaria": {
+              "adCode": "ssp-!demo!-lufip"
+            }
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "test.com"
+    },
+    "ext": {
+      "telaria": {
+        "seatCode": "awesome-seat"
+      }
+    }
+  },
+  "httpCalls": []
+}

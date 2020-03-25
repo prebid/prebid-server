@@ -94,7 +94,7 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("x-openrtb-version", "2.5")
+	headers.Add("X-Openrtb-Version", "2.5")
 	headers.Add("Accept-Encoding", "gzip")
 
 	if request.Device != nil {
@@ -103,7 +103,7 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 		}
 
 		if len(request.Device.IP) > 0 {
-			headers.Add("x-Forwarded-For", request.Device.IP)
+			headers.Add("X-Forwarded-For", request.Device.IP)
 		}
 
 		if len(request.Device.Language) > 0 {
@@ -111,7 +111,7 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 		}
 
 		if request.Device.DNT != nil {
-			headers.Add("DNT", strconv.Itoa(int(*request.Device.DNT)))
+			headers.Add("Dnt", strconv.Itoa(int(*request.Device.DNT)))
 		}
 	}
 
@@ -132,14 +132,7 @@ func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb.Imp) (*openrtb_ex
 	}
 
 	var telariaExt openrtb_ext.ExtImpTelaria
-	err = json.Unmarshal(bidderExt.Bidder, &telariaExt)
-	if err != nil {
-		err = &errortypes.BadInput{
-			Message: "error while unwrapping the JSON",
-		}
-
-		return nil, err
-	}
+	_ = json.Unmarshal(bidderExt.Bidder, &telariaExt)
 
 	return &telariaExt, nil
 }
@@ -172,10 +165,6 @@ func (a *TelariaAdapter) PopulateRequestExtAndPubId(request *openrtb.BidRequest)
 	var requestExtIncoming ReqExtIn
 	if err := json.Unmarshal(request.Ext, &requestExtIncoming); err != nil {
 		return err
-	}
-
-	if requestExtIncoming.Telaria == nil {
-		requestExtIncoming.Telaria = &ReqExtTelariaIn{}
 	}
 
 	if requestExtIncoming.Telaria.SeatCode == "" {
@@ -225,20 +214,17 @@ func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 		if err != nil {
 			errors = append(errors, err)
+		} else {
+			request.Imp[i].TagID = telariaExt.AdCode
+			request.Imp[i].Ext, _ = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID})
 		}
-
-		request.Imp[i].TagID = telariaExt.AdCode
-		request.Imp[i].Ext, _ = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID})
 	}
 
 	if len(errors) > 0 {
 		return nil, errors
 	}
 
-	reqJSON, err := json.Marshal(request)
-	if err != nil {
-		return nil, []error{err}
-	}
+	reqJSON, _ := json.Marshal(request)
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -283,7 +269,7 @@ func (a *TelariaAdapter) CheckResponseStatusCodes(response *adapters.ResponseDat
 
 	if response.StatusCode == http.StatusBadRequest {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: [ %d ] . ", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: [ %d ] ", response.StatusCode),
 		}
 	}
 
@@ -318,7 +304,7 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("bad server response: [ %d ]. ", err),
+			Message: "bad server response",
 		}}
 	}
 
