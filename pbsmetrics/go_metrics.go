@@ -478,7 +478,7 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 }
 
 // RecordCookieSync implements a part of the MetricsEngine interface. Records a cookie sync request
-func (me *Metrics) RecordCookieSync(labels Labels) {
+func (me *Metrics) RecordCookieSync() {
 	me.CookieSyncMeter.Mark(1)
 }
 
@@ -518,13 +518,12 @@ func (me *Metrics) RecordStoredImpCacheResult(cacheResult CacheResult, inc int) 
 
 // RecordPrebidCacheRequestTime implements a part of the MetricsEngine interface. Records the
 // amount of time taken to store the auction result in Prebid Cache.
-func (me *Metrics) RecordPrebidCacheRequestTime(labels RequestLabels, length time.Duration) {
-	if labels.RequestStatus == RequestStatusOK {
+func (me *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
+	if success {
 		me.PrebidCacheRequestTimerSuccess.Update(length)
-		return
+	} else {
+		me.PrebidCacheRequestTimerError.Update(length)
 	}
-
-	me.PrebidCacheRequestTimerError.Update(length)
 }
 
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {

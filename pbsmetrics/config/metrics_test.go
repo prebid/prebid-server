@@ -75,9 +75,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 		AudioImps:  true,
 		NativeImps: true,
 	}
-	requestLabels := pbsmetrics.RequestLabels{
-		RequestStatus: pbsmetrics.RequestStatusOK,
-	}
 	for i := 0; i < 5; i++ {
 		metricsEngine.RecordRequest(labels)
 		metricsEngine.RecordImps(impTypeLabels)
@@ -88,7 +85,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordAdapterPrice(pubLabels, 1.34)
 		metricsEngine.RecordAdapterBidReceived(pubLabels, openrtb_ext.BidTypeBanner, true)
 		metricsEngine.RecordAdapterTime(pubLabels, time.Millisecond*20)
-		metricsEngine.RecordPrebidCacheRequestTime(requestLabels, time.Millisecond*20)
+		metricsEngine.RecordPrebidCacheRequestTime(true, time.Millisecond*20)
 	}
 	labelsBlacklist := []pbsmetrics.Labels{
 		{

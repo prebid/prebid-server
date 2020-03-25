@@ -22,6 +22,9 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -68,7 +71,8 @@ func NewAmpEndpoint(
 		disabledBidders,
 		defRequest,
 		defReqJSON,
-		bidderMap}).AmpAuction), nil
+		bidderMap,
+		nil}).AmpAuction), nil
 
 }
 
@@ -162,7 +166,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories, nil)
 	ao.AuctionResponse = response
 
 	if err != nil {
@@ -379,22 +383,16 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		req.Imp[0].TagID = slot
 	}
 
-	//In the AMP endpoint the consent string found in the http.Request query overrides that of the prebid query
-	queryConsentString := httpRequest.FormValue("gdpr_consent")
-	if queryConsentString != "" {
-		jsonMsg := json.RawMessage(`{"consent":"` + queryConsentString + `"}`)
-		// If nil, initialize
-		if req.User == nil {
-			req.User = &openrtb.User{Ext: jsonMsg}
-		} else if req.User.Ext == nil {
-			req.User.Ext = jsonMsg
-		} else { // req.User.Ext != nil, keep whatever is in there and only substitute the consent string
-			var parserErr error
-			req.User.Ext, parserErr = jsonparser.Set(req.User.Ext, []byte(`"`+queryConsentString+`"`), "consent")
-			if parserErr != nil {
-				return parserErr
-			}
-		}
+	privacyPolicies := privacy.Policies{
+		GDPR: gdpr.Policy{
+			Consent: httpRequest.URL.Query().Get("gdpr_consent"),
+		},
+		CCPA: ccpa.Policy{
+			Value: httpRequest.URL.Query().Get("us_privacy"),
+		},
+	}
+	if err := privacyPolicies.Write(req); err != nil {
+		return err
 	}
 
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {

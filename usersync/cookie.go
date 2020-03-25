@@ -100,6 +100,15 @@ func NewPBSCookie() *PBSCookie {
 	}
 }
 
+// NewPBSCookie returns an empty PBSCookie with optOut enabled
+func NewPBSCookieWithOptOut() *PBSCookie {
+	return &PBSCookie{
+		uids:     make(map[string]uidWithExpiry),
+		optOut:   true,
+		birthday: timestamp(),
+	}
+}
+
 // AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
 func (cookie *PBSCookie) AllowSyncs() bool {
 	return cookie != nil && !cookie.optOut
@@ -193,19 +202,24 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCooki
 		currSize = len([]byte(httpCookie.String()))
 	}
 
-	uidsCookieStr := httpCookie.String()
+	var uidsCookieStr string
 	var sameSiteCookie *http.Cookie
 	if setSiteCookie {
+		httpCookie.Secure = true
+		uidsCookieStr = httpCookie.String()
 		uidsCookieStr += SameSiteAttribute
 		sameSiteCookie = &http.Cookie{
 			Name:    SameSiteCookieName,
 			Value:   SameSiteCookieValue,
 			Expires: time.Now().Add(ttl),
 			Path:    "/",
+			Secure:  true,
 		}
 		sameSiteCookieStr := sameSiteCookie.String()
 		sameSiteCookieStr += SameSiteAttribute
 		w.Header().Add("Set-Cookie", sameSiteCookieStr)
+	} else {
+		uidsCookieStr = httpCookie.String()
 	}
 	w.Header().Add("Set-Cookie", uidsCookieStr)
 }

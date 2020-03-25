@@ -4,3 +4,6 @@ capabilities:
   site:
     mediaTypes:
       - banner
+  app:
+    mediaTypes:
+      - banner

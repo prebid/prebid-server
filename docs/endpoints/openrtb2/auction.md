@@ -174,7 +174,7 @@ will be truncated to only include the first 20 characters.
 #### Cookie syncs
 
 Each Bidder should receive their own ID in the `request.user.buyeruid` property.
-Prebid Server has three ways to popualte this field. In order of priority:
+Prebid Server has three ways to populate this field. In order of priority:
 
 1. If the request payload contains `request.user.buyeruid`, then that value will be sent to all Bidders.
 In most cases, this is probably a bad idea.
@@ -336,7 +336,7 @@ Bids can be temporarily cached on the server by sending the following data as `r
 }
 ```
 
-Both `bids` and `vastxml` are optional, but one of the two is required. Thils property will have no effect
+Both `bids` and `vastxml` are optional, but one of the two is required. This property will have no effect
 unless `request.ext.prebid.targeting` is also set in the request.
 
 If `bids` is present, Prebid Server will make a _best effort_ to include these extra
@@ -402,6 +402,29 @@ Example:
 
 PBS receiving a request for an interstitial imp and these parameters set, it will rewrite the format object within the interstitial imp. If the format array's first object is a size, PBS will take it as the max size for the interstitial. If that size is 1x1, it will look up the device's size and use that as the max size. If the format is not present, it will also use the device size as the max size. (1x1 support so that you don't have to omit the format object to use the device size)
 PBS with interstitial support will come preconfigured with a list of common ad sizes. Preferentially organized by weighing the larger and more common sizes first. But no guarantees to the ordering will be made. PBS will generate a new format list for the interstitial imp by traversing this list and picking the first 10 sizes that fall within the imp's max size and minimum percentage size. There will be no attempt to favor aspect ratios closer to the original size's aspect ratio. The limit of 10 is enforced to ensure we don't overload bidders with an overlong list. All the interstitial parameters will still be passed to the bidders, so they may recognize them and use their own size matching algorithms if they prefer.
+
+#### Currency Support
+
+To set the desired 'ad server currency', use the standard OpenRTB `cur` attribute. Note that Prebid Server only looks at the first currency in the array.
+```
+"cur": ["USD"]
+```
+
+If you want or need to define currency conversion rates (e.g. for currencies that your Prebid Server doesn't support), define ext.prebid.currency.rates. (Currently supported in PBS-Java only)
+
+```
+"ext": {
+  "prebid": {
+	  "currency": {
+		  "rates": {
+			  "USD": { "UAH": 24.47, "ETB": 32.04 }
+		  }
+	  }
+  }
+}
+```
+
+If it exists, a rate defined in ext.prebid.currency.rates has the highest priority. If a currency rate doesn't exist in the request, the external file will be used.
 
 #### Stored Responses (PBS-Java only)
 

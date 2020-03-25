@@ -88,7 +88,7 @@ func TestExplicitUserId(t *testing.T) {
 				},
 				"ext": {
 					"appnexus": {
-						"placementId": 10433394
+						"placementId": 12883451
 					}
 				}
 			}
@@ -282,7 +282,6 @@ func TestRejectAccountRequired(t *testing.T) {
 func (gr *getResponseFromDirectory) assert(t *testing.T) {
 	//t *testing.T, dir string, payloadGetter func(*testing.T, []byte) []byte, messageGetter func(*testing.T, []byte) []byte, expectedCode int, aliased bool) {
 	t.Helper()
-	var filename string
 	var filesToAssert []string
 	if gr.file == "" {
 		// Append every file found in `gr.dir` to the `filesToAssert` array and test them all
@@ -300,14 +299,14 @@ func (gr *getResponseFromDirectory) assert(t *testing.T) {
 		fileData = readFile(t, testFile)
 		code, msg := gr.doRequest(t, gr.payloadGetter(t, fileData))
 		fmt.Printf("Processing %s\n", testFile)
-		assertResponseCode(t, filename, code, gr.expectedCode, msg)
+		assertResponseCode(t, testFile, code, gr.expectedCode, msg)
 
 		expectMsg := gr.messageGetter(t, fileData)
 		if gr.description != "" {
 			if len(expectMsg) > 0 {
-				assert.Equal(t, string(expectMsg), msg, "Test failed. %s. Filename: \n", gr.description, filename)
+				assert.Equal(t, string(expectMsg), msg, "Test failed. %s. Filename: \n", gr.description, testFile)
 			} else {
-				assert.Equal(t, string(expectMsg), msg, "file %s had bad response body", filename)
+				assert.Equal(t, string(expectMsg), msg, "file %s had bad response body", testFile)
 			}
 		}
 	}
@@ -426,7 +425,7 @@ func buildNativeRequest(t *testing.T, nativeData []byte) []byte {
 	buf := bytes.NewBuffer(nil)
 	buf.WriteString(`{"id":"req-id","site":{"page":"some.page.com"},"tmax":500,"imp":[{"id":"some-imp","native":{"request":`)
 	buf.Write(serialized)
-	buf.WriteString(`},"ext":{"appnexus":{"placementId":10433394}}}]}`)
+	buf.WriteString(`},"ext":{"appnexus":{"placementId":12883451}}}]}`)
 	return buf.Bytes()
 }
 
@@ -603,7 +602,7 @@ func TestStoredRequests(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	edep := &endpointDeps{&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, false, []byte{}, openrtb_ext.BidderMap}
+	edep := &endpointDeps{&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, false, []byte{}, openrtb_ext.BidderMap, nil}
 
 	for i, requestData := range testStoredRequests {
 		newRequest, errList := edep.processStoredRequests(context.Background(), json.RawMessage(requestData))
@@ -639,6 +638,7 @@ func TestOversizedRequest(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -671,6 +671,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -808,6 +809,7 @@ func TestDisabledBidder(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -841,6 +843,7 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	}
 	errs := deps.validateImpExt(imp, nil, 0)
 	assert.JSONEq(t, `{"appnexus":{"placement_id":555}}`, string(imp.Ext))
@@ -865,12 +868,98 @@ func validRequest(t *testing.T, filename string) string {
 	return string(requestData)
 }
 
+func TestCurrencyTrunc(t *testing.T) {
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BidderMap,
+		nil,
+	}
+
+	ui := uint64(1)
+	req := openrtb.BidRequest{
+		ID: "someID",
+		Imp: []openrtb.Imp{
+			{
+				ID: "imp-ID",
+				Banner: &openrtb.Banner{
+					W: &ui,
+					H: &ui,
+				},
+				Ext: json.RawMessage("{\"appnexus\": {\"placementId\": 5667}}"),
+			},
+		},
+		Site: &openrtb.Site{
+			ID: "myID",
+		},
+		Cur: []string{"USD", "EUR"},
+	}
+
+	errL := deps.validateRequest(&req)
+
+	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
+	assert.ElementsMatch(t, errL, []error{&expectedError})
+}
+
+func TestCCPAInvalidValueWarning(t *testing.T) {
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BidderMap,
+		nil,
+	}
+
+	ui := uint64(1)
+	req := openrtb.BidRequest{
+		ID: "someID",
+		Imp: []openrtb.Imp{
+			{
+				ID: "imp-ID",
+				Banner: &openrtb.Banner{
+					W: &ui,
+					H: &ui,
+				},
+				Ext: json.RawMessage("{\"appnexus\": {\"placementId\": 5667}}"),
+			},
+		},
+		Site: &openrtb.Site{
+			ID: "myID",
+		},
+		Regs: &openrtb.Regs{
+			Ext: json.RawMessage("{\"us_privacy\":\"invalid by length\"}"),
+		},
+	}
+
+	errL := deps.validateRequest(&req)
+
+	expectedError := errortypes.Warning{Message: "CCPA value is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)"}
+	assert.ElementsMatch(t, errL, []error{&expectedError})
+}
+
 // nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	e.gotRequest = bidRequest
 	return &openrtb.BidResponse{
 		ID:    bidRequest.ID,
@@ -881,7 +970,7 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bid
 
 type brokenExchange struct{}
 
-func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
+func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	return nil, errors.New("Critical, unrecoverable error.")
 }
 
@@ -1241,7 +1330,7 @@ type mockExchange struct {
 	lastRequest *openrtb.BidRequest
 }
 
-func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
+func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
 	return &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{

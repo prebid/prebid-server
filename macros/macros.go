@@ -17,6 +17,7 @@ type EndpointTemplateParams struct {
 type UserSyncTemplateParams struct {
 	GDPR        string
 	GDPRConsent string
+	USPrivacy   string
 }
 
 // ResolveMacros resolves macros in the given template with the provided params
