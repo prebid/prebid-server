@@ -103,6 +103,11 @@ func (d *DataLogger) LogAmpObject(ao *analytics.AmpObject) {
 		fmt.Println("News IQ Module - LogAmpObject")
 	}
 }
+func (d *DataLogger) LogVideoObject(vo *analytics.VideoObject) {
+	if DebugLogging {
+		fmt.Println("News IQ Module - LogVideoObject")
+	}
+}
 
 func currentTimestamp() uint64 {
 	timeStamp := strings.ReplaceAll(time.Now().Format("01-02-2006"), "-", "")
