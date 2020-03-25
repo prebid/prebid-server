@@ -20,7 +20,7 @@ import (
 type permissionsImpl struct {
 	cfg             config.GDPR
 	vendorIDs       map[openrtb_ext.BidderName]uint16
-	fetchVendorList []func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
+	fetchVendorList map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
 }
 
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
@@ -122,7 +122,7 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 	if version < 1 || version > 2 {
 		return
 	}
-	vendorList, err := p.fetchVendorList[version-1](ctx, parsedConsent.VendorListVersion())
+	vendorList, err := p.fetchVendorList[version](ctx, parsedConsent.VendorListVersion())
 	if err != nil {
 		return
 	}

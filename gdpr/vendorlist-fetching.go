@@ -26,7 +26,7 @@ type saveVendors func(uint16, api.VendorList)
 //
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
-func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16, int) string, TCFVer int) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16, uint8) string, TCFVer uint8) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
 	// These save and load functions can be used to store & retrieve lists from our cache.
 	save, load := newVendorListCache()
 
@@ -51,18 +51,18 @@ func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http
 }
 
 // populateCache saves all the known versions of the vendor list for future use.
-func populateCache(ctx context.Context, client *http.Client, urlMaker func(uint16, int) string, saver saveVendors, TCFVer int) {
-	latestVersion := saveOne(ctx, client, urlMaker(0, 1), saver, TCFVer)
+func populateCache(ctx context.Context, client *http.Client, urlMaker func(uint16, uint8) string, saver saveVendors, TCFVer uint8) {
+	latestVersion := saveOne(ctx, client, urlMaker(0, TCFVer), saver, TCFVer)
 
 	for i := uint16(1); i < latestVersion; i++ {
-		saveOne(ctx, client, urlMaker(i, 1), saver, TCFVer)
+		saveOne(ctx, client, urlMaker(i, TCFVer), saver, TCFVer)
 	}
 }
 
 // Make a URL which can be used to fetch a given version of the Global Vendor List. If the version is 0,
 // this will fetch the latest version.
-func vendorListURLMaker(version uint16, tCFVersion int) string {
-	if tCFVersion == 2 {
+func vendorListURLMaker(version uint16, TCFVer uint8) string {
+	if TCFVer == 2 {
 		if version == 0 {
 			return "https://vendorlist.consensu.org/v2/vendor-list.json"
 		}
@@ -79,7 +79,7 @@ func vendorListURLMaker(version uint16, tCFVersion int) string {
 // The goal here is to update quickly when new versions of the VendorList are released, but not wreck
 // server performance if a bad CMP starts sending us malformed consent strings that advertize a version
 // that doesn't exist yet.
-func newOccasionalSaver(timeout time.Duration, TCFVer int) func(ctx context.Context, client *http.Client, url string, saver saveVendors) {
+func newOccasionalSaver(timeout time.Duration, TCFVer uint8) func(ctx context.Context, client *http.Client, url string, saver saveVendors) {
 	lastSaved := &atomic.Value{}
 	lastSaved.Store(time.Time{})
 
@@ -94,7 +94,7 @@ func newOccasionalSaver(timeout time.Duration, TCFVer int) func(ctx context.Cont
 	}
 }
 
-func saveOne(ctx context.Context, client *http.Client, url string, saver saveVendors, cTFVer int) uint16 {
+func saveOne(ctx context.Context, client *http.Client, url string, saver saveVendors, cTFVer uint8) uint16 {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		glog.Errorf("Failed to build GET %s request. Cookie syncs may be affected: %v", url, err)

@@ -26,6 +26,11 @@ type Permissions interface {
 	PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error)
 }
 
+const (
+	tCF1 uint8 = 1
+	tCF2 uint8 = 2
+)
+
 // NewPermissions gets an instance of the Permissions for use elsewhere in the project.
 func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_ext.BidderName]uint16, client *http.Client) Permissions {
 	// If the host doesn't buy into the IAB GDPR consent framework, then save some cycles and let all syncs happen.
@@ -36,9 +41,9 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 	return &permissionsImpl{
 		cfg:       cfg,
 		vendorIDs: vendorIDs,
-		fetchVendorList: []func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, 1),
-			newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, 2)},
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tCF1),
+			tCF2: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tCF2)},
 	}
 }
 

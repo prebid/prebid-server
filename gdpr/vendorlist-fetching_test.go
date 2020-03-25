@@ -203,9 +203,9 @@ func mockVendorListData(t *testing.T, version uint16, vendors map[uint16]*purpos
 	return string(data)
 }
 
-func testURLMaker(server *httptest.Server) func(uint16, int) string {
+func testURLMaker(server *httptest.Server) func(uint16, uint8) string {
 	url := server.URL
-	return func(version uint16, TCFVer int) string {
+	return func(version uint16, TCFVer uint8) string {
 		return url + "?version=" + strconv.Itoa(int(version))
 	}
 }

@@ -19,9 +19,9 @@ func TestNoConsentButAllowByDefault(t *testing.T) {
 			UsersyncIfAmbiguous: true,
 		},
 		vendorIDs: nil,
-		fetchVendorList: []func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			failedListFetcher,
-			failedListFetcher,
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: failedListFetcher,
+			tCF2: failedListFetcher,
 		},
 	}
 	allowSync, err := perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderAppnexus, "")
@@ -39,9 +39,9 @@ func TestNoConsentAndRejectByDefault(t *testing.T) {
 			UsersyncIfAmbiguous: false,
 		},
 		vendorIDs: nil,
-		fetchVendorList: []func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			failedListFetcher,
-			failedListFetcher,
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: failedListFetcher,
+			tCF2: failedListFetcher,
 		},
 	}
 	allowSync, err := perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderAppnexus, "")
@@ -69,11 +69,11 @@ func TestAllowedSyncs(t *testing.T) {
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 3,
 		},
-		fetchVendorList: []func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			listFetcher(map[uint16]vendorlist.VendorList{
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: listFetcher(map[uint16]vendorlist.VendorList{
 				1: parseVendorListData(t, vendorListData),
 			}),
-			listFetcher(map[uint16]vendorlist.VendorList{
+			tCF2: listFetcher(map[uint16]vendorlist.VendorList{
 				1: parseVendorListData(t, vendorListData),
 			}),
 		},
@@ -105,11 +105,11 @@ func TestProhibitedPurposes(t *testing.T) {
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 3,
 		},
-		fetchVendorList: []func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			listFetcher(map[uint16]vendorlist.VendorList{
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: listFetcher(map[uint16]vendorlist.VendorList{
 				1: parseVendorListData(t, vendorListData),
 			}),
-			listFetcher(map[uint16]vendorlist.VendorList{
+			tCF2: listFetcher(map[uint16]vendorlist.VendorList{
 				1: parseVendorListData(t, vendorListData),
 			}),
 		},
@@ -141,11 +141,11 @@ func TestProhibitedVendors(t *testing.T) {
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 3,
 		},
-		fetchVendorList: []func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			listFetcher(map[uint16]vendorlist.VendorList{
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: listFetcher(map[uint16]vendorlist.VendorList{
 				1: parseVendorListData(t, vendorListData),
 			}),
-			listFetcher(map[uint16]vendorlist.VendorList{
+			tCF2: listFetcher(map[uint16]vendorlist.VendorList{
 				1: parseVendorListData(t, vendorListData),
 			}),
 		},
@@ -165,9 +165,9 @@ func TestMalformedConsent(t *testing.T) {
 		cfg: config.GDPR{
 			HostVendorID: 2,
 		},
-		fetchVendorList: []func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			listFetcher(nil),
-			listFetcher(nil),
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: listFetcher(nil),
+			tCF2: listFetcher(nil),
 		},
 	}
 
@@ -193,11 +193,11 @@ func TestAllowPersonalInfo(t *testing.T) {
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 3,
 		},
-		fetchVendorList: []func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			listFetcher(map[uint16]vendorlist.VendorList{
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: listFetcher(map[uint16]vendorlist.VendorList{
 				1: parseVendorListData(t, vendorListData),
 			}),
-			listFetcher(map[uint16]vendorlist.VendorList{
+			tCF2: listFetcher(map[uint16]vendorlist.VendorList{
 				1: parseVendorListData(t, vendorListData),
 			}),
 		},
