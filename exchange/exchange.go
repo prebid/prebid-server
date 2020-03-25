@@ -219,7 +219,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// Build the response
-	bidResponseObj, reponseError := e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errs)
+	bidResponseObj, reponseError := e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, bidResponseExt, errs)
 	if DebugLogging {
 		fmt.Println("TEST Bid Responded here")
 		// fmt.Println("TEST Bid Response Object Created: ", bidResponseObj)

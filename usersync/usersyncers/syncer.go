@@ -4,8 +4,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/prebid-server/adapters/adpone"
-
 	"github.com/golang/glog"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/adform"
