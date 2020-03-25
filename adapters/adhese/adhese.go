@@ -199,6 +199,8 @@ func convertAdheseBid(adheseBid openrtb_ext.AdheseBid) openrtb.BidResponse {
 		ID: adheseBid.Id,
 		SeatBid: []openrtb.SeatBid{{
 			Bid: []openrtb.Bid{{
+				ID:     adheseBid.Id,
+				ImpID:  adheseBid.CreativeName,
 				DealID: adheseBid.OrderId,
 				Price:  price,
 				W:      width,
