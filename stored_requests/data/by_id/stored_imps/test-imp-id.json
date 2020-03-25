@@ -13,6 +13,9 @@
     ]
   },
   "ext": {
+    "appnexus": {
+      "placementId": 18764176
+    },
     "rubicon": {
       "accountId": 11076,	
       "siteId": 312006,
