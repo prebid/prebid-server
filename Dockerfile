@@ -21,7 +21,7 @@ RUN go build
 FROM ubuntu:18.04 AS release
 LABEL maintainer="hans.hjort@xandr.com" 
 WORKDIR /usr/local/bin/
-COPY --from=build /app/prebid-server/prebid-server .
+COPY --from=build /app/prebid-server/ .
 COPY static static/
 COPY stored_requests/data stored_requests/data
 RUN apt-get update && \
