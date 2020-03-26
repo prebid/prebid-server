@@ -175,11 +175,22 @@ var validGranularityTests []granularityTestData = []granularityTestData{
 			},
 		},
 	},
+	{
+		json:   []byte(`{}`),
+		target: priceGranularityMed,
+	},
+	{
+		json:   []byte(`{"precision": 2}`),
+		target: priceGranularityMed,
+	},
+	{
+		json:   []byte(`{"precision": 2, "ranges":[]}`),
+		target: priceGranularityMed,
+	},
 }
 
 func TestGranularityUnmarshalBad(t *testing.T) {
 	tests := [][]byte{
-		[]byte(`{}`),
 		[]byte(`[]`),
 		[]byte(`{"precision": -1, "ranges": [{"max":20, "increment":0.5}]}`),
 		[]byte(`{"ranges":[{"max":20, "increment": -1}]}`),

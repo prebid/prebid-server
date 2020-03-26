@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
@@ -50,11 +51,13 @@ type adaptedBidder interface {
 // pbsOrtbBid.bidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // pbsOrtbBid.bidTargets does not need to be filled out by the Bidder. It will be set later by the exchange.
 // pbsOrtbBid.bidVideo is optional but should be filled out by the Bidder if bidType is video.
+// pbsOrtbBid.dealPriority will become "response.seatbid[i].bid.dealPriority" in the final OpenRTB response.
 type pbsOrtbBid struct {
-	bid        *openrtb.Bid
-	bidType    openrtb_ext.BidType
-	bidTargets map[string]string
-	bidVideo   *openrtb_ext.ExtBidPrebidVideo
+	bid          *openrtb.Bid
+	bidType      openrtb_ext.BidType
+	bidTargets   map[string]string
+	bidVideo     *openrtb_ext.ExtBidPrebidVideo
+	dealPriority int
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -182,9 +185,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment * conversionRate
 						}
 						seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-							bid:      bidResponse.Bids[i].Bid,
-							bidType:  bidResponse.Bids[i].BidType,
-							bidVideo: bidResponse.Bids[i].BidVideo,
+							bid:          bidResponse.Bids[i].Bid,
+							bidType:      bidResponse.Bids[i].BidType,
+							bidVideo:     bidResponse.Bids[i].BidVideo,
+							dealPriority: bidResponse.Bids[i].DealPriority,
 						})
 					}
 				} else {
@@ -295,6 +299,14 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			err = &errortypes.Timeout{Message: err.Error()}
+			if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); ok {
+				// Toss the timeout notification call into a go routine, as we are out of time'
+				// and cannot delay processing. We don't do anything result, as there is not much
+				// we can do about a timeout notification failure. We do not want to get stuck in
+				// a loop of trying to report timeouts to the timeout notifications.
+				go bidder.doTimeoutNotification(tb, req)
+			}
+
 		}
 		return &httpCallInfo{
 			request: req,
@@ -326,6 +338,21 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 		},
 		err: err,
 	}
+}
+
+func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.TimeoutBidder, req *adapters.RequestData) {
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	toReq, errL := timeoutBidder.MakeTimeoutNotification(req)
+	if toReq != nil && len(errL) == 0 {
+		httpReq, err := http.NewRequest(toReq.Method, toReq.Uri, bytes.NewBuffer(toReq.Body))
+		if err == nil {
+			httpReq.Header = req.Headers
+			ctxhttp.Do(ctx, bidder.Client, httpReq)
+			// No validation yet on sending notifications
+		}
+	}
+
 }
 
 type httpCallInfo struct {
