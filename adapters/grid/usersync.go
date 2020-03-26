@@ -8,5 +8,5 @@ import (
 )
 
 func NewGridSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("grid", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("grid", 686, temp, adapters.SyncTypeRedirect)
 }

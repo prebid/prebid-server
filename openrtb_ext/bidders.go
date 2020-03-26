@@ -25,10 +25,12 @@ const (
 	BidderAdkernel         BidderName = "adkernel"
 	BidderAdkernelAdn      BidderName = "adkernelAdn"
 	BidderAdpone           BidderName = "adpone"
+	BidderAdmixer          BidderName = "admixer"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
 	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
+	BidderAdoppler         BidderName = "adoppler"
 	BidderBeachfront       BidderName = "beachfront"
 	BidderBrightroll       BidderName = "brightroll"
 	BidderConsumable       BidderName = "consumable"
@@ -45,6 +47,7 @@ const (
 	BidderGumGum           BidderName = "gumgum"
 	BidderImprovedigital   BidderName = "improvedigital"
 	BidderIx               BidderName = "ix"
+	BidderKidoz            BidderName = "kidoz"
 	BidderKubient          BidderName = "kubient"
 	BidderLifestreet       BidderName = "lifestreet"
 	BidderLockerDome       BidderName = "lockerdome"
@@ -67,11 +70,14 @@ const (
 	BidderTappx            BidderName = "tappx"
 	BidderTriplelift       BidderName = "triplelift"
 	BidderTripleliftNative BidderName = "triplelift_native"
+	BidderUcfunnel         BidderName = "ucfunnel"
 	BidderUnruly           BidderName = "unruly"
+	BidderValueImpression  BidderName = "valueimpression"
 	BidderVerizonMedia     BidderName = "verizonmedia"
 	BidderVisx             BidderName = "visx"
 	BidderVrtcal           BidderName = "vrtcal"
 	BidderYieldmo          BidderName = "yieldmo"
+	BidderZeroClickFraud   BidderName = "zeroclickfraud"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
@@ -80,11 +86,13 @@ var BidderMap = map[string]BidderName{
 	"adform":            BidderAdform,
 	"adkernel":          BidderAdkernel,
 	"adkernelAdn":       BidderAdkernelAdn,
+	"admixer":           BidderAdmixer,
 	"adpone":            BidderAdpone,
 	"adtelligent":       BidderAdtelligent,
 	"advangelists":      BidderAdvangelists,
 	"applogy":           BidderApplogy,
 	"appnexus":          BidderAppnexus,
+	"adoppler":          BidderAdoppler,
 	"beachfront":        BidderBeachfront,
 	"brightroll":        BidderBrightroll,
 	"consumable":        BidderConsumable,
@@ -101,6 +109,7 @@ var BidderMap = map[string]BidderName{
 	"gumgum":            BidderGumGum,
 	"improvedigital":    BidderImprovedigital,
 	"ix":                BidderIx,
+	"kidoz":             BidderKidoz,
 	"kubient":           BidderKubient,
 	"lifestreet":        BidderLifestreet,
 	"lockerdome":        BidderLockerDome,
@@ -123,11 +132,14 @@ var BidderMap = map[string]BidderName{
 	"tappx":             BidderTappx,
 	"triplelift":        BidderTriplelift,
 	"triplelift_native": BidderTripleliftNative,
+	"ucfunnel":          BidderUcfunnel,
 	"unruly":            BidderUnruly,
+	"valueimpression":   BidderValueImpression,
 	"verizonmedia":      BidderVerizonMedia,
 	"visx":              BidderVisx,
 	"vrtcal":            BidderVrtcal,
 	"yieldmo":           BidderYieldmo,
+	"zeroclickfraud":    BidderZeroClickFraud,
 }
 
 // BidderList returns the values of the BidderMap

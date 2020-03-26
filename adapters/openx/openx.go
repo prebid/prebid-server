@@ -169,6 +169,11 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
+	// overrride default currency
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
+
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{

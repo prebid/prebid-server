@@ -188,7 +188,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 		winningBidsByBidder: winningBidsByBidder,
 		roundedPrices:       roundedPrices,
 	}
-	_ = testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
+	_ = testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory, &specData.DebugLog)
 
 	if len(specData.ExpectedCacheables) > len(cache.items) {
 		t.Errorf("%s:  [CACHE_ERROR] Less elements were cached than expected \n", fileDisplayName)
@@ -232,6 +232,7 @@ type cacheSpec struct {
 	TargetDataIncludeBidderKeys bool                            `json:"targetDataIncludeBidderKeys"`
 	TargetDataIncludeCacheBids  bool                            `json:"targetDataIncludeCacheBids"`
 	TargetDataIncludeCacheVast  bool                            `json:"targetDataIncludeCacheVast"`
+	DebugLog                    DebugLog                        `json:"debugLog,omitempty"`
 }
 
 type pbsBid struct {
