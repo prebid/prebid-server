@@ -719,7 +719,7 @@ func (d *DataLogger) RunDataTaskService() {
 		client:        client,
 		bucket:        bucket,
 		ctx:           ctx,
-		fileNameTmplt: "newsiq-pbs-logs/dt=%s/%s-%s-%v.json.gz",
+		fileNameTmplt: "newsiq-prebidserver-logs/dt=%s/%s-%s-%v.json.gz",
 		instanceId:    os.Getenv("PBS_INSTANCE_ID"),
 	}
 
@@ -727,7 +727,7 @@ func (d *DataLogger) RunDataTaskService() {
 		client:        client,
 		bucket:        bucket,
 		ctx:           ctx,
-		fileNameTmplt: "newsiq-pbs-badrecords-logs/dt=%s/%s-%s-%v.json.gz",
+		fileNameTmplt: "newsiq-prebidserver-badrecords-logs/dt=%s/%s-%s-%v.json.gz",
 		instanceId:    os.Getenv("PBS_INSTANCE_ID"),
 	}
 
