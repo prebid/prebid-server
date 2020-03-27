@@ -2,7 +2,6 @@ package exchange
 
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/adapters/telaria"
 	"net/http"
 	"strings"
 
@@ -54,6 +53,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/adapters/synacormedia"
 	"github.com/prebid/prebid-server/adapters/tappx"
+	"github.com/prebid/prebid-server/adapters/telaria"
 	"github.com/prebid/prebid-server/adapters/triplelift"
 	"github.com/prebid/prebid-server/adapters/triplelift_native"
 	"github.com/prebid/prebid-server/adapters/ucfunnel"

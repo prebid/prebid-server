@@ -137,28 +137,6 @@ func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb.Imp) (*openrtb_ex
 	return &telariaExt, nil
 }
 
-// Fetch the id from the appropriate publisher object
-func (a *TelariaAdapter) FetchPublisherId(request *openrtb.BidRequest) string {
-
-	if request.Site != nil {
-		if request.Site.Publisher != nil {
-			if request.Site.Publisher.ID != "" {
-				return request.Site.Publisher.ID
-			}
-		}
-	}
-
-	if request.App != nil {
-		if request.App.Publisher != nil {
-			if request.App.Publisher.ID != "" {
-				return request.App.Publisher.ID
-			}
-		}
-	}
-
-	return ""
-}
-
 // This method changes <site/app>.publisher.id to request.ext.telaria.seatCode
 // And moves the publisher.id to request.ext.originalPublisherId
 func (a *TelariaAdapter) PopulateRequestExtAndPubId(request *openrtb.BidRequest) error {
@@ -167,17 +145,19 @@ func (a *TelariaAdapter) PopulateRequestExtAndPubId(request *openrtb.BidRequest)
 		return err
 	}
 
-	if requestExtIncoming.Telaria.SeatCode == "" {
+	if requestExtIncoming.Telaria == nil || requestExtIncoming.Telaria.SeatCode == "" {
 		return &errortypes.BadInput{Message: "Seat Code is required"}
 	}
 
-	request.Ext, _ = json.Marshal(&BidExtOut{requestExtIncoming.ExtRequest, a.FetchPublisherId(request)})
-
 	publisherObject := &openrtb.Publisher{ID: requestExtIncoming.Telaria.SeatCode}
+	originalPubId := ""
 
 	if request.Site != nil {
 		if request.Site.Publisher != nil {
-			request.Site.Publisher.ID = requestExtIncoming.Telaria.SeatCode
+			if request.Site.Publisher.ID != "" {
+				originalPubId = request.Site.Publisher.ID
+				request.Site.Publisher.ID = requestExtIncoming.Telaria.SeatCode
+			}
 		} else {
 			request.Site.Publisher = publisherObject
 		}
@@ -185,10 +165,20 @@ func (a *TelariaAdapter) PopulateRequestExtAndPubId(request *openrtb.BidRequest)
 
 	if request.App != nil {
 		if request.App.Publisher != nil {
-			request.App.Publisher.ID = requestExtIncoming.Telaria.SeatCode
+			if request.App.Publisher.ID != "" {
+				originalPubId = request.App.Publisher.ID
+				request.App.Publisher.ID = requestExtIncoming.Telaria.SeatCode
+			}
 		} else {
 			request.App.Publisher = publisherObject
 		}
+	}
+
+	var err error
+	request.Ext, err = json.Marshal(&BidExtOut{requestExtIncoming.ExtRequest, originalPubId})
+
+	if err != nil {
+		return &errortypes.BadInput{Message: "Error while adding the request.Ext object"}
 	}
 
 	return nil
@@ -214,9 +204,14 @@ func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 		if err != nil {
 			errors = append(errors, err)
-		} else {
-			request.Imp[i].TagID = telariaExt.AdCode
-			request.Imp[i].Ext, _ = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID})
+			break
+		}
+
+		request.Imp[i].TagID = telariaExt.AdCode
+		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID})
+		if err != nil {
+			errors = append(errors, err)
+			break
 		}
 	}
 
@@ -224,7 +219,11 @@ func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		return nil, errors
 	}
 
-	reqJSON, _ := json.Marshal(request)
+	reqJSON, err := json.Marshal(request)
+
+	if err != nil {
+		return nil, []error{err}
+	}
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
