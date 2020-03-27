@@ -105,8 +105,8 @@ github.com/pelletier/go-toml v1.2.0 h1:T5zMGML61Wp+FlcbWjRDT7yAxhJNAiPPLOFECq181
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/prebid/go-gdpr v0.6.0 h1:/GKrygGkUbsgd96HIkjAu7/6CHtRedvcojRtfAd4Igc=
-github.com/prebid/go-gdpr v0.6.0/go.mod h1:FPY0uxSrl9/Mz237LnPo3ge4aCG0wQ9FWf2b4WhwNn0=
+github.com/prebid/go-gdpr v0.7.0 h1:m4E/FjUhTBMciDsd3lQlbzFyXLzNK+JQkFmInJpFAwc=
+github.com/prebid/go-gdpr v0.7.0/go.mod h1:FPY0uxSrl9/Mz237LnPo3ge4aCG0wQ9FWf2b4WhwNn0=
 github.com/prebid/prebid-cache v0.0.0-20200218152159-6d6d678c1caf h1:CcE+KN1tCtWKsUFH5IzdQxHIgP609VSIVe5Hywg2phs=
 github.com/prebid/prebid-cache v0.0.0-20200218152159-6d6d678c1caf/go.mod h1:k5xrl5ZpnumN1S2x8w8cMiFYsgRuVyAeFJz+BkSi+98=
 github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed h1:0dloFFFNNDG7c+8qtkYw2FdADrWy9s5cI8wHp6tK3Mg=
