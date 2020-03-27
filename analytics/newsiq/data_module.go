@@ -1,15 +1,23 @@
 package newsiq
 
 import (
+	"bufio"
 	"bytes"
+	"compress/gzip"
+	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/golang/protobuf/proto"
 	"github.com/mxmCherry/openrtb"
+	"github.com/pquerna/ffjson/ffjson"
 	"github.com/prebid/prebid-server/analytics"
 )
 
@@ -170,17 +178,24 @@ func InitDataLogger() DataLogger {
 		fmt.Println("News IQ Module - InitDataLogger")
 	}
 
+	// fmt.Println("ENVIRONMENT : ", Env)
+	// if Env == "prod" {
+	// 	bucketName = bucketNameProd
+	// 	RunDataTaskService()
+	// } else if Env == "dev" {
+	// 	bucketName = bucketNameDev
+	// 	RunDataTaskService()
+	// }
+
 	return DataLogger{}
 }
 
 var dataTaskChannel chan DataTask
 
+/*
+ TODO : Deprecated - no longer used - cleanup required
+*/
 func (d *DataLogger) StartDataTaskWorker() {
-	if DebugLogging {
-		fmt.Println("TEST : StartDataTaskWorker() ")
-	}
-	// return // TEST : Only for testing purposes
-
 	dataTaskChannel = make(chan DataTask, 100)
 	go dataTaskWorker(dataTaskChannel)
 }
@@ -189,8 +204,6 @@ func (d *DataLogger) EnqueueDataTask(task DataTask) bool {
 	if DebugLogging {
 		fmt.Println("TEST : EnqueueDataTask(): ", dataTaskChannel)
 	}
-	// return true // TEST : Only for testing purposes
-
 	select {
 	case dataTaskChannel <- task:
 		return true
@@ -269,7 +282,74 @@ func sendCollectorData(request *openrtb.BidRequest, response *openrtb.BidRespons
 		NewsId:         request.ID,
 	}
 
-	postData(prebidEventObj)
+	postData(prebidEventObj) // TODO : Remove old code
+}
+
+func generatePrebidLogData(request *openrtb.BidRequest, response *openrtb.BidResponse, msg MsgType) *LogPrebidEvents {
+	if DebugLogging {
+		fmt.Println("News IQ Module - generatePrebidLogData() ", msg)
+		t := time.Now()
+		ctx := context.TODO()
+		defer TimeTrack(ctx, t, "GeneratePrebidLogData")
+	}
+
+	app := request.App
+	site := request.Site
+
+	var clientId uint64 = 0
+	var clientDomain = ""
+
+	if app != nil {
+		if DebugLogging {
+			fmt.Println("App type")
+		}
+		clientId, _ = strconv.ParseUint(app.ID, 10, 32)
+		clientDomain = app.Domain
+	} else if site != nil {
+		if DebugLogging {
+			fmt.Println("Site type")
+		}
+		clientId, _ = strconv.ParseUint(site.ID, 10, 32)
+		clientDomain = site.Domain
+	} else {
+		if DebugLogging {
+			fmt.Println("Client type key not found") // TODO : Log this
+		}
+	}
+
+	adunitsArray := []*AdUnit{}
+	prebidAuctionID := ""
+	if response != nil {
+		adunitsArray = generateAdUnits(request, response)
+		prebidAuctionID = response.BidID // TODO : Is this correct?
+	}
+
+	auctionObj := Auction{
+		Version:              PrebidServerVersion,
+		AuctionInitTimestamp: currentTimestamp(), // TODO : Update all timestamps
+		PrebidAuctionId:      prebidAuctionID,
+		ConfiguredTimeoutMs:  30000, // 30 seconds
+		MsgType:              uint32(msg),
+		AdUnits:              adunitsArray,
+	}
+	auctionsArray := []*Auction{&auctionObj}
+
+	device := request.Device
+	// device.DeviceType // TODO : Include this?
+	deviceString := device.Make + " " + device.Model + " " + device.HWV + " " + device.OS + " " + device.OSV
+	prebidEventObj := &LogPrebidEvents{
+		Timestamp:       currentTimestamp(),
+		RemoteAddrMacro: request.Device.IP,
+		UserAgentMacro:  request.Device.UA,
+		// RefererUrl:      clientDomain, // TODO : Should be a page url
+		SellerMemberId: uint32(clientId),
+		Domain:         clientDomain,
+		Device:         deviceString,
+		Auctions:       auctionsArray,
+		NewsId:         request.ID,
+	}
+
+	return prebidEventObj
 }
 
 func generateBidsArray(identifier string, response *openrtb.BidResponse) []*Bid {
@@ -412,4 +492,279 @@ func generateAdUnits(request *openrtb.BidRequest, response *openrtb.BidResponse)
 	}
 
 	return adunitsArray
+}
+
+/***** Google Storage Variables *****/
+
+var bucketNameProd, bucketNameDev, bucketName string = "newscorp-newsiq-stage-bq", "newscorp-newsiq-dev-bq", ""
+var Env = os.Getenv("PREBID_ENV")
+
+var NewLineBytes = len([]byte("\n"))
+
+var validPrebidRecordsKeyName = []byte("{\n\"validPrebidRecords\":")
+var invalidPrebidRecordsKeyName = []byte(",\n\"invalidPrebidRecords\":")
+var jsonMsgEnder = []byte("\n}")
+
+/***** Core *****/
+
+type GcsGzFileRoller struct {
+	io.Writer
+	client        *storage.Client
+	bucket        string
+	ctx           context.Context
+	fileNameTmplt string
+	instanceId    string
+
+	dateStr         string
+	hourStr         string
+	dateHourStr     string
+	isStreaming     bool
+	filePathAndName string
+	cBytesWritten   uint64
+	uBytesWritten   uint64
+	recordsWritten  uint64
+
+	fi *storage.Writer
+	gf *gzip.Writer
+	fw *bufio.Writer
+}
+
+func (f *GcsGzFileRoller) Write(buf []byte) (int, error) {
+	n, err := f.fi.Write(buf)
+	atomic.AddUint64(&f.cBytesWritten, uint64(n))
+	return n, err
+}
+
+func (f *GcsGzFileRoller) IncrementByteCount(size int) *GcsGzFileRoller {
+	f.uBytesWritten += uint64(size)
+	return f
+}
+
+func (f *GcsGzFileRoller) NextGZ() *GcsGzFileRoller {
+	f.cBytesWritten = 0
+	f.uBytesWritten = 0
+	f.recordsWritten = 0
+
+	tm := time.Now().UTC()
+	f.dateStr = fmt.Sprintf("%d%02d%02d", tm.Year(), tm.Month(), tm.Day())
+	f.hourStr = fmt.Sprintf("%02d", tm.Hour())
+	f.dateHourStr = f.dateStr + "-" + f.hourStr
+	fileName := fmt.Sprintf(f.fileNameTmplt, f.dateStr, f.dateHourStr, f.instanceId, tm.Unix())
+	f.filePathAndName = fileName
+
+	fi := f.client.Bucket(f.bucket).Object(fileName).NewWriter(f.ctx)
+	f.fi = fi
+	gf := gzip.NewWriter(f)
+	nameArray := strings.Split(fileName, "/")
+	gf.Name = nameArray[len(nameArray)-1]
+	fw := bufio.NewWriter(gf)
+	f.gf = gf
+	f.fw = fw
+	f.isStreaming = true
+	return f
+}
+
+func (f *GcsGzFileRoller) WriteGZ(logData *LogPrebidEvents, brf *GcsGzFileRoller) *GcsGzFileRoller {
+	if DebugLogging {
+		fmt.Println("TEST : WriteGZ() - ", f.ctx)
+	}
+	var jsonMsg []byte
+
+	// payload := &serialize.LogPrebidEvents{}
+	// if err := proto.Unmarshal(b, payload); err != nil {
+	// 	if DebugLogging {
+	// 		fmt.Println("News IQ Module - SendCollectorData() ", msg)
+	// 	}
+	// 	log.Warningf(f.ctx, "can't deserialize protobuf payload: %v", err)
+	// 	return f
+	// }
+
+	if rslt, err := ffjson.Marshal(&logData); err == nil {
+		jsonMsg = rslt
+	} else {
+		if DebugLogging {
+			fmt.Println(f.ctx, "can't json marshal LogPrebidEvents data payload: %v", err)
+		}
+		// log.Errorf(f.ctx, "can't json marshal protobuf payload: %v", err) // TODO : Update
+		return f
+	}
+
+	// call function to verify and validate timestamp and prebid_auction_id columns
+
+	/* TODO : Verify and add logic back in ???
+
+	var writeRecord bool = VerifyFields(logData)
+
+	if writeRecord == false {
+		// log.Errorf(f.ctx, "Field verification: %v", "Field verification has failed either for timestamp or prebid_auction_id") // TODO : Update
+		LogJsonMsg(brf, jsonMsg)
+		return f
+	}
+	*/
+
+	LogJsonMsg(f, jsonMsg)
+
+	return f
+}
+
+func (f *GcsGzFileRoller) CloseCurrentGZ() *GcsGzFileRoller {
+	f.fw.Flush()
+	f.gf.Close()
+	f.fi.Close()
+	f.isStreaming = false
+	return f
+}
+
+func (f *GcsGzFileRoller) GetStats() []byte {
+	rslt, _ := ffjson.Marshal(&map[string]string{
+		"isStreaming":              strconv.FormatBool(f.isStreaming),
+		"bucket":                   f.bucket,
+		"instanceId":               f.instanceId,
+		"filePathAndName":          f.filePathAndName,
+		"compressedBytesWritten":   strconv.FormatUint(f.cBytesWritten, 10),
+		"uncompressedBytesWritten": strconv.FormatUint(f.uBytesWritten, 10),
+		"recordsWritten":           strconv.FormatUint(f.recordsWritten, 10),
+	})
+	return rslt
+}
+
+func VerifyFields(prebidData *LogPrebidEvents) bool {
+	var writeData bool = true
+	timestampValue := strconv.FormatUint((*prebidData).Timestamp, 10)
+	t, err := strconv.ParseInt(timestampValue, 10, 64)
+	if err != nil {
+		fmt.Println("timestamp parsing error : ", err)
+		fmt.Println("Maximum value allowed for timestamp string is : ", t)
+		return false
+	}
+
+	t = 0 // to avoid Go's error for unused variables
+
+	for _, element := range (*prebidData).Auctions {
+		if (*element).PrebidAuctionId == "" {
+			writeData = false
+			break
+		}
+	}
+	return writeData
+}
+
+func LogJsonMsg(f *GcsGzFileRoller, msg []byte) {
+	if DebugLogging {
+		fmt.Println("TEST : LogJsonMsg")
+	}
+	if !f.isStreaming {
+		f.NextGZ()
+	}
+	tm := time.Now().UTC()
+	dateHourStr := fmt.Sprintf("%d%02d%02d-%02d", tm.Year(), tm.Month(), tm.Day(), tm.Hour())
+	if f.dateHourStr != dateHourStr || f.cBytesWritten >= 524288000 {
+		// log.Infof(f.ctx, "closing '%s' stream to roll to next hour or due to size (>=500MB)", f.filePathAndName) // TODO : Update
+		f.CloseCurrentGZ().NextGZ()
+	}
+	(f.fw).Write(msg)
+	(f.fw).WriteString("\n")
+	f.IncrementByteCount(len(msg) + NewLineBytes)
+	f.recordsWritten++
+
+}
+
+func LogData(c <-chan DataTask, f *GcsGzFileRoller, brf *GcsGzFileRoller) {
+	if DebugLogging {
+		fmt.Println("TEST : LogData() in NewsIQ Data Module")
+	}
+	defer f.CloseCurrentGZ()
+	defer f.client.Close()
+	defer brf.CloseCurrentGZ()
+	defer brf.client.Close()
+	for {
+		select {
+		case incoming := <-c:
+			logData := generatePrebidLogData(incoming.Request, incoming.Response, incoming.Msg)
+			f.WriteGZ(logData, brf)
+		case <-time.After(time.Second * 60): //<-close stream after 60 seconds of inactivity
+			if f.isStreaming {
+				f.CloseCurrentGZ()
+				// log.Infof(f.ctx, "closing '%s' stream due to inactivity", f.filePathAndName) // TODO : Update
+			}
+			if brf.isStreaming {
+				brf.CloseCurrentGZ()
+				// log.Infof(f.ctx, "closing '%s' stream due to inactivity", brf.filePathAndName) // TODO : Update
+			}
+		}
+	}
+}
+
+/***** Data Service *****/
+
+func (d *DataLogger) RunDataTaskService() {
+	fmt.Println("ENVIRONMENT : ", Env)
+	if Env == "prod" {
+		bucketName = bucketNameProd
+	} else if Env == "dev" {
+		bucketName = bucketNameDev
+	}
+	ctx := context.Background()
+	// ctx := appengine.BackgroundContext() // TODO : remove old code
+	// logCh := make(chan []byte, 1111) // TODO : remove old code
+	client, err := storage.NewClient(ctx)
+	bucket := bucketName
+	if err != nil {
+		fmt.Println(ctx, "failed to create client: %v", err)
+		// log.Errorf(ctx, "failed to create client: %v", err) // TODO : Remove old code
+		return
+	}
+
+	roller := &GcsGzFileRoller{
+		client:        client,
+		bucket:        bucket,
+		ctx:           ctx,
+		fileNameTmplt: "newsiq-pbs-logs/dt=%s/%s-%s-%v.json.gz",
+		instanceId:    os.Getenv("PBS_INSTANCE_ID"),
+	}
+
+	badRecordsRoller := &GcsGzFileRoller{
+		client:        client,
+		bucket:        bucket,
+		ctx:           ctx,
+		fileNameTmplt: "newsiq-pbs-badrecords-logs/dt=%s/%s-%s-%v.json.gz",
+		instanceId:    os.Getenv("PBS_INSTANCE_ID"),
+	}
+
+	// go LogData(logCh, roller, badRecordsRoller) // TODO : Remove old code
+	dataTaskChannel = make(chan DataTask, 100)
+	go LogData(dataTaskChannel, roller, badRecordsRoller)
+}
+
+func TimeTrack(ctx context.Context, start time.Time, name string) {
+	elapsed := time.Since(start)
+	took := elapsed.Nanoseconds() / 1000
+	if took > 500 {
+		fmt.Println(ctx, "%s took %dms", name, took)
+		// log.Warningf(ctx, "%s took %dms", name, took) // TODO : Remove old code
+	}
+}
+
+func (d *DataLogger) EnqueuePrebidDataTask(task DataTask) bool {
+	if DebugLogging {
+		fmt.Println("TEST : EnqueuePrebidDataTask(): ", task)
+	}
+	// ctx := appengine.NewContext(r) // TODO : Update this context
+	/* TODO : Moving all over to generatePrebidLogData
+	t := time.Now()
+	ctx := context.TODO()
+	defer TimeTrack(ctx, t, "EnqueuePrebidDataTask")
+	*/
+	// responseData, err := ioutil.ReadAll(r.Body)
+	// if err != nil {
+	// 	log.Warningf(ctx, "%v", err)
+	// 	return
+	// }
+	// c <- responseData
+	select {
+	case dataTaskChannel <- task:
+		return true
+	default:
+		return false
+	}
 }

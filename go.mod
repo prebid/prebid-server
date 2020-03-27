@@ -3,7 +3,7 @@ module github.com/prebid/prebid-server
 go 1.12
 
 require (
-	github.com/BurntSushi/toml v0.3.1 // indirect
+	cloud.google.com/go/storage v1.6.0
 	github.com/DATA-DOG/go-sqlmock v1.3.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
@@ -23,7 +23,7 @@ require (
 	github.com/gocql/gocql v0.0.0-20200203083758-81b8263d9fe5
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/golang/protobuf v1.3.2
+	github.com/golang/protobuf v1.3.3
 	github.com/golang/snappy v0.0.1
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/influxdata/influxdb v1.6.1 // indirect
@@ -40,10 +40,11 @@ require (
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
+	github.com/pquerna/ffjson v0.0.0-20190930134022-aa0246cd15f7
 	github.com/prebid/go-gdpr v0.7.0
 	github.com/prebid/prebid-cache v0.0.0-20200218152159-6d6d678c1caf
 	github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed
-	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
+	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
 	github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e // indirect
 	github.com/prometheus/procfs v0.0.0-20180725123919-05ee40e3a273 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20180503174638-e2704e165165
@@ -56,7 +57,7 @@ require (
 	github.com/spf13/jwalterweatherman v0.0.0-20180814060501-14d3d4c51834 // indirect
 	github.com/spf13/pflag v1.0.2 // indirect
 	github.com/spf13/viper v1.1.0
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.4.0
 	github.com/valyala/fasthttp v1.9.0
 	github.com/vrischmann/go-metrics-influxdb v0.0.0-20160917065939-43af8332c303
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
@@ -67,9 +68,7 @@ require (
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20191220021717-ab39c6098bdb // indirect
-	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/text v0.3.0
-	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	gopkg.in/yaml.v2 v2.2.1
+	golang.org/x/net v0.0.0-20200222125558-5a598a2470a0
+	golang.org/x/text v0.3.2
+	gopkg.in/yaml.v2 v2.2.2
 )

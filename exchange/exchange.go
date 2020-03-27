@@ -93,7 +93,8 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e.defaultTTLs = cfg.CacheURL.DefaultTTLs
 	e.enforceCCPA = cfg.CCPA.Enforce
 	e.dataLogger = newsiq.InitDataLogger()
-	e.dataLogger.StartDataTaskWorker()
+	e.dataLogger.RunDataTaskService()
+	// e.dataLogger.StartDataTaskWorker() // TODO : Remove old code
 	return e
 }
 
@@ -105,19 +106,14 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// NewsIQ : Auction Init call
-	e.dataLogger.EnqueueDataTask(newsiq.DataTask{
+	enqueueSuccess := e.dataLogger.EnqueuePrebidDataTask(newsiq.DataTask{
 		Request:  bidRequest,
 		Response: nil,
 		Msg:      newsiq.AuctionInit,
 	})
-	// auctionInitDataTask := newsiq.DataTask{
-	// 	Request:  bidRequest,
-	// 	Response: nil,
-	// 	Msg:      newsiq.AuctionInit,
-	// }
-	// if !e.dataLogger.EnqueueDataTask(auctionInitDataTask) {
-	// 	fmt.Println("TEST : Data enqueue failure")
-	// }
+	if !enqueueSuccess {
+		fmt.Println("TEST : Data enqueue failure")
+	}
 
 	for _, impInRequest := range bidRequest.Imp {
 		var impLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
@@ -226,19 +222,14 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// NewsIQ : Bids Response from bidder
-	e.dataLogger.EnqueueDataTask(newsiq.DataTask{
+	enqueueResponseSuccess := e.dataLogger.EnqueuePrebidDataTask(newsiq.DataTask{
 		Request:  bidRequest,
 		Response: bidResponseObj,
 		Msg:      newsiq.BidResponse,
 	})
-	// bidResponseDataTask := newsiq.DataTask{
-	// 	Request:  bidRequest,
-	// 	Response: bidResponseObj,
-	// 	Msg:      newsiq.BidResponse,
-	// }
-	// if !e.dataLogger.EnqueueDataTask(bidResponseDataTask) {
-	// 	fmt.Println("TEST : Data enqueue failure")
-	// }
+	if !enqueueResponseSuccess {
+		fmt.Println("TEST : Data enqueue failure")
+	}
 
 	return bidResponseObj, reponseError
 }
@@ -357,19 +348,14 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 					fmt.Println("TEST : Bid Requested here")
 				}
 
-				e.dataLogger.EnqueueDataTask(newsiq.DataTask{
+				enqueueSuccess := e.dataLogger.EnqueuePrebidDataTask(newsiq.DataTask{
 					Request:  request,
 					Response: nil,
 					Msg:      newsiq.BidRequested,
 				})
-				// bidRequestedDataTask := newsiq.DataTask{
-				// 	Request:  request,
-				// 	Response: nil,
-				// 	Msg:      newsiq.BidRequested,
-				// }
-				// if !e.dataLogger.EnqueueDataTask(bidRequestedDataTask) {
-				// 	fmt.Println("TEST : Data enqueue failure")
-				// }
+				if !enqueueSuccess {
+					fmt.Println("TEST : Data enqueue failure")
+				}
 			}()
 			start := time.Now()
 
