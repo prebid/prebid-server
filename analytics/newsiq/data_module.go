@@ -531,6 +531,13 @@ type GcsGzFileRoller struct {
 
 func (f *GcsGzFileRoller) Write(buf []byte) (int, error) {
 	n, err := f.fi.Write(buf)
+	if DebugLogging {
+		if err != nil {
+			fmt.Println("TEST : Write() Error - ", err, " | context: ", f.ctx)
+		} else {
+			fmt.Println("TEST : Write() Success - ", f.ctx)
+		}
+	}
 	atomic.AddUint64(&f.cBytesWritten, uint64(n))
 	return n, err
 }
@@ -541,6 +548,9 @@ func (f *GcsGzFileRoller) IncrementByteCount(size int) *GcsGzFileRoller {
 }
 
 func (f *GcsGzFileRoller) NextGZ() *GcsGzFileRoller {
+	if DebugLogging {
+		fmt.Println("TEST : NextGZ() - ", f.ctx)
+	}
 	f.cBytesWritten = 0
 	f.uBytesWritten = 0
 	f.recordsWritten = 0
@@ -608,6 +618,9 @@ func (f *GcsGzFileRoller) WriteGZ(logData *LogPrebidEvents, brf *GcsGzFileRoller
 }
 
 func (f *GcsGzFileRoller) CloseCurrentGZ() *GcsGzFileRoller {
+	if DebugLogging {
+		fmt.Println("TEST : CloseCurrentGZ() - ", f.ctx)
+	}
 	f.fw.Flush()
 	f.gf.Close()
 	f.fi.Close()
@@ -666,7 +679,9 @@ func LogJsonMsg(f *GcsGzFileRoller, msg []byte) {
 	(f.fw).WriteString("\n")
 	f.IncrementByteCount(len(msg) + NewLineBytes)
 	f.recordsWritten++
-
+	if DebugLogging {
+		fmt.Println("TEST : LogData() records written = ", f.recordsWritten)
+	}
 }
 
 func LogData(c <-chan DataTask, f *GcsGzFileRoller, brf *GcsGzFileRoller) {
