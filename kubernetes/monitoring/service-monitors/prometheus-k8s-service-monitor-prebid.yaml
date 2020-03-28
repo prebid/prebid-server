@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: prebid-server
+  namespace: monitoring
+  labels:
+    k8s-app: prebid
+    app: prebid
+    component: server 
+spec:
+  endpoints:
+  - honorLabels: true
+  - port: "8000"
+  - interval: 30s
+    path: /
+    targetPort: "8000"
+  namespaceSelector:
+    matchNames:
+    - prebid
+  selector:
+    matchLabels:
+      app: prebid
+      component: server
