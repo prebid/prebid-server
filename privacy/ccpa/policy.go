@@ -3,6 +3,7 @@ package ccpa
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
@@ -49,35 +50,44 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 	return err
 }
 
-// Validate returns an error if the CCPA regulation value does not adhere to the IAB spec.
+// Validate returns an error if the CCPA policy does not adhere to the IAB spec.
 func (p Policy) Validate() error {
-	if p.Value == "" {
+	if err := ValidateConsent(p.Value); err != nil {
+		return fmt.Errorf("request.regs.ext.us_privacy %s", err.Error())
+	}
+
+	return nil
+}
+
+// ValidateConsent returns an error if the CCPA consent string does not adhere to the IAB spec.
+func ValidateConsent(consent string) error {
+	if consent == "" {
 		return nil
 	}
 
-	if len(p.Value) != 4 {
-		return errors.New("request.regs.ext.us_privacy must contain 4 characters")
+	if len(consent) != 4 {
+		return errors.New("must contain 4 characters")
 	}
 
-	if p.Value[0] != '1' {
-		return errors.New("request.regs.ext.us_privacy must specify version 1")
+	if consent[0] != '1' {
+		return errors.New("must specify version 1")
 	}
 
 	var c byte
 
-	c = p.Value[1]
+	c = consent[1]
 	if c != 'N' && c != 'Y' && c != '-' {
-		return errors.New("request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the explicit notice")
+		return errors.New("must specify 'N', 'Y', or '-' for the explicit notice")
 	}
 
-	c = p.Value[2]
+	c = consent[2]
 	if c != 'N' && c != 'Y' && c != '-' {
-		return errors.New("request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the opt-out sale")
+		return errors.New("must specify 'N', 'Y', or '-' for the opt-out sale")
 	}
 
-	c = p.Value[3]
+	c = consent[3]
 	if c != 'N' && c != 'Y' && c != '-' {
-		return errors.New("request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the limited service provider agreement")
+		return errors.New("must specify 'N', 'Y', or '-' for the limited service provider agreement")
 	}
 
 	return nil

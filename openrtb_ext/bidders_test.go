@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -49,21 +50,14 @@ func TestInvalidParams(t *testing.T) {
 	}
 }
 
-func TestBidderList(t *testing.T) {
-	list := BidderList()
+func TestBidderListMatchesBidderMap(t *testing.T) {
+	bidders := BidderList()
 	for _, bidderName := range BidderMap {
-		adapterInList(t, bidderName, list)
+		assert.Contains(t, bidders, bidderName)
 	}
 }
 
-func adapterInList(t *testing.T, a BidderName, l []BidderName) {
-	found := false
-	for _, n := range l {
-		if a == n {
-			found = true
-		}
-	}
-	if !found {
-		t.Errorf("Adapter %s not found in the adapter map!", a)
-	}
+func TestBidderListDoesNotDefineGeneral(t *testing.T) {
+	bidders := BidderList()
+	assert.NotContains(t, bidders, BidderNameGeneral)
 }
