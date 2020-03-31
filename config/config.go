@@ -247,6 +247,9 @@ type Adapter struct {
 	// needed for Facebook
 	PlatformID string `mapstructure:"platform_id"`
 	AppSecret  string `mapstructure:"app_secret"`
+
+	// needed for Beachfront adapter with separate endpoint for video
+	VideoEndpoint string `mapstructure:"video_endpoint"`
 }
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
@@ -693,6 +696,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
 	v.SetDefault("adapters.appnexus.platform_id", "5")
 	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
+	v.SetDefault("adapters.beachfront.video_endpoint", "https://reachms.bfmio.com/bid.json?exchange_id")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.consumable.endpoint", "https://e.serverbid.com/api/v2")
 	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
@@ -771,6 +775,7 @@ func SetupViper(v *viper.Viper, filename string) {
 func setBidderDefaults(v *viper.Viper, bidder string) {
 	adapterCfgPrefix := "adapters."
 	v.SetDefault(adapterCfgPrefix+bidder+".endpoint", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".video_endpoint", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".usersync_url", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".platform_id", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".app_secret", "")
