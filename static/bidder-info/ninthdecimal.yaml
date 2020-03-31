@@ -1,0 +1,13 @@
+maintainer:
+  email: "chandra.prakash@advangelists.com"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+   

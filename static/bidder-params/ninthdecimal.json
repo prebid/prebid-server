@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Ninthdecimal Adapter Params",
+  "description": "A schema which validates params accepted by the Ninthdecimal adapter",
+  "type": "object",
+  "properties": {
+    "pubid": {
+      "type": "string",
+      "description": "An id used to identify Ninthdecimal publisher.",
+      "minLength": 8
+    }
+  },
+  "required": ["pubid"]
+}
