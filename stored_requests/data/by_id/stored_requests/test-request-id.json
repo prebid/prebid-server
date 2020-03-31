@@ -23,16 +23,5 @@
         "osv" : "13.0",
         "pxratio" : 3,
         "w" : 414
-    },
-    "imp" :     [{
-        "ext" :             {
-            "prebid" :                 {
-                "storedrequest" :                     {
-                    "id" : "test-imp-id"
-                }
-            }
-        },
-        "id" : "nypost-ios-article-3-test-imp-id",
-        "secure" : 1
-}]
+    }
 }

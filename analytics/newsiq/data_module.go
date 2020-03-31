@@ -679,7 +679,7 @@ func LogJsonMsg(f *GcsGzFileRoller, msg []byte) {
 		}
 	}
 	(f.fw).Write(msg)
-	(f.fw).WriteString("\n")
+	(f.fw).WriteString("TESTING \n") // TEST :
 	f.IncrementByteCount(len(msg) + NewLineBytes)
 	f.recordsWritten++
 	if DebugLogging {
