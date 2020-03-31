@@ -674,6 +674,9 @@ func LogJsonMsg(f *GcsGzFileRoller, msg []byte) {
 	if f.dateHourStr != dateHourStr || f.cBytesWritten >= 524288000 {
 		// log.Infof(f.ctx, "closing '%s' stream to roll to next hour or due to size (>=500MB)", f.filePathAndName) // TODO : Update
 		f.CloseCurrentGZ().NextGZ()
+		if DebugLogging {
+			fmt.Println("TEST : LogJsonMsg - Closing GZ")
+		}
 	}
 	(f.fw).Write(msg)
 	(f.fw).WriteString("\n")
@@ -700,10 +703,16 @@ func LogData(c <-chan DataTask, f *GcsGzFileRoller, brf *GcsGzFileRoller) {
 		case <-time.After(time.Second * 60): //<-close stream after 60 seconds of inactivity
 			if f.isStreaming {
 				f.CloseCurrentGZ()
+				if DebugLogging {
+					fmt.Println("TEST : LogData() closing stream due to inactivity: ", f.filePathAndName)
+				}
 				// log.Infof(f.ctx, "closing '%s' stream due to inactivity", f.filePathAndName) // TODO : Update
 			}
 			if brf.isStreaming {
 				brf.CloseCurrentGZ()
+				if DebugLogging {
+					fmt.Println("TEST : LogData() closing stream due to inactivity: ", brf.filePathAndName)
+				}
 				// log.Infof(f.ctx, "closing '%s' stream due to inactivity", brf.filePathAndName) // TODO : Update
 			}
 		}
