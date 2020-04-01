@@ -1,11 +1,12 @@
 package aspects
 
 import (
-	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/config"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/config"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +19,7 @@ func TestAny(t *testing.T) {
 		reqTimeInQueue          string
 		reqTimeOut              string
 		setHeaders              bool
-		extectedRespCode        int
+		expectedRespCode        int
 		expectedRespCodeMessage string
 		expectedRespBody        string
 		expectedRespBodyMessage string
@@ -28,7 +29,7 @@ func TestAny(t *testing.T) {
 			reqTimeInQueue:          "6",
 			reqTimeOut:              "5",
 			setHeaders:              true,
-			extectedRespCode:        http.StatusRequestTimeout,
+			expectedRespCode:        http.StatusRequestTimeout,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 408",
 			expectedRespBody:        "Queued request processing time exceeded maximum",
 			expectedRespBodyMessage: "Body should have error message",
@@ -38,7 +39,7 @@ func TestAny(t *testing.T) {
 			reqTimeInQueue:          "0.9",
 			reqTimeOut:              "5",
 			setHeaders:              true,
-			extectedRespCode:        http.StatusOK,
+			expectedRespCode:        http.StatusOK,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 200",
 			expectedRespBody:        "Executed",
 			expectedRespBodyMessage: "Body should be present in response",
@@ -48,7 +49,7 @@ func TestAny(t *testing.T) {
 			reqTimeInQueue:          "",
 			reqTimeOut:              "",
 			setHeaders:              false,
-			extectedRespCode:        http.StatusOK,
+			expectedRespCode:        http.StatusOK,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 200",
 			expectedRespBody:        "Executed",
 			expectedRespBodyMessage: "Body should be present in response",
@@ -58,7 +59,7 @@ func TestAny(t *testing.T) {
 			reqTimeInQueue:          "2",
 			reqTimeOut:              "",
 			setHeaders:              true,
-			extectedRespCode:        http.StatusOK,
+			expectedRespCode:        http.StatusOK,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 200",
 			expectedRespBody:        "Executed",
 			expectedRespBodyMessage: "Body should be present in response",
@@ -68,7 +69,7 @@ func TestAny(t *testing.T) {
 			reqTimeInQueue:          "test1",
 			reqTimeOut:              "test2",
 			setHeaders:              true,
-			extectedRespCode:        http.StatusInternalServerError,
+			expectedRespCode:        http.StatusInternalServerError,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 400",
 			expectedRespBody:        "Request timeout headers are incorrect (wrong format)",
 			expectedRespBodyMessage: "Body should have error message",
@@ -78,7 +79,7 @@ func TestAny(t *testing.T) {
 			reqTimeInQueue:          "test1",
 			reqTimeOut:              "123",
 			setHeaders:              true,
-			extectedRespCode:        http.StatusInternalServerError,
+			expectedRespCode:        http.StatusInternalServerError,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 400",
 			expectedRespBody:        "Request timeout headers are incorrect (wrong format)",
 			expectedRespBodyMessage: "Body should have error message",
@@ -87,7 +88,7 @@ func TestAny(t *testing.T) {
 
 	for _, test := range testCases {
 		result := ExecuteAspectRequest(t, test.reqTimeInQueue, test.reqTimeOut, test.setHeaders)
-		assert.Equal(t, test.extectedRespCode, result.Code, test.expectedRespCodeMessage)
+		assert.Equal(t, test.expectedRespCode, result.Code, test.expectedRespCodeMessage)
 		assert.Equal(t, test.expectedRespBody, string(result.Body.Bytes()), test.expectedRespBodyMessage)
 	}
 }

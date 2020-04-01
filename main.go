@@ -42,9 +42,11 @@ func main() {
 	}
 }
 
+const configFileName = "pbs"
+
 func loadConfig() (*config.Configuration, error) {
 	v := viper.New()
-	config.SetupViper(v, "pbs") // filke = filename
+	config.SetupViper(v, configFileName)
 	return config.New(v)
 }
 

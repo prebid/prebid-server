@@ -199,7 +199,7 @@ for each Bidder by using the `/cookie_sync` endpoint, and calling the URLs that 
 
 #### Native Request
 
-For each native request, the `assets` objects's `id` field must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID.
+For each native request, the `assets` object's `id` field must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID.
 
 
 #### Bidder Aliases
@@ -236,7 +236,7 @@ This can be used to request bids from the same Bidder with different params. For
 ```
 
 For all intents and purposes, the alias will be treated as another Bidder. This new Bidder will behave exactly
-like the original, except that the Response will contain seprate SeatBids, and any Targeting keys
+like the original, except that the Response will contain separate SeatBids, and any Targeting keys
 will be formed using the alias' name.
 
 If an alias overlaps with a core Bidder's name, then the alias will take precedence.
@@ -253,7 +253,7 @@ For example, if the Request defines an alias like this:
 ```
 
 then any `imp.ext.appnexus` params will actually go to the **rubicon** adapter.
-It will become impossible to fetch bids from Appnexus within that Request.
+It will become impossible to fetch bids from AppNexus within that Request.
 
 #### Bidder Response Times
 
@@ -431,7 +431,7 @@ If it exists, a rate defined in ext.prebid.currency.rates has the highest priori
 While testing SDK and video integrations, it's important, but often difficult, to get consistent responses back from bidders that cover a range of scenarios like different CPM values, deals, etc. Prebid Server supports a debugging workflow in two ways:
 
 - a stored-auction-response that covers multiple bidder responses
-- multiple stored-bid-reponses at the bidder adapter level
+- multiple stored-bid-responses at the bidder adapter level
 
 **Single Stored Auction Response ID**
 

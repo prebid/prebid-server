@@ -76,7 +76,7 @@ const (
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
 func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	requestTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
-	cacheWriteTimeBuckts := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
+	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
 
 	metrics := Metrics{}
@@ -112,7 +112,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"prebidcache_write_time_seconds",
 		"Seconds to write to Prebid Cache labeled by success or failure. Failure timing is limited by Prebid Server enforced timeouts.",
 		[]string{successLabel},
-		cacheWriteTimeBuckts)
+		cacheWriteTimeBuckets)
 
 	metrics.requests = newCounter(cfg, metrics.Registry,
 		"requests",
