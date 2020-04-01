@@ -589,7 +589,8 @@ func (f *GcsGzFileRoller) WriteGZ(logData *LogPrebidEvents, brf *GcsGzFileRoller
 	// 	return f
 	// }
 
-	if rslt, err := ffjson.Marshal(&logData); err == nil {
+	// if rslt, err := ffjson.Marshal(&logData); err == nil {
+	if rslt, err := ffjson.Marshal("THIS IS TEST DATA JSON"); err == nil {
 		jsonMsg = rslt
 	} else {
 		if DebugLogging {
