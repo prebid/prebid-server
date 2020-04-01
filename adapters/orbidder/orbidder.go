@@ -1,7 +1,6 @@
 package orbidder
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
@@ -17,24 +16,21 @@ type OrbidderAdapter struct {
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids from orbidder.
 func (rcv *OrbidderAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
-	var adapterRequests []*adapters.RequestData
+	requestBodyJSON, err := json.Marshal(request)
+	if err != nil {
+		return nil, []error{err}
+	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	body := new(bytes.Buffer)
-	json.NewEncoder(body).Encode(request)
-
-	reqData := &adapters.RequestData{
+	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     rcv.endpoint,
-		Body:    body.Bytes(),
+		Body:    requestBodyJSON,
 		Headers: headers,
-	}
-	adapterRequests = append(adapterRequests, reqData)
-	return adapterRequests, errs
+	}}, nil
 }
 
 // MakeBids unpacks server response into Bids.
@@ -62,11 +58,10 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
-	for _, sb := range bidResp.SeatBid {
-		for i := 0; i < len(sb.Bid); i++ {
-			bid := &sb.Bid[i]
+	for _, seatBid := range bidResp.SeatBid {
+		for _, bid := range seatBid.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     bid,
+				Bid:     &bid,
 				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
