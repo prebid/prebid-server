@@ -42,9 +42,9 @@ type BidType string
 
 const (
 	BidTypeBanner BidType = "banner"
-	BidTypeVideo          = "video"
-	BidTypeAudio          = "audio"
-	BidTypeNative         = "native"
+	BidTypeVideo  BidType = "video"
+	BidTypeAudio  BidType = "audio"
+	BidTypeNative BidType = "native"
 )
 
 func BidTypes() []BidType {

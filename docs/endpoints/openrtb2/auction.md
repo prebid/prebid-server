@@ -195,7 +195,7 @@ will be truncated to only include the first 20 characters.
 #### Cookie syncs
 
 Each Bidder should receive their own ID in the `request.user.buyeruid` property.
-Prebid Server has three ways to popualte this field. In order of priority:
+Prebid Server has three ways to populate this field. In order of priority:
 
 1. If the request payload contains `request.user.buyeruid`, then that value will be sent to all Bidders.
 In most cases, this is probably a bad idea.
@@ -447,6 +447,28 @@ PBS with interstitial support will come preconfigured with a list of common ad s
 Rewarded video is a way to incentivize users to watch ads by giving them 'points' for viewing an ad. A Prebid Server
 client can declare a given adunit as eligible for rewards by declaring `imp.ext.prebid.is_rewarded_inventory:1`.
 
+#### Currency Support
+
+To set the desired 'ad server currency', use the standard OpenRTB `cur` attribute. Note that Prebid Server only looks at the first currency in the array.
+```
+"cur": ["USD"]
+```
+
+If you want or need to define currency conversion rates (e.g. for currencies that your Prebid Server doesn't support), define ext.prebid.currency.rates. (Currently supported in PBS-Java only)
+
+```
+"ext": {
+  "prebid": {
+	  "currency": {
+		  "rates": {
+			  "USD": { "UAH": 24.47, "ETB": 32.04 }
+		  }
+	  }
+  }
+}
+```
+
+If it exists, a rate defined in ext.prebid.currency.rates has the highest priority. If a currency rate doesn't exist in the request, the external file will be used.
 
 #### Stored Responses (PBS-Java only)
 

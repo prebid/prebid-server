@@ -51,11 +51,13 @@ type adaptedBidder interface {
 // pbsOrtbBid.bidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // pbsOrtbBid.bidTargets does not need to be filled out by the Bidder. It will be set later by the exchange.
 // pbsOrtbBid.bidVideo is optional but should be filled out by the Bidder if bidType is video.
+// pbsOrtbBid.dealPriority will become "response.seatbid[i].bid.dealPriority" in the final OpenRTB response.
 type pbsOrtbBid struct {
-	bid        *openrtb.Bid
-	bidType    openrtb_ext.BidType
-	bidTargets map[string]string
-	bidVideo   *openrtb_ext.ExtBidPrebidVideo
+	bid          *openrtb.Bid
+	bidType      openrtb_ext.BidType
+	bidTargets   map[string]string
+	bidVideo     *openrtb_ext.ExtBidPrebidVideo
+	dealPriority int
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -183,9 +185,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment * conversionRate
 						}
 						seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-							bid:      bidResponse.Bids[i].Bid,
-							bidType:  bidResponse.Bids[i].BidType,
-							bidVideo: bidResponse.Bids[i].BidVideo,
+							bid:          bidResponse.Bids[i].Bid,
+							bidType:      bidResponse.Bids[i].BidType,
+							bidVideo:     bidResponse.Bids[i].BidVideo,
+							dealPriority: bidResponse.Bids[i].DealPriority,
 						})
 					}
 				} else {

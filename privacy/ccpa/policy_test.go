@@ -154,74 +154,148 @@ func TestWrite(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	testCases := []struct {
-		description string
-		policy      Policy
-		expected    string
+		description   string
+		policy        Policy
+		expectedError string
 	}{
 		{
-			description: "Valid",
-			policy:      Policy{Value: "1NYN"},
-			expected:    "",
+			description:   "Valid",
+			policy:        Policy{Value: "1NYN"},
+			expectedError: "",
 		},
 		{
-			description: "Valid - Not Applicable",
-			policy:      Policy{Value: "1---"},
-			expected:    "",
+			description:   "Valid - Not Applicable",
+			policy:        Policy{Value: "1---"},
+			expectedError: "",
 		},
 		{
-			description: "Valid - Empty",
-			policy:      Policy{Value: ""},
-			expected:    "",
+			description:   "Valid - Empty",
+			policy:        Policy{Value: ""},
+			expectedError: "",
 		},
 		{
-			description: "Invalid Length",
-			policy:      Policy{Value: "1NY"},
-			expected:    "request.regs.ext.us_privacy must contain 4 characters",
+			description:   "Invalid Length",
+			policy:        Policy{Value: "1NY"},
+			expectedError: "request.regs.ext.us_privacy must contain 4 characters",
 		},
 		{
-			description: "Invalid Version",
-			policy:      Policy{Value: "2---"},
-			expected:    "request.regs.ext.us_privacy must specify version 1",
+			description:   "Invalid Version",
+			policy:        Policy{Value: "2---"},
+			expectedError: "request.regs.ext.us_privacy must specify version 1",
 		},
 		{
-			description: "Invalid Explicit Notice Char",
-			policy:      Policy{Value: "1X--"},
-			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the explicit notice",
+			description:   "Invalid Explicit Notice Char",
+			policy:        Policy{Value: "1X--"},
+			expectedError: "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the explicit notice",
 		},
 		{
-			description: "Invalid Explicit Notice Case",
-			policy:      Policy{Value: "1y--"},
-			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the explicit notice",
+			description:   "Invalid Explicit Notice Case",
+			policy:        Policy{Value: "1y--"},
+			expectedError: "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the explicit notice",
 		},
 		{
-			description: "Invalid Opt-Out Sale Char",
-			policy:      Policy{Value: "1-X-"},
-			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the opt-out sale",
+			description:   "Invalid Opt-Out Sale Char",
+			policy:        Policy{Value: "1-X-"},
+			expectedError: "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the opt-out sale",
 		},
 		{
-			description: "Invalid Opt-Out Sale Case",
-			policy:      Policy{Value: "1-y-"},
-			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the opt-out sale",
+			description:   "Invalid Opt-Out Sale Case",
+			policy:        Policy{Value: "1-y-"},
+			expectedError: "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the opt-out sale",
 		},
 		{
-			description: "Invalid LSPA Char",
-			policy:      Policy{Value: "1--X"},
-			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the limited service provider agreement",
+			description:   "Invalid LSPA Char",
+			policy:        Policy{Value: "1--X"},
+			expectedError: "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the limited service provider agreement",
 		},
 		{
-			description: "Invalid LSPA Case",
-			policy:      Policy{Value: "1--y"},
-			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the limited service provider agreement",
+			description:   "Invalid LSPA Case",
+			policy:        Policy{Value: "1--y"},
+			expectedError: "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the limited service provider agreement",
 		},
 	}
 
 	for _, test := range testCases {
 		result := test.policy.Validate()
 
-		if test.expected == "" {
+		if test.expectedError == "" {
 			assert.NoError(t, result, test.description)
 		} else {
-			assert.EqualError(t, result, test.expected, test.description)
+			assert.EqualError(t, result, test.expectedError, test.description)
+		}
+	}
+}
+
+func TestValidateConsent(t *testing.T) {
+	testCases := []struct {
+		description   string
+		consent       string
+		expectedError string
+	}{
+		{
+			description:   "Valid",
+			consent:       "1NYN",
+			expectedError: "",
+		},
+		{
+			description:   "Valid - Not Applicable",
+			consent:       "1---",
+			expectedError: "",
+		},
+		{
+			description:   "Invalid Empty",
+			consent:       "",
+			expectedError: "",
+		},
+		{
+			description:   "Invalid Length",
+			consent:       "1NY",
+			expectedError: "must contain 4 characters",
+		},
+		{
+			description:   "Invalid Version",
+			consent:       "2---",
+			expectedError: "must specify version 1",
+		},
+		{
+			description:   "Invalid Explicit Notice Char",
+			consent:       "1X--",
+			expectedError: "must specify 'N', 'Y', or '-' for the explicit notice",
+		},
+		{
+			description:   "Invalid Explicit Notice Case",
+			consent:       "1y--",
+			expectedError: "must specify 'N', 'Y', or '-' for the explicit notice",
+		},
+		{
+			description:   "Invalid Opt-Out Sale Char",
+			consent:       "1-X-",
+			expectedError: "must specify 'N', 'Y', or '-' for the opt-out sale",
+		},
+		{
+			description:   "Invalid Opt-Out Sale Case",
+			consent:       "1-y-",
+			expectedError: "must specify 'N', 'Y', or '-' for the opt-out sale",
+		},
+		{
+			description:   "Invalid LSPA Char",
+			consent:       "1--X",
+			expectedError: "must specify 'N', 'Y', or '-' for the limited service provider agreement",
+		},
+		{
+			description:   "Invalid LSPA Case",
+			consent:       "1--y",
+			expectedError: "must specify 'N', 'Y', or '-' for the limited service provider agreement",
+		},
+	}
+
+	for _, test := range testCases {
+		result := ValidateConsent(test.consent)
+
+		if test.expectedError == "" {
+			assert.NoError(t, result, test.description)
+		} else {
+			assert.EqualError(t, result, test.expectedError, test.description)
 		}
 	}
 }
