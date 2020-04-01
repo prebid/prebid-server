@@ -174,7 +174,7 @@ will be truncated to only include the first 20 characters.
 #### Cookie syncs
 
 Each Bidder should receive their own ID in the `request.user.buyeruid` property.
-Prebid Server has three ways to popualte this field. In order of priority:
+Prebid Server has three ways to populate this field. In order of priority:
 
 1. If the request payload contains `request.user.buyeruid`, then that value will be sent to all Bidders.
 In most cases, this is probably a bad idea.
@@ -336,7 +336,7 @@ Bids can be temporarily cached on the server by sending the following data as `r
 }
 ```
 
-Both `bids` and `vastxml` are optional, but one of the two is required. Thils property will have no effect
+Both `bids` and `vastxml` are optional, but one of the two is required. This property will have no effect
 unless `request.ext.prebid.targeting` is also set in the request.
 
 If `bids` is present, Prebid Server will make a _best effort_ to include these extra
@@ -418,7 +418,6 @@ ext.prebid.schains: [
 In this scenario, Prebid Server sends the first schain object to `bidderA` and the second schain object to everyone else.
 
 If there's already an source.ext.schain and a bidder is named in ext.prebid.schains (or covered by the wildcard condition), ext.prebid.schains takes precedent.
-
 
 #### Stored Responses (PBS-Java only)
 

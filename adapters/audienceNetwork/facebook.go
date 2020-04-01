@@ -333,6 +333,12 @@ func modifyImpCustom(json []byte, imp *openrtb.Imp) ([]byte, error) {
 }
 
 func (this *FacebookAdapter) MakeBids(request *openrtb.BidRequest, adapterRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	/* No bid response */
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	/* Any other http status codes outside of 200 and 204 should be treated as errors */
 	if response.StatusCode != http.StatusOK {
 		msg := response.Headers.Get("x-fb-an-errors")
 		return nil, []error{&errortypes.BadInput{
