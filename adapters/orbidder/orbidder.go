@@ -74,17 +74,3 @@ func NewOrbidderBidder(endpoint string) *OrbidderAdapter {
 		endpoint: endpoint,
 	}
 }
-
-func UnmarshalOrbidderExtImp(ext json.RawMessage) (*openrtb_ext.ExtImpOrbidder, error) {
-	extImpBidder := new(adapters.ExtImpBidder)
-	if err := json.Unmarshal(ext, extImpBidder); err != nil {
-		return nil, err
-	}
-
-	impExt := new(openrtb_ext.ExtImpOrbidder)
-	if err := json.Unmarshal(extImpBidder.Bidder, impExt); err != nil {
-		return nil, err
-	}
-
-	return impExt, nil
-}
