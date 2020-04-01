@@ -6,7 +6,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/analytics/filesystem"
-	"github.com/prebid/prebid-server/analytics/newsiq"
 	"github.com/prebid/prebid-server/config"
 )
 
@@ -17,16 +16,16 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 	// println("Enabled: ", enabledAnalytics)
 	println("Modules: ", modules)
 	if len(analytics.File.Filename) > 0 {
-		// if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil { // OLD
-		if mod, err := filesystem.NewFileLogger(""); err == nil { // NEW
+		// if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil { // TODO :  OLD
+		if mod, err := filesystem.NewFileLogger(""); err == nil { // TODO :  NEW
 			modules = append(modules, mod)
 		} else {
 			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
 		}
 	}
 
-	dataLogger := newsiq.NewDataLogger("TestNewsIQDataLogger")
-	modules = append(modules, dataLogger)
+	// dataLogger := newsiq.NewDataLogger("TestNewsIQDataLogger") // TODO : Remove code
+	// modules = append(modules, dataLogger)
 	return modules
 }
 
