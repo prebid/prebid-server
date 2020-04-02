@@ -561,7 +561,7 @@ func (f *GcsGzFileRoller) NextGZ() *GcsGzFileRoller {
 	f.filePathAndName = fileName
 
 	if DebugLogging {
-		fmt.Println("TEST : NextGZ() - ", f.ctx, " Bucket: ", f.bucket, " Filename: ", fileName, " Instance: ", f.instanceId)
+		fmt.Println("TEST : NextGZ()", f.ctx, " Bucket: ", f.bucket, " Filename: ", fileName, " Instance: ", f.instanceId)
 	}
 
 	fi := f.client.Bucket(f.bucket).Object(fileName).NewWriter(f.ctx)
