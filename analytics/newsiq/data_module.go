@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,7 +20,6 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/pquerna/ffjson/ffjson"
 	"github.com/prebid/prebid-server/analytics"
-	"google.golang.org/api/iterator"
 )
 
 /*
@@ -595,7 +595,8 @@ func (f *GcsGzFileRoller) WriteGZ(logData *LogPrebidEvents, brf *GcsGzFileRoller
 	theArray[0] = "India"  // Assign a value to the first element
 	theArray[1] = "Canada" // Assign a value to the second element
 	theArray[2] = "Japan"
-	if rslt, err := ffjson.Marshal(theArray); err == nil {
+	// if rslt, err := ffjson.Marshal(theArray); err == nil { // TODO : Fix this
+	if rslt, err := json.Marshal(theArray); err == nil {
 		jsonMsg = rslt
 	} else {
 		if DebugLogging {
@@ -788,18 +789,19 @@ func (d *DataLogger) RunDataTaskService() {
 		return
 	}
 
-	it := client.Bucket(bucket).Objects(ctx, nil)
-	for {
-		attrs, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			fmt.Println("TEST : Item name Error ", err)
-			return
-		}
-		fmt.Println("TEST : Item name - ", attrs.Name)
-	}
+	/*
+		it := client.Bucket(bucket).Objects(ctx, nil)
+		for {
+			attrs, err := it.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				fmt.Println("TEST : Item name Error ", err)
+				return
+			}
+			fmt.Println("TEST : Item name - ", attrs.Name)
+		}*/
 
 	roller := &GcsGzFileRoller{
 		client:        client,
