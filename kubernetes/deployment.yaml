@@ -43,7 +43,20 @@ spec:
           valueFrom:
             fieldRef:
               apiVersion: v1
-              fieldPath: metadata.name                                      
+              fieldPath: metadata.name
+        - name: PBS_PROJECT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: prebid-secrets
+              key: project-name
+        volumeMounts:
+        - name: prebid-secrets
+          mountPath: "/secrets/config"
+          readOnly: true              
+      volumes:
+      - name: prebid-secrets
+        secret:
+          secretName: prebid-secrets                                                  
 
 ---
 apiVersion: v1

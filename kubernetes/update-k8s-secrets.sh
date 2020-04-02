@@ -59,4 +59,11 @@ kubectl --namespace=monitoring create secret generic grafana-config-ini \
     --from-file=grafana_url=.secrets-repo-${ENV}/others/grafana_url \
     --dry-run -o yaml | kubectl apply -f -
 
+echo "Update prebid-secrets..."
+
+kubectl --namespace=prebid create secret generic prebid-secrets \
+    --from-file=project-name=.secrets-repo-${ENV}/kubernetes/project_name \
+    --from-file=prebid-service-account=.secrets-repo-${ENV}/kubernetes/prebid-server_service_account.json \
+    --dry-run -o yaml | kubectl apply -f -    
+
 echo "Done."
