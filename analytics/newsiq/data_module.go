@@ -548,9 +548,7 @@ func (f *GcsGzFileRoller) IncrementByteCount(size int) *GcsGzFileRoller {
 }
 
 func (f *GcsGzFileRoller) NextGZ() *GcsGzFileRoller {
-	if DebugLogging {
-		fmt.Println("TEST : NextGZ() - ", f.ctx)
-	}
+
 	f.cBytesWritten = 0
 	f.uBytesWritten = 0
 	f.recordsWritten = 0
@@ -561,6 +559,10 @@ func (f *GcsGzFileRoller) NextGZ() *GcsGzFileRoller {
 	f.dateHourStr = f.dateStr + "-" + f.hourStr
 	fileName := fmt.Sprintf(f.fileNameTmplt, f.dateStr, f.dateHourStr, f.instanceId, tm.Unix())
 	f.filePathAndName = fileName
+
+	if DebugLogging {
+		fmt.Println("TEST : NextGZ() - ", f.ctx, " Bucket: ", f.bucket, " Filename: ", fileName, " Instance: ", f.instanceId)
+	}
 
 	fi := f.client.Bucket(f.bucket).Object(fileName).NewWriter(f.ctx)
 	f.fi = fi
@@ -589,8 +591,7 @@ func (f *GcsGzFileRoller) WriteGZ(logData *LogPrebidEvents, brf *GcsGzFileRoller
 	// 	return f
 	// }
 
-	// if rslt, err := ffjson.Marshal(&logData); err == nil {
-	if rslt, err := ffjson.Marshal("THIS IS TEST DATA JSON"); err == nil {
+	if rslt, err := ffjson.Marshal(&logData); err == nil {
 		jsonMsg = rslt
 	} else {
 		if DebugLogging {
@@ -720,6 +721,44 @@ func LogData(c <-chan DataTask, f *GcsGzFileRoller, brf *GcsGzFileRoller) {
 	}
 }
 
+// func listBuckets(ctx context) {
+// 	var buckets []string
+// 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+// 	defer cancel()
+// 	client, err := storage.NewClient(ctx)
+// it := client.Buckets(ctx, projectID)
+// for {
+// 	battrs, err := it.Next()
+// 	if err == iterator.Done {
+// 		break
+// 	}
+// 	if err != nil {
+// 		fmt.Println("TEST : Error bucket name - ", err)
+// 		return
+// 	}
+// 	fmt.Println("TEST : bucket name - ", battrs.Name)
+// 	buckets = append(buckets, battrs.Name)
+// }
+// }
+
+// func listBucketObjects(ctx Context) {
+// 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+// 	defer cancel()
+// 	client, err := storage.NewClient(ctx)
+// 	it := client.Bucket(f.bucket).Objects(ctx, nil)
+// 	for {
+// 		attrs, err := it.Next()
+// 		if err == iterator.Done {
+// 			break
+// 		}
+// 		if err != nil {
+// 			fmt.Println("TEST : Error bucket objects - ", err)
+// 			return
+// 		}
+// 		fmt.Println("TEST : bucket object name - ", attrs.Name)
+// 	}
+// }
+
 /***** Data Service *****/
 
 func (d *DataLogger) RunDataTaskService() {
@@ -730,6 +769,11 @@ func (d *DataLogger) RunDataTaskService() {
 		bucketName = bucketNameDev
 	}
 	ctx := context.Background()
+
+	// listBuckets(ctx)
+
+	// listBucketObjects(ctx)
+
 	// ctx := appengine.BackgroundContext() // TODO : remove old code
 	// logCh := make(chan []byte, 1111) // TODO : remove old code
 	client, err := storage.NewClient(ctx)
@@ -757,7 +801,7 @@ func (d *DataLogger) RunDataTaskService() {
 	}
 
 	// go LogData(logCh, roller, badRecordsRoller) // TODO : Remove old code
-	dataTaskChannel = make(chan DataTask, 100)
+	dataTaskChannel := make(chan DataTask, 100)
 	go LogData(dataTaskChannel, roller, badRecordsRoller)
 }
 
