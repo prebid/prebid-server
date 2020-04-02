@@ -19,6 +19,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/pquerna/ffjson/ffjson"
 	"github.com/prebid/prebid-server/analytics"
+	"google.golang.org/api/iterator"
 )
 
 /*
@@ -785,6 +786,19 @@ func (d *DataLogger) RunDataTaskService() {
 		fmt.Println(ctx, "failed to create client: %v", err)
 		// log.Errorf(ctx, "failed to create client: %v", err) // TODO : Remove old code
 		return
+	}
+
+	it := client.Bucket(bucket).Objects(ctx, nil)
+	for {
+		attrs, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			fmt.Println("TEST : Item name Error ", err)
+			return
+		}
+		fmt.Println("TEST : Item name - ", attrs.Name)
 	}
 
 	roller := &GcsGzFileRoller{
