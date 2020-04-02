@@ -738,7 +738,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard")
 	v.SetDefault("adapters.vrtcal.endpoint", "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804")
 	v.SetDefault("adapters.yieldmo.endpoint", "https://ads.yieldmo.com/exchange/prebid-server")
-	v.SetDefault("adapters.yieldone.endpoint", "http://dev.dac-yieldone.iponweb.net/hbs_imp") //"https://y.one.impact-ad.jp/hbs_imp")
+	v.SetDefault("adapters.yieldone.endpoint", "https://y.one.impact-ad.jp/hbs_imp")
 	v.SetDefault("adapters.zeroclickfraud.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
 
 	v.SetDefault("max_request_size", 1024*256)
