@@ -106,7 +106,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, errL := deps.parseRequest(r)
 
-	if fatalError(errL) && writeError(errL, w, &labels) {
+	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
 
@@ -326,7 +326,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
-		if fatalError(errs) {
+		if errortypes.ContainsFatalError(errs) {
 			return errL
 		}
 	}
@@ -1177,8 +1177,8 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 		httpStatus := http.StatusBadRequest
 		metricsStatus := pbsmetrics.RequestStatusBadInput
 		for _, err := range errs {
-			erVal := errortypes.DecodeError(err)
-			if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
+			erVal := errortypes.ReadCode(err)
+			if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.BlacklistedAcctErrorCode {
 				httpStatus = http.StatusServiceUnavailable
 				metricsStatus = pbsmetrics.RequestStatusBlacklisted
 				break
@@ -1192,17 +1192,6 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 		rc = true
 	}
 	return rc
-}
-
-// Checks to see if an error in an error list is a fatal error
-func fatalError(errL []error) bool {
-	for _, err := range errL {
-		errCode := errortypes.DecodeError(err)
-		if errCode != errortypes.BidderTemporarilyDisabledCode && errCode != errortypes.WarningCode {
-			return true
-		}
-	}
-	return false
 }
 
 // Returns the effective publisher ID

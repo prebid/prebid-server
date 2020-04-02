@@ -298,12 +298,12 @@ func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error,
 	var errors string
 	var status int = http.StatusInternalServerError
 	for _, er := range errL {
-		erVal := errortypes.DecodeError(er)
-		if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
+		erVal := errortypes.ReadCode(er)
+		if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.BlacklistedAcctErrorCode {
 			status = http.StatusServiceUnavailable
 			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
 			break
-		} else if erVal == errortypes.AcctRequiredCode {
+		} else if erVal == errortypes.AcctRequiredErrorCode {
 			status = http.StatusBadRequest
 			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 			break
