@@ -4,5 +4,5 @@ package openrtb_ext
 type ExtImpOrbidder struct {
 	AccountId   string  `json:"accountId"`
 	PlacementId string  `json:"placementId"`
-	BidFloor    float64 `json:"bid-floor"`
+	BidFloor    float64 `json:"bidfloor"`
 }
