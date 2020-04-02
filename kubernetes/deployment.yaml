@@ -49,6 +49,8 @@ spec:
             secretKeyRef:
               name: prebid-secrets
               key: project-name
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /secrets/config/prebid-service-account              
         volumeMounts:
         - name: prebid-secrets
           mountPath: "/secrets/config"
