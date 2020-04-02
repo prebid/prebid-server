@@ -1,0 +1,414 @@
+#!/bin/bash
+
+#########################################################################################
+#components default version
+#########################################################################################
+GRAFANA_DEFAULT_VERSION=6.6.0
+PROMETHEUS_DEFAULT_VERSION=v2.8.1
+PROMETHEUS_OPERATOR_DEFAULT_VERSION=v0.29.0
+PROMETHEUS_STORAGE_DEFAULT_RETENTION=168h
+PROMETHEUS_STORAGE_DEFAULT_VOLUME_SIZE=40Gi
+PROMETHEUS_DEFAULT_MEMORY_REQUEST=1Gi
+ALERTMANAGER_DEFAULT_VERSION=v0.16.1
+NODE_EXPORTER_DEFAULT_VERSION=v0.17.0
+KUBE_STATE_METRICS_DEFAULT_VERSION=v1.5.0
+NODE_LABEL_DEFAULT_KEY=beta.kubernetes.io/monit
+NODE_LABEL_DEFAULT_VALUE=prometheus
+DEFAULT_NAMESPACE=monitoring
+
+#########################################################################################
+#external Urls for Prometheus and Alertmanager
+#########################################################################################
+PROMETHEUS_DEFAULT_EXTERNAL_URL=http://127.0.0.1:9090
+ALERTMANAGER_DEFAULT_EXTERNAL_URL=http://127.0.0.1:9093
+
+#########################################################################################
+#environment configuration
+#########################################################################################
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+GREEN_PS3=$'\e[0;32m'
+ORANGE_PS3=$'\e[0;33m'
+WHITE='\033[0;37m'
+if [ -z "${KUBECONFIG}" ]; then
+    export KUBECONFIG=~/.kube/config
+fi
+
+#check for uncommitted changes
+echo -e "${ORANGE}Check for uncommitted changes"
+echo
+
+if [ "$(git status -s)" != "" ]; then
+  echo -e "${RED}WARNING! ${WHITE}You have uncommitted changes! Please commit your changes now, then press ENTER"
+  tput sgr0
+  git status -s
+  read -p " [ENTER]: " next
+else
+  echo -e "${GREEN}OK! ${WHITE}No uncommitted changes detected"
+  tput sgr0
+fi
+
+#Namespace
+read -p "Enter desired namespace to deploy prometheus [$DEFAULT_NAMESPACE]: " NAMESPACE
+NAMESPACE=${NAMESPACE:-$DEFAULT_NAMESPACE}
+tput sgr0
+
+echo -e "${BLUE}Creating ${ORANGE}${NAMESPACE} ${BLUE}namespace."
+kubectl create namespace "$NAMESPACE"
+
+#Set namespace in various resources
+for n in $(egrep -lir --include=*.{yaml,sh} "CUSTOM_NAMESPACE" .); do
+  sed -i -e 's,CUSTOM_NAMESPACE,'"$NAMESPACE"',g' $n
+done
+
+kctl() {
+    kubectl --namespace "$NAMESPACE" "$@"
+}
+
+#Cloud Provider
+PS3="${GREEN_PS3}Please select your cloud provider:"
+
+options=("AWS" "GCP" "Azure" "Custom")
+select opt in "${options[@]}"
+do
+    tput sgr0
+    case $opt in
+        "AWS")
+            echo "Deploying on AWS"
+            STORAGE_CLASS_PROVISIONER=kubernetes.io/aws-ebs
+            STORAGE_CLASS_TYPE=gp2
+            sed -i -e 's,STORAGE_CLASS_PROVISIONER,'"$STORAGE_CLASS_PROVISIONER"',g' manifests/prometheus/prometheus-k8s.yaml;
+            sed -i -e 's,STORAGE_CLASS_TYPE,'"$STORAGE_CLASS_TYPE"',g' manifests/prometheus/prometheus-k8s.yaml;
+            sed -i -e 's,STORAGE_CLASS_TYPE,'"$STORAGE_CLASS_TYPE"',g' manifests/grafana/grafana.pvc.yaml;
+            break
+            ;;
+        "GCP")
+            echo "Deploying on Google Cloud"
+            STORAGE_CLASS_PROVISIONER=kubernetes.io/gce-pd
+            STORAGE_CLASS_TYPE=pd-ssd
+            #RBAC in GKE
+            echo -e "${BLUE}Are you deploying in Google Container Engine (GKE)?"
+            tput sgr0
+            read -p "Y/N [N]: " use_gke
+            if [[ $use_gke =~ ^([yY][eE][sS]|[yY])$ ]]; then
+              echo "Grant cluster-admin permissions to your current identity"
+              echo "Remove rules for self hosted clusters"
+
+              echo
+              kubectl create clusterrolebinding admin-binding --clusterrole=cluster-admin --user=$(gcloud config get-value core/account)
+            fi
+            sed -i -e 's,STORAGE_CLASS_PROVISIONER,'"$STORAGE_CLASS_PROVISIONER"',g' manifests/prometheus/prometheus-k8s.yaml;
+            sed -i -e 's,STORAGE_CLASS_TYPE,'"$STORAGE_CLASS_TYPE"',g' manifests/prometheus/prometheus-k8s.yaml;
+            break
+            ;;
+        "Azure")
+            echo "Deploying on Azure"
+            STORAGE_CLASS_PROVISIONER=kubernetes.io/azure-disk
+            STORAGE_CLASS_TYPE=Managed
+            echo -e "${BLUE}Are you deploying in Azure Container Engine (AKS)?"
+            tput sgr0
+            read -p "Y/N [N]: " use_aks
+            if [[ $use_aks =~ ^([yY][eE][sS]|[yY])$ ]]; then
+              echo "Remove rules for self hosted clusters"
+              echo
+            fi
+            sed -i -e 's,type,'kind',g' manifests/prometheus/prometheus-k8s.yaml;
+            sed -i -e 's,STORAGE_CLASS_PROVISIONER,'"$STORAGE_CLASS_PROVISIONER"',g' manifests/prometheus/prometheus-k8s.yaml;
+            sed -i -e 's,STORAGE_CLASS_TYPE,'"$STORAGE_CLASS_TYPE"',g' manifests/prometheus/prometheus-k8s.yaml;
+            break
+            ;;
+        "Custom")
+            echo "Deploying on custom providers without persistence"
+            sed -i -e '1,8d;32,45d' manifests/prometheus/prometheus-k8s.yaml;
+            rm -rf manifests/grafana/grafana.pvc.yaml
+            sed -i -e '31,34d;77,79d' manifests/grafana/grafana.de.yaml;
+            break
+            ;;
+        *) echo invalid option;;
+    esac
+done
+
+###########################################################################################
+#set components version
+###########################################################################################
+echo -e "${ORANGE}Setting components version"
+tput sgr0
+
+#Prometheus Operator
+read -p "Enter Prometheus Operator version [$PROMETHEUS_OPERATOR_DEFAULT_VERSION]: " PROMETHEUS_OPERATOR_VERSION
+PROMETHEUS_OPERATOR_VERSION=${PROMETHEUS_OPERATOR_VERSION:-$PROMETHEUS_OPERATOR_DEFAULT_VERSION}
+
+#Prometheus
+echo
+read -p "Enter Prometheus version [$PROMETHEUS_DEFAULT_VERSION]: " PROMETHEUS_VERSION
+PROMETHEUS_VERSION=${PROMETHEUS_VERSION:-$PROMETHEUS_DEFAULT_VERSION}
+
+#Prometheus Storage Retention
+echo
+read -p "Enter Prometheus storage retention period in hours [$PROMETHEUS_STORAGE_DEFAULT_RETENTION]: " PROMETHEUS_STORAGE_RETENTION
+PROMETHEUS_STORAGE_RETENTION=${PROMETHEUS_STORAGE_RETENTION:-$PROMETHEUS_STORAGE_DEFAULT_RETENTION}
+
+#Prometheus Storage Volume Size
+echo
+read -p "Enter Prometheus storage volume size [$PROMETHEUS_STORAGE_DEFAULT_VOLUME_SIZE]: " PROMETHEUS_STORAGE_VOLUME_SIZE
+PROMETHEUS_STORAGE_VOLUME_SIZE=${PROMETHEUS_STORAGE_VOLUME_SIZE:-$PROMETHEUS_STORAGE_DEFAULT_VOLUME_SIZE}
+
+#Prometheus Memory Request
+echo
+read -p "Enter Prometheus memory request in Gi or Mi [$PROMETHEUS_DEFAULT_MEMORY_REQUEST]: " PROMETHEUS_MEMORY_REQUEST
+PROMETHEUS_MEMORY_REQUEST=${PROMETHEUS_MEMORY_REQUEST:-$PROMETHEUS_DEFAULT_MEMORY_REQUEST}
+
+#Grafana
+echo
+read -p "Enter Grafana version [$GRAFANA_DEFAULT_VERSION]: " GRAFANA_VERSION
+GRAFANA_VERSION=${GRAFANA_VERSION:-$GRAFANA_DEFAULT_VERSION}
+
+#Alertmanager
+echo
+read -p "Enter Alert Manager version [$ALERTMANAGER_DEFAULT_VERSION]: " ALERTMANAGER_VERSION
+ALERTMANAGER_VERSION=${ALERTMANAGER_VERSION:-$ALERTMANAGER_DEFAULT_VERSION}
+
+#Node Exporter
+echo
+read -p "Enter Node Exporter version [$NODE_EXPORTER_DEFAULT_VERSION]: " NODE_EXPORTER_VERSION
+NODE_EXPORTER_VERSION=${NODE_EXPORTER_VERSION:-$NODE_EXPORTER_DEFAULT_VERSION}
+
+#Kube State Metrics
+echo
+read -p "Enter Kube State Metrics version [$KUBE_STATE_METRICS_DEFAULT_VERSION]: " KUBE_STATE_METRICS_VERSION
+KUBE_STATE_METRICS_VERSION=${KUBE_STATE_METRICS_VERSION:-$KUBE_STATE_METRICS_DEFAULT_VERSION}
+
+#Prometheus External URL
+echo
+read -p "Enter Prometheus external Url [$PROMETHEUS_DEFAULT_EXTERNAL_URL]: " PROMETHEUS_EXTERNAL_URL
+PROMETHEUS_EXTERNAL_URL=${PROMETHEUS_EXTERNAL_URL:-$PROMETHEUS_DEFAULT_EXTERNAL_URL}
+
+#Alertmanager External URL
+echo
+read -p "Enter Alertmanager external Url [$ALERTMANAGER_DEFAULT_EXTERNAL_URL]: " ALERTMANAGER_EXTERNAL_URL
+ALERTMANAGER_EXTERNAL_URL=${ALERTMANAGER_EXTERNAL_URL:-$ALERTMANAGER_DEFAULT_EXTERNAL_URL}
+
+#Dedicated nodes?
+echo
+echo -e "${ORANGE}Do you want to use ${WHITE}NodeSelector ${ORANGE} to assign monitoring components on dedicated nodes?"
+tput sgr0
+read -p "Y/N [N]: " use_dedicated_nodes
+
+#if so, fill out this form...
+if [[ $use_dedicated_nodes =~ ^([yY][eE][sS]|[yY])$ ]]; then
+
+  echo
+  echo -e "${RED}Make sure you label the nodes correctly. The default label is: ${WHITE}beta.kubernetes.io/monit=prometheus"
+  tput sgr0
+
+  read -p "Node label key [$NODE_LABEL_DEFAULT_KEY]: " NODE_LABEL_KEY
+  NODE_LABEL_KEY=${NODE_LABEL_KEY:-$NODE_LABEL_DEFAULT_KEY}
+
+  read -p "Node label value [$NODE_LABEL_DEFAULT_VALUE]: " NODE_LABEL_VALUE
+  NODE_LABEL_VALUE=${NODE_LABEL_VALUE:-$NODE_LABEL_DEFAULT_VALUE}
+
+  sed -i -e 's,node_label_key,'"$NODE_LABEL_KEY"',g' manifests/alertmanager/alertmanager.yaml
+  sed -i -e 's,node_label_value,'"$NODE_LABEL_VALUE"',g' manifests/alertmanager/alertmanager.yaml
+
+  sed -i -e 's,node_label_key,'"$NODE_LABEL_KEY"',g' manifests/grafana/grafana.de.yaml
+  sed -i -e 's,node_label_value,'"$NODE_LABEL_VALUE"',g' manifests/grafana/grafana.de.yaml
+
+  sed -i -e 's,node_label_key,'"$NODE_LABEL_KEY"',g' manifests/kube-state-metrics/kube-state-metrics.de.yaml
+  sed -i -e 's,node_label_value,'"$NODE_LABEL_VALUE"',g' manifests/kube-state-metrics/kube-state-metrics.de.yaml
+
+  sed -i -e 's,node_label_key,'"$NODE_LABEL_KEY"',g' manifests/prometheus/prometheus-k8s.yaml
+  sed -i -e 's,node_label_value,'"$NODE_LABEL_VALUE"',g' manifests/prometheus/prometheus-k8s.yaml
+
+  sed -i -e 's,node_label_key,'"$NODE_LABEL_KEY"',g' manifests/prometheus-operator/prometheus-operator.yaml
+  sed -i -e 's,node_label_value,'"$NODE_LABEL_VALUE"',g' manifests/prometheus-operator/prometheus-operator.yaml
+else
+  sed -i -e '/node_label_key/d' manifests/alertmanager/alertmanager.yaml
+  sed -i -e '/nodeSelector:/d' manifests/alertmanager/alertmanager.yaml
+  sed -i -e '/node_label_key/d' manifests/grafana/grafana.de.yaml
+  sed -i -e '/node_label_key/d' manifests/kube-state-metrics/kube-state-metrics.de.yaml
+  sed -i -e '/node_label_key/d' manifests/prometheus/prometheus-k8s.yaml
+  sed -i -e '/nodeSelector:/d' manifests/prometheus/prometheus-k8s.yaml
+  sed -i -e '/node_label_key/d' manifests/prometheus-operator/prometheus-operator.yaml
+fi
+
+#set prometheus operator version
+sed -i -e 's/PROMETHEUS_OPERATOR_VERSION/'"$PROMETHEUS_OPERATOR_VERSION"'/g' manifests/prometheus-operator/prometheus-operator.yaml
+
+#set prometheus version
+sed -i -e 's/PROMETHEUS_VERSION/'"$PROMETHEUS_VERSION"'/g' manifests/prometheus/prometheus-k8s.yaml
+
+#set prometheus storage retention
+sed -i -e 's/PROMETHEUS_STORAGE_RETENTION/'"$PROMETHEUS_STORAGE_RETENTION"'/g' manifests/prometheus/prometheus-k8s.yaml
+
+#set prometheus storage volume size
+sed -i -e 's/PROMETHEUS_STORAGE_VOLUME_SIZE/'"$PROMETHEUS_STORAGE_VOLUME_SIZE"'/g' manifests/prometheus/prometheus-k8s.yaml
+
+#set prometheus memory request
+sed -i -e 's/PROMETHEUS_MEMORY_REQUEST/'"$PROMETHEUS_MEMORY_REQUEST"'/g' manifests/prometheus/prometheus-k8s.yaml
+
+#set grafana version
+sed -i -e 's/GRAFANA_VERSION/'"$GRAFANA_VERSION"'/g' manifests/grafana/grafana.de.yaml
+
+#set alertmanager version
+sed -i -e 's/ALERTMANAGER_VERSION/'"$ALERTMANAGER_VERSION"'/g' manifests/alertmanager/alertmanager.yaml
+
+#set node-exporter version
+sed -i -e 's/NODE_EXPORTER_VERSION/'"$NODE_EXPORTER_VERSION"'/g' manifests/node-exporter/node-exporter.ds.yaml
+
+#set node-exporter version
+sed -i -e 's/KUBE_STATE_METRICS_VERSION/'"$KUBE_STATE_METRICS_VERSION"'/g' manifests/kube-state-metrics/kube-state-metrics.de.yaml
+
+#set prometheus external url
+sed -i -e 's,PROMETHEUS_EXTERNAL_URL,'"$PROMETHEUS_EXTERNAL_URL"',g' manifests/prometheus/prometheus-k8s.yaml
+
+#set alertmanager external url
+sed -i -e 's,ALERTMANAGER_EXTERNAL_URL,'"$ALERTMANAGER_EXTERNAL_URL"',g' manifests/alertmanager/alertmanager.yaml
+
+##########################################################################################################################################
+#configure alert channels
+##########################################################################################################################################
+#SMTP
+echo
+echo -e "${BLUE}Do you want to set up an SMTP relay?"
+tput sgr0
+read -p "Y/N [N]: " use_smtp
+
+#if so, fill out this form...
+if [[ $use_smtp =~ ^([yY][eE][sS]|[yY])$ ]]; then
+  #smtp smarthost
+  read -p "SMTP smarthost: " smtp_smarthost
+  #smtp from address
+  read -p "SMTP from (user@domain.com): " smtp_from
+  #smtp to address
+  read -p "Email address to send alerts to (user@domain.com): " alert_email_address
+  #smtp username
+  read -p "SMTP auth username: " smtp_user
+  #smtp password
+  prompt="SMTP auth password: "
+  while IFS= read -p "$prompt" -r -s -n 1 char
+  do
+      if [[ $char == $'\0' ]]
+      then
+          break
+      fi
+      prompt='*'
+      smtp_password+="$char"
+  done
+
+  #update configmap with SMTP relay info
+  sed -i -e 's/your_smtp_smarthost/'"$smtp_smarthost"'/g' assets/alertmanager/alertmanager.yaml
+  sed -i -e 's/your_smtp_from/'"$smtp_from"'/g' assets/alertmanager/alertmanager.yaml
+  sed -i -e 's/your_smtp_user/'"$smtp_user"'/g' assets/alertmanager/alertmanager.yaml
+  sed -i -e 's,your_smtp_pass,'"$smtp_password"',g' assets/alertmanager/alertmanager.yaml
+  sed -i -e 's/your_alert_email_address/'"$alert_email_address"'/g' assets/alertmanager/alertmanager.yaml
+fi
+
+#Do you want to set up slack?
+echo
+echo -e "${BLUE}Do you want to set up slack alerts?"
+tput sgr0
+read -p "Y/N [N]: " use_slack
+
+#if so, fill out this form...
+if [[ $use_slack =~ ^([yY][eE][sS]|[yY])$ ]]; then
+
+  read -p "Slack api token: " slack_api_token
+  read -p "Slack channel: " slack_channel
+
+  #again, our sed is funky due to slashes appearing in slack api tokens
+  sed -i -e 's,your_slack_api_token,'"$slack_api_token"',g' assets/alertmanager/alertmanager.yaml
+  sed -i -e 's/your_slack_channel/'"$slack_channel"'/g' assets/alertmanager/alertmanager.yaml
+fi
+
+echo
+echo -e "${BLUE}Removing all the sed generated files"
+find . -name "*.yaml-e" -exec rm -rf {} \;
+tput sgr0
+######################################################################################################
+#deploy all the components
+######################################################################################################
+
+#prometheus-operator
+echo
+echo -e "${ORANGE}Deploying Prometheus Operator"
+tput sgr0
+kctl apply -f manifests/prometheus-operator
+
+printf "${ORANGE}Waiting for Operator to register custom resource definitions..."
+tput sgr0
+until kctl get customresourcedefinitions servicemonitors.monitoring.coreos.com > /dev/null 2>&1; do sleep 1; printf "."; done
+until kctl get customresourcedefinitions prometheuses.monitoring.coreos.com > /dev/null 2>&1; do sleep 1; printf "."; done
+until kctl get customresourcedefinitions alertmanagers.monitoring.coreos.com > /dev/null 2>&1; do sleep 1; printf "."; done
+until kctl get servicemonitors.monitoring.coreos.com > /dev/null 2>&1; do sleep 1; printf "."; done
+until kctl get prometheuses.monitoring.coreos.com > /dev/null 2>&1; do sleep 1; printf "."; done
+until kctl get alertmanagers.monitoring.coreos.com > /dev/null 2>&1; do sleep 1; printf "."; done
+until kctl get prometheusrules.monitoring.coreos.com > /dev/null 2>&1; do sleep 1; printf "."; done
+echo "done!"
+
+#alertmanager
+echo
+echo -e "${ORANGE}Deploying Alertmanager"
+tput sgr0
+(cd ./scripts; ./generate-alertmanager-config-secret.sh)
+kctl apply -f manifests/alertmanager
+
+#prometheus node-exporter
+echo
+echo -e "${ORANGE}Deploying node-exporter"
+tput sgr0
+kctl apply -f manifests/node-exporter
+
+#kube-state-metrics
+echo
+echo -e "${ORANGE}Deploying Kube State Metrics exporter"
+tput sgr0
+kctl apply -f manifests/kube-state-metrics
+echo
+
+#grafana
+echo
+echo -e "${ORANGE}Deploying Grafana"
+tput sgr0
+
+kctl apply -f manifests/grafana
+
+echo
+echo -e "${ORANGE}Grafana default credentials"
+echo -e "${WHITE}user: ${ORANGE}admin, ${WHITE}password: ${ORANGE}admin"
+tput sgr0
+
+#prometheus
+echo
+echo -e "${ORANGE}Deploying Prometheus"
+tput sgr0
+
+#deploy prometheus
+kubectl apply -f manifests/prometheus/prometheus-k8s-rbac.yaml
+find manifests/prometheus -type f -not -path "self-hosted/*" -type f ! -name prometheus-k8s-rbac.yaml -exec kubectl --namespace "$NAMESPACE" apply -f {} \;
+
+#self-hosted
+if [[ "$(kubectl get pods -n kube-system | grep scheduler)" ]]; then
+  echo
+  echo -e "${ORANGE}Self hosted"
+  tput sgr0
+  kubectl apply -f manifests/k8s/self-hosted
+  kubectl apply -f manifests/prometheus/self-hosted
+else
+  echo
+  echo -e "${ORANGE}Skipping rules for self hosted clusters "
+  tput sgr0
+fi
+
+######################################################################################################
+#cleanup
+######################################################################################################
+echo
+echo -e "${BLUE}Removing local changes"
+git checkout -- .
+
+echo
+echo -e "${GREEN}Done"
+tput sgr0

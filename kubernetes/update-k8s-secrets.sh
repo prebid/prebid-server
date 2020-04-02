@@ -48,4 +48,15 @@ kubectl --namespace=prebid create secret generic prebid-environment \
     --from-file=environment=.secrets-repo-${ENV}/others/environment \
     --dry-run -o yaml | kubectl apply -f -
 
+echo "Update grafana-config-ini"
+
+kubectl --namespace=monitoring create secret generic grafana-config-ini \
+    --from-file=smtp-user=.secrets-repo-${ENV}/others/smtp_user \
+    --from-file=smtp-password=.secrets-repo-${ENV}/others/smtp_password \
+    --from-file=smtp-host=.secrets-repo-${ENV}/others/smtp_host \
+    --from-file=smtp-port=.secrets-repo-${ENV}/others/smtp_port \
+    --from-file=from-email=.secrets-repo-${ENV}/others/from_email \
+    --from-file=grafana_url=.secrets-repo-${ENV}/others/grafana_url \
+    --dry-run -o yaml | kubectl apply -f -
+
 echo "Done."

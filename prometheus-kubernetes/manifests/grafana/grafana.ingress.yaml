@@ -1,0 +1,14 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    ingress.gcp.kubernetes.io/pre-shared-cert: grafana-prebid-certificate
+    ingress.kubernetes.io/ssl-cert: grafana-prebid-certificate
+    networking.gke.io/managed-certificates: grafana-prebid-certificate
+  generation: 1
+  name: grafana-ingress
+  namespace: monitoring
+spec:
+  backend:
+    serviceName: grafana
+    servicePort: 443

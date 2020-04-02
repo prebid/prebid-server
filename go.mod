@@ -71,5 +71,6 @@ require (
 	golang.org/x/net v0.0.0-20200222125558-5a598a2470a0
 	golang.org/x/text v0.3.2
 	google.golang.org/api v0.18.0
+	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 )
