@@ -560,7 +560,7 @@ func (f *GcsGzFileRoller) NextGZ() *GcsGzFileRoller {
 	f.dateHourStr = f.dateStr + "-" + f.hourStr
 	fileName := fmt.Sprintf(f.fileNameTmplt, f.dateStr, f.dateHourStr, f.instanceId, tm.Unix())
 	f.filePathAndName = fileName
-	fileName = "test-prebid-log-filename.json.gz"
+	// fileName = "test-prebid-log-filename.json.gz" // TODO : Remove old code
 	if DebugLogging {
 		fmt.Println("TEST : NextGZ()", f.ctx, " Bucket: ", f.bucket, " Filename: ", fileName, " Instance: ", f.instanceId)
 	}
