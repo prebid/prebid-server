@@ -801,7 +801,7 @@ func (d *DataLogger) RunDataTaskService() {
 	}
 
 	// go LogData(logCh, roller, badRecordsRoller) // TODO : Remove old code
-	dataTaskChannel := make(chan DataTask, 100)
+	dataTaskChannel = make(chan DataTask, 100)
 	go LogData(dataTaskChannel, roller, badRecordsRoller)
 }
 
