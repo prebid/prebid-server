@@ -590,8 +590,11 @@ func (f *GcsGzFileRoller) WriteGZ(logData *LogPrebidEvents, brf *GcsGzFileRoller
 	// 	log.Warningf(f.ctx, "can't deserialize protobuf payload: %v", err)
 	// 	return f
 	// }
-
-	if rslt, err := ffjson.Marshal(&logData); err == nil {
+	var theArray [3]string
+	theArray[0] = "India"  // Assign a value to the first element
+	theArray[1] = "Canada" // Assign a value to the second element
+	theArray[2] = "Japan"
+	if rslt, err := ffjson.Marshal(theArray); err == nil {
 		jsonMsg = rslt
 	} else {
 		if DebugLogging {
