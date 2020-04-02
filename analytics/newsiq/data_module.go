@@ -789,6 +789,22 @@ func (d *DataLogger) RunDataTaskService() {
 		return
 	}
 
+	f, err := os.Open("notes.txt")
+	if err != nil {
+		fmt.Println("TEST : Open notes Error ", err)
+	}
+	defer f.Close()
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
+	defer cancel()
+	wc := client.Bucket(bucket).Object("Test object!!").NewWriter(ctx)
+	if _, err = io.Copy(wc, f); err != nil {
+		fmt.Println("TEST : Open notes Error Copy ", err)
+	}
+	if err := wc.Close(); err != nil {
+		fmt.Println("TEST : Open notes Error Close ", err)
+	}
+
 	/*
 		it := client.Bucket(bucket).Objects(ctx, nil)
 		for {
