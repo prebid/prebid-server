@@ -54,3 +54,4 @@ analytics/filesystem/testFiles/
 
 kubernetes/.secrets-repo-*
 kubernetes/secrets
+*.mod
