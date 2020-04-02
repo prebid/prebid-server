@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -548,9 +549,7 @@ func (f *GcsGzFileRoller) IncrementByteCount(size int) *GcsGzFileRoller {
 }
 
 func (f *GcsGzFileRoller) NextGZ() *GcsGzFileRoller {
-	if DebugLogging {
-		fmt.Println("TEST : NextGZ() - ", f.ctx)
-	}
+
 	f.cBytesWritten = 0
 	f.uBytesWritten = 0
 	f.recordsWritten = 0
@@ -561,6 +560,10 @@ func (f *GcsGzFileRoller) NextGZ() *GcsGzFileRoller {
 	f.dateHourStr = f.dateStr + "-" + f.hourStr
 	fileName := fmt.Sprintf(f.fileNameTmplt, f.dateStr, f.dateHourStr, f.instanceId, tm.Unix())
 	f.filePathAndName = fileName
+	// fileName = "test-prebid-log-filename.json.gz" // TODO : Remove old code
+	if DebugLogging {
+		fmt.Println("TEST : NextGZ()", f.ctx, " Bucket: ", f.bucket, " Filename: ", fileName, " Instance: ", f.instanceId)
+	}
 
 	fi := f.client.Bucket(f.bucket).Object(fileName).NewWriter(f.ctx)
 	f.fi = fi
@@ -588,8 +591,12 @@ func (f *GcsGzFileRoller) WriteGZ(logData *LogPrebidEvents, brf *GcsGzFileRoller
 	// 	log.Warningf(f.ctx, "can't deserialize protobuf payload: %v", err)
 	// 	return f
 	// }
-
-	if rslt, err := ffjson.Marshal(&logData); err == nil {
+	var theArray [3]string
+	theArray[0] = "India"  // Assign a value to the first element
+	theArray[1] = "Canada" // Assign a value to the second element
+	theArray[2] = "Japan"
+	// if rslt, err := ffjson.Marshal(theArray); err == nil { // TODO : Fix this
+	if rslt, err := json.Marshal(theArray); err == nil {
 		jsonMsg = rslt
 	} else {
 		if DebugLogging {
@@ -719,6 +726,44 @@ func LogData(c <-chan DataTask, f *GcsGzFileRoller, brf *GcsGzFileRoller) {
 	}
 }
 
+// func listBuckets(ctx context) {
+// 	var buckets []string
+// 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+// 	defer cancel()
+// 	client, err := storage.NewClient(ctx)
+// it := client.Buckets(ctx, projectID)
+// for {
+// 	battrs, err := it.Next()
+// 	if err == iterator.Done {
+// 		break
+// 	}
+// 	if err != nil {
+// 		fmt.Println("TEST : Error bucket name - ", err)
+// 		return
+// 	}
+// 	fmt.Println("TEST : bucket name - ", battrs.Name)
+// 	buckets = append(buckets, battrs.Name)
+// }
+// }
+
+// func listBucketObjects(ctx Context) {
+// 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+// 	defer cancel()
+// 	client, err := storage.NewClient(ctx)
+// 	it := client.Bucket(f.bucket).Objects(ctx, nil)
+// 	for {
+// 		attrs, err := it.Next()
+// 		if err == iterator.Done {
+// 			break
+// 		}
+// 		if err != nil {
+// 			fmt.Println("TEST : Error bucket objects - ", err)
+// 			return
+// 		}
+// 		fmt.Println("TEST : bucket object name - ", attrs.Name)
+// 	}
+// }
+
 /***** Data Service *****/
 
 func (d *DataLogger) RunDataTaskService() {
@@ -729,6 +774,11 @@ func (d *DataLogger) RunDataTaskService() {
 		bucketName = bucketNameDev
 	}
 	ctx := context.Background()
+
+	// listBuckets(ctx)
+
+	// listBucketObjects(ctx)
+
 	// ctx := appengine.BackgroundContext() // TODO : remove old code
 	// logCh := make(chan []byte, 1111) // TODO : remove old code
 	client, err := storage.NewClient(ctx)
@@ -738,6 +788,36 @@ func (d *DataLogger) RunDataTaskService() {
 		// log.Errorf(ctx, "failed to create client: %v", err) // TODO : Remove old code
 		return
 	}
+
+	f, err := os.Open("notes.txt")
+	if err != nil {
+		fmt.Println("TEST : Open notes Error ", err)
+	}
+	defer f.Close()
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
+	defer cancel()
+	wc := client.Bucket(bucket).Object("Test object!!").NewWriter(ctx)
+	if _, err = io.Copy(wc, f); err != nil {
+		fmt.Println("TEST : Open notes Error Copy ", err)
+	}
+	if err := wc.Close(); err != nil {
+		fmt.Println("TEST : Open notes Error Close ", err)
+	}
+
+	/*
+		it := client.Bucket(bucket).Objects(ctx, nil)
+		for {
+			attrs, err := it.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				fmt.Println("TEST : Item name Error ", err)
+				return
+			}
+			fmt.Println("TEST : Item name - ", attrs.Name)
+		}*/
 
 	roller := &GcsGzFileRoller{
 		client:        client,
