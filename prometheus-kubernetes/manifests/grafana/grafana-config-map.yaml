@@ -1,0 +1,17 @@
+apiVersion: v1
+data:
+  grafana.ini: |-
+    [smtp]
+    enabled=true
+    host=${SMTP_HOST}:${SMTP_PORT}
+    user=${SMTP_USERNAME}
+    password=${SMTP_PASSWORD}
+    skip_verify=false
+    from_address=${FROM_EMAIL}
+    from_name=Grafana
+    [server]
+    root_url="${GRAFANA_URL}"
+kind: ConfigMap
+metadata:
+  name: grafana-config-map
+  namespace: monitoring

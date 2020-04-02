@@ -1,0 +1,62 @@
+global:
+  resolve_timeout: 5m
+  slack_api_url: 'https://hooks.slack.com/services/your_slack_api_token'
+  smtp_smarthost: 'your_smtp_smarthost:587'
+  smtp_from: 'your_smtp_from'
+  smtp_auth_username: 'your_smtp_user'
+  smtp_auth_password: 'your_smtp_pass'
+templates:
+- '/etc/alertmanager/template/*.tmpl'
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+  receiver: default-receiver
+  routes:
+  - match:
+      alertname: Watchdog
+    receiver: 'null'
+inhibit_rules:
+- source_match:
+    severity: 'critical'
+  target_match:
+    severity: 'warning'
+  # Apply inhibition if the alertname is the same.
+  equal: ['alertname', 'cluster', 'service']
+receivers:
+- name: 'default-receiver'
+  slack_configs:
+  - channel: '#your_slack_channel'
+    title: |-
+      [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }} for {{ .CommonLabels.job }}
+      {{- if gt (len .CommonLabels) (len .GroupLabels) -}}
+        {{" "}}(
+        {{- with .CommonLabels.Remove .GroupLabels.Names }}
+          {{- range $index, $label := .SortedPairs -}}
+            {{ if $index }}, {{ end }}
+            {{- $label.Name }}="{{ $label.Value -}}"
+          {{- end }}
+        {{- end -}}
+        )
+      {{- end }}
+    text: >-
+      {{ with index .Alerts 0 -}}
+        :chart_with_upwards_trend: *<{{ .GeneratorURL }}|Graph>*
+        {{- if .Labels.runbook }}   :notebook: *<{{ .Labels.runbook }}|Runbook>*{{ end }}
+      {{ end }}
+
+      *Alert details*:
+
+      {{ range .Alerts -}}
+        *Alert:* {{ .Annotations.title }}{{ if .Labels.severity }} - `{{ .Labels.severity }}`{{ end }}
+      *Description:* {{ .Annotations.description }}
+      *Details:*
+        {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
+        {{ end }}
+      {{ end }}
+    send_resolved: true
+  email_configs:
+  - to: 'your_alert_email_address'
+    send_resolved: true
+- name: 'null'

@@ -1,0 +1,13 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    ingress.gcp.kubernetes.io/pre-shared-cert: alertmanager-prebid-certificate
+    ingress.kubernetes.io/ssl-cert: alertmanager-prebid-certificate
+    networking.gke.io/managed-certificates: alertmanager-prebid-certificate
+  name: alertmanager-ingress
+  namespace: monitoring
+spec:
+  backend:
+    serviceName: alertmanager-main
+    servicePort: 443
