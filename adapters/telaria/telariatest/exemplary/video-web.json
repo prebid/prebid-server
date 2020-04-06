@@ -32,17 +32,13 @@
         "ext": {
           "bidder": {
             "telaria": {
-              "adCode": "ssp-!demo!-lufip"
+              "adCode": "ssp-!demo!-lufip",
+              "seatCode": "test-code"
             }
           }
         }
       }
-    ],
-    "ext": {
-      "telaria": {
-        "seatCode": "test-code"
-      }
-    }
+    ]
   },
 
   "httpCalls": [{

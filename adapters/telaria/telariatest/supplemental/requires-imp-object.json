@@ -10,11 +10,6 @@
     "imp": [],
     "site": {
       "page": "test.com"
-    },
-    "ext": {
-      "telaria": {
-        "seatCode": "awesome-seat"
-      }
     }
   },
   "httpCalls": []

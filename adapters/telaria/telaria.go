@@ -21,25 +21,16 @@ type TelariaAdapter struct {
 
 // This will be part of Imp[i].Ext when this adapter calls out the Telaria Ad Server
 type ImpressionExtOut struct {
-	OriginalTagID string `json:"originalTagid"`
-}
-
-// This will be part of Request.Ext when this adapter calls out the Telaria Ad Server
-type BidExtOut struct {
-	openrtb_ext.ExtRequest
+	OriginalTagID       string `json:"originalTagid"`
 	OriginalPublisherID string `json:"originalPublisherId"`
 }
 
-// Publishers must send this information as part of the Request under the Ext object
-type ReqExtTelariaIn struct {
-	SeatCode string `json:"seatCode,omitempty"`
-}
-
+/*
 // Full request extension including Telaria extension object
 type ReqExtIn struct {
 	openrtb_ext.ExtRequest
 	Telaria *ReqExtTelariaIn `json:"telaria,omitempty"`
-}
+}*/
 
 // used for cookies and such
 func (a *TelariaAdapter) Name() string {
@@ -132,31 +123,31 @@ func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb.Imp) (*openrtb_ex
 	}
 
 	var telariaExt openrtb_ext.ExtImpTelaria
-	_ = json.Unmarshal(bidderExt.Bidder, &telariaExt)
+	err = json.Unmarshal(bidderExt.Bidder, &telariaExt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if telariaExt.SeatCode == "" {
+		return nil, &errortypes.BadInput{Message: "Seat Code required"}
+	}
 
 	return &telariaExt, nil
 }
 
 // This method changes <site/app>.publisher.id to request.ext.telaria.seatCode
 // And moves the publisher.id to request.ext.originalPublisherId
-func (a *TelariaAdapter) PopulateRequestExtAndPubId(request *openrtb.BidRequest) error {
-	var requestExtIncoming ReqExtIn
-	if err := json.Unmarshal(request.Ext, &requestExtIncoming); err != nil {
-		return err
-	}
+func (a *TelariaAdapter) PopulatePublisherId(request *openrtb.BidRequest, impExt *openrtb_ext.ExtImpTelaria) (string, error) {
 
-	if requestExtIncoming.Telaria == nil || requestExtIncoming.Telaria.SeatCode == "" {
-		return &errortypes.BadInput{Message: "Seat Code is required"}
-	}
-
-	publisherObject := &openrtb.Publisher{ID: requestExtIncoming.Telaria.SeatCode}
+	publisherObject := &openrtb.Publisher{ID: impExt.SeatCode}
 	originalPubId := ""
 
 	if request.Site != nil {
 		if request.Site.Publisher != nil {
 			if request.Site.Publisher.ID != "" {
 				originalPubId = request.Site.Publisher.ID
-				request.Site.Publisher.ID = requestExtIncoming.Telaria.SeatCode
+				request.Site.Publisher.ID = impExt.SeatCode
 			}
 		} else {
 			request.Site.Publisher = publisherObject
@@ -167,21 +158,14 @@ func (a *TelariaAdapter) PopulateRequestExtAndPubId(request *openrtb.BidRequest)
 		if request.App.Publisher != nil {
 			if request.App.Publisher.ID != "" {
 				originalPubId = request.App.Publisher.ID
-				request.App.Publisher.ID = requestExtIncoming.Telaria.SeatCode
+				request.App.Publisher.ID = impExt.SeatCode
 			}
 		} else {
 			request.App.Publisher = publisherObject
 		}
 	}
 
-	var err error
-	request.Ext, err = json.Marshal(&BidExtOut{requestExtIncoming.ExtRequest, originalPubId})
-
-	if err != nil {
-		return &errortypes.BadInput{Message: "Error while adding the request.Ext object"}
-	}
-
-	return nil
+	return originalPubId, nil
 }
 
 func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -194,10 +178,6 @@ func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		return nil, []error{noVideoObjectError}
 	}
 
-	if noSeatCodeError := a.PopulateRequestExtAndPubId(request); noSeatCodeError != nil {
-		return nil, []error{noSeatCodeError}
-	}
-
 	var errors []error
 	for i, imp := range request.Imp {
 		telariaExt, err := a.FetchTelariaExtImpParams(&imp)
@@ -207,8 +187,16 @@ func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			break
 		}
 
+		var originalPublisherID string
+
+		originalPublisherID, err = a.PopulatePublisherId(request, telariaExt)
+		if err != nil {
+			errors = append(errors, err)
+			break
+		}
+
 		request.Imp[i].TagID = telariaExt.AdCode
-		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID})
+		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID, originalPublisherID})
 		if err != nil {
 			errors = append(errors, err)
 			break

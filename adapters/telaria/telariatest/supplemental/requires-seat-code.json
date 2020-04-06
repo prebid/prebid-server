@@ -26,11 +26,6 @@
     ],
     "site": {
       "page": "test.com"
-    },
-    "ext": {
-      "telaria": {
-
-      }
     }
   },
   "httpCalls": []

@@ -12,6 +12,11 @@
     "seatCode": {
       "type": "string",
       "description": "Your Seat Code."
+    },
+    "originalPublisherId": {
+      "type": "string",
+      "description": "publisher ID from the original request"
     }
-  }
+  },
+  "required": ["seatCode"]
 }
