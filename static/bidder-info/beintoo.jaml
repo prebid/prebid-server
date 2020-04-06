@@ -1,0 +1,12 @@
+maintainer:
+  email: "premium@beintoo.com "
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+© 2020 GitHub, Inc.
