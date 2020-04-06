@@ -219,7 +219,7 @@ func TestGDPRConsent(t *testing.T) {
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
-		// Parse Resonse
+		// Parse Response
 		var response AmpResponse
 		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
 			t.Fatalf("Error unmarshalling response: %s", err.Error())
@@ -372,7 +372,7 @@ func TestCCPAConsent(t *testing.T) {
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
-		// Parse Resonse
+		// Parse Response
 		var response AmpResponse
 		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
 			t.Fatalf("Error unmarshalling response: %s", err.Error())
@@ -431,7 +431,7 @@ func TestNoConsent(t *testing.T) {
 	responseRecorder := httptest.NewRecorder()
 	endpoint(responseRecorder, request, nil)
 
-	// Parse Resonse
+	// Parse Response
 	var response AmpResponse
 	if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
 		t.Fatalf("Error unmarshalling response: %s", err.Error())
@@ -478,7 +478,7 @@ func TestInvalidConsent(t *testing.T) {
 	responseRecorder := httptest.NewRecorder()
 	endpoint(responseRecorder, request, nil)
 
-	// Parse Resonse
+	// Parse Response
 	var response AmpResponse
 	if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
 		t.Fatalf("Error unmarshalling response: %s", err.Error())
@@ -561,7 +561,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
-		// Parse Resonse
+		// Parse Response
 		var response AmpResponse
 		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
 			t.Fatalf("Error unmarshalling response: %s", err.Error())

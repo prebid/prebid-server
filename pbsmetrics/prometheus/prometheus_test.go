@@ -571,7 +571,7 @@ func TestAdapterRequestMetrics(t *testing.T) {
 		var totalCount float64
 		var totalCookieNoCount float64
 		var totalCookieYesCount float64
-		var totalCookieUnknowmCount float64
+		var totalCookieUnknownCount float64
 		var totalHasBidsCount float64
 		processMetrics(m.adapterRequests, func(m dto.Metric) {
 			isMetricForAdapter := false
@@ -597,7 +597,7 @@ func TestAdapterRequestMetrics(t *testing.T) {
 						case string(pbsmetrics.CookieFlagYes):
 							totalCookieYesCount += value
 						case string(pbsmetrics.CookieFlagUnknown):
-							totalCookieUnknowmCount += value
+							totalCookieUnknownCount += value
 						}
 					}
 				}
@@ -606,7 +606,7 @@ func TestAdapterRequestMetrics(t *testing.T) {
 		assert.Equal(t, test.expectedCount, totalCount, test.description+":total")
 		assert.Equal(t, test.expectedCookieNoCount, totalCookieNoCount, test.description+":cookie=no")
 		assert.Equal(t, test.expectedCookieYesCount, totalCookieYesCount, test.description+":cookie=yes")
-		assert.Equal(t, test.expectedCookieUnknownCount, totalCookieUnknowmCount, test.description+":cookie=unknown")
+		assert.Equal(t, test.expectedCookieUnknownCount, totalCookieUnknownCount, test.description+":cookie=unknown")
 		assert.Equal(t, test.expectedHasBidsCount, totalHasBidsCount, test.description+":hasBids")
 	}
 }
