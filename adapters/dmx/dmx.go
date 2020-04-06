@@ -28,7 +28,8 @@ type dmxParams struct {
 	TagId       string `json:"tagid,omitempty"`
 	DmxId       string `json:"dmxid,omitempty"`
 	MemberId    string `json:"memberid,omitempty"`
-	PublisherId string `json:"publisher_id"`
+	PublisherId string `json:"publisher_id,omitempty"`
+	SellerId    string `json:"seller_id,omitempty"`
 }
 
 func ReturnPubId(str1, str2 string) string {
@@ -47,6 +48,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	var imps []openrtb.Imp
 	var rootExtInfo dmxExt
 	var publisherId string
+	var sellerId string
 	if len(request.Imp) < 1 {
 		errs = append(errs, errors.New("imp is empty no auction possible"))
 		return nil, errs
@@ -58,7 +60,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 			errs = append(errs, err)
 		} else {
 			publisherId = ReturnPubId(rootExtInfo.Bidder.PublisherId, rootExtInfo.Bidder.MemberId)
-
+			sellerId = rootExtInfo.Bidder.SellerId
 		}
 	}
 	if err := json.Unmarshal(request.Ext, &dmxBidderStaticInfo); err != nil {
@@ -78,8 +80,11 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		request.App.Publisher = &openrtb.Publisher{ID: publisherId}
 	}
 	if request.Site != nil {
-
-		request.Site.Publisher.ID = publisherId
+		if request.Site.Publisher == nil {
+			request.Site.Publisher = &openrtb.Publisher{ID: publisherId}
+		} else {
+			request.Site.Publisher.ID = publisherId
+		}
 	}
 
 	for _, inst := range request.Imp {
@@ -123,7 +128,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	headers.Add("Content-Type", "Application/json;charset=utf-8")
 	reqBidder := &adapters.RequestData{
 		Method:  "POST",
-		Uri:     adapter.endpoint, //adapter.endpoint,
+		Uri:     adapter.endpoint + addParams(sellerId), //adapter.endpoint,
 		Body:    oJson,
 		Headers: headers,
 	}
@@ -231,6 +236,13 @@ func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrt
 	}
 	imps = append(imps, ins)
 	return imps
+}
+
+func addParams(str string) string {
+	if str != "" {
+		return "?sellerid=" + str
+	}
+	return ""
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
