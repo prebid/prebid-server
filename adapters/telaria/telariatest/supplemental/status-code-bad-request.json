@@ -73,7 +73,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: [ 400 ] ",
+      "value": "Telaria: Unexpected status code: [ 400 ] ",
       "comparison": "literal"
     }
   ]

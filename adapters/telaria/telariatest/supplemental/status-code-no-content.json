@@ -76,7 +76,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Invalid Bid Request received by the server",
+      "value": "Telaria: Invalid Bid Request received by the server",
       "comparison": "literal"
     }
   ]

@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "No imp object in the bid request",
+      "value": "Telaria: Missing Imp Object",
       "comparison": "literal"
     }
   ],

@@ -50,7 +50,7 @@ func (a *TelariaAdapter) FetchEndpoint() string {
 func (a *TelariaAdapter) CheckHasImps(request *openrtb.BidRequest) error {
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
-			Message: "No imp object in the bid request",
+			Message: "Telaria: Missing Imp Object",
 		}
 		return err
 	}
@@ -64,7 +64,7 @@ func (a *TelariaAdapter) CheckHasVideoObject(request *openrtb.BidRequest) error 
 	for _, imp := range request.Imp {
 		if imp.Banner != nil {
 			return &errortypes.BadInput{
-				Message: "Telaria doesn't support banner",
+				Message: "Telaria: Banner not supported",
 			}
 		}
 
@@ -73,7 +73,7 @@ func (a *TelariaAdapter) CheckHasVideoObject(request *openrtb.BidRequest) error 
 
 	if !hasVideoObject {
 		return &errortypes.BadInput{
-			Message: "No Video object present in Imp object",
+			Message: "Telaria: Only Supports Video",
 		}
 	}
 
@@ -116,7 +116,7 @@ func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb.Imp) (*openrtb_ex
 
 	if err != nil {
 		err = &errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: "Telaria: ext.bidder not provided",
 		}
 
 		return nil, err
@@ -130,7 +130,7 @@ func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb.Imp) (*openrtb_ex
 	}
 
 	if telariaExt.SeatCode == "" {
-		return nil, &errortypes.BadInput{Message: "Seat Code required"}
+		return nil, &errortypes.BadInput{Message: "Telaria: Seat Code required"}
 	}
 
 	return &telariaExt, nil
@@ -252,24 +252,24 @@ func GetResponseBody(response *adapters.ResponseData) ([]byte, error) {
 
 func (a *TelariaAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusNoContent {
-		return &errortypes.BadInput{Message: "Invalid Bid Request received by the server"}
+		return &errortypes.BadInput{Message: "Telaria: Invalid Bid Request received by the server"}
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: [ %d ] ", response.StatusCode),
+			Message: fmt.Sprintf("Telaria: Unexpected status code: [ %d ] ", response.StatusCode),
 		}
 	}
 
 	if response.StatusCode == http.StatusServiceUnavailable {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
+			Message: fmt.Sprintf("Telaria: Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
 		}
 	}
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
+			Message: fmt.Sprintf("Telaria: Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
 		}
 	}
 
@@ -292,7 +292,7 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: "bad server response",
+			Message: "Telaria: Bad Server Response",
 		}}
 	}
 

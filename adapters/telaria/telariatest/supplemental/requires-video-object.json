@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "No Video object present in Imp object",
+      "value": "Telaria: Only Supports Video",
       "comparison": "literal"
     }
   ],

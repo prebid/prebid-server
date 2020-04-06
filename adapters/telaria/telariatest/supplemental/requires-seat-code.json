@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "Seat Code required",
+      "value": "Telaria: Seat Code required",
       "comparison": "literal"
     }
   ],

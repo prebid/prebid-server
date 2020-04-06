@@ -2,7 +2,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "Telaria doesn't support banner",
+      "value": "Telaria: Banner not supported",
       "comparison": "literal"
     }
   ],

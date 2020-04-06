@@ -98,7 +98,7 @@
   }],
   "expectedMakeBidsErrors": [
     {
-      "value": "bad server response",
+      "value": "Telaria: Bad Server Response",
       "comparison": "literal"
     }
   ]

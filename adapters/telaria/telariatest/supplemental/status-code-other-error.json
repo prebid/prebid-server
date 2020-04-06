@@ -76,7 +76,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Something went wrong, please contact your Account Manager. Status Code: [ 306 ] ",
+      "value": "Telaria: Something went wrong, please contact your Account Manager. Status Code: [ 306 ] ",
       "comparison": "literal"
     }
   ]

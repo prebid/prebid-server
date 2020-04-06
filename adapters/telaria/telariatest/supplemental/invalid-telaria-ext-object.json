@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "ext.bidder not provided",
+      "value": "Telaria: ext.bidder not provided",
       "comparison": "literal"
     }
   ],
