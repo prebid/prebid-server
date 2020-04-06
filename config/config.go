@@ -221,7 +221,7 @@ const (
 type Adapter struct {
 	Endpoint string `mapstructure:"endpoint"` // Required
 	// UserSyncURL is the URL returned by /cookie_sync for this Bidder. It is _usually_ optional.
-	// If not defined, sensible defaults will be derved based on the config.external_url.
+	// If not defined, sensible defaults will be derived based on the config.external_url.
 	// Note that some Bidders don't have sensible defaults, because their APIs require an ID that will vary
 	// from one PBS host to another.
 	//

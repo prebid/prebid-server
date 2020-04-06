@@ -12,17 +12,17 @@ import (
 type Permissions interface {
 	// Determines whether or not the host company is allowed to read/write cookies.
 	//
-	// If the consent string was nonsenical, the returned error will be an ErrorMalformedConsent.
+	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
 	HostCookiesAllowed(ctx context.Context, consent string) (bool, error)
 
 	// Determines whether or not the given bidder is allowed to user personal info for ad targeting.
 	//
-	// If the consent string was nonsenical, the returned error will be an ErrorMalformedConsent.
+	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
 	BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error)
 
 	// Determines whether or not to send PI information to a bidder, or mask it out.
 	//
-	// If the consent string was nonsenical, the returned error will be an ErrorMalformedConsent.
+	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
 	PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error)
 }
 
