@@ -10,7 +10,7 @@
     "imp": [
       {
         "id": "some-impression-id",
-        "tagid": "ssp-!demo!-lufip",
+        "tagid": "my-adcode",
         "video": {
           "mimes": ["video/mp4"],
           "w": 640,

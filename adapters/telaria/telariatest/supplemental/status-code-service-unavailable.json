@@ -9,13 +9,13 @@
     "site": {
       "page": "test.com",
       "publisher": {
-        "id": "someother-publisher-id"
+        "id": "123456789"
       }
     },
     "imp": [
       {
         "id": "some-impression-id",
-        "tagid": "ssp-!demo!-lufip",
+        "tagid": "ogTAGID",
         "video": {
           "mimes": ["video/mp4"],
           "w": 640,
@@ -25,10 +25,8 @@
         },
         "ext": {
           "bidder": {
-            "telaria": {
-              "adCode": "ssp-!demo!-lufip",
-              "seatCode": "test-code"
-            }
+            "adCode": "my-adcode",
+            "seatCode": "my-seatcode"
           }
         }
       }
@@ -43,6 +41,7 @@
         "imp": [
           {
             "id": "some-impression-id",
+            "tagid": "my-adcode",
             "video": {
               "mimes": [
                 "video/mp4"
@@ -53,24 +52,21 @@
               "h": 480
             },
             "ext": {
-              "originalTagid": ""
+              "originalTagid": "ogTAGID",
+              "originalPublisherid": "123456789"
             }
           }
         ],
         "site": {
           "page": "test.com",
           "publisher": {
-            "id": "test-code"
+            "id": "my-seatcode"
           }
         },
         "user": {
           "buyeruid": "awesome-user"
         },
-        "tmax": 1000,
-        "ext": {
-          "prebid": {},
-          "originalPublisherId": "someother-publisher-id"
-        }
+        "tmax": 1000
       }
     },
     "mockResponse": {

@@ -26,7 +26,7 @@
     "imp": [
       {
         "id": "some-impression-id",
-        "tagid": "ssp-!demo!-lufip",
+        "tagid": "ogTAGID",
         "video": {
           "mimes": [
             "video/mp4"
@@ -38,10 +38,8 @@
         },
         "ext": {
           "bidder": {
-            "telaria": {
-              "adCode": "ssp-!demo!-lufip",
-              "seatCode": "test-code"
-            }
+            "adCode": "my-adcode",
+            "seatCode": "my-seatcode"
           }
         }
       }
@@ -80,8 +78,10 @@
               "w": 640,
               "h": 480
             },
+            "tagid": "my-adcode",
             "ext": {
-              "originalTagid": ""
+              "originalTagid": "ogTAGID",
+              "originalPublisherid": "123456789"
             }
           }
         ],
@@ -94,17 +94,13 @@
             "IAB22-1"
           ],
           "publisher": {
-            "id": "test-code"
+            "id": "my-seatcode"
           }
         },
         "user": {
           "buyeruid": "awesome-user"
         },
-        "tmax": 1000,
-        "ext": {
-          "prebid": {},
-          "originalPublisherId": "123456789"
-        }
+        "tmax": 1000
       }
     },
     "mockResponse": {
@@ -145,7 +141,7 @@
     "id": "a3ae1b4e2fc24a4fb45540082e98e161",
     "impid": "1",
     "price": 3.5,
-    "adm": "asesome-markup",
+    "adm": "awesome-markup",
     "adomain": [
       "awesome.com"
     ],

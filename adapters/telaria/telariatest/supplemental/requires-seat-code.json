@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "Seat Code is required",
+      "value": "Seat Code required",
       "comparison": "literal"
     }
   ],
@@ -17,9 +17,7 @@
         },
         "ext": {
           "bidder": {
-            "telaria": {
-              "adCode": "ssp-!demo!-lufip"
-            }
+            "adCode": "my-adcode"
           }
         }
       }

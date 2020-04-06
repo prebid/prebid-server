@@ -22,7 +22,7 @@ type TelariaAdapter struct {
 // This will be part of Imp[i].Ext when this adapter calls out the Telaria Ad Server
 type ImpressionExtOut struct {
 	OriginalTagID       string `json:"originalTagid"`
-	OriginalPublisherID string `json:"originalPublisherId"`
+	OriginalPublisherID string `json:"originalPublisherid"`
 }
 
 /*
@@ -195,8 +195,9 @@ func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			break
 		}
 
+		originalTagId := request.Imp[i].TagID
 		request.Imp[i].TagID = telariaExt.AdCode
-		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID, originalPublisherID})
+		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{originalTagId, originalPublisherID})
 		if err != nil {
 			errors = append(errors, err)
 			break

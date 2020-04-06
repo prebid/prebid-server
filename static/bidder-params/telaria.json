@@ -13,7 +13,7 @@
       "type": "string",
       "description": "Your Seat Code."
     },
-    "originalPublisherId": {
+    "originalPublisherid": {
       "type": "string",
       "description": "publisher ID from the original request"
     }

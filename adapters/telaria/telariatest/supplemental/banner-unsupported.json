@@ -17,7 +17,7 @@
     "imp": [
       {
         "id": "some-impression-id",
-        "tagid": "ssp-!demo!-lufip",
+        "tagid": "my-adcode",
         "banner": {
           "format": [
             {
@@ -32,10 +32,8 @@
         },
         "ext": {
           "bidder": {
-            "telaria": {
-              "adCode": "ssp-!demo!-lufip",
-              "seatCode": "test-code"
-            }
+            "adCode": "my-adcode",
+            "seatCode": "my-seatcode"
           }
         }
       }

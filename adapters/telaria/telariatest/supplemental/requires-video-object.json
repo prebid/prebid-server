@@ -12,10 +12,8 @@
         "id": "test-impression-1",
         "ext": {
           "bidder": {
-            "telaria": {
-              "adCode": "ssp-!demo!-lufip",
-              "seatCode": "awesome-seat"
-            }
+            "adCode": "my-adcode",
+            "seatCode": "my-seatcode"
           }
         }
       }
