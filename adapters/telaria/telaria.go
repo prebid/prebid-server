@@ -136,80 +136,98 @@ func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb.Imp) (*openrtb_ex
 	return &telariaExt, nil
 }
 
-// This method changes <site/app>.publisher.id to request.ext.telaria.seatCode
-// And moves the publisher.id to request.ext.originalPublisherId
-func (a *TelariaAdapter) PopulatePublisherId(request *openrtb.BidRequest, impExt *openrtb_ext.ExtImpTelaria) (string, error) {
+// Method to fetch the original publisher ID. Note that this method must be called
+// before we replace publisher.ID with seatCode
+func (a *TelariaAdapter) FetchOriginalPublisherID(request *openrtb.BidRequest) string {
 
-	publisherObject := &openrtb.Publisher{ID: impExt.SeatCode}
-	originalPubId := ""
-
-	if request.Site != nil {
-		if request.Site.Publisher != nil {
-			if request.Site.Publisher.ID != "" {
-				originalPubId = request.Site.Publisher.ID
-				request.Site.Publisher.ID = impExt.SeatCode
-			}
-		} else {
-			request.Site.Publisher = publisherObject
-		}
+	if request.Site != nil && request.Site.Publisher != nil {
+		return request.Site.Publisher.ID
+	} else if request.App != nil && request.App.Publisher != nil {
+		return request.App.Publisher.ID
 	}
 
-	if request.App != nil {
-		if request.App.Publisher != nil {
-			if request.App.Publisher.ID != "" {
-				originalPubId = request.App.Publisher.ID
-				request.App.Publisher.ID = impExt.SeatCode
-			}
-		} else {
-			request.App.Publisher = publisherObject
-		}
-	}
-
-	return originalPubId, nil
+	return ""
 }
 
-func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+// Method to do a deep copy of the publisher object. It also adds the seatCode as publisher.ID
+func (a *TelariaAdapter) MakePublisherObject(seatCode string, publisher *openrtb.Publisher) *openrtb.Publisher {
+	var pub = &openrtb.Publisher{ID: seatCode}
 
-	if noImps := a.CheckHasImps(request); noImps != nil {
+	if publisher != nil {
+		pub.Domain = publisher.Domain
+		pub.Name = publisher.Name
+		pub.Cat = publisher.Cat
+		pub.Ext = publisher.Ext
+	}
+
+	return pub
+}
+
+// This method changes <site/app>.publisher.id to the seatCode
+func (a *TelariaAdapter) PopulatePublisherId(request *openrtb.BidRequest, seatCode string) (*openrtb.Site, *openrtb.App) {
+	if request.Site != nil {
+		siteCopy := *request.Site
+		siteCopy.Publisher = a.MakePublisherObject(seatCode, request.Site.Publisher)
+		return &siteCopy, nil
+	} else if request.App != nil {
+		appCopy := *request.App
+		appCopy.Publisher = a.MakePublisherObject(seatCode, request.App.Publisher)
+		return nil, &appCopy
+	}
+	return nil, nil
+}
+
+func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+
+	// make a copy of the incoming request
+	request := *requestIn
+
+	// ensure that the request has Impressions
+	if noImps := a.CheckHasImps(&request); noImps != nil {
 		return nil, []error{noImps}
 	}
 
-	if noVideoObjectError := a.CheckHasVideoObject(request); noVideoObjectError != nil {
+	// ensure that the request has a Video object
+	if noVideoObjectError := a.CheckHasVideoObject(&request); noVideoObjectError != nil {
 		return nil, []error{noVideoObjectError}
 	}
 
+	var seatCode string
+	originalPublisherID := a.FetchOriginalPublisherID(&request)
+
 	var errors []error
 	for i, imp := range request.Imp {
+		// fetch adCode & seatCode from Imp[i].Ext
 		telariaExt, err := a.FetchTelariaExtImpParams(&imp)
-
 		if err != nil {
 			errors = append(errors, err)
 			break
 		}
 
-		var originalPublisherID string
+		seatCode = telariaExt.SeatCode
 
-		originalPublisherID, err = a.PopulatePublisherId(request, telariaExt)
+		// move the original tagId and the original publisher.id into the Imp[i].Ext object
+		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID, originalPublisherID})
 		if err != nil {
 			errors = append(errors, err)
 			break
 		}
 
-		originalTagId := request.Imp[i].TagID
+		// Swap the tagID with adCode
 		request.Imp[i].TagID = telariaExt.AdCode
-		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{originalTagId, originalPublisherID})
-		if err != nil {
-			errors = append(errors, err)
-			break
-		}
 	}
 
 	if len(errors) > 0 {
 		return nil, errors
 	}
 
-	reqJSON, err := json.Marshal(request)
+	// Add seatCode to <Site/App>.Publisher.ID
+	siteObject, appObject := a.PopulatePublisherId(&request, seatCode)
 
+	request.Site = siteObject
+	request.App = appObject
+
+	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -218,7 +236,7 @@ func (a *TelariaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		Method:  "POST",
 		Uri:     a.FetchEndpoint(),
 		Body:    reqJSON,
-		Headers: *GetHeaders(request),
+		Headers: *GetHeaders(&request),
 	}}, nil
 }
 
