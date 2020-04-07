@@ -14,41 +14,6 @@ func TestNewSyncerMap(t *testing.T) {
 	}
 	cfg := &config.Configuration{
 		Adapters: map[string]config.Adapter{
-<<<<<<< HEAD
-			string(openrtb_ext.BidderAdform):         syncConfig,
-			string(openrtb_ext.BidderAdkernelAdn):    syncConfig,
-			string(openrtb_ext.BidderAdtelligent):    syncConfig,
-			string(openrtb_ext.BidderAdvangelists):   syncConfig,
-			string(openrtb_ext.BidderNinthdecimal):   syncConfig,
-			string(openrtb_ext.BidderAppnexus):       syncConfig,
-			string(openrtb_ext.BidderBeachfront):     syncConfig,
-			string(openrtb_ext.BidderFacebook):       syncConfig,
-			string(openrtb_ext.BidderBrightroll):     syncConfig,
-			string(openrtb_ext.BidderConsumable):     syncConfig,
-			string(openrtb_ext.BidderConversant):     syncConfig,
-			string(openrtb_ext.BidderEPlanning):      syncConfig,
-			string(openrtb_ext.BidderGrid):           syncConfig,
-			string(openrtb_ext.BidderGumGum):         syncConfig,
-			string(openrtb_ext.BidderImprovedigital): syncConfig,
-			string(openrtb_ext.BidderIx):             syncConfig,
-			string(openrtb_ext.BidderLifestreet):     syncConfig,
-			string(openrtb_ext.BidderMgid):           syncConfig,
-			string(openrtb_ext.BidderOpenx):          syncConfig,
-			string(openrtb_ext.BidderPubmatic):       syncConfig,
-			string(openrtb_ext.BidderPulsepoint):     syncConfig,
-			string(openrtb_ext.BidderRhythmone):      syncConfig,
-			string(openrtb_ext.BidderRTBHouse):       syncConfig,
-			string(openrtb_ext.BidderRubicon):        syncConfig,
-			string(openrtb_ext.BidderSharethrough):   syncConfig,
-			string(openrtb_ext.BidderSomoaudience):   syncConfig,
-			string(openrtb_ext.BidderSovrn):          syncConfig,
-			string(openrtb_ext.Bidder33Across):       syncConfig,
-			string(openrtb_ext.BidderSonobi):         syncConfig,
-			string(openrtb_ext.BidderVrtcal):         syncConfig,
-			string(openrtb_ext.BidderYieldmo):        syncConfig,
-			string(openrtb_ext.BidderGamoshi):        syncConfig,
-			string(openrtb_ext.BidderUnruly):         syncConfig,
-=======
 			string(openrtb_ext.Bidder33Across):         syncConfig,
 			string(openrtb_ext.BidderAdform):           syncConfig,
 			string(openrtb_ext.BidderAdkernel):         syncConfig,
@@ -77,8 +42,9 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderLifestreet):       syncConfig,
 			string(openrtb_ext.BidderLockerDome):       syncConfig,
 			string(openrtb_ext.BidderMarsmedia):        syncConfig,
-			string(openrtb_ext.BidderMgid):             syncConfig,
+			string(openrtb_ext.BidderMgid):             syncConfig
 			string(openrtb_ext.BidderNanoInteractive):  syncConfig,
+			string(openrtb_ext.BidderNinthdecimal):     syncConfig,
 			string(openrtb_ext.BidderOpenx):            syncConfig,
 			string(openrtb_ext.BidderPubmatic):         syncConfig,
 			string(openrtb_ext.BidderPulsepoint):       syncConfig,
@@ -101,7 +67,6 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderVrtcal):           syncConfig,
 			string(openrtb_ext.BidderYieldmo):          syncConfig,
 			string(openrtb_ext.BidderZeroClickFraud):   syncConfig,
->>>>>>> fb386190f4491648bb1e8d1b0345a333be1c0393
 		},
 	}
 

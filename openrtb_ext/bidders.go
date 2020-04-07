@@ -24,41 +24,6 @@ const BidderNameGeneral = BidderName("general")
 // Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 // The bidder name 'general' is not allowed since it has special meaning in message maps.
 const (
-<<<<<<< HEAD
-	Bidder33Across       BidderName = "33across"
-	BidderAdkernelAdn    BidderName = "adkernelAdn"
-	BidderAdtelligent    BidderName = "adtelligent"
-	BidderAdform         BidderName = "adform"
-	BidderAdvangelists   BidderName = "advangelists"
-	BidderAppnexus       BidderName = "appnexus"
-	BidderBeachfront     BidderName = "beachfront"
-	BidderBrightroll     BidderName = "brightroll"
-	BidderConsumable     BidderName = "consumable"
-	BidderConversant     BidderName = "conversant"
-	BidderEPlanning      BidderName = "eplanning"
-	BidderFacebook       BidderName = "audienceNetwork"
-	BidderGamoshi        BidderName = "gamoshi"
-	BidderGrid           BidderName = "grid"
-	BidderGumGum         BidderName = "gumgum"
-	BidderImprovedigital BidderName = "improvedigital"
-	BidderIx             BidderName = "ix"
-	BidderLifestreet     BidderName = "lifestreet"
-	BidderMgid           BidderName = "mgid"
-	BidderNinthdecimal   BidderName = "ninthdecimal"
-	BidderOpenx          BidderName = "openx"
-	BidderPubmatic       BidderName = "pubmatic"
-	BidderPulsepoint     BidderName = "pulsepoint"
-	BidderRhythmone      BidderName = "rhythmone"
-	BidderRTBHouse       BidderName = "rtbhouse"
-	BidderRubicon        BidderName = "rubicon"
-	BidderSharethrough   BidderName = "sharethrough"
-	BidderSomoaudience   BidderName = "somoaudience"
-	BidderSovrn          BidderName = "sovrn"
-	BidderSonobi         BidderName = "sonobi"
-	BidderUnruly         BidderName = "unruly"
-	BidderVrtcal         BidderName = "vrtcal"
-	BidderYieldmo        BidderName = "yieldmo"
-=======
 	Bidder33Across         BidderName = "33across"
 	BidderAdform           BidderName = "adform"
 	BidderAdkernel         BidderName = "adkernel"
@@ -93,6 +58,7 @@ const (
 	BidderMarsmedia        BidderName = "marsmedia"
 	BidderMgid             BidderName = "mgid"
 	BidderNanoInteractive  BidderName = "nanointeractive"
+	BidderNinthdecimal     BidderName = "ninthdecimal"
 	BidderOpenx            BidderName = "openx"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
@@ -117,47 +83,11 @@ const (
 	BidderVrtcal           BidderName = "vrtcal"
 	BidderYieldmo          BidderName = "yieldmo"
 	BidderZeroClickFraud   BidderName = "zeroclickfraud"
->>>>>>> fb386190f4491648bb1e8d1b0345a333be1c0393
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
 // The bidder name 'general' is not allowed since it has special meaning in message maps.
 var BidderMap = map[string]BidderName{
-<<<<<<< HEAD
-	"33across":        Bidder33Across,
-	"adkernelAdn":     BidderAdkernelAdn,
-	"adtelligent":     BidderAdtelligent,
-	"adform":          BidderAdform,
-	"advangelists":    BidderAdvangelists,
-	"appnexus":        BidderAppnexus,
-	"beachfront":      BidderBeachfront,
-	"audienceNetwork": BidderFacebook,
-	"brightroll":      BidderBrightroll,
-	"consumable":      BidderConsumable,
-	"conversant":      BidderConversant,
-	"eplanning":       BidderEPlanning,
-	"gamoshi":         BidderGamoshi,
-	"grid":            BidderGrid,
-	"gumgum":          BidderGumGum,
-	"improvedigital":  BidderImprovedigital,
-	"ix":              BidderIx,
-	"lifestreet":      BidderLifestreet,
-	"openx":           BidderOpenx,
-	"mgid":            BidderMgid,
-	"ninthdecimal":    BidderNinthdecimal,
-	"pubmatic":        BidderPubmatic,
-	"pulsepoint":      BidderPulsepoint,
-	"rhythmone":       BidderRhythmone,
-	"rtbhouse":        BidderRTBHouse,
-	"rubicon":         BidderRubicon,
-	"sharethrough":    BidderSharethrough,
-	"somoaudience":    BidderSomoaudience,
-	"sovrn":           BidderSovrn,
-	"sonobi":          BidderSonobi,
-	"unruly":          BidderUnruly,
-	"vrtcal":          BidderVrtcal,
-	"yieldmo":         BidderYieldmo,
-=======
 	"33across":          Bidder33Across,
 	"adform":            BidderAdform,
 	"adkernel":          BidderAdkernel,
@@ -192,6 +122,7 @@ var BidderMap = map[string]BidderName{
 	"marsmedia":         BidderMarsmedia,
 	"mgid":              BidderMgid,
 	"nanointeractive":   BidderNanoInteractive,
+	"ninthdecimal":      BidderNinthdecimal,
 	"openx":             BidderOpenx,
 	"pubmatic":          BidderPubmatic,
 	"pubnative":         BidderPubnative,
@@ -216,7 +147,6 @@ var BidderMap = map[string]BidderName{
 	"vrtcal":            BidderVrtcal,
 	"yieldmo":           BidderYieldmo,
 	"zeroclickfraud":    BidderZeroClickFraud,
->>>>>>> fb386190f4491648bb1e8d1b0345a333be1c0393
 }
 
 // BidderList returns the values of the BidderMap
