@@ -23,6 +23,9 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-       "ext.bidder.supplyPartnerId not provided"
+    {
+      "value": "ext.bidder.supplyPartnerId not provided",
+      "comparison": "literal"
+    }
   ]
 }

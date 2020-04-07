@@ -8,17 +8,60 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type GridAdapter struct {
 	endpoint string
 }
 
+func processImp(imp *openrtb.Imp) error {
+	// get the grid extension
+	var ext adapters.ExtImpBidder
+	var gridExt openrtb_ext.ExtImpGrid
+	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+		return err
+	}
+	if err := json.Unmarshal(ext.Bidder, &gridExt); err != nil {
+		return err
+	}
+
+	if gridExt.Uid == 0 {
+		err := &errortypes.BadInput{
+			Message: "uid is empty",
+		}
+		return err
+	}
+	// no error
+	return nil
+}
+
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
 func (a *GridAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors = make([]error, 0)
 
-	reqJSON, err := json.Marshal(request)
+	// copy the request, because we are going to mutate it
+	requestCopy := *request
+	// this will contain all the valid impressions
+	var validImps []openrtb.Imp
+	// pre-process the imps
+	for _, imp := range requestCopy.Imp {
+		if err := processImp(&imp); err == nil {
+			validImps = append(validImps, imp)
+		} else {
+			errors = append(errors, err)
+		}
+	}
+	if len(validImps) == 0 {
+		err := &errortypes.BadInput{
+			Message: "No valid impressions for grid",
+		}
+		errors = append(errors, err)
+		return nil, errors
+	}
+	requestCopy.Imp = validImps
+
+	reqJSON, err := json.Marshal(requestCopy)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
@@ -62,9 +105,14 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequ
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
+			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			if err != nil {
+				return nil, []error{err}
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: "banner",
+				BidType: bidType,
 			})
 		}
 	}
@@ -76,5 +124,28 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequ
 func NewGridBidder(endpoint string) *GridAdapter {
 	return &GridAdapter{
 		endpoint: endpoint,
+	}
+}
+
+func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
+			}
+
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
+			}
+
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Unknown impression type for ID: \"%s\"", impID),
+			}
+		}
+	}
+
+	// This shouldnt happen. Lets handle it just incase by returning an error.
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to find impression for ID: \"%s\"", impID),
 	}
 }

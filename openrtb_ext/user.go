@@ -1,5 +1,7 @@
 package openrtb_ext
 
+import "encoding/json"
+
 // ExtUser defines the contract for bidrequest.user.ext
 type ExtUser struct {
 	// Consent is a GDPR consent string. See "Advised Extensions" of
@@ -13,7 +15,7 @@ type ExtUser struct {
 	// For more info, see: https://github.com/digi-trust/dt-cdn/wiki/OpenRTB-extension#openrtb-2x
 	DigiTrust *ExtUserDigiTrust `json:"digitrust,omitempty"`
 
-	TpID []ExtUserTpID `json:"tpid,omitempty"`
+	Eids []ExtUserEid `json:"eids,omitempty"`
 }
 
 // ExtUserPrebid defines the contract for bidrequest.user.ext.prebid
@@ -29,9 +31,18 @@ type ExtUserDigiTrust struct {
 	Pref int    `json:"pref"` // User optout preference
 }
 
-// ExtUserTpID defines the contract for bidrequest.user.ext.tpid
+// ExtUserEid defines the contract for bidrequest.user.ext.eids
 // Responsible for the Universal User ID support: establishing pseudonymous IDs for users.
-type ExtUserTpID struct {
-	Source string `json:"source"`
-	UID    string `json:"uid"`
+// See https://github.com/prebid/Prebid.js/issues/3900 for details.
+type ExtUserEid struct {
+	Source string          `json:"source"`
+	ID     string          `json:"id,omitempty"`
+	Uids   []ExtUserEidUid `json:"uids,omitempty"`
+	Ext    json.RawMessage `json:"ext,omitempty"`
+}
+
+// ExtUserEidUid defines the contract for bidrequest.user.ext.eids[i].uids[j]
+type ExtUserEidUid struct {
+	ID  string          `json:"id"`
+	Ext json.RawMessage `json:"ext,omitempty"`
 }

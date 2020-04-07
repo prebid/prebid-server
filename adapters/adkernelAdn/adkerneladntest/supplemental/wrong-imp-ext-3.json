@@ -15,6 +15,9 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Invalid pubId value. Ignoring imp id=malconfigured-adunit"
+    {
+      "value": "Invalid pubId value. Ignoring imp id=malconfigured-adunit",
+      "comparison": "literal"
+    }
   ]
 }

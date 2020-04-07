@@ -1,0 +1,37 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Unsupported publisher for triplelift_native",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": { "publisher": {"ext":{"prebid":{"parentAccount":"faz"}}, "id":"far","name":"bar"}},
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "inventoryCode": "foo",
+            "floor": 20
+          }
+        }
+    }
+    ]
+  },
+  "httpCalls": [
+  ]
+}

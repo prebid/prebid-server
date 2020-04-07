@@ -24,6 +24,9 @@
     }
   },
   "expectedMakeRequestsErrors" : [
-    "accountId is not set"
+    {
+      "value": "accountId is not set",
+      "comparison": "literal"
+    }
   ]
 }

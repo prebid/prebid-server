@@ -124,6 +124,8 @@
                 "type": "video",
                 "targeting": {
                   "hb_bidder_audienceNe": "audienceNetwork",
+                  "hb_cache_host_audien": "www.pbcserver.com",
+                  "hb_cache_path_audien": "/pbcache/endpoint",
                   "hb_pb_audienceNetwor": "0.50",
                   "hb_size_audienceNetw": "200x250"
                 }
@@ -145,6 +147,8 @@
                 "type": "video",
                 "targeting": {
                   "hb_bidder_appnexus": "appnexus",
+                  "hb_cache_host_appnex": "www.pbcserver.com",
+                  "hb_cache_path_appnex": "/pbcache/endpoint",
                   "hb_pb_appnexus": "0.70",
                   "hb_size_appnexus": "200x250"
                 }
@@ -176,6 +180,8 @@
                 "type": "video",
                 "targeting": {
                   "hb_bidder_appnexus": "appnexus",
+                  "hb_cache_host_appnex": "www.pbcserver.com",
+                  "hb_cache_path_appnex": "/pbcache/endpoint",
                   "hb_pb_appnexus": "0.60",
                   "hb_size_appnexus": "300x500"
                 }

@@ -28,10 +28,26 @@ type AdapterLabels struct {
 	AdapterErrors map[AdapterError]struct{}
 }
 
+// ImpLabels defines metric labels describing the impression type.
+type ImpLabels struct {
+	BannerImps bool
+	VideoImps  bool
+	AudioImps  bool
+	NativeImps bool
+}
+
+// RequestLabels defines metric labels describing the result of a network request.
+type RequestLabels struct {
+	RequestStatus RequestStatus
+}
+
 // Label typecasting. Se below the type definitions for possible values
 
 // DemandSource : Demand source enumeration
 type DemandSource string
+
+// ImpMediaType : Media type described in the "imp" JSON object  TODO is this still needed?
+type ImpMediaType string
 
 // RequestType : Request type enumeration
 type RequestType string
@@ -54,7 +70,7 @@ type AdapterError string
 // CacheResult : Cache hit/miss
 type CacheResult string
 
-// PublisherUnknown: Default value for Labels.PubID
+// PublisherUnknown : Default value for Labels.PubID
 const PublisherUnknown = "unknown"
 
 // The demand sources
@@ -81,6 +97,14 @@ const (
 	ReqTypeVideo    RequestType = "video"
 )
 
+// The media types described in the "imp" json objects
+const (
+	ImpTypeBanner ImpMediaType = "banner"
+	ImpTypeVideo  ImpMediaType = "video"
+	ImpTypeAudio  ImpMediaType = "audio"
+	ImpTypeNative ImpMediaType = "native"
+)
+
 func RequestTypes() []RequestType {
 	return []RequestType{
 		ReqTypeLegacy,
@@ -88,6 +112,15 @@ func RequestTypes() []RequestType {
 		ReqTypeORTB2App,
 		ReqTypeAMP,
 		ReqTypeVideo,
+	}
+}
+
+func ImpTypes() []ImpMediaType {
+	return []ImpMediaType{
+		ImpTypeBanner,
+		ImpTypeVideo,
+		ImpTypeAudio,
+		ImpTypeNative,
 	}
 }
 
@@ -121,10 +154,11 @@ func CookieTypes() []CookieFlag {
 
 // Request/return status
 const (
-	RequestStatusOK         RequestStatus = "ok"
-	RequestStatusBadInput   RequestStatus = "badinput"
-	RequestStatusErr        RequestStatus = "err"
-	RequestStatusNetworkErr RequestStatus = "networkerr"
+	RequestStatusOK          RequestStatus = "ok"
+	RequestStatusBadInput    RequestStatus = "badinput"
+	RequestStatusErr         RequestStatus = "err"
+	RequestStatusNetworkErr  RequestStatus = "networkerr"
+	RequestStatusBlacklisted RequestStatus = "blacklistedacctorapp"
 )
 
 func RequestStatuses() []RequestStatus {
@@ -133,6 +167,7 @@ func RequestStatuses() []RequestStatus {
 		RequestStatusBadInput,
 		RequestStatusErr,
 		RequestStatusNetworkErr,
+		RequestStatusBlacklisted,
 	}
 }
 
@@ -201,9 +236,19 @@ const (
 	RequestActionErr    RequestAction = "err"
 )
 
+// RequestActions returns possible setuid action labels
+func RequestActions() []RequestAction {
+	return []RequestAction{
+		RequestActionSet,
+		RequestActionOptOut,
+		RequestActionGDPR,
+		RequestActionErr,
+	}
+}
+
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
 // The first three metrics function fire off once per incoming request, so total metrics
-// will equal the total numer of incoming requests. The remaining 5 fire off per outgoing
+// will equal the total number of incoming requests. The remaining 5 fire off per outgoing
 // request to a bidder adapter, so will record a number of hits per incoming request. The
 // two groups should be consistent within themselves, but comparing numbers between groups
 // is generally not useful.
@@ -211,7 +256,8 @@ type MetricsEngine interface {
 	RecordConnectionAccept(success bool)
 	RecordConnectionClose(success bool)
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
-	RecordImps(labels Labels, numImps int)                 // ignores adapter. only statusOk and statusErr fom status
+	RecordImps(labels ImpLabels)                           // RecordImps across openRTB2 engines that support the 'Native' Imp Type
+	RecordLegacyImps(labels Labels, numImps int)           // RecordImps for the legacy engine
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterPanic(labels AdapterLabels)
@@ -220,9 +266,10 @@ type MetricsEngine interface {
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
-	RecordCookieSync(labels Labels) // May ignore all labels
+	RecordCookieSync()
 	RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool)
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
+	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 }

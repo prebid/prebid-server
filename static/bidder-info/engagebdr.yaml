@@ -1,0 +1,8 @@
+maintainer:
+  email: "admin@engagebdr.com"
+capabilities:
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native

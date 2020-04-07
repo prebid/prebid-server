@@ -39,6 +39,32 @@ type Bidder interface {
 	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
 }
 
+// TimeoutBidder is used to identify bidders that support timeout notifications.
+type TimeoutBidder interface {
+	Bidder
+
+	// MakeTimeoutNotice functions much the same as MakeRequests, except it is fed the bidder request that timed out,
+	// and expects that only one notification "request" will be generated. A use case for multiple timeout notifications
+	// has not been anticipated.
+	//
+	// Do note that if MakeRequests returns multiple requests, and more than one of these times out, MakeTimeoutNotice will be called
+	// once for each timed out request.
+	MakeTimeoutNotification(req *RequestData) (*RequestData, []error)
+}
+
+type MisconfiguredBidder struct {
+	Name  string
+	Error error
+}
+
+func (this *MisconfiguredBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
+	return nil, []error{this.Error}
+}
+
+func (this *MisconfiguredBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
+	return nil, []error{this.Error}
+}
+
 func BadInput(msg string) *errortypes.BadInput {
 	return &errortypes.BadInput{
 		Message: msg,
@@ -82,10 +108,12 @@ func NewBidderResponse() *BidderResponse {
 // TypedBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // TypedBid.BidVideo will become "response.seatbid[i].bid.ext.prebid.video" in the final OpenRTB response.
+// TypedBid.DealPriority will become "response.seatbid[i].bid.dealPriority" in the final OpenRTB response.
 type TypedBid struct {
-	Bid      *openrtb.Bid
-	BidType  openrtb_ext.BidType
-	BidVideo *openrtb_ext.ExtBidPrebidVideo
+	Bid          *openrtb.Bid
+	BidType      openrtb_ext.BidType
+	BidVideo     *openrtb_ext.ExtBidPrebidVideo
+	DealPriority int
 }
 
 // RequestData and ResponseData exist so that prebid-server core code can implement its "debug" functionality

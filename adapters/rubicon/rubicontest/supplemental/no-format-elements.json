@@ -20,5 +20,10 @@
     ]
   },
 
-  "expectedMakeRequestsErrors": ["rubicon imps must have at least one imp.format element"]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "rubicon imps must have at least one imp.format element",
+      "comparison": "literal"
+    }
+  ]
 }

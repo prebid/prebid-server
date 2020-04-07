@@ -1,0 +1,99 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "adunit-1",
+        "banner": {
+          "format": [{"w": 300,"h": 200}, {"w": 300,"h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 101,
+            "host": "tag.test.com"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com/test.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "user": {
+      "buyeruid": "A-38327932832"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://tag.test.com/hb?zone=101",
+        "body": {
+          "id": "0000000000001",
+          "imp": [
+            {
+              "id": "adunit-1",
+              "banner": {
+                "format": [{"w": 300, "h": 200}, {"w": 300, "h": 250}]
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com/test.html"
+          },
+          "user": {
+            "buyeruid": "A-38327932832"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "75472df2-1cb3-4f8e-9a28-10cb95fe05a4",
+          "seatbid": [{
+              "bid": [{
+                  "id": "wehM-93KGr0_0_0",
+                  "impid": "adunit-1",
+                  "price": 0.5,
+                  "cid": "3706",
+                  "crid": "19005",
+                  "adid": "19005",
+                  "adm": "<!-- admarkup -->",
+                  "cat": ["IAB2"],
+                  "adomain": ["test.com"],
+                  "h": 250,
+                  "w": 300
+              }]
+          }],
+          "bidid": "wehM-93KGr0"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "wehM-93KGr0_0_0",
+            "impid": "adunit-1",
+            "price": 0.5,
+            "adm": "<!-- admarkup -->",
+            "adid": "19005",
+            "adomain": ["test.com"],
+            "cid": "3706",
+            "crid": "19005",
+            "w": 300,
+            "h": 250,
+            "cat": ["IAB2"]
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

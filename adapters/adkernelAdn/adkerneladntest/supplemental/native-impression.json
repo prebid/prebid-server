@@ -1,0 +1,37 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "adunit-1",
+        "native": {
+          "request": "<-- native request -->",
+	  "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "pubId": 101,
+            "host": "tag.test.com"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com/test.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "user": {
+      "buyeruid": "A-38327932832"
+    }
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid imp with id=adunit-1. Expected imp.banner or imp.video",
+      "comparison": "literal"
+    }
+  ]
+  
+}

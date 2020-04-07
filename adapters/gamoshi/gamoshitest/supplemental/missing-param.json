@@ -26,6 +26,9 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-    "supplyPartnerId is empty"
+    {
+      "value": "supplyPartnerId is empty",
+      "comparison": "literal"
+    }
   ]
 }

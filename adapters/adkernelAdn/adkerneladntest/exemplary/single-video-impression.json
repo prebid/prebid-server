@@ -39,7 +39,6 @@
           "imp": [
             {
               "id": "video-adunit-2",
-              "tagid": "video-adunit-2",
               "video": {
                 "mimes": [
                   "video/mp4"

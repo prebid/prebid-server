@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
 	"github.com/spf13/viper"
 )
@@ -341,7 +342,6 @@ func TestCacheVideoOnly(t *testing.T) {
 	bids = append(bids, &rbVideoBid2)
 
 	ctx := context.TODO()
-	w := httptest.NewRecorder()
 	v := viper.New()
 	config.SetupViper(v, "")
 	cfg, err := config.New(v)
@@ -353,7 +353,11 @@ func TestCacheVideoOnly(t *testing.T) {
 		HostVendorID: 0,
 	}, nil, nil)
 	prebid_cache_client.InitPrebidCache(server.URL)
-	cacheVideoOnly(bids, ctx, w, &auction{cfg: cfg, syncers: syncers, gdprPerms: gdprPerms, metricsEngine: &metricsConf.DummyMetricsEngine{}}, &pbsmetrics.Labels{})
+	var labels = &pbsmetrics.Labels{}
+	if err := cacheVideoOnly(bids, ctx, &auction{cfg: cfg, syncers: syncers, gdprPerms: gdprPerms, metricsEngine: &metricsConf.DummyMetricsEngine{}}, labels); err != nil {
+		t.Errorf("Prebid cache failed: %v \n", err)
+		return
+	}
 	if bids[0].CacheID != "UUID-1" {
 		t.Errorf("UUID was '%s', should have been 'UUID-1'", bids[0].CacheID)
 	}
@@ -383,7 +387,11 @@ func TestShouldUsersync(t *testing.T) {
 			},
 			metricsEngine: nil,
 		}
-		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprApplies, consent)
+		privacyPolicy := gdprPolicy.Policy{
+			Signal:  gdprApplies,
+			Consent: consent,
+		}
+		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, privacyPolicy)
 		if allowSyncs != expectAllow {
 			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
 		}

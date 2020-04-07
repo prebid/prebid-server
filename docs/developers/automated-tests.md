@@ -1,8 +1,5 @@
 # Automated Tests
 
-**NOTE**: The automated tests will not pass on Go 1.11 due to [this bug](https://github.com/golang/go/issues/27275) in Go.
-This issue has been fixed in Go 1.11.1.
-
 This project uses [TravisCI](https://travis-ci.org/) to make sure that every PR passes automated tests.
 To reproduce these tests locally, use:
 
@@ -12,7 +9,7 @@ To reproduce these tests locally, use:
 
 ## Writing Tests
 
-Tests for `some-file.go` should be placed in the file `some-file_test.go` in the same paackage.
+Tests for `some-file.go` should be placed in the file `some-file_test.go` in the same package.
 For more info on how to write tests in Go, see [the Go docs](https://golang.org/pkg/testing/).
 
 ## Adapter Tests

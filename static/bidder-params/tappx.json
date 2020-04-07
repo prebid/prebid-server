@@ -1,0 +1,25 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "Tappx Adapter Params",
+	"description": "A schema which validates params accepted by the Tappx adapter",
+	"type": "object",
+	"properties": {
+		"host": {
+			"type": "string",
+			"description": "Tappx host"
+		},
+		"tappxkey": {
+			"type": "string",
+			"description": "An ID which identifies the adunit"
+		},
+		"endpoint": {
+			"type": "string",
+			"description": "Endpoint provided to publisher"
+		},
+		"bidfloor": {
+			"type": "number",
+			"description": "Minimum bid for this impression expressed in CPM (USD)"
+		}
+	},
+	"required": ["host","tappxkey","endpoint"]
+}

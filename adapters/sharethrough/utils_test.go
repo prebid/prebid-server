@@ -1,32 +1,35 @@
 package sharethrough
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 	"regexp"
-	"strings"
 	"testing"
 )
 
 func TestGetAdMarkup(t *testing.T) {
 	tests := map[string]struct {
-		inputResponse   openrtb_ext.ExtImpSharethroughResponse
+		inputResponse   []byte
 		inputParams     *StrAdSeverParams
 		expectedSuccess []string
 		expectedError   error
 	}{
 		"Sets template variables": {
-			inputResponse: openrtb_ext.ExtImpSharethroughResponse{BidID: "bid", AdServerRequestID: "arid"},
+			inputResponse: []byte(`{"bidId": "bid", "adserverRequestId": "arid"}`),
 			inputParams:   &StrAdSeverParams{Pkey: "pkey"},
 			expectedSuccess: []string{
-				`<img src="//b.sharethrough.com/butler?type=s2s-win&arid=arid" />`,
+				`<img src="//b.sharethrough.com/butler?type=s2s-win&arid=arid&adReceivedAt=2019-09-12T11%3a29%3a00.000123456Z" />`,
 				`<div data-str-native-key="pkey" data-stx-response-name="str_response_bid"></div>`,
-				`<script>var str_response_bid = "eyJhZHNlcnZlclJlcXVlc3RJZCI6ImFyaWQiLCJiaWRJZCI6ImJpZCIsImNvb2tpZVN5bmNVcmxzIjpudWxsLCJjcmVhdGl2ZXMiOm51bGwsInBsYWNlbWVudCI6eyJhbGxvd19pbnN0YW50X3BsYXkiOmZhbHNlLCJhcnRpY2xlc19iZWZvcmVfZmlyc3RfYWQiOjAsImFydGljbGVzX2JldHdlZW5fYWRzIjowLCJsYXlvdXQiOiIiLCJtZXRhZGF0YSI6bnVsbCwicGxhY2VtZW50QXR0cmlidXRlcyI6eyJhZF9zZXJ2ZXJfa2V5IjoiIiwiYWRfc2VydmVyX3BhdGgiOiIiLCJhbGxvd19keW5hbWljX2Nyb3BwaW5nIjpmYWxzZSwiYXBwX3RoaXJkX3BhcnR5X3BhcnRuZXJzIjpudWxsLCJjdXN0b21fY2FyZF9jc3MiOiIiLCJkZnBfcGF0aCI6IiIsImRpcmVjdF9zZWxsX3Byb21vdGVkX2J5X3RleHQiOiIiLCJkb21haW4iOiIiLCJlbmFibGVfbGlua19yZWRpcmVjdGlvbiI6ZmFsc2UsImZlYXR1cmVkX2NvbnRlbnQiOm51bGwsIm1heF9oZWFkbGluZV9sZW5ndGgiOjAsIm11bHRpX2FkX3BsYWNlbWVudCI6ZmFsc2UsInByb21vdGVkX2J5X3RleHQiOiIiLCJwdWJsaXNoZXJfa2V5IjoiIiwicmVuZGVyaW5nX3BpeGVsX29mZnNldCI6MCwic2FmZV9mcmFtZV9zaXplIjpudWxsLCJzaXRlX2tleSI6IiIsInN0cl9vcHRfb3V0X3VybCI6IiIsInRlbXBsYXRlIjoiIiwidGhpcmRfcGFydHlfcGFydG5lcnMiOm51bGx9LCJzdGF0dXMiOiIifSwic3R4VXNlcklkIjoiIn0="</script>`,
+				fmt.Sprintf(`<script>var str_response_bid = "%s"</script>`, base64.StdEncoding.EncodeToString([]byte(`{"bidId": "bid", "adserverRequestId": "arid"}`))),
 			},
 			expectedError: nil,
 		},
 		"Includes sfp.js without iFrame busting logic if iFrame param is true": {
-			inputResponse: openrtb_ext.ExtImpSharethroughResponse{BidID: "bid", AdServerRequestID: "arid"},
+			inputResponse: []byte(`{"bidId": "bid", "adserverRequestId": "arid"}`),
 			inputParams:   &StrAdSeverParams{Pkey: "pkey", Iframe: true},
 			expectedSuccess: []string{
 				`<script src="//native.sharethrough.com/assets/sfp.js"></script>`,
@@ -34,7 +37,7 @@ func TestGetAdMarkup(t *testing.T) {
 			expectedError: nil,
 		},
 		"Includes sfp.js with iFrame busting logic if iFrame param is false": {
-			inputResponse: openrtb_ext.ExtImpSharethroughResponse{BidID: "bid", AdServerRequestID: "arid"},
+			inputResponse: []byte(`{"bidId": "bid", "adserverRequestId": "arid"}`),
 			inputParams:   &StrAdSeverParams{Pkey: "pkey", Iframe: false},
 			expectedSuccess: []string{
 				`<script src="//native.sharethrough.com/assets/sfp-set-targeting.js"></script>`,
@@ -42,7 +45,7 @@ func TestGetAdMarkup(t *testing.T) {
 			expectedError: nil,
 		},
 		"Includes sfp.js with iFrame busting logic if iFrame param is not provided": {
-			inputResponse: openrtb_ext.ExtImpSharethroughResponse{BidID: "bid", AdServerRequestID: "arid"},
+			inputResponse: []byte(`{"bidId": "bid", "adserverRequestId": "arid"}`),
 			inputParams:   &StrAdSeverParams{Pkey: "pkey"},
 			expectedSuccess: []string{
 				`<script src="//native.sharethrough.com/assets/sfp-set-targeting.js"></script>`,
@@ -51,23 +54,65 @@ func TestGetAdMarkup(t *testing.T) {
 		},
 	}
 
-	util := Util{}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
-		outputSuccess, outputError := util.getAdMarkup(test.inputResponse, test.inputParams)
+		var strResp openrtb_ext.ExtImpSharethroughResponse
+		_ = json.Unmarshal(test.inputResponse, &strResp)
+
+		outputSuccess, outputError := Util{Clock: MockClock{}}.getAdMarkup(test.inputResponse, strResp, test.inputParams)
 		for _, markup := range test.expectedSuccess {
-			if !strings.Contains(outputSuccess, markup) {
-				t.Errorf("Expected Ad Markup to contain: %s, got %s\n", markup, outputSuccess)
-			}
+			assert.Contains(outputSuccess, markup)
 		}
-		if outputError != test.expectedError {
-			t.Errorf("Expected Error to be: %s, got %s\n", test.expectedError, outputError)
-		}
+		assert.Equal(test.expectedError, outputError)
 	}
 }
 
 func TestGetPlacementSize(t *testing.T) {
+	tests := map[string]struct {
+		imp            openrtb.Imp
+		strImpParams   openrtb_ext.ExtImpSharethrough
+		expectedHeight uint64
+		expectedWidth  uint64
+	}{
+		"Returns size from STR params if provided": {
+			imp:            openrtb.Imp{},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{IframeSize: []int{100, 200}},
+			expectedHeight: 100,
+			expectedWidth:  200,
+		},
+		"Skips size from STR params if malformed": {
+			imp:            openrtb.Imp{},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{IframeSize: []int{100}},
+			expectedHeight: 1,
+			expectedWidth:  1,
+		},
+		"Returns size from banner format if provided": {
+			imp:            openrtb.Imp{Banner: &openrtb.Banner{Format: []openrtb.Format{{H: 100, W: 200}}}},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{},
+			expectedHeight: 100,
+			expectedWidth:  200,
+		},
+		"Defaults to 1x1": {
+			imp:            openrtb.Imp{},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{},
+			expectedHeight: 1,
+			expectedWidth:  1,
+		},
+	}
+
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
+
+		outputHeight, outputWidth := Util{}.getPlacementSize(test.imp, test.strImpParams)
+		assert.Equal(test.expectedHeight, outputHeight)
+		assert.Equal(test.expectedWidth, outputWidth)
+	}
+}
+
+func TestGetBestFormat(t *testing.T) {
 	tests := map[string]struct {
 		input          []openrtb.Format
 		expectedHeight uint64
@@ -90,17 +135,13 @@ func TestGetPlacementSize(t *testing.T) {
 		},
 	}
 
-	util := Util{}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
-		outputHeight, outputWidth := util.getPlacementSize(test.input)
-		if outputHeight != test.expectedHeight {
-			t.Errorf("Expected Height: %d, got %d\n", test.expectedHeight, outputHeight)
-		}
-		if outputWidth != test.expectedWidth {
-			t.Errorf("Expected Width: %d, got %d\n", test.expectedWidth, outputWidth)
-		}
+		outputHeight, outputWidth := Util{}.getBestFormat(test.input)
+		assert.Equal(test.expectedHeight, outputHeight)
+		assert.Equal(test.expectedWidth, outputWidth)
 	}
 }
 
@@ -109,14 +150,17 @@ type userAgentTest struct {
 	expected bool
 }
 
+type userAgentFailureTest struct {
+	input string
+}
+
 func runUserAgentTests(tests map[string]userAgentTest, fn func(string) bool, t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := fn(test.input)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -155,11 +199,10 @@ func TestCanAutoPlayVideo(t *testing.T) {
 
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := Util{}.canAutoPlayVideo(test.input, uaParsers)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -233,11 +276,10 @@ func TestIsAtMinChromeVersion(t *testing.T) {
 
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := Util{}.isAtMinChromeVersion(test.input, regex)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -264,11 +306,10 @@ func TestIsAtMinChromeIosVersion(t *testing.T) {
 
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := Util{}.isAtMinChromeVersion(test.input, regex)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -295,11 +336,10 @@ func TestIsAtMinSafariVersion(t *testing.T) {
 
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := Util{}.isAtMinSafariVersion(test.input, regex)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -345,67 +385,62 @@ func TestGdprApplies(t *testing.T) {
 		},
 	}
 
-	util := Util{}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
-		output := util.gdprApplies(test.input)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		output := Util{}.gdprApplies(test.input)
+		assert.Equal(test.expected, output)
 	}
 }
 
-func TestGdprConsentString(t *testing.T) {
-	bidRequestWithConsent := openrtb.BidRequest{
-		User: &openrtb.User{
-			Ext: []byte(`{"consent": "abc"}`),
-		},
-	}
-	bidRequestWithEmptyConsent := openrtb.BidRequest{
-		User: &openrtb.User{
-			Ext: []byte(`{"consent": ""}`),
-		},
-	}
-	bidRequestWithoutConsent := openrtb.BidRequest{
-		User: &openrtb.User{
-			Ext: []byte(`{"other": "abc"}`),
-		},
-	}
-	bidRequestWithUserExt := openrtb.BidRequest{
-		User: &openrtb.User{},
-	}
-
+func TestParseUserInfo(t *testing.T) {
 	tests := map[string]struct {
-		input    *openrtb.BidRequest
-		expected string
+		input    *openrtb.User
+		expected userInfo
 	}{
-		"Return consent string if provided": {
-			input:    &bidRequestWithConsent,
-			expected: "abc",
+		"Return empty strings if no User": {
+			input:    nil,
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
 		},
-		"Return empty string if consent string empty": {
-			input:    &bidRequestWithEmptyConsent,
-			expected: "",
+		"Return empty strings if no uids": {
+			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": []}] }`)},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
 		},
-		"Return empty string if no consent string provided": {
-			input:    &bidRequestWithoutConsent,
-			expected: "",
+		"Return empty strings if ID is not defined or empty string": {
+			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": [{"id": null}]}, {"source": "adserver.org", "uids": [{"id": ""}]}] }`)},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
 		},
-		"Return empty string if User set": {
-			input:    &bidRequestWithUserExt,
-			expected: "",
+		"Return consent correctly": {
+			input:    &openrtb.User{Ext: []byte(`{ "consent": "abc" }`)},
+			expected: userInfo{Consent: "abc", TtdUid: "", StxUid: ""},
+		},
+		"Return ttd uid correctly": {
+			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
+			expected: userInfo{Consent: "", TtdUid: "abc123", StxUid: ""},
+		},
+		"Ignore non-trade-desk uid": {
+			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "something", "uids": [{"id": "xyz"}]}] }`)},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
+		},
+		"Returns STX user id from buyer id": {
+			input:    &openrtb.User{BuyerUID: "myid"},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: "myid"},
+		},
+		"Full test": {
+			input:    &openrtb.User{BuyerUID: "myid", Ext: []byte(`{ "consent": "abc", "eids": [{"source": "something", "uids": [{"id": "xyz"}]}, {"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
+			expected: userInfo{Consent: "abc", TtdUid: "abc123", StxUid: "myid"},
 		},
 	}
 
-	util := Util{}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
-		output := util.gdprConsentString(test.input)
-		if output != test.expected {
-			t.Errorf("Expected: %s, got %s\n", test.expected, output)
-		}
+		output := Util{}.parseUserInfo(test.input)
+		assert.Equal(test.expected.Consent, output.Consent)
+		assert.Equal(test.expected.TtdUid, output.TtdUid)
+		assert.Equal(test.expected.StxUid, output.StxUid)
 	}
 }
 
@@ -416,11 +451,11 @@ func TestParseDomain(t *testing.T) {
 	}{
 		"Parses domain without port": {
 			input:    "http://a.domain.com/page?param=value",
-			expected: "a.domain.com",
+			expected: "http://a.domain.com",
 		},
 		"Parses domain with port": {
-			input:    "http://a.domain.com:8000/page?param=value",
-			expected: "a.domain.com",
+			input:    "https://a.domain.com:8000/page?param=value",
+			expected: "https://a.domain.com",
 		},
 		"Returns empty string if cannot parse the domain": {
 			input:    "abc",
@@ -430,12 +465,29 @@ func TestParseDomain(t *testing.T) {
 
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := Util{}.parseDomain(test.input)
+		assert.Equal(test.expected, output)
+	}
+}
 
-		if output != test.expected {
-			t.Errorf("Expected parsed url %s, got %s\n", test.expected, output)
-			return
-		}
+func TestGetClock(t *testing.T) {
+	tests := map[string]struct {
+		input    Util
+		expected Clock
+	}{
+		"returns Clock from Utility": {
+			input:    Util{Clock: Clock{}},
+			expected: Clock{},
+		},
+	}
+
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
+
+		output := test.input.getClock()
+		assert.Equal(test.expected, output)
 	}
 }

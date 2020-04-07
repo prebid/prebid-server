@@ -47,7 +47,7 @@
           "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534",
           "referrer": "",
           "search": "",
-          "secure": 0,
+          "secure": 1,
           "requestId": "some_test_ad",
           "isMobile": 0,
           "ip": "",
@@ -56,7 +56,7 @@
           "dnt": 0,
           "ua": "",
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.3.0",
+          "adapterVersion": "0.8.0",
           "user": {
           }
         }

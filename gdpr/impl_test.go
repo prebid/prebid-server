@@ -18,8 +18,11 @@ func TestNoConsentButAllowByDefault(t *testing.T) {
 			HostVendorID:        3,
 			UsersyncIfAmbiguous: true,
 		},
-		vendorIDs:       nil,
-		fetchVendorList: failedListFetcher,
+		vendorIDs: nil,
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: failedListFetcher,
+			tCF2: failedListFetcher,
+		},
 	}
 	allowSync, err := perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderAppnexus, "")
 	assertBoolsEqual(t, true, allowSync)
@@ -35,8 +38,11 @@ func TestNoConsentAndRejectByDefault(t *testing.T) {
 			HostVendorID:        3,
 			UsersyncIfAmbiguous: false,
 		},
-		vendorIDs:       nil,
-		fetchVendorList: failedListFetcher,
+		vendorIDs: nil,
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: failedListFetcher,
+			tCF2: failedListFetcher,
+		},
 	}
 	allowSync, err := perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderAppnexus, "")
 	assertBoolsEqual(t, false, allowSync)
@@ -63,9 +69,14 @@ func TestAllowedSyncs(t *testing.T) {
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 3,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			1: parseVendorListData(t, vendorListData),
-		}),
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: listFetcher(map[uint16]vendorlist.VendorList{
+				1: parseVendorListData(t, vendorListData),
+			}),
+			tCF2: listFetcher(map[uint16]vendorlist.VendorList{
+				1: parseVendorListData(t, vendorListData),
+			}),
+		},
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background(), "BON3PCUON3PCUABABBAAABoAAAAAMw")
@@ -94,9 +105,14 @@ func TestProhibitedPurposes(t *testing.T) {
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 3,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			1: parseVendorListData(t, vendorListData),
-		}),
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: listFetcher(map[uint16]vendorlist.VendorList{
+				1: parseVendorListData(t, vendorListData),
+			}),
+			tCF2: listFetcher(map[uint16]vendorlist.VendorList{
+				1: parseVendorListData(t, vendorListData),
+			}),
+		},
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background(), "BON3PCUON3PCUABABBAAABAAAAAAMw")
@@ -125,9 +141,14 @@ func TestProhibitedVendors(t *testing.T) {
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 3,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			1: parseVendorListData(t, vendorListData),
-		}),
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: listFetcher(map[uint16]vendorlist.VendorList{
+				1: parseVendorListData(t, vendorListData),
+			}),
+			tCF2: listFetcher(map[uint16]vendorlist.VendorList{
+				1: parseVendorListData(t, vendorListData),
+			}),
+		},
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background(), "BOS2bx5OS2bx5ABABBAAABoAAAAAFA")
@@ -144,7 +165,10 @@ func TestMalformedConsent(t *testing.T) {
 		cfg: config.GDPR{
 			HostVendorID: 2,
 		},
-		fetchVendorList: listFetcher(nil),
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: listFetcher(nil),
+			tCF2: listFetcher(nil),
+		},
 	}
 
 	sync, err := perms.HostCookiesAllowed(context.Background(), "BON")
@@ -169,9 +193,14 @@ func TestAllowPersonalInfo(t *testing.T) {
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 3,
 		},
-		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
-			1: parseVendorListData(t, vendorListData),
-		}),
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: listFetcher(map[uint16]vendorlist.VendorList{
+				1: parseVendorListData(t, vendorListData),
+			}),
+			tCF2: listFetcher(map[uint16]vendorlist.VendorList{
+				1: parseVendorListData(t, vendorListData),
+			}),
+		},
 	}
 
 	// PI needs both purposes to succeed

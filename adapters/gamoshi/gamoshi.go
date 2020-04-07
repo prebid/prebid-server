@@ -101,7 +101,7 @@ func (a *GamoshiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	if len(thisURI) == 0 {
 		thisURI = "https://rtb.gamoshi.io"
 	}
-	thisURI = thisURI + "/r/" + gamoshiExt.SupplyPartnerId + "/bidr?reqformat=RTB_JSON"
+	thisURI = thisURI + "/r/" + gamoshiExt.SupplyPartnerId + "/bidr?bidder=prebid-server"
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
