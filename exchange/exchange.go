@@ -344,7 +344,12 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	// Wait for the bidders to do their thing
 	for i := 0; i < len(cleanRequests); i++ {
 		brw := <-chBids
-		adapterBids[brw.bidder] = brw.adapterBids
+
+		//if bidder returned no bids back - remove bidder from further processing
+		if brw.adapterBids != nil && len(brw.adapterBids.bids) != 0 {
+			adapterBids[brw.bidder] = brw.adapterBids
+		}
+		//but we need to add all bidders data to adapterExtra to have metrics and other metadata
 		adapterExtra[brw.bidder] = brw.adapterExtra
 
 		if !bidsFound && adapterBids[brw.bidder] != nil && len(adapterBids[brw.bidder].bids) > 0 {
@@ -637,19 +642,21 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		}
 	}
 
-	for a, b := range adapterBids {
-		if b != nil && req.Test == 1 {
+	for a, b := range adapterExtra {
+
+		bid := adapterBids[a]
+		if bid != nil && req.Test == 1 {
 			// Fill debug info
-			bidResponseExt.Debug.HttpCalls[a] = b.httpCalls
+			bidResponseExt.Debug.HttpCalls[a] = bid.httpCalls
 		}
 		// Only make an entry for bidder errors if the bidder reported any.
-		if len(adapterExtra[a].Errors) > 0 {
-			bidResponseExt.Errors[a] = adapterExtra[a].Errors
+		if len(b.Errors) > 0 {
+			bidResponseExt.Errors[a] = b.Errors
 		}
 		if len(errList) > 0 {
 			bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = errsToBidderErrors(errList)
 		}
-		bidResponseExt.ResponseTimeMillis[a] = adapterExtra[a].ResponseTimeMillis
+		bidResponseExt.ResponseTimeMillis[a] = b.ResponseTimeMillis
 		// Defering the filling of bidResponseExt.Usersync[a] until later
 
 	}
