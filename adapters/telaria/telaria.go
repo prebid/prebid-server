@@ -25,13 +25,6 @@ type ImpressionExtOut struct {
 	OriginalPublisherID string `json:"originalPublisherid"`
 }
 
-/*
-// Full request extension including Telaria extension object
-type ReqExtIn struct {
-	openrtb_ext.ExtRequest
-	Telaria *ReqExtTelariaIn `json:"telaria,omitempty"`
-}*/
-
 // used for cookies and such
 func (a *TelariaAdapter) Name() string {
 	return "telaria"

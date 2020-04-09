@@ -1,7 +1,6 @@
 package usersyncers
 
 import (
-	"github.com/prebid/prebid-server/adapters/telaria"
 	"strings"
 	"text/template"
 
@@ -48,6 +47,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/adapters/synacormedia"
+	"github.com/prebid/prebid-server/adapters/telaria"
 	"github.com/prebid/prebid-server/adapters/triplelift"
 	"github.com/prebid/prebid-server/adapters/triplelift_native"
 	"github.com/prebid/prebid-server/adapters/ucfunnel"
