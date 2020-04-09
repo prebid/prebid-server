@@ -19,9 +19,16 @@ type YieldoneAdapter struct {
 func (a *YieldoneAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors = make([]error, 0)
 
+	var validImps []openrtb.Imp
 	for i := 0; i < len(request.Imp); i++ {
-		preprocess(&request.Imp[i])
+		if err := preprocess(&request.Imp[i]); err == nil {
+			validImps = append(validImps, request.Imp[i])
+		} else {
+			errors = append(errors, err)
+		}
 	}
+
+	request.Imp = validImps
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
@@ -89,7 +96,17 @@ func NewYieldoneBidder(endpoint string) *YieldoneAdapter {
 	}
 }
 
-func preprocess(imp *openrtb.Imp) {
+func preprocess(imp *openrtb.Imp) error {
+
+	var ext adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+		return err
+	}
+	var impressionExt openrtb_ext.ExtImpYieldone
+	if err := json.Unmarshal(ext.Bidder, &impressionExt); err != nil {
+		return err
+	}
+
 	if imp.Banner != nil {
 		bannerCopy := *imp.Banner
 		if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
@@ -99,6 +116,8 @@ func preprocess(imp *openrtb.Imp) {
 		}
 		imp.Banner = &bannerCopy
 	}
+
+	return nil
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
