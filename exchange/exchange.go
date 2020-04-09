@@ -325,7 +325,10 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
-			ae.httpCalls = bids.httpCalls
+			if request.Test == 1 && bids != nil {
+				ae.httpCalls = bids.httpCalls
+			}
+
 			// Timing statistics
 			e.me.RecordAdapterTime(*bidlabels, time.Since(start))
 			serr := errsToBidderErrors(err)
