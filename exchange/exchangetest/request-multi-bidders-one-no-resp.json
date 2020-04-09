@@ -37,7 +37,15 @@
       ],
       "ext": {
         "prebid": {
-          "targeting": {}
+          "targeting": {
+            "durationRangeSec": [15,30],
+            "includebrandcategory": {
+              "primaryadserver": 1,
+              "publisher": "",
+              "withCategory": true,
+              "translateCategories": true
+            }
+          }
         }
       }
     }
@@ -51,34 +59,14 @@
               "ortbBid": {
                 "id": "winning-bid",
                 "impid": "my-imp-id",
-                "price": 0.71,
+                "price": 12.00,
                 "w": 200,
                 "h": 250,
-                "crid": "creative-1"
-              },
-              "bidType": "video"
-            },
-            {
-              "ortbBid": {
-                "id": "losing-bid",
-                "impid": "my-imp-id",
-                "price": 0.21,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-2"
-              },
-              "bidType": "video"
-            },
-            {
-              "ortbBid": {
-                "id": "other-bid",
-                "impid": "imp-id-2",
-                "price": 0.61,
-                "w": 300,
-                "h": 500,
-                "crid": "creative-3"
-              },
-              "bidType": "video"
+                "crid": "creative-1",
+                "cat": [
+                  "IAB1-1"
+                ]
+              }
             }
           ]
         }
@@ -86,9 +74,7 @@
     },
     "audienceNetwork": {
       "mockResponse": {
-        "pbsSeatBid": {
 
-        }
       }
     }
   },
@@ -98,16 +84,18 @@
       "seatbid": [
         {
           "seat": "appnexus",
-          "bid": [{
+          "bid": [
+            {
             "id": "winning-bid",
             "impid": "my-imp-id",
-            "price": 0.71,
+            "price": 12.00,
             "w": 200,
             "h": 250,
             "crid": "creative-1",
+            "cat": ["IAB1-1"],
             "ext": {
               "prebid": {
-                "type": "video",
+                "type": "",
                 "targeting": {
                   "hb_bidder": "appnexus",
                   "hb_bidder_appnexus": "appnexus",
@@ -115,55 +103,20 @@
                   "hb_cache_host_appnex": "www.pbcserver.com",
                   "hb_cache_path": "/pbcache/endpoint",
                   "hb_cache_path_appnex": "/pbcache/endpoint",
-                  "hb_pb": "0.70",
-                  "hb_pb_appnexus": "0.70",
                   "hb_size": "200x250",
-                  "hb_size_appnexus": "200x250"
+                  "hb_size_appnexus": "200x250",
+                  "hb_pb": "12.00",
+                  "hb_pb_appnexus": "12.00",
+                  "hb_pb_cat_dur": "12.00_VideoGames_15s",
+                  "hb_pb_cat_dur_appnex": "12.00_VideoGames_15s"
                 }
               }
             }
-          },
-            {
-              "id": "losing-bid",
-              "impid": "my-imp-id",
-              "price": 0.21,
-              "w": 200,
-              "h": 250,
-              "crid": "creative-2",
-              "ext": {
-                "prebid": {
-                  "type": "video"
-                }
-              }
-            },
-            {
-              "id": "other-bid",
-              "impid": "imp-id-2",
-              "price": 0.61,
-              "w": 300,
-              "h": 500,
-              "crid": "creative-3",
-              "ext": {
-                "prebid": {
-                  "type": "video",
-                  "targeting": {
-                    "hb_bidder": "appnexus",
-                    "hb_bidder_appnexus": "appnexus",
-                    "hb_cache_host": "www.pbcserver.com",
-                    "hb_cache_host_appnex": "www.pbcserver.com",
-                    "hb_cache_path": "/pbcache/endpoint",
-                    "hb_cache_path_appnex": "/pbcache/endpoint",
-                    "hb_pb": "0.60",
-                    "hb_pb_appnexus": "0.60",
-                    "hb_size": "300x500",
-                    "hb_size_appnexus": "300x500"
-                  }
-                }
-              }
-            }
-          ]
+          }]
         }
       ]
     }
   }
 }
+
+
