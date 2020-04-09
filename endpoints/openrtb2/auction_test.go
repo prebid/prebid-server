@@ -175,7 +175,7 @@ func TestBadNativeRequests(t *testing.T) {
 	tests.assert(t)
 }
 
-// TestAliasedRequests makes sure we handle (defuault) aliased bidders properly
+// TestAliasedRequests makes sure we handle (default) aliased bidders properly
 func TestAliasedRequests(t *testing.T) {
 	tests := &getResponseFromDirectory{
 		dir:           "sample-requests/aliased",
@@ -289,7 +289,7 @@ func (gr *getResponseFromDirectory) assert(t *testing.T) {
 			filesToAssert = append(filesToAssert, gr.dir+"/"+fileInfo.Name())
 		}
 	} else {
-		// Just test the single `gr.file`, and not the entiriety of files that may be found in `gr.dir`
+		// Just test the single `gr.file`, and not the entirety of files that may be found in `gr.dir`
 		filesToAssert = append(filesToAssert, gr.dir+"/"+gr.file)
 	}
 
@@ -805,7 +805,7 @@ func TestDisabledBidder(t *testing.T) {
 		},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{"unknownbidder": "The biddder 'unknownbidder' has been disabled."},
+		map[string]string{"unknownbidder": "The bidder 'unknownbidder' has been disabled."},
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
@@ -839,7 +839,7 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 		&config.Configuration{MaxRequestSize: int64(8096)},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{"unknownbidder": "The biddder 'unknownbidder' has been disabled."},
+		map[string]string{"unknownbidder": "The bidder 'unknownbidder' has been disabled."},
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
@@ -847,7 +847,7 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 	}
 	errs := deps.validateImpExt(imp, nil, 0)
 	assert.JSONEq(t, `{"appnexus":{"placement_id":555}}`, string(imp.Ext))
-	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The biddder 'unknownbidder' has been disabled."}}, errs)
+	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'unknownbidder' has been disabled."}}, errs)
 }
 
 func TestEffectivePubID(t *testing.T) {
