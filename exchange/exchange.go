@@ -63,6 +63,9 @@ type exchange struct {
 type seatResponseExtra struct {
 	ResponseTimeMillis int
 	Errors             []openrtb_ext.ExtBidderError
+	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
+	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
+	httpCalls []*openrtb_ext.ExtHttpCall
 }
 
 type bidResponseWrapper struct {
@@ -322,6 +325,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
+			ae.httpCalls = bids.httpCalls
 			// Timing statistics
 			e.me.RecordAdapterTime(*bidlabels, time.Since(start))
 			serr := errsToBidderErrors(err)
@@ -644,10 +648,9 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 
 	for a, b := range adapterExtra {
 
-		bid := adapterBids[a]
-		if bid != nil && req.Test == 1 {
+		if req.Test == 1 {
 			// Fill debug info
-			bidResponseExt.Debug.HttpCalls[a] = bid.httpCalls
+			bidResponseExt.Debug.HttpCalls[a] = b.httpCalls
 		}
 		// Only make an entry for bidder errors if the bidder reported any.
 		if len(b.Errors) > 0 {
