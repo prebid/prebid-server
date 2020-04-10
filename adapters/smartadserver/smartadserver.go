@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -13,12 +14,12 @@ import (
 )
 
 type SmartadserverAdapter struct {
-	http *adapters.HTTPAdapter
+	host string
 }
 
-func NewSmartadserverBidder(client *http.Client) *SmartadserverAdapter {
+func NewSmartadserverBidder(host string) *SmartadserverAdapter {
 	return &SmartadserverAdapter{
-		http: &adapters.HTTPAdapter{Client: client},
+		host: host,
 	}
 }
 
@@ -65,7 +66,7 @@ func (a *SmartadserverAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 			continue
 		}
 
-		url, err := buildEndpointURL(&smartadserverExt)
+		url, err := a.BuildEndpointURL(&smartadserverExt)
 		if url == "" {
 			errs = append(errs, err)
 			continue
@@ -120,14 +121,15 @@ func (a *SmartadserverAdapter) MakeBids(internalRequest *openrtb.BidRequest, ext
 	return bidResponse, []error{}
 }
 
-// Builds endpoint url
-func buildEndpointURL(params *openrtb_ext.ExtImpSmartadserver) (string, error) {
+// BuildEndpointURL : Builds endpoint url
+func (a *SmartadserverAdapter) BuildEndpointURL(params *openrtb_ext.ExtImpSmartadserver) (string, error) {
 
-	if params.Domain == "" {
-		params.Domain = "https://diff.smartadserver.com/api/prebidserver"
+	host := a.host
+	if params.Domain != "" {
+		host = params.Domain
 	}
 
-	thisURI, err := url.Parse(params.Domain)
+	uri, err := url.Parse(host)
 
 	if err != nil {
 		return "", &errortypes.BadInput{
@@ -135,7 +137,9 @@ func buildEndpointURL(params *openrtb_ext.ExtImpSmartadserver) (string, error) {
 		}
 	}
 
-	return thisURI.String(), nil
+	uri.Path = path.Join(uri.Path, "api/prebidserver")
+
+	return uri.String(), nil
 }
 
 func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
