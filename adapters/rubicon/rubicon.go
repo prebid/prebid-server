@@ -740,6 +740,15 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			request.App = &appCopy
 		}
 
+		// Сrop badv to 50 elements
+		badvLimitSize := 50
+		reqBadv := request.BAdv
+		if reqBadv != nil {
+			if len(reqBadv) > badvLimitSize {
+				request.BAdv = reqBadv[:badvLimitSize]
+			}
+		}
+
 		request.Imp = []openrtb.Imp{thisImp}
 		request.Cur = nil
 		request.Ext = nil
