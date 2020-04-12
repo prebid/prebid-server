@@ -704,6 +704,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.synacormedia.endpoint", "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}")
+	v.SetDefault("adapters.spotx.endpoint", "https://search.spotxchange.com/openrtb/2.3/dados")
 	v.SetDefault("adapters.tappx.endpoint", "https://{{.Host}}")
 	v.SetDefault("adapters.triplelift_native.disabled", true)
 	v.SetDefault("adapters.triplelift_native.extra_info", "{\"publisher_whitelist\":[]}")
