@@ -174,6 +174,12 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		if targData != nil {
 			auc.setRoundedPrices(targData.priceGranularity)
+
+			if requestExt.Prebid.SupportDeals {
+				dealErrs := applyDealSupport(bidRequest, auc, bidCategory)
+				errs = append(errs, dealErrs...)
+			}
+
 			if debugLog != nil && debugLog.EnableDebug {
 				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errs)
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
@@ -183,16 +189,17 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				}
 			}
 
-			if requestExt.Prebid.SupportDeals {
-				dealErrs := applyDealSupport(bidRequest, auc, bidCategory)
-				errs = append(errs, dealErrs...)
-			}
-
 			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}
 			targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
+
+			// Ensure caching errors are added if the bid response ext has already been created
+			if bidResponseExt != nil {
+				bidderCacheErrs := errsToBidderErrors(cacheErrs)
+				bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = append(bidResponseExt.Errors[openrtb_ext.PrebidExtKey], bidderCacheErrs...)
+			}
 		}
 
 	}
