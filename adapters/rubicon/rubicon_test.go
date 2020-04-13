@@ -1172,8 +1172,8 @@ func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
 		t.Fatalf("Unexpected error while decoding request: %s", err)
 	}
 
-	badbRequest := rubiconReq.BAdv
-	assert.Equal(t, badvOverflowed[:50], badbRequest, "Unexpected dfp_ad_unit_code: %s")
+	badvRequest := rubiconReq.BAdv
+	assert.Equal(t, badvOverflowed[:50], badvRequest, "Unexpected dfp_ad_unit_code: %s")
 }
 
 func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
