@@ -1,6 +1,6 @@
 # Kidoz Bidder
 
-Kidoz is exclusively for Mobile app coppa compatible ads, 100% kid relevant and appropriate.
+Kidoz is exclusively for Mobile app COPPA compatible ads, 100% kid relevant and appropriate.
 
 In order for a company to receive bids from Kidoz, they must first open a publisher account at Kidoz.net
 (https://accounts.kidoz.net/publishers/register) and accept the Kidoz Terms and Conditions and Privacy Policy. 
