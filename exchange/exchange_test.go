@@ -1403,7 +1403,10 @@ func TestApplyDealSupport(t *testing.T) {
 			},
 		}
 
-		bid := pbsOrtbBid{&openrtb.Bid{}, "video", test.targ, &openrtb_ext.ExtBidPrebidVideo{}, test.dealPriority}
+		bid := pbsOrtbBid{&openrtb.Bid{ID: "123456"}, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, test.dealPriority}
+		bidCategory := map[string]string{
+			bid.bid.ID: test.targ["hb_pb_cat_dur"],
+		}
 
 		auc := &auction{
 			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
@@ -1413,9 +1416,9 @@ func TestApplyDealSupport(t *testing.T) {
 			},
 		}
 
-		dealErrs := applyDealSupport(bidRequest, auc)
+		dealErrs := applyDealSupport(bidRequest, auc, bidCategory)
 
-		assert.Equal(t, test.expectedHbPbCatDur, auc.winningBidsByBidder["imp_id1"][bidderName].bidTargets["hb_pb_cat_dur"], test.description)
+		assert.Equal(t, test.expectedHbPbCatDur, bidCategory[auc.winningBidsByBidder["imp_id1"][bidderName].bid.ID], test.description)
 		if len(test.expectedDealErr) > 0 {
 			assert.Containsf(t, dealErrs, errors.New(test.expectedDealErr), "Expected error message not found in deal errors")
 		}
@@ -1590,11 +1593,14 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		bid := pbsOrtbBid{&openrtb.Bid{}, "video", test.targ, &openrtb_ext.ExtBidPrebidVideo{}, test.dealPriority}
+		bid := pbsOrtbBid{&openrtb.Bid{ID: "123456"}, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, test.dealPriority}
+		bidCategory := map[string]string{
+			bid.bid.ID: test.targ["hb_pb_cat_dur"],
+		}
 
-		updateHbPbCatDur(&bid, test.dealTier)
+		updateHbPbCatDur(&bid, test.dealTier, bidCategory)
 
-		assert.Equal(t, test.expectedHbPbCatDur, bid.bidTargets["hb_pb_cat_dur"], test.description)
+		assert.Equal(t, test.expectedHbPbCatDur, bidCategory[bid.bid.ID], test.description)
 	}
 }
 

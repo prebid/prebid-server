@@ -179,6 +179,12 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 					errs = append(errs, errors.New("Unable to marshal response ext for debugging"))
 				}
 			}
+
+			if requestExt.Prebid.SupportDeals {
+				dealErrs := applyDealSupport(bidRequest, auc, bidCategory)
+				errs = append(errs, dealErrs...)
+			}
+
 			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
@@ -186,10 +192,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
 		}
 
-		if requestExt.Prebid.SupportDeals {
-			dealErrs := applyDealSupport(bidRequest, auc)
-			errs = append(errs, dealErrs...)
-		}
 	}
 
 	// Build the response
@@ -210,7 +212,7 @@ type BidderDealTier struct {
 }
 
 // applyDealSupport updates targeting keys with deal prefixes if minimum deal tier exceeded
-func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) []error {
+func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction, bidCategory map[string]string) []error {
 	errs := []error{}
 	impDealMap := getDealTiers(bidRequest)
 
@@ -221,7 +223,7 @@ func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) []error {
 
 			if topBidPerBidder.dealPriority > 0 {
 				if validateAndNormalizeDealTier(impDeal[bidderString]) {
-					updateHbPbCatDur(topBidPerBidder, impDeal[bidderString].Info)
+					updateHbPbCatDur(topBidPerBidder, impDeal[bidderString].Info, bidCategory)
 				} else {
 					errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", bidderString, impID))
 				}
@@ -258,16 +260,16 @@ func validateAndNormalizeDealTier(impDeal *DealTier) bool {
 	return len(impDeal.Info.Prefix) > 0 && impDeal.Info.MinDealTier > 0
 }
 
-func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo) {
+func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo, bidCategory map[string]string) {
 	if bid.dealPriority >= dealTierInfo.MinDealTier {
 		prefixTier := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
 
-		if oldCatDur, ok := bid.bidTargets["hb_pb_cat_dur"]; ok {
+		if oldCatDur, ok := bidCategory[bid.bid.ID]; ok {
 			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
 			oldCatDurSplit[0] = prefixTier
 
 			newCatDur := strings.Join(oldCatDurSplit, "")
-			bid.bidTargets["hb_pb_cat_dur"] = newCatDur
+			bidCategory[bid.bid.ID] = newCatDur
 		}
 	}
 }
