@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -1131,6 +1132,48 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 
 	assert.Equal(t, "test-adslot", rubiconExtInventory["dfp_ad_unit_code"],
 		"Unexpected dfp_ad_unit_code: %s", rubiconExtInventory["dfp_ad_unit_code"])
+}
+
+func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	badvOverflowed := make([]string, 100)
+	for i := range badvOverflowed {
+		badvOverflowed[i] = strconv.Itoa(i)
+	}
+
+	request := &openrtb.BidRequest{
+		ID:   "test-request-id",
+		BAdv: badvOverflowed,
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{
+					SIZE_ID[15],
+				},
+			},
+			Ext: json.RawMessage(`{
+				"bidder": {
+					"zoneId": 8394,
+					"siteId": 283282,
+					"accountId": 7891,
+					"inventory": {"key1" : "val1"},
+					"visitor": {"key2" : "val2"}
+				}
+			}`),
+		}},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Fatalf("Unexpected error while decoding request: %s", err)
+	}
+
+	badvRequest := rubiconReq.BAdv
+	assert.Equal(t, badvOverflowed[:50], badvRequest, "Unexpected dfp_ad_unit_code: %s")
 }
 
 func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {

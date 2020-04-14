@@ -29,6 +29,8 @@ const (
 	USWest Region = "us_west"
 	EU     Region = "eu"
 	APAC   Region = "apac"
+
+	badvLimitSize = 50
 )
 
 type RubiconAdapter struct {
@@ -791,6 +793,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			appCopy.Publisher = &openrtb.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			request.App = &appCopy
+		}
+
+		reqBadv := request.BAdv
+		if reqBadv != nil {
+			if len(reqBadv) > badvLimitSize {
+				request.BAdv = reqBadv[:badvLimitSize]
+			}
 		}
 
 		request.Imp = []openrtb.Imp{thisImp}
