@@ -19,6 +19,8 @@ import (
 const Seat = "beachfront"
 const BidCapacity = 5
 
+const defaultVideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
+
 const nurlVideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
@@ -685,12 +687,16 @@ func NewBeachfrontBidder(bannerEndpoint string, extraAdapterInfo string) adapter
 	var extraInfo ExtraInfo
 
 	if len(extraAdapterInfo) == 0 {
-		extraAdapterInfo = "{\"video_endpoint\":\"\"}"
+		extraAdapterInfo = "{\"video_endpoint\":\"" + defaultVideoEndpoint + "\"}"
 	}
 
 	if err := json.Unmarshal([]byte(extraAdapterInfo), &extraInfo); err != nil {
 		glog.Fatal("Invalid Beachfront extra adapter info: " + err.Error())
 		return nil
+	}
+
+	if extraInfo.VideoEndpoint == "" {
+		extraInfo.VideoEndpoint = defaultVideoEndpoint
 	}
 
 	return &BeachfrontAdapter{bannerEndpoint: bannerEndpoint, extraInfo: extraInfo}
