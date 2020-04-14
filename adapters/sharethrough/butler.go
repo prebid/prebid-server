@@ -21,6 +21,7 @@ type StrAdSeverParams struct {
 	BidID              string
 	ConsentRequired    bool
 	ConsentString      string
+	UsPrivacySignal    string
 	InstantPlayCapable bool
 	Iframe             bool
 	Height             uint64
@@ -71,6 +72,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	headers.Add("Accept-Encoding", "gzip")
 	headers.Add("Origin", domain)
 	headers.Add("Referer", request.Site.Page)
 	headers.Add("X-Forwarded-For", request.Device.IP)
@@ -101,6 +103,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			BidID:              imp.ID,
 			ConsentRequired:    s.Util.gdprApplies(request),
 			ConsentString:      userInfo.Consent,
+			UsPrivacySignal:    s.Util.getUsPrivacySignal(request),
 			Iframe:             strImpParams.Iframe,
 			Height:             height,
 			Width:              width,
@@ -184,6 +187,7 @@ func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	v.Set("bidId", params.BidID)
 	v.Set("consent_required", fmt.Sprintf("%t", params.ConsentRequired))
 	v.Set("consent_string", params.ConsentString)
+	v.Set("us_privacy", params.UsPrivacySignal)
 	if params.TheTradeDeskUserId != "" {
 		v.Set("ttduid", params.TheTradeDeskUserId)
 	}
