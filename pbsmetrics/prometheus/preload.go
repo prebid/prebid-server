@@ -1,6 +1,7 @@
 package prometheusmetrics
 
 import (
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -95,7 +96,7 @@ func preloadLabelValues(m *Metrics) {
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
 	//boolean value represents 2 general request statuses: accepted and rejected
 	preloadLabelValuesForHistogram(m.requestsQueueTimer, map[string][]string{
-		requestTypeLabel:   {isVideoLabel},
+		requestTypeLabel:   {string(pbsmetrics.ReqTypeVideo)},
 		requestStatusLabel: {requestSuccessLabel, requestRejectLabel},
 	})
 }

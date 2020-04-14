@@ -21,7 +21,7 @@ func TestAny(t *testing.T) {
 		reqTimeInQueue          string
 		reqTimeOut              string
 		setHeaders              bool
-		extectedRespCode        int
+		expectedRespCode        int
 		expectedRespCodeMessage string
 		expectedRespBody        string
 		expectedRespBodyMessage string
@@ -32,7 +32,7 @@ func TestAny(t *testing.T) {
 			reqTimeInQueue:          "6",
 			reqTimeOut:              "5",
 			setHeaders:              true,
-			extectedRespCode:        http.StatusRequestTimeout,
+			expectedRespCode:        http.StatusRequestTimeout,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 408",
 			expectedRespBody:        "Queued request processing time exceeded maximum",
 			expectedRespBodyMessage: "Body should have error message",
@@ -43,7 +43,7 @@ func TestAny(t *testing.T) {
 			reqTimeInQueue:          "0.9",
 			reqTimeOut:              "5",
 			setHeaders:              true,
-			extectedRespCode:        http.StatusOK,
+			expectedRespCode:        http.StatusOK,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 200",
 			expectedRespBody:        "Executed",
 			expectedRespBodyMessage: "Body should be present in response",
@@ -54,7 +54,7 @@ func TestAny(t *testing.T) {
 			reqTimeInQueue:          "",
 			reqTimeOut:              "",
 			setHeaders:              false,
-			extectedRespCode:        http.StatusOK,
+			expectedRespCode:        http.StatusOK,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 200",
 			expectedRespBody:        "Executed",
 			expectedRespBodyMessage: "Body should be present in response",
@@ -65,7 +65,7 @@ func TestAny(t *testing.T) {
 			reqTimeInQueue:          "2",
 			reqTimeOut:              "",
 			setHeaders:              true,
-			extectedRespCode:        http.StatusOK,
+			expectedRespCode:        http.StatusOK,
 			expectedRespCodeMessage: "Http response code is incorrect, should be 200",
 			expectedRespBody:        "Executed",
 			expectedRespBodyMessage: "Body should be present in response",
@@ -76,7 +76,7 @@ func TestAny(t *testing.T) {
 	for _, test := range testCases {
 		reqTimeFloat, _ := strconv.ParseFloat(test.reqTimeInQueue, 64)
 		result := ExecuteAspectRequest(t, test.reqTimeInQueue, test.reqTimeOut, test.setHeaders, pbsmetrics.ReqTypeVideo, test.requestStatusMetrics, reqTimeFloat)
-		assert.Equal(t, test.extectedRespCode, result.Code, test.expectedRespCodeMessage)
+		assert.Equal(t, test.expectedRespCode, result.Code, test.expectedRespCodeMessage)
 		assert.Equal(t, test.expectedRespBody, string(result.Body.Bytes()), test.expectedRespBodyMessage)
 	}
 }

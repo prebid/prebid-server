@@ -538,7 +538,10 @@ func (me *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Durati
 }
 
 func (me *Metrics) RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration) {
-	me.RequestsQueueTimer[requestType][success].Update(length)
+	if requestType == ReqTypeVideo { //remove this check when other request types are supported
+		me.RequestsQueueTimer[requestType][success].Update(length)
+	}
+
 }
 
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {

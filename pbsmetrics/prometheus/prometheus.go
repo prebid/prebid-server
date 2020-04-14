@@ -75,8 +75,8 @@ const (
 )
 
 const (
-	requestSuccessLabel = "accepted"
-	requestRejectLabel  = "rejected"
+	requestSuccessLabel = "requestAcceptedLabel"
+	requestRejectLabel  = "requestRejectedLabel"
 )
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
