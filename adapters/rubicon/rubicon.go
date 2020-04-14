@@ -21,6 +21,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+const badvLimitSize = 50
+
 type RubiconAdapter struct {
 	http         *adapters.HTTPAdapter
 	URI          string
@@ -738,6 +740,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			appCopy.Publisher = &openrtb.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			request.App = &appCopy
+		}
+
+		reqBadv := request.BAdv
+		if reqBadv != nil {
+			if len(reqBadv) > badvLimitSize {
+				request.BAdv = reqBadv[:badvLimitSize]
+			}
 		}
 
 		request.Imp = []openrtb.Imp{thisImp}
