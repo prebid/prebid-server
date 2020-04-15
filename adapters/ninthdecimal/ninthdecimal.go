@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -25,14 +24,12 @@ func (adapter *NinthdecimalAdapter) MakeRequests(request *openrtb.BidRequest, re
 		errs = append(errs, &errortypes.BadInput{Message: "No impression in the bid request"})
 		return nil, errs
 	}
-	imps, impExts, err := getImpressionsInfo(request.Imp)
+	pub2impressions, imps, err := getImpressionsInfo(request.Imp)
 	if len(imps) == 0 {
 		return nil, err
 	}
 	errs = append(errs, err...)
 
-	pub2impressions, dispErrors := dispatchImpressions(imps, impExts)
-	errs = append(errs, dispErrors...)
 	if len(pub2impressions) == 0 {
 		return nil, errs
 	}
@@ -51,10 +48,10 @@ func (adapter *NinthdecimalAdapter) MakeRequests(request *openrtb.BidRequest, re
 }
 
 // getImpressionsInfo checks each impression for validity and returns impressions copy with corresponding exts
-func getImpressionsInfo(imps []openrtb.Imp) ([]openrtb.Imp, []openrtb_ext.ExtImpNinthdecimal, []error) {
+func getImpressionsInfo(imps []openrtb.Imp) (map[openrtb_ext.ExtImpNinthdecimal][]openrtb.Imp, []openrtb.Imp, []error) {
 	errors := make([]error, 0, len(imps))
 	resImps := make([]openrtb.Imp, 0, len(imps))
-	resImpExts := make([]openrtb_ext.ExtImpNinthdecimal, 0, len(imps))
+	res := make(map[openrtb_ext.ExtImpNinthdecimal][]openrtb.Imp)
 
 	for _, imp := range imps {
 		impExt, err := getImpressionExt(&imp)
@@ -62,42 +59,30 @@ func getImpressionsInfo(imps []openrtb.Imp) ([]openrtb.Imp, []openrtb_ext.ExtImp
 			errors = append(errors, err)
 			continue
 		}
-		if err := validateImpression(&imp, impExt); err != nil {
+		if err := validateImpression(impExt); err != nil {
 			errors = append(errors, err)
 			continue
 		}
+		//dispatchImpressions
+		//Group impressions by ninthdecimal-specific parameters `pubid
+		if err := compatImpression(&imp); err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		if res[*impExt] == nil {
+			res[*impExt] = make([]openrtb.Imp, 0)
+		}
+		res[*impExt] = append(res[*impExt], imp)
 		resImps = append(resImps, imp)
-		resImpExts = append(resImpExts, *impExt)
-
 	}
-	return resImps, resImpExts, errors
+	return res, resImps, errors
 }
 
-func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpNinthdecimal) error {
+func validateImpression(impExt *openrtb_ext.ExtImpNinthdecimal) error {
 	if impExt.PublisherID == "" {
 		return &errortypes.BadInput{Message: "No pubid value provided"}
 	}
 	return nil
-}
-
-//Group impressions by ninthdecimal-specific parameters `pubid
-func dispatchImpressions(imps []openrtb.Imp, impsExt []openrtb_ext.ExtImpNinthdecimal) (map[openrtb_ext.ExtImpNinthdecimal][]openrtb.Imp, []error) {
-	res := make(map[openrtb_ext.ExtImpNinthdecimal][]openrtb.Imp)
-	errors := make([]error, 0)
-	for idx, imp := range imps {
-		err := compatImpression(&imp)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		impExt := impsExt[idx]
-		if res[impExt] == nil {
-			res[impExt] = make([]openrtb.Imp, 0)
-		}
-		res[impExt] = append(res[impExt], imp)
-
-	}
-	return res, errors
 }
 
 //Alter impression info to comply with ninthdecimal platform requirements
@@ -111,6 +96,7 @@ func compatImpression(imp *openrtb.Imp) error {
 
 func compatBannerImpression(imp *openrtb.Imp) error {
 	// Create a copy of the banner, since imp is a shallow copy of the original.
+
 	bannerCopy := *imp.Banner
 	banner := &bannerCopy
 	//As banner.w/h are required fields for ninthdecimalAdn platform - take the first format entry
@@ -205,6 +191,7 @@ func (adapter *NinthdecimalAdapter) MakeBids(internalRequest *openrtb.BidRequest
 	if response.StatusCode != http.StatusOK {
 		msg = fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
+
 	}
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
@@ -243,7 +230,6 @@ func getMediaTypeForImpID(impID string, imps []openrtb.Imp) openrtb_ext.BidType 
 func NewNinthdecimalBidder(endpointTemplate string) adapters.Bidder {
 	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
 		return nil
 	}
 	return &NinthdecimalAdapter{EndpointTemplate: *template}
