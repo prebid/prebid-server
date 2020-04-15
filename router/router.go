@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -258,7 +259,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 
 	requestTimeoutHeaders := config.RequestTimeoutHeaders{}
 	if cfg.RequestTimeoutHeaders != requestTimeoutHeaders {
-		videoEndpoint = aspects.QueuedRequestTimeout(videoEndpoint, cfg.RequestTimeoutHeaders)
+		videoEndpoint = aspects.QueuedRequestTimeout(videoEndpoint, cfg.RequestTimeoutHeaders, r.MetricsEngine, pbsmetrics.ReqTypeVideo)
 	}
 
 	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
