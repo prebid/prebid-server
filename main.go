@@ -94,9 +94,12 @@ func OrtbAuction(w http.ResponseWriter, r *http.Request) error {
 	return router.OrtbAuctionEndpointWrapper(w, r)
 }
 
+func VideoAuction(w http.ResponseWriter, r *http.Request) error {
+	return router.OrtbAuctionEndpointWrapper(w, r)
+}
+
 func Auction(w http.ResponseWriter, r *http.Request) {
 	router.AuctionWrapper(w, r)
-
 }
 
 func GetUIDS(w http.ResponseWriter, r *http.Request) {
