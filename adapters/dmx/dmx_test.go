@@ -129,27 +129,7 @@ func TestMakeRequestsInvalid(t *testing.T) {
 
 }
 
-func TestMakeRequestsNoImp(t *testing.T) {
-	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2", "10007")
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
-				ID: "10007",
-			},
-		},
-		App: &openrtb.App{ID: "cansanuabnua", Publisher: &openrtb.Publisher{ID: "whatever"}},
-		ID:  "1234",
-	}
-	actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 
-	if actualAdapterRequests != nil {
-		t.Errorf("request should be nil")
-	}
-	if len(err) == 0 {
-		t.Errorf("We should have at least one Error")
-	}
-}
 
 func TestMakeRequestsApp(t *testing.T) {
 	var w, h int = 300, 250
@@ -327,8 +307,8 @@ func TestMakeBidsNoContent(t *testing.T) {
 
 	_, err204 := adapter.MakeBids(&inputRequest, actualAdapterRequests[0], &adapters.ResponseData{StatusCode: 204})
 
-	if err204 == nil {
-		t.Errorf("Was expecting error")
+	if err204 != nil {
+		t.Errorf("Was expecting nil")
 	}
 
 	_, err400 := adapter.MakeBids(&inputRequest, actualAdapterRequests[0], &adapters.ResponseData{StatusCode: 400})
