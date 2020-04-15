@@ -65,7 +65,7 @@ type seatResponseExtra struct {
 	Errors             []openrtb_ext.ExtBidderError
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
-	httpCalls []*openrtb_ext.ExtHttpCall
+	HttpCalls []*openrtb_ext.ExtHttpCall
 }
 
 type bidResponseWrapper struct {
@@ -325,8 +325,8 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
-			if request.Test == 1 && bids != nil {
-				ae.httpCalls = bids.httpCalls
+			if bids != nil {
+				ae.HttpCalls = bids.httpCalls
 			}
 
 			// Timing statistics
@@ -649,21 +649,20 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		}
 	}
 
-	for a, b := range adapterExtra {
+	for bidderName, responseExtra := range adapterExtra {
 
 		if req.Test == 1 {
-			// Fill debug info
-			bidResponseExt.Debug.HttpCalls[a] = b.httpCalls
+			bidResponseExt.Debug.HttpCalls[bidderName] = responseExtra.HttpCalls
 		}
 		// Only make an entry for bidder errors if the bidder reported any.
-		if len(b.Errors) > 0 {
-			bidResponseExt.Errors[a] = b.Errors
+		if len(responseExtra.Errors) > 0 {
+			bidResponseExt.Errors[bidderName] = responseExtra.Errors
 		}
 		if len(errList) > 0 {
 			bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = errsToBidderErrors(errList)
 		}
-		bidResponseExt.ResponseTimeMillis[a] = b.ResponseTimeMillis
-		// Defering the filling of bidResponseExt.Usersync[a] until later
+		bidResponseExt.ResponseTimeMillis[bidderName] = responseExtra.ResponseTimeMillis
+		// Defering the filling of bidResponseExt.Usersync[bidderName] until later
 
 	}
 	return bidResponseExt
