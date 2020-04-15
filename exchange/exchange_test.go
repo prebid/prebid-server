@@ -483,6 +483,11 @@ func TestRaceIntegration(t *testing.T) {
 		Endpoint:   server.URL,
 		PlatformID: "abc",
 	}
+	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderBeachfront))] = config.Adapter{
+		Endpoint:         server.URL,
+		ExtraAdapterInfo: "{\"video_endpoint\":\"" + server.URL + "\"}",
+	}
+
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
