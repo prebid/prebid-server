@@ -9,7 +9,6 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"net/http"
-	"strings"
 )
 
 type Adapter struct {
@@ -19,9 +18,9 @@ type Adapter struct {
 type spotxRequest struct {
 	ID         string          `json:"id"`
 	Imp        *openrtb.Imp    `json:"imp"`
-	Site       *openrtb.Site   `json:"site"`
-	Device     *openrtb.Device `json:"device"`
-	Ext        json.RawMessage `json:"ext"`
+	Site       *openrtb.Site   `json:"site,omitempty"`
+	Device     *openrtb.Device `json:"device,omitempty"`
+	Ext        json.RawMessage `json:"ext,omitempty"`
 }
 
 func (a *Adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -68,7 +67,7 @@ func makeRequest(a *Adapter, request *openrtb.BidRequest, imp openrtb.Imp) (*ada
 		return &adapters.RequestData{}, errs
 	}
 
-	if spotxExt.Secure || strings.HasPrefix(request.Site.Page, "https") {
+	if spotxExt.Secure {
 		*imp.Secure = int8(1)
 	}
 
