@@ -85,7 +85,7 @@ var BidderMap = map[string]BidderName{
 	"consumable":        BidderConsumable,
 	"conversant":        BidderConversant,
 	"datablocks":        BidderDatablocks,
-	"dmx":        		 BidderDmx,
+	"dmx":               BidderDmx,
 	"emx_digital":       BidderEmxDigital,
 	"eplanning":         BidderEPlanning,
 	"gamma":             BidderGamma,
