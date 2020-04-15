@@ -183,7 +183,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			if debugLog != nil && debugLog.EnableDebug {
 				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errs)
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
-					debugLog.Data = fmt.Sprintf("<!--\n%s\n\nResponse:\n%s\n-->", debugLog.Data, string(bidRespExtBytes))
+					xmlDeclaration := "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+					debugLog.Data = fmt.Sprintf("%s<log>%s<response>\n%s\n</response></log>", xmlDeclaration, debugLog.Data, string(bidRespExtBytes))
 				} else {
 					errs = append(errs, errors.New("Unable to marshal response ext for debugging"))
 				}

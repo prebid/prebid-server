@@ -96,7 +96,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	defer func() {
 		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
-			debugLog.Data = fmt.Sprintf("<!--\n%s\n\nNo response created\n-->", debugLog.Data)
+			xmlDeclaration := "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+			debugLog.Data = fmt.Sprintf("%s<log>%s<response>\nNo response created\n</response></log>", xmlDeclaration, debugLog.Data)
 			data, err := json.Marshal(debugLog.Data)
 			if err == nil {
 				toCache := []prebid_cache_client.Cacheable{
@@ -131,11 +132,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	resolvedRequest := requestJson
 	if debugLog.EnableDebug {
-		debugLog.Data = fmt.Sprintf("Request:\n%s", string(requestJson))
+		debugLog.Data = fmt.Sprintf("<request>\n%s\n</request>", string(requestJson))
 		if headerBytes, err := json.Marshal(r.Header); err == nil {
-			debugLog.Data = fmt.Sprintf("%s\n\nHeaders:\n%s", debugLog.Data, string(headerBytes))
+			debugLog.Data = fmt.Sprintf("%s<headers>\n%s\n</headers>", debugLog.Data, string(headerBytes))
 		} else {
-			debugLog.Data = fmt.Sprintf("%s\n\nUnable to marshal headers data\n", debugLog.Data)
+			debugLog.Data = fmt.Sprintf("%s<headers>\nUnable to marshal headers data\n</headers>", debugLog.Data)
 		}
 	}
 
