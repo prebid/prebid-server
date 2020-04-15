@@ -1,0 +1,80 @@
+
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "awesome-user"
+    },
+    "app": {
+      "id": "123456789"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "ogTAGID",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
+        },
+        "ext": {
+          "bidder": {
+            "adCode": "my-adcode",
+            "seatCode": "my-seatcode"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://ads.tremorhub.com/ad/rtb/prebid",
+      "body": {
+        "id": "some-request-id",
+        "imp": [
+          {
+            "id": "some-impression-id",
+            "tagid": "my-adcode",
+            "video": {
+              "mimes": [
+                "video/mp4"
+              ],
+              "minduration": 120,
+              "maxduration": 150,
+              "w": 640,
+              "h": 480
+            },
+            "ext": {
+              "originalTagid": "ogTAGID",
+              "originalPublisherid": ""
+            }
+          }
+        ],
+        "app": {
+          "id": "123456789",
+          "publisher": {
+            "id": "my-seatcode"
+          }
+        },
+        "user": {
+          "buyeruid": "awesome-user"
+        },
+        "tmax": 1000
+      }
+    },
+    "mockResponse": {
+      "status": 400
+    }
+  }],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Telaria: Unexpected status code: [ 400 ] ",
+      "comparison": "literal"
+    }
+  ]
+}
