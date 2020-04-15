@@ -8,6 +8,10 @@
       "type": "string",
       "description": "An id used to identify Ninthdecimal publisher.",
       "minLength": 8
+    },
+    "placement": {
+      "type": "string",
+      "description": "A placement created on adserver."
     }
   },
   "required": ["pubid"]
