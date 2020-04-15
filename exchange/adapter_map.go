@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/prebid/prebid-server/adapters/adhese"
 	"github.com/prebid/prebid-server/adapters/kubient"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -70,6 +71,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	ortbBidders := map[openrtb_ext.BidderName]adapters.Bidder{
 		openrtb_ext.Bidder33Across:     ttx.New33AcrossBidder(cfg.Adapters[string(openrtb_ext.Bidder33Across)].Endpoint),
 		openrtb_ext.BidderAdform:       adform.NewAdformBidder(client, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
+		openrtb_ext.BidderAdhese:       adhese.NewAdheseBidder(client, cfg.Adapters[string(openrtb_ext.BidderAdhese)].Endpoint, 0),
 		openrtb_ext.BidderAdkernel:     adkernel.NewAdkernelAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernel))].Endpoint),
 		openrtb_ext.BidderAdkernelAdn:  adkernelAdn.NewAdkernelAdnAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].Endpoint),
 		openrtb_ext.BidderAdoppler:     adoppler.NewAdopplerBidder(cfg.Adapters[string(openrtb_ext.BidderAdoppler)].Endpoint),
