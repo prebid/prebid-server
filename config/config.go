@@ -233,9 +233,6 @@ type Adapter struct {
 	PlatformID string `mapstructure:"platform_id"`
 	AppID      string `mapstructure:"app_id"`
 	AppSecret  string `mapstructure:"app_secret"`
-
-	// needed for district m DMX
-	SellerID string `mapstructure:"seller_id"`
 }
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
