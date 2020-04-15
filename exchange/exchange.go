@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/prebid/prebid-server/stored_requests"
@@ -26,10 +27,18 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
+type DebugLog struct {
+	EnableDebug bool
+	CacheType   prebid_cache_client.PayloadType
+	Data        string
+	TTL         int64
+	CacheKey    string
+}
+
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error)
+	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error)
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -77,7 +86,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	return e
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {
 	// Snapshot of resolved bid request for debug if test request
 	resolvedRequest, err := buildResolvedRequest(bidRequest)
 	if err != nil {
@@ -141,6 +150,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 
 	var auc *auction = nil
+	var bidResponseExt *openrtb_ext.ExtBidResponse = nil
 	if anyBidsReturned {
 
 		var bidCategory map[string]string
@@ -161,16 +171,107 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		if targData != nil {
 			auc.setRoundedPrices(targData.priceGranularity)
-			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory)
+			if debugLog != nil && debugLog.EnableDebug {
+				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errs)
+				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+					debugLog.Data = fmt.Sprintf("<!--\n%s\n\nResponse:\n%s\n-->", debugLog.Data, string(bidRespExtBytes))
+				} else {
+					errs = append(errs, errors.New("Unable to marshal response ext for debugging"))
+				}
+			}
+
+			if requestExt.Prebid.SupportDeals {
+				dealErrs := applyDealSupport(bidRequest, auc, bidCategory)
+				errs = append(errs, dealErrs...)
+			}
+
+			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}
 			targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
 		}
+
 	}
 
 	// Build the response
-	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
+	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, bidResponseExt, errs)
+}
+
+type DealTierInfo struct {
+	Prefix      string `json:"prefix"`
+	MinDealTier int    `json:"minDealTier"`
+}
+
+type DealTier struct {
+	Info *DealTierInfo `json:"dealTier,omitempty"`
+}
+
+type BidderDealTier struct {
+	DealInfo map[string]*DealTier
+}
+
+// applyDealSupport updates targeting keys with deal prefixes if minimum deal tier exceeded
+func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction, bidCategory map[string]string) []error {
+	errs := []error{}
+	impDealMap := getDealTiers(bidRequest)
+
+	for impID, topBidsPerImp := range auc.winningBidsByBidder {
+		impDeal := impDealMap[impID].DealInfo
+		for bidder, topBidPerBidder := range topBidsPerImp {
+			bidderString := bidder.String()
+
+			if topBidPerBidder.dealPriority > 0 {
+				if validateAndNormalizeDealTier(impDeal[bidderString]) {
+					updateHbPbCatDur(topBidPerBidder, impDeal[bidderString].Info, bidCategory)
+				} else {
+					errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", bidderString, impID))
+				}
+			}
+		}
+	}
+
+	return errs
+}
+
+// getDealTiers creates map of impression to bidder deal tier configuration
+func getDealTiers(bidRequest *openrtb.BidRequest) map[string]*BidderDealTier {
+	impDealMap := make(map[string]*BidderDealTier)
+
+	for _, imp := range bidRequest.Imp {
+		var bidderDealTier BidderDealTier
+		err := json.Unmarshal(imp.Ext, &bidderDealTier.DealInfo)
+		if err != nil {
+			continue
+		}
+
+		impDealMap[imp.ID] = &bidderDealTier
+	}
+
+	return impDealMap
+}
+
+func validateAndNormalizeDealTier(impDeal *DealTier) bool {
+	if impDeal == nil || impDeal.Info == nil {
+		return false
+	}
+	// Remove whitespace from prefix before checking if it can be used
+	impDeal.Info.Prefix = strings.ReplaceAll(impDeal.Info.Prefix, " ", "")
+	return len(impDeal.Info.Prefix) > 0 && impDeal.Info.MinDealTier > 0
+}
+
+func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo, bidCategory map[string]string) {
+	if bid.dealPriority >= dealTierInfo.MinDealTier {
+		prefixTier := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
+
+		if oldCatDur, ok := bidCategory[bid.bid.ID]; ok {
+			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
+			oldCatDurSplit[0] = prefixTier
+
+			newCatDur := strings.Join(oldCatDurSplit, "")
+			bidCategory[bid.bid.ID] = newCatDur
+		}
+	}
 }
 
 func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {
@@ -286,14 +387,14 @@ func errorsToMetric(errs []error) map[pbsmetrics.AdapterError]struct{} {
 	ret := make(map[pbsmetrics.AdapterError]struct{}, len(errs))
 	var s struct{}
 	for _, err := range errs {
-		switch errortypes.DecodeError(err) {
-		case errortypes.TimeoutCode:
+		switch errortypes.ReadCode(err) {
+		case errortypes.TimeoutErrorCode:
 			ret[pbsmetrics.AdapterErrorTimeout] = s
-		case errortypes.BadInputCode:
+		case errortypes.BadInputErrorCode:
 			ret[pbsmetrics.AdapterErrorBadInput] = s
-		case errortypes.BadServerResponseCode:
+		case errortypes.BadServerResponseErrorCode:
 			ret[pbsmetrics.AdapterErrorBadServerResponse] = s
-		case errortypes.FailedToRequestBidsCode:
+		case errortypes.FailedToRequestBidsErrorCode:
 			ret[pbsmetrics.AdapterErrorFailedToRequestBids] = s
 		default:
 			ret[pbsmetrics.AdapterErrorUnknown] = s
@@ -305,14 +406,14 @@ func errorsToMetric(errs []error) map[pbsmetrics.AdapterError]struct{} {
 func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderError {
 	serr := make([]openrtb_ext.ExtBidderError, len(errs))
 	for i := 0; i < len(errs); i++ {
-		serr[i].Code = errortypes.DecodeError(errs[i])
+		serr[i].Code = errortypes.ReadCode(errs[i])
 		serr[i].Message = errs[i].Error()
 	}
 	return serr
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, errList []error) (*openrtb.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, errList []error) (*openrtb.BidResponse, error) {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -335,7 +436,9 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 
 	bidResponse.SeatBid = seatBids
 
-	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errList)
+	if bidResponseExt == nil {
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errList)
+	}
 	buffer := &bytes.Buffer{}
 	enc := json.NewEncoder(buffer)
 	enc.SetEscapeHTML(false)
@@ -571,7 +674,7 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 		ext, err := json.Marshal(sbExt)
 		if err != nil {
 			extError := openrtb_ext.ExtBidderError{
-				Code:    errortypes.DecodeError(err),
+				Code:    errortypes.ReadCode(err),
 				Message: fmt.Sprintf("Error writing SeatBid.Ext: %s", err.Error()),
 			}
 			adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, extError)

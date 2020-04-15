@@ -175,7 +175,7 @@ func TestBadNativeRequests(t *testing.T) {
 	tests.assert(t)
 }
 
-// TestAliasedRequests makes sure we handle (defuault) aliased bidders properly
+// TestAliasedRequests makes sure we handle (default) aliased bidders properly
 func TestAliasedRequests(t *testing.T) {
 	tests := &getResponseFromDirectory{
 		dir:           "sample-requests/aliased",
@@ -289,7 +289,7 @@ func (gr *getResponseFromDirectory) assert(t *testing.T) {
 			filesToAssert = append(filesToAssert, gr.dir+"/"+fileInfo.Name())
 		}
 	} else {
-		// Just test the single `gr.file`, and not the entiriety of files that may be found in `gr.dir`
+		// Just test the single `gr.file`, and not the entirety of files that may be found in `gr.dir`
 		filesToAssert = append(filesToAssert, gr.dir+"/"+gr.file)
 	}
 
@@ -602,7 +602,7 @@ func TestStoredRequests(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	edep := &endpointDeps{&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, false, []byte{}, openrtb_ext.BidderMap}
+	edep := &endpointDeps{&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, false, []byte{}, openrtb_ext.BidderMap, nil}
 
 	for i, requestData := range testStoredRequests {
 		newRequest, errList := edep.processStoredRequests(context.Background(), json.RawMessage(requestData))
@@ -638,6 +638,7 @@ func TestOversizedRequest(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -670,6 +671,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -803,10 +805,11 @@ func TestDisabledBidder(t *testing.T) {
 		},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{"unknownbidder": "The biddder 'unknownbidder' has been disabled."},
+		map[string]string{"unknownbidder": "The bidder 'unknownbidder' has been disabled."},
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -836,14 +839,15 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 		&config.Configuration{MaxRequestSize: int64(8096)},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{"unknownbidder": "The biddder 'unknownbidder' has been disabled."},
+		map[string]string{"unknownbidder": "The bidder 'unknownbidder' has been disabled."},
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	}
 	errs := deps.validateImpExt(imp, nil, 0)
 	assert.JSONEq(t, `{"appnexus":{"placement_id":555}}`, string(imp.Ext))
-	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The biddder 'unknownbidder' has been disabled."}}, errs)
+	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'unknownbidder' has been disabled."}}, errs)
 }
 
 func TestEffectivePubID(t *testing.T) {
@@ -878,6 +882,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	}
 
 	ui := uint64(1)
@@ -919,6 +924,7 @@ func TestCCPAInvalidValueWarning(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	}
 
 	ui := uint64(1)
@@ -953,7 +959,7 @@ type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	e.gotRequest = bidRequest
 	return &openrtb.BidResponse{
 		ID:    bidRequest.ID,
@@ -964,7 +970,7 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bid
 
 type brokenExchange struct{}
 
-func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
+func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	return nil, errors.New("Critical, unrecoverable error.")
 }
 
@@ -1324,7 +1330,7 @@ type mockExchange struct {
 	lastRequest *openrtb.BidRequest
 }
 
-func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
+func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
 	return &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{

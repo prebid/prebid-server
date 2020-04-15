@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -16,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	metrics "github.com/rcrowley/go-metrics"
@@ -42,7 +44,7 @@ func TestVideoEndpointImpressionsNumber(t *testing.T) {
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
 	if err := json.Unmarshal(respBytes, resp); err != nil {
-		t.Fatalf("Unable to umarshal response.")
+		t.Fatalf("Unable to unmarshal response.")
 	}
 
 	assert.Len(t, ex.lastRequest.Imp, 11, "Incorrect number of impressions in request")
@@ -170,6 +172,112 @@ func TestCreateBidExtensionExactDurTrueNoPriceRange(t *testing.T) {
 	assert.Equal(t, resExt.Prebid.Targeting.PriceGranularity, openrtb_ext.PriceGranularityFromString("med"), "Price granularity is incorrect")
 }
 
+func TestVideoEndpointDebugQueryTrue(t *testing.T) {
+	ex := &mockExchangeVideo{
+		cache: &mockCacheClient{},
+	}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+	reqBody := string(getRequestPayload(t, reqData))
+	req := httptest.NewRequest("POST", "/openrtb2/video?debug=true", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps := mockDeps(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	if ex.lastRequest == nil {
+		t.Fatalf("The request never made it into the Exchange.")
+	}
+	if !ex.cache.called {
+		t.Fatalf("Cache was not called when it should have been")
+	}
+
+	respBytes := recorder.Body.Bytes()
+	resp := &openrtb_ext.BidResponseVideo{}
+	if err := json.Unmarshal(respBytes, resp); err != nil {
+		t.Fatalf("Unable to unmarshal response.")
+	}
+
+	assert.Len(t, ex.lastRequest.Imp, 11, "Incorrect number of impressions in request")
+	assert.Equal(t, string(ex.lastRequest.Site.Page), "prebid.com", "Incorrect site page in request")
+	assert.Equal(t, ex.lastRequest.Site.Content.Series, "TvName", "Incorrect site content series in request")
+
+	assert.Len(t, resp.AdPods, 5, "Incorrect number of Ad Pods in response")
+	assert.Len(t, resp.AdPods[0].Targeting, 4, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[1].Targeting, 3, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[2].Targeting, 5, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[3].Targeting, 1, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[4].Targeting, 3, "Incorrect Targeting data in response")
+
+	assert.Equal(t, resp.AdPods[4].Targeting[0].HbPbCatDur, "20.00_395_30s", "Incorrect number of Ad Pods in response")
+}
+
+func TestVideoEndpointDebugQueryFalse(t *testing.T) {
+	ex := &mockExchangeVideo{
+		cache: &mockCacheClient{},
+	}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+	reqBody := string(getRequestPayload(t, reqData))
+	req := httptest.NewRequest("POST", "/openrtb2/video?debug=123", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps := mockDeps(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	if ex.lastRequest == nil {
+		t.Fatalf("The request never made it into the Exchange.")
+	}
+	if ex.cache.called {
+		t.Fatalf("Cache was called when it shouldn't have been")
+	}
+
+	respBytes := recorder.Body.Bytes()
+	resp := &openrtb_ext.BidResponseVideo{}
+	if err := json.Unmarshal(respBytes, resp); err != nil {
+		t.Fatalf("Unable to unmarshal response.")
+	}
+
+	assert.Len(t, ex.lastRequest.Imp, 11, "Incorrect number of impressions in request")
+	assert.Equal(t, string(ex.lastRequest.Site.Page), "prebid.com", "Incorrect site page in request")
+	assert.Equal(t, ex.lastRequest.Site.Content.Series, "TvName", "Incorrect site content series in request")
+
+	assert.Len(t, resp.AdPods, 5, "Incorrect number of Ad Pods in response")
+	assert.Len(t, resp.AdPods[0].Targeting, 4, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[1].Targeting, 3, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[2].Targeting, 5, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[3].Targeting, 1, "Incorrect Targeting data in response")
+	assert.Len(t, resp.AdPods[4].Targeting, 3, "Incorrect Targeting data in response")
+
+	assert.Equal(t, resp.AdPods[4].Targeting[0].HbPbCatDur, "20.00_395_30s", "Incorrect number of Ad Pods in response")
+}
+
+func TestVideoEndpointDebugError(t *testing.T) {
+	ex := &mockExchangeVideo{
+		cache: &mockCacheClient{},
+	}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_invalid_sample.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+	reqBody := string(getRequestPayload(t, reqData))
+	req := httptest.NewRequest("POST", "/openrtb2/video?debug=true", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps := mockDeps(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	if !ex.cache.called {
+		t.Fatalf("Cache was not called when it should have been")
+	}
+
+	assert.Equal(t, recorder.Code, 500, "Should catch error in request")
+}
+
 func TestVideoEndpointNoPods(t *testing.T) {
 	ex := &mockExchangeVideo{}
 	reqData, err := ioutil.ReadFile("sample-requests/video/video_invalid_sample.json")
@@ -233,8 +341,8 @@ func TestVideoEndpointValidationsPositive(t *testing.T) {
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
-		Video: openrtb_ext.SimplifiedVideo{
-			Mimes:     mimes,
+		Video: &openrtb.Video{
+			MIMEs:     mimes,
 			Protocols: videoProtocols,
 		},
 	}
@@ -271,8 +379,8 @@ func TestVideoEndpointValidationsCritical(t *testing.T) {
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 0,
 		},
-		Video: openrtb_ext.SimplifiedVideo{
-			Mimes:     mimes,
+		Video: &openrtb.Video{
+			MIMEs:     mimes,
 			Protocols: videoProtocols,
 		},
 	}
@@ -345,8 +453,8 @@ func TestVideoEndpointValidationsPodErrors(t *testing.T) {
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
-		Video: openrtb_ext.SimplifiedVideo{
-			Mimes:     mimes,
+		Video: &openrtb.Video{
+			MIMEs:     mimes,
 			Protocols: videoProtocols,
 		},
 	}
@@ -418,8 +526,8 @@ func TestVideoEndpointValidationsSiteAndApp(t *testing.T) {
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
-		Video: openrtb_ext.SimplifiedVideo{
-			Mimes:     mimes,
+		Video: &openrtb.Video{
+			MIMEs:     mimes,
 			Protocols: videoProtocols,
 		},
 	}
@@ -473,8 +581,8 @@ func TestVideoEndpointValidationsSiteMissingRequiredField(t *testing.T) {
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
-		Video: openrtb_ext.SimplifiedVideo{
-			Mimes:     mimes,
+		Video: &openrtb.Video{
+			MIMEs:     mimes,
 			Protocols: videoProtocols,
 		},
 	}
@@ -482,6 +590,43 @@ func TestVideoEndpointValidationsSiteMissingRequiredField(t *testing.T) {
 	errors, podErrors := deps.validateVideoRequest(&req)
 	assert.Equal(t, "request.site missing required field: id or page", errors[0].Error(), "Site required fields error should be present")
 	assert.Len(t, podErrors, 0, "Pod errors should be empty")
+}
+
+func TestVideoEndpointValidationsMissingVideo(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	deps := mockDeps(t, ex)
+	deps.cfg.VideoStoredRequestRequired = true
+
+	req := openrtb_ext.BidRequestVideo{
+		StoredRequestId: "123",
+		PodConfig: openrtb_ext.PodConfig{
+			DurationRangeSec:     []int{15, 30},
+			RequireExactDuration: true,
+			Pods: []openrtb_ext.Pod{
+				{
+					PodId:            1,
+					AdPodDurationSec: 30,
+					ConfigId:         "qwerty",
+				},
+				{
+					PodId:            2,
+					AdPodDurationSec: 30,
+					ConfigId:         "qwerty",
+				},
+			},
+		},
+		App: &openrtb.App{
+			Bundle: "pbs.com",
+		},
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
+			PrimaryAdserver: 1,
+		},
+	}
+
+	errors, podErrors := deps.validateVideoRequest(&req)
+	assert.Len(t, podErrors, 0, "Pod errors should be empty")
+	assert.Len(t, errors, 1, "Errors array should contain 1 error message")
+	assert.Equal(t, "request missing required field: Video", errors[0].Error(), "Errors array should contain message regarding missing Video field")
 }
 
 func TestVideoBuildVideoResponseMissedCacheForOneBid(t *testing.T) {
@@ -633,6 +778,13 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 		Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"1NYY","existing":"any","consent":"anyConsent"}`),
 	}
 
+	videoReq.User = &openrtb.User{
+		BuyerUID: "test UID",
+		Yob:      1980,
+		Keywords: "test keywords",
+		Ext:      json.RawMessage(`{"consent":"test string"}`),
+	}
+
 	mergeData(videoReq, bidReq)
 
 	assert.Equal(t, videoReq.BCat, bidReq.BCat, "BCat is incorrect")
@@ -647,6 +799,8 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 	assert.Equal(t, videoReq.Site.Page, bidReq.Site.Page, "Device.Site.Page is incorrect")
 
 	assert.Equal(t, videoReq.Regs, bidReq.Regs, "Regs is incorrect")
+
+	assert.Equal(t, videoReq.User, bidReq.User, "User is incorrect")
 }
 
 func TestHandleError(t *testing.T) {
@@ -667,7 +821,7 @@ func TestHandleError(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	err1 := errors.New("Error for testing handleError 1")
 	err2 := errors.New("Error for testing handleError 2")
-	handleError(&labels, recorder, []error{err1, err2}, &vo)
+	handleError(&labels, recorder, []error{err1, err2}, &vo, nil)
 
 	assert.Equal(t, pbsmetrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
 	assert.Equal(t, 500, recorder.Code, "Error status should be written to writer")
@@ -699,6 +853,115 @@ func TestHandleErrorMetrics(t *testing.T) {
 	assert.Equal(t, "request missing required field: PodConfig.Pods", mod.videoObjects[0].Errors[1].Error(), "Second error in AnalyticsObject should have message regarding Pods")
 }
 
+func TestParseVideoRequestWithUserAgentAndHeader(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_with_device_user_agent.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	headers := http.Header{}
+	headers.Add("User-Agent", "TestHeader")
+
+	deps := mockDeps(t, ex)
+	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+
+	assert.Equal(t, "TestHeaderSample", req.Device.UA, "Header should be taken from original request")
+	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
+	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
+
+}
+
+func TestParseVideoRequestWithUserAgentAndEmptyHeader(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_with_device_user_agent.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	headers := http.Header{}
+
+	deps := mockDeps(t, ex)
+	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+
+	assert.Equal(t, "TestHeaderSample", req.Device.UA, "Header should be taken from original request")
+	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
+	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
+
+}
+
+func TestParseVideoRequestWithoutUserAgentWithHeader(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_without_device_user_agent.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	headers := http.Header{}
+	headers.Add("User-Agent", "TestHeader")
+
+	deps := mockDeps(t, ex)
+	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+
+	assert.Equal(t, "TestHeader", req.Device.UA, "Device.ua should be taken from request header")
+	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
+	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
+
+}
+
+func TestParseVideoRequestWithoutUserAgentAndEmptyHeader(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_without_device_user_agent.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	headers := http.Header{}
+
+	deps := mockDeps(t, ex)
+	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+
+	assert.Equal(t, "", req.Device.UA, "Device.ua should be empty")
+	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
+	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
+
+}
+
+func TestHandleErrorDebugLog(t *testing.T) {
+	vo := analytics.VideoObject{
+		Status: 200,
+		Errors: make([]error, 0),
+	}
+
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeVideo,
+		PubID:         pbsmetrics.PublisherUnknown,
+		Browser:       "test browser",
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+
+	recorder := httptest.NewRecorder()
+	err1 := errors.New("Error for testing handleError 1")
+	err2 := errors.New("Error for testing handleError 2")
+	debugLog := exchange.DebugLog{
+		EnableDebug: true,
+		CacheType:   prebid_cache_client.TypeXML,
+		Data:        "test debug data",
+		TTL:         int64(3600),
+	}
+	handleError(&labels, recorder, []error{err1, err2}, &vo, &debugLog)
+
+	assert.Equal(t, pbsmetrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
+	assert.Equal(t, 500, recorder.Code, "Error status should be written to writer")
+	assert.Equal(t, 500, vo.Status, "Analytics object should have error status")
+	assert.Equal(t, 3, len(vo.Errors), "New errors including debug cache ID should be appended to Analytics object Errors")
+	assert.Equal(t, "Error for testing handleError 1", vo.Errors[0].Error(), "Error in Analytics object should have test error message for first error")
+	assert.Equal(t, "Error for testing handleError 2", vo.Errors[1].Error(), "Error in Analytics object should have test error message for second error")
+	assert.NotEmpty(t, debugLog.CacheKey, "DebugLog CacheKey value should have been set")
+}
+
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	mockModule := &mockAnalyticsModule{}
@@ -715,6 +978,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *p
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	}
 
 	return edep, theMetrics, mockModule
@@ -754,9 +1018,25 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		ex.cache,
 	}
 
 	return edep
+}
+
+type mockCacheClient struct {
+	called bool
+}
+
+func (m *mockCacheClient) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
+	if !m.called {
+		m.called = true
+	}
+	return []string{}, []error{}
+}
+
+func (m *mockCacheClient) GetExtCacheData() (string, string) {
+	return "", ""
 }
 
 type mockVideoStoredReqFetcher struct {
@@ -768,10 +1048,14 @@ func (cf mockVideoStoredReqFetcher) FetchRequests(ctx context.Context, requestID
 
 type mockExchangeVideo struct {
 	lastRequest *openrtb.BidRequest
+	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
+func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
+	if debugLog != nil && debugLog.EnableDebug {
+		m.cache.called = true
+	}
 	ext := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"20.00","hb_pb_cat_dur":"20.00_395_30s","hb_size":"1x1", "hb_uuid":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"},"type":"video"},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
 	return &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{

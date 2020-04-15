@@ -142,7 +142,7 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 	}
 }
 
-// proceess unpacks the HTTP response and sends the relevant events to the channels.
+// parse unpacks the HTTP response and sends the relevant events to the channels.
 // It returns true if everything was successful, and false if any errors occurred.
 func (e *HTTPEvents) parse(endpoint string, resp *httpCore.Response, err error) (*responseContract, bool) {
 	if err != nil {

@@ -417,9 +417,9 @@ func TestCookieSizeError(t *testing.T) {
 	}
 	for i := range testCases {
 		if testCases[i].expectError {
-			assert.Error(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCooki.MaxCookieSizeBytes less than MIN_COOKIE_SIZE_BYTES = %d and not equal to zero should return an error", MIN_COOKIE_SIZE_BYTES))
+			assert.Error(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCookie.MaxCookieSizeBytes less than MIN_COOKIE_SIZE_BYTES = %d and not equal to zero should return an error", MIN_COOKIE_SIZE_BYTES))
 		} else {
-			assert.NoError(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCooki.MaxCookieSizeBytes greater than MIN_COOKIE_SIZE_BYTES = %d or equal to zero should not return an error", MIN_COOKIE_SIZE_BYTES))
+			assert.NoError(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCookie.MaxCookieSizeBytes greater than MIN_COOKIE_SIZE_BYTES = %d or equal to zero should not return an error", MIN_COOKIE_SIZE_BYTES))
 		}
 	}
 }

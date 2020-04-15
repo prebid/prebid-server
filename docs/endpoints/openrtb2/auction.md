@@ -95,8 +95,14 @@ If you find that some bidders use Gross bids, publishers can adjust for it with 
 
 ```
 {
-  "appnexus: 0.8,
-  "rubicon": 0.7
+  "ext": {
+    "prebid": {
+      "bidadjustmentfactors": {
+        "appnexus: 0.8,
+        "rubicon": 0.7
+      }
+    }
+  }
 }
 ```
 
@@ -114,17 +120,21 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 
 ```
 {
-    "pricegranularity": {
-        "precision": 2,
-        "ranges": [
-            {
+  "ext": {
+    "prebid": {
+      "targeting": {
+        "pricegranularity": {
+          "precision": 2,
+          "ranges": [{
                 "max":20.00,
                 "increment":0.10 // This is equivalent to the deprecated "pricegranularity": "medium"
-            }
-        ]
-    },
-    "includewinners": false // Optional param defaulting to true
-    "includebidderkeys": false // Optional param defaulting to true
+          }]
+        },
+        "includewinners": false, // Optional param defaulting to true
+        "includebidderkeys": false // Optional param defaulting to true
+      }
+    }
+  }
 }
 ```
 The list of price granularity ranges must be given in order of increasing `max` values. If `precision` is omitted, it will default to `2`. The minimum of a range will be 0 or the previous `max`. Any cmp above the largest `max` will go in the `max` pricebucket.
@@ -159,9 +169,20 @@ MediaType PriceGranularity (PBS-Java only) - when a single OpenRTB request conta
 
 ```
 {
-  "hb_bidder_{bidderName}": "The seatbid.seat which contains this bid",
-  "hb_size_{bidderName}": "A string like '300x250' using bid.w and bid.h for this bid",
-  "hb_pb_{bidderName}": "The bid.cpm, rounded down based on the price granularity."
+  "seatbid": [{
+    "bid": [{
+      ...
+      "ext": {
+        "prebid": {
+          "targeting": {
+            "hb_bidder_{bidderName}": "The seatbid.seat which contains this bid",
+            "hb_size_{bidderName}": "A string like '300x250' using bid.w and bid.h for this bid",
+            "hb_pb_{bidderName}": "The bid.cpm, rounded down based on the price granularity."
+          }
+        }
+      }
+    }]
+  }]
 }
 ```
 
@@ -174,7 +195,7 @@ will be truncated to only include the first 20 characters.
 #### Cookie syncs
 
 Each Bidder should receive their own ID in the `request.user.buyeruid` property.
-Prebid Server has three ways to popualte this field. In order of priority:
+Prebid Server has three ways to populate this field. In order of priority:
 
 1. If the request payload contains `request.user.buyeruid`, then that value will be sent to all Bidders.
 In most cases, this is probably a bad idea.
@@ -183,8 +204,16 @@ In most cases, this is probably a bad idea.
 
 ```
 {
-  "appnexus": "some-appnexus-id",
-  "rubicon": "some-rubicon-id"
+  "user": {
+    "ext": {
+      "prebid": {
+        "buyeruids": {
+          "appnexus": "some-appnexus-id",
+          "rubicon": "some-rubicon-id"
+        }
+      }
+    }
+  }
 }
 ```
 
@@ -199,7 +228,7 @@ for each Bidder by using the `/cookie_sync` endpoint, and calling the URLs that 
 
 #### Native Request
 
-For each native request, the `assets` objects's `id` field must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID.
+For each native request, the `assets` object's `id` field must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID.
 
 
 #### Bidder Aliases
@@ -236,7 +265,7 @@ This can be used to request bids from the same Bidder with different params. For
 ```
 
 For all intents and purposes, the alias will be treated as another Bidder. This new Bidder will behave exactly
-like the original, except that the Response will contain seprate SeatBids, and any Targeting keys
+like the original, except that the Response will contain separate SeatBids, and any Targeting keys
 will be formed using the alias' name.
 
 If an alias overlaps with a core Bidder's name, then the alias will take precedence.
@@ -245,15 +274,13 @@ This prevents breaking API changes as new Bidders are added to the project.
 For example, if the Request defines an alias like this:
 
 ```
-{
   "aliases": {
     "appnexus": "rubicon"
   }
-}
 ```
 
 then any `imp.ext.appnexus` params will actually go to the **rubicon** adapter.
-It will become impossible to fetch bids from Appnexus within that Request.
+It will become impossible to fetch bids from AppNexus within that Request.
 
 #### Bidder Response Times
 
@@ -273,19 +300,17 @@ For example, a request may return this in `response.ext`
 
 ```
 {
-  "errors": {
-    "appnexus": [
-      {
-        "code": 2,
-        "message": "A hybrid Banner/Audio Imp was offered, but Appnexus doesn't support Audio."
-      }
-    ],
-    "rubicon": [
-      {
-        "code": 1,
-        "message": "The request exceeded the timeout allocated"
-      }
-    ]
+  "ext": {
+    "errors": {
+      "appnexus": [{
+          "code": 2,
+          "message": "A hybrid Banner/Audio Imp was offered, but Appnexus doesn't support Audio."
+      }],
+      "rubicon": [{
+          "code": 1,
+          "message": "The request exceeded the timeout allocated"
+      }]
+    }
   }
 }
 ```
@@ -319,7 +344,15 @@ A typical `storedrequest` value looks like this:
 
 ```
 {
-  "id": "some-id"
+  "imp": [{
+    "ext": {
+      "prebid": {
+        "storedrequest": {
+          "id": "some-id"
+        }
+      }
+    }
+  }]
 }
 ```
 
@@ -331,12 +364,18 @@ Bids can be temporarily cached on the server by sending the following data as `r
 
 ```
 {
-  "bids": {},
-  "vastxml": {}
+  "ext": {
+    "prebid": {
+      "cache": {
+        "bids": {},
+        "vastxml": {}
+      }
+    }
+  }
 }
 ```
 
-Both `bids` and `vastxml` are optional, but one of the two is required. Thils property will have no effect
+Both `bids` and `vastxml` are optional, but one of the two is required if you want to cache bids. This property will have no effect
 unless `request.ext.prebid.targeting` is also set in the request.
 
 If `bids` is present, Prebid Server will make a _best effort_ to include these extra
@@ -403,12 +442,60 @@ Example:
 PBS receiving a request for an interstitial imp and these parameters set, it will rewrite the format object within the interstitial imp. If the format array's first object is a size, PBS will take it as the max size for the interstitial. If that size is 1x1, it will look up the device's size and use that as the max size. If the format is not present, it will also use the device size as the max size. (1x1 support so that you don't have to omit the format object to use the device size)
 PBS with interstitial support will come preconfigured with a list of common ad sizes. Preferentially organized by weighing the larger and more common sizes first. But no guarantees to the ordering will be made. PBS will generate a new format list for the interstitial imp by traversing this list and picking the first 10 sizes that fall within the imp's max size and minimum percentage size. There will be no attempt to favor aspect ratios closer to the original size's aspect ratio. The limit of 10 is enforced to ensure we don't overload bidders with an overlong list. All the interstitial parameters will still be passed to the bidders, so they may recognize them and use their own size matching algorithms if they prefer.
 
+#### Currency Support
+
+To set the desired 'ad server currency', use the standard OpenRTB `cur` attribute. Note that Prebid Server only looks at the first currency in the array.
+
+```
+    "cur": ["USD"]
+```
+
+If you want or need to define currency conversion rates (e.g. for currencies that your Prebid Server doesn't support),
+define ext.prebid.currency.rates. (Currently supported in PBS-Java only)
+
+```
+"ext": {
+  "prebid": {
+	  "currency": {
+		  "rates": {
+			  "USD": { "UAH": 24.47, "ETB": 32.04 }
+		  }
+	  }
+  }
+}
+```
+
+If it exists, a rate defined in ext.prebid.currency.rates has the highest priority.
+If a currency rate doesn't exist in the request, the external file will be used.
+
+#### Supply Chain Support
+
+
+Basic supply chains are passed to Prebid Server on `source.ext.schain` and passed through to bid adapters. Prebid Server does not currently offer the ability to add a node to the supply chain.
+
+Bidder-specific schains (PBS-Java only):
+
+```
+ext.prebid.schains: [
+   { bidders: ["bidderA"], schain: { SCHAIN OBJECT 1}},
+   { bidders: ["*"], schain: { SCHAIN OBJECT 2}}
+]
+```
+In this scenario, Prebid Server sends the first schain object to `bidderA` and the second schain object to everyone else.
+
+If there's already an source.ext.schain and a bidder is named in ext.prebid.schains (or covered by the wildcard condition), ext.prebid.schains takes precedent.
+
+#### Rewarded Video (PBS-Java only)
+
+Rewarded video is a way to incentivize users to watch ads by giving them 'points' for viewing an ad. A Prebid Server
+client can declare a given adunit as eligible for rewards by declaring `imp.ext.prebid.is_rewarded_inventory:1`.
+
 #### Stored Responses (PBS-Java only)
 
 While testing SDK and video integrations, it's important, but often difficult, to get consistent responses back from bidders that cover a range of scenarios like different CPM values, deals, etc. Prebid Server supports a debugging workflow in two ways:
 
 - a stored-auction-response that covers multiple bidder responses
-- multiple stored-bid-reponses at the bidder adapter level
+- multiple stored-bid-responses at the bidder adapter level
 
 **Single Stored Auction Response ID**
 
@@ -567,33 +654,33 @@ It specifies where in the OpenRTB request non-standard attributes should be pass
 
 ```
 {
-    ext: {
-       prebid: {
-           data: { bidders: [ 'rubicon', 'appnexus' ] }  // these are the bidders allowed to see protected data
+    "ext": {
+       "prebid": {
+           "data": { "bidders": [ "rubicon", "appnexus" ] }  // these are the bidders allowed to see protected data
        }
     },
-    site: {
-         keywords: "",
-         search: "",
-         ext: {
+    "site": {
+         "keywords": "",
+         "search": "",
+         "ext": {
              data: { GLOBAL CONTEXT DATA } // only seen by bidders named in ext.prebid.data.bidders[]
          }
     },
-    user: {
-        keywords: "", 
-        gender: "", 
-        yob: 1999, 
-        geo: {},
-        ext: {
+    "user": {
+        "keywords": "", 
+        "gender": "", 
+        "yob": 1999, 
+        "geo": {},
+        "ext": {
             data: { GLOBAL USER DATA }  // only seen by bidders named in ext.prebid.data.bidders[]
         }
     },
-    imp: [
-        ext: {
-            context: {
-                keywords: "",
-                search: "",
-                data: { ADUNIT SPECFIC CONTEXT DATA }  // can be seen by all bidders
+    "imp": [
+        "ext": {
+            "context": {
+                "keywords": "",
+                "search": "",
+                "data": { ADUNIT SPECFIC CONTEXT DATA }  // can be seen by all bidders
             }
          }
     ]
