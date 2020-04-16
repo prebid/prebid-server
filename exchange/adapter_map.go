@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prebid/prebid-server/adapters/adhese"
 	"github.com/prebid/prebid-server/adapters"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/adform"
+	"github.com/prebid/prebid-server/adapters/adhese"
 	"github.com/prebid/prebid-server/adapters/adkernel"
 	"github.com/prebid/prebid-server/adapters/adkernelAdn"
 	"github.com/prebid/prebid-server/adapters/admixer"
