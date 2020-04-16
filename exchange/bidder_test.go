@@ -1088,9 +1088,10 @@ func TestErrorReporting(t *testing.T) {
 
 func TestSetAssetTypes(t *testing.T) {
 	testCases := []struct {
-		respAsset nativeResponse.Asset
-		nativeReq nativeRequests.Request
-		errStr    string
+		respAsset   nativeResponse.Asset
+		nativeReq   nativeRequests.Request
+		expectedErr string
+		desc        string
 	}{
 		{
 			respAsset: nativeResponse.Asset{
@@ -1115,7 +1116,8 @@ func TestSetAssetTypes(t *testing.T) {
 					},
 				},
 			},
-			errStr: "",
+			expectedErr: "",
+			desc:        "Matching image asset exists in the request and asset type is set correctly",
 		},
 		{
 			respAsset: nativeResponse.Asset{
@@ -1140,7 +1142,8 @@ func TestSetAssetTypes(t *testing.T) {
 					},
 				},
 			},
-			errStr: "",
+			expectedErr: "",
+			desc:        "Matching data asset exists in the request and asset type is set correctly",
 		},
 		{
 			respAsset: nativeResponse.Asset{
@@ -1159,7 +1162,8 @@ func TestSetAssetTypes(t *testing.T) {
 					},
 				},
 			},
-			errStr: "Couldn't find asset with ID:1 in the request",
+			expectedErr: "Unable to find asset with ID:1 in the request",
+			desc:        "Matching image asset with the same ID doesn't exist in the request",
 		},
 		{
 			respAsset: nativeResponse.Asset{
@@ -1178,7 +1182,8 @@ func TestSetAssetTypes(t *testing.T) {
 					},
 				},
 			},
-			errStr: "Response has a Data asset with ID:2 present that doesn't exist in the request",
+			expectedErr: "Response has a Data asset with ID:2 present that doesn't exist in the request",
+			desc:        "Assets with same ID in the req and resp are of different types",
 		},
 		{
 			respAsset: nativeResponse.Asset{
@@ -1197,25 +1202,26 @@ func TestSetAssetTypes(t *testing.T) {
 					},
 				},
 			},
-			errStr: "Response has an Image asset with ID:1 present that doesn't exist in the request",
+			expectedErr: "Response has an Image asset with ID:1 present that doesn't exist in the request",
+			desc:        "Assets with same ID in the req and resp are of different types",
 		},
 	}
 
 	for _, test := range testCases {
 		err := setAssetTypes(test.respAsset, test.nativeReq)
-		if len(test.errStr) != 0 {
-			assert.EqualError(t, err, test.errStr)
+		if len(test.expectedErr) != 0 {
+			assert.EqualError(t, err, test.expectedErr, "Test Case: %s", test.desc)
 			continue
 		} else {
-			assert.NoError(t, err)
+			assert.NoError(t, err, "Test Case: %s", test.desc)
 		}
 
 		for _, asset := range test.nativeReq.Assets {
 			if asset.Img != nil && test.respAsset.Img != nil {
-				assert.Equal(t, asset.Img.Type, test.respAsset.Img.Type, "Asset type not set correctly")
+				assert.Equal(t, asset.Img.Type, test.respAsset.Img.Type, "Asset type not set correctly. Test Case: %s", test.desc)
 			}
 			if asset.Data != nil && test.respAsset.Data != nil {
-				assert.Equal(t, asset.Data.Type, test.respAsset.Data.Type, "Asset type not set correctly")
+				assert.Equal(t, asset.Data.Type, test.respAsset.Data.Type, "Asset type not set correctly. Test Case: %s", test.desc)
 			}
 		}
 	}

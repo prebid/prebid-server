@@ -272,13 +272,13 @@ func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Na
 	return nil, errors.New("Could not find native imp")
 }
 
-func getAssetByID(id int64, assets []nativeRequests.Asset) (*nativeRequests.Asset, error) {
+func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset, error) {
 	for _, asset := range assets {
 		if id == asset.ID {
-			return &asset, nil
+			return asset, nil
 		}
 	}
-	return nil, fmt.Errorf("Couldn't find asset with ID:%d in the request", id)
+	return nativeRequests.Asset{}, fmt.Errorf("Unable to find asset with ID:%d in the request", id)
 }
 
 // makeExt transforms information about the HTTP call into the contract class for the PBS response.
