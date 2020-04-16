@@ -129,8 +129,7 @@ func TestMakeRequestsInvalid(t *testing.T) {
 
 }
 
-
-func TestMakeRequestNoSite(t *testing.T){
+func TestMakeRequestNoSite(t *testing.T) {
 	var w, h int = 300, 250
 
 	var width, height uint64 = uint64(w), uint64(h)
@@ -171,7 +170,6 @@ func TestMakeRequestNoSite(t *testing.T){
 		t.Errorf("Missing publisher ID must be in")
 	}
 }
-
 
 func TestMakeRequestsApp(t *testing.T) {
 	var w, h int = 300, 250

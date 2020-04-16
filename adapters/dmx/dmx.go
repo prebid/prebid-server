@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"net/url"
 )
 
 type DmxAdapter struct {
@@ -16,8 +17,8 @@ type DmxAdapter struct {
 	publisherId string
 }
 
-func NewDmxBidder(endpoint string, publisher_id string) *DmxAdapter {
-	return &DmxAdapter{endpoint: endpoint, publisherId: publisher_id}
+func NewDmxBidder(endpoint string) *DmxAdapter {
+	return &DmxAdapter{endpoint: endpoint}
 }
 
 type dmxExt struct {
@@ -32,15 +33,11 @@ type dmxParams struct {
 	SellerId    string `json:"seller_id,omitempty"`
 }
 
-func ReturnPubId(str1, str2 string) string {
+func UserSellerOrPubId(str1, str2 string) string {
 	if str1 != "" {
 		return str1
 	}
-	if str2 != "" {
-		return str2
-	}
-	return ""
-
+	return str2
 }
 
 func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
@@ -49,17 +46,15 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	var rootExtInfo dmxExt
 	var publisherId string
 	var sellerId string
-	if len(request.Imp) < 1 {
-		errs = append(errs, errors.New("imp is empty no auction possible"))
-		return nil, errs
-	}
+
+	var dmxReq = request
 
 	if len(request.Imp) >= 1 {
 		err := json.Unmarshal(request.Imp[0].Ext, &rootExtInfo)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-			publisherId = ReturnPubId(rootExtInfo.Bidder.PublisherId, rootExtInfo.Bidder.MemberId)
+			publisherId = UserSellerOrPubId(rootExtInfo.Bidder.PublisherId, rootExtInfo.Bidder.MemberId)
 			sellerId = rootExtInfo.Bidder.SellerId
 		}
 	}
@@ -68,22 +63,22 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	}
 
 	if dmxBidderStaticInfo.Bidder.PublisherId != "" && publisherId == "" {
-		request.Site.Publisher = &openrtb.Publisher{ID: dmxBidderStaticInfo.Bidder.PublisherId}
-	} else {
-		if request.Site.Publisher != nil {
-			request.Site.Publisher.ID = adapter.publisherId
-		}
+		publisherId = dmxBidderStaticInfo.Bidder.PublisherId
 	}
 
-	if request.App != nil {
-		request.Site = nil
-		request.App.Publisher = &openrtb.Publisher{ID: publisherId}
+	if dmxReq.App != nil {
+		dmxReq.Site = nil
+		dmxReq.App.Publisher.ID = publisherId
 	}
-	if request.Site != nil {
-		if request.Site.Publisher == nil {
-			request.Site.Publisher = &openrtb.Publisher{ID: publisherId}
+	if dmxReq.Site != nil {
+		if dmxReq.Site.Publisher == nil {
+			dmxReq.Site.Publisher = &openrtb.Publisher{ID: publisherId}
 		} else {
-			request.Site.Publisher.ID = publisherId
+			if dmxReq.Site.Publisher != nil {
+				dmxReq.Site.Publisher.ID = adapter.publisherId
+			} else {
+				dmxReq.Site.Publisher.ID = publisherId
+			}
 		}
 	}
 
@@ -98,8 +93,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 				Format: inst.Banner.Format,
 			}
 
-			var intVal int8
-			intVal = 1
+			const intVal int8 = 1
 			var params dmxExt
 
 			source := (*json.RawMessage)(&inst.Ext)
@@ -112,7 +106,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 					errs = append(errs, err)
 					return nil, errs
 				}
-				imps = fetchFailedParams(failedParams, inst, ins, imps, banner, intVal)
+				imps = fetchAlternativeParams(failedParams, inst, ins, imps, banner, intVal)
 			} else {
 				imps = fetchParams(params, inst, ins, imps, banner, intVal)
 			}
@@ -121,9 +115,13 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 
 	}
 
-	request.Imp = imps
+	dmxReq.Imp = imps
 
-	oJson, _ := json.Marshal(request)
+	oJson, err := json.Marshal(request)
+
+	if err != nil {
+		errs = append(errs, err)
+	}
 	headers := http.Header{}
 	headers.Add("Content-Type", "Application/json;charset=utf-8")
 	reqBidder := &adapters.RequestData{
@@ -133,8 +131,8 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		Headers: headers,
 	}
 
-	if request.User == nil {
-		if request.App == nil {
+	if dmxReq.User == nil {
+		if dmxReq.App == nil {
 			return nil, []error{errors.New("no user Id found and AppID, no request to DMX")}
 		}
 	}
@@ -147,20 +145,18 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 	var errs []error
 
 	if http.StatusNoContent == response.StatusCode {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No content to be return"),
-		}}
+		return nil, nil
 	}
 
 	if http.StatusBadRequest == response.StatusCode {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Bad formated request"),
+			Message: fmt.Sprintf("Unexpected status code 400"),
 		}}
 	}
 
 	if http.StatusOK != response.StatusCode {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Something is really wrong"),
+			Message: fmt.Sprintf("Unexpected response no status code"),
 		}}
 	}
 
@@ -190,7 +186,7 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 
 }
 
-func fetchFailedParams(params dmxParams, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner openrtb.Banner, intVal int8) []openrtb.Imp {
+func fetchAlternativeParams(params dmxParams, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner openrtb.Banner, intVal int8) []openrtb.Imp {
 	if params.TagId != "" {
 		ins = openrtb.Imp{
 			ID:     inst.ID,
@@ -240,7 +236,7 @@ func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrt
 
 func addParams(str string) string {
 	if str != "" {
-		return "?sellerid=" + str
+		return "?sellerid=" + url.QueryEscape(str)
 	}
 	return ""
 }
