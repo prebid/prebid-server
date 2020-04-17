@@ -15,14 +15,6 @@ type Adapter struct {
 	url string
 }
 
-type spotxRequest struct {
-	ID         string          `json:"id"`
-	Imp        *openrtb.Imp    `json:"imp"`
-	Site       *openrtb.Site   `json:"site,omitempty"`
-	Device     *openrtb.Device `json:"device,omitempty"`
-	Ext        json.RawMessage `json:"ext,omitempty"`
-}
-
 func (a *Adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
@@ -48,7 +40,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 	return adapterRequests, errs
 }
 
-func makeRequest(a *Adapter, request *openrtb.BidRequest, imp openrtb.Imp) (*adapters.RequestData, []error) {
+func makeRequest(a *Adapter, originalReq *openrtb.BidRequest, imp openrtb.Imp) (*adapters.RequestData, []error) {
 	var errs []error
 
 	var bidderExt adapters.ExtImpBidder
@@ -67,6 +59,14 @@ func makeRequest(a *Adapter, request *openrtb.BidRequest, imp openrtb.Imp) (*ada
 		return &adapters.RequestData{}, errs
 	}
 
+	reqCopy := *originalReq
+	reqCopy.ID = spotxExt.ChannelID
+
+	intermediateReq, _ := json.Marshal(reqCopy)
+
+	reqMap := make(map[string]interface{})
+	_ = json.Unmarshal(intermediateReq, &reqMap)
+
 	if spotxExt.Secure {
 		*imp.Secure = int8(1)
 	}
@@ -79,17 +79,10 @@ func makeRequest(a *Adapter, request *openrtb.BidRequest, imp openrtb.Imp) (*ada
 		impVideoExt["hide_skin"] = 1
 	}
 	imp.Video.Ext, _ = json.Marshal(impVideoExt)
-
-	spotReq := spotxRequest{
-		ID:     spotxExt.ChannelID,
-		Imp:    &imp, //TODO: Other adapters are sending this as an array
-		Site:   request.Site,
-		Device: request.Device,
-	}
-
 	imp.BidFloor = float64(spotxExt.PriceFloor)
+	reqMap["imp"] = imp
 
-	reqJSON, err := json.Marshal(spotReq)
+	reqJSON, err := json.Marshal(reqMap)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
