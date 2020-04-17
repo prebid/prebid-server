@@ -1,0 +1,6 @@
+maintainer:
+  email: "aoteam@gemius.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner

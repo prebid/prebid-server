@@ -1,0 +1,21 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "AdOcean Adapter Params",
+	"description": "A schema which validates params accepted by the AdOcean adapter",
+	"type": "object",
+	"properties": {
+		"emiter": {
+			"type": "string",
+			"description": "AdOcean emiter"
+		},
+		"masterId": {
+			"type": "string",
+			"description": "Master's id"
+		},
+		"slaveId": {
+			"type": "string",
+			"description": "Slave's id"
+		}
+	},
+	"required": ["emiter", "masterId", "slaveId"]
+}
