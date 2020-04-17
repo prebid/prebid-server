@@ -63,20 +63,28 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		}}
 	}
 
-	var requests []*adapters.RequestData
+	consentString := ""
+	if request.User != nil {
+		var extUser openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+			consentString = extUser.Consent
+		}
+	}
+
+	var httpRequests []*adapters.RequestData
 	for _, auction := range request.Imp {
-		request, err := a.makeRequest(&auction, request)
+		bidRequest, err := a.makeRequest(&auction, request, consentString)
 		if err != nil {
 			return nil, []error{err}
 		}
 
-		requests = append(requests, request)
+		httpRequests = append(httpRequests, bidRequest)
 	}
 
-	return requests, nil
+	return httpRequests, nil
 }
 
-func (a *AdOceanAdapter) makeRequest(imp *openrtb.Imp, request *openrtb.BidRequest) (*adapters.RequestData, error) {
+func (a *AdOceanAdapter) makeRequest(imp *openrtb.Imp, request *openrtb.BidRequest, consentString string) (*adapters.RequestData, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -91,7 +99,7 @@ func (a *AdOceanAdapter) makeRequest(imp *openrtb.Imp, request *openrtb.BidReque
 		}
 	}
 
-	url, err := a.makeURL(&adOceanExt, imp.ID)
+	url, err := a.makeURL(&adOceanExt, imp.ID, consentString)
 	if url == "" {
 		return nil, err
 	}
@@ -115,7 +123,7 @@ func (a *AdOceanAdapter) makeRequest(imp *openrtb.Imp, request *openrtb.BidReque
 	}, nil
 }
 
-func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID string) (string, error) {
+func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID string, consentString string) (string, error) {
 	if error := validateParams(params); error != nil {
 		return "", error
 	}
@@ -144,6 +152,10 @@ func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID st
 	queryParams.Add("nosecure", "1")
 	queryParams.Add("aid", auctionID)
 	queryParams.Add("sid", params.SlaveID)
+	if consentString != "" {
+		queryParams.Add("gdpr_consent", consentString)
+		queryParams.Add("gdpr", "1")
+	}
 	endpointURL.RawQuery = queryParams.Encode()
 
 	fmt.Println("endpointURL: ", endpointURL.String())
