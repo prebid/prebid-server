@@ -44,4 +44,5 @@ var invalidParams = []string{
 	`true`,
 	`2`,
 	`{"invalid_param": "123"}`,
+	`{"placementId": 123}`,
 }

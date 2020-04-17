@@ -1,6 +1,6 @@
 package openrtb_ext
 
-// ExtImpGrid defines the contract for bidrequest.imp[i].ext.grid
+// ExtImpYieldone defines the contract for bidrequest.imp[i].ext.yieldone
 type ExtImpYieldone struct {
 	PlacementId string `json:"placementId"`
 }
