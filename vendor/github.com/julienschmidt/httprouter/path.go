@@ -41,7 +41,11 @@ func CleanPath(p string) string {
 		buf[0] = '/'
 	}
 
+<<<<<<< HEAD
 	trailing := n > 1 && p[n-1] == '/'
+=======
+	trailing := n > 2 && p[n-1] == '/'
+>>>>>>> OPER-5108 Setup Local development with k8s
 
 	// A bit more clunky without a 'lazybuf' like the path package, but the loop
 	// gets completely inlined (bufApp). So in contrast to the path package this
@@ -59,11 +63,19 @@ func CleanPath(p string) string {
 
 		case p[r] == '.' && p[r+1] == '/':
 			// . element
+<<<<<<< HEAD
 			r += 2
 
 		case p[r] == '.' && p[r+1] == '.' && (r+2 == n || p[r+2] == '/'):
 			// .. element: remove to last /
 			r += 3
+=======
+			r++
+
+		case p[r] == '.' && p[r+1] == '.' && (r+2 == n || p[r+2] == '/'):
+			// .. element: remove to last /
+			r += 2
+>>>>>>> OPER-5108 Setup Local development with k8s
 
 			if w > 1 {
 				// can backtrack
