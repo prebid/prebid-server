@@ -483,6 +483,11 @@ func TestRaceIntegration(t *testing.T) {
 		Endpoint:   server.URL,
 		PlatformID: "abc",
 	}
+	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderBeachfront))] = config.Adapter{
+		Endpoint:         server.URL,
+		ExtraAdapterInfo: "{\"video_endpoint\":\"" + server.URL + "\"}",
+	}
+
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
@@ -765,6 +770,11 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 				t.Errorf("%s: DebugLog was modified when it shouldn't have been", filename)
 			}
 		}
+	}
+	if spec.IncomingRequest.OrtbRequest.Test == 1 {
+		//compare debug info
+		diffJson(t, "Debug info modified", bid.Ext, spec.Response.Ext)
+
 	}
 }
 
@@ -1403,7 +1413,10 @@ func TestApplyDealSupport(t *testing.T) {
 			},
 		}
 
-		bid := pbsOrtbBid{&openrtb.Bid{}, "video", test.targ, &openrtb_ext.ExtBidPrebidVideo{}, test.dealPriority}
+		bid := pbsOrtbBid{&openrtb.Bid{ID: "123456"}, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, test.dealPriority}
+		bidCategory := map[string]string{
+			bid.bid.ID: test.targ["hb_pb_cat_dur"],
+		}
 
 		auc := &auction{
 			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
@@ -1413,9 +1426,9 @@ func TestApplyDealSupport(t *testing.T) {
 			},
 		}
 
-		dealErrs := applyDealSupport(bidRequest, auc)
+		dealErrs := applyDealSupport(bidRequest, auc, bidCategory)
 
-		assert.Equal(t, test.expectedHbPbCatDur, auc.winningBidsByBidder["imp_id1"][bidderName].bidTargets["hb_pb_cat_dur"], test.description)
+		assert.Equal(t, test.expectedHbPbCatDur, bidCategory[auc.winningBidsByBidder["imp_id1"][bidderName].bid.ID], test.description)
 		if len(test.expectedDealErr) > 0 {
 			assert.Containsf(t, dealErrs, errors.New(test.expectedDealErr), "Expected error message not found in deal errors")
 		}
@@ -1590,11 +1603,14 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		bid := pbsOrtbBid{&openrtb.Bid{}, "video", test.targ, &openrtb_ext.ExtBidPrebidVideo{}, test.dealPriority}
+		bid := pbsOrtbBid{&openrtb.Bid{ID: "123456"}, "video", map[string]string{}, &openrtb_ext.ExtBidPrebidVideo{}, test.dealPriority}
+		bidCategory := map[string]string{
+			bid.bid.ID: test.targ["hb_pb_cat_dur"],
+		}
 
-		updateHbPbCatDur(&bid, test.dealTier)
+		updateHbPbCatDur(&bid, test.dealTier, bidCategory)
 
-		assert.Equal(t, test.expectedHbPbCatDur, bid.bidTargets["hb_pb_cat_dur"], test.description)
+		assert.Equal(t, test.expectedHbPbCatDur, bidCategory[bid.bid.ID], test.description)
 	}
 }
 
@@ -1614,6 +1630,7 @@ type exchangeRequest struct {
 type exchangeResponse struct {
 	Bids  *openrtb.BidResponse `json:"bids"`
 	Error string               `json:"error,omitempty"`
+	Ext   json.RawMessage      `json:"ext,omitempty"`
 }
 
 type bidderSpec struct {
@@ -1627,8 +1644,9 @@ type bidderRequest struct {
 }
 
 type bidderResponse struct {
-	SeatBid *bidderSeatBid `json:"pbsSeatBid,omitempty"`
-	Errors  []string       `json:"errors,omitempty"`
+	SeatBid   *bidderSeatBid             `json:"pbsSeatBid,omitempty"`
+	Errors    []string                   `json:"errors,omitempty"`
+	HttpCalls []*openrtb_ext.ExtHttpCall `json:"httpCalls,omitempty"`
 }
 
 // bidderSeatBid is basically a subset of pbsOrtbSeatBid from exchange/bidder.go.
@@ -1685,7 +1703,13 @@ func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidR
 			}
 
 			seatBid = &pbsOrtbSeatBid{
-				bids: bids,
+				bids:      bids,
+				httpCalls: mockResponse.HttpCalls,
+			}
+		} else {
+			seatBid = &pbsOrtbSeatBid{
+				bids:      nil,
+				httpCalls: mockResponse.HttpCalls,
 			}
 		}
 

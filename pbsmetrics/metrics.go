@@ -154,11 +154,12 @@ func CookieTypes() []CookieFlag {
 
 // Request/return status
 const (
-	RequestStatusOK          RequestStatus = "ok"
-	RequestStatusBadInput    RequestStatus = "badinput"
-	RequestStatusErr         RequestStatus = "err"
-	RequestStatusNetworkErr  RequestStatus = "networkerr"
-	RequestStatusBlacklisted RequestStatus = "blacklistedacctorapp"
+	RequestStatusOK           RequestStatus = "ok"
+	RequestStatusBadInput     RequestStatus = "badinput"
+	RequestStatusErr          RequestStatus = "err"
+	RequestStatusNetworkErr   RequestStatus = "networkerr"
+	RequestStatusBlacklisted  RequestStatus = "blacklistedacctorapp"
+	RequestStatusQueueTimeout RequestStatus = "queuetimeout"
 )
 
 func RequestStatuses() []RequestStatus {
@@ -168,6 +169,7 @@ func RequestStatuses() []RequestStatus {
 		RequestStatusErr,
 		RequestStatusNetworkErr,
 		RequestStatusBlacklisted,
+		RequestStatusQueueTimeout,
 	}
 }
 
@@ -272,4 +274,5 @@ type MetricsEngine interface {
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
+	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 }
