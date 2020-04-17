@@ -197,7 +197,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
 
 			// Ensure caching errors are added if the bid response ext has already been created
-			if bidResponseExt != nil {
+			if bidResponseExt != nil && len(cacheErrs) > 0 {
 				bidderCacheErrs := errsToBidderErrors(cacheErrs)
 				bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = append(bidResponseExt.Errors[openrtb_ext.PrebidExtKey], bidderCacheErrs...)
 			}
