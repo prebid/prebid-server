@@ -6,15 +6,18 @@
 	"properties": {
 		"emiter": {
 			"type": "string",
-			"description": "AdOcean emiter"
+			"description": "AdOcean emiter",
+            "pattern": ".+"
 		},
 		"masterId": {
 			"type": "string",
-			"description": "Master's id"
+			"description": "Master's id",
+            "pattern": "^[\\w.]+$"
 		},
 		"slaveId": {
 			"type": "string",
-			"description": "Slave's id"
+			"description": "Slave's id",
+            "pattern": "^adocean[\\w.]+$"
 		}
 	},
 	"required": ["emiter", "masterId", "slaveId"]
