@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type DmxAdapter struct {
@@ -83,19 +84,37 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	}
 
 	for _, inst := range request.Imp {
-		var banner openrtb.Banner
+		var banner *openrtb.Banner
+		var video *openrtb.Video
 		var ins openrtb.Imp
+		if inst.Banner != nil {
+			if len(inst.Banner.Format) != 0 {
+				banner = inst.Banner
+				const intVal int8 = 1
+				var params dmxExt
 
-		if len(inst.Banner.Format) != 0 {
-			banner = openrtb.Banner{
-				W:      &inst.Banner.Format[0].W,
-				H:      &inst.Banner.Format[0].H,
-				Format: inst.Banner.Format,
+				source := (*json.RawMessage)(&inst.Ext)
+				if err := json.Unmarshal(*source, &params); err != nil {
+					errs = append(errs, err)
+				}
+				if params.Bidder.PublisherId == "" && params.Bidder.MemberId == "" {
+					var failedParams dmxParams
+					if err := json.Unmarshal(inst.Ext, &failedParams); err != nil {
+						errs = append(errs, err)
+						return nil, errs
+					}
+					imps = fetchAlternativeParams(failedParams, inst, ins, imps, banner, nil, intVal)
+				} else {
+					imps = fetchParams(params, inst, ins, imps, banner, nil, intVal)
+				}
+
 			}
+		}
 
-			const intVal int8 = 1
+		if inst.Video != nil {
+			video = inst.Video
 			var params dmxExt
-
+			const intVal int8 = 1
 			source := (*json.RawMessage)(&inst.Ext)
 			if err := json.Unmarshal(*source, &params); err != nil {
 				errs = append(errs, err)
@@ -106,9 +125,9 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 					errs = append(errs, err)
 					return nil, errs
 				}
-				imps = fetchAlternativeParams(failedParams, inst, ins, imps, banner, intVal)
+				imps = fetchAlternativeParams(failedParams, inst, ins, imps, nil, video, intVal)
 			} else {
-				imps = fetchParams(params, inst, ins, imps, banner, intVal)
+				imps = fetchParams(params, inst, ins, imps, nil, video, intVal)
 			}
 
 		}
@@ -117,11 +136,13 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 
 	dmxReq.Imp = imps
 
-	oJson, err := json.Marshal(request)
+	oJson, err := json.Marshal(dmxReq)
 
 	if err != nil {
 		errs = append(errs, err)
 	}
+	//dmxReq.User = &openrtb.User{ID: "msfnkafbhsbfdahmbahfsafasfdas"}
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "Application/json;charset=utf-8")
 	reqBidder := &adapters.RequestData{
@@ -178,6 +199,9 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 					Bid:     &sb.Bid[i],
 					BidType: bidType,
 				}
+				if b.BidType == openrtb_ext.BidTypeVideo {
+					b.Bid.AdM = videoImpInsertion(b.Bid)
+				}
 				bidResponse.Bids = append(bidResponse.Bids, b)
 			}
 		}
@@ -186,12 +210,11 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 
 }
 
-func fetchAlternativeParams(params dmxParams, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner openrtb.Banner, intVal int8) []openrtb.Imp {
+func fetchAlternativeParams(params dmxParams, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner *openrtb.Banner, video *openrtb.Video, intVal int8) []openrtb.Imp {
 	if params.TagId != "" {
 		ins = openrtb.Imp{
 			ID:     inst.ID,
 			TagID:  params.TagId,
-			Banner: &banner,
 			Ext:    inst.Ext,
 			Secure: &intVal,
 		}
@@ -201,21 +224,26 @@ func fetchAlternativeParams(params dmxParams, inst openrtb.Imp, ins openrtb.Imp,
 		ins = openrtb.Imp{
 			ID:     inst.ID,
 			TagID:  params.DmxId,
-			Banner: &banner,
 			Ext:    inst.Ext,
 			Secure: &intVal,
 		}
+	}
+	if banner != nil {
+		ins.Banner = banner
+	}
+
+	if video != nil {
+		ins.Video = video
 	}
 	imps = append(imps, ins)
 	return imps
 }
 
-func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner openrtb.Banner, intVal int8) []openrtb.Imp {
+func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner *openrtb.Banner, video *openrtb.Video, intVal int8) []openrtb.Imp {
 	if params.Bidder.TagId != "" {
 		ins = openrtb.Imp{
 			ID:     inst.ID,
 			TagID:  params.Bidder.TagId,
-			Banner: &banner,
 			Ext:    inst.Ext,
 			Secure: &intVal,
 		}
@@ -225,10 +253,16 @@ func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrt
 		ins = openrtb.Imp{
 			ID:     inst.ID,
 			TagID:  params.Bidder.DmxId,
-			Banner: &banner,
 			Ext:    inst.Ext,
 			Secure: &intVal,
 		}
+	}
+	if banner != nil {
+		ins.Banner = banner
+	}
+
+	if video != nil {
+		ins.Video = video
 	}
 	imps = append(imps, ins)
 	return imps
@@ -256,4 +290,14 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, 
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
 	}
+}
+
+func videoImpInsertion(bid *openrtb.Bid) string {
+	adm := bid.AdM
+	nurl := bid.NURL
+	search := "</Impression>"
+	imp := "</Impression><Impression><![CDATA[%s]]></Impression>"
+	wrapped_nurl := fmt.Sprintf(imp, nurl)
+	results := strings.Replace(adm, search, wrapped_nurl, 1)
+	return results
 }
