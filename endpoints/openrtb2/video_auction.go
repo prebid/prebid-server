@@ -620,9 +620,14 @@ func (deps *endpointDeps) parseVideoRequest(request []byte, headers http.Header)
 	if req.Device.UA == "" {
 		ua := headers.Get("User-Agent")
 
-		var err error
-		req.Device.UA, err = url.QueryUnescape(ua)
-		if err != nil {
+		//Check UA is encoded. Without it the `+` character would get changed to a space if not actually encoded
+		if strings.ContainsAny(ua, "%") {
+			var err error
+			req.Device.UA, err = url.QueryUnescape(ua)
+			if err != nil {
+				req.Device.UA = ua
+			}
+		} else {
 			req.Device.UA = ua
 		}
 	}

@@ -956,7 +956,7 @@ func TestParseVideoRequestWithDecodedUserAgentInHeader(t *testing.T) {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}
 
-	uaDecoded := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36"
+	uaDecoded := "Mozilla/5.0+(Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36"
 
 	headers := http.Header{}
 	headers.Add("User-Agent", uaDecoded)
