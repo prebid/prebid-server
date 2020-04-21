@@ -7,17 +7,19 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type AdheseAdapter struct {
 	http             *adapters.HTTPAdapter
-	URI              string
+	endpointTemplate template.Template
 	dummyCacheBuster int
 }
 
@@ -104,8 +106,15 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	}
 
 	// Compose url
-	complete_url := fmt.Sprintf("https://ads-%s.adhese.com/json%s%s%s%s%s",
-		params.Account,
+	endpointParams := macros.EndpointTemplateParams{Host: params.Account}
+
+	host, err := macros.ResolveMacros(*&a.endpointTemplate, endpointParams)
+	if err != nil {
+		errs = append(errs, WrapError("Could not compose url from template and request account val: "+err.Error()))
+		return nil, errs
+	}
+	complete_url := fmt.Sprintf("%s%s%s%s%s%s",
+		host,
 		extractSlotParameter(params),
 		extractTargetParameters(params),
 		extractGdprParameter(),
@@ -279,7 +288,8 @@ func NewAdheseAdapter(config *adapters.HTTPAdapterConfig, uri string) *AdheseAda
 
 // Set dummyCacheBuster to 0 in order to generate a cache buster
 func NewAdheseBidder(client *http.Client, uri string, dummyCacheBuster int) *AdheseAdapter {
-	return &AdheseAdapter{http: &adapters.HTTPAdapter{Client: client}, URI: uri, dummyCacheBuster: dummyCacheBuster}
+	template, _ := template.New("endpointTemplate").Parse(uri)
+	return &AdheseAdapter{http: &adapters.HTTPAdapter{Client: client}, endpointTemplate: *template, dummyCacheBuster: dummyCacheBuster}
 }
 
 func printAsJson(obj interface{}) {
