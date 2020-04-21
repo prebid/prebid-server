@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"text/template"
 
@@ -236,22 +237,25 @@ func prepareAdCodeForBid(bid ResponseAdUnit) (string, error) {
 		return "", err
 	}
 
-	adCode := fmt.Sprintf(`
-        <script>
-            +function() {
-                var wu = "%s";
-                var su = "%s".replace(/\[TIMESTAMP\]/, Date.now());
+	measurementCode := `
+		<script>
+			+function() {
+				var wu = "%s";
+				var su = "%s".replace(/\[TIMESTAMP\]/, Date.now());
 
-                if (wu && !(navigator.sendBeacon && navigator.sendBeacon(wu))) {
-                    (new Image(1,1)).src = wu
-                }
+				if (wu && !(navigator.sendBeacon && navigator.sendBeacon(wu))) {
+					(new Image(1,1)).src = wu
+				}
 
-                if (su && !(navigator.sendBeacon && navigator.sendBeacon(su))) {
-                    (new Image(1,1)).src = su
-                }
-            }();
-        </script>
-    `, bid.WinURL, bid.StatsURL) + sspCode
+				if (su && !(navigator.sendBeacon && navigator.sendBeacon(su))) {
+					(new Image(1,1)).src = su
+				}
+			}();
+		</script>
+	`
+	whiteSpace := regexp.MustCompile(`\s+`)
+	measurementCode = whiteSpace.ReplaceAllString(measurementCode, " ")
+	adCode := fmt.Sprintf(measurementCode, bid.WinURL, bid.StatsURL) + sspCode
 
 	return adCode, nil
 }

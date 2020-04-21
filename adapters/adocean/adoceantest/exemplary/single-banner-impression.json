@@ -67,8 +67,8 @@
           {
             "id": "adoceanmyaozpniqismex",
             "price": "1",
-            "winurl": "",
-            "statsUrl": "",
+            "winurl": "https://win-url.com",
+            "statsUrl": "https://stats-url.com",
             "code": " <!-- code 1 --> ",
             "currency": "EUR",
             "minFloorPrice": "0.01",
@@ -103,7 +103,7 @@
             "id": "adoceanmyaozpniqismex",
             "impid": "ao-test",
             "price": 1,
-            "adm": "\n        <script>\n            +function() {\n                var wu = \"\";\n                var su = \"\".replace(/\\[TIMESTAMP\\]/, Date.now());\n\n                if (wu && !(navigator.sendBeacon && navigator.sendBeacon(wu))) {\n                    (new Image(1,1)).src = wu\n                }\n\n                if (su && !(navigator.sendBeacon && navigator.sendBeacon(su))) {\n                    (new Image(1,1)).src = su\n                }\n            }();\n        </script>\n     <!-- code 1 --> ",
+            "adm": " <script> +function() { var wu = \"https://win-url.com\"; var su = \"https://stats-url.com\".replace(/\\[TIMESTAMP\\]/, Date.now()); if (wu && !(navigator.sendBeacon && navigator.sendBeacon(wu))) { (new Image(1,1)).src = wu } if (su && !(navigator.sendBeacon && navigator.sendBeacon(su))) { (new Image(1,1)).src = su } }(); </script>  <!-- code 1 --> ",
             "crid": "0af345b42983cc4bc0",
             "w": 300,
             "h": 250
