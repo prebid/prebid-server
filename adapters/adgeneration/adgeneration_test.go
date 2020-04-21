@@ -50,7 +50,7 @@ func TestGetRequestUri(t *testing.T) {
 	for index := 0; index < numRequests; index++ {
 		httpRequests, err := bidder.getRequestUri(successRequest, index)
 		if err != nil {
-			t.Errorf("%v did throw an error", successRequest.Imp[index])
+			t.Errorf("%v did throw an error: %v", successRequest.Imp[index], err)
 		}
 		if httpRequests == "?posall=SSPLOC&id=58278&sdktype=0&hb=true&t=json3&currency=JPY&sdkname=prebidserver&adapterver="+bidder.version {
 			t.Errorf("%v did return Request: %s", successRequest.Imp[index], httpRequests)
@@ -59,7 +59,6 @@ func TestGetRequestUri(t *testing.T) {
 }
 
 func TestGetSizes(t *testing.T) {
-	bidder := NewAdgenerationAdapter("https://d.socdm.com/adsv/v1")
 	// Test items
 	var request *openrtb.Imp
 	var size string
@@ -68,17 +67,17 @@ func TestGetSizes(t *testing.T) {
 	nativeFormat := &openrtb.Native{}
 
 	request = &openrtb.Imp{Banner: multiFormatBanner}
-	size = bidder.getSizes(request)
+	size = getSizes(request)
 	if size != "300×250,320×50" {
 		t.Errorf("%v does not match size.", multiFormatBanner)
 	}
 	request = &openrtb.Imp{Banner: noFormatBanner}
-	size = bidder.getSizes(request)
+	size = getSizes(request)
 	if size != "" {
 		t.Errorf("%v does not match size.", noFormatBanner)
 	}
 	request = &openrtb.Imp{Native: nativeFormat}
-	size = bidder.getSizes(request)
+	size = getSizes(request)
 	if size != "" {
 		t.Errorf("%v does not match size.", nativeFormat)
 	}
@@ -105,7 +104,6 @@ func TestGetCurrency(t *testing.T) {
 }
 
 func TestCreateAd(t *testing.T) {
-	bidder := NewAdgenerationAdapter("https://d.socdm.com/adsv/v1")
 	// Test items
 	adgBannerImpId := "test-banner-imp"
 	adgBannerResponse := adgServerResponse{
@@ -138,11 +136,11 @@ func TestCreateAd(t *testing.T) {
 	}
 	matchVastTag := "<div id=\"apvad-test-vast-imp\"></div><script type=\"text/javascript\" id=\"apv\" src=\"https://cdn.apvdr.com/js/VideoAd.min.js\"></script><script type=\"text/javascript\"> (function(){ new APV.VideoAd({s:\"test-vast-imp\"}).load('<?xml version=\"1.0\"><VAST version=\"3.0\"</VAST>'); })(); </script><img src=\"https://dummy-beacon.com\">"
 
-	bannerAd := bidder.createAd(&adgBannerResponse, adgBannerImpId)
+	bannerAd := createAd(&adgBannerResponse, adgBannerImpId)
 	if bannerAd != matchBannerTag {
 		t.Errorf("%v does not match createAd.", adgBannerResponse)
 	}
-	vastAd := bidder.createAd(&adgVastResponse, adgVastImpId)
+	vastAd := createAd(&adgVastResponse, adgVastImpId)
 	if vastAd != matchVastTag {
 		t.Errorf("%v does not match createAd.", adgVastResponse)
 	}

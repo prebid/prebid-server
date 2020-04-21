@@ -50,12 +50,13 @@ func (adg *AdgenerationAdapter) MakeRequests(request *openrtb.BidRequest, reqInf
 		return nil, errs
 	}
 
-	requestArray := make([]*adapters.RequestData, 0, numRequests)
-	for index := 0; index < numRequests; index++ {
-		headers := http.Header{}
-		headers.Add("Content-Type", "application/json;charset=utf-8")
-		headers.Add("Accept", "application/json")
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
 
+	requestArray := make([]*adapters.RequestData, 0, numRequests)
+
+	for index := 0; index < numRequests; index++ {
 		requestUri, err := adg.getRequestUri(request, index)
 		if err != nil {
 			errs = append(errs, err)
@@ -75,13 +76,13 @@ func (adg *AdgenerationAdapter) MakeRequests(request *openrtb.BidRequest, reqInf
 
 func (adg *AdgenerationAdapter) getRequestUri(request *openrtb.BidRequest, index int) (string, error) {
 	imp := request.Imp[index]
-	bidderExt, err := adg.unmarshalExtImpBidder(&imp)
+	bidderExt, err := unmarshalExtImpBidder(&imp)
 	if err != nil {
 		return "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
-	adgExt, err := adg.unmarshalExtImpAdgeneration(&bidderExt)
+	adgExt, err := unmarshalExtImpAdgeneration(bidderExt)
 	if err != nil {
 		return "", &errortypes.BadInput{
 			Message: err.Error(),
@@ -97,8 +98,8 @@ func (adg *AdgenerationAdapter) getRequestUri(request *openrtb.BidRequest, index
 		"&currency=" + adg.getCurrency(request) +
 		"&sdkname=prebidserver" +
 		"&adapterver=" + adg.version
-	if adg.getSizes(&imp) != "" {
-		endpoint += "&sizes=" + adg.getSizes(&imp)
+	if getSizes(&imp) != "" {
+		endpoint += "&sizes=" + getSizes(&imp)
 	}
 	if request.Site != nil && request.Site.Page != "" {
 		endpoint += "&tp=" + request.Site.Page
@@ -107,26 +108,26 @@ func (adg *AdgenerationAdapter) getRequestUri(request *openrtb.BidRequest, index
 	return endpoint, nil
 }
 
-func (adg *AdgenerationAdapter) unmarshalExtImpBidder(imp *openrtb.Imp) (adapters.ExtImpBidder, error) {
+func unmarshalExtImpBidder(imp *openrtb.Imp) (*adapters.ExtImpBidder, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return bidderExt, err
+		return nil, err
 	}
-	return bidderExt, nil
+	return &bidderExt, nil
 }
 
-func (adg *AdgenerationAdapter) unmarshalExtImpAdgeneration(ext *adapters.ExtImpBidder) (openrtb_ext.ExtImpAdgeneration, error) {
+func unmarshalExtImpAdgeneration(ext *adapters.ExtImpBidder) (*openrtb_ext.ExtImpAdgeneration, error) {
 	var adgExt openrtb_ext.ExtImpAdgeneration
 	if err := json.Unmarshal(ext.Bidder, &adgExt); err != nil {
-		return adgExt, err
+		return nil, err
 	}
 	if adgExt.Id == "" {
-		return adgExt, errors.New("No Location ID in ExtImpAdgeneration.")
+		return nil, errors.New("No Location ID in ExtImpAdgeneration.")
 	}
-	return adgExt, nil
+	return &adgExt, nil
 }
 
-func (adg *AdgenerationAdapter) getSizes(imp *openrtb.Imp) string {
+func getSizes(imp *openrtb.Imp) string {
 	if imp.Banner == nil || len(imp.Banner.Format) == 0 {
 		return ""
 	}
@@ -181,14 +182,14 @@ func (adg *AdgenerationAdapter) MakeBids(internalRequest *openrtb.BidRequest, ex
 	var bitType openrtb_ext.BidType
 	var adm string
 	for _, v := range internalRequest.Imp {
-		bidderExt, err := adg.unmarshalExtImpBidder(&v)
+		bidderExt, err := unmarshalExtImpBidder(&v)
 		if err != nil {
 			return nil, []error{&errortypes.BadServerResponse{
 				Message: err.Error(),
 			},
 			}
 		}
-		adgExt, err := adg.unmarshalExtImpAdgeneration(&bidderExt)
+		adgExt, err := unmarshalExtImpAdgeneration(bidderExt)
 		if err != nil {
 			return nil, []error{&errortypes.BadServerResponse{
 				Message: err.Error(),
@@ -198,7 +199,7 @@ func (adg *AdgenerationAdapter) MakeBids(internalRequest *openrtb.BidRequest, ex
 		if adgExt.Id == bidResp.Locationid {
 			impId = v.ID
 			bitType = openrtb_ext.BidTypeBanner
-			adm = adg.createAd(&bidResp, impId)
+			adm = createAd(&bidResp, impId)
 			bid := openrtb.Bid{
 				ID:     bidResp.Locationid,
 				ImpID:  impId,
@@ -214,35 +215,36 @@ func (adg *AdgenerationAdapter) MakeBids(internalRequest *openrtb.BidRequest, ex
 				Bid:     &bid,
 				BidType: bitType,
 			})
+			return bidResponse, nil
 		}
 	}
-	return bidResponse, nil
+	return nil, nil
 }
 
-func (adg *AdgenerationAdapter) createAd(body *adgServerResponse, impId string) string {
+func createAd(body *adgServerResponse, impId string) string {
 	ad := body.Ad
 	if body.Vastxml != "" {
-		ad = "<body><div id=\"apvad-" + impId + "\"></div><script type=\"text/javascript\" id=\"apv\" src=\"https://cdn.apvdr.com/js/VideoAd.min.js\"></script>" + adg.insertVASTMethod(impId, body.Vastxml) + "</body>"
+		ad = "<body><div id=\"apvad-" + impId + "\"></div><script type=\"text/javascript\" id=\"apv\" src=\"https://cdn.apvdr.com/js/VideoAd.min.js\"></script>" + insertVASTMethod(impId, body.Vastxml) + "</body>"
 	}
-	ad = adg.appendChildToBody(ad, body.Beacon)
-	if adg.removeWrapper(ad) != "" {
-		return adg.removeWrapper(ad)
+	ad = appendChildToBody(ad, body.Beacon)
+	if removeWrapper(ad) != "" {
+		return removeWrapper(ad)
 	}
 	return ad
 }
 
-func (adg *AdgenerationAdapter) insertVASTMethod(bidId string, vastxml string) string {
+func insertVASTMethod(bidId string, vastxml string) string {
 	rep := regexp.MustCompile(`/\r?\n/g`)
 	var replacedVastxml = rep.ReplaceAllString(vastxml, "")
 	return "<script type=\"text/javascript\"> (function(){ new APV.VideoAd({s:\"" + bidId + "\"}).load('" + replacedVastxml + "'); })(); </script>"
 }
 
-func (adg *AdgenerationAdapter) appendChildToBody(ad string, data string) string {
+func appendChildToBody(ad string, data string) string {
 	rep := regexp.MustCompile(`<\/\s?body>`)
 	return rep.ReplaceAllString(ad, data+"</body>")
 }
 
-func (adg *AdgenerationAdapter) removeWrapper(ad string) string {
+func removeWrapper(ad string) string {
 	bodyIndex := strings.Index(ad, "<body>")
 	lastBodyIndex := strings.LastIndex(ad, "</body>")
 	if bodyIndex == -1 || lastBodyIndex == -1 {
