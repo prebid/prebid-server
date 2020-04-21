@@ -619,8 +619,12 @@ func (deps *endpointDeps) parseVideoRequest(request []byte, headers http.Header)
 	//if Device.UA is not present in request body, init it with user-agent from request header if it's present
 	if req.Device.UA == "" {
 		ua := headers.Get("User-Agent")
-		ua, _ = url.QueryUnescape(ua)
-		req.Device.UA = ua
+
+		var err error
+		req.Device.UA, err = url.QueryUnescape(ua)
+		if err != nil {
+			req.Device.UA = ua
+		}
 	}
 
 	errL, podErrors := deps.validateVideoRequest(req)
