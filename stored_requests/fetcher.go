@@ -30,7 +30,7 @@ type CategoryFetcher interface {
 	FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error)
 }
 
-// AllFetcher is an iterface that encapsulates both the original Fetcher and the CategoryFetcher
+// AllFetcher is an interface that encapsulates both the original Fetcher and the CategoryFetcher
 type AllFetcher interface {
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
 	FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error)

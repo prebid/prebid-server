@@ -44,7 +44,7 @@ func TestVideoEndpointImpressionsNumber(t *testing.T) {
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
 	if err := json.Unmarshal(respBytes, resp); err != nil {
-		t.Fatalf("Unable to umarshal response.")
+		t.Fatalf("Unable to unmarshal response.")
 	}
 
 	assert.Len(t, ex.lastRequest.Imp, 11, "Incorrect number of impressions in request")
@@ -197,7 +197,7 @@ func TestVideoEndpointDebugQueryTrue(t *testing.T) {
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
 	if err := json.Unmarshal(respBytes, resp); err != nil {
-		t.Fatalf("Unable to umarshal response.")
+		t.Fatalf("Unable to unmarshal response.")
 	}
 
 	assert.Len(t, ex.lastRequest.Imp, 11, "Incorrect number of impressions in request")
@@ -239,7 +239,7 @@ func TestVideoEndpointDebugQueryFalse(t *testing.T) {
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
 	if err := json.Unmarshal(respBytes, resp); err != nil {
-		t.Fatalf("Unable to umarshal response.")
+		t.Fatalf("Unable to unmarshal response.")
 	}
 
 	assert.Len(t, ex.lastRequest.Imp, 11, "Incorrect number of impressions in request")

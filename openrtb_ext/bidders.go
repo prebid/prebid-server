@@ -57,6 +57,7 @@ const (
 	BidderLockerDome       BidderName = "lockerdome"
 	BidderMarsmedia        BidderName = "marsmedia"
 	BidderMgid             BidderName = "mgid"
+	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
 	BidderPubmatic         BidderName = "pubmatic"
@@ -72,6 +73,7 @@ const (
 	BidderSovrn            BidderName = "sovrn"
 	BidderSynacormedia     BidderName = "synacormedia"
 	BidderTappx            BidderName = "tappx"
+	BidderTelaria          BidderName = "telaria"
 	BidderTriplelift       BidderName = "triplelift"
 	BidderTripleliftNative BidderName = "triplelift_native"
 	BidderUcfunnel         BidderName = "ucfunnel"
@@ -120,6 +122,7 @@ var BidderMap = map[string]BidderName{
 	"lockerdome":        BidderLockerDome,
 	"marsmedia":         BidderMarsmedia,
 	"mgid":              BidderMgid,
+	"nanointeractive":   BidderNanoInteractive,
 	"openx":             BidderOpenx,
 	"orbidder":          BidderOrbidder,
 	"pubmatic":          BidderPubmatic,
@@ -135,6 +138,7 @@ var BidderMap = map[string]BidderName{
 	"sovrn":             BidderSovrn,
 	"synacormedia":      BidderSynacormedia,
 	"tappx":             BidderTappx,
+	"telaria":           BidderTelaria,
 	"triplelift":        BidderTriplelift,
 	"triplelift_native": BidderTripleliftNative,
 	"ucfunnel":          BidderUcfunnel,

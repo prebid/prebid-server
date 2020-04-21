@@ -23,7 +23,7 @@ func TestListen(t *testing.T) {
 		TTL:              -1,
 	})
 
-	// create channels to syncronize
+	// create channels to synchronize
 	saveOccurred := make(chan struct{})
 	invalidateOccurred := make(chan struct{})
 	listener := NewEventListener(

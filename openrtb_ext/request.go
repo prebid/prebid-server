@@ -160,7 +160,7 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 func PriceGranularityFromString(gran string) PriceGranularity {
 	switch gran {
 	case "low":
-		return priceGranulrityLow
+		return priceGranularityLow
 	case "med", "medium":
 		// Seems that PBS was written with medium = "med", so hacking that in
 		return priceGranularityMed
@@ -175,7 +175,7 @@ func PriceGranularityFromString(gran string) PriceGranularity {
 	return PriceGranularity{}
 }
 
-var priceGranulrityLow = PriceGranularity{
+var priceGranularityLow = PriceGranularity{
 	Precision: 2,
 	Ranges: []GranularityRange{{
 		Min:       0,

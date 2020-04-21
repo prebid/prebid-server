@@ -85,7 +85,7 @@
             "buyeruid": "some-buyer"
           },
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.8.0",
+          "adapterVersion": "0.9.0",
           "ip": "192.168.255.255",
           "requestId": "61b87329-8790-47b7-90dd-c53ae7ce1723"
         }
