@@ -39,7 +39,7 @@
       "expectedRequest": {
         "uri": "https://an.facebook.com/placementbid.ortb",
         "body": {
-          "id": "test-req-id",
+          "id": "test-imp-id",
           "imp": [
             {
               "id": "test-imp-id",
@@ -72,7 +72,7 @@
           },
           "tmax": 500,
           "ext": {
-              "authentication_id": "b2f9edfd707106adb6b692520081ad7e2a345444af1a895310228297a1b6247e",
+              "authentication_id": "4e24a2b23fbfb5e41a9093b921d6cddf497c24dd5f63879038cec2ab2f27d174",
               "platformid": "test-platform-id"
           }
         }
@@ -80,7 +80,7 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-req-id",
+          "id": "test-imp-id",
           "seatbid": [
             {
               "bid": [
