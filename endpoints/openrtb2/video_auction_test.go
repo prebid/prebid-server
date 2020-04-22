@@ -927,6 +927,49 @@ func TestParseVideoRequestWithoutUserAgentAndEmptyHeader(t *testing.T) {
 
 }
 
+func TestParseVideoRequestWithEncodedUserAgentInHeader(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_without_device_user_agent.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	uaEncoded := "Mozilla%2F5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_14_6%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F78.0.3904.87%20Safari%2F537.36"
+	uaDecoded := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36"
+
+	headers := http.Header{}
+	headers.Add("User-Agent", uaEncoded)
+
+	deps := mockDeps(t, ex)
+	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+
+	assert.Equal(t, uaDecoded, req.Device.UA, "Device.ua should be taken from request header")
+	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
+	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
+
+}
+
+func TestParseVideoRequestWithDecodedUserAgentInHeader(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_without_device_user_agent.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	uaDecoded := "Mozilla/5.0+(Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36"
+
+	headers := http.Header{}
+	headers.Add("User-Agent", uaDecoded)
+
+	deps := mockDeps(t, ex)
+	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+
+	assert.Equal(t, uaDecoded, req.Device.UA, "Device.ua should be taken from request header")
+	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
+	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
+
+}
+
 func TestHandleErrorDebugLog(t *testing.T) {
 	vo := analytics.VideoObject{
 		Status: 200,
