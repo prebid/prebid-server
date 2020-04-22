@@ -69,17 +69,30 @@ func makeRequest(a *Adapter, originalReq *openrtb.BidRequest, imp openrtb.Imp) (
 
 	if spotxExt.Secure {
 		*imp.Secure = int8(1)
+	} else {
+		*imp.Secure = int8(0)
 	}
 
 	impVideoExt := map[string]interface{}{}
 	_ = json.Unmarshal(imp.Video.Ext, &impVideoExt)
-	impVideoExt["ad_volume"] = fmt.Sprintf("%g", spotxExt.AdVolume)
+	impVideoExt["ad_volume"] = spotxExt.AdVolume
 	impVideoExt["ad_unit"] = spotxExt.AdUnit
 	if spotxExt.HideSkin {
 		impVideoExt["hide_skin"] = 1
+	} else {
+		impVideoExt["hide_skin"] = 0
 	}
 	imp.Video.Ext, _ = json.Marshal(impVideoExt)
 	imp.BidFloor = float64(spotxExt.PriceFloor)
+
+	// remove bidder from imp.Ext
+	if bidderExt.Prebid != nil {
+		byteExt, _ := json.Marshal(bidderExt)
+		imp.Ext = byteExt
+	} else {
+		imp.Ext = nil
+	}
+
 	reqMap["imp"] = imp
 
 	reqJSON, err := json.Marshal(reqMap)
@@ -94,7 +107,7 @@ func makeRequest(a *Adapter, originalReq *openrtb.BidRequest, imp openrtb.Imp) (
 	return &adapters.RequestData{
 		Method:  "POST",
 		Uri:     fmt.Sprintf("%s/%s", a.url, spotxExt.ChannelID),
-		Body:    reqJSON, //TODO: This is a custom request, other adapters are sending this openrtb.BidRequest
+		Body:    reqJSON, //TODO: This is a custom request struct, other adapters are sending this openrtb.BidRequest
 		Headers: headers,
 	}, errs
 }
