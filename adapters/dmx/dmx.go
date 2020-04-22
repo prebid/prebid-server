@@ -14,8 +14,7 @@ import (
 )
 
 type DmxAdapter struct {
-	endpoint    string
-	publisherId string
+	endpoint string
 }
 
 func NewDmxBidder(endpoint string) *DmxAdapter {
@@ -42,13 +41,13 @@ func UserSellerOrPubId(str1, str2 string) string {
 }
 
 func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
-	var dmxBidderStaticInfo dmxExt
 	var imps []openrtb.Imp
 	var rootExtInfo dmxExt
 	var publisherId string
 	var sellerId string
 
 	var dmxReq = request
+	//dmxReq.User = &openrtb.User{ID: "fnakfnakubakufbnalinalifnali"}
 
 	if len(request.Imp) >= 1 {
 		err := json.Unmarshal(request.Imp[0].Ext, &rootExtInfo)
@@ -59,77 +58,56 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 			sellerId = rootExtInfo.Bidder.SellerId
 		}
 	}
-	if err := json.Unmarshal(request.Ext, &dmxBidderStaticInfo); err != nil {
-		errs = append(errs, err)
-	}
-
-	if dmxBidderStaticInfo.Bidder.PublisherId != "" && publisherId == "" {
-		publisherId = dmxBidderStaticInfo.Bidder.PublisherId
-	}
 
 	if dmxReq.App != nil {
 		dmxReq.Site = nil
-		dmxReq.App.Publisher.ID = publisherId
+		if dmxReq.App.Publisher != nil {
+			dmxReq.App.Publisher.ID = publisherId
+		} else {
+			dmxReq.App.Publisher = &openrtb.Publisher{ID: publisherId}
+		}
 	}
 	if dmxReq.Site != nil {
 		if dmxReq.Site.Publisher == nil {
 			dmxReq.Site.Publisher = &openrtb.Publisher{ID: publisherId}
-		} else {
-			if dmxReq.Site.Publisher != nil {
-				dmxReq.Site.Publisher.ID = adapter.publisherId
-			} else {
-				dmxReq.Site.Publisher.ID = publisherId
-			}
+		}
+	}
+	if dmxReq.User == nil {
+		if dmxReq.App == nil {
+			return nil, []error{errors.New("no user Id found and AppID, no request to DMX")}
 		}
 	}
 
-	for _, inst := range request.Imp {
+	for _, inst := range dmxReq.Imp {
 		var banner *openrtb.Banner
 		var video *openrtb.Video
 		var ins openrtb.Imp
-		if inst.Banner != nil {
-			if len(inst.Banner.Format) != 0 {
-				banner = inst.Banner
-				const intVal int8 = 1
-				var params dmxExt
-
-				source := (*json.RawMessage)(&inst.Ext)
-				if err := json.Unmarshal(*source, &params); err != nil {
-					errs = append(errs, err)
-				}
-				if params.Bidder.PublisherId == "" && params.Bidder.MemberId == "" {
-					var failedParams dmxParams
-					if err := json.Unmarshal(inst.Ext, &failedParams); err != nil {
-						errs = append(errs, err)
-						return nil, errs
-					}
-					imps = fetchAlternativeParams(failedParams, inst, ins, imps, banner, nil, intVal)
-				} else {
-					imps = fetchParams(params, inst, ins, imps, banner, nil, intVal)
-				}
-
-			}
+		var params dmxExt
+		const intVal int8 = 1
+		source := (*json.RawMessage)(&inst.Ext)
+		if err := json.Unmarshal(*source, &params); err != nil {
+			errs = append(errs, err)
 		}
-
-		if inst.Video != nil {
-			video = inst.Video
-			var params dmxExt
-			const intVal int8 = 1
-			source := (*json.RawMessage)(&inst.Ext)
-			if err := json.Unmarshal(*source, &params); err != nil {
-				errs = append(errs, err)
-			}
-			if params.Bidder.PublisherId == "" && params.Bidder.MemberId == "" {
-				var failedParams dmxParams
-				if err := json.Unmarshal(inst.Ext, &failedParams); err != nil {
-					errs = append(errs, err)
-					return nil, errs
+		if isDmxParams(params.Bidder) {
+			if inst.Banner != nil {
+				if len(inst.Banner.Format) != 0 {
+					banner = inst.Banner
+					if params.Bidder.PublisherId != "" || params.Bidder.MemberId != "" {
+						imps = fetchParams(params, inst, ins, imps, banner, nil, intVal)
+					} else {
+						return nil, []error{errors.New("Missing Params for auction to be send")}
+					}
 				}
-				imps = fetchAlternativeParams(failedParams, inst, ins, imps, nil, video, intVal)
-			} else {
-				imps = fetchParams(params, inst, ins, imps, nil, video, intVal)
 			}
 
+			if inst.Video != nil {
+				video = inst.Video
+				if params.Bidder.PublisherId != "" || params.Bidder.MemberId != "" {
+					imps = fetchParams(params, inst, ins, imps, nil, video, intVal)
+				} else {
+					return nil, []error{errors.New("Missing Params for auction to be send")}
+				}
+			}
 		}
 
 	}
@@ -140,6 +118,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 
 	if err != nil {
 		errs = append(errs, err)
+		return nil, errs
 	}
 	//dmxReq.User = &openrtb.User{ID: "msfnkafbhsbfdahmbahfsafasfdas"}
 
@@ -150,12 +129,6 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		Uri:     adapter.endpoint + addParams(sellerId), //adapter.endpoint,
 		Body:    oJson,
 		Headers: headers,
-	}
-
-	if dmxReq.User == nil {
-		if dmxReq.App == nil {
-			return nil, []error{errors.New("no user Id found and AppID, no request to DMX")}
-		}
 	}
 
 	reqsBidder = append(reqsBidder, reqBidder)
@@ -208,35 +181,6 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 	}
 	return bidResponse, errs
 
-}
-
-func fetchAlternativeParams(params dmxParams, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner *openrtb.Banner, video *openrtb.Video, intVal int8) []openrtb.Imp {
-	if params.TagId != "" {
-		ins = openrtb.Imp{
-			ID:     inst.ID,
-			TagID:  params.TagId,
-			Ext:    inst.Ext,
-			Secure: &intVal,
-		}
-	}
-
-	if params.DmxId != "" {
-		ins = openrtb.Imp{
-			ID:     inst.ID,
-			TagID:  params.DmxId,
-			Ext:    inst.Ext,
-			Secure: &intVal,
-		}
-	}
-	if banner != nil {
-		ins.Banner = banner
-	}
-
-	if video != nil {
-		ins.Video = video
-	}
-	imps = append(imps, ins)
-	return imps
 }
 
 func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner *openrtb.Banner, video *openrtb.Video, intVal int8) []openrtb.Imp {
@@ -300,4 +244,13 @@ func videoImpInsertion(bid *openrtb.Bid) string {
 	wrapped_nurl := fmt.Sprintf(imp, nurl)
 	results := strings.Replace(adm, search, wrapped_nurl, 1)
 	return results
+}
+
+func isDmxParams(t interface{}) bool {
+	switch t.(type) {
+	case dmxParams:
+		return true
+	default:
+		return false
+	}
 }

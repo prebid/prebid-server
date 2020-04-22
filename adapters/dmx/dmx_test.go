@@ -2,7 +2,6 @@ package dmx
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"strings"
@@ -67,7 +66,7 @@ func TestMakeRequestsOtherPlacement(t *testing.T) {
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
-		Ext: json.RawMessage("{\"tagid\": \"1007\", \"placement_id\": \"123456\"}"),
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
 		Banner: &openrtb.Banner{
 			W: &width,
 			H: &height,
@@ -77,7 +76,8 @@ func TestMakeRequestsOtherPlacement(t *testing.T) {
 		}}
 
 	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1},
+		User: &openrtb.User{ID: "bscakucbkasucbkasunscancasuin"},
+		Imp:  []openrtb.Imp{imp1},
 		Site: &openrtb.Site{
 			Publisher: &openrtb.Publisher{
 				ID: "10007",
@@ -87,12 +87,12 @@ func TestMakeRequestsOtherPlacement(t *testing.T) {
 	}
 
 	actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
-	fmt.Println(actualAdapterRequests, err)
-	if actualAdapterRequests != nil {
+
+	if actualAdapterRequests == nil {
 		t.Errorf("request should be nil")
 	}
-	if len(err) == 0 {
-		t.Errorf("We should have at least one Error")
+	if len(err) != 0 {
+		t.Errorf("We should have no error")
 	}
 
 }
@@ -105,7 +105,7 @@ func TestMakeRequestsInvalid(t *testing.T) {
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
-		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
+		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}"),
 		Banner: &openrtb.Banner{
 			W: &width,
 			H: &height,
@@ -125,11 +125,12 @@ func TestMakeRequestsInvalid(t *testing.T) {
 	}
 
 	actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
-	if actualAdapterRequests != nil {
+
+	if len(actualAdapterRequests) != 0 {
 		t.Errorf("request should be nil")
 	}
 	if len(err) == 0 {
-		t.Errorf("We should have at least one Error")
+		t.Errorf("We should have no error")
 	}
 
 }
@@ -184,7 +185,7 @@ func TestMakeRequestsApp(t *testing.T) {
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
-		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
 		Banner: &openrtb.Banner{
 			W: &width,
 			H: &height,
@@ -228,7 +229,7 @@ func TestMakeRequestsNoUser(t *testing.T) {
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
-		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
 		Banner: &openrtb.Banner{
 			W: &width,
 			H: &height,
@@ -264,7 +265,7 @@ func TestMakeRequests(t *testing.T) {
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
-		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
 		Banner: &openrtb.Banner{
 			W: &width,
 			H: &height,
@@ -274,7 +275,7 @@ func TestMakeRequests(t *testing.T) {
 		}}
 	imp2 := openrtb.Imp{
 		ID:  "imp2",
-		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
 		Banner: &openrtb.Banner{
 			W: &width,
 			H: &height,
@@ -284,7 +285,7 @@ func TestMakeRequests(t *testing.T) {
 		}}
 	imp3 := openrtb.Imp{
 		ID:  "imp3",
-		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
 		Banner: &openrtb.Banner{
 			W: &width,
 			H: &height,
@@ -328,7 +329,7 @@ func TestMakeBidVideo(t *testing.T) {
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
-		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
 		Video: &openrtb.Video{
 			W:     width,
 			H:     height,
@@ -357,7 +358,7 @@ func TestMakeBidVideo(t *testing.T) {
 	}
 
 	if len(the_body.Imp) != 1 {
-		t.Errorf("must have 3 bids")
+		t.Errorf("must have 1 bids")
 	}
 }
 
@@ -369,7 +370,7 @@ func TestMakeBidsNoContent(t *testing.T) {
 	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
-		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\"}"),
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
 		Banner: &openrtb.Banner{
 			W: &width,
 			H: &height,
@@ -558,13 +559,9 @@ func TestVideoImpInsertion(t *testing.T) {
 	if err != nil {
 		t.Errorf("Payload is invalid")
 	}
-	fmt.Println(bidResp)
 	bid = openrtb.Bid(bidResp.SeatBid[0].Bid[0])
 	data := videoImpInsertion(&bid)
-	fmt.Println(data)
-
 	find := strings.Index(data, "demo.arripiblik.com")
-
 	if find == -1 {
 		t.Errorf("String was not found")
 	}
