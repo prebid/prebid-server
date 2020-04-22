@@ -28,6 +28,7 @@ type ResponseAdUnit struct {
 	Code     string `json:"code"`
 	WinURL   string `json:"winUrl"`
 	StatsURL string `json:"statsUrl"`
+	Error    string `json:"error"`
 }
 
 func NewAdOceanBidder(client *http.Client, endpointTemplateString string) *AdOceanAdapter {
@@ -201,10 +202,14 @@ func (a *AdOceanAdapter) MakeBids(
 		return nil, []error{err}
 	}
 
-	parsedResponses := adapters.NewBidderResponseWithBidsCapacity(1)
+	var parsedResponses *adapters.BidderResponse
 
 	for _, bid := range bidResponses {
 		if bid.ID == slaveID {
+			if bid.Error == "true" {
+				return nil, nil
+			}
+
 			price, _ := strconv.ParseFloat(bid.Price, 64)
 			width, _ := strconv.ParseUint(bid.Width, 10, 64)
 			height, _ := strconv.ParseUint(bid.Height, 10, 64)
@@ -213,6 +218,7 @@ func (a *AdOceanAdapter) MakeBids(
 				return nil, []error{err}
 			}
 
+			parsedResponses = adapters.NewBidderResponseWithBidsCapacity(1)
 			parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
 				Bid: &openrtb.Bid{
 					ID:    bid.ID,
