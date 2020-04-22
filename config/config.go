@@ -570,7 +570,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("port", 8000)
 	v.SetDefault("admin_port", 6060)
 	v.SetDefault("enable_gzip", false)
-	v.SetDefault("status_response", "")
+	v.SetDefault("status_response", "OK")
 	v.SetDefault("auction_timeouts_ms.default", 0)
 	v.SetDefault("auction_timeouts_ms.max", 0)
 	v.SetDefault("cache.scheme", "")
