@@ -92,7 +92,7 @@ func (a *AdOceanAdapter) makeRequest(imp *openrtb.Imp, request *openrtb.BidReque
 		}
 	}
 
-	url, err := a.makeURL(&adOceanExt, imp.ID, consentString, (request.Test == 1))
+	url, err := a.makeURL(&adOceanExt, imp.ID, request, consentString)
 	if url == "" {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (a *AdOceanAdapter) makeRequest(imp *openrtb.Imp, request *openrtb.BidReque
 	}, nil
 }
 
-func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID string, consentString string, test bool) (string, error) {
+func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID string, request *openrtb.BidRequest, consentString string) (string, error) {
 	if error := validateParams(params); error != nil {
 		return "", error
 	}
@@ -137,7 +137,7 @@ func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID st
 	}
 
 	randomizedPart := 10000000 + rand.Intn(99999999-10000000)
-	if test {
+	if request.Test == 1 {
 		randomizedPart = 10000000
 	}
 	endpointURL.Path = "/_" + strconv.Itoa(randomizedPart) + "/ad.json"
@@ -151,6 +151,9 @@ func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID st
 	if consentString != "" {
 		queryParams.Add("gdpr_consent", consentString)
 		queryParams.Add("gdpr", "1")
+	}
+	if request.User != nil && request.User.BuyerUID != "" {
+		queryParams.Add("hcuserid", request.User.BuyerUID)
 	}
 	endpointURL.RawQuery = queryParams.Encode()
 
