@@ -208,6 +208,10 @@ func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrt
 	if video != nil {
 		ins.Video = video
 	}
+
+	if ins.TagID == "" {
+		return imps
+	}
 	imps = append(imps, ins)
 	return imps
 }
