@@ -18,7 +18,6 @@ import (
 type MockUtil struct {
 	mockCanAutoPlayVideo func() bool
 	mockGdprApplies      func() bool
-	mockUsPrivacySignal  func() string
 	mockGetPlacementSize func() (uint64, uint64)
 	mockParseUserInfo    func() userInfo
 	UtilityInterface
@@ -30,10 +29,6 @@ func (m MockUtil) canAutoPlayVideo(userAgent string, parsers UserAgentParsers) b
 
 func (m MockUtil) gdprApplies(request *openrtb.BidRequest) bool {
 	return m.mockGdprApplies()
-}
-
-func (m MockUtil) getUsPrivacySignal(request *openrtb.BidRequest) string {
-	return m.mockUsPrivacySignal()
 }
 
 func (m MockUtil) getPlacementSize(imp openrtb.Imp, strImpParams openrtb_ext.ExtImpSharethrough) (height uint64, width uint64) {
@@ -163,7 +158,6 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 	mockUtil := MockUtil{
 		mockCanAutoPlayVideo: func() bool { return true },
 		mockGdprApplies:      func() bool { return true },
-		mockUsPrivacySignal:  func() string { return "ccpa_string" },
 		mockGetPlacementSize: func() (uint64, uint64) { return 100, 200 },
 		mockParseUserInfo:    func() userInfo { return userInfo{Consent: "ok", TtdUid: "ttduid", StxUid: "stxuid"} },
 	}
@@ -219,7 +213,6 @@ func TestFailureRequestFromOpenRTB(t *testing.T) {
 	mockUtil := MockUtil{
 		mockCanAutoPlayVideo: func() bool { return true },
 		mockGdprApplies:      func() bool { return true },
-		mockUsPrivacySignal:  func() string { return "ccpa_string" },
 		mockGetPlacementSize: func() (uint64, uint64) { return 100, 200 },
 		mockParseUserInfo:    func() userInfo { return userInfo{Consent: "ok", TtdUid: "ttduid", StxUid: "stxuid"} },
 	}
@@ -445,7 +438,7 @@ func TestBuildUri(t *testing.T) {
 				BidID:              "bid",
 				ConsentRequired:    true,
 				ConsentString:      "consent",
-				UsPrivacySignal:    "ccpa",
+				USPrivacySignal:    "ccpa",
 				InstantPlayCapable: true,
 				Iframe:             false,
 				Height:             20,

@@ -396,48 +396,6 @@ func TestGdprApplies(t *testing.T) {
 	}
 }
 
-func TestAppliesUsPrivacySignal(t *testing.T) {
-	bidRequestWithSignal := openrtb.BidRequest{
-		Regs: &openrtb.Regs{
-			Ext: []byte(`{"us_privacy": "ccpa_string"}`),
-		},
-	}
-	bidRequestEmptyCcpa := openrtb.BidRequest{
-		Regs: &openrtb.Regs{
-			Ext: []byte(``),
-		},
-	}
-	bidRequestEmptyRegs := openrtb.BidRequest{
-		Regs: &openrtb.Regs{},
-	}
-
-	tests := map[string]struct {
-		input    *openrtb.BidRequest
-		expected string
-	}{
-		"Return the string if set": {
-			input:    &bidRequestWithSignal,
-			expected: "ccpa_string",
-		},
-		"Return empty string if Regs empty": {
-			input:    &bidRequestEmptyCcpa,
-			expected: "",
-		},
-		"Return empty string if no Regs set": {
-			input:    &bidRequestEmptyRegs,
-			expected: "",
-		},
-	}
-
-	for testName, test := range tests {
-		t.Logf("Test case: %s\n", testName)
-		assert := assert.New(t)
-
-		output := Util{}.getUsPrivacySignal(test.input)
-		assert.Equal(test.expected, output)
-	}
-}
-
 func TestParseUserInfo(t *testing.T) {
 	tests := map[string]struct {
 		input    *openrtb.User

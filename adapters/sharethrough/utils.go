@@ -23,7 +23,6 @@ const minSafariVersion = 10
 
 type UtilityInterface interface {
 	gdprApplies(*openrtb.BidRequest) bool
-	getUsPrivacySignal(*openrtb.BidRequest) string
 	parseUserInfo(*openrtb.User) userInfo
 
 	getAdMarkup([]byte, openrtb_ext.ExtImpSharethroughResponse, *StrAdSeverParams) (string, error)
@@ -210,19 +209,6 @@ func (u Util) gdprApplies(request *openrtb.BidRequest) bool {
 	}
 
 	return gdprApplies != 0
-}
-
-func (u Util) getUsPrivacySignal(request *openrtb.BidRequest) (ccpaSignal string) {
-	ccpaSignal = ""
-
-	if request.Regs != nil {
-		if jsonExtRegs, err := request.Regs.Ext.MarshalJSON(); err == nil {
-			// "" is the return value if error, so no need to handle
-			ccpaSignal, _ = jsonparser.GetString(jsonExtRegs, "us_privacy")
-		}
-	}
-
-	return
 }
 
 func (u Util) parseUserInfo(user *openrtb.User) (ui userInfo) {
