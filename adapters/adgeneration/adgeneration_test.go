@@ -12,7 +12,7 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "adgenerationtest", NewAdgenerationAdapter("https://d.socdm.com/adsv/v1"))
 }
 
-func TestGetRequestUri(t *testing.T) {
+func TestgetRequestUri(t *testing.T) {
 	bidder := NewAdgenerationAdapter("https://d.socdm.com/adsv/v1")
 	// Test items
 	failedRequest := &openrtb.BidRequest{
@@ -40,20 +40,49 @@ func TestGetRequestUri(t *testing.T) {
 	for index := 0; index < numRequests; index++ {
 		httpRequests, err := bidder.getRequestUri(failedRequest, index)
 		if err == nil {
-			t.Errorf("%v did not throw an error", failedRequest.Imp[index])
+			t.Errorf("getRequestUri: %v did not throw an error", failedRequest.Imp[index])
 		}
 		if httpRequests != "" {
-			t.Errorf("%v did return Request: %s", failedRequest.Imp[index], httpRequests)
+			t.Errorf("getRequestUri: %v did return Request: %s", failedRequest.Imp[index], httpRequests)
 		}
 	}
 	numRequests = len(successRequest.Imp)
 	for index := 0; index < numRequests; index++ {
+		// RequestUri Test.
 		httpRequests, err := bidder.getRequestUri(successRequest, index)
 		if err != nil {
-			t.Errorf("%v did throw an error: %v", successRequest.Imp[index], err)
+			t.Errorf("getRequestUri: %v did throw an error: %v", successRequest.Imp[index], err)
 		}
-		if httpRequests == "?posall=SSPLOC&id=58278&sdktype=0&hb=true&t=json3&currency=JPY&sdkname=prebidserver&adapterver="+bidder.version {
-			t.Errorf("%v did return Request: %s", successRequest.Imp[index], httpRequests)
+		if httpRequests == "adapterver="+bidder.version+"&currency=JPY&hb=true&id=58278&posall=SSPLOC&sdkname=prebidserver&sdktype=0&size=300%C3%97250&t=json3&tp=http%3A%2F%2Fexample.com%2Ftest.html" {
+			t.Errorf("getRequestUri: %v did return Request: %s", successRequest.Imp[index], httpRequests)
+		}
+		// getRawQuery Test.
+		adgExt, err := unmarshalExtImpAdgeneration(&successRequest.Imp[index])
+		if err != nil {
+			t.Errorf("unmarshalExtImpAdgeneration: %v did throw an error: %v", successRequest.Imp[index], err)
+		}
+		rawQuery := bidder.getRawQuery(adgExt.Id, successRequest, &successRequest.Imp[index])
+		expectQueries := map[string]string{
+			"posall":     "SSPLOC",
+			"id":         adgExt.Id,
+			"sdktype":    "0",
+			"hb":         "true",
+			"currency":   bidder.getCurrency(successRequest),
+			"sdkname":    "prebidserver",
+			"adapterver": bidder.version,
+			"size":       getSizes(&successRequest.Imp[index]),
+			"tp":         successRequest.Site.Name,
+		}
+		for key, expectedValue := range expectQueries {
+			actualValue := rawQuery.Get(key)
+			if actualValue == "" {
+				if !(key == "size" || key == "tp") {
+					t.Errorf("getRawQuery: key %s is required value.", key)
+				}
+			}
+			if actualValue != expectedValue {
+				t.Errorf("getRawQuery: %s value does not match expected %s, actual %s", key, expectedValue, actualValue)
+			}
 		}
 	}
 }

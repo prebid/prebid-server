@@ -35,6 +35,7 @@ func TestInvalidParams(t *testing.T) {
 var validParams = []string{
 	`{"id":"12345"}`,
 	`{"id":"123456"}`,
+	`{"id":""}`,
 	`{"id":"12345","other_params":"hoge"}`,
 }
 

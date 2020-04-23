@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -54,71 +55,72 @@ func (adg *AdgenerationAdapter) MakeRequests(request *openrtb.BidRequest, reqInf
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	requestArray := make([]*adapters.RequestData, 0, numRequests)
+	bidRequestArray := make([]*adapters.RequestData, 0, numRequests)
 
 	for index := 0; index < numRequests; index++ {
-		requestUri, err := adg.getRequestUri(request, index)
+		bidRequestUri, err := adg.getRequestUri(request, index)
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
 		}
-		request := &adapters.RequestData{
+		bidRequest := &adapters.RequestData{
 			Method:  "GET",
-			Uri:     requestUri,
+			Uri:     bidRequestUri,
 			Body:    nil,
 			Headers: headers,
 		}
-		requestArray = append(requestArray, request)
+		bidRequestArray = append(bidRequestArray, bidRequest)
 	}
 
-	return requestArray, errs
+	return bidRequestArray, errs
 }
 
 func (adg *AdgenerationAdapter) getRequestUri(request *openrtb.BidRequest, index int) (string, error) {
 	imp := request.Imp[index]
-	bidderExt, err := unmarshalExtImpBidder(&imp)
+	adgExt, err := unmarshalExtImpAdgeneration(&imp)
 	if err != nil {
 		return "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
-	adgExt, err := unmarshalExtImpAdgeneration(bidderExt)
+	uriObj, err := url.Parse(adg.endpoint)
 	if err != nil {
 		return "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
-
-	endpoint := adg.endpoint +
-		"?posall=SSPLOC" +
-		"&id=" + adgExt.Id +
-		"&sdktype=0" +
-		"&hb=true" +
-		"&t=json3" +
-		"&currency=" + adg.getCurrency(request) +
-		"&sdkname=prebidserver" +
-		"&adapterver=" + adg.version
-	if getSizes(&imp) != "" {
-		endpoint += "&sizes=" + getSizes(&imp)
-	}
-	if request.Site != nil && request.Site.Page != "" {
-		endpoint += "&tp=" + request.Site.Page
-	}
-
-	return endpoint, nil
+	v := adg.getRawQuery(adgExt.Id, request, &imp)
+	uriObj.RawQuery = v.Encode()
+	return uriObj.String(), err
 }
 
-func unmarshalExtImpBidder(imp *openrtb.Imp) (*adapters.ExtImpBidder, error) {
+func (adg *AdgenerationAdapter) getRawQuery(id string, request *openrtb.BidRequest, imp *openrtb.Imp) *url.Values {
+	v := url.Values{}
+	v.Set("posall", "SSPLOC")
+	v.Set("id", id)
+	v.Set("sdktype", "0")
+	v.Set("hb", "true")
+	v.Set("t", "json3")
+	v.Set("currency", adg.getCurrency(request))
+	v.Set("sdkname", "prebidserver")
+	v.Set("adapterver", adg.version)
+	adSize := getSizes(imp)
+	if adSize != "" {
+		v.Set("size", adSize)
+	}
+	if request.Site != nil && request.Site.Page != "" {
+		v.Set("tp", request.Site.Page)
+	}
+	return &v
+}
+
+func unmarshalExtImpAdgeneration(imp *openrtb.Imp) (*openrtb_ext.ExtImpAdgeneration, error) {
 	var bidderExt adapters.ExtImpBidder
+	var adgExt openrtb_ext.ExtImpAdgeneration
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, err
 	}
-	return &bidderExt, nil
-}
-
-func unmarshalExtImpAdgeneration(ext *adapters.ExtImpBidder) (*openrtb_ext.ExtImpAdgeneration, error) {
-	var adgExt openrtb_ext.ExtImpAdgeneration
-	if err := json.Unmarshal(ext.Bidder, &adgExt); err != nil {
+	if err := json.Unmarshal(bidderExt.Bidder, &adgExt); err != nil {
 		return nil, err
 	}
 	if adgExt.Id == "" {
@@ -182,14 +184,7 @@ func (adg *AdgenerationAdapter) MakeBids(internalRequest *openrtb.BidRequest, ex
 	var bitType openrtb_ext.BidType
 	var adm string
 	for _, v := range internalRequest.Imp {
-		bidderExt, err := unmarshalExtImpBidder(&v)
-		if err != nil {
-			return nil, []error{&errortypes.BadServerResponse{
-				Message: err.Error(),
-			},
-			}
-		}
-		adgExt, err := unmarshalExtImpAdgeneration(bidderExt)
+		adgExt, err := unmarshalExtImpAdgeneration(&v)
 		if err != nil {
 			return nil, []error{&errortypes.BadServerResponse{
 				Message: err.Error(),
@@ -227,8 +222,9 @@ func createAd(body *adgServerResponse, impId string) string {
 		ad = "<body><div id=\"apvad-" + impId + "\"></div><script type=\"text/javascript\" id=\"apv\" src=\"https://cdn.apvdr.com/js/VideoAd.min.js\"></script>" + insertVASTMethod(impId, body.Vastxml) + "</body>"
 	}
 	ad = appendChildToBody(ad, body.Beacon)
-	if removeWrapper(ad) != "" {
-		return removeWrapper(ad)
+	unwrappedAd := removeWrapper(ad)
+	if unwrappedAd != "" {
+		return unwrappedAd
 	}
 	return ad
 }
