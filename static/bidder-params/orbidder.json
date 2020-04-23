@@ -13,7 +13,7 @@
       "type": "string",
       "description": "The placementId of the ad unit."
     },
-    "bid-floor": {
+    "bidfloor": {
       "type": "number",
       "description": "The minimum CPM price in EUR.",
       "minimum": 0
