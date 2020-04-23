@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/golang/glog"
@@ -19,6 +20,7 @@ import (
 )
 
 const adapterVersion = "1.0.0"
+const maxUriLength = 8000
 
 type ResponseAdUnit struct {
 	ID       string `json:"id"`
@@ -69,18 +71,20 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 	var httpRequests []*adapters.RequestData
 	for _, auction := range request.Imp {
-		bidRequest, err := a.makeRequest(&auction, request, consentString)
+		newBidRequest, err := a.makeRequest(httpRequests, &auction, request, consentString)
 		if err != nil {
 			return nil, []error{err}
 		}
 
-		httpRequests = append(httpRequests, bidRequest)
+		if newBidRequest != nil {
+			httpRequests = append(httpRequests, newBidRequest)
+		}
 	}
 
 	return httpRequests, nil
 }
 
-func (a *AdOceanAdapter) makeRequest(imp *openrtb.Imp, request *openrtb.BidRequest, consentString string) (*adapters.RequestData, error) {
+func (a *AdOceanAdapter) makeRequest(existingRequests []*adapters.RequestData, imp *openrtb.Imp, request *openrtb.BidRequest, consentString string) (*adapters.RequestData, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -95,6 +99,11 @@ func (a *AdOceanAdapter) makeRequest(imp *openrtb.Imp, request *openrtb.BidReque
 		}
 	}
 
+	addedToExistingRequest := addToExistingRequest(existingRequests, &adOceanExt, imp.ID)
+	if addedToExistingRequest {
+		return nil, nil
+	}
+
 	url, err := a.makeURL(&adOceanExt, imp.ID, request, consentString)
 	if url == "" {
 		return nil, err
@@ -103,13 +112,16 @@ func (a *AdOceanAdapter) makeRequest(imp *openrtb.Imp, request *openrtb.BidReque
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("User-Agent", request.Device.UA)
-	headers.Add("Referer", request.Site.Page)
 
-	if request.Device.IP != "" {
-		headers.Add("X-Forwarded-For", request.Device.IP)
-	} else if request.Device.IPv6 != "" {
-		headers.Add("X-Forwarded-For", request.Device.IPv6)
+	if request.Device != nil {
+		headers.Add("User-Agent", request.Device.UA)
+		headers.Add("Referer", request.Site.Page)
+
+		if request.Device.IP != "" {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		} else if request.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
 	}
 
 	return &adapters.RequestData{
@@ -117,6 +129,35 @@ func (a *AdOceanAdapter) makeRequest(imp *openrtb.Imp, request *openrtb.BidReque
 		Uri:     url,
 		Headers: headers,
 	}, nil
+}
+
+func addToExistingRequest(existingRequests []*adapters.RequestData, newParams *openrtb_ext.ExtImpAdOcean, auctionID string) bool {
+requestsLoop:
+	for _, request := range existingRequests {
+		endpointURL, _ := url.Parse(request.Uri)
+		queryParams := endpointURL.Query()
+		masterID := queryParams["id"][0]
+
+		if masterID == newParams.MasterID {
+			aids := queryParams["aid"]
+			for _, aid := range aids {
+				slaveID := strings.SplitN(aid, ":", 2)[0]
+				if slaveID == newParams.SlaveID {
+					continue requestsLoop
+				}
+			}
+
+			queryParams.Add("aid", newParams.SlaveID+":"+auctionID)
+			endpointURL.RawQuery = queryParams.Encode()
+			newUri := endpointURL.String()
+			if len(newUri) < maxUriLength {
+				request.Uri = endpointURL.String()
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID string, request *openrtb.BidRequest, consentString string) (string, error) {
@@ -150,8 +191,7 @@ func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID st
 	queryParams.Add("id", params.MasterID)
 	queryParams.Add("nc", "1")
 	queryParams.Add("nosecure", "1")
-	queryParams.Add("aid", auctionID)
-	queryParams.Add("sid", params.SlaveID)
+	queryParams.Add("aid", params.SlaveID+":"+auctionID)
 	if consentString != "" {
 		queryParams.Add("gdpr_consent", consentString)
 		queryParams.Add("gdpr", "1")
@@ -197,46 +237,50 @@ func (a *AdOceanAdapter) MakeBids(
 
 	requestURL, _ := url.Parse(externalRequest.Uri)
 	queryParams := requestURL.Query()
-	auctionID := queryParams["aid"][0]
-	slaveID := queryParams["sid"][0]
+	auctionIDs := queryParams["aid"]
 
 	bidResponses := make([]ResponseAdUnit, 0)
 	if err := json.Unmarshal(response.Body, &bidResponses); err != nil {
 		return nil, []error{err}
 	}
 
-	var parsedResponses *adapters.BidderResponse
+	var parsedResponses = adapters.NewBidderResponseWithBidsCapacity(len(auctionIDs))
 
-	for _, bid := range bidResponses {
-		if bid.ID == slaveID {
-			if bid.Error == "true" {
-				return nil, nil
+	for _, auctionFullID := range auctionIDs {
+		auctionIDsSlice := strings.SplitN(auctionFullID, ":", 2)
+		auctionID := auctionIDsSlice[1]
+		slaveID := auctionIDsSlice[0]
+
+		for _, bid := range bidResponses {
+			if bid.ID == slaveID {
+				if bid.Error == "true" {
+					break
+				}
+
+				price, _ := strconv.ParseFloat(bid.Price, 64)
+				width, _ := strconv.ParseUint(bid.Width, 10, 64)
+				height, _ := strconv.ParseUint(bid.Height, 10, 64)
+				adCode, err := prepareAdCodeForBid(bid)
+				if err != nil {
+					return nil, []error{err}
+				}
+
+				parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
+					Bid: &openrtb.Bid{
+						ID:    bid.ID,
+						ImpID: auctionID,
+						Price: price,
+						AdM:   adCode,
+						CrID:  bid.CrID,
+						W:     width,
+						H:     height,
+					},
+					BidType: openrtb_ext.BidTypeBanner,
+				})
+				parsedResponses.Currency = bid.Currency
+
+				break
 			}
-
-			price, _ := strconv.ParseFloat(bid.Price, 64)
-			width, _ := strconv.ParseUint(bid.Width, 10, 64)
-			height, _ := strconv.ParseUint(bid.Height, 10, 64)
-			adCode, err := prepareAdCodeForBid(bid)
-			if err != nil {
-				return nil, []error{err}
-			}
-
-			parsedResponses = adapters.NewBidderResponseWithBidsCapacity(1)
-			parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
-				Bid: &openrtb.Bid{
-					ID:    bid.ID,
-					ImpID: auctionID,
-					Price: price,
-					AdM:   adCode,
-					CrID:  bid.CrID,
-					W:     width,
-					H:     height,
-				},
-				BidType: openrtb_ext.BidTypeBanner,
-			})
-			parsedResponses.Currency = bid.Currency
-
-			break
 		}
 	}
 
