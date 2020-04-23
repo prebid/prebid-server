@@ -18,6 +18,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+const adapterVersion = "1.0.0"
+
 type ResponseAdUnit struct {
 	ID       string `json:"id"`
 	CrID     string `json:"crid"`
@@ -144,6 +146,7 @@ func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID st
 	endpointURL.Path = "/_" + strconv.Itoa(randomizedPart) + "/ad.json"
 
 	queryParams := url.Values{}
+	queryParams.Add("pbsrv_v", adapterVersion)
 	queryParams.Add("id", params.MasterID)
 	queryParams.Add("nc", "1")
 	queryParams.Add("nosecure", "1")
