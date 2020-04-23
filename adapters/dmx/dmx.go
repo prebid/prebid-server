@@ -40,14 +40,38 @@ func UserSellerOrPubId(str1, str2 string) string {
 	return str2
 }
 
+type dmxUserExt struct {
+	Eids      []dmxEids    `json:"eids,omitempty"`
+	Digitrust dmxDigitrust `json:"digitrust,omitempty"`
+}
+type dmxEids struct {
+	Source string `json:"source,omitempty"`
+	Uids   []struct {
+		ID  string `json:"id,omitempty"`
+		Ext json.RawMessage
+	} `json:"uids,omitempty"`
+}
+
+type dmxDigitrust struct {
+	ID   string `json:"id,omitempty"`
+	Keyv int    `json:"keyv,omitempty"`
+}
+
 func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
 	var imps []openrtb.Imp
 	var rootExtInfo dmxExt
 	var publisherId string
 	var sellerId string
+	var user_ext dmxUserExt
+	var hasId []bool
 
 	var dmxReq = request
-	//dmxReq.User = &openrtb.User{ID: "fnakfnakubakufbnalinalifnali"}
+
+	if dmxReq.User == nil {
+		if dmxReq.App == nil {
+			return nil, []error{errors.New("no user Id found and AppID, no request to DMX")}
+		}
+	}
 
 	if len(request.Imp) >= 1 {
 		err := json.Unmarshal(request.Imp[0].Ext, &rootExtInfo)
@@ -61,6 +85,9 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 
 	if dmxReq.App != nil {
 		dmxReq.Site = nil
+		if dmxReq.App.ID != "" {
+			hasId = append(hasId, true)
+		}
 		if dmxReq.App.Publisher != nil {
 			dmxReq.App.Publisher.ID = publisherId
 		} else {
@@ -72,10 +99,21 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 			dmxReq.Site.Publisher = &openrtb.Publisher{ID: publisherId}
 		}
 	}
-	if dmxReq.User == nil {
-		if dmxReq.App == nil {
-			return nil, []error{errors.New("no user Id found and AppID, no request to DMX")}
+	if dmxReq.User != nil {
+		if dmxReq.User.ID != "" {
+			hasId = append(hasId, true)
 		}
+		if dmxReq.User.Ext != nil {
+			if err := json.Unmarshal(dmxReq.User.Ext, &user_ext); err == nil {
+				if len(user_ext.Eids) > 0 || user_ext.Digitrust.ID != "" {
+					hasId = append(hasId, true)
+				}
+			}
+		}
+	}
+
+	if len(hasId) == 0 {
+		return nil, []error{errors.New("This request contained no identifier")}
 	}
 
 	for _, inst := range dmxReq.Imp {
@@ -120,7 +158,6 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		errs = append(errs, err)
 		return nil, errs
 	}
-	//dmxReq.User = &openrtb.User{ID: "msfnkafbhsbfdahmbahfsafasfdas"}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "Application/json;charset=utf-8")

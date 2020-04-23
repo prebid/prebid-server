@@ -495,6 +495,187 @@ func TestMakeBidsNoContent(t *testing.T) {
 
 }
 
+func TestUserEidsOnly(t *testing.T) {
+	var w, h int = 300, 250
+
+	var width, height uint64 = uint64(w), uint64(h)
+
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
+	imp1 := openrtb.Imp{
+		ID:  "imp1",
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
+		Banner: &openrtb.Banner{
+			W: &width,
+			H: &height,
+			Format: []openrtb.Format{
+				{W: 300, H: 250},
+			},
+		}}
+
+	inputRequest := openrtb.BidRequest{
+		Imp: []openrtb.Imp{imp1, imp1, imp1},
+		Site: &openrtb.Site{
+			Publisher: &openrtb.Publisher{
+				ID: "10007",
+			},
+		},
+		User: &openrtb.User{Ext: json.RawMessage(`{"eids": [{
+                "source": "adserver.org",
+                "uids": [{
+                    "id": "111111111111",
+                    "ext": {
+                        "rtiPartner": "TDID"
+                    }
+                }]
+            },{
+                "source": "netid.de",
+                "uids": [{
+                    "id": "11111111"
+                }]
+            }]
+            }`)},
+		ID: "1234",
+	}
+
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	if len(actualAdapterRequests) != 1 {
+		t.Errorf("should have 1 request")
+	}
+}
+
+func TestUserDigitrustOnly(t *testing.T) {
+	var w, h int = 300, 250
+
+	var width, height uint64 = uint64(w), uint64(h)
+
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
+	imp1 := openrtb.Imp{
+		ID:  "imp1",
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
+		Banner: &openrtb.Banner{
+			W: &width,
+			H: &height,
+			Format: []openrtb.Format{
+				{W: 300, H: 250},
+			},
+		}}
+
+	inputRequest := openrtb.BidRequest{
+		Imp: []openrtb.Imp{imp1, imp1, imp1},
+		Site: &openrtb.Site{
+			Publisher: &openrtb.Publisher{
+				ID: "10007",
+			},
+		},
+		User: &openrtb.User{Ext: json.RawMessage(`{
+            "digitrust": {
+                "id": "11111111111",
+                "keyv": 4
+            }}`)},
+		ID: "1234",
+	}
+
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	if len(actualAdapterRequests) != 1 {
+		t.Errorf("should have 1 request")
+	}
+}
+
+func TestUsersEids(t *testing.T) {
+	var w, h int = 300, 250
+
+	var width, height uint64 = uint64(w), uint64(h)
+
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
+	imp1 := openrtb.Imp{
+		ID:  "imp1",
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
+		Banner: &openrtb.Banner{
+			W: &width,
+			H: &height,
+			Format: []openrtb.Format{
+				{W: 300, H: 250},
+			},
+		}}
+
+	inputRequest := openrtb.BidRequest{
+		Imp: []openrtb.Imp{imp1, imp1, imp1},
+		Site: &openrtb.Site{
+			Publisher: &openrtb.Publisher{
+				ID: "10007",
+			},
+		},
+		User: &openrtb.User{ID: "districtmID", Ext: json.RawMessage(`{"eids": [{
+                "source": "adserver.org",
+                "uids": [{
+                    "id": "111111111111",
+                    "ext": {
+                        "rtiPartner": "TDID"
+                    }
+                }]
+            },{
+                "source": "pubcid.org",
+                "uids": [{
+                    "id":"11111111"
+                }]
+            },
+            {
+                "source": "id5-sync.com",
+                "uids": [{
+                    "id": "ID5-12345"
+                }]
+            },
+            {
+                "source": "parrable.com",
+                "uids": [{
+                    "id": "01.1563917337.test-eid"
+                }]
+            },{
+                "source": "identityLink",
+                "uids": [{
+                    "id": "11111111"
+                }]
+            },{
+                "source": "criteo",
+                "uids": [{
+                    "id": "11111111"
+                }]
+            },{
+                "source": "britepool.com",
+                "uids": [{
+                    "id": "11111111"
+                }]
+            },{
+                "source": "liveintent.com",
+                "uids": [{
+                    "id": "11111111"
+                }]
+            },{
+                "source": "netid.de",
+                "uids": [{
+                    "id": "11111111"
+                }]
+            }],
+            "digitrust": {
+                "id": "11111111111",
+                "keyv": 4
+            }}`)},
+		ID: "1234",
+	}
+
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	if len(actualAdapterRequests) != 1 {
+		t.Errorf("should have 1 request")
+	}
+	var the_body openrtb.BidRequest
+	if err := json.Unmarshal(actualAdapterRequests[0].Body, &the_body); err != nil {
+		t.Errorf("failed to read bid request")
+	}
+
+	if len(the_body.Imp) != 3 {
+		t.Errorf("must have 3 bids")
+	}
+}
 func TestVideoImpInsertion(t *testing.T) {
 	var bidResp openrtb.BidResponse
 	var bid openrtb.Bid
