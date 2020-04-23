@@ -120,7 +120,6 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	return []*adapters.RequestData{{
 		Method: "GET",
 		Uri:    complete_url,
-		Body:   []byte("{}"),
 	}}, errs
 }
 
