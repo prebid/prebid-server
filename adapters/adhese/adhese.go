@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -74,13 +73,6 @@ func extractRefererParameter() string {
 	return ""
 }
 
-func (a *AdheseAdapter) generateCacheBuster() string {
-	if a.dummyCacheBuster > 0 {
-		return fmt.Sprintf("?t=%d", a.dummyCacheBuster)
-	}
-	return fmt.Sprintf("?t=%d", time.Now().UnixNano())
-}
-
 func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
@@ -106,20 +98,19 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	}
 
 	// Compose url
-	endpointParams := macros.EndpointTemplateParams{Host: params.Account}
+	endpointParams := macros.EndpointTemplateParams{Host: "ads-" + params.Account + ".adhese.com"}
 
 	host, err := macros.ResolveMacros(*&a.endpointTemplate, endpointParams)
 	if err != nil {
 		errs = append(errs, WrapError("Could not compose url from template and request account val: "+err.Error()))
 		return nil, errs
 	}
-	complete_url := fmt.Sprintf("%s%s%s%s%s%s",
+	complete_url := fmt.Sprintf("%s%s%s%s%s",
 		host,
 		extractSlotParameter(params),
 		extractTargetParameters(params),
 		extractGdprParameter(),
-		extractRefererParameter(),
-		a.generateCacheBuster())
+		extractRefererParameter())
 
 	// If all the requests are invalid, Call to adaptor is skipped
 	if len(request.Imp) == 0 {
