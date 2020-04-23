@@ -26,12 +26,8 @@ _testmain.go
 *.test
 *.prof
 
-# dep directory
-vendor
-
 # build artifacts
-prebid-server
-build
+build/prebid-server
 debug
 
 # config files

@@ -1,0 +1,5 @@
+# ignore contents of this directory
+*
+
+# except this file
+!.buildignore
