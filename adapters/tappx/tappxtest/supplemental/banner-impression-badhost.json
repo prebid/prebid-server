@@ -31,8 +31,8 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Malformed URL: parse https://example.ho%st.tappx.com: invalid URL escape \"%st\"",
-      "comparison": "literal"
+      "value": "Malformed URL: parse (\\\")?https://example\\.ho%st\\.tappx.com(\\\")?: invalid URL escape \\\"%st\\\"",
+      "comparison": "regex"
     }
   ]
  
