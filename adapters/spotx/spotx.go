@@ -63,18 +63,23 @@ func makeRequest(a *Adapter, originalReq *openrtb.BidRequest, imp openrtb.Imp) (
 	reqCopy.ID = spotxExt.ChannelID
 
 	intermediateReq, _ := json.Marshal(reqCopy)
-
 	reqMap := make(map[string]interface{})
 	_ = json.Unmarshal(intermediateReq, &reqMap)
 
+	intermediateImp, _ := json.Marshal(imp)
+	impMap := make(map[string]interface{})
+	_ = json.Unmarshal(intermediateImp, &impMap)
+
 	if spotxExt.Secure {
-		*imp.Secure = int8(1)
+		impMap["secure"] = 1
 	} else {
-		*imp.Secure = int8(0)
+		impMap["secure"] = 0
 	}
 
 	impVideoExt := map[string]interface{}{}
-	_ = json.Unmarshal(imp.Video.Ext, &impVideoExt)
+	if impMap["video"].(map[string]interface{})["ext"] != nil {
+		_ = json.Unmarshal(impMap["video"].(map[string]interface{})["ext"].([]byte), &impVideoExt)
+	}
 	impVideoExt["ad_volume"] = spotxExt.AdVolume
 	impVideoExt["ad_unit"] = spotxExt.AdUnit
 	if spotxExt.HideSkin {
@@ -82,18 +87,17 @@ func makeRequest(a *Adapter, originalReq *openrtb.BidRequest, imp openrtb.Imp) (
 	} else {
 		impVideoExt["hide_skin"] = 0
 	}
-	imp.Video.Ext, _ = json.Marshal(impVideoExt)
-	imp.BidFloor = float64(spotxExt.PriceFloor)
+	impMap["video"].(map[string]interface{})["ext"] = impVideoExt
+	impMap["bidfloor"] = float64(spotxExt.PriceFloor)
 
 	// remove bidder from imp.Ext
 	if bidderExt.Prebid != nil {
 		byteExt, _ := json.Marshal(bidderExt)
-		imp.Ext = byteExt
+		impMap["ext"] = byteExt
 	} else {
-		imp.Ext = nil
+		delete(impMap, "ext")
 	}
-
-	reqMap["imp"] = imp
+	reqMap["imp"] = impMap
 
 	reqJSON, err := json.Marshal(reqMap)
 	if err != nil {
