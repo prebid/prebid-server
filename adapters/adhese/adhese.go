@@ -117,16 +117,10 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		return nil, errs
 	}
 
-	reqJSON, err := json.Marshal(request)
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
-
 	return []*adapters.RequestData{{
 		Method: "GET",
 		Uri:    complete_url,
-		Body:   reqJSON,
+		Body:   []byte("{}"),
 	}}, errs
 }
 
