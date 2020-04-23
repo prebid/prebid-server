@@ -1,0 +1,34 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "format": [
+          {
+            "w": 300,
+            "h": 250
+          }
+        ],
+        "ext": {
+          "bidder": {
+            "accountId": "",
+            "placementId": "test-placement",
+            "bidfloor": 0.1
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Wrong orbidder bidder ext, no account id",
+      "comparison": "literal"
+    }
+  ]
+}
