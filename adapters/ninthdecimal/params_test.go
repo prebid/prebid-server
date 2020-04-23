@@ -13,8 +13,8 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderNinthdecimal, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected Ninthdecimal params: %s", validParam)
+		if err := validator.Validate(openrtb_ext.BidderNinthDecimal, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected NinthDecimal params: %s", validParam)
 		}
 	}
 }
@@ -26,7 +26,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderNinthdecimal, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderNinthDecimal, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
