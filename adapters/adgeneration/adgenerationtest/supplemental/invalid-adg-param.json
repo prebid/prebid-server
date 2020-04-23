@@ -1,0 +1,31 @@
+{
+    "mockBidRequest":{
+        "id": "some-request-id",
+        "site": {
+            "page": "http://example.com/test.html"
+        },
+        "imp": [
+            {
+                "id": "some-impression-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "_id": "12345"
+                    }
+                }
+            }
+        ],
+        "tmax": 500
+    },
+    "expectedMakeRequestsErrors": [{
+        "value": "No Location ID in ExtImpAdgeneration.",
+        "comparison": "literal"
+    }]
+}
