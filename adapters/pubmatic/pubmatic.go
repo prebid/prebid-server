@@ -731,7 +731,7 @@ func NewPubmaticBidder(client *http.Client, uri string) *PubmaticAdapter {
 	}
 }
 
-func appendTargetingKey(bidExt json.RawMessage, pBid *pbs.PBSBid) *pbs.PBSBid {
+func appendTargetingKey(bidExt json.RawMessage, pBid *pbs.PBSBid) {
 	if bidExt != nil {
 		bidExtMap := make(map[string]interface{})
 		extbyte, err := json.Marshal(bidExt)
@@ -745,5 +745,4 @@ func appendTargetingKey(bidExt json.RawMessage, pBid *pbs.PBSBid) *pbs.PBSBid {
 			}
 		}
 	}
-	return pBid
 }
