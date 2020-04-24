@@ -7,10 +7,10 @@ import (
 )
 
 type ExtImpAdhese struct {
-	Account  string            `json:"account"`
-	Location string            `json:"location"`
-	Format   string            `json:"format"`
-	Keywords []json.RawMessage `json:"targets,omitempty"`
+	Account  string          `json:"account"`
+	Location string          `json:"location"`
+	Format   string          `json:"format"`
+	Keywords json.RawMessage `json:"targets,omitempty"`
 }
 
 type ExtAdhese struct {

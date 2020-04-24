@@ -6,17 +6,12 @@
                     "account": "demo",
                     "location": "_adhese_prebid_demo_",
                     "format": "leaderboard",
-                    "targets": [
-                      {
-                        "ci": ["gent", "brussels"]
-                      },
-                      {
-                        "ag": ["55"]
-                      },
-                      {
-                        "tl": ["all"]
-                      }
-                    ]
+                    "targets":
+                    {
+                      "ci": ["gent", "brussels"],
+                      "ag": ["55"],
+                      "tl": ["all"]
+                    }
                 }
             }
         }]

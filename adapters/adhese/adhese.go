@@ -38,17 +38,15 @@ func extractTargetParameters(parameters openrtb_ext.ExtImpAdhese) string {
 		return ""
 	}
 	m := make(map[string][]string)
-	for _, targetRaw := range parameters.Keywords {
-		var targetParsed map[string]interface{}
-		json.Unmarshal(targetRaw, &targetParsed)
-		for targetKey, targetRawValue := range targetParsed {
-			var targetingValues = targetRawValue.([]interface{})
-			for _, targetRawValKey := range targetingValues {
-				var targetValueParsed = targetRawValKey.(string)
-				cur, _ := m[targetKey]
-				new := cur[:]
-				m[targetKey] = append(new, targetValueParsed)
-			}
+	var targetParsed map[string]interface{}
+	json.Unmarshal(parameters.Keywords, &targetParsed)
+	for targetKey, targetRawValue := range targetParsed {
+		var targetingValues = targetRawValue.([]interface{})
+		for _, targetRawValKey := range targetingValues {
+			var targetValueParsed = targetRawValKey.(string)
+			cur, _ := m[targetKey]
+			new := cur[:]
+			m[targetKey] = append(new, targetValueParsed)
 		}
 	}
 
