@@ -60,6 +60,7 @@ const (
 	BidderMarsmedia        BidderName = "marsmedia"
 	BidderMgid             BidderName = "mgid"
 	BidderNanoInteractive  BidderName = "nanointeractive"
+	BidderNinthDecimal     BidderName = "ninthdecimal"
 	BidderOpenx            BidderName = "openx"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
@@ -127,6 +128,7 @@ var BidderMap = map[string]BidderName{
 	"marsmedia":         BidderMarsmedia,
 	"mgid":              BidderMgid,
 	"nanointeractive":   BidderNanoInteractive,
+	"ninthdecimal":      BidderNinthDecimal,
 	"openx":             BidderOpenx,
 	"pubmatic":          BidderPubmatic,
 	"pubnative":         BidderPubnative,
