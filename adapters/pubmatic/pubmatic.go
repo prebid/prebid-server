@@ -294,7 +294,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 			mediaType := getBidType(bid.Ext)
 			pbid.CreativeMediaType = string(mediaType)
-			appendTargetingKey(bid.Ext, &pbid)
+			appendTargetingKey(sb.Ext, &pbid)
 			bids = append(bids, &pbid)
 			logf("%s Returned Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
 				PUBMATIC, pubId, pbid.AdUnitCode, pbid.BidID, pbid.Width, pbid.Height, pbid.Price)
