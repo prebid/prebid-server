@@ -811,6 +811,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("deploy_pid_mode", os.FileMode(0664)) // -rw-rw-r--
 	v.SetDefault("deploy_pid_path", "./pids")
 	v.SetDefault("external_cache.scheme", "")
+	v.SetDefault("deploy_pid_enabled", false)
+	v.SetDefault("deploy_pid_mode", os.FileMode(0664)) // -rw-rw-r--
+	v.SetDefault("deploy_pid_path", "./pids")
 	v.SetDefault("external_cache.host", "")
 	v.SetDefault("external_cache.path", "")
 	v.SetDefault("recaptcha_secret", "")
