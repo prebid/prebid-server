@@ -28,10 +28,10 @@ func (a *AJAAdapter) MakeRequests(bidReq *openrtb.BidRequest, extraInfo *adapter
 		impsByTagID[imp.TagID] = append(impsByTagID[imp.TagID], imp)
 	}
 
-	originalImps := bidReq.Imp
+	req := *bidReq
 	for _, imps := range impsByTagID {
-		bidReq.Imp = imps
-		body, err := json.Marshal(bidReq)
+		req.Imp = imps
+		body, err := json.Marshal(req)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -42,7 +42,6 @@ func (a *AJAAdapter) MakeRequests(bidReq *openrtb.BidRequest, extraInfo *adapter
 			Body:   body,
 		})
 	}
-	bidReq.Imp = originalImps
 
 	return
 }
