@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 	"text/template"
@@ -66,6 +67,11 @@ type Configuration struct {
 	PemCertsFile string `mapstructure:"certificates_file"`
 	// Custom headers to handle request timeouts from queueing infrastructure
 	RequestTimeoutHeaders RequestTimeoutHeaders `mapstructure:"request_timeout_headers"`
+
+	// Deployment
+	DeployPIDEnabled bool        `mapstructure:"deploy_pid_enabled"`
+	DeployPIDPath    string      `mapstructure:"deploy_pid_path"`
+	DeployPIDMode    os.FileMode `mapstructure:"deploy_pid_mode"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -581,6 +587,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("cache.default_ttl_seconds.video", 0)
 	v.SetDefault("cache.default_ttl_seconds.native", 0)
 	v.SetDefault("cache.default_ttl_seconds.audio", 0)
+	v.SetDefault("deploy_pid_enabled", false)
+	v.SetDefault("deploy_pid_mode", os.FileMode(0664)) // -rw-rw-r--
+	v.SetDefault("deploy_pid_path", "./pids")
 	v.SetDefault("external_cache.host", "")
 	v.SetDefault("external_cache.path", "")
 	v.SetDefault("recaptcha_secret", "")
