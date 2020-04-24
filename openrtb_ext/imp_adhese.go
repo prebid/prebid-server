@@ -7,10 +7,10 @@ import (
 )
 
 type ExtImpAdhese struct {
-	Account  string                  `json:"account"`
-	Location string                  `json:"location"`
-	Format   string                  `json:"format"`
-	Keywords []*AdheseKeywordsParams `json:"targets,omitempty"`
+	Account  string            `json:"account"`
+	Location string            `json:"location"`
+	Format   string            `json:"format"`
+	Keywords []json.RawMessage `json:"targets,omitempty"`
 }
 
 type ExtAdhese struct {
@@ -23,11 +23,6 @@ type ExtAdhese struct {
 	AdspaceId                 string `json:"adspaceId"`
 	LibId                     string `json:"libId"`
 	ViewableImpressionCounter string `json:"viewableImpressionCounter"`
-}
-
-type AdheseKeywordsParams struct {
-	Key    string   `json:"key,omitempty"`
-	Values []string `json:"value,omitempty"`
 }
 
 type AdheseOrigin struct {

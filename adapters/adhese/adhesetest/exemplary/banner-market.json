@@ -19,23 +19,13 @@
             "format": "leaderboard",
             "targets": [
               {
-                "key": "ci",
-                "value": [
-                  "gent",
-                  "brussels"
-                ]
+                "ci": ["gent", "brussels"]
               },
               {
-                "key": "ag",
-                "value": [
-                  "55"
-                ]
+                "ag": ["55"]
               },
               {
-                "key": "tl",
-                "value": [
-                  "all"
-                ]
+                "tl": ["all"]
               }
             ]
           }

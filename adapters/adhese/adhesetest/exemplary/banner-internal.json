@@ -19,23 +19,13 @@
             "format": "leaderboard",
             "targets": [
               {
-                "key": "ci",
-                "value": [
-                  "gent",
-                  "brussels"
-                ]
+                "ci": ["gent", "brussels"]
               },
               {
-                "key": "ag",
-                "value": [
-                  "55"
-                ]
+                "ag": ["55"]
               },
               {
-                "key": "tl",
-                "value": [
-                  "all"
-                ]
+                "tl": ["all"]
               }
             ]
           }
@@ -57,7 +47,7 @@
       "mockResponse": {
         "status": 200,
         "body": [{
-          "origin": "DALE",
+          "origin": "JERLICIA",
           "originInstance": "",
           "ext": "js",
           "slotName": "_main_page_-leaderboard",
@@ -104,7 +94,6 @@
               "id": "",
               "impid": "",
               "burl": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
-              "nurl": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
               "price": 1.000000,
               "ext": {
                     "adFormat": "",

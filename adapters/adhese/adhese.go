@@ -19,12 +19,6 @@ import (
 type AdheseAdapter struct {
 	http             *adapters.HTTPAdapter
 	endpointTemplate template.Template
-	dummyCacheBuster int
-}
-
-type AdheseKeywordsParams struct {
-	Key    string   `json:"key,omitempty"`
-	Values []string `json:"value,omitempty"`
 }
 
 func (a *AdheseAdapter) Name() string {
@@ -44,11 +38,17 @@ func extractTargetParameters(parameters openrtb_ext.ExtImpAdhese) string {
 		return ""
 	}
 	m := make(map[string][]string)
-	for _, kv := range parameters.Keywords {
-		for _, tv := range kv.Values {
-			cur, _ := m[kv.Key]
-			new := cur[:]
-			m[kv.Key] = append(new, tv)
+	for _, targetRaw := range parameters.Keywords {
+		var targetParsed map[string]interface{}
+		json.Unmarshal(targetRaw, &targetParsed)
+		for targetKey, targetRawValue := range targetParsed {
+			var targetingValues = targetRawValue.([]interface{})
+			for _, targetRawValKey := range targetingValues {
+				var targetValueParsed = targetRawValKey.(string)
+				cur, _ := m[targetKey]
+				new := cur[:]
+				m[targetKey] = append(new, targetValueParsed)
+			}
 		}
 	}
 
@@ -124,10 +124,6 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 }
 
 func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
-		return nil, nil
-	}
-
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{WrapError(fmt.Sprintf("Unexpected status code: %d.", response.StatusCode))}
 	}
@@ -139,7 +135,7 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		return nil, []error{err, WrapError(fmt.Sprintf("Response %v does not have an Origin.", string(response.Body)))}
 	}
 
-	if originArray[0].Origin == "JERLICIA" || originArray[0].Origin == "DALE" {
+	if originArray[0].Origin == "JERLICIA" {
 		var adheseBidResponseArray []openrtb_ext.AdheseBid
 		if err := json.Unmarshal(response.Body, &adheseBidResponseArray); err != nil {
 			return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed as Adhese bid.", string(response.Body)))}
@@ -200,7 +196,6 @@ func convertAdheseBid(adheseBid openrtb_ext.AdheseBid) openrtb.BidResponse {
 				H:      height,
 				CID:    adheseBid.OrderId,
 				CrID:   adheseBid.Id,
-				NURL:   adheseBid.ImpressionCounter,
 				BURL:   adheseBid.Tracker,
 				AdM:    getAdMarkup(adheseBid),
 				Ext:    adheseObj,
@@ -267,13 +262,12 @@ func ContainsAny(raw string, keys []string) bool {
 }
 
 func NewAdheseAdapter(config *adapters.HTTPAdapterConfig, uri string) *AdheseAdapter {
-	return NewAdheseBidder(adapters.NewHTTPAdapter(config).Client, uri, 0)
+	return NewAdheseBidder(adapters.NewHTTPAdapter(config).Client, uri)
 }
 
-// Set dummyCacheBuster to 0 in order to generate a cache buster
-func NewAdheseBidder(client *http.Client, uri string, dummyCacheBuster int) *AdheseAdapter {
+func NewAdheseBidder(client *http.Client, uri string) *AdheseAdapter {
 	template, _ := template.New("endpointTemplate").Parse(uri)
-	return &AdheseAdapter{http: &adapters.HTTPAdapter{Client: client}, endpointTemplate: *template, dummyCacheBuster: dummyCacheBuster}
+	return &AdheseAdapter{http: &adapters.HTTPAdapter{Client: client}, endpointTemplate: *template}
 }
 
 func printAsJson(obj interface{}) {
