@@ -16,6 +16,7 @@ type AJAAdapter struct {
 
 func (a *AJAAdapter) MakeRequests(bidReq *openrtb.BidRequest, extraInfo *adapters.ExtraRequestInfo) (adapterReqs []*adapters.RequestData, errs []error) {
 	// split imps by tagid
+	tagIDs := []string{}
 	impsByTagID := map[string][]openrtb.Imp{}
 	for _, imp := range bidReq.Imp {
 		extAJA, err := parseExtAJA(imp)
@@ -25,12 +26,15 @@ func (a *AJAAdapter) MakeRequests(bidReq *openrtb.BidRequest, extraInfo *adapter
 		}
 		imp.TagID = extAJA.AdSpotID
 		imp.Ext = nil
+		if _, ok := impsByTagID[imp.TagID]; !ok {
+			tagIDs = append(tagIDs, imp.TagID)
+		}
 		impsByTagID[imp.TagID] = append(impsByTagID[imp.TagID], imp)
 	}
 
 	req := *bidReq
-	for _, imps := range impsByTagID {
-		req.Imp = imps
+	for _, tagID := range tagIDs {
+		req.Imp = impsByTagID[tagID]
 		body, err := json.Marshal(req)
 		if err != nil {
 			errs = append(errs, err)
