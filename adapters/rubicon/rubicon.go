@@ -22,10 +22,11 @@ import (
 )
 
 type RubiconAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	XAPIUsername string
-	XAPIPassword string
+	http               *adapters.HTTPAdapter
+	URI                string
+	XAPIUsername       string
+	XAPIPassword       string
+	SupportedEndpoints map[string]bool
 }
 
 // used for cookies and such
@@ -546,11 +547,11 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 	return
 }
 
-func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
-	return NewRubiconBidder(adapters.NewHTTPAdapter(config).Client, uri, xuser, xpass, tracker)
+func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string, useast string, uswest string, eu string, apac string) *RubiconAdapter {
+	return NewRubiconBidder(adapters.NewHTTPAdapter(config).Client, uri, xuser, xpass, tracker, useast, uswest, eu, apac)
 }
 
-func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
+func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass string, tracker string, useast string, uswest string, eu string, apac string) *RubiconAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
 
 	uri = appendTrackerToUrl(uri, tracker)
@@ -560,6 +561,12 @@ func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass strin
 		URI:          uri,
 		XAPIUsername: xuser,
 		XAPIPassword: xpass,
+		SupportedEndpoints: map[string]bool{
+			useast: true,
+			uswest: true,
+			eu:     true,
+			apac:   true,
+		},
 	}
 }
 
@@ -750,9 +757,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			continue
 		}
 
+		uri := a.URI
+		if a.SupportedEndpoints[rubiconExt.Endpoint] {
+			uri = rubiconExt.Endpoint
+		}
+
 		reqData := &adapters.RequestData{
 			Method:  "POST",
-			Uri:     a.URI,
+			Uri:     uri,
 			Body:    reqJSON,
 			Headers: headers,
 		}

@@ -12,6 +12,7 @@ type ExtImpRubicon struct {
 	Inventory json.RawMessage    `json:"inventory,omitempty"`
 	Visitor   json.RawMessage    `json:"visitor,omitempty"`
 	Video     rubiconVideoParams `json:"video"`
+	Endpoint  string             `json:"endpoint"`
 }
 
 // rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.video
