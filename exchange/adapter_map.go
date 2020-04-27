@@ -118,7 +118,11 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password,
-			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
+			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker,
+			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointUSEast,
+			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointUSWest,
+			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointEU,
+			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointAPAC),
 
 		openrtb_ext.BidderSharethrough:     sharethrough.NewSharethroughBidder(cfg.Adapters[string(openrtb_ext.BidderSharethrough)].Endpoint),
 		openrtb_ext.BidderSmartRTB:         smartrtb.NewSmartRTBBidder(cfg.Adapters[string(openrtb_ext.BidderSmartRTB)].Endpoint),
