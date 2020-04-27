@@ -44,6 +44,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderMarsmedia):        syncConfig,
 			string(openrtb_ext.BidderMgid):             syncConfig,
 			string(openrtb_ext.BidderNanoInteractive):  syncConfig,
+			string(openrtb_ext.BidderNinthDecimal):     syncConfig,
 			string(openrtb_ext.BidderOpenx):            syncConfig,
 			string(openrtb_ext.BidderPubmatic):         syncConfig,
 			string(openrtb_ext.BidderPulsepoint):       syncConfig,
@@ -66,18 +67,20 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderVisx):             syncConfig,
 			string(openrtb_ext.BidderVrtcal):           syncConfig,
 			string(openrtb_ext.BidderYieldmo):          syncConfig,
+			string(openrtb_ext.BidderYieldone):         syncConfig,
 			string(openrtb_ext.BidderZeroClickFraud):   syncConfig,
 		},
 	}
 
 	adaptersWithoutSyncers := map[openrtb_ext.BidderName]bool{
-		openrtb_ext.BidderAdoppler:  true,
-		openrtb_ext.BidderApplogy:   true,
-		openrtb_ext.BidderTappx:     true,
-		openrtb_ext.BidderKubient:   true,
-		openrtb_ext.BidderPubnative: true,
-		openrtb_ext.BidderKidoz:     true,
-		openrtb_ext.BidderOrbidder:  true,
+		openrtb_ext.BidderAdgeneration: true,
+		openrtb_ext.BidderAdoppler:     true,
+		openrtb_ext.BidderApplogy:      true,
+		openrtb_ext.BidderTappx:        true,
+		openrtb_ext.BidderKubient:      true,
+		openrtb_ext.BidderPubnative:    true,
+		openrtb_ext.BidderKidoz:        true,
+		openrtb_ext.BidderOrbidder:     true,
 	}
 
 	for bidder, config := range cfg.Adapters {
