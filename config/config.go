@@ -1114,10 +1114,17 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.username", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.password", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.tracker", "")
+<<<<<<< HEAD
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_east", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_west", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_eu", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_apac", "")
+=======
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_east", "http://exapi-us-east.rubiconproject.com")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_west", "http://exapi-us-west.rubiconproject.com")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_eu", "http://exapi-eu.rubiconproject.com")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_apac", "http://exapi-apac.rubiconproject.com")
+>>>>>>> [PROG-1258] Rubicon 4 endpoints support
 	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
 	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".extra_info", "")
