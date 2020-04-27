@@ -21,6 +21,22 @@ import (
 
 const adapterVersion = "1.0.0"
 const maxUriLength = 8000
+const measurementCode = `
+	<script>
+		+function() {
+			var wu = "%s";
+			var su = "%s".replace(/\[TIMESTAMP\]/, Date.now());
+
+			if (wu && !(navigator.sendBeacon && navigator.sendBeacon(wu))) {
+				(new Image(1,1)).src = wu
+			}
+
+			if (su && !(navigator.sendBeacon && navigator.sendBeacon(su))) {
+				(new Image(1,1)).src = su
+			}
+		}();
+	</script>
+`
 
 type ResponseAdUnit struct {
 	ID       string `json:"id"`
@@ -43,15 +59,19 @@ func NewAdOceanBidder(client *http.Client, endpointTemplateString string) *AdOce
 		return nil
 	}
 
+	whiteSpace := regexp.MustCompile(`\s+`)
+
 	return &AdOceanAdapter{
 		http:             a,
 		endpointTemplate: *endpointTemplate,
+		measurementCode:  whiteSpace.ReplaceAllString(measurementCode, " "),
 	}
 }
 
 type AdOceanAdapter struct {
 	http             *adapters.HTTPAdapter
 	endpointTemplate template.Template
+	measurementCode  string
 }
 
 func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -115,13 +135,16 @@ func (a *AdOceanAdapter) makeRequest(existingRequests []*adapters.RequestData, i
 
 	if request.Device != nil {
 		headers.Add("User-Agent", request.Device.UA)
-		headers.Add("Referer", request.Site.Page)
 
 		if request.Device.IP != "" {
 			headers.Add("X-Forwarded-For", request.Device.IP)
 		} else if request.Device.IPv6 != "" {
 			headers.Add("X-Forwarded-For", request.Device.IPv6)
 		}
+	}
+
+	if request.Site != nil {
+		headers.Add("Referer", request.Site.Page)
 	}
 
 	return &adapters.RequestData{
@@ -151,7 +174,7 @@ requestsLoop:
 			endpointURL.RawQuery = queryParams.Encode()
 			newUri := endpointURL.String()
 			if len(newUri) < maxUriLength {
-				request.Uri = endpointURL.String()
+				request.Uri = newUri
 				return true
 			}
 		}
@@ -260,7 +283,7 @@ func (a *AdOceanAdapter) MakeBids(
 				price, _ := strconv.ParseFloat(bid.Price, 64)
 				width, _ := strconv.ParseUint(bid.Width, 10, 64)
 				height, _ := strconv.ParseUint(bid.Height, 10, 64)
-				adCode, err := prepareAdCodeForBid(bid)
+				adCode, err := a.prepareAdCodeForBid(bid)
 				if err != nil {
 					return nil, []error{err}
 				}
@@ -287,31 +310,13 @@ func (a *AdOceanAdapter) MakeBids(
 	return parsedResponses, []error{}
 }
 
-func prepareAdCodeForBid(bid ResponseAdUnit) (string, error) {
+func (a *AdOceanAdapter) prepareAdCodeForBid(bid ResponseAdUnit) (string, error) {
 	sspCode, err := url.QueryUnescape(bid.Code)
 	if err != nil {
 		return "", err
 	}
 
-	measurementCode := `
-		<script>
-			+function() {
-				var wu = "%s";
-				var su = "%s".replace(/\[TIMESTAMP\]/, Date.now());
-
-				if (wu && !(navigator.sendBeacon && navigator.sendBeacon(wu))) {
-					(new Image(1,1)).src = wu
-				}
-
-				if (su && !(navigator.sendBeacon && navigator.sendBeacon(su))) {
-					(new Image(1,1)).src = su
-				}
-			}();
-		</script>
-	`
-	whiteSpace := regexp.MustCompile(`\s+`)
-	measurementCode = whiteSpace.ReplaceAllString(measurementCode, " ")
-	adCode := fmt.Sprintf(measurementCode, bid.WinURL, bid.StatsURL) + sspCode
+	adCode := fmt.Sprintf(a.measurementCode, bid.WinURL, bid.StatsURL) + sspCode
 
 	return adCode, nil
 }
