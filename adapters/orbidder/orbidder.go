@@ -16,9 +16,36 @@ type OrbidderAdapter struct {
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids from orbidder.
 func (rcv *OrbidderAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+	var validImps []openrtb.Imp
+
+	// check if imps exists, if not do not return error and do send request to orbidder
+	if len(request.Imp) == 0 {
+		return nil, []error{&errortypes.BadInput{
+			Message: "No impressions in request",
+		}}
+	}
+
+	// validate imps
+	for _, imp := range request.Imp {
+		if err := preprocess(&imp); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		validImps = append(validImps, imp)
+	}
+
+	if len(validImps) == 0 {
+		return nil, errs
+	}
+
+	//set imp array to only valid imps
+	request.Imp = validImps
+
 	requestBodyJSON, err := json.Marshal(request)
 	if err != nil {
-		return nil, []error{err}
+		errs = append(errs, err)
+		return nil, errs
 	}
 
 	headers := http.Header{}
@@ -30,7 +57,37 @@ func (rcv *OrbidderAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		Uri:     rcv.endpoint,
 		Body:    requestBodyJSON,
 		Headers: headers,
-	}}, nil
+	}}, errs
+}
+
+func preprocess(imp *openrtb.Imp) error {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
+
+	var orbidderExt openrtb_ext.ExtImpOrbidder
+	if err := json.Unmarshal(bidderExt.Bidder, &orbidderExt); err != nil {
+		return &errortypes.BadInput{
+			Message: "Wrong orbidder bidder ext",
+		}
+	}
+
+	if orbidderExt.AccountId == "" {
+		return &errortypes.BadInput{
+			Message: "Wrong orbidder bidder ext, no account id",
+		}
+	}
+
+	if orbidderExt.PlacementId == "" {
+		return &errortypes.BadInput{
+			Message: "Wrong orbidder bidder ext, no placement id",
+		}
+	}
+
+	return nil
 }
 
 // MakeBids unpacks server response into Bids.
@@ -39,15 +96,21 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 		return nil, nil
 	}
 
-	if response.StatusCode == http.StatusBadRequest {
+	if response.StatusCode >= http.StatusInternalServerError {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Dsp server internal error.", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode >= http.StatusBadRequest {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Append debug=1 as request parameter for more info", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d. Bad request to dsp.", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Append debug=1 as request parameter for more info", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d. Bad response from dsp.", response.StatusCode),
 		}}
 	}
 

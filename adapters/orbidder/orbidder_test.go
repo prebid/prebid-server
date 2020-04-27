@@ -2,6 +2,7 @@ package orbidder
 
 import (
 	"encoding/json"
+	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -17,4 +18,8 @@ func TestUnmarshalOrbidderExtImp(t *testing.T) {
 		PlacementId: "center-banner",
 		BidFloor:    0.1,
 	}, impExt)
+}
+
+func TestJsonSamples(t *testing.T) {
+	adapterstest.RunJSONBidderTest(t, "orbiddertest", NewOrbidderBidder("https://orbidder-test"))
 }
