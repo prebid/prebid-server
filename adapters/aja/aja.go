@@ -37,7 +37,9 @@ func (a *AJAAdapter) MakeRequests(bidReq *openrtb.BidRequest, extraInfo *adapter
 		req.Imp = impsByTagID[tagID]
 		body, err := json.Marshal(req)
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs,  &errortypes.BadInput{
+				Message: fmt.Sprintf("Failed to unmarshal bidrequest ID: %s err: %s", bidReq.ID, err),
+			})
 			continue
 		}
 		adapterReqs = append(adapterReqs, &adapters.RequestData{
