@@ -9,9 +9,7 @@
           "w": 640,
           "h": 480
         },
-        "ext": {
-          "bidder": 111
-        }
+        "ext": 111
       }
     ],
     "user": {
@@ -26,7 +24,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Failed to unmarshal ext.bidder impID: test-imp-id err: json: cannot unmarshal number into Go value of type openrtb_ext.ExtImpAJA",
+      "value": "Failed to unmarshal ext impID: test-imp-id err: json: cannot unmarshal number into Go value of type adapters.ExtImpBidder",
       "comparison": "literal"
     }
 
