@@ -98,7 +98,6 @@ func (a *AJAAdapter) MakeBids(bidReq *openrtb.BidRequest, adapterReq *adapters.R
 
 	for _, seatbid := range bidResp.SeatBid {
 		for _, bid := range seatbid.Bid {
-		impID:
 			for _, imp := range bidReq.Imp {
 				if imp.ID == bid.ImpID {
 					var bidType openrtb_ext.BidType
@@ -116,7 +115,7 @@ func (a *AJAAdapter) MakeBids(bidReq *openrtb.BidRequest, adapterReq *adapters.R
 						Bid:     &bid,
 						BidType: bidType,
 					})
-					break impID
+					break
 				}
 			}
 		}
