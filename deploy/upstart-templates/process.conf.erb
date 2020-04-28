@@ -1,0 +1,22 @@
+post-stop script
+
+# prevent rapid restarts of the application
+# It doesn't help that there is a post-stop script in the master template
+# because if this process dies it is respawned having nothing to do with
+# the master upstart config.
+
+# this sleep is tied to the amount of time that v1.go will 503 after receiving a SIGHUP / SIGINT / SIGTERM
+# if we start up before the previous process closes the socket, the socket gets closed while the new process is attepting
+# to bind to it, and we fail to create the socket.
+sleep 5
+
+end script
+
+start on starting <%= app %>-<%= name %>
+stop on stopping <%= app %>-<%= name %>
+respawn
+
+exec su - <%= user %> -c 'cd <%= engine.root %>/current ;
+  if [ -f <%= engine.root %>/shared/env ] ; then source <%= engine.root %>/shared/env ; fi ;
+  if [ -f <%= engine.root %>/shared/env-export ] ; then source <%= engine.root %>/shared/env-export ; fi ;
+  <%= engine.root %>/current/grace-shepherd.sh <%= process.command %> <%= app %>-<%= name %>-<%=num%> | logger -t <%= app %>-<%= name %>[<%=num%>]'
