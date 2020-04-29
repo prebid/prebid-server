@@ -310,7 +310,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 }
 
 func TestRubiconUserSyncInfo(t *testing.T) {
-	an := NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker")
+	an := NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker", "", "", "", "")
 
 	assert.Equal(t, "rubicon", an.Name(), "Name '%s' != 'rubicon'", an.Name())
 
@@ -807,7 +807,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an = NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker")
+	an = NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker", "", "", "", "")
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
@@ -1404,5 +1404,5 @@ func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
 }
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker"))
+	adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker", "", "", "", ""))
 }

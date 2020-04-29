@@ -21,11 +21,22 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// Region ...
+type Region string
+
+const (
+	USEast Region = "us_east"
+	USWest Region = "us_west"
+	EU     Region = "eu"
+	APAC   Region = "apac"
+)
+
 type RubiconAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	XAPIUsername string
-	XAPIPassword string
+	http             *adapters.HTTPAdapter
+	URI              string
+	XAPIUsername     string
+	XAPIPassword     string
+	SupportedRegions map[Region]string
 }
 
 // used for cookies and such
@@ -546,11 +557,11 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 	return
 }
 
-func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
-	return NewRubiconBidder(adapters.NewHTTPAdapter(config).Client, uri, xuser, xpass, tracker)
+func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string, useast string, uswest string, eu string, apac string) *RubiconAdapter {
+	return NewRubiconBidder(adapters.NewHTTPAdapter(config).Client, uri, xuser, xpass, tracker, useast, uswest, eu, apac)
 }
 
-func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
+func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass string, tracker string, useast string, uswest string, eu string, apac string) *RubiconAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
 
 	uri = appendTrackerToUrl(uri, tracker)
@@ -560,6 +571,12 @@ func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass strin
 		URI:          uri,
 		XAPIUsername: xuser,
 		XAPIPassword: xpass,
+		SupportedRegions: map[Region]string{
+			USEast: appendTrackerToUrl(useast, tracker),
+			USWest: appendTrackerToUrl(uswest, tracker),
+			EU:     appendTrackerToUrl(eu, tracker),
+			APAC:   appendTrackerToUrl(apac, tracker),
+		},
 	}
 }
 
@@ -750,9 +767,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			continue
 		}
 
+		uri := a.URI
+		if endpoint, ok := a.SupportedRegions[Region(rubiconExt.Region)]; ok {
+			uri = endpoint
+		}
+
 		reqData := &adapters.RequestData{
 			Method:  "POST",
-			Uri:     a.URI,
+			Uri:     uri,
 			Body:    reqJSON,
 			Headers: headers,
 		}

@@ -243,9 +243,13 @@ type Adapter struct {
 	// For more info on templates, see: https://golang.org/pkg/text/template/
 	UserSyncURL string `mapstructure:"usersync_url"`
 	XAPI        struct {
-		Username string `mapstructure:"username"`
-		Password string `mapstructure:"password"`
-		Tracker  string `mapstructure:"tracker"`
+		Username       string `mapstructure:"username"`
+		Password       string `mapstructure:"password"`
+		Tracker        string `mapstructure:"tracker"`
+		EndpointUSEast string `mapstructure:"endpoint_us_east"`
+		EndpointUSWest string `mapstructure:"endpoint_us_west"`
+		EndpointEU     string `mapstructure:"endpoint_eu"`
+		EndpointAPAC   string `mapstructure:"endpoint_apac"`
 	} `mapstructure:"xapi"` // needed for Rubicon
 	Disabled         bool   `mapstructure:"disabled"`
 	ExtraAdapterInfo string `mapstructure:"extra_info"`
@@ -788,6 +792,10 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.username", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.password", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.tracker", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_east", "http://exapi-us-east.rubiconproject.com")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_west", "http://exapi-us-west.rubiconproject.com")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_eu", "http://exapi-eu.rubiconproject.com")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_apac", "http://exapi-apac.rubiconproject.com")
 	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
 	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".extra_info", "")
