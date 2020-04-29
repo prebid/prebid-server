@@ -49,11 +49,9 @@
               "bid": [{
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                 "impid": "test-imp-id",
-                "price": 0.700,
+                "price": 1.2,
                 "adm": "some-ads",
-                "crid": "crid_10",
-                "h": 90,
-                "w": 728
+                "crid": "crid_testid"
               }]
             }
           ],
@@ -71,11 +69,9 @@
           "bid": {
             "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
             "impid": "test-imp-id",
-            "price": 0.7,
+            "price": 1.2,
             "adm": "some-ads",
-            "crid": "crid_10",
-            "w": 728,
-            "h": 90
+            "crid": "crid_testid"
           },
           "type": "banner"
         }

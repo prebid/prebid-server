@@ -38,15 +38,13 @@ func (adapter *YeahmobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInf
 	return adapterRequests, errors
 }
 
-// Update the request object to include custom value
-// site.id
 func (adapter *YeahmobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
 	yeahmobiExt, errs := getYeahmobiExt(request)
 
 	if yeahmobiExt == nil {
-		glog.Fatal("invalid ExtImpYeahmobi value")
+		glog.Fatal("Invalid ExtImpYeahmobi value")
 		return nil, errs
 	}
 
@@ -97,7 +95,7 @@ func getYeahmobiExt(request *openrtb.BidRequest) (*openrtb_ext.ExtImpYeahmobi, [
 
 func (adapter *YeahmobiAdapter) getEndpoint(ext *openrtb_ext.ExtImpYeahmobi) (string, error) {
 	if ext.ZoneId == "" {
-		return "", errors.New("param of zone not config")
+		return "", errors.New("param of zoneId not config")
 	}
 
 	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{Host: "gw-" + ext.ZoneId + "-bid.yeahtargeter.com"})
