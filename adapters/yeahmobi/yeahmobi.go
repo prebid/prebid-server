@@ -50,6 +50,8 @@ func (adapter *YeahmobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapt
 
 	endPoint, err := adapter.getEndpoint(yeahmobiExt)
 
+	transform(request)
+
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -68,6 +70,21 @@ func (adapter *YeahmobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapt
 		Body:    reqBody,
 		Headers: headers,
 	}, errs
+}
+
+func transform(request *openrtb.BidRequest) {
+	for i, imp := range request.Imp {
+		if imp.Native != nil {
+			var nativeRequest map[string]interface{}
+			err := json.Unmarshal([]byte(request.Imp[i].Native.Request), &nativeRequest)
+			if err == nil {
+				if nativeRequest["native"] != nil {
+					continue
+				}
+				request.Imp[i].Native.Request = "{\"native\":" + request.Imp[i].Native.Request + "}"
+			}
+		}
+	}
 }
 
 func getYeahmobiExt(request *openrtb.BidRequest) (*openrtb_ext.ExtImpYeahmobi, []error) {
