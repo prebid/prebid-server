@@ -58,7 +58,7 @@
                   }
                 ]
               },
-              "tagid": "456",
+              "tagid": "456/test-imp-id",
               "ext": {
                 "bidder": {
                   "accountId": "123",

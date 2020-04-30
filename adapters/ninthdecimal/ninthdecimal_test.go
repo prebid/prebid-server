@@ -6,5 +6,5 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "ninthdecimaltest", NewNinthdecimalBidder("http://rtb.ninthdecimal.com/xp/get?pubid={{.PublisherID}}"))
+	adapterstest.RunJSONBidderTest(t, "ninthdecimaltest", NewNinthDecimalBidder("http://rtb.ninthdecimal.com/xp/get?pubid={{.PublisherID}}"))
 }

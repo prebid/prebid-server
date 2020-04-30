@@ -1,0 +1,39 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "adunit-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "host": "example.ho%st.tappx.com",
+            "endpoint": "PREBIDTEMPLATE",
+            "tappxkey": "pub-12345-android-9876"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app_001",
+      "bundle": "com.rovio.angrybirds",
+      "publisher": {
+        "id": "2"
+      }
+    },
+    "user": {
+      "buyeruid": "A-38327932832"
+    }
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Malformed URL: parse https://example.ho%st.tappx.com: invalid URL escape \"%st\"",
+      "comparison": "literal"
+    }
+  ]
+ 
+}

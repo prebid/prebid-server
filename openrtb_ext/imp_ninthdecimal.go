@@ -1,6 +1,6 @@
 package openrtb_ext
 
-type ExtImpNinthdecimal struct {
+type ExtImpNinthDecimal struct {
 	PublisherID string `json:"pubid"`
 	Placement   string `json:"placement,omitempty"`
 }

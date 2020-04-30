@@ -21,7 +21,7 @@
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "http://ads.us.e-planning.net/hb/1/12345/1/FILE/ROS?r=pbs&ncb=1&ur=FILE&e=testadunitcode:600x300",
+          "uri": "https://ads.us.e-planning.net/hb/1/12345/1/FILE/ROS?r=pbs&ncb=1&ur=FILE&e=testadunitcode:600x300",
           "body": {}
         },
         "mockResponse": {
@@ -48,6 +48,11 @@
       }
     ],
   
-    "expectedMakeBidsErrors": ["Unexpected status code: 500. Run with request.debug = 1 for more info"]
+    "expectedMakeBidsErrors": [
+      {
+        "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+        "comparison": "literal"
+      }
+    ]
   }
   

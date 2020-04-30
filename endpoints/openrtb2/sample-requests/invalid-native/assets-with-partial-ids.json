@@ -1,0 +1,22 @@
+{
+    "context": 1,
+    "plcmttype": 1,
+    "assets": [
+        {
+            "id": 1,
+            "img": {
+                "wmin": 30
+            }
+        },
+        {
+            "title": {
+                "len": 20
+            }
+        },
+        {
+            "img": {
+                "wmin": 50
+            }
+        }
+    ]
+}

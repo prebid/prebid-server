@@ -32,7 +32,6 @@
           "imp": [
             {
               "id": "adunit-1",
-              "tagid": "adunit-1",
               "banner": {
                 "w": 300,
                 "h": 250

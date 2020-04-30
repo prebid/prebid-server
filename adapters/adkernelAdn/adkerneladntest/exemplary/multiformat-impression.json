@@ -1,0 +1,109 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "multi-adunit",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+	"banner" : {
+	  "format": [{"w": 300,"h": 250}]
+	},
+        "ext": {
+          "bidder": {
+            "pubId": 102,
+            "host": "tag.test.com"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app_001",
+      "bundle": "com.rovio.angrybirds",
+      "publisher": {
+        "id": "2"
+      }
+    },
+    "user": {
+      "buyeruid": "A-38327932832"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://tag.test.com/rtbpub?account=102",
+        "body": {
+          "id": "0000000000001",
+          "imp": [
+            {
+              "id": "multi-adunit",
+              "banner": {
+                "w": 300,
+                "h": 250
+	      }
+            }
+          ],
+          "app": {
+            "bundle": "com.rovio.angrybirds",
+            "id": "app_001"
+          },
+          "user": {
+            "buyeruid": "A-38327932832"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "75472df2-1cb3-4f8e-9a28-10cb95fe05a4",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid02",
+                  "impid": "multi-adunit",
+                  "price": 2.25,
+                  "cid": "1001",
+                  "crid": "2002",
+                  "adid": "2002",
+                  "adm": "<!-- admarkup -->",
+                  "adomain": [
+                    "tag-example.com"
+                  ]
+                }
+              ]
+            }
+          ],
+          "bidid": "wehM-93KGr0"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+          "currency": "USD",
+          "bids": [
+            {
+              "bid": {
+                "id": "bid02",
+                "impid": "multi-adunit",
+                "price": 2.25,
+                "adm": "<!-- admarkup -->",
+                "adomain": [
+                  "tag-example.com"
+                ],
+                "cid": "1001",
+                "adid": "2002",
+                "crid": "2002"
+              },
+              "type": "banner"
+            }
+          ]
+        }
+  ]
+}

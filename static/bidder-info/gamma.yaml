@@ -1,0 +1,7 @@
+maintainer:
+  email: "support@gammassp.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video

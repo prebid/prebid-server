@@ -2,7 +2,7 @@
   "mockBidRequest": {
     "id": "some_test_ad",
     "app": {
-      "domain": "some.app.com",
+      "bundle":"_org.prebid.mobile.demoapp",
       "id": "some-mobile-app"
     },
     "imp": [
@@ -11,19 +11,23 @@
         "ext":{
           "bidder":{
             "bidfloor":0.01,
-            "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
+            "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76",
+            "videoResponseType" : "nurl"
           }
         },
         "video":{
           "mimes":[
             "video/mp4"
           ],
-          "context":"instream",
           "w":300,
           "h":250
         }
       }
-    ]
+    ],
+    "device":{
+      "devicetype": 1,
+      "ifa":"bb956625-df13-4568-b60b-eb5cbf76e986"
+    }
   },
 
   "httpCalls": [
@@ -31,34 +35,32 @@
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
         "body": {
-          "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76",
           "cur": [
             "USD"
           ],
           "device": {
-            "ip": "",
-            "ua": "",
-            "js": ""
+            "devicetype": 1,
+            "ifa": "bb956625-df13-4568-b60b-eb5cbf76e986"
           },
           "id": "some_test_ad",
           "imp": [
             {
-              "bidfloor": 0.01,
-              "id": 0,
+              "id": "video1",
               "secure": 0,
-              "impid": "video1",
               "video": {
+                "mimes":[
+                  "video/mp4"
+                ],
                 "h": 250,
                 "w": 300
               }
             }
           ],
           "isPrebid": true,
-          "site": {
-            "domain": "some.app.com",
-            "page": "some-mobile-app"
-          },
-          "user": {
+          "app": {
+            "bundle": "_org.prebid.mobile.demoapp",
+            "domain": "prebid.org",
+            "id": "some-mobile-app"
           }
         }
       },

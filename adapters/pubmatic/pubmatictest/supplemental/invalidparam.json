@@ -96,11 +96,29 @@
     },
   
     "expectedMakeRequestsErrors": [
-        "Invalid adSlot AdTag_Div1@",
-        "Invalid size provided in adSlot AdTag_Div1@300",
-        "Invalid width provided in adSlot AdTag_Div1@valx250",
-        "Invalid height provided in adSlot AdTag_Div1@300xval",
-        "Invalid height provided in adSlot AdTag_Div1@300x",
-        "Invalid width provided in adSlot AdTag_Div1@x250"
+        {
+            "value": "Invalid adSlot AdTag_Div1@",
+            "comparison": "literal"
+        },
+        {
+            "value": "Invalid size provided in adSlot AdTag_Div1@300",
+            "comparison": "literal"
+        },
+        {
+            "value": "Invalid width provided in adSlot AdTag_Div1@valx250",
+            "comparison": "literal"
+        },
+        {
+            "value": "Invalid height provided in adSlot AdTag_Div1@300xval",
+            "comparison": "literal"
+        },
+        {
+            "value": "Invalid height provided in adSlot AdTag_Div1@300x",
+            "comparison": "literal"
+        },
+        {
+            "value": "Invalid width provided in adSlot AdTag_Div1@x250",
+            "comparison": "literal"
+        }
       ]
   }

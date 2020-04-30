@@ -7,6 +7,6 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-func NewNinthdecimalSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("ninthdecimal", 61, temp, adapters.SyncTypeIframe)
+func NewNinthDecimalSyncer(temp *template.Template) usersync.Usersyncer {
+	return adapters.NewSyncer("ninthdecimal", 0, temp, adapters.SyncTypeIframe)
 }

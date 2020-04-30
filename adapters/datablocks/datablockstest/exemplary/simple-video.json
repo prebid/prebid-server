@@ -1,0 +1,138 @@
+{
+    "mockBidRequest":
+    {
+        "id": "some-request-id",
+        "imp": [
+        {
+            "id": "some-impression-id",
+            "video":
+            {
+                "mimes":[
+                  "video/x-flv"
+                ],
+                "w": 500,
+                "h": 400,
+                "minduration": 30
+            },
+            "ext":
+            {
+                "bidder":
+                {
+                    "host": "search.nutella.datablocks.net",
+                    "sourceId": 906295
+                }
+            }
+        }],
+        "site":
+        {
+            "page": "prebid.org"
+        },
+        "device":
+        {
+            "ip": "8.8.8.10"
+        },
+        "at": 1,
+        "tmax": 500
+    },
+
+    "httpCalls": [
+    {
+        "expectedRequest":
+        {
+            "uri": "http://search.nutella.datablocks.net/openrtb2?sid=906295",
+            "body":
+            {
+                "id": "some-request-id",
+                "imp": [
+                {
+                    "id": "some-impression-id",
+                    "video":
+                    {
+                        "mimes":[
+                          "video/x-flv"
+                        ],
+                        "w": 500,
+                        "h": 400,
+                        "minduration": 30
+                    },
+                    "ext":
+                    {
+                        "bidder":
+                        {
+                            "host": "search.nutella.datablocks.net",
+                            "sourceId": 906295
+                        }
+                    }
+                }],
+                "site":
+                {
+                    "page": "prebid.org"
+                },
+                "device":
+                {
+                    "ip": "8.8.8.10"
+                },
+                "at": 1,
+                "tmax": 500
+            }
+        },
+        "mockResponse":
+        {
+            "status": 200,
+            "body":
+            {
+                "id": "some-request-id",
+                "bidid": "183975330-4-29038-2",
+                "seatbid": [
+                {
+                    "seat": "906295",
+                    "bid": [
+                    {
+                        "id": "2181314347",
+                        "impid": "some-impression-id",
+                        "nurl": "https://impression.nutella.datablocks.net/wm/267237/?fcid=2181314347",
+                        "price": 13.37,
+                        "cid": "906293",
+                        "adid": "906297",
+                        "crid": "906729",
+                        "w": 500,
+                        "h": 400,
+                        "ext":
+                        {
+                            "type": "CPM"
+                        }
+                    }]
+                }],
+                "cur": "USD",
+                "ext":
+                {}
+            }
+        }
+    }],
+
+
+    "expectedBidResponses": [
+    {
+        "currency": "USD",
+        "bids": [
+        {
+            "bid":
+            {
+                "id": "2181314347",
+                "impid": "some-impression-id",
+                "price": 13.37,
+                "nurl": "https://impression.nutella.datablocks.net/wm/267237/?fcid=2181314347",
+                "adid": "906297",
+                "cid": "906293",
+                "crid": "906729",
+                "w": 500,
+                "h": 400,
+                "ext":
+                {
+                    "type": "CPM"
+                }
+            },
+            "type": "video"
+        }]
+    }]
+}

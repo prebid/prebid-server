@@ -56,6 +56,9 @@
     }],
 
     "expectedMakeBidsErrors": [
-        "Unknown impression type for ID: \"test-imp-id\""
+        {
+            "value":  "Unknown impression type for ID: \"test-imp-id\"",
+            "comparison": "literal"
+        }
     ]
 }

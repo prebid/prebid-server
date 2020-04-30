@@ -4,7 +4,7 @@ import "encoding/json"
 
 type BidResponseVideo struct {
 	AdPods []*AdPod        `json:"adPods"`
-	Ext    json.RawMessage `json:"ext"`
+	Ext    json.RawMessage `json:"ext,omitempty"`
 }
 
 type AdPod struct {

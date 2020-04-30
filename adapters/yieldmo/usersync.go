@@ -8,5 +8,5 @@ import (
 )
 
 func NewYieldmoSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("yieldmo", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("yieldmo", 173, temp, adapters.SyncTypeRedirect)
 }

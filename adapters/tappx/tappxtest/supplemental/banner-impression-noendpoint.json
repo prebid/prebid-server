@@ -1,0 +1,38 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "adunit-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "tappxkey": "pub-12345-android-9876",
+            "host": "test.tappx.com"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app_001",
+      "bundle": "com.rovio.angrybirds",
+      "publisher": {
+        "id": "2"
+      }
+    },
+    "user": {
+      "buyeruid": "A-38327932832"
+    }
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Tappx endpoint undefined",
+      "comparison": "literal"
+    }
+  ]
+  
+}

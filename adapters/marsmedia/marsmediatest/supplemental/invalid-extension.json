@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-invalid-ext-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+        }
+
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ext.bidder.zone not provided",
+      "comparison": "literal"
+    }
+  ]
+}

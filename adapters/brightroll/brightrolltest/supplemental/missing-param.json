@@ -26,6 +26,9 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-    "publisher is empty"
+    {
+      "value": "publisher is empty",
+      "comparison": "literal"
+    }
   ]
 }

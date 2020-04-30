@@ -1,0 +1,11 @@
+maintainer:
+  email: "prebid@mars.media"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

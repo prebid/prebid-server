@@ -88,7 +88,11 @@ func preprocess(request *openrtb.BidRequest) (path string, err error) {
 		if path == "" {
 			path = mgidExt.AccountId
 		}
-		request.Imp[i].TagID = mgidExt.PlacementId
+		if mgidExt.PlacementId == "" {
+			request.Imp[i].TagID = imp.ID
+		} else {
+			request.Imp[i].TagID = mgidExt.PlacementId + "/" + imp.ID
+		}
 
 		cur := ""
 		if mgidExt.Currency != "" && mgidExt.Currency != "USD" {

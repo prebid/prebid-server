@@ -21,8 +21,11 @@
   },
 
   "expectedMakeRequestsErrors": [
-      "ignoring imp id=empty-extbid-test, extImpBidder is empty"
+    {
+      "value": "ignoring imp id=empty-extbid-test, extImpBidder is empty",
+      "comparison": "literal"
+    } 
   ]
 
-
+  
 }

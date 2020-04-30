@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Triplelift Adapter Params",
+  "description": "A schema which validates params accepted by the Triplelift adapter",
+
+  "type": "object",
+  "properties": {
+    "inventoryCode": {
+      "type": "string",
+      "description": "TripleLift inventory code for this ad unit (provided to you by your partner manager)"
+    },
+    "floor" :  {"description" : "the bid floor", "type": "number" }
+  },
+  "required": ["inventoryCode"]
+}

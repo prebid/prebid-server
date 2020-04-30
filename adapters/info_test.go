@@ -2,10 +2,12 @@ package adapters_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -124,12 +126,22 @@ func (m *mockBidder) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 	return nil, []error{errors.New("mock MakeBids error")}
 }
 
+func blankAdapterConfig(bidderName openrtb_ext.BidderName) map[string]config.Adapter {
+	adapters := make(map[string]config.Adapter)
+	adapters[strings.ToLower(string(bidderName))] = config.Adapter{}
+
+	return adapters
+}
+
 func TestParsing(t *testing.T) {
 	mockBidderName := openrtb_ext.BidderName("someBidder")
-	infos := adapters.ParseBidderInfos("./adapterstest/bidder-info", []openrtb_ext.BidderName{mockBidderName})
+	infos := adapters.ParseBidderInfos(blankAdapterConfig(mockBidderName), "./adapterstest/bidder-info", []openrtb_ext.BidderName{mockBidderName})
 	if infos[string(mockBidderName)].Maintainer.Email != "some-email@domain.com" {
 		t.Errorf("Bad maintainer email. Got %s", infos[string(mockBidderName)].Maintainer.Email)
 	}
+
+	assert.Equal(t, true, infos.IsActive(mockBidderName))
+
 	assert.Equal(t, true, infos.HasAppSupport(mockBidderName))
 	assert.Equal(t, true, infos.HasSiteSupport(mockBidderName))
 

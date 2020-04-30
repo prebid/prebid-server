@@ -24,6 +24,9 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-  	"ext data not provided in imp id=test-missing-ext-id. Abort all Request"
-]
+	{
+	  "value": "ext data not provided in imp id=test-missing-ext-id. Abort all Request",
+	  "comparison": "literal"
+	}
+  ]
 }
