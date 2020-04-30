@@ -93,40 +93,43 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	var errors []error
 
 	for _, auction := range request.Imp {
-		newHttpRequest, err := a.makeRequest(httpRequests, &auction, request, consentString)
+		err := a.makeRequest(&httpRequests, &auction, request, consentString)
 		if err != nil {
 			errors = append(errors, err)
-		} else if newHttpRequest != nil {
-			httpRequests = append(httpRequests, newHttpRequest)
 		}
 	}
 
 	return httpRequests, errors
 }
 
-func (a *AdOceanAdapter) makeRequest(existingRequests []*adapters.RequestData, imp *openrtb.Imp, request *openrtb.BidRequest, consentString string) (*adapters.RequestData, error) {
+func (a *AdOceanAdapter) makeRequest(
+	existingRequests *[]*adapters.RequestData,
+	imp *openrtb.Imp,
+	request *openrtb.BidRequest,
+	consentString string,
+) error {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{
+		return &errortypes.BadInput{
 			Message: "Error parsing bidderExt object",
 		}
 	}
 
 	var adOceanExt openrtb_ext.ExtImpAdOcean
 	if err := json.Unmarshal(bidderExt.Bidder, &adOceanExt); err != nil {
-		return nil, &errortypes.BadInput{
+		return &errortypes.BadInput{
 			Message: "Error parsing adOceanExt parameters",
 		}
 	}
 
-	addedToExistingRequest := addToExistingRequest(existingRequests, &adOceanExt, imp.ID)
+	addedToExistingRequest := addToExistingRequest(*existingRequests, &adOceanExt, imp)
 	if addedToExistingRequest {
-		return nil, nil
+		return nil
 	}
 
-	url, err := a.makeURL(&adOceanExt, imp.ID, request, consentString)
+	url, err := a.makeURL(&adOceanExt, imp, request, consentString)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	headers := http.Header{}
@@ -147,14 +150,18 @@ func (a *AdOceanAdapter) makeRequest(existingRequests []*adapters.RequestData, i
 		headers.Add("Referer", request.Site.Page)
 	}
 
-	return &adapters.RequestData{
+	*existingRequests = append(*existingRequests, &adapters.RequestData{
 		Method:  "GET",
 		Uri:     url,
 		Headers: headers,
-	}, nil
+	})
+
+	return nil
 }
 
-func addToExistingRequest(existingRequests []*adapters.RequestData, newParams *openrtb_ext.ExtImpAdOcean, auctionID string) bool {
+func addToExistingRequest(existingRequests []*adapters.RequestData, newParams *openrtb_ext.ExtImpAdOcean, imp *openrtb.Imp) bool {
+	auctionID := imp.ID
+
 requestsLoop:
 	for _, request := range existingRequests {
 		endpointURL, _ := url.Parse(request.Uri)
@@ -171,6 +178,7 @@ requestsLoop:
 			}
 
 			queryParams.Add("aid", newParams.SlaveID+":"+auctionID)
+			appendSizes(&queryParams, imp, newParams.SlaveID)
 			endpointURL.RawQuery = queryParams.Encode()
 			newUri := endpointURL.String()
 			if len(newUri) < maxUriLength {
@@ -183,7 +191,7 @@ requestsLoop:
 	return false
 }
 
-func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID string, request *openrtb.BidRequest, consentString string) (string, error) {
+func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, imp *openrtb.Imp, request *openrtb.BidRequest, consentString string) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{Host: params.EmitterDomain}
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
@@ -205,6 +213,7 @@ func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID st
 	}
 	endpointURL.Path = "/_" + strconv.Itoa(randomizedPart) + "/ad.json"
 
+	auctionID := imp.ID
 	queryParams := url.Values{}
 	queryParams.Add("pbsrv_v", adapterVersion)
 	queryParams.Add("id", params.MasterID)
@@ -218,9 +227,33 @@ func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID st
 	if request.User != nil && request.User.BuyerUID != "" {
 		queryParams.Add("hcuserid", request.User.BuyerUID)
 	}
+	appendSizes(&queryParams, imp, params.SlaveID)
 	endpointURL.RawQuery = queryParams.Encode()
 
 	return endpointURL.String(), nil
+}
+
+func appendSizes(queryParams *url.Values, imp *openrtb.Imp, slaveID string) {
+	if imp.Banner == nil {
+		return
+	}
+
+	var sizeValues string
+
+	if len(imp.Banner.Format) > 0 {
+		sizes := make([]string, len(imp.Banner.Format))
+		for i, format := range imp.Banner.Format {
+			sizes[i] = strconv.FormatUint(format.W, 10) + "x" + strconv.FormatUint(format.H, 10)
+		}
+		sizeValues = strings.Join(sizes, "_")
+	} else if imp.Banner.W != nil && imp.Banner.H != nil {
+		sizeValues = strconv.FormatUint(*imp.Banner.W, 10) + "x" + strconv.FormatUint(*imp.Banner.H, 10)
+	} else {
+		return
+	}
+
+	key := "-" + strings.Replace(slaveID, "adocean", "", 1)
+	queryParams.Add(key, sizeValues)
 }
 
 func (a *AdOceanAdapter) MakeBids(
