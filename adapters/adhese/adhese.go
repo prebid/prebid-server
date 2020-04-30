@@ -61,13 +61,20 @@ func extractTargetParameters(parameters openrtb_ext.ExtImpAdhese) string {
 
 }
 
-func extractGdprParameter() string {
-	//const gdprParams = (gdprConsent && gdprConsent.consentString) ? [ 'xt' + gdprConsent.consentString, 'tlall' ] : [];
+func extractGdprParameter(request *openrtb.BidRequest) string {
+	if request.User != nil {
+		var extUser openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+			return "/xt" + extUser.Consent
+		}
+	}
 	return ""
 }
 
-func extractRefererParameter() string {
-	//const refererParams = (refererInfo && refererInfo.referer) ? [ 'xf' + base64urlEncode(refererInfo.referer) ] : [];
+func extractRefererParameter(request *openrtb.BidRequest) string {
+	if request.Site != nil && request.Site.Page != "" {
+		return "/xf" + request.Site.Page
+	}
 	return ""
 }
 
@@ -107,8 +114,8 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		host,
 		extractSlotParameter(params),
 		extractTargetParameters(params),
-		extractGdprParameter(),
-		extractRefererParameter())
+		extractGdprParameter(request),
+		extractRefererParameter(request))
 
 	// If all the requests are invalid, Call to adaptor is skipped
 	if len(request.Imp) == 0 {
@@ -133,6 +140,10 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		return nil, []error{err, WrapError(fmt.Sprintf("Response %v does not have an Origin.", string(response.Body)))}
 	}
 
+	if len(originArray) == 0 {
+		return nil, []error{WrapError("Empty Origin array.")}
+	}
+
 	if originArray[0].Origin == "JERLICIA" {
 		var adheseBidResponseArray []openrtb_ext.AdheseBid
 		if err := json.Unmarshal(response.Body, &adheseBidResponseArray); err != nil {
@@ -140,7 +151,7 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		}
 		bidResponse = convertAdheseBid(adheseBidResponseArray[0])
 	} else {
-		var openRtbBidResponseArray []openrtb_ext.AdheseOpenRtbBid
+		var openRtbBidResponseArray []openrtb_ext.AdheseBid
 		if err := json.Unmarshal(response.Body, &openRtbBidResponseArray); err != nil {
 			return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed as Adhese OpenRtb Bid.", string(response.Body)))}
 		}
@@ -171,7 +182,7 @@ func convertAdheseBid(adheseBid openrtb_ext.AdheseBid) openrtb.BidResponse {
 	price, _ := strconv.ParseFloat(adheseBid.Extension.Prebid.Cpm.Amount, 64)
 	width, _ := strconv.ParseUint(adheseBid.Width, 10, 64)
 	height, _ := strconv.ParseUint(adheseBid.Height, 10, 64)
-	adheseObj, _ := json.Marshal(openrtb_ext.ExtAdhese{
+	adheseObj, _ := json.Marshal(openrtb_ext.Ext{
 		CreativeId:                adheseBid.Id,
 		AdFormat:                  adheseBid.AdFormat,
 		AdType:                    adheseBid.AdType,
@@ -205,7 +216,7 @@ func convertAdheseBid(adheseBid openrtb_ext.AdheseBid) openrtb.BidResponse {
 	}
 }
 
-func convertAdheseOpenRtbBid(adheseBid openrtb_ext.AdheseOpenRtbBid) openrtb.BidResponse {
+func convertAdheseOpenRtbBid(adheseBid openrtb_ext.AdheseBid) openrtb.BidResponse {
 	price, _ := strconv.ParseFloat(adheseBid.Extension.Prebid.Cpm.Amount, 64)
 	width, _ := strconv.ParseUint(adheseBid.Width, 10, 64)
 	height, _ := strconv.ParseUint(adheseBid.Height, 10, 64)
@@ -219,9 +230,6 @@ func convertAdheseOpenRtbBid(adheseBid openrtb_ext.AdheseOpenRtbBid) openrtb.Bid
 		response.SeatBid[0].Bid[0].W = width
 		response.SeatBid[0].Bid[0].H = height
 		response.SeatBid[0].Bid[0].AdM = adheseBid.Body
-		if ContainsAny(adheseBid.Body, []string{"<script", "<div", "<html"}) {
-			response.SeatBid[0].Bid[0].AdM += "<img src='" + adheseBid.ImpressionCounter + "' style='height:1px; width:1px; margin: -1px -1px; display:none;'/>"
-		}
 	}
 
 	response.Cur = adheseBid.Extension.Prebid.Cpm.Currency
