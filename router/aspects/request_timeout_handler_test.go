@@ -1,12 +1,14 @@
 package aspects
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbsmetrics"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -23,6 +25,7 @@ func TestAny(t *testing.T) {
 		expectedRespCodeMessage string
 		expectedRespBody        string
 		expectedRespBodyMessage string
+		requestStatusMetrics    bool
 	}{
 		{
 			//TestQueuedRequestTimeoutWithTimeout
@@ -33,6 +36,7 @@ func TestAny(t *testing.T) {
 			expectedRespCodeMessage: "Http response code is incorrect, should be 408",
 			expectedRespBody:        "Queued request processing time exceeded maximum",
 			expectedRespBodyMessage: "Body should have error message",
+			requestStatusMetrics:    false,
 		},
 		{
 			//TestQueuedRequestTimeoutNoTimeout
@@ -43,6 +47,7 @@ func TestAny(t *testing.T) {
 			expectedRespCodeMessage: "Http response code is incorrect, should be 200",
 			expectedRespBody:        "Executed",
 			expectedRespBodyMessage: "Body should be present in response",
+			requestStatusMetrics:    true,
 		},
 		{
 			//TestQueuedRequestNoHeaders
@@ -53,6 +58,7 @@ func TestAny(t *testing.T) {
 			expectedRespCodeMessage: "Http response code is incorrect, should be 200",
 			expectedRespBody:        "Executed",
 			expectedRespBodyMessage: "Body should be present in response",
+			requestStatusMetrics:    true,
 		},
 		{
 			//TestQueuedRequestSomeHeaders
@@ -63,31 +69,13 @@ func TestAny(t *testing.T) {
 			expectedRespCodeMessage: "Http response code is incorrect, should be 200",
 			expectedRespBody:        "Executed",
 			expectedRespBodyMessage: "Body should be present in response",
-		},
-		{
-			//TestQueuedRequestAllHeadersIncorrect
-			reqTimeInQueue:          "test1",
-			reqTimeOut:              "test2",
-			setHeaders:              true,
-			expectedRespCode:        http.StatusInternalServerError,
-			expectedRespCodeMessage: "Http response code is incorrect, should be 400",
-			expectedRespBody:        "Request timeout headers are incorrect (wrong format)",
-			expectedRespBodyMessage: "Body should have error message",
-		},
-		{
-			//TestQueuedRequestSomeHeadersIncorrect
-			reqTimeInQueue:          "test1",
-			reqTimeOut:              "123",
-			setHeaders:              true,
-			expectedRespCode:        http.StatusInternalServerError,
-			expectedRespCodeMessage: "Http response code is incorrect, should be 400",
-			expectedRespBody:        "Request timeout headers are incorrect (wrong format)",
-			expectedRespBodyMessage: "Body should have error message",
+			requestStatusMetrics:    true,
 		},
 	}
 
 	for _, test := range testCases {
-		result := ExecuteAspectRequest(t, test.reqTimeInQueue, test.reqTimeOut, test.setHeaders)
+		reqTimeFloat, _ := strconv.ParseFloat(test.reqTimeInQueue, 64)
+		result := ExecuteAspectRequest(t, test.reqTimeInQueue, test.reqTimeOut, test.setHeaders, pbsmetrics.ReqTypeVideo, test.requestStatusMetrics, reqTimeFloat)
 		assert.Equal(t, test.expectedRespCode, result.Code, test.expectedRespCodeMessage)
 		assert.Equal(t, test.expectedRespBody, string(result.Body.Bytes()), test.expectedRespBodyMessage)
 	}
@@ -101,7 +89,7 @@ func MockHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Write([]byte("Executed"))
 }
 
-func ExecuteAspectRequest(t *testing.T, timeInQueue string, reqTimeout string, setHeaders bool) *httptest.ResponseRecorder {
+func ExecuteAspectRequest(t *testing.T, timeInQueue string, reqTimeout string, setHeaders bool, requestType pbsmetrics.RequestType, status bool, requestDuration float64) *httptest.ResponseRecorder {
 	rw := httptest.NewRecorder()
 	req, err := http.NewRequest("POST", "/test", nil)
 	if err != nil {
@@ -114,7 +102,11 @@ func ExecuteAspectRequest(t *testing.T, timeInQueue string, reqTimeout string, s
 
 	customHeaders := config.RequestTimeoutHeaders{reqTimeInQueueHeaderName, reqTimeoutHeaderName}
 
-	handler := QueuedRequestTimeout(MockEndpoint(), customHeaders)
+	metrics := &pbsmetrics.MetricsEngineMock{}
+
+	metrics.On("RecordRequestQueueTime", status, requestType, time.Duration(requestDuration*float64(time.Second))).Once()
+
+	handler := QueuedRequestTimeout(MockEndpoint(), customHeaders, metrics, requestType)
 
 	r := httprouter.New()
 	r.POST("/test", handler)

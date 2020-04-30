@@ -224,26 +224,43 @@ func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest) (*nativeRespo
 	}
 
 	for _, asset := range nativeMarkup.Assets {
-		setAssetTypes(asset, nativePayload)
+		if err := setAssetTypes(asset, nativePayload); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	return nativeMarkup, errs
 }
 
-func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Request) {
+func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Request) error {
 	if asset.Img != nil {
-		tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
-		if tempAsset.Img.Type != 0 {
-			asset.Img.Type = tempAsset.Img.Type
+		if tempAsset, err := getAssetByID(asset.ID, nativePayload.Assets); err == nil {
+			if tempAsset.Img != nil {
+				if tempAsset.Img.Type != 0 {
+					asset.Img.Type = tempAsset.Img.Type
+				}
+			} else {
+				return fmt.Errorf("Response has an Image asset with ID:%d present that doesn't exist in the request", asset.ID)
+			}
+		} else {
+			return err
 		}
 	}
 
 	if asset.Data != nil {
-		tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
-		if tempAsset.Data.Type != 0 {
-			asset.Data.Type = tempAsset.Data.Type
+		if tempAsset, err := getAssetByID(asset.ID, nativePayload.Assets); err == nil {
+			if tempAsset.Data != nil {
+				if tempAsset.Data.Type != 0 {
+					asset.Data.Type = tempAsset.Data.Type
+				}
+			} else {
+				return fmt.Errorf("Response has a Data asset with ID:%d present that doesn't exist in the request", asset.ID)
+			}
+		} else {
+			return err
 		}
 	}
+	return nil
 }
 
 func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Native, error) {
@@ -255,13 +272,13 @@ func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Na
 	return nil, errors.New("Could not find native imp")
 }
 
-func getAssetByID(id int64, assets []nativeRequests.Asset) nativeRequests.Asset {
+func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset, error) {
 	for _, asset := range assets {
 		if id == asset.ID {
-			return asset
+			return asset, nil
 		}
 	}
-	return nativeRequests.Asset{}
+	return nativeRequests.Asset{}, fmt.Errorf("Unable to find asset with ID:%d in the request", id)
 }
 
 // makeExt transforms information about the HTTP call into the contract class for the PBS response.
