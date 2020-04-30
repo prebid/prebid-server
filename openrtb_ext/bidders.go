@@ -33,6 +33,7 @@ const (
 	BidderAdmixer          BidderName = "admixer"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
+	BidderAJA              BidderName = "aja"
 	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
 	BidderAdoppler         BidderName = "adoppler"
@@ -100,6 +101,7 @@ var BidderMap = map[string]BidderName{
 	"adpone":            BidderAdpone,
 	"adtelligent":       BidderAdtelligent,
 	"advangelists":      BidderAdvangelists,
+	"aja":               BidderAJA,
 	"applogy":           BidderApplogy,
 	"appnexus":          BidderAppnexus,
 	"adoppler":          BidderAdoppler,
