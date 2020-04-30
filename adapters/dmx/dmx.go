@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 )
 
@@ -63,15 +64,16 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	var publisherId string
 	var sellerId string
 	var user_ext dmxUserExt
-	var hasId []bool
+	var anyHasId = false
+	var dmxReq *openrtb.BidRequest = &openrtb.BidRequest{}
 
-	var dmxReq = request
-
-	if dmxReq.User == nil {
-		if dmxReq.App == nil {
-			return nil, []error{errors.New("no user Id found and AppID, no request to DMX")}
+	if request.User == nil {
+		if request.App == nil {
+			return nil, []error{errors.New("No user id or app id found. Could not send request to DMX.")}
 		}
 	}
+
+	CloneValue(request, dmxReq)
 
 	if len(request.Imp) >= 1 {
 		err := json.Unmarshal(request.Imp[0].Ext, &rootExtInfo)
@@ -83,10 +85,31 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		}
 	}
 
+	if request.App != nil {
+		appCopy := *request.App
+		dmxReq.App = &appCopy
+	} else {
+		dmxReq.App = nil
+	}
+
+	if request.Site != nil {
+		siteCopy := *request.Site
+		dmxReq.Site = &siteCopy
+	} else {
+		dmxReq.Site = nil
+	}
+
+	if request.User != nil {
+		userCopy := *request.User
+		dmxReq.User = &userCopy
+	} else {
+		dmxReq.User = nil
+	}
+
 	if dmxReq.App != nil {
 		dmxReq.Site = nil
 		if dmxReq.App.ID != "" {
-			hasId = append(hasId, true)
+			anyHasId = true
 		}
 		if dmxReq.App.Publisher != nil {
 			dmxReq.App.Publisher.ID = publisherId
@@ -101,18 +124,18 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	}
 	if dmxReq.User != nil {
 		if dmxReq.User.ID != "" {
-			hasId = append(hasId, true)
+			anyHasId = true
 		}
 		if dmxReq.User.Ext != nil {
 			if err := json.Unmarshal(dmxReq.User.Ext, &user_ext); err == nil {
 				if len(user_ext.Eids) > 0 || user_ext.Digitrust.ID != "" {
-					hasId = append(hasId, true)
+					anyHasId = true
 				}
 			}
 		}
 	}
 
-	if len(hasId) == 0 {
+	if anyHasId == false {
 		return nil, []error{errors.New("This request contained no identifier")}
 	}
 
@@ -293,5 +316,18 @@ func isDmxParams(t interface{}) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func CloneValue(source interface{}, destin interface{}) {
+	x := reflect.ValueOf(source)
+	if x.Kind() == reflect.Ptr {
+		starX := x.Elem()
+		y := reflect.New(starX.Type())
+		starY := y.Elem()
+		starY.Set(starX)
+		reflect.ValueOf(destin).Elem().Set(y.Elem())
+	} else {
+		destin = x.Interface()
 	}
 }
