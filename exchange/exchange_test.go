@@ -762,12 +762,12 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 	if spec.DebugLog != nil {
 		if spec.DebugLog.EnableDebug {
-			if len(debugLog.Data) <= len(spec.DebugLog.Data) {
-				t.Errorf("%s: DebugLog was not modified when it should have been", filename)
+			if len(debugLog.Data.Response) == 0 {
+				t.Errorf("%s: DebugLog response was not modified when it should have been", filename)
 			}
 		} else {
-			if !strings.EqualFold(spec.DebugLog.Data, debugLog.Data) {
-				t.Errorf("%s: DebugLog was modified when it shouldn't have been", filename)
+			if len(debugLog.Data.Response) != 0 {
+				t.Errorf("%s: DebugLog response was modified when it shouldn't have been", filename)
 			}
 		}
 	}

@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
 	"github.com/prebid/prebid-server/errortypes"
 
@@ -96,23 +96,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	defer func() {
 		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
-			xmlDeclaration := "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
-			debugLog.Data = fmt.Sprintf("%s<log>%s<response>\nNo response created\n</response></log>", xmlDeclaration, debugLog.Data)
-			data, err := json.Marshal(debugLog.Data)
-			if err == nil {
-				toCache := []prebid_cache_client.Cacheable{
-					{
-						Type:       debugLog.CacheType,
-						Data:       data,
-						TTLSeconds: debugLog.TTL,
-						Key:        "log_" + debugLog.CacheKey,
-					},
-				}
-				if deps.cache != nil {
-					ctx, cancel := context.WithDeadline(context.Background(), start.Add(time.Duration(100)*time.Millisecond))
-					defer cancel()
-					deps.cache.PutJson(ctx, toCache)
-				}
+			err := putDebugLogError(deps.cache, &debugLog, start)
+			if err != nil {
+				vo.Errors = append(vo.Errors, err)
 			}
 		}
 		deps.metricsEngine.RecordRequest(labels)
@@ -132,11 +118,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	resolvedRequest := requestJson
 	if debugLog.EnableDebug {
-		debugLog.Data = fmt.Sprintf("<request>\n%s\n</request>", string(requestJson))
+		debugLog.Data.Request = string(requestJson)
 		if headerBytes, err := json.Marshal(r.Header); err == nil {
-			debugLog.Data = fmt.Sprintf("%s<headers>\n%s\n</headers>", debugLog.Data, string(headerBytes))
+			debugLog.Data.Headers = string(headerBytes)
 		} else {
-			debugLog.Data = fmt.Sprintf("%s<headers>\nUnable to marshal headers data\n</headers>", debugLog.Data)
+			debugLog.Data.Headers = "Unable to marshal headers data"
 		}
 	}
 
@@ -280,6 +266,33 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 
+}
+
+func putDebugLogError(cache prebid_cache_client.Client, debugLog *exchange.DebugLog, start time.Time) error {
+	debugLog.Data.Response = "No response created"
+
+	debugLog.BuildDebugLog()
+
+	data, err := json.Marshal(debugLog.CacheString)
+	if err != nil {
+		return err
+	}
+
+	toCache := []prebid_cache_client.Cacheable{
+		{
+			Type:       debugLog.CacheType,
+			Data:       data,
+			TTLSeconds: debugLog.TTL,
+			Key:        "log_" + debugLog.CacheKey,
+		},
+	}
+	if cache != nil {
+		ctx, cancel := context.WithDeadline(context.Background(), start.Add(time.Duration(100)*time.Millisecond))
+		defer cancel()
+		cache.PutJson(ctx, toCache)
+	}
+
+	return nil
 }
 
 func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) *openrtb_ext.BidRequestVideo {

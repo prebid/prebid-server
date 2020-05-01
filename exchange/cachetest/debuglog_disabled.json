@@ -3,7 +3,11 @@
         "EnableDebug": false,
         "CacheType": "xml",
         "TTL": 3600,
-        "Data": "test debug data"
+        "Data": {
+            "Request": "test request string",
+            "Headers": "test headers string",
+            "Response": "test response string"
+        }
     },
     "bidRequest": {
         "imp": [{

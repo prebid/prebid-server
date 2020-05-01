@@ -27,14 +27,6 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
-type DebugLog struct {
-	EnableDebug bool
-	CacheType   prebid_cache_client.PayloadType
-	Data        string
-	TTL         int64
-	CacheKey    string
-}
-
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
@@ -183,10 +175,10 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			if debugLog != nil && debugLog.EnableDebug {
 				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errs)
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
-					xmlDeclaration := "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
-					debugLog.Data = fmt.Sprintf("%s<log>%s<response>\n%s\n</response></log>", xmlDeclaration, debugLog.Data, string(bidRespExtBytes))
+					debugLog.Data.Response = string(bidRespExtBytes)
 				} else {
-					errs = append(errs, errors.New("Unable to marshal response ext for debugging"))
+					debugLog.Data.Response = "Unable to marshal response ext for debugging"
+					errs = append(errs, errors.New(debugLog.Data.Response))
 				}
 			}
 

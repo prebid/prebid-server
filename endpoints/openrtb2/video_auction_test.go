@@ -991,8 +991,12 @@ func TestHandleErrorDebugLog(t *testing.T) {
 	debugLog := exchange.DebugLog{
 		EnableDebug: true,
 		CacheType:   prebid_cache_client.TypeXML,
-		Data:        "test debug data",
-		TTL:         int64(3600),
+		Data: exchange.DebugData{
+			Request:  "test request string",
+			Headers:  "test headers string",
+			Response: "test response string",
+		},
+		TTL: int64(3600),
 	}
 	handleError(&labels, recorder, []error{err1, err2}, &vo, &debugLog)
 
