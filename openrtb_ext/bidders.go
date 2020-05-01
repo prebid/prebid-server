@@ -104,6 +104,7 @@ var BidderMap = map[string]BidderName{
 	"appnexus":          BidderAppnexus,
 	"adoppler":          BidderAdoppler,
 	"beachfront":        BidderBeachfront,
+	"beintoo":           BidderBeintoo,
 	"brightroll":        BidderBrightroll,
 	"consumable":        BidderConsumable,
 	"conversant":        BidderConversant,
