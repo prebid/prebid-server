@@ -8,9 +8,13 @@ import (
 	"strings"
 	"unicode"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"unicode/utf8"
 =======
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+	"unicode/utf8"
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 )
 
 func min(a, b int) int {
@@ -21,10 +25,15 @@ func min(a, b int) int {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const maxParamCount uint8 = ^uint8(0)
 
 =======
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+const maxParamCount uint8 = ^uint8(0)
+
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 func countParams(path string) uint8 {
 	var n uint
 	for i := 0; i < len(path); i++ {
@@ -33,6 +42,7 @@ func countParams(path string) uint8 {
 		}
 		n++
 	}
+<<<<<<< HEAD
 <<<<<<< HEAD
 	if n >= uint(maxParamCount) {
 		return maxParamCount
@@ -43,6 +53,12 @@ func countParams(path string) uint8 {
 		return 255
 	}
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+	if n >= uint(maxParamCount) {
+		return maxParamCount
+	}
+
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 	return uint8(n)
 }
 
@@ -50,15 +66,21 @@ type nodeType uint8
 
 const (
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 	static nodeType = iota // default
 	root
 	param
 	catchAll
+<<<<<<< HEAD
 =======
 	static   nodeType = 0
 	param    nodeType = 1
 	catchAll nodeType = 2
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 )
 
 type node struct {
@@ -67,6 +89,7 @@ type node struct {
 	nType     nodeType
 	maxParams uint8
 <<<<<<< HEAD
+<<<<<<< HEAD
 	priority  uint32
 	indices   string
 	children  []*node
@@ -77,6 +100,12 @@ type node struct {
 	handle    Handle
 	priority  uint32
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+	priority  uint32
+	indices   string
+	children  []*node
+	handle    Handle
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 }
 
 // increments priority of the given child and reorders if necessary
@@ -89,12 +118,16 @@ func (n *node) incrementChildPrio(pos int) int {
 	for newPos > 0 && n.children[newPos-1].priority < prio {
 		// swap node positions
 <<<<<<< HEAD
+<<<<<<< HEAD
 		n.children[newPos-1], n.children[newPos] = n.children[newPos], n.children[newPos-1]
 =======
 		tmpN := n.children[newPos-1]
 		n.children[newPos-1] = n.children[newPos]
 		n.children[newPos] = tmpN
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+		n.children[newPos-1], n.children[newPos] = n.children[newPos], n.children[newPos-1]
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 
 		newPos--
 	}
@@ -140,9 +173,13 @@ func (n *node) addRoute(path string, handle Handle) {
 					path:      n.path[i:],
 					wildChild: n.wildChild,
 <<<<<<< HEAD
+<<<<<<< HEAD
 					nType:     static,
 =======
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+					nType:     static,
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 					indices:   n.indices,
 					children:  n.children,
 					handle:    n.handle,
@@ -180,6 +217,9 @@ func (n *node) addRoute(path string, handle Handle) {
 
 					// Check if the wildcard matches
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 					if len(path) >= len(n.path) && n.path == path[:len(n.path)] &&
 						// Adding a child to a catchAll is not possible
 						n.nType != catchAll &&
@@ -193,6 +233,7 @@ func (n *node) addRoute(path string, handle Handle) {
 							pathSeg = path
 						} else {
 							pathSeg = strings.SplitN(path, "/", 2)[0]
+<<<<<<< HEAD
 						}
 						prefix := fullPath[:strings.Index(fullPath, pathSeg)] + n.path
 						panic("'" + pathSeg +
@@ -206,13 +247,24 @@ func (n *node) addRoute(path string, handle Handle) {
 						// check for longer wildcard, e.g. :name and :names
 						if len(n.path) >= len(path) || path[len(n.path)] == '/' {
 							continue walk
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 						}
+						prefix := fullPath[:strings.Index(fullPath, pathSeg)] + n.path
+						panic("'" + pathSeg +
+							"' in new path '" + fullPath +
+							"' conflicts with existing wildcard '" + n.path +
+							"' in existing prefix '" + prefix +
+							"'")
 					}
+<<<<<<< HEAD
 
 					panic("path segment '" + path +
 						"' conflicts with existing wildcard '" + n.path +
 						"' in path '" + fullPath + "'")
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 				}
 
 				c := path[0]
@@ -250,10 +302,14 @@ func (n *node) addRoute(path string, handle Handle) {
 			} else if i == len(path) { // Make node a (in-path) leaf
 				if n.handle != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 					panic("a handle is already registered for path '" + fullPath + "'")
 =======
 					panic("a handle is already registered for path ''" + fullPath + "'")
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+					panic("a handle is already registered for path '" + fullPath + "'")
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 				}
 				n.handle = handle
 			}
@@ -262,9 +318,13 @@ func (n *node) addRoute(path string, handle Handle) {
 	} else { // Empty tree
 		n.insertChild(numParams, path, fullPath, handle)
 <<<<<<< HEAD
+<<<<<<< HEAD
 		n.nType = root
 =======
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+		n.nType = root
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 	}
 }
 
@@ -358,12 +418,18 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 				maxParams: 1,
 			}
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 			// update maxParams of the parent node
 			if n.maxParams < 1 {
 				n.maxParams = 1
 			}
+<<<<<<< HEAD
 =======
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 			n.children = []*node{child}
 			n.indices = string(path[i])
 			n = child
@@ -395,10 +461,14 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handle Handle
 // given path.
 func (n *node) getValue(path string) (handle Handle, p Params, tsr bool) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 walk: // outer loop for walking the tree
 =======
 walk: // Outer loop for walking the tree
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+walk: // outer loop for walking the tree
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 	for {
 		if len(path) > len(n.path) {
 			if path[:len(n.path)] == n.path {
@@ -493,13 +563,19 @@ walk: // Outer loop for walking the tree
 			}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 			if path == "/" && n.wildChild && n.nType != root {
 				tsr = true
 				return
 			}
 
+<<<<<<< HEAD
 =======
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 			// No handle found. Check if a handle for this path + a
 			// trailing slash exists for trailing slash recommendation
 			for i := 0; i < len(n.indices); i++ {
@@ -529,6 +605,9 @@ walk: // Outer loop for walking the tree
 // was successful.
 func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) (ciPath []byte, found bool) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 	return n.findCaseInsensitivePathRec(
 		path,
 		make([]byte, 0, len(path)+1), // preallocate enough memory for new path
@@ -552,6 +631,7 @@ func shiftNRuneBytes(rb [4]byte, n int) [4]byte {
 		return [4]byte{}
 	}
 }
+<<<<<<< HEAD
 
 // recursive case-insensitive lookup function used by n.findCaseInsensitivePath
 func (n *node) findCaseInsensitivePathRec(path string, ciPath []byte, rb [4]byte, fixTrailingSlash bool) ([]byte, bool) {
@@ -570,6 +650,19 @@ walk: // outer loop for walking the tree
 	for len(path) >= len(n.path) && strings.ToLower(path[:len(n.path)]) == strings.ToLower(n.path) {
 		path = path[len(n.path):]
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+
+// recursive case-insensitive lookup function used by n.findCaseInsensitivePath
+func (n *node) findCaseInsensitivePathRec(path string, ciPath []byte, rb [4]byte, fixTrailingSlash bool) ([]byte, bool) {
+	npLen := len(n.path)
+
+walk: // outer loop for walking the tree
+	for len(path) >= npLen && (npLen == 0 || strings.EqualFold(path[1:npLen], n.path[1:])) {
+		// add common prefix to result
+
+		oldPath := path
+		path = path[npLen:]
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 		ciPath = append(ciPath, n.path...)
 
 		if len(path) > 0 {
@@ -578,6 +671,9 @@ walk: // outer loop for walking the tree
 			// the tree
 			if !n.wildChild {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 				// skip rune bytes already processed
 				rb = shiftNRuneBytes(rb, npLen)
 
@@ -643,6 +739,7 @@ walk: // outer loop for walking the tree
 								npLen = len(n.path)
 								continue walk
 							}
+<<<<<<< HEAD
 =======
 				r := unicode.ToLower(rune(path[0]))
 				for i, index := range n.indices {
@@ -653,6 +750,8 @@ walk: // outer loop for walking the tree
 						if found {
 							return append(ciPath, out...), true
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 						}
 					}
 				}
@@ -660,11 +759,15 @@ walk: // outer loop for walking the tree
 				// Nothing found. We can recommend to redirect to the same URL
 				// without a trailing slash if a leaf exists for that path
 <<<<<<< HEAD
+<<<<<<< HEAD
 				return ciPath, (fixTrailingSlash && path == "/" && n.handle != nil)
 =======
 				found = (fixTrailingSlash && path == "/" && n.handle != nil)
 				return
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+				return ciPath, (fixTrailingSlash && path == "/" && n.handle != nil)
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 			}
 
 			n = n.children[0]
@@ -683,6 +786,7 @@ walk: // outer loop for walking the tree
 				if k < len(path) {
 					if len(n.children) > 0 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 						// continue with child node
 						n = n.children[0]
 						npLen = len(n.path)
@@ -691,6 +795,12 @@ walk: // outer loop for walking the tree
 						path = path[k:]
 						n = n.children[0]
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+						// continue with child node
+						n = n.children[0]
+						npLen = len(n.path)
+						path = path[k:]
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 						continue
 					}
 
@@ -699,10 +809,14 @@ walk: // outer loop for walking the tree
 						return ciPath, true
 					}
 <<<<<<< HEAD
+<<<<<<< HEAD
 					return ciPath, false
 =======
 					return
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+					return ciPath, false
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 				}
 
 				if n.handle != nil {
@@ -716,10 +830,14 @@ walk: // outer loop for walking the tree
 					}
 				}
 <<<<<<< HEAD
+<<<<<<< HEAD
 				return ciPath, false
 =======
 				return
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+				return ciPath, false
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 
 			case catchAll:
 				return append(ciPath, path...), true
@@ -745,6 +863,7 @@ walk: // outer loop for walking the tree
 							return append(ciPath, '/'), true
 						}
 <<<<<<< HEAD
+<<<<<<< HEAD
 						return ciPath, false
 					}
 				}
@@ -757,6 +876,13 @@ walk: // outer loop for walking the tree
 			}
 			return
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+						return ciPath, false
+					}
+				}
+			}
+			return ciPath, false
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 		}
 	}
 
@@ -766,6 +892,7 @@ walk: // outer loop for walking the tree
 		if path == "/" {
 			return ciPath, true
 		}
+<<<<<<< HEAD
 <<<<<<< HEAD
 		if len(path)+1 == npLen && n.path[len(path)] == '/' &&
 			strings.EqualFold(path[1:], n.path[1:len(path)]) && n.handle != nil {
@@ -782,4 +909,12 @@ walk: // outer loop for walking the tree
 	}
 	return
 >>>>>>> OPER-5108 Setup Local development with k8s
+=======
+		if len(path)+1 == npLen && n.path[len(path)] == '/' &&
+			strings.EqualFold(path[1:], n.path[1:len(path)]) && n.handle != nil {
+			return append(ciPath, n.path...), true
+		}
+	}
+	return ciPath, false
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 }

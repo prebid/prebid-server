@@ -146,6 +146,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
+<<<<<<< HEAD
+=======
+	ctx := r.Context()
+
+>>>>>>> [PROG-1244] Newrelic Integration (simple)
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
