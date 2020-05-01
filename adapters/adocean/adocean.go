@@ -90,18 +90,18 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	}
 
 	var httpRequests []*adapters.RequestData
-	for _, auction := range request.Imp {
-		newBidRequest, err := a.makeRequest(httpRequests, &auction, request, consentString)
-		if err != nil {
-			return nil, []error{err}
-		}
+	var errors []error
 
-		if newBidRequest != nil {
-			httpRequests = append(httpRequests, newBidRequest)
+	for _, auction := range request.Imp {
+		newHttpRequest, err := a.makeRequest(httpRequests, &auction, request, consentString)
+		if err != nil {
+			errors = append(errors, err)
+		} else if newHttpRequest != nil {
+			httpRequests = append(httpRequests, newHttpRequest)
 		}
 	}
 
-	return httpRequests, nil
+	return httpRequests, errors
 }
 
 func (a *AdOceanAdapter) makeRequest(existingRequests []*adapters.RequestData, imp *openrtb.Imp, request *openrtb.BidRequest, consentString string) (*adapters.RequestData, error) {
@@ -268,6 +268,7 @@ func (a *AdOceanAdapter) MakeBids(
 	}
 
 	var parsedResponses = adapters.NewBidderResponseWithBidsCapacity(len(auctionIDs))
+	var errors []error
 
 	for _, auctionFullID := range auctionIDs {
 		auctionIDsSlice := strings.SplitN(auctionFullID, ":", 2)
@@ -285,7 +286,8 @@ func (a *AdOceanAdapter) MakeBids(
 				height, _ := strconv.ParseUint(bid.Height, 10, 64)
 				adCode, err := a.prepareAdCodeForBid(bid)
 				if err != nil {
-					return nil, []error{err}
+					errors = append(errors, err)
+					break
 				}
 
 				parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
@@ -307,7 +309,7 @@ func (a *AdOceanAdapter) MakeBids(
 		}
 	}
 
-	return parsedResponses, []error{}
+	return parsedResponses, errors
 }
 
 func (a *AdOceanAdapter) prepareAdCodeForBid(bid ResponseAdUnit) (string, error) {
