@@ -45,7 +45,7 @@ github.com/hashicorp/hcl/json/token
 github.com/influxdata/influxdb/client
 github.com/influxdata/influxdb/models
 github.com/influxdata/influxdb/pkg/escape
-# github.com/julienschmidt/httprouter v1.1.0
+# github.com/julienschmidt/httprouter v1.3.0
 github.com/julienschmidt/httprouter
 # github.com/lib/pq v1.0.0
 github.com/lib/pq
@@ -64,6 +64,16 @@ github.com/mxmCherry/openrtb
 github.com/mxmCherry/openrtb/native
 github.com/mxmCherry/openrtb/native/request
 github.com/mxmCherry/openrtb/native/response
+# github.com/newrelic/go-agent/v3 v3.0.0
+github.com/newrelic/go-agent/v3/internal
+github.com/newrelic/go-agent/v3/internal/cat
+github.com/newrelic/go-agent/v3/internal/jsonx
+github.com/newrelic/go-agent/v3/internal/logger
+github.com/newrelic/go-agent/v3/internal/sysinfo
+github.com/newrelic/go-agent/v3/internal/utilization
+github.com/newrelic/go-agent/v3/newrelic
+# github.com/newrelic/go-agent/v3/integrations/nrhttprouter v1.0.0
+github.com/newrelic/go-agent/v3/integrations/nrhttprouter
 # github.com/pelletier/go-toml v1.2.0
 github.com/pelletier/go-toml
 # github.com/pmezard/go-difflib v1.0.0

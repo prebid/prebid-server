@@ -20,7 +20,7 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/influxdata/influxdb v1.6.1 // indirect
-	github.com/julienschmidt/httprouter v1.1.0
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/lib/pq v1.0.0
 	github.com/magiconair/properties v1.8.0
@@ -29,6 +29,8 @@ require (
 	github.com/mitchellh/mapstructure v1.0.0 // indirect
 	github.com/mssola/user_agent v0.4.1
 	github.com/mxmCherry/openrtb v11.0.0+incompatible
+	github.com/newrelic/go-agent/v3 v3.0.0
+	github.com/newrelic/go-agent/v3/integrations/nrhttprouter v1.0.0
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect

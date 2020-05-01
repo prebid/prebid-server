@@ -10,7 +10,8 @@ import (
 	"testing"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
-	"github.com/julienschmidt/httprouter"
+	"github.com/newrelic/go-agent/v3/integrations/nrhttprouter"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
@@ -233,7 +234,8 @@ func TestNewPostgresEventProducers(t *testing.T) {
 }
 
 func TestNewEventsAPI(t *testing.T) {
-	router := httprouter.New()
+	nrApp, _ := newrelic.NewApplication(newrelic.ConfigEnabled(false))
+	router := nrhttprouter.New(nrApp)
 	newEventsAPI(router, "/test-endpoint")
 	if handle, _, _ := router.Lookup("POST", "/test-endpoint"); handle == nil {
 		t.Error("The newEventsAPI method didn't add a POST /test-endpoint route")
