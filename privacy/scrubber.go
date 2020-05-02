@@ -34,24 +34,21 @@ const (
 	ScrubStrategyGeoReducedPrecision
 )
 
-// ScrubStrategyUser defines the approach to scrub PII from user data.
-type ScrubStrategyUser int
+// ScrubStrategyDemographic defines the approach to non-location demographic data.
+type ScrubStrategyDemographic int
 
 const (
-	// ScrubStrategyUserNone does not remove user data.
-	ScrubStrategyUserNone ScrubStrategyUser = iota
+	// ScrubStrategyDemographicNone does not remove non-location demographic data.
+	ScrubStrategyDemographicNone ScrubStrategyDemographic = iota
 
-	// ScrubStrategyUserFull removes the user's buyer id, exchange id year of birth, and gender.
-	ScrubStrategyUserFull
-
-	// ScrubStrategyUserBuyerIDOnly removes the user's buyer id.
-	ScrubStrategyUserBuyerIDOnly
+	// ScrubStrategyDemographicAgeAndGender removes age and gender data.
+	ScrubStrategyDemographicAgeAndGender
 )
 
 // Scrubber removes PII from parts of an OpenRTB request.
 type Scrubber interface {
-	ScrubDevice(device *openrtb.Device, macAndIFA bool, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device
-	ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb.User
+	ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device
+	ScrubUser(user *openrtb.User, demographic ScrubStrategyDemographic, geo ScrubStrategyGeo) *openrtb.User
 }
 
 type scrubber struct{}
@@ -61,24 +58,20 @@ func NewScrubber() Scrubber {
 	return scrubber{}
 }
 
-func (scrubber) ScrubDevice(device *openrtb.Device, macAndIFA bool, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
+func (scrubber) ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
 	if device == nil {
 		return nil
 	}
 
 	deviceCopy := *device
-
 	deviceCopy.DIDMD5 = ""
 	deviceCopy.DIDSHA1 = ""
 	deviceCopy.DPIDMD5 = ""
 	deviceCopy.DPIDSHA1 = ""
+	deviceCopy.IFA = ""
+	deviceCopy.MACMD5 = ""
+	deviceCopy.MACSHA1 = ""
 	deviceCopy.IP = scrubIPV4(device.IP)
-
-	if macAndIFA {
-		deviceCopy.MACSHA1 = ""
-		deviceCopy.MACMD5 = ""
-		deviceCopy.IFA = ""
-	}
 
 	switch ipv6 {
 	case ScrubStrategyIPV6Lowest16:
@@ -97,21 +90,19 @@ func (scrubber) ScrubDevice(device *openrtb.Device, macAndIFA bool, ipv6 ScrubSt
 	return &deviceCopy
 }
 
-func (scrubber) ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb.User {
+func (scrubber) ScrubUser(user *openrtb.User, demographic ScrubStrategyDemographic, geo ScrubStrategyGeo) *openrtb.User {
 	if user == nil {
 		return nil
 	}
 
 	userCopy := *user
+	userCopy.BuyerUID = ""
+	userCopy.ID = ""
 
-	switch strategy {
-	case ScrubStrategyUserFull:
-		userCopy.BuyerUID = ""
-		userCopy.ID = ""
+	switch demographic {
+	case ScrubStrategyDemographicAgeAndGender:
 		userCopy.Yob = 0
 		userCopy.Gender = ""
-	case ScrubStrategyUserBuyerIDOnly:
-		userCopy.BuyerUID = ""
 	}
 
 	switch geo {
@@ -169,13 +160,7 @@ func scrubGeoFull(geo *openrtb.Geo) *openrtb.Geo {
 		return nil
 	}
 
-	geoCopy := *geo
-	geoCopy.Lat = 0
-	geoCopy.Lon = 0
-	geoCopy.Metro = ""
-	geoCopy.City = ""
-	geoCopy.ZIP = ""
-	return &geoCopy
+	return &openrtb.Geo{}
 }
 
 func scrubGeoPrecision(geo *openrtb.Geo) *openrtb.Geo {
