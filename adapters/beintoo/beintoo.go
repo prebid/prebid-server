@@ -20,14 +20,24 @@ type BeintooAdapter struct {
 }
 
 func buildEndpoint(endpoint string, testing bool, timeout int64) string {
+	
 	if timeout == 0 {
 		timeout = 1000
 	}
-	if testing {
-		// for passing validation tests
-		return endpoint + "?t=1000&ts=2060541160"
-	}
-	return endpoint + "?t=" + strconv.FormatInt(timeout, 10) + "&ts=" + strconv.FormatInt(time.Now().Unix(), 10) + "&src=pbserver"
+	
+	// host
+	uriObj, _ := url.Parse(endpoint)
+
+	// query
+	parameters := url.Values{}
+	parameters.Add("t", strconv.FormatInt(timeout, 10))
+	parameters.Add("ts", strconv.FormatInt(time.Now().Unix(), 10))
+	parameters.Add("src", "pbserver")
+
+	// Add query values to host
+	uriObj.RawQuery = parameters.Encode()
+
+	return uriObj.String()
 }
 
 func (a *BeintooAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -100,11 +110,7 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpBeintoo, error) {
 		}
 	}
 
-	if BeintooExt.TagID == "" {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Ignoring imp id=%s, no tagid present", imp.ID),
-		}
-	}
+	
 
 	return &BeintooExt, nil
 }
@@ -118,8 +124,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 		}
 	}
 
-	bannerCopy := *imp.Banner
-	banner := &bannerCopy
+	
 
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
@@ -166,9 +171,8 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 
 // Handle request errors and formatting to be sent to Beintoo
 func preprocess(request *openrtb.BidRequest) []error {
-	impsCount := len(request.Imp)
-	errors := make([]error, 0, impsCount)
-	resImps := make([]openrtb.Imp, 0, impsCount)
+	errors := make([]error, 0, len(request.Imp))
+        resImps := make([]openrtb.Imp, 0, len(request.Imp))
 	secure := int8(0)
 
 	if request.Site != nil && request.Site.Page != "" {
