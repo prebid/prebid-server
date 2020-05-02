@@ -25,16 +25,22 @@ func buildEndpoint(endpoint string, testing bool, timeout int64) string {
 		timeout = 1000
 	}
 	
-	// host
 	uriObj, _ := url.Parse(endpoint)
-
-	// query
 	parameters := url.Values{}
+	
+	if testing {
+		
+		parameters.Add("t", "1000")
+		parameters.Add("ts", "2060541160")
+		uriObj.RawQuery = parameters.Encode()
+
+	return uriObj.String()
+	}
+	
 	parameters.Add("t", strconv.FormatInt(timeout, 10))
 	parameters.Add("ts", strconv.FormatInt(time.Now().Unix(), 10))
 	parameters.Add("src", "pbserver")
 
-	// Add query values to host
 	uriObj.RawQuery = parameters.Encode()
 
 	return uriObj.String()
