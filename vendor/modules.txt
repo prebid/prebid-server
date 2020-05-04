@@ -46,14 +46,13 @@ github.com/influxdata/influxdb/client
 github.com/influxdata/influxdb/models
 github.com/influxdata/influxdb/pkg/escape
 # github.com/julienschmidt/httprouter v1.3.0
-<<<<<<< HEAD
 github.com/julienschmidt/httprouter
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/julienschmidt/httprouter v1.1.0
-=======
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 github.com/julienschmidt/httprouter
+# github.com/konsorten/go-windows-terminal-sequences v1.0.3
+github.com/konsorten/go-windows-terminal-sequences
 # github.com/lib/pq v1.0.0
 github.com/lib/pq
 github.com/lib/pq/oid
@@ -82,10 +81,15 @@ github.com/newrelic/go-agent/v3/newrelic
 # github.com/newrelic/go-agent/v3/integrations/nrhttprouter v1.0.0
 github.com/newrelic/go-agent/v3/integrations/nrhttprouter
 <<<<<<< HEAD
+<<<<<<< HEAD
 # github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.0
 github.com/newrelic/go-agent/v3/integrations/nrlogrus
 =======
 >>>>>>> [PROG-1244] Newrelic Integration (simple)
+=======
+# github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.0
+github.com/newrelic/go-agent/v3/integrations/nrlogrus
+>>>>>>> logrus logger and cleanups
 # github.com/pelletier/go-toml v1.2.0
 github.com/pelletier/go-toml
 # github.com/pmezard/go-difflib v1.0.0

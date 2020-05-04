@@ -2,9 +2,12 @@ package newrelic
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	"fmt"
 >>>>>>> [PROG-1244] Newrelic Integration (simple)
+=======
+>>>>>>> logrus logger and cleanups
 	"net/http"
 )
 
@@ -83,19 +86,25 @@ func WrapHandleFunc(app *Application, pattern string, handler func(http.Response
 func NewRoundTripper(original http.RoundTripper) http.RoundTripper {
 	return roundTripperFunc(func(request *http.Request) (*http.Response, error) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 		fmt.Println("newrelic round tripper")
 
 >>>>>>> [PROG-1244] Newrelic Integration (simple)
+=======
+>>>>>>> logrus logger and cleanups
 		// The specification of http.RoundTripper requires that the request is never modified.
 		request = cloneRequest(request)
 		segment := StartExternalSegment(nil, request)
 
 		if nil == original {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 			fmt.Println("original is nil")
 >>>>>>> [PROG-1244] Newrelic Integration (simple)
+=======
+>>>>>>> logrus logger and cleanups
 			original = http.DefaultTransport
 		}
 		response, err := original.RoundTrip(request)

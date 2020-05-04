@@ -103,7 +103,6 @@ type NewRelic struct {
 	AppName    string `mapstructure:"app_name"`
 	LicenseKey string `mapstructure:"license_key"`
 	LogLevel   string `mapstructure:"log_level"`
-	DebugMode  bool   `mapstructure:"debug_mode"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
