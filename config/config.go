@@ -639,7 +639,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.prometheus.subsystem", "")
 	v.SetDefault("metrics.prometheus.timeout_ms", 10000)
 	v.SetDefault("monitoring.newrelic.app_name", "tpe_prebid_service-dev")
-	v.SetDefault("monitoring.newrelic.license_key", "")
+	v.SetDefault("monitoring.newrelic.license_key", "ThisValueIs40CharacterNewRelicLicenseKey")
 	v.SetDefault("monitoring.newrelic.log_level", "info") // values: https://github.com/sirupsen/logrus/blob/39a5ad12948d094ddd5d5a6a4a4281f453d77562/logrus.go#L25
 	v.SetDefault("datacache.type", "dummy")
 	v.SetDefault("datacache.filename", "")
