@@ -337,25 +337,17 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	}
 	httpReq.Header = req.Headers
 
-<<<<<<< HEAD
 	// If adapter connection metrics are not disabled, add the client trace
 	// to get complete connection info into our metrics
 	if !bidder.config.DisableConnMetrics {
 		ctx = bidder.addClientTrace(ctx)
 	}
-<<<<<<< HEAD
 
 	// get newrelic transaction from context
 	txn := newrelic.FromContext(ctx)
 	// put newrelic transaction into http request
 	httpReq = newrelic.RequestWithTransactionContext(httpReq, txn)
 
-=======
-=======
-	txn := newrelic.FromContext(ctx)
-	httpReq = newrelic.RequestWithTransactionContext(httpReq, txn)
->>>>>>> [PROG-1244] Newrelic Integration (simple)
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {

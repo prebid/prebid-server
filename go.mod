@@ -32,6 +32,7 @@ require (
 	github.com/mxmCherry/openrtb v11.0.0+incompatible
 	github.com/newrelic/go-agent/v3 v3.0.0
 	github.com/newrelic/go-agent/v3/integrations/nrhttprouter v1.0.0
+	github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.0
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
@@ -42,6 +43,7 @@ require (
 	github.com/prometheus/procfs v0.0.0-20180725123919-05ee40e3a273 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20180503174638-e2704e165165
 	github.com/sergi/go-diff v1.0.0 // indirect
+	github.com/sirupsen/logrus v1.6.0
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/afero v1.1.1 // indirect
 	github.com/spf13/cast v1.2.0 // indirect

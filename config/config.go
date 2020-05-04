@@ -102,11 +102,8 @@ type Monitoring struct {
 type NewRelic struct {
 	AppName    string `mapstructure:"app_name"`
 	LicenseKey string `mapstructure:"license_key"`
-<<<<<<< HEAD
 	LogLevel   string `mapstructure:"log_level"`
-=======
 	DebugMode  bool   `mapstructure:"debug_mode"`
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -851,13 +848,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.prometheus.subsystem", "")
 	v.SetDefault("metrics.prometheus.timeout_ms", 10000)
 	v.SetDefault("monitoring.newrelic.app_name", "tpe_prebid_service-dev")
-<<<<<<< HEAD
 	v.SetDefault("monitoring.newrelic.license_key", "ThisValueIs40CharacterNewRelicLicenseKey")
 	v.SetDefault("monitoring.newrelic.log_level", "info") // values: https://github.com/sirupsen/logrus/blob/39a5ad12948d094ddd5d5a6a4a4281f453d77562/logrus.go#L25
-=======
-	v.SetDefault("monitoring.newrelic.license_key", "")
-	v.SetDefault("monitoring.newrelic.debug_mode", false)
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 	v.SetDefault("datacache.type", "dummy")
 	v.SetDefault("datacache.filename", "")
 	v.SetDefault("datacache.cache_size", 0)
@@ -1123,24 +1115,10 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.username", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.password", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.tracker", "")
-<<<<<<< HEAD
-<<<<<<< HEAD
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_east", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_west", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_eu", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_apac", "")
-=======
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_east", "http://exapi-us-east.rubiconproject.com")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_west", "http://exapi-us-west.rubiconproject.com")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_eu", "http://exapi-eu.rubiconproject.com")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_apac", "http://exapi-apac.rubiconproject.com")
->>>>>>> [PROG-1258] Rubicon 4 endpoints support
-=======
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_east", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_west", "http://exapi-us-west.rubiconproject.com/a/api/exchange.json")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_eu", "http://exapi-eu.rubiconproject.com/a/api/exchange.json")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_apac", "http://exapi-apac.rubiconproject.com/a/api/exchange.json")
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
 	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".extra_info", "")
