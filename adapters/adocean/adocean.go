@@ -125,7 +125,7 @@ func (a *AdOceanAdapter) makeRequest(existingRequests []*adapters.RequestData, i
 	}
 
 	url, err := a.makeURL(&adOceanExt, imp.ID, request, consentString)
-	if url == "" {
+	if err != nil {
 		return nil, err
 	}
 
@@ -184,10 +184,6 @@ requestsLoop:
 }
 
 func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID string, request *openrtb.BidRequest, consentString string) (string, error) {
-	if error := validateParams(params); error != nil {
-		return "", error
-	}
-
 	endpointParams := macros.EndpointTemplateParams{Host: params.EmitterDomain}
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
@@ -227,28 +223,6 @@ func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID st
 	return endpointURL.String(), nil
 }
 
-func validateParams(params *openrtb_ext.ExtImpAdOcean) error {
-	if params.EmitterDomain == "" {
-		return &errortypes.BadInput{
-			Message: "Emitter domain undefined",
-		}
-	}
-
-	if params.MasterID == "" {
-		return &errortypes.BadInput{
-			Message: "MasterId undefined",
-		}
-	}
-
-	if params.SlaveID == "" {
-		return &errortypes.BadInput{
-			Message: "SlaveId undefined",
-		}
-	}
-
-	return nil
-}
-
 func (a *AdOceanAdapter) MakeBids(
 	internalRequest *openrtb.BidRequest,
 	externalRequest *adapters.RequestData,
@@ -269,43 +243,41 @@ func (a *AdOceanAdapter) MakeBids(
 
 	var parsedResponses = adapters.NewBidderResponseWithBidsCapacity(len(auctionIDs))
 	var errors []error
+	var slaveToAuctionIDMap = make(map[string]string, len(auctionIDs))
 
 	for _, auctionFullID := range auctionIDs {
 		auctionIDsSlice := strings.SplitN(auctionFullID, ":", 2)
-		auctionID := auctionIDsSlice[1]
-		slaveID := auctionIDsSlice[0]
+		slaveToAuctionIDMap[auctionIDsSlice[0]] = auctionIDsSlice[1]
+	}
 
-		for _, bid := range bidResponses {
-			if bid.ID == slaveID {
-				if bid.Error == "true" {
-					break
-				}
-
-				price, _ := strconv.ParseFloat(bid.Price, 64)
-				width, _ := strconv.ParseUint(bid.Width, 10, 64)
-				height, _ := strconv.ParseUint(bid.Height, 10, 64)
-				adCode, err := a.prepareAdCodeForBid(bid)
-				if err != nil {
-					errors = append(errors, err)
-					break
-				}
-
-				parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
-					Bid: &openrtb.Bid{
-						ID:    bid.ID,
-						ImpID: auctionID,
-						Price: price,
-						AdM:   adCode,
-						CrID:  bid.CrID,
-						W:     width,
-						H:     height,
-					},
-					BidType: openrtb_ext.BidTypeBanner,
-				})
-				parsedResponses.Currency = bid.Currency
-
-				break
+	for _, bid := range bidResponses {
+		if auctionID, found := slaveToAuctionIDMap[bid.ID]; found {
+			if bid.Error == "true" {
+				continue
 			}
+
+			price, _ := strconv.ParseFloat(bid.Price, 64)
+			width, _ := strconv.ParseUint(bid.Width, 10, 64)
+			height, _ := strconv.ParseUint(bid.Height, 10, 64)
+			adCode, err := a.prepareAdCodeForBid(bid)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+
+			parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
+				Bid: &openrtb.Bid{
+					ID:    bid.ID,
+					ImpID: auctionID,
+					Price: price,
+					AdM:   adCode,
+					CrID:  bid.CrID,
+					W:     width,
+					H:     height,
+				},
+				BidType: openrtb_ext.BidTypeBanner,
+			})
+			parsedResponses.Currency = bid.Currency
 		}
 	}
 
