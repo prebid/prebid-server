@@ -182,9 +182,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment * conversionRate
 						}
 						seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-							bid:      bidResponse.Bids[i].Bid,
-							bidType:  bidResponse.Bids[i].BidType,
-							bidVideo: bidResponse.Bids[i].BidVideo,
+							bid:        bidResponse.Bids[i].Bid,
+							bidType:    bidResponse.Bids[i].BidType,
+							bidVideo:   bidResponse.Bids[i].BidVideo,
+							bidTargets: bidResponse.Bids[i].BidTargets,
 						})
 					}
 				} else {

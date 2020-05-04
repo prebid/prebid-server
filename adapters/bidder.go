@@ -96,9 +96,10 @@ func NewBidderResponse() *BidderResponse {
 // TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // TypedBid.BidVideo will become "response.seatbid[i].bid.ext.prebid.video" in the final OpenRTB response.
 type TypedBid struct {
-	Bid      *openrtb.Bid
-	BidType  openrtb_ext.BidType
-	BidVideo *openrtb_ext.ExtBidPrebidVideo
+	Bid        *openrtb.Bid
+	BidType    openrtb_ext.BidType
+	BidVideo   *openrtb_ext.ExtBidPrebidVideo
+	BidTargets map[string]string
 }
 
 // RequestData and ResponseData exist so that prebid-server core code can implement its "debug" functionality

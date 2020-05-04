@@ -294,7 +294,6 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 			mediaType := getBidType(bid.Ext)
 			pbid.CreativeMediaType = string(mediaType)
-			appendTargetingKey(sb.Ext, &pbid)
 			bids = append(bids, &pbid)
 			logf("%s Returned Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
 				PUBMATIC, pubId, pbid.AdUnitCode, pbid.BidID, pbid.Width, pbid.Height, pbid.Price)
@@ -670,11 +669,14 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
+			// Copy SeatBid Ext to Bid.Ext
+			targets := getTargetingKeys(sb.Ext, &bid)
+			bid.Ext = copySBExtToBidExt(sb.Ext, bid.Ext)
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: getBidType(bid.Ext),
+				Bid:        &bid,
+				BidType:    getBidType(bid.Ext),
+				BidTargets: targets,
 			})
-
 		}
 	}
 	return bidResponse, errs
@@ -731,18 +733,58 @@ func NewPubmaticBidder(client *http.Client, uri string) *PubmaticAdapter {
 	}
 }
 
-func appendTargetingKey(bidExt json.RawMessage, pBid *pbs.PBSBid) {
+func getTargetingKeys(bidExt json.RawMessage, bid *openrtb.Bid) map[string]string {
+	targets := map[string]string{}
 	if bidExt != nil {
 		bidExtMap := make(map[string]interface{})
 		extbyte, err := json.Marshal(bidExt)
 		if err == nil {
 			err = json.Unmarshal(extbyte, &bidExtMap)
 			if err == nil && bidExtMap[buyId] != nil {
-				if pBid.AdServerTargeting == nil {
-					pBid.AdServerTargeting = make(map[string]string)
-				}
-				pBid.AdServerTargeting[buyIdTargetingKey] = string(bidExtMap[buyId].(string))
+				// jsonString := fmt.Sprintf("{\"Prebid\":{\"Targeting\":{ \"%s\":\"%s\" }}}", buyIdTargetingKey, string(bidExtMap[buyId].(string)))
+				// jsonString := fmt.Sprintf("{Targeting:{%s:%s}}", buyIdTargetingKey, string(bidExtMap[buyId].(string)))
+				// if bid.Ext != nil {
+				// 	bid.Ext["BuyId"] = json.RawMessage(jsonString)
+				// }
+				// if bid.AdServerTargeting == nil {
+				// 	pBid.AdServerTargeting = make(map[string]string)
+				// }
+				// pBid.AdServerTargeting[buyIdTargetingKey] = string(bidExtMap[buyId].(string))
+				targets[buyIdTargetingKey] = string(bidExtMap[buyId].(string))
 			}
 		}
 	}
+	return targets
+}
+
+func copySBExtToBidExt(sbExt json.RawMessage, bidExt json.RawMessage) json.RawMessage {
+	if sbExt != nil {
+		sbExtMap := getMapFromJSON(sbExt)
+		bidExtMap := make(map[string]interface{})
+		if bidExt != nil {
+			bidExtMap = getMapFromJSON(bidExt)
+		}
+		if bidExtMap != nil && sbExtMap != nil {
+			if sbExtMap[buyId] != nil && bidExtMap[buyId] == nil {
+				bidExtMap[buyId] = sbExtMap[buyId]
+			}
+		}
+		byteAra, _ := json.Marshal(bidExtMap)
+		return json.RawMessage(byteAra)
+	}
+	return bidExt
+}
+
+func getMapFromJSON(ext json.RawMessage) map[string]interface{} {
+	if ext != nil {
+		extMap := make(map[string]interface{})
+		extbyte, err := json.Marshal(ext)
+		if err == nil {
+			err = json.Unmarshal(extbyte, &extMap)
+			if err == nil {
+				return extMap
+			}
+		}
+	}
+	return nil
 }

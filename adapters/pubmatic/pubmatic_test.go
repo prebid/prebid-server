@@ -77,7 +77,6 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 			H:      *imp.Banner.H,
 			DealID: fmt.Sprintf("DealID_%d", i),
 		}
-		bid.Ext = json.RawMessage("{\"buyid\": \"testBuyId\"}")
 
 		bids = append(bids, bid)
 	}
@@ -723,28 +722,26 @@ func TestGetBidTypeForUnsupportedCode(t *testing.T) {
 }
 
 func TestAppendAdServerTargetingForEmptyExt(t *testing.T) {
-	pbid := pbs.PBSBid{}
+	pbid := openrtb.Bid{}
 	ext := json.RawMessage(`{}`)
-	appendTargetingKey(ext, &pbid)
+	targets := getTargetingKeys(ext, &pbid)
 	// banner is the default bid type when no bidType key is present in the bid.ext
-	if pbid.AdServerTargeting != nil {
+	if targets != nil && targets["hb_buyid_pubmatic"] != "" {
 		t.Errorf("It should not contained AdserverTageting")
 	}
 }
 
 func TestAppendAdServerTargetingForValidExt(t *testing.T) {
-	pbid := pbs.PBSBid{}
-	ext := json.RawMessage(`{"buyid":"testBuyId"}`)
-	appendTargetingKey(ext, &pbid)
+	pbid := openrtb.Bid{}
+	ext := json.RawMessage("{\"buyid\":\"testBuyId\"}")
+	targets := getTargetingKeys(ext, &pbid)
 	// banner is the default bid type when no bidType key is present in the bid.ext
-	if pbid.AdServerTargeting == nil {
-		t.Error("It should have AdserverTageting")
+	if targets == nil {
+		t.Error("It should have targets")
 		t.FailNow()
 	}
-	if pbid.AdServerTargeting != nil && pbid.AdServerTargeting["hb_buyid_pubmatic"] == "" {
-		t.Errorf("It should have AdserverTageting and have hb_buyid_pubmatic")
-	}
-	if pbid.AdServerTargeting["hb_buyid_pubmatic"] != "testBuyId" {
-		t.Errorf("It should have value testBuyId")
+	if targets != nil && targets["hb_buyid_pubmatic"] != "testBuyId" {
+		t.Error("It should have testBuyId as targeting")
+		t.FailNow()
 	}
 }
