@@ -1,7 +1,6 @@
 package newrelic
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -79,14 +78,11 @@ func WrapHandleFunc(app *Application, pattern string, handler func(http.Response
 // (using FromContext).
 func NewRoundTripper(original http.RoundTripper) http.RoundTripper {
 	return roundTripperFunc(func(request *http.Request) (*http.Response, error) {
-		fmt.Println("newrelic round tripper")
-
 		// The specification of http.RoundTripper requires that the request is never modified.
 		request = cloneRequest(request)
 		segment := StartExternalSegment(nil, request)
 
 		if nil == original {
-			fmt.Println("original is nil")
 			original = http.DefaultTransport
 		}
 		response, err := original.RoundTrip(request)

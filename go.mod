@@ -31,6 +31,7 @@ require (
 	github.com/mxmCherry/openrtb v11.0.0+incompatible
 	github.com/newrelic/go-agent/v3 v3.0.0
 	github.com/newrelic/go-agent/v3/integrations/nrhttprouter v1.0.0
+	github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.0
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
@@ -42,6 +43,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20180503174638-e2704e165165
 	github.com/rs/cors v1.5.0
 	github.com/sergi/go-diff v1.0.0 // indirect
+	github.com/sirupsen/logrus v1.6.0
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/afero v1.1.1 // indirect
 	github.com/spf13/cast v1.2.0 // indirect
@@ -59,7 +61,6 @@ require (
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20190422165155-953cdadca894 // indirect
 	golang.org/x/text v0.3.0
 	gopkg.in/yaml.v2 v2.2.1
 )
