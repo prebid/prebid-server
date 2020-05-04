@@ -296,8 +296,11 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	}
 	httpReq.Header = req.Headers
 
+	// get newrelic transaction from context
 	txn := newrelic.FromContext(ctx)
+	// put newrelic transaction into http request
 	httpReq = newrelic.RequestWithTransactionContext(httpReq, txn)
+
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {
