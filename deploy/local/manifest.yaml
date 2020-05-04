@@ -72,6 +72,9 @@ metadata:
 data:
   # Placeholder until we need some real ENV for the application
   RACK_ENV: {{ $env | quote }} 
+
+  PBS_MONITORING_NEWRELIC_LICENSE_KEY: {{ default "bb8353602ba48d962a5db59ac4e1468d2da7fb8d" (env "NEW_RELIC_LICENSE_KEY") | quote }}
+  PBS_MONITORING_NEWRELIC_DEBUG_MODE: "false"
 ---
 ########################################################################################################################
 ## WORKLOAD-RELATED MANIFESTS
