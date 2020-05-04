@@ -23,6 +23,8 @@ import (
 const MAX_IMPRESSIONS_PUBMATIC = 30
 const bidTypeExtKey = "BidType"
 const PUBMATIC = "[PUBMATIC]"
+const buyId = "buyid"
+const buyIdTargetingKey = "hb_buyid_pubmatic"
 
 type PubmaticAdapter struct {
 	http *adapters.HTTPAdapter
@@ -292,7 +294,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 			mediaType := getBidType(bid.Ext)
 			pbid.CreativeMediaType = string(mediaType)
-
+			appendTargetingKey(sb.Ext, &pbid)
 			bids = append(bids, &pbid)
 			logf("%s Returned Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
 				PUBMATIC, pubId, pbid.AdUnitCode, pbid.BidID, pbid.Width, pbid.Height, pbid.Price)
@@ -726,5 +728,21 @@ func NewPubmaticBidder(client *http.Client, uri string) *PubmaticAdapter {
 	return &PubmaticAdapter{
 		http: a,
 		URI:  uri,
+	}
+}
+
+func appendTargetingKey(bidExt json.RawMessage, pBid *pbs.PBSBid) {
+	if bidExt != nil {
+		bidExtMap := make(map[string]interface{})
+		extbyte, err := json.Marshal(bidExt)
+		if err == nil {
+			err = json.Unmarshal(extbyte, &bidExtMap)
+			if err == nil && bidExtMap[buyId] != nil {
+				if pBid.AdServerTargeting == nil {
+					pBid.AdServerTargeting = make(map[string]string)
+				}
+				pBid.AdServerTargeting[buyIdTargetingKey] = string(bidExtMap[buyId].(string))
+			}
+		}
 	}
 }

@@ -1,0 +1,9 @@
+maintainer:
+  email: "teameighties@spotx.tv"
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video
