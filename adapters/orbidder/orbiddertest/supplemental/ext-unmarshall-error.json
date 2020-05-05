@@ -25,7 +25,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Wrong orbidder bidder ext",
+      "value": "Wrong orbidder bidder ext: json: cannot unmarshal array into Go struct field ExtImpOrbidder.accountId of type string",
       "comparison": "literal"
     }
   ]
