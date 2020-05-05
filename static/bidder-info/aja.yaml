@@ -1,11 +1,13 @@
 maintainer:
-  email: "header-bidding@pubmatic.com"
+  email: "dev@aja-kk.co.jp"
 capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - video
   site:
     mediaTypes:
       - banner
       - video
+
+  app:
+    mediaTypes:
+      - banner
+      - video
+
