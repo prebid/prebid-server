@@ -741,15 +741,6 @@ func getTargetingKeys(bidExt json.RawMessage, bid *openrtb.Bid) map[string]strin
 		if err == nil {
 			err = json.Unmarshal(extbyte, &bidExtMap)
 			if err == nil && bidExtMap[buyId] != nil {
-				// jsonString := fmt.Sprintf("{\"Prebid\":{\"Targeting\":{ \"%s\":\"%s\" }}}", buyIdTargetingKey, string(bidExtMap[buyId].(string)))
-				// jsonString := fmt.Sprintf("{Targeting:{%s:%s}}", buyIdTargetingKey, string(bidExtMap[buyId].(string)))
-				// if bid.Ext != nil {
-				// 	bid.Ext["BuyId"] = json.RawMessage(jsonString)
-				// }
-				// if bid.AdServerTargeting == nil {
-				// 	pBid.AdServerTargeting = make(map[string]string)
-				// }
-				// pBid.AdServerTargeting[buyIdTargetingKey] = string(bidExtMap[buyId].(string))
 				targets[buyIdTargetingKey] = string(bidExtMap[buyId].(string))
 			}
 		}
