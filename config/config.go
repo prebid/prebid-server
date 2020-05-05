@@ -72,6 +72,21 @@ type Configuration struct {
 	DeployPIDEnabled bool        `mapstructure:"deploy_pid_enabled"`
 	DeployPIDPath    string      `mapstructure:"deploy_pid_path"`
 	DeployPIDMode    os.FileMode `mapstructure:"deploy_pid_mode"`
+
+	// Monitoring
+	Monitoring Monitoring `mapstructure:"monitoring"`
+}
+
+// Monitoring ...
+type Monitoring struct {
+	NewRelic NewRelic `mapstructure:"newrelic"`
+}
+
+// NewRelic ...
+type NewRelic struct {
+	AppName    string `mapstructure:"app_name"`
+	LicenseKey string `mapstructure:"license_key"`
+	LogLevel   string `mapstructure:"log_level"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -623,6 +638,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.prometheus.namespace", "")
 	v.SetDefault("metrics.prometheus.subsystem", "")
 	v.SetDefault("metrics.prometheus.timeout_ms", 10000)
+	v.SetDefault("monitoring.newrelic.app_name", "tpe_prebid_service-dev")
+	v.SetDefault("monitoring.newrelic.license_key", "ThisValueIs40CharacterNewRelicLicenseKey")
+	v.SetDefault("monitoring.newrelic.log_level", "info") // values: https://github.com/sirupsen/logrus/blob/39a5ad12948d094ddd5d5a6a4a4281f453d77562/logrus.go#L25
 	v.SetDefault("datacache.type", "dummy")
 	v.SetDefault("datacache.filename", "")
 	v.SetDefault("datacache.cache_size", 0)
@@ -792,10 +810,10 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.username", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.password", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.tracker", "")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_east", "http://exapi-us-east.rubiconproject.com")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_west", "http://exapi-us-west.rubiconproject.com")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_eu", "http://exapi-eu.rubiconproject.com")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_apac", "http://exapi-apac.rubiconproject.com")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_east", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_west", "http://exapi-us-west.rubiconproject.com/a/api/exchange.json")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_eu", "http://exapi-eu.rubiconproject.com/a/api/exchange.json")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_apac", "http://exapi-apac.rubiconproject.com/a/api/exchange.json")
 	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
 	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".extra_info", "")

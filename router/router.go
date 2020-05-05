@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/newrelic/go-agent/v3/integrations/nrhttprouter"
+	nr "github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/appnexus"
@@ -34,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/monitoring/newrelic"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
@@ -169,7 +172,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 }
 
 type Router struct {
-	*httprouter.Router
+	*nrhttprouter.Router
 	MetricsEngine   *metricsConf.DetailedMetricsEngine
 	ParamsValidator openrtb_ext.BidderParamValidator
 	Shutdown        func()
@@ -179,8 +182,13 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	const schemaDirectory = "./static/bidder-params"
 	const infoDirectory = "./static/bidder-info"
 
+	nrApp, err := newrelic.Make(cfg.Monitoring.NewRelic)
+	if err != nil {
+		return nil, err
+	}
+
 	r = &Router{
-		Router: httprouter.New(),
+		Router: nrhttprouter.New(nrApp),
 	}
 
 	// For bid processing, we need both the hardcoded certificates and the certificates found in container's
@@ -200,6 +208,8 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 			TLSClientConfig:     &tls.Config{RootCAs: certPool},
 		},
 	}
+
+	generalHttpClient.Transport = nr.NewRoundTripper(generalHttpClient.Transport)
 
 	cacheHttpClient := &http.Client{
 		Transport: &http.Transport{
