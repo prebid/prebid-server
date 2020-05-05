@@ -71,7 +71,7 @@ func preprocess(imp *openrtb.Imp) error {
 	var orbidderExt openrtb_ext.ExtImpOrbidder
 	if err := json.Unmarshal(bidderExt.Bidder, &orbidderExt); err != nil {
 		return &errortypes.BadInput{
-			Message: "Wrong orbidder bidder ext",
+			Message: "Wrong orbidder bidder ext: " + err.Error(),
 		}
 	}
 
