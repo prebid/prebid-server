@@ -66,21 +66,5 @@ func (a SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, exter
 		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
-	data, err := getResponseData(response)
-	if err != nil {
-		return nil, []error{fmt.Errorf("unable to read response body"), err}
-	}
-
-	return a.AdServer.responseToOpenRTB(data, externalRequest)
-}
-
-func getResponseData(response *adapters.ResponseData) (data []byte, err error) {
-	err = nil
-	if response.Headers.Get("Content-Encoding") == "gzip" {
-		data, err = Util{}.gUnzipData(response.Body)
-	} else {
-		data = response.Body
-	}
-
-	return
+	return a.AdServer.responseToOpenRTB(response.Body, externalRequest)
 }

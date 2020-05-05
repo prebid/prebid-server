@@ -2,7 +2,6 @@ package sharethrough
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"html/template"
-	"io"
 	"net"
 	"net/url"
 	"regexp"
@@ -36,7 +34,6 @@ type UtilityInterface interface {
 	isAtMinSafariVersion(string, *regexp.Regexp) bool
 
 	parseDomain(string) string
-	gUnzipData([]byte) ([]byte, error)
 	getClock() ClockInterface
 }
 
@@ -253,25 +250,6 @@ func (u Util) parseDomain(fullUrl string) string {
 	}
 
 	return domain
-}
-
-func (u Util) gUnzipData(data []byte) (resData []byte, err error) {
-	b := bytes.NewBuffer(data)
-
-	var r io.Reader
-	r, err = gzip.NewReader(b)
-	if err != nil {
-		return
-	}
-
-	var resB bytes.Buffer
-	_, err = resB.ReadFrom(r)
-	if err != nil {
-		return
-	}
-
-	resData = resB.Bytes()
-	return
 }
 
 func (u Util) getClock() ClockInterface {
