@@ -19,7 +19,7 @@ func (rcv *OrbidderAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	var errs []error
 	var validImps []openrtb.Imp
 
-	// check if imps exists, if not do not return error and do send request to orbidder
+	// check if imps exists, if not return error and do send request to orbidder.
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
 			Message: "No impressions in request",
