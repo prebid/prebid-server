@@ -73,8 +73,10 @@ data:
   # Placeholder until we need some real ENV for the application
   RACK_ENV: {{ $env | quote }} 
 
-  PBS_MONITORING_NEWRELIC_LICENSE_KEY: {{ default "bb8353602ba48d962a5db59ac4e1468d2da7fb8d" (env "NEW_RELIC_LICENSE_KEY") | quote }}
-  PBS_MONITORING_NEWRELIC_DEBUG_MODE: "false"
+  # new relic values
+  PBS_MONITORING_NEWRELIC_APP_NAME: "tpe_prebid_service-dev"
+  PBS_MONITORING_NEWRELIC_LICENSE_KEY: {{ default "ThisValueIs40CharacterNewRelicLicenseKey" (env "PBS_MONITORING_NEWRELIC_LICENSE_KEY") | quote }}
+  PBS_MONITORING_NEWRELIC_LOG_LEVEL: "error" # // values: https://github.com/sirupsen/logrus/blob/39a5ad12948d094ddd5d5a6a4a4281f453d77562/logrus.go#L25
 ---
 ########################################################################################################################
 ## WORKLOAD-RELATED MANIFESTS
