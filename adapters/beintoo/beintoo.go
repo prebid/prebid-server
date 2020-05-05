@@ -130,7 +130,8 @@ func buildImpBanner(imp *openrtb.Imp) error {
 		}
 	}
 
-	
+	bannerCopy := *imp.Banner
+	banner := &bannerCopy
 
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
