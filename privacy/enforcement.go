@@ -23,13 +23,9 @@ func (e Enforcement) Apply(bidRequest *openrtb.BidRequest) {
 
 func (e Enforcement) apply(bidRequest *openrtb.BidRequest, scrubber Scrubber) {
 	if bidRequest != nil && e.Any() {
-		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getDeviceMacAndIFA(), e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
-		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(), e.getGeoScrubStrategy())
+		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
+		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getDemographicScrubStrategy(), e.getGeoScrubStrategy())
 	}
-}
-
-func (e Enforcement) getDeviceMacAndIFA() bool {
-	return e.COPPA
 }
 
 func (e Enforcement) getIPv6ScrubStrategy() ScrubStrategyIPV6 {
@@ -56,14 +52,10 @@ func (e Enforcement) getGeoScrubStrategy() ScrubStrategyGeo {
 	return ScrubStrategyGeoNone
 }
 
-func (e Enforcement) getUserScrubStrategy() ScrubStrategyUser {
+func (e Enforcement) getDemographicScrubStrategy() ScrubStrategyDemographic {
 	if e.COPPA {
-		return ScrubStrategyUserFull
+		return ScrubStrategyDemographicAgeAndGender
 	}
 
-	if e.GDPR || e.CCPA {
-		return ScrubStrategyUserBuyerIDOnly
-	}
-
-	return ScrubStrategyUserNone
+	return ScrubStrategyDemographicNone
 }
