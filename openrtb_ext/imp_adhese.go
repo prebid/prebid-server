@@ -32,10 +32,6 @@ type AdheseExt struct {
 	Tracker                   string `json:"tracker"`
 }
 
-type AdheseOrigin struct {
-	Origin string `json:"origin"`
-}
-
 type AdheseBid struct {
 	Origin                    string              `json:"origin"`
 	OriginData                openrtb.BidResponse `json:"originData"`
