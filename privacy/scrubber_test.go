@@ -229,6 +229,7 @@ func TestScrubDevice(t *testing.T) {
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
+
 func TestScrubDeviceNil(t *testing.T) {
 	result := NewScrubber().ScrubDevice(nil, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
 	assert.Nil(t, result)
