@@ -133,7 +133,11 @@ func TestApplyNoneApplicable(t *testing.T) {
 
 	m := &mockScrubber{}
 
-	enforcement := Enforcement{}
+	enforcement := Enforcement{
+		CCPA:  false,
+		COPPA: false,
+		GDPR:  false,
+	}
 	enforcement.apply(req, m)
 
 	m.AssertNotCalled(t, "ScrubDevice")
