@@ -15,31 +15,31 @@ func TestAny(t *testing.T) {
 		description string
 	}{
 		{
+			description: "All False",
 			enforcement: Enforcement{
 				CCPA:  false,
 				COPPA: false,
 				GDPR:  false,
 			},
-			expected:    false,
-			description: "All False",
+			expected: false,
 		},
 		{
+			description: "All True",
 			enforcement: Enforcement{
 				CCPA:  true,
 				COPPA: true,
 				GDPR:  true,
 			},
-			expected:    true,
-			description: "All True",
+			expected: true,
 		},
 		{
+			description: "Mixed",
 			enforcement: Enforcement{
 				CCPA:  false,
 				COPPA: true,
 				GDPR:  false,
 			},
-			expected:    true,
-			description: "Mixed",
+			expected: true,
 		},
 	}
 
