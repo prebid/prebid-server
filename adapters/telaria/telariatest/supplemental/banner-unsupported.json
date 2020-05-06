@@ -1,0 +1,41 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Telaria: Banner not supported",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "someother-publisher-id"
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "my-adcode",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "adCode": "my-adcode",
+            "seatCode": "my-seatcode"
+          }
+        }
+      }
+    ]
+  }
+}
