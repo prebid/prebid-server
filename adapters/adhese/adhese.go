@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -73,7 +74,7 @@ func extractGdprParameter(request *openrtb.BidRequest) string {
 
 func extractRefererParameter(request *openrtb.BidRequest) string {
 	if request.Site != nil && request.Site.Page != "" {
-		return "/xf" + request.Site.Page
+		return "/xf" + url.QueryEscape(request.Site.Page)
 	}
 	return ""
 }
@@ -144,19 +145,32 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		return nil, []error{WrapError("Empty Origin array.")}
 	}
 
+    var adheseBidResponseArray []openrtb_ext.AdheseBid
+    if err := json.Unmarshal(response.Body, &adheseBidResponseArray); err != nil {
+        return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed as Adhese bid.", string(response.Body)))}
+    }
+
+    var adheseBid = adheseBidResponseArray[0]
+
 	if originArray[0].Origin == "JERLICIA" {
-		var adheseBidResponseArray []openrtb_ext.AdheseBid
-		if err := json.Unmarshal(response.Body, &adheseBidResponseArray); err != nil {
-			return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed as Adhese bid.", string(response.Body)))}
-		}
-		bidResponse = convertAdheseBid(adheseBidResponseArray[0])
+		var extArray []openrtb_ext.AdheseExt
+		if err := json.Unmarshal(response.Body, &extArray); err != nil {
+            return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed as Adhese bid.", string(response.Body)))}
+        }
+		bidResponse = convertAdheseBid(adheseBidResponseArray[0], extArray[0])
 	} else {
-		var openRtbBidResponseArray []openrtb_ext.AdheseBid
-		if err := json.Unmarshal(response.Body, &openRtbBidResponseArray); err != nil {
-			return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed as Adhese OpenRtb Bid.", string(response.Body)))}
-		}
-		bidResponse = convertAdheseOpenRtbBid(openRtbBidResponseArray[0])
+		bidResponse = convertAdheseOpenRtbBid(adheseBidResponseArray[0])
 	}
+
+    price, _ := strconv.ParseFloat(adheseBid.Extension.Prebid.Cpm.Amount, 64)
+    width, _ := strconv.ParseUint(adheseBid.Width, 10, 64)
+    height, _ := strconv.ParseUint(adheseBid.Height, 10, 64)
+    bidResponse.Cur = adheseBid.Extension.Prebid.Cpm.Currency
+    if len(bidResponse.SeatBid) > 0 && len(bidResponse.SeatBid[0].Bid) > 0 {
+        bidResponse.SeatBid[0].Bid[0].Price = price
+        bidResponse.SeatBid[0].Bid[0].W = width
+        bidResponse.SeatBid[0].Bid[0].H = height
+    }
 
 	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
@@ -178,71 +192,47 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	return bidderResponse, errs
 }
 
-func convertAdheseBid(adheseBid openrtb_ext.AdheseBid) openrtb.BidResponse {
-	price, _ := strconv.ParseFloat(adheseBid.Extension.Prebid.Cpm.Amount, 64)
-	width, _ := strconv.ParseUint(adheseBid.Width, 10, 64)
-	height, _ := strconv.ParseUint(adheseBid.Height, 10, 64)
-	adheseObj, _ := json.Marshal(openrtb_ext.Ext{
-		CreativeId:                adheseBid.Id,
-		AdFormat:                  adheseBid.AdFormat,
-		AdType:                    adheseBid.AdType,
-		AdspaceId:                 adheseBid.AdspaceId,
-		DealId:                    adheseBid.OrderId,
-		LibId:                     adheseBid.LibId,
-		OrderProperty:             adheseBid.OrderProperty,
-		Priority:                  adheseBid.Priority,
-		ViewableImpressionCounter: adheseBid.ViewableImpressionCounter,
-	})
+func convertAdheseBid(adheseBid openrtb_ext.AdheseBid, adheseExt openrtb_ext.AdheseExt) openrtb.BidResponse {
+    adheseExtJson, _ := json.Marshal(adheseExt)
+
 	return openrtb.BidResponse{
-		ID: adheseBid.Id,
+		ID: adheseExt.Id,
 		SeatBid: []openrtb.SeatBid{{
 			Bid: []openrtb.Bid{{
-				ID:     adheseBid.Id,
-				ImpID:  adheseBid.CreativeName,
-				DealID: adheseBid.OrderId,
-				Price:  price,
-				W:      width,
-				H:      height,
-				CID:    adheseBid.OrderId,
-				CrID:   adheseBid.Id,
-				BURL:   adheseBid.Tracker,
-				AdM:    getAdMarkup(adheseBid),
-				Ext:    adheseObj,
+				ID:     adheseExt.Id,
+				ImpID:  adheseExt.CreativeName,
+				DealID: adheseExt.OrderId,
+				CID:    adheseExt.OrderId,
+				CrID:   adheseExt.Id,
+				BURL:   adheseExt.Tracker,
+				AdM:    getAdMarkup(adheseBid, adheseExt),
+				Ext:    adheseExtJson,
 			}},
 			Seat: "",
 		}},
-		BidID: adheseBid.OrderId,
-		Cur:   adheseBid.Extension.Prebid.Cpm.Currency,
+		BidID: adheseExt.OrderId,
 	}
 }
 
 func convertAdheseOpenRtbBid(adheseBid openrtb_ext.AdheseBid) openrtb.BidResponse {
-	price, _ := strconv.ParseFloat(adheseBid.Extension.Prebid.Cpm.Amount, 64)
-	width, _ := strconv.ParseUint(adheseBid.Width, 10, 64)
-	height, _ := strconv.ParseUint(adheseBid.Height, 10, 64)
 	var response openrtb.BidResponse = adheseBid.OriginData
 	response.ID = adheseBid.Origin
 	if adheseBid.OriginInstance != "" {
 		response.ID = response.ID + "-" + adheseBid.OriginInstance
 	}
 	if len(response.SeatBid) > 0 && len(response.SeatBid[0].Bid) > 0 {
-		response.SeatBid[0].Bid[0].Price = price
-		response.SeatBid[0].Bid[0].W = width
-		response.SeatBid[0].Bid[0].H = height
 		response.SeatBid[0].Bid[0].AdM = adheseBid.Body
 	}
-
-	response.Cur = adheseBid.Extension.Prebid.Cpm.Currency
 	return response
 }
 
-func getAdMarkup(adheseBid openrtb_ext.AdheseBid) string {
-	if adheseBid.Ext == "js" && ContainsAny(adheseBid.Body, []string{"<script", "<div", "<html"}) {
-		return adheseBid.Body + "<img src='" + adheseBid.ImpressionCounter + "' style='height:1px; width:1px; margin: -1px -1px; display:none;'/>"
-	} else if adheseBid.Ext == "js" && ContainsAny(adheseBid.Body, []string{"<?xml", "<vast"}) {
+func getAdMarkup(adheseBid openrtb_ext.AdheseBid, adheseExt openrtb_ext.AdheseExt) string {
+	if adheseExt.Ext == "js" && ContainsAny(adheseBid.Body, []string{"<script", "<div", "<html"}) {
+		return adheseBid.Body + "<img src='" + adheseExt.ImpressionCounter + "' style='height:1px; width:1px; margin: -1px -1px; display:none;'/>"
+	} else if adheseExt.Ext == "js" && ContainsAny(adheseBid.Body, []string{"<?xml", "<vast"}) {
 		return adheseBid.Body
 	} else {
-		return adheseBid.Tag
+		return adheseExt.Tag
 	}
 }
 

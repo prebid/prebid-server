@@ -13,16 +13,23 @@ type ExtImpAdhese struct {
 	Keywords json.RawMessage `json:"targets,omitempty"`
 }
 
-type Ext struct {
-	CreativeId                string `json:"creativeId"`
-	DealId                    string `json:"dealId"`
+type AdheseExt struct {
+	Id                        string `json:"id"`
+	OrderId                   string `json:"orderId"`
 	Priority                  string `json:"priority"`
 	OrderProperty             string `json:"orderProperty"`
 	AdFormat                  string `json:"adFormat"`
 	AdType                    string `json:"adType"`
 	AdspaceId                 string `json:"adspaceId"`
 	LibId                     string `json:"libId"`
+	SlotID                    string `json:"slotID,omitempty"`
+	SlotName                  string `json:"slotName,omitempty"`
+	ImpressionCounter         string `json:"impressionCounter"`
 	ViewableImpressionCounter string `json:"viewableImpressionCounter"`
+	Tag                       string `json:"tag,omitempty"`
+	Ext                       string `json:"ext"`
+	CreativeName              string `json:"creativeName"`
+	Tracker                   string `json:"tracker"`
 }
 
 type AdheseOrigin struct {
@@ -33,23 +40,7 @@ type AdheseBid struct {
 	Origin                    string              `json:"origin"`
 	OriginData                openrtb.BidResponse `json:"originData"`
 	OriginInstance            string              `json:"originInstance,omitempty"`
-	OrderProperty             string              `json:"orderProperty"`
-	Ext                       string              `json:"ext"`
 	Body                      string              `json:"body,omitempty"`
-	Tag                       string              `json:"tag,omitempty"`
-	SlotName                  string              `json:"slotName,omitempty"`
-	SlotID                    string              `json:"slotID,omitempty"`
-	AdspaceId                 string              `json:"adspaceId"`
-	Priority                  string              `json:"priority"`
-	LibId                     string              `json:"libId"`
-	OrderId                   string              `json:"orderId"`
-	AdType                    string              `json:"adType"`
-	ImpressionCounter         string              `json:"impressionCounter"`
-	ViewableImpressionCounter string              `json:"viewableImpressionCounter"`
-	Tracker                   string              `json:"tracker"`
-	Id                        string              `json:"id"`
-	CreativeName              string              `json:"creativeName"`
-	AdFormat                  string              `json:"adFormat"`
 	Height                    string              `json:"height"`
 	Width                     string              `json:"width"`
 	Extension                 Prebid              `json:"extension"`
