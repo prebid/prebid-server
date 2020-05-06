@@ -52,7 +52,6 @@ func TestAny(t *testing.T) {
 func TestApply(t *testing.T) {
 	testCases := []struct {
 		enforcement             Enforcement
-		isAMP                   bool
 		expectedDeviceMacAndIFA bool
 		expectedDeviceIPv6      ScrubStrategyIPV6
 		expectedDeviceGeo       ScrubStrategyGeo
@@ -66,7 +65,6 @@ func TestApply(t *testing.T) {
 				COPPA: true,
 				GDPR:  true,
 			},
-			isAMP:                   true,
 			expectedDeviceMacAndIFA: true,
 			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest32,
 			expectedDeviceGeo:       ScrubStrategyGeoFull,
@@ -80,7 +78,6 @@ func TestApply(t *testing.T) {
 				COPPA: true,
 				GDPR:  false,
 			},
-			isAMP:                   false,
 			expectedDeviceMacAndIFA: true,
 			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest32,
 			expectedDeviceGeo:       ScrubStrategyGeoFull,
@@ -94,7 +91,6 @@ func TestApply(t *testing.T) {
 				COPPA: false,
 				GDPR:  true,
 			},
-			isAMP:                   false,
 			expectedDeviceMacAndIFA: false,
 			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:       ScrubStrategyGeoReducedPrecision,
@@ -104,59 +100,16 @@ func TestApply(t *testing.T) {
 		},
 		{
 			enforcement: Enforcement{
-				CCPA:  false,
-				COPPA: false,
-				GDPR:  true,
-			},
-			isAMP:                   true,
-			expectedDeviceMacAndIFA: false,
-			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest16,
-			expectedDeviceGeo:       ScrubStrategyGeoReducedPrecision,
-			expectedUser:            ScrubStrategyUserNone,
-			expectedUserGeo:         ScrubStrategyGeoReducedPrecision,
-			description:             "GDPR For AMP",
-		},
-		{
-			enforcement: Enforcement{
 				CCPA:  true,
 				COPPA: false,
 				GDPR:  false,
 			},
-			isAMP:                   false,
 			expectedDeviceMacAndIFA: false,
 			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:       ScrubStrategyGeoReducedPrecision,
 			expectedUser:            ScrubStrategyUserBuyerIDOnly,
 			expectedUserGeo:         ScrubStrategyGeoReducedPrecision,
 			description:             "CCPA",
-		},
-		{
-			enforcement: Enforcement{
-				CCPA:  true,
-				COPPA: false,
-				GDPR:  false,
-			},
-			isAMP:                   true,
-			expectedDeviceMacAndIFA: false,
-			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest16,
-			expectedDeviceGeo:       ScrubStrategyGeoReducedPrecision,
-			expectedUser:            ScrubStrategyUserBuyerIDOnly,
-			expectedUserGeo:         ScrubStrategyGeoReducedPrecision,
-			description:             "CCPA For AMP",
-		},
-		{
-			enforcement: Enforcement{
-				CCPA:  true,
-				COPPA: false,
-				GDPR:  true,
-			},
-			isAMP:                   true,
-			expectedDeviceMacAndIFA: false,
-			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest16,
-			expectedDeviceGeo:       ScrubStrategyGeoReducedPrecision,
-			expectedUser:            ScrubStrategyUserNone,
-			expectedUserGeo:         ScrubStrategyGeoReducedPrecision,
-			description:             "GDPR And CCPA For AMP",
 		},
 	}
 
@@ -172,7 +125,7 @@ func TestApply(t *testing.T) {
 		m.On("ScrubDevice", req.Device, test.expectedDeviceMacAndIFA, test.expectedDeviceIPv6, test.expectedDeviceGeo).Return(device).Once()
 		m.On("ScrubUser", req.User, test.expectedUser, test.expectedUserGeo).Return(user).Once()
 
-		test.enforcement.apply(req, test.isAMP, m)
+		test.enforcement.apply(req, m)
 
 		m.AssertExpectations(t)
 		assert.Equal(t, device, req.Device, "Device Set Correctly")
@@ -191,7 +144,7 @@ func TestApplyNoneApplicable(t *testing.T) {
 
 	m := &mockScrubber{}
 
-	enforcement.apply(req, true, m)
+	enforcement.apply(req, m)
 
 	m.AssertNotCalled(t, "ScrubDevice")
 	m.AssertNotCalled(t, "ScrubUser")

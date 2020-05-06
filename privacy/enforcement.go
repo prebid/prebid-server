@@ -17,14 +17,14 @@ func (e Enforcement) Any() bool {
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
-func (e Enforcement) Apply(bidRequest *openrtb.BidRequest, isAMP bool) {
-	e.apply(bidRequest, isAMP, NewScrubber())
+func (e Enforcement) Apply(bidRequest *openrtb.BidRequest) {
+	e.apply(bidRequest, NewScrubber())
 }
 
-func (e Enforcement) apply(bidRequest *openrtb.BidRequest, isAMP bool, scrubber Scrubber) {
+func (e Enforcement) apply(bidRequest *openrtb.BidRequest, scrubber Scrubber) {
 	if bidRequest != nil && e.Any() {
 		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getDeviceMacAndIFA(), e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
-		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(isAMP), e.getGeoScrubStrategy())
+		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(), e.getGeoScrubStrategy())
 	}
 }
 
@@ -56,16 +56,9 @@ func (e Enforcement) getGeoScrubStrategy() ScrubStrategyGeo {
 	return ScrubStrategyGeoNone
 }
 
-func (e Enforcement) getUserScrubStrategy(isAMP bool) ScrubStrategyUser {
+func (e Enforcement) getUserScrubStrategy() ScrubStrategyUser {
 	if e.COPPA {
 		return ScrubStrategyUserFull
-	}
-
-	// There's no way for AMP to send a GDPR consent string yet so it's hard
-	// to know if the vendor is consented or not and therefore for AMP requests
-	// we keep the BuyerUID as is for GDPR.
-	if e.GDPR && isAMP {
-		return ScrubStrategyUserNone
 	}
 
 	if e.GDPR || e.CCPA {
