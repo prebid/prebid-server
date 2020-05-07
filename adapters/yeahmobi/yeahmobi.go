@@ -22,7 +22,7 @@ type YeahmobiAdapter struct {
 func NewYeahmobiBidder(endpointTemplate string) adapters.Bidder {
 	tpl, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
-		glog.Fatal("Unable parse url template %s", err.Error())
+		glog.Fatal("Unable parse url template err:" + err.Error())
 		return nil
 	}
 	return &YeahmobiAdapter{EndpointTemplate: *tpl}
@@ -32,7 +32,7 @@ func (adapter *YeahmobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInf
 	var adapterRequests []*adapters.RequestData
 
 	adapterRequest, errs := adapter.makeRequest(request)
-	if errs != nil {
+	if errs == nil {
 		adapterRequests = append(adapterRequests, adapterRequest)
 	}
 
@@ -83,7 +83,7 @@ func transform(request *openrtb.BidRequest) {
 				if exists {
 					continue
 				}
-				nativeCopy := *request.Imp[i].Native;
+				nativeCopy := *request.Imp[i].Native
 				nativeCopy.Request = "{\"native\":" + request.Imp[i].Native.Request + "}"
 				request.Imp[i].Native = &nativeCopy
 			}
@@ -118,7 +118,6 @@ func (adapter *YeahmobiAdapter) getEndpoint(ext *openrtb_ext.ExtImpYeahmobi) (st
 	if ext.ZoneId == "" {
 		return "", errors.New("param of zoneId not config")
 	}
-
 	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{Host: "gw-" + url.QueryEscape(ext.ZoneId) + "-bid.yeahtargeter.com"})
 }
 
