@@ -18,7 +18,7 @@ import (
 )
 
 type AdheseAdapter struct {
-	http			 *adapters.HTTPAdapter
+	http             *adapters.HTTPAdapter
 	endpointTemplate template.Template
 }
 
@@ -125,7 +125,7 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 
 	return []*adapters.RequestData{{
 		Method: "GET",
-		Uri:	complete_url,
+		Uri:    complete_url,
 	}}, errs
 }
 
@@ -145,10 +145,15 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 	if adheseBid.Origin == "JERLICIA" {
 		var extArray []openrtb_ext.AdheseExt
+		var originDataArray []openrtb_ext.AdheseOriginData
 		if err := json.Unmarshal(response.Body, &extArray); err != nil {
-			return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed as JERLICIA Adhese bid.", string(response.Body)))}
+			return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed to JERLICIA ext.", string(response.Body)))}
 		}
-		bidResponse = convertAdheseBid(adheseBid, extArray[0])
+
+		if err := json.Unmarshal(response.Body, &originDataArray); err != nil {
+			return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed to JERLICIA origin data.", string(response.Body)))}
+		}
+		bidResponse = convertAdheseBid(adheseBid, extArray[0], originDataArray[0])
 	} else {
 		bidResponse = convertAdheseOpenRtbBid(adheseBid)
 	}
@@ -174,7 +179,7 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
-				Bid:	 &bid,
+				Bid:     &bid,
 				BidType: getBidType(bid.AdM),
 			})
 
@@ -183,34 +188,25 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	return bidderResponse, errs
 }
 
-func convertAdheseBid(adheseBid openrtb_ext.AdheseBid, adheseExt openrtb_ext.AdheseExt) openrtb.BidResponse {
-	adheseExtJson, _ := json.Marshal(adheseExt)
+func convertAdheseBid(adheseBid openrtb_ext.AdheseBid, adheseExt openrtb_ext.AdheseExt, adheseOriginData openrtb_ext.AdheseOriginData) openrtb.BidResponse {
+	adheseExtJson, _ := json.Marshal(adheseOriginData)
 
 	return openrtb.BidResponse{
 		ID: adheseExt.Id,
 		SeatBid: []openrtb.SeatBid{{
 			Bid: []openrtb.Bid{{
-				ID:	 adheseExt.Id,
-				ImpID:  adheseExt.CreativeName,
 				DealID: adheseExt.OrderId,
-				CID:	adheseExt.OrderId,
 				CrID:   adheseExt.Id,
-				BURL:   adheseExt.Tracker,
-				AdM:	getAdMarkup(adheseBid, adheseExt),
-				Ext:	adheseExtJson,
+				AdM:    getAdMarkup(adheseBid, adheseExt),
+				Ext:    adheseExtJson,
 			}},
 			Seat: "",
 		}},
-		BidID: adheseExt.OrderId,
 	}
 }
 
 func convertAdheseOpenRtbBid(adheseBid openrtb_ext.AdheseBid) openrtb.BidResponse {
 	var response openrtb.BidResponse = adheseBid.OriginData
-	response.ID = adheseBid.Origin
-	if adheseBid.OriginInstance != "" {
-		response.ID = response.ID + "-" + adheseBid.OriginInstance
-	}
 	if len(response.SeatBid) > 0 && len(response.SeatBid[0].Bid) > 0 {
 		response.SeatBid[0].Bid[0].AdM = adheseBid.Body
 	}
