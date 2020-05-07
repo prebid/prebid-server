@@ -142,6 +142,7 @@ type GDPR struct {
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
 	NonStandardPublisherMap map[string]int
+	TCF2                    TCF2 `mapstructure:"tcf2"`
 }
 
 func (cfg *GDPR) validate(errs configErrors) configErrors {
@@ -162,6 +163,16 @@ func (t *GDPRTimeouts) InitTimeout() time.Duration {
 
 func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
+}
+
+// TCF2 defines the TCF2 specific configurations for GDPR
+type TCF2 struct {
+	Enabled         bool `mapstructure:"enabled"`
+	Purpose1        bool `mapstructure:"purpose1"`
+	Purpose2        bool `mapstructure:"purpose2"`
+	Purpose4        bool `mapstructure:"purpose4"`
+	Purpose7        bool `mapstructure:"purpose7"`
+	SpecialPurpose1 bool `mapstructure:"special_purpose1"`
 }
 
 type CCPA struct {
@@ -760,6 +771,12 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
+	v.SetDefault("gdpr.tcf2.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose1", true)
+	v.SetDefault("gdpr.tcf2.purpose2", true)
+	v.SetDefault("gdpr.tcf2.purpose4", true)
+	v.SetDefault("gdpr.tcf2.purpose7", true)
+	v.SetDefault("gdpr.tcf2.special_purpose1", true)
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
