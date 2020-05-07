@@ -16,10 +16,10 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/blang/semver"
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/publicsuffix"
 )
 

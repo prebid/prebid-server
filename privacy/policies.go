@@ -1,7 +1,7 @@
 package privacy
 
 import (
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"

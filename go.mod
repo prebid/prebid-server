@@ -7,6 +7,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.3.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
+	github.com/PubMatic-OpenWrap/openrtb v11.0.1-0.20200228131822-5216ebe65c0c+incompatible
 	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/blang/semver v3.5.1+incompatible
@@ -28,7 +29,6 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.0.0 // indirect
 	github.com/mssola/user_agent v0.4.1
-	github.com/mxmCherry/openrtb v11.0.0+incompatible
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
+	"github.com/golang/glog"
 )
 
 // currencyRatesInfo holds currency rates information.

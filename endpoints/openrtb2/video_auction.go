@@ -12,13 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
@@ -26,6 +24,8 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
 )
 
 var defaultRequestTimeout int64 = 5000

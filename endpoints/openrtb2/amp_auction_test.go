@@ -14,7 +14,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/backends/empty_fetcher"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"

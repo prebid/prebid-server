@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/buger/jsonparser"
 )
 
 // Policy represents the CCPA regulation for an OpenRTB bid request.

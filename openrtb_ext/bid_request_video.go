@@ -1,7 +1,7 @@
 package openrtb_ext
 
 import (
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 )
 
 type BidRequestVideo struct {

@@ -19,9 +19,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	metrics "github.com/rcrowley/go-metrics"
 
-	"github.com/buger/jsonparser"
-	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
@@ -29,6 +27,8 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/buger/jsonparser"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/stretchr/testify/assert"
 )
 

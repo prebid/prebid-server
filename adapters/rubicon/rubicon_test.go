@@ -19,10 +19,10 @@ import (
 
 	"strings"
 
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/mxmCherry/openrtb"
 
 	"github.com/stretchr/testify/assert"
 )

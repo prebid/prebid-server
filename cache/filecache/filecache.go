@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/golang/glog"
 	"github.com/PubMatic-OpenWrap/prebid-server/cache"
+	"github.com/golang/glog"
 	"gopkg.in/yaml.v2"
 )
 

@@ -13,7 +13,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/stretchr/testify/assert"
 )
 

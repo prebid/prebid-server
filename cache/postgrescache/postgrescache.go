@@ -9,9 +9,9 @@ import (
 
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 
+	"github.com/PubMatic-OpenWrap/prebid-server/cache"
 	"github.com/coocood/freecache"
 	"github.com/lib/pq"
-	"github.com/PubMatic-OpenWrap/prebid-server/cache"
 )
 
 type CacheConfig struct {

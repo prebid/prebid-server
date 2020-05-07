@@ -12,6 +12,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/PubMatic-OpenWrap/openrtb"
+	"github.com/PubMatic-OpenWrap/openrtb/native"
+	nativeRequests "github.com/PubMatic-OpenWrap/openrtb/native/request"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
@@ -28,9 +31,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
-	"github.com/mxmCherry/openrtb"
-	"github.com/mxmCherry/openrtb/native"
-	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	"golang.org/x/net/publicsuffix"
 )
 

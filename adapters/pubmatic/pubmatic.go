@@ -11,18 +11,20 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
 
 const MAX_IMPRESSIONS_PUBMATIC = 30
 const bidTypeExtKey = "BidType"
 const PUBMATIC = "[PUBMATIC]"
+const buyId = "buyid"
+const buyIdTargetingKey = "hb_buyid_pubmatic"
 
 type PubmaticAdapter struct {
 	http *adapters.HTTPAdapter
@@ -292,7 +294,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 			mediaType := getBidType(bid.Ext)
 			pbid.CreativeMediaType = string(mediaType)
-
+			appendTargetingKey(sb.Ext, &pbid)
 			bids = append(bids, &pbid)
 			logf("%s Returned Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
 				PUBMATIC, pubId, pbid.AdUnitCode, pbid.BidID, pbid.Width, pbid.Height, pbid.Price)
@@ -357,6 +359,21 @@ func getCookiesFromRequest(request *openrtb.BidRequest) ([]string, error) {
 	return cookies, nil
 }
 
+/*func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	// convert mxmcherry.openrtb.BidRequest object to PubMatic-OpenWrap.openrtb.BidRequest object
+	var newRequest *owortb.BidRequest
+	reqBytes, err := json.Marshal(request)
+	if reqBytes, err = json.Marshal(request); err == nil {
+		if err = json.Unmarshal(reqBytes, &newRequest); err == nil {
+			return a.internalMakeRequests(newRequest, reqInfo)
+		}
+	}
+	errs := make([]error, 0, 1)
+	err1 := fmt.Errorf("%s Error occurred while parsing the request", PUBMATIC)
+	errs = append(errs, err1)
+	return nil, errs
+}*/
+
 func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
@@ -404,6 +421,41 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 			appCopy.Publisher = &openrtb.Publisher{ID: pubID}
 		}
 		request.App = &appCopy
+	}
+
+	// move user.ext.eids to user.eids
+	if request.User != nil && request.User.Ext != nil {
+		var userExt *openrtb_ext.ExtUser
+		if err = json.Unmarshal(request.User.Ext, &userExt); err == nil {
+			if userExt != nil && userExt.Eids != nil {
+				var eidArr []openrtb.Eid
+				for _, eid := range userExt.Eids {
+					//var newEid openrtb.Eid
+					newEid := &openrtb.Eid{
+						ID:     eid.ID,
+						Source: eid.Source,
+						Ext:    eid.Ext,
+					}
+					var uidArr []openrtb.Uid
+					for _, uid := range eid.Uids {
+						newUID := &openrtb.Uid{
+							ID:    uid.ID,
+							AType: uid.AType,
+							Ext:   uid.Ext,
+						}
+						uidArr = append(uidArr, *newUID)
+					}
+					newEid.Uids = uidArr
+					eidArr = append(eidArr, *newEid)
+				}
+				request.User.Eids = eidArr
+				userExt.Eids = nil
+				updatedUserExt, err1 := json.Marshal(userExt)
+				if err1 == nil {
+					request.User.Ext = updatedUserExt
+				}
+			}
+		}
 	}
 
 	//adding hack to support DNT, since hbopenbid does not support lmt
@@ -676,5 +728,21 @@ func NewPubmaticBidder(client *http.Client, uri string) *PubmaticAdapter {
 	return &PubmaticAdapter{
 		http: a,
 		URI:  uri,
+	}
+}
+
+func appendTargetingKey(bidExt json.RawMessage, pBid *pbs.PBSBid) {
+	if bidExt != nil {
+		bidExtMap := make(map[string]interface{})
+		extbyte, err := json.Marshal(bidExt)
+		if err == nil {
+			err = json.Unmarshal(extbyte, &bidExtMap)
+			if err == nil && bidExtMap[buyId] != nil {
+				if pBid.AdServerTargeting == nil {
+					pBid.AdServerTargeting = make(map[string]string)
+				}
+				pBid.AdServerTargeting[buyIdTargetingKey] = string(bidExtMap[buyId].(string))
+			}
+		}
 	}
 }

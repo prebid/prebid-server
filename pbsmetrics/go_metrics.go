@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/golang/glog"
 	metrics "github.com/rcrowley/go-metrics"
 )
 

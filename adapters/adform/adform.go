@@ -17,8 +17,8 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
 
