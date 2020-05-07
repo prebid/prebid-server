@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adkernel"
 	"github.com/prebid/prebid-server/adapters/adkernelAdn"
 	"github.com/prebid/prebid-server/adapters/admixer"
+	"github.com/prebid/prebid-server/adapters/adocean"
 	"github.com/prebid/prebid-server/adapters/adoppler"
 	"github.com/prebid/prebid-server/adapters/adpone"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
@@ -39,6 +40,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/kubient"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/lockerdome"
+	"github.com/prebid/prebid-server/adapters/lunamedia"
 	"github.com/prebid/prebid-server/adapters/marsmedia"
 	"github.com/prebid/prebid-server/adapters/mgid"
 	"github.com/prebid/prebid-server/adapters/nanointeractive"
@@ -84,6 +86,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderAdkernel:     adkernel.NewAdkernelAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernel))].Endpoint),
 		openrtb_ext.BidderAdkernelAdn:  adkernelAdn.NewAdkernelAdnAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].Endpoint),
 		openrtb_ext.BidderAdmixer:      admixer.NewAdmixerBidder(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdmixer))].Endpoint),
+		openrtb_ext.BidderAdOcean:      adocean.NewAdOceanBidder(client, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdOcean))].Endpoint),
 		openrtb_ext.BidderAdoppler:     adoppler.NewAdopplerBidder(cfg.Adapters[string(openrtb_ext.BidderAdoppler)].Endpoint),
 		openrtb_ext.BidderAdpone:       adpone.NewAdponeBidder(cfg.Adapters[string(openrtb_ext.BidderAdpone)].Endpoint),
 		openrtb_ext.BidderAdtelligent:  adtelligent.NewAdtelligentBidder(cfg.Adapters[string(openrtb_ext.BidderAdtelligent)].Endpoint),
@@ -111,6 +114,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderKidoz:           kidoz.NewKidozBidder(cfg.Adapters[string(openrtb_ext.BidderKidoz)].Endpoint),
 		openrtb_ext.BidderKubient:         kubient.NewKubientBidder(cfg.Adapters[string(openrtb_ext.BidderKubient)].Endpoint),
 		openrtb_ext.BidderLockerDome:      lockerdome.NewLockerDomeBidder(cfg.Adapters[string(openrtb_ext.BidderLockerDome)].Endpoint),
+		openrtb_ext.BidderLunaMedia:       lunamedia.NewLunaMediaBidder(cfg.Adapters[string(openrtb_ext.BidderLunaMedia)].Endpoint),
 		openrtb_ext.BidderMarsmedia:       marsmedia.NewMarsmediaBidder(cfg.Adapters[string(openrtb_ext.BidderMarsmedia)].Endpoint),
 		openrtb_ext.BidderMgid:            mgid.NewMgidBidder(cfg.Adapters[string(openrtb_ext.BidderMgid)].Endpoint),
 		openrtb_ext.BidderNanoInteractive: nanointeractive.NewNanoIneractiveBidder(cfg.Adapters[string(openrtb_ext.BidderNanoInteractive)].Endpoint),
