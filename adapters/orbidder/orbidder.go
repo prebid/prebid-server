@@ -75,18 +75,6 @@ func preprocess(imp *openrtb.Imp) error {
 		}
 	}
 
-	if orbidderExt.AccountId == "" {
-		return &errortypes.BadInput{
-			Message: "Wrong orbidder bidder ext, no account id",
-		}
-	}
-
-	if orbidderExt.PlacementId == "" {
-		return &errortypes.BadInput{
-			Message: "Wrong orbidder bidder ext, no placement id",
-		}
-	}
-
 	return nil
 }
 

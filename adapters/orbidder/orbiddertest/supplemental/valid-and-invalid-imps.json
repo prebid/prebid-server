@@ -27,21 +27,9 @@
         }
       },
       {
-        "id": "test-imp-id-INVALID-no-account-id",
+        "id": "test-imp-id-INVALID",
         "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
-        },
-        "ext": {
-          "bidder": {
-            "accountId": "",
-            "placementId": "test-placement",
-            "bidfloor": 0.1
-          }
+          "format": [{}]
         }
       }
     ]
@@ -128,7 +116,7 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Wrong orbidder bidder ext, no account id",
+      "value": "unexpected end of JSON input",
       "comparison": "literal"
     }
   ]
