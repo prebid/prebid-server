@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"net/url"
 	"text/template"
 )
 
@@ -21,7 +22,7 @@ type YeahmobiAdapter struct {
 func NewYeahmobiBidder(endpointTemplate string) adapters.Bidder {
 	tpl, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
-		glog.Fatal("Unknow url template")
+		glog.Fatal("Unable parse url template %s", err.Error())
 		return nil
 	}
 	return &YeahmobiAdapter{EndpointTemplate: *tpl}
@@ -30,12 +31,12 @@ func NewYeahmobiBidder(endpointTemplate string) adapters.Bidder {
 func (adapter *YeahmobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var adapterRequests []*adapters.RequestData
 
-	adapterRequest, errors := adapter.makeRequest(request)
-	if adapterRequest != nil {
+	adapterRequest, errs := adapter.makeRequest(request)
+	if errs != nil {
 		adapterRequests = append(adapterRequests, adapterRequest)
 	}
 
-	return adapterRequests, errors
+	return adapterRequests, errs
 }
 
 func (adapter *YeahmobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
@@ -78,10 +79,13 @@ func transform(request *openrtb.BidRequest) {
 			var nativeRequest map[string]interface{}
 			err := json.Unmarshal([]byte(request.Imp[i].Native.Request), &nativeRequest)
 			if err == nil {
-				if nativeRequest["native"] != nil {
+				_, exists := nativeRequest["native"]
+				if exists {
 					continue
 				}
-				request.Imp[i].Native.Request = "{\"native\":" + request.Imp[i].Native.Request + "}"
+				nativeCopy := *request.Imp[i].Native;
+				nativeCopy.Request = "{\"native\":" + request.Imp[i].Native.Request + "}"
+				request.Imp[i].Native = &nativeCopy
 			}
 		}
 	}
@@ -115,7 +119,7 @@ func (adapter *YeahmobiAdapter) getEndpoint(ext *openrtb_ext.ExtImpYeahmobi) (st
 		return "", errors.New("param of zoneId not config")
 	}
 
-	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{Host: "gw-" + ext.ZoneId + "-bid.yeahtargeter.com"})
+	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{Host: "gw-" + url.QueryEscape(ext.ZoneId) + "-bid.yeahtargeter.com"})
 }
 
 // MakeBids make the bids for the bid response.
