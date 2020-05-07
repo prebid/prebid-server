@@ -63,6 +63,9 @@ type exchange struct {
 type seatResponseExtra struct {
 	ResponseTimeMillis int
 	Errors             []openrtb_ext.ExtBidderError
+	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
+	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
+	HttpCalls []*openrtb_ext.ExtHttpCall
 }
 
 type bidResponseWrapper struct {
@@ -324,6 +327,10 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
+			if bids != nil {
+				ae.HttpCalls = bids.httpCalls
+			}
+
 			// Timing statistics
 			e.me.RecordAdapterTime(*bidlabels, time.Since(start))
 			serr := errsToBidderErrors(err)
@@ -346,7 +353,12 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	// Wait for the bidders to do their thing
 	for i := 0; i < len(cleanRequests); i++ {
 		brw := <-chBids
-		adapterBids[brw.bidder] = brw.adapterBids
+
+		//if bidder returned no bids back - remove bidder from further processing
+		if brw.adapterBids != nil && len(brw.adapterBids.bids) != 0 {
+			adapterBids[brw.bidder] = brw.adapterBids
+		}
+		//but we need to add all bidders data to adapterExtra to have metrics and other metadata
 		adapterExtra[brw.bidder] = brw.adapterExtra
 
 		if !bidsFound && adapterBids[brw.bidder] != nil && len(adapterBids[brw.bidder].bids) > 0 {
@@ -639,20 +651,20 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		}
 	}
 
-	for a, b := range adapterBids {
-		if b != nil && req.Test == 1 {
-			// Fill debug info
-			bidResponseExt.Debug.HttpCalls[a] = b.httpCalls
+	for bidderName, responseExtra := range adapterExtra {
+
+		if req.Test == 1 {
+			bidResponseExt.Debug.HttpCalls[bidderName] = responseExtra.HttpCalls
 		}
 		// Only make an entry for bidder errors if the bidder reported any.
-		if len(adapterExtra[a].Errors) > 0 {
-			bidResponseExt.Errors[a] = adapterExtra[a].Errors
+		if len(responseExtra.Errors) > 0 {
+			bidResponseExt.Errors[bidderName] = responseExtra.Errors
 		}
 		if len(errList) > 0 {
 			bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = errsToBidderErrors(errList)
 		}
-		bidResponseExt.ResponseTimeMillis[a] = adapterExtra[a].ResponseTimeMillis
-		// Defering the filling of bidResponseExt.Usersync[a] until later
+		bidResponseExt.ResponseTimeMillis[bidderName] = responseExtra.ResponseTimeMillis
+		// Defering the filling of bidResponseExt.Usersync[bidderName] until later
 
 	}
 	return bidResponseExt

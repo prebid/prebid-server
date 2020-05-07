@@ -483,6 +483,11 @@ func TestRaceIntegration(t *testing.T) {
 		Endpoint:   server.URL,
 		PlatformID: "abc",
 	}
+	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderBeachfront))] = config.Adapter{
+		Endpoint:         server.URL,
+		ExtraAdapterInfo: "{\"video_endpoint\":\"" + server.URL + "\"}",
+	}
+
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
@@ -765,6 +770,11 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 				t.Errorf("%s: DebugLog was modified when it shouldn't have been", filename)
 			}
 		}
+	}
+	if spec.IncomingRequest.OrtbRequest.Test == 1 {
+		//compare debug info
+		diffJson(t, "Debug info modified", bid.Ext, spec.Response.Ext)
+
 	}
 }
 
@@ -1620,6 +1630,7 @@ type exchangeRequest struct {
 type exchangeResponse struct {
 	Bids  *openrtb.BidResponse `json:"bids"`
 	Error string               `json:"error,omitempty"`
+	Ext   json.RawMessage      `json:"ext,omitempty"`
 }
 
 type bidderSpec struct {
@@ -1633,8 +1644,9 @@ type bidderRequest struct {
 }
 
 type bidderResponse struct {
-	SeatBid *bidderSeatBid `json:"pbsSeatBid,omitempty"`
-	Errors  []string       `json:"errors,omitempty"`
+	SeatBid   *bidderSeatBid             `json:"pbsSeatBid,omitempty"`
+	Errors    []string                   `json:"errors,omitempty"`
+	HttpCalls []*openrtb_ext.ExtHttpCall `json:"httpCalls,omitempty"`
 }
 
 // bidderSeatBid is basically a subset of pbsOrtbSeatBid from exchange/bidder.go.
@@ -1691,7 +1703,13 @@ func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidR
 			}
 
 			seatBid = &pbsOrtbSeatBid{
-				bids: bids,
+				bids:      bids,
+				httpCalls: mockResponse.HttpCalls,
+			}
+		} else {
+			seatBid = &pbsOrtbSeatBid{
+				bids:      nil,
+				httpCalls: mockResponse.HttpCalls,
 			}
 		}
 
