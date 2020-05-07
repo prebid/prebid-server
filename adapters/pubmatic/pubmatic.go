@@ -667,10 +667,10 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
+		targets := getTargetingKeys(sb.Ext)
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			// Copy SeatBid Ext to Bid.Ext
-			targets := getTargetingKeys(sb.Ext, &bid)
 			bid.Ext = copySBExtToBidExt(sb.Ext, bid.Ext)
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:        &bid,
@@ -733,16 +733,13 @@ func NewPubmaticBidder(client *http.Client, uri string) *PubmaticAdapter {
 	}
 }
 
-func getTargetingKeys(bidExt json.RawMessage, bid *openrtb.Bid) map[string]string {
+func getTargetingKeys(bidExt json.RawMessage) map[string]string {
 	targets := map[string]string{}
 	if bidExt != nil {
 		bidExtMap := make(map[string]interface{})
-		extbyte, err := json.Marshal(bidExt)
-		if err == nil {
-			err = json.Unmarshal(extbyte, &bidExtMap)
-			if err == nil && bidExtMap[buyId] != nil {
-				targets[buyIdTargetingKey] = string(bidExtMap[buyId].(string))
-			}
+		err := json.Unmarshal(bidExt, &bidExtMap)
+		if err == nil && bidExtMap[buyId] != nil {
+			targets[buyIdTargetingKey] = string(bidExtMap[buyId].(string))
 		}
 	}
 	return targets
@@ -769,12 +766,9 @@ func copySBExtToBidExt(sbExt json.RawMessage, bidExt json.RawMessage) json.RawMe
 func getMapFromJSON(ext json.RawMessage) map[string]interface{} {
 	if ext != nil {
 		extMap := make(map[string]interface{})
-		extbyte, err := json.Marshal(ext)
+		err := json.Unmarshal(ext, &extMap)
 		if err == nil {
-			err = json.Unmarshal(extbyte, &extMap)
-			if err == nil {
-				return extMap
-			}
+			return extMap
 		}
 	}
 	return nil

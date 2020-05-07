@@ -722,9 +722,8 @@ func TestGetBidTypeForUnsupportedCode(t *testing.T) {
 }
 
 func TestGetAdServerTargetingForEmptyExt(t *testing.T) {
-	pbid := openrtb.Bid{}
 	ext := json.RawMessage(`{}`)
-	targets := getTargetingKeys(ext, &pbid)
+	targets := getTargetingKeys(ext)
 	// banner is the default bid type when no bidType key is present in the bid.ext
 	if targets != nil && targets["hb_buyid_pubmatic"] != "" {
 		t.Errorf("It should not contained AdserverTageting")
@@ -732,9 +731,8 @@ func TestGetAdServerTargetingForEmptyExt(t *testing.T) {
 }
 
 func TestGetAdServerTargetingForValidExt(t *testing.T) {
-	pbid := openrtb.Bid{}
 	ext := json.RawMessage("{\"buyid\":\"testBuyId\"}")
-	targets := getTargetingKeys(ext, &pbid)
+	targets := getTargetingKeys(ext)
 	// banner is the default bid type when no bidType key is present in the bid.ext
 	if targets == nil {
 		t.Error("It should have targets")
