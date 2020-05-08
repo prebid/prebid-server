@@ -2,7 +2,6 @@ package yeahmobi
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
@@ -107,7 +106,7 @@ func getYeahmobiExt(request *openrtb.BidRequest) (*openrtb_ext.ExtImpYeahmobi, [
 			errs = append(errs, err)
 			continue
 		}
-
+		break
 	}
 
 	return &extImpYeahmobi, errs
@@ -115,9 +114,6 @@ func getYeahmobiExt(request *openrtb.BidRequest) (*openrtb_ext.ExtImpYeahmobi, [
 }
 
 func (adapter *YeahmobiAdapter) getEndpoint(ext *openrtb_ext.ExtImpYeahmobi) (string, error) {
-	if ext.ZoneId == "" {
-		return "", errors.New("param of zoneId not config")
-	}
 	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{Host: "gw-" + url.QueryEscape(ext.ZoneId) + "-bid.yeahtargeter.com"})
 }
 
