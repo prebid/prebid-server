@@ -26,13 +26,16 @@ const BidderNameGeneral = BidderName("general")
 const (
 	Bidder33Across         BidderName = "33across"
 	BidderAdform           BidderName = "adform"
+	BidderAdgeneration     BidderName = "adgeneration"
 	BidderAdhese           BidderName = "adhese"
 	BidderAdkernel         BidderName = "adkernel"
 	BidderAdkernelAdn      BidderName = "adkernelAdn"
 	BidderAdpone           BidderName = "adpone"
 	BidderAdmixer          BidderName = "admixer"
+	BidderAdOcean          BidderName = "adocean"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
+	BidderAJA              BidderName = "aja"
 	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
 	BidderAdoppler         BidderName = "adoppler"
@@ -56,9 +59,11 @@ const (
 	BidderKubient          BidderName = "kubient"
 	BidderLifestreet       BidderName = "lifestreet"
 	BidderLockerDome       BidderName = "lockerdome"
+	BidderLunaMedia        BidderName = "lunamedia"
 	BidderMarsmedia        BidderName = "marsmedia"
 	BidderMgid             BidderName = "mgid"
 	BidderNanoInteractive  BidderName = "nanointeractive"
+	BidderNinthDecimal     BidderName = "ninthdecimal"
 	BidderOpenx            BidderName = "openx"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
@@ -83,6 +88,7 @@ const (
 	BidderVisx             BidderName = "visx"
 	BidderVrtcal           BidderName = "vrtcal"
 	BidderYieldmo          BidderName = "yieldmo"
+	BidderYieldone         BidderName = "yieldone"
 	BidderZeroClickFraud   BidderName = "zeroclickfraud"
 )
 
@@ -91,13 +97,16 @@ const (
 var BidderMap = map[string]BidderName{
 	"33across":          Bidder33Across,
 	"adform":            BidderAdform,
+	"adgeneration":      BidderAdgeneration,
 	"adhese":            BidderAdhese,
 	"adkernel":          BidderAdkernel,
 	"adkernelAdn":       BidderAdkernelAdn,
 	"admixer":           BidderAdmixer,
+	"adocean":           BidderAdOcean,
 	"adpone":            BidderAdpone,
 	"adtelligent":       BidderAdtelligent,
 	"advangelists":      BidderAdvangelists,
+	"aja":               BidderAJA,
 	"applogy":           BidderApplogy,
 	"appnexus":          BidderAppnexus,
 	"adoppler":          BidderAdoppler,
@@ -121,9 +130,11 @@ var BidderMap = map[string]BidderName{
 	"kubient":           BidderKubient,
 	"lifestreet":        BidderLifestreet,
 	"lockerdome":        BidderLockerDome,
+	"lunamedia":         BidderLunaMedia,
 	"marsmedia":         BidderMarsmedia,
 	"mgid":              BidderMgid,
 	"nanointeractive":   BidderNanoInteractive,
+	"ninthdecimal":      BidderNinthDecimal,
 	"openx":             BidderOpenx,
 	"pubmatic":          BidderPubmatic,
 	"pubnative":         BidderPubnative,
@@ -148,6 +159,7 @@ var BidderMap = map[string]BidderName{
 	"visx":              BidderVisx,
 	"vrtcal":            BidderVrtcal,
 	"yieldmo":           BidderYieldmo,
+	"yieldone":          BidderYieldone,
 	"zeroclickfraud":    BidderZeroClickFraud,
 }
 

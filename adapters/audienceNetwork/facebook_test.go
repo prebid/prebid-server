@@ -43,9 +43,9 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "audienceNetworktest", NewFacebookBidder(nil, "test-platform-id", "test-app-secret"))
 }
 
-func TestMakeTimeoutNotice(t *testing.T) {
+func TestMakeTimeoutNoticeApp(t *testing.T) {
 	req := adapters.RequestData{
-		Body: []byte(`{"imp":[{"id":"1234"}]}}`),
+		Body: []byte(`{"id":"1234","imp":[{"id":"1234"}],"app":{"publisher":{"id":"5678"}}}`),
 	}
 	fba := NewFacebookBidder(nil, "test-platform-id", "test-app-secret")
 
@@ -56,9 +56,25 @@ func TestMakeTimeoutNotice(t *testing.T) {
 
 	toReq, err := tb.MakeTimeoutNotification(&req)
 	assert.Nil(t, err, "Facebook MakeTimeoutNotification() return an error %v", err)
-	expectedUri := "https://www.facebook.com/audiencenetwork/nurl/?partner=test-platform-id&app=test-platform-id&auction=1234&ortb_loss_code=2"
+	expectedUri := "https://www.facebook.com/audiencenetwork/nurl/?partner=test-platform-id&app=5678&auction=1234&ortb_loss_code=2"
 	assert.Equal(t, expectedUri, toReq.Uri, "Facebook timeout notification not returning the expected URI.")
+}
 
+func TestMakeTimeoutNoticeSite(t *testing.T) {
+	req := adapters.RequestData{
+		Body: []byte(`{"id":"1234","imp":[{"id":"1234"}],"site":{"publisher":{"id":"5678"}}}`),
+	}
+	fba := NewFacebookBidder(nil, "test-platform-id", "test-app-secret")
+
+	tb, ok := fba.(adapters.TimeoutBidder)
+	if !ok {
+		t.Error("Facebook adapter is not a TimeoutAdapter")
+	}
+
+	toReq, err := tb.MakeTimeoutNotification(&req)
+	assert.Nil(t, err, "Facebook MakeTimeoutNotification() return an error %v", err)
+	expectedUri := "https://www.facebook.com/audiencenetwork/nurl/?partner=test-platform-id&app=5678&auction=1234&ortb_loss_code=2"
+	assert.Equal(t, expectedUri, toReq.Uri, "Facebook timeout notification not returning the expected URI.")
 }
 
 func TestMakeTimeoutNoticeBadRequest(t *testing.T) {

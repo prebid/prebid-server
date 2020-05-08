@@ -8,12 +8,13 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
-	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
 	"github.com/prebid/prebid-server/errortypes"
 
@@ -617,7 +618,18 @@ func (deps *endpointDeps) parseVideoRequest(request []byte, headers http.Header)
 
 	//if Device.UA is not present in request body, init it with user-agent from request header if it's present
 	if req.Device.UA == "" {
-		req.Device.UA = headers.Get("User-Agent")
+		ua := headers.Get("User-Agent")
+
+		//Check UA is encoded. Without it the `+` character would get changed to a space if not actually encoded
+		if strings.ContainsAny(ua, "%") {
+			var err error
+			req.Device.UA, err = url.QueryUnescape(ua)
+			if err != nil {
+				req.Device.UA = ua
+			}
+		} else {
+			req.Device.UA = ua
+		}
 	}
 
 	errL, podErrors := deps.validateVideoRequest(req)
