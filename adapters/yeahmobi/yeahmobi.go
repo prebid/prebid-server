@@ -47,18 +47,15 @@ func (adapter *YeahmobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapt
 		glog.Fatal("Invalid ExtImpYeahmobi value")
 		return nil, errs
 	}
-
 	endPoint, err := adapter.getEndpoint(yeahmobiExt)
-
-	transform(request)
-
 	if err != nil {
 		return nil, append(errs, err)
 	}
+	transform(request)
 	reqBody, err := json.Marshal(request)
 
 	if err != nil {
-		errs = append(errs, err)
+		return nil, append(errs, err)
 	}
 
 	headers := http.Header{}
