@@ -35,8 +35,8 @@ func buildEndpoint(endpoint string, testing bool, timeout int64) string {
 
 	} else {
 
-	parameters.Add("t", strconv.FormatInt(timeout, 10))
-	parameters.Add("ts", strconv.FormatInt(time.Now().Unix(), 10))
+		parameters.Add("t", strconv.FormatInt(timeout, 10))
+		parameters.Add("ts", strconv.FormatInt(time.Now().Unix(), 10))
 
 	}
 
