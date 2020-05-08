@@ -41,6 +41,7 @@ func buildEndpoint(endpoint string, testing bool, timeout int64) string {
 	}
 
 	uriObj.RawQuery = parameters.Encode()
+
 	return uriObj.String()
 }
 
@@ -113,8 +114,6 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpBeintoo, error) {
 			Message: fmt.Sprintf("ignoring imp id=%s, invalid tagid must be a String of numbers", imp.ID),
 		}
 	}
-
-	
 
 	return &BeintooExt, nil
 }
