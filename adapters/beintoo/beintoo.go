@@ -177,7 +177,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 // Handle request errors and formatting to be sent to Beintoo
 func preprocess(request *openrtb.BidRequest) []error {
 	errors := make([]error, 0, len(request.Imp))
-        resImps := make([]openrtb.Imp, 0, len(request.Imp))
+	resImps := make([]openrtb.Imp, 0, len(request.Imp))
 	secure := int8(0)
 
 	if request.Site != nil && request.Site.Page != "" {
