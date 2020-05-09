@@ -1,9 +1,11 @@
 package privacy
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // ScrubStrategyIPV6 defines the approach to scrub PII from an IPV6 address.
@@ -98,6 +100,24 @@ func (scrubber) ScrubUser(user *openrtb.User, demographic ScrubStrategyDemograph
 	userCopy := *user
 	userCopy.BuyerUID = ""
 	userCopy.ID = ""
+
+	if len(userCopy.Ext) > 0 {
+		var extUser openrtb_ext.ExtUser
+		err := json.Unmarshal(userCopy.Ext, &extUser)
+		if err == nil {
+			needsToScrub := len(extUser.Eids) > 0 || extUser.DigiTrust != nil
+
+			extUser.Eids = nil
+			extUser.DigiTrust = nil
+
+			if needsToScrub {
+				extUserJSON, err := json.Marshal(extUser)
+				if err == nil {
+					userCopy.Ext = extUserJSON
+				}
+			}
+		}
+	}
 
 	switch demographic {
 	case ScrubStrategyDemographicAgeAndGender:

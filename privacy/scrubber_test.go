@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -251,13 +252,15 @@ func TestScrubUser(t *testing.T) {
 	}
 
 	testCases := []struct {
+		description string
+		user        *openrtb.User
 		expected    *openrtb.User
 		demographic ScrubStrategyDemographic
 		geo         ScrubStrategyGeo
-		description string
 	}{
 		{
 			description: "Demographic Age And Gender & Geo Full",
+			user:        user,
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -270,6 +273,7 @@ func TestScrubUser(t *testing.T) {
 		},
 		{
 			description: "Demographic Age And Gender & Geo Reduced",
+			user:        user,
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -288,6 +292,7 @@ func TestScrubUser(t *testing.T) {
 		},
 		{
 			description: "Demographic Age And Gender & Geo None",
+			user:        user,
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -306,6 +311,7 @@ func TestScrubUser(t *testing.T) {
 		},
 		{
 			description: "Demographic None & Geo Full",
+			user:        user,
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -318,6 +324,7 @@ func TestScrubUser(t *testing.T) {
 		},
 		{
 			description: "Demographic None & Geo Reduced",
+			user:        user,
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -336,6 +343,7 @@ func TestScrubUser(t *testing.T) {
 		},
 		{
 			description: "Demographic None & Geo None",
+			user:        user,
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -352,10 +360,76 @@ func TestScrubUser(t *testing.T) {
 			demographic: ScrubStrategyDemographicNone,
 			geo:         ScrubStrategyGeoNone,
 		},
+		{
+			description: "User Ext - Nil",
+			user: &openrtb.User{
+				Ext: nil,
+			},
+			expected: &openrtb.User{
+				Ext: nil,
+			},
+			demographic: ScrubStrategyDemographicNone,
+			geo:         ScrubStrategyGeoNone,
+		},
+		{
+			description: "User Ext - Empty",
+			user: &openrtb.User{
+				Ext: json.RawMessage(``),
+			},
+			expected: &openrtb.User{
+				Ext: json.RawMessage(``),
+			},
+			demographic: ScrubStrategyDemographicNone,
+			geo:         ScrubStrategyGeoNone,
+		},
+		{
+			description: "User Ext - Ignored When Malformed",
+			user: &openrtb.User{
+				Ext: json.RawMessage(`malformed`),
+			},
+			expected: &openrtb.User{
+				Ext: json.RawMessage(`malformed`),
+			},
+			demographic: ScrubStrategyDemographicNone,
+			geo:         ScrubStrategyGeoNone,
+		},
+		{
+			description: "User Ext - Removes External IDs",
+			user: &openrtb.User{
+				Ext: json.RawMessage(`{"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
+			},
+			expected: &openrtb.User{
+				Ext: json.RawMessage(`{}`),
+			},
+			demographic: ScrubStrategyDemographicNone,
+			geo:         ScrubStrategyGeoNone,
+		},
+		{
+			description: "User Ext - Removes Digitrust IDs",
+			user: &openrtb.User{
+				Ext: json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			},
+			expected: &openrtb.User{
+				Ext: json.RawMessage(`{}`),
+			},
+			demographic: ScrubStrategyDemographicNone,
+			geo:         ScrubStrategyGeoNone,
+		},
+		{
+			description: "User Ext - Removes External IDs & Digitrust IDs - Keeps Other Data",
+			user: &openrtb.User{
+				Ext: json.RawMessage(`{"consent":"anyConsent","eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}],"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			},
+			expected: &openrtb.User{
+				Ext: json.RawMessage(`{"consent":"anyConsent"}`),
+			},
+			demographic: ScrubStrategyDemographicNone,
+			geo:         ScrubStrategyGeoNone,
+		},
 	}
 
 	for _, test := range testCases {
-		result := NewScrubber().ScrubUser(user, test.demographic, test.geo)
+		result := NewScrubber().ScrubUser(test.user, test.demographic, test.geo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
