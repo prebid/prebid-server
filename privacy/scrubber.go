@@ -100,24 +100,7 @@ func (scrubber) ScrubUser(user *openrtb.User, demographic ScrubStrategyDemograph
 	userCopy := *user
 	userCopy.BuyerUID = ""
 	userCopy.ID = ""
-
-	if len(userCopy.Ext) > 0 {
-		var extUser openrtb_ext.ExtUser
-		err := json.Unmarshal(userCopy.Ext, &extUser)
-		if err == nil {
-			needsToScrub := len(extUser.Eids) > 0 || extUser.DigiTrust != nil
-
-			extUser.Eids = nil
-			extUser.DigiTrust = nil
-
-			if needsToScrub {
-				extUserJSON, err := json.Marshal(extUser)
-				if err == nil {
-					userCopy.Ext = extUserJSON
-				}
-			}
-		}
-	}
+	userCopy.Ext = scrubUserExt(userCopy.Ext)
 
 	switch demographic {
 	case ScrubStrategyDemographicAgeAndGender:
@@ -192,4 +175,29 @@ func scrubGeoPrecision(geo *openrtb.Geo) *openrtb.Geo {
 	geoCopy.Lat = float64(int(geo.Lat*100.0+0.5)) / 100.0 // Round Latitude
 	geoCopy.Lon = float64(int(geo.Lon*100.0+0.5)) / 100.0 // Round Longitude
 	return &geoCopy
+}
+
+func scrubUserExt(userExt json.RawMessage) json.RawMessage {
+	if len(userExt) == 0 {
+		return userExt
+	}
+
+	var userExtParsed openrtb_ext.ExtUser
+	err := json.Unmarshal(userExt, &userExtParsed)
+	if err != nil {
+		return userExt
+	}
+
+	needToScrub := len(userExtParsed.Eids) > 0 || userExtParsed.DigiTrust != nil
+	if needToScrub {
+		userExtParsed.Eids = nil
+		userExtParsed.DigiTrust = nil
+
+		result, err := json.Marshal(userExtParsed)
+		if err == nil {
+			return result
+		}
+	}
+
+	return userExt
 }

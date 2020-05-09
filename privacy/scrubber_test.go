@@ -405,6 +405,17 @@ func TestScrubUser(t *testing.T) {
 			geo:         ScrubStrategyGeoNone,
 		},
 		{
+			description: "User Ext - Empty External IDs",
+			user: &openrtb.User{
+				Ext: json.RawMessage(`{"eids":[]}`),
+			},
+			expected: &openrtb.User{
+				Ext: json.RawMessage(`{"eids":[]}`),
+			},
+			demographic: ScrubStrategyDemographicNone,
+			geo:         ScrubStrategyGeoNone,
+		},
+		{
 			description: "User Ext - Removes Digitrust IDs",
 			user: &openrtb.User{
 				Ext: json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
