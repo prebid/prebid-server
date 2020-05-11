@@ -38,7 +38,14 @@ type visxResponse struct {
 func (a *VisxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors = make([]error, 0)
 
-	reqJSON, err := json.Marshal(request)
+	// copy the request, because we are going to mutate it
+	requestCopy := *request
+	if len(requestCopy.Cur) == 0 {
+		requestCopy.Cur = make([]string, 1)
+		requestCopy.Cur[0] = "USD"
+	}
+
+	reqJSON, err := json.Marshal(requestCopy)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
