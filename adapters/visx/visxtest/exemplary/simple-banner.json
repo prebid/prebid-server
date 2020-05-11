@@ -138,14 +138,12 @@
                             {
                                 "price": 0.500000,
                                 "adm": "some-test-ad",
-                                "impid": "1",
+                                "impid": "test-imp-id",
                                 "auid": 46,
-                                "id": "1",
                                 "h": 250,
                                 "adomain": [
                                     "goodadvertiser.com"
                                 ],
-                                "crid": "11_222222",
                                 "w": 300
                             }
                         ],
@@ -161,13 +159,13 @@
             "bid": {
                 "price": 0.5,
                 "adm": "some-test-ad",
-                "impid": "1",
-                "id": "1",
+                "impid": "test-imp-id",
+                "id": "test-request-id",
                 "h": 250,
                 "adomain": [
                     "goodadvertiser.com"
                 ],
-                "crid": "11_222222",
+                "crid": "46",
                 "w": 300
             },
             "type": "banner"
