@@ -90,6 +90,9 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		appPublisherCopy := *request.App.Publisher
 		dmxReq.App = &appCopy
 		dmxReq.App.Publisher = &appPublisherCopy
+		if dmxReq.App.ID != "" {
+			anyHasId = true
+		}
 	} else {
 		dmxReq.App = nil
 	}
@@ -115,22 +118,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		dmxReq.User = nil
 	}
 
-	if dmxReq.App != nil {
-		dmxReq.Site = nil
-		if dmxReq.App.ID != "" {
-			anyHasId = true
-		}
-		if dmxReq.App.Publisher != nil {
-			dmxReq.App.Publisher.ID = publisherId
-		} else {
-			dmxReq.App.Publisher = &openrtb.Publisher{ID: publisherId}
-		}
-	}
-	if dmxReq.Site != nil {
-		if dmxReq.Site.Publisher == nil {
-			dmxReq.Site.Publisher = &openrtb.Publisher{ID: publisherId}
-		}
-	}
+
 	if dmxReq.User != nil {
 		if dmxReq.User.ID != "" {
 			anyHasId = true
