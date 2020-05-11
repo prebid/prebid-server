@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -16,7 +15,6 @@ import (
 
 type BeintooAdapter struct {
 	endpoint string
-	
 }
 
 func (a *BeintooAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -56,8 +54,6 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	if request.Site != nil {
 		addHeaderIfNonEmpty(headers, "Referer", request.Site.Page)
 	}
-
-	
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -167,7 +163,6 @@ func preprocess(request *openrtb.BidRequest) []error {
 			continue
 		}
 
-
 		addImpProps(&imp, &secure, beintooExt)
 
 		if err := buildImpBanner(&imp); err != nil {
@@ -224,6 +219,5 @@ func (a *BeintooAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 func NewBeintooBidder(endpoint string) *BeintooAdapter {
 	return &BeintooAdapter{
 		endpoint: endpoint,
-		
 	}
 }
