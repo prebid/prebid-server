@@ -30,7 +30,7 @@
 
   "httpCalls": [{
     "expectedRequest": {
-      "uri": "https://ib.beintoo.com?t=1000&ts=2060541160",
+      "uri": "https://ib.beintoo.com",
       "headers": {
         "Accept": [
           "application/json"
