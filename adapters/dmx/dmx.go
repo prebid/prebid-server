@@ -95,6 +95,11 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	if request.Site != nil {
 		siteCopy := *request.Site
 		dmxReq.Site = &siteCopy
+		if dmxReq.Site.Publisher != nil {
+			dmxReq.Site.Publisher.ID = publisherId
+		} else {
+			dmxReq.Site.Publisher = &openrtb.Publisher{ID: publisherId}
+		}
 	} else {
 		dmxReq.Site = nil
 	}
@@ -190,7 +195,6 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		Body:    oJson,
 		Headers: headers,
 	}
-
 	reqsBidder = append(reqsBidder, reqBidder)
 	return
 }
