@@ -1005,6 +1005,31 @@ func TestHandleErrorDebugLog(t *testing.T) {
 	assert.NotEmpty(t, debugLog.CacheKey, "DebugLog CacheKey value should have been set")
 }
 
+func TestCreateImpressionTemplate(t *testing.T) {
+
+	imp := openrtb.Imp{}
+	imp.Video = &openrtb.Video{}
+	imp.Video.Protocols = []openrtb.Protocol{1, 2}
+	imp.Video.MIMEs = []string{"video/mp4"}
+	imp.Video.H = 200
+	imp.Video.W = 400
+	imp.Video.PlaybackMethod = []openrtb.PlaybackMethod{5, 6}
+
+	video := openrtb.Video{}
+	video.Protocols = []openrtb.Protocol{3, 4}
+	video.MIMEs = []string{"video/flv"}
+	video.H = 300
+	video.W = 0
+	video.PlaybackMethod = []openrtb.PlaybackMethod{7, 8}
+
+	res := createImpressionTemplate(imp, video)
+	assert.Equal(t, res.Video.Protocols, []openrtb.Protocol{3, 4}, "")
+	assert.Equal(t, res.Video.MIMEs, []string{"video/flv"}, "")
+	assert.Equal(t, int(res.Video.H), 300, "")
+	assert.Equal(t, int(res.Video.W), 0, "")
+	assert.Equal(t, res.Video.PlaybackMethod, []openrtb.PlaybackMethod{7, 8}, "")
+}
+
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	mockModule := &mockAnalyticsModule{}
