@@ -87,14 +87,18 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 
 	if request.App != nil {
 		appCopy := *request.App
+		appPublisherCopy := *request.App.Publisher
 		dmxReq.App = &appCopy
+		dmxReq.App.Publisher = &appPublisherCopy
 	} else {
 		dmxReq.App = nil
 	}
 
 	if request.Site != nil {
 		siteCopy := *request.Site
+		sitePublisherCopy := *request.Site.Publisher
 		dmxReq.Site = &siteCopy
+		dmxReq.Site.Publisher = &sitePublisherCopy
 		if dmxReq.Site.Publisher != nil {
 			dmxReq.Site.Publisher.ID = publisherId
 		} else {
