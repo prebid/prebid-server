@@ -8,6 +8,5 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	beintooAdapter := NewBeintooBidder("https://ib.beintoo.com")
-	beintooAdapter.testing = true
 	adapterstest.RunJSONBidderTest(t, "beintootest", beintooAdapter)
 }
