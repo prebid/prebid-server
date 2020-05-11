@@ -1,6 +1,6 @@
 {
     "debugLog": {
-        "EnableDebug": false,
+        "Enabled": false,
         "CacheType": "xml",
         "TTL": 3600,
         "Data": {

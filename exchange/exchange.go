@@ -172,7 +172,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				errs = append(errs, dealErrs...)
 			}
 
-			if debugLog != nil && debugLog.EnableDebug {
+			if debugLog != nil && debugLog.Enabled {
 				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errs)
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)

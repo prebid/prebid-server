@@ -3,6 +3,7 @@ package exchange
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"strconv"
@@ -38,6 +39,57 @@ func TestMakeVASTNurl(t *testing.T) {
 	}
 	vast := makeVAST(bid)
 	assert.Equal(t, expect, vast)
+}
+
+func TestBuildCacheString(t *testing.T) {
+	testCases := []struct {
+		description      string
+		debugLog         DebugLog
+		expectedDebugLog DebugLog
+	}{
+		{
+			description: "DebugLog strings should have tags and be formatted",
+			debugLog: DebugLog{
+				Data: DebugData{
+					Request:  "test request string",
+					Headers:  "test headers string",
+					Response: "test response string",
+				},
+			},
+			expectedDebugLog: DebugLog{
+				Data: DebugData{
+					Request:  "<Request>test request string</Request>",
+					Headers:  "<Headers>test headers string</Headers>",
+					Response: "<Response>test response string</Response>",
+				},
+			},
+		},
+		{
+			description: "DebugLog strings should have no < or > characters",
+			debugLog: DebugLog{
+				Data: DebugData{
+					Request:  "<test>test request string</test>",
+					Headers:  "test <headers string",
+					Response: "test <response> string",
+				},
+			},
+			expectedDebugLog: DebugLog{
+				Data: DebugData{
+					Request:  "<Request>testtest request string/test</Request>",
+					Headers:  "<Headers>test headers string</Headers>",
+					Response: "<Response>test response string</Response>",
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		test.expectedDebugLog.CacheString = fmt.Sprintf("%s<Log>%s%s%s</Log>", xml.Header, test.expectedDebugLog.Data.Request, test.expectedDebugLog.Data.Headers, test.expectedDebugLog.Data.Response)
+
+		test.debugLog.BuildCacheString()
+
+		assert.Equal(t, test.expectedDebugLog, test.debugLog, test.description)
+	}
 }
 
 // TestCacheJSON executes tests for all the *.json files in cachetest.

@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	uuid "github.com/gofrs/uuid"
@@ -17,7 +18,7 @@ import (
 )
 
 type DebugLog struct {
-	EnableDebug bool
+	Enabled     bool
 	CacheType   prebid_cache_client.PayloadType
 	Data        DebugData
 	TTL         int64
@@ -31,7 +32,13 @@ type DebugData struct {
 	Response string
 }
 
-func (d *DebugLog) BuildDebugLog() {
+func (d *DebugLog) BuildCacheString() {
+	matcher := regexp.MustCompile(`[<>]`)
+
+	d.Data.Request = fmt.Sprintf(matcher.ReplaceAllString(d.Data.Request, ""))
+	d.Data.Headers = fmt.Sprintf(matcher.ReplaceAllString(d.Data.Headers, ""))
+	d.Data.Response = fmt.Sprintf(matcher.ReplaceAllString(d.Data.Response, ""))
+
 	d.Data.Request = fmt.Sprintf("<Request>%s</Request>", d.Data.Request)
 	d.Data.Headers = fmt.Sprintf("<Headers>%s</Headers>", d.Data.Headers)
 	d.Data.Response = fmt.Sprintf("<Response>%s</Response>", d.Data.Response)
@@ -171,8 +178,8 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 
-	if debugLog != nil && debugLog.EnableDebug {
-		debugLog.BuildDebugLog()
+	if debugLog != nil && debugLog.Enabled {
+		debugLog.BuildCacheString()
 		debugLog.CacheKey = hbCacheID
 		if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
 			toCache = append(toCache, prebid_cache_client.Cacheable{

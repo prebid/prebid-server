@@ -761,7 +761,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		}
 	}
 	if spec.DebugLog != nil {
-		if spec.DebugLog.EnableDebug {
+		if spec.DebugLog.Enabled {
 			if len(debugLog.Data.Response) == 0 {
 				t.Errorf("%s: DebugLog response was not modified when it should have been", filename)
 			}
