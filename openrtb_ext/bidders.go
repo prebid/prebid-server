@@ -31,8 +31,10 @@ const (
 	BidderAdkernelAdn      BidderName = "adkernelAdn"
 	BidderAdpone           BidderName = "adpone"
 	BidderAdmixer          BidderName = "admixer"
+	BidderAdOcean          BidderName = "adocean"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
+	BidderAJA              BidderName = "aja"
 	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
 	BidderAdoppler         BidderName = "adoppler"
@@ -56,11 +58,13 @@ const (
 	BidderKubient          BidderName = "kubient"
 	BidderLifestreet       BidderName = "lifestreet"
 	BidderLockerDome       BidderName = "lockerdome"
+	BidderLunaMedia        BidderName = "lunamedia"
 	BidderMarsmedia        BidderName = "marsmedia"
 	BidderMgid             BidderName = "mgid"
 	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderNinthDecimal     BidderName = "ninthdecimal"
 	BidderOpenx            BidderName = "openx"
+	BidderOrbidder         BidderName = "orbidder"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
 	BidderPulsepoint       BidderName = "pulsepoint"
@@ -98,9 +102,11 @@ var BidderMap = map[string]BidderName{
 	"adkernel":          BidderAdkernel,
 	"adkernelAdn":       BidderAdkernelAdn,
 	"admixer":           BidderAdmixer,
+	"adocean":           BidderAdOcean,
 	"adpone":            BidderAdpone,
 	"adtelligent":       BidderAdtelligent,
 	"advangelists":      BidderAdvangelists,
+	"aja":               BidderAJA,
 	"applogy":           BidderApplogy,
 	"appnexus":          BidderAppnexus,
 	"adoppler":          BidderAdoppler,
@@ -124,11 +130,13 @@ var BidderMap = map[string]BidderName{
 	"kubient":           BidderKubient,
 	"lifestreet":        BidderLifestreet,
 	"lockerdome":        BidderLockerDome,
+	"lunamedia":         BidderLunaMedia,
 	"marsmedia":         BidderMarsmedia,
 	"mgid":              BidderMgid,
 	"nanointeractive":   BidderNanoInteractive,
 	"ninthdecimal":      BidderNinthDecimal,
 	"openx":             BidderOpenx,
+	"orbidder":          BidderOrbidder,
 	"pubmatic":          BidderPubmatic,
 	"pubnative":         BidderPubnative,
 	"pulsepoint":        BidderPulsepoint,
