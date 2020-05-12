@@ -84,6 +84,7 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 
 	// If all the requests are invalid, Call to adaptor is skipped
 	if len(request.Imp) == 0 {
+		errs = append(errs, WrapError("Imp is empty"))
 		return nil, errs
 	}
 
