@@ -350,7 +350,7 @@ func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVide
 
 		impsArray := make([]openrtb.Imp, numImps)
 		for impInd := range impsArray {
-			newImp := createImpressionTemplate(storedImp, *videoData)
+			newImp := createImpressionTemplate(storedImp, videoData)
 			impsArray[impInd] = newImp
 			if reqExactDur {
 				//floor := int(math.Floor(ind/impDivNumber))
@@ -380,8 +380,11 @@ func max(a, b int) int {
 	return b
 }
 
-func createImpressionTemplate(imp openrtb.Imp, video openrtb.Video) openrtb.Imp {
-	imp.Video = &video
+func createImpressionTemplate(imp openrtb.Imp, video *openrtb.Video) openrtb.Imp {
+	//for every new impression we need to have it's own copy of video object, because we customize it in further processing
+	newVideo := &openrtb.Video{}
+	*newVideo = *video
+	imp.Video = newVideo
 	return imp
 }
 

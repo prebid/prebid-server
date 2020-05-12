@@ -1022,7 +1022,7 @@ func TestCreateImpressionTemplate(t *testing.T) {
 	video.W = 0
 	video.PlaybackMethod = []openrtb.PlaybackMethod{7, 8}
 
-	res := createImpressionTemplate(imp, video)
+	res := createImpressionTemplate(imp, &video)
 	assert.Equal(t, res.Video.Protocols, []openrtb.Protocol{3, 4}, "")
 	assert.Equal(t, res.Video.MIMEs, []string{"video/flv"}, "")
 	assert.Equal(t, int(res.Video.H), 300, "")
