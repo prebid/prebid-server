@@ -129,7 +129,6 @@ func addImpProps(imp *openrtb.Imp, secure *int8, BeintooExt *openrtb_ext.ExtImpB
 
 		if bidFloor > 0 {
 			imp.BidFloor = bidFloor
-			imp.BidFloorCur = "USD"
 		}
 	}
 
