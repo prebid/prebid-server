@@ -18,7 +18,7 @@ type BeintooAdapter struct {
 }
 
 func (a *BeintooAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
+	var errors []error
 
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
@@ -26,9 +26,9 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		}}
 	}
 
-	if errs := preprocess(request); errs != nil && len(errs) > 0 {
-		return nil, append(errs, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", errs),
+	if errors := preprocess(request); errors != nil && len(errors) > 0 {
+		return nil, append(errors, &errortypes.BadInput{
+			Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", errors),
 		})
 	}
 
@@ -60,7 +60,7 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		Uri:     a.endpoint,
 		Body:    data,
 		Headers: headers,
-	}}, errs
+	}}, errors
 }
 
 func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpBeintoo, error) {
