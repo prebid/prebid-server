@@ -73,15 +73,23 @@ func transform(request *openrtb.BidRequest) {
 	for i, imp := range request.Imp {
 		if imp.Native != nil {
 			var nativeRequest map[string]interface{}
+			nativeCopyRequest := make(map[string]interface{})
 			err := json.Unmarshal([]byte(request.Imp[i].Native.Request), &nativeRequest)
+			//just ignore the bad native request
 			if err == nil {
 				_, exists := nativeRequest["native"]
 				if exists {
 					continue
 				}
-				nativeCopy := *request.Imp[i].Native
-				nativeCopy.Request = "{\"native\":" + request.Imp[i].Native.Request + "}"
-				request.Imp[i].Native = &nativeCopy
+
+				nativeCopyRequest["native"] = nativeRequest
+				nativeReqByte, err := json.Marshal(nativeCopyRequest)
+				//just ignore the bad native request
+				if err != nil {
+					continue
+				}
+
+				request.Imp[i].Native.Request = string(nativeReqByte)
 			}
 		}
 	}
