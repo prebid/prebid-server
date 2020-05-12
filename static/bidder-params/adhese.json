@@ -16,26 +16,9 @@
 			"type": "string",
 			"description": "The format you accept for this unit, as defined in your Adhese inventory"
 		},
-		"data": {
-			"type": "array",
-			"minItems": 1,
-			"items": {
-			  "type": "object",
-			  "description": "Target params, as defined in your Adhese setup.",
-			  "properties": {
-				"key": {
-				  "type": "string"
-				},
-				"value": {
-				  "type": "array",
-				  "minItems": 1,
-				  "items": {
-					"type": "string"
-				  }
-				}
-			  },
-			  "required": ["key", "value"]
-			}
+		"targets": {
+			"type": "object",
+			"description": "Target params, as defined in your Adhese setup."
 		  }
 	},
 	"required": ["account", "location", "format"]

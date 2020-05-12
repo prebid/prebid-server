@@ -45,9 +45,7 @@ func extractTargetParameters(parameters openrtb_ext.ExtImpAdhese) string {
 		var targetingValues = targetRawValue.([]interface{})
 		for _, targetRawValKey := range targetingValues {
 			var targetValueParsed = targetRawValKey.(string)
-			cur, _ := m[targetKey]
-			new := cur[:]
-			m[targetKey] = append(new, targetValueParsed)
+			m[targetKey] = append(m[targetKey], targetValueParsed)
 		}
 	}
 
@@ -83,6 +81,12 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	errs := make([]error, 0, len(request.Imp))
 
 	var err error
+
+	// If all the requests are invalid, Call to adaptor is skipped
+	if len(request.Imp) == 0 {
+		return nil, errs
+	}
+
 	var imp = &request.Imp[0]
 	var bidderExt adapters.ExtImpBidder
 
@@ -94,12 +98,6 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	var params openrtb_ext.ExtImpAdhese
 	if err := json.Unmarshal(bidderExt.Bidder, &params); err != nil {
 		errs = append(errs, WrapError("Request could not be parsed as ExtImpAdhese due to: "+err.Error()))
-		return nil, errs
-	}
-
-	// Validate request
-	if params.Account == "" || params.Location == "" || params.Format == "" {
-		errs = append(errs, WrapError("Request is missing a required parameter (Account, Location and/or Format)"))
 		return nil, errs
 	}
 
@@ -118,11 +116,6 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		extractGdprParameter(request),
 		extractRefererParameter(request))
 
-	// If all the requests are invalid, Call to adaptor is skipped
-	if len(request.Imp) == 0 {
-		return nil, errs
-	}
-
 	return []*adapters.RequestData{{
 		Method: "GET",
 		Uri:    complete_url,
@@ -136,7 +129,7 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 	var bidResponse openrtb.BidResponse
 
-	var adheseBidResponseArray []openrtb_ext.AdheseBid
+	var adheseBidResponseArray []AdheseBid
 	if err := json.Unmarshal(response.Body, &adheseBidResponseArray); err != nil {
 		return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed as generic Adhese bid.", string(response.Body)))}
 	}
@@ -144,8 +137,8 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	var adheseBid = adheseBidResponseArray[0]
 
 	if adheseBid.Origin == "JERLICIA" {
-		var extArray []openrtb_ext.AdheseExt
-		var originDataArray []openrtb_ext.AdheseOriginData
+		var extArray []AdheseExt
+		var originDataArray []AdheseOriginData
 		if err := json.Unmarshal(response.Body, &extArray); err != nil {
 			return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed to JERLICIA ext.", string(response.Body)))}
 		}
@@ -188,7 +181,7 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	return bidderResponse, errs
 }
 
-func convertAdheseBid(adheseBid openrtb_ext.AdheseBid, adheseExt openrtb_ext.AdheseExt, adheseOriginData openrtb_ext.AdheseOriginData) openrtb.BidResponse {
+func convertAdheseBid(adheseBid AdheseBid, adheseExt AdheseExt, adheseOriginData AdheseOriginData) openrtb.BidResponse {
 	adheseExtJson, _ := json.Marshal(adheseOriginData)
 
 	return openrtb.BidResponse{
@@ -205,7 +198,7 @@ func convertAdheseBid(adheseBid openrtb_ext.AdheseBid, adheseExt openrtb_ext.Adh
 	}
 }
 
-func convertAdheseOpenRtbBid(adheseBid openrtb_ext.AdheseBid) openrtb.BidResponse {
+func convertAdheseOpenRtbBid(adheseBid AdheseBid) openrtb.BidResponse {
 	var response openrtb.BidResponse = adheseBid.OriginData
 	if len(response.SeatBid) > 0 && len(response.SeatBid[0].Bid) > 0 {
 		response.SeatBid[0].Bid[0].AdM = adheseBid.Body
@@ -213,14 +206,16 @@ func convertAdheseOpenRtbBid(adheseBid openrtb_ext.AdheseBid) openrtb.BidRespons
 	return response
 }
 
-func getAdMarkup(adheseBid openrtb_ext.AdheseBid, adheseExt openrtb_ext.AdheseExt) string {
-	if adheseExt.Ext == "js" && ContainsAny(adheseBid.Body, []string{"<script", "<div", "<html"}) {
-		return adheseBid.Body + "<img src='" + adheseExt.ImpressionCounter + "' style='height:1px; width:1px; margin: -1px -1px; display:none;'/>"
-	} else if adheseExt.Ext == "js" && ContainsAny(adheseBid.Body, []string{"<?xml", "<vast"}) {
-		return adheseBid.Body
-	} else {
-		return adheseExt.Tag
+func getAdMarkup(adheseBid AdheseBid, adheseExt AdheseExt) string {
+	if adheseExt.Ext == "js" {
+		if ContainsAny(adheseBid.Body, []string{"<script", "<div", "<html"}) {
+			return adheseBid.Body + "<img src='" + adheseExt.ImpressionCounter + "' style='height:1px; width:1px; margin: -1px -1px; display:none;'/>"
+		}
+		if ContainsAny(adheseBid.Body, []string{"<?xml", "<vast"}) {
+			return adheseBid.Body
+		}
 	}
+	return adheseExt.Tag
 }
 
 func getBidType(bidAdm string) openrtb_ext.BidType {
@@ -251,9 +246,4 @@ func NewAdheseAdapter(config *adapters.HTTPAdapterConfig, uri string) *AdheseAda
 func NewAdheseBidder(client *http.Client, uri string) *AdheseAdapter {
 	template, _ := template.New("endpointTemplate").Parse(uri)
 	return &AdheseAdapter{http: &adapters.HTTPAdapter{Client: client}, endpointTemplate: *template}
-}
-
-func printAsJson(obj interface{}) {
-	outy, _ := json.Marshal(obj)
-	fmt.Println(string(outy))
 }
