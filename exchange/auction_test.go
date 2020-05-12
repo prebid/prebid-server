@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -55,6 +56,7 @@ func TestBuildCacheString(t *testing.T) {
 					Headers:  "test headers string",
 					Response: "test response string",
 				},
+				Matcher: regexp.MustCompile(`[<>]`),
 			},
 			expectedDebugLog: DebugLog{
 				Data: DebugData{
@@ -62,6 +64,7 @@ func TestBuildCacheString(t *testing.T) {
 					Headers:  "<Headers>test headers string</Headers>",
 					Response: "<Response>test response string</Response>",
 				},
+				Matcher: regexp.MustCompile(`[<>]`),
 			},
 		},
 		{
@@ -72,6 +75,7 @@ func TestBuildCacheString(t *testing.T) {
 					Headers:  "test <headers string",
 					Response: "test <response> string",
 				},
+				Matcher: regexp.MustCompile(`[<>]`),
 			},
 			expectedDebugLog: DebugLog{
 				Data: DebugData{
@@ -79,6 +83,7 @@ func TestBuildCacheString(t *testing.T) {
 					Headers:  "<Headers>test headers string</Headers>",
 					Response: "<Response>test response string</Response>",
 				},
+				Matcher: regexp.MustCompile(`[<>]`),
 			},
 		},
 	}

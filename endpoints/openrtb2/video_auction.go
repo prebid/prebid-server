@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -92,6 +93,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		Enabled:   strings.EqualFold(debugQuery, "true"),
 		CacheType: prebid_cache_client.TypeXML,
 		TTL:       cacheTTL,
+		Matcher:   regexp.MustCompile(`[<>]`),
 	}
 
 	defer func() {

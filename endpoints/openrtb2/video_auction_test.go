@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -996,7 +997,8 @@ func TestHandleErrorDebugLog(t *testing.T) {
 			Headers:  "test headers string",
 			Response: "test response string",
 		},
-		TTL: int64(3600),
+		TTL:     int64(3600),
+		Matcher: regexp.MustCompile(`[<>]`),
 	}
 	handleError(&labels, recorder, []error{err1, err2}, &vo, &debugLog)
 
