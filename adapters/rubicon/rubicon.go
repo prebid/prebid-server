@@ -590,7 +590,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 	requestImpCopy := request.Imp
 
-	rubiconRequest := makeRubiconRequest(request)
+	rubiconRequest := request
 	for i := 0; i < numRequests; i++ {
 		thisImp := requestImpCopy[i]
 
@@ -785,31 +785,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	return requestData, errs
 }
 
-func makeRubiconRequest(internalRequest *openrtb.BidRequest) *openrtb.BidRequest {
-	return &openrtb.BidRequest{
-		ID:      internalRequest.ID,
-		Imp:     internalRequest.Imp,
-		Site:    internalRequest.Site,
-		App:     internalRequest.App,
-		Device:  internalRequest.Device,
-		User:    internalRequest.User,
-		Test:    internalRequest.Test,
-		AT:      internalRequest.AT,
-		TMax:    internalRequest.TMax,
-		WSeat:   internalRequest.WSeat,
-		BSeat:   internalRequest.BSeat,
-		AllImps: internalRequest.AllImps,
-		Cur:     internalRequest.Cur,
-		WLang:   internalRequest.WLang,
-		BCat:    internalRequest.BCat,
-		BAdv:    internalRequest.BAdv,
-		BApp:    internalRequest.BApp,
-		Source:  internalRequest.Source,
-		Regs:    internalRequest.Regs,
-		Ext:     internalRequest.Ext,
-	}
-}
-
 func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, []string, []error) {
 	tpIds := make([]rubiconExtUserTpID, 0)
 	segments := make([]string, 0)
@@ -938,19 +913,8 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		bidType = openrtb_ext.BidTypeVideo
 	}
 
-	impToCpmOverride, err := mapImpIdToCpmOverride(internalRequest.Imp)
-	if err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: err.Error(),
-		}}
-	}
-
-	cmpOverride, err := cmpOverrideFromBidRequest(internalRequest)
-	if err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: err.Error(),
-		}}
-	}
+	impToCpmOverride := mapImpIdToCpmOverride(internalRequest.Imp)
+	cmpOverride := cmpOverrideFromBidRequest(internalRequest)
 
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
@@ -982,20 +946,16 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	return bidResponse, nil
 }
 
-func cmpOverrideFromBidRequest(bidRequest *openrtb.BidRequest) (float64, error) {
-	if bidRequest.Ext == nil {
-		return 0, nil
-	}
-
+func cmpOverrideFromBidRequest(bidRequest *openrtb.BidRequest) float64 {
 	var bidRequestExt bidRequestExt
 	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
-		return 0, fmt.Errorf("Error decoding Request.ext : %s ", err.Error())
+		return 0
 	}
 
-	return bidRequestExt.Rubicon.Debug.CpmOverride, nil
+	return bidRequestExt.Rubicon.Debug.CpmOverride
 }
 
-func mapImpIdToCpmOverride(imps []openrtb.Imp) (map[string]float64, error) {
+func mapImpIdToCpmOverride(imps []openrtb.Imp) map[string]float64 {
 	impIdToCmpOverride := make(map[string]float64)
 	for _, imp := range imps {
 		var bidderExt adapters.ExtImpBidder
@@ -1010,5 +970,5 @@ func mapImpIdToCpmOverride(imps []openrtb.Imp) (map[string]float64, error) {
 
 		impIdToCmpOverride[imp.ID] = rubiconExt.Debug.CpmOverride
 	}
-	return impIdToCmpOverride, nil
+	return impIdToCmpOverride
 }
