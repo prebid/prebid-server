@@ -1023,11 +1023,11 @@ func TestCreateImpressionTemplate(t *testing.T) {
 	video.PlaybackMethod = []openrtb.PlaybackMethod{7, 8}
 
 	res := createImpressionTemplate(imp, &video)
-	assert.Equal(t, res.Video.Protocols, []openrtb.Protocol{3, 4}, "")
-	assert.Equal(t, res.Video.MIMEs, []string{"video/flv"}, "")
-	assert.Equal(t, int(res.Video.H), 300, "")
-	assert.Equal(t, int(res.Video.W), 0, "")
-	assert.Equal(t, res.Video.PlaybackMethod, []openrtb.PlaybackMethod{7, 8}, "")
+	assert.Equal(t, res.Video.Protocols, []openrtb.Protocol{3, 4}, "Incorrect video protocols")
+	assert.Equal(t, res.Video.MIMEs, []string{"video/flv"}, "Incorrect video MIMEs")
+	assert.Equal(t, int(res.Video.H), 300, "Incorrect video height")
+	assert.Equal(t, int(res.Video.W), 0, "Incorrect video width")
+	assert.Equal(t, res.Video.PlaybackMethod, []openrtb.PlaybackMethod{7, 8}, "Incorrect video playback method")
 }
 
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
