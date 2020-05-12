@@ -159,14 +159,14 @@ func preprocess(request *openrtb.BidRequest) []error {
 		beintooExt, err := unpackImpExt(&imp)
 		if err != nil {
 			errors = append(errors, err)
-			continue
+			return errors
 		}
 
 		addImpProps(&imp, &secure, beintooExt)
 
 		if err := buildImpBanner(&imp); err != nil {
 			errors = append(errors, err)
-			continue
+			return errors
 		}
 		resImps = append(resImps, imp)
 	}
