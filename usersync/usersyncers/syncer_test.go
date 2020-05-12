@@ -19,9 +19,11 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderAdkernel):         syncConfig,
 			string(openrtb_ext.BidderAdkernelAdn):      syncConfig,
 			string(openrtb_ext.BidderAdmixer):          syncConfig,
+			string(openrtb_ext.BidderAdOcean):          syncConfig,
 			string(openrtb_ext.BidderAdpone):           syncConfig,
 			string(openrtb_ext.BidderAdtelligent):      syncConfig,
 			string(openrtb_ext.BidderAdvangelists):     syncConfig,
+			string(openrtb_ext.BidderAJA):              syncConfig,
 			string(openrtb_ext.BidderAppnexus):         syncConfig,
 			string(openrtb_ext.BidderBeachfront):       syncConfig,
 			string(openrtb_ext.BidderBrightroll):       syncConfig,
@@ -41,6 +43,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderIx):               syncConfig,
 			string(openrtb_ext.BidderLifestreet):       syncConfig,
 			string(openrtb_ext.BidderLockerDome):       syncConfig,
+			string(openrtb_ext.BidderLunaMedia):        syncConfig,
 			string(openrtb_ext.BidderMarsmedia):        syncConfig,
 			string(openrtb_ext.BidderMgid):             syncConfig,
 			string(openrtb_ext.BidderNanoInteractive):  syncConfig,
@@ -81,6 +84,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderPubnative:    true,
 		openrtb_ext.BidderKidoz:        true,
 		openrtb_ext.BidderYeahmobi:     true,
+		openrtb_ext.BidderOrbidder:     true,
 	}
 
 	for bidder, config := range cfg.Adapters {
