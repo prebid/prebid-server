@@ -56,7 +56,7 @@ func TestBuildCacheString(t *testing.T) {
 					Headers:  "test headers string",
 					Response: "test response string",
 				},
-				Matcher: regexp.MustCompile(`[<>]`),
+				Regexp: regexp.MustCompile(`[<>]`),
 			},
 			expectedDebugLog: DebugLog{
 				Data: DebugData{
@@ -64,7 +64,7 @@ func TestBuildCacheString(t *testing.T) {
 					Headers:  "<Headers>test headers string</Headers>",
 					Response: "<Response>test response string</Response>",
 				},
-				Matcher: regexp.MustCompile(`[<>]`),
+				Regexp: regexp.MustCompile(`[<>]`),
 			},
 		},
 		{
@@ -75,7 +75,7 @@ func TestBuildCacheString(t *testing.T) {
 					Headers:  "test <headers string",
 					Response: "test <response> string",
 				},
-				Matcher: regexp.MustCompile(`[<>]`),
+				Regexp: regexp.MustCompile(`[<>]`),
 			},
 			expectedDebugLog: DebugLog{
 				Data: DebugData{
@@ -83,7 +83,7 @@ func TestBuildCacheString(t *testing.T) {
 					Headers:  "<Headers>test headers string</Headers>",
 					Response: "<Response>test response string</Response>",
 				},
-				Matcher: regexp.MustCompile(`[<>]`),
+				Regexp: regexp.MustCompile(`[<>]`),
 			},
 		},
 	}

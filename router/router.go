@@ -6,12 +6,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/prebid/prebid-server/pbsmetrics"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adform"
@@ -252,7 +254,9 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	videoEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, videoFetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap, cacheClient)
+	videoEndpointRegexp := regexp.MustCompile(`[<>]`)
+
+	videoEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, videoFetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap, cacheClient, videoEndpointRegexp)
 	if err != nil {
 		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
 	}

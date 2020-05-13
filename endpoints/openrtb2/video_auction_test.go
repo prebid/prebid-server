@@ -997,8 +997,8 @@ func TestHandleErrorDebugLog(t *testing.T) {
 			Headers:  "test headers string",
 			Response: "test response string",
 		},
-		TTL:     int64(3600),
-		Matcher: regexp.MustCompile(`[<>]`),
+		TTL:    int64(3600),
+		Regexp: regexp.MustCompile(`[<>]`),
 	}
 	handleError(&labels, recorder, []error{err1, err2}, &vo, &debugLog)
 
@@ -1027,6 +1027,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *p
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 		nil,
 	}
 
@@ -1068,6 +1069,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		[]byte{},
 		openrtb_ext.BidderMap,
 		ex.cache,
+		regexp.MustCompile(`[<>]`),
 	}
 
 	return edep

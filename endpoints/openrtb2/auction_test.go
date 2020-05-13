@@ -602,7 +602,7 @@ func TestStoredRequests(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	edep := &endpointDeps{&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, false, []byte{}, openrtb_ext.BidderMap, nil}
+	edep := &endpointDeps{&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, false, []byte{}, openrtb_ext.BidderMap, nil, nil}
 
 	for i, requestData := range testStoredRequests {
 		newRequest, errList := edep.processStoredRequests(context.Background(), json.RawMessage(requestData))
@@ -639,6 +639,7 @@ func TestOversizedRequest(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BidderMap,
 		nil,
+		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -671,6 +672,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 		nil,
 	}
 
@@ -810,6 +812,7 @@ func TestDisabledBidder(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BidderMap,
 		nil,
+		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -843,6 +846,7 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 		nil,
 	}
 	errs := deps.validateImpExt(imp, nil, 0)
@@ -882,6 +886,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 		nil,
 	}
 
@@ -924,6 +929,7 @@ func TestCCPAInvalidValueWarning(t *testing.T) {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 		nil,
 	}
 

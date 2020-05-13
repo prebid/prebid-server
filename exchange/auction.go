@@ -24,7 +24,7 @@ type DebugLog struct {
 	TTL         int64
 	CacheKey    string
 	CacheString string
-	Matcher     *regexp.Regexp
+	Regexp      *regexp.Regexp
 }
 
 type DebugData struct {
@@ -34,10 +34,10 @@ type DebugData struct {
 }
 
 func (d *DebugLog) BuildCacheString() {
-	if d.Matcher != nil {
-		d.Data.Request = fmt.Sprintf(d.Matcher.ReplaceAllString(d.Data.Request, ""))
-		d.Data.Headers = fmt.Sprintf(d.Matcher.ReplaceAllString(d.Data.Headers, ""))
-		d.Data.Response = fmt.Sprintf(d.Matcher.ReplaceAllString(d.Data.Response, ""))
+	if d.Regexp != nil {
+		d.Data.Request = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Request, ""))
+		d.Data.Headers = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Headers, ""))
+		d.Data.Response = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Response, ""))
 	}
 
 	d.Data.Request = fmt.Sprintf("<Request>%s</Request>", d.Data.Request)
