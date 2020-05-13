@@ -18,6 +18,10 @@ type ConsumableAdapter struct {
 	endpoint string
 }
 
+type regsExt struct {
+	UsPrivacy string `json:"us_privacy,omitempty"`
+}
+
 type bidRequest struct {
 	Placements         []placement `json:"placements"`
 	Time               int64       `json:"time"`
@@ -32,6 +36,7 @@ type bidRequest struct {
 	Url                string      `json:"url,omitempty"`
 	EnableBotFiltering bool        `json:"enableBotFiltering,omitempty"`
 	Parallel           bool        `json:"parallel"`
+	Ccpa               string      `json:"ccpa,omitempty"`
 }
 
 type placement struct {
@@ -122,6 +127,13 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	if request.Site != nil {
 		body.Referrer = request.Site.Ref // Effectively the previous page to the page where the ad will be shown
 		body.Url = request.Site.Page     // where the impression will be made
+	}
+
+	if request.Regs != nil && request.Regs.Ext != nil {
+		var regsExt regsExt
+		if err := json.Unmarshal(request.Regs.Ext, &regsExt); err == nil {
+			body.Ccpa = regsExt.UsPrivacy
+		}
 	}
 
 	for i, impression := range request.Imp {
