@@ -20,6 +20,11 @@ type ConsumableAdapter struct {
 
 type regsExt struct {
 	UsPrivacy string `json:"us_privacy,omitempty"`
+	Gdpr      *int   `json:"gdpr,omitempty"`
+}
+
+type userExt struct {
+	Consent string `json:"consent,omitempty"`
 }
 
 type bidRequest struct {
@@ -37,6 +42,7 @@ type bidRequest struct {
 	EnableBotFiltering bool        `json:"enableBotFiltering,omitempty"`
 	Parallel           bool        `json:"parallel"`
 	Ccpa               string      `json:"ccpa,omitempty"`
+	Gdpr               *bidGdpr    `json:"gdpr,omitempty"`
 }
 
 type placement struct {
@@ -50,6 +56,11 @@ type placement struct {
 
 type user struct {
 	Key string `json:"key,omitempty"`
+}
+
+type bidGdpr struct {
+	Applies *bool  `json:"applies,omitempty"`
+	Consent string `json:"consent,omitempty"`
 }
 
 type bidResponse struct {
@@ -129,10 +140,26 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		body.Url = request.Site.Page     // where the impression will be made
 	}
 
+	gdpr := bidGdpr{}
+
 	if request.Regs != nil && request.Regs.Ext != nil {
 		var regsExt regsExt
 		if err := json.Unmarshal(request.Regs.Ext, &regsExt); err == nil {
 			body.Ccpa = regsExt.UsPrivacy
+
+			if regsExt.Gdpr != nil {
+				applies := *regsExt.Gdpr != 0
+				gdpr.Applies = &applies
+				body.Gdpr = &gdpr
+			}
+		}
+	}
+
+	if request.User != nil && request.User.Ext != nil {
+		var userExt userExt
+		if err := json.Unmarshal(request.User.Ext, &userExt); err == nil {
+			gdpr.Consent = userExt.Consent
+			body.Gdpr = &gdpr
 		}
 	}
 
