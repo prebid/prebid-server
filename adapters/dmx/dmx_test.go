@@ -494,7 +494,39 @@ func TestMakeBidsNoContent(t *testing.T) {
 	}
 
 }
+func TestUserExtEmptyObject(t *testing.T) {
+	var w, h int = 300, 250
 
+	var width, height uint64 = uint64(w), uint64(h)
+
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
+	imp1 := openrtb.Imp{
+		ID:  "imp1",
+		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
+		Banner: &openrtb.Banner{
+			W: &width,
+			H: &height,
+			Format: []openrtb.Format{
+				{W: 300, H: 250},
+			},
+		}}
+
+	inputRequest := openrtb.BidRequest{
+		Imp: []openrtb.Imp{imp1, imp1, imp1},
+		Site: &openrtb.Site{
+			Publisher: &openrtb.Publisher{
+				ID: "10007",
+			},
+		},
+		User: &openrtb.User{Ext: json.RawMessage(`{}`)},
+		ID:   "1234",
+	}
+
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	if len(actualAdapterRequests) != 0 {
+		t.Errorf("should have 0 request")
+	}
+}
 func TestUserEidsOnly(t *testing.T) {
 	var w, h int = 300, 250
 

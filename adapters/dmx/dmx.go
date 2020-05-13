@@ -124,7 +124,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		}
 		if dmxReq.User.Ext != nil {
 			if err := json.Unmarshal(dmxReq.User.Ext, &user_ext); err == nil {
-				if len(user_ext.Eids) > 0 || (&user_ext.Digitrust != nil && user_ext.Digitrust.ID != "") {
+				if len(user_ext.Eids) > 0 || user_ext.Digitrust.ID != "" {
 					anyHasId = true
 				}
 			}
