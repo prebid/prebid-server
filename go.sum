@@ -65,10 +65,8 @@ github.com/mssola/user_agent v0.4.1 h1:iTUaMpVrb2qWyvUw8UvK3ygWMd2lB1NGuZ1xhpBf1
 github.com/mssola/user_agent v0.4.1/go.mod h1:UFiKPVaShrJGW93n4uo8dpPdg1BSVpw2P9bneo0Mtp8=
 github.com/mxmCherry/openrtb v11.0.0+incompatible h1:tNzh7vKwQ8lopBAadyN3QPryawXSaVXYWi1IVluXHiM=
 github.com/mxmCherry/openrtb v11.0.0+incompatible/go.mod h1:zpnz6Au3bzTGplpRU0kvFPNT6g4ROAKx/GkrslFDwZk=
-github.com/newrelic/go-agent v3.4.0+incompatible h1:GhUhNLDdR3ETfUVJAN/czXlqRTcgbPs6U02jYhf15rg=
 github.com/newrelic/go-agent/v3 v3.0.0 h1:YK9ddXLcMoWr/Bqj30T+cQo1wniFVR5SS/mVuVTGKS8=
 github.com/newrelic/go-agent/v3 v3.0.0/go.mod h1:H28zDNUC0U/b7kLoY4EFOhuth10Xu/9dchozUiOseQQ=
-github.com/newrelic/go-agent/v3 v3.4.0 h1:PZTDUw+8h0yRkpkkXKrHSlRsDk0uYJ4I3Dv2lrws/EU=
 github.com/newrelic/go-agent/v3/integrations/nrhttprouter v1.0.0 h1:58+OKy9eBvASQoWKhTQNJjY/AWIcFZkpff2JNpLLn9o=
 github.com/newrelic/go-agent/v3/integrations/nrhttprouter v1.0.0/go.mod h1:CkLa4BKOGaiFbWHsv7zOspG+zXrfjsNXDxsDGvdhT+s=
 github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.0 h1:qmAtZBKzuzxTkcBBfWHbeImk0Wxjooc522xaafANKJs=

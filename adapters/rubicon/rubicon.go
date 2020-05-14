@@ -236,6 +236,40 @@ type rubiconUserExtEidUidExt struct {
 	RtiPartner string `json:"rtiPartner,omitempty"`
 }
 
+// hack for aqid in response
+type rubiconBidResponse struct {
+	SeatBid []rubiconSeatBid `json:"seatbid,omitempty"`
+}
+type rubiconSeatBid struct {
+	Bid []rubiconBid `json:"bid"`
+}
+type rubiconBid struct {
+	AqID string `json:"aqid,omitempty"`
+}
+
+func (rbr rubiconBidResponse) AqID() string {
+	if len(rbr.SeatBid) == 0 {
+		return ""
+	}
+
+	if len(rbr.SeatBid[0].Bid) == 0 {
+		return ""
+	}
+
+	return rbr.SeatBid[0].Bid[0].AqID
+}
+
+type rubiconBidExt struct {
+	RP rubiconBidExtRP `json:"rp,omitempty"`
+}
+
+type rubiconBidExtRP struct {
+	AdVid  int    `json:"advid,omitempty"`
+	Mime   string `json:"mime,omitempty"`
+	SizeID int    `json:"size_id,omitempty"`
+	AqID   string `json:"aqid,omitempty"`
+}
+
 //MAS algorithm
 func findPrimary(alt []int) (int, []int) {
 	min, pos, primary := 0, 0, 0
@@ -892,6 +926,12 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		}}
 	}
 
+	var rubiconBidResp rubiconBidResponse
+	if err := json.Unmarshal(response.Body, &rubiconBidResp); err != nil {
+		// explicitly setting empty RubiconBidResponse
+		rubiconBidResp = rubiconBidResponse{}
+	}
+
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -922,6 +962,9 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 				if bid.ID == "0" {
 					bid.ID = bidResp.BidID
 				}
+
+				injectAqID(&bid, rubiconBidResp.AqID())
+
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &bid,
 					BidType: bidType,
@@ -931,4 +974,20 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	}
 
 	return bidResponse, nil
+}
+
+func injectAqID(bid *openrtb.Bid, aqid string) {
+	var bidExt rubiconBidExt
+	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+		return
+	}
+
+	bidExt.RP.AqID = aqid
+	rawBidExt, err := json.Marshal(bidExt)
+	if err != nil {
+		return
+	}
+
+	bid.Ext = rawBidExt
+	return
 }
