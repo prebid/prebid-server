@@ -61,9 +61,10 @@ func TestApply(t *testing.T) {
 		{
 			description: "All Enforced",
 			enforcement: Enforcement{
-				CCPA:  true,
-				COPPA: true,
-				GDPR:  true,
+				CCPA:    true,
+				COPPA:   true,
+				GDPR:    true,
+				GDPRGeo: true,
 			},
 			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest32,
 			expectedDeviceGeo:       ScrubStrategyGeoFull,
@@ -73,9 +74,10 @@ func TestApply(t *testing.T) {
 		{
 			description: "CCPA Only",
 			enforcement: Enforcement{
-				CCPA:  true,
-				COPPA: false,
-				GDPR:  false,
+				CCPA:    true,
+				COPPA:   false,
+				GDPR:    false,
+				GDPRGeo: false,
 			},
 			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:       ScrubStrategyGeoReducedPrecision,
@@ -85,9 +87,10 @@ func TestApply(t *testing.T) {
 		{
 			description: "COPPA Only",
 			enforcement: Enforcement{
-				CCPA:  false,
-				COPPA: true,
-				GDPR:  false,
+				CCPA:    false,
+				COPPA:   true,
+				GDPR:    false,
+				GDPRGeo: false,
 			},
 			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest32,
 			expectedDeviceGeo:       ScrubStrategyGeoFull,
@@ -97,9 +100,10 @@ func TestApply(t *testing.T) {
 		{
 			description: "GDPR Only",
 			enforcement: Enforcement{
-				CCPA:  false,
-				COPPA: false,
-				GDPR:  true,
+				CCPA:    false,
+				COPPA:   false,
+				GDPR:    true,
+				GDPRGeo: true,
 			},
 			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:       ScrubStrategyGeoReducedPrecision,
