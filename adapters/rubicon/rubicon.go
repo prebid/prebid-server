@@ -590,7 +590,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 	requestImpCopy := request.Imp
 
-	rubiconRequest := request
+	rubiconRequest := *request
 	for i := 0; i < numRequests; i++ {
 		thisImp := requestImpCopy[i]
 
