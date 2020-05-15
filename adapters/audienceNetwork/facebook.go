@@ -1,34 +1,37 @@
 package audienceNetwork
 
 import (
-	"bytes"
-	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/pbs"
-	"golang.org/x/net/context/ctxhttp"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type FacebookAdapter struct {
 	http         *adapters.HTTPAdapter
 	URI          string
 	nonSecureUri string
-	platformJSON json.RawMessage
+	platformID   string
+	appSecret    string
 }
 
-var supportedHeight = map[uint64]bool{
+type facebookAdMarkup struct {
+	BidID string `json:"bid_id"`
+}
+
+var supportedBannerHeights = map[uint64]bool{
 	50:  true,
-	90:  true,
 	250: true,
 }
 
@@ -37,267 +40,459 @@ func (a *FacebookAdapter) Name() string {
 	return "audienceNetwork"
 }
 
-// Facebook likes to parallelize to minimize latency
-func (a *FacebookAdapter) SplitAdUnits() bool {
-	return true
-}
-
 func (a *FacebookAdapter) SkipNoCookies() bool {
 	return false
 }
 
-type facebookParams struct {
-	PlacementId string `json:"placementId"`
+type facebookReqExt struct {
+	PlatformID string `json:"platformid"`
+	AuthID     string `json:"authentication_id"`
 }
 
-func coinFlip() bool {
-	return rand.Intn(2) != 0
+func (this *FacebookAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	if len(request.Imp) == 0 {
+		return nil, []error{&errortypes.BadInput{
+			Message: "No impressions provided",
+		}}
+	}
+
+	if request.User == nil || request.User.BuyerUID == "" {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Missing bidder token in 'user.buyeruid'",
+		}}
+	}
+
+	return this.buildRequests(request)
 }
 
-func (a *FacebookAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (result adapters.CallOneResult, err error) {
-	url := a.URI
-	if coinFlip() {
-		//50% of traffic to non-secure endpoint
-		url = a.nonSecureUri
-	}
-	httpReq, _ := http.NewRequest("POST", url, &reqJSON)
-	httpReq.Header.Add("Content-Type", "application/json")
-	httpReq.Header.Add("Accept", "application/json")
+func (this *FacebookAdapter) buildRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+	// Documentation suggests bid request splitting by impression so that each
+	// request only represents a single impression
+	reqs := make([]*adapters.RequestData, 0, len(request.Imp))
+	headers := http.Header{}
+	var errs []error
 
-	anResp, e := ctxhttp.Do(ctx, a.http.Client, httpReq)
-	if e != nil {
-		err = e
-		return
-	}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	headers.Add("X-Fb-Pool-Routing-Token", request.User.BuyerUID)
 
-	result.StatusCode = anResp.StatusCode
+	for _, imp := range request.Imp {
+		// Make a copy of the request so that we don't change the original request which
+		// is shared across multiple threads
+		fbreq := *request
+		fbreq.Imp = []openrtb.Imp{imp}
 
-	defer anResp.Body.Close()
-	body, _ := ioutil.ReadAll(anResp.Body)
-	result.ResponseBody = string(body)
-
-	if anResp.StatusCode == http.StatusBadRequest {
-		err = &errortypes.BadInput{
-			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, result.ResponseBody),
+		if err := this.modifyRequest(&fbreq); err != nil {
+			errs = append(errs, err)
+			continue
 		}
-		return
-	}
 
-	if anResp.StatusCode == http.StatusNoContent {
-		return
-	}
-
-	if anResp.StatusCode != http.StatusOK {
-		err = &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, result.ResponseBody),
+		body, err := json.Marshal(&fbreq)
+		if err != nil {
+			errs = append(errs, err)
+			continue
 		}
-		return
+
+		body, err = modifyImpCustom(body, &fbreq.Imp[0])
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		reqs = append(reqs, &adapters.RequestData{
+			Method:  "POST",
+			Uri:     this.URI,
+			Body:    body,
+			Headers: headers,
+		})
 	}
 
-	var bidResp openrtb.BidResponse
-	err = json.Unmarshal(body, &bidResp)
+	return reqs, errs
+}
+
+// The authentication ID is a sha256 hmac hash encoded as a hex string, based on
+// the app secret and the ID of the bid request
+func (this *FacebookAdapter) makeAuthID(req *openrtb.BidRequest) string {
+	h := hmac.New(sha256.New, []byte(this.appSecret))
+	h.Write([]byte(req.ID))
+
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func (this *FacebookAdapter) modifyRequest(out *openrtb.BidRequest) error {
+	if len(out.Imp) != 1 {
+		panic("each bid request to facebook should only have a single impression")
+	}
+
+	imp := &out.Imp[0]
+	plmtId, pubId, err := this.extractPlacementAndPublisher(imp)
 	if err != nil {
-		err = &errortypes.BadServerResponse{
+		return err
+	}
+
+	// Every outgoing FAN request has a single impression, so we can safely use the unique
+	// impression ID as the FAN request ID. We need to make sure that we update the request
+	// ID *BEFORE* we generate the auth ID since its a hash based on the request ID
+	out.ID = imp.ID
+
+	reqExt := facebookReqExt{
+		PlatformID: this.platformID,
+		AuthID:     this.makeAuthID(out),
+	}
+
+	if out.Ext, err = json.Marshal(reqExt); err != nil {
+		return err
+	}
+
+	imp.TagID = pubId + "_" + plmtId
+	imp.Ext = nil
+
+	if out.App != nil {
+		app := *out.App
+		app.Publisher = &openrtb.Publisher{ID: pubId}
+		out.App = &app
+	} else {
+		site := *out.Site
+		site.Publisher = &openrtb.Publisher{ID: pubId}
+		out.Site = &site
+	}
+
+	if err = this.modifyImp(imp); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (this *FacebookAdapter) modifyImp(out *openrtb.Imp) error {
+	impType, ok := resolveImpType(out)
+	if !ok {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("imp #%s with invalid type", out.ID),
+		}
+	}
+
+	if out.Instl == 1 && impType != openrtb_ext.BidTypeBanner {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner", out.ID),
+		}
+	}
+
+	switch impType {
+	case openrtb_ext.BidTypeBanner:
+		if out.Instl == 1 {
+			out.Banner.W = openrtb.Uint64Ptr(0)
+			out.Banner.H = openrtb.Uint64Ptr(0)
+			out.Banner.Format = nil
+
+			return nil
+		}
+
+		if out.Banner.H == nil {
+			for _, f := range out.Banner.Format {
+				if _, ok := supportedBannerHeights[f.H]; ok {
+					h := f.H
+					out.Banner.H = &h
+					break
+				}
+			}
+			if out.Banner.H == nil {
+				return &errortypes.BadInput{
+					Message: fmt.Sprintf("imp #%s: banner height required", out.ID),
+				}
+			}
+		}
+
+		if _, ok := supportedBannerHeights[*out.Banner.H]; !ok {
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("imp #%s: only banner heights 50 and 250 are supported", out.ID),
+			}
+		}
+
+		/* This will get overwritten post-serialization */
+		out.Banner.W = openrtb.Uint64Ptr(0)
+		out.Banner.Format = nil
+		break
+	}
+
+	return nil
+}
+
+func (this *FacebookAdapter) extractPlacementAndPublisher(out *openrtb.Imp) (string, string, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(out.Ext, &bidderExt); err != nil {
+		return "", "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
-		return
-	}
-	if len(bidResp.SeatBid) == 0 {
-		return
-	}
-	if len(bidResp.SeatBid[0].Bid) == 0 {
-		return
-	}
-	bid := bidResp.SeatBid[0].Bid[0]
-
-	result.Bid = &pbs.PBSBid{
-		AdUnitCode:        bid.ImpID,
-		Price:             bid.Price,
-		Adm:               bid.AdM,
-		CreativeMediaType: "banner", //  hard code this, because that's all facebook supports now, can potentially update it dynamically from "template" field in the "adm"
-	}
-	return
-}
-
-func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs.PBSBidder, placementId string, mtype pbs.MediaType, pubId string, unitInd int) (openrtb.BidRequest, error) {
-	// this method creates imps for all ad units for the bidder with a single media type
-	fbReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), []pbs.MediaType{mtype})
-
-	if err != nil {
-		return openrtb.BidRequest{}, err
 	}
 
-	fbReq.Ext = a.platformJSON
-
-	if fbReq.Imp != nil && len(fbReq.Imp) > 0 {
-		// only returns 1 imp for requested ad unit
-		fbReq.Imp = fbReq.Imp[unitInd : unitInd+1]
-
-		if fbReq.Site != nil {
-			siteCopy := *fbReq.Site
-			siteCopy.Publisher = &openrtb.Publisher{ID: pubId}
-			fbReq.Site = &siteCopy
+	var fbExt openrtb_ext.ExtImpFacebook
+	if err := json.Unmarshal(bidderExt.Bidder, &fbExt); err != nil {
+		return "", "", &errortypes.BadInput{
+			Message: err.Error(),
 		}
-		if fbReq.App != nil {
-			appCopy := *fbReq.App
-			appCopy.Publisher = &openrtb.Publisher{ID: pubId}
-			fbReq.App = &appCopy
-		}
-		fbReq.Imp[0].TagID = placementId
+	}
 
-		// if instl = 1 sent in, pass size (0,0) to facebook
-		if fbReq.Imp[0].Instl == 1 && fbReq.Imp[0].Banner != nil {
-			fbReq.Imp[0].Banner.W = openrtb.Uint64Ptr(0)
-			fbReq.Imp[0].Banner.H = openrtb.Uint64Ptr(0)
+	if fbExt.PlacementId == "" {
+		return "", "", &errortypes.BadInput{
+			Message: "Missing placementId param",
 		}
-		// if instl = 0 and type is banner, do not send non supported size
-		if fbReq.Imp[0].Instl == 0 && fbReq.Imp[0].Banner != nil {
-			if !supportedHeight[*fbReq.Imp[0].Banner.H] {
-				return fbReq, &errortypes.BadInput{
-					Message: "Facebook do not support banner height other than 50, 90 and 250",
-				}
-			}
-			// do not send legacy 320x50 size to facebook, instead use 0x50
-			if *fbReq.Imp[0].Banner.W == 320 && *fbReq.Imp[0].Banner.H == 50 {
-				fbReq.Imp[0].Banner.W = openrtb.Uint64Ptr(0)
+	}
+
+	placementId := fbExt.PlacementId
+	publisherId := fbExt.PublisherId
+
+	// Support the legacy path with the caller was expected to pass in just placementId
+	// which was an underscore concantenated string with the publisherId and placementId.
+	// The new path for callers is to pass in the placementId and publisherId independently
+	// and the below code will prefix the placementId that we pass to FAN with the publsiherId
+	// so that we can abstract the implementation details from the caller
+	toks := strings.Split(placementId, "_")
+	if len(toks) == 1 {
+		if publisherId == "" {
+			return "", "", &errortypes.BadInput{
+				Message: "Missing publisherId param",
 			}
 		}
-		return fbReq, nil
+
+		return placementId, publisherId, nil
+	} else if len(toks) == 2 {
+		publisherId = toks[0]
+		placementId = toks[1]
 	} else {
-		return fbReq, &errortypes.BadInput{
-			Message: "No supported impressions",
+		return "", "", &errortypes.BadInput{
+			Message: fmt.Sprintf("Invalid placementId param '%s' and publisherId param '%s'", placementId, publisherId),
 		}
 	}
+
+	return placementId, publisherId, nil
 }
 
-func (a *FacebookAdapter) GenerateRequestsForFacebook(req *pbs.PBSRequest, bidder *pbs.PBSBidder) ([]*openrtb.BidRequest, error) {
-	requests := make([]*openrtb.BidRequest, len(bidder.AdUnits)*2) // potentially we can for eachadUnit have 2 imps - BANNER and VIDEO
-	reqIndex := 0
-	for i, unit := range bidder.AdUnits {
-		var params facebookParams
-		err := json.Unmarshal(unit.Params, &params)
-		if err != nil {
-			return nil, err
-		}
-		if params.PlacementId == "" {
-			return nil, &errortypes.BadInput{
-				Message: "Missing placementId param",
-			}
-		}
-		s := strings.Split(params.PlacementId, "_")
-		if len(s) != 2 {
-			return nil, &errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid placementId param '%s'", params.PlacementId),
-			}
-		}
-		pubId := s[0]
-
-		// BANNER
-		fbReqB, err := a.MakeOpenRtbBidRequest(req, bidder, params.PlacementId, pbs.MEDIA_TYPE_BANNER, pubId, i)
-		if err == nil {
-			requests[reqIndex] = &fbReqB
-			reqIndex = reqIndex + 1
-		}
-
-		// VIDEO
-		fbReqV, err := a.MakeOpenRtbBidRequest(req, bidder, params.PlacementId, pbs.MEDIA_TYPE_VIDEO, pubId, i)
-		if err == nil {
-			requests[reqIndex] = &fbReqV
-			reqIndex = reqIndex + 1
-
-		}
-
-	}
-	return requests[:reqIndex], nil
-}
-
-func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	ortbRequests, e := a.GenerateRequestsForFacebook(req, bidder)
-
-	if e != nil {
-		return nil, e
-	}
-
-	requests := make([]bytes.Buffer, len(ortbRequests))
-	for i, ortbRequest := range ortbRequests {
-		e = json.NewEncoder(&requests[i]).Encode(ortbRequest)
-		if e != nil {
-			return nil, e
-		}
-	}
-
-	ch := make(chan adapters.CallOneResult)
-
-	for i := range requests {
-		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
-			result, err := a.callOne(ctx, reqJSON)
-			result.Error = err
-			if result.Bid != nil {
-				result.Bid.BidderCode = bidder.BidderCode
-				unit := bidder.LookupAdUnit(result.Bid.AdUnitCode)
-				if unit != nil {
-					result.Bid.Width = unit.Sizes[0].W
-					result.Bid.Height = unit.Sizes[0].H
-				}
-				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
-				if result.Bid.BidID == "" {
-					result.Error = &errortypes.BadServerResponse{
-						Message: fmt.Sprintf("Unknown ad unit code '%s'", result.Bid.AdUnitCode),
-					}
-					result.Bid = nil
-				}
-			}
-			ch <- result
-		}(bidder, requests[i])
+// XXX: This entire function is just a hack to get around mxmCherry 11.0.0 limitations, without
+// having to fork the library and maintain our own branch
+func modifyImpCustom(json []byte, imp *openrtb.Imp) ([]byte, error) {
+	impType, ok := resolveImpType(imp)
+	if ok == false {
+		panic("processing an invalid impression")
 	}
 
 	var err error
 
-	bids := make(pbs.PBSBidSlice, 0)
-	for i := 0; i < len(requests); i++ {
-		result := <-ch
-		if result.Bid != nil {
-			bids = append(bids, result.Bid)
+	switch impType {
+	case openrtb_ext.BidTypeBanner:
+		// The current version of mxmCherry (11.0.0) repesents banner.w as unsigned
+		// integers, so setting a value of -1 is not possible which is why we have to do it
+		// post-serialization
+
+		// The above does not apply to interstitial impressions
+		if imp.Instl == 1 {
+			break
 		}
-		if req.IsDebug {
-			debug := &pbs.BidderDebug{
-				RequestURI:   a.URI,
-				RequestBody:  requests[i].String(),
-				StatusCode:   result.StatusCode,
-				ResponseBody: result.ResponseBody,
+
+		json, err = jsonparser.Set(json, []byte("-1"), "imp", "[0]", "banner", "w")
+		if err != nil {
+			return json, err
+		}
+
+		break
+
+	case openrtb_ext.BidTypeVideo:
+		// mxmCherry omits video.w/h if set to zero, so we need to force set those
+		// fields to zero post-serialization for the time being
+		json, err = jsonparser.Set(json, []byte("0"), "imp", "[0]", "video", "w")
+		if err != nil {
+			return json, err
+		}
+
+		json, err = jsonparser.Set(json, []byte("0"), "imp", "[0]", "video", "h")
+		if err != nil {
+			return json, err
+		}
+
+		break
+
+	case openrtb_ext.BidTypeNative:
+		// Set w/h to -1 for native impressions based on the facebook native spec.
+		// We have to set this post-serialization since the OpenRTB protocol doesn't
+		// actaully support w/h in the native object
+		json, err = jsonparser.Set(json, []byte("-1"), "imp", "[0]", "native", "w")
+		if err != nil {
+			return json, err
+		}
+
+		json, err = jsonparser.Set(json, []byte("-1"), "imp", "[0]", "native", "h")
+		if err != nil {
+			return json, err
+		}
+
+		// The FAN adserver does not expect the native request payload, all that information
+		// is derived server side based on the placement ID. We need to remove these pieces of
+		// information manually since OpenRTB (and thus mxmCherry) never omit native.request
+		json = jsonparser.Delete(json, "imp", "[0]", "native", "ver")
+		json = jsonparser.Delete(json, "imp", "[0]", "native", "request")
+
+		break
+	}
+
+	return json, nil
+}
+
+func (this *FacebookAdapter) MakeBids(request *openrtb.BidRequest, adapterRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	/* No bid response */
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	/* Any other http status codes outside of 200 and 204 should be treated as errors */
+	if response.StatusCode != http.StatusOK {
+		msg := response.Headers.Get("x-fb-an-errors")
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code %d with error message '%s'", response.StatusCode, msg),
+		}}
+	}
+
+	var bidResp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
+	out := adapters.NewBidderResponseWithBidsCapacity(4)
+	var errs []error
+
+	for _, seatbid := range bidResp.SeatBid {
+		for _, bid := range seatbid.Bid {
+			if bid.AdM == "" {
+				errs = append(errs, &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Bid %s missing 'adm'", bid.ID),
+				})
+				continue
 			}
-			bidder.Debug = append(bidder.Debug, debug)
-		}
-		if result.Error != nil {
-			err = result.Error
+
+			var obj facebookAdMarkup
+			if err := json.Unmarshal([]byte(bid.AdM), &obj); err != nil {
+				errs = append(errs, &errortypes.BadServerResponse{
+					Message: err.Error(),
+				})
+				continue
+			}
+
+			if obj.BidID == "" {
+				errs = append(errs, &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("bid %s missing 'bid_id' in 'adm'", bid.ID),
+				})
+				continue
+			}
+
+			bid.AdID = obj.BidID
+			bid.CrID = obj.BidID
+
+			out.Bids = append(out.Bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: resolveBidType(&bid, request),
+			})
 		}
 	}
 
-	if len(bids) == 0 {
-		return nil, err
-	}
-	return bids, nil
+	return out, errs
 }
 
-func NewAdapterFromFacebook(config *adapters.HTTPAdapterConfig, partnerID string) adapters.Adapter {
-	if partnerID == "" {
+func resolveBidType(bid *openrtb.Bid, req *openrtb.BidRequest) openrtb_ext.BidType {
+	for _, imp := range req.Imp {
+		if bid.ImpID == imp.ID {
+			if typ, ok := resolveImpType(&imp); ok {
+				return typ
+			}
+
+			panic("Processing an invalid impression; cannot resolve impression type")
+		}
+	}
+
+	panic(fmt.Sprintf("Invalid bid imp ID %s does not match any imp IDs from the original bid request", bid.ImpID))
+}
+
+func resolveImpType(imp *openrtb.Imp) (openrtb_ext.BidType, bool) {
+	if imp.Banner != nil {
+		return openrtb_ext.BidTypeBanner, true
+	}
+
+	if imp.Video != nil {
+		return openrtb_ext.BidTypeVideo, true
+	}
+
+	if imp.Audio != nil {
+		return openrtb_ext.BidTypeAudio, true
+	}
+
+	if imp.Native != nil {
+		return openrtb_ext.BidTypeNative, true
+	}
+
+	return openrtb_ext.BidTypeBanner, false
+}
+
+func NewFacebookBidder(client *http.Client, platformID string, appSecret string) adapters.Bidder {
+	if platformID == "" {
 		glog.Errorf("No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?")
-		return &adapters.MisconfiguredAdapter{
-			TheName: "audienceNetwork",
-			Err:     errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
+		return &adapters.MisconfiguredBidder{
+			Name:  "audienceNetwork",
+			Error: errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
 		}
 	}
-	return NewFacebookAdapter(config, partnerID)
-}
 
-func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string) *FacebookAdapter {
-	a := adapters.NewHTTPAdapter(config)
+	if appSecret == "" {
+		glog.Errorf("No facebook app secret specified. Calls to the Audience Network will fail. Did you set adapters.facebook.app_secret in the app config?")
+		return &adapters.MisconfiguredBidder{
+			Name:  "audienceNetwork",
+			Error: errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
+		}
+	}
+
+	a := &adapters.HTTPAdapter{Client: client}
 
 	return &FacebookAdapter{
 		http: a,
 		URI:  "https://an.facebook.com/placementbid.ortb",
 		//for AB test
 		nonSecureUri: "http://an.facebook.com/placementbid.ortb",
-		platformJSON: json.RawMessage(fmt.Sprintf("{\"platformid\": %s}", partnerID)),
+		platformID:   platformID,
+		appSecret:    appSecret,
 	}
+}
+
+func (fa *FacebookAdapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+	var (
+		rID   string
+		pubID string
+		err   error
+	)
+
+	// Note, the facebook adserver can only handle single impression requests, so we have to split multi-imp requests into
+	// multiple request. In order to ensure that every split request has a unique ID, the split request IDs are set to the
+	// corresponding imp's ID
+	rID, err = jsonparser.GetString(req.Body, "id")
+	if err != nil {
+		return &adapters.RequestData{}, []error{err}
+	}
+
+	// The publisher ID is either in the app object or the site object, depending on the supply of the request so we need
+	// to check both
+	pubID, err = jsonparser.GetString(req.Body, "app", "publisher", "id")
+	if err != nil {
+		pubID, err = jsonparser.GetString(req.Body, "site", "publisher", "id")
+		if err != nil {
+			return &adapters.RequestData{}, []error{
+				errors.New("path [app|site].publisher.id not found in the request"),
+			}
+		}
+	}
+
+	uri := fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&app=%s&auction=%s&ortb_loss_code=2", fa.platformID, pubID, rID)
+	timeoutReq := adapters.RequestData{
+		Method:  "GET",
+		Uri:     uri,
+		Body:    nil,
+		Headers: http.Header{},
+	}
+
+	return &timeoutReq, nil
 }

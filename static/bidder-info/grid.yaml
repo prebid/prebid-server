@@ -1,0 +1,7 @@
+maintainer:
+  email: "grid-tech@themediagrid.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video

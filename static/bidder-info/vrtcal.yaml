@@ -1,0 +1,6 @@
+maintainer:
+  email: "support@vrtcal.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner

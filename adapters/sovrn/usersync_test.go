@@ -2,22 +2,29 @@ package sovrn
 
 import (
 	"testing"
+	"text/template"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSovrnSyncer(t *testing.T) {
-	syncer := NewSovrnSyncer(&config.Configuration{ExternalURL: "external.com", Adapters: map[string]config.Adapter{
-		string(openrtb_ext.BidderSovrn): {
-			UserSyncURL: "//ap.lijit.com/pixel?",
+	syncURL := "//ap.lijit.com/pixel?redir=external.com%2Fsetuid%3Fbidder%3Dsovrn%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID"
+	syncURLTemplate := template.Must(
+		template.New("sync-template").Parse(syncURL),
+	)
+
+	syncer := NewSovrnSyncer(syncURLTemplate)
+	syncInfo, err := syncer.GetUsersyncInfo(privacy.Policies{
+		GDPR: gdpr.Policy{
+			Signal: "0",
 		},
-	}})
-	u := syncer.GetUsersyncInfo("0", "")
-	assert.Equal(t, "//ap.lijit.com/pixel?redir=external.com%2Fsetuid%3Fbidder%3Dsovrn%26gdpr%3D0%26gdpr_consent%3D%26uid%3D%24UID", u.URL)
-	assert.Equal(t, "redirect", u.Type)
-	assert.Equal(t, uint16(13), syncer.GDPRVendorID())
-	assert.Equal(t, false, u.SupportCORS)
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "//ap.lijit.com/pixel?redir=external.com%2Fsetuid%3Fbidder%3Dsovrn%26gdpr%3D0%26gdpr_consent%3D%26uid%3D%24UID", syncInfo.URL)
+	assert.Equal(t, "redirect", syncInfo.Type)
+	assert.EqualValues(t, 13, syncer.GDPRVendorID())
+	assert.Equal(t, false, syncInfo.SupportCORS)
 }

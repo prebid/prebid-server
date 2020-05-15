@@ -1,0 +1,36 @@
+{
+  "description": "Valid request using stored imp request which has missing comma to yield invalid JSON",
+  
+  "message": "Invalid request: imp.ext.prebid.storedrequest.id 7: Stored Imp has Invalid JSON: invalid character '\"' after object key:value pair at offset 185\n",
+  "requestPayload": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "storedrequest": {
+              "id": "7"
+            }
+          }
+        }
+      }
+    ],
+    "tmax": 500
+  }
+}

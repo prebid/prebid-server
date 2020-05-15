@@ -1,0 +1,6 @@
+maintainer:
+  email: "dsp-supply-prebid@verizonmedia.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner

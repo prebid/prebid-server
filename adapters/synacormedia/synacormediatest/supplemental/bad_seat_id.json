@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "seatId": 1927,
+            "tagId": "demo1"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "json: cannot unmarshal number into Go struct field ExtImpSynacormedia.seatId of type string",
+      "comparison": "literal"
+    }
+  ]
+}

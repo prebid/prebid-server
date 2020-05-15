@@ -1,0 +1,18 @@
+{
+    "mockBidRequest": {
+        "id": "some_test_auction",
+        "imp": [
+        ],
+        "site": {
+          "domain": "www.publisher.com",
+          "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+        }
+      },
+
+      "expectedMakeRequestsErrors": [
+        {
+          "value": "No Imps in Bid Request",
+          "comparison": "literal"
+        }
+      ]
+}

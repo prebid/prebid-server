@@ -29,7 +29,7 @@ func TestVendorFetch(t *testing.T) {
 	})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server), 1)
 	list, err := fetcher(context.Background(), 1)
 	assertNilErr(t, err)
 	vendor := list.Vendor(32)
@@ -61,7 +61,7 @@ func TestLazyFetch(t *testing.T) {
 	})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server), 1)
 	list, err := fetcher(context.Background(), 2)
 	assertNilErr(t, err)
 
@@ -83,7 +83,7 @@ func TestInitialTimeout(t *testing.T) {
 
 	ctx, cancel := context.WithDeadline(context.Background(), time.Time{})
 	defer cancel()
-	fetcher := newVendorListFetcher(ctx, testConfig(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(ctx, testConfig(), server.Client(), testURLMaker(server), 1)
 	_, err := fetcher(context.Background(), 1) // This should do a lazy fetch, even though the initial call failed
 	assertNilErr(t, err)
 }
@@ -106,7 +106,7 @@ func TestFetchThrottling(t *testing.T) {
 	})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server), 1)
 	_, err := fetcher(context.Background(), 2)
 	assertNilErr(t, err)
 	_, err = fetcher(context.Background(), 3)
@@ -117,7 +117,7 @@ func TestMalformedVendorlistFetch(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{1: "{}"})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server), 1)
 	_, err := fetcher(context.Background(), 1)
 	assertErr(t, err, false)
 }
@@ -126,15 +126,17 @@ func TestMissingVendorlistFetch(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{1: "{}"})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server), 1)
 	_, err := fetcher(context.Background(), 2)
 	assertErr(t, err, false)
 }
 
 func TestVendorListMaker(t *testing.T) {
-	assertStringsEqual(t, "https://vendorlist.consensu.org/vendorlist.json", vendorListURLMaker(0))
-	assertStringsEqual(t, "https://vendorlist.consensu.org/v-2/vendorlist.json", vendorListURLMaker(2))
-	assertStringsEqual(t, "https://vendorlist.consensu.org/v-12/vendorlist.json", vendorListURLMaker(12))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/vendorlist.json", vendorListURLMaker(0, 1))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/v-2/vendorlist.json", vendorListURLMaker(2, 1))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/v-12/vendorlist.json", vendorListURLMaker(12, 1))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/v2/vendor-list.json", vendorListURLMaker(0, 2))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/v2/archives/vendor-list-v7.json", vendorListURLMaker(7, 2))
 }
 
 // mockServer returns a handler which returns the given response for each global vendor list version.
@@ -201,9 +203,9 @@ func mockVendorListData(t *testing.T, version uint16, vendors map[uint16]*purpos
 	return string(data)
 }
 
-func testURLMaker(server *httptest.Server) func(uint16) string {
+func testURLMaker(server *httptest.Server) func(uint16, uint8) string {
 	url := server.URL
-	return func(version uint16) string {
+	return func(version uint16, TCFVer uint8) string {
 		return url + "?version=" + strconv.Itoa(int(version))
 	}
 }

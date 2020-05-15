@@ -1,0 +1,133 @@
+{
+    "mockBidRequest":
+    {
+        "id": "some-request-id",
+        "imp": [
+        {
+            "id": "some-impression-id",
+            "banner":
+            {
+                "format": [
+                {
+                    "w": 300,
+                    "h": 250
+                },
+                {
+                    "w": 300,
+                    "h": 600
+                }]
+            },
+            "ext":
+            {
+                "bidder":
+                {
+                    "host": "search.nutella.datablocks.net",
+                    "sourceId": 906295
+                }
+            }
+        }],
+        "site":
+        {
+            "page": "prebid.org"
+        },
+        "device":
+        {
+            "ip": "8.8.8.10"
+        },
+        "at": 1,
+        "tmax": 500
+    },
+    "httpCalls": [
+    {
+        "expectedRequest":
+        {
+            "uri": "http://search.nutella.datablocks.net/openrtb2?sid=906295",
+            "body":
+            {
+                "id": "some-request-id",
+                "imp": [
+                {
+                    "id": "some-impression-id",
+                    "banner":
+                    {
+                        "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }]
+                    },
+                    "ext":
+                    {
+                        "bidder":
+                        {
+                            "host": "search.nutella.datablocks.net",
+                            "sourceId": 906295
+                        }
+                    }
+                }],
+                "site":
+                {
+                    "page": "prebid.org"
+                },
+                "device":
+                {
+                    "ip": "8.8.8.10"
+                },
+                "at": 1,
+                "tmax": 500
+            }
+        },
+        "mockResponse":
+        {
+            "status": 200,
+            "body":
+            {
+                "id": "some-request-id",
+                "bidid": "183975330-5-29038-2",
+                "seatbid": [
+                {
+                    "seat": "906295",
+                    "bid": [
+                    {
+                        "id": "2181314349",
+                        "impid": "some-impression-id",
+                        "adm": "<style>.text_preview{padding:14px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;margin:0;padding:0;color:#333;background:#fff}.text_decription{min-width:150px;padding:5px;flex-grow:0;}.title_preview a{color:#00f;font-weight:700;text-decoration:none}.description_preview{padding:0 0 20px;overflow:hidden;text-overflow:ellipsis}.click_url_preview{color:green}.image_container{position:relative;width:160;height:120}.image_container img{max-height:100%;max-width:100%}.loading{background:url() center no-repeat #eee;height:100%;width:100%;top:0;left:0;position:absolute;border-radius:0}</style><style>.text_boundary {width:300px;height:250px;}</style><div class=\"text_preview text_boundary\"><div class=\"text_decription\"><div class=\"title_preview\"><a href=\"https://track.nutella.datablocks.net/c/267237/?fcid=2181314349\" target=\"_top\">Datablocks Inc.</a></div><div class=\"description_preview\">Datablocks provides world class \"Software as a Service\" (SaaS) solutions to its clients.</div><a class=\"click_url_preview\" target=\"_top\" href=\"https://track.nutella.datablocks.net/c/267237/?fcid=2181314349\">www.datablocks.net</a></div></div><img alt=\"\" src=\"https://impression.nutella.datablocks.net/i/267237/?fcid=2181314349&pixel=1\" width=\"1\" height=\"1\" ></div>",
+                        "price": 13.37,
+                        "cid": "906293",
+                        "adid": "906297",
+                        "crid": "906299",
+                        "w": 300,
+                        "h": 250
+                    }]
+                }],
+                "cur": "USD",
+                "ext":
+                {}
+            }
+        }
+    }],
+    "expectedBidResponses": [
+    {
+        "currency": "USD",
+        "bids": [
+        {
+            "bid":
+            {
+                "id": "2181314349",
+                "impid": "some-impression-id",
+                "adm": "<style>.text_preview{padding:14px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;margin:0;padding:0;color:#333;background:#fff}.text_decription{min-width:150px;padding:5px;flex-grow:0;}.title_preview a{color:#00f;font-weight:700;text-decoration:none}.description_preview{padding:0 0 20px;overflow:hidden;text-overflow:ellipsis}.click_url_preview{color:green}.image_container{position:relative;width:160;height:120}.image_container img{max-height:100%;max-width:100%}.loading{background:url() center no-repeat #eee;height:100%;width:100%;top:0;left:0;position:absolute;border-radius:0}</style><style>.text_boundary {width:300px;height:250px;}</style><div class=\"text_preview text_boundary\"><div class=\"text_decription\"><div class=\"title_preview\"><a href=\"https://track.nutella.datablocks.net/c/267237/?fcid=2181314349\" target=\"_top\">Datablocks Inc.</a></div><div class=\"description_preview\">Datablocks provides world class \"Software as a Service\" (SaaS) solutions to its clients.</div><a class=\"click_url_preview\" target=\"_top\" href=\"https://track.nutella.datablocks.net/c/267237/?fcid=2181314349\">www.datablocks.net</a></div></div><img alt=\"\" src=\"https://impression.nutella.datablocks.net/i/267237/?fcid=2181314349&pixel=1\" width=\"1\" height=\"1\" ></div>",
+                "price": 13.37,
+                "cid": "906293",
+                "adid": "906297",
+                "crid": "906299",
+                "w": 300,
+                "h": 250
+            },
+            "type": "banner"
+        }]
+    }]
+}

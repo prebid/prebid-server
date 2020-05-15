@@ -1,0 +1,19 @@
+{
+  "expectedMakeRequestsErrors" : [{"comparison":"literal","value": "no native object specified"},{"comparison":"literal","value":"No valid impressions for triplelift"}],
+  "mockBidRequest": {
+    "site": { "publisher": {"id":"foo","name":"foo"}},
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "ext": {
+          "bidder": {
+            "inventoryCode": "aa" 
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+  ]
+}

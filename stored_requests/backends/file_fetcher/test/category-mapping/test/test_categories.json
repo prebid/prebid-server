@@ -1,0 +1,26 @@
+{
+  "IAB1-1": {
+    "id": "Beverages",
+    "name": "Beverages"
+  },
+  "IAB1-2": {
+    "id": "Computing",
+    "name": "Computing"
+  },
+  "IAB1-3": {
+    "id": "Food",
+    "name": "Food"
+  },
+  "IAB1-4": {
+    "id": "Health",
+    "name": "Health"
+  },
+  "IAB1-5": {
+    "id": "Jobs",
+    "name": "Jobs"
+  },
+  "IAB1-6": {
+    "id": "Travel",
+    "name": "Travel"
+  }
+}

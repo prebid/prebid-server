@@ -23,7 +23,7 @@ type somoaudienceReqExt struct {
 	BidderConfig string `json:"prebid"`
 }
 
-func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	var errs []error
 	var bannerImps []openrtb.Imp
@@ -119,7 +119,9 @@ func (a *SomoaudienceAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
 		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
 		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
-		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
+		if request.Device.DNT != nil {
+			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
+		}
 	}
 	return &adapters.RequestData{
 		Method:  "POST",

@@ -1,0 +1,97 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "http://tester.go.sonobi.com",
+      "domain": "sonobi.com"
+    },
+    "device": {
+      "ip": "123.123.123.123"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "w": 300,
+          "h": 250,
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "TagID": "/7780971/apex_3pdm_integration"
+          }
+        }
+      }
+    ],
+    "test": 1,
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "uri": "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af",
+        "body": {
+          "id": "some-request-id",
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "tagid": "/7780971/apex_3pdm_integration",
+              "ext": {
+                "bidder": {
+                  "TagID": "/7780971/apex_3pdm_integration"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "sonobi.com",
+            "page": "http://tester.go.sonobi.com"
+          },
+          "device": {
+            "ip": "123.123.123.123"
+          },
+          "test": 1,
+          "tmax": 500
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {}
+  ]
+}

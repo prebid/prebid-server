@@ -1,0 +1,52 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"imp": [
+			{
+				"id": "test-impression-id-5",
+				"banner": {
+					"format": [
+						{
+							"w": 320,
+							"h": 50
+						}
+					]
+				},
+				"ext": {
+					"bidder": {
+						"access_token": "test-token-5"
+					}
+				}
+			},
+			{
+				"id": "test-impression-id-6",
+				"banner": {
+					"format": [
+						{
+							"w": 320,
+							"h": 50
+						}
+					]
+				},
+				"ext": {
+					"bidder": {
+						"publisher_id": "test-publisher-6"
+					}
+				}
+			}
+		]
+	},
+	"httpCalls": [],
+	"expectedBidResponses": [],
+	"expectedMakeRequestsErrors": [
+		{
+			"value": "Kidoz publisher_id required",
+			"comparison": "literal"
+		},
+		{
+			"value": "Kidoz access_token required",
+			"comparison": "literal"
+		}
+	],
+	"expectedMakeBidsErrors": []
+}

@@ -19,7 +19,7 @@ type adtelligentImpExt struct {
 	Adtelligent openrtb_ext.ExtImpAdtelligent `json:"adtelligent"`
 }
 
-func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	totalImps := len(request.Imp)
 	errors := make([]error, 0, totalImps)

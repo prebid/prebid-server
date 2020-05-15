@@ -1,0 +1,11 @@
+maintainer:
+  email: "prebid@mgid.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - native

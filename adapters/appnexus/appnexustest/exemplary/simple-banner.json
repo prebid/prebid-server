@@ -18,7 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "placement_id": 10433394
+            "placement_id": 1
           }
         }
       }
@@ -31,6 +31,12 @@
         "uri": "http://ib.adnxs.com/openrtb2",
         "body": {
           "id": "test-request-id",
+          "ext": {
+            "appnexus": {
+              "hb_source": 5
+            },
+            "prebid": {}
+          },
           "imp": [
             {
               "id": "test-imp-id",
@@ -50,7 +56,7 @@
               },
               "ext": {
                 "appnexus": {
-                  "placement_id": 10433394
+                  "placement_id": 1
                 }
               }
             }
@@ -79,10 +85,12 @@
                 "ext": {
                   "appnexus": {
                     "brand_id": 1,
+                    "brand_category_id": 1,
                     "auction_id": 8189378542222915032,
                     "bid_ad_type": 0,
                     "bidder_id": 2,
-                    "ranking_price": 0.000000
+                    "ranking_price": 0.000000,
+                    "deal_priority": 5
                   }
                 }
               }]
@@ -112,13 +120,16 @@
             "crid": "29681110",
             "w": 300,
             "h": 250,
+            "cat": ["IAB20-3"],
             "ext": {
               "appnexus": {
                 "brand_id": 1,
+                "brand_category_id": 1,
                 "auction_id": 8189378542222915032,
                 "bid_ad_type": 0,
                 "bidder_id": 2,
-                "ranking_price": 0.000000
+                "ranking_price": 0.000000,
+                "deal_priority": 5
               }
             }
           },

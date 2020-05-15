@@ -1,0 +1,48 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [{
+            "id": "test-imp-id",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "placementId": 13245
+                }
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://localhost/pbs",
+            "body": {
+                "id": "test-request-id",
+                "imp": [{
+                    "id": "test-imp-id",
+                    "banner": {
+                        "format": [{
+                            "w": 300,
+                            "h": 250
+                        }]
+                    },
+                    "ext": {
+                        "bidder": {
+                            "placementId": 13245
+                        }
+                    }
+                }]
+            }
+        },
+        "mockResponse": {
+            "status": 204,
+            "body": "{\"ext\": {\"debug\": \"developer magic with special chars \\n \\t \n \t \"}}"
+        }
+    }],
+
+    "expectedBidResponses": []
+}

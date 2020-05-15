@@ -1,0 +1,116 @@
+{
+  "mockBidRequest": {
+    "id": "someID",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "tagid": "0420420421",
+        "secure": 0,
+        "ext": {
+          "bidder": {
+            "uuid": "someUUID",
+            "siteid": "someSiteId"
+          },
+          "ozone": {
+            "adUnitCode": "mpu",
+            "transactionId": "9aaf1ba9-d5ed-4f19-99d5-3216bff5903b"
+          },
+          "prebid": {
+            "storedrequest": {
+              "id": "0420420421"
+            }
+          }
+        }
+      }
+    ]
+  },
+
+  "HttpCalls": [
+    {
+      "expectedRequest": {
+        "id": "someID",
+        "body": {"id":"someID","imp":[{"id":"test-imp-id","video":{"mimes":["video/mp4"]},"tagid":"0420420421","secure":0,"ext":{"unruly":{"uuid":"someUUID","siteid":"someSiteId"}}}]},
+        "uri": "http://targeting.unrulymedia.com/openrtb/2.2",
+        "imp": [
+          {
+            "id": "test-imp-id",
+            "video": {
+              "mimes": [
+                "video/mp4"
+              ]
+            },
+            "tagid": "0420420421",
+            "secure": 0,
+            "ext": {
+              "bidder": {
+                "uuid": "someUUID",
+                "siteid": "someSiteId"
+              },
+              "ozone": {
+                "adUnitCode": "mpu",
+                "transactionId": "9aaf1ba9-d5ed-4f19-99d5-3216bff5903b"
+              },
+              "prebid": {
+                "storedrequest": {
+                  "id": "0420420421"
+                }
+              }
+            }
+          }
+        ]
+      },
+
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "bids": [
+            {
+              "seat": "unruly",
+              "bid": [{
+                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                "impid": "test-imp-id",
+                "price": 0.500000,
+                "adm": "some-test-ad",
+                "crid": "crid_10",
+                "w": 1024,
+                "h": 576
+              }]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "id":"8815f346-9e64-4fb8-a4e1-11e03b4b71aa",
+      "body": {
+        "id": "test-request-id",
+        "cur": "USD",
+        "bids": [
+          {
+            "seat": "unruly",
+            "bid": [{
+              "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+              "impid": "test-imp-id",
+              "price": 0.500000,
+              "adm": "some-test-ad",
+              "crid": "crid_10",
+              "w": 1024,
+              "h": 576
+            }]
+          }
+        ]
+      }
+    }
+
+  ]
+}

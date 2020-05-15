@@ -1,0 +1,72 @@
+{
+	"bidRequest": {
+		"imp": [{
+				"id": "oneImp",
+				"exp": 300
+			},
+			{
+				"id": "twoImp"
+			}
+		]
+	},
+	"pbsBids": [{
+		"bid": {
+			"id": "bidOne",
+			"impid": "oneImp",
+			"price": 7.64,
+			"exp": 600,
+			"cat": ["11_sports_22"]
+		},
+		"bidType": "banner",
+		"bidder": "appnexus"
+	}, {
+		"bid": {
+			"id": "bidTwo",
+			"impid": "oneImp",
+			"price": 15.64,
+			"exp": 200,
+			"cat": ["33_news_44"]
+		},
+		"bidType": "banner",
+		"bidder": "pubmatic"
+	}, {
+		"bid": {
+			"id": "bidThree",
+			"impid": "oneImp",
+			"price": 2.3,
+			"cat": ["33_news_44"]
+		},
+		"bidType": "banner",
+		"bidder": "openx"
+	}, {
+		"bid": {
+			"id": "bidFour",
+			"impid": "twoImp",
+			"price": 1.64,
+			"cat": ["11_sports_22"]
+		},
+		"bidType": "banner",
+		"bidder": "appnexus"
+	}, {
+		"bid": {
+			"id": "bidFive",
+			"impid": "twoImp",
+			"price": 7.64,
+			"exp": 900,
+			"cat": ["11_sports_22"]
+		},
+		"bidType": "banner",
+		"bidder": "rubicon"
+	}],
+	"expectedCacheables": [ ],
+	"defaultTTLs": {
+		"banner": 300,
+		"video": 3600,
+		"audio": 1800,
+		"native": 300
+	},
+	"targetDataIncludeWinners": true,
+	"targetDataIncludeBidderKeys": true,
+	"targetDataIncludeCacheBids": false,
+	"targetDataIncludeCacheVast": true
+}

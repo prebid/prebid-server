@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "malconfigured-adunit",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "tappxkey": 1,
+            "endpoint": "PREBIDTEMPLATE",
+            "host": "test.tappx.com"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Error parsing tappxExt parameters",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -8,7 +8,6 @@ optimized to create [lightweight containers](https://blog.codeship.com/building-
 [Install Docker](https://www.docker.com/community-edition#/download) and build a container:
 
 ```bash
-CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags '-w' .
 docker build -t prebid-server .
 ```
 

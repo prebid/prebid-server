@@ -1,0 +1,26 @@
+{
+    "description": "Valid request that uses stored request with extra curly brace so stored request is not valid JSON",
+  
+    "message": "Invalid request: ext.prebid.storedrequest.id refers to Stored Request 3 which contains Invalid JSON: invalid character '}' after top-level value at offset 293\n",
+    "requestPayload": {
+      "id": "ThisID",
+      "imp": [
+         {
+          "ext": {
+            "prebid": {
+              "storedrequest": {
+                "id": "1"
+              }
+            }
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+          "storedrequest": {
+            "id": "3"
+          }
+        }
+      }
+    }
+}

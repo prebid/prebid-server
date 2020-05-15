@@ -1,0 +1,40 @@
+{
+  "description": "Otherwise valid request but without comma after first width field in first imp to yield invalid JSON, using stored imp request",
+  
+  "message": "Invalid request: Invalid JSON in Imp[0] of Incoming Request: invalid character '\"' after object key:value pair at offset 132\n",
+  "requestPayload": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "rubicon": {
+            "siteId": 113910,
+            "zoneId": 434410
+          }
+          "prebid": {
+            "storedrequest": {
+              "id": "3"
+            }
+          }
+        }
+      }
+    ],
+    "tmax": 500
+  }
+}

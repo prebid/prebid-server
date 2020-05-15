@@ -40,6 +40,9 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{"publisherId":"7890"}`,
+	`{"adSlot":"","publisherId":"7890"}`,
+	`{"adSlot":"AdTag_Div1","publisherId":"7890"}`,
 	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890"}`,
 	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890","keywords":[{"key": "pmZoneID", "value":["zone1"]},{"key": "dctr", "value":[ "v1","v2"]}]}`,
 	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890","keywords":[{"key": "pmZoneID", "value":["zone1", "zone2"]}], "wrapper":{"profile":5123}}`,
@@ -53,7 +56,6 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
-	`{"publisherId":"7890"}`,
 	`{"adSlot":"AdTag_Div1@728x90:0"}`,
 	`{"adSlot":"AdTag_Div1@728x90:0","publisherId":1}`,
 	`{"adSlot":123,"publisherId":"7890"}`,

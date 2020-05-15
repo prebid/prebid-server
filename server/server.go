@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/NYTimes/gziphandler"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -36,12 +37,12 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 
 	mainListener, err := newListener(mainServer.Addr, metrics)
 	if err != nil {
-		glog.Errorf("Error listening for TCP connections on %s: %v", mainServer.Addr, err)
+		glog.Errorf("Error listening for TCP connections on %s: %v for main server", mainServer.Addr, err)
 		return
 	}
 	adminListener, err := newListener(adminServer.Addr, nil)
 	if err != nil {
-		glog.Errorf("Error listening for TCP connections on %s: %v", adminServer.Addr, err)
+		glog.Errorf("Error listening for TCP connections on %s: %v for admin server", adminServer.Addr, err)
 		return
 	}
 	go runServer(mainServer, "Main", mainListener)
@@ -52,7 +53,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 		go shutdownAfterSignals(prometheusServer, stopPrometheus, done)
 		prometheusListener, err := newListener(prometheusServer.Addr, nil)
 		if err != nil {
-			glog.Errorf("Error listening for TCP connections on %s: %v", adminServer.Addr, err)
+			glog.Errorf("Error listening for TCP connections on %s: %v for prometheus server", adminServer.Addr, err)
 			return
 		}
 		go runServer(prometheusServer, "Prometheus", prometheusListener)
@@ -72,12 +73,18 @@ func newAdminServer(cfg *config.Configuration, handler http.Handler) *http.Serve
 }
 
 func newMainServer(cfg *config.Configuration, handler http.Handler) *http.Server {
+	var serverHandler = handler
+	if cfg.EnableGzip {
+		serverHandler = gziphandler.GzipHandler(handler)
+	}
+
 	return &http.Server{
 		Addr:         cfg.Host + ":" + strconv.Itoa(cfg.Port),
-		Handler:      handler,
+		Handler:      serverHandler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
+
 }
 
 func runServer(server *http.Server, name string, listener net.Listener) {

@@ -17,6 +17,7 @@ type ExtRequestPrebid struct {
 	Cache                *ExtRequestPrebidCache `json:"cache,omitempty"`
 	StoredRequest        *ExtStoredRequest      `json:"storedrequest,omitempty"`
 	Targeting            *ExtRequestTargeting   `json:"targeting,omitempty"`
+	SupportDeals         bool                   `json:"supportdeals,omitempty"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
@@ -49,9 +50,18 @@ type ExtRequestPrebidCacheVAST struct{}
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
-	PriceGranularity  PriceGranularity `json:"pricegranularity"`
-	IncludeWinners    bool             `json:"includewinners"`
-	IncludeBidderKeys bool             `json:"includebidderkeys"`
+	PriceGranularity     PriceGranularity         `json:"pricegranularity"`
+	IncludeWinners       bool                     `json:"includewinners"`
+	IncludeBidderKeys    bool                     `json:"includebidderkeys"`
+	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory"`
+	DurationRangeSec     []int                    `json:"durationrangesec"`
+}
+
+type ExtIncludeBrandCategory struct {
+	PrimaryAdServer     int    `json:"primaryadserver"`
+	Publisher           string `json:"publisher"`
+	WithCategory        bool   `json:"withcategory"`
+	TranslateCategories *bool  `json:"translatecategories,omitempty"`
 }
 
 // Make an unmarshaller that will set a default PriceGranularity
@@ -60,7 +70,7 @@ func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 
-	// define seperate type to prevent infinite recursive calls to UnmarshalJSON
+	// define separate type to prevent infinite recursive calls to UnmarshalJSON
 	type extRequestTargetingDefaults ExtRequestTargeting
 	defaults := &extRequestTargetingDefaults{
 		PriceGranularity:  priceGranularityMed,
@@ -138,10 +148,11 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 			}
 			prevMax = gr.Max
 		}
-	} else {
-		return errors.New("Price granularity error: empty granularity definition supplied")
+		*pg = PriceGranularity(pgraw)
+		return nil
 	}
-	*pg = PriceGranularity(pgraw)
+	// Default to medium if no ranges are specified
+	*pg = priceGranularityMed
 	return nil
 }
 
@@ -149,7 +160,7 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 func PriceGranularityFromString(gran string) PriceGranularity {
 	switch gran {
 	case "low":
-		return priceGranulrityLow
+		return priceGranularityLow
 	case "med", "medium":
 		// Seems that PBS was written with medium = "med", so hacking that in
 		return priceGranularityMed
@@ -164,7 +175,7 @@ func PriceGranularityFromString(gran string) PriceGranularity {
 	return PriceGranularity{}
 }
 
-var priceGranulrityLow = PriceGranularity{
+var priceGranularityLow = PriceGranularity{
 	Precision: 2,
 	Ranges: []GranularityRange{{
 		Min:       0,

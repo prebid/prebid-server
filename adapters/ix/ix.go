@@ -54,6 +54,13 @@ type callOneObject struct {
 	height      uint64
 }
 
+func isValidIXSize(f openrtb.Format, s [2]uint64) bool {
+	if f.W != s[0] || f.H != s[1] {
+		return false
+	}
+	return true
+}
+
 func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	var prioritizedRequests, requests []callOneObject
 
@@ -77,20 +84,21 @@ func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.P
 			break
 		}
 
-		for sizeIndex, format := range unit.Sizes {
-			var params indexParams
-			err := json.Unmarshal(unit.Params, &params)
-			if err != nil {
-				return nil, &errortypes.BadInput{
-					Message: fmt.Sprintf("unmarshal params '%s' failed: %v", unit.Params, err),
-				}
+		var params indexParams
+		err := json.Unmarshal(unit.Params, &params)
+		if err != nil {
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("unmarshal params '%s' failed: %v", unit.Params, err),
 			}
-			if params.SiteID == "" {
-				return nil, &errortypes.BadInput{
-					Message: "Missing siteId param",
-				}
-			}
+		}
 
+		if params.SiteID == "" {
+			return nil, &errortypes.BadInput{
+				Message: "Missing siteId param",
+			}
+		}
+
+		for sizeIndex, format := range unit.Sizes {
 			// Only grab this ad unit
 			// Not supporting multi-media-type adunit yet
 			thisImp := indexReqImp[i]
@@ -132,7 +140,7 @@ func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.P
 
 	if len(requests) == 0 {
 		return nil, &errortypes.BadInput{
-			Message: "Invalid ad unit/imp",
+			Message: "Invalid ad unit/imp/size",
 		}
 	}
 

@@ -1,0 +1,29 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-native-request",
+    "imp": [
+      {
+        "id": "unsupported-native-imp",
+        "native": {
+          "ver": "1.1"
+        },
+        "ext": {
+          "bidder": {
+            "supplyPartnerId": "1707"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Gamoshi only supports banner and video media types. Ignoring imp id=unsupported-native-imp",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid impression in the bid request",
+      "comparison": "literal"
+    }
+  ]
+}

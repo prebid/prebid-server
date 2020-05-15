@@ -27,11 +27,11 @@ GOGLOB="${GOGLOB/ docs/}"
 GOGLOB="${GOGLOB/ vendor/}"
 
 # Check that there are no formatting issues
-GOFMT_LINES=`gofmt -s -l $GOGLOB | wc -l | xargs`
+GOFMT_LINES=`gofmt -s -l $GOGLOB | tr '\\\\' '/' | wc -l | xargs`
 if $AUTOFMT; then
   # if there are files with formatting issues, they will be automatically corrected using the gofmt -w <file> command
   if [[ $GOFMT_LINES -ne 0 ]]; then
-    FMT_FILES=`gofmt -s -l $GOGLOB | xargs`
+    FMT_FILES=`gofmt -s -l $GOGLOB | tr '\\\\' '/' | xargs`
     for FILE in $FMT_FILES; do
         echo "Running: gofmt -s -w $FILE"
         `gofmt -s -w $FILE`
@@ -51,24 +51,13 @@ fi
 # Then run the race condition tests. These only run on tests named TestRace.* for two reasons.
 #
 #   1. To speed things up (for large -count values)
-#   2. Because some tests open up files on the filesystem, and some operating systems limit the number of open files for a single proecss.
+#   2. Because some tests open up files on the filesystem, and some operating systems limit the number of open files for a single process.
 if [ "$RACE" -ne "0" ]; then
   go test -race $(go list ./... | grep -v /vendor/) -run ^TestRace.*$ -count $RACE
 fi
 
 if $VET; then
-  # Fix for the go 1.10 vet bug (https://github.com/w0rp/ale/issues/1358)
-  COMMAND="go tool vet -source *.go"
+  COMMAND="go vet"
   echo "Running: $COMMAND"
   `$COMMAND`
-  for SOURCE in $GOGLOB ; do
-    # default call for wildcards and directories
-    COMMAND="go tool vet -source $SOURCE"
-    if [ -f $SOURCE ]; then
-      # file
-      COMMAND="go vet -source $SOURCE"
-    fi
-    echo "Running: $COMMAND"
-    `$COMMAND`
-  done
 fi

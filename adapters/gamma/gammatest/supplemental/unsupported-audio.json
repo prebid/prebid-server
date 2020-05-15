@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-audio-request",
+    "imp": [
+      {
+        "id": "unsupported-audio-imp",
+        "audio": {
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "id": "sample-id",
+            "zid": "sample-zone-id",
+            "wid": "sample-web-id"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Gamma only supports banner and video media types. Ignoring imp id=unsupported-audio-imp",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid impression in the bid request",
+      "comparison": "literal"
+    }
+  ]
+}

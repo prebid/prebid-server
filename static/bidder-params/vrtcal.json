@@ -1,0 +1,15 @@
+
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Vrtcal Adapter Params",
+    "description": "A schema which validates params accepted by the Vrtcal adapter",
+  
+    "type": "object",
+    "properties": {
+      "just_an_unused_vrtcal_param": {
+        "type": "string",
+        "description": "We only have this param as the prebid server crashes without at least 1 custom param; Not set to required to achieve parameter-less custom functionality"
+      }
+    },
+    "required": []
+  }

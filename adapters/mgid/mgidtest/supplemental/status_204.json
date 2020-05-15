@@ -1,0 +1,68 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "321",
+            "accountId": "123"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "fake-site-domain"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.mgid.com/prebid/123",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "321/test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "321",
+                  "accountId": "123"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "fake-site-domain"
+          },
+          "tmax": 200
+        }
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+
+  "expectedBidResponses": []
+}

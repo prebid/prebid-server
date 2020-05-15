@@ -18,10 +18,13 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -31,18 +34,45 @@ type AmpResponse struct {
 	Targeting map[string]string                                       `json:"targeting"`
 	Debug     *openrtb_ext.ExtResponseDebug                           `json:"debug,omitempty"`
 	Errors    map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError `json:"errors,omitempty"`
+	Warnings  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError `json:"warnings,omitempty"`
 }
 
 // NewAmpEndpoint modifies the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
-// of the request, and the return value, using the OpenRTB machinery to handle everything inbetween.
-func NewAmpEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte) (httprouter.Handle, error) {
+// of the request, and the return value, using the OpenRTB machinery to handle everything in between.
+func NewAmpEndpoint(
+	ex exchange.Exchange,
+	validator openrtb_ext.BidderParamValidator,
+	requestsById stored_requests.Fetcher,
+	categories stored_requests.CategoryFetcher,
+	cfg *config.Configuration,
+	met pbsmetrics.MetricsEngine,
+	pbsAnalytics analytics.PBSAnalyticsModule,
+	disabledBidders map[string]string,
+	defReqJSON []byte,
+	bidderMap map[string]openrtb_ext.BidderName,
+) (httprouter.Handle, error) {
+
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
 
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON}).AmpAuction), nil
+	return httprouter.Handle((&endpointDeps{
+		ex,
+		validator,
+		requestsById,
+		empty_fetcher.EmptyFetcher{},
+		categories,
+		cfg,
+		met,
+		pbsAnalytics,
+		disabledBidders,
+		defRequest,
+		defReqJSON,
+		bidderMap,
+		nil}).AmpAuction), nil
+
 }
 
 func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -63,24 +93,18 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	start := time.Now()
 	labels := pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
+		Source:        pbsmetrics.DemandWeb,
 		RType:         pbsmetrics.ReqTypeAMP,
-		PubID:         "",
-		Browser:       pbsmetrics.BrowserOther,
+		PubID:         pbsmetrics.PublisherUnknown,
+		Browser:       getBrowserName(r),
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordImps(labels, 1)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAmpObject(&ao)
 	}()
-
-	isSafari := checkSafari(r)
-	if isSafari {
-		labels.Browser = pbsmetrics.BrowserSafari
-	}
 
 	// Add AMP headers
 	origin := r.FormValue("__amp_source_origin")
@@ -96,19 +120,19 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 
 	req, errL := deps.parseAmpRequest(r)
+	ao.Errors = append(ao.Errors, errL...)
 
-	if fatalError(errL) {
+	if errortypes.ContainsFatalError(errL) {
 		w.WriteHeader(http.StatusBadRequest)
-		for _, err := range errL {
+		for _, err := range errortypes.FatalOnly(errL) {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		ao.Errors = append(ao.Errors, errL...)
 		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
 
 	ctx := context.Background()
-	cancel := func() {}
+	var cancel context.CancelFunc
 	if req.TMax > 0 {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
 	} else {
@@ -117,17 +141,31 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	defer cancel()
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if req.App != nil {
-		labels.Source = pbsmetrics.DemandApp
+	if usersyncs.LiveSyncCount() == 0 {
+		labels.CookieFlag = pbsmetrics.CookieFlagNo
 	} else {
-		labels.Source = pbsmetrics.DemandWeb
-		if usersyncs.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
-		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
-		}
+		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
+	labels.PubID = effectivePubID(req.Site.Publisher)
+	// Blacklist account now that we have resolved the value
+	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
+		errL = append(errL, acctIdErr)
+		errCode := errortypes.ReadCode(acctIdErr)
+		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		}
+		for _, err := range errortypes.FatalOnly(errL) {
+			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
+		}
+		ao.Errors = append(ao.Errors, acctIdErr)
+		return
+	}
+
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories, nil)
 	ao.AuctionResponse = response
 
 	if err != nil {
@@ -167,6 +205,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			}
 		}
 	}
+
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
 	eRErr := json.Unmarshal(response.Ext, &extResponse)
@@ -174,10 +213,20 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
 	}
 
+	warnings := make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError)
+	for _, v := range errortypes.WarningOnly(errL) {
+		bidderErr := openrtb_ext.ExtBidderError{
+			Code:    errortypes.ReadCode(v),
+			Message: v.Error(),
+		}
+		warnings[openrtb_ext.BidderNameGeneral] = append(warnings[openrtb_ext.BidderNameGeneral], bidderErr)
+	}
+
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{
 		Targeting: targets,
 		Errors:    extResponse.Errors,
+		Warnings:  warnings,
 	}
 
 	ao.AmpTargetingValues = targets
@@ -213,8 +262,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 // If the errors list has at least one element, then no guarantees are made about the returned request.
 func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb.BidRequest, errs []error) {
 	// Load the stored request for the AMP ID.
-	req, errs = deps.loadRequestJSONForAmp(httpRequest)
-	if len(errs) > 0 {
+	req, e := deps.loadRequestJSONForAmp(httpRequest)
+	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
 		return
 	}
 
@@ -222,18 +271,15 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	deps.setFieldsImplicitly(httpRequest, req)
 
 	// Need to ensure cache and targeting are turned on
-	errs = defaultRequestExt(req)
-	if len(errs) > 0 {
+	e = defaultRequestExt(req)
+	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
 		return
 	}
 
 	// At this point, we should have a valid request that definitely has Targeting and Cache turned on
 
-	errL := deps.validateRequest(req)
-	if len(errL) > 0 {
-		errs = append(errs, errL...)
-	}
-
+	e = deps.validateRequest(req)
+	errs = append(errs, e...)
 	return
 }
 
@@ -247,9 +293,6 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		errs = []error{errors.New("AMP requests require an AMP tag_id")}
 		return
 	}
-
-	debugParam := httpRequest.FormValue("debug")
-	debug := debugParam == "1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
@@ -270,7 +313,8 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
-	if debug {
+	debugParam := httpRequest.FormValue("debug")
+	if debugParam == "1" {
 		req.Test = 1
 	}
 
@@ -297,15 +341,15 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		*req.Imp[0].Secure = 1
 	}
 
-	deps.overrideWithParams(httpRequest, req)
-
+	errs = deps.overrideWithParams(httpRequest, req)
 	return
 }
 
-func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) {
+func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) []error {
 	if req.Site == nil {
 		req.Site = &openrtb.Site{}
 	}
+
 	// Override the stored request sizes with AMP ones, if they exist.
 	if req.Imp[0].Banner != nil {
 		width := parseFormInt(httpRequest, "w", 0)
@@ -341,9 +385,24 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		req.Imp[0].TagID = slot
 	}
 
+	consent := readConsent(httpRequest.URL)
+	if consent != "" {
+		if policies, ok := privacy.ReadPoliciesFromConsent(consent); ok {
+			if err := policies.Write(req); err != nil {
+				return []error{err}
+			}
+		} else {
+			return []error{&errortypes.InvalidPrivacyConsent{
+				Message: fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF.", consent),
+			}}
+		}
+	}
+
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
 		req.TMax = timeout - deps.cfg.AMPTimeoutAdjustment
 	}
+
+	return nil
 }
 
 func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width uint64, height uint64, multisize string) []openrtb.Format {
@@ -476,4 +535,13 @@ func setAmpExt(site *openrtb.Site, value string) {
 	} else {
 		site.Ext = json.RawMessage(`{"amp":` + value + `}`)
 	}
+}
+
+func readConsent(url *url.URL) string {
+	if v := url.Query().Get("consent_string"); v != "" {
+		return v
+	}
+
+	// Fallback to 'gdpr_consent' for compatability until it's no longer used by AMP.
+	return url.Query().Get("gdpr_consent")
 }

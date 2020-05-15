@@ -3,16 +3,13 @@ package conversant
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"testing"
-	"time"
-
 	"io/ioutil"
-
 	"net/http"
 	"net/http/httptest"
-
-	"encoding/json"
+	"testing"
+	"time"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -171,7 +168,7 @@ func TestConversantNoBid(t *testing.T) {
 
 	resp, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if resp != nil || err != nil {
-		t.Fatal("Failed to handle emtpy bid", err)
+		t.Fatal("Failed to handle empty bid", err)
 	}
 }
 
@@ -213,6 +210,81 @@ func TestConversantRequestDefault(t *testing.T) {
 	assertEqual(t, imp.BidFloor, 0.0, "Request bid floor")
 	assertEqual(t, imp.TagID, "", "Request tag id")
 	assertTrue(t, imp.Banner.Pos == nil, "Request pos")
+	assertEqual(t, int(*imp.Banner.W), 300, "Request width")
+	assertEqual(t, int(*imp.Banner.H), 250, "Request height")
+}
+
+// Verify inapp video request
+func TestConversantInappVideoRequest(t *testing.T) {
+	server, lastReq := CreateServer()
+	if server == nil {
+		t.Fatal("server not created")
+	}
+
+	defer server.Close()
+
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := NewConversantAdapter(&conf, server.URL)
+
+	requestParam := `{"secure": 1, "site_id": "12345"}`
+	appParam := `{ "bundle": "com.naver.linewebtoon" }`
+	videoParam := `{ "mimes": ["video/x-ms-wmv"],
+		   "protocols": [1, 2],
+		   "maxduration": 90 }`
+
+	ctx := context.TODO()
+	pbReq := CreateRequest(requestParam)
+	pbReq, err := ConvertToVideoRequest(pbReq, videoParam)
+	if err != nil {
+		t.Fatal("failed to parse request")
+	}
+	pbReq, err = ConvertToAppRequest(pbReq, appParam)
+	if err != nil {
+		t.Fatal("failed to parse request")
+	}
+	pbReq, err = ParseRequest(pbReq)
+	if err != nil {
+		t.Fatal("failed to parse request")
+	}
+
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	imp := &lastReq.Imp[0]
+	assertEqual(t, int(imp.Video.W), 300, "Request width")
+	assertEqual(t, int(imp.Video.H), 250, "Request height")
+	assertEqual(t, lastReq.App.ID, "12345", "App Id")
+}
+
+// Verify inapp video request
+func TestConversantInappBannerRequest(t *testing.T) {
+	server, lastReq := CreateServer()
+	if server == nil {
+		t.Fatal("server not created")
+	}
+
+	defer server.Close()
+
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := NewConversantAdapter(&conf, server.URL)
+
+	param := `{ "secure": 1,
+		"site_id": "12345",
+		"tag_id": "top",
+		"position": 2,
+		"bidfloor": 1.01 }`
+	appParam := `{ "bundle": "com.naver.linewebtoon" }`
+
+	ctx := context.TODO()
+	pbReq, _ := CreateBannerRequest(param)
+	pbReq, err := ConvertToAppRequest(pbReq, appParam)
+	if err != nil {
+		t.Fatal("failed to parse request")
+	}
+
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	imp := &lastReq.Imp[0]
+	assertEqual(t, lastReq.App.ID, "12345", "App Id")
 	assertEqual(t, int(*imp.Banner.W), 300, "Request width")
 	assertEqual(t, int(*imp.Banner.H), 250, "Request height")
 }
@@ -303,7 +375,7 @@ func TestConversantResponse(t *testing.T) {
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
 
-	assertEqual(t, len(resp), len(prices), "Bad number of reponses")
+	assertEqual(t, len(resp), len(prices), "Bad number of responses")
 
 	for i, bid := range resp {
 		assertEqual(t, bid.Price, prices[i], "Bad price in response")
@@ -526,7 +598,7 @@ func TestConversantVideoResponse(t *testing.T) {
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
 
-	assertEqual(t, len(resp), len(prices), "Bad number of reponses")
+	assertEqual(t, len(resp), len(prices), "Bad number of responses")
 
 	for i, bid := range resp {
 		assertEqual(t, bid.Price, prices[i], "Bad price in response")
@@ -598,18 +670,29 @@ func ConvertToVideoRequest(req *pbs.PBSRequest, videoParams ...string) (*pbs.PBS
 	return req, nil
 }
 
+// Convert a request to an app request by adding required properties
+func ConvertToAppRequest(req *pbs.PBSRequest, appParams string) (*pbs.PBSRequest, error) {
+	app := new(openrtb.App)
+	err := json.Unmarshal([]byte(appParams), &app)
+	if err == nil {
+		req.App = app
+	}
+
+	return req, nil
+}
+
 // Feed the request thru the prebid parser so user id and
 // other private properties are defined
 
 func ParseRequest(req *pbs.PBSRequest) (*pbs.PBSRequest, error) {
 	body := new(bytes.Buffer)
-	json.NewEncoder(body).Encode(req)
+	_ = json.NewEncoder(body).Encode(req)
 
 	// Need to pass the conversant user id thru uid cookie
 
 	httpReq := httptest.NewRequest("POST", "/foo", body)
 	cookie := usersync.NewPBSCookie()
-	cookie.TrySync("conversant", ExpectedBuyerUID)
+	_ = cookie.TrySync("conversant", ExpectedBuyerUID)
 	httpReq.Header.Set("Cookie", cookie.ToHTTPCookie(90*24*time.Hour).String())
 	httpReq.Header.Add("Referer", "http://example.com")
 	cache, _ := dummycache.New()
@@ -715,7 +798,7 @@ func CreateServer(prices ...float64) (*httptest.Server, *openrtb.BidRequest) {
 			})
 
 			w.Header().Set("Content-Type", "application/json")
-			w.Write(js)
+			_, _ = w.Write(js)
 		}
 	}),
 	)

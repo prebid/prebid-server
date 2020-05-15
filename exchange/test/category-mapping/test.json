@@ -1,0 +1,26 @@
+{
+  "IAB1-1": {
+    "id": "VideoGames",
+    "name": "VideoGames"
+  },
+  "IAB1-2": {
+    "id": "HomeDecor",
+    "name": "HomeDecor"
+  },
+  "IAB1-3": {
+    "id": "Electronics",
+    "name": "Electronics"
+  },
+  "IAB1-4": {
+    "id": "Sports",
+    "name": "Sports"
+  },
+  "IAB1-5": {
+    "id": "Medicine",
+    "name": "Medicine"
+  },
+  "IAB1-6": {
+    "id": "Makeup",
+    "name": "Makeup"
+  }
+}

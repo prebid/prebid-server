@@ -21,6 +21,9 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=unsupported-audio-imp"
+    {
+      "value": "Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=unsupported-audio-imp",
+      "comparison": "literal"
+    }
   ]
 }

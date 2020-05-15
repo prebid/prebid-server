@@ -1,0 +1,6 @@
+maintainer:
+  email: "prebid@rtbhouse.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner

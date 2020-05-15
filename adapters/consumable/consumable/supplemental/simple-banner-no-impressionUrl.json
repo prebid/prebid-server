@@ -1,0 +1,132 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-no-impUrl-id",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "networkId": 11,
+            "siteId": 32,
+            "unitId": 42,
+            "unitName": "the-answer"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+      "ip": "123.123.123.123"
+    },
+    "site": {
+      "domain": "www.some.com",
+      "page": "http://www.some.com/page-where-ad-will-be-shown",
+      "ref": "http://www.some.com/page-before-the-ad-if-any"
+    },
+    "user": {
+      "buyeruid": "azk-user-id"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json"
+          ],
+          "Cookie": [
+            "azk=azk-user-id"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ],
+          "Forwarded": [
+              "for=123.123.123.123"
+          ],
+          "Origin": [
+              "http://www.some.com"
+          ],
+          "Referer": [
+              "http://www.some.com/page-where-ad-will-be-shown"
+          ]
+        },
+        "uri": "https://e.serverbid.com/api/v2",
+        "body": {
+          "placements": [
+            {
+              "adTypes": [5],
+              "divName": "test-no-impUrl-id",
+              "networkId": 11,
+              "siteId": 32,
+              "unitId": 42,
+              "unitName": "the-answer"
+            }
+          ],
+          "networkId": 11,
+          "siteId": 32,
+          "unitId": 42,
+          "unitName": "the-answer",
+          "time": 1451651415,
+          "includePricingData": true,
+          "user":{},
+          "enableBotFiltering": true,
+          "parallel": true,
+          "url": "http://www.some.com/page-where-ad-will-be-shown",
+          "referrer": "http://www.some.com/page-before-the-ad-if-any"
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "decisions": {
+            "test-no-impUrl-id": {
+              "adId": 1234567890,
+              "bidderName": "aol",
+              "pricing": {
+                "clearPrice": 0.5
+              },
+              "width": 300,
+              "height": 250,
+              "contents" : [
+                {
+                  "body": "<blink>Remember this: https://www.google.com/search?q=blink+tag ?</blink>"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-id",
+            "crid": "1234567890",
+            "impid": "test-no-impUrl-id",
+            "price": 0.5,
+            "adm": "<blink>Remember this: https://www.google.com/search?q=blink+tag ?</blink>",
+            "exp": 30,
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

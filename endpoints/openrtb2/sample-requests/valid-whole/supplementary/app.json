@@ -1,6 +1,13 @@
 {
   "id": "some-request-id",
-  "app": {},
+  "app": {
+    "ext": {
+      "prebid": {
+        "source": "prebid-mobile",
+        "version": "1.0.0"
+      }
+    }
+  },
   "imp": [
     {
       "id": "my-imp-id",
@@ -21,7 +28,7 @@
       },
       "ext": {
         "appnexus": {
-          "placementId": 10433394
+          "placementId": 12883451
         }
       }
     }

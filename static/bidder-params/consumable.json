@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Consumable Adapter Params",
+  "description": "A schema which validates params accepted by the Consumable adapter",
+
+  "type": "object",
+  "properties": {
+    "siteId": {
+      "type": "number",
+      "description": "The site ID from Consumable",
+      "pattern": "^[0-9]+$"
+    },
+    "networkId": {
+      "type": "number",
+      "description": "The network ID from Consumable",
+      "pattern": "^[0-9]+$"
+    },
+    "unitId": {
+      "type": "number",
+      "description": "The unit ID from Consumable",
+      "pattern": "^[0-9]+$"
+    },
+    "unitName": {
+      "type": "string",
+      "description": "The unit name from Consumable (expected to be a valid CSS class name)",
+      "pattern": "^-?[_a-zA-Z]+[_a-zA-Z0-9-]*$"
+    }
+  },
+  "required": ["siteId", "networkId","unitId"]
+}

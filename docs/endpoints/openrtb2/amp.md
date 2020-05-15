@@ -67,7 +67,6 @@ A sample response payload looks like this:
         "hb_bidder_appnexus": "appnexus",
         "hb_cache_id": "420d7329-30e8-4c4e-8eaa-fe937172e4e0",
         "hb_cache_id_appnexus": "420d7329-30e8-4c4e-8eaa-fe937172e4e0",
-        "hb_creative_loadtype": "html",
         "hb_pb": "0.50",
         "hb_pb_appnexus": "0.50",
         "hb_size": "300x250",
@@ -101,7 +100,7 @@ This endpoint supports the following query parameters:
 6. `curl` - the canonical URL of the page
 7. `timeout` - the publisher-specified timeout for the RTC callout
    - A configuration option `amp_timeout_adjustment_ms` may be set to account for estimated latency so that Prebid Server can handle timeouts from adapters and respond to the AMP RTC request before it times out.
-8. `debug` - When set to `1`, the respones will contain extra info for debugging.
+8. `debug` - When set to `1`, the response will contain extra info for debugging.
 
 For information on how these get from AMP into this endpoint, see [this pull request adding the query params to the Prebid callout](https://github.com/ampproject/amphtml/pull/14155) and [this issue adding support for network-level RTC macros](https://github.com/ampproject/amphtml/issues/12374).
 

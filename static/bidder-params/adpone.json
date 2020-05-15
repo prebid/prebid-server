@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adpone Adapter Params",
+  "description": "A schema which validates params accepted by the adpone adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "Placement Id"
+    }
+  },
+  "required": []
+}

@@ -44,6 +44,10 @@ var validParams = []string{
 	`{"mid":"123"}`,
 	`{"mid":123,"priceType":"gross"}`,
 	`{"mid":"123","priceType":"net"}`,
+	`{"mid":"123","mkv":" color :blue , length : 350"}`,
+	`{"mid":"123","mkv":"color:"}`,
+	`{"mid":"123","mkw":"green,male"}`,
+	`{"mid":"123","mkv":" ","mkw":" "}`,
 }
 
 var invalidParams = []string{
@@ -55,4 +59,11 @@ var invalidParams = []string{
 	`[]`,
 	`{}`,
 	`{"notmid":"123"}`,
+	`{"mid":"123","priceType":"ne"}`,
+	`{"mid":"123","mkv":"color:blue,:350"}`,
+	`{"mid":"123","mkv":"color:blue;length:350"}`,
+	`{"mid":"123","mkv":"color"}`,
+	`{"mid":"123","mkv":"color:blue,l&ngth:350"}`,
+	`{"mid":"123","mkv":"color::blue"}`,
+	`{"mid":"123","mkw":"fem&le"}`,
 }

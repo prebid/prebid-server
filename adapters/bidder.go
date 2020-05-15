@@ -25,7 +25,7 @@ type Bidder interface {
 	// "subpar" in some way. For example: the request contained ad types which this bidder doesn't support.
 	//
 	// If the error is caused by bad user input, return an errortypes.BadInput.
-	MakeRequests(request *openrtb.BidRequest) ([]*RequestData, []error)
+	MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error)
 
 	// MakeBids unpacks the server's response into Bids.
 	//
@@ -39,6 +39,32 @@ type Bidder interface {
 	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
 }
 
+// TimeoutBidder is used to identify bidders that support timeout notifications.
+type TimeoutBidder interface {
+	Bidder
+
+	// MakeTimeoutNotice functions much the same as MakeRequests, except it is fed the bidder request that timed out,
+	// and expects that only one notification "request" will be generated. A use case for multiple timeout notifications
+	// has not been anticipated.
+	//
+	// Do note that if MakeRequests returns multiple requests, and more than one of these times out, MakeTimeoutNotice will be called
+	// once for each timed out request.
+	MakeTimeoutNotification(req *RequestData) (*RequestData, []error)
+}
+
+type MisconfiguredBidder struct {
+	Name  string
+	Error error
+}
+
+func (this *MisconfiguredBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
+	return nil, []error{this.Error}
+}
+
+func (this *MisconfiguredBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
+	return nil, []error{this.Error}
+}
+
 func BadInput(msg string) *errortypes.BadInput {
 	return &errortypes.BadInput{
 		Message: msg,
@@ -49,7 +75,7 @@ func BadInput(msg string) *errortypes.BadInput {
 //
 // Currency declaration is not mandatory but helps to detect an eventual currency mismatch issue.
 // From the bid response, the bidder accepts a list of valid currencies for the bid.
-// The currency is the same accross all bids.
+// The currency is the same across all bids.
 type BidderResponse struct {
 	Currency string
 	Bids     []*TypedBid
@@ -81,9 +107,13 @@ func NewBidderResponse() *BidderResponse {
 //
 // TypedBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
+// TypedBid.BidVideo will become "response.seatbid[i].bid.ext.prebid.video" in the final OpenRTB response.
+// TypedBid.DealPriority will become "response.seatbid[i].bid.dealPriority" in the final OpenRTB response.
 type TypedBid struct {
-	Bid     *openrtb.Bid
-	BidType openrtb_ext.BidType
+	Bid          *openrtb.Bid
+	BidType      openrtb_ext.BidType
+	BidVideo     *openrtb_ext.ExtBidPrebidVideo
+	DealPriority int
 }
 
 // RequestData and ResponseData exist so that prebid-server core code can implement its "debug" functionality

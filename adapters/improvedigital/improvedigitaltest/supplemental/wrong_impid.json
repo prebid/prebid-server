@@ -1,0 +1,80 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+			  "placementId": 13245
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/pbs",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+					"placementId": 13245
+                }
+              }
+            }
+          ]
+        }
+      },
+	  "mockResponse": {
+		  "status": 200,
+		  "body": {
+			  "id": "test-request-id",
+			  "seatbid": [{
+				  "seat": "improvedigital",
+				  "bid": [{
+					  "id": "randomid",
+					  "impid": "unknown_impid",
+					  "price": 0.500000,
+					  "adid": "12345678",
+					  "adm": "some-test-ad",
+					  "cid": "987",
+					  "crid": "12345678",
+					  "h": 250,
+					  "w": 300
+				  }]
+			  }],
+			  "cur": "USD"
+		  }
+	  }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Failed to find impression for ID: \"unknown_impid\"",
+      "comparison": "literal"
+    }
+  ]
+}

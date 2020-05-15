@@ -16,9 +16,7 @@ func (es *ExtSite) UnmarshalJSON(b []byte) error {
 	if len(b) == 0 {
 		return errors.New("request.site.ext must have some data in it")
 	}
-	if value, dataType, _, _ := jsonparser.Get(b, "amp"); dataType != jsonparser.NotExist && dataType != jsonparser.Number {
-		return errors.New(`request.site.ext.amp must be either 1, 0, or undefined`)
-	} else if len(value) != 1 {
+	if value, dataType, _, _ := jsonparser.Get(b, "amp"); (dataType != jsonparser.NotExist && dataType != jsonparser.Number) || (len(value) != 1) {
 		return errors.New(`request.site.ext.amp must be either 1, 0, or undefined`)
 	} else {
 		switch value[0] {

@@ -145,6 +145,7 @@
 		"os": "iOS",
 		"osv": "6.1",
 		"js": 1,
+		"dnt": 0,
 		"language": "en",
 		"carrier": "VERIZON",
 		"connectiontype": 3,

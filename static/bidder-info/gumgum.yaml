@@ -1,0 +1,6 @@
+maintainer:
+  email: "prebid@gumgum.com"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
