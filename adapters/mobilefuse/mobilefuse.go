@@ -11,42 +11,37 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"strconv"
-	"strings" // TODO: remove
 	"text/template"
 )
 
-// class
 type MobilefuseAdapter struct {
 	EndpointTemplate template.Template
 }
 
-// constructor
-func NewMobilefuseBidder(endpoint_template string) adapters.Bidder {
-	parsed_template, errors := template.New("endpoint_template").Parse(endpoint_template)
+func NewMobilefuseBidder(endpointTemplate string) adapters.Bidder {
+	parsedTemplate, errs := template.New("endpointTemplate").Parse(endpointTemplate)
 
-	if errors != nil {
-		glog.Fatal("Unable parse endpoint template: " + errors.Error())
+	if errs != nil {
+		glog.Fatal("Unable parse endpoint template: " + errs.Error())
 		return nil
 	}
 
-	return &MobilefuseAdapter{EndpointTemplate: *parsed_template}
+	return &MobilefuseAdapter{EndpointTemplate: *parsedTemplate}
 }
 
-// public method MakeRequests
 func (adapter *MobilefuseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var adapter_requests []*adapters.RequestData
+	var adapterRequests []*adapters.RequestData
 
-	adapter_request, errors := adapter.makeRequest(request)
+	adapterRequest, errs := adapter.makeRequest(request)
 
-	if errors == nil {
-		adapter_requests = append(adapter_requests, adapter_request)
+	if errs == nil {
+		adapterRequests = append(adapterRequests, adapterRequest)
 	}
 
-	return adapter_requests, errors
+	return adapterRequests, errs
 }
 
-// public method MakeBids
-func (adapter *MobilefuseAdapter) MakeBids(incoming_request *openrtb.BidRequest, outgoing_request *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *MobilefuseAdapter) MakeBids(incomingRequest *openrtb.BidRequest, outgoingRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -63,52 +58,57 @@ func (adapter *MobilefuseAdapter) MakeBids(incoming_request *openrtb.BidRequest,
 		}}
 	}
 
-	var incoming_bid_response openrtb.BidResponse
+	var incomingBidResponse openrtb.BidResponse
 
-	if err := json.Unmarshal(response.Body, &incoming_bid_response); err != nil {
+	if err := json.Unmarshal(response.Body, &incomingBidResponse); err != nil {
 		return nil, []error{err}
 	}
 
-	outgoing_bid_response := adapters.NewBidderResponseWithBidsCapacity(1)
+	outgoingBidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
-	for _, seatbid := range incoming_bid_response.SeatBid {
+	for _, seatbid := range incomingBidResponse.SeatBid {
 		for i := range seatbid.Bid {
-			outgoing_bid_response.Bids = append(outgoing_bid_response.Bids, &adapters.TypedBid{
+			outgoingBidResponse.Bids = append(outgoingBidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatbid.Bid[i],
-				BidType: adapter.getBidType(seatbid.Bid[i].ImpID, incoming_request.Imp),
+				BidType: adapter.getBidType(seatbid.Bid[i].ImpID, incomingRequest.Imp),
 			})
 		}
 	}
 
-	return outgoing_bid_response, nil
+	return outgoingBidResponse, nil
 }
 
-// private method makeRequest
-func (adapter *MobilefuseAdapter) makeRequest(bid_request *openrtb.BidRequest) (*adapters.RequestData, []error) {
-	var errors []error
+func (adapter *MobilefuseAdapter) makeRequest(bidRequest *openrtb.BidRequest) (*adapters.RequestData, []error) {
+	var errs []error
 
-	mobilefuse_extension, errors := getMobilefuseExtension(bid_request)
+	mobilefuseBidRequest := *bidRequest
 
-	if mobilefuse_extension == nil {
-		glog.Fatal("Invalid ExtImpMobilefuse value")
-		return nil, errors
+	mobilefuseExtension, errs := adapter.getMobilefuseExtension(bidRequest)
+
+	if mobilefuseExtension == nil {
+		return nil, errs
 	}
 
-	endpoint, error := adapter.getEndpoint(mobilefuse_extension)
+	endpoint, err := adapter.getEndpoint(mobilefuseExtension)
 
-	if error != nil {
-		return nil, append(errors, error)
+	if err != nil {
+		return nil, append(errs, err)
 	}
 
-	adapter.modifyBidRequest(bid_request, mobilefuse_extension)
+	adapter.modifyBidRequest(&mobilefuseBidRequest, mobilefuseExtension)
 
-	body, error := json.Marshal(bid_request)
-
-	if error != nil {
-		return nil, append(errors, error)
+	if len(mobilefuseBidRequest.Imp) == 0 {
+		err := fmt.Errorf("No valid imps")
+		errs = append(errs, err)
+		return nil, errs
 	}
 
-	// TODO: gzip?
+	body, err := json.Marshal(mobilefuseBidRequest)
+
+	if err != nil {
+		return nil, append(errs, err)
+	}
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -118,77 +118,75 @@ func (adapter *MobilefuseAdapter) makeRequest(bid_request *openrtb.BidRequest) (
 		Uri:     endpoint,
 		Body:    body,
 		Headers: headers,
-	}, errors
+	}, errs
 }
 
-// private function getMobilefuseExtension
-func getMobilefuseExtension(request *openrtb.BidRequest) (*openrtb_ext.ExtImpMobilefuse, []error) {
-	var mf_imp_extension openrtb_ext.ExtImpMobilefuse
-	var errors []error
+func (adapter *MobilefuseAdapter) getMobilefuseExtension(request *openrtb.BidRequest) (*openrtb_ext.ExtImpMobilefuse, []error) {
+	var mobilefuseImpExtension openrtb_ext.ExtImpMobilefuse
+	var errs []error
 
 	for _, imp := range request.Imp {
 		var bidder_imp_extension adapters.ExtImpBidder
 
-		error := json.Unmarshal(imp.Ext, &bidder_imp_extension)
+		err := json.Unmarshal(imp.Ext, &bidder_imp_extension)
 
-		if error != nil {
-			errors = append(errors, error)
+		if err != nil {
+			errs = append(errs, err)
 			continue
 		}
 
-		error = json.Unmarshal(bidder_imp_extension.Bidder, &mf_imp_extension)
+		err = json.Unmarshal(bidder_imp_extension.Bidder, &mobilefuseImpExtension)
 
-		if error != nil {
-			errors = append(errors, error)
+		if err != nil {
+			errs = append(errs, err)
 			continue
 		}
 
 		break
 	}
 
-	return &mf_imp_extension, errors
+	return &mobilefuseImpExtension, errs
 }
 
-// private method getEndpoint
 func (adapter *MobilefuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobilefuse) (string, error) {
 	publisher_id := strconv.Itoa(ext.PublisherId)
 
-	url, errors := macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{PublisherID: publisher_id})
+	url, errs := macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{PublisherID: publisher_id})
 
-	if errors != nil {
-		return "", errors
+	if errs != nil {
+		return "", errs
 	}
 
 	if ext.TagidSrc == "ext" {
 		url += "&tagid_src=ext"
 	}
 
-	url = strings.Replace(url, "mfx-us-east", "danb-mfx", 1) // TODO: remove
-
 	return url, nil
 }
 
-// private method modifyBidRequest
-func (adapter *MobilefuseAdapter) modifyBidRequest(request *openrtb.BidRequest, ext *openrtb_ext.ExtImpMobilefuse) {
-	placement_id := strconv.Itoa(ext.PlacementId)
+func (adapter *MobilefuseAdapter) modifyBidRequest(bidRequest *openrtb.BidRequest, ext *openrtb_ext.ExtImpMobilefuse) {
+	var validImps []openrtb.Imp
 
-	for i := range request.Imp {
-		request.Imp[i].TagID = placement_id
+	for _, imp := range bidRequest.Imp {
+		if imp.Banner != nil || imp.Video != nil {
+			if imp.Banner != nil && imp.Video != nil {
+				imp.Video = nil
+			}
+
+			imp.TagID = strconv.Itoa(ext.PlacementId)
+			imp.Ext = nil
+			validImps = append(validImps, imp)
+		}
+
+		break
 	}
+
+	bidRequest.Imp = validImps
 }
 
-// private function getBidType
 func (adapter *MobilefuseAdapter) getBidType(imp_id string, imps []openrtb.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID != imp_id {
-			continue
-		}
-
-		if imp.Banner != nil {
-			return openrtb_ext.BidTypeBanner
-		} else if imp.Video != nil {
-			return openrtb_ext.BidTypeVideo
-		}
+	if imps[0].Video != nil {
+		return openrtb_ext.BidTypeVideo
 	}
 
 	return openrtb_ext.BidTypeBanner

@@ -6,5 +6,5 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "mobilefusetest", NewMobilefuseBidder("https://{{.Host}}/prebid/bid"))
+	adapterstest.RunJSONBidderTest(t, "mobilefusetest", NewMobilefuseBidder("http://mfx-us-east.mobilefuse.com/openrtb?pub_id={{.PublisherID}}"))
 }

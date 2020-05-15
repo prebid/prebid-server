@@ -4,51 +4,56 @@
         "imp": [
             {
                 "id": "1",
-                "banner": {
-                    "format": [
-                        {
-                            "w": 320,
-                            "h": 50
-                        }
-                    ]
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "protocols": [
+                        2,
+                        5
+                    ],
+                    "w": 320,
+                    "h": 480
                 },
                 "ext": {
                     "bidder": {
-                        "placement_id": 123456,
-                        "pub_id": 1234
+                        "placement_id": 200000,
+                        "pub_id": 2000
                     }
                 }
             }
         ]
     },
-
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://mfx-us-east.mobilefuse.com/openrtb?pub_id=1234",
+                "uri": "http://mfx-us-east.mobilefuse.com/openrtb?pub_id=2000",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
                         {
                             "id": "1",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 320,
-                                        "h": 50
-                                    }
-                                ]
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "protocols": [
+                                    2,
+                                    5
+                                ],
+                                "w": 320,
+                                "h": 480
                             },
-                            "tagid": "123456"
+                            "tagid": "200000"
                         }
                     ]
                 }
             },
-
             "mockResponse": {
                 "status": 200,
                 "body": {
                     "id": "test-request-id",
+                    "cur": "USD",
                     "seatbid": [
                         {
                             "seat": "mobilefuse",
@@ -56,21 +61,19 @@
                                 {
                                     "id": "test-bid-id",
                                     "impid": "1",
-                                    "price": 1.50,
+                                    "price": 2.50,
                                     "adm": "some-test-ad",
                                     "crid": "test-crid",
-                                    "h": 50,
-                                    "w": 320
+                                    "w": 320,
+                                    "h": 480
                                 }
                             ]
                         }
-                    ],
-                    "cur": "USD"
+                    ]
                 }
             }
         }
     ],
-
     "expectedBidResponses": [
         {
             "currency": "USD",
@@ -79,13 +82,13 @@
                     "bid": {
                         "id": "test-bid-id",
                         "impid": "1",
-                        "price": 1.50,
+                        "price": 2.50,
                         "adm": "some-test-ad",
                         "crid": "test-crid",
                         "w": 320,
-                        "h": 50
+                        "h": 480
                     },
-                    "type": "banner"
+                    "type": "video"
                 }
             ]
         }

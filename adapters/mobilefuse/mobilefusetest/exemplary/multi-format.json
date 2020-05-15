@@ -12,6 +12,17 @@
                         }
                     ]
                 },
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "protocols": [
+                        2,
+                        5
+                    ],
+                    "w": 320,
+                    "h": 480
+                },
                 "ext": {
                     "bidder": {
                         "placement_id": 123456,
@@ -46,48 +57,11 @@
             },
 
             "mockResponse": {
-                "status": 200,
-                "body": {
-                    "id": "test-request-id",
-                    "seatbid": [
-                        {
-                            "seat": "mobilefuse",
-                            "bid": [
-                                {
-                                    "id": "test-bid-id",
-                                    "impid": "1",
-                                    "price": 1.50,
-                                    "adm": "some-test-ad",
-                                    "crid": "test-crid",
-                                    "h": 50,
-                                    "w": 320
-                                }
-                            ]
-                        }
-                    ],
-                    "cur": "USD"
-                }
+                "status": 204,
+                "body": ""
             }
         }
     ],
 
-    "expectedBidResponses": [
-        {
-            "currency": "USD",
-            "bids": [
-                {
-                    "bid": {
-                        "id": "test-bid-id",
-                        "impid": "1",
-                        "price": 1.50,
-                        "adm": "some-test-ad",
-                        "crid": "test-crid",
-                        "w": 320,
-                        "h": 50
-                    },
-                    "type": "banner"
-                }
-            ]
-        }
-    ]
+    "expectedBidResponses": []
 }
