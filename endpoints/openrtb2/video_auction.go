@@ -381,11 +381,9 @@ func max(a, b int) int {
 }
 
 func createImpressionTemplate(imp openrtb.Imp, video *openrtb.Video) openrtb.Imp {
-	imp.Video = &openrtb.Video{}
-	imp.Video.W = video.W
-	imp.Video.H = video.H
-	imp.Video.Protocols = video.Protocols
-	imp.Video.MIMEs = video.MIMEs
+	//for every new impression we need to have it's own copy of video object, because we customize it in further processing
+	newVideo := *video
+	imp.Video = &newVideo
 	return imp
 }
 
