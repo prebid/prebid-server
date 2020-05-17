@@ -59,6 +59,32 @@ func TestWrite(t *testing.T) {
 				Ext: json.RawMessage(`malformed`)}},
 			expectedError: true,
 		},
+		{
+			description: "Injection Attack With Nil Request User Object",
+			policy:      Policy{Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request:     &openrtb.BidRequest{},
+			expected: &openrtb.BidRequest{User: &openrtb.User{
+				Ext: json.RawMessage(`{"consent":"BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+			}},
+		},
+		{
+			description: "Injection Attack With Nil Request User Ext Object",
+			policy:      Policy{Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request:     &openrtb.BidRequest{User: &openrtb.User{}},
+			expected: &openrtb.BidRequest{User: &openrtb.User{
+				Ext: json.RawMessage(`{"consent":"BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+			}},
+		},
+		{
+			description: "Injection Attack With Existing Request User Ext Object",
+			policy:      Policy{Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request: &openrtb.BidRequest{User: &openrtb.User{
+				Ext: json.RawMessage(`{"existing":"any"}`),
+			}},
+			expected: &openrtb.BidRequest{User: &openrtb.User{
+				Ext: json.RawMessage(`{"existing":"any","consent":"BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+			}},
+		},
 	}
 
 	for _, test := range testCases {
