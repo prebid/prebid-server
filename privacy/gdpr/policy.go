@@ -2,6 +2,7 @@ package gdpr
 
 import (
 	"encoding/json"
+	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
@@ -24,13 +25,17 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 		req.User = &openrtb.User{}
 	}
 
+	var err error
+
 	if req.User.Ext == nil {
-		req.User.Ext = json.RawMessage(`{"consent":"` + p.Consent + `"}`)
-		return nil
+		req.User.Ext, err = json.Marshal(openrtb_ext.ExtUser{Consent: p.Consent})
+		return err
 	}
 
-	var err error
-	req.User.Ext, err = jsonparser.Set(req.User.Ext, []byte(`"`+p.Consent+`"`), "consent")
+	jsonString, err := json.Marshal(p.Consent)
+	if err == nil {
+		req.User.Ext, err = jsonparser.Set(req.User.Ext, jsonString, "consent")
+	}
 	return err
 }
 

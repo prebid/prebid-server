@@ -40,13 +40,17 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 		req.Regs = &openrtb.Regs{}
 	}
 
+	var err error
+
 	if req.Regs.Ext == nil {
-		req.Regs.Ext = json.RawMessage(`{"us_privacy":"` + p.Value + `"}`)
-		return nil
+		req.Regs.Ext, err = json.Marshal(openrtb_ext.ExtRegs{USPrivacy: p.Value})
+		return err
 	}
 
-	var err error
-	req.Regs.Ext, err = jsonparser.Set(req.Regs.Ext, []byte(`"`+p.Value+`"`), "us_privacy")
+	jsonString, err := json.Marshal(p.Value)
+	if err == nil {
+		req.Regs.Ext, err = jsonparser.Set(req.Regs.Ext, jsonString, "us_privacy")
+	}
 	return err
 }
 
