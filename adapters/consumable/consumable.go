@@ -33,8 +33,8 @@ type bidRequest struct {
 	Url                string      `json:"url,omitempty"`
 	EnableBotFiltering bool        `json:"enableBotFiltering,omitempty"`
 	Parallel           bool        `json:"parallel"`
-	Ccpa               string      `json:"ccpa,omitempty"`
-	Gdpr               *bidGdpr    `json:"gdpr,omitempty"`
+	CCPA               string      `json:"ccpa,omitempty"`
+	GDPR               *bidGdpr    `json:"gdpr,omitempty"`
 }
 
 type placement struct {
@@ -136,7 +136,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	ccpaPolicy, err := ccpa.ReadPolicy(request)
 	if err == nil {
-		body.Ccpa = ccpaPolicy.Value
+		body.CCPA = ccpaPolicy.Value
 	}
 
 	// TODO: Replace with gdpr.ReadPolicy when it is available
@@ -146,7 +146,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 			if extRegs.GDPR != nil {
 				applies := *extRegs.GDPR != 0
 				gdpr.Applies = &applies
-				body.Gdpr = &gdpr
+				body.GDPR = &gdpr
 			}
 		}
 	}
@@ -156,7 +156,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		var extUser openrtb_ext.ExtUser
 		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
 			gdpr.Consent = extUser.Consent
-			body.Gdpr = &gdpr
+			body.GDPR = &gdpr
 		}
 	}
 
