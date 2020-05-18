@@ -23,6 +23,7 @@ const nullSize = "1x1"
 const defaultPageURL = "FILE"
 const sec = "ROS"
 const dfpClientID = "1"
+const requestTargetInventory = "1"
 
 var cleanNameSteps = []cleanNameStep{
 	{regexp.MustCompile(`_|\.|-|\/`), ""},
@@ -117,7 +118,19 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 		pageDomain = defaultPageURL
 	}
 
-	uri := adapter.URI + fmt.Sprintf("/%s/%s/%s/%s?r=pbs&ncb=1&ur=%s&e=%s", clientID, dfpClientID, pageDomain, sec, url.QueryEscape(pageURL), strings.Join(spacesStrings, "+"))
+	var requestTarget string
+	if request.App != nil && request.App.Bundle != "" {
+		requestTarget = request.App.Bundle
+	} else {
+		requestTarget = pageDomain
+	}
+
+	var uri string
+	if request.App != nil {
+		uri = adapter.URI + fmt.Sprintf("/%s/%s/%s/%s?r=pbs&ncb=1&e=%s", clientID, dfpClientID, requestTarget, sec, strings.Join(spacesStrings, "+"))
+	} else {
+		uri = adapter.URI + fmt.Sprintf("/%s/%s/%s/%s?r=pbs&ncb=1&ur=%s&e=%s", clientID, dfpClientID, requestTarget, sec, url.QueryEscape(pageURL), strings.Join(spacesStrings, "+"))
+	}
 
 	if request.User != nil && request.User.BuyerUID != "" {
 		uri = uri + fmt.Sprintf("&uid=%s", request.User.BuyerUID)
@@ -133,6 +146,19 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 	} else {
 		uri = uri + fmt.Sprintf("&rnd=%d", rand.Int())
 		body = nil
+	}
+
+	if request.App != nil {
+		if request.App.Name != "" {
+			uri = uri + fmt.Sprintf("&appn=%s", request.App.Name)
+		}
+		if request.App.ID != "" {
+			uri = uri + fmt.Sprintf("&appid=%s", request.App.ID)
+		}
+		if request.Device != nil && request.Device.IFA != "" {
+			uri = uri + fmt.Sprintf("&ifa=%s", request.Device.IFA)
+		}
+		uri = uri + fmt.Sprintf("&app=%s", requestTargetInventory)
 	}
 
 	requestData := adapters.RequestData{
