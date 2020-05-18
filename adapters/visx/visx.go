@@ -18,6 +18,7 @@ type visxBid struct {
 	ImpID   string   `json:"impid"`
 	Price   float64  `json:"price"`
 	UID     int      `json:"auid"`
+	CrID    string   `json:"crid,omitempty"`
 	AdM     string   `json:"adm,omitempty"`
 	ADomain []string `json:"adomain,omitempty"`
 	DealID  string   `json:"dealid,omitempty"`
@@ -41,8 +42,7 @@ func (a *VisxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapter
 	// copy the request, because we are going to mutate it
 	requestCopy := *request
 	if len(requestCopy.Cur) == 0 {
-		requestCopy.Cur = make([]string, 1)
-		requestCopy.Cur[0] = "USD"
+		requestCopy.Cur = []string{"USD"}
 	}
 
 	reqJSON, err := json.Marshal(requestCopy)
@@ -91,7 +91,7 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequ
 		for i := range sb.Bid {
 			bid := openrtb.Bid{}
 			bid.ID = internalRequest.ID
-			bid.CrID = fmt.Sprint(sb.Bid[i].UID)
+			bid.CrID = sb.Bid[i].CrID
 			bid.ImpID = sb.Bid[i].ImpID
 			bid.Price = sb.Bid[i].Price
 			bid.AdM = sb.Bid[i].AdM

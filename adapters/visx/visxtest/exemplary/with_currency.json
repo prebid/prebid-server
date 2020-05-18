@@ -49,12 +49,12 @@
         "mockResponse": {
             "status": 200,
             "body": {
-                "id": "test-request-id",
                 "cur": ["EUR"],
                 "seatbid": [
                     {
                         "bid": [
                             {
+                                "crid": "2_261",
                                 "price": 0.500000,
                                 "adm": "some-test-ad",
                                 "impid": "test-imp-id",
@@ -85,7 +85,7 @@
                 "adomain": [
                     "goodadvertiser.com"
                 ],
-                "crid": "46",
+                "crid": "2_261",
                 "w": 300
             },
             "type": "banner"

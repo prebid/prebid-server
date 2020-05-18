@@ -132,12 +132,12 @@
         "mockResponse": {
             "status": 200,
             "body": {
-                "id": "1519967420713_259406708_583019428",
                 "cur": ["USD"],
                 "seatbid": [
                     {
                         "bid": [
                             {
+                                "crid": "2_260",
                                 "price": 0.500000,
                                 "adm": "some-test-ad",
                                 "impid": "test-imp-id",
@@ -146,6 +146,7 @@
                                 "adomain": [
                                     "goodadvertiser.com"
                                 ],
+                                "dealid": "test_deal_id",
                                 "w": 300
                             }
                         ],
@@ -168,7 +169,8 @@
                 "adomain": [
                     "goodadvertiser.com"
                 ],
-                "crid": "46",
+                "dealid": "test_deal_id",
+                "crid": "2_260",
                 "w": 300
             },
             "type": "banner"
