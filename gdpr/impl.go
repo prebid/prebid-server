@@ -50,7 +50,6 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 
 	id, ok := p.vendorIDs[bidder]
 	if ok {
-
 		return p.allowPI(ctx, id, consent)
 	}
 
@@ -130,39 +129,43 @@ func (p *permissionsImpl) allowPITCF2(parsedConsent api.VendorConsents, vendor a
 		err = fmt.Errorf("Unable to access TCF2 parsed consent")
 		return
 	}
-	if p.cfg.TCF2.SpecialPurpose1 {
+	if p.cfg.TCF2.SpecialPurpose1.Enabled {
 		allowGeo = consent.SpecialFeatureOptIn(1) && vendor.SpecialPurpose(1)
 	} else {
 		allowGeo = true
 	}
 	// Set to true so any purpose check can flip it to false
 	allowPI = true
-	if p.cfg.TCF2.Purpose1 {
+	if p.cfg.TCF2.Purpose1.Enabled {
 		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.InfoStorageAccess)
 	}
-	if p.cfg.TCF2.Purpose2 {
+	if p.cfg.TCF2.Purpose2.Enabled {
 		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.BasicAdserving)
 	}
-	if p.cfg.TCF2.Purpose4 {
+	if p.cfg.TCF2.Purpose4.Enabled {
 		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.PersonalizationSelection)
 	}
-	if p.cfg.TCF2.Purpose7 {
+	if p.cfg.TCF2.Purpose7.Enabled {
 		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.AdPerformance)
 	}
 	return
 }
 
+const pubRestrictNotAllowed = 0
+const pubRestrictRequireConsent = 1
+const pubRestrictRequireLegitInterest = 2
+
 func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose tcf1constants.Purpose) bool {
-	if purpose == 1 && p.cfg.TCF2.PurposeOneTreatment.Enabled && consent.PurposeOneTreatment() {
+	if purpose == consentconstants.InfoStorageAccess && p.cfg.TCF2.PurposeOneTreatment.Enabled && consent.PurposeOneTreatment() {
 		return p.cfg.TCF2.PurposeOneTreatment.AccessAllowed
 	}
-	if consent.CheckPubRestriction(uint8(purpose), 0, vendorID) {
+	if consent.CheckPubRestriction(uint8(purpose), pubRestrictNotAllowed, vendorID) {
 		return false
 	}
-	if consent.CheckPubRestriction(uint8(purpose), 1, vendorID) {
+	if consent.CheckPubRestriction(uint8(purpose), pubRestrictRequireConsent, vendorID) {
 		return vendor.PurposeStrict(purpose) && consent.PurposeAllowed(purpose) && consent.VendorConsent(vendorID)
 	}
-	if consent.CheckPubRestriction(uint8(purpose), 2, vendorID) {
+	if consent.CheckPubRestriction(uint8(purpose), pubRestrictRequireLegitInterest, vendorID) {
 		// Need LITransparency here
 		return vendor.LegitimateInterestStrict(purpose) && consent.PurposeLITransparency(purpose) && consent.VendorLegitInterest(vendorID)
 	}

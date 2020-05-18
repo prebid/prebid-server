@@ -220,35 +220,37 @@ func TestAllowPersonalInfo(t *testing.T) {
 	assertBoolsEqual(t, true, allowPI)
 }
 
+var tcf2BasicPurposes = map[uint16]*purposes{
+	2: {purposes: []int{1}},       //cookie reads/writes
+	6: {purposes: []int{1, 2, 4}}, // ad personalization
+	8: {purposes: []int{1, 7}},
+}
+var tcf2LegitInterests = map[uint16]*purposes{
+	6: {purposes: []int{7}},
+	8: {purposes: []int{2, 4}},
+}
+var tcf2SpecialPuproses = map[uint16]*purposes{
+	6: {purposes: []int{1}},
+}
+var tcf2FlexPurposes = map[uint16]*purposes{
+	6: {purposes: []int{1, 2, 4, 7}},
+}
+var tcf2Config = config.GDPR{
+	HostVendorID: 2,
+	TCF2: config.TCF2{
+		Enabled:         true,
+		Purpose1:        config.PurposeDetail{Enabled: true},
+		Purpose2:        config.PurposeDetail{Enabled: true},
+		Purpose4:        config.PurposeDetail{Enabled: true},
+		Purpose7:        config.PurposeDetail{Enabled: true},
+		SpecialPurpose1: config.PurposeDetail{Enabled: true},
+	},
+}
+
 func TestAllowPersonalInfoTCF2(t *testing.T) {
-	basicPurposes := map[uint16]*purposes{
-		2: {purposes: []int{1}},       //cookie reads/writes
-		6: {purposes: []int{1, 2, 4}}, // ad personalization
-		8: {purposes: []int{1, 7}},
-	}
-	legitInterests := map[uint16]*purposes{
-		6: {purposes: []int{7}},
-		8: {purposes: []int{2, 4}},
-	}
-	specialPuproses := map[uint16]*purposes{
-		6: {purposes: []int{1}},
-	}
-	flexPurposes := map[uint16]*purposes{
-		6: {purposes: []int{1, 2, 4, 7}},
-	}
-	vendorListData := mockVendorListDataTCF2(t, 2, basicPurposes, legitInterests, flexPurposes, specialPuproses)
+	vendorListData := mockVendorListDataTCF2(t, 2, tcf2BasicPurposes, tcf2LegitInterests, tcf2FlexPurposes, tcf2SpecialPuproses)
 	perms := permissionsImpl{
-		cfg: config.GDPR{
-			HostVendorID: 2,
-			TCF2: config.TCF2{
-				Enabled:         true,
-				Purpose1:        true,
-				Purpose2:        true,
-				Purpose4:        true,
-				Purpose7:        true,
-				SpecialPurpose1: true,
-			},
-		},
+		cfg: tcf2Config,
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 6,
@@ -262,7 +264,7 @@ func TestAllowPersonalInfoTCF2(t *testing.T) {
 		},
 	}
 
-	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : TCF2 with full consensts to purposes and vendors 2, 4, 6
+	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : TCF2 with full consensts to purposes and vendors 2, 6, 8
 	// PI needs all purposes to succeed
 	allowPI, allowGeo, err := perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "", "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
 	assertNilErr(t, err)
@@ -287,6 +289,94 @@ func TestAllowPersonalInfoTCF2(t *testing.T) {
 	assertNilErr(t, err)
 	assertBoolsEqual(t, true, allowPI)
 	assertBoolsEqual(t, true, allowGeo)
+}
+
+func TestAllowSyncTCF2(t *testing.T) {
+	vendorListData := mockVendorListDataTCF2(t, 2, tcf2BasicPurposes, tcf2LegitInterests, tcf2FlexPurposes, tcf2SpecialPuproses)
+	perms := permissionsImpl{
+		cfg: tcf2Config,
+		vendorIDs: map[openrtb_ext.BidderName]uint16{
+			openrtb_ext.BidderAppnexus: 2,
+			openrtb_ext.BidderPubmatic: 6,
+			openrtb_ext.BidderRubicon:  8,
+		},
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: nil,
+			tCF2: listFetcher(map[uint16]vendorlist.VendorList{
+				34: parseVendorListDataV2(t, vendorListData),
+			}),
+		},
+	}
+
+	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : TCF2 with full consensts to purposes and vendors 2, 6, 8
+	allowSync, err := perms.HostCookiesAllowed(context.Background(), "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	assertNilErr(t, err)
+	assertBoolsEqual(t, true, allowSync)
+
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderRubicon, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	assertNilErr(t, err)
+	assertBoolsEqual(t, true, allowSync)
+}
+
+func TestProhibitedPurposeSyncTCF2(t *testing.T) {
+	basicPurposes := tcf2BasicPurposes
+	basicPurposes[8] = &purposes{purposes: []int{7}}
+	vendorListData := mockVendorListDataTCF2(t, 2, basicPurposes, tcf2LegitInterests, tcf2FlexPurposes, tcf2SpecialPuproses)
+	perms := permissionsImpl{
+		cfg: tcf2Config,
+		vendorIDs: map[openrtb_ext.BidderName]uint16{
+			openrtb_ext.BidderAppnexus: 2,
+			openrtb_ext.BidderPubmatic: 6,
+			openrtb_ext.BidderRubicon:  8,
+		},
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: nil,
+			tCF2: listFetcher(map[uint16]vendorlist.VendorList{
+				34: parseVendorListDataV2(t, vendorListData),
+			}),
+		},
+	}
+	perms.cfg.HostVendorID = 8
+
+	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : TCF2 with full consensts to purposes and vendors 2, 6, 8
+	allowSync, err := perms.HostCookiesAllowed(context.Background(), "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	assertNilErr(t, err)
+	assertBoolsEqual(t, false, allowSync)
+
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderRubicon, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	assertNilErr(t, err)
+	assertBoolsEqual(t, false, allowSync)
+}
+
+func TestProhibitedVendorSyncTCF2(t *testing.T) {
+	basicPurposes := tcf2BasicPurposes
+	basicPurposes[10] = &purposes{purposes: []int{1}}
+	vendorListData := mockVendorListDataTCF2(t, 2, basicPurposes, tcf2LegitInterests, tcf2FlexPurposes, tcf2SpecialPuproses)
+	perms := permissionsImpl{
+		cfg: tcf2Config,
+		vendorIDs: map[openrtb_ext.BidderName]uint16{
+			openrtb_ext.BidderAppnexus: 2,
+			openrtb_ext.BidderPubmatic: 6,
+			openrtb_ext.BidderRubicon:  8,
+			openrtb_ext.BidderOpenx:    10,
+		},
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+			tCF1: nil,
+			tCF2: listFetcher(map[uint16]vendorlist.VendorList{
+				34: parseVendorListDataV2(t, vendorListData),
+			}),
+		},
+	}
+	perms.cfg.HostVendorID = 10
+
+	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : TCF2 with full consensts to purposes and vendors 2, 4, 6
+	allowSync, err := perms.HostCookiesAllowed(context.Background(), "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	assertNilErr(t, err)
+	assertBoolsEqual(t, false, allowSync)
+
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderRubicon, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	assertNilErr(t, err)
+	assertBoolsEqual(t, false, allowSync)
 }
 
 func parseVendorListData(t *testing.T, data string) vendorlist.VendorList {

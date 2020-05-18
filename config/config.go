@@ -168,12 +168,17 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 // TCF2 defines the TCF2 specific configurations for GDPR
 type TCF2 struct {
 	Enabled             bool                 `mapstructure:"enabled"`
-	Purpose1            bool                 `mapstructure:"purpose1"`
-	Purpose2            bool                 `mapstructure:"purpose2"`
-	Purpose4            bool                 `mapstructure:"purpose4"`
-	Purpose7            bool                 `mapstructure:"purpose7"`
-	SpecialPurpose1     bool                 `mapstructure:"special_purpose1"`
+	Purpose1            PurposeDetail        `mapstructure:"purpose1"`
+	Purpose2            PurposeDetail        `mapstructure:"purpose2"`
+	Purpose4            PurposeDetail        `mapstructure:"purpose4"`
+	Purpose7            PurposeDetail        `mapstructure:"purpose7"`
+	SpecialPurpose1     PurposeDetail        `mapstructure:"special_purpose1"`
 	PurposeOneTreatment PurposeOneTreatement `mapstructure:"purpose_one_treatement"`
+}
+
+// Making a purpose struct so purpose specific details can be added later.
+type PurposeDetail struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 type PurposeOneTreatement struct {
@@ -782,11 +787,11 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
 	v.SetDefault("gdpr.tcf2.enabled", true)
-	v.SetDefault("gdpr.tcf2.purpose1", true)
-	v.SetDefault("gdpr.tcf2.purpose2", true)
-	v.SetDefault("gdpr.tcf2.purpose4", true)
-	v.SetDefault("gdpr.tcf2.purpose7", true)
-	v.SetDefault("gdpr.tcf2.special_purpose1", true)
+	v.SetDefault("gdpr.tcf2.purpose1.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose2.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose4.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose7.enabled", true)
+	v.SetDefault("gdpr.tcf2.special_purpose1.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatement.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatement.access_allowed", true)
 	v.SetDefault("ccpa.enforce", false)
