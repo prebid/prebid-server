@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy/ccpa"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -16,15 +17,6 @@ import (
 type ConsumableAdapter struct {
 	clock    instant
 	endpoint string
-}
-
-type regsExt struct {
-	UsPrivacy string `json:"us_privacy,omitempty"`
-	Gdpr      *int   `json:"gdpr,omitempty"`
-}
-
-type userExt struct {
-	Consent string `json:"consent,omitempty"`
 }
 
 type bidRequest struct {
@@ -142,23 +134,28 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	gdpr := bidGdpr{}
 
-	if request.Regs != nil && request.Regs.Ext != nil {
-		var regsExt regsExt
-		if err := json.Unmarshal(request.Regs.Ext, &regsExt); err == nil {
-			body.Ccpa = regsExt.UsPrivacy
+	ccpaPolicy, err := ccpa.ReadPolicy(request)
+	if err == nil {
+		body.Ccpa = ccpaPolicy.Value
+	}
 
-			if regsExt.Gdpr != nil {
-				applies := *regsExt.Gdpr != 0
+	// TODO: Replace with gdpr.ReadPolicy when it is available
+	if request.Regs != nil && request.Regs.Ext != nil {
+		var extRegs openrtb_ext.ExtRegs
+		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
+			if extRegs.GDPR != nil {
+				applies := *extRegs.GDPR != 0
 				gdpr.Applies = &applies
 				body.Gdpr = &gdpr
 			}
 		}
 	}
 
+	// TODO: Replace with gdpr.ReadPolicy when it is available
 	if request.User != nil && request.User.Ext != nil {
-		var userExt userExt
-		if err := json.Unmarshal(request.User.Ext, &userExt); err == nil {
-			gdpr.Consent = userExt.Consent
+		var extUser openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+			gdpr.Consent = extUser.Consent
 			body.Gdpr = &gdpr
 		}
 	}
