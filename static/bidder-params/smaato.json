@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Smaato Adapter Params",
+  "description": "A schema which validates params accepted by the Smaato adapter",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "A unique identifier for this impression within the context of the bid request"
+    },
+    "tagId": {
+      "type": "string",
+      "description": "Identifier for specific ad placement is SOMA `adSpaceId`"
+    },
+    "instl": {
+      "type": "integer",
+      "description": "A flag that shows if fullscreen ads is requested. 0 = not interstitial ad, 1 = the ad is interstitial or full screen."
+    },
+    "secure": {
+      "type": "integer",
+      "description": "A flag that shows if fullscreen ads is requested. 0 = not interstitial ad, 1 = the ad is interstitial or full screen."
+    }
+  },
+  "required": ["id","tagId","instl","secure"]
+}

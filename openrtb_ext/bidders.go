@@ -72,6 +72,7 @@ const (
 	BidderRTBHouse         BidderName = "rtbhouse"
 	BidderRubicon          BidderName = "rubicon"
 	BidderSharethrough     BidderName = "sharethrough"
+	BidderSmaato           BidderName = "smaato"
 	BidderSmartRTB         BidderName = "smartrtb"
 	BidderSomoaudience     BidderName = "somoaudience"
 	BidderSonobi           BidderName = "sonobi"
@@ -143,6 +144,7 @@ var BidderMap = map[string]BidderName{
 	"rtbhouse":          BidderRTBHouse,
 	"rubicon":           BidderRubicon,
 	"sharethrough":      BidderSharethrough,
+	"smaato":            BidderSmaato,
 	"smartrtb":          BidderSmartRTB,
 	"somoaudience":      BidderSomoaudience,
 	"sonobi":            BidderSonobi,

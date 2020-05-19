@@ -55,6 +55,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderRTBHouse):         syncConfig,
 			string(openrtb_ext.BidderRubicon):          syncConfig,
 			string(openrtb_ext.BidderSharethrough):     syncConfig,
+			string(openrtb_ext.BidderSmaato):           syncConfig,
 			string(openrtb_ext.BidderSomoaudience):     syncConfig,
 			string(openrtb_ext.BidderSonobi):           syncConfig,
 			string(openrtb_ext.BidderSovrn):            syncConfig,
@@ -84,6 +85,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderPubnative:    true,
 		openrtb_ext.BidderKidoz:        true,
 		openrtb_ext.BidderOrbidder:     true,
+		openrtb_ext.BidderSmaato:       true,
 	}
 
 	for bidder, config := range cfg.Adapters {
