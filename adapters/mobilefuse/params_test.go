@@ -2,8 +2,9 @@ package mobilefuse
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 func TestValidParams(test *testing.T) {
@@ -17,22 +18,22 @@ func TestValidParams(test *testing.T) {
 		err := validator.Validate(openrtb_ext.BidderMobilefuse, json.RawMessage(validParam))
 
 		if err != nil {
-			test.Errorf("Schema rejected mobilefuse params: %s", validParam)
+			test.Errorf("Schema rejected mobilefuse params: %s\nError: %v", validParam, err)
 		}
 	}
 }
 
 func TestInvalidParams(test *testing.T) {
-	validator, errs := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
+	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 
-	if errs != nil {
-		test.Fatalf("Failed to fetch the json-schemas. %v", errs)
+	if err != nil {
+		test.Fatalf("Failed to fetch the json-schemas. %v", err)
 	}
 
 	for _, invalidParam := range invalidParams {
-		errs := validator.Validate(openrtb_ext.BidderMobilefuse, json.RawMessage(invalidParam))
+		err := validator.Validate(openrtb_ext.BidderMobilefuse, json.RawMessage(invalidParam))
 
-		if errs == nil {
+		if err == nil {
 			test.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}

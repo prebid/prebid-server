@@ -81,11 +81,9 @@ func (adapter *MobilefuseAdapter) MakeBids(incomingRequest *openrtb.BidRequest, 
 func (adapter *MobilefuseAdapter) makeRequest(bidRequest *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
-	mobilefuseBidRequest := *bidRequest
-
 	mobilefuseExtension, errs := adapter.getMobilefuseExtension(bidRequest)
 
-	if mobilefuseExtension == nil {
+	if errs != nil {
 		return nil, errs
 	}
 
@@ -95,14 +93,16 @@ func (adapter *MobilefuseAdapter) makeRequest(bidRequest *openrtb.BidRequest) (*
 		return nil, append(errs, err)
 	}
 
-	adapter.modifyBidRequest(&mobilefuseBidRequest, mobilefuseExtension)
+	validImps := adapter.getValidImps(bidRequest, mobilefuseExtension)
 
-	if len(mobilefuseBidRequest.Imp) == 0 {
+	if len(validImps) == 0 {
 		err := fmt.Errorf("No valid imps")
 		errs = append(errs, err)
 		return nil, errs
 	}
 
+	mobilefuseBidRequest := *bidRequest
+	mobilefuseBidRequest.Imp = validImps
 	body, err := json.Marshal(mobilefuseBidRequest)
 
 	if err != nil {
@@ -164,7 +164,7 @@ func (adapter *MobilefuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobilefuse)
 	return url, nil
 }
 
-func (adapter *MobilefuseAdapter) modifyBidRequest(bidRequest *openrtb.BidRequest, ext *openrtb_ext.ExtImpMobilefuse) {
+func (adapter *MobilefuseAdapter) getValidImps(bidRequest *openrtb.BidRequest, ext *openrtb_ext.ExtImpMobilefuse) []openrtb.Imp {
 	var validImps []openrtb.Imp
 
 	for _, imp := range bidRequest.Imp {
@@ -176,12 +176,12 @@ func (adapter *MobilefuseAdapter) modifyBidRequest(bidRequest *openrtb.BidReques
 			imp.TagID = strconv.Itoa(ext.PlacementId)
 			imp.Ext = nil
 			validImps = append(validImps, imp)
-		}
 
-		break
+			break
+		}
 	}
 
-	bidRequest.Imp = validImps
+	return validImps
 }
 
 func (adapter *MobilefuseAdapter) getBidType(imp_id string, imps []openrtb.Imp) openrtb_ext.BidType {
