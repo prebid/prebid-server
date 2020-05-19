@@ -40,29 +40,12 @@ func UserSellerOrPubId(str1, str2 string) string {
 	return str2
 }
 
-type dmxUserExt struct {
-	Eids      []dmxEids    `json:"eids,omitempty"`
-	Digitrust dmxDigitrust `json:"digitrust,omitempty"`
-}
-type dmxEids struct {
-	Source string `json:"source,omitempty"`
-	Uids   []struct {
-		ID  string `json:"id,omitempty"`
-		Ext json.RawMessage
-	} `json:"uids,omitempty"`
-}
-
-type dmxDigitrust struct {
-	ID   string `json:"id,omitempty"`
-	Keyv int    `json:"keyv,omitempty"`
-}
-
 func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
 	var imps []openrtb.Imp
 	var rootExtInfo dmxExt
 	var publisherId string
 	var sellerId string
-	var user_ext dmxUserExt
+	var userExt openrtb_ext.ExtUser
 	var anyHasId = false
 	var dmxReq *openrtb.BidRequest = request
 
@@ -120,8 +103,8 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 			anyHasId = true
 		}
 		if dmxReq.User.Ext != nil {
-			if err := json.Unmarshal(dmxReq.User.Ext, &user_ext); err == nil {
-				if len(user_ext.Eids) > 0 || user_ext.Digitrust.ID != "" {
+			if err := json.Unmarshal(dmxReq.User.Ext, &userExt); err == nil {
+				if len(userExt.Eids) > 0 || (userExt.DigiTrust != nil && userExt.DigiTrust.ID != "") {
 					anyHasId = true
 				}
 			}
