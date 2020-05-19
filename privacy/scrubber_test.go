@@ -28,13 +28,13 @@ func TestScrubDevice(t *testing.T) {
 	}
 
 	testCases := []struct {
+		description string
 		expected    *openrtb.Device
-		isMacAndIFA bool
 		ipv6        ScrubStrategyIPV6
 		geo         ScrubStrategyGeo
-		description string
 	}{
 		{
+			description: "IPv6 Lowest 32 & Geo Full",
 			expected: &openrtb.Device{
 				DIDMD5:   "",
 				DIDSHA1:  "",
@@ -47,12 +47,11 @@ func TestScrubDevice(t *testing.T) {
 				IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
 				Geo:      &openrtb.Geo{},
 			},
-			isMacAndIFA: true,
-			ipv6:        ScrubStrategyIPV6Lowest32,
-			geo:         ScrubStrategyGeoFull,
-			description: "Full Scrubbing",
+			ipv6: ScrubStrategyIPV6Lowest32,
+			geo:  ScrubStrategyGeoFull,
 		},
 		{
+			description: "IPv6 Lowest 16 & Geo Full",
 			expected: &openrtb.Device{
 				DIDMD5:   "",
 				DIDSHA1:  "",
@@ -65,12 +64,11 @@ func TestScrubDevice(t *testing.T) {
 				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:0",
 				Geo:      &openrtb.Geo{},
 			},
-			isMacAndIFA: true,
-			ipv6:        ScrubStrategyIPV6Lowest16,
-			geo:         ScrubStrategyGeoFull,
-			description: "IPv6 Lowest 16",
+			ipv6: ScrubStrategyIPV6Lowest16,
+			geo:  ScrubStrategyGeoFull,
 		},
 		{
+			description: "IPv6 None & Geo Full",
 			expected: &openrtb.Device{
 				DIDMD5:   "",
 				DIDSHA1:  "",
@@ -83,12 +81,11 @@ func TestScrubDevice(t *testing.T) {
 				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
 				Geo:      &openrtb.Geo{},
 			},
-			isMacAndIFA: true,
-			ipv6:        ScrubStrategyIPV6None,
-			geo:         ScrubStrategyGeoFull,
-			description: "IPv6 None",
+			ipv6: ScrubStrategyIPV6None,
+			geo:  ScrubStrategyGeoFull,
 		},
 		{
+			description: "IPv6 Lowest 32 & Geo Reduced",
 			expected: &openrtb.Device{
 				DIDMD5:   "",
 				DIDSHA1:  "",
@@ -107,12 +104,57 @@ func TestScrubDevice(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			isMacAndIFA: true,
-			ipv6:        ScrubStrategyIPV6Lowest32,
-			geo:         ScrubStrategyGeoReducedPrecision,
-			description: "Geo Reduced Precision",
+			ipv6: ScrubStrategyIPV6Lowest32,
+			geo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
+			description: "IPv6 Lowest 16 & Geo Reduced",
+			expected: &openrtb.Device{
+				DIDMD5:   "",
+				DIDSHA1:  "",
+				DPIDMD5:  "",
+				DPIDSHA1: "",
+				MACSHA1:  "",
+				MACMD5:   "",
+				IFA:      "",
+				IP:       "1.2.3.0",
+				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:0",
+				Geo: &openrtb.Geo{
+					Lat:   123.46,
+					Lon:   678.89,
+					Metro: "some metro",
+					City:  "some city",
+					ZIP:   "some zip",
+				},
+			},
+			ipv6: ScrubStrategyIPV6Lowest16,
+			geo:  ScrubStrategyGeoReducedPrecision,
+		},
+		{
+			description: "IPv6 None & Geo Reduced",
+			expected: &openrtb.Device{
+				DIDMD5:   "",
+				DIDSHA1:  "",
+				DPIDMD5:  "",
+				DPIDSHA1: "",
+				MACSHA1:  "",
+				MACMD5:   "",
+				IFA:      "",
+				IP:       "1.2.3.0",
+				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
+				Geo: &openrtb.Geo{
+					Lat:   123.46,
+					Lon:   678.89,
+					Metro: "some metro",
+					City:  "some city",
+					ZIP:   "some zip",
+				},
+			},
+			ipv6: ScrubStrategyIPV6None,
+			geo:  ScrubStrategyGeoReducedPrecision,
+		},
+		{
+			description: "IPv6 Lowest 32 & Geo None",
 			expected: &openrtb.Device{
 				DIDMD5:   "",
 				DIDSHA1:  "",
@@ -131,41 +173,72 @@ func TestScrubDevice(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			isMacAndIFA: true,
-			ipv6:        ScrubStrategyIPV6Lowest32,
-			geo:         ScrubStrategyGeoNone,
-			description: "Geo None",
+			ipv6: ScrubStrategyIPV6Lowest32,
+			geo:  ScrubStrategyGeoNone,
 		},
 		{
+			description: "IPv6 Lowest 16 & Geo None",
 			expected: &openrtb.Device{
 				DIDMD5:   "",
 				DIDSHA1:  "",
 				DPIDMD5:  "",
 				DPIDSHA1: "",
-				MACSHA1:  "anyMACSHA1",
-				MACMD5:   "anyMACMD5",
-				IFA:      "anyIFA",
+				MACSHA1:  "",
+				MACMD5:   "",
+				IFA:      "",
 				IP:       "1.2.3.0",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
-				Geo:      &openrtb.Geo{},
+				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:0",
+				Geo: &openrtb.Geo{
+					Lat:   123.456,
+					Lon:   678.89,
+					Metro: "some metro",
+					City:  "some city",
+					ZIP:   "some zip",
+				},
 			},
-			isMacAndIFA: false,
-			ipv6:        ScrubStrategyIPV6Lowest32,
-			geo:         ScrubStrategyGeoFull,
-			description: "Without MAC Address And IFA Scrubbing",
+			ipv6: ScrubStrategyIPV6Lowest16,
+			geo:  ScrubStrategyGeoNone,
+		},
+		{
+			description: "IPv6 None & Geo None",
+			expected: &openrtb.Device{
+				DIDMD5:   "",
+				DIDSHA1:  "",
+				DPIDMD5:  "",
+				DPIDSHA1: "",
+				MACSHA1:  "",
+				MACMD5:   "",
+				IFA:      "",
+				IP:       "1.2.3.0",
+				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
+				Geo: &openrtb.Geo{
+					Lat:   123.456,
+					Lon:   678.89,
+					Metro: "some metro",
+					City:  "some city",
+					ZIP:   "some zip",
+				},
+			},
+			ipv6: ScrubStrategyIPV6None,
+			geo:  ScrubStrategyGeoNone,
 		},
 	}
 
 	for _, test := range testCases {
-		result := NewScrubber().ScrubDevice(device, test.isMacAndIFA, test.ipv6, test.geo)
+		result := NewScrubber().ScrubDevice(device, test.ipv6, test.geo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
+func TestScrubDeviceNil(t *testing.T) {
+	result := NewScrubber().ScrubDevice(nil, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
+	assert.Nil(t, result)
+}
+
 func TestScrubUser(t *testing.T) {
 	user := &openrtb.User{
-		BuyerUID: "anyBuyerUID",
 		ID:       "anyID",
+		BuyerUID: "anyBuyerUID",
 		Yob:      42,
 		Gender:   "anyGender",
 		Geo: &openrtb.Geo{
@@ -179,50 +252,27 @@ func TestScrubUser(t *testing.T) {
 
 	testCases := []struct {
 		expected    *openrtb.User
-		strategy    ScrubStrategyUser
+		demographic ScrubStrategyDemographic
 		geo         ScrubStrategyGeo
 		description string
 	}{
 		{
+			description: "Demographic Age And Gender & Geo Full",
 			expected: &openrtb.User{
-				BuyerUID: "",
 				ID:       "",
+				BuyerUID: "",
 				Yob:      0,
 				Gender:   "",
 				Geo:      &openrtb.Geo{},
 			},
-			strategy:    ScrubStrategyUserFull,
+			demographic: ScrubStrategyDemographicAgeAndGender,
 			geo:         ScrubStrategyGeoFull,
-			description: "Full Scrubbing",
 		},
 		{
+			description: "Demographic Age And Gender & Geo Reduced",
 			expected: &openrtb.User{
-				BuyerUID: "",
-				ID:       "anyID",
-				Yob:      42,
-				Gender:   "anyGender",
-				Geo:      &openrtb.Geo{},
-			},
-			strategy:    ScrubStrategyUserBuyerIDOnly,
-			geo:         ScrubStrategyGeoFull,
-			description: "User Buyer ID Only",
-		},
-		{
-			expected: &openrtb.User{
-				BuyerUID: "anyBuyerUID",
-				ID:       "anyID",
-				Yob:      42,
-				Gender:   "anyGender",
-				Geo:      &openrtb.Geo{},
-			},
-			strategy:    ScrubStrategyUserNone,
-			geo:         ScrubStrategyGeoFull,
-			description: "User None",
-		},
-		{
-			expected: &openrtb.User{
-				BuyerUID: "",
 				ID:       "",
+				BuyerUID: "",
 				Yob:      0,
 				Gender:   "",
 				Geo: &openrtb.Geo{
@@ -233,14 +283,14 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			strategy:    ScrubStrategyUserFull,
+			demographic: ScrubStrategyDemographicAgeAndGender,
 			geo:         ScrubStrategyGeoReducedPrecision,
-			description: "Geo Reduced Precision",
 		},
 		{
+			description: "Demographic Age And Gender & Geo None",
 			expected: &openrtb.User{
-				BuyerUID: "",
 				ID:       "",
+				BuyerUID: "",
 				Yob:      0,
 				Gender:   "",
 				Geo: &openrtb.Geo{
@@ -251,16 +301,68 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			strategy:    ScrubStrategyUserFull,
+			demographic: ScrubStrategyDemographicAgeAndGender,
 			geo:         ScrubStrategyGeoNone,
-			description: "Geo None",
+		},
+		{
+			description: "Demographic None & Geo Full",
+			expected: &openrtb.User{
+				ID:       "",
+				BuyerUID: "",
+				Yob:      42,
+				Gender:   "anyGender",
+				Geo:      &openrtb.Geo{},
+			},
+			demographic: ScrubStrategyDemographicNone,
+			geo:         ScrubStrategyGeoFull,
+		},
+		{
+			description: "Demographic None & Geo Reduced",
+			expected: &openrtb.User{
+				ID:       "",
+				BuyerUID: "",
+				Yob:      42,
+				Gender:   "anyGender",
+				Geo: &openrtb.Geo{
+					Lat:   123.46,
+					Lon:   678.89,
+					Metro: "some metro",
+					City:  "some city",
+					ZIP:   "some zip",
+				},
+			},
+			demographic: ScrubStrategyDemographicNone,
+			geo:         ScrubStrategyGeoReducedPrecision,
+		},
+		{
+			description: "Demographic None & Geo None",
+			expected: &openrtb.User{
+				ID:       "",
+				BuyerUID: "",
+				Yob:      42,
+				Gender:   "anyGender",
+				Geo: &openrtb.Geo{
+					Lat:   123.456,
+					Lon:   678.89,
+					Metro: "some metro",
+					City:  "some city",
+					ZIP:   "some zip",
+				},
+			},
+			demographic: ScrubStrategyDemographicNone,
+			geo:         ScrubStrategyGeoNone,
 		},
 	}
 
 	for _, test := range testCases {
-		result := NewScrubber().ScrubUser(user, test.strategy, test.geo)
+		result := NewScrubber().ScrubUser(user, test.demographic, test.geo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
+}
+
+func TestScrubUserNil(t *testing.T) {
+	result := NewScrubber().ScrubUser(nil, ScrubStrategyDemographicNone, ScrubStrategyGeoNone)
+	assert.Nil(t, result)
 }
 
 func TestScrubIPV4(t *testing.T) {
