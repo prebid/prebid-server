@@ -280,21 +280,21 @@ func TestAllowPersonalInfoTCF2(t *testing.T) {
 	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : TCF2 with full consensts to purposes and vendors 2, 6, 8
 	// PI needs all purposes to succeed
 	testDefs := []tcf2TestDef{
-		tcf2TestDef{
+		{
 			description: "Appnexus vendor test, insufficient purposes claimed",
 			bidder:      openrtb_ext.BidderAppnexus,
 			consent:     "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
 			allowPI:     false,
 			allowGeo:    false,
 		},
-		tcf2TestDef{
+		{
 			description: "Pubmatic vendor test, flex purposes claimed",
 			bidder:      openrtb_ext.BidderPubmatic,
 			consent:     "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
 			allowPI:     true,
 			allowGeo:    true,
 		},
-		tcf2TestDef{
+		{
 			description: "Rubicon vendor test, Specific purposes/LIs claimed, no geo claimed",
 			bidder:      openrtb_ext.BidderRubicon,
 			consent:     "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
@@ -356,21 +356,21 @@ func TestAllowPersonalInfoTCF2PubRestrict(t *testing.T) {
 	// COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA - vendors 1-10 legit interest only,
 	// Pub restriction on purpose 7, consent only ... no allowPI will pass, no Special purpose 1 consent
 	testDefs := []tcf2TestDef{
-		tcf2TestDef{
+		{
 			description: "Appnexus vendor test, insufficient purposes claimed",
 			bidder:      openrtb_ext.BidderAppnexus,
 			consent:     "COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA",
 			allowPI:     false,
 			allowGeo:    false,
 		},
-		tcf2TestDef{
+		{
 			description: "Pubmatic vendor test, flex purposes claimed",
 			bidder:      openrtb_ext.BidderPubmatic,
 			consent:     "COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA",
 			allowPI:     false,
 			allowGeo:    false,
 		},
-		tcf2TestDef{
+		{
 			description: "Rubicon vendor test, Specific purposes/LIs claimed, no geo claimed",
 			bidder:      openrtb_ext.BidderRubicon,
 			consent:     "COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA",
@@ -408,21 +408,21 @@ func TestAllowPersonalInfoTCF2PurposeOneTrue(t *testing.T) {
 
 	// COzqiL3OzqiL3NIAAAENAiCMAP_AAH_AAIAAAQEX2S5MAICL7JcmAAA Purpose one flag set
 	testDefs := []tcf2TestDef{
-		tcf2TestDef{
+		{
 			description: "Appnexus vendor test, insufficient purposes claimed",
 			bidder:      openrtb_ext.BidderAppnexus,
 			consent:     "COzqiL3OzqiL3NIAAAENAiCMAP_AAH_AAIAAAQEX2S5MAICL7JcmAAA",
 			allowPI:     false,
 			allowGeo:    false,
 		},
-		tcf2TestDef{
+		{
 			description: "Pubmatic vendor test, flex purposes claimed",
 			bidder:      openrtb_ext.BidderPubmatic,
 			consent:     "COzqiL3OzqiL3NIAAAENAiCMAP_AAH_AAIAAAQEX2S5MAICL7JcmAAA",
 			allowPI:     true,
 			allowGeo:    true,
 		},
-		tcf2TestDef{
+		{
 			description: "Rubicon vendor test, Specific purposes/LIs claimed, no geo claimed",
 			bidder:      openrtb_ext.BidderRubicon,
 			consent:     "COzqiL3OzqiL3NIAAAENAiCMAP_AAH_AAIAAAQEX2S5MAICL7JcmAAA",
@@ -460,21 +460,21 @@ func TestAllowPersonalInfoTCF2PurposeOneFalse(t *testing.T) {
 
 	// COzqiL3OzqiL3NIAAAENAiCMAP_AAH_AAIAAAQEX2S5MAICL7JcmAAA Purpose one flag set
 	testDefs := []tcf2TestDef{
-		tcf2TestDef{
+		{
 			description: "Appnexus vendor test, insufficient purposes claimed",
 			bidder:      openrtb_ext.BidderAppnexus,
 			consent:     "COzqiL3OzqiL3NIAAAENAiCMAP_AAH_AAIAAAQEX2S5MAICL7JcmAAA",
 			allowPI:     false,
 			allowGeo:    false,
 		},
-		tcf2TestDef{
+		{
 			description: "Pubmatic vendor test, flex purposes claimed",
 			bidder:      openrtb_ext.BidderPubmatic,
 			consent:     "COzqiL3OzqiL3NIAAAENAiCMAP_AAH_AAIAAAQEX2S5MAICL7JcmAAA",
 			allowPI:     false,
 			allowGeo:    true,
 		},
-		tcf2TestDef{
+		{
 			description: "Rubicon vendor test, Specific purposes/LIs claimed, no geo claimed",
 			bidder:      openrtb_ext.BidderRubicon,
 			consent:     "COzqiL3OzqiL3NIAAAENAiCMAP_AAH_AAIAAAQEX2S5MAICL7JcmAAA",
