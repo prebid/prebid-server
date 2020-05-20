@@ -1443,10 +1443,10 @@ func TestOpenRTBResponseOverridePriceFromBidRequest(t *testing.T) {
 			}}`),
 		}},
 		Ext: json.RawMessage(`{"prebid": {
-    		"bidders": {
-      			"rubicon": {
-        			"debug": {
-          				"cpmOverride": 10
+			"bidders": {
+				"rubicon": {
+					"debug": {
+						"cpmOverride": 10
 			}}}}}`),
 	}
 
@@ -1493,10 +1493,10 @@ func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
 			}}`),
 		}},
 		Ext: json.RawMessage(`{"prebid": {
-    		"bidders": {
-      			"rubicon": {
-        			"debug": {
-          				"cpmOverride": 10
+			"bidders": {
+				"rubicon": {
+					"debug": {
+						"cpmOverride": 10
 			}}}}}`),
 	}
 
