@@ -225,13 +225,13 @@ func TestScrubDevice(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result := NewScrubber().ScrubDevice(device, test.ipv6, test.geo)
+		result := NewScrubber().ScrubDevice(device, true, test.ipv6, test.geo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
 func TestScrubDeviceNil(t *testing.T) {
-	result := NewScrubber().ScrubDevice(nil, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
+	result := NewScrubber().ScrubDevice(nil, true, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
 	assert.Nil(t, result)
 }
 
@@ -252,7 +252,7 @@ func TestScrubUser(t *testing.T) {
 
 	testCases := []struct {
 		expected    *openrtb.User
-		demographic ScrubStrategyDemographic
+		user        ScrubStrategyUser
 		geo         ScrubStrategyGeo
 		description string
 	}{
@@ -265,8 +265,8 @@ func TestScrubUser(t *testing.T) {
 				Gender:   "",
 				Geo:      &openrtb.Geo{},
 			},
-			demographic: ScrubStrategyDemographicAgeAndGender,
-			geo:         ScrubStrategyGeoFull,
+			user: ScrubStrategyUserFull,
+			geo:  ScrubStrategyGeoFull,
 		},
 		{
 			description: "Demographic Age And Gender & Geo Reduced",
@@ -283,8 +283,8 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			demographic: ScrubStrategyDemographicAgeAndGender,
-			geo:         ScrubStrategyGeoReducedPrecision,
+			user: ScrubStrategyUserFull,
+			geo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
 			description: "Demographic Age And Gender & Geo None",
@@ -301,8 +301,8 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			demographic: ScrubStrategyDemographicAgeAndGender,
-			geo:         ScrubStrategyGeoNone,
+			user: ScrubStrategyUserFull,
+			geo:  ScrubStrategyGeoNone,
 		},
 		{
 			description: "Demographic None & Geo Full",
@@ -313,8 +313,8 @@ func TestScrubUser(t *testing.T) {
 				Gender:   "anyGender",
 				Geo:      &openrtb.Geo{},
 			},
-			demographic: ScrubStrategyDemographicNone,
-			geo:         ScrubStrategyGeoFull,
+			user: ScrubStrategyUserBuyerIDOnly,
+			geo:  ScrubStrategyGeoFull,
 		},
 		{
 			description: "Demographic None & Geo Reduced",
@@ -331,8 +331,8 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			demographic: ScrubStrategyDemographicNone,
-			geo:         ScrubStrategyGeoReducedPrecision,
+			user: ScrubStrategyUserBuyerIDOnly,
+			geo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
 			description: "Demographic None & Geo None",
@@ -349,19 +349,19 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			demographic: ScrubStrategyDemographicNone,
-			geo:         ScrubStrategyGeoNone,
+			user: ScrubStrategyUserBuyerIDOnly,
+			geo:  ScrubStrategyGeoNone,
 		},
 	}
 
 	for _, test := range testCases {
-		result := NewScrubber().ScrubUser(user, test.demographic, test.geo)
+		result := NewScrubber().ScrubUser(user, test.user, test.geo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
 func TestScrubUserNil(t *testing.T) {
-	result := NewScrubber().ScrubUser(nil, ScrubStrategyDemographicNone, ScrubStrategyGeoNone)
+	result := NewScrubber().ScrubUser(nil, ScrubStrategyUserNone, ScrubStrategyGeoNone)
 	assert.Nil(t, result)
 }
 

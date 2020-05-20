@@ -17,14 +17,14 @@ func (e Enforcement) Any() bool {
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
-func (e Enforcement) Apply(bidRequest *openrtb.BidRequest) {
-	e.apply(bidRequest, NewScrubber())
+func (e Enforcement) Apply(bidRequest *openrtb.BidRequest, isAMP bool) {
+	e.apply(bidRequest, isAMP, NewScrubber())
 }
 
-func (e Enforcement) apply(bidRequest *openrtb.BidRequest, scrubber Scrubber) {
+func (e Enforcement) apply(bidRequest *openrtb.BidRequest, isAMP bool, scrubber Scrubber) {
 	if bidRequest != nil && e.Any() {
-		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
-		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getDemographicScrubStrategy(), e.getGeoScrubStrategy())
+		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, !isAMP, e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
+		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(isAMP), e.getGeoScrubStrategy())
 	}
 }
 
@@ -52,10 +52,13 @@ func (e Enforcement) getGeoScrubStrategy() ScrubStrategyGeo {
 	return ScrubStrategyGeoNone
 }
 
-func (e Enforcement) getDemographicScrubStrategy() ScrubStrategyDemographic {
+func (e Enforcement) getUserScrubStrategy(isAMP bool) ScrubStrategyUser {
 	if e.COPPA {
-		return ScrubStrategyDemographicAgeAndGender
+		return ScrubStrategyUserFull
 	}
 
-	return ScrubStrategyDemographicNone
+	if isAMP {
+		return ScrubStrategyUserAgeAndGender
+	}
+	return ScrubStrategyUserBuyerIDOnly
 }
