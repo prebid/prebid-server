@@ -95,7 +95,7 @@ func OrtbAuction(w http.ResponseWriter, r *http.Request) error {
 }
 
 func VideoAuction(w http.ResponseWriter, r *http.Request) error {
-	return router.OrtbAuctionEndpointWrapper(w, r)
+	return router.VideoAuctionEndpointWrapper(w, r)
 }
 
 func Auction(w http.ResponseWriter, r *http.Request) {
