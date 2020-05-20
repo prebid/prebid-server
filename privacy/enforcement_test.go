@@ -110,6 +110,32 @@ func TestApply(t *testing.T) {
 			expectedUserDemographic: ScrubStrategyDemographicNone,
 			expectedUserGeo:         ScrubStrategyGeoReducedPrecision,
 		},
+		{
+			description: "GDPR Only, no Geo",
+			enforcement: Enforcement{
+				CCPA:    false,
+				COPPA:   false,
+				GDPR:    true,
+				GDPRGeo: false,
+			},
+			expectedDeviceIPv6:      ScrubStrategyIPV6Lowest16,
+			expectedDeviceGeo:       ScrubStrategyGeoNone,
+			expectedUserDemographic: ScrubStrategyDemographicNone,
+			expectedUserGeo:         ScrubStrategyGeoNone,
+		},
+		{
+			description: "GDPR Only, Geo only",
+			enforcement: Enforcement{
+				CCPA:    false,
+				COPPA:   false,
+				GDPR:    false,
+				GDPRGeo: true,
+			},
+			expectedDeviceIPv6:      ScrubStrategyIPV6None,
+			expectedDeviceGeo:       ScrubStrategyGeoReducedPrecision,
+			expectedUserDemographic: ScrubStrategyDemographicNone,
+			expectedUserGeo:         ScrubStrategyGeoReducedPrecision,
+		},
 	}
 
 	for _, test := range testCases {
