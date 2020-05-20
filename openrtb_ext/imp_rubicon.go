@@ -27,5 +27,5 @@ type rubiconVideoParams struct {
 
 // rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.debug
 type impExtRubiconDebug struct {
-	CpmOverride float64 `json:"cpmOverride,omitempty"`
+	CpmOverride float64 `json:"cpmoverride,omitempty"`
 }

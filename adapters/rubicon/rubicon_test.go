@@ -1442,10 +1442,12 @@ func TestOpenRTBResponseOverridePriceFromBidRequest(t *testing.T) {
 				"zoneId": 327642
 			}}`),
 		}},
-		Ext: json.RawMessage(`{"rubicon": {
-				"debug": {
-					"cpmOverride" : 10 
-				}}}`),
+		Ext: json.RawMessage(`{"prebid": {
+    		"bidders": {
+      			"rubicon": {
+        			"debug": {
+          				"cpmOverride": 10
+			}}}}}`),
 	}
 
 	requestJson, _ := json.Marshal(request)
@@ -1490,10 +1492,12 @@ func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
 				}
 			}}`),
 		}},
-		Ext: json.RawMessage(`{"rubicon": {
-				"debug": {
-					"cpmOverride" : 10 
-				}}}`),
+		Ext: json.RawMessage(`{"prebid": {
+    		"bidders": {
+      			"rubicon": {
+        			"debug": {
+          				"cpmOverride": 10
+			}}}}}`),
 	}
 
 	requestJson, _ := json.Marshal(request)

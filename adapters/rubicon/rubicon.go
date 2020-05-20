@@ -49,15 +49,23 @@ type rubiconParams struct {
 }
 
 type bidRequestExt struct {
-	Rubicon bidRequestExtRubicon `json:"rubicon,omitempty"`
+	Prebid bidRequestExtPrebid `json:"prebid"`
 }
 
-type bidRequestExtRubicon struct {
-	Debug bidRequestExtRubiconDebug `json:"debug,omitempty"`
+type bidRequestExtPrebid struct {
+	Bidders bidRequestExtPrebidBidders `json:"bidders"`
 }
 
-type bidRequestExtRubiconDebug struct {
-	CpmOverride float64 `json:"cpmOverride,omitempty"`
+type bidRequestExtPrebidBidders struct {
+	Rubicon prebidBiddersRubicon `json:"rubicon,omitempty"`
+}
+
+type prebidBiddersRubicon struct {
+	Debug prebidBiddersRubiconDebug `json:"debug,omitempty"`
+}
+
+type prebidBiddersRubiconDebug struct {
+	CpmOverride float64 `json:"cpmoverride,omitempty"`
 }
 
 type rubiconImpExtRPTrack struct {
@@ -952,7 +960,7 @@ func cmpOverrideFromBidRequest(bidRequest *openrtb.BidRequest) float64 {
 		return 0
 	}
 
-	return bidRequestExt.Rubicon.Debug.CpmOverride
+	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
 }
 
 func mapImpIdToCpmOverride(imps []openrtb.Imp) map[string]float64 {
