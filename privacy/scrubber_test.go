@@ -287,7 +287,7 @@ func TestScrubUser(t *testing.T) {
 			geo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "Demographic Age And Gender & Geo None",
+			description: "Demographic Full & Geo None",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -305,7 +305,7 @@ func TestScrubUser(t *testing.T) {
 			geo:  ScrubStrategyGeoNone,
 		},
 		{
-			description: "Demographic None & Geo Full",
+			description: "Demographic Buyer ID & Geo Full",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -317,7 +317,7 @@ func TestScrubUser(t *testing.T) {
 			geo:  ScrubStrategyGeoFull,
 		},
 		{
-			description: "Demographic None & Geo Reduced",
+			description: "Demographic Buyer ID & Geo Reduced",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -335,7 +335,25 @@ func TestScrubUser(t *testing.T) {
 			geo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "Demographic None & Geo None",
+			description: "Demographic AgeAndGender & Geo None",
+			expected: &openrtb.User{
+				ID:       "anyID",
+				BuyerUID: "anyBuyerUID",
+				Yob:      0,
+				Gender:   "",
+				Geo: &openrtb.Geo{
+					Lat:   123.456,
+					Lon:   678.89,
+					Metro: "some metro",
+					City:  "some city",
+					ZIP:   "some zip",
+				},
+			},
+			user: ScrubStrategyUserAgeAndGender,
+			geo:  ScrubStrategyGeoNone,
+		},
+		{
+			description: "Demographic BuyerIDOnly & Geo None",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
