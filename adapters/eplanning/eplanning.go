@@ -136,7 +136,7 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 	query.Set("r", "pbs")
 	query.Set("ncb", "1")
 	if request.App == nil {
-		query.Set("ur", url.QueryEscape(pageURL))
+		query.Set("ur", pageURL)
 	}
 	query.Set("e", strings.Join(spacesStrings, "+"))
 
