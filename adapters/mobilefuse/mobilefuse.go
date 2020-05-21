@@ -19,10 +19,10 @@ type MobilefuseAdapter struct {
 }
 
 func NewMobilefuseBidder(endpointTemplate string) adapters.Bidder {
-	parsedTemplate, errs := template.New("endpointTemplate").Parse(endpointTemplate)
+	parsedTemplate, err := template.New("endpointTemplate").Parse(endpointTemplate)
 
-	if errs != nil {
-		glog.Fatal("Unable parse endpoint template: " + errs.Error())
+	if err != nil {
+		glog.Fatal("Unable parse endpoint template: " + err.Error())
 		return nil
 	}
 
@@ -81,7 +81,7 @@ func (adapter *MobilefuseAdapter) MakeBids(incomingRequest *openrtb.BidRequest, 
 func (adapter *MobilefuseAdapter) makeRequest(bidRequest *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
-	mobilefuseExtension, errs := adapter.getMobilefuseExtension(bidRequest)
+	mobilefuseExtension, errs := adapter.getFirstMobilefuseExtension(bidRequest)
 
 	if errs != nil {
 		return nil, errs
@@ -121,7 +121,7 @@ func (adapter *MobilefuseAdapter) makeRequest(bidRequest *openrtb.BidRequest) (*
 	}, errs
 }
 
-func (adapter *MobilefuseAdapter) getMobilefuseExtension(request *openrtb.BidRequest) (*openrtb_ext.ExtImpMobilefuse, []error) {
+func (adapter *MobilefuseAdapter) getFirstMobilefuseExtension(request *openrtb.BidRequest) (*openrtb_ext.ExtImpMobilefuse, []error) {
 	var mobilefuseImpExtension openrtb_ext.ExtImpMobilefuse
 	var errs []error
 
