@@ -34,7 +34,8 @@ type ExtCTVBid struct {
 
 // BidAdPodExt defines the prebid adpod response in bidresponse.ext.adpod parameter
 type BidAdPodExt struct {
-	RefBids []string `json:"refbids,omitempty"`
+	ReasonCode *int     `json:"aprc,omitempty"`
+	RefBids    []string `json:"refbids,omitempty"`
 }
 
 // ExtCTVRequest defines the contract for bidrequest.ext

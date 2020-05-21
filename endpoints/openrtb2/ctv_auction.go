@@ -390,6 +390,11 @@ func (deps *ctvEndpointDeps) getAllAdPodImpsConfigs() {
 			continue
 		}
 		deps.impData[index].Config = getAdPodImpsConfigs(&imp, deps.impData[index].VideoExt.AdPod)
+		if 0 == len(deps.impData[index].Config) {
+			errorCode := new(int)
+			*errorCode = 101
+			deps.impData[index].ErrorCode = errorCode
+		}
 	}
 }
 
@@ -413,30 +418,33 @@ func getAdPodImpsConfigs(imp *openrtb.Imp, adpod *openrtb_ext.VideoAdPod) []*ctv
 func (deps *ctvEndpointDeps) createImpressions() []openrtb.Imp {
 	impCount := 0
 	for _, imp := range deps.impData {
-		if len(imp.Config) == 0 {
-			impCount = impCount + 1
-		} else {
-			impCount = impCount + len(imp.Config)
+		if nil == imp.ErrorCode {
+			if len(imp.Config) == 0 {
+				impCount = impCount + 1
+			} else {
+				impCount = impCount + len(imp.Config)
+			}
 		}
 	}
 
 	count := 0
 	imps := make([]openrtb.Imp, impCount)
 	for index, imp := range deps.request.Imp {
-		adPodConfig := deps.impData[index].Config
-		if len(adPodConfig) == 0 {
-			//non adpod request it will be normal video impression
-			imps[count] = imp
-			count++
-		} else {
-			//for adpod request it will create new impression based on configurations
-			for _, config := range adPodConfig {
-				imps[count] = *(newImpression(&imp, config))
+		if nil == deps.impData[index].ErrorCode {
+			adPodConfig := deps.impData[index].Config
+			if len(adPodConfig) == 0 {
+				//non adpod request it will be normal video impression
+				imps[count] = imp
 				count++
+			} else {
+				//for adpod request it will create new impression based on configurations
+				for _, config := range adPodConfig {
+					imps[count] = *(newImpression(&imp, config))
+					count++
+				}
 			}
 		}
 	}
-
 	return imps[:]
 }
 
@@ -652,7 +660,7 @@ func (deps *ctvEndpointDeps) getBidResponseExt(resp *openrtb.BidResponse) json.R
 	}
 
 	for index, imp := range deps.impData {
-		if len(imp.Config) > 0 {
+		if nil != imp.VideoExt && nil != imp.VideoExt.AdPod {
 			_ext.Config[deps.request.Imp[index].ID] = imp
 		}
 	}
