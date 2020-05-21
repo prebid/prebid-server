@@ -38,7 +38,7 @@ const (
 type ScrubStrategyUser int
 
 const (
-	// ScrubStrategyUserNone does not remove non-location demographic data.
+	// ScrubStrategyUserNone does not remove non-location data.
 	ScrubStrategyUserNone ScrubStrategyUser = iota
 
 	// ScrubStrategyUserIDAndDemographic removes the user's buyer id, exchange id year of birth, and gender.
