@@ -41,11 +41,11 @@ const (
 	// ScrubStrategyUserNone does not remove non-location demographic data.
 	ScrubStrategyUserNone ScrubStrategyUser = iota
 
-	// ScrubStrategyUserFull removes the user's buyer id, exchange id year of birth, and gender.
-	ScrubStrategyUserFull
+	// ScrubStrategyUserIDAndDemographic removes the user's buyer id, exchange id year of birth, and gender.
+	ScrubStrategyUserIDAndDemographic
 
-	// ScrubStrategyUserBuyerIDOnly removes the user's buyer id.
-	ScrubStrategyUserBuyerIDOnly
+	// ScrubStrategyUserID removes the user's buyer id.
+	ScrubStrategyUserID
 
 	// ScrubStrategyUserAgeAndGender renoves the user's year of birth, and gender.
 	ScrubStrategyUserAgeAndGender
@@ -53,7 +53,7 @@ const (
 
 // Scrubber removes PII from parts of an OpenRTB request.
 type Scrubber interface {
-	ScrubDevice(device *openrtb.Device, macAndIFA bool, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device
+	ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device
 	ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb.User
 }
 
@@ -64,7 +64,7 @@ func NewScrubber() Scrubber {
 	return scrubber{}
 }
 
-func (scrubber) ScrubDevice(device *openrtb.Device, macAndIFA bool, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
+func (scrubber) ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
 	if device == nil {
 		return nil
 	}
@@ -74,11 +74,9 @@ func (scrubber) ScrubDevice(device *openrtb.Device, macAndIFA bool, ipv6 ScrubSt
 	deviceCopy.DIDSHA1 = ""
 	deviceCopy.DPIDMD5 = ""
 	deviceCopy.DPIDSHA1 = ""
-	if macAndIFA {
-		deviceCopy.IFA = ""
-		deviceCopy.MACMD5 = ""
-		deviceCopy.MACSHA1 = ""
-	}
+	deviceCopy.IFA = ""
+	deviceCopy.MACMD5 = ""
+	deviceCopy.MACSHA1 = ""
 	deviceCopy.IP = scrubIPV4(device.IP)
 
 	switch ipv6 {
@@ -106,17 +104,14 @@ func (scrubber) ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo Sc
 	userCopy := *user
 
 	switch strategy {
-	case ScrubStrategyUserFull:
+	case ScrubStrategyUserIDAndDemographic:
 		userCopy.BuyerUID = ""
 		userCopy.ID = ""
 		userCopy.Yob = 0
 		userCopy.Gender = ""
-	case ScrubStrategyUserBuyerIDOnly:
+	case ScrubStrategyUserID:
 		userCopy.BuyerUID = ""
 		userCopy.ID = ""
-	case ScrubStrategyUserAgeAndGender:
-		userCopy.Yob = 0
-		userCopy.Gender = ""
 	}
 
 	switch geo {

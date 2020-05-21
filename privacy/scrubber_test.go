@@ -225,13 +225,13 @@ func TestScrubDevice(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result := NewScrubber().ScrubDevice(device, true, test.ipv6, test.geo)
+		result := NewScrubber().ScrubDevice(device, test.ipv6, test.geo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
 func TestScrubDeviceNil(t *testing.T) {
-	result := NewScrubber().ScrubDevice(nil, true, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
+	result := NewScrubber().ScrubDevice(nil, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
 	assert.Nil(t, result)
 }
 
@@ -265,7 +265,7 @@ func TestScrubUser(t *testing.T) {
 				Gender:   "",
 				Geo:      &openrtb.Geo{},
 			},
-			user: ScrubStrategyUserFull,
+			user: ScrubStrategyUserIDAndDemographic,
 			geo:  ScrubStrategyGeoFull,
 		},
 		{
@@ -283,7 +283,7 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			user: ScrubStrategyUserFull,
+			user: ScrubStrategyUserIDAndDemographic,
 			geo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
@@ -301,7 +301,7 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			user: ScrubStrategyUserFull,
+			user: ScrubStrategyUserIDAndDemographic,
 			geo:  ScrubStrategyGeoNone,
 		},
 		{
@@ -313,7 +313,7 @@ func TestScrubUser(t *testing.T) {
 				Gender:   "anyGender",
 				Geo:      &openrtb.Geo{},
 			},
-			user: ScrubStrategyUserBuyerIDOnly,
+			user: ScrubStrategyUserID,
 			geo:  ScrubStrategyGeoFull,
 		},
 		{
@@ -331,16 +331,16 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			user: ScrubStrategyUserBuyerIDOnly,
+			user: ScrubStrategyUserID,
 			geo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "Demographic AgeAndGender & Geo None",
+			description: "Demographic None & Geo None",
 			expected: &openrtb.User{
 				ID:       "anyID",
 				BuyerUID: "anyBuyerUID",
-				Yob:      0,
-				Gender:   "",
+				Yob:      42,
+				Gender:   "anyGender",
 				Geo: &openrtb.Geo{
 					Lat:   123.456,
 					Lon:   678.89,
@@ -349,7 +349,7 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			user: ScrubStrategyUserAgeAndGender,
+			user: ScrubStrategyUserNone,
 			geo:  ScrubStrategyGeoNone,
 		},
 		{
@@ -367,7 +367,7 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			user: ScrubStrategyUserBuyerIDOnly,
+			user: ScrubStrategyUserID,
 			geo:  ScrubStrategyGeoNone,
 		},
 	}

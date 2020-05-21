@@ -53,7 +53,7 @@ func TestApply(t *testing.T) {
 	testCases := []struct {
 		description        string
 		enforcement        Enforcement
-		isAMP              bool
+		ampGDPRException   bool
 		expectedDeviceIPv6 ScrubStrategyIPV6
 		expectedDeviceGeo  ScrubStrategyGeo
 		expectedUser       ScrubStrategyUser
@@ -66,10 +66,10 @@ func TestApply(t *testing.T) {
 				COPPA: true,
 				GDPR:  true,
 			},
-			isAMP:              false,
+			ampGDPRException:   false,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
 			expectedDeviceGeo:  ScrubStrategyGeoFull,
-			expectedUser:       ScrubStrategyUserFull,
+			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoFull,
 		},
 		{
@@ -79,10 +79,10 @@ func TestApply(t *testing.T) {
 				COPPA: false,
 				GDPR:  false,
 			},
-			isAMP:              false,
+			ampGDPRException:   false,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
-			expectedUser:       ScrubStrategyUserBuyerIDOnly,
+			expectedUser:       ScrubStrategyUserID,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 		{
@@ -92,10 +92,10 @@ func TestApply(t *testing.T) {
 				COPPA: true,
 				GDPR:  false,
 			},
-			isAMP:              false,
+			ampGDPRException:   false,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
 			expectedDeviceGeo:  ScrubStrategyGeoFull,
-			expectedUser:       ScrubStrategyUserFull,
+			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoFull,
 		},
 		{
@@ -105,24 +105,50 @@ func TestApply(t *testing.T) {
 				COPPA: false,
 				GDPR:  true,
 			},
-			isAMP:              false,
+			ampGDPRException:   false,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
-			expectedUser:       ScrubStrategyUserBuyerIDOnly,
+			expectedUser:       ScrubStrategyUserID,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "GDPR Only, isAMP",
+			description: "GDPR Only, ampGDPRException",
 			enforcement: Enforcement{
 				CCPA:  false,
 				COPPA: false,
 				GDPR:  true,
 			},
-			isAMP:              true,
+			ampGDPRException:   true,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
-			expectedUser:       ScrubStrategyUserAgeAndGender,
+			expectedUser:       ScrubStrategyUserNone,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
+		},
+		{
+			description: "CCPA Only, ampGDPRException",
+			enforcement: Enforcement{
+				CCPA:  true,
+				COPPA: false,
+				GDPR:  false,
+			},
+			ampGDPRException:   true,
+			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
+			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
+			expectedUser:       ScrubStrategyUserID,
+			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
+		},
+		{
+			description: "COPPA and GDPR, ampGDPRException",
+			enforcement: Enforcement{
+				CCPA:  false,
+				COPPA: true,
+				GDPR:  true,
+			},
+			ampGDPRException:   true,
+			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
+			expectedDeviceGeo:  ScrubStrategyGeoFull,
+			expectedUser:       ScrubStrategyUserIDAndDemographic,
+			expectedUserGeo:    ScrubStrategyGeoFull,
 		},
 	}
 
@@ -138,7 +164,7 @@ func TestApply(t *testing.T) {
 		m.On("ScrubDevice", req.Device, test.expectedDeviceIPv6, test.expectedDeviceGeo).Return(replacedDevice).Once()
 		m.On("ScrubUser", req.User, test.expectedUser, test.expectedUserGeo).Return(replacedUser).Once()
 
-		test.enforcement.apply(req, test.isAMP, m)
+		test.enforcement.apply(req, test.ampGDPRException, m)
 
 		m.AssertExpectations(t)
 		assert.Same(t, replacedDevice, req.Device, "Device")
@@ -176,7 +202,7 @@ type mockScrubber struct {
 	mock.Mock
 }
 
-func (m *mockScrubber) ScrubDevice(device *openrtb.Device, macAndIFA bool, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
+func (m *mockScrubber) ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
 	args := m.Called(device, ipv6, geo)
 	return args.Get(0).(*openrtb.Device)
 }
