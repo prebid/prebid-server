@@ -125,41 +125,53 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 		requestTarget = pageDomain
 	}
 
-	var uri string
-	if request.App != nil {
-		uri = adapter.URI + fmt.Sprintf("/%s/%s/%s/%s?r=pbs&ncb=1&e=%s", clientID, dfpClientID, requestTarget, sec, strings.Join(spacesStrings, "+"))
-	} else {
-		uri = adapter.URI + fmt.Sprintf("/%s/%s/%s/%s?r=pbs&ncb=1&ur=%s&e=%s", clientID, dfpClientID, requestTarget, sec, url.QueryEscape(pageURL), strings.Join(spacesStrings, "+"))
+	uriObj, err := url.Parse(adapter.URI)
+	if err != nil {
+		errors = append(errors, err)
+		return nil, errors
 	}
 
+	uriObj.Path = uriObj.Path + fmt.Sprintf("/%s/%s/%s/%s", clientID, dfpClientID, requestTarget, sec)
+	query := url.Values{}
+	query.Set("r", "pbs")
+	query.Set("ncb", "1")
+	if request.App == nil {
+		query.Set("ur", url.QueryEscape(pageURL))
+	}
+	query.Set("e", strings.Join(spacesStrings, "+"))
+
 	if request.User != nil && request.User.BuyerUID != "" {
-		uri = uri + fmt.Sprintf("&uid=%s", request.User.BuyerUID)
+		query.Set("uid", request.User.BuyerUID)
 	}
 
 	if ip != "" {
-		uri = uri + fmt.Sprintf("&ip=%s", ip)
+		query.Set("ip", ip)
 	}
 
 	var body []byte
 	if adapter.testing {
 		body = []byte("{}")
 	} else {
-		uri = uri + fmt.Sprintf("&rnd=%d", rand.Int())
+		t := strconv.Itoa(rand.Int())
+		query.Set("rnd", t)
 		body = nil
 	}
 
 	if request.App != nil {
 		if request.App.Name != "" {
-			uri = uri + fmt.Sprintf("&appn=%s", request.App.Name)
+			query.Set("appn", request.App.Name)
 		}
 		if request.App.ID != "" {
-			uri = uri + fmt.Sprintf("&appid=%s", request.App.ID)
+			query.Set("appid", request.App.ID)
 		}
 		if request.Device != nil && request.Device.IFA != "" {
-			uri = uri + fmt.Sprintf("&ifa=%s", request.Device.IFA)
+			query.Set("ifa", request.Device.IFA)
 		}
-		uri = uri + fmt.Sprintf("&app=%s", requestTargetInventory)
+		query.Set("app", requestTargetInventory)
 	}
+
+	uriObj.RawQuery = query.Encode()
+	uri := uriObj.String()
 
 	requestData := adapters.RequestData{
 		Method:  "GET",
