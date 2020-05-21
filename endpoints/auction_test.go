@@ -421,6 +421,10 @@ func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder
 	return m.allowPI, nil
 }
 
+func (m *auctionMockPermissions) AMPException() bool {
+	return false
+}
+
 func TestBidSizeValidate(t *testing.T) {
 	bids := make(pbs.PBSBidSlice, 0)
 	// bid1 will be rejected due to undefined size when adunit has multiple sizes
