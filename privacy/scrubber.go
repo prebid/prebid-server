@@ -46,9 +46,6 @@ const (
 
 	// ScrubStrategyUserID removes the user's buyer id.
 	ScrubStrategyUserID
-
-	// ScrubStrategyUserAgeAndGender renoves the user's year of birth, and gender.
-	ScrubStrategyUserAgeAndGender
 )
 
 // Scrubber removes PII from parts of an OpenRTB request.
