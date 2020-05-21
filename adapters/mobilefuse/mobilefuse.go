@@ -14,11 +14,11 @@ import (
 	"text/template"
 )
 
-type MobilefuseAdapter struct {
+type MobileFuseAdapter struct {
 	EndpointTemplate template.Template
 }
 
-func NewMobilefuseBidder(endpointTemplate string) adapters.Bidder {
+func NewMobileFuseBidder(endpointTemplate string) adapters.Bidder {
 	parsedTemplate, err := template.New("endpointTemplate").Parse(endpointTemplate)
 
 	if err != nil {
@@ -26,10 +26,10 @@ func NewMobilefuseBidder(endpointTemplate string) adapters.Bidder {
 		return nil
 	}
 
-	return &MobilefuseAdapter{EndpointTemplate: *parsedTemplate}
+	return &MobileFuseAdapter{EndpointTemplate: *parsedTemplate}
 }
 
-func (adapter *MobilefuseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *MobileFuseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var adapterRequests []*adapters.RequestData
 
 	adapterRequest, errs := adapter.makeRequest(request)
@@ -41,7 +41,7 @@ func (adapter *MobilefuseAdapter) MakeRequests(request *openrtb.BidRequest, reqI
 	return adapterRequests, errs
 }
 
-func (adapter *MobilefuseAdapter) MakeBids(incomingRequest *openrtb.BidRequest, outgoingRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb.BidRequest, outgoingRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -78,22 +78,22 @@ func (adapter *MobilefuseAdapter) MakeBids(incomingRequest *openrtb.BidRequest, 
 	return outgoingBidResponse, nil
 }
 
-func (adapter *MobilefuseAdapter) makeRequest(bidRequest *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
-	mobilefuseExtension, errs := adapter.getFirstMobilefuseExtension(bidRequest)
+	mobileFuseExtension, errs := adapter.getFirstMobileFuseExtension(bidRequest)
 
 	if errs != nil {
 		return nil, errs
 	}
 
-	endpoint, err := adapter.getEndpoint(mobilefuseExtension)
+	endpoint, err := adapter.getEndpoint(mobileFuseExtension)
 
 	if err != nil {
 		return nil, append(errs, err)
 	}
 
-	validImps := adapter.getValidImps(bidRequest, mobilefuseExtension)
+	validImps := adapter.getValidImps(bidRequest, mobileFuseExtension)
 
 	if len(validImps) == 0 {
 		err := fmt.Errorf("No valid imps")
@@ -101,9 +101,9 @@ func (adapter *MobilefuseAdapter) makeRequest(bidRequest *openrtb.BidRequest) (*
 		return nil, errs
 	}
 
-	mobilefuseBidRequest := *bidRequest
-	mobilefuseBidRequest.Imp = validImps
-	body, err := json.Marshal(mobilefuseBidRequest)
+	mobileFuseBidRequest := *bidRequest
+	mobileFuseBidRequest.Imp = validImps
+	body, err := json.Marshal(mobileFuseBidRequest)
 
 	if err != nil {
 		return nil, append(errs, err)
@@ -121,8 +121,8 @@ func (adapter *MobilefuseAdapter) makeRequest(bidRequest *openrtb.BidRequest) (*
 	}, errs
 }
 
-func (adapter *MobilefuseAdapter) getFirstMobilefuseExtension(request *openrtb.BidRequest) (*openrtb_ext.ExtImpMobilefuse, []error) {
-	var mobilefuseImpExtension openrtb_ext.ExtImpMobilefuse
+func (adapter *MobileFuseAdapter) getFirstMobileFuseExtension(request *openrtb.BidRequest) (*openrtb_ext.ExtImpMobileFuse, []error) {
+	var mobileFuseImpExtension openrtb_ext.ExtImpMobileFuse
 	var errs []error
 
 	for _, imp := range request.Imp {
@@ -135,7 +135,7 @@ func (adapter *MobilefuseAdapter) getFirstMobilefuseExtension(request *openrtb.B
 			continue
 		}
 
-		err = json.Unmarshal(bidder_imp_extension.Bidder, &mobilefuseImpExtension)
+		err = json.Unmarshal(bidder_imp_extension.Bidder, &mobileFuseImpExtension)
 
 		if err != nil {
 			errs = append(errs, err)
@@ -145,10 +145,10 @@ func (adapter *MobilefuseAdapter) getFirstMobilefuseExtension(request *openrtb.B
 		break
 	}
 
-	return &mobilefuseImpExtension, errs
+	return &mobileFuseImpExtension, errs
 }
 
-func (adapter *MobilefuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobilefuse) (string, error) {
+func (adapter *MobileFuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobileFuse) (string, error) {
 	publisher_id := strconv.Itoa(ext.PublisherId)
 
 	url, errs := macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{PublisherID: publisher_id})
@@ -164,7 +164,7 @@ func (adapter *MobilefuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobilefuse)
 	return url, nil
 }
 
-func (adapter *MobilefuseAdapter) getValidImps(bidRequest *openrtb.BidRequest, ext *openrtb_ext.ExtImpMobilefuse) []openrtb.Imp {
+func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb.BidRequest, ext *openrtb_ext.ExtImpMobileFuse) []openrtb.Imp {
 	var validImps []openrtb.Imp
 
 	for _, imp := range bidRequest.Imp {
@@ -184,7 +184,7 @@ func (adapter *MobilefuseAdapter) getValidImps(bidRequest *openrtb.BidRequest, e
 	return validImps
 }
 
-func (adapter *MobilefuseAdapter) getBidType(imp_id string, imps []openrtb.Imp) openrtb_ext.BidType {
+func (adapter *MobileFuseAdapter) getBidType(imp_id string, imps []openrtb.Imp) openrtb_ext.BidType {
 	if imps[0].Video != nil {
 		return openrtb_ext.BidTypeVideo
 	}

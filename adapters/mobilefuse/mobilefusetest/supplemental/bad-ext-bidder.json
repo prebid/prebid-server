@@ -1,7 +1,7 @@
 {
     "expectedMakeRequestsErrors": [
         {
-            "value": "json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpMobilefuse",
+            "value": "json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpMobileFuse",
             "comparison": "literal"
         }
     ],

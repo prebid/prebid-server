@@ -15,10 +15,10 @@ func TestValidParams(test *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		err := validator.Validate(openrtb_ext.BidderMobilefuse, json.RawMessage(validParam))
+		err := validator.Validate(openrtb_ext.BidderMobileFuse, json.RawMessage(validParam))
 
 		if err != nil {
-			test.Errorf("Schema rejected mobilefuse params: %s\nError: %v", validParam, err)
+			test.Errorf("Schema rejected MobileFuse params: %s\nError: %v", validParam, err)
 		}
 	}
 }
@@ -31,7 +31,7 @@ func TestInvalidParams(test *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		err := validator.Validate(openrtb_ext.BidderMobilefuse, json.RawMessage(invalidParam))
+		err := validator.Validate(openrtb_ext.BidderMobileFuse, json.RawMessage(invalidParam))
 
 		if err == nil {
 			test.Errorf("Schema allowed unexpected params: %s", invalidParam)
