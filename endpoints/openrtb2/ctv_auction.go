@@ -509,19 +509,10 @@ func (deps *ctvEndpointDeps) getBids(resp *openrtb.BidResponse) {
 
 			//adding duration
 			if sequenceNumber > 0 {
-				duration, _ = jsonparser.GetInt(bid.Ext, "prebid", "video", "duration")
-				if duration <= 0 {
-					//if sequenceNumber > 0 {
-					duration = deps.impData[index].Config[sequenceNumber-1].MaxDuration
-					//} else {
-					//	duration = deps.request.Imp[index].Video.MaxDuration
-					//}
-					raw, err := jsonparser.Set(bid.Ext, []byte(strconv.Itoa(int(duration))), "prebid", "video", "duration")
-					if nil == err {
-						bid.Ext = raw
-					}
-				} else {
-					duration = deps.impData[index].Config[sequenceNumber-1].MaxDuration
+				duration = deps.impData[index].Config[sequenceNumber-1].MaxDuration
+				raw, err := jsonparser.Set(bid.Ext, []byte(strconv.Itoa(int(duration))), "prebid", "video", "duration")
+				if nil == err {
+					bid.Ext = raw
 				}
 			}
 
