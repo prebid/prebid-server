@@ -144,6 +144,10 @@ func getImpressions(podMinDuration, podMaxDuration int64, vPod openrtb_ext.Video
 
 // Returns total number of Ad Slots/ impressions that the Ad Pod can have
 func computeTotalAds(cfg adPodConfig) int64 {
+	if cfg.slotMaxDuration <= 0 || cfg.slotMinDuration <= 0 {
+		log.Printf("Either cfg.slotMaxDuration or cfg.slotMinDuration or both are <= 0. Hence, totalAds = 0")
+		return 0
+	}
 	maxAds := cfg.podMaxDuration / cfg.slotMaxDuration
 	minAds := cfg.podMaxDuration / cfg.slotMinDuration
 
@@ -169,6 +173,10 @@ func computeTotalAds(cfg adPodConfig) int64 {
 // Ad Slots / Impressions that the Ad Pod can have.
 func computeTimeForEachAdSlot(cfg adPodConfig, totalAds int64) int64 {
 	// Compute time for each ad
+	if totalAds <= 0 {
+		log.Printf("totalAds = 0, Hence timeForEachSlot = 0")
+		return 0
+	}
 	timeForEachSlot := cfg.podMaxDuration / totalAds
 
 	log.Printf("Computed timeForEachSlot = %v (podMaxDuration/totalAds) (%v/%v)\n", timeForEachSlot, cfg.podMaxDuration, totalAds)
