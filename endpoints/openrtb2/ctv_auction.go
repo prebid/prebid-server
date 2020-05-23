@@ -566,6 +566,7 @@ func (deps *ctvEndpointDeps) doAdPodExclusions() ctv.AdPodBids {
 	for index := 0; index < len(deps.request.Imp); index++ {
 		bid := deps.impData[index].Bid
 		if nil != bid && len(bid.Bids) > 0 {
+			//TODO: MULTI ADPOD IMPRESSIONS
 			//duration wise buckets sorted
 			buckets := ctv.GetDurationWiseBidsBucket(bid.Bids[:])
 
@@ -577,7 +578,7 @@ func (deps *ctvEndpointDeps) doAdPodExclusions() ctv.AdPodBids {
 			comb := ctv.NewCombination(slots[:], deps.impData[index].VideoExt.AdPod)
 
 			//adpod generator
-			adpodGenerator := ctv.NewAdPodGenerator(buckets, comb)
+			adpodGenerator := ctv.NewAdPodGenerator(buckets, comb, deps.impData[index].VideoExt.AdPod)
 
 			adpodBids := adpodGenerator.GetAdPodBids()
 			if adpodBids != nil {
@@ -600,12 +601,23 @@ func (deps *ctvEndpointDeps) createBidResponse(resp *openrtb.BidResponse, adpods
 		ID:         resp.ID,
 		Cur:        resp.Cur,
 		CustomData: resp.CustomData,
-	}
-	//append pure video request seats
-	for _, seat := range deps.videoSeats {
-		bidResp.SeatBid = append(bidResp.SeatBid, *seat)
+		SeatBid:    deps.getBidResponseSeatBids(adpods),
 	}
 
+	//NOTE: this should be called at last
+	bidResp.Ext = deps.getBidResponseExt(resp)
+	return bidResp
+}
+
+func (deps *ctvEndpointDeps) getBidResponseSeatBids(adpods ctv.AdPodBids) []openrtb.SeatBid {
+	seats := []openrtb.SeatBid{}
+
+	//append pure video request seats
+	for _, seat := range deps.videoSeats {
+		seats = append(seats, *seat)
+	}
+
+	var adpodSeat *openrtb.SeatBid
 	for _, adpod := range adpods {
 		if len(adpod.Bids) == 0 {
 			continue
@@ -613,29 +625,18 @@ func (deps *ctvEndpointDeps) createBidResponse(resp *openrtb.BidResponse, adpods
 
 		bid := deps.getAdPodBid(adpod)
 		if bid != nil {
-			found := false
-			for index := range bidResp.SeatBid {
-				if bidResp.SeatBid[index].Seat == adpod.SeatName {
-					bidResp.SeatBid[index].Bid = append(bidResp.SeatBid[index].Bid, *bid.Bid)
-					found = true
-					break
+			if nil == adpodSeat {
+				adpodSeat = &openrtb.SeatBid{
+					Seat: adpod.SeatName,
 				}
 			}
-			if found == false {
-				bidResp.SeatBid = append(bidResp.SeatBid, openrtb.SeatBid{
-					Seat: adpod.SeatName,
-					Bid: []openrtb.Bid{
-						*bid.Bid,
-					},
-				})
-			}
+			adpodSeat.Bid = append(adpodSeat.Bid, *bid.Bid)
 		}
 	}
-
-	//NOTE: this should be called at last
-	bidResp.Ext = deps.getBidResponseExt(resp)
-
-	return bidResp
+	if nil != adpodSeat {
+		seats = append(seats, *adpodSeat)
+	}
+	return seats[:]
 }
 
 //getBidResponseExt will return extension object
