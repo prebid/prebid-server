@@ -11,49 +11,45 @@ import (
 
 //IAdPodGenerator interface for generating AdPod from Ads
 type IAdPodGenerator interface {
-	GetAdPodBids() []*Bid
-	GetFilterReasonCode() map[string]int
+	GetAdPodBids() *AdPodBid
 }
-
-type evaluation struct {
+type filteredBids struct {
+	bid        *Bid
+	reasonCode FilterReasonCode
+}
+type highestCombination struct {
 	bids          []*Bid
-	sum           float64
+	price         float64
 	categoryScore map[string]int
 	domainScore   map[string]int
-}
-
-type highestCombination struct {
-	bids []*Bid
-	sum  float64
+	filteredBids  []filteredBids
 }
 
 //AdPodGenerator AdPodGenerator
 type AdPodGenerator struct {
 	IAdPodGenerator
-	buckets       BidsBuckets
-	comb          ICombination
-	filterReasons map[string]int
-	adpod         *openrtb_ext.VideoAdPod
+	buckets BidsBuckets
+	comb    ICombination
+	adpod   *openrtb_ext.VideoAdPod
 }
 
 //NewAdPodGenerator will generate adpod based on configuration
 func NewAdPodGenerator(buckets BidsBuckets, comb ICombination, adpod *openrtb_ext.VideoAdPod) *AdPodGenerator {
 	return &AdPodGenerator{
-		buckets:       buckets,
-		comb:          comb,
-		adpod:         adpod,
-		filterReasons: make(map[string]int),
+		buckets: buckets,
+		comb:    comb,
+		adpod:   adpod,
 	}
 }
 
 //GetAdPodBids will return Adpod based on configurations
-func (o *AdPodGenerator) GetAdPodBids() []*Bid {
+func (o *AdPodGenerator) GetAdPodBids() *AdPodBid {
 
-	var maxResult *highestCombination
 	isTimedOutORReceivedAllResponses := false
 	responseCount := 0
 	totalRequest := 0
 	maxRequests := 5
+	results := make([]*highestCombination, maxRequests)
 	responseCh := make(chan *highestCombination, maxRequests)
 
 	timeout := 50 * time.Millisecond
@@ -76,8 +72,8 @@ func (o *AdPodGenerator) GetAdPodBids() []*Bid {
 			isTimedOutORReceivedAllResponses = true
 		case hbc := <-responseCh:
 			responseCount++
-			if nil != hbc && (nil == maxResult || maxResult.sum < hbc.sum) {
-				maxResult = hbc
+			if nil != hbc { //&& (nil == maxResult || maxResult.price < hbc.price) {
+				results = append(results, hbc)
 			}
 			if responseCount == totalRequest {
 				isTimedOutORReceivedAllResponses = true
@@ -87,10 +83,41 @@ func (o *AdPodGenerator) GetAdPodBids() []*Bid {
 
 	go cleanupResponseChannel(responseCh, totalRequest-responseCount)
 
-	if nil == maxResult {
+	if 0 == len(results) {
 		return nil
 	}
-	return maxResult.bids
+
+	var maxResult *highestCombination
+	for _, result := range results {
+		if nil == maxResult || maxResult.price < result.price {
+			maxResult = result
+		}
+
+		for _, rc := range result.filteredBids {
+			if CTVRCDidNotGetChance == rc.bid.FilterReasonCode {
+				rc.bid.FilterReasonCode = rc.reasonCode
+			}
+		}
+	}
+
+	adpodBid := &AdPodBid{
+		Bids:    maxResult.bids[:],
+		Price:   maxResult.price,
+		ADomain: make([]string, len(maxResult.domainScore)),
+		Cat:     make([]string, len(maxResult.categoryScore)),
+	}
+
+	//Get Unique Domains
+	for domain := range maxResult.domainScore {
+		adpodBid.ADomain = append(adpodBid.ADomain, domain)
+	}
+
+	//Get Unique Categories
+	for cat := range maxResult.categoryScore {
+		adpodBid.Cat = append(adpodBid.Cat, cat)
+	}
+
+	return adpodBid
 }
 
 func cleanupResponseChannel(responseCh <-chan *highestCombination, responseCount int) {
@@ -101,149 +128,145 @@ func cleanupResponseChannel(responseCh <-chan *highestCombination, responseCount
 }
 
 func (o *AdPodGenerator) getUniqueBids(responseCh chan<- *highestCombination, durationSequence []int) {
-	combinationsInputArray := [][]*Bid{}
+	data := [][]*Bid{}
+	combinations := []int{}
+
+	uniqueDuration := 0
 	for index, duration := range durationSequence {
-		combinationsInputArray[index] = o.buckets[duration][:]
+		if 0 != index && durationSequence[index-1] == duration {
+			combinations[uniqueDuration-1]++
+			continue
+		}
+		data = append(data, o.buckets[duration][:])
+		combinations = append(combinations, 1)
+		uniqueDuration++
 	}
 
-	responseCh <- findUniqueCombinations(combinationsInputArray, *o.adpod.IABCategoryExclusionPercent, *o.adpod.AdvertiserExclusionPercent)
+	responseCh <- findUniqueCombinations(data[:], combinations[:], *o.adpod.IABCategoryExclusionPercent, *o.adpod.AdvertiserExclusionPercent)
 }
 
-// Todo: this function is still returning (B3 B4) and (B4 B3), need to work on it
-// func findUniqueCombinations(arr [][]Bid) ([][]Bid) {
-func findUniqueCombinations(arr [][]*Bid, maxCategoryScore, maxDomainScore int) *highestCombination {
+func findUniqueCombinations(data [][]*Bid, combination []int, maxCategoryScore, maxDomainScore int) *highestCombination {
 	// number of arrays
-	n := len(arr)
+	n := len(combination)
+	totalBids := 0
 	//  to keep track of next element in each of the n arrays
-	indices := make([]int, n)
-	// indices is initialized with all zeros
+	// indices is initialized
+	indices := make([][]int, len(combination))
+	for i := 0; i < len(combination); i++ {
+		indices[i] = make([]int, combination[i])
+		for j := 0; j < combination[i]; j++ {
+			indices[i][j] = j
+			totalBids++
+		}
+	}
 
-	// output := [][]Bid{}
+	hc := &highestCombination{price: 0}
+	var ehc *highestCombination
+	var rc FilterReasonCode
+	inext, jnext := n-1, 0
+	var filterBids []filteredBids
 
-	// maintain highest sum combination
-	hc := &highestCombination{sum: 0}
+	// maintain highest price combination
 	for true {
 
-		row := []*Bid{}
-		// We do not want the same bid to appear twice in a combination
-		bidsInRow := make(map[string]bool)
-		good := true
-
-		for i := 0; i < n; i++ {
-			if _, present := bidsInRow[arr[i][indices[i]].ID]; !present {
-				row = append(row, arr[i][indices[i]])
-				bidsInRow[arr[i][indices[i]].ID] = true
+		ehc, inext, jnext, rc = evaluate(data[:], indices[:], totalBids, maxCategoryScore, maxDomainScore)
+		if nil != ehc {
+			if nil == hc || hc.price < ehc.price {
+				hc = ehc
 			} else {
-				good = false
-				break
+				// if you see current combination price lower than the highest one then break the loop
+				hc.filteredBids = filterBids[:]
+				return hc
 			}
+		} else {
+			//Filtered Bid
+			filterBids = append(filterBids, filteredBids{bid: data[inext][indices[inext][jnext]], reasonCode: rc})
 		}
 
-		if good {
-			// output = append(output, row)
-			// give a call for exclusion checking here only
-			e := getEvaluation(row)
-			// fmt.Println(e)
-			if e.isOk(maxCategoryScore, maxDomainScore) {
-				if hc.sum < e.sum {
-					hc.bids = e.bids
-					hc.sum = e.sum
-				} else {
-					// if you see current combination sum lower than the highest one then break the loop
-					return hc
-				}
-			}
+		if -1 == inext {
+			inext, jnext = n-1, 0
 		}
 
 		// find the rightmost array that has more
 		// elements left after the current element
 		// in that array
-		next := n - 1
-		for next >= 0 && (indices[next]+1 >= len(arr[next])) {
-			next--
+		inext, jnext := n-1, 0
+
+		for inext >= 0 {
+			jnext = len(indices[inext]) - 1
+			for jnext >= 0 && (indices[inext][jnext]+1 > (len(data[inext]) - len(indices[inext]) + jnext)) {
+				jnext--
+			}
+			if jnext >= 0 {
+				break
+			}
+			inext--
 		}
 
 		// no such array is found so no more combinations left
-		if next < 0 {
+		if inext < 0 {
 			// return output
 			return nil
 		}
 
 		// if found move to next element in that array
-		indices[next]++
+		indices[inext][jnext]++
 
 		// for all arrays to the right of this
 		// array current index again points to
 		// first element
-		for i := next + 1; i < n; i++ {
-			indices[i] = 0
+		jnext++
+		for i := inext; i < len(combination); i++ {
+			for j := jnext; j < combination[i]; j++ {
+				if i == inext {
+					indices[i][j] = indices[i][j-1] + 1
+				} else {
+					indices[i][j] = j
+				}
+			}
+			jnext = 0
 		}
 	}
-	// return output
+	//setting filteredBids
+	hc.filteredBids = filterBids[:]
 	return hc
 }
 
-func getEvaluation(bids []*Bid) *evaluation {
+func evaluate(bids [][]*Bid, indices [][]int, totalBids int, maxCategoryScore, maxDomainScore int) (*highestCombination, int, int, FilterReasonCode) {
 
-	eval := &evaluation{
-		bids:          bids,
-		sum:           0,
+	hbc := &highestCombination{
+		bids:          make([]*Bid, totalBids),
+		price:         0,
 		categoryScore: make(map[string]int),
 		domainScore:   make(map[string]int),
 	}
+	pos := 0
 
-	for _, bid := range bids {
+	for inext := range indices {
+		for jnext := range indices[inext] {
+			bid := bids[inext][indices[inext][jnext]]
+			hbc.bids[pos] = bid
 
-		eval.sum = eval.sum + bid.Price
-		for _, cat := range bid.Cat {
-			if _, present := eval.categoryScore[cat]; !present {
-				eval.categoryScore[cat] = 1
-			} else {
-				eval.categoryScore[cat] = eval.categoryScore[cat] + 1
+			//Price
+			hbc.price = hbc.price + bid.Price
+
+			//Categories
+			for _, cat := range bid.Cat {
+				hbc.categoryScore[cat]++
+				if (hbc.categoryScore[cat] * 100 / totalBids) > maxCategoryScore {
+					return nil, inext, jnext, CTVRCCategoryExclusion
+				}
+			}
+
+			//Domain
+			for _, domain := range bid.ADomain {
+				hbc.domainScore[domain]++
+				if (hbc.domainScore[domain] * 100 / totalBids) > maxDomainScore {
+					return nil, inext, jnext, CTVRCDomainExclusion
+				}
 			}
 		}
-
-		l := len(eval.bids)
-		for i := range eval.categoryScore {
-			eval.categoryScore[i] = (eval.categoryScore[i] * 100 / l)
-		}
-
-		for _, domain := range bid.ADomain {
-			if _, present := eval.domainScore[domain]; !present {
-				eval.domainScore[domain] = 1
-			} else {
-				eval.domainScore[domain] = eval.domainScore[domain] + 1
-			}
-		}
-
-		l2 := len(eval.bids)
-		for i := range eval.domainScore {
-			eval.domainScore[i] = (eval.domainScore[i] * 100 / l2)
-		}
 	}
 
-	return eval
-}
-
-func (e *evaluation) isOk(maxCategoryScore, maxDomainScore int) bool {
-
-	// if we find any CategoryScore above maxCategoryScore then we return false
-	for _, score := range e.categoryScore {
-		if maxCategoryScore < score {
-			return false
-		}
-	}
-
-	// if we find any DomainScore above maxDomainScore then we return false
-	for _, score := range e.domainScore {
-		if maxDomainScore < score {
-			return false
-		}
-	}
-
-	return true
-}
-
-func (o *AdPodGenerator) GetFilterReasonCode() map[string]int {
-	return o.filterReasons
+	return hbc, -1, -1, CTVRCWinningBid
 }
