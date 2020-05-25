@@ -61,8 +61,6 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 			publisherCopy := *siteCopy.Publisher
 			publisherCopy.ID = publisherId
 			siteCopy.Publisher = &publisherCopy
-		} else {
-			siteCopy.Publisher = &openrtb.Publisher{ID: publisherId}
 		}
 		request.Site = &siteCopy
 	} else if request.App != nil {

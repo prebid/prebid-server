@@ -1,131 +1,126 @@
 {
-    "mockBidRequest": {
-        "id": "test-request-id",
-        "imp": [{
-            "id": "test-imp-id",
-            "banner": {
-                "format": [{
-                    "w": 300,
-                    "h": 250
-                }]
-            },
-            "ext": {
-                "bidder": {
-                    "tagId": "123456",
-                    "publisherId": "999"
-                }
-            }
-        }],
-        "device":{
-            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
-        },
-        "site": {
-		      	"id": "siteID",
-		    	  "publisher": {
-			        	"id": "1234"
-		      	}
-		      }
-     },
-  
-    "httpCalls": [
+  "mockBidRequest": {
+    "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
       {
-        "expectedRequest": {
-          "uri": "https://unifiedbidding.ad.smaato.net/oapi/unifiedbidding",
-          "body": {
-            "id": "test-request-id",
-            "imp": [
-              {
-                "id": "test-imp-id",
-                "tagid":"AdTag_Div1",
-                 "banner": {
-                  "format": [
-                    {
-                      "w": 300,
-                      "h": 250
-                    }
-                ],
-                "h": 250,
-                "w": 300
-            },
-                "ext": {
-                    "pmZoneID": "Zone1,Zone2",
-                    "preference": "sports,movies"
-                }
-              }
-            ], 
-            "device":{
-                "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
-            },
-            "site": {
-                "id": "siteID",
-                "publisher": {
-                    "id": "999"
-                }
-            },
-            "ext": {
-                "wrapper": {
-                    "profile": 5123,
-                    "version":1
-                }
+        "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
             }
-          }
+          ]
         },
-        "mockResponse": {
-          "status": 200,
-          "body": {
-            "id": "test-request-id",
-            "seatbid": [
-              {
-                "seat": "958",
-                "bid": [{
+        "ext": {
+          "bidder": {
+            "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+            "tagId": "130563103",
+            "instl": 0,
+            "secure": 0
+          }
+        }
+      }
+    ],
+    "regs": {
+      "coppa": 1,
+      "ext": {
+        "gdpr": 0
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid-test.smaatolabs.net/bidder",
+        "body": {
+          "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+          "imp": [
+            {
+              "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+              "tagid": "130563103",
+              "secure": 0,
+              "banner": {
+                "h": 50,
+                "w": 320
+              }
+            }
+          ],
+          "regs": {
+            "coppa": 1,
+            "ext": {
+              "gdpr": 0
+            }
+          },
+          "site": {
+            "page": "prebid.org"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "958",
+              "bid": [
+                {
                   "id": "7706636740145184841",
                   "impid": "test-imp-id",
                   "price": 0.500000,
                   "adid": "29681110",
                   "adm": "some-test-ad",
-                  "adomain": ["smaato.com"],
+                  "adomain": [
+                    "smaato.com"
+                  ],
                   "crid": "29681110",
                   "h": 250,
                   "w": 300,
-                  "dealid":"test deal",
+                  "dealid": "test deal",
                   "ext": {
                     "dspid": 6,
                     "deal_channel": 1
                   }
-                }]
-              }
-            ],
-            "bidid": "5778926625248726496",
-            "cur": "USD"
-          }
+                }
+              ]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
         }
       }
-    ],
-  
-    "expectedBidResponses": [
-      {
-        "currency": "USD",
-        "bids": [
-          {
-            "bid": {
-              "id": "7706636740145184841",
-              "impid": "test-imp-id",
-              "price": 0.5,
-              "adid": "29681110",
-              "adm": "some-test-ad",
-              "adomain": ["smaato.com"],
-              "crid": "29681110",
-              "w": 300,
-              "h": 250,
-              "dealid":"test deal",
-              "ext": {
-                "dspid": 6,
-                "deal_channel": 1
-              }
-            },
-            "type": "banner"
-          }
-        ]
-      }
-    ]
-  }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "7706636740145184841",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adid": "29681110",
+            "adm": "some-test-ad",
+            "adomain": [
+              "smaato.com"
+            ],
+            "crid": "29681110",
+            "w": 300,
+            "h": 250,
+            "dealid": "test deal",
+            "ext": {
+              "dspid": 6,
+              "deal_channel": 1
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
