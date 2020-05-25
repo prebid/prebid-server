@@ -13,7 +13,6 @@ import (
 	"golang.org/x/text/currency"
 
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -31,20 +30,6 @@ func NewYieldlabBidder(endpoint string) *YieldlabAdapter {
 		cacheBuster: defaultCacheBuster,
 		getWeek:     defaultWeekGenerator,
 	}
-}
-
-// MakeRequests prepares bid requests to the Yieldlab API
-func (a *YieldlabAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
-	var adapterRequests []*adapters.RequestData
-
-	adapterReq, errors := a.makeRequest(request)
-	if adapterReq != nil {
-		adapterRequests = append(adapterRequests, adapterReq)
-	}
-	errs = append(errs, errors...)
-
-	return adapterRequests, errors
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
@@ -130,18 +115,12 @@ func (a *YieldlabAdapter) makeTargetingValues(params *openrtb_ext.ExtImpYieldlab
 	return values.Encode()
 }
 
-func (a *YieldlabAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
-	params, err := a.parseRequest(request)
-	if err != nil {
-		return nil, []error{err}
+func (a *YieldlabAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	if len(request.Imp) == 0 {
+		return nil, []error{fmt.Errorf("invalid request %+v, no Impressions given", request)}
 	}
 
-	mergedParams, err := a.mergeParams(params)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	bidURL, err := a.makeEndpointURL(request, mergedParams)
+	bidURL, err := a.makeEndpointURL(request, a.mergeParams(a.parseRequest(request)))
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -159,39 +138,35 @@ func (a *YieldlabAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Re
 		headers.Add("Cookie", "id="+request.User.BuyerUID)
 	}
 
-	return &adapters.RequestData{
+	return []*adapters.RequestData{{
 		Method:  "GET",
 		Uri:     bidURL,
 		Headers: headers,
-	}, nil
+	}}, nil
 }
 
 // parseRequest extracts the Yieldlab request information from the request
-func (a *YieldlabAdapter) parseRequest(request *openrtb.BidRequest) ([]*openrtb_ext.ExtImpYieldlab, error) {
+func (a *YieldlabAdapter) parseRequest(request *openrtb.BidRequest) []*openrtb_ext.ExtImpYieldlab {
 	params := make([]*openrtb_ext.ExtImpYieldlab, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
 		bidderExt := new(adapters.ExtImpBidder)
 		if err := json.Unmarshal(request.Imp[i].Ext, bidderExt); err != nil {
-			return nil, &errortypes.BadInput{
-				Message: err.Error(),
-			}
+			continue
 		}
 
 		yieldlabExt := new(openrtb_ext.ExtImpYieldlab)
 		if err := json.Unmarshal(bidderExt.Bidder, yieldlabExt); err != nil {
-			return nil, &errortypes.BadInput{
-				Message: err.Error(),
-			}
+			continue
 		}
 
 		params = append(params, yieldlabExt)
 	}
 
-	return params, nil
+	return params
 }
 
-func (a *YieldlabAdapter) mergeParams(params []*openrtb_ext.ExtImpYieldlab) (*openrtb_ext.ExtImpYieldlab, error) {
+func (a *YieldlabAdapter) mergeParams(params []*openrtb_ext.ExtImpYieldlab) *openrtb_ext.ExtImpYieldlab {
 	var adSlotIds []string
 	targeting := make(map[string]string)
 
@@ -205,7 +180,7 @@ func (a *YieldlabAdapter) mergeParams(params []*openrtb_ext.ExtImpYieldlab) (*op
 	return &openrtb_ext.ExtImpYieldlab{
 		AdslotID:  strings.Join(adSlotIds, adSlotIdSeparator),
 		Targeting: targeting,
-	}, nil
+	}
 }
 
 // MakeBids make the bids for the bid response.
@@ -223,10 +198,7 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 		}
 	}
 
-	requests, err := a.parseRequest(internalRequest)
-	if err != nil {
-		return nil, []error{err}
-	}
+	params := a.parseRequest(internalRequest)
 
 	bidderResponse := &adapters.BidderResponse{
 		Currency: currency.EUR.String(),
@@ -239,7 +211,7 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			return nil, []error{err}
 		}
 
-		req := a.findBidReq(bid.ID, requests)
+		req := a.findBidReq(bid.ID, params)
 		if req == nil {
 			return nil, []error{
 				fmt.Errorf("failed to find yieldlab request for adslotID %v. This is most likely a programming issue", bid.ID),
