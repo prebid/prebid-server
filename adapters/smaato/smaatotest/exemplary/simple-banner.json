@@ -63,33 +63,31 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
+          "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
           "seatbid": [
             {
-              "seat": "958",
+              "seat": "CM6523",
               "bid": [
                 {
-                  "id": "7706636740145184841",
-                  "impid": "test-imp-id",
-                  "price": 0.500000,
-                  "adid": "29681110",
-                  "adm": "some-test-ad",
+                  "adm": "<div>mytestadd</div>",
                   "adomain": [
                     "smaato.com"
                   ],
-                  "crid": "29681110",
-                  "h": 250,
-                  "w": 300,
-                  "dealid": "test deal",
-                  "ext": {
-                    "dspid": 6,
-                    "deal_channel": 1
-                  }
+                  "bidderName": "smaato",
+                  "cid": "CM6523",
+                  "crid": "CR69381",
+                  "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
+                  "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+                  "iurl": "https://bidstalkcreatives.s3.amazonaws.com/1x1.png",
+                  "nurl": "https://ets-eu-west-1.track.smaato.net/v1/view?sessionId=e4e17adb-9599-42b1-bb5f-a1f1b3bee572&adSourceId=6906aae8-7f74-4edd-9a4f-f49379a3cadd&originalRequestTime=1552310449698&expires=1552311350698&winurl=ama8JbpJVpFWxvEja5viE3cLXFu58qRI8dGUh23xtsOn3N2-5UU0IwkgNEmR82pI37fcMXejL5IWTNAoW6Cnsjf-Dxl_vx2dUqMrVEevX-Vdx2VVnf-D5f73gZhvi4t36iPL8Dsw4aACekoLvVOV7-eXDjz7GHy60QFqcwKf5g2AlKPOInyZ6vJg_fn4qA9argvCRgwVybXE9Ndm2W0v8La4uFYWpJBOUveDDUrSQfzal7RsYvLb_OyaMlPHdrd_bwA9qqZWuyJXd-L9lxr7RQ%3D%3D%7CMw3kt91KJR0Uy5L-oNztAg%3D%3D&dpid=4XVofb_lH-__hr2JNGhKfg%3D%3D%7Cr9ciCU1cx3zmHXihItKO0g%3D%3D",
+                  "price": 0.01,
+                  "w": 350,
+                  "h": 50
                 }
               ]
             }
           ],
-          "bidid": "5778926625248726496",
+          "bidid": "04db8629-179d-4bcd-acce-e54722969006",
           "cur": "USD"
         }
       }
@@ -101,22 +99,19 @@
       "bids": [
         {
           "bid": {
-            "id": "7706636740145184841",
-            "impid": "test-imp-id",
-            "price": 0.5,
-            "adid": "29681110",
-            "adm": "some-test-ad",
+            "adm": "<div>mytestadd</div>",
             "adomain": [
               "smaato.com"
             ],
-            "crid": "29681110",
-            "w": 300,
-            "h": 250,
-            "dealid": "test deal",
-            "ext": {
-              "dspid": 6,
-              "deal_channel": 1
-            }
+            "cid": "CM6523",
+            "crid": "CR69381",
+            "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
+            "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+            "iurl": "https://bidstalkcreatives.s3.amazonaws.com/1x1.png",
+            "nurl": "https://ets-eu-west-1.track.smaato.net/v1/view?sessionId=e4e17adb-9599-42b1-bb5f-a1f1b3bee572&adSourceId=6906aae8-7f74-4edd-9a4f-f49379a3cadd&originalRequestTime=1552310449698&expires=1552311350698&winurl=ama8JbpJVpFWxvEja5viE3cLXFu58qRI8dGUh23xtsOn3N2-5UU0IwkgNEmR82pI37fcMXejL5IWTNAoW6Cnsjf-Dxl_vx2dUqMrVEevX-Vdx2VVnf-D5f73gZhvi4t36iPL8Dsw4aACekoLvVOV7-eXDjz7GHy60QFqcwKf5g2AlKPOInyZ6vJg_fn4qA9argvCRgwVybXE9Ndm2W0v8La4uFYWpJBOUveDDUrSQfzal7RsYvLb_OyaMlPHdrd_bwA9qqZWuyJXd-L9lxr7RQ%3D%3D%7CMw3kt91KJR0Uy5L-oNztAg%3D%3D&dpid=4XVofb_lH-__hr2JNGhKfg%3D%3D%7Cr9ciCU1cx3zmHXihItKO0g%3D%3D",
+            "price": 0.01,
+            "w": 350,
+            "h": 50
           },
           "type": "banner"
         }
