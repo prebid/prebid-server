@@ -13,7 +13,7 @@ import (
 type IAdPodGenerator interface {
 	GetAdPodBids() *AdPodBid
 }
-type filteredBid struct {
+type filteredBids struct {
 	bid        *Bid
 	reasonCode FilterReasonCode
 }
@@ -22,7 +22,7 @@ type highestCombination struct {
 	price         float64
 	categoryScore map[string]int
 	domainScore   map[string]int
-	filteredBids  map[string]*filteredBid
+	filteredBids  []filteredBids
 }
 
 //AdPodGenerator AdPodGenerator
@@ -90,13 +90,14 @@ func (o *AdPodGenerator) GetAdPodBids() *AdPodBid {
 	//Get Max Response
 	var maxResult *highestCombination
 	for _, result := range results {
+		if nil == maxResult || maxResult.price < result.price {
+			maxResult = result
+		}
+
 		for _, rc := range result.filteredBids {
 			if CTVRCDidNotGetChance == rc.bid.FilterReasonCode {
 				rc.bid.FilterReasonCode = rc.reasonCode
 			}
-		}
-		if len(result.bids) != 0 || nil == maxResult || maxResult.price < result.price {
-			maxResult = result
 		}
 	}
 
@@ -164,7 +165,7 @@ func findUniqueCombinations(data [][]*Bid, combination []int, maxCategoryScore, 
 	var ehc *highestCombination
 	var rc FilterReasonCode
 	inext, jnext := n-1, 0
-	filterBids := map[string]*filteredBid{}
+	var filterBids []filteredBids
 
 	// maintain highest price combination
 	for true {
@@ -179,14 +180,7 @@ func findUniqueCombinations(data [][]*Bid, combination []int, maxCategoryScore, 
 			}
 		} else {
 			//Filtered Bid
-			for i := 0; i <= inext; i++ {
-				for j := 0; j < combination[i] && !(i == inext && j > jnext); j++ {
-					bid := data[i][indices[i][j]]
-					if _, ok := filterBids[bid.ID]; !ok {
-						filterBids[bid.ID] = &filteredBid{bid: bid, reasonCode: rc}
-					}
-				}
-			}
+			filterBids = append(filterBids, filteredBids{bid: data[inext][indices[inext][jnext]], reasonCode: rc})
 		}
 
 		if -1 == inext {
@@ -234,8 +228,8 @@ func findUniqueCombinations(data [][]*Bid, combination []int, maxCategoryScore, 
 	}
 
 	//setting filteredBids
-	if nil != filterBids {
-		hc.filteredBids = filterBids
+	if nil != hc {
+		hc.filteredBids = filterBids[:]
 	}
 	return hc
 }

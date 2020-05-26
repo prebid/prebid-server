@@ -12,10 +12,12 @@ type ICombination interface {
 // Combination ...
 type Combination struct {
 	ICombination
+	data      []int
 	generator PodDurationCombination
 	config    *openrtb_ext.VideoAdPod
 }
 
+/*
 // NewCombination ...
 func NewCombination(data []int, config *openrtb_ext.VideoAdPod) *Combination {
 	generator := new(PodDurationCombination)
@@ -36,4 +38,16 @@ func (c *Combination) Get() []int {
 		cnt++
 	}
 	return nextCombInt
+}
+*/
+
+func NewCombination(data []int, config *openrtb_ext.VideoAdPod) *Combination {
+	return &Combination{
+		data:   data[:],
+		config: config,
+	}
+}
+
+func (c *Combination) Get() []int {
+	return c.data[:]
 }

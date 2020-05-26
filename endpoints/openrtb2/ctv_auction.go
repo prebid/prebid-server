@@ -537,7 +537,7 @@ func (deps *ctvEndpointDeps) getBids(resp *openrtb.BidResponse) {
 				impBids.Bids = append(impBids.Bids, &ctv.Bid{
 					Bid:              bid,
 					FilterReasonCode: ctv.CTVRCDidNotGetChance,
-					Duration:         int(deps.request.Imp[index].Video.MaxDuration),
+					Duration:         int(deps.impData[index].Config[sequenceNumber-1].MaxDuration),
 				})
 			}
 		}

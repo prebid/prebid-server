@@ -44,7 +44,7 @@ func init0(podMinDuration, podMaxDuration int64, vPod openrtb_ext.VideoAdPod) ad
 	config.requestedSlotMaxDuration = int64(*vPod.MaxDuration)
 	if config.requestedPodMinDuration == config.requestedPodMaxDuration {
 		/*TestCase 16*/
-		log.Printf("requestedPodMinDuration = requestedPodMaxDuration = %v\n", config.requestedPodMinDuration)
+		Logf("requestedPodMinDuration = requestedPodMaxDuration = %v\n", config.requestedPodMinDuration)
 		config.podMinDuration = getClosetFactor(config.requestedPodMinDuration, multipleOf)
 		config.podMaxDuration = config.podMinDuration
 	} else {
@@ -64,12 +64,12 @@ func init0(podMinDuration, podMaxDuration int64, vPod openrtb_ext.VideoAdPod) ad
 	config.maxAds = int64(*vPod.MaxAds)
 	config.totalSlotTime = new(int64)
 
-	log.Printf("Computed podMinDuration = %v in multiples of %v (requestedPodMinDuration = %v)\n", config.podMinDuration, multipleOf, config.requestedPodMinDuration)
-	log.Printf("Computed podMaxDuration = %v in multiples of %v (requestedPodMaxDuration = %v)\n", config.podMaxDuration, multipleOf, config.requestedPodMaxDuration)
-	log.Printf("Computed slotMinDuration = %v in multiples of %v (requestedSlotMinDuration = %v)\n", config.slotMinDuration, multipleOf, config.requestedSlotMinDuration)
-	log.Printf("Computed slotMaxDuration = %v in multiples of %v (requestedSlotMaxDuration = %v)\n", config.slotMaxDuration, multipleOf, *vPod.MaxDuration)
-	log.Printf("Requested minAds = %v\n", config.minAds)
-	log.Printf("Requested maxAds = %v\n", config.maxAds)
+	Logf("Computed podMinDuration = %v in multiples of %v (requestedPodMinDuration = %v)\n", config.podMinDuration, multipleOf, config.requestedPodMinDuration)
+	Logf("Computed podMaxDuration = %v in multiples of %v (requestedPodMaxDuration = %v)\n", config.podMaxDuration, multipleOf, config.requestedPodMaxDuration)
+	Logf("Computed slotMinDuration = %v in multiples of %v (requestedSlotMinDuration = %v)\n", config.slotMinDuration, multipleOf, config.requestedSlotMinDuration)
+	Logf("Computed slotMaxDuration = %v in multiples of %v (requestedSlotMaxDuration = %v)\n", config.slotMaxDuration, multipleOf, *vPod.MaxDuration)
+	Logf("Requested minAds = %v\n", config.minAds)
+	Logf("Requested maxAds = %v\n", config.maxAds)
 
 	return config
 }
@@ -94,17 +94,17 @@ func GetImpressions(podMinDuration, podMaxDuration int64, vPod openrtb_ext.Video
 func getImpressions(podMinDuration, podMaxDuration int64, vPod openrtb_ext.VideoAdPod) (adPodConfig, [][2]int64) {
 
 	cfg := init0(podMinDuration, podMaxDuration, vPod)
-	log.Printf("Pod Config with Internal Computation (using multiples of %v) = %+v\n", multipleOf, cfg)
+	Logf("Pod Config with Internal Computation (using multiples of %v) = %+v\n", multipleOf, cfg)
 	totalAds := computeTotalAds(cfg)
 	timeForEachSlot := computeTimeForEachAdSlot(cfg, totalAds)
 
 	cfg.Slots = make([][2]int64, totalAds)
 	cfg.slotsWithZeroTime = new(int64)
 	*cfg.slotsWithZeroTime = totalAds
-	log.Printf("Plotted Ad Slots / Impressions of size = %v\n", len(cfg.Slots))
+	Logf("Plotted Ad Slots / Impressions of size = %v\n", len(cfg.Slots))
 	// iterate over total time till it is < cfg.RequestedPodMaxDuration
 	time := int64(0)
-	log.Printf("Started allocating durations to each Ad Slot / Impression\n")
+	Logf("Started allocating durations to each Ad Slot / Impression\n")
 	fillZeroSlotsOnPriority := true
 	noOfZeroSlotsFilledByLastRun := int64(0)
 	for time < cfg.requestedPodMaxDuration {
@@ -112,7 +112,7 @@ func getImpressions(podMinDuration, podMaxDuration int64, vPod openrtb_ext.Video
 		time += adjustedTime
 		timeForEachSlot = computeTimeLeastValue(cfg.requestedPodMaxDuration - time)
 		if slotsFull {
-			log.Printf("All slots are full of their capacity. validating slots\n")
+			Logf("All slots are full of their capacity. validating slots\n")
 			break
 		}
 
@@ -126,7 +126,7 @@ func getImpressions(podMinDuration, podMaxDuration int64, vPod openrtb_ext.Video
 			fillZeroSlotsOnPriority = true
 		}
 	}
-	log.Printf("Completed allocating durations to each Ad Slot / Impression\n")
+	Logf("Completed allocating durations to each Ad Slot / Impression\n")
 
 	// validate slots
 	cfg.validateSlots()
@@ -138,33 +138,33 @@ func getImpressions(podMinDuration, podMaxDuration int64, vPod openrtb_ext.Video
 		log.Println("TO STATS SERVER : Free Time not allocated ", cfg.freeTime, "sec")
 	}
 
-	log.Printf("\nTotal Impressions = %v, Total Allocated Time = %v sec (out of %v sec, Max Pod Duration)\n%v", len(cfg.Slots), *cfg.totalSlotTime, cfg.requestedPodMaxDuration, cfg.Slots)
+	Logf("\nTotal Impressions = %v, Total Allocated Time = %v sec (out of %v sec, Max Pod Duration)\n%v", len(cfg.Slots), *cfg.totalSlotTime, cfg.requestedPodMaxDuration, cfg.Slots)
 	return cfg, cfg.Slots
 }
 
 // Returns total number of Ad Slots/ impressions that the Ad Pod can have
 func computeTotalAds(cfg adPodConfig) int64 {
 	if cfg.slotMaxDuration <= 0 || cfg.slotMinDuration <= 0 {
-		log.Printf("Either cfg.slotMaxDuration or cfg.slotMinDuration or both are <= 0. Hence, totalAds = 0")
+		Logf("Either cfg.slotMaxDuration or cfg.slotMinDuration or both are <= 0. Hence, totalAds = 0")
 		return 0
 	}
 	maxAds := cfg.podMaxDuration / cfg.slotMaxDuration
 	minAds := cfg.podMaxDuration / cfg.slotMinDuration
 
-	log.Printf("Computed minAds = %v , maxAds = %v\n", minAds, maxAds)
+	Logf("Computed minAds = %v , maxAds = %v\n", minAds, maxAds)
 
 	totalAds := max(minAds, maxAds)
-	log.Printf("Computed max(minAds, maxAds) = totalAds = %v\n", totalAds)
+	Logf("Computed max(minAds, maxAds) = totalAds = %v\n", totalAds)
 
 	if totalAds < cfg.minAds {
 		totalAds = cfg.minAds
-		log.Printf("Computed totalAds < requested  minAds (%v). Hence, setting totalAds =  minAds = %v\n", cfg.minAds, totalAds)
+		Logf("Computed totalAds < requested  minAds (%v). Hence, setting totalAds =  minAds = %v\n", cfg.minAds, totalAds)
 	}
 	if totalAds > cfg.maxAds {
 		totalAds = cfg.maxAds
-		log.Printf("Computed totalAds > requested  maxAds (%v). Hence, setting totalAds =  maxAds = %v\n", cfg.maxAds, totalAds)
+		Logf("Computed totalAds > requested  maxAds (%v). Hence, setting totalAds =  maxAds = %v\n", cfg.maxAds, totalAds)
 	}
-	log.Printf("Computed Final totalAds = %v  [%v <= %v <= %v]\n", totalAds, cfg.minAds, totalAds, cfg.maxAds)
+	Logf("Computed Final totalAds = %v  [%v <= %v <= %v]\n", totalAds, cfg.minAds, totalAds, cfg.maxAds)
 	return totalAds
 }
 
@@ -174,21 +174,21 @@ func computeTotalAds(cfg adPodConfig) int64 {
 func computeTimeForEachAdSlot(cfg adPodConfig, totalAds int64) int64 {
 	// Compute time for each ad
 	if totalAds <= 0 {
-		log.Printf("totalAds = 0, Hence timeForEachSlot = 0")
+		Logf("totalAds = 0, Hence timeForEachSlot = 0")
 		return 0
 	}
 	timeForEachSlot := cfg.podMaxDuration / totalAds
 
-	log.Printf("Computed timeForEachSlot = %v (podMaxDuration/totalAds) (%v/%v)\n", timeForEachSlot, cfg.podMaxDuration, totalAds)
+	Logf("Computed timeForEachSlot = %v (podMaxDuration/totalAds) (%v/%v)\n", timeForEachSlot, cfg.podMaxDuration, totalAds)
 
 	if timeForEachSlot < cfg.slotMinDuration {
 		timeForEachSlot = cfg.slotMinDuration
-		log.Printf("Computed timeForEachSlot < requested  slotMinDuration (%v). Hence, setting timeForEachSlot =  slotMinDuration = %v\n", cfg.slotMinDuration, timeForEachSlot)
+		Logf("Computed timeForEachSlot < requested  slotMinDuration (%v). Hence, setting timeForEachSlot =  slotMinDuration = %v\n", cfg.slotMinDuration, timeForEachSlot)
 	}
 
 	if timeForEachSlot > cfg.slotMaxDuration {
 		timeForEachSlot = cfg.slotMaxDuration
-		log.Printf("Computed timeForEachSlot > requested  slotMaxDuration (%v). Hence, setting timeForEachSlot =  slotMaxDuration = %v\n", cfg.slotMaxDuration, timeForEachSlot)
+		Logf("Computed timeForEachSlot > requested  slotMaxDuration (%v). Hence, setting timeForEachSlot =  slotMaxDuration = %v\n", cfg.slotMaxDuration, timeForEachSlot)
 	}
 
 	// ensure timeForEachSlot is multipleof given number
@@ -197,9 +197,9 @@ func computeTimeForEachAdSlot(cfg adPodConfig, totalAds int64) int64 {
 		// here we muse get either cfg.SlotMinDuration or cfg.SlotMaxDuration
 		// these values are already pre-computed in multiples of given number
 		timeForEachSlot = getClosetFactor(timeForEachSlot, multipleOf)
-		log.Printf("Computed closet factor %v, in multiples of %v for timeForEachSlot\n", timeForEachSlot, multipleOf)
+		Logf("Computed closet factor %v, in multiples of %v for timeForEachSlot\n", timeForEachSlot, multipleOf)
 	}
-	log.Printf("Computed Final timeForEachSlot = %v  [%v <= %v <= %v]\n", timeForEachSlot, cfg.requestedSlotMinDuration, timeForEachSlot, cfg.requestedSlotMaxDuration)
+	Logf("Computed Final timeForEachSlot = %v  [%v <= %v <= %v]\n", timeForEachSlot, cfg.requestedSlotMinDuration, timeForEachSlot, cfg.requestedSlotMaxDuration)
 	return timeForEachSlot
 }
 
@@ -242,14 +242,14 @@ func (config *adPodConfig) validateSlots() {
 	emptySlotCount := 0
 	for index, slot := range config.Slots {
 		if slot[0] == 0 || slot[1] == 0 {
-			log.Printf("WARNING:Slot[%v][%v] is having 0 duration\n", index, slot)
+			Logf("WARNING:Slot[%v][%v] is having 0 duration\n", index, slot)
 			emptySlotCount++
 			continue
 		}
 
 		// check slot boundaries
 		if slot[1] < config.requestedSlotMinDuration || slot[1] > config.requestedSlotMaxDuration {
-			log.Printf("ERROR: Slot%v Duration %v sec is out of either requestedSlotMinDuration (%v) or requestedSlotMaxDuration (%v)\n", index, slot[1], config.requestedSlotMinDuration, config.requestedSlotMaxDuration)
+			Logf("ERROR: Slot%v Duration %v sec is out of either requestedSlotMinDuration (%v) or requestedSlotMaxDuration (%v)\n", index, slot[1], config.requestedSlotMinDuration, config.requestedSlotMaxDuration)
 			returnEmptySlots = true
 			break
 		}
@@ -266,25 +266,25 @@ func (config *adPodConfig) validateSlots() {
 			}
 		}
 		config.Slots = optimizedSlots
-		log.Printf("Removed %v empty slots\n", emptySlotCount)
+		Logf("Removed %v empty slots\n", emptySlotCount)
 	}
 
 	if int64(len(config.Slots)) < config.minAds || int64(len(config.Slots)) > config.maxAds {
-		log.Printf("ERROR: slotSize %v is either less than Min Ads (%v) or greater than Max Ads (%v)\n", len(config.Slots), config.minAds, config.maxAds)
+		Logf("ERROR: slotSize %v is either less than Min Ads (%v) or greater than Max Ads (%v)\n", len(config.Slots), config.minAds, config.maxAds)
 		returnEmptySlots = true
 	}
 
 	// ensure if min pod duration = max pod duration
 	// config.TotalSlotTime = pod duration
 	if config.requestedPodMinDuration == config.requestedPodMaxDuration && *config.totalSlotTime != config.requestedPodMaxDuration {
-		log.Printf("ERROR: Total Slot Duration %v sec is not matching with Total Pod Duration %v sec\n", *config.totalSlotTime, config.requestedPodMaxDuration)
+		Logf("ERROR: Total Slot Duration %v sec is not matching with Total Pod Duration %v sec\n", *config.totalSlotTime, config.requestedPodMaxDuration)
 		returnEmptySlots = true
 	}
 
 	// ensure slot duration lies between requested min pod duration and  requested max pod duration
 	// Testcase #15
 	if *config.totalSlotTime < config.requestedPodMinDuration || *config.totalSlotTime > config.requestedPodMaxDuration {
-		log.Printf("ERROR: Total Slot Duration %v sec is either less than Requested Pod Min Duration (%v sec) or greater than Requested  Pod Max Duration (%v sec)\n", *config.totalSlotTime, config.requestedPodMinDuration, config.requestedPodMaxDuration)
+		Logf("ERROR: Total Slot Duration %v sec is either less than Requested Pod Min Duration (%v sec) or greater than Requested  Pod Max Duration (%v sec)\n", *config.totalSlotTime, config.requestedPodMinDuration, config.requestedPodMaxDuration)
 		returnEmptySlots = true
 	}
 
@@ -345,7 +345,7 @@ func (config adPodConfig) addTime(timeForEachSlot int64, fillZeroSlotsOnPriority
 			slot[1] += timeForEachSlot
 			*config.totalSlotTime += timeForEachSlot
 			time += timeForEachSlot
-			log.Printf("Slot %v = Added %v sec (New Time = %v)\n", ad, timeForEachSlot, slot[1])
+			Logf("Slot %v = Added %v sec (New Time = %v)\n", ad, timeForEachSlot, slot[1])
 		}
 		// check slot capabity
 		// !canAdjustTime - TestCase18
@@ -354,7 +354,7 @@ func (config adPodConfig) addTime(timeForEachSlot int64, fillZeroSlotsOnPriority
 			slotCountFullWithCapacity++
 		}
 	}
-	log.Printf("adjustedTime = %v\n ", time)
+	Logf("adjustedTime = %v\n ", time)
 	return time, slotCountFullWithCapacity == len(config.Slots)
 }
 

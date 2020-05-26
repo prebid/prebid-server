@@ -34,8 +34,8 @@ const (
 	CTVErrorNoValidImpressionsForAdPodConfig ErrorCode = 601
 
 	//Filter Reason Code
-	CTVRCDidNotGetChance   FilterReasonCode = 700
-	CTVRCWinningBid        FilterReasonCode = 701
-	CTVRCCategoryExclusion FilterReasonCode = 702
-	CTVRCDomainExclusion   FilterReasonCode = 703
+	CTVRCDidNotGetChance   FilterReasonCode = 0
+	CTVRCWinningBid        FilterReasonCode = 1
+	CTVRCCategoryExclusion FilterReasonCode = 2
+	CTVRCDomainExclusion   FilterReasonCode = 3
 )
