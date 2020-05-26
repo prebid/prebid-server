@@ -588,11 +588,7 @@ func (deps *ctvEndpointDeps) doAdPodExclusions() ctv.AdPodBids {
 			buckets := ctv.GetDurationWiseBidsBucket(bid.Bids[:])
 
 			//combination generator
-			slots := make([]int, len(deps.impData[index].Config))
-			for i, config := range deps.impData[index].Config {
-				slots[i] = int(config.MaxDuration)
-			}
-			comb := ctv.NewCombination(slots[:], deps.impData[index].VideoExt.AdPod)
+			comb := ctv.NewCombination(buckets, deps.impData[index].VideoExt.AdPod)
 
 			//adpod generator
 			adpodGenerator := ctv.NewAdPodGenerator(buckets, comb, deps.impData[index].VideoExt.AdPod)

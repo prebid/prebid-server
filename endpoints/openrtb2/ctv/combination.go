@@ -17,11 +17,20 @@ type Combination struct {
 	config    *openrtb_ext.VideoAdPod
 }
 
-/*
-// NewCombination ...
-func NewCombination(data []int, config *openrtb_ext.VideoAdPod) *Combination {
+// NewCombination ... Generates on demand valid combinations
+// Valid combinations are those who satisifies
+//  1. Pod Min Max duration
+//  2. minAds <= size(combination) <= maxads
+//  3. If  Combination contains repeatition for given duration then
+//     repeatitions are <= no of ads received for the duration
+// Use Get method to start getting valid combinations
+func NewCombination(buckets BidsBuckets, config *openrtb_ext.VideoAdPod) *Combination {
 	generator := new(PodDurationCombination)
-	generator.Init(config, nil)
+	durationBidsCnts := make([][2]uint64, 0)
+	for duration, bids := range buckets {
+		durationBidsCnts = append(durationBidsCnts, [2]uint64{uint64(duration), uint64(len(bids))})
+	}
+	generator.Init(config, durationBidsCnts)
 	return &Combination{
 		generator: *generator,
 		config:    config,
@@ -29,6 +38,7 @@ func NewCombination(data []int, config *openrtb_ext.VideoAdPod) *Combination {
 }
 
 // Get next valid combination
+// Retuns empty slice if all combinations are generated
 func (c *Combination) Get() []int {
 	nextComb := c.generator.Next()
 	nextCombInt := make([]int, len(nextComb))
@@ -38,16 +48,4 @@ func (c *Combination) Get() []int {
 		cnt++
 	}
 	return nextCombInt
-}
-*/
-
-func NewCombination(data []int, config *openrtb_ext.VideoAdPod) *Combination {
-	return &Combination{
-		data:   data[:],
-		config: config,
-	}
-}
-
-func (c *Combination) Get() []int {
-	return c.data[:]
 }

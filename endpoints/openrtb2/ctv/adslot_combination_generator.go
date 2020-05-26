@@ -527,6 +527,9 @@ func getRepeatitionBreakUp(c *PodDurationCombination) map[uint64]uint64 {
 		repeatations := c.combinationCountMap[r-2]
 		// get next series item
 		nextItem := repeatations - seriesSum
+		if repeatations == seriesSum {
+			nextItem = repeatations
+		}
 		series[ads] = nextItem
 		seriesSum += nextItem
 		ads--
