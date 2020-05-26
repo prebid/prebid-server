@@ -3,6 +3,7 @@ language: go
 go:
   - '1.12'
   - '1.13'
+  - '1.14'
 
 go_import_path: github.com/prebid/prebid-server
 
