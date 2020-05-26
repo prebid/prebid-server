@@ -5,14 +5,25 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
+//Bid openrtb bid object with extra parameters
 type Bid struct {
 	*openrtb.Bid
-	Duration int
+	Duration         int
+	FilterReasonCode FilterReasonCode
+}
+
+//BidResponseAdPodExt object for ctv bidresponse object
+type BidResponseAdPodExt struct {
+	Response openrtb.BidResponse `json:"bidresponse,omitempty"`
+	Config   map[string]*ImpData `json:"config,omitempty"`
 }
 
 //AdPodBid combination contains ImpBid
 type AdPodBid struct {
 	Bids          []*Bid
+	Price         float64
+	Cat           []string
+	ADomain       []string
 	OriginalImpID string
 	SeatName      string
 }
