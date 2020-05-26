@@ -27,14 +27,6 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
-type DebugLog struct {
-	EnableDebug bool
-	CacheType   prebid_cache_client.PayloadType
-	Data        string
-	TTL         int64
-	CacheKey    string
-}
-
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
@@ -174,18 +166,20 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		if targData != nil {
 			auc.setRoundedPrices(targData.priceGranularity)
-			if debugLog != nil && debugLog.EnableDebug {
-				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errs)
-				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
-					debugLog.Data = fmt.Sprintf("<!--\n%s\n\nResponse:\n%s\n-->", debugLog.Data, string(bidRespExtBytes))
-				} else {
-					errs = append(errs, errors.New("Unable to marshal response ext for debugging"))
-				}
-			}
 
 			if requestExt.Prebid.SupportDeals {
 				dealErrs := applyDealSupport(bidRequest, auc, bidCategory)
 				errs = append(errs, dealErrs...)
+			}
+
+			if debugLog != nil && debugLog.Enabled {
+				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errs)
+				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+					debugLog.Data.Response = string(bidRespExtBytes)
+				} else {
+					debugLog.Data.Response = "Unable to marshal response ext for debugging"
+					errs = append(errs, errors.New(debugLog.Data.Response))
+				}
 			}
 
 			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory, debugLog)
@@ -193,6 +187,12 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				errs = append(errs, cacheErrs...)
 			}
 			targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
+
+			// Ensure caching errors are added if the bid response ext has already been created
+			if bidResponseExt != nil && len(cacheErrs) > 0 {
+				bidderCacheErrs := errsToBidderErrors(cacheErrs)
+				bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = append(bidResponseExt.Errors[openrtb_ext.PrebidExtKey], bidderCacheErrs...)
+			}
 		}
 
 	}

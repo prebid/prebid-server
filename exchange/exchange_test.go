@@ -740,6 +740,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	debugLog := &DebugLog{}
 	if spec.DebugLog != nil {
 		*debugLog = *spec.DebugLog
+		debugLog.Regexp = regexp.MustCompile(`[<>]`)
 	}
 	bid, err := ex.HoldAuction(context.Background(), &spec.IncomingRequest.OrtbRequest, mockIdFetcher(spec.IncomingRequest.Usersyncs), pbsmetrics.Labels{}, &categoriesFetcher, debugLog)
 	responseTimes := extractResponseTimes(t, filename, bid)
@@ -761,13 +762,13 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		}
 	}
 	if spec.DebugLog != nil {
-		if spec.DebugLog.EnableDebug {
-			if len(debugLog.Data) <= len(spec.DebugLog.Data) {
-				t.Errorf("%s: DebugLog was not modified when it should have been", filename)
+		if spec.DebugLog.Enabled {
+			if len(debugLog.Data.Response) == 0 {
+				t.Errorf("%s: DebugLog response was not modified when it should have been", filename)
 			}
 		} else {
-			if !strings.EqualFold(spec.DebugLog.Data, debugLog.Data) {
-				t.Errorf("%s: DebugLog was modified when it shouldn't have been", filename)
+			if len(debugLog.Data.Response) != 0 {
+				t.Errorf("%s: DebugLog response was modified when it shouldn't have been", filename)
 			}
 		}
 	}
