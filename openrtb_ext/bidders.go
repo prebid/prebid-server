@@ -39,6 +39,7 @@ const (
 	BidderAppnexus         BidderName = "appnexus"
 	BidderAdoppler         BidderName = "adoppler"
 	BidderBeachfront       BidderName = "beachfront"
+	BidderBeintoo          BidderName = "beintoo"
 	BidderBrightroll       BidderName = "brightroll"
 	BidderConsumable       BidderName = "consumable"
 	BidderConversant       BidderName = "conversant"
@@ -64,6 +65,7 @@ const (
 	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderNinthDecimal     BidderName = "ninthdecimal"
 	BidderOpenx            BidderName = "openx"
+	BidderOrbidder         BidderName = "orbidder"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
 	BidderPulsepoint       BidderName = "pulsepoint"
@@ -86,6 +88,7 @@ const (
 	BidderVerizonMedia     BidderName = "verizonmedia"
 	BidderVisx             BidderName = "visx"
 	BidderVrtcal           BidderName = "vrtcal"
+	BidderYeahmobi         BidderName = "yeahmobi"
 	BidderYieldmo          BidderName = "yieldmo"
 	BidderYieldone         BidderName = "yieldone"
 	BidderZeroClickFraud   BidderName = "zeroclickfraud"
@@ -109,6 +112,7 @@ var BidderMap = map[string]BidderName{
 	"appnexus":          BidderAppnexus,
 	"adoppler":          BidderAdoppler,
 	"beachfront":        BidderBeachfront,
+	"beintoo":           BidderBeintoo,
 	"brightroll":        BidderBrightroll,
 	"consumable":        BidderConsumable,
 	"conversant":        BidderConversant,
@@ -134,6 +138,7 @@ var BidderMap = map[string]BidderName{
 	"nanointeractive":   BidderNanoInteractive,
 	"ninthdecimal":      BidderNinthDecimal,
 	"openx":             BidderOpenx,
+	"orbidder":          BidderOrbidder,
 	"pubmatic":          BidderPubmatic,
 	"pubnative":         BidderPubnative,
 	"pulsepoint":        BidderPulsepoint,
@@ -156,6 +161,7 @@ var BidderMap = map[string]BidderName{
 	"verizonmedia":      BidderVerizonMedia,
 	"visx":              BidderVisx,
 	"vrtcal":            BidderVrtcal,
+	"yeahmobi":          BidderYeahmobi,
 	"yieldmo":           BidderYieldmo,
 	"yieldone":          BidderYieldone,
 	"zeroclickfraud":    BidderZeroClickFraud,

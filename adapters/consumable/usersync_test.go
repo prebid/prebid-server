@@ -30,6 +30,6 @@ func TestConsumableSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "//e.serverbid.com/udb/9969/match?gdpr=A&euconsent=B&us_privacy=C&redir=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dconsumable%26gdpr%3DA%26gdpr_consent%3DB%26uid%3D", u.URL)
 	assert.Equal(t, "redirect", u.Type)
-	assert.Equal(t, uint16(65535), syncer.GDPRVendorID())
+	assert.Equal(t, uint16(591), syncer.GDPRVendorID())
 	assert.Equal(t, false, u.SupportCORS)
 }

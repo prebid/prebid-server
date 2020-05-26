@@ -60,6 +60,10 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 	return false, false, nil
 }
 
+func (p *permissionsImpl) AMPException() bool {
+	return p.cfg.AMPException
+}
+
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string) (bool, error) {
 	// If we're not given a consent string, respect the preferences in the app config.
 	if consent == "" {
@@ -211,4 +215,8 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 
 func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, error) {
 	return true, true, nil
+}
+
+func (a AlwaysAllow) AMPException() bool {
+	return false
 }
