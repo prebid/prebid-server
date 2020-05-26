@@ -40,6 +40,7 @@ import (
 	pbc "github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
 	"github.com/PubMatic-OpenWrap/prebid-server/ssl"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/backends/empty_fetcher"
 	storedRequestsConf "github.com/PubMatic-OpenWrap/prebid-server/stored_requests/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync/usersyncers"
@@ -305,6 +306,15 @@ func OrtbAuctionEndpointWrapper(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	ortbAuctionEndpoint(w, r, nil)
+	return nil
+}
+
+func VideoAuctionEndpointWrapper(w http.ResponseWriter, r *http.Request) error {
+	videoAuctionEndpoint, err := openrtb2.NewCTVEndpoint(g_ex, g_paramsValidator, g_storedReqFetcher, empty_fetcher.EmptyFetcher{}, g_categoriesFetcher, g_cfg, g_metrics, g_analytics, g_disabledBidders, g_defReqJSON, g_bidderMap)
+	if err != nil {
+		return err
+	}
+	videoAuctionEndpoint(w, r, nil)
 	return nil
 }
 
