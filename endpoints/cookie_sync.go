@@ -122,7 +122,8 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	for _, b := range parsedReq.Bidders {
 		adapterSyncs[openrtb_ext.BidderName(b)] = true
 	}
-	parsedReq.filterForPrivacy(deps.syncPermissions, privacyPolicy, deps.enforceCCPA)
+	parsedReq.filterForGDPR(privacyPolicy, deps.syncPermissions)
+	parsedReq.filterForCCPA(privacyPolicy, deps.enforceCCPA)
 	// surviving bidders are not privacy blocked
 	for _, b := range parsedReq.Bidders {
 		adapterSyncs[openrtb_ext.BidderName(b)] = false
@@ -223,12 +224,7 @@ func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderNa
 	}
 }
 
-func (req *cookieSyncRequest) filterForPrivacy(permissions gdpr.Permissions, privacyPolicies privacy.Policies, enforceCCPA bool) {
-	if enforceCCPA && privacyPolicies.CCPA.ShouldEnforce() {
-		req.Bidders = nil
-		return
-	}
-
+func (req *cookieSyncRequest) filterForGDPR(privacyPolicies privacy.Policies, permissions gdpr.Permissions) {
 	if req.GDPR != nil && *req.GDPR == 0 {
 		return
 	}
@@ -240,6 +236,19 @@ func (req *cookieSyncRequest) filterForPrivacy(permissions gdpr.Permissions, pri
 
 	for i := 0; i < len(req.Bidders); i++ {
 		if allowSync, err := permissions.BidderSyncAllowed(context.Background(), openrtb_ext.BidderName(req.Bidders[i]), req.Consent); err != nil || !allowSync {
+			req.Bidders = append(req.Bidders[:i], req.Bidders[i+1:]...)
+			i--
+		}
+	}
+}
+
+func (req *cookieSyncRequest) filterForCCPA(privacyPolicies privacy.Policies, enforceCCPA bool) {
+	if !enforceCCPA {
+		return
+	}
+
+	for i := 0; i < len(req.Bidders); i++ {
+		if privacyPolicies.CCPA.ShouldEnforce(req.Bidders[i]) {
 			req.Bidders = append(req.Bidders[:i], req.Bidders[i+1:]...)
 			i--
 		}

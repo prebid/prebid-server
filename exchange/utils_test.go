@@ -79,11 +79,24 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 	testCases := []struct {
 		description     string
+		reqExt          json.RawMessage
 		enforceCCPA     bool
 		expectDataScrub bool
 	}{
 		{
 			description:     "Feature Flag Enabled",
+			enforceCCPA:     true,
+			expectDataScrub: true,
+		},
+		{
+			description:     "Feature Flag Enabled - No Sale Bidder - Scrub",
+			reqExt:          json.RawMessage(`{"prebid":{"nosale":["appnexus"]}}`),
+			enforceCCPA:     true,
+			expectDataScrub: false,
+		},
+		{
+			description:     "Feature Flag Enabled - No Sale Bidder - Doesn't Scrub",
+			reqExt:          json.RawMessage(`{"prebid":{"nosale":["rubicon"]}}`),
 			enforceCCPA:     true,
 			expectDataScrub: true,
 		},
@@ -96,6 +109,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 
 	for _, test := range testCases {
 		req := newCCPABidRequest(t)
+		req.Ext = test.reqExt
 
 		results, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, test.enforceCCPA)
 		result := results["appnexus"]

@@ -48,13 +48,17 @@ func cleanOpenRTBRequests(ctx context.Context,
 		COPPA: orig.Regs != nil && orig.Regs.COPPA == 1,
 	}
 
+	var ccpaPolicy ccpa.Policy
 	if enforceCCPA {
-		ccpaPolicy, _ := ccpa.ReadPolicy(orig)
-		privacyEnforcement.CCPA = ccpaPolicy.ShouldEnforce()
+		ccpaPolicy, _ = ccpa.ReadPolicy(orig)
 	}
 
 	for bidder, bidReq := range requestsByBidder {
 
+		// CCPA
+		privacyEnforcement.CCPA = ccpaPolicy.ShouldEnforce(bidder.String())
+
+		// GDPR
 		if gdpr == 1 {
 			coreBidder := resolveBidder(bidder.String(), aliases)
 

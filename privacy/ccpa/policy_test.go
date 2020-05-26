@@ -21,38 +21,45 @@ func TestRead(t *testing.T) {
 				Regs: &openrtb.Regs{
 					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
 				},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
 			expectedPolicy: Policy{
-				Value: "ABC",
+				Value:         "ABC",
+				NoSaleBidders: []string{"a", "b"},
 			},
 		},
 		{
 			description: "Empty - No Request",
 			request:     nil,
 			expectedPolicy: Policy{
-				Value: "",
+				Value:         "",
+				NoSaleBidders: nil,
 			},
 		},
 		{
 			description: "Empty - No Regs",
 			request: &openrtb.BidRequest{
 				Regs: nil,
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
 			expectedPolicy: Policy{
-				Value: "",
+				Value:         "",
+				NoSaleBidders: []string{"a", "b"},
 			},
 		},
 		{
-			description: "Empty - No Ext",
+			description: "Empty - No Regs.Ext",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{},
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
 			expectedPolicy: Policy{
-				Value: "",
+				Value:         "",
+				NoSaleBidders: []string{"a", "b"},
 			},
 		},
 		{
-			description: "Empty - No Value",
+			description: "Empty - No Regs.Ext Value",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{
 					Ext: json.RawMessage(`{"anythingElse":"42"}`),
@@ -63,11 +70,48 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "Serialization Issue",
+			description: "Empty - No Ext",
+			request: &openrtb.BidRequest{
+				Regs: &openrtb.Regs{
+					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
+				},
+				Ext: nil,
+			},
+			expectedPolicy: Policy{
+				Value:         "ABC",
+				NoSaleBidders: nil,
+			},
+		},
+		{
+			description: "Empty - No Ext Value",
+			request: &openrtb.BidRequest{
+				Regs: &openrtb.Regs{
+					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
+				},
+				Ext: json.RawMessage(`{"anythingElse":"42"}`),
+			},
+			expectedPolicy: Policy{
+				Value:         "ABC",
+				NoSaleBidders: nil,
+			},
+		},
+		{
+			description: "Malformed Regs.Ext",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{
 					Ext: json.RawMessage(`malformed`),
 				},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedError: true,
+		},
+		{
+			description: "Malformed Ext",
+			request: &openrtb.BidRequest{
+				Regs: &openrtb.Regs{
+					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
+				},
+				Ext: json.RawMessage(`malformed`),
 			},
 			expectedError: true,
 		},
@@ -88,6 +132,57 @@ func TestRead(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
+	testCases := []struct {
+		description   string
+		policy        Policy
+		request       *openrtb.BidRequest
+		expected      *openrtb.BidRequest
+		expectedError bool
+	}{
+		{
+			description: "Success",
+			policy:      Policy{Value: "anyValue", NoSaleBidders: []string{"a", "b"}},
+			request:     &openrtb.BidRequest{},
+			expected: &openrtb.BidRequest{
+				Regs: &openrtb.Regs{
+					Ext: json.RawMessage(`{"us_privacy":"anyValue"}`),
+				},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a","b"]}}`),
+			},
+		},
+		{
+			description: "Error Regs.Ext",
+			policy:      Policy{Value: "anyValue", NoSaleBidders: []string{"a", "b"}},
+			request: &openrtb.BidRequest{
+				Regs: &openrtb.Regs{
+					Ext: json.RawMessage(`malformed}`),
+				},
+			},
+			expectedError: true,
+		},
+		{
+			description: "Error Ext",
+			policy:      Policy{Value: "anyValue", NoSaleBidders: []string{"a", "b"}},
+			request: &openrtb.BidRequest{
+				Ext: json.RawMessage(`malformed}`),
+			},
+			expectedError: true,
+		},
+	}
+
+	for _, test := range testCases {
+		err := test.policy.Write(test.request)
+
+		if test.expectedError {
+			assert.Error(t, err, test.description)
+		} else {
+			assert.NoError(t, err, test.description)
+			assert.Equal(t, test.expected, test.request, test.description)
+		}
+	}
+}
+
+func TestWriteRegsExt(t *testing.T) {
 	testCases := []struct {
 		description   string
 		policy        Policy
@@ -141,7 +236,89 @@ func TestWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		err := test.policy.Write(test.request)
+		err := test.policy.writeRegsExt(test.request)
+
+		if test.expectedError {
+			assert.Error(t, err, test.description)
+		} else {
+			assert.NoError(t, err, test.description)
+			assert.Equal(t, test.expected, test.request, test.description)
+		}
+	}
+}
+
+func TestWriteExt(t *testing.T) {
+	testCases := []struct {
+		description   string
+		policy        Policy
+		request       *openrtb.BidRequest
+		expected      *openrtb.BidRequest
+		expectedError bool
+	}{
+		{
+			description: "Nil",
+			policy:      Policy{NoSaleBidders: nil},
+			request:     &openrtb.BidRequest{},
+			expected:    &openrtb.BidRequest{},
+		},
+		{
+			description: "Empty",
+			policy:      Policy{NoSaleBidders: []string{}},
+			request:     &openrtb.BidRequest{},
+			expected:    &openrtb.BidRequest{},
+		},
+		{
+			description: "Values - Nil Ext",
+			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
+			request: &openrtb.BidRequest{
+				Ext: nil,
+			},
+			expected: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a","b"]}}`),
+			},
+		},
+		{
+			description: "Values - Empty Prebid",
+			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
+			request: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{}}`),
+			},
+			expected: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a","b"]}}`),
+			},
+		},
+		{
+			description: "Values - Existing - Persists Other Values",
+			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
+			request: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"supportdeals":true}}`),
+			},
+			expected: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"supportdeals":true,"nosale":["a","b"]}}`),
+			},
+		},
+		{
+			description: "Values - Existing - Overwrites Same Value",
+			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
+			request: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"nosale":["1","2"]}}`),
+			},
+			expected: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a","b"]}}`),
+			},
+		},
+		{
+			description: "Values - Malformed",
+			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
+			request: &openrtb.BidRequest{
+				Ext: json.RawMessage(`malformed`),
+			},
+			expectedError: true,
+		},
+	}
+
+	for _, test := range testCases {
+		err := test.policy.writeExt(test.request)
 
 		if test.expectedError {
 			assert.Error(t, err, test.description)
@@ -303,38 +480,62 @@ func TestValidateConsent(t *testing.T) {
 func TestShouldEnforce(t *testing.T) {
 	testCases := []struct {
 		description string
+		bidder      string
 		policy      Policy
 		expected    bool
 	}{
 		{
 			description: "Enforceable",
+			bidder:      "a",
 			policy:      Policy{Value: "1-Y-"},
 			expected:    true,
 		},
 		{
+			description: "Enforceable - No Sale For Different Bidder",
+			bidder:      "a",
+			policy:      Policy{Value: "1-Y-", NoSaleBidders: []string{"b"}},
+			expected:    true,
+		},
+		{
 			description: "Not Enforceable - Not Present",
+			bidder:      "a",
 			policy:      Policy{Value: ""},
 			expected:    false,
 		},
 		{
 			description: "Not Enforceable - Opt-Out Unknown",
+			bidder:      "a",
 			policy:      Policy{Value: "1---"},
 			expected:    false,
 		},
 		{
 			description: "Not Enforceable - Opt-Out Explicitly No",
+			bidder:      "a",
 			policy:      Policy{Value: "1-N-"},
 			expected:    false,
 		},
 		{
+			description: "Not Enforceable - No Sale All Bidders",
+			bidder:      "a",
+			policy:      Policy{Value: "1-Y-", NoSaleBidders: []string{"*"}},
+			expected:    false,
+		},
+		{
+			description: "Not Enforceable - No Sale Specific Bidder",
+			bidder:      "a",
+			policy:      Policy{Value: "1-Y-", NoSaleBidders: []string{"a"}},
+			expected:    false,
+		},
+		{
 			description: "Invalid",
+			bidder:      "a",
 			policy:      Policy{Value: "2---"},
 			expected:    false,
 		},
 	}
 
 	for _, test := range testCases {
-		result := test.policy.ShouldEnforce()
+		result := test.policy.ShouldEnforce(test.bidder)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }

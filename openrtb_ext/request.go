@@ -18,6 +18,10 @@ type ExtRequestPrebid struct {
 	StoredRequest        *ExtStoredRequest      `json:"storedrequest,omitempty"`
 	Targeting            *ExtRequestTargeting   `json:"targeting,omitempty"`
 	SupportDeals         bool                   `json:"supportdeals,omitempty"`
+
+	// NoSale allows publishers to explicitly declare relationships with bidders which do not constitute
+	// a sale per CCPA law. Values are bidder names or a star ('*') character to represent all bidders.
+	NoSale []string `json:"nosale,omitempty"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
