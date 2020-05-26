@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 	"runtime/debug"
 	"strconv"
 	"time"
@@ -59,6 +60,7 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 		defRequest,
 		defReqJSON,
 		bidderMap,
+		nil,
 		nil}).Auction), nil
 }
 
@@ -76,6 +78,7 @@ type endpointDeps struct {
 	defReqJSON       []byte
 	bidderMap        map[string]openrtb_ext.BidderName
 	cache            prebid_cache_client.Client
+	debugLogRegexp   *regexp.Regexp
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
