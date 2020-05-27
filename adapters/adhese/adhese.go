@@ -10,6 +10,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,32 +19,33 @@ import (
 )
 
 type AdheseAdapter struct {
-	http             *adapters.HTTPAdapter
 	endpointTemplate template.Template
 }
 
-func (a *AdheseAdapter) Name() string {
-	return "adhese"
-}
-
-func (a *AdheseAdapter) SkipNoCookies() bool {
-	return false
-}
-
 func extractSlotParameter(parameters openrtb_ext.ExtImpAdhese) string {
-	return fmt.Sprintf("/sl%s-%s", parameters.Location, parameters.Format)
+	return fmt.Sprintf("/sl%s-%s", url.PathEscape(parameters.Location), url.PathEscape(parameters.Format))
 }
 
 func extractTargetParameters(parameters openrtb_ext.ExtImpAdhese) string {
-	if parameters.Keywords == nil || len(parameters.Keywords) == 0 {
+	if len(parameters.Keywords) == 0 {
 		return ""
 	}
 	var parametersAsString = ""
 	var targetParsed map[string]interface{}
-	json.Unmarshal(parameters.Keywords, &targetParsed)
-	for targetKey, targetRawValue := range targetParsed {
-		var targetingValues = targetRawValue.([]interface{})
-		parametersAsString += "/" + targetKey
+	err := json.Unmarshal(parameters.Keywords, &targetParsed)
+	if err != nil {
+		return ""
+	}
+
+	targetKeys := make([]string, 0, len(targetParsed))
+	for key := range targetParsed {
+		targetKeys = append(targetKeys, key)
+	}
+	sort.Strings(targetKeys)
+
+	for _, targetKey := range targetKeys {
+		var targetingValues = targetParsed[targetKey].([]interface{})
+		parametersAsString += "/" + url.PathEscape(targetKey)
 		for _, targetRawValKey := range targetingValues {
 			var targetValueParsed = targetRawValKey.(string)
 			parametersAsString += targetValueParsed + ";"
@@ -51,10 +53,7 @@ func extractTargetParameters(parameters openrtb_ext.ExtImpAdhese) string {
 		parametersAsString = strings.TrimRight(parametersAsString, ";")
 	}
 
-	params := strings.Split(parametersAsString, "/")
-	sort.Strings(params)
-	return strings.Join(params, "/")
-
+	return parametersAsString
 }
 
 func extractGdprParameter(request *openrtb.BidRequest) string {
@@ -81,7 +80,7 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 
 	// If all the requests are invalid, Call to adaptor is skipped
 	if len(request.Imp) == 0 {
-		errs = append(errs, WrapError("Imp is empty"))
+		errs = append(errs, WrapReqError("Imp is empty"))
 		return nil, errs
 	}
 
@@ -89,22 +88,22 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	var bidderExt adapters.ExtImpBidder
 
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		errs = append(errs, WrapError("Request could not be parsed as ExtImpBidder due to: "+err.Error()))
+		errs = append(errs, WrapReqError("Request could not be parsed as ExtImpBidder due to: "+err.Error()))
 		return nil, errs
 	}
 
 	var params openrtb_ext.ExtImpAdhese
 	if err := json.Unmarshal(bidderExt.Bidder, &params); err != nil {
-		errs = append(errs, WrapError("Request could not be parsed as ExtImpAdhese due to: "+err.Error()))
+		errs = append(errs, WrapReqError("Request could not be parsed as ExtImpAdhese due to: "+err.Error()))
 		return nil, errs
 	}
 
 	// Compose url
-	endpointParams := macros.EndpointTemplateParams{Host: "ads-" + params.Account + ".adhese.com"}
+	endpointParams := macros.EndpointTemplateParams{AccountID: params.Account}
 
 	host, err := macros.ResolveMacros(*&a.endpointTemplate, endpointParams)
 	if err != nil {
-		errs = append(errs, WrapError("Could not compose url from template and request account val: "+err.Error()))
+		errs = append(errs, WrapReqError("Could not compose url from template and request account val: "+err.Error()))
 		return nil, errs
 	}
 	complete_url := fmt.Sprintf("%s%s%s%s%s",
@@ -121,15 +120,17 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 }
 
 func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{WrapError(fmt.Sprintf("Unexpected status code: %d.", response.StatusCode))}
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	} else if response.StatusCode != http.StatusOK {
+		return nil, []error{WrapServerError(fmt.Sprintf("Unexpected status code: %d.", response.StatusCode))}
 	}
 
 	var bidResponse openrtb.BidResponse
 
 	var adheseBidResponseArray []AdheseBid
 	if err := json.Unmarshal(response.Body, &adheseBidResponseArray); err != nil {
-		return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed as generic Adhese bid.", string(response.Body)))}
+		return nil, []error{err, WrapServerError(fmt.Sprintf("Response %v could not be parsed as generic Adhese bid.", string(response.Body)))}
 	}
 
 	var adheseBid = adheseBidResponseArray[0]
@@ -138,20 +139,29 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		var extArray []AdheseExt
 		var originDataArray []AdheseOriginData
 		if err := json.Unmarshal(response.Body, &extArray); err != nil {
-			return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed to JERLICIA ext.", string(response.Body)))}
+			return nil, []error{err, WrapServerError(fmt.Sprintf("Response %v could not be parsed to JERLICIA ext.", string(response.Body)))}
 		}
 
 		if err := json.Unmarshal(response.Body, &originDataArray); err != nil {
-			return nil, []error{err, WrapError(fmt.Sprintf("Response %v could not be parsed to JERLICIA origin data.", string(response.Body)))}
+			return nil, []error{err, WrapServerError(fmt.Sprintf("Response %v could not be parsed to JERLICIA origin data.", string(response.Body)))}
 		}
 		bidResponse = convertAdheseBid(adheseBid, extArray[0], originDataArray[0])
 	} else {
 		bidResponse = convertAdheseOpenRtbBid(adheseBid)
 	}
 
-	price, _ := strconv.ParseFloat(adheseBid.Extension.Prebid.Cpm.Amount, 64)
-	width, _ := strconv.ParseUint(adheseBid.Width, 10, 64)
-	height, _ := strconv.ParseUint(adheseBid.Height, 10, 64)
+	price, err := strconv.ParseFloat(adheseBid.Extension.Prebid.Cpm.Amount, 64)
+	if err != nil {
+		return nil, []error{err, WrapServerError(fmt.Sprintf("Could not parse Price %v as float ", string(adheseBid.Extension.Prebid.Cpm.Amount)))}
+	}
+	width, err := strconv.ParseUint(adheseBid.Width, 10, 64)
+	if err != nil {
+		return nil, []error{err, WrapServerError(fmt.Sprintf("Could not parse Width %v as int ", string(adheseBid.Width)))}
+	}
+	height, err := strconv.ParseUint(adheseBid.Height, 10, 64)
+	if err != nil {
+		return nil, []error{err, WrapServerError(fmt.Sprintf("Could not parse Height %v as int ", string(adheseBid.Height)))}
+	}
 	bidResponse.Cur = adheseBid.Extension.Prebid.Cpm.Currency
 	if len(bidResponse.SeatBid) > 0 && len(bidResponse.SeatBid[0].Bid) > 0 {
 		bidResponse.SeatBid[0].Bid[0].Price = price
@@ -162,7 +172,7 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
 	if len(bidResponse.SeatBid) == 0 {
-		return nil, []error{WrapError("Response resulted in an empty seatBid array.")}
+		return nil, []error{WrapServerError("Response resulted in an empty seatBid array.")}
 	}
 
 	var errs []error
@@ -180,8 +190,11 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 }
 
 func convertAdheseBid(adheseBid AdheseBid, adheseExt AdheseExt, adheseOriginData AdheseOriginData) openrtb.BidResponse {
-	adheseExtJson, _ := json.Marshal(adheseOriginData)
-
+	adheseExtJson, err := json.Marshal(adheseOriginData)
+	if err != nil {
+		glog.Error(fmt.Sprintf("Unable to parse adhese Origin Data as JSON due to %v", err))
+		adheseExtJson = make([]byte, 0)
+	}
 	return openrtb.BidResponse{
 		ID: adheseExt.Id,
 		SeatBid: []openrtb.SeatBid{{
@@ -223,13 +236,18 @@ func getBidType(bidAdm string) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeBanner
 }
 
-func WrapError(errorStr string) *errortypes.BadInput {
+func WrapReqError(errorStr string) *errortypes.BadInput {
 	return &errortypes.BadInput{Message: errorStr}
 }
 
+func WrapServerError(errorStr string) *errortypes.BadServerResponse {
+	return &errortypes.BadServerResponse{Message: errorStr}
+}
+
 func ContainsAny(raw string, keys []string) bool {
+	lowerCased := strings.ToLower(raw)
 	for i := 0; i < len(keys); i++ {
-		if strings.Contains(strings.ToLower(raw), keys[i]) {
+		if strings.Contains(lowerCased, keys[i]) {
 			return true
 		}
 	}
@@ -237,11 +255,11 @@ func ContainsAny(raw string, keys []string) bool {
 
 }
 
-func NewAdheseAdapter(config *adapters.HTTPAdapterConfig, uri string) *AdheseAdapter {
-	return NewAdheseBidder(adapters.NewHTTPAdapter(config).Client, uri)
-}
-
-func NewAdheseBidder(client *http.Client, uri string) *AdheseAdapter {
-	template, _ := template.New("endpointTemplate").Parse(uri)
-	return &AdheseAdapter{http: &adapters.HTTPAdapter{Client: client}, endpointTemplate: *template}
+func NewAdheseBidder(uri string) *AdheseAdapter {
+	template, err := template.New("endpointTemplate").Parse(uri)
+	if err != nil {
+		glog.Fatal("Unable to parse endpoint url template")
+		return nil
+	}
+	return &AdheseAdapter{endpointTemplate: *template}
 }
