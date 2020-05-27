@@ -47,7 +47,8 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	var sellerId string
 	var userExt openrtb_ext.ExtUser
 	var anyHasId = false
-	var dmxReq *openrtb.BidRequest = request
+	var reqCopy openrtb.BidRequest = *request
+	var dmxReq *openrtb.BidRequest = &reqCopy
 
 	if request.User == nil {
 		if request.App == nil {
