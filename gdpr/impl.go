@@ -81,6 +81,10 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 
 	// InfoStorageAccess is the same across TCF 1 and TCF 2
 	if parsedConsent.Version() == 2 {
+		if !p.cfg.TCF2.Purpose1.Enabled {
+			// We are not enforcing purpose 1
+			return true, nil
+		}
 		consent, ok := parsedConsent.(tcf2.ConsentMetadata)
 		if !ok {
 			err := fmt.Errorf("Unable to access TCF2 parsed consent")
