@@ -1446,7 +1446,7 @@ func TestOpenRTBResponseOverridePriceFromBidRequest(t *testing.T) {
 			"bidders": {
 				"rubicon": {
 					"debug": {
-						"cpmOverride": 10
+						"cpmoverride": 10
 			}}}}}`),
 	}
 
@@ -1488,7 +1488,7 @@ func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
 				"siteId": 68780,
 				"zoneId": 327642,
 				"debug": {
-					"cpmOverride" : 20 
+					"cpmoverride" : 20 
 				}
 			}}`),
 		}},
@@ -1496,7 +1496,7 @@ func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
 			"bidders": {
 				"rubicon": {
 					"debug": {
-						"cpmOverride": 10
+						"cpmoverride": 10
 			}}}}}`),
 	}
 
