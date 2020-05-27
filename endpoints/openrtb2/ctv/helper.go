@@ -48,13 +48,13 @@ func GetUniqueBidID(bidID string, id int) string {
 }
 
 func Logf(msg string, args ...interface{}) {
-	if glog.V(2) {
+	if glog.V(3) {
 		glog.Infof(msg, args...)
 	}
 }
 
 func JLogf(msg string, obj interface{}) {
-	if glog.V(2) {
+	if glog.V(3) {
 		data, _ := json.Marshal(obj)
 		glog.Infof("[OPENWRAP] %v:%v", msg, string(data))
 	}

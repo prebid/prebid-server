@@ -81,7 +81,7 @@ func (o *AdPodGenerator) GetAdPodBids() *AdPodBid {
 		}
 	}
 
-	go cleanupResponseChannel(responseCh, totalRequest-responseCount)
+	defer cleanupResponseChannel(responseCh, totalRequest-responseCount)
 
 	if 0 == len(results) {
 		return nil
