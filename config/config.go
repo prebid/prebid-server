@@ -66,6 +66,8 @@ type Configuration struct {
 	PemCertsFile string `mapstructure:"certificates_file"`
 	// Custom headers to handle request timeouts from queueing infrastructure
 	RequestTimeoutHeaders RequestTimeoutHeaders `mapstructure:"request_timeout_headers"`
+	// Debug/logging flags go here
+	Debug Debug `mapstructure:"debug"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -428,6 +430,30 @@ type DefReqFiles struct {
 	FileName string `mapstructure:"name"`
 }
 
+type Debug struct {
+	TimeoutNotification TimeoutNotification `mapstructure:"timeout_notification"`
+}
+
+func (cfg *Debug) validate(errs configErrors) configErrors {
+	return cfg.TimeoutNotification.validate(errs)
+}
+
+type TimeoutNotification struct {
+	// Log timeout notifications in the application log
+	Log bool `mapstructure:"log"`
+	// Fraction of notifications to log
+	Sampling float32 `mapstructure:"sampling"`
+	// Only log failures
+	FailOnly bool `mapstructure:"fail_only"`
+}
+
+func (cfg *TimeoutNotification) validate(errs configErrors) configErrors {
+	if cfg.Sampling < 0.0 || cfg.Sampling > 1.0 {
+		errs = append(errs, fmt.Errorf("debug.timeout_notification.sampling must be positive and not greater than 1.0. Got %f", cfg.Sampling))
+	}
+	return errs
+}
+
 // New uses viper to get our server configurations.
 func New(v *viper.Viper) (*Configuration, error) {
 	var c Configuration
@@ -784,6 +810,10 @@ func SetupViper(v *viper.Viper, filename string) {
 
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")
+
+	v.SetDefault("debug.timeout_notification.log", false)
+	v.SetDefault("debug.timeout_notification.sampling", 0.0)
+	v.SetDefault("debug.timeout_notification.fail_only", false)
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
