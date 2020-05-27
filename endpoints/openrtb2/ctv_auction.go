@@ -579,6 +579,8 @@ func (deps *ctvEndpointDeps) getImpressionID(id string) (string, int) {
 
 //doAdPodExclusions
 func (deps *ctvEndpointDeps) doAdPodExclusions() ctv.AdPodBids {
+	defer ctv.TimeTrack(time.Now(), "doAdPodExclusions")
+
 	result := ctv.AdPodBids{}
 	for index := 0; index < len(deps.request.Imp); index++ {
 		bid := deps.impData[index].Bid
@@ -588,7 +590,11 @@ func (deps *ctvEndpointDeps) doAdPodExclusions() ctv.AdPodBids {
 			buckets := ctv.GetDurationWiseBidsBucket(bid.Bids[:])
 
 			//combination generator
-			comb := ctv.NewCombination(buckets, deps.impData[index].VideoExt.AdPod)
+			comb := ctv.NewCombination(
+				buckets,
+				uint64(deps.request.Imp[index].Video.MinDuration),
+				uint64(deps.request.Imp[index].Video.MaxDuration),
+				deps.impData[index].VideoExt.AdPod)
 
 			//adpod generator
 			adpodGenerator := ctv.NewAdPodGenerator(buckets, comb, deps.impData[index].VideoExt.AdPod)
@@ -608,6 +614,8 @@ func (deps *ctvEndpointDeps) doAdPodExclusions() ctv.AdPodBids {
 
 //createBidResponse
 func (deps *ctvEndpointDeps) createBidResponse(resp *openrtb.BidResponse, adpods ctv.AdPodBids) *openrtb.BidResponse {
+	defer ctv.TimeTrack(time.Now(), "createBidResponse")
+
 	bidResp := &openrtb.BidResponse{
 		ID:         resp.ID,
 		Cur:        resp.Cur,

@@ -51,10 +51,10 @@ type snapshot struct {
 // Init ...initializes with following
 // 1. Determines the number of combinations to be generated
 // 2. Intializes the c.state values required for c.Next() and iteratoor
-func (c *PodDurationCombination) Init(config *openrtb_ext.VideoAdPod, durationAdsMap [][2]uint64) {
+func (c *PodDurationCombination) Init(podMinDuration, podMaxDuration uint64, config *openrtb_ext.VideoAdPod, durationAdsMap [][2]uint64) {
 
-	c.podMinDuration = uint64(*config.MinDuration)
-	c.podMaxDuration = uint64(*config.MaxDuration)
+	c.podMinDuration = podMinDuration
+	c.podMaxDuration = podMaxDuration
 	c.minAds = uint64(*config.MinAds)
 	c.maxAds = uint64(*config.MaxAds)
 

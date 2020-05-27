@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 )
@@ -58,4 +59,10 @@ func JLogf(msg string, obj interface{}) {
 		data, _ := json.Marshal(obj)
 		glog.Infof("[OPENWRAP] %v:%v", msg, string(data))
 	}
+}
+
+func TimeTrack(start time.Time, name string) {
+	elapsed := time.Since(start)
+	Logf("[TIMETRACK] %s took %s", name, elapsed)
+	//eg: defer TimeTrack(time.Now(), "factorial")
 }

@@ -24,13 +24,13 @@ type Combination struct {
 //  3. If  Combination contains repeatition for given duration then
 //     repeatitions are <= no of ads received for the duration
 // Use Get method to start getting valid combinations
-func NewCombination(buckets BidsBuckets, config *openrtb_ext.VideoAdPod) *Combination {
+func NewCombination(buckets BidsBuckets, podMinDuration, podMaxDuration uint64, config *openrtb_ext.VideoAdPod) *Combination {
 	generator := new(PodDurationCombination)
 	durationBidsCnts := make([][2]uint64, 0)
 	for duration, bids := range buckets {
 		durationBidsCnts = append(durationBidsCnts, [2]uint64{uint64(duration), uint64(len(bids))})
 	}
-	generator.Init(config, durationBidsCnts)
+	generator.Init(podMinDuration, podMaxDuration, config, durationBidsCnts)
 	return &Combination{
 		generator: *generator,
 		config:    config,
