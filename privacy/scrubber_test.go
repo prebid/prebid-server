@@ -252,7 +252,7 @@ func TestScrubUser(t *testing.T) {
 
 	testCases := []struct {
 		expected    *openrtb.User
-		demographic ScrubStrategyDemographic
+		user        ScrubStrategyUser
 		geo         ScrubStrategyGeo
 		description string
 	}{
@@ -265,8 +265,8 @@ func TestScrubUser(t *testing.T) {
 				Gender:   "",
 				Geo:      &openrtb.Geo{},
 			},
-			demographic: ScrubStrategyDemographicAgeAndGender,
-			geo:         ScrubStrategyGeoFull,
+			user: ScrubStrategyUserIDAndDemographic,
+			geo:  ScrubStrategyGeoFull,
 		},
 		{
 			description: "Demographic Age And Gender & Geo Reduced",
@@ -283,11 +283,11 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			demographic: ScrubStrategyDemographicAgeAndGender,
-			geo:         ScrubStrategyGeoReducedPrecision,
+			user: ScrubStrategyUserIDAndDemographic,
+			geo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "Demographic Age And Gender & Geo None",
+			description: "Demographic Full & Geo None",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -301,11 +301,11 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			demographic: ScrubStrategyDemographicAgeAndGender,
-			geo:         ScrubStrategyGeoNone,
+			user: ScrubStrategyUserIDAndDemographic,
+			geo:  ScrubStrategyGeoNone,
 		},
 		{
-			description: "Demographic None & Geo Full",
+			description: "Demographic Buyer ID & Geo Full",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -313,11 +313,11 @@ func TestScrubUser(t *testing.T) {
 				Gender:   "anyGender",
 				Geo:      &openrtb.Geo{},
 			},
-			demographic: ScrubStrategyDemographicNone,
-			geo:         ScrubStrategyGeoFull,
+			user: ScrubStrategyUserID,
+			geo:  ScrubStrategyGeoFull,
 		},
 		{
-			description: "Demographic None & Geo Reduced",
+			description: "Demographic Buyer ID & Geo Reduced",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -331,11 +331,29 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			demographic: ScrubStrategyDemographicNone,
-			geo:         ScrubStrategyGeoReducedPrecision,
+			user: ScrubStrategyUserID,
+			geo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
 			description: "Demographic None & Geo None",
+			expected: &openrtb.User{
+				ID:       "anyID",
+				BuyerUID: "anyBuyerUID",
+				Yob:      42,
+				Gender:   "anyGender",
+				Geo: &openrtb.Geo{
+					Lat:   123.456,
+					Lon:   678.89,
+					Metro: "some metro",
+					City:  "some city",
+					ZIP:   "some zip",
+				},
+			},
+			user: ScrubStrategyUserNone,
+			geo:  ScrubStrategyGeoNone,
+		},
+		{
+			description: "Demographic BuyerIDOnly & Geo None",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
@@ -349,19 +367,19 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			demographic: ScrubStrategyDemographicNone,
-			geo:         ScrubStrategyGeoNone,
+			user: ScrubStrategyUserID,
+			geo:  ScrubStrategyGeoNone,
 		},
 	}
 
 	for _, test := range testCases {
-		result := NewScrubber().ScrubUser(user, test.demographic, test.geo)
+		result := NewScrubber().ScrubUser(user, test.user, test.geo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
 func TestScrubUserNil(t *testing.T) {
-	result := NewScrubber().ScrubUser(nil, ScrubStrategyDemographicNone, ScrubStrategyGeoNone)
+	result := NewScrubber().ScrubUser(nil, ScrubStrategyUserNone, ScrubStrategyGeoNone)
 	assert.Nil(t, result)
 }
 
