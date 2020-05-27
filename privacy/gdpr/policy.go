@@ -25,10 +25,11 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 		req.User = &openrtb.User{}
 	}
 
-	var err error
-
 	if req.User.Ext == nil {
-		req.User.Ext, err = json.Marshal(openrtb_ext.ExtUser{Consent: p.Consent})
+		ext, err := json.Marshal(openrtb_ext.ExtUser{Consent: p.Consent})
+		if err == nil {
+			req.User.Ext = ext
+		}
 		return err
 	}
 
