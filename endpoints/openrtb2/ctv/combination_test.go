@@ -23,12 +23,8 @@ func TestCombination(t *testing.T) {
 	*config.MinAds = 2
 	config.MaxAds = new(int)
 	*config.MaxAds = 4
-	config.MinDuration = new(int)
-	*config.MinDuration = 30
-	config.MaxDuration = new(int)
-	*config.MaxDuration = 70
 
-	c := NewCombination(buckets, config)
+	c := NewCombination(buckets, 30, 70, config)
 
 	for true {
 		comb := c.generator.Next()

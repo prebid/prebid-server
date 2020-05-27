@@ -102,7 +102,7 @@ var testBidResponseMaxDurations = []struct {
 	}, {
 		scenario:             "TC16-50ads",
 		responseMaxDurations: [][2]uint64{{25, 2}, {30, 2}, {76, 2}, {10, 2}, {88, 2}},
-		podMinDuration:       200, podMaxDuration: 200, minAds: 10, maxAds: 50,
+		podMinDuration:       200, podMaxDuration: 200, minAds: 10, maxAds: 10, /*50*/
 	},
 }
 
@@ -138,10 +138,8 @@ func TestPodDurationCombinationGenerator(t *testing.T) {
 			config := new(openrtb_ext.VideoAdPod)
 			config.MinAds = &test.minAds
 			config.MaxAds = &test.maxAds
-			config.MinDuration = &test.podMinDuration
-			config.MaxDuration = &test.podMaxDuration
 
-			c.Init(config, test.responseMaxDurations)
+			c.Init(uint64(test.podMinDuration), uint64(test.podMaxDuration), config, test.responseMaxDurations)
 			expectedOutput := c.searchAll()
 			// determine expected size of expected output
 			// subtract invalid combinations size
