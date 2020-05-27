@@ -521,9 +521,21 @@ func TestShouldEnforce(t *testing.T) {
 			expected:    false,
 		},
 		{
+			description: "Not Enforceable - No Sale All Bidders Mixed With Specific Bidders",
+			bidder:      "a",
+			policy:      Policy{Value: "1-Y-", NoSaleBidders: []string{"b", "*", "c"}},
+			expected:    false,
+		},
+		{
 			description: "Not Enforceable - No Sale Specific Bidder",
 			bidder:      "a",
 			policy:      Policy{Value: "1-Y-", NoSaleBidders: []string{"a"}},
+			expected:    false,
+		},
+		{
+			description: "Not Enforceable - No Sale Specific Bidder Case Insensitive",
+			bidder:      "a",
+			policy:      Policy{Value: "1-Y-", NoSaleBidders: []string{"A"}},
 			expected:    false,
 		},
 		{
