@@ -55,7 +55,9 @@ func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *
 
 	imps := request.Imp
 	request.Imp = make([]openrtb.Imp, 0, len(imps))
-
+	if request.Device != nil && request.Test == 1 {
+		request.Device.IP = getIP(request.Device.IP)
+	}
 	for sourceId, impIds := range imp2source {
 		request.Imp = request.Imp[:0]
 
@@ -83,6 +85,13 @@ func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *
 
 	return reqs, errors
 
+}
+
+func getIP(ip string) string {
+	if ip == "" || ip == "::1" {
+		return "127.0.0.1"
+	}
+	return ip
 }
 
 func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
