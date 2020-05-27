@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -33,6 +34,10 @@ func (a *SmartadserverAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 
 	var adapterRequests []*adapters.RequestData
 	var errs []error
+
+	// We copy the original request, and we send one serialized "smartRequest" per impression of the original request.
+	smartRequest := *request
+
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -50,6 +55,20 @@ func (a *SmartadserverAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 			continue
 		}
 
+		// Adding publisher id.
+		if smartRequest.Site == nil {
+			smartRequest.Site = new(openrtb.Site)
+		}
+		if smartRequest.Site.Publisher == nil {
+			smartRequest.Site.Publisher = new(openrtb.Publisher)
+		}
+		smartRequest.Site.Publisher.ID = strconv.Itoa(smartadserverExt.NetworkID)
+
+		// We send one request for each impression.
+		var monoImp []openrtb.Imp
+		monoImp = append(monoImp, imp)
+		smartRequest.Imp = monoImp
+
 		var errMarshal error
 		if imp.Ext, errMarshal = json.Marshal(smartadserverExt); errMarshal != nil {
 			errs = append(errs, &errortypes.BadInput{
@@ -58,7 +77,7 @@ func (a *SmartadserverAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 			continue
 		}
 
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := json.Marshal(smartRequest)
 		if err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "Error parsing reqJSON object",
@@ -131,13 +150,14 @@ func (a *SmartadserverAdapter) BuildEndpointURL(params *openrtb_ext.ExtImpSmarta
 
 	uri, err := url.Parse(host)
 
-	if err != nil {
+	if err != nil || uri.Scheme == "" || uri.Host == "" {
 		return "", &errortypes.BadInput{
-			Message: "Malformed URL: " + err.Error(),
+			Message: "Malformed URL: " + host + ".",
 		}
 	}
 
-	uri.Path = path.Join(uri.Path, "api/prebidserver")
+	uri.Path = path.Join(uri.Path, "api/bid")
+	uri.RawQuery = "callerId=5"
 
 	return uri.String(), nil
 }
@@ -147,8 +167,6 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 		if imp.ID == impId {
 			if imp.Video != nil {
 				return openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
 			}
 			return openrtb_ext.BidTypeBanner
 		}

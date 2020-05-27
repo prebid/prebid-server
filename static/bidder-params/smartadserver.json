@@ -23,8 +23,17 @@
       "type": "integer",
       "description": "The format id.",
       "minimum": 1
+    },
+    "networkId": {
+      "type": "integer",
+      "description": "The network id.",
+      "minimum": 1
     }
   },
-
-  "required": ["pageId", "formatId"]
+  "dependencies": {
+    "siteId": { "required": ["pageId", "formatId"] },
+    "pageId": { "required": ["siteId", "formatId"] },
+    "formatId": { "required": ["siteId", "pageId"] }
+  },
+  "required": ["networkId"]
 }

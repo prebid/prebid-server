@@ -7,5 +7,5 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "smartadservertest", NewSmartadserverBidder("https://diff.smartadserver.com"))
+	adapterstest.RunJSONBidderTest(t, "smartadservertest", NewSmartadserverBidder("https://ssb.smartadserver.com"))
 }
