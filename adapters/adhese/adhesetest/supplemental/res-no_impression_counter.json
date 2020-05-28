@@ -1,6 +1,11 @@
 {
   "mockBidRequest": {
     "id": "test-req",
+    "user": {
+      "ext": {
+        "consent" : "dummy"
+      }
+    },
     "imp": [
       {
         "id": "test-req",
@@ -14,7 +19,7 @@
         },
         "ext": {
           "bidder": {
-            "account": "market",
+            "account": "demo",
             "location": "_adhese_prebid_demo_",
             "format": "leaderboard",
             "targets": 
@@ -31,45 +36,33 @@
       "id": "test",
       "publisher": {
         "id": "123"
-      },
-      "page": "dummy"
+      }
     }
   },
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads-market.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/ag55/cigent;brussels/tlall/xfdummy"
+        "uri": "https://ads-demo.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/ag55/cigent;brussels/tlall/xtdummy"
       },
       "mockResponse": {
         "status": 200,
         "body": [{
-          "origin": "APPNEXUS",
+          "origin": "JERLICIA",
           "originInstance": "",
           "ext": "js",
           "slotName": "_main_page_-leaderboard",
           "adType": "leaderboard",
-          "originData": {
-            "seatbid": [
-              {
-                "bid": [
-                  {
-                    "crid": "60613369",
-                    "dealid": null
-                  }
-                ],
-                "seat": "958"
-              }
-            ]
-          },
+          "orderId": "888",
+          "id": "60613369",
           "width": "728",
           "height": "90",
           "body": "<div style='background-color:red; height:250px; width:300px'></div>",
           "tracker": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
-          "impressionCounter": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
+          "impressionCounter": "",
           "extension": {
             "prebid": {
               "cpm": {
-                "amount": 10,
+                "amount": "1",
                 "currency": "USD"
               }
             }
@@ -78,14 +71,33 @@
       }
     }
   ],
-  "expectedBidResponses": [],
-    "expectedMakeBidsErrors": [
-      {
-        "value": "json: cannot unmarshal number into Go struct field CPMValues.*\\.amount of type string",
-        "comparison": "regex"
-      }, {
-        "value": "Response (.*\n.*)+ could not be parsed as generic Adhese bid",
-        "comparison": "regex"
-      }
-    ]
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "adm": "<div style='background-color:red; height:250px; width:300px'></div>",
+              "w": 728,
+              "h": 90,
+              "id": "",
+              "impid": "",
+              "price": 1.000000,
+              "dealid": "888",
+              "crid": "60613369",
+              "ext": {
+                    "adFormat": "",
+                    "adType": "leaderboard",
+                    "adspaceId": "",
+                    "libId": "",
+                    "orderProperty": "",
+                    "priority": "",
+                    "viewableImpressionCounter": ""
+                  }
+            },
+            "type": "banner"
+          }
+        ]
+    }
+  ]
 }
