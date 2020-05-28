@@ -18,7 +18,7 @@
     },
     "secure": {
       "type": "integer",
-      "description": "A flag that shows if fullscreen ads is requested. 0 = not interstitial ad, 1 = the ad is interstitial or full screen."
+      "description": "A flag that shows if the ads is secured. 0 = not secure uses http, 1 = the ad is secure uses https."
     }
   },
   "required": ["id","tagId","instl","secure"]
