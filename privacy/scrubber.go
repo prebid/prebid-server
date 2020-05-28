@@ -188,7 +188,7 @@ func scrubUserExtIDs(userExt json.RawMessage) json.RawMessage {
 		return userExt
 	}
 
-	var userExtParsed map[string]interface{}
+	var userExtParsed map[string]json.RawMessage
 	err := json.Unmarshal(userExt, &userExtParsed)
 	if err != nil {
 		return userExt
