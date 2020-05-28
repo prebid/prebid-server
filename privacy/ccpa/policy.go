@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -48,9 +47,14 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 		return err
 	}
 
-	jsonString, err := json.Marshal(p.Value)
+	var extMap map[string]interface{}
+	err := json.Unmarshal(req.Regs.Ext, &extMap)
 	if err == nil {
-		req.Regs.Ext, err = jsonparser.Set(req.Regs.Ext, jsonString, "us_privacy")
+		extMap["us_privacy"] = p.Value
+		ext, err := json.Marshal(extMap)
+		if err == nil {
+			req.Regs.Ext = ext
+		}
 	}
 	return err
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/go-gdpr/vendorconsent"
 )
@@ -33,9 +32,14 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 		return err
 	}
 
-	jsonString, err := json.Marshal(p.Consent)
+	var extMap map[string]interface{}
+	err := json.Unmarshal(req.User.Ext, &extMap)
 	if err == nil {
-		req.User.Ext, err = jsonparser.Set(req.User.Ext, jsonString, "consent")
+		extMap["consent"] = p.Consent
+		ext, err := json.Marshal(extMap)
+		if err == nil {
+			req.User.Ext = ext
+		}
 	}
 	return err
 }
