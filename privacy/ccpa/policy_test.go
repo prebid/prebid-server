@@ -29,7 +29,7 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "Empty - No Request",
+			description: "No Request",
 			request:     nil,
 			expectedPolicy: Policy{
 				Value:         "",
@@ -37,7 +37,7 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "Empty - No Regs",
+			description: "No Regs",
 			request: &openrtb.BidRequest{
 				Regs: nil,
 				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
@@ -48,7 +48,7 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "Empty - No Regs.Ext",
+			description: "No Regs.Ext",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{},
 				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
@@ -59,18 +59,33 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "Empty - No Regs.Ext Value",
+			description: "Empty Regs.Ext",
+			request: &openrtb.BidRequest{
+				Regs: &openrtb.Regs{
+					Ext: json.RawMessage(`{}`),
+				},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Value:         "",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "No Regs.Ext Value",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{
 					Ext: json.RawMessage(`{"anythingElse":"42"}`),
 				},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
 			expectedPolicy: Policy{
-				Value: "",
+				Value:         "",
+				NoSaleBidders: []string{"a", "b"},
 			},
 		},
 		{
-			description: "Empty - No Ext",
+			description: "No Ext",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{
 					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
@@ -83,7 +98,20 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "Empty - No Ext Value",
+			description: "Empty Ext",
+			request: &openrtb.BidRequest{
+				Regs: &openrtb.Regs{
+					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
+				},
+				Ext: json.RawMessage(`{}`),
+			},
+			expectedPolicy: Policy{
+				Value:         "ABC",
+				NoSaleBidders: nil,
+			},
+		},
+		{
+			description: "No Ext NoSale",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{
 					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
@@ -112,6 +140,16 @@ func TestRead(t *testing.T) {
 					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
 				},
 				Ext: json.RawMessage(`malformed`),
+			},
+			expectedError: true,
+		},
+		{
+			description: "Incorrect Ext.Prebid.NoSale Type",
+			request: &openrtb.BidRequest{
+				Regs: &openrtb.Regs{
+					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
+				},
+				Ext: json.RawMessage(`{"prebid":{"nosale":"wrongtype"}}`),
 			},
 			expectedError: true,
 		},
