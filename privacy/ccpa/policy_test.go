@@ -256,19 +256,19 @@ func TestWriteExt(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			description: "Nil",
+			description: "Nil NoSaleBidders",
 			policy:      Policy{NoSaleBidders: nil},
 			request:     &openrtb.BidRequest{},
 			expected:    &openrtb.BidRequest{},
 		},
 		{
-			description: "Empty",
+			description: "Empty NoSaleBidders",
 			policy:      Policy{NoSaleBidders: []string{}},
 			request:     &openrtb.BidRequest{},
 			expected:    &openrtb.BidRequest{},
 		},
 		{
-			description: "Values - Nil Ext",
+			description: "Nil Ext",
 			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
 			request: &openrtb.BidRequest{
 				Ext: nil,
@@ -278,7 +278,17 @@ func TestWriteExt(t *testing.T) {
 			},
 		},
 		{
-			description: "Values - Empty Prebid",
+			description: "Empty Ext",
+			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
+			request: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{}`),
+			},
+			expected: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a","b"]}}`),
+			},
+		},
+		{
+			description: "Empty Ext.Prebid",
 			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
 			request: &openrtb.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{}}`),
@@ -288,17 +298,27 @@ func TestWriteExt(t *testing.T) {
 			},
 		},
 		{
-			description: "Values - Existing - Persists Other Values",
+			description: "Existing Values In Ext",
 			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
 			request: &openrtb.BidRequest{
-				Ext: json.RawMessage(`{"prebid":{"supportdeals":true}}`),
+				Ext: json.RawMessage(`{"existing":true,"prebid":{}}`),
 			},
 			expected: &openrtb.BidRequest{
-				Ext: json.RawMessage(`{"prebid":{"supportdeals":true,"nosale":["a","b"]}}`),
+				Ext: json.RawMessage(`{"existing":true,"prebid":{"nosale":["a","b"]}}`),
 			},
 		},
 		{
-			description: "Values - Existing - Overwrites Same Value",
+			description: "Existing Values In Ext.Prebid",
+			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
+			request: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"existing":true}}`),
+			},
+			expected: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"existing":true,"nosale":["a","b"]}}`),
+			},
+		},
+		{
+			description: "Overwrite Existing In Ext.Prebid",
 			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
 			request: &openrtb.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"nosale":["1","2"]}}`),
@@ -308,10 +328,18 @@ func TestWriteExt(t *testing.T) {
 			},
 		},
 		{
-			description: "Values - Malformed",
+			description: "Malformed Ext",
 			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
 			request: &openrtb.BidRequest{
 				Ext: json.RawMessage(`malformed`),
+			},
+			expectedError: true,
+		},
+		{
+			description: "Invalid Ext.Prebid",
+			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
+			request: &openrtb.BidRequest{
+				Ext: json.RawMessage(`{"prebid":42}`),
 			},
 			expectedError: true,
 		},

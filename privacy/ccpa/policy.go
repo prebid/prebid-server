@@ -81,18 +81,39 @@ func (p Policy) writeExt(req *openrtb.BidRequest) error {
 		return nil
 	}
 
-	var ext openrtb_ext.ExtRequest
 	if len(req.Ext) == 0 {
-		ext = openrtb_ext.ExtRequest{}
-	} else {
-		err := json.Unmarshal(req.Ext, &ext)
+		ext := openrtb_ext.ExtRequest{}
+		ext.Prebid.NoSale = p.NoSaleBidders
+
+		extJSON, err := json.Marshal(ext)
 		if err != nil {
 			return err
 		}
+
+		req.Ext = extJSON
+		return nil
 	}
 
-	ext.Prebid.NoSale = p.NoSaleBidders
-	extJSON, err := json.Marshal(ext)
+	var extMap map[string]interface{}
+	if err := json.Unmarshal(req.Ext, &extMap); err != nil {
+		return err
+	}
+
+	var extMapPrebid map[string]interface{}
+	if v, exists := extMap["prebid"]; !exists {
+		extMapPrebid = make(map[string]interface{})
+		extMap["prebid"] = extMapPrebid
+	} else {
+		vCasted, ok := v.(map[string]interface{})
+		if !ok {
+			return errors.New("invalid data type for ext.prebid")
+		}
+		extMapPrebid = vCasted
+	}
+
+	extMapPrebid["nosale"] = p.NoSaleBidders
+
+	extJSON, err := json.Marshal(extMap)
 	if err != nil {
 		return err
 	}
