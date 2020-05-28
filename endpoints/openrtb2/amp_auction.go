@@ -71,6 +71,7 @@ func NewAmpEndpoint(
 		defRequest,
 		defReqJSON,
 		bidderMap,
+		nil,
 		nil}).AmpAuction), nil
 
 }
