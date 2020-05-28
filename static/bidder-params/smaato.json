@@ -4,11 +4,11 @@
   "description": "A schema which validates params accepted by the Smaato adapter",
   "type": "object",
   "properties": {
-    "id": {
+    "publisherId": {
       "type": "string",
       "description": "A unique identifier for this impression within the context of the bid request"
     },
-    "tagId": {
+    "adSpaceId": {
       "type": "string",
       "description": "Identifier for specific ad placement is SOMA `adSpaceId`"
     },
@@ -21,5 +21,5 @@
       "description": "A flag that shows if the ads is secured. 0 = not secure uses http, 1 = the ad is secure uses https."
     }
   },
-  "required": ["id","tagId","instl","secure"]
+  "required": ["publisherId","adSpaceId"]
 }

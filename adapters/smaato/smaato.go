@@ -142,21 +142,19 @@ func parseImpressionObject(imp *openrtb.Imp) error {
 			return err
 		}
 
-		tagId := smaatoExt.TagId
-		id := smaatoExt.Id
+		tagId := smaatoExt.AdSpaceId
+		id := smaatoExt.PublisherId
 		instl := smaatoExt.Instl
 		secure := smaatoExt.Secure
 
-		if tagId != "" && id != "" && instl >= 0 && secure != nil {
+		if tagId != "" && id != "" {
 			imp.ID = id
 			imp.TagID = tagId
+			imp.Ext = nil
+		}
+		if instl >= 0 && secure != nil {
 			imp.Instl = instl
 			imp.Secure = secure
-
-			imp.Banner.Format = nil
-			imp.Ext = nil
-		} else {
-			return fmt.Errorf("Invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
 		}
 		return nil
 	}
@@ -193,7 +191,6 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 				Bid:     &bid,
 				BidType: getBidType(bid.Ext),
 			})
-
 		}
 	}
 	return bidResponse, errs
