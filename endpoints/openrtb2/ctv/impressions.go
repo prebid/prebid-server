@@ -2,7 +2,6 @@
 package ctv
 
 import (
-	"log"
 	"math"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
@@ -45,7 +44,7 @@ func init0(podMinDuration, podMaxDuration int64, vPod openrtb_ext.VideoAdPod) ad
 	if config.requestedPodMinDuration == config.requestedPodMaxDuration {
 		/*TestCase 16*/
 		Logf("requestedPodMinDuration = requestedPodMaxDuration = %v\n", config.requestedPodMinDuration)
-		config.podMinDuration = getClosetFactor(config.requestedPodMinDuration, multipleOf)
+		config.podMinDuration = config.requestedPodMinDuration
 		config.podMaxDuration = config.podMinDuration
 	} else {
 		config.podMinDuration = getClosetFactorForMinDuration(config.requestedPodMinDuration, multipleOf)
@@ -54,7 +53,8 @@ func init0(podMinDuration, podMaxDuration int64, vPod openrtb_ext.VideoAdPod) ad
 
 	if config.requestedSlotMinDuration == config.requestedSlotMaxDuration {
 		/*TestCase 30*/
-		config.slotMinDuration = getClosetFactor(config.requestedSlotMinDuration, multipleOf)
+		Logf("requestedSlotMinDuration = requestedSlotMaxDuration = %v\n", config.requestedPodMinDuration)
+		config.slotMinDuration = config.requestedSlotMinDuration
 		config.slotMaxDuration = config.slotMinDuration
 	} else {
 		config.slotMinDuration = getClosetFactorForMinDuration(int64(config.requestedSlotMinDuration), multipleOf)
@@ -110,7 +110,7 @@ func getImpressions(podMinDuration, podMaxDuration int64, vPod openrtb_ext.Video
 	for time < cfg.requestedPodMaxDuration {
 		adjustedTime, slotsFull := cfg.addTime(timeForEachSlot, fillZeroSlotsOnPriority)
 		time += adjustedTime
-		timeForEachSlot = computeTimeLeastValue(cfg.requestedPodMaxDuration - time)
+		timeForEachSlot = computeTimeLeastValue(cfg.requestedPodMaxDuration-time, cfg.requestedSlotMaxDuration-timeForEachSlot)
 		if slotsFull {
 			Logf("All slots are full of their capacity. validating slots\n")
 			break
@@ -135,7 +135,7 @@ func getImpressions(podMinDuration, podMaxDuration int64, vPod openrtb_ext.Video
 	// also check algoritm computed the no. of ads
 	if cfg.requestedPodMaxDuration-time > 0 && len(cfg.Slots) > 0 {
 		cfg.freeTime = cfg.requestedPodMaxDuration - time
-		log.Println("TO STATS SERVER : Free Time not allocated ", cfg.freeTime, "sec")
+		Logf("TO STATS SERVER : Free Time not allocated %v sec", cfg.freeTime)
 	}
 
 	Logf("\nTotal Impressions = %v, Total Allocated Time = %v sec (out of %v sec, Max Pod Duration)\n%v", len(cfg.Slots), *cfg.totalSlotTime, cfg.requestedPodMaxDuration, cfg.Slots)
@@ -191,6 +191,25 @@ func computeTimeForEachAdSlot(cfg adPodConfig, totalAds int64) int64 {
 		Logf("Computed timeForEachSlot > requested  slotMaxDuration (%v). Hence, setting timeForEachSlot =  slotMaxDuration = %v\n", cfg.slotMaxDuration, timeForEachSlot)
 	}
 
+	// Case - Exact slot duration is given. No scope for finding multiples
+	// of given number. Prefer to return computed timeForEachSlot
+	// In such case timeForEachSlot no necessarily to be multiples of given number
+	if cfg.requestedSlotMinDuration == cfg.requestedSlotMaxDuration {
+		Logf("requestedSlotMinDuration = requestedSlotMinDuration = %v. Hence, not computing multiples of %v value.", cfg.requestedSlotMaxDuration, multipleOf)
+		return timeForEachSlot
+	}
+
+	// Case - adjusted timeForEachSlot may be pushed to and fro by
+	// slot min and max duration (multiples of given number)
+	// In such case prefer to return cfg.podMaxDuration / totalAds
+	// In such case timeForEachSlot no necessarily to be multiples of given number
+	if timeForEachSlot < cfg.slotMinDuration || timeForEachSlot > cfg.slotMaxDuration {
+		Logf("timeForEachSlot (%v) < cfg.slotMinDuration (%v) || timeForEachSlot (%v) > cfg.slotMaxDuration (%v)", timeForEachSlot, cfg.slotMinDuration, timeForEachSlot, cfg.slotMaxDuration)
+		Logf("Hence, not computing multiples of %v value.", multipleOf)
+		// need that division again
+		return cfg.podMaxDuration / totalAds
+	}
+
 	// ensure timeForEachSlot is multipleof given number
 	if !isMultipleOf(timeForEachSlot, multipleOf) {
 		// get close to value of multiple
@@ -207,8 +226,9 @@ func computeTimeForEachAdSlot(cfg adPodConfig, totalAds int64) int64 {
 // this will ensure eack slot to maximize its time if possible
 // if multipleOf can not be used as least value then default input value is returned as is
 // accepts time containing, which least value to be computed.
+// leastTimeRequiredByEachSlot - indicates the mimimum time that any slot can accept (UOE-5268)
 // Returns the least value based on multiple of X
-func computeTimeLeastValue(time int64) int64 {
+func computeTimeLeastValue(time int64, leastTimeRequiredByEachSlot int64) int64 {
 	// time if Testcase#6
 	// 1. multiple of x - get smallest factor N of multiple of x for time
 	// 2. not multiple of x - try to obtain smallet no N multipe of x
@@ -216,7 +236,14 @@ func computeTimeLeastValue(time int64) int64 {
 	leastFactor := multipleOf
 	if leastFactor < time {
 		time = leastFactor
+
+		// case:  check if slots are looking for time < leastFactor
+		// UOE-5268
+		if leastTimeRequiredByEachSlot < leastFactor {
+			time = leastTimeRequiredByEachSlot
+		}
 	}
+
 	return time
 }
 
@@ -319,12 +346,12 @@ func (config adPodConfig) addTime(timeForEachSlot int64, fillZeroSlotsOnPriority
 		// 1. time(slot(0)) <= config.SlotMaxDuration
 		// 2. if adding new time  to slot0 not exeeding config.SlotMaxDuration
 		// 3. if sum(slot time) +  timeForEachSlot  <= config.RequestedPodMaxDuration
-		canAdjustTime := (slot[0]+timeForEachSlot) <= config.requestedSlotMaxDuration && (slot[0]+timeForEachSlot) >= config.requestedSlotMinDuration
+		canAdjustTime := (slot[1]+timeForEachSlot) <= config.requestedSlotMaxDuration && (slot[1]+timeForEachSlot) >= config.requestedSlotMinDuration
 		totalSlotTimeWithNewTimeLessThanRequestedPodMaxDuration := *config.totalSlotTime+timeForEachSlot <= config.requestedPodMaxDuration
 
 		// if fillZeroSlotsOnPriority= true ensure current slot value =  0
-		allowCurrentSlot := !fillZeroSlotsOnPriority || (fillZeroSlotsOnPriority && slot[0] == 0)
-		if slot[0] <= config.slotMaxDuration && canAdjustTime && totalSlotTimeWithNewTimeLessThanRequestedPodMaxDuration && allowCurrentSlot {
+		allowCurrentSlot := !fillZeroSlotsOnPriority || (fillZeroSlotsOnPriority && slot[1] == 0)
+		if slot[1] <= config.slotMaxDuration && canAdjustTime && totalSlotTimeWithNewTimeLessThanRequestedPodMaxDuration && allowCurrentSlot {
 			slot[0] += timeForEachSlot
 
 			// if we are adjusting the free time which will match up with config.RequestedPodMaxDuration
@@ -349,7 +376,8 @@ func (config adPodConfig) addTime(timeForEachSlot int64, fillZeroSlotsOnPriority
 		}
 		// check slot capabity
 		// !canAdjustTime - TestCase18
-		if slot[1] == config.slotMaxDuration || !canAdjustTime {
+		// UOE-5268 - Check with Requested Slot Max Duration
+		if slot[1] == config.requestedSlotMaxDuration || !canAdjustTime {
 			// slot is full
 			slotCountFullWithCapacity++
 		}

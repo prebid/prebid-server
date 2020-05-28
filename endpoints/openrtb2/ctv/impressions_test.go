@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -155,8 +156,8 @@ var impressionsTests = []struct {
 	}},
 	{scenario: "TC14", in: []int{30, 60, 5, 9, 1, 6}, out: Expected{
 		impressionCount: 6,
-		freeTime:        30,
-		output:          [][2]int64{{5, 5}, {5, 5}, {5, 5}, {5, 5}, {5, 5}, {5, 5}},
+		freeTime:        6,
+		output:          [][2]int64{{5, 9}, {5, 9}, {5, 9}, {5, 9}, {5, 9}, {5, 9}},
 
 		closedMinDuration:     30,
 		closedMaxDuration:     60,
@@ -164,9 +165,9 @@ var impressionsTests = []struct {
 		closedSlotMaxDuration: 5,
 	}},
 	{scenario: "TC15", in: []int{30, 60, 5, 9, 1, 5}, out: Expected{
-		impressionCount: 0,
-		freeTime:        60,
-		output:          [][2]int64{},
+		impressionCount: 5,
+		freeTime:        15,
+		output:          [][2]int64{{5, 9}, {5, 9}, {5, 9}, {5, 9}, {5, 9}},
 
 		closedMinDuration:     30,
 		closedMaxDuration:     60,
@@ -176,17 +177,17 @@ var impressionsTests = []struct {
 	{scenario: "TC16", in: []int{126, 126, 1, 12, 7, 13}, out: Expected{
 		impressionCount: 13,
 		freeTime:        0,
-		output:          [][2]int64{{1, 11}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {5, 5}},
+		output:          [][2]int64{{1, 12}, {1, 12}, {1, 12}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}},
 
-		closedMinDuration:     125,
-		closedMaxDuration:     125,
+		closedMinDuration:     126,
+		closedMaxDuration:     126,
 		closedSlotMinDuration: 5,
 		closedSlotMaxDuration: 10,
 	}},
 	{scenario: "TC17", in: []int{127, 128, 1, 12, 7, 13}, out: Expected{
 		impressionCount: 13,
 		freeTime:        0,
-		output:          [][2]int64{{10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {1, 8}},
+		output:          [][2]int64{{1, 12}, {1, 12}, {1, 12}, {1, 12}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}},
 
 		closedMinDuration:     130,
 		closedMaxDuration:     125,
@@ -200,8 +201,8 @@ var impressionsTests = []struct {
 
 		closedMinDuration:     125,
 		closedMaxDuration:     125,
-		closedSlotMinDuration: 5,
-		closedSlotMaxDuration: 5,
+		closedSlotMinDuration: 4,
+		closedSlotMaxDuration: 4,
 	}},
 	{scenario: "TC19", in: []int{90, 90, 7, 9, 3, 5}, out: Expected{
 		impressionCount: 0,
@@ -225,8 +226,8 @@ var impressionsTests = []struct {
 	}},
 	{scenario: "TC21", in: []int{2, 170, 3, 9, 4, 9}, out: Expected{
 		impressionCount: 9,
-		freeTime:        125,
-		output:          [][2]int64{{5, 5}, {5, 5}, {5, 5}, {5, 5}, {5, 5}, {5, 5}, {5, 5}, {5, 5}, {5, 5}},
+		freeTime:        89,
+		output:          [][2]int64{{3, 9}, {3, 9}, {3, 9}, {3, 9}, {3, 9}, {3, 9}, {3, 9}, {3, 9}, {3, 9}},
 
 		closedMinDuration:     5,
 		closedMaxDuration:     170,
@@ -248,8 +249,8 @@ var impressionsTests = []struct {
 		freeTime:        0,
 		output:          [][2]int64{{60, 69}, {65, 65}},
 
-		closedMinDuration:     135,
-		closedMaxDuration:     135,
+		closedMinDuration:     134,
+		closedMaxDuration:     134,
 		closedSlotMinDuration: 60,
 		closedSlotMaxDuration: 90,
 	}},
@@ -257,8 +258,8 @@ var impressionsTests = []struct {
 		impressionCount:       2,
 		freeTime:              0,
 		output:                [][2]int64{{1, 68}, {20, 20}},
-		closedMinDuration:     90,
-		closedMaxDuration:     90,
+		closedMinDuration:     88,
+		closedMaxDuration:     88,
 		closedSlotMinDuration: 5,
 		closedSlotMaxDuration: 80,
 	}},
@@ -304,37 +305,37 @@ var impressionsTests = []struct {
 		freeTime:        123,
 		output:          [][2]int64{},
 
-		closedMinDuration:     125,
-		closedMaxDuration:     125,
-		closedSlotMinDuration: 35,
-		closedSlotMaxDuration: 35,
+		closedMinDuration:     123,
+		closedMaxDuration:     123,
+		closedSlotMinDuration: 34,
+		closedSlotMaxDuration: 34,
 	}},
 	{scenario: "TC31", in: []int{123, 123, 31, 31, 3, 3}, out: Expected{
 		impressionCount: 3,
 		freeTime:        123,
 		output:          [][2]int64{},
 
-		closedMinDuration:     125,
-		closedMaxDuration:     125,
-		closedSlotMinDuration: 30,
-		closedSlotMaxDuration: 30,
+		closedMinDuration:     123,
+		closedMaxDuration:     123,
+		closedSlotMinDuration: 31,
+		closedSlotMaxDuration: 31,
 	}}, {scenario: "TC32", in: []int{134, 134, 63, 63, 2, 3}, out: Expected{
 		impressionCount: 0,
 		freeTime:        134,
 		output:          [][2]int64{},
 
-		closedMinDuration:     135,
-		closedMaxDuration:     135,
-		closedSlotMinDuration: 65,
-		closedSlotMaxDuration: 65,
+		closedMinDuration:     134,
+		closedMaxDuration:     134,
+		closedSlotMinDuration: 63,
+		closedSlotMaxDuration: 63,
 	}},
 	{scenario: "TC33", in: []int{147, 147, 30, 60, 4, 6}, out: Expected{
 		impressionCount: 4,
 		freeTime:        0,
 		output:          [][2]int64{{30, 42}, {35, 35}, {35, 35}, {35, 35}},
 
-		closedMinDuration:     145,
-		closedMaxDuration:     145,
+		closedMinDuration:     147,
+		closedMaxDuration:     147,
 		closedSlotMinDuration: 30,
 		closedSlotMaxDuration: 60,
 	}},
@@ -411,23 +412,23 @@ var impressionsTests = []struct {
 		closedSlotMinDuration: 5,
 		closedSlotMaxDuration: 45,
 	}}, {scenario: "TC42", in: []int{1, 1, 1, 1, 1, 1}, out: Expected{
-		impressionCount: 0,
+		impressionCount: 1,
 		freeTime:        0,
-		output:          [][2]int64{},
+		output:          [][2]int64{{1, 1}},
 
-		closedMinDuration:     0,
-		closedMaxDuration:     0,
-		closedSlotMinDuration: 0,
-		closedSlotMaxDuration: 0,
+		closedMinDuration:     1,
+		closedMaxDuration:     1,
+		closedSlotMinDuration: 1,
+		closedSlotMaxDuration: 1,
 	}}, {scenario: "TC43", in: []int{2, 2, 2, 2, 2, 2}, out: Expected{
 		impressionCount: 0,
-		freeTime:        0,
+		freeTime:        2,
 		output:          [][2]int64{},
 
-		closedMinDuration:     0,
-		closedMaxDuration:     0,
-		closedSlotMinDuration: 0,
-		closedSlotMaxDuration: 0,
+		closedMinDuration:     2,
+		closedMaxDuration:     2,
+		closedSlotMinDuration: 2,
+		closedSlotMaxDuration: 2,
 	}}, {scenario: "TC44", in: []int{0, 0, 0, 0, 0, 0}, out: Expected{
 		impressionCount: 0,
 		freeTime:        0,
@@ -451,10 +452,65 @@ var impressionsTests = []struct {
 		freeTime:        0,
 		output:          [][2]int64{},
 
-		closedMinDuration:     0,
-		closedMaxDuration:     0,
-		closedSlotMinDuration: 0,
-		closedSlotMaxDuration: 0,
+		closedMinDuration:     -1,
+		closedMaxDuration:     -1,
+		closedSlotMinDuration: -1,
+		closedSlotMaxDuration: -1,
+	}}, {scenario: "TC47", in: []int{6, 6, 6, 6, 1, 1}, out: Expected{
+		impressionCount: 1,
+		freeTime:        0,
+		output:          [][2]int64{{6, 6}},
+
+		closedMinDuration:     6,
+		closedMaxDuration:     6,
+		closedSlotMinDuration: 6,
+		closedSlotMaxDuration: 6,
+	}}, {scenario: "TC48", in: []int{12, 12, 6, 6, 1, 2}, out: Expected{
+		impressionCount: 2,
+		freeTime:        0,
+		output:          [][2]int64{{6, 6}, {6, 6}},
+
+		closedMinDuration:     12,
+		closedMaxDuration:     12,
+		closedSlotMinDuration: 6,
+		closedSlotMaxDuration: 6,
+	}}, {scenario: "TC49", in: []int{12, 12, 7, 7, 1, 2}, out: Expected{
+		impressionCount: 0,
+		freeTime:        12,
+		output:          [][2]int64{},
+
+		closedMinDuration:     12,
+		closedMaxDuration:     12,
+		closedSlotMinDuration: 7,
+		closedSlotMaxDuration: 7,
+	}}, {scenario: "TC50", in: []int{1, 1, 1, 1, 1, 1}, out: Expected{
+		impressionCount: 0,
+		freeTime:        0,
+		output:          [][2]int64{{1, 1}},
+
+		closedMinDuration:     1,
+		closedMaxDuration:     1,
+		closedSlotMinDuration: 1,
+		closedSlotMaxDuration: 1,
+	}}, {scenario: "TC51", in: []int{31, 43, 11, 13, 2, 3}, out: Expected{
+		impressionCount: 3,
+		freeTime:        4,
+		output:          [][2]int64{{13, 13}, {13, 13}, {13, 13}},
+
+		closedMinDuration:     35,
+		closedMaxDuration:     40,
+		closedSlotMinDuration: 15,
+		closedSlotMaxDuration: 10,
+	}},
+	{scenario: "TC52", in: []int{68, 72, 12, 18, 2, 4}, out: Expected{
+		impressionCount: 3,
+		freeTime:        0,
+		output:          [][2]int64{{12, 18}, {12, 18}, {12, 18}, {12, 18}},
+
+		closedMinDuration:     70,
+		closedMaxDuration:     70,
+		closedSlotMinDuration: 15,
+		closedSlotMaxDuration: 15,
 	}},
 }
 
