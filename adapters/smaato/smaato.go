@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -12,7 +11,6 @@ import (
 	"net/http"
 )
 
-const MAX_IMPRESSIONS_SMAATO = 30
 const bidTypeExtKey = "BidType"
 
 type SmaatoAdapter struct {
@@ -29,10 +27,6 @@ func (a *SmaatoAdapter) SkipNoCookies() bool {
 	return false
 }
 
-const (
-	INVALID_PARAMS = "Invalid BidParam"
-)
-
 type smaatoSize struct {
 	w uint16
 	h uint16
@@ -43,17 +37,11 @@ var smaatoSizeMap = map[smaatoSize]int{
 	{w: 320, h: 250}: 2,
 }
 
-func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...interface{}) string {
-	return fmt.Sprintf("[SMAATO] ReqID [%s] PubID [%s] AdUnit [%s] BidID [%s] %s \n",
-		tID, pubId, adUnitId, bidID, details)
-}
-
 func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var err error
 	publisherId := ""
-	//instl :="
 
 	if request.Site != nil {
 		siteCopy := *request.Site
@@ -158,7 +146,7 @@ func parseImpressionObject(imp *openrtb.Imp) error {
 		}
 		return nil
 	}
-	return fmt.Errorf("Invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
+	return fmt.Errorf("invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
 }
 
 func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -173,7 +161,7 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
 	var bidResp openrtb.BidResponse
@@ -222,20 +210,6 @@ func getBidType(bidExt json.RawMessage) openrtb_ext.BidType {
 		}
 	}
 	return bidType
-}
-
-func logf(msg string, args ...interface{}) {
-	if glog.V(2) {
-		glog.Infof(msg, args...)
-	}
-}
-
-func NewSmaatoAdapter(config *adapters.HTTPAdapterConfig, uri string) *SmaatoAdapter {
-	a := adapters.NewHTTPAdapter(config)
-	return &SmaatoAdapter{
-		http: a,
-		URI:  uri,
-	}
 }
 
 func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
