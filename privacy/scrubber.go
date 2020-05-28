@@ -105,9 +105,9 @@ func (scrubber) ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo Sc
 	case ScrubStrategyUserIDAndDemographic:
 		userCopy.BuyerUID = ""
 		userCopy.ID = ""
+		userCopy.Ext = scrubUserExtIDs(userCopy.Ext)
 		userCopy.Yob = 0
 		userCopy.Gender = ""
-		userCopy.Ext = scrubUserExtIDs(userCopy.Ext)
 	case ScrubStrategyUserID:
 		userCopy.BuyerUID = ""
 		userCopy.ID = ""

@@ -636,6 +636,11 @@ func TestScrubUserExtIDs(t *testing.T) {
 			expected:    json.RawMessage(`{"anyExisting":42}`),
 		},
 		{
+			description: "Remove eids + digitrust - With Other Nested Data",
+			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}],"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
+		},
+		{
 			description: "Remove eids Only",
 			userExt:     json.RawMessage(`{"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
 			expected:    json.RawMessage(`{}`),
@@ -651,6 +656,11 @@ func TestScrubUserExtIDs(t *testing.T) {
 			expected:    json.RawMessage(`{"anyExisting":42}`),
 		},
 		{
+			description: "Remove eids Only - With Other Nested Data",
+			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
+			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
+		},
+		{
 			description: "Remove digitrust Only",
 			userExt:     json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
 			expected:    json.RawMessage(`{}`),
@@ -659,6 +669,11 @@ func TestScrubUserExtIDs(t *testing.T) {
 			description: "Remove digitrust Only - With Other Data",
 			userExt:     json.RawMessage(`{"anyExisting":42,"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
 			expected:    json.RawMessage(`{"anyExisting":42}`),
+		},
+		{
+			description: "Remove digitrust Only - With Other Nested Data",
+			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
 		},
 	}
 
