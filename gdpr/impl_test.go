@@ -246,7 +246,6 @@ var tcf2Config = config.GDPR{
 		Enabled:         true,
 		Purpose1:        config.PurposeDetail{Enabled: true},
 		Purpose2:        config.PurposeDetail{Enabled: true},
-		Purpose4:        config.PurposeDetail{Enabled: true},
 		Purpose7:        config.PurposeDetail{Enabled: true},
 		SpecialPurpose1: config.PurposeDetail{Enabled: true},
 	},

@@ -150,9 +150,6 @@ func (p *permissionsImpl) allowPITCF2(parsedConsent api.VendorConsents, vendor a
 	if p.cfg.TCF2.Purpose2.Enabled {
 		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.BasicAdserving)
 	}
-	if p.cfg.TCF2.Purpose4.Enabled {
-		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.PersonalizationSelection)
-	}
 	if p.cfg.TCF2.Purpose7.Enabled {
 		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.AdPerformance)
 	}

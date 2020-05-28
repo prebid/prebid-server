@@ -171,7 +171,6 @@ type TCF2 struct {
 	Enabled             bool                 `mapstructure:"enabled"`
 	Purpose1            PurposeDetail        `mapstructure:"purpose1"`
 	Purpose2            PurposeDetail        `mapstructure:"purpose2"`
-	Purpose4            PurposeDetail        `mapstructure:"purpose4"`
 	Purpose7            PurposeDetail        `mapstructure:"purpose7"`
 	SpecialPurpose1     PurposeDetail        `mapstructure:"special_purpose1"`
 	PurposeOneTreatment PurposeOneTreatement `mapstructure:"purpose_one_treatement"`
