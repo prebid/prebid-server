@@ -220,7 +220,11 @@ func convertAdheseOpenRtbBid(adheseBid AdheseBid) openrtb.BidResponse {
 func getAdMarkup(adheseBid AdheseBid, adheseExt AdheseExt) string {
 	if adheseExt.Ext == "js" {
 		if ContainsAny(adheseBid.Body, []string{"<script", "<div", "<html"}) {
-			return adheseBid.Body + "<img src='" + adheseExt.ImpressionCounter + "' style='height:1px; width:1px; margin: -1px -1px; display:none;'/>"
+			counter := ""
+			if len(adheseExt.ImpressionCounter) > 0 {
+				counter = "<img src='" + adheseExt.ImpressionCounter + "' style='height:1px; width:1px; margin: -1px -1px; display:none;'/>"
+			}
+			return adheseBid.Body + counter
 		}
 		if ContainsAny(adheseBid.Body, []string{"<?xml", "<vast"}) {
 			return adheseBid.Body
