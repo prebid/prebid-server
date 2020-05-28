@@ -96,7 +96,7 @@
           "dnt": 1,
           "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.8.0",
+          "adapterVersion": "0.9.0",
           "user": {
             "buyeruid": "some-buyer",
             "id": "some-user"

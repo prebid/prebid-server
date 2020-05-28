@@ -38,19 +38,19 @@ const (
 type ScrubStrategyUser int
 
 const (
-	// ScrubStrategyUserNone does not remove user data.
+	// ScrubStrategyUserNone does not remove non-location data.
 	ScrubStrategyUserNone ScrubStrategyUser = iota
 
-	// ScrubStrategyUserFull removes the user's buyer id, exchange id year of birth, and gender.
-	ScrubStrategyUserFull
+	// ScrubStrategyUserIDAndDemographic removes the user's buyer id, exchange id year of birth, and gender.
+	ScrubStrategyUserIDAndDemographic
 
-	// ScrubStrategyUserBuyerIDOnly removes the user's buyer id.
-	ScrubStrategyUserBuyerIDOnly
+	// ScrubStrategyUserID removes the user's buyer id.
+	ScrubStrategyUserID
 )
 
 // Scrubber removes PII from parts of an OpenRTB request.
 type Scrubber interface {
-	ScrubDevice(device *openrtb.Device, macAndIFA bool, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device
+	ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device
 	ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb.User
 }
 
@@ -61,24 +61,20 @@ func NewScrubber() Scrubber {
 	return scrubber{}
 }
 
-func (scrubber) ScrubDevice(device *openrtb.Device, macAndIFA bool, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
+func (scrubber) ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
 	if device == nil {
 		return nil
 	}
 
 	deviceCopy := *device
-
 	deviceCopy.DIDMD5 = ""
 	deviceCopy.DIDSHA1 = ""
 	deviceCopy.DPIDMD5 = ""
 	deviceCopy.DPIDSHA1 = ""
+	deviceCopy.IFA = ""
+	deviceCopy.MACMD5 = ""
+	deviceCopy.MACSHA1 = ""
 	deviceCopy.IP = scrubIPV4(device.IP)
-
-	if macAndIFA {
-		deviceCopy.MACSHA1 = ""
-		deviceCopy.MACMD5 = ""
-		deviceCopy.IFA = ""
-	}
 
 	switch ipv6 {
 	case ScrubStrategyIPV6Lowest16:
@@ -105,13 +101,14 @@ func (scrubber) ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo Sc
 	userCopy := *user
 
 	switch strategy {
-	case ScrubStrategyUserFull:
+	case ScrubStrategyUserIDAndDemographic:
 		userCopy.BuyerUID = ""
 		userCopy.ID = ""
 		userCopy.Yob = 0
 		userCopy.Gender = ""
-	case ScrubStrategyUserBuyerIDOnly:
+	case ScrubStrategyUserID:
 		userCopy.BuyerUID = ""
+		userCopy.ID = ""
 	}
 
 	switch geo {
@@ -169,13 +166,7 @@ func scrubGeoFull(geo *openrtb.Geo) *openrtb.Geo {
 		return nil
 	}
 
-	geoCopy := *geo
-	geoCopy.Lat = 0
-	geoCopy.Lon = 0
-	geoCopy.Metro = ""
-	geoCopy.City = ""
-	geoCopy.ZIP = ""
-	return &geoCopy
+	return &openrtb.Geo{}
 }
 
 func scrubGeoPrecision(geo *openrtb.Geo) *openrtb.Geo {
