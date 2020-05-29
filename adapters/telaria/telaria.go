@@ -77,7 +77,6 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("X-Openrtb-Version", "2.5")
-	/*headers.Add("Accept-Encoding", "gzip")*/
 
 	if request.Device != nil {
 		if len(request.Device.UA) > 0 {
