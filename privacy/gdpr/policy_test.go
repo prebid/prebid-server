@@ -42,7 +42,7 @@ func TestWrite(t *testing.T) {
 			request: &openrtb.BidRequest{User: &openrtb.User{
 				Ext: json.RawMessage(`{"existing":"any"}`)}},
 			expected: &openrtb.BidRequest{User: &openrtb.User{
-				Ext: json.RawMessage(`{"existing":"any","consent":"anyConsent"}`)}},
+				Ext: json.RawMessage(`{"consent":"anyConsent","existing":"any"}`)}},
 		},
 		{
 			description: "Enabled With Existing Request User Ext Object - Overwrites",
@@ -50,7 +50,7 @@ func TestWrite(t *testing.T) {
 			request: &openrtb.BidRequest{User: &openrtb.User{
 				Ext: json.RawMessage(`{"existing":"any","consent":"toBeOverwritten"}`)}},
 			expected: &openrtb.BidRequest{User: &openrtb.User{
-				Ext: json.RawMessage(`{"existing":"any","consent":"anyConsent"}`)}},
+				Ext: json.RawMessage(`{"consent":"anyConsent","existing":"any"}`)}},
 		},
 		{
 			description: "Enabled With Existing Malformed Request User Ext Object",
@@ -58,6 +58,32 @@ func TestWrite(t *testing.T) {
 			request: &openrtb.BidRequest{User: &openrtb.User{
 				Ext: json.RawMessage(`malformed`)}},
 			expectedError: true,
+		},
+		{
+			description: "Injection Attack With Nil Request User Object",
+			policy:      Policy{Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request:     &openrtb.BidRequest{},
+			expected: &openrtb.BidRequest{User: &openrtb.User{
+				Ext: json.RawMessage(`{"consent":"BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+			}},
+		},
+		{
+			description: "Injection Attack With Nil Request User Ext Object",
+			policy:      Policy{Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request:     &openrtb.BidRequest{User: &openrtb.User{}},
+			expected: &openrtb.BidRequest{User: &openrtb.User{
+				Ext: json.RawMessage(`{"consent":"BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+			}},
+		},
+		{
+			description: "Injection Attack With Existing Request User Ext Object",
+			policy:      Policy{Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request: &openrtb.BidRequest{User: &openrtb.User{
+				Ext: json.RawMessage(`{"existing":"any"}`),
+			}},
+			expected: &openrtb.BidRequest{User: &openrtb.User{
+				Ext: json.RawMessage(`{"consent":"BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"","existing":"any"}`),
+			}},
 		},
 	}
 

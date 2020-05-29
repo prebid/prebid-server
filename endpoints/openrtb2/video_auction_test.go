@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -989,10 +990,15 @@ func TestHandleErrorDebugLog(t *testing.T) {
 	err1 := errors.New("Error for testing handleError 1")
 	err2 := errors.New("Error for testing handleError 2")
 	debugLog := exchange.DebugLog{
-		EnableDebug: true,
-		CacheType:   prebid_cache_client.TypeXML,
-		Data:        "test debug data",
-		TTL:         int64(3600),
+		Enabled:   true,
+		CacheType: prebid_cache_client.TypeXML,
+		Data: exchange.DebugData{
+			Request:  "test request string",
+			Headers:  "test headers string",
+			Response: "test response string",
+		},
+		TTL:    int64(3600),
+		Regexp: regexp.MustCompile(`[<>]`),
 	}
 	handleError(&labels, recorder, []error{err1, err2}, &vo, &debugLog)
 
@@ -1047,6 +1053,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *p
 		[]byte{},
 		openrtb_ext.BidderMap,
 		nil,
+		nil,
 	}
 
 	return edep, theMetrics, mockModule
@@ -1087,6 +1094,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		[]byte{},
 		openrtb_ext.BidderMap,
 		ex.cache,
+		regexp.MustCompile(`[<>]`),
 	}
 
 	return edep
@@ -1121,7 +1129,7 @@ type mockExchangeVideo struct {
 
 func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
-	if debugLog != nil && debugLog.EnableDebug {
+	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
 	}
 	ext := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"20.00","hb_pb_cat_dur":"20.00_395_30s","hb_size":"1x1", "hb_uuid":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"},"type":"video"},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
