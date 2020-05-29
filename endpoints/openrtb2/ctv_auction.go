@@ -177,11 +177,11 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 		defer cancel()
 	}
 
-	deps.holdAuction(request, usersyncs)
+	response, err = deps.holdAuction(request, usersyncs)
 
 	ao.Request = request
 	ao.Response = response
-	if err != nil {
+	if err != nil || nil == response {
 		deps.labels.RequestStatus = pbsmetrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
@@ -668,15 +668,17 @@ func (deps *ctvEndpointDeps) getBidResponseSeatBids(adpods ctv.AdPodBids) []open
 }
 
 //getBidResponseExt will return extension object
-func (deps *ctvEndpointDeps) getBidResponseExt(resp *openrtb.BidResponse) json.RawMessage {
-	ext := ctv.BidResponseAdPodExt{
+func (deps *ctvEndpointDeps) getBidResponseExt(resp *openrtb.BidResponse) (data json.RawMessage) {
+	var err error
+
+	adpodExt := ctv.BidResponseAdPodExt{
 		Response: *resp,
 		Config:   make(map[string]*ctv.ImpData, len(deps.impData)),
 	}
 
 	for index, imp := range deps.impData {
 		if nil != imp.VideoExt && nil != imp.VideoExt.AdPod {
-			ext.Config[deps.request.Imp[index].ID] = imp
+			adpodExt.Config[deps.request.Imp[index].ID] = imp
 		}
 
 		if nil != imp.Bid && len(imp.Bid.Bids) > 0 {
@@ -700,10 +702,31 @@ func (deps *ctvEndpointDeps) getBidResponseExt(resp *openrtb.BidResponse) json.R
 	}
 
 	//Remove extension parameter
-	ext.Response.Ext = nil
+	adpodExt.Response.Ext = nil
 
-	data, _ := json.Marshal(ext)
-	data, _ = jsonparser.Set(resp.Ext, data, ctv.CTVAdpod)
+	if nil == resp.Ext {
+		bidResponseExt := &ctv.ExtCTVBidResponse{
+			AdPod: &adpodExt,
+		}
+
+		data, err = json.Marshal(bidResponseExt)
+		if err != nil {
+			glog.Errorf("JSON Marshal Error: %v", err.Error())
+			return nil
+		}
+	} else {
+		data, err = json.Marshal(adpodExt)
+		if err != nil {
+			glog.Errorf("JSON Marshal Error: %v", err.Error())
+			return nil
+		}
+
+		data, err = jsonparser.Set(resp.Ext, data, ctv.CTVAdpod)
+		if err != nil {
+			glog.Errorf("JSONParser Set Error: %v", err.Error())
+			return nil
+		}
+	}
 
 	return data[:]
 }

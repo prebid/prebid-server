@@ -12,7 +12,13 @@ type Bid struct {
 	FilterReasonCode FilterReasonCode
 }
 
-//BidResponseAdPodExt object for ctv bidresponse object
+//ExtCTVBidResponse object for ctv bid resposne object
+type ExtCTVBidResponse struct {
+	openrtb_ext.ExtBidResponse
+	AdPod *BidResponseAdPodExt `json:"adpod,omitempty"`
+}
+
+//BidResponseAdPodExt object for ctv bidresponse adpod object
 type BidResponseAdPodExt struct {
 	Response openrtb.BidResponse `json:"bidresponse,omitempty"`
 	Config   map[string]*ImpData `json:"config,omitempty"`
