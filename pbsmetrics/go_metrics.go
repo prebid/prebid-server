@@ -544,6 +544,11 @@ func (me *Metrics) RecordRequestQueueTime(success bool, requestType RequestType,
 
 }
 
+func (me *Metrics) RecordTimeoutNotice(sucess bool) {
+	// Not yet implemented for influx
+	return
+}
+
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {
 	met, ok := meters[bidder]
 	if ok {
