@@ -1,7 +1,6 @@
 package ctv
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -54,8 +53,7 @@ func (o *AdPodGenerator) GetAdPodBids() *AdPodBid {
 	var results []*highestCombination
 
 	timeout := 50 * time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+	ticker := time.NewTicker(timeout)
 
 	for totalRequest < maxRequests {
 		durations := o.comb.Get()
@@ -69,8 +67,6 @@ func (o *AdPodGenerator) GetAdPodBids() *AdPodBid {
 
 	for totalRequest > 0 && !isTimedOutORReceivedAllResponses {
 		select {
-		case <-ctx.Done():
-			isTimedOutORReceivedAllResponses = true
 		case hbc := <-responseCh:
 			responseCount++
 			if nil != hbc {
@@ -79,9 +75,13 @@ func (o *AdPodGenerator) GetAdPodBids() *AdPodBid {
 			if responseCount == totalRequest {
 				isTimedOutORReceivedAllResponses = true
 			}
+		case <-ticker.C:
+			isTimedOutORReceivedAllResponses = true
+			Logf("GetAdPodBids Timeout Reached %v", timeout)
 		}
 	}
 
+	defer ticker.Stop()
 	defer cleanupResponseChannel(responseCh, totalRequest-responseCount)
 
 	if 0 == len(results) {
@@ -266,7 +266,7 @@ func evaluate(bids [][]*Bid, indices [][]int, totalBids int, maxCategoryScore, m
 			//Categories
 			for _, cat := range bid.Cat {
 				hbc.categoryScore[cat]++
-				if (hbc.categoryScore[cat] * 100 / totalBids) > maxCategoryScore {
+				if hbc.categoryScore[cat] > 1 && (hbc.categoryScore[cat]*100/totalBids) > maxCategoryScore {
 					return nil, inext, jnext, CTVRCCategoryExclusion
 				}
 			}
@@ -274,7 +274,7 @@ func evaluate(bids [][]*Bid, indices [][]int, totalBids int, maxCategoryScore, m
 			//Domain
 			for _, domain := range bid.ADomain {
 				hbc.domainScore[domain]++
-				if (hbc.domainScore[domain] * 100 / totalBids) > maxDomainScore {
+				if hbc.domainScore[domain] > 1 && (hbc.domainScore[domain]*100/totalBids) > maxDomainScore {
 					return nil, inext, jnext, CTVRCDomainExclusion
 				}
 			}

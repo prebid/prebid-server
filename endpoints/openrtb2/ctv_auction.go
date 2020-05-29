@@ -77,7 +77,7 @@ func NewCTVEndpoint(
 }
 
 func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
+	defer ctv.TimeTrack(time.Now(), "CTVAuctionEndpoint")
 	var request *openrtb.BidRequest
 	var response *openrtb.BidResponse
 	var err error
