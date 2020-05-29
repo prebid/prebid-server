@@ -511,6 +511,15 @@ var impressionsTests = []struct {
 		closedMaxDuration:     70,
 		closedSlotMinDuration: 15,
 		closedSlotMaxDuration: 15,
+	}}, {scenario: "TC53", in: []int{126, 126, 1, 20, 1, 7}, out: Expected{
+		impressionCount: 3,
+		freeTime:        0,
+		output:          [][2]int64{{20, 20}, {20, 20}, {20, 20}, {20, 20}, {20, 20}, {20, 20}, {1, 6}},
+
+		closedMinDuration:     126,
+		closedMaxDuration:     126,
+		closedSlotMinDuration: 5,
+		closedSlotMaxDuration: 20,
 	}},
 }
 
