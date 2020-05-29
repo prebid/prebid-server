@@ -1,6 +1,6 @@
 # Cookie Sync Technical Details
 
-This document describes the mechancis of a Prebid Server cookie sync.
+This document describes the mechanics of a Prebid Server cookie sync.
 
 ## Motivation
 

@@ -38,7 +38,7 @@ func TestCertsFromFilePoolDontExist(t *testing.T) {
 	// Assert loaded certificates by looking at the length of the subjects array of strings
 	assert.NoError(t, err, "Error thrown by AppendPEMFileToRootCAPool while loading file %s: %v", certificatesFile, err)
 	subjects := certPool.Subjects()
-	assert.Equal(t, len(subjects), 1, "We only loaded one vertificate from the file, len(subjects) should equal 1")
+	assert.Equal(t, len(subjects), 1, "We only loaded one certificate from the file, len(subjects) should equal 1")
 }
 
 func TestAppendPEMFileToRootCAPoolFail(t *testing.T) {

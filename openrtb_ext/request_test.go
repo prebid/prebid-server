@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Test the unmashalling of the prebid extensions and setting default Price Granularity
+// Test the unmarshalling of the prebid extensions and setting default Price Granularity
 func TestExtRequestTargeting(t *testing.T) {
 	extRequest := &ExtRequest{}
 	err := json.Unmarshal([]byte(ext1), extRequest)
 	if err != nil {
-		t.Errorf("ext1 Unmashall falure: %s", err.Error())
+		t.Errorf("ext1 Unmarshall failure: %s", err.Error())
 	}
 	if extRequest.Prebid.Targeting != nil {
 		t.Error("ext1 Targeting is not nil")
@@ -22,7 +22,7 @@ func TestExtRequestTargeting(t *testing.T) {
 	extRequest = &ExtRequest{}
 	err = json.Unmarshal([]byte(ext2), extRequest)
 	if err != nil {
-		t.Errorf("ext2 Unmashall falure: %s", err.Error())
+		t.Errorf("ext2 Unmarshall failure: %s", err.Error())
 	}
 	if extRequest.Prebid.Targeting == nil {
 		t.Error("ext2 Targeting is nil")
@@ -36,7 +36,7 @@ func TestExtRequestTargeting(t *testing.T) {
 	extRequest = &ExtRequest{}
 	err = json.Unmarshal([]byte(ext3), extRequest)
 	if err != nil {
-		t.Errorf("ext3 Unmashall falure: %s", err.Error())
+		t.Errorf("ext3 Unmarshall failure: %s", err.Error())
 	}
 	if extRequest.Prebid.Targeting == nil {
 		t.Error("ext3 Targeting is nil")
@@ -175,11 +175,22 @@ var validGranularityTests []granularityTestData = []granularityTestData{
 			},
 		},
 	},
+	{
+		json:   []byte(`{}`),
+		target: priceGranularityMed,
+	},
+	{
+		json:   []byte(`{"precision": 2}`),
+		target: priceGranularityMed,
+	},
+	{
+		json:   []byte(`{"precision": 2, "ranges":[]}`),
+		target: priceGranularityMed,
+	},
 }
 
 func TestGranularityUnmarshalBad(t *testing.T) {
 	tests := [][]byte{
-		[]byte(`{}`),
 		[]byte(`[]`),
 		[]byte(`{"precision": -1, "ranges": [{"max":20, "increment":0.5}]}`),
 		[]byte(`{"ranges":[{"max":20, "increment": -1}]}`),

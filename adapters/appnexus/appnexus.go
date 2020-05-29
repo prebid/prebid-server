@@ -87,6 +87,7 @@ type appnexusBidExtAppnexus struct {
 	BrandId       int                    `json:"brand_id"`
 	BrandCategory int                    `json:"brand_category_id"`
 	CreativeInfo  appnexusBidExtCreative `json:"creative_info"`
+	DealPriority  int                    `json:"deal_priority"`
 }
 
 type appnexusBidExt struct {
@@ -543,9 +544,10 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 					}
 
 					bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-						Bid:      &bid,
-						BidType:  bidType,
-						BidVideo: impVideo,
+						Bid:          &bid,
+						BidType:      bidType,
+						BidVideo:     impVideo,
+						DealPriority: bidExt.Appnexus.DealPriority,
 					})
 				} else {
 					errs = append(errs, err)

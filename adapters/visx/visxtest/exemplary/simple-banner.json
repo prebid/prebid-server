@@ -77,6 +77,7 @@
                         "amp": 0
                     }
                 },
+                "cur": ["USD"],
                 "imp": [{
                     "id": "test-imp-id",
                     "banner": {
@@ -131,21 +132,21 @@
         "mockResponse": {
             "status": 200,
             "body": {
-                "id": "1519967420713_259406708_583019428",
+                "cur": ["USD"],
                 "seatbid": [
                     {
                         "bid": [
                             {
+                                "crid": "2_260",
                                 "price": 0.500000,
                                 "adm": "some-test-ad",
-                                "impid": "1",
+                                "impid": "test-imp-id",
                                 "auid": 46,
-                                "id": "1",
                                 "h": 250,
                                 "adomain": [
                                     "goodadvertiser.com"
                                 ],
-                                "crid": "11_222222",
+                                "dealid": "test_deal_id",
                                 "w": 300
                             }
                         ],
@@ -157,17 +158,19 @@
     }],
 
     "expectedBidResponses": [{
+        "currency": "USD",
         "bids": [{
             "bid": {
                 "price": 0.5,
                 "adm": "some-test-ad",
-                "impid": "1",
-                "id": "1",
+                "impid": "test-imp-id",
+                "id": "test-request-id",
                 "h": 250,
                 "adomain": [
                     "goodadvertiser.com"
                 ],
-                "crid": "11_222222",
+                "dealid": "test_deal_id",
+                "crid": "2_260",
                 "w": 300
             },
             "type": "banner"

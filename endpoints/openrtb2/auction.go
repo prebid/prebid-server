@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -27,6 +28,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
+	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -54,7 +57,9 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 		disabledBidders,
 		defRequest,
 		defReqJSON,
-		bidderMap}).Auction), nil
+		bidderMap,
+		nil,
+		nil}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -70,6 +75,8 @@ type endpointDeps struct {
 	defaultRequest   bool
 	defReqJSON       []byte
 	bidderMap        map[string]openrtb_ext.BidderName
+	cache            prebid_cache_client.Client
+	debugLogRegexp   *regexp.Regexp
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -102,7 +109,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, errL := deps.parseRequest(r)
 
-	if fatalError(errL) && writeError(errL, w, &labels) {
+	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
 
@@ -136,7 +143,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories, nil)
 	ao.Request = req
 	ao.Response = response
 	if err != nil {
@@ -301,6 +308,16 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		return errL
 	}
 
+	ccpaPolicy, ccpaPolicyErr := ccpa.ReadPolicy(req)
+	if ccpaPolicyErr != nil {
+		errL = append(errL, ccpaPolicyErr)
+		return errL
+	}
+
+	if err := ccpaPolicy.Validate(); err != nil {
+		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("CCPA value is invalid and will be ignored. (%s)", err.Error())})
+	}
+
 	impIDs := make(map[string]int, len(req.Imp))
 	for index := range req.Imp {
 		imp := &req.Imp[index]
@@ -312,7 +329,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
-		if fatalError(errs) {
+		if errortypes.ContainsFatalError(errs) {
 			return errL
 		}
 	}
@@ -444,6 +461,10 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 }
 
 func validateNativeContextTypes(cType native.ContextType, cSubtype native.ContextSubType, impIndex int) error {
+	if cType == 0 {
+		// Context is only recommended, so none is a valid type.
+		return nil
+	}
 	if cType < native.ContextTypeContent || cType > native.ContextTypeProduct {
 		return fmt.Errorf("request.imp[%d].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
@@ -480,6 +501,10 @@ func validateNativeContextTypes(cType native.ContextType, cSubtype native.Contex
 }
 
 func validateNativePlacementType(pt native.PlacementType, impIndex int) error {
+	if pt == 0 {
+		// Placement Type is only reccomended, not required.
+		return nil
+	}
 	if pt < native.PlacementTypeFeed || pt > native.PlacementTypeRecommendationWidget {
 		return fmt.Errorf("request.imp[%d].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40", impIndex)
 	}
@@ -491,23 +516,37 @@ func fillAndValidateNativeAssets(assets []nativeRequests.Asset, impIndex int) er
 		return fmt.Errorf("request.imp[%d].native.request.assets must be an array containing at least one object", impIndex)
 	}
 
+	assetIDs := make(map[int64]struct{}, len(assets))
+
+	// If none of the asset IDs are defined by the caller, then prebid server should assign its own unique IDs. But
+	// if the caller did assign its own asset IDs, then prebid server will respect those IDs
+	assignAssetIDs := true
 	for i := 0; i < len(assets); i++ {
-		// Per the OpenRTB spec docs, this is a "unique asset ID, assigned by exchange. Typically a counter for the array"
-		// To avoid conflict with the Request, we'll return a 400 if the Request _did_ define this ID,
-		// and then populate it as the spec suggests.
+		assignAssetIDs = assignAssetIDs && (assets[i].ID == 0)
+	}
+
+	for i := 0; i < len(assets); i++ {
 		if err := validateNativeAsset(assets[i], impIndex, i); err != nil {
 			return err
 		}
-		assets[i].ID = int64(i)
+
+		if assignAssetIDs {
+			assets[i].ID = int64(i)
+			continue
+		}
+
+		// Each asset should have a unique ID thats assigned by the caller
+		if _, ok := assetIDs[assets[i].ID]; ok {
+			return fmt.Errorf("request.imp[%d].native.request.assets[%d].id is already being used by another asset. Each asset ID must be unique.", impIndex, i)
+		}
+
+		assetIDs[assets[i].ID] = struct{}{}
 	}
+
 	return nil
 }
 
 func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex int) error {
-	if asset.ID != 0 {
-		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID`, impIndex, assetIndex)
-	}
-
 	assetErr := "request.imp[%d].native.request.assets[%d] must define exactly one of {title, img, video, data}"
 	foundType := false
 
@@ -523,9 +562,7 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 			return fmt.Errorf(assetErr, impIndex, assetIndex)
 		}
 		foundType = true
-		if err := validateNativeAssetImg(asset.Img, impIndex, assetIndex); err != nil {
-			return err
-		}
+		// It is technically valid to have neither w/h nor wmin/hmin, so no check
 	}
 
 	if asset.Video != nil {
@@ -582,19 +619,6 @@ func validateNativeEventTracker(tracker nativeRequests.EventTracker, impIndex in
 		if method < native.EventTrackingMethodImage || method > native.EventTrackingMethodJS {
 			return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].methods[%d] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex, methodIndex)
 		}
-	}
-
-	return nil
-}
-
-func validateNativeAssetImg(image *nativeRequests.Image, impIndex int, assetIndex int) error {
-	// Note that w, wmin, h, and hmin cannot be negative because these variables use unsigned ints.
-	// Those fail during the standard json.Unmarshal() call.
-	if image.W == 0 && image.WMin == 0 {
-		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contain at least one of "w" or "wmin"`, impIndex, assetIndex)
-	}
-	if image.H == 0 && image.HMin == 0 {
-		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contain at least one of "h" or "hmin"`, impIndex, assetIndex)
 	}
 
 	return nil
@@ -1156,8 +1180,8 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 		httpStatus := http.StatusBadRequest
 		metricsStatus := pbsmetrics.RequestStatusBadInput
 		for _, err := range errs {
-			erVal := errortypes.DecodeError(err)
-			if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
+			erVal := errortypes.ReadCode(err)
+			if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.BlacklistedAcctErrorCode {
 				httpStatus = http.StatusServiceUnavailable
 				metricsStatus = pbsmetrics.RequestStatusBlacklisted
 				break
@@ -1171,17 +1195,6 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 		rc = true
 	}
 	return rc
-}
-
-// Checks to see if an error in an error list is a fatal error
-func fatalError(errL []error) bool {
-	for _, err := range errL {
-		errCode := errortypes.DecodeError(err)
-		if errCode != errortypes.BidderTemporarilyDisabledCode && errCode != errortypes.WarningCode {
-			return true
-		}
-	}
-	return false
 }
 
 // Returns the effective publisher ID

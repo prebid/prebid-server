@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Applogy Adapter Params",
+  "description": "A schema which validates params accepted by the Applogy adapter",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "description": "Applogy token"
+    }
+  },
+  "required": ["token"]
+}

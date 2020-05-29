@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Telaria Adapter Params",
+  "description": "A schema which validates params accepted by the Telaria adapter",
+
+  "type": "object",
+  "properties": {
+    "adCode": {
+      "type": "string",
+      "description": "The Ad Unit Code."
+    },
+    "seatCode": {
+      "type": "string",
+      "description": "Your Seat Code."
+    },
+    "originalPublisherid": {
+      "type": "string",
+      "description": "publisher ID from the original request"
+    }
+  },
+  "required": ["seatCode"]
+}

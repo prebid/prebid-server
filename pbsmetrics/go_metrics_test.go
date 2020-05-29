@@ -50,6 +50,9 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "requests.badinput.video", m.RequestStatuses[ReqTypeVideo][RequestStatusBadInput])
 	ensureContains(t, registry, "requests.err.video", m.RequestStatuses[ReqTypeVideo][RequestStatusErr])
 	ensureContains(t, registry, "requests.networkerr.video", m.RequestStatuses[ReqTypeVideo][RequestStatusNetworkErr])
+
+	ensureContains(t, registry, "queued_requests.video.rejected", m.RequestsQueueTimer[ReqTypeVideo][false])
+	ensureContains(t, registry, "queued_requests.video.accepted", m.RequestsQueueTimer[ReqTypeVideo][true])
 }
 
 func TestRecordBidType(t *testing.T) {
@@ -172,25 +175,21 @@ func TestNewMetricsWithDisabledConfig(t *testing.T) {
 	assert.True(t, m.MetricsDisabled.AccountAdapterDetails, "Accound adapter metrics should be disabled")
 }
 
-func TestRecordPrebidCacheRequestTimeWithSuccessLabel(t *testing.T) {
+func TestRecordPrebidCacheRequestTimeWithSuccess(t *testing.T) {
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
 
-	m.RecordPrebidCacheRequestTime(RequestLabels{
-		RequestStatus: RequestStatusOK,
-	}, 42)
+	m.RecordPrebidCacheRequestTime(true, 42)
 
 	assert.Equal(t, m.PrebidCacheRequestTimerSuccess.Count(), int64(1))
 	assert.Equal(t, m.PrebidCacheRequestTimerError.Count(), int64(0))
 }
 
-func TestRecordPrebidCacheRequestTimeWithErrorLabel(t *testing.T) {
+func TestRecordPrebidCacheRequestTimeWithNotSuccess(t *testing.T) {
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
 
-	m.RecordPrebidCacheRequestTime(RequestLabels{
-		RequestStatus: RequestStatusErr,
-	}, 42)
+	m.RecordPrebidCacheRequestTime(false, 42)
 
 	assert.Equal(t, m.PrebidCacheRequestTimerSuccess.Count(), int64(0))
 	assert.Equal(t, m.PrebidCacheRequestTimerError.Count(), int64(1))

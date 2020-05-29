@@ -15,6 +15,9 @@ import (
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+
+	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+	nativeResponse "github.com/mxmCherry/openrtb/native/response"
 )
 
 // TestSingleBidder makes sure that the following things work if the Bidder needs only one request.
@@ -39,13 +42,15 @@ func TestSingleBidder(t *testing.T) {
 				Bid: &openrtb.Bid{
 					Price: firstInitialPrice,
 				},
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType:      openrtb_ext.BidTypeBanner,
+				DealPriority: 4,
 			},
 			{
 				Bid: &openrtb.Bid{
 					Price: secondInitialPrice,
 				},
-				BidType: openrtb_ext.BidTypeVideo,
+				BidType:      openrtb_ext.BidTypeVideo,
+				DealPriority: 5,
 			},
 		},
 	}
@@ -87,6 +92,9 @@ func TestSingleBidder(t *testing.T) {
 		}
 		if typedBid.BidType != seatBid.bids[index].bidType {
 			t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
+		}
+		if typedBid.DealPriority != seatBid.bids[index].dealPriority {
+			t.Errorf("Bid %d did not have the right deal priority. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
 		}
 	}
 	if mockBidderResponse.Bids[0].Bid.Price != bidAdjustment*firstInitialPrice {
@@ -1075,6 +1083,147 @@ func TestErrorReporting(t *testing.T) {
 	}
 	if errs[0].Error() != "Invalid params on BidRequest." {
 		t.Errorf(`Error message was mutated. Expected "%s", Got "%s"`, "Invalid params on BidRequest.", errs[0].Error())
+	}
+}
+
+func TestSetAssetTypes(t *testing.T) {
+	testCases := []struct {
+		respAsset   nativeResponse.Asset
+		nativeReq   nativeRequests.Request
+		expectedErr string
+		desc        string
+	}{
+		{
+			respAsset: nativeResponse.Asset{
+				ID: 1,
+				Img: &nativeResponse.Image{
+					URL: "http://some-url",
+				},
+			},
+			nativeReq: nativeRequests.Request{
+				Assets: []nativeRequests.Asset{
+					{
+						ID: 1,
+						Img: &nativeRequests.Image{
+							Type: 2,
+						},
+					},
+					{
+						ID: 2,
+						Data: &nativeRequests.Data{
+							Type: 4,
+						},
+					},
+				},
+			},
+			expectedErr: "",
+			desc:        "Matching image asset exists in the request and asset type is set correctly",
+		},
+		{
+			respAsset: nativeResponse.Asset{
+				ID: 2,
+				Data: &nativeResponse.Data{
+					Label: "some label",
+				},
+			},
+			nativeReq: nativeRequests.Request{
+				Assets: []nativeRequests.Asset{
+					{
+						ID: 1,
+						Img: &nativeRequests.Image{
+							Type: 2,
+						},
+					},
+					{
+						ID: 2,
+						Data: &nativeRequests.Data{
+							Type: 4,
+						},
+					},
+				},
+			},
+			expectedErr: "",
+			desc:        "Matching data asset exists in the request and asset type is set correctly",
+		},
+		{
+			respAsset: nativeResponse.Asset{
+				ID: 1,
+				Img: &nativeResponse.Image{
+					URL: "http://some-url",
+				},
+			},
+			nativeReq: nativeRequests.Request{
+				Assets: []nativeRequests.Asset{
+					{
+						ID: 2,
+						Img: &nativeRequests.Image{
+							Type: 2,
+						},
+					},
+				},
+			},
+			expectedErr: "Unable to find asset with ID:1 in the request",
+			desc:        "Matching image asset with the same ID doesn't exist in the request",
+		},
+		{
+			respAsset: nativeResponse.Asset{
+				ID: 2,
+				Data: &nativeResponse.Data{
+					Label: "some label",
+				},
+			},
+			nativeReq: nativeRequests.Request{
+				Assets: []nativeRequests.Asset{
+					{
+						ID: 2,
+						Img: &nativeRequests.Image{
+							Type: 2,
+						},
+					},
+				},
+			},
+			expectedErr: "Response has a Data asset with ID:2 present that doesn't exist in the request",
+			desc:        "Assets with same ID in the req and resp are of different types",
+		},
+		{
+			respAsset: nativeResponse.Asset{
+				ID: 1,
+				Img: &nativeResponse.Image{
+					URL: "http://some-url",
+				},
+			},
+			nativeReq: nativeRequests.Request{
+				Assets: []nativeRequests.Asset{
+					{
+						ID: 1,
+						Data: &nativeRequests.Data{
+							Type: 2,
+						},
+					},
+				},
+			},
+			expectedErr: "Response has an Image asset with ID:1 present that doesn't exist in the request",
+			desc:        "Assets with same ID in the req and resp are of different types",
+		},
+	}
+
+	for _, test := range testCases {
+		err := setAssetTypes(test.respAsset, test.nativeReq)
+		if len(test.expectedErr) != 0 {
+			assert.EqualError(t, err, test.expectedErr, "Test Case: %s", test.desc)
+			continue
+		} else {
+			assert.NoError(t, err, "Test Case: %s", test.desc)
+		}
+
+		for _, asset := range test.nativeReq.Assets {
+			if asset.Img != nil && test.respAsset.Img != nil {
+				assert.Equal(t, asset.Img.Type, test.respAsset.Img.Type, "Asset type not set correctly. Test Case: %s", test.desc)
+			}
+			if asset.Data != nil && test.respAsset.Data != nil {
+				assert.Equal(t, asset.Data.Type, test.respAsset.Data.Type, "Asset type not set correctly. Test Case: %s", test.desc)
+			}
+		}
 	}
 }
 
