@@ -13,6 +13,7 @@ import (
 	"golang.org/x/text/currency"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -187,14 +188,18 @@ func (a *YieldlabAdapter) mergeParams(params []*openrtb_ext.ExtImpYieldlab) *ope
 func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode != 200 {
 		return nil, []error{
-			fmt.Errorf("failed to resolve bids from yieldlab response: Unexpected response code %v", response.StatusCode),
+			&errortypes.BadServerResponse{
+				Message: fmt.Sprintf("failed to resolve bids from yieldlab response: Unexpected response code %v", response.StatusCode),
+			},
 		}
 	}
 
 	bids := make([]*bidResponse, 0)
 	if err := json.Unmarshal(response.Body, &bids); err != nil {
 		return nil, []error{
-			fmt.Errorf("failed to parse bids response from yieldlab: %v", err),
+			&errortypes.BadServerResponse{
+				Message: fmt.Sprintf("failed to parse bids response from yieldlab: %v", err),
+			},
 		}
 	}
 
