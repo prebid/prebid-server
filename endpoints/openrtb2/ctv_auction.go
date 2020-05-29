@@ -37,6 +37,10 @@ type ctvEndpointDeps struct {
 	videoSeats     []*openrtb.SeatBid //stores pure video impression bids
 	impIndices     map[string]int
 	isAdPodRequest bool
+
+	//Prebid Specific
+	ctx    context.Context
+	labels pbsmetrics.Labels
 }
 
 //NewCTVEndpoint new ctv endpoint object
@@ -78,6 +82,7 @@ func NewCTVEndpoint(
 
 func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	defer ctv.TimeTrack(time.Now(), "CTVAuctionEndpoint")
+
 	var request *openrtb.BidRequest
 	var response *openrtb.BidResponse
 	var err error
@@ -96,7 +101,7 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	// to compute the auction timeout.
 	start := time.Now()
 	//Prebid Stats
-	labels := pbsmetrics.Labels{
+	deps.labels = pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeVideo,
 		PubID:         pbsmetrics.PublisherUnknown,
@@ -105,14 +110,14 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
 	defer func() {
-		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.metricsEngine.RecordRequest(deps.labels)
+		deps.metricsEngine.RecordRequestTime(deps.labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
 	//Parse ORTB Request and do Standard Validation
 	request, errL = deps.parseRequest(r)
-	if fatalError(errL) && writeError(errL, w, &labels) {
+	if fatalError(errL) && writeError(errL, w, &deps.labels) {
 		return
 	}
 
@@ -129,7 +134,7 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	//Validate CTV BidRequest
 	if err := deps.validateBidRequest(); err != nil {
 		errL = append(errL, err...)
-		writeError(errL, w, &labels)
+		writeError(errL, w, &deps.labels)
 		return
 	}
 
@@ -142,50 +147,42 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	//Parsing Cookies and Set Stats
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if request.App != nil {
-		labels.Source = pbsmetrics.DemandApp
-		labels.RType = pbsmetrics.ReqTypeVideo
-		labels.PubID = effectivePubID(request.App.Publisher)
+		deps.labels.Source = pbsmetrics.DemandApp
+		deps.labels.RType = pbsmetrics.ReqTypeVideo
+		deps.labels.PubID = effectivePubID(request.App.Publisher)
 	} else { //request.Site != nil
-		labels.Source = pbsmetrics.DemandWeb
+		deps.labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
+			deps.labels.CookieFlag = pbsmetrics.CookieFlagNo
 		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
+			deps.labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		labels.PubID = effectivePubID(request.Site.Publisher)
+		deps.labels.PubID = effectivePubID(request.Site.Publisher)
 	}
 
 	//Validate Accounts
-	if err = validateAccount(deps.cfg, labels.PubID); err != nil {
+	if err = validateAccount(deps.cfg, deps.labels.PubID); err != nil {
 		errL = append(errL, err)
-		writeError(errL, w, &labels)
+		writeError(errL, w, &deps.labels)
 		return
 	}
 
-	ctx := context.Background()
+	deps.ctx = context.Background()
 
 	//Setting Timeout for Request
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(request.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
+		deps.ctx, cancel = context.WithDeadline(deps.ctx, start.Add(timeout))
 		defer cancel()
 	}
 
-	//Hold OpenRTB Standard Auction
-	if len(request.Imp) == 0 {
-		//Dummy Response Object
-		response = &openrtb.BidResponse{
-			ID: request.ID,
-		}
-	} else {
-		response, err = deps.ex.HoldAuction(ctx, request, usersyncs, labels, &deps.categories)
-	}
+	deps.holdAuction(request, usersyncs)
 
 	ao.Request = request
 	ao.Response = response
 	if err != nil {
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		deps.labels.RequestStatus = pbsmetrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/video Critical error: %v", err)
@@ -199,7 +196,7 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 		//Validate Bid Response
 		if err := deps.validateBidResponse(request, response); err != nil {
 			errL = append(errL, err)
-			writeError(errL, w, &labels)
+			writeError(errL, w, &deps.labels)
 			return
 		}
 
@@ -225,9 +222,21 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
-		labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
+		deps.labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/video Failed to send response: %v", err))
 	}
+}
+
+func (deps *ctvEndpointDeps) holdAuction(request *openrtb.BidRequest, usersyncs *usersync.PBSCookie) (*openrtb.BidResponse, error) {
+	defer ctv.TimeTrack(time.Now(), "CTVHoldAuction")
+
+	//Hold OpenRTB Standard Auction
+	if len(request.Imp) == 0 {
+		//Dummy Response Object
+		return &openrtb.BidResponse{ID: request.ID}, nil
+	}
+
+	return deps.ex.HoldAuction(deps.ctx, request, usersyncs, deps.labels, &deps.categories)
 }
 
 /********************* BidRequest Processing *********************/
