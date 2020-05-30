@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
@@ -19,6 +20,8 @@ type filteredBid struct {
 }
 type highestCombination struct {
 	bids          []*Bid
+	bidIDs        []string
+	durations     []int
 	price         float64
 	categoryScore map[string]int
 	domainScore   map[string]int
@@ -28,23 +31,27 @@ type highestCombination struct {
 //AdPodGenerator AdPodGenerator
 type AdPodGenerator struct {
 	IAdPodGenerator
-	buckets BidsBuckets
-	comb    ICombination
-	adpod   *openrtb_ext.VideoAdPod
+	request  *openrtb.BidRequest
+	impIndex int
+	buckets  BidsBuckets
+	comb     ICombination
+	adpod    *openrtb_ext.VideoAdPod
 }
 
 //NewAdPodGenerator will generate adpod based on configuration
-func NewAdPodGenerator(buckets BidsBuckets, comb ICombination, adpod *openrtb_ext.VideoAdPod) *AdPodGenerator {
+func NewAdPodGenerator(request *openrtb.BidRequest, impIndex int, buckets BidsBuckets, comb ICombination, adpod *openrtb_ext.VideoAdPod) *AdPodGenerator {
 	return &AdPodGenerator{
-		buckets: buckets,
-		comb:    comb,
-		adpod:   adpod,
+		request:  request,
+		impIndex: impIndex,
+		buckets:  buckets,
+		comb:     comb,
+		adpod:    adpod,
 	}
 }
 
 //GetAdPodBids will return Adpod based on configurations
 func (o *AdPodGenerator) GetAdPodBids() *AdPodBid {
-	defer TimeTrack(time.Now(), "adpodgenerator")
+	defer TimeTrack(time.Now(), fmt.Sprintf("Tid:%v ImpId:%v adpodgenerator", o.request.ID, o.request.Imp[o.impIndex].ID))
 	isTimedOutORReceivedAllResponses := false
 	responseCount := 0
 	totalRequest := 0
@@ -77,14 +84,15 @@ func (o *AdPodGenerator) GetAdPodBids() *AdPodBid {
 			}
 		case <-ticker.C:
 			isTimedOutORReceivedAllResponses = true
-			Logf("GetAdPodBids Timeout Reached %v", timeout)
+			Logf("Tid:%v ImpId:%v GetAdPodBids Timeout Reached %v", o.request.ID, o.request.Imp[o.impIndex].ID, timeout)
 		}
 	}
 
 	defer ticker.Stop()
-	defer cleanupResponseChannel(responseCh, totalRequest-responseCount)
+	defer o.cleanupResponseChannel(responseCh, totalRequest-responseCount)
 
 	if 0 == len(results) {
+		Logf("Tid:%v ImpId:%v NoBid", o.request.ID, o.request.Imp[o.impIndex].ID)
 		return nil
 	}
 
@@ -118,18 +126,20 @@ func (o *AdPodGenerator) GetAdPodBids() *AdPodBid {
 		adpodBid.Cat = append(adpodBid.Cat, cat)
 	}
 
+	Logf("Tid:%v ImpId:%v Selected Durations:%v Bids:%v", o.request.ID, o.request.Imp[o.impIndex].ID, maxResult.durations[:], maxResult.bidIDs[:])
 	return adpodBid
 }
 
-func cleanupResponseChannel(responseCh <-chan *highestCombination, responseCount int) {
+func (o *AdPodGenerator) cleanupResponseChannel(responseCh <-chan *highestCombination, responseCount int) {
 	for responseCount > 0 {
-		<-responseCh
+		extra := <-responseCh
+		Logf("Tid:%v ImpId:%v Delayed Response Durations:%v Bids:%v", o.request.ID, o.request.Imp[o.impIndex].ID, extra.durations, extra.bidIDs)
 		responseCount--
 	}
 }
 
 func (o *AdPodGenerator) getUniqueBids(responseCh chan<- *highestCombination, durationSequence []int) {
-	defer TimeTrack(time.Now(), fmt.Sprintf("getUniqueBids:%v", durationSequence))
+	defer TimeTrack(time.Now(), fmt.Sprintf("Tid:%v ImpId:%v getUniqueBids:%v", o.request.ID, o.request.Imp[o.impIndex].ID, durationSequence))
 
 	data := [][]*Bid{}
 	combinations := []int{}
@@ -145,6 +155,7 @@ func (o *AdPodGenerator) getUniqueBids(responseCh chan<- *highestCombination, du
 		uniqueDuration++
 	}
 	hbc := findUniqueCombinations(data[:], combinations[:], *o.adpod.IABCategoryExclusionPercent, *o.adpod.AdvertiserExclusionPercent)
+	hbc.durations = durationSequence[:]
 	responseCh <- hbc
 }
 
@@ -247,6 +258,7 @@ func evaluate(bids [][]*Bid, indices [][]int, totalBids int, maxCategoryScore, m
 
 	hbc := &highestCombination{
 		bids:          make([]*Bid, totalBids),
+		bidIDs:        make([]string, totalBids),
 		price:         0,
 		categoryScore: make(map[string]int),
 		domainScore:   make(map[string]int),
@@ -258,6 +270,7 @@ func evaluate(bids [][]*Bid, indices [][]int, totalBids int, maxCategoryScore, m
 			bid := bids[inext][indices[inext][jnext]]
 
 			hbc.bids[pos] = bid
+			hbc.bidIDs[pos] = bid.ID
 			pos++
 
 			//Price

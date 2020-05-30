@@ -228,7 +228,7 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 }
 
 func (deps *ctvEndpointDeps) holdAuction(request *openrtb.BidRequest, usersyncs *usersync.PBSCookie) (*openrtb.BidResponse, error) {
-	defer ctv.TimeTrack(time.Now(), "CTVHoldAuction")
+	defer ctv.TimeTrack(time.Now(), fmt.Sprintf("Tid:%v CTVHoldAuction", deps.request.ID))
 
 	//Hold OpenRTB Standard Auction
 	if len(request.Imp) == 0 {
@@ -588,7 +588,7 @@ func (deps *ctvEndpointDeps) getImpressionID(id string) (string, int) {
 
 //doAdPodExclusions
 func (deps *ctvEndpointDeps) doAdPodExclusions() ctv.AdPodBids {
-	defer ctv.TimeTrack(time.Now(), "doAdPodExclusions")
+	defer ctv.TimeTrack(time.Now(), fmt.Sprintf("Tid:%v doAdPodExclusions", deps.request.ID))
 
 	result := ctv.AdPodBids{}
 	for index := 0; index < len(deps.request.Imp); index++ {
@@ -606,7 +606,7 @@ func (deps *ctvEndpointDeps) doAdPodExclusions() ctv.AdPodBids {
 				deps.impData[index].VideoExt.AdPod)
 
 			//adpod generator
-			adpodGenerator := ctv.NewAdPodGenerator(buckets, comb, deps.impData[index].VideoExt.AdPod)
+			adpodGenerator := ctv.NewAdPodGenerator(deps.request, index, buckets, comb, deps.impData[index].VideoExt.AdPod)
 
 			adpodBids := adpodGenerator.GetAdPodBids()
 			if adpodBids != nil {
@@ -623,7 +623,7 @@ func (deps *ctvEndpointDeps) doAdPodExclusions() ctv.AdPodBids {
 
 //createBidResponse
 func (deps *ctvEndpointDeps) createBidResponse(resp *openrtb.BidResponse, adpods ctv.AdPodBids) *openrtb.BidResponse {
-	defer ctv.TimeTrack(time.Now(), "createBidResponse")
+	defer ctv.TimeTrack(time.Now(), fmt.Sprintf("Tid:%v createBidResponse", deps.request.ID))
 
 	bidResp := &openrtb.BidResponse{
 		ID:         resp.ID,
