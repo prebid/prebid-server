@@ -22,7 +22,7 @@ var (
 	errInvalidIABCategoryExclusionPercent         = errors.New("%key%.ext.adpod.excliabcat must be number between 0 and 100")
 	errInvalidMinMaxAds                           = errors.New("%key%.ext.adpod.minads must be less than %key%.ext.adpod.maxads")
 	errInvalidMinMaxDuration                      = errors.New("%key%.ext.adpod.adminduration must be less than %key%.ext.adpod.admaxduration")
-	errInvalidMinMaxDurationRange                 = errors.New("adpod duration checks for adminduration,admaxduration,minads,maxads are not in video minduration and maxduration duration")
+	errInvalidMinMaxDurationRange                 = errors.New("adpod duration checks for adminduration,admaxduration,minads,maxads are not in video minduration and maxduration duration range")
 )
 
 // ExtCTVBid defines the contract for bidresponse.seatbid.bid[i].ext
@@ -300,28 +300,28 @@ func (pod *VideoAdPod) ValidateAdPodDurations(minDuration, maxDuration, maxExten
 
 		if allowed == false && pod.MaxAds != nil && pod.MaxDuration != nil {
 			duration := int64((*pod.MaxDuration) * (*pod.MaxAds))
-			if !(minDuration <= duration && duration <= maxDuration) {
+			if minDuration <= duration && duration <= maxDuration {
 				allowed = true
 			}
 		}
 
 		if allowed == false && pod.MaxAds != nil && pod.MinDuration != nil {
 			duration := int64((*pod.MinDuration) * (*pod.MaxAds))
-			if !(minDuration <= duration && duration <= maxDuration) {
+			if minDuration <= duration && duration <= maxDuration {
 				allowed = true
 			}
 		}
 
 		if allowed == false && pod.MinAds != nil && pod.MaxDuration != nil {
 			duration := int64((*pod.MaxDuration) * (*pod.MinAds))
-			if !(minDuration <= duration && duration <= maxDuration) {
+			if minDuration <= duration && duration <= maxDuration {
 				allowed = true
 			}
 		}
 
 		if allowed == false && pod.MinAds != nil && pod.MinDuration != nil {
 			duration := int64((*pod.MinDuration) * (*pod.MinAds))
-			if !(minDuration <= duration && duration <= maxDuration) {
+			if minDuration <= duration && duration <= maxDuration {
 				allowed = true
 			}
 		}
