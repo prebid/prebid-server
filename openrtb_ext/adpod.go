@@ -300,28 +300,28 @@ func (pod *VideoAdPod) ValidateAdPodDurations(minDuration, maxDuration, maxExten
 
 		if allowed == false && pod.MaxAds != nil && pod.MaxDuration != nil {
 			duration := int64((*pod.MaxDuration) * (*pod.MaxAds))
-			if !(minDuration < duration && duration < maxDuration) {
+			if !(minDuration <= duration && duration <= maxDuration) {
 				allowed = true
 			}
 		}
 
 		if allowed == false && pod.MaxAds != nil && pod.MinDuration != nil {
 			duration := int64((*pod.MinDuration) * (*pod.MaxAds))
-			if !(minDuration < duration && duration < maxDuration) {
+			if !(minDuration <= duration && duration <= maxDuration) {
 				allowed = true
 			}
 		}
 
 		if allowed == false && pod.MinAds != nil && pod.MaxDuration != nil {
 			duration := int64((*pod.MaxDuration) * (*pod.MinAds))
-			if !(minDuration < duration && duration < maxDuration) {
+			if !(minDuration <= duration && duration <= maxDuration) {
 				allowed = true
 			}
 		}
 
 		if allowed == false && pod.MinAds != nil && pod.MinDuration != nil {
 			duration := int64((*pod.MinDuration) * (*pod.MinAds))
-			if !(minDuration < duration && duration < maxDuration) {
+			if !(minDuration <= duration && duration <= maxDuration) {
 				allowed = true
 			}
 		}
