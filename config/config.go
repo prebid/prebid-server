@@ -49,6 +49,7 @@ type Configuration struct {
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
 	CCPA                 CCPA               `mapstructure:"ccpa"`
+	LMT                  LMT                `mapstructure:"lmt"`
 	CurrencyConverter    CurrencyConverter  `mapstructure:"currency_converter"`
 	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
 
@@ -136,6 +137,13 @@ func (cfg *AuctionTimeouts) LimitAuctionTimeout(requested time.Duration) time.Du
 	return requested
 }
 
+// Privacy is a grouping of privacy related configs to assist in dependency injection.
+type Privacy struct {
+	GDPR GDPR
+	CCPA CCPA
+	LMT  LMT
+}
+
 type GDPR struct {
 	HostVendorID            int          `mapstructure:"host_vendor_id"`
 	UsersyncIfAmbiguous     bool         `mapstructure:"usersync_if_ambiguous"`
@@ -166,6 +174,10 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 }
 
 type CCPA struct {
+	Enforce bool `mapstructure:"enforce"`
+}
+
+type LMT struct {
 	Enforce bool `mapstructure:"enforce"`
 }
 
@@ -776,6 +788,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
 	v.SetDefault("gdpr.amp_exception", false)
 	v.SetDefault("ccpa.enforce", false)
+	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
 	v.SetDefault("default_request.type", "")
