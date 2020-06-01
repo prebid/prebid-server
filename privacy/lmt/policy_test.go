@@ -25,7 +25,9 @@ func TestRead(t *testing.T) {
 		},
 		{
 			description: "Nil Device",
-			request:     nil,
+			request: &openrtb.BidRequest{
+				Device: nil,
+			},
 			expectedPolicy: Policy{
 				Signal:         0,
 				SignalProvided: false,
@@ -33,7 +35,11 @@ func TestRead(t *testing.T) {
 		},
 		{
 			description: "Nil Device.Lmt",
-			request:     nil,
+			request: &openrtb.BidRequest{
+				Device: &openrtb.Device{
+					Lmt: nil,
+				},
+			},
 			expectedPolicy: Policy{
 				Signal:         0,
 				SignalProvided: false,
