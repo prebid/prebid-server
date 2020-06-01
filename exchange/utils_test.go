@@ -93,13 +93,19 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			expectDataScrub: true,
 		},
 		{
-			description:     "Feature Flag Enabled - No Sale Bidder - Scrub",
+			description:     "Feature Flag Enabled - No Sale Star - Doesn't Scrub",
+			reqExt:          json.RawMessage(`{"prebid":{"nosale":["*"]}}`),
+			enforceCCPA:     true,
+			expectDataScrub: false,
+		},
+		{
+			description:     "Feature Flag Enabled - No Sale Specific Bidder - Doesn't Scrub",
 			reqExt:          json.RawMessage(`{"prebid":{"nosale":["appnexus"]}}`),
 			enforceCCPA:     true,
 			expectDataScrub: false,
 		},
 		{
-			description:     "Feature Flag Enabled - No Sale Bidder - Doesn't Scrub",
+			description:     "Feature Flag Enabled - No Sale Different Bidder - Scrubs",
 			reqExt:          json.RawMessage(`{"prebid":{"nosale":["rubicon"]}}`),
 			enforceCCPA:     true,
 			expectDataScrub: true,

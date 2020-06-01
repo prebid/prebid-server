@@ -29,7 +29,7 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "No Request",
+			description: "Nil Request",
 			request:     nil,
 			expectedPolicy: Policy{
 				Value:         "",
@@ -37,7 +37,7 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "No Regs",
+			description: "Nil Regs",
 			request: &openrtb.BidRequest{
 				Regs: nil,
 				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
@@ -48,7 +48,7 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "No Regs.Ext",
+			description: "Nil Regs.Ext",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{},
 				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
@@ -72,7 +72,7 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "No Regs.Ext Value",
+			description: "Nil Regs.Ext Value",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{
 					Ext: json.RawMessage(`{"anythingElse":"42"}`),
@@ -85,7 +85,7 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "No Ext",
+			description: "Nil Ext",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{
 					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
@@ -111,7 +111,7 @@ func TestRead(t *testing.T) {
 			},
 		},
 		{
-			description: "No Ext NoSale",
+			description: "Nil Ext.Prebid.NoSale",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{
 					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
@@ -246,21 +246,21 @@ func TestWriteRegsExt(t *testing.T) {
 			expected:    &openrtb.BidRequest{},
 		},
 		{
-			description: "Enabled With Nil Request Regs Object",
+			description: "Enabled - Nil Regs",
 			policy:      Policy{Value: "anyValue"},
 			request:     &openrtb.BidRequest{},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`{"us_privacy":"anyValue"}`)}},
 		},
 		{
-			description: "Enabled With Nil Request Regs Ext Object",
+			description: "Enabled - Nil Regs.Ext",
 			policy:      Policy{Value: "anyValue"},
 			request:     &openrtb.BidRequest{Regs: &openrtb.Regs{}},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`{"us_privacy":"anyValue"}`)}},
 		},
 		{
-			description: "Enabled With Existing Request Regs Ext Object - Doesn't Overwrite",
+			description: "Enabled - Existing Regs.Ext - Doesn't Overwrite",
 			policy:      Policy{Value: "anyValue"},
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`{"existing":"any"}`)}},
@@ -268,7 +268,7 @@ func TestWriteRegsExt(t *testing.T) {
 				Ext: json.RawMessage(`{"existing":"any","us_privacy":"anyValue"}`)}},
 		},
 		{
-			description: "Enabled With Existing Request Regs Ext Object - Overwrites",
+			description: "Enabled - Existing Regs.Ext.US_Privacy - Overwrites",
 			policy:      Policy{Value: "anyValue"},
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`{"existing":"any","us_privacy":"toBeOverwritten"}`)}},
@@ -276,14 +276,14 @@ func TestWriteRegsExt(t *testing.T) {
 				Ext: json.RawMessage(`{"existing":"any","us_privacy":"anyValue"}`)}},
 		},
 		{
-			description: "Enabled With Existing Malformed Request Regs Ext Object",
+			description: "Enabled -  Malformed Regs.Ext",
 			policy:      Policy{Value: "anyValue"},
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`malformed`)}},
 			expectedError: true,
 		},
 		{
-			description: "Injection Attack With Nil Request Regs Object",
+			description: "Injection Attack - Nil Regs",
 			policy:      Policy{Value: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
 			request:     &openrtb.BidRequest{},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
@@ -291,7 +291,7 @@ func TestWriteRegsExt(t *testing.T) {
 			}},
 		},
 		{
-			description: "Injection Attack With Nil Request Regs Ext Object",
+			description: "Injection Attack - Nil Regs.Ext",
 			policy:      Policy{Value: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
 			request:     &openrtb.BidRequest{Regs: &openrtb.Regs{}},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
@@ -299,7 +299,7 @@ func TestWriteRegsExt(t *testing.T) {
 			}},
 		},
 		{
-			description: "Injection Attack With Existing Request Regs Ext Object",
+			description: "Injection Attack - Existing Regs.Ext",
 			policy:      Policy{Value: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`{"existing":"any"}`),
@@ -411,7 +411,7 @@ func TestWriteExt(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			description: "Invalid Ext.Prebid",
+			description: "Invalid Ext.Prebid Type",
 			policy:      Policy{NoSaleBidders: []string{"a", "b"}},
 			request: &openrtb.BidRequest{
 				Ext: json.RawMessage(`{"prebid":42}`),

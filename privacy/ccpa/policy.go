@@ -10,6 +10,22 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+const (
+	ccpaVersion1      = '1'
+	ccpaNo            = 'N'
+	ccpaYes           = 'Y'
+	ccpaNotApplicable = '-'
+)
+
+const (
+	indexVersion                = 0
+	indexExplicitNotice         = 1
+	indexOptOutSale             = 2
+	indexLSPACoveredTransaction = 3
+)
+
+const allBidders = "*"
+
 // Policy represents the CCPA regulation for an OpenRTB bid request.
 type Policy struct {
 	Value         string
@@ -57,7 +73,7 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 }
 
 func (p Policy) writeRegsExt(req *openrtb.BidRequest) error {
-	if p.Value == "" {
+	if len(p.Value) == 0 {
 		return nil
 	}
 
@@ -95,12 +111,11 @@ func (p Policy) writeExt(req *openrtb.BidRequest) error {
 		ext.Prebid.NoSale = p.NoSaleBidders
 
 		extJSON, err := json.Marshal(ext)
-		if err != nil {
-			return err
+		if err == nil {
+			req.Ext = extJSON
 		}
 
-		req.Ext = extJSON
-		return nil
+		return err
 	}
 
 	var extMap map[string]interface{}
@@ -123,12 +138,11 @@ func (p Policy) writeExt(req *openrtb.BidRequest) error {
 	extMapPrebid["nosale"] = p.NoSaleBidders
 
 	extJSON, err := json.Marshal(extMap)
-	if err != nil {
-		return err
+	if err == nil {
+		req.Ext = extJSON
 	}
-	req.Ext = extJSON
 
-	return nil
+	return err
 }
 
 // Validate returns an error if the CCPA policy does not adhere to the IAB spec.
@@ -150,24 +164,24 @@ func ValidateConsent(consent string) error {
 		return errors.New("must contain 4 characters")
 	}
 
-	if consent[0] != '1' {
+	if consent[indexVersion] != ccpaVersion1 {
 		return errors.New("must specify version 1")
 	}
 
 	var c byte
 
-	c = consent[1]
-	if c != 'N' && c != 'Y' && c != '-' {
+	c = consent[indexExplicitNotice]
+	if c != ccpaNo && c != ccpaYes && c != ccpaNotApplicable {
 		return errors.New("must specify 'N', 'Y', or '-' for the explicit notice")
 	}
 
-	c = consent[2]
-	if c != 'N' && c != 'Y' && c != '-' {
+	c = consent[indexOptOutSale]
+	if c != ccpaNo && c != ccpaYes && c != ccpaNotApplicable {
 		return errors.New("must specify 'N', 'Y', or '-' for the opt-out sale")
 	}
 
-	c = consent[3]
-	if c != 'N' && c != 'Y' && c != '-' {
+	c = consent[indexLSPACoveredTransaction]
+	if c != ccpaNo && c != ccpaYes && c != ccpaNotApplicable {
 		return errors.New("must specify 'N', 'Y', or '-' for the limited service provider agreement")
 	}
 
@@ -181,10 +195,10 @@ func (p Policy) ShouldEnforce(bidder string) bool {
 	}
 
 	for _, b := range p.NoSaleBidders {
-		if b == "*" || strings.EqualFold(b, bidder) {
+		if b == allBidders || strings.EqualFold(b, bidder) {
 			return false
 		}
 	}
 
-	return p.Value != "" && p.Value[2] == 'Y'
+	return p.Value != "" && p.Value[indexOptOutSale] == ccpaYes
 }

@@ -20,7 +20,7 @@ type ExtRequestPrebid struct {
 	SupportDeals         bool                   `json:"supportdeals,omitempty"`
 
 	// NoSale allows publishers to explicitly declare relationships with bidders which do not constitute
-	// a sale per CCPA law. Values are bidder names or a star ('*') character to represent all bidders.
+	// a sale per CCPA law. Values are either bidder names or a star ('*') to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
 }
 
