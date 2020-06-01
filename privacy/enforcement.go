@@ -17,19 +17,15 @@ func (e Enforcement) Any() bool {
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
-func (e Enforcement) Apply(bidRequest *openrtb.BidRequest) {
-	e.apply(bidRequest, NewScrubber())
+func (e Enforcement) Apply(bidRequest *openrtb.BidRequest, ampGDPRException bool) {
+	e.apply(bidRequest, ampGDPRException, NewScrubber())
 }
 
-func (e Enforcement) apply(bidRequest *openrtb.BidRequest, scrubber Scrubber) {
+func (e Enforcement) apply(bidRequest *openrtb.BidRequest, ampGDPRException bool, scrubber Scrubber) {
 	if bidRequest != nil && e.Any() {
-		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getDeviceMacAndIFA(), e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
-		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(), e.getGeoScrubStrategy())
+		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
+		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(ampGDPRException), e.getGeoScrubStrategy())
 	}
-}
-
-func (e Enforcement) getDeviceMacAndIFA() bool {
-	return e.COPPA
 }
 
 func (e Enforcement) getIPv6ScrubStrategy() ScrubStrategyIPV6 {
@@ -56,14 +52,13 @@ func (e Enforcement) getGeoScrubStrategy() ScrubStrategyGeo {
 	return ScrubStrategyGeoNone
 }
 
-func (e Enforcement) getUserScrubStrategy() ScrubStrategyUser {
+func (e Enforcement) getUserScrubStrategy(ampGDPRException bool) ScrubStrategyUser {
 	if e.COPPA {
-		return ScrubStrategyUserFull
+		return ScrubStrategyUserIDAndDemographic
 	}
 
-	if e.GDPR || e.CCPA {
-		return ScrubStrategyUserBuyerIDOnly
+	if e.GDPR && ampGDPRException {
+		return ScrubStrategyUserNone
 	}
-
-	return ScrubStrategyUserNone
+	return ScrubStrategyUserID
 }

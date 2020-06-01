@@ -1,0 +1,127 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 728, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "networkId": 11,
+            "siteId": 32,
+            "unitId": 42
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+      "ip": "123.123.123.123"
+    },
+    "site": {
+      "domain": "www.some.com",
+      "page": "http://www.some.com/page-where-ad-will-be-shown"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://e.serverbid.com/api/v2",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ],
+          "Forwarded": [
+            "for=123.123.123.123"
+          ],
+          "Origin": [
+            "http://www.some.com"
+          ],
+          "Referer": [
+            "http://www.some.com/page-where-ad-will-be-shown"
+          ]
+        },
+        "body": {
+          "placements": [
+            {
+              "adTypes": [2730],
+              "divName": "test-imp-id",
+              "networkId": 11,
+              "siteId": 32,
+              "unitId": 42
+            }
+          ],
+          "networkId": 11,
+          "siteId": 32,
+          "unitId": 42,
+          "time": 1451651415,
+          "url": "http://www.some.com/page-where-ad-will-be-shown",
+          "includePricingData": true,
+          "user":{},
+          "enableBotFiltering": true,
+          "parallel": true,
+          "gdpr": {
+            "applies": false
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "decisions": {
+            "test-imp-id": {
+              "adId": 1234567890,
+              "pricing": {
+                "clearPrice": 0.5
+              },
+              "width": 728,
+              "height": 250,
+              "impressionUrl": "http://localhost:8080/shown",
+              "contents" : [
+                {
+                  "body": "<blink>Remember this: https://www.google.com/search?q=blink+tag ?</blink>"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-id",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "<blink>Remember this: https://www.google.com/search?q=blink+tag ?</blink>",
+            "crid": "1234567890",
+            "exp": 30,
+            "w": 728,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

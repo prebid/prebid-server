@@ -1,0 +1,123 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "orbidder-test",
+            "placementId": "test-placement",
+            "bidfloor": 0.1
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-INVALID",
+        "banner": {
+          "format": [{}]
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://orbidder-test",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "accountId": "orbidder-test",
+                  "placementId": "test-placement",
+                  "bidfloor": 0.1
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "seat-id",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "adid": "11110126",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "test-crid",
+                  "h": 250,
+                  "w": 300
+                }
+              ]
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "adid": "11110126",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "test-crid",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "unexpected end of JSON input",
+      "comparison": "literal"
+    }
+  ]
+}
