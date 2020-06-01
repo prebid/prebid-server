@@ -846,6 +846,15 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		}
 	}
 
+	privacyConfig := config.Privacy{
+		CCPA: config.CCPA{
+			Enforce: enforceCCPA,
+		},
+		LMT: config.LMT{
+			Enforce: true,
+		},
+	}
+
 	return &exchange{
 		adapterMap:          adapters,
 		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
@@ -854,7 +863,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		gDPR:                gdpr.AlwaysAllow{},
 		currencyConverter:   currencies.NewRateConverterDefault(),
 		UsersyncIfAmbiguous: false,
-		enforceCCPA:         enforceCCPA,
+		privacyConfig:       privacyConfig,
 	}
 }
 
