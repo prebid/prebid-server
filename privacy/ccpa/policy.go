@@ -36,20 +36,27 @@ type Policy struct {
 func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
 	policy := Policy{}
 
-	if req != nil && req.Regs != nil && len(req.Regs.Ext) > 0 {
+	if req == nil {
+		return policy, nil
+	}
+
+	if req.Regs != nil && len(req.Regs.Ext) > 0 {
 		var ext openrtb_ext.ExtRegs
 		if err := json.Unmarshal(req.Regs.Ext, &ext); err != nil {
-			return Policy{}, err
+			return policy, err
 		}
 		policy.Value = ext.USPrivacy
 	}
 
-	if req != nil && len(req.Ext) > 0 {
+	if len(req.Ext) > 0 {
 		var ext openrtb_ext.ExtRequest
-		if err := json.Unmarshal(req.Ext, &ext); err != nil {
-			return Policy{}, err
+
+		// Errors with reading the NoSaleBidders list shouldn't block enforcement of CCPA, so take a
+		// 'best effort' approach here and ignore problems unmarshalling the Prebid extension. Failure
+		// here is very unlikely due to request validation happening early in the auction endpoint.
+		if err := json.Unmarshal(req.Ext, &ext); err == nil {
+			policy.NoSaleBidders = ext.Prebid.NoSale
 		}
-		policy.NoSaleBidders = ext.Prebid.NoSale
 	}
 
 	return policy, nil

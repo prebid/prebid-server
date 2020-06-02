@@ -134,24 +134,30 @@ func TestRead(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			description: "Malformed Ext",
+			description: "Malformed Ext - NoSale Ignored",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{
 					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
 				},
 				Ext: json.RawMessage(`malformed`),
 			},
-			expectedError: true,
+			expectedPolicy: Policy{
+				Value:         "ABC",
+				NoSaleBidders: nil,
+			},
 		},
 		{
-			description: "Incorrect Ext.Prebid.NoSale Type",
+			description: "Incorrect Ext.Prebid.NoSale Type - NoSale Ignored",
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{
 					Ext: json.RawMessage(`{"us_privacy":"ABC"}`),
 				},
 				Ext: json.RawMessage(`{"prebid":{"nosale":"wrongtype"}}`),
 			},
-			expectedError: true,
+			expectedPolicy: Policy{
+				Value:         "ABC",
+				NoSaleBidders: nil,
+			},
 		},
 		{
 			description: "Injection Attack",
@@ -633,6 +639,12 @@ func TestShouldEnforce(t *testing.T) {
 			description: "Not Enforceable - No Sale Specific Bidder",
 			bidder:      "a",
 			policy:      Policy{Value: "1-Y-", NoSaleBidders: []string{"a"}},
+			expected:    false,
+		},
+		{
+			description: "Not Enforceable - No Sale Specific Bidder Mixed",
+			bidder:      "a",
+			policy:      Policy{Value: "1-Y-", NoSaleBidders: []string{"b", "a", "c"}},
 			expected:    false,
 		},
 		{

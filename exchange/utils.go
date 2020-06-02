@@ -41,6 +41,10 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	requestsByBidder, errs = splitBidRequest(orig, impsByBidder, aliases, usersyncs, blables, labels)
 
+	if len(requestsByBidder) == 0 {
+		return
+	}
+
 	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
 	consent := extractConsent(orig)
 	ampGDPRException := (labels.RType == pbsmetrics.ReqTypeAMP) && gDPR.AMPException()
