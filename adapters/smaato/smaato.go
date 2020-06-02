@@ -27,16 +27,6 @@ func (a *SmaatoAdapter) SkipNoCookies() bool {
 	return false
 }
 
-type smaatoSize struct {
-	w uint16
-	h uint16
-}
-
-var smaatoSizeMap = map[smaatoSize]int{
-	{w: 320, h: 50}:  1,
-	{w: 320, h: 250}: 2,
-}
-
 func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
