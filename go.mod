@@ -52,7 +52,6 @@ require (
 	github.com/spf13/viper v1.1.0
 	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.5.1
-	github.com/valyala/fasthttp v1.9.0
 	github.com/vrischmann/go-metrics-influxdb v0.0.0-20160917065939-43af8332c303
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
@@ -62,7 +61,7 @@ require (
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
+	golang.org/x/sys v0.0.0-20190422165155-953cdadca894 // indirect
 	golang.org/x/text v0.3.0
-	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 )
