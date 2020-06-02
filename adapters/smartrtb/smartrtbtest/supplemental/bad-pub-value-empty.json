@@ -1,0 +1,37 @@
+{
+  "mockBidRequest": {
+    "id": "abc",
+    "site": {
+      "page": "prebid.org"
+    },
+    "publisher": { },
+    "imp": [
+      {
+        "id": "imp123",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "zone_id": "N4zTDq3PPEHBIODv7cXK",
+            "force_bid": true
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Cannot infer publisher ID from bid ext",
+      "comparison": "literal"
+    }
+  ]
+}

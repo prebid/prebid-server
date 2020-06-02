@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
 
@@ -19,6 +20,8 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
+
+const badvLimitSize = 50
 
 type RubiconAdapter struct {
 	http         *adapters.HTTPAdapter
@@ -43,6 +46,26 @@ type rubiconParams struct {
 	Inventory json.RawMessage    `json:"inventory,omitempty"`
 	Visitor   json.RawMessage    `json:"visitor,omitempty"`
 	Video     rubiconVideoParams `json:"video"`
+}
+
+type bidRequestExt struct {
+	Prebid bidRequestExtPrebid `json:"prebid"`
+}
+
+type bidRequestExtPrebid struct {
+	Bidders bidRequestExtPrebidBidders `json:"bidders"`
+}
+
+type bidRequestExtPrebidBidders struct {
+	Rubicon prebidBiddersRubicon `json:"rubicon,omitempty"`
+}
+
+type prebidBiddersRubicon struct {
+	Debug prebidBiddersRubiconDebug `json:"debug,omitempty"`
+}
+
+type prebidBiddersRubiconDebug struct {
+	CpmOverride float64 `json:"cpmoverride,omitempty"`
 }
 
 type rubiconImpExtRPTrack struct {
@@ -128,6 +151,7 @@ type rubiconVideoParams struct {
 type rubiconVideoExt struct {
 	Skip      int               `json:"skip,omitempty"`
 	SkipDelay int               `json:"skipdelay,omitempty"`
+	VideoType string            `json:"videotype,omitempty"`
 	RP        rubiconVideoExtRP `json:"rp"`
 }
 
@@ -211,6 +235,16 @@ var rubiSizeMap = map[rubiSize]int{
 	{w: 800, h: 250}:   125,
 	{w: 200, h: 600}:   126,
 	{w: 640, h: 320}:   156,
+}
+
+// defines the contract for bidrequest.user.ext.eids[i].ext
+type rubiconUserExtEidExt struct {
+	Segments []string `json:"segments,omitempty"`
+}
+
+// defines the contract for bidrequest.user.ext.eids[i].uids[j].ext
+type rubiconUserExtEidUidExt struct {
+	RtiPartner string `json:"rtiPartner,omitempty"`
 }
 
 //MAS algorithm
@@ -564,6 +598,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 	requestImpCopy := request.Imp
 
+	rubiconRequest := *request
 	for i := 0; i < numRequests; i++ {
 		thisImp := requestImpCopy[i]
 
@@ -648,20 +683,12 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 				// set user.ext.tpid
 				if len(userExt.Eids) > 0 {
-					tpIds := make([]rubiconExtUserTpID, 0)
-					for _, eid := range userExt.Eids {
-						if eid.Source == "adserver.org" {
-							uids := eid.Uids
-							if len(uids) > 0 {
-								uid := uids[0]
-								if uid.Ext != nil && uid.Ext.RtiPartner == "TDID" {
-									tpIds = append(tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
-								}
-							}
-						}
-					}
-					if len(tpIds) > 0 {
-						userExtRP.TpID = tpIds
+					if tpIds, segments, errors := getTpIdsAndSegments(userExt.Eids); len(errors) > 0 {
+						errs = append(errs, errors...)
+						continue
+					} else if err := updateUserExtWithTpIdsAndSegments(&userExtRP, tpIds, segments); err != nil {
+						errs = append(errs, err)
+						continue
 					}
 				}
 			}
@@ -671,20 +698,33 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				errs = append(errs, err)
 				continue
 			}
-			request.User = &userCopy
+			rubiconRequest.User = &userCopy
 		}
 
 		if request.Device != nil {
 			deviceCopy := *request.Device
 			deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio}}
 			deviceCopy.Ext, err = json.Marshal(&deviceExt)
-			request.Device = &deviceCopy
+			rubiconRequest.Device = &deviceCopy
 		}
 
 		isVideo := isVideo(thisImp)
 		if isVideo {
+			if rubiconExt.Video.VideoSizeID == 0 {
+				errs = append(errs, &errortypes.BadInput{
+					Message: fmt.Sprintf("imp[%d].ext.bidder.rubicon.video.size_id must be defined for video impression", i),
+				})
+				continue
+			}
+
+			// if imp.ext.is_rewarded_inventory = 1, set imp.video.ext.videotype = "rewarded"
+			var videoType = ""
+			if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
+				videoType = "rewarded"
+			}
+
 			videoCopy := *thisImp.Video
-			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
+			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			thisImp.Video = &videoCopy
 			thisImp.Banner = nil
@@ -713,21 +753,28 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			siteCopy.Ext, err = json.Marshal(&siteExt)
 			siteCopy.Publisher = &openrtb.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
-			request.Site = &siteCopy
+			rubiconRequest.Site = &siteCopy
 		}
 		if request.App != nil {
 			appCopy := *request.App
 			appCopy.Ext, err = json.Marshal(&siteExt)
 			appCopy.Publisher = &openrtb.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
-			request.App = &appCopy
+			rubiconRequest.App = &appCopy
 		}
 
-		request.Imp = []openrtb.Imp{thisImp}
-		request.Cur = nil
-		request.Ext = nil
+		reqBadv := request.BAdv
+		if reqBadv != nil {
+			if len(reqBadv) > badvLimitSize {
+				rubiconRequest.BAdv = reqBadv[:badvLimitSize]
+			}
+		}
 
-		reqJSON, err := json.Marshal(request)
+		rubiconRequest.Imp = []openrtb.Imp{thisImp}
+		rubiconRequest.Cur = nil
+		rubiconRequest.Ext = nil
+
+		reqJSON, err := json.Marshal(rubiconRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -744,6 +791,82 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	}
 
 	return requestData, errs
+}
+
+func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, []string, []error) {
+	tpIds := make([]rubiconExtUserTpID, 0)
+	segments := make([]string, 0)
+	errs := make([]error, 0)
+
+	for _, eid := range eids {
+		switch eid.Source {
+		case "adserver.org":
+			uids := eid.Uids
+			if len(uids) > 0 {
+				uid := uids[0]
+
+				if uid.Ext != nil {
+					var eidUidExt rubiconUserExtEidUidExt
+					if err := json.Unmarshal(uid.Ext, &eidUidExt); err != nil {
+						errs = append(errs, &errortypes.BadInput{
+							Message: err.Error(),
+						})
+						continue
+					}
+
+					if eidUidExt.RtiPartner == "TDID" {
+						tpIds = append(tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
+					}
+				}
+			}
+		case "liveintent.com":
+			uids := eid.Uids
+			if len(uids) > 0 {
+				uidId := uids[0].ID
+				if uidId != "" {
+					tpIds = append(tpIds, rubiconExtUserTpID{Source: "liveintent.com", UID: uidId})
+				}
+
+				if eid.Ext != nil {
+					var eidExt rubiconUserExtEidExt
+					if err := json.Unmarshal(eid.Ext, &eidExt); err != nil {
+						errs = append(errs, &errortypes.BadInput{
+							Message: err.Error(),
+						})
+						continue
+					}
+					segments = eidExt.Segments
+				}
+			}
+		}
+	}
+
+	return tpIds, segments, errs
+}
+
+func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, tpIds []rubiconExtUserTpID, segments []string) error {
+	if len(tpIds) > 0 {
+		userExtRP.TpID = tpIds
+
+		if segments != nil {
+			userExtRPTarget := make(map[string]interface{})
+
+			if userExtRP.RP.Target != nil {
+				if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
+					return &errortypes.BadInput{Message: err.Error()}
+				}
+			}
+
+			userExtRPTarget["LIseg"] = segments
+
+			if target, err := json.Marshal(&userExtRPTarget); err != nil {
+				return &errortypes.BadInput{Message: err.Error()}
+			} else {
+				userExtRP.RP.Target = target
+			}
+		}
+	}
+	return nil
 }
 
 func isVideo(imp openrtb.Imp) bool {
@@ -798,9 +921,22 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		bidType = openrtb_ext.BidTypeVideo
 	}
 
+	impToCpmOverride := mapImpIdToCpmOverride(internalRequest.Imp)
+	cmpOverride := cmpOverrideFromBidRequest(internalRequest)
+
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
+
+			bidCmpOverride, ok := impToCpmOverride[bid.ImpID]
+			if !ok || bidCmpOverride == 0 {
+				bidCmpOverride = cmpOverride
+			}
+
+			if bidCmpOverride > 0 {
+				bid.Price = bidCmpOverride
+			}
+
 			if bid.Price != 0 {
 				// Since Rubicon XAPI returns only one bid per response
 				// copy response.bidid to openrtb_response.seatbid.bid.bidid
@@ -816,4 +952,31 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	}
 
 	return bidResponse, nil
+}
+
+func cmpOverrideFromBidRequest(bidRequest *openrtb.BidRequest) float64 {
+	var bidRequestExt bidRequestExt
+	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
+		return 0
+	}
+
+	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
+}
+
+func mapImpIdToCpmOverride(imps []openrtb.Imp) map[string]float64 {
+	impIdToCmpOverride := make(map[string]float64)
+	for _, imp := range imps {
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			continue
+		}
+
+		var rubiconExt openrtb_ext.ExtImpRubicon
+		if err := json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
+			continue
+		}
+
+		impIdToCmpOverride[imp.ID] = rubiconExt.Debug.CpmOverride
+	}
+	return impIdToCmpOverride
 }

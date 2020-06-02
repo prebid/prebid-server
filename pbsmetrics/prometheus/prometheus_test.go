@@ -1,9 +1,6 @@
 package prometheusmetrics
 
 import (
-	"fmt"
-	"regexp"
-	"strconv"
 	"testing"
 	"time"
 
@@ -15,428 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var gaugeValueRegexp = regexp.MustCompile("gauge:<value:([0-9]+) >")
-var counterValueRegexp = regexp.MustCompile("counter:<value:([0-9]+) >")
-var histogramValueRegexp = regexp.MustCompile("histogram:<sample_count:([0-9]+)")
-
-func TestConnectionMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metricConn := dto.Metric{}
-	metricConnErrA := dto.Metric{}
-	metricConnErrC := dto.Metric{}
-	proMetrics.RecordConnectionAccept(true)
-	proMetrics.RecordConnectionAccept(true)
-	proMetrics.RecordConnectionClose(true)
-	proMetrics.RecordConnectionAccept(true)
-	proMetrics.RecordConnectionAccept(false)
-	proMetrics.RecordConnectionClose(false)
-
-	proMetrics.connCounter.Write(&metricConn)
-	proMetrics.connError.WithLabelValues("accept_error").Write(&metricConnErrA)
-	proMetrics.connError.WithLabelValues("close_error").Write(&metricConnErrC)
-
-	assertGaugeValue(t, "connCounter", &metricConn, 2)
-	assertCounterValue(t, "connError[accept_error]", &metricConnErrA, 1)
-	assertCounterValue(t, "connError[close_error]", &metricConnErrC, 1)
-}
-
-func TestRequestMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metrics0 := dto.Metric{}
-	metrics1 := dto.Metric{}
-	metrics2 := dto.Metric{}
-	metrics3 := dto.Metric{}
-	metrics4 := dto.Metric{}
-
-	proMetrics.RecordRequest(labels[0])
-	proMetrics.RecordRequest(labels[1])
-	proMetrics.RecordRequest(labels[0])
-	proMetrics.RecordRequest(labels[2])
-	proMetrics.RecordRequest(labels[0])
-	proMetrics.RecordRequest(labels[2])
-	proMetrics.RecordRequest(labels[4])
-
-	proMetrics.requests.With(resolveLabels(labels[0])).Write(&metrics0)
-	proMetrics.requests.With(resolveLabels(labels[1])).Write(&metrics1)
-	proMetrics.requests.With(resolveLabels(labels[2])).Write(&metrics2)
-	proMetrics.requests.With(resolveLabels(labels[3])).Write(&metrics3)
-	proMetrics.requests.With(resolveLabels(labels[4])).Write(&metrics4)
-
-	assertCounterValue(t, "requests[0]", &metrics0, 3)
-	assertCounterValue(t, "requests[1]", &metrics1, 1)
-	assertCounterValue(t, "requests[2]", &metrics2, 2)
-	assertCounterValue(t, "requests[3]", &metrics3, 0)
-	assertCounterValue(t, "requests[4]", &metrics4, 1)
-}
-
-func TestLegacyImpMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metrics0 := dto.Metric{}
-	metrics1 := dto.Metric{}
-	metrics2 := dto.Metric{}
-	metrics3 := dto.Metric{}
-	metrics4 := dto.Metric{}
-
-	proMetrics.RecordLegacyImps(labels[0], 1)
-	proMetrics.RecordLegacyImps(labels[1], 5)
-	proMetrics.RecordLegacyImps(labels[0], 2)
-	proMetrics.RecordLegacyImps(labels[2], 2)
-	proMetrics.RecordLegacyImps(labels[0], 7)
-	proMetrics.RecordLegacyImps(labels[2], 1)
-	proMetrics.RecordLegacyImps(labels[4], 1)
-
-	proMetrics.legacyImps.With(resolveLabels(labels[0])).Write(&metrics0)
-	proMetrics.legacyImps.With(resolveLabels(labels[1])).Write(&metrics1)
-	proMetrics.legacyImps.With(resolveLabels(labels[2])).Write(&metrics2)
-	proMetrics.legacyImps.With(resolveLabels(labels[3])).Write(&metrics3)
-	proMetrics.legacyImps.With(resolveLabels(labels[4])).Write(&metrics4)
-
-	assertCounterValue(t, "legacyImps_requested[0]", &metrics0, 10)
-	assertCounterValue(t, "legacyImps_requested[1]", &metrics1, 5)
-	assertCounterValue(t, "legacyImps_requested[2]", &metrics2, 3)
-	assertCounterValue(t, "legacyImps_requested[3]", &metrics3, 0)
-	assertCounterValue(t, "legacyImps_requested[4]", &metrics4, 1)
-}
-
-func TestImpMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metrics0 := dto.Metric{}
-	metrics1 := dto.Metric{}
-	metrics2 := dto.Metric{}
-	metrics3 := dto.Metric{}
-
-	proMetrics.RecordImps(impTypeLabels[0])
-	proMetrics.RecordImps(impTypeLabels[1])
-	proMetrics.RecordImps(impTypeLabels[0])
-	proMetrics.RecordImps(impTypeLabels[2])
-	proMetrics.RecordImps(impTypeLabels[0])
-	proMetrics.RecordImps(impTypeLabels[2])
-	proMetrics.RecordImps(impTypeLabels[3])
-
-	proMetrics.imps.With(resolveImpLabels(impTypeLabels[0])).Write(&metrics0)
-	proMetrics.imps.With(resolveImpLabels(impTypeLabels[1])).Write(&metrics1)
-	proMetrics.imps.With(resolveImpLabels(impTypeLabels[2])).Write(&metrics2)
-	proMetrics.imps.With(resolveImpLabels(impTypeLabels[3])).Write(&metrics3)
-
-	assertCounterValue(t, "imp_metrics[0]", &metrics0, 3)
-	assertCounterValue(t, "imp_metrics[1]", &metrics1, 1)
-	assertCounterValue(t, "imp_metrics[2]", &metrics2, 2)
-	assertCounterValue(t, "imp_metrics[3]", &metrics3, 1)
-}
-
-func TestRecordImps(t *testing.T) {
-	var sampleEngine *Metrics = newTestMetricsEngine()
-	var sampleMetrics dto.Metric = dto.Metric{}
-	var samplePBSImpLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
-		BannerImps: false,
-		VideoImps:  false,
-		AudioImps:  false,
-		NativeImps: true,
-	}
-	var samplePrometheusMetrics prometheus.Labels = resolveImpLabels(samplePBSImpLabels)
-
-	sampleEngine.RecordImps(samplePBSImpLabels)
-	sampleEngine.imps.With(samplePrometheusMetrics).Write(&sampleMetrics)
-
-	for _, metricLabel := range sampleMetrics.Label {
-		var impType string = *metricLabel.Name
-		switch impType {
-		case "banner":
-			assert.Equal(t, *metricLabel.Value, "no", "'banner")
-		case "video":
-			assert.Equal(t, *metricLabel.Value, "no", "'video' should equal 'no'")
-		case "audio":
-			assert.Equal(t, *metricLabel.Value, "no", "'audio' should equal 'no'")
-		case "native":
-			assert.Equal(t, *metricLabel.Value, "yes", "'native' should equal 'yes'")
-		default:
-			fmt.Printf("'%s' is not recognized as a label \n", impType)
-		}
-	}
-
-	assertCounterValue(t, "imps_types_banner_count", &sampleMetrics, 1)
-}
-
-func TestTimerMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metrics0 := dto.Metric{}
-	metrics1 := dto.Metric{}
-	metrics2 := dto.Metric{}
-	metrics3 := dto.Metric{}
-	metrics4 := dto.Metric{}
-
-	proMetrics.RecordRequestTime(labels[0], 120*time.Millisecond)
-	proMetrics.RecordRequestTime(labels[1], 85*time.Millisecond)
-	proMetrics.RecordRequestTime(labels[0], 220*time.Millisecond)
-	proMetrics.RecordRequestTime(labels[2], 250*time.Millisecond)
-	proMetrics.RecordRequestTime(labels[0], 90*time.Millisecond)
-	proMetrics.RecordRequestTime(labels[2], 180*time.Millisecond)
-	proMetrics.RecordRequestTime(labels[4], 100*time.Millisecond)
-
-	// HistogramVec.With() now returns an observer interface, with no Write() method. The interface
-	// returned is still a reference to a Histogram, so this hack works. It may break in the future
-	// if the Prometheus team changes the observer to actually be its own thing.
-	proMetrics.reqTimer.With(resolveLabels(labels[0])).(prometheus.Histogram).Write(&metrics0)
-	proMetrics.reqTimer.With(resolveLabels(labels[1])).(prometheus.Histogram).Write(&metrics1)
-	proMetrics.reqTimer.With(resolveLabels(labels[2])).(prometheus.Histogram).Write(&metrics2)
-	proMetrics.reqTimer.With(resolveLabels(labels[3])).(prometheus.Histogram).Write(&metrics3)
-	proMetrics.reqTimer.With(resolveLabels(labels[4])).(prometheus.Histogram).Write(&metrics4)
-
-	assertHistogramValue(t, "request_time[0]", &metrics0, 3)
-	assertHistogramValue(t, "request_time[1]", &metrics1, 1)
-	assertHistogramValue(t, "request_time[2]", &metrics2, 2)
-	assertHistogramValue(t, "request_time[3]", &metrics3, 0)
-	assertHistogramValue(t, "request_time[4]", &metrics4, 1)
-}
-
-func TestAdapterRequestMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metrics0 := dto.Metric{}
-	metrics1 := dto.Metric{}
-	metrics2 := dto.Metric{}
-	metrics3 := dto.Metric{}
-	metrics4 := dto.Metric{}
-	emetrics0 := dto.Metric{}
-	emetrics1a := dto.Metric{}
-	emetrics1b := dto.Metric{}
-	emetrics2 := dto.Metric{}
-	emetrics3 := dto.Metric{}
-	emetrics4 := dto.Metric{}
-
-	proMetrics.RecordAdapterRequest(adaptLabels[0])
-	proMetrics.RecordAdapterRequest(adaptLabels[1])
-	proMetrics.RecordAdapterRequest(adaptLabels[0])
-	proMetrics.RecordAdapterRequest(adaptLabels[2])
-	proMetrics.RecordAdapterRequest(adaptLabels[0])
-	proMetrics.RecordAdapterRequest(adaptLabels[2])
-	proMetrics.RecordAdapterRequest(adaptLabels[4])
-
-	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[0])).Write(&metrics0)
-	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[1])).Write(&metrics1)
-	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[2])).Write(&metrics2)
-	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[3])).Write(&metrics3)
-	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[4])).Write(&metrics4)
-
-	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[0], string(pbsmetrics.AdapterErrorBadInput))).Write(&emetrics0)
-	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[1], string(pbsmetrics.AdapterErrorBadServerResponse))).Write(&emetrics1a)
-	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[1], string(pbsmetrics.AdapterErrorUnknown))).Write(&emetrics1b)
-	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[2], string(pbsmetrics.AdapterErrorBadInput))).Write(&emetrics2)
-	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[3], string(pbsmetrics.AdapterErrorBadInput))).Write(&emetrics3)
-	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[4], string(pbsmetrics.AdapterErrorBadInput))).Write(&emetrics4)
-
-	assertCounterValue(t, "adapter_requests[0]", &metrics0, 3)
-	assertCounterValue(t, "adapter_requests[1]", &metrics1, 1)
-	assertCounterValue(t, "adapter_requests[2]", &metrics2, 2)
-	assertCounterValue(t, "adapter_requests[3]", &metrics3, 0)
-	assertCounterValue(t, "adapter_requests[4]", &metrics4, 1)
-
-	assertCounterValue(t, "adapter_errors[0]", &emetrics0, 0)
-	assertCounterValue(t, "adapter_errors[1]a", &emetrics1a, 1)
-	assertCounterValue(t, "adapter_errors[1]b", &emetrics1b, 1)
-	assertCounterValue(t, "adapter_errors[2]", &emetrics2, 0)
-	assertCounterValue(t, "adapter_errors[3]", &emetrics3, 0)
-	assertCounterValue(t, "adapter_errors[4]", &emetrics4, 0)
-}
-
-func TestAdapterBidsMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metrics0 := dto.Metric{}
-	metrics1 := dto.Metric{}
-	metrics2 := dto.Metric{}
-	metrics3 := dto.Metric{}
-	metrics4 := dto.Metric{}
-
-	proMetrics.RecordAdapterBidReceived(adaptLabels[0], openrtb_ext.BidTypeBanner, true)
-	proMetrics.RecordAdapterBidReceived(adaptLabels[1], openrtb_ext.BidTypeBanner, false)
-	proMetrics.RecordAdapterBidReceived(adaptLabels[0], openrtb_ext.BidTypeBanner, true)
-	proMetrics.RecordAdapterBidReceived(adaptLabels[2], openrtb_ext.BidTypeVideo, true)
-	proMetrics.RecordAdapterBidReceived(adaptLabels[0], openrtb_ext.BidTypeBanner, true)
-	proMetrics.RecordAdapterBidReceived(adaptLabels[2], openrtb_ext.BidTypeVideo, true)
-	proMetrics.RecordAdapterBidReceived(adaptLabels[4], openrtb_ext.BidTypeVideo, true)
-
-	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[0], openrtb_ext.BidTypeBanner, true)).Write(&metrics0)
-	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[1], openrtb_ext.BidTypeBanner, false)).Write(&metrics1)
-	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[2], openrtb_ext.BidTypeVideo, true)).Write(&metrics2)
-	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[3], openrtb_ext.BidTypeNative, false)).Write(&metrics3)
-	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[4], openrtb_ext.BidTypeVideo, true)).Write(&metrics4)
-
-	assertCounterValue(t, "adapter_bids_received[0]", &metrics0, 3)
-	assertCounterValue(t, "adapter_bids_received[1]", &metrics1, 1)
-	assertCounterValue(t, "adapter_bids_received[2]", &metrics2, 2)
-	assertCounterValue(t, "adapter_bids_received[3]", &metrics3, 0)
-	assertCounterValue(t, "adapter_bids_received[4]", &metrics4, 1)
-}
-
-func TestAdapterPriceMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-	metrics0 := dto.Metric{}
-	metrics1 := dto.Metric{}
-	metrics2 := dto.Metric{}
-	metrics3 := dto.Metric{}
-	metrics4 := dto.Metric{}
-
-	proMetrics.RecordAdapterPrice(adaptLabels[0], 0.12)
-	proMetrics.RecordAdapterPrice(adaptLabels[1], 2.35)
-	proMetrics.RecordAdapterPrice(adaptLabels[0], 17.65)
-	proMetrics.RecordAdapterPrice(adaptLabels[2], 3.23333)
-	proMetrics.RecordAdapterPrice(adaptLabels[0], 6.564)
-	proMetrics.RecordAdapterPrice(adaptLabels[2], 0.03)
-	proMetrics.RecordAdapterPrice(adaptLabels[4], 1.23)
-
-	// HistogramVec.With() now returns an observer interface, with no Write() method. The interface
-	// returned is still a reference to a Histogram, so this hack works. It may break in the future
-	// if the Prometheus team changes the observer to actually be its own thing.
-	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[0])).(prometheus.Histogram).Write(&metrics0)
-	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[1])).(prometheus.Histogram).Write(&metrics1)
-	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[2])).(prometheus.Histogram).Write(&metrics2)
-	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[3])).(prometheus.Histogram).Write(&metrics3)
-	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[4])).(prometheus.Histogram).Write(&metrics4)
-
-	assertHistogramValue(t, "adapter_prices[0]", &metrics0, 3)
-	assertHistogramValue(t, "adapter_prices[1]", &metrics1, 1)
-	assertHistogramValue(t, "adapter_prices[2]", &metrics2, 2)
-	assertHistogramValue(t, "adapter_prices[3]", &metrics3, 0)
-	assertHistogramValue(t, "adapter_prices[4]", &metrics4, 1)
-
-}
-
-func TestAdapterTimeMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metrics0 := dto.Metric{}
-	metrics1 := dto.Metric{}
-	metrics2 := dto.Metric{}
-	metrics3 := dto.Metric{}
-	metrics4 := dto.Metric{}
-
-	proMetrics.RecordAdapterTime(adaptLabels[0], 85*time.Millisecond)
-	proMetrics.RecordAdapterTime(adaptLabels[1], 235*time.Millisecond)
-	proMetrics.RecordAdapterTime(adaptLabels[0], 177*time.Millisecond)
-	proMetrics.RecordAdapterTime(adaptLabels[2], 323*time.Millisecond)
-	proMetrics.RecordAdapterTime(adaptLabels[0], 664*time.Millisecond)
-	proMetrics.RecordAdapterTime(adaptLabels[2], 33*time.Millisecond)
-	proMetrics.RecordAdapterTime(adaptLabels[4], 333*time.Millisecond)
-
-	// HistogramVec.With() now returns an observer interface, with no Write() method. The interface
-	// returned is still a reference to a Histogram, so this hack works. It may break in the future
-	// if the Prometheus team changes the observer to actually be its own thing.
-	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[0])).(prometheus.Histogram).Write(&metrics0)
-	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[1])).(prometheus.Histogram).Write(&metrics1)
-	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[2])).(prometheus.Histogram).Write(&metrics2)
-	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[3])).(prometheus.Histogram).Write(&metrics3)
-	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[4])).(prometheus.Histogram).Write(&metrics4)
-
-	assertHistogramValue(t, "adapter_time[0]", &metrics0, 3)
-	assertHistogramValue(t, "adapter_time[1]", &metrics1, 1)
-	assertHistogramValue(t, "adapter_time[2]", &metrics2, 2)
-	assertHistogramValue(t, "adapter_time[3]", &metrics3, 0)
-	assertHistogramValue(t, "adapter_time[4]", &metrics4, 1)
-
-}
-
-func TestRecordStoredReqCacheResult(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metricCacheHit := dto.Metric{}
-	metricCacheMiss := dto.Metric{}
-
-	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheHit, 2)
-	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheHit, 0)
-	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheMiss, 1)
-
-	proMetrics.storedReqCacheResult.WithLabelValues(string(pbsmetrics.CacheHit)).Write(&metricCacheHit)
-	proMetrics.storedReqCacheResult.WithLabelValues(string(pbsmetrics.CacheMiss)).Write(&metricCacheMiss)
-
-	assertCounterValue(t, "stored_request_cache_performance[hit]", &metricCacheHit, 2)
-	assertCounterValue(t, "stored_request_cache_performance[miss]", &metricCacheMiss, 1)
-}
-
-func TestRecordStoredImpCacheResult(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metricCacheHit := dto.Metric{}
-	metricCacheMiss := dto.Metric{}
-
-	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheHit, 2)
-	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheHit, 0)
-	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, 1)
-
-	proMetrics.storedImpCacheResult.WithLabelValues(string(pbsmetrics.CacheHit)).Write(&metricCacheHit)
-	proMetrics.storedImpCacheResult.WithLabelValues(string(pbsmetrics.CacheMiss)).Write(&metricCacheMiss)
-
-	assertCounterValue(t, "stored_imp_cache_performance[hit]", &metricCacheHit, 2)
-	assertCounterValue(t, "stored_imp_cache_performance[miss]", &metricCacheMiss, 1)
-}
-
-func TestCookieMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metrics0 := dto.Metric{}
-
-	proMetrics.RecordCookieSync(labels[0])
-	proMetrics.RecordCookieSync(labels[1])
-	proMetrics.RecordCookieSync(labels[0])
-	proMetrics.RecordCookieSync(labels[2])
-	proMetrics.RecordCookieSync(labels[0])
-	proMetrics.RecordCookieSync(labels[2])
-	proMetrics.RecordCookieSync(labels[4])
-
-	proMetrics.cookieSync.Write(&metrics0)
-
-	assertCounterValue(t, "cookie_sync_requests", &metrics0, 7)
-}
-
-func TestUserMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metrics0 := dto.Metric{}
-	metrics1 := dto.Metric{}
-	metrics2 := dto.Metric{}
-	metrics3 := dto.Metric{}
-
-	proMetrics.RecordUserIDSet(userLabels[0])
-	proMetrics.RecordUserIDSet(userLabels[1])
-	proMetrics.RecordUserIDSet(userLabels[0])
-	proMetrics.RecordUserIDSet(userLabels[2])
-	proMetrics.RecordUserIDSet(userLabels[0])
-	proMetrics.RecordUserIDSet(userLabels[2])
-
-	proMetrics.userID.With(resolveUserSyncLabels(userLabels[0])).Write(&metrics0)
-	proMetrics.userID.With(resolveUserSyncLabels(userLabels[1])).Write(&metrics1)
-	proMetrics.userID.With(resolveUserSyncLabels(userLabels[2])).Write(&metrics2)
-	proMetrics.userID.With(resolveUserSyncLabels(userLabels[3])).Write(&metrics3)
-
-	assertCounterValue(t, "usersync[0]", &metrics0, 3)
-	assertCounterValue(t, "usersync[1]", &metrics1, 1)
-	assertCounterValue(t, "usersync[2]", &metrics2, 2)
-	assertCounterValue(t, "usersync[3]", &metrics3, 0)
-}
-
-func TestMetricsExist(t *testing.T) {
-	// Initialize the metrics engine -> register the metrics to prometheus
-	metrics := newTestMetricsEngine()
-
-	// Get at the underlying metrics object
-	proMetrics := metrics
-
-	if err := proMetrics.Registry.Register(prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: "prebid",
-		Subsystem: "server",
-		Name:      "active_connections",
-		Help:      "Current number of active (open) connections.",
-	})); err == nil {
-		t.Error("connCounter not registered")
-	}
-}
-
-func newTestMetricsEngine() *Metrics {
+func createMetricsForTesting() *Metrics {
 	return NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
@@ -444,190 +20,967 @@ func newTestMetricsEngine() *Metrics {
 	})
 }
 
-var labels = []pbsmetrics.Labels{
-	{
-		Source:        pbsmetrics.DemandWeb,
-		RType:         pbsmetrics.ReqTypeLegacy,
-		PubID:         "Pub1",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagYes,
-		RequestStatus: pbsmetrics.RequestStatusOK,
-	},
-	{
-		Source:        pbsmetrics.DemandWeb,
-		RType:         pbsmetrics.ReqTypeLegacy,
-		PubID:         "Pub1",
-		Browser:       pbsmetrics.BrowserSafari,
-		CookieFlag:    pbsmetrics.CookieFlagYes,
-		RequestStatus: pbsmetrics.RequestStatusOK,
-	},
-	{
-		Source:        pbsmetrics.DemandApp,
-		RType:         pbsmetrics.ReqTypeORTB2Web,
-		PubID:         "Pub2",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagNo,
-		RequestStatus: pbsmetrics.RequestStatusOK,
-	},
-	{
-		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeORTB2App,
-		PubID:         "Pub3",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusBadInput,
-	},
-	{
-		Source:        pbsmetrics.DemandWeb,
-		RType:         pbsmetrics.ReqTypeVideo,
-		PubID:         "Pub4",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusOK,
-	},
+func TestMetricCountGatekeeping(t *testing.T) {
+	m := createMetricsForTesting()
+
+	// Gather All Metrics
+	metricFamilies, err := m.Registry.Gather()
+	assert.NoError(t, err, "gather metics")
+
+	// Summarize By Adapter Cardinality
+	// - This requires metrics to be preloaded. We don't preload account metrics, so we can't test those.
+	generalCardinalityCount := 0
+	adapterCardinalityCount := 0
+	for _, metricFamily := range metricFamilies {
+		for _, metric := range metricFamily.GetMetric() {
+			isPerAdapter := false
+			for _, label := range metric.GetLabel() {
+				if label.GetName() == adapterLabel {
+					isPerAdapter = true
+				}
+			}
+
+			if isPerAdapter {
+				adapterCardinalityCount++
+			} else {
+				generalCardinalityCount++
+			}
+		}
+	}
+
+	// Calculate Per-Adapter Cardinality
+	adapterCount := len(openrtb_ext.BidderList())
+	perAdapterCardinalityCount := adapterCardinalityCount / adapterCount
+
+	// Verify General Cardinality
+	// - This assertion provides a warning for newly added high-cardinality non-adapter specific metrics. The hardcoded limit
+	//   is an arbitrary soft ceiling. Thought should be given as to the value of the new metrics if you find yourself
+	//   needing to increase this number.
+	assert.True(t, generalCardinalityCount <= 500, "General Cardinality")
+
+	// Verify Per-Adapter Cardinality
+	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
+	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
+	assert.True(t, perAdapterCardinalityCount <= 22, "Per-Adapter Cardinality")
 }
 
-var impTypeLabels = []pbsmetrics.ImpLabels{
-	{
-		//impType: "banner",
-		BannerImps: true,
-		VideoImps:  false,
-		AudioImps:  false,
-		NativeImps: false,
-	},
-	{
-		//impType: "audio",
-		BannerImps: false,
-		VideoImps:  true,
-		AudioImps:  false,
-		NativeImps: false,
-	},
-	{
-		//impType: "video",
-		BannerImps: false,
-		VideoImps:  false,
-		AudioImps:  true,
-		NativeImps: false,
-	},
-	{
-		//impType: "native",
-		BannerImps: false,
-		VideoImps:  false,
-		AudioImps:  false,
-		NativeImps: true,
-	},
-}
-
-var s struct{}
-
-var adaptLabels = []pbsmetrics.AdapterLabels{
-	{
-		Source:        pbsmetrics.DemandWeb,
-		RType:         pbsmetrics.ReqTypeLegacy,
-		Adapter:       openrtb_ext.BidderAppnexus,
-		PubID:         "Pub1",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagYes,
-		AdapterBids:   pbsmetrics.AdapterBidPresent,
-		AdapterErrors: map[pbsmetrics.AdapterError]struct{}{},
-	},
-	{
-		Source:      pbsmetrics.DemandWeb,
-		RType:       pbsmetrics.ReqTypeLegacy,
-		Adapter:     openrtb_ext.BidderEPlanning,
-		PubID:       "Pub1",
-		Browser:     pbsmetrics.BrowserSafari,
-		CookieFlag:  pbsmetrics.CookieFlagYes,
-		AdapterBids: pbsmetrics.AdapterBidPresent,
-		AdapterErrors: map[pbsmetrics.AdapterError]struct{}{
-			pbsmetrics.AdapterErrorBadServerResponse: s,
-			pbsmetrics.AdapterErrorUnknown:           s,
+func TestConnectionMetrics(t *testing.T) {
+	testCases := []struct {
+		description              string
+		testCase                 func(m *Metrics)
+		expectedOpenedCount      float64
+		expectedOpenedErrorCount float64
+		expectedClosedCount      float64
+		expectedClosedErrorCount float64
+	}{
+		{
+			description: "Open Success",
+			testCase: func(m *Metrics) {
+				m.RecordConnectionAccept(true)
+			},
+			expectedOpenedCount:      1,
+			expectedOpenedErrorCount: 0,
+			expectedClosedCount:      0,
+			expectedClosedErrorCount: 0,
 		},
-	},
-	{
-		Source:        pbsmetrics.DemandApp,
-		RType:         pbsmetrics.ReqTypeORTB2Web,
-		Adapter:       openrtb_ext.BidderIx,
-		PubID:         "Pub2",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagNo,
-		AdapterBids:   pbsmetrics.AdapterBidPresent,
-		AdapterErrors: map[pbsmetrics.AdapterError]struct{}{},
-	},
-	{
-		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeORTB2App,
-		Adapter:       openrtb_ext.BidderAppnexus,
-		PubID:         "Pub3",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		AdapterBids:   pbsmetrics.AdapterBidPresent,
-		AdapterErrors: map[pbsmetrics.AdapterError]struct{}{},
-	},
-	{
-		Source:        pbsmetrics.DemandWeb,
-		RType:         pbsmetrics.ReqTypeVideo,
-		Adapter:       openrtb_ext.BidderAppnexus,
-		PubID:         "Pub4",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		AdapterBids:   pbsmetrics.AdapterBidPresent,
-		AdapterErrors: map[pbsmetrics.AdapterError]struct{}{},
-	},
-}
+		{
+			description: "Open Error",
+			testCase: func(m *Metrics) {
+				m.RecordConnectionAccept(false)
+			},
+			expectedOpenedCount:      0,
+			expectedOpenedErrorCount: 1,
+			expectedClosedCount:      0,
+			expectedClosedErrorCount: 0,
+		},
+		{
+			description: "Closed Success",
+			testCase: func(m *Metrics) {
+				m.RecordConnectionClose(true)
+			},
+			expectedOpenedCount:      0,
+			expectedOpenedErrorCount: 0,
+			expectedClosedCount:      1,
+			expectedClosedErrorCount: 0,
+		},
+		{
+			description: "Closed Error",
+			testCase: func(m *Metrics) {
+				m.RecordConnectionClose(false)
+			},
+			expectedOpenedCount:      0,
+			expectedOpenedErrorCount: 0,
+			expectedClosedCount:      0,
+			expectedClosedErrorCount: 1,
+		},
+	}
 
-var userLabels = []pbsmetrics.UserLabels{
-	{
-		Action: pbsmetrics.RequestActionSet,
-		Bidder: openrtb_ext.BidderAppnexus,
-	},
-	{
-		Action: pbsmetrics.RequestActionGDPR,
-		Bidder: openrtb_ext.BidderAppnexus,
-	},
-	{
-		Action: pbsmetrics.RequestActionSet,
-		Bidder: openrtb_ext.BidderRubicon,
-	},
-	{
-		Action: pbsmetrics.RequestActionOptOut,
-		Bidder: openrtb_ext.BidderOpenx,
-	},
-}
+	for _, test := range testCases {
+		m := createMetricsForTesting()
 
-func assertMetricValue(t *testing.T, name string, m *dto.Metric, expected string) {
-	v := m.String()
-	if v != expected {
-		t.Errorf("Bad value for metric %s: expected=\"%s\", found=\"%s\"", name, expected, v)
+		test.testCase(m)
+
+		assertCounterValue(t, test.description, "connectionsClosed", m.connectionsClosed,
+			test.expectedClosedCount)
+		assertCounterValue(t, test.description, "connectionsOpened", m.connectionsOpened,
+			test.expectedOpenedCount)
+		assertCounterVecValue(t, test.description, "connectionsError[type=accept]", m.connectionsError,
+			test.expectedOpenedErrorCount, prometheus.Labels{
+				connectionErrorLabel: connectionAcceptError,
+			})
+		assertCounterVecValue(t, test.description, "connectionsError[type=close]", m.connectionsError,
+			test.expectedClosedErrorCount, prometheus.Labels{
+				connectionErrorLabel: connectionCloseError,
+			})
 	}
 }
 
-func assertGaugeValue(t *testing.T, name string, m *dto.Metric, expected int) {
-	v, err := strconv.Atoi(gaugeValueRegexp.FindStringSubmatch(m.String())[1])
-	if err != nil {
-		t.Errorf("Could not extract the value for metric %s. (output was %s, error was %v)", name, m.String(), err)
+func TestRequestMetric(t *testing.T) {
+	m := createMetricsForTesting()
+	requestType := pbsmetrics.ReqTypeORTB2Web
+	requestStatus := pbsmetrics.RequestStatusBlacklisted
+
+	m.RecordRequest(pbsmetrics.Labels{
+		RType:         requestType,
+		RequestStatus: requestStatus,
+	})
+
+	expectedCount := float64(1)
+	assertCounterVecValue(t, "", "requests", m.requests,
+		expectedCount,
+		prometheus.Labels{
+			requestTypeLabel:   string(requestType),
+			requestStatusLabel: string(requestStatus),
+		})
+}
+
+func TestRequestMetricWithoutCookie(t *testing.T) {
+	requestType := pbsmetrics.ReqTypeORTB2Web
+	performTest := func(m *Metrics, cookieFlag pbsmetrics.CookieFlag) {
+		m.RecordRequest(pbsmetrics.Labels{
+			RType:         requestType,
+			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
+			CookieFlag:    cookieFlag,
+		})
 	}
-	if v != expected {
-		t.Errorf("Bad value for metric %s: expected=\"%d\", found=\"%d\"", name, expected, v)
+
+	testCases := []struct {
+		description   string
+		testCase      func(m *Metrics)
+		cookieFlag    pbsmetrics.CookieFlag
+		expectedCount float64
+	}{
+		{
+			description: "Yes",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagYes)
+			},
+			expectedCount: 0,
+		},
+		{
+			description: "No",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagNo)
+			},
+			expectedCount: 1,
+		},
+		{
+			description: "Unknown",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagUnknown)
+			},
+			expectedCount: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+
+		test.testCase(m)
+
+		assertCounterVecValue(t, test.description, "requestsWithoutCookie", m.requestsWithoutCookie,
+			test.expectedCount,
+			prometheus.Labels{
+				requestTypeLabel: string(requestType),
+			})
 	}
 }
 
-func assertCounterValue(t *testing.T, name string, m *dto.Metric, expected int) {
-	v, err := strconv.Atoi(counterValueRegexp.FindStringSubmatch(m.String())[1])
-	if err != nil {
-		t.Errorf("Could not extract the value for metric %s. (output was %s, error was %v)", name, m.String(), err)
+func TestAccountMetric(t *testing.T) {
+	knownPubID := "knownPublisher"
+	performTest := func(m *Metrics, pubID string) {
+		m.RecordRequest(pbsmetrics.Labels{
+			RType:         pbsmetrics.ReqTypeORTB2Web,
+			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
+			PubID:         pubID,
+		})
 	}
-	if v != expected {
-		t.Errorf("Bad value for metric %s: expected=\"%d\", found=\"%d\"", name, expected, v)
+
+	testCases := []struct {
+		description   string
+		testCase      func(m *Metrics)
+		expectedCount float64
+	}{
+		{
+			description: "Known",
+			testCase: func(m *Metrics) {
+				performTest(m, knownPubID)
+			},
+			expectedCount: 1,
+		},
+		{
+			description: "Unknown",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.PublisherUnknown)
+			},
+			expectedCount: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+
+		test.testCase(m)
+
+		assertCounterVecValue(t, test.description, "accountRequests", m.accountRequests,
+			test.expectedCount,
+			prometheus.Labels{
+				accountLabel: knownPubID,
+			})
 	}
 }
 
-func assertHistogramValue(t *testing.T, name string, m *dto.Metric, expected int) {
-	v, err := strconv.Atoi(histogramValueRegexp.FindStringSubmatch(m.String())[1])
-	if err != nil {
-		t.Errorf("Could not extract the value for metric %s. (output was %s, error was %v)", name, m.String(), err)
+func TestImpressionsMetric(t *testing.T) {
+	performTest := func(m *Metrics, isBanner, isVideo, isAudio, isNative bool) {
+		m.RecordImps(pbsmetrics.ImpLabels{
+			BannerImps: isBanner,
+			VideoImps:  isVideo,
+			AudioImps:  isAudio,
+			NativeImps: isNative,
+		})
 	}
-	if v != expected {
-		t.Errorf("Bad value for metric %s: expected=\"%d\", found=\"%d\"", name, expected, v)
+
+	testCases := []struct {
+		description         string
+		testCase            func(m *Metrics)
+		expectedBannerCount float64
+		expectedVideoCount  float64
+		expectedAudioCount  float64
+		expectedNativeCount float64
+	}{
+		{
+			description: "Banner Only",
+			testCase: func(m *Metrics) {
+				performTest(m, true, false, false, false)
+			},
+			expectedBannerCount: 1,
+			expectedVideoCount:  0,
+			expectedAudioCount:  0,
+			expectedNativeCount: 0,
+		},
+		{
+			description: "Video Only",
+			testCase: func(m *Metrics) {
+				performTest(m, false, true, false, false)
+			},
+			expectedBannerCount: 0,
+			expectedVideoCount:  1,
+			expectedAudioCount:  0,
+			expectedNativeCount: 0,
+		},
+		{
+			description: "Audio Only",
+			testCase: func(m *Metrics) {
+				performTest(m, false, false, true, false)
+			},
+			expectedBannerCount: 0,
+			expectedVideoCount:  0,
+			expectedAudioCount:  1,
+			expectedNativeCount: 0,
+		},
+		{
+			description: "Native Only",
+			testCase: func(m *Metrics) {
+				performTest(m, false, false, false, true)
+			},
+			expectedBannerCount: 0,
+			expectedVideoCount:  0,
+			expectedAudioCount:  0,
+			expectedNativeCount: 1,
+		},
+		{
+			description: "Multiple Types",
+			testCase: func(m *Metrics) {
+				performTest(m, true, false, false, true)
+			},
+			expectedBannerCount: 1,
+			expectedVideoCount:  0,
+			expectedAudioCount:  0,
+			expectedNativeCount: 1,
+		},
 	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+
+		test.testCase(m)
+
+		var bannerCount float64
+		var videoCount float64
+		var audioCount float64
+		var nativeCount float64
+		processMetrics(m.impressions, func(m dto.Metric) {
+			value := m.GetCounter().GetValue()
+			for _, label := range m.GetLabel() {
+				if label.GetValue() == "true" {
+					switch label.GetName() {
+					case isBannerLabel:
+						bannerCount += value
+					case isVideoLabel:
+						videoCount += value
+					case isAudioLabel:
+						audioCount += value
+					case isNativeLabel:
+						nativeCount += value
+					}
+				}
+			}
+		})
+		assert.Equal(t, test.expectedBannerCount, bannerCount, test.description+":banner")
+		assert.Equal(t, test.expectedVideoCount, videoCount, test.description+":video")
+		assert.Equal(t, test.expectedAudioCount, audioCount, test.description+":audio")
+		assert.Equal(t, test.expectedNativeCount, nativeCount, test.description+":native")
+	}
+}
+
+func TestLegacyImpressionsMetric(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordLegacyImps(pbsmetrics.Labels{}, 42)
+
+	expectedCount := float64(42)
+	assertCounterValue(t, "", "impressionsLegacy", m.impressionsLegacy,
+		expectedCount)
+}
+
+func TestRequestTimeMetric(t *testing.T) {
+	requestType := pbsmetrics.ReqTypeORTB2Web
+	performTest := func(m *Metrics, requestStatus pbsmetrics.RequestStatus, timeInMs float64) {
+		m.RecordRequestTime(pbsmetrics.Labels{
+			RType:         requestType,
+			RequestStatus: requestStatus,
+		}, time.Duration(timeInMs)*time.Millisecond)
+	}
+
+	testCases := []struct {
+		description   string
+		testCase      func(m *Metrics)
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description: "Success",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.RequestStatusOK, 500)
+			},
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+		{
+			description: "Error",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.RequestStatusErr, 500)
+			},
+			expectedCount: 0,
+			expectedSum:   0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+
+		test.testCase(m)
+
+		result := getHistogramFromHistogramVec(m.requestsTimer, requestTypeLabel, string(requestType))
+		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
+	}
+}
+
+func TestAdapterBidReceivedMetric(t *testing.T) {
+	adapterName := "anyName"
+	performTest := func(m *Metrics, hasAdm bool) {
+		labels := pbsmetrics.AdapterLabels{
+			Adapter: openrtb_ext.BidderName(adapterName),
+		}
+		bidType := openrtb_ext.BidTypeBanner
+		m.RecordAdapterBidReceived(labels, bidType, hasAdm)
+	}
+
+	testCases := []struct {
+		description       string
+		testCase          func(m *Metrics)
+		expectedAdmCount  float64
+		expectedNurlCount float64
+	}{
+		{
+			description: "AdM",
+			testCase: func(m *Metrics) {
+				performTest(m, true)
+			},
+			expectedAdmCount:  1,
+			expectedNurlCount: 0,
+		},
+		{
+			description: "Nurl",
+			testCase: func(m *Metrics) {
+				performTest(m, false)
+			},
+			expectedAdmCount:  0,
+			expectedNurlCount: 1,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+
+		test.testCase(m)
+
+		assertCounterVecValue(t, test.description, "adapterBids[adm]", m.adapterBids,
+			test.expectedAdmCount,
+			prometheus.Labels{
+				adapterLabel:        adapterName,
+				markupDeliveryLabel: markupDeliveryAdm,
+			})
+		assertCounterVecValue(t, test.description, "adapterBids[nurl]", m.adapterBids,
+			test.expectedNurlCount,
+			prometheus.Labels{
+				adapterLabel:        adapterName,
+				markupDeliveryLabel: markupDeliveryNurl,
+			})
+	}
+}
+
+func TestRecordAdapterPriceMetric(t *testing.T) {
+	m := createMetricsForTesting()
+	adapterName := "anyName"
+	cpm := float64(42)
+
+	m.RecordAdapterPrice(pbsmetrics.AdapterLabels{
+		Adapter: openrtb_ext.BidderName(adapterName),
+	}, cpm)
+
+	expectedCount := uint64(1)
+	expectedSum := cpm
+	result := getHistogramFromHistogramVec(m.adapterPrices, adapterLabel, adapterName)
+	assertHistogram(t, "adapterPrices", result, expectedCount, expectedSum)
+}
+
+func TestAdapterRequestMetrics(t *testing.T) {
+	adapterName := "anyName"
+	performTest := func(m *Metrics, cookieFlag pbsmetrics.CookieFlag, adapterBids pbsmetrics.AdapterBid) {
+		labels := pbsmetrics.AdapterLabels{
+			Adapter:     openrtb_ext.BidderName(adapterName),
+			CookieFlag:  cookieFlag,
+			AdapterBids: adapterBids,
+		}
+		m.RecordAdapterRequest(labels)
+	}
+
+	testCases := []struct {
+		description                string
+		testCase                   func(m *Metrics)
+		expectedCount              float64
+		expectedCookieNoCount      float64
+		expectedCookieYesCount     float64
+		expectedCookieUnknownCount float64
+		expectedHasBidsCount       float64
+	}{
+		{
+			description: "No Cookie & No Bids",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagNo, pbsmetrics.AdapterBidNone)
+			},
+			expectedCount:              1,
+			expectedCookieNoCount:      1,
+			expectedCookieYesCount:     0,
+			expectedCookieUnknownCount: 0,
+			expectedHasBidsCount:       0,
+		},
+		{
+			description: "Unknown Cookie & No Bids",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagUnknown, pbsmetrics.AdapterBidNone)
+			},
+			expectedCount:              1,
+			expectedCookieNoCount:      0,
+			expectedCookieYesCount:     0,
+			expectedCookieUnknownCount: 1,
+			expectedHasBidsCount:       0,
+		},
+		{
+			description: "Has Cookie & No Bids",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagYes, pbsmetrics.AdapterBidNone)
+			},
+			expectedCount:              1,
+			expectedCookieNoCount:      0,
+			expectedCookieYesCount:     1,
+			expectedCookieUnknownCount: 0,
+			expectedHasBidsCount:       0,
+		},
+		{
+			description: "No Cookie & Bids Present",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagNo, pbsmetrics.AdapterBidPresent)
+			},
+			expectedCount:              1,
+			expectedCookieNoCount:      1,
+			expectedCookieYesCount:     0,
+			expectedCookieUnknownCount: 0,
+			expectedHasBidsCount:       1,
+		},
+		{
+			description: "Unknown Cookie & Bids Present",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagUnknown, pbsmetrics.AdapterBidPresent)
+			},
+			expectedCount:              1,
+			expectedCookieNoCount:      0,
+			expectedCookieYesCount:     0,
+			expectedCookieUnknownCount: 1,
+			expectedHasBidsCount:       1,
+		},
+		{
+			description: "Has Cookie & Bids Present",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagYes, pbsmetrics.AdapterBidPresent)
+			},
+			expectedCount:              1,
+			expectedCookieNoCount:      0,
+			expectedCookieYesCount:     1,
+			expectedCookieUnknownCount: 0,
+			expectedHasBidsCount:       1,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+
+		test.testCase(m)
+
+		var totalCount float64
+		var totalCookieNoCount float64
+		var totalCookieYesCount float64
+		var totalCookieUnknownCount float64
+		var totalHasBidsCount float64
+		processMetrics(m.adapterRequests, func(m dto.Metric) {
+			isMetricForAdapter := false
+			for _, label := range m.GetLabel() {
+				if label.GetName() == adapterLabel && label.GetValue() == adapterName {
+					isMetricForAdapter = true
+				}
+			}
+
+			if isMetricForAdapter {
+				value := m.GetCounter().GetValue()
+				totalCount += value
+				for _, label := range m.GetLabel() {
+
+					if label.GetName() == hasBidsLabel && label.GetValue() == "true" {
+						totalHasBidsCount += value
+					}
+
+					if label.GetName() == cookieLabel {
+						switch label.GetValue() {
+						case string(pbsmetrics.CookieFlagNo):
+							totalCookieNoCount += value
+						case string(pbsmetrics.CookieFlagYes):
+							totalCookieYesCount += value
+						case string(pbsmetrics.CookieFlagUnknown):
+							totalCookieUnknownCount += value
+						}
+					}
+				}
+			}
+		})
+		assert.Equal(t, test.expectedCount, totalCount, test.description+":total")
+		assert.Equal(t, test.expectedCookieNoCount, totalCookieNoCount, test.description+":cookie=no")
+		assert.Equal(t, test.expectedCookieYesCount, totalCookieYesCount, test.description+":cookie=yes")
+		assert.Equal(t, test.expectedCookieUnknownCount, totalCookieUnknownCount, test.description+":cookie=unknown")
+		assert.Equal(t, test.expectedHasBidsCount, totalHasBidsCount, test.description+":hasBids")
+	}
+}
+
+func TestAdapterRequestErrorMetrics(t *testing.T) {
+	adapterName := "anyName"
+	performTest := func(m *Metrics, adapterErrors map[pbsmetrics.AdapterError]struct{}) {
+		labels := pbsmetrics.AdapterLabels{
+			Adapter:       openrtb_ext.BidderName(adapterName),
+			AdapterErrors: adapterErrors,
+			CookieFlag:    pbsmetrics.CookieFlagUnknown,
+			AdapterBids:   pbsmetrics.AdapterBidPresent,
+		}
+		m.RecordAdapterRequest(labels)
+	}
+
+	testCases := []struct {
+		description                 string
+		testCase                    func(m *Metrics)
+		expectedErrorsCount         float64
+		expectedBadInputErrorsCount float64
+	}{
+		{
+			description: "No Errors",
+			testCase: func(m *Metrics) {
+				performTest(m, nil)
+			},
+			expectedErrorsCount:         0,
+			expectedBadInputErrorsCount: 0,
+		},
+		{
+			description: "Bad Input Error",
+			testCase: func(m *Metrics) {
+				performTest(m, map[pbsmetrics.AdapterError]struct{}{
+					pbsmetrics.AdapterErrorBadInput: {},
+				})
+			},
+			expectedErrorsCount:         1,
+			expectedBadInputErrorsCount: 1,
+		},
+		{
+			description: "Other Error",
+			testCase: func(m *Metrics) {
+				performTest(m, map[pbsmetrics.AdapterError]struct{}{
+					pbsmetrics.AdapterErrorBadServerResponse: {},
+				})
+			},
+			expectedErrorsCount:         1,
+			expectedBadInputErrorsCount: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+
+		test.testCase(m)
+
+		var errorsCount float64
+		var badInputErrorsCount float64
+		processMetrics(m.adapterErrors, func(m dto.Metric) {
+			isMetricForAdapter := false
+			for _, label := range m.GetLabel() {
+				if label.GetName() == adapterLabel && label.GetValue() == adapterName {
+					isMetricForAdapter = true
+				}
+			}
+
+			if isMetricForAdapter {
+				value := m.GetCounter().GetValue()
+				errorsCount += value
+				for _, label := range m.GetLabel() {
+					if label.GetName() == adapterErrorLabel && label.GetValue() == string(pbsmetrics.AdapterErrorBadInput) {
+						badInputErrorsCount += value
+					}
+				}
+			}
+		})
+		assert.Equal(t, test.expectedErrorsCount, errorsCount, test.description+":errors")
+		assert.Equal(t, test.expectedBadInputErrorsCount, badInputErrorsCount, test.description+":badInputErrors")
+	}
+}
+
+func TestAdapterTimeMetric(t *testing.T) {
+	adapterName := "anyName"
+	performTest := func(m *Metrics, timeInMs float64, adapterErrors map[pbsmetrics.AdapterError]struct{}) {
+		m.RecordAdapterTime(pbsmetrics.AdapterLabels{
+			Adapter:       openrtb_ext.BidderName(adapterName),
+			AdapterErrors: adapterErrors,
+		}, time.Duration(timeInMs)*time.Millisecond)
+	}
+
+	testCases := []struct {
+		description   string
+		testCase      func(m *Metrics)
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description: "Success",
+			testCase: func(m *Metrics) {
+				performTest(m, 500, map[pbsmetrics.AdapterError]struct{}{})
+			},
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+		{
+			description: "Error",
+			testCase: func(m *Metrics) {
+				performTest(m, 500, map[pbsmetrics.AdapterError]struct{}{
+					pbsmetrics.AdapterErrorTimeout: {},
+				})
+			},
+			expectedCount: 0,
+			expectedSum:   0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+
+		test.testCase(m)
+
+		result := getHistogramFromHistogramVec(m.adapterRequestsTimer, adapterLabel, adapterName)
+		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
+	}
+}
+
+func TestAdapterCookieSyncMetric(t *testing.T) {
+	m := createMetricsForTesting()
+	adapterName := "anyName"
+	privacyBlocked := true
+
+	m.RecordAdapterCookieSync(openrtb_ext.BidderName(adapterName), privacyBlocked)
+
+	expectedCount := float64(1)
+	assertCounterVecValue(t, "", "adapterCookieSync", m.adapterCookieSync,
+		expectedCount,
+		prometheus.Labels{
+			adapterLabel:        adapterName,
+			privacyBlockedLabel: "true",
+		})
+}
+
+func TestUserIDSetMetric(t *testing.T) {
+	m := createMetricsForTesting()
+	adapterName := "anyName"
+	action := pbsmetrics.RequestActionSet
+
+	m.RecordUserIDSet(pbsmetrics.UserLabels{
+		Bidder: openrtb_ext.BidderName(adapterName),
+		Action: action,
+	})
+
+	expectedCount := float64(1)
+	assertCounterVecValue(t, "", "adapterUserSync", m.adapterUserSync,
+		expectedCount,
+		prometheus.Labels{
+			adapterLabel: adapterName,
+			actionLabel:  string(action),
+		})
+}
+
+func TestUserIDSetMetricWhenBidderEmpty(t *testing.T) {
+	m := createMetricsForTesting()
+	action := pbsmetrics.RequestActionErr
+
+	m.RecordUserIDSet(pbsmetrics.UserLabels{
+		Bidder: openrtb_ext.BidderName(""),
+		Action: action,
+	})
+
+	expectedTotalCount := float64(0)
+	actualTotalCount := float64(0)
+	processMetrics(m.adapterUserSync, func(m dto.Metric) {
+		actualTotalCount += m.GetCounter().GetValue()
+	})
+	assert.Equal(t, expectedTotalCount, actualTotalCount, "total count")
+}
+
+func TestAdapterPanicMetric(t *testing.T) {
+	m := createMetricsForTesting()
+	adapterName := "anyName"
+
+	m.RecordAdapterPanic(pbsmetrics.AdapterLabels{
+		Adapter: openrtb_ext.BidderName(adapterName),
+	})
+
+	expectedCount := float64(1)
+	assertCounterVecValue(t, "", "adapterPanics", m.adapterPanics,
+		expectedCount,
+		prometheus.Labels{
+			adapterLabel: adapterName,
+		})
+}
+
+func TestStoredReqCacheResultMetric(t *testing.T) {
+	m := createMetricsForTesting()
+
+	hitCount := 42
+	missCount := 108
+	m.RecordStoredReqCacheResult(pbsmetrics.CacheHit, hitCount)
+	m.RecordStoredReqCacheResult(pbsmetrics.CacheMiss, missCount)
+
+	assertCounterVecValue(t, "", "storedRequestCacheResult:hit", m.storedRequestCacheResult,
+		float64(hitCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheHit),
+		})
+	assertCounterVecValue(t, "", "storedRequestCacheResult:miss", m.storedRequestCacheResult,
+		float64(missCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheMiss),
+		})
+}
+
+func TestStoredImpCacheResultMetric(t *testing.T) {
+	m := createMetricsForTesting()
+
+	hitCount := 42
+	missCount := 108
+	m.RecordStoredImpCacheResult(pbsmetrics.CacheHit, hitCount)
+	m.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, missCount)
+
+	assertCounterVecValue(t, "", "storedImpressionsCacheResult:hit", m.storedImpressionsCacheResult,
+		float64(hitCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheHit),
+		})
+	assertCounterVecValue(t, "", "storedImpressionsCacheResult:miss", m.storedImpressionsCacheResult,
+		float64(missCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheMiss),
+		})
+}
+
+func TestCookieMetric(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordCookieSync()
+
+	expectedCount := float64(1)
+	assertCounterValue(t, "", "cookieSync", m.cookieSync,
+		expectedCount)
+}
+
+func TestPrebidCacheRequestTimeMetric(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordPrebidCacheRequestTime(true, time.Duration(100)*time.Millisecond)
+	m.RecordPrebidCacheRequestTime(false, time.Duration(200)*time.Millisecond)
+
+	successExpectedCount := uint64(1)
+	successExpectedSum := float64(0.1)
+	successResult := getHistogramFromHistogramVec(m.prebidCacheWriteTimer, successLabel, "true")
+	assertHistogram(t, "Success", successResult, successExpectedCount, successExpectedSum)
+
+	errorExpectedCount := uint64(1)
+	errorExpectedSum := float64(0.2)
+	errorResult := getHistogramFromHistogramVec(m.prebidCacheWriteTimer, successLabel, "false")
+	assertHistogram(t, "Error", errorResult, errorExpectedCount, errorExpectedSum)
+}
+
+func TestMetricAccumulationSpotCheck(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordLegacyImps(pbsmetrics.Labels{}, 1)
+	m.RecordLegacyImps(pbsmetrics.Labels{}, 2)
+	m.RecordLegacyImps(pbsmetrics.Labels{}, 3)
+
+	expectedValue := float64(1 + 2 + 3)
+	assertCounterValue(t, "", "impressionsLegacy", m.impressionsLegacy,
+		expectedValue)
+}
+
+func TestRecordRequestQueueTimeMetric(t *testing.T) {
+	performTest := func(m *Metrics, requestStatus bool, requestType pbsmetrics.RequestType, timeInSec float64) {
+		m.RecordRequestQueueTime(requestStatus, requestType, time.Duration(timeInSec*float64(time.Second)))
+	}
+
+	testCases := []struct {
+		description   string
+		status        string
+		testCase      func(m *Metrics)
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description: "Success",
+			status:      requestSuccessLabel,
+			testCase: func(m *Metrics) {
+				performTest(m, true, pbsmetrics.ReqTypeVideo, 2)
+			},
+			expectedCount: 1,
+			expectedSum:   2,
+		},
+		{
+			description: "TimeoutError",
+			status:      requestRejectLabel,
+			testCase: func(m *Metrics) {
+				performTest(m, false, pbsmetrics.ReqTypeVideo, 50)
+			},
+			expectedCount: 1,
+			expectedSum:   50,
+		},
+	}
+
+	m := createMetricsForTesting()
+	for _, test := range testCases {
+
+		test.testCase(m)
+
+		result := getHistogramFromHistogramVecByTwoKeys(m.requestsQueueTimer, requestTypeLabel, "video", requestStatusLabel, test.status)
+		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
+	}
+}
+
+func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {
+	m := dto.Metric{}
+	counter.Write(&m)
+	actual := *m.GetCounter().Value
+
+	assert.Equal(t, expected, actual, description)
+}
+
+func assertCounterVecValue(t *testing.T, description, name string, counterVec *prometheus.CounterVec, expected float64, labels prometheus.Labels) {
+	counter := counterVec.With(labels)
+	assertCounterValue(t, description, name, counter, expected)
+}
+
+func getHistogramFromHistogramVec(histogram *prometheus.HistogramVec, labelKey, labelValue string) dto.Histogram {
+	var result dto.Histogram
+	processMetrics(histogram, func(m dto.Metric) {
+		for _, label := range m.GetLabel() {
+			if label.GetName() == labelKey && label.GetValue() == labelValue {
+				result = *m.GetHistogram()
+			}
+		}
+	})
+	return result
+}
+
+func getHistogramFromHistogramVecByTwoKeys(histogram *prometheus.HistogramVec, label1Key, label1Value, label2Key, label2Value string) dto.Histogram {
+	var result dto.Histogram
+	processMetrics(histogram, func(m dto.Metric) {
+		for ind, label := range m.GetLabel() {
+			if label.GetName() == label1Key && label.GetValue() == label1Value {
+				valInd := ind
+				if ind == 1 {
+					valInd = 0
+				}
+				if m.Label[valInd].GetName() == label2Key && m.Label[valInd].GetValue() == label2Value {
+					result = *m.GetHistogram()
+				}
+			}
+		}
+	})
+	return result
+}
+
+func processMetrics(collector prometheus.Collector, handler func(m dto.Metric)) {
+	collectorChan := make(chan prometheus.Metric)
+	go func() {
+		collector.Collect(collectorChan)
+		close(collectorChan)
+	}()
+
+	for metric := range collectorChan {
+		dtoMetric := dto.Metric{}
+		metric.Write(&dtoMetric)
+		handler(dtoMetric)
+	}
+}
+
+func assertHistogram(t *testing.T, name string, histogram dto.Histogram, expectedCount uint64, expectedSum float64) {
+	assert.Equal(t, expectedCount, histogram.GetSampleCount(), name+":count")
+	assert.Equal(t, expectedSum, histogram.GetSampleSum(), name+":sum")
 }

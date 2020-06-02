@@ -154,11 +154,12 @@ func CookieTypes() []CookieFlag {
 
 // Request/return status
 const (
-	RequestStatusOK          RequestStatus = "ok"
-	RequestStatusBadInput    RequestStatus = "badinput"
-	RequestStatusErr         RequestStatus = "err"
-	RequestStatusNetworkErr  RequestStatus = "networkerr"
-	RequestStatusBlacklisted RequestStatus = "blacklistedacctorapp"
+	RequestStatusOK           RequestStatus = "ok"
+	RequestStatusBadInput     RequestStatus = "badinput"
+	RequestStatusErr          RequestStatus = "err"
+	RequestStatusNetworkErr   RequestStatus = "networkerr"
+	RequestStatusBlacklisted  RequestStatus = "blacklistedacctorapp"
+	RequestStatusQueueTimeout RequestStatus = "queuetimeout"
 )
 
 func RequestStatuses() []RequestStatus {
@@ -168,6 +169,7 @@ func RequestStatuses() []RequestStatus {
 		RequestStatusErr,
 		RequestStatusNetworkErr,
 		RequestStatusBlacklisted,
+		RequestStatusQueueTimeout,
 	}
 }
 
@@ -236,9 +238,19 @@ const (
 	RequestActionErr    RequestAction = "err"
 )
 
+// RequestActions returns possible setuid action labels
+func RequestActions() []RequestAction {
+	return []RequestAction{
+		RequestActionSet,
+		RequestActionOptOut,
+		RequestActionGDPR,
+		RequestActionErr,
+	}
+}
+
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
 // The first three metrics function fire off once per incoming request, so total metrics
-// will equal the total numer of incoming requests. The remaining 5 fire off per outgoing
+// will equal the total number of incoming requests. The remaining 5 fire off per outgoing
 // request to a bidder adapter, so will record a number of hits per incoming request. The
 // two groups should be consistent within themselves, but comparing numbers between groups
 // is generally not useful.
@@ -256,10 +268,11 @@ type MetricsEngine interface {
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
-	RecordCookieSync(labels Labels) // May ignore all labels
+	RecordCookieSync()
 	RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool)
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
-	RecordPrebidCacheRequestTime(labels RequestLabels, length time.Duration)
+	RecordPrebidCacheRequestTime(success bool, length time.Duration)
+	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 }

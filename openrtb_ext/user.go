@@ -1,5 +1,7 @@
 package openrtb_ext
 
+import "encoding/json"
+
 // ExtUser defines the contract for bidrequest.user.ext
 type ExtUser struct {
 	// Consent is a GDPR consent string. See "Advised Extensions" of
@@ -36,15 +38,11 @@ type ExtUserEid struct {
 	Source string          `json:"source"`
 	ID     string          `json:"id,omitempty"`
 	Uids   []ExtUserEidUid `json:"uids,omitempty"`
+	Ext    json.RawMessage `json:"ext,omitempty"`
 }
 
 // ExtUserEidUid defines the contract for bidrequest.user.ext.eids[i].uids[j]
 type ExtUserEidUid struct {
-	ID  string            `json:"id"`
-	Ext *ExtUserEidUidExt `json:"ext,omitempty"`
-}
-
-// ExtUserEidUidExt defines the contract for bidrequest.user.ext.eids[i].uids[j].ext
-type ExtUserEidUidExt struct {
-	RtiPartner string `json:"rtiPartner,omitempty"`
+	ID  string          `json:"id"`
+	Ext json.RawMessage `json:"ext,omitempty"`
 }

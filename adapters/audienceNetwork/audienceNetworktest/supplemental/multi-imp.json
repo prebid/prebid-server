@@ -62,9 +62,6 @@
                     "Accept": [
                         "application/json"
                     ],
-                    "Auth-Token": [
-                        "test-app-id|test-app-secret"
-                    ],
                     "Content-Type": [
                         "application/json;charset=utf-8"
                     ],
@@ -73,7 +70,7 @@
                     ]
                 },
                 "body": {
-                    "id": "test-req-id",
+                    "id": "test-imp-1",
                     "imp": [
                         {
                             "id": "test-imp-1",
@@ -106,7 +103,7 @@
                     },
                     "tmax": 500,
                     "ext": {
-                        "authentication_id": "b2f9edfd707106adb6b692520081ad7e2a345444af1a895310228297a1b6247e",
+                        "authentication_id": "dfecd103a45daeb2a01728afb8ce78f6738f6007ecfebe1ca616b196e22b43e9",
                         "platformid": "test-platform-id"
                     }
                 }
@@ -114,7 +111,7 @@
             "mockResponse": {
                 "status": 200,
                 "body": {
-                    "id": "test-req-id",
+                    "id": "test-imp-1",
                     "seatbid": [
                         {
                             "bid": [
@@ -142,9 +139,6 @@
                     "Accept": [
                         "application/json"
                     ],
-                    "Auth-Token": [
-                        "test-app-id|test-app-secret"
-                    ],
                     "Content-Type": [
                         "application/json;charset=utf-8"
                     ],
@@ -153,7 +147,7 @@
                     ]
                 },
                 "body": {
-                    "id": "test-req-id",
+                    "id": "test-imp-2",
                     "imp": [
                         {
                             "id": "test-imp-2",
@@ -186,7 +180,7 @@
                     },
                     "tmax": 500,
                     "ext": {
-                        "authentication_id": "b2f9edfd707106adb6b692520081ad7e2a345444af1a895310228297a1b6247e",
+                        "authentication_id": "a5fead11a4db86d0f62f57c3d8001640227120c8ef236549f0db010c1dbab399",
                         "platformid": "test-platform-id"
                     }
                 }
@@ -194,7 +188,7 @@
             "mockResponse": {
                 "status": 200,
                 "body": {
-                    "id": "test-req-id",
+                    "id": "test-imp-2",
                     "seatbid": [
                         {
                             "bid": [

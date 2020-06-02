@@ -22,7 +22,7 @@ func TestSampleModule(t *testing.T) {
 		Response: &openrtb.BidResponse{},
 	})
 	if count != 1 {
-		t.Errorf("PBSAnalyticsModule failed at LogAuctionObejct")
+		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
 	am.LogSetUIDObject(&analytics.SetUIDObject{
@@ -33,17 +33,22 @@ func TestSampleModule(t *testing.T) {
 		Success: true,
 	})
 	if count != 2 {
-		t.Errorf("PBSAnalyticsModule failed at LogSetUIDObejct")
+		t.Errorf("PBSAnalyticsModule failed at LogSetUIDObject")
 	}
 
 	am.LogCookieSyncObject(&analytics.CookieSyncObject{})
 	if count != 3 {
-		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObejct")
+		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObject")
 	}
 
 	am.LogAmpObject(&analytics.AmpObject{})
 	if count != 4 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
+	}
+
+	am.LogVideoObject(&analytics.VideoObject{})
+	if count != 5 {
+		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
 }
 
@@ -52,6 +57,8 @@ type sampleModule struct {
 }
 
 func (m *sampleModule) LogAuctionObject(ao *analytics.AuctionObject) { *m.count++ }
+
+func (m *sampleModule) LogVideoObject(vo *analytics.VideoObject) { *m.count++ }
 
 func (m *sampleModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) { *m.count++ }
 

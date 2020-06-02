@@ -26,7 +26,7 @@
           },
           "ext": {
             "bidder": {
-              "placement_id": 10433394
+              "placement_id": 1
             }
           }
         }
@@ -73,7 +73,7 @@
                 "displaymanagerver": "prebid-mobile-1.0.0",
                 "ext": {
                   "appnexus": {
-                    "placement_id": 10433394
+                    "placement_id": 1
                   }
                 }
               }
@@ -106,7 +106,8 @@
                       "auction_id": 8189378542222915032,
                       "bid_ad_type": 0,
                       "bidder_id": 2,
-                      "ranking_price": 0.000000
+                      "ranking_price": 0.000000,
+                      "deal_priority": 5
                     }
                   }
                 }]
@@ -144,7 +145,8 @@
                   "auction_id": 8189378542222915032,
                   "bid_ad_type": 0,
                   "bidder_id": 2,
-                  "ranking_price": 0.000000
+                  "ranking_price": 0.000000,
+                  "deal_priority": 5
                 }
               }
             },

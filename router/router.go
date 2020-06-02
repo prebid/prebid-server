@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prebid/prebid-server/pbsmetrics"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/appnexus"
@@ -38,6 +40,7 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/router/aspects"
 	"github.com/prebid/prebid-server/ssl"
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
@@ -183,7 +186,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		glog.Infof("Could not read certificates file: %s \n", readCertErr.Error())
 	}
 
-	theClient := &http.Client{
+	generalHttpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        cfg.Client.MaxIdleConns,
 			MaxIdleConnsPerHost: cfg.Client.MaxIdleConnsPerHost,
@@ -191,13 +194,22 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 			TLSClientConfig:     &tls.Config{RootCAs: certPool},
 		},
 	}
+
+	cacheHttpClient := &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:        cfg.CacheClient.MaxIdleConns,
+			MaxIdleConnsPerHost: cfg.CacheClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:     time.Duration(cfg.CacheClient.IdleConnTimeout) * time.Second,
+		},
+	}
+
 	// Hack because of how legacy handles districtm
 	legacyBidderList := openrtb_ext.BidderList()
 	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
 
 	// Metrics engine
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
-	db, shutdown, fetcher, ampFetcher, categoriesFetcher, videoFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, theClient, r.Router)
+	db, shutdown, fetcher, ampFetcher, categoriesFetcher, videoFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
@@ -223,10 +235,11 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 
 	syncers := usersyncers.NewSyncerMap(cfg)
-	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, adapters.GDPRAwareSyncerIDs(syncers), theClient)
+	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, adapters.GDPRAwareSyncerIDs(syncers), generalHttpClient)
 
 	exchanges = newExchangeMap(cfg)
-	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine), cfg, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor)
+	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
+	theExchange := exchange.NewExchange(generalHttpClient, cacheClient, cfg, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor)
 
 	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap)
 
@@ -240,9 +253,14 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	videoEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, videoFetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap)
+	videoEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, videoFetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap, cacheClient)
 	if err != nil {
 		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
+	}
+
+	requestTimeoutHeaders := config.RequestTimeoutHeaders{}
+	if cfg.RequestTimeoutHeaders != requestTimeoutHeaders {
+		videoEndpoint = aspects.QueuedRequestTimeout(videoEndpoint, cfg.RequestTimeoutHeaders, r.MetricsEngine, pbsmetrics.ReqTypeVideo)
 	}
 
 	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
@@ -265,7 +283,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		PBSAnalytics:     pbsAnalytics,
 	}
 
-	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, pbsAnalytics, r.MetricsEngine))
+	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, syncers, gdprPerms, pbsAnalytics, r.MetricsEngine))
 	r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 	r.POST("/optout", userSyncDeps.OptOut)
 	r.GET("/optout", userSyncDeps.OptOut)

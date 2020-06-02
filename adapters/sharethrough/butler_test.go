@@ -2,17 +2,18 @@ package sharethrough
 
 import (
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
 type MockUtil struct {
@@ -436,6 +437,7 @@ func TestBuildUri(t *testing.T) {
 				BidID:              "bid",
 				ConsentRequired:    true,
 				ConsentString:      "consent",
+				USPrivacySignal:    "ccpa",
 				InstantPlayCapable: true,
 				Iframe:             false,
 				Height:             20,
@@ -449,6 +451,7 @@ func TestBuildUri(t *testing.T) {
 				"bidId=bid",
 				"consent_required=true",
 				"consent_string=consent",
+				"us_privacy=ccpa",
 				"instant_play_capable=true",
 				"stayInIframe=false",
 				"height=20",
@@ -538,15 +541,15 @@ func TestFailParseUri(t *testing.T) {
 	}{
 		"Fails decoding if unable to parse URI": {
 			input:         "test:/#$%?#",
-			expectedError: `parse test:/#$%?#: invalid URL escape "%?#"`,
+			expectedError: `parse (\")?test:/#\$%\?#(\")?: invalid URL escape \"%\?#\"`,
 		},
 		"Fails decoding if height not provided": {
 			input:         "http://abc.com?width=10",
-			expectedError: `strconv.ParseUint: parsing "": invalid syntax`,
+			expectedError: `strconv.ParseUint: parsing \"\": invalid syntax`,
 		},
 		"Fails decoding if width not provided": {
 			input:         "http://abc.com?height=10",
-			expectedError: `strconv.ParseUint: parsing "": invalid syntax`,
+			expectedError: `strconv.ParseUint: parsing \"\": invalid syntax`,
 		},
 	}
 
@@ -559,6 +562,6 @@ func TestFailParseUri(t *testing.T) {
 
 		assert.Nil(output)
 		assert.NotNil(actualError)
-		assert.Equal(test.expectedError, actualError.Error())
+		assert.Regexp(test.expectedError, actualError.Error())
 	}
 }

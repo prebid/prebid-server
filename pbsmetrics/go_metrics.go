@@ -24,6 +24,7 @@ type Metrics struct {
 	SafariRequestMeter             metrics.Meter
 	SafariNoCookieMeter            metrics.Meter
 	RequestTimer                   metrics.Timer
+	RequestsQueueTimer             map[RequestType]map[bool]metrics.Timer
 	PrebidCacheRequestTimerSuccess metrics.Timer
 	PrebidCacheRequestTimerError   metrics.Timer
 	StoredReqCacheMeter            map[CacheResult]metrics.Meter
@@ -111,6 +112,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		SafariRequestMeter:             blankMeter,
 		SafariNoCookieMeter:            blankMeter,
 		RequestTimer:                   blankTimer,
+		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
 		StoredReqCacheMeter:            make(map[CacheResult]metrics.Meter),
@@ -146,6 +148,11 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		}
 	}
 
+	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
+	//boolean value represents 2 general request statuses: accepted and rejected
+	newMetrics.RequestsQueueTimer["video"] = make(map[bool]metrics.Timer)
+	newMetrics.RequestsQueueTimer["video"][true] = blankTimer
+	newMetrics.RequestsQueueTimer["video"][false] = blankTimer
 	return newMetrics
 }
 
@@ -191,10 +198,14 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 			statusMap[stat] = metrics.GetOrRegisterMeter("requests."+string(stat)+"."+string(typ), registry)
 		}
 	}
+
 	for _, cacheRes := range CacheResults() {
 		newMetrics.StoredReqCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_request_cache_%s", string(cacheRes)), registry)
 		newMetrics.StoredImpCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_imp_cache_%s", string(cacheRes)), registry)
 	}
+
+	newMetrics.RequestsQueueTimer["video"][true] = metrics.GetOrRegisterTimer("queued_requests.video.accepted", registry)
+	newMetrics.RequestsQueueTimer["video"][false] = metrics.GetOrRegisterTimer("queued_requests.video.rejected", registry)
 
 	newMetrics.userSyncSet[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.sets", registry)
 	newMetrics.userSyncGDPRPrevent[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.gdpr_prevent", registry)
@@ -478,7 +489,7 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 }
 
 // RecordCookieSync implements a part of the MetricsEngine interface. Records a cookie sync request
-func (me *Metrics) RecordCookieSync(labels Labels) {
+func (me *Metrics) RecordCookieSync() {
 	me.CookieSyncMeter.Mark(1)
 }
 
@@ -518,13 +529,19 @@ func (me *Metrics) RecordStoredImpCacheResult(cacheResult CacheResult, inc int) 
 
 // RecordPrebidCacheRequestTime implements a part of the MetricsEngine interface. Records the
 // amount of time taken to store the auction result in Prebid Cache.
-func (me *Metrics) RecordPrebidCacheRequestTime(labels RequestLabels, length time.Duration) {
-	if labels.RequestStatus == RequestStatusOK {
+func (me *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
+	if success {
 		me.PrebidCacheRequestTimerSuccess.Update(length)
-		return
+	} else {
+		me.PrebidCacheRequestTimerError.Update(length)
+	}
+}
+
+func (me *Metrics) RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration) {
+	if requestType == ReqTypeVideo { //remove this check when other request types are supported
+		me.RequestsQueueTimer[requestType][success].Update(length)
 	}
 
-	me.PrebidCacheRequestTimerError.Update(length)
 }
 
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {

@@ -141,7 +141,7 @@
                 "targeting": {
                   "hb_bidder": "appnexus",
                   "hb_cache_host": "www.pbcserver.com",
-                  "hb_cache_path": "pbcache/endpoint",
+                  "hb_cache_path": "/pbcache/endpoint",
                   "hb_pb": "0.70",
                   "hb_size": "200x250"
                 }
@@ -174,7 +174,7 @@
                 "targeting": {
                   "hb_bidder": "appnexus",
                   "hb_cache_host": "www.pbcserver.com",
-                  "hb_cache_path": "pbcache/endpoint",
+                  "hb_cache_path": "/pbcache/endpoint",
                   "hb_pb": "0.60",
                   "hb_size": "300x500"
                 }

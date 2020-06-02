@@ -140,9 +140,9 @@ func (me *MultiMetricsEngine) RecordAdapterTime(labels pbsmetrics.AdapterLabels,
 }
 
 // RecordCookieSync across all engines
-func (me *MultiMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
+func (me *MultiMetricsEngine) RecordCookieSync() {
 	for _, thisME := range *me {
-		thisME.RecordCookieSync(labels)
+		thisME.RecordCookieSync()
 	}
 }
 
@@ -175,9 +175,16 @@ func (me *MultiMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) 
 }
 
 // RecordPrebidCacheRequestTime across all engines
-func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
+func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordPrebidCacheRequestTime(labels, length)
+		thisME.RecordPrebidCacheRequestTime(success, length)
+	}
+}
+
+// RecordRequestQueueTime across all engines
+func (me *MultiMetricsEngine) RecordRequestQueueTime(success bool, requestType pbsmetrics.RequestType, length time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordRequestQueueTime(success, requestType, length)
 	}
 }
 
@@ -186,85 +193,72 @@ type DummyMetricsEngine struct{}
 
 // RecordRequest as a noop
 func (me *DummyMetricsEngine) RecordRequest(labels pbsmetrics.Labels) {
-	return
 }
 
 // RecordConnectionAccept as a noop
 func (me *DummyMetricsEngine) RecordConnectionAccept(success bool) {
-	return
 }
 
 // RecordConnectionClose as a noop
 func (me *DummyMetricsEngine) RecordConnectionClose(success bool) {
-	return
 }
 
 // RecordImps as a noop
 func (me *DummyMetricsEngine) RecordImps(implabels pbsmetrics.ImpLabels) {
-	return
 }
 
 // RecordLegacyImps as a noop
 func (me *DummyMetricsEngine) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
-	return
 }
 
 // RecordRequestTime as a noop
 func (me *DummyMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
-	return
 }
 
 // RecordAdapterPanic as a noop
 func (me *DummyMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
-	return
 }
 
 // RecordAdapterRequest as a noop
 func (me *DummyMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
-	return
 }
 
 // RecordAdapterBidReceived as a noop
 func (me *DummyMetricsEngine) RecordAdapterBidReceived(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
-	return
 }
 
 // RecordAdapterPrice as a noop
 func (me *DummyMetricsEngine) RecordAdapterPrice(labels pbsmetrics.AdapterLabels, cpm float64) {
-	return
 }
 
 // RecordAdapterTime as a noop
 func (me *DummyMetricsEngine) RecordAdapterTime(labels pbsmetrics.AdapterLabels, length time.Duration) {
-	return
 }
 
 // RecordCookieSync as a noop
-func (me *DummyMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
-	return
+func (me *DummyMetricsEngine) RecordCookieSync() {
 }
 
 // RecordAdapterCookieSync as a noop
 func (me *DummyMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
-	return
 }
 
 // RecordUserIDSet as a noop
 func (me *DummyMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
-	return
 }
 
 // RecordStoredReqCacheResult as a noop
 func (me *DummyMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
-	return
 }
 
 // RecordStoredImpCacheResult as a noop
 func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
-	return
 }
 
 // RecordPrebidCacheRequestTime as a noop
-func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
-	return
+func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
+}
+
+// RecordRequestQueueTime as a noop
+func (me *DummyMetricsEngine) RecordRequestQueueTime(success bool, requestType pbsmetrics.RequestType, length time.Duration) {
 }

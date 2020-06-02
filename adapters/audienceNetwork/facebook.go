@@ -23,7 +23,6 @@ type FacebookAdapter struct {
 	URI          string
 	nonSecureUri string
 	platformID   string
-	appID        string
 	appSecret    string
 }
 
@@ -75,7 +74,6 @@ func (this *FacebookAdapter) buildRequests(request *openrtb.BidRequest) ([]*adap
 
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("Auth-Token", this.appID+"|"+this.appSecret)
 	headers.Add("X-Fb-Pool-Routing-Token", request.User.BuyerUID)
 
 	for _, imp := range request.Imp {
@@ -132,6 +130,11 @@ func (this *FacebookAdapter) modifyRequest(out *openrtb.BidRequest) error {
 		return err
 	}
 
+	// Every outgoing FAN request has a single impression, so we can safely use the unique
+	// impression ID as the FAN request ID. We need to make sure that we update the request
+	// ID *BEFORE* we generate the auth ID since its a hash based on the request ID
+	out.ID = imp.ID
+
 	reqExt := facebookReqExt{
 		PlatformID: this.platformID,
 		AuthID:     this.makeAuthID(out),
@@ -183,6 +186,21 @@ func (this *FacebookAdapter) modifyImp(out *openrtb.Imp) error {
 			out.Banner.Format = nil
 
 			return nil
+		}
+
+		if out.Banner.H == nil {
+			for _, f := range out.Banner.Format {
+				if _, ok := supportedBannerHeights[f.H]; ok {
+					h := f.H
+					out.Banner.H = &h
+					break
+				}
+			}
+			if out.Banner.H == nil {
+				return &errortypes.BadInput{
+					Message: fmt.Sprintf("imp #%s: banner height required", out.ID),
+				}
+			}
 		}
 
 		if _, ok := supportedBannerHeights[*out.Banner.H]; !ok {
@@ -320,6 +338,12 @@ func modifyImpCustom(json []byte, imp *openrtb.Imp) ([]byte, error) {
 }
 
 func (this *FacebookAdapter) MakeBids(request *openrtb.BidRequest, adapterRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	/* No bid response */
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	/* Any other http status codes outside of 200 and 204 should be treated as errors */
 	if response.StatusCode != http.StatusOK {
 		msg := response.Headers.Get("x-fb-an-errors")
 		return nil, []error{&errortypes.BadInput{
@@ -406,17 +430,9 @@ func resolveImpType(imp *openrtb.Imp) (openrtb_ext.BidType, bool) {
 	return openrtb_ext.BidTypeBanner, false
 }
 
-func NewFacebookBidder(client *http.Client, platformID string, appID string, appSecret string) adapters.Bidder {
+func NewFacebookBidder(client *http.Client, platformID string, appSecret string) adapters.Bidder {
 	if platformID == "" {
 		glog.Errorf("No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?")
-		return &adapters.MisconfiguredBidder{
-			Name:  "audienceNetwork",
-			Error: errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
-		}
-	}
-
-	if appID == "" {
-		glog.Errorf("No facebook app ID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.app_id in the app config?")
 		return &adapters.MisconfiguredBidder{
 			Name:  "audienceNetwork",
 			Error: errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
@@ -439,7 +455,44 @@ func NewFacebookBidder(client *http.Client, platformID string, appID string, app
 		//for AB test
 		nonSecureUri: "http://an.facebook.com/placementbid.ortb",
 		platformID:   platformID,
-		appID:        appID,
 		appSecret:    appSecret,
 	}
+}
+
+func (fa *FacebookAdapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+	var (
+		rID   string
+		pubID string
+		err   error
+	)
+
+	// Note, the facebook adserver can only handle single impression requests, so we have to split multi-imp requests into
+	// multiple request. In order to ensure that every split request has a unique ID, the split request IDs are set to the
+	// corresponding imp's ID
+	rID, err = jsonparser.GetString(req.Body, "id")
+	if err != nil {
+		return &adapters.RequestData{}, []error{err}
+	}
+
+	// The publisher ID is either in the app object or the site object, depending on the supply of the request so we need
+	// to check both
+	pubID, err = jsonparser.GetString(req.Body, "app", "publisher", "id")
+	if err != nil {
+		pubID, err = jsonparser.GetString(req.Body, "site", "publisher", "id")
+		if err != nil {
+			return &adapters.RequestData{}, []error{
+				errors.New("path [app|site].publisher.id not found in the request"),
+			}
+		}
+	}
+
+	uri := fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&app=%s&auction=%s&ortb_loss_code=2", fa.platformID, pubID, rID)
+	timeoutReq := adapters.RequestData{
+		Method:  "GET",
+		Uri:     uri,
+		Body:    nil,
+		Headers: http.Header{},
+	}
+
+	return &timeoutReq, nil
 }
