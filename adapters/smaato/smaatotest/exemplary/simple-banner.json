@@ -18,7 +18,7 @@
         "ext": {
           "bidder": {
             "publisherId": "1C86242D-9535-47D6-9576-7B1FE87F282C",
-            "adSpaceId": "130563103",
+            "adspaceId": "130563103",
             "instl": 0,
             "secure": 0
           }

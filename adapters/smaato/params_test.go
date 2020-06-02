@@ -39,10 +39,10 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"publisherId":"test-id-1234-smaato","adSpaceId": "1123581321"}`,
-	`{"publisherId":"test-id-1234-smaato","adSpaceId": "1123581321","instl": 1}`,
-	`{"publisherId":"test-id-1234-smaato","adSpaceId": "1123581321","secure": 1}`,
-	`{"publisherId":"test-id-1234-smaato","adSpaceId": "1123581321","instl": 0,"secure": 1}`,
+	`{"publisherId":"test-id-1234-smaato","adspaceId": "1123581321"}`,
+	`{"publisherId":"test-id-1234-smaato","adspaceId": "1123581321","instl": 1}`,
+	`{"publisherId":"test-id-1234-smaato","adspaceId": "1123581321","secure": 1}`,
+	`{"publisherId":"test-id-1234-smaato","adspaceId": "1123581321","instl": 0,"secure": 1}`,
 }
 
 var invalidParams = []string{
@@ -54,10 +54,10 @@ var invalidParams = []string{
 	`[]`,
 	`{}`,
 	`{"publisherId":"test-id-1234-smaato"}`,
-	`"adSpaceId": "1123581321"}`,
+	`"adspaceId": "1123581321"}`,
 	`{"instl": 0}`,
 	`{"secure": 0}`,
-	`{"adSpaceId": "1123581321","instl": 0,"secure": 0}`,
+	`{"adspaceId": "1123581321","instl": 0,"secure": 0}`,
 	`{"instl": 0,"secure": 0}`,
 	`{"publisherId":"test-id-1234-smaato","instl": 0,"secure": 0}`,
 }
