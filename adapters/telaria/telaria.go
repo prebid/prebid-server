@@ -1,8 +1,6 @@
 package telaria
 
 import (
-	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
@@ -79,7 +77,6 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("X-Openrtb-Version", "2.5")
-	headers.Add("Accept-Encoding", "gzip")
 
 	if request.Device != nil {
 		if len(request.Device.UA) > 0 {
@@ -233,34 +230,6 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 	}}, nil
 }
 
-// response isn't automatically decompressed. This method unzips the response if Content-Encoding is gzip
-func GetResponseBody(response *adapters.ResponseData) ([]byte, error) {
-
-	if "gzip" == response.Headers.Get("Content-Encoding") {
-		body := bytes.NewBuffer(response.Body)
-		r, readerErr := gzip.NewReader(body)
-		if readerErr != nil {
-			return nil, &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Error while trying to unzip data [ %d ]", response.StatusCode),
-			}
-		}
-		var resB bytes.Buffer
-		var err error
-		_, err = resB.ReadFrom(r)
-		if err != nil {
-			return nil, &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Error while trying to unzip data [ %d ]", response.StatusCode),
-			}
-		}
-
-		response.Headers.Del("Content-Encoding")
-
-		return resB.Bytes(), nil
-	} else {
-		return response.Body, nil
-	}
-}
-
 func (a *TelariaAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusNoContent {
 		return &errortypes.BadInput{Message: "Telaria: Invalid Bid Request received by the server"}
@@ -294,11 +263,7 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		return nil, []error{httpStatusError}
 	}
 
-	responseBody, err := GetResponseBody(response)
-
-	if err != nil {
-		return nil, []error{err}
-	}
+	responseBody := response.Body
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
