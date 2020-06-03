@@ -60,10 +60,12 @@ func cleanOpenRTBRequests(ctx context.Context,
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
 			var publisherID = labels.PubID
-			ok, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent)
+			ok, geo, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent)
 			privacyEnforcement.GDPR = !ok && err == nil
+			privacyEnforcement.GDPRGeo = !geo && err == nil
 		} else {
 			privacyEnforcement.GDPR = false
+			privacyEnforcement.GDPRGeo = false
 		}
 
 		privacyEnforcement.Apply(bidReq, ampGDPRException)
