@@ -17,27 +17,40 @@ func TestAny(t *testing.T) {
 		{
 			description: "All False",
 			enforcement: Enforcement{
-				CCPA:  false,
-				COPPA: false,
-				GDPR:  false,
+				CCPA:    false,
+				COPPA:   false,
+				GDPR:    false,
+				GDPRGeo: false,
 			},
 			expected: false,
 		},
 		{
 			description: "All True",
 			enforcement: Enforcement{
-				CCPA:  true,
-				COPPA: true,
-				GDPR:  true,
+				CCPA:    true,
+				COPPA:   true,
+				GDPR:    true,
+				GDPRGeo: true,
 			},
 			expected: true,
 		},
 		{
 			description: "Mixed",
 			enforcement: Enforcement{
-				CCPA:  false,
-				COPPA: true,
-				GDPR:  false,
+				CCPA:    false,
+				COPPA:   true,
+				GDPR:    false,
+				GDPRGeo: false,
+			},
+			expected: true,
+		},
+		{
+			description: "GDPRGeo only",
+			enforcement: Enforcement{
+				CCPA:    false,
+				COPPA:   false,
+				GDPR:    false,
+				GDPRGeo: true,
 			},
 			expected: true,
 		},
@@ -62,9 +75,10 @@ func TestApply(t *testing.T) {
 		{
 			description: "All Enforced",
 			enforcement: Enforcement{
-				CCPA:  true,
-				COPPA: true,
-				GDPR:  true,
+				CCPA:    true,
+				COPPA:   true,
+				GDPR:    true,
+				GDPRGeo: true,
 			},
 			ampGDPRException:   false,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
@@ -75,9 +89,10 @@ func TestApply(t *testing.T) {
 		{
 			description: "CCPA Only",
 			enforcement: Enforcement{
-				CCPA:  true,
-				COPPA: false,
-				GDPR:  false,
+				CCPA:    true,
+				COPPA:   false,
+				GDPR:    false,
+				GDPRGeo: false,
 			},
 			ampGDPRException:   false,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
@@ -88,9 +103,10 @@ func TestApply(t *testing.T) {
 		{
 			description: "COPPA Only",
 			enforcement: Enforcement{
-				CCPA:  false,
-				COPPA: true,
-				GDPR:  false,
+				CCPA:    false,
+				COPPA:   true,
+				GDPR:    false,
+				GDPRGeo: false,
 			},
 			ampGDPRException:   false,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
@@ -101,9 +117,10 @@ func TestApply(t *testing.T) {
 		{
 			description: "GDPR Only",
 			enforcement: Enforcement{
-				CCPA:  false,
-				COPPA: false,
-				GDPR:  true,
+				CCPA:    false,
+				COPPA:   false,
+				GDPR:    true,
+				GDPRGeo: true,
 			},
 			ampGDPRException:   false,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
@@ -114,9 +131,10 @@ func TestApply(t *testing.T) {
 		{
 			description: "GDPR Only, ampGDPRException",
 			enforcement: Enforcement{
-				CCPA:  false,
-				COPPA: false,
-				GDPR:  true,
+				CCPA:    false,
+				COPPA:   false,
+				GDPR:    true,
+				GDPRGeo: true,
 			},
 			ampGDPRException:   true,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
@@ -127,9 +145,10 @@ func TestApply(t *testing.T) {
 		{
 			description: "CCPA Only, ampGDPRException",
 			enforcement: Enforcement{
-				CCPA:  true,
-				COPPA: false,
-				GDPR:  false,
+				CCPA:    true,
+				COPPA:   false,
+				GDPR:    false,
+				GDPRGeo: false,
 			},
 			ampGDPRException:   true,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
@@ -140,15 +159,44 @@ func TestApply(t *testing.T) {
 		{
 			description: "COPPA and GDPR, ampGDPRException",
 			enforcement: Enforcement{
-				CCPA:  false,
-				COPPA: true,
-				GDPR:  true,
+				CCPA:    false,
+				COPPA:   true,
+				GDPR:    true,
+				GDPRGeo: true,
 			},
 			ampGDPRException:   true,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
 			expectedDeviceGeo:  ScrubStrategyGeoFull,
 			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoFull,
+		},
+		{
+			description: "GDPR Only, no Geo",
+			enforcement: Enforcement{
+				CCPA:    false,
+				COPPA:   false,
+				GDPR:    true,
+				GDPRGeo: false,
+			},
+			ampGDPRException:   false,
+			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
+			expectedDeviceGeo:  ScrubStrategyGeoNone,
+			expectedUser:       ScrubStrategyUserID,
+			expectedUserGeo:    ScrubStrategyGeoNone,
+		},
+		{
+			description: "GDPR Only, Geo only",
+			enforcement: Enforcement{
+				CCPA:    false,
+				COPPA:   false,
+				GDPR:    false,
+				GDPRGeo: true,
+			},
+			ampGDPRException:   false,
+			expectedDeviceIPv6: ScrubStrategyIPV6None,
+			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
+			expectedUser:       ScrubStrategyUserNone,
+			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 	}
 
