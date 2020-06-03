@@ -69,7 +69,8 @@ type rubiconImpExtRP struct {
 }
 
 type rubiconImpExt struct {
-	RP rubiconImpExtRP `json:"rp"`
+	RP                 rubiconImpExtRP `json:"rp"`
+	ViewabilityVendors []string        `json:"viewabilityvendors"`
 }
 
 type rubiconUserExtRP struct {
@@ -684,6 +685,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
+			ViewabilityVendors: rubiconExt.ViewabilityVendors,
 		}
 		thisImp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
