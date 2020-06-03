@@ -860,12 +860,12 @@ func TestParseVideoRequestWithUserAgentAndHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}
-
 	headers := http.Header{}
 	headers.Add("User-Agent", "TestHeader")
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "TestHeaderSample", req.Device.UA, "Header should be taken from original request")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
@@ -883,7 +883,8 @@ func TestParseVideoRequestWithUserAgentAndEmptyHeader(t *testing.T) {
 	headers := http.Header{}
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "TestHeaderSample", req.Device.UA, "Header should be taken from original request")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
@@ -902,7 +903,8 @@ func TestParseVideoRequestWithoutUserAgentWithHeader(t *testing.T) {
 	headers.Add("User-Agent", "TestHeader")
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "TestHeader", req.Device.UA, "Device.ua should be taken from request header")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
@@ -920,7 +922,8 @@ func TestParseVideoRequestWithoutUserAgentAndEmptyHeader(t *testing.T) {
 	headers := http.Header{}
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "", req.Device.UA, "Device.ua should be empty")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
@@ -942,7 +945,8 @@ func TestParseVideoRequestWithEncodedUserAgentInHeader(t *testing.T) {
 	headers.Add("User-Agent", uaEncoded)
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, uaDecoded, req.Device.UA, "Device.ua should be taken from request header")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
@@ -963,7 +967,8 @@ func TestParseVideoRequestWithDecodedUserAgentInHeader(t *testing.T) {
 	headers.Add("User-Agent", uaDecoded)
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, uaDecoded, req.Device.UA, "Device.ua should be taken from request header")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
