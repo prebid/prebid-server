@@ -10,7 +10,7 @@ import (
 // Policies represents the privacy regulations for an OpenRTB bid request.
 type Policies struct {
 	GDPR gdpr.Policy
-	CCPA ccpa.Policy
+	CCPA ccpa.ParsedPolicy
 }
 
 type policyWriter interface {

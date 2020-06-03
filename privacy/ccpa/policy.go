@@ -26,41 +26,51 @@ const (
 
 const allBidders = "*"
 
-// Policy represents the CCPA regulation for an OpenRTB bid request.
-type Policy struct {
+// RawPolicy represents the user provided CCPA regulation values.
+type RawPolicy struct {
 	Value         string
 	NoSaleBidders []string
 }
 
-// ReadPolicy extracts the CCPA regulation policy from an OpenRTB regs ext.
-func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
-	policy := Policy{}
+// ParsedPolicy represents the parsed and validated CCPA regulation values.
+type ParsedPolicy struct {
+	OptOutSaleYes         bool
+	NoSaleAllBidders      bool
+	NoSaleSpecificBidders map[string]struct{}
+}
 
+// ReadPolicy extracts the user provided CCPA regulation values from an OpenRTB request.
+func ReadPolicy(req *openrtb.BidRequest) (RawPolicy, error) {
 	if req == nil {
-		return policy, nil
+		return RawPolicy{}, nil
 	}
 
+	var value string
 	if req.Regs != nil && len(req.Regs.Ext) > 0 {
 		var ext openrtb_ext.ExtRegs
 		if err := json.Unmarshal(req.Regs.Ext, &ext); err != nil {
-			return policy, err
+			return RawPolicy{}, err
 		}
-		policy.Value = ext.USPrivacy
+		value = ext.USPrivacy
 	}
 
+	var noSaleBidders []string
 	if len(req.Ext) > 0 {
 		var ext openrtb_ext.ExtRequest
-
-		// Errors with reading the NoSaleBidders list shouldn't block enforcement of CCPA, so take a
-		// 'best effort' approach here and ignore problems unmarshalling the Prebid extension. Failure
-		// here is very unlikely due to request validation happening early in the auction endpoint.
-		if err := json.Unmarshal(req.Ext, &ext); err == nil {
-			policy.NoSaleBidders = ext.Prebid.NoSale
+		if err := json.Unmarshal(req.Ext, &ext); err != nil {
+			return RawPolicy{}, err
 		}
+		noSaleBidders = ext.Prebid.NoSale
 	}
 
-	return policy, nil
+	result := RawPolicy{{
+		Value: value,
+		NoSaleBidders: noSaleBidders,
+	}
+	return result, nil
 }
+
+
 
 // Write mutates an OpenRTB bid request with the context of the CCPA policy.
 func (p Policy) Write(req *openrtb.BidRequest) error {
@@ -152,10 +162,14 @@ func (p Policy) writeExt(req *openrtb.BidRequest) error {
 	return err
 }
 
-// Validate returns an error if the CCPA policy does not adhere to the IAB spec.
-func (p Policy) Validate() error {
+// Validate returns an error if the CCPA policy does not adhere to the IAB spec or the NoSale list is invalid.
+func (p Policy) Validate(bidders []string) error {
 	if err := ValidateConsent(p.Value); err != nil {
 		return fmt.Errorf("request.regs.ext.us_privacy %s", err.Error())
+	}
+
+	if err := ValidateNoSaleBidders(p.NoSaleBidders); err != nil {
+		return fmt.Errorf("request.ext.prebid.nosale %s", err.Error())
 	}
 
 	return nil
@@ -190,6 +204,20 @@ func ValidateConsent(consent string) error {
 	c = consent[indexLSPACoveredTransaction]
 	if c != ccpaNo && c != ccpaYes && c != ccpaNotApplicable {
 		return errors.New("must specify 'N', 'Y', or '-' for the limited service provider agreement")
+	}
+
+	return nil
+}
+
+func ValidateNoSaleBidders(noSaleBidders []string, bidders map[string]openrtb_ext.BidderName, aliases map[string]string) error {
+	if len(noSaleBidders) == 1 && noSaleBidders[0] == allBidders {
+		return nil
+	}
+
+	for _, bidder := range noSaleBidders {
+		if !validBidders.cotains[bidder] {
+			return fmt.Errorf("unrecognized bidder '%s'", bidder)
+		}
 	}
 
 	return nil
