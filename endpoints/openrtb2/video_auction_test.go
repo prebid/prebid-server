@@ -1107,9 +1107,6 @@ func TestCCPA(t *testing.T) {
 	}
 }
 
-func TestCCPAInvalidConsent(t *testing.T) {
-}
-
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	mockModule := &mockAnalyticsModule{}
