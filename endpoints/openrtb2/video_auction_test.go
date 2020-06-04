@@ -1,6 +1,7 @@
 package openrtb2
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -1041,6 +1042,74 @@ func TestCreateImpressionTemplate(t *testing.T) {
 	assert.Equal(t, res.Video.PlaybackMethod, []openrtb.PlaybackMethod{7, 8}, "Incorrect video playback method")
 }
 
+func TestCCPA(t *testing.T) {
+	testCases := []struct {
+		description         string
+		testFilePath        string
+		expectConsentString bool
+	}{
+		{
+			description:         "Missing Consent",
+			testFilePath:        "sample-requests/video/video_valid_sample.json",
+			expectConsentString: false,
+		},
+		{
+			description:         "Valid Consent",
+			testFilePath:        "sample-requests/video/video_valid_sample_ccpa_valid.json",
+			expectConsentString: true,
+		},
+		{
+			description:         "Malformed Consent",
+			testFilePath:        "sample-requests/video/video_valid_sample_ccpa_malformed.json",
+			expectConsentString: false,
+		},
+	}
+
+	for _, test := range testCases {
+		// Load Test Request
+		requestContainerBytes, err := ioutil.ReadFile(test.testFilePath)
+		if err != nil {
+			t.Fatalf("%s: Failed to fetch a valid request: %v", test.description, err)
+		}
+		requestBytes := getRequestPayload(t, requestContainerBytes)
+
+		// Create HTTP Request + Response Recorder
+		httpRequest := httptest.NewRequest("POST", "/openrtb2/video", bytes.NewReader(requestBytes))
+		httpResponseRecorder := httptest.NewRecorder()
+
+		// Run Test
+		ex := &mockExchangeVideo{}
+		mockDeps(t, ex).VideoAuctionEndpoint(httpResponseRecorder, httpRequest, nil)
+
+		// Validate Request To Exchange
+		// - An error should never be generated for CCPA problems.
+		if ex.lastRequest == nil {
+			t.Fatalf("%s: The request never made it into the exchange.", test.description)
+		}
+		extRegs := &openrtb_ext.ExtRegs{}
+		if err = json.Unmarshal(ex.lastRequest.Regs.Ext, extRegs); err != nil {
+			t.Fatalf("%s: Failed to unmarshal reg.ext in request to the exchange: %v", test.description, err)
+		}
+		if test.expectConsentString {
+			assert.Len(t, extRegs.USPrivacy, 4, test.description+":consent")
+		} else {
+			assert.Empty(t, extRegs.USPrivacy, test.description+":consent")
+		}
+
+		// Validate HTTP Response
+		responseBytes := httpResponseRecorder.Body.Bytes()
+		response := &openrtb_ext.BidResponseVideo{}
+		if err := json.Unmarshal(responseBytes, response); err != nil {
+			t.Fatalf("%s: Unable to unmarshal response.", test.description)
+		}
+		assert.Len(t, ex.lastRequest.Imp, 11, test.description+":imps")
+		assert.Len(t, response.AdPods, 5, test.description+":adpods")
+	}
+}
+
+func TestCCPAInvalidConsent(t *testing.T) {
+}
+
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	mockModule := &mockAnalyticsModule{}
@@ -1170,4 +1239,20 @@ var testVideoStoredImpData = map[string]json.RawMessage{
 
 var testVideoStoredRequestData = map[string]json.RawMessage{
 	"80ce30c53c16e6ede735f123ef6e32361bfc7b22": json.RawMessage(`{"accountid": "11223344", "site": {"page": "mygame.foo.com"}}`),
+}
+
+func loadValidRequest(t *testing.T) *openrtb_ext.BidRequestVideo {
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	reqBody := getRequestPayload(t, reqData)
+
+	reqVideo := &openrtb_ext.BidRequestVideo{}
+	if err := json.Unmarshal(reqBody, reqVideo); err != nil {
+		t.Fatalf("Failed to unmarshal the request: %v", err)
+	}
+
+	return reqVideo
 }
