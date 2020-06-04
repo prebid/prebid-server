@@ -726,7 +726,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.gumgum.endpoint", "https://g2.gumgum.com/providers/prbds2s/bid")
 	v.SetDefault("adapters.improvedigital.endpoint", "http://ad.360yield.com/pbs")
 	v.SetDefault("adapters.ix.endpoint", "http://appnexus-us-east.lb.indexww.com/transbidder?p=184932")
-	v.SetDefault("adapters.invibes.endpoint", "https://adweb.invibesstage.com/VideoAd/VideoAdContent?location=https%3A%2F%2Fdemo.invibesstage.com%2Fqa%2Finfeed.html&lId=l67e504l0gmk&showFallback=false&ivbsCampIdsLocal=&blk=&noc=false&oi=2&lnkBrk=&kw=Europe1&l=178&aci=divVideoStepAdTop&videoaddebug=1&invibbvlog=true&userCookieId=f14e0bd9-b637-415e-8800-6c0c30da93cb&vId=o5qji1&width=874&height=937&minifiedScriptList=21&callback=invibes.cb_4yermcpd")
+	v.SetDefault("adapters.invibes.endpoint", "https://adweb.videostepstage.com/bid/VideoAdContent")
 	v.SetDefault("adapters.kidoz.endpoint", "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server")
 	v.SetDefault("adapters.kubient.endpoint", "http://kbntx.ch/prebid")
 	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")

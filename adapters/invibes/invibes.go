@@ -126,8 +126,8 @@ type BidModel struct {
 	AuctionStartTime int64       `json:"AuctionStartTime"`
 	PreloadScripts   interface{} `json:"PreloadScripts"`
 	BidVersion       int64       `json:"BidVersion"`
-	Width            interface{} `json:"Width"`
-	Height           interface{} `json:"Height"`
+	Width            *uint64     `json:"Width"`
+	Height           *uint64     `json:"Height"`
 	Currency         string      `json:"Currency"`
 	Context          Context     `json:"Context"`
 }
@@ -148,8 +148,8 @@ type Placement struct {
 	PublisherURLID           int64       `json:"PublisherUrlId"`
 	TemplateModelID          int64       `json:"TemplateModelId"`
 	URL                      interface{} `json:"Url"`
-	Width                    interface{} `json:"Width"`
-	Height                   interface{} `json:"Height"`
+	Width                    *uint64     `json:"Width"`
+	Height                   *uint64     `json:"Height"`
 }
 
 type BrokerAPI struct {
@@ -170,22 +170,6 @@ type CmpSettings struct {
 
 const adapterVersion = "1.0.0"
 const maxUriLength = 8000
-const measurementCode = `
-	<script>
-		+function() {
-			var wu = "%s";
-			var su = "%s".replace(/\[TIMESTAMP\]/, Date.now());
-
-			if (wu && !(navigator.sendBeacon && navigator.sendBeacon(wu))) {
-				(new Image(1,1)).src = wu
-			}
-
-			if (su && !(navigator.sendBeacon && navigator.sendBeacon(su))) {
-				(new Image(1,1)).src = su
-			}
-		}();
-	</script>
-`
 
 type ResponseAdUnit struct {
 	ID       string `json:"id"`
@@ -203,7 +187,6 @@ type ResponseAdUnit struct {
 type AdInvibesAdapter struct {
 	http             *adapters.HTTPAdapter
 	endpointTemplate template.Template
-	measurementCode  string
 }
 
 func NewInvibesBidder(client *http.Client, endpointTemplateString string) *AdInvibesAdapter {
@@ -217,14 +200,13 @@ func NewInvibesBidder(client *http.Client, endpointTemplateString string) *AdInv
 	return &AdInvibesAdapter{
 		http:             a,
 		endpointTemplate: *endpointTemplate,
-		//measurementCode:  whiteSpace.ReplaceAllString(measurementCode, " "),
 	}
 }
 
 func (a *AdInvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
-			Message: "No impression in the bid request",
+			Message: "No imps in the bid request",
 		}}
 	}
 
@@ -266,17 +248,17 @@ func (a *AdInvibesAdapter) makeRequest(existingRequests []*adapters.RequestData,
 		}
 	}
 
-	//support for multiple imps?
-	addedToExistingRequest := addToExistingRequest(existingRequests, &invibesExt, imp.ID)
-	if addedToExistingRequest {
-		return nil, nil
-	}
+	//support for multiple imps per request?
+	// addedToExistingRequest := addToExistingRequest(existingRequests, &invibesExt, imp.ID)
+	// if addedToExistingRequest {
+	// 	return nil, nil
+	// }
 
-	url, err := a.makeURL(&invibesExt, imp.ID, request, consentString)
+	url, err := a.makeURL(&invibesExt, imp, request, consentString)
 	if err != nil {
 		return nil, err
 	}
-
+	println(url)
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -284,19 +266,17 @@ func (a *AdInvibesAdapter) makeRequest(existingRequests []*adapters.RequestData,
 	if request.Device != nil {
 		headers.Add("User-Agent", request.Device.UA)
 
-		//todoav: fix this
-		// if request.Device.IP != "" {
-		// 	headers.Add("X-Forwarded-For", request.Device.IP)
-		// } else if request.Device.IPv6 != "" {
-		// 	headers.Add("X-Forwarded-For", request.Device.IPv6)
-		// }
-		headers.Add("X-Forwarded-For", "86.104.183.197")
+		if invibesExt.Debug.TestIp != "" {
+			headers.Add("X-Forwarded-For", invibesExt.Debug.TestIp)
+		} else if request.Device.IP != "" {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		} else if request.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
 	}
 
 	if request.Site != nil {
-		//todoav: fix this
-		// headers.Add("Referer", request.Site.Page)
-		headers.Add("Referer", "https://demo.invibesstage.com/qa/infeed.html?videoaddebug=1&invibbvlog=true")
+		headers.Add("Referer", request.Site.Page)
 	}
 
 	return &adapters.RequestData{
@@ -306,37 +286,7 @@ func (a *AdInvibesAdapter) makeRequest(existingRequests []*adapters.RequestData,
 	}, nil
 }
 
-func addToExistingRequest(existingRequests []*adapters.RequestData, newParams *openrtb_ext.ExtImpInvibes, auctionID string) bool {
-	// requestsLoop:
-	// 	for _, request := range existingRequests {
-	// 		endpointURL, _ := url.Parse(request.Uri)
-	// 		queryParams := endpointURL.Query()
-	// 		masterID := queryParams["id"][0]
-
-	// 		if masterID == newParams.MasterID {
-	// 			aids := queryParams["aid"]
-	// 			for _, aid := range aids {
-	// 				slaveID := strings.SplitN(aid, ":", 2)[0]
-	// 				if slaveID == newParams.SlaveID {
-	// 					continue requestsLoop
-	// 				}
-	// 			}
-
-	// 			queryParams.Add("aid", newParams.SlaveID+":"+auctionID)
-	// 			endpointURL.RawQuery = queryParams.Encode()
-	// 			newUri := endpointURL.String()
-	// 			if len(newUri) < maxUriLength {
-	// 				request.Uri = newUri
-	// 				return true
-	// 			}
-	// 		}
-	// 	}
-
-	return false
-}
-
-func (a *AdInvibesAdapter) makeURL(params *openrtb_ext.ExtImpInvibes, auctionID string, request *openrtb.BidRequest, consentString string) (string, error) {
-	//endpointParams := macros.EndpointTemplateParams{Host: params.EmitterDomain}
+func (a *AdInvibesAdapter) makeURL(params *openrtb_ext.ExtImpInvibes, imp *openrtb.Imp, request *openrtb.BidRequest, consentString string) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{Host: request.Site.Domain}
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
@@ -345,37 +295,54 @@ func (a *AdInvibesAdapter) makeURL(params *openrtb_ext.ExtImpInvibes, auctionID 
 		}
 	}
 
-	return host, nil
+	endpointURL, err := url.Parse(host)
+	if err != nil {
+		return "", &errortypes.BadInput{
+			Message: "Malformed URL: " + err.Error(),
+		}
+	}
 
-	// endpointURL, err := url.Parse(host)
-	// if err != nil {
-	// 	return "", &errortypes.BadInput{
-	// 		Message: "Malformed URL: " + err.Error(),
-	// 	}
-	// }
+	queryParams := url.Values{}
+	queryParams.Add("aver", adapterVersion)
+	queryParams.Add("impid", imp.ID)
+	bidParams := "{placementIds:[\"" + params.PlacementId + "\"],bidVersion:\"1\"}"
+	queryParams.Add("BidParamsJson", bidParams)
+	if request.Site != nil {
+		queryParams.Add("location", request.Site.Page)
+	}
+	//todoav: checkuser
+	if request.User != nil {
+		var lid string = request.User.BuyerUID
+		if lid == "" {
+			lid = request.User.ID
+		}
+		if lid != "" {
+			queryParams.Add("lid", lid)
+		}
+	}
+	if params.Debug.TestIp != "" {
+		queryParams.Add("istest", "true")
+	}
+	queryParams.Add("showFallback", "false")
+	queryParams.Add("kw", "Europe1")
 
-	// randomizedPart := 10000000 + rand.Intn(99999999-10000000)
-	// if request.Test == 1 {
-	// 	randomizedPart = 10000000
-	// }
-	// endpointURL.Path = "/_" + strconv.Itoa(randomizedPart) + "/ad.json"
+	if imp.Banner != nil {
+		// imp.Banner.Format
+		// imp.Banner.W
+		// imp.Banner.H
+	}
+	if imp.Video != nil {
+		//imp.Video.MIMEs
+		// imp.Video.W
+		// imp.Video.H
+	}
+	if consentString != "" {
+		queryParams.Add("gdpr_consent", consentString)
+		queryParams.Add("gdpr", "1")
+	}
+	endpointURL.RawQuery = endpointURL.RawQuery + queryParams.Encode()
 
-	// queryParams := url.Values{}
-	// queryParams.Add("pbsrv_v", adapterVersion)
-	// //queryParams.Add("id", params.MasterID)
-	// queryParams.Add("nc", "1")
-	// queryParams.Add("nosecure", "1")
-	// //queryParams.Add("aid", params.SlaveID+":"+auctionID)
-	// if consentString != "" {
-	// 	queryParams.Add("gdpr_consent", consentString)
-	// 	queryParams.Add("gdpr", "1")
-	// }
-	// if request.User != nil && request.User.BuyerUID != "" {
-	// 	queryParams.Add("hcuserid", request.User.BuyerUID)
-	// }
-	// endpointURL.RawQuery = queryParams.Encode()
-
-	// return endpointURL.String(), nil
+	return endpointURL.String(), nil
 }
 
 func (a *AdInvibesAdapter) MakeBids(
@@ -387,15 +354,21 @@ func (a *AdInvibesAdapter) MakeBids(
 		return nil, []error{fmt.Errorf("Unexpected status code: %d. Network error?", response.StatusCode)}
 	}
 
-	//requestURL, _ := url.Parse(externalRequest.Uri)
-	//queryParams := requestURL.Query()
-	//auctionIDs := queryParams["aid"]
+	requestURL, _ := url.Parse(externalRequest.Uri)
+	queryParams := requestURL.Query()
+
+	var impId string
+	if len(queryParams["impid"]) > 0 {
+		impId = queryParams["impid"][0]
+	} else if len(internalRequest.Imp) > 0 {
+		impId = internalRequest.Imp[0].ID
+	}
+	var isTest bool = false
+	if len(queryParams["istest"]) > 0 {
+		isTest = queryParams["istest"][0] == "true"
+	}
 
 	bidResponses := InvibesBidResponse{}
-
-	// sliceBytes := response.Body[20 : len(response.Body)-2]
-	// jsonString := string(sliceBytes)
-	// println(jsonString)
 
 	if err := json.Unmarshal(response.Body, &bidResponses); err != nil {
 		return nil, []error{err}
@@ -404,77 +377,46 @@ func (a *AdInvibesAdapter) MakeBids(
 	var parsedResponses = adapters.NewBidderResponseWithBidsCapacity(len(bidResponses.VideoAdContentResult.Ads))
 	var errors []error
 
-	adjson, _ := json.Marshal(bidResponses.VideoAdContentResult)
-	adresponse := string(adjson)
-	println(string(adresponse))
-	// getlinkurl := "https://static.videostepstage.com/desktop/getlink.desktop.js"
-	// withScript := "<script id='ivCrHtmlS'>(function () {var i = (top.invibes = top.invibes || {}); i.bidResponse = " + adresponse + ";  })();"
-	// withScript = withScript + "(function() { var i = top.invibes = top.invibes || {}; if (i.creativeHtmlRan) { return; } i.creativeHtmlRan = true;  var d = top.document; var e = d.getElementById('divVideoStepAdTop') || d.getElementById('divVideoStepAdTop2') || d.getElementById('divVideoStepAdBottom'); if (e) e.parentNode.removeChild(e); var s = document.getElementById('ivCrHtmlS'); var d = document.createElement('div'); d.setAttribute('id', 'divVideoStepAdTop'); d.className += 'divVideoStep'; s.parentNode.insertBefore(d, s); var j = window.invibes = window.invibes || { }; j.getlinkUrl = '" + getlinkurl + "'; var t = document.createElement('script'); t.src = '" + getlinkurl + "'; s.parentNode.insertBefore(t, s); }()) </script>"
-	withScript := "<script id='ivCrHtmlS0'>(function () {var i = (top.invibes = top.invibes || {}); i.bidResponse = " + adresponse + ";  })();</script>"
-	withScript = withScript + bidResponses.VideoAdContentResult.BidModel.CreativeHTML
-
-	parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
-		Bid: &openrtb.Bid{
-			ID:    bidResponses.VideoAdContentResult.Ads[0].VideoExposedID,
-			ImpID: "111",
-			Price: 1.1, //bidResponses.VideoAdContentResult.Ads[0].BidPrice,
-			AdM:   strings.Replace(withScript, "[attrs]", "", -1),
-			CrID:  bidResponses.VideoAdContentResult.Ads[0].VideoExposedID,
-			W:     320,
-			H:     150,
-		},
-		BidType: openrtb_ext.BidTypeBanner,
-	})
 	parsedResponses.Currency = bidResponses.VideoAdContentResult.BidModel.Currency
+	invibesAds := bidResponses.VideoAdContentResult.Ads
+	bidResponses.VideoAdContentResult.Ads = nil
+	for _, invibesAd := range invibesAds {
+		adContentResult := bidResponses.VideoAdContentResult
+		adContentResult.Ads = []Ad{invibesAd}
 
-	// var slaveToAuctionIDMap = make(map[string]string, len(auctionIDs))
+		adjson, _ := json.Marshal(adContentResult)
+		adresponse := string(adjson)
+		withScript := "<script>(function () {var i = (top.invibes = top.invibes || {}); i.bidResponse = " + strings.Replace(adresponse, "[attrs]", "", -1) + ";  })();</script>"
+		withScript = withScript + bidResponses.VideoAdContentResult.BidModel.CreativeHTML
 
-	// for _, auctionFullID := range auctionIDs {
-	// 	auctionIDsSlice := strings.SplitN(auctionFullID, ":", 2)
-	// 	slaveToAuctionIDMap[auctionIDsSlice[0]] = auctionIDsSlice[1]
-	// }
+		var bidPrice float64 = 0
+		if invibesAd.BidPrice > 0 {
+			bidPrice = invibesAd.BidPrice
+		} else if isTest {
+			bidPrice = 0.000001
+		}
 
-	// for _, bid := range bidResponses {
-	// 	if auctionID, found := slaveToAuctionIDMap[bid.ID]; found {
-	// 		if bid.Error == "true" {
-	// 			continue
-	// 		}
-
-	// 		price, _ := strconv.ParseFloat(bid.Price, 64)
-	// 		width, _ := strconv.ParseUint(bid.Width, 10, 64)
-	// 		height, _ := strconv.ParseUint(bid.Height, 10, 64)
-	// 		adCode, err := a.prepareAdCodeForBid(bid)
-	// 		if err != nil {
-	// 			errors = append(errors, err)
-	// 			continue
-	// 		}
-
-	// 		parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
-	// 			Bid: &openrtb.Bid{
-	// 				ID:    bid.ID,
-	// 				ImpID: auctionID,
-	// 				Price: price,
-	// 				AdM:   adCode,
-	// 				CrID:  bid.CrID,
-	// 				W:     width,
-	// 				H:     height,
-	// 			},
-	// 			BidType: openrtb_ext.BidTypeBanner,
-	// 		})
-	// 		parsedResponses.Currency = bid.Currency
-	// 	}
-	// }
-
-	return parsedResponses, errors
-}
-
-func (a *AdInvibesAdapter) prepareAdCodeForBid(bid ResponseAdUnit) (string, error) {
-	sspCode, err := url.QueryUnescape(bid.Code)
-	if err != nil {
-		return "", err
+		var wsize uint64 = 0
+		if adContentResult.BidModel.Width != nil {
+			wsize = *adContentResult.BidModel.Width
+		}
+		var hsize uint64 = 0
+		if adContentResult.BidModel.Height != nil {
+			hsize = *adContentResult.BidModel.Height
+		}
+		parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
+			Bid: &openrtb.Bid{
+				ID:    impId + "_" + invibesAd.VideoExposedID,
+				ImpID: impId,
+				Price: bidPrice,
+				AdM:   withScript,
+				CrID:  invibesAd.VideoExposedID,
+				W:     wsize,
+				H:     hsize,
+			},
+			BidType: openrtb_ext.BidTypeBanner,
+		})
 	}
 
-	adCode := fmt.Sprintf(a.measurementCode, bid.WinURL, bid.StatsURL) + sspCode
-
-	return adCode, nil
+	return parsedResponses, errors
 }
