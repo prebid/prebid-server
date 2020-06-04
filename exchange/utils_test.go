@@ -136,8 +136,10 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsLMT(t *testing.T) {
-	var enabled int8 = 1
-	var disabled int8 = 0
+	var (
+		enabled  int8 = 1
+		disabled int8 = 0
+	)
 	testCases := []struct {
 		description     string
 		lmt             *int8

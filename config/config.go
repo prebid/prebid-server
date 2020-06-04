@@ -139,8 +139,8 @@ func (cfg *AuctionTimeouts) LimitAuctionTimeout(requested time.Duration) time.Du
 
 // Privacy is a grouping of privacy related configs to assist in dependency injection.
 type Privacy struct {
-	GDPR GDPR
 	CCPA CCPA
+	GDPR GDPR
 	LMT  LMT
 }
 

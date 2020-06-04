@@ -9,13 +9,13 @@ const (
 	trackingRestricted   = 1
 )
 
-// Policy represents the LMT (Limit Ad Tracking) standard for an OpenRTB bid request.
+// Policy represents the LMT (Limit Ad Tracking) policy for an OpenRTB bid request.
 type Policy struct {
 	Signal         int
 	SignalProvided bool
 }
 
-// ReadPolicy extracts the LMT (Limit Ad Tracking) policy from an OpenRTB device.
+// ReadPolicy extracts the LMT (Limit Ad Tracking) policy from an OpenRTB bid request.
 func ReadPolicy(req *openrtb.BidRequest) Policy {
 	policy := Policy{}
 
