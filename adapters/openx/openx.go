@@ -142,6 +142,14 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 		}
 	}
 
+	if imp.Video != nil {
+		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
+			imp.Video.Ext = json.RawMessage(`{"rewarded":1}`)
+		} else {
+			imp.Video.Ext = nil
+		}
+	}
+
 	return nil
 }
 

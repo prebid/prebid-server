@@ -71,6 +71,17 @@ func TestRead(t *testing.T) {
 			},
 			expectedError: true,
 		},
+		{
+			description: "Injection Attack",
+			request: &openrtb.BidRequest{
+				Regs: &openrtb.Regs{
+					Ext: json.RawMessage(`{"us_privacy":"1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+				},
+			},
+			expectedPolicy: Policy{
+				Value: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -137,6 +148,32 @@ func TestWrite(t *testing.T) {
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`malformed`)}},
 			expectedError: true,
+		},
+		{
+			description: "Injection Attack With Nil Request Regs Object",
+			policy:      Policy{Value: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request:     &openrtb.BidRequest{},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"us_privacy":"1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+			}},
+		},
+		{
+			description: "Injection Attack With Nil Request Regs Ext Object",
+			policy:      Policy{Value: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request:     &openrtb.BidRequest{Regs: &openrtb.Regs{}},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"us_privacy":"1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+			}},
+		},
+		{
+			description: "Injection Attack With Existing Request Regs Ext Object",
+			policy:      Policy{Value: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"existing":"any"}`),
+			}},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"existing":"any","us_privacy":"1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+			}},
 		},
 	}
 

@@ -48,6 +48,26 @@ type rubiconParams struct {
 	Video     rubiconVideoParams `json:"video"`
 }
 
+type bidRequestExt struct {
+	Prebid bidRequestExtPrebid `json:"prebid"`
+}
+
+type bidRequestExtPrebid struct {
+	Bidders bidRequestExtPrebidBidders `json:"bidders"`
+}
+
+type bidRequestExtPrebidBidders struct {
+	Rubicon prebidBiddersRubicon `json:"rubicon,omitempty"`
+}
+
+type prebidBiddersRubicon struct {
+	Debug prebidBiddersRubiconDebug `json:"debug,omitempty"`
+}
+
+type prebidBiddersRubiconDebug struct {
+	CpmOverride float64 `json:"cpmoverride,omitempty"`
+}
+
 type rubiconImpExtRPTrack struct {
 	Mint        string `json:"mint"`
 	MintVersion string `json:"mint_version"`
@@ -578,6 +598,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 	requestImpCopy := request.Imp
 
+	rubiconRequest := *request
 	for i := 0; i < numRequests; i++ {
 		thisImp := requestImpCopy[i]
 
@@ -677,14 +698,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				errs = append(errs, err)
 				continue
 			}
-			request.User = &userCopy
+			rubiconRequest.User = &userCopy
 		}
 
 		if request.Device != nil {
 			deviceCopy := *request.Device
 			deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio}}
 			deviceCopy.Ext, err = json.Marshal(&deviceExt)
-			request.Device = &deviceCopy
+			rubiconRequest.Device = &deviceCopy
 		}
 
 		isVideo := isVideo(thisImp)
@@ -732,28 +753,28 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			siteCopy.Ext, err = json.Marshal(&siteExt)
 			siteCopy.Publisher = &openrtb.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
-			request.Site = &siteCopy
+			rubiconRequest.Site = &siteCopy
 		}
 		if request.App != nil {
 			appCopy := *request.App
 			appCopy.Ext, err = json.Marshal(&siteExt)
 			appCopy.Publisher = &openrtb.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
-			request.App = &appCopy
+			rubiconRequest.App = &appCopy
 		}
 
 		reqBadv := request.BAdv
 		if reqBadv != nil {
 			if len(reqBadv) > badvLimitSize {
-				request.BAdv = reqBadv[:badvLimitSize]
+				rubiconRequest.BAdv = reqBadv[:badvLimitSize]
 			}
 		}
 
-		request.Imp = []openrtb.Imp{thisImp}
-		request.Cur = nil
-		request.Ext = nil
+		rubiconRequest.Imp = []openrtb.Imp{thisImp}
+		rubiconRequest.Cur = nil
+		rubiconRequest.Ext = nil
 
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := json.Marshal(rubiconRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -900,9 +921,22 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		bidType = openrtb_ext.BidTypeVideo
 	}
 
+	impToCpmOverride := mapImpIdToCpmOverride(internalRequest.Imp)
+	cmpOverride := cmpOverrideFromBidRequest(internalRequest)
+
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
+
+			bidCmpOverride, ok := impToCpmOverride[bid.ImpID]
+			if !ok || bidCmpOverride == 0 {
+				bidCmpOverride = cmpOverride
+			}
+
+			if bidCmpOverride > 0 {
+				bid.Price = bidCmpOverride
+			}
+
 			if bid.Price != 0 {
 				// Since Rubicon XAPI returns only one bid per response
 				// copy response.bidid to openrtb_response.seatbid.bid.bidid
@@ -918,4 +952,31 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	}
 
 	return bidResponse, nil
+}
+
+func cmpOverrideFromBidRequest(bidRequest *openrtb.BidRequest) float64 {
+	var bidRequestExt bidRequestExt
+	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
+		return 0
+	}
+
+	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
+}
+
+func mapImpIdToCpmOverride(imps []openrtb.Imp) map[string]float64 {
+	impIdToCmpOverride := make(map[string]float64)
+	for _, imp := range imps {
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			continue
+		}
+
+		var rubiconExt openrtb_ext.ExtImpRubicon
+		if err := json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
+			continue
+		}
+
+		impIdToCmpOverride[imp.ID] = rubiconExt.Debug.CpmOverride
+	}
+	return impIdToCmpOverride
 }
