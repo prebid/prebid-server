@@ -63,5 +63,10 @@ func (e Enforcement) getUserScrubStrategy(ampGDPRException bool) ScrubStrategyUs
 		return ScrubStrategyUserNone
 	}
 
-	return ScrubStrategyUserID
+	// If no user scrubbing is needed, then return none, else scrub ID (COPPA checked above)
+	if e.CCPA || e.GDPR || e.LMT {
+		return ScrubStrategyUserID
+	}
+
+	return ScrubStrategyUserNone
 }

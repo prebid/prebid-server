@@ -200,6 +200,36 @@ func TestApply(t *testing.T) {
 			expectedUser:       ScrubStrategyUserNone,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
+		{
+			description: "LMT Only",
+			enforcement: Enforcement{
+				CCPA:    false,
+				COPPA:   false,
+				GDPR:    false,
+				GDPRGeo: false,
+				LMT:     true,
+			},
+			ampGDPRException:   false,
+			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
+			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
+			expectedUser:       ScrubStrategyUserID,
+			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
+		},
+		{
+			description: "LMT Only, ampGDPRException",
+			enforcement: Enforcement{
+				CCPA:    false,
+				COPPA:   false,
+				GDPR:    false,
+				GDPRGeo: false,
+				LMT:     true,
+			},
+			ampGDPRException:   true,
+			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
+			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
+			expectedUser:       ScrubStrategyUserID,
+			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
+		},
 	}
 
 	for _, test := range testCases {
