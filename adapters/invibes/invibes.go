@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 type InvibesBidResponse struct {
@@ -210,6 +211,11 @@ func (a *AdInvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 		}}
 	}
 
+	var isAmp bool
+	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
+		isAmp = true
+	}
+
 	consentString := ""
 	if request.User != nil {
 		var extUser openrtb_ext.ExtUser
@@ -222,7 +228,7 @@ func (a *AdInvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 	var errors []error
 
 	for _, auction := range request.Imp {
-		newHttpRequest, err := a.makeRequest(httpRequests, &auction, request, consentString)
+		newHttpRequest, err := a.makeRequest(httpRequests, &auction, request, consentString, isAmp)
 		if err != nil {
 			errors = append(errors, err)
 		} else if newHttpRequest != nil {
@@ -233,7 +239,7 @@ func (a *AdInvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 	return httpRequests, errors
 }
 
-func (a *AdInvibesAdapter) makeRequest(existingRequests []*adapters.RequestData, imp *openrtb.Imp, request *openrtb.BidRequest, consentString string) (*adapters.RequestData, error) {
+func (a *AdInvibesAdapter) makeRequest(existingRequests []*adapters.RequestData, imp *openrtb.Imp, request *openrtb.BidRequest, consentString string, isAmp bool) (*adapters.RequestData, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -254,7 +260,7 @@ func (a *AdInvibesAdapter) makeRequest(existingRequests []*adapters.RequestData,
 	// 	return nil, nil
 	// }
 
-	url, err := a.makeURL(&invibesExt, imp, request, consentString)
+	url, err := a.makeURL(&invibesExt, imp, request, consentString, isAmp)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +292,7 @@ func (a *AdInvibesAdapter) makeRequest(existingRequests []*adapters.RequestData,
 	}, nil
 }
 
-func (a *AdInvibesAdapter) makeURL(params *openrtb_ext.ExtImpInvibes, imp *openrtb.Imp, request *openrtb.BidRequest, consentString string) (string, error) {
+func (a *AdInvibesAdapter) makeURL(params *openrtb_ext.ExtImpInvibes, imp *openrtb.Imp, request *openrtb.BidRequest, consentString string, isAmp bool) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{Host: request.Site.Domain}
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
@@ -302,6 +308,19 @@ func (a *AdInvibesAdapter) makeURL(params *openrtb_ext.ExtImpInvibes, imp *openr
 		}
 	}
 
+	var lid string
+	if request.User != nil {
+		if request.User.BuyerUID != "" {
+			lid = request.User.BuyerUID
+		} else if request.User.ID != "" {
+			lid = request.User.ID
+		} else {
+			return "", &errortypes.BadInput{
+				Message: "No user id",
+			}
+		}
+	}
+
 	queryParams := url.Values{}
 	queryParams.Add("aver", adapterVersion)
 	queryParams.Add("impid", imp.ID)
@@ -310,22 +329,35 @@ func (a *AdInvibesAdapter) makeURL(params *openrtb_ext.ExtImpInvibes, imp *openr
 	if request.Site != nil {
 		queryParams.Add("location", request.Site.Page)
 	}
-	//todoav: checkuser
-	if request.User != nil {
-		var lid string = request.User.BuyerUID
-		if lid == "" {
-			lid = request.User.ID
-		}
-		if lid != "" {
-			queryParams.Add("lid", lid)
-		}
+	if lid != "" {
+		queryParams.Add("lid", lid)
 	}
+
 	if params.Debug.TestIp != "" {
-		queryParams.Add("istest", "true")
+		queryParams.Add("pbsdebug", "true")
 	}
 	queryParams.Add("showFallback", "false")
-	queryParams.Add("kw", "Europe1")
+	if request.Site.Keywords != "" {
+		queryParams.Add("kw", request.Site.Keywords)
+	}
+	if isAmp {
+		queryParams.Add("integType", "2")
+	} else {
+		queryParams.Add("integType", "0")
+	}
+	if request.Device != nil {
+		if request.Device.W > 0 {
+			queryParams.Add("width", string(request.Device.W))
+		} else if params.Debug.TestIp != "" {
+			queryParams.Add("width", "600")
+		}
 
+		if request.Device.H > 0 {
+			queryParams.Add("height", string(request.Device.H))
+		} else if params.Debug.TestIp != "" {
+			queryParams.Add("height", "600")
+		}
+	}
 	if imp.Banner != nil {
 		// imp.Banner.Format
 		// imp.Banner.W
@@ -363,9 +395,9 @@ func (a *AdInvibesAdapter) MakeBids(
 	} else if len(internalRequest.Imp) > 0 {
 		impId = internalRequest.Imp[0].ID
 	}
-	var isTest bool = false
-	if len(queryParams["istest"]) > 0 {
-		isTest = queryParams["istest"][0] == "true"
+	var pbsdebug bool = false
+	if len(queryParams["pbsdebug"]) > 0 {
+		pbsdebug = queryParams["pbsdebug"][0] == "true"
 	}
 
 	bidResponses := InvibesBidResponse{}
@@ -392,7 +424,7 @@ func (a *AdInvibesAdapter) MakeBids(
 		var bidPrice float64 = 0
 		if invibesAd.BidPrice > 0 {
 			bidPrice = invibesAd.BidPrice
-		} else if isTest {
+		} else if pbsdebug {
 			bidPrice = 0.000001
 		}
 
