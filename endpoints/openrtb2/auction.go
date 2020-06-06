@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -27,12 +28,12 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -249,6 +250,35 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
+func (deps *endpointDeps) removeInvalidRequestValues(req *openrtb.BidRequest) []error {
+
+	if req.Device != nil {
+		if req.Device.IP != "" {
+			// todo: also verify address is not local
+			// todo: also verify address is ipv4
+			if ip := net.ParseIP(req.Device.IP); ip == nil {
+				req.Device.IP = ""
+			}
+		}
+
+		if req.Device.IPv6 != "" {
+			// todo: also verify address is not local
+			// todo: also verify address is ipv4
+			if ip := net.ParseIP(req.Device.IP); ip == nil {
+				req.Device.IPv6 = ""
+			}
+		}
+	}
+
+	if policy, err := ccpa.ReadPolicy(req); err == nil {
+		if err := policy.Validate(); err != nil {
+			errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("CCPA value is invalid and will be ignored. (%s)", err.Error())})
+		}
+	} else {
+		errL = append(errL, err)
+	}
+}
+
 func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	errL := []error{}
 	if req.ID == "" {
@@ -306,16 +336,6 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	if err := validateRegs(req.Regs); err != nil {
 		errL = append(errL, err)
 		return errL
-	}
-
-	ccpaPolicy, ccpaPolicyErr := ccpa.ReadPolicy(req)
-	if ccpaPolicyErr != nil {
-		errL = append(errL, ccpaPolicyErr)
-		return errL
-	}
-
-	if err := ccpaPolicy.Validate(); err != nil {
-		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("CCPA value is invalid and will be ignored. (%s)", err.Error())})
 	}
 
 	impIDs := make(map[string]int, len(req.Imp))
@@ -970,7 +990,7 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
 	secure := int8(1)
 	for i := 0; i < len(imps); i++ {
-		if imps[i].Secure == nil && prebid.IsSecure(httpReq) {
+		if imps[i].Secure == nil && util.IsSecure(httpReq) {
 			imps[i].Secure = &secure
 		}
 	}
@@ -1126,14 +1146,27 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 	return string(value), true, nil
 }
 
+// todo: pass down non-local validator service
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
 func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	if bidReq.Device == nil || bidReq.Device.IP == "" {
-		if ip := prebid.GetIP(httpReq); ip != "" {
-			if bidReq.Device == nil {
-				bidReq.Device = &openrtb.Device{}
+	if bidReq.Device == nil {
+		bidReq.Device = &openrtb.Device{}
+	}
+
+	if bidReq.Device.IP == "" && bidReq.Device.IPv6 == "" {
+		ips := httputils.GetIPs(httpReq)
+		for _, ip := range ips {
+			// todo: comntinue if local / should be ignored
+
+			if ip4 := ip.To4(); len(ip4) == net.IPv4len {
+				bidReq.Device.IP = ip.String()
+				break
 			}
-			bidReq.Device.IP = ip
+
+			if len(ip) != net.IPv6len {
+				bidReq.Device.IPv6 = ip.String()
+				break
+			}
 		}
 	}
 }
