@@ -9,6 +9,9 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 )
 
 const bidTypeExtKey = "BidType"
@@ -16,6 +19,21 @@ const bidTypeExtKey = "BidType"
 type SmaatoAdapter struct {
 	http *adapters.HTTPAdapter
 	URI  string
+}
+
+type ImageAd struct {
+	Image Image `json:"image"`
+}
+type Image struct {
+	Img                IMG      `json:"img"`
+	Impressiontrackers []string `json:"impressiontrackers"`
+	Clicktrackers      []string `json:"clicktrackers"`
+}
+type IMG struct {
+	URL    string `json:"url"`
+	W      int    `json:"w"`
+	H      int    `json:"h"`
+	Ctaurl string `json:"ctaurl"`
 }
 
 // used for cookies and such
@@ -121,12 +139,10 @@ func parseImpressionObject(imp *openrtb.Imp) error {
 		}
 
 		tagId := smaatoExt.AdSpaceId
-		id := smaatoExt.PublisherId
 		instl := smaatoExt.Instl
 		secure := smaatoExt.Secure
 
-		if tagId != "" && id != "" {
-			imp.ID = id
+		if tagId != "" {
 			imp.TagID = tagId
 			imp.Ext = nil
 		}
@@ -161,10 +177,14 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
+	adType := response.Headers.Get("X-SMT-ADTYPE")
+
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
+			adm := getADM(adType, bid.AdM)
+			bid.AdM = adm
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: getBidType(bid.Ext),
@@ -200,6 +220,36 @@ func getBidType(bidExt json.RawMessage) openrtb_ext.BidType {
 		}
 	}
 	return bidType
+}
+
+func getADM(adType string, adapterResponseAdm string) string {
+	imageMarkup, done := extractAdmImage(adType, adapterResponseAdm)
+	if done {
+		return imageMarkup
+	}
+	return adapterResponseAdm
+}
+
+func extractAdmImage(adType string, adapterResponseAdm string) (string, bool) {
+	var imgMarkup string
+	if strings.EqualFold(adType, "img") {
+
+		var imageAd ImageAd
+		err := json.Unmarshal([]byte(adapterResponseAdm), &imageAd)
+		var image = imageAd.Image
+
+		if err == nil {
+			var clickEvent string
+			for _, clicktracker := range image.Clicktrackers {
+				clickEvent += "fetch(decodeURIComponent(" + url.QueryEscape(clicktracker) + "), {cache: 'no-cache'});"
+			}
+			imgMarkup = "<div onclick=" + clickEvent + "><a href=" + image.Img.Ctaurl + "><img src=" + image.
+				Img.URL + " width=" + strconv.Itoa(image.Img.W) + " height=" + strconv.Itoa(image.Img.
+				H) + "/></a></div>"
+		}
+		return imgMarkup, true
+	}
+	return "", false
 }
 
 func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
