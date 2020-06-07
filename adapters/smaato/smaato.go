@@ -249,7 +249,7 @@ func extractAdmImage(adType string, adapterResponseAdm string) (string, bool) {
 		}
 		return imgMarkup, true
 	}
-	return "", false
+	return adapterResponseAdm, false
 }
 
 func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
