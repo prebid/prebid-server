@@ -9,7 +9,7 @@ Before adding PubNative as a new bidder, there are 3 prerequisites:
 ## Configuration 
 
 - app_auth_token is unique per publisher app. Please contact our account manager to obtain yours.
-zone_id should be always set to 1 (unless special use case)
+- zone_id should be always set to 1 (unless special use case)
 - bidder should be always set to "pubnative"
 
 ## Testing
