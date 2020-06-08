@@ -14,7 +14,7 @@ type Policy struct {
 	Value string
 }
 
-// ReadPolicy extracts the CCPA regulation policy from an OpenRTB regs ext.
+// ReadPolicy extracts the CCPA regulation policy from an OpenRTB request.
 func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
 	policy := Policy{}
 
@@ -32,6 +32,10 @@ func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
 // Write mutates an OpenRTB bid request with the context of the CCPA policy.
 func (p Policy) Write(req *openrtb.BidRequest) error {
 	if p.Value == "" {
+		return clearPolicy(req)
+	}
+
+	if req == nil {
 		return nil
 	}
 
@@ -56,6 +60,37 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 			req.Regs.Ext = ext
 		}
 	}
+	return err
+}
+
+func clearPolicy(req *openrtb.BidRequest) error {
+	if req == nil {
+		return nil
+	}
+
+	if req.Regs == nil {
+		return nil
+	}
+
+	if len(req.Regs.Ext) == 0 {
+		return nil
+	}
+
+	var extMap map[string]interface{}
+	err := json.Unmarshal(req.Regs.Ext, &extMap)
+	if err == nil {
+		delete(extMap, "us_privacy")
+		if len(extMap) == 0 {
+			req.Regs.Ext = nil
+		} else {
+			ext, err := json.Marshal(extMap)
+			if err == nil {
+				req.Regs.Ext = ext
+			}
+			return err
+		}
+	}
+
 	return err
 }
 
