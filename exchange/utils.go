@@ -320,7 +320,7 @@ func randomizeList(list []openrtb_ext.BidderName) {
 // This function adds an httptrace.ClientTrace object to the context so, if connection with the bidder
 // endpoint is established, we can keep track of whether the connection was newly created, reused, and
 // even know it was left idle and for how long.
-func addClientTrace(ctx context.Context, bidderLabel *pbsmetrics.AdapterLabels) context.Context {
+func AddClientTrace(ctx context.Context, bidderLabel *pbsmetrics.AdapterLabels) context.Context {
 	trace := &httptrace.ClientTrace{
 		GotConn: func(info httptrace.GotConnInfo) {
 			bidderLabel.GotConn = true

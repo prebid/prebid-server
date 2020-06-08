@@ -330,10 +330,10 @@ func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 
 	m.adapterConnections.With(prometheus.Labels{
 		adapterLabel:            string(labels.Adapter),
-		adapterConnSuccessLabel: strconv.FormatBool(labels.GotConn == true),
-		adapterConnErrorLabel:   strconv.FormatBool(labels.GotConn == false),
-		adapterConnReusedLabel:  strconv.FormatBool(labels.ReusedConn == true),
-		adapterConnCreatedLabel: strconv.FormatBool(labels.ReusedConn == false),
+		adapterConnSuccessLabel: strconv.FormatBool(labels.GotConn),
+		adapterConnErrorLabel:   strconv.FormatBool(!labels.GotConn),
+		adapterConnReusedLabel:  strconv.FormatBool(labels.ReusedConn),
+		adapterConnCreatedLabel: strconv.FormatBool(!labels.ReusedConn),
 		adapterConnIdleLabel:    strconv.FormatBool(labels.WasIdleConn),
 	}).Inc()
 }

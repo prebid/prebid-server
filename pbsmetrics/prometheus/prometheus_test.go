@@ -61,7 +61,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Verify Per-Adapter Cardinality
 	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
 	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
-	assert.True(t, perAdapterCardinalityCount <= 22, "Per-Adapter Cardinality")
+	assert.True(t, perAdapterCardinalityCount <= 54, "Per-Adapter Cardinality")
 }
 
 func TestConnectionMetrics(t *testing.T) {

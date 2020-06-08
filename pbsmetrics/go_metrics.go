@@ -70,11 +70,11 @@ type AdapterMetrics struct {
 	BidsReceivedMeter metrics.Meter
 	PanicMeter        metrics.Meter
 	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
-	ConnSuccess       metrics.Meter
-	ConnError         metrics.Meter
-	ConnCreated       metrics.Meter
-	ConnReused        metrics.Meter
-	ConnWasIdle       metrics.Meter
+	ConnSuccess       metrics.Counter
+	ConnError         metrics.Counter
+	ConnCreated       metrics.Counter
+	ConnReused        metrics.Counter
+	ConnWasIdle       metrics.Counter
 }
 
 type MarkupDeliveryMetrics struct {
@@ -230,6 +230,11 @@ func makeBlankAdapterMetrics() *AdapterMetrics {
 		BidsReceivedMeter: blankMeter,
 		PanicMeter:        blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
+		ConnSuccess:       metrics.NilCounter{},
+		ConnError:         metrics.NilCounter{},
+		ConnCreated:       metrics.NilCounter{},
+		ConnReused:        metrics.NilCounter{},
+		ConnWasIdle:       metrics.NilCounter{},
 	}
 	for _, err := range AdapterErrors() {
 		newAdapter.ErrorMeters[err] = blankMeter
@@ -265,6 +270,11 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
 		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative),
 	}
+	am.ConnSuccess = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_success", registry)
+	am.ConnError = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_error", registry)
+	am.ConnCreated = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_created", registry)
+	am.ConnReused = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_reused", registry)
+	am.ConnWasIdle = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_idle", registry)
 	for err := range am.ErrorMeters {
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
@@ -435,17 +445,17 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 	}
 
 	if labels.GotConn {
-		am.ConnSuccess.Mark(1)
+		am.ConnSuccess.Inc(1)
 		if labels.ReusedConn {
-			am.ConnReused.Mark(1)
+			am.ConnReused.Inc(1)
 		} else {
-			am.ConnCreated.Mark(1)
+			am.ConnCreated.Inc(1)
 		}
 		if labels.WasIdleConn {
-			am.ConnWasIdle.Mark(1)
+			am.ConnWasIdle.Inc(1)
 		}
 	} else {
-		am.ConnError.Mark(1)
+		am.ConnError.Inc(1)
 	}
 }
 
