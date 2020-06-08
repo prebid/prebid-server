@@ -9,7 +9,7 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "smaatotest", NewSmaatoBidder(nil, "https://prebid-test.smaatolabs.net/bidder"))
 }
 
-func Test_extractAdmImage(t *testing.T) {
+func Test_getADM(t *testing.T) {
 	type args struct {
 		adType             string
 		adapterResponseAdm string
@@ -30,7 +30,7 @@ func Test_extractAdmImage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			got, got1 := extractAdmImage(tt.args.adType, tt.args.adapterResponseAdm)
+			got, got1 := getADM(tt.args.adType, tt.args.adapterResponseAdm)
 			if got != tt.result {
 				t.Errorf("extractAdmImage() got = %v, result %v", got, tt.result)
 			}

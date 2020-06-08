@@ -183,7 +183,7 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			adm := getADM(adType, bid.AdM)
+			adm, _ := getADM(adType, bid.AdM)
 			bid.AdM = adm
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
@@ -222,12 +222,12 @@ func getBidType(bidExt json.RawMessage) openrtb_ext.BidType {
 	return bidType
 }
 
-func getADM(adType string, adapterResponseAdm string) string {
+func getADM(adType string, adapterResponseAdm string) (string, bool) {
 	imageMarkup, done := extractAdmImage(adType, adapterResponseAdm)
 	if done {
-		return imageMarkup
+		return imageMarkup, done
 	}
-	return adapterResponseAdm
+	return adapterResponseAdm, done
 }
 
 func extractAdmImage(adType string, adapterResponseAdm string) (string, bool) {
