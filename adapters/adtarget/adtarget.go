@@ -27,7 +27,7 @@ func (a *AdtargetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 	for i := 0; i < totalImps; i++ {
 
-		sourceId, err := validateImpression(&request.Imp[i])
+		sourceId, err := validateImpressionAndSetExt(&request.Imp[i])
 
 		if err != nil {
 			errors = append(errors, err)
@@ -55,11 +55,11 @@ func (a *AdtargetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 	imps := request.Imp
 	request.Imp = make([]openrtb.Imp, 0, len(imps))
-	for sourceId, impIds := range imp2source {
+	for sourceId, impIndexes := range imp2source {
 		request.Imp = request.Imp[:0]
 
-		for i := 0; i < len(impIds); i++ {
-			request.Imp = append(request.Imp, imps[impIds[i]])
+		for i := 0; i < len(impIndexes); i++ {
+			request.Imp = append(request.Imp, imps[impIndexes[i]])
 		}
 
 		body, err := json.Marshal(request)
@@ -76,12 +76,7 @@ func (a *AdtargetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 		})
 	}
 
-	if 0 == len(reqs) {
-		return nil, errors
-	}
-
 	return reqs, errors
-
 }
 
 func (a *AdtargetAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -89,7 +84,11 @@ func (a *AdtargetAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
-
+	if httpRes.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", httpRes.StatusCode),
+		}}
+	}
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -137,7 +136,7 @@ func (a *AdtargetAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.
 	return bidResponse, errors
 }
 
-func validateImpression(imp *openrtb.Imp) (int, error) {
+func validateImpressionAndSetExt(imp *openrtb.Imp) (int, error) {
 
 	if imp.Banner == nil && imp.Video == nil {
 		return 0, &errortypes.BadInput{
