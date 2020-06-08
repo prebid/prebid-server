@@ -36,6 +36,7 @@ type Metrics struct {
 	adapterPanics        *prometheus.CounterVec
 	adapterPrices        *prometheus.HistogramVec
 	adapterRequests      *prometheus.CounterVec
+	adapterConnections   *prometheus.CounterVec
 	adapterRequestsTimer *prometheus.HistogramVec
 	adapterUserSync      *prometheus.CounterVec
 
@@ -62,6 +63,12 @@ const (
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
 	successLabel         = "success"
+
+	adapterConnSuccessLabel = "adapter_connection_success"
+	adapterConnErrorLabel   = "adapter_connection_error"
+	adapterConnReusedLabel  = "adapter_connection_reused"
+	adapterConnCreatedLabel = "adapter_connection_created"
+	adapterConnIdleLabel    = "adapter_connection_idle"
 )
 
 const (
@@ -177,6 +184,11 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"adapter_requests",
 		"Count of requests labeled by adapter, if has a cookie, and if it resulted in bids.",
 		[]string{adapterLabel, cookieLabel, hasBidsLabel})
+
+	metrics.adapterConnections = newCounter(cfg, metrics.Registry,
+		"adapter_connections",
+		"Count of connections to bidder hosts labeled by their adapters. Tracks if connection was successful, connection was reused, or if connection was left idle",
+		[]string{adapterLabel, adapterConnSuccessLabel, adapterConnErrorLabel, adapterConnReusedLabel, adapterConnCreatedLabel, adapterConnIdleLabel})
 
 	metrics.adapterRequestsTimer = newHistogram(cfg, metrics.Registry,
 		"adapter_request_time_seconds",
@@ -315,6 +327,15 @@ func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 			adapterErrorLabel: string(err),
 		}).Inc()
 	}
+
+	m.adapterConnections.With(prometheus.Labels{
+		adapterLabel:            string(labels.Adapter),
+		adapterConnSuccessLabel: strconv.FormatBool(labels.GotConn == true),
+		adapterConnErrorLabel:   strconv.FormatBool(labels.GotConn == false),
+		adapterConnReusedLabel:  strconv.FormatBool(labels.ReusedConn == true),
+		adapterConnCreatedLabel: strconv.FormatBool(labels.ReusedConn == false),
+		adapterConnIdleLabel:    strconv.FormatBool(labels.WasIdleConn),
+	}).Inc()
 }
 
 func (m *Metrics) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {

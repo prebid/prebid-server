@@ -84,6 +84,15 @@ func preloadLabelValues(m *Metrics) {
 		hasBidsLabel: boolValues,
 	})
 
+	preloadLabelValuesForCounter(m.adapterConnections, map[string][]string{
+		adapterLabel:            adapterValues,
+		adapterConnSuccessLabel: boolValues,
+		adapterConnErrorLabel:   boolValues,
+		adapterConnReusedLabel:  boolValues,
+		adapterConnCreatedLabel: boolValues,
+		adapterConnIdleLabel:    boolValues,
+	})
+
 	preloadLabelValuesForHistogram(m.adapterRequestsTimer, map[string][]string{
 		adapterLabel: adapterValues,
 	})

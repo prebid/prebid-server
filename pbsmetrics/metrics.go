@@ -26,6 +26,9 @@ type AdapterLabels struct {
 	CookieFlag    CookieFlag
 	AdapterBids   AdapterBid
 	AdapterErrors map[AdapterError]struct{}
+	GotConn       bool
+	ReusedConn    bool
+	WasIdleConn   bool
 }
 
 // ImpLabels defines metric labels describing the impression type.

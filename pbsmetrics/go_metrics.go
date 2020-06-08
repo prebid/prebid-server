@@ -70,6 +70,11 @@ type AdapterMetrics struct {
 	BidsReceivedMeter metrics.Meter
 	PanicMeter        metrics.Meter
 	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
+	ConnSuccess       metrics.Meter
+	ConnError         metrics.Meter
+	ConnCreated       metrics.Meter
+	ConnReused        metrics.Meter
+	ConnWasIdle       metrics.Meter
 }
 
 type MarkupDeliveryMetrics struct {
@@ -427,6 +432,20 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 
 	if labels.CookieFlag == CookieFlagNo {
 		am.NoCookieMeter.Mark(1)
+	}
+
+	if labels.GotConn {
+		am.ConnSuccess.Mark(1)
+		if labels.ReusedConn {
+			am.ConnReused.Mark(1)
+		} else {
+			am.ConnCreated.Mark(1)
+		}
+		if labels.WasIdleConn {
+			am.ConnWasIdle.Mark(1)
+		}
+	} else {
+		am.ConnError.Mark(1)
 	}
 }
 
