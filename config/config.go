@@ -442,14 +442,14 @@ type TimeoutNotification struct {
 	// Log timeout notifications in the application log
 	Log bool `mapstructure:"log"`
 	// Fraction of notifications to log
-	Sampling float32 `mapstructure:"sampling"`
+	SamplingRate float32 `mapstructure:"sampling_rate"`
 	// Only log failures
 	FailOnly bool `mapstructure:"fail_only"`
 }
 
 func (cfg *TimeoutNotification) validate(errs configErrors) configErrors {
-	if cfg.Sampling < 0.0 || cfg.Sampling > 1.0 {
-		errs = append(errs, fmt.Errorf("debug.timeout_notification.sampling must be positive and not greater than 1.0. Got %f", cfg.Sampling))
+	if cfg.SamplingRate < 0.0 || cfg.SamplingRate > 1.0 {
+		errs = append(errs, fmt.Errorf("debug.timeout_notification.sampling_rate must be positive and not greater than 1.0. Got %f", cfg.SamplingRate))
 	}
 	return errs
 }
@@ -812,7 +812,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")
 
 	v.SetDefault("debug.timeout_notification.log", false)
-	v.SetDefault("debug.timeout_notification.sampling", 0.0)
+	v.SetDefault("debug.timeout_notification.sampling_rate", 0.0)
 	v.SetDefault("debug.timeout_notification.fail_only", false)
 
 	// Set environment variable support:

@@ -9,11 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var expected string = `This is test line 2
+func TestLogRandomSample(t *testing.T) {
+
+	const expected string = `This is test line 2
 This is test line 3
 `
 
-func TestLogRandomSample(t *testing.T) {
 	myRand := rand.New(rand.NewSource(1337))
 	var buf bytes.Buffer
 

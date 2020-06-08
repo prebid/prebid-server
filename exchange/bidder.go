@@ -89,18 +89,18 @@ type pbsOrtbSeatBid struct {
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
 func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me pbsmetrics.MetricsEngine) adaptedBidder {
 	return &bidderAdapter{
-		Bidder:   bidder,
-		Client:   client,
-		DebugCfg: cfg.Debug,
-		me:       me,
+		Bidder:      bidder,
+		Client:      client,
+		DebugConfig: cfg.Debug,
+		me:          me,
 	}
 }
 
 type bidderAdapter struct {
-	Bidder   adapters.Bidder
-	Client   *http.Client
-	DebugCfg config.Debug
-	me       pbsmetrics.MetricsEngine
+	Bidder      adapters.Bidder
+	Client      *http.Client
+	DebugConfig config.Debug
+	me          pbsmetrics.MetricsEngine
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
@@ -377,7 +377,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 			success := (err == nil && httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
 			bidder.me.RecordTimeoutNotice(success)
-			if bidder.DebugCfg.TimeoutNotification.Log && !(bidder.DebugCfg.TimeoutNotification.FailOnly && success) {
+			if bidder.DebugConfig.TimeoutNotification.Log && !(bidder.DebugConfig.TimeoutNotification.FailOnly && success) {
 				var msg string
 				if err == nil {
 					msg = fmt.Sprintf("TimeoutNotification: status:(%d) body:%s", httpResp.StatusCode, string(toReq.Body))
@@ -385,7 +385,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 					msg = fmt.Sprintf("TimeoutNotification: error:(%s) body:%s", err.Error(), string(toReq.Body))
 				}
 				// If logging is turned on, and logging is not disallowed via FailOnly
-				util.LogRandomSample(msg, glog.Warningf, bidder.DebugCfg.TimeoutNotification.Sampling)
+				util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
 			}
 		} else {
 			bidder.me.RecordTimeoutNotice(false)
