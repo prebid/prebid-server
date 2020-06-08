@@ -375,10 +375,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 		if err == nil {
 			httpReq.Header = req.Headers
 			httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
-			success := true
-			if err != nil || httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-				success = false
-			}
+			success := (err == nil && httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
 			bidder.me.RecordTimeoutNotice(success)
 			if bidder.DebugCfg.TimeoutNotification.Log && !(bidder.DebugCfg.TimeoutNotification.FailOnly && success) {
 				var msg string
