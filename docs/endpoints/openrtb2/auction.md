@@ -53,7 +53,7 @@ This endpoint will respond with either:
 
 - An OpenRTB 2.5 bid response, or
 - HTTP 400 if the request is malformed, or
-- HTTP 503 if the account or app specified in the request is blacklisted, or
+- HTTP 503 if the account or app specified in the request is blacklisted
 
 This is the corresponding response to the above sample OpenRTB 2.5 bid request, with the `ext.debug` field removed and the `seatbid.bid.adm` field simplified.
 
