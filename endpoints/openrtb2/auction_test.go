@@ -915,7 +915,7 @@ func TestCurrencyTrunc(t *testing.T) {
 	assert.ElementsMatch(t, errL, []error{&expectedError})
 }
 
-func TestCCPAInvalidValueWarning(t *testing.T) {
+func TestCCPAInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		&nobidExchange{},
 		newParamsValidator(t),
@@ -943,21 +943,23 @@ func TestCCPAInvalidValueWarning(t *testing.T) {
 					W: &ui,
 					H: &ui,
 				},
-				Ext: json.RawMessage("{\"appnexus\": {\"placementId\": 5667}}"),
+				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
 			},
 		},
 		Site: &openrtb.Site{
 			ID: "myID",
 		},
 		Regs: &openrtb.Regs{
-			Ext: json.RawMessage("{\"us_privacy\":\"invalid by length\"}"),
+			Ext: json.RawMessage(`{"us_privacy":"invalid by length"}`),
 		},
 	}
 
 	errL := deps.validateRequest(&req)
 
-	expectedError := errortypes.Warning{Message: "CCPA value is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)"}
-	assert.ElementsMatch(t, errL, []error{&expectedError})
+	expectedWarning := errortypes.InvalidPrivacyConsent{Message: "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)"}
+	assert.ElementsMatch(t, errL, []error{&expectedWarning})
+
+	assert.Empty(t, req.Regs.Ext, "Invalid Consent Removed From Request")
 }
 
 // nobidExchange is a well-behaved exchange which always bids "no bid".
