@@ -14,53 +14,94 @@ This endpoint runs an auction with the given OpenRTB 2.5 bid request.
 
 ### Sample request
 
-The [Prebid sample ad](http://prebid.org/examples/pbjs_demo.html) can be loaded with the request sample [here](../../../endpoints/openrtb2/sample-requests/valid-whole/exemplary/prebid-test-ad.json).
+This is a sample OpenRTB 2.5 bid request for a Xandr (formerly AppNexus) test placement. Please note, the Xandr Ad Server will only
+respond with a bid if the "test" field is set to 1.
 
-Other examples can be found in [endpoints/openrtb2/sample-requests/valid-whole/exemplary](../../../endpoints/openrtb2/sample-requests/valid-whole/exemplary).
+```
+{
+  "id": "some-request-id",
+  "test": 1,
+  "site": {
+    "page": "prebid.org"
+  },
+  "imp": [{
+    "id": "some-impression-id",
+    "banner": {
+      "format": [{
+        "w": 600,
+        "h": 500
+      }, {
+        "w": 300,
+        "h": 600
+      }]
+    },
+    "ext": {
+      "appnexus": {
+        "placementId": 12883451
+      }
+    }
+  }],
+  "tmax": 500
+}
+```
+
+Additional examples can be found in [endpoints/openrtb2/sample-requests/valid-whole](../../../endpoints/openrtb2/sample-requests/valid-whole).
 
 ### Sample Response
 
 This endpoint will respond with either:
 
-- An OpenRTB 2.5 BidResponse, or
-- An HTTP 400 status code if the request is malformed
+- An OpenRTB 2.5 bid response, or
+- HTTP 400 if the request is malformed, or
+- HTTP 503 if the account or app specified in the request is blacklisted
 
-A "hello world" response from the prebid sample ad request is shown below.
+This is the corresponding response to the above sample OpenRTB 2.5 bid request, with the `ext.debug` field removed and the `seatbid.bid.adm` field simplified.
 
 ```
 {
   "id": "some-request-id",
-  "seatbid": [
-    {
-      "seat": "appnexus"
-      "bid": [
-        {
-          "id": "4625436751433509010",
-          "impid": "some-impression-id",
-          "price": 0.5,
-          "adm": "<script type=\"application/javascript\">... the creative javascript is in here ... </script>",
-          "adid": "29681110",
-          "adomain": [
-            "appnexus.com"
-          ],
-          "iurl": "http://nym1-ib.adnxs.com/cr?id=29681110",
-          "cid": "958",
-          "crid": "29681110",
-          "w": 300,
-          "h": 250,
-          "ext": {
-            "bidder": {
-              "appnexus": {
-                "brand_id": 1,
-                "auction_id": 6127490747252133000,
-                "bidder_id": 2
-              }
-            }
+  "seatbid": [{
+    "seat": "appnexus",
+    "bid": [{
+      "id": "145556724130495288",
+      "impid": "some-impression-id",
+      "price": 0.01,
+      "adm": "<script type=\"application/javascript\">...</script>",
+      "adid": "107987536",
+      "adomain": [
+        "appnexus.com"
+      ],
+      "iurl": "https://nym1-ib.adnxs.com/cr?id=107987536",
+      "cid": "3532",
+      "crid": "107987536",
+      "w": 600,
+      "h": 500,
+      "ext": {
+        "prebid": {
+          "type": "banner",
+          "video": {
+            "duration": 0,
+            "primary_category": ""
+          }
+        },
+        "bidder": {
+          "appnexus": {
+            "brand_id": 1,
+            "auction_id": 7311907164510136364,
+            "bidder_id": 2,
+            "bid_ad_type": 0
           }
         }
-      ]
-    }
-  ]
+      }
+    }]
+  }],
+  "cur": "USD",
+  "ext": {
+    "responsetimemillis": {
+      "appnexus": 10
+    },
+    "tmaxrequest": 500
+  }
 }
 ```
 
@@ -69,12 +110,12 @@ A "hello world" response from the prebid sample ad request is shown below.
 #### Conventions
 
 OpenRTB 2.5 permits exchanges to define their own extensions to any object from the spec.
-These fall under the `ext` property of JSON objects.
+These fall under the `ext` field of JSON objects.
 
 If `ext` is defined on an object, Prebid Server uses the following conventions:
 
-1. `ext` in "Request objects" uses `ext.prebid` and/or `ext.{anyBidderCode}`.
-2. `ext` on "Response objects" uses `ext.prebid` and/or `ext.bidder`.
+1. `ext` in "request objects" uses `ext.prebid` and/or `ext.{anyBidderCode}`.
+2. `ext` on "response objects" uses `ext.prebid` and/or `ext.bidder`.
 The only exception here is the top-level `BidResponse`, because it's bidder-independent.
 
 `ext.{anyBidderCode}` and `ext.bidder` extensions are defined by bidders.
@@ -84,9 +125,9 @@ Exceptions are made for extensions with "standard" recommendations:
 
 - `request.user.ext.digitrust` -- To support Digitrust
 - `request.regs.ext.gdpr` and `request.user.ext.consent` -- To support GDPR
+- `request.regs.us_privacy` -- To support CCPA
 - `request.site.ext.amp` -- To identify AMP as the request source
 - `request.app.ext.source` and `request.app.ext.version` -- To support identifying the displaymanager/SDK in mobile apps. If given, we expect these to be strings.
-- `request.regs.coppa` -- to support COPPA
 
 #### Bid Adjustments
 
@@ -98,7 +139,7 @@ If you find that some bidders use Gross bids, publishers can adjust for it with 
   "ext": {
     "prebid": {
       "bidadjustmentfactors": {
-        "appnexus: 0.8,
+        "appnexus": 0.8,
         "rubicon": 0.7
       }
     }
@@ -126,8 +167,8 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
         "pricegranularity": {
           "precision": 2,
           "ranges": [{
-                "max":20.00,
-                "increment":0.10 // This is equivalent to the deprecated "pricegranularity": "medium"
+            "max": 20.00,
+            "increment": 0.10 // This is equivalent to the deprecated "pricegranularity": "medium"
           }]
         },
         "includewinners": false, // Optional param defaulting to true
@@ -146,23 +187,29 @@ One of "includewinners" or "includebidderkeys" must be true (both default to tru
 MediaType PriceGranularity (PBS-Java only) - when a single OpenRTB request contains multiple impressions with different mediatypes, or a single impression supports multiple formats, the different mediatypes may need different price granularities. If `mediatypepricegranularity` is present, `pricegranularity` would only be used for any mediatypes not specified. 
 
 ```
-            "ext": {
-                "prebid": {
-                    "targeting": {
-                        "mediatypepricegranularity": {
-                            "banner": { "ranges": [
-                                {"max": 20, "increment": 0.5}
-                            ]},
-                            "video": { "ranges": [
-                                {"max": 10, "increment": 1},
-                                {"max": 20, "increment": 2},
-                                {"max": 50, "increment": 5}
-                            ]}
-                        }
-                    }
-                    "includewinners": true
-                }
-             }
+{
+  "ext": {
+    "prebid": {
+      "targeting": {
+        "mediatypepricegranularity": {
+          "banner": {
+            "ranges": [
+              {"max": 20, "increment": 0.5}
+            ]
+          },
+          "video": {
+            "ranges": [
+              {"max": 10, "increment": 1},
+              {"max": 20, "increment": 2},
+              {"max": 50, "increment": 5}
+            ]
+          }
+        }
+      },
+      "includewinners": true
+    }
+  }
+}
 ```
 
 **Response format** (returned in `bid.ext.prebid.targeting`)
@@ -238,22 +285,20 @@ This can be used to request bids from the same Bidder with different params. For
 
 ```
 {
-  "imp": [
-    {
-      "id": "some-impression-id",
-      "video": {
-        "mimes": ["video/mp4"]
+  "imp": [{
+    "id": "some-impression-id",
+    "video": {
+      "mimes": ["video/mp4"]
+    },
+    "ext": {
+      "appnexus": {
+        "placementId": 123
       },
-      "ext": {
-        "appnexus: {
-          "placementId": 123
-        },
-        "districtm": {
-          "placementId": 456
-        }
+      "districtm": {
+        "placementId": 456
       }
     }
-  ],
+  }],
   "ext": {
     "prebid": {
       "aliases": {
@@ -303,12 +348,12 @@ For example, a request may return this in `response.ext`
   "ext": {
     "errors": {
       "appnexus": [{
-          "code": 2,
-          "message": "A hybrid Banner/Audio Imp was offered, but Appnexus doesn't support Audio."
+        "code": 2,
+        "message": "A hybrid Banner/Audio Imp was offered, but Appnexus doesn't support Audio."
       }],
       "rubicon": [{
-          "code": 1,
-          "message": "The request exceeded the timeout allocated"
+        "code": 1,
+        "message": "The request exceeded the timeout allocated"
       }]
     }
   }
@@ -413,16 +458,14 @@ The values will be numbers that indicate the minimum allowed size for the ad, as
 Example:
 ```
 {
-  "imp": [
-    {
-      ...
-      "banner": {
-        ...
-      }
-      "instl": 1,
+  "imp": [{
+    ...
+    "banner": {
       ...
     }
-  ]
+    "instl": 1,
+    ...
+  }]
   "device": {
     ...
     "h": 640,

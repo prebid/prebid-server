@@ -923,6 +923,27 @@ func TestRecordRequestQueueTimeMetric(t *testing.T) {
 	}
 }
 
+func TestTimeoutNotifications(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordTimeoutNotice(true)
+	m.RecordTimeoutNotice(true)
+	m.RecordTimeoutNotice(false)
+
+	assertCounterVecValue(t, "", "timeout_notifications:ok", m.timeout_notifications,
+		float64(2),
+		prometheus.Labels{
+			successLabel: requestSuccessful,
+		})
+
+	assertCounterVecValue(t, "", "timeout_notifications:fail", m.timeout_notifications,
+		float64(1),
+		prometheus.Labels{
+			successLabel: requestFailed,
+		})
+
+}
+
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {
 	m := dto.Metric{}
 	counter.Write(&m)

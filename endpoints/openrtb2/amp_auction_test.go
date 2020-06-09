@@ -122,9 +122,8 @@ func TestAMPPageInfo(t *testing.T) {
 }
 
 func TestGDPRConsent(t *testing.T) {
-	consent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	consent := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
 	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
-
 	digitrust := &openrtb_ext.ExtUserDigiTrust{
 		ID:   "anyDigitrustID",
 		KeyV: 1,
