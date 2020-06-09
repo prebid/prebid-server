@@ -222,18 +222,20 @@ func getBidType(bidExt json.RawMessage) openrtb_ext.BidType {
 	return bidType
 }
 
-func getADM(adType string, adapterResponseAdm string) (string, bool) {
-	imageMarkup, done := extractAdmImage(adType, adapterResponseAdm)
-	if done {
-		return imageMarkup, done
+func getADM(adType string, adapterResponseAdm string) (string, error) {
+
+	if strings.EqualFold(adType, "img") {
+		imageMarkup, err := extractAdmImage(adType, adapterResponseAdm)
+		return imageMarkup, err
 	}
-	return adapterResponseAdm, done
+	customError := fmt.Errorf("no adtype set = %s, returning unformatted ADM", adType)
+	return adapterResponseAdm, customError
 }
 
-func extractAdmImage(adType string, adapterResponseAdm string) (string, bool) {
+func extractAdmImage(adType string, adapterResponseAdm string) (string, error) {
 	var imgMarkup string
+	var err error
 	if strings.EqualFold(adType, "img") {
-
 		var imageAd ImageAd
 		err := json.Unmarshal([]byte(adapterResponseAdm), &imageAd)
 		var image = imageAd.Image
@@ -247,9 +249,8 @@ func extractAdmImage(adType string, adapterResponseAdm string) (string, bool) {
 				Img.URL + " width=" + strconv.Itoa(image.Img.W) + " height=" + strconv.Itoa(image.Img.
 				H) + "/></a></div>"
 		}
-		return imgMarkup, true
 	}
-	return adapterResponseAdm, false
+	return imgMarkup, err
 }
 
 func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
