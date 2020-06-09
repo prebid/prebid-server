@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/prebid/prebid-server/pbsmetrics"
+
 	"github.com/prebid/prebid-server/adapters"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/adform"
@@ -85,7 +87,7 @@ import (
 // The newAdapterMap function is segregated to its own file to make it a simple and clean location for each Adapter
 // to register itself. No wading through Exchange code to find it.
 
-func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
+func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) map[openrtb_ext.BidderName]adaptedBidder {
 	ortbBidders := map[openrtb_ext.BidderName]adapters.Bidder{
 		openrtb_ext.Bidder33Across:     ttx.New33AcrossBidder(cfg.Adapters[string(openrtb_ext.Bidder33Across)].Endpoint),
 		openrtb_ext.BidderAdform:       adform.NewAdformBidder(client, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
@@ -190,7 +192,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	for name, bidder := range ortbBidders {
 		// Clean out any disabled bidders
 		if infos[string(name)].Status == adapters.StatusActive {
-			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client)
+			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client, cfg, me)
 		}
 	}
 

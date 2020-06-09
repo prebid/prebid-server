@@ -28,6 +28,7 @@ type Metrics struct {
 	requestsWithoutCookie        *prometheus.CounterVec
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
+	timeout_notifications        *prometheus.CounterVec
 
 	// Adapter Metrics
 	adapterBids          *prometheus.CounterVec
@@ -77,6 +78,11 @@ const (
 const (
 	requestSuccessLabel = "requestAcceptedLabel"
 	requestRejectLabel  = "requestRejectedLabel"
+)
+
+const (
+	requestSuccessful = "ok"
+	requestFailed     = "failed"
 )
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
@@ -146,6 +152,11 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"stored_request_cache_performance",
 		"Count of stored request cache requests attempts by hits or miss.",
 		[]string{cacheResultLabel})
+
+	metrics.timeout_notifications = newCounter(cfg, metrics.Registry,
+		"timeout_notification",
+		"Count of timeout notifications triggered, and if they were successfully sent.",
+		[]string{successLabel})
 
 	metrics.adapterBids = newCounter(cfg, metrics.Registry,
 		"adapter_bids",
@@ -397,4 +408,16 @@ func (m *Metrics) RecordRequestQueueTime(success bool, requestType pbsmetrics.Re
 		requestTypeLabel:   string(requestType),
 		requestStatusLabel: successLabelFormatted,
 	}).Observe(length.Seconds())
+}
+
+func (m *Metrics) RecordTimeoutNotice(success bool) {
+	if success {
+		m.timeout_notifications.With(prometheus.Labels{
+			successLabel: requestSuccessful,
+		}).Inc()
+	} else {
+		m.timeout_notifications.With(prometheus.Labels{
+			successLabel: requestFailed,
+		}).Inc()
+	}
 }

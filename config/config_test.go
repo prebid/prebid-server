@@ -426,6 +426,14 @@ func TestCookieSizeError(t *testing.T) {
 	}
 }
 
+func TestValidateDebug(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.Debug.TimeoutNotification.SamplingRate = 1.1
+
+	err := cfg.validate()
+	assert.NotNil(t, err, "cfg.debug.timeout_notification.sampling_rate should not be allowed to be greater than 1.0, but it was allowed")
+}
+
 func newDefaultConfig(t *testing.T) *Configuration {
 	v := viper.New()
 	SetupViper(v, "")

@@ -10,13 +10,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/config/util"
+
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	nativeResponse "github.com/mxmCherry/openrtb/native/response"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -82,16 +87,20 @@ type pbsOrtbSeatBid struct {
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client) adaptedBidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me pbsmetrics.MetricsEngine) adaptedBidder {
 	return &bidderAdapter{
-		Bidder: bidder,
-		Client: client,
+		Bidder:      bidder,
+		Client:      client,
+		DebugConfig: cfg.Debug,
+		me:          me,
 	}
 }
 
 type bidderAdapter struct {
-	Bidder adapters.Bidder
-	Client *http.Client
+	Bidder      adapters.Bidder
+	Client      *http.Client
+	DebugConfig config.Debug
+	me          pbsmetrics.MetricsEngine
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
@@ -365,8 +374,21 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 		httpReq, err := http.NewRequest(toReq.Method, toReq.Uri, bytes.NewBuffer(toReq.Body))
 		if err == nil {
 			httpReq.Header = req.Headers
-			ctxhttp.Do(ctx, bidder.Client, httpReq)
-			// No validation yet on sending notifications
+			httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
+			success := (err == nil && httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
+			bidder.me.RecordTimeoutNotice(success)
+			if bidder.DebugConfig.TimeoutNotification.Log && !(bidder.DebugConfig.TimeoutNotification.FailOnly && success) {
+				var msg string
+				if err == nil {
+					msg = fmt.Sprintf("TimeoutNotification: status:(%d) body:%s", httpResp.StatusCode, string(toReq.Body))
+				} else {
+					msg = fmt.Sprintf("TimeoutNotification: error:(%s) body:%s", err.Error(), string(toReq.Body))
+				}
+				// If logging is turned on, and logging is not disallowed via FailOnly
+				util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
+			}
+		} else {
+			bidder.me.RecordTimeoutNotice(false)
 		}
 	}
 
