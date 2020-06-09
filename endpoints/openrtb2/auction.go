@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -57,6 +58,7 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 		defRequest,
 		defReqJSON,
 		bidderMap,
+		nil,
 		nil}).Auction), nil
 }
 
@@ -74,6 +76,7 @@ type endpointDeps struct {
 	defReqJSON       []byte
 	bidderMap        map[string]openrtb_ext.BidderName
 	cache            prebid_cache_client.Client
+	debugLogRegexp   *regexp.Regexp
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -312,7 +315,12 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	if err := ccpaPolicy.Validate(); err != nil {
-		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("CCPA value is invalid and will be ignored. (%s)", err.Error())})
+		errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
+
+		ccpaPolicy.Value = ""
+		if err := ccpaPolicy.Write(req); err != nil {
+			errL = append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
+		}
 	}
 
 	impIDs := make(map[string]int, len(req.Imp))

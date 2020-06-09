@@ -1,0 +1,25 @@
+{
+    "mockBidRequest": {
+      "id": "test-req",
+      "user": {
+        "ext": {
+          "consent" : "dummy"
+        }
+      },
+      "imp": [],
+      "site": {
+        "id": "test",
+        "publisher": {
+          "id": "123"
+        }
+      }
+    },
+    "httpCalls": [],
+    "expectedBidResponses": [],
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "Imp is empty",
+        "comparison": "literal"
+      }
+    ]
+  }
