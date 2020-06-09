@@ -6,11 +6,15 @@ Before adding PubNative as a new bidder, there are 3 prerequisites:
 - You need a configured Prebid Server (either self-hosted or hosted by 3rd party).
 - You need to be integrated with Ad Server SDK (e.g. Mopub) or internal product which communicates with Prebid Mobile SDK.
 
+Please see [documentation](https://developers.pubnative.net/docs/prebid-adding-pubnative-as-a-bidder) for more info.
+
 ## Configuration 
 
-- app_auth_token is unique per publisher app. Please contact our account manager to obtain yours.
-- zone_id should be always set to 1 (unless special use case)
-- bidder should be always set to "pubnative"
+- bidder should be always set to "pubnative" (`imp.ext.pubnative`)
+- zone_id (int) should be always set to 1, unless special use case agreed with our account manager. (`imp.ext.pubnative.zone_id`)
+- app_auth_token (string) is unique per publisher app. Please contact our account manager to obtain yours. (`imp.ext.pubnative.app_auth_token`)
+
+An example is illustrated in a section below.
 
 ## Testing
 
@@ -18,9 +22,9 @@ Please consult with our Account Manager for testing.
 We need to confirm that your ad request is correctly received by our system.
 
 The following test parameters can be used to verify that Prebid Server is working properly with the 
-Appnexus adapter.
+Pubnative adapter.
 
-The following json can be used to do a request to prebid server for verifying it's integration with Pubnative adapter.
+The following json can be used to do a request to prebid server for verifying its integration with Pubnative adapter.
 
 ```json
 {
