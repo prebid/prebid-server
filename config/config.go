@@ -106,6 +106,7 @@ func (cfg *Configuration) validate() configErrors {
 	errs = cfg.GDPR.validate(errs)
 	errs = cfg.CurrencyConverter.validate(errs)
 	errs = validateAdapters(cfg.Adapters, errs)
+	errs = cfg.Debug.validate(errs)
 	return errs
 }
 
