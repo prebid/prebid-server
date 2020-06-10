@@ -35,9 +35,26 @@ func (a *SmartadserverAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 	var adapterRequests []*adapters.RequestData
 	var errs []error
 
-	// We copy the original request, and we send one serialized "smartRequest" per impression of the original request.
+	// We copy the original request.
 	smartRequest := *request
 
+	// We create or copy the Site object.
+	if smartRequest.Site == nil {
+		smartRequest.Site = new(openrtb.Site)
+	} else {
+		site := *smartRequest.Site
+		smartRequest.Site = &site
+	}
+
+	// We create or copy the Publisher object.
+	if smartRequest.Site.Publisher == nil {
+		smartRequest.Site.Publisher = new(openrtb.Publisher)
+	} else {
+		publisher := *smartRequest.Site.Publisher
+		smartRequest.Site.Publisher = &publisher
+	}
+
+	// We send one serialized "smartRequest" per impression of the original request.
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -56,12 +73,6 @@ func (a *SmartadserverAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 		}
 
 		// Adding publisher id.
-		if smartRequest.Site == nil {
-			smartRequest.Site = new(openrtb.Site)
-		}
-		if smartRequest.Site.Publisher == nil {
-			smartRequest.Site.Publisher = new(openrtb.Publisher)
-		}
 		smartRequest.Site.Publisher.ID = strconv.Itoa(smartadserverExt.NetworkID)
 
 		// We send one request for each impression.
