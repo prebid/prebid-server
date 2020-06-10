@@ -19,5 +19,5 @@ func TestBadConfig(t *testing.T) {
 }
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "triplelift_nativetest", NewTripleliftNativeBidder(nil, "http://tlx.3lift.net/s2sn/auction?supplier_id=20", "{\"publisher_whitelist\":[\"foo\",\"bar\",\"baz\"]}"))
+	adapterstest.RunJSONBidderTest(t, "triplelift_nativetest", NewTripleliftNativeBidder(nil, "http://tlx.3lift.net/s2sn/auction?sra=1&supplier_id=20", "{\"publisher_whitelist\":[\"foo\",\"bar\",\"baz\"]}"))
 }
