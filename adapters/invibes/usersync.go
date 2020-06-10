@@ -7,14 +7,11 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-const invibesGDPRVendorID = uint16(16)
-const invibesFamilyName = "invibes"
-
 func NewInvibesSyncer(urlTemplate *template.Template) usersync.Usersyncer {
 	return adapters.NewSyncer(
-		invibesFamilyName,
-		invibesGDPRVendorID,
+		"invibes",
+		0,
 		urlTemplate,
-		adapters.SyncTypeRedirect,
+		adapters.SyncTypeIframe,
 	)
 }
