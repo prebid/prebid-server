@@ -2,7 +2,10 @@
   "mockBidRequest": {
     "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
     "site": {
-      "page": "prebid.org"
+      "page": "prebid.org",
+      "publisher": {
+        "id": "1"
+      }
     },
     "imp": [
       {
@@ -21,7 +24,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherId": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+            "publisherId": "1100042525",
             "adspaceId": "130563103",
             "instl": 0,
             "secure": 0
@@ -46,7 +49,6 @@
             {
               "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
               "tagid": "130563103",
-              "secure": 0,
               "banner": {
                 "h": 50,
                 "w": 320,
@@ -70,7 +72,10 @@
             }
           },
           "site": {
-            "page": "prebid.org"
+            "page": "prebid.org",
+            "publisher": {
+              "id": "1100042525"
+            }
           }
         }
       },
