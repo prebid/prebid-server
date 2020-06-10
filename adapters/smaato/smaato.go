@@ -228,8 +228,8 @@ func getADM(adType string, adapterResponseAdm string) (string, error) {
 		imageMarkup, err := extractAdmImage(adType, adapterResponseAdm)
 		return imageMarkup, err
 	}
-	customError := fmt.Errorf("no adtype set = %s, returning unformatted ADM", adType)
-	return adapterResponseAdm, customError
+	admError := fmt.Errorf("no adtype set = %s, returning unformatted ADM", adType)
+	return adapterResponseAdm, admError
 }
 
 func extractAdmImage(adType string, adapterResponseAdm string) (string, error) {
@@ -243,9 +243,10 @@ func extractAdmImage(adType string, adapterResponseAdm string) (string, error) {
 		if err == nil {
 			var clickEvent string
 			for _, clicktracker := range image.Clicktrackers {
-				clickEvent += "fetch(decodeURIComponent(" + url.QueryEscape(clicktracker) + "), {cache: 'no-cache'});"
+				clickEvent += "fetch(decodeURIComponent(" + url.QueryEscape(clicktracker) + "), " +
+					"{cache: 'no-cache'});"
 			}
-			imgMarkup = "<div onclick=" + clickEvent + "><a href=" + image.Img.Ctaurl + "><img src=" + image.
+			imgMarkup = "<div onclick=\"" + clickEvent + "\"><a href=" + image.Img.Ctaurl + "><img src=" + image.
 				Img.URL + " width=" + strconv.Itoa(image.Img.W) + " height=" + strconv.Itoa(image.Img.
 				H) + "/></a></div>"
 		}
