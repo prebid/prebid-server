@@ -40,11 +40,15 @@ func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
 func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
-	var err error
-	var smaatoParams smaatoParams
+	// Use ext of first imp to retrieve params which are valid for all imps
+	smaatoParams, err := parseSmaatoParams(&request.Imp[0])
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
+	}
 
 	for i := 0; i < len(request.Imp); i++ {
-		smaatoParams, err = parseImpressionObject(&request.Imp[i])
+		err := parseImpressionObject(&request.Imp[i])
 		// If the parsing is failed, remove imp and add the error.
 		if err != nil {
 			errs = append(errs, err)
@@ -163,24 +167,24 @@ func assignBannerSize(banner *openrtb.Banner) error {
 }
 
 // parseImpressionObject parse the imp to get it ready to send to smaato
-func parseImpressionObject(imp *openrtb.Imp) (smaatoParams, error) {
+func parseImpressionObject(imp *openrtb.Imp) error {
 	smaatoParams, err := parseSmaatoParams(imp)
 	if err != nil {
-		return smaatoParams, err
+		return err
 	}
 
 	// SMAATO supports banner impressions.
 	if imp.Banner != nil {
 		if err := assignBannerSize(imp.Banner); err != nil {
-			return smaatoParams, err
+			return err
 		}
 
 		imp.TagID = smaatoParams.AdSpaceId
 		imp.Ext = nil
 
-		return smaatoParams, nil
+		return nil
 	}
-	return smaatoParams, fmt.Errorf("invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
+	return fmt.Errorf("invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
 }
 
 func parseSmaatoParams(imp *openrtb.Imp) (smaatoParams, error) {
