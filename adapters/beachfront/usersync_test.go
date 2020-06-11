@@ -30,6 +30,6 @@ func TestBeachfrontSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://sync.bfmio.com/sync_s2s?gdpr=A&us_privacy=C&url=https%3A%2F%2Flocalhost%3A8888%2Fsetuid%3Fbidder%3Dbeachfront%26gdpr%3DA%26gdpr_consent%3DB%26uid%3D%5Bio_cid%5D", syncInfo.URL)
 	assert.Equal(t, "iframe", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
+	assert.EqualValues(t, uint16(335), syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

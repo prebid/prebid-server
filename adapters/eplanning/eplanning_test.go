@@ -8,7 +8,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	eplanningAdapter := NewEPlanningBidder(new(http.Client), "https://ads.us.e-planning.net/hb/1")
+	eplanningAdapter := NewEPlanningBidder(new(http.Client), "http://rtb.e-planning.net/pbs/1")
 	eplanningAdapter.testing = true
 	adapterstest.RunJSONBidderTest(t, "eplanningtest", eplanningAdapter)
 }

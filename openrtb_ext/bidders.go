@@ -33,6 +33,7 @@ const (
 	BidderAdpone           BidderName = "adpone"
 	BidderAdmixer          BidderName = "admixer"
 	BidderAdOcean          BidderName = "adocean"
+	BidderAdtarget         BidderName = "adtarget"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
 	BidderAJA              BidderName = "aja"
@@ -46,6 +47,7 @@ const (
 	BidderConversant       BidderName = "conversant"
 	BidderCpmstar          BidderName = "cpmstar"
 	BidderDatablocks       BidderName = "datablocks"
+	BidderDmx              BidderName = "dmx"
 	BidderEmxDigital       BidderName = "emx_digital"
 	BidderEngageBDR        BidderName = "engagebdr"
 	BidderEPlanning        BidderName = "eplanning"
@@ -91,6 +93,7 @@ const (
 	BidderVisx             BidderName = "visx"
 	BidderVrtcal           BidderName = "vrtcal"
 	BidderYeahmobi         BidderName = "yeahmobi"
+	BidderYieldlab         BidderName = "yieldlab"
 	BidderYieldmo          BidderName = "yieldmo"
 	BidderYieldone         BidderName = "yieldone"
 	BidderZeroClickFraud   BidderName = "zeroclickfraud"
@@ -108,6 +111,7 @@ var BidderMap = map[string]BidderName{
 	"admixer":           BidderAdmixer,
 	"adocean":           BidderAdOcean,
 	"adpone":            BidderAdpone,
+	"adtarget":          BidderAdtarget,
 	"adtelligent":       BidderAdtelligent,
 	"advangelists":      BidderAdvangelists,
 	"aja":               BidderAJA,
@@ -121,6 +125,7 @@ var BidderMap = map[string]BidderName{
 	"conversant":        BidderConversant,
 	"cpmstar":           BidderCpmstar,
 	"datablocks":        BidderDatablocks,
+	"dmx":               BidderDmx,
 	"emx_digital":       BidderEmxDigital,
 	"engagebdr":         BidderEngageBDR,
 	"eplanning":         BidderEPlanning,
@@ -166,6 +171,7 @@ var BidderMap = map[string]BidderName{
 	"visx":              BidderVisx,
 	"vrtcal":            BidderVrtcal,
 	"yeahmobi":          BidderYeahmobi,
+	"yieldlab":          BidderYieldlab,
 	"yieldmo":           BidderYieldmo,
 	"yieldone":          BidderYieldone,
 	"zeroclickfraud":    BidderZeroClickFraud,

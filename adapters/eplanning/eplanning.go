@@ -133,7 +133,6 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 
 	uriObj.Path = uriObj.Path + fmt.Sprintf("/%s/%s/%s/%s", clientID, dfpClientID, requestTarget, sec)
 	query := url.Values{}
-	query.Set("r", "pbs")
 	query.Set("ncb", "1")
 	if request.App == nil {
 		query.Set("ur", pageURL)

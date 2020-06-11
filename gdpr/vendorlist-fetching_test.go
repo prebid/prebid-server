@@ -15,12 +15,12 @@ import (
 func TestVendorFetch(t *testing.T) {
 	vendorListOne := mockVendorListData(t, 1, map[uint16]*purposes{
 		32: {
-			purposes: []uint8{1, 2},
+			purposes: []int{1, 2},
 		},
 	})
 	vendorListTwo := mockVendorListData(t, 2, map[uint16]*purposes{
 		32: {
-			purposes: []uint8{1, 2, 3},
+			purposes: []int{1, 2, 3},
 		},
 	})
 	server := httptest.NewServer(http.HandlerFunc(mockServer(2, map[int]string{
@@ -47,12 +47,12 @@ func TestVendorFetch(t *testing.T) {
 func TestLazyFetch(t *testing.T) {
 	firstVendorList := mockVendorListData(t, 1, map[uint16]*purposes{
 		32: {
-			purposes: []uint8{1, 2},
+			purposes: []int{1, 2},
 		},
 	})
 	secondVendorList := mockVendorListData(t, 2, map[uint16]*purposes{
 		3: {
-			purposes: []uint8{1},
+			purposes: []int{1},
 		},
 	})
 	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{
@@ -73,7 +73,7 @@ func TestLazyFetch(t *testing.T) {
 func TestInitialTimeout(t *testing.T) {
 	list := mockVendorListData(t, 1, map[uint16]*purposes{
 		32: {
-			purposes: []uint8{1, 2},
+			purposes: []int{1, 2},
 		},
 	})
 	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{
@@ -91,12 +91,12 @@ func TestInitialTimeout(t *testing.T) {
 func TestFetchThrottling(t *testing.T) {
 	vendorListTwo := mockVendorListData(t, 2, map[uint16]*purposes{
 		32: {
-			purposes: []uint8{1, 2},
+			purposes: []int{1, 2},
 		},
 	})
 	vendorListThree := mockVendorListData(t, 3, map[uint16]*purposes{
 		32: {
-			purposes: []uint8{1, 2},
+			purposes: []int{1, 2},
 		},
 	})
 	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{
@@ -174,8 +174,8 @@ func mockServer(latestVersion int, responses map[int]string) func(http.ResponseW
 
 func mockVendorListData(t *testing.T, version uint16, vendors map[uint16]*purposes) string {
 	type vendorContract struct {
-		ID       uint16  `json:"id"`
-		Purposes []uint8 `json:"purposeIds"`
+		ID       uint16 `json:"id"`
+		Purposes []int  `json:"purposeIds"`
 	}
 
 	type vendorListContract struct {
@@ -203,6 +203,72 @@ func mockVendorListData(t *testing.T, version uint16, vendors map[uint16]*purpos
 	return string(data)
 }
 
+type purposeMap map[uint16]*purposes
+
+func mockVendorListDataTCF2(t *testing.T, version uint16, basicPurposes purposeMap, legitInterests purposeMap, flexPurposes purposeMap, specialPurposes purposeMap) string {
+	type vendorContract struct {
+		ID               uint16 `json:"id"`
+		Purposes         []int  `json:"purposes"`
+		LegIntPurposes   []int  `json:"legIntPurposes"`
+		FlexiblePurposes []int  `json:"flexiblePurposes"`
+		SpecialPurposes  []int  `json:"specialPurposes"`
+	}
+
+	type vendorListContract struct {
+		Version uint16                    `json:"vendorListVersion"`
+		Vendors map[string]vendorContract `json:"vendors"`
+	}
+
+	vendors := make(map[string]vendorContract, len(basicPurposes))
+	for id, purpose := range basicPurposes {
+		sid := strconv.Itoa(int(id))
+		vendor, ok := vendors[sid]
+		if !ok {
+			vendor = vendorContract{ID: id}
+		}
+		vendor.Purposes = purpose.purposes
+		vendors[sid] = vendor
+	}
+
+	for id, purpose := range legitInterests {
+		sid := strconv.Itoa(int(id))
+		vendor, ok := vendors[sid]
+		if !ok {
+			vendor = vendorContract{ID: id}
+		}
+		vendor.LegIntPurposes = purpose.purposes
+		vendors[sid] = vendor
+	}
+
+	for id, purpose := range flexPurposes {
+		sid := strconv.Itoa(int(id))
+		vendor, ok := vendors[sid]
+		if !ok {
+			vendor = vendorContract{ID: id}
+		}
+		vendor.FlexiblePurposes = purpose.purposes
+		vendors[sid] = vendor
+	}
+
+	for id, purpose := range specialPurposes {
+		sid := strconv.Itoa(int(id))
+		vendor, ok := vendors[sid]
+		if !ok {
+			vendor = vendorContract{ID: id}
+		}
+		vendor.SpecialPurposes = purpose.purposes
+		vendors[sid] = vendor
+	}
+
+	obj := vendorListContract{
+		Version: version,
+		Vendors: vendors,
+	}
+	data, err := json.Marshal(obj)
+	assertNilErr(t, err)
+	return string(data)
+}
+
 func testURLMaker(server *httptest.Server) func(uint16, uint8) string {
 	url := server.URL
 	return func(version uint16, TCFVer uint8) string {
@@ -220,5 +286,5 @@ func testConfig() config.GDPR {
 }
 
 type purposes struct {
-	purposes []uint8
+	purposes []int
 }
