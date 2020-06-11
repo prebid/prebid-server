@@ -171,7 +171,7 @@ type CCPA struct {
 
 type Analytics struct {
 	File     FileLogs `mapstructure:"file"`
-	Pubstack Pbstck   `mapstructure:"pubstack"`
+	Pubstack Pubstack `mapstructure:"pubstack"`
 }
 
 type CurrencyConverter struct {
@@ -191,15 +191,15 @@ type FileLogs struct {
 	Filename string `mapstructure:"filename"`
 }
 
-type Pbstck struct {
-	Enabled     bool         `mapstructure:"enabled"`
-	ScopeId     string       `mapstructure:"scopeid"`
-	IntakeUrl   string       `mapstructure:"endpoint"`
-	Buffers     PbstckBuffer `mapstructure:"buffers"`
-	ConfRefresh string       `mapstructure:"configuration_refresh_delay"`
+type Pubstack struct {
+	Enabled     bool           `mapstructure:"enabled"`
+	ScopeId     string         `mapstructure:"scopeid"`
+	IntakeUrl   string         `mapstructure:"endpoint"`
+	Buffers     PubstackBuffer `mapstructure:"buffers"`
+	ConfRefresh string         `mapstructure:"configuration_refresh_delay"`
 }
 
-type PbstckBuffer struct {
+type PubstackBuffer struct {
 	BufferSize string `mapstructure:"size"`
 	EventCount int    `mapstructure:"count"`
 	Timeout    string `mapstructure:"timeout"`

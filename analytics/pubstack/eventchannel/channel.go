@@ -14,7 +14,7 @@ import (
 	"github.com/golang/glog"
 )
 
-func (c *Channel) resetMetrics() {
+func (c *EventChannel) resetMetrics() {
 	c.metrics.eventCount = 0
 	c.metrics.bufferSize = 0
 	c.metrics.eventError = 0
@@ -26,7 +26,7 @@ type ChannelMetrics struct {
 	eventError int64
 }
 
-type Channel struct {
+type EventChannel struct {
 	intake  *url.URL
 	gz      *gzip.Writer
 	buff    *bytes.Buffer
@@ -35,18 +35,18 @@ type Channel struct {
 }
 
 // Add : add a new event to be processed
-func (c *Channel) Add(event []byte) {
+func (c *EventChannel) Add(event []byte) {
 	c.ch <- event
 }
 
-func (c *Channel) forward(maxSize, maxCount int64, maxTime time.Duration, termCh chan os.Signal) {
+func (c *EventChannel) forward(maxSize, maxCount int64, maxTime time.Duration, termCh chan os.Signal) {
 	ticker := time.NewTicker(maxTime)
 
 	for {
 		select {
 		// termination received
 		case <-termCh:
-			glog.Info("termination signal received")
+			glog.Info("[pubstack] Termination signal received")
 			c.flush()
 			return
 		// event is received
@@ -54,7 +54,7 @@ func (c *Channel) forward(maxSize, maxCount int64, maxTime time.Duration, termCh
 			_, err := c.gz.Write(event)
 			if err != nil {
 				c.metrics.eventError++
-				glog.Warning("fail to compress event")
+				glog.Warning("[pubstack] Fail to compress event")
 				continue
 			}
 			c.metrics.eventCount++
@@ -69,7 +69,7 @@ func (c *Channel) forward(maxSize, maxCount int64, maxTime time.Duration, termCh
 	}
 }
 
-func (c *Channel) flush() {
+func (c *EventChannel) flush() {
 	c.resetMetrics()
 	// finish writing gzip header
 	c.gz.Close()
@@ -78,7 +78,7 @@ func (c *Channel) flush() {
 	payload := make([]byte, c.buff.Len())
 	_, err := c.buff.Read(payload)
 	if err != nil {
-		glog.Warning("Fail to read gzipped buffer")
+		glog.Warning("[pubstack] Fail to read gzipped buffer")
 	}
 
 	// clean buffers and writers
@@ -100,18 +100,18 @@ func (c *Channel) flush() {
 		return
 	}
 	if resp.StatusCode != http.StatusOK {
-		glog.Errorf("wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
+		glog.Errorf("[pubstack] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 		return
 	}
 }
 
-func NewChannel(intake, route string, maxSize, maxCount int64, maxTime time.Duration) *Channel {
+func NewChannel(intake, route string, maxSize, maxCount int64, maxTime time.Duration) *EventChannel {
 	u, _ := url.Parse(intake)
 	u.Path = path.Join(u.Path, "intake", route)
 
 	b := bytes.NewBufferString("")
 	gzw := gzip.NewWriter(b)
-	c := Channel{
+	c := EventChannel{
 		intake:  u,
 		gz:      gzw,
 		buff:    b,

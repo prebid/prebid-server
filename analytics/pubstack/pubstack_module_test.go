@@ -112,7 +112,7 @@ func TestPubstackModule(t *testing.T) {
 
 	pbmodule, ok := pm.(*PubstackModule)
 	assert.Equal(t, ok, true) // assert pubstack module is effectively a PBSAnalyticsModule
-	assert.Equal(t, len(pbmodule.chans), 2)
+	assert.Equal(t, len(pbmodule.eventChannels), 2)
 
 	eventOne, err := loadJsonFromFile()
 	assert.Equal(t, err, nil)
@@ -146,9 +146,9 @@ func TestPubstackModule(t *testing.T) {
 	assert.Equal(t, err, nil)
 	pbmodule, ok = pm.(*PubstackModule)
 	assert.Equal(t, ok, true)
-	assert.Equal(t, len(pbmodule.chans), 2)
+	assert.Equal(t, len(pbmodule.eventChannels), 2)
 	updateConfig = 1             // force config update
 	time.Sleep(15 * time.Second) // wait for the config to update
 	// update should enable all features so chanmap size should be 5 instead of 2
-	assert.Equal(t, len(pbmodule.chans), 5)
+	assert.Equal(t, len(pbmodule.eventChannels), 5)
 }

@@ -1,9 +1,8 @@
 # Pubstack Analytics
 
-In order to use the pubstack analytics module. One should configure it first.
-Configuration of the module is made in the same fashion as other prebid server configuration.
+In order to use the pubstack analytics module, it needs to be configured by the host.
 
-You can either configure the server using the following environment variables:
+You can configure the server using the following environment variables:
 
 ```bash
 export PBS_ANALYTICS_PUBSTACK_ENABLED="true"
@@ -18,5 +17,5 @@ analytics:
     pubstack:
       enabled: true
       endpoint: "https://openrtb.preview.pubstack.io/v1/openrtb2"
-      scopeid: <your scopeId here> # should be an UUIDv4
+      scopeid: <your scopeId here> # The scopeId provided by the Pubstack Support Team
 ```
