@@ -13,17 +13,24 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const bidTypeExtKey = "BidType"
-
 const (
-	smtAdTypeImg       string = "Img"
-	smtAdTypeRichmedia        = "Richmedia"
+	smtAdTypeImg       = "Img"
+	smtAdTypeRichmedia = "Richmedia"
 )
 
 // SmaatoAdapter describes a Smaato prebid server adapter.
 type SmaatoAdapter struct {
 	http *adapters.HTTPAdapter
 	URI  string
+}
+
+// NewSmaatoBidder creates a Smaato bid adapter.
+func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
+	return &SmaatoAdapter{
+		http: a,
+		URI:  uri,
+	}
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
@@ -185,14 +192,6 @@ func parseSmaatoParams(imp *openrtb.Imp) (openrtb_ext.ExtImpSmaato, error) {
 		return smaatoExt, err
 	}
 	return smaatoExt, nil
-}
-
-func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
-	return &SmaatoAdapter{
-		http: a,
-		URI:  uri,
-	}
 }
 
 func logf(msg string, args ...interface{}) {
