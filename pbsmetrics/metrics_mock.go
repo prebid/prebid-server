@@ -106,3 +106,8 @@ func (me *MetricsEngineMock) RecordRequestQueueTime(success bool, requestType Re
 func (me *MetricsEngineMock) RecordTimeoutNotice(success bool) {
 	me.Called(success)
 }
+
+// RecordTCF mock
+func (me *MetricsEngineMock) RecordTCF(version int) {
+	me.Called(version)
+}

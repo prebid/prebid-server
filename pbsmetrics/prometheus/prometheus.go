@@ -1,6 +1,7 @@
 package prometheusmetrics
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -28,7 +29,8 @@ type Metrics struct {
 	requestsWithoutCookie        *prometheus.CounterVec
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
-	timeout_notifications        *prometheus.CounterVec
+	timeoutNotifications         *prometheus.CounterVec
+	tcfMetrics                   *prometheus.CounterVec
 
 	// Adapter Metrics
 	adapterBids          *prometheus.CounterVec
@@ -63,6 +65,7 @@ const (
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
 	successLabel         = "success"
+	versionLabel         = "version"
 )
 
 const (
@@ -153,10 +156,15 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of stored request cache requests attempts by hits or miss.",
 		[]string{cacheResultLabel})
 
-	metrics.timeout_notifications = newCounter(cfg, metrics.Registry,
+	metrics.timeoutNotifications = newCounter(cfg, metrics.Registry,
 		"timeout_notification",
 		"Count of timeout notifications triggered, and if they were successfully sent.",
 		[]string{successLabel})
+
+	metrics.tcfMetrics = newCounter(cfg, metrics.Registry,
+		"privacy_tcf",
+		"Count of TCF versions for requests under GDPR.",
+		[]string{versionLabel})
 
 	metrics.adapterBids = newCounter(cfg, metrics.Registry,
 		"adapter_bids",
@@ -412,12 +420,22 @@ func (m *Metrics) RecordRequestQueueTime(success bool, requestType pbsmetrics.Re
 
 func (m *Metrics) RecordTimeoutNotice(success bool) {
 	if success {
-		m.timeout_notifications.With(prometheus.Labels{
+		m.timeoutNotifications.With(prometheus.Labels{
 			successLabel: requestSuccessful,
 		}).Inc()
 	} else {
-		m.timeout_notifications.With(prometheus.Labels{
+		m.timeoutNotifications.With(prometheus.Labels{
 			successLabel: requestFailed,
 		}).Inc()
 	}
+}
+
+func (m *Metrics) RecordTCF(version int) {
+	var value string = "err"
+	if version > 0 {
+		value = fmt.Sprintf("v%d", version)
+	}
+	m.tcfMetrics.With(prometheus.Labels{
+		versionLabel: value,
+	}).Inc()
 }

@@ -930,18 +930,45 @@ func TestTimeoutNotifications(t *testing.T) {
 	m.RecordTimeoutNotice(true)
 	m.RecordTimeoutNotice(false)
 
-	assertCounterVecValue(t, "", "timeout_notifications:ok", m.timeout_notifications,
+	assertCounterVecValue(t, "", "timeout_notifications:ok", m.timeoutNotifications,
 		float64(2),
 		prometheus.Labels{
 			successLabel: requestSuccessful,
 		})
 
-	assertCounterVecValue(t, "", "timeout_notifications:fail", m.timeout_notifications,
+	assertCounterVecValue(t, "", "timeout_notifications:fail", m.timeoutNotifications,
 		float64(1),
 		prometheus.Labels{
 			successLabel: requestFailed,
 		})
 
+}
+
+func TestTCFMetrics(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordTCF(0)
+	m.RecordTCF(1)
+	m.RecordTCF(2)
+	m.RecordTCF(1)
+
+	assertCounterVecValue(t, "", "privacy_tcf:err", m.tcfMetrics,
+		float64(1),
+		prometheus.Labels{
+			versionLabel: "err",
+		})
+
+	assertCounterVecValue(t, "", "privacy_tcf:v1", m.tcfMetrics,
+		float64(2),
+		prometheus.Labels{
+			versionLabel: "v1",
+		})
+
+	assertCounterVecValue(t, "", "privacy_tcf:v2", m.tcfMetrics,
+		float64(1),
+		prometheus.Labels{
+			versionLabel: "v2",
+		})
 }
 
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {

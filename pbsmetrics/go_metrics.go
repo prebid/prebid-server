@@ -48,8 +48,14 @@ type Metrics struct {
 	ImpsTypeAudio  metrics.Meter
 	ImpsTypeNative metrics.Meter
 
+	// Notification timeout metrics
 	TimeoutNotificationSuccess metrics.Meter
 	TimeoutNotificationFailure metrics.Meter
+
+	// TCF adaption metrics
+	TCF1Meter   metrics.Meter
+	TCF2Meter   metrics.Meter
+	TCFErrMeter metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -137,6 +143,10 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		TimeoutNotificationSuccess: blankMeter,
 		TimeoutNotificationFailure: blankMeter,
 
+		TCF1Meter:   blankMeter,
+		TCF2Meter:   blankMeter,
+		TCFErrMeter: blankMeter,
+
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
 		MetricsDisabled: disableMetrics,
@@ -218,6 +228,10 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 
 	newMetrics.TimeoutNotificationSuccess = metrics.GetOrRegisterMeter("timeout_notification.ok", registry)
 	newMetrics.TimeoutNotificationFailure = metrics.GetOrRegisterMeter("timeout_notification.failed", registry)
+
+	newMetrics.TCF1Meter = metrics.GetOrRegisterMeter("privacy.tcf.v1", registry)
+	newMetrics.TCF2Meter = metrics.GetOrRegisterMeter("privacy.tcf.v2", registry)
+	newMetrics.TCFErrMeter = metrics.GetOrRegisterMeter("privacy.tcf.err", registry)
 	return newMetrics
 }
 
@@ -558,6 +572,17 @@ func (me *Metrics) RecordTimeoutNotice(success bool) {
 		me.TimeoutNotificationSuccess.Mark(1)
 	} else {
 		me.TimeoutNotificationFailure.Mark(1)
+	}
+	return
+}
+
+func (me *Metrics) RecordTCF(version int) {
+	if version == 1 {
+		me.TCF1Meter.Mark(1)
+	} else if version == 2 {
+		me.TCF2Meter.Mark(1)
+	} else {
+		me.TCFErrMeter.Mark(1)
 	}
 	return
 }

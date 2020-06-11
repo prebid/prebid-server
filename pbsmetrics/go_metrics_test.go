@@ -56,6 +56,10 @@ func TestNewMetrics(t *testing.T) {
 
 	ensureContains(t, registry, "timeout_notification.ok", m.TimeoutNotificationSuccess)
 	ensureContains(t, registry, "timeout_notification.failed", m.TimeoutNotificationFailure)
+	ensureContains(t, registry, "privacy.tcf.v1", m.TCF1Meter)
+	ensureContains(t, registry, "privacy.tcf.v2", m.TCF2Meter)
+	ensureContains(t, registry, "privacy.tcf.err", m.TCFErrMeter)
+
 }
 
 func TestRecordBidType(t *testing.T) {
