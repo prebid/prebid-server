@@ -21,7 +21,7 @@ type TelariaAdapter struct {
 type ImpressionExtOut struct {
 	OriginalTagID       string          `json:"originalTagid"`
 	OriginalPublisherID string          `json:"originalPublisherid"`
-	CustomParams        json.RawMessage `json:"customParams"`
+	Extra               json.RawMessage `json:"extra,omitempty"`
 }
 
 // used for cookies and such
@@ -198,7 +198,7 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 		seatCode = telariaExt.SeatCode
 
 		// move the original tagId and the original publisher.id into the Imp[i].Ext object
-		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID, originalPublisherID, telariaExt.CustomParams})
+		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID, originalPublisherID, telariaExt.Extra})
 		if err != nil {
 			errors = append(errors, err)
 			break
