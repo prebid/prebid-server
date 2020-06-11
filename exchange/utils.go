@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"net/http/httptrace"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
@@ -315,18 +314,4 @@ func randomizeList(list []openrtb_ext.BidderName) {
 		j = perm[i]
 		list[i], list[j] = list[j], list[i]
 	}
-}
-
-// This function adds an httptrace.ClientTrace object to the context so, if connection with the bidder
-// endpoint is established, we can keep track of whether the connection was newly created, reused, and
-// even know it was left idle and for how long.
-func AddClientTrace(ctx context.Context, bidderLabel *pbsmetrics.AdapterLabels) context.Context {
-	trace := &httptrace.ClientTrace{
-		GotConn: func(info httptrace.GotConnInfo) {
-			bidderLabel.GotConn = true
-			bidderLabel.ReusedConn = info.Reused
-			bidderLabel.WasIdleConn = info.WasIdle
-		},
-	}
-	return httptrace.WithClientTrace(ctx, trace)
 }

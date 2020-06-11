@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptrace"
 	"time"
 
 	"github.com/golang/glog"
@@ -87,9 +88,10 @@ type pbsOrtbSeatBid struct {
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me pbsmetrics.MetricsEngine) adaptedBidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me pbsmetrics.MetricsEngine, name openrtb_ext.BidderName) adaptedBidder {
 	return &bidderAdapter{
 		Bidder:      bidder,
+		BidderName:  name,
 		Client:      client,
 		DebugConfig: cfg.Debug,
 		me:          me,
@@ -98,6 +100,7 @@ func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 
 type bidderAdapter struct {
 	Bidder      adapters.Bidder
+	BidderName  openrtb_ext.BidderName
 	Client      *http.Client
 	DebugConfig config.Debug
 	me          pbsmetrics.MetricsEngine
@@ -321,6 +324,7 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	}
 	httpReq.Header = req.Headers
 
+	ctx = bidder.AddClientTrace(ctx)
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {
@@ -398,4 +402,16 @@ type httpCallInfo struct {
 	request  *adapters.RequestData
 	response *adapters.ResponseData
 	err      error
+}
+
+// This function adds an httptrace.ClientTrace object to the context so, if connection with the bidder
+// endpoint is established, we can keep track of whether the connection was newly created, reused, and
+// even know it was left idle and for how long.
+func (bidder *bidderAdapter) AddClientTrace(ctx context.Context) context.Context {
+	trace := &httptrace.ClientTrace{
+		GotConn: func(info httptrace.GotConnInfo) {
+			bidder.me.RecordAdapterConnections(bidder.BidderName, true, info)
+		},
+	}
+	return httptrace.WithClientTrace(ctx, trace)
 }

@@ -84,13 +84,19 @@ func preloadLabelValues(m *Metrics) {
 		hasBidsLabel: boolValues,
 	})
 
-	preloadLabelValuesForCounter(m.adapterConnections, map[string][]string{
+	preloadLabelValuesForCounter(m.adapterFailedConnections, map[string][]string{
+		adapterLabel:          adapterValues,
+		adapterConnErrorLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterReusedConnections, map[string][]string{
 		adapterLabel:            adapterValues,
-		adapterConnSuccessLabel: boolValues,
-		adapterConnErrorLabel:   boolValues,
 		adapterConnReusedLabel:  boolValues,
 		adapterConnCreatedLabel: boolValues,
-		adapterConnIdleLabel:    boolValues,
+	})
+
+	preloadLabelValuesForHistogram(m.adapterIdleConnectionTime, map[string][]string{
+		adapterLabel: adapterValues,
 	})
 
 	preloadLabelValuesForHistogram(m.adapterRequestsTimer, map[string][]string{

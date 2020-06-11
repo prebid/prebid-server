@@ -1,6 +1,7 @@
 package pbsmetrics
 
 import (
+	"net/http/httptrace"
 	"time"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -26,9 +27,6 @@ type AdapterLabels struct {
 	CookieFlag    CookieFlag
 	AdapterBids   AdapterBid
 	AdapterErrors map[AdapterError]struct{}
-	GotConn       bool
-	ReusedConn    bool
-	WasIdleConn   bool
 }
 
 // ImpLabels defines metric labels describing the impression type.
@@ -265,6 +263,7 @@ type MetricsEngine interface {
 	RecordLegacyImps(labels Labels, numImps int)           // RecordImps for the legacy engine
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
+	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo)
 	RecordAdapterPanic(labels AdapterLabels)
 	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
 	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.

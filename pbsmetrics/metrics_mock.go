@@ -1,6 +1,7 @@
 package pbsmetrics
 
 import (
+	"net/http/httptrace"
 	"time"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -50,6 +51,10 @@ func (me *MetricsEngineMock) RecordAdapterPanic(labels AdapterLabels) {
 // RecordAdapterRequest mock
 func (me *MetricsEngineMock) RecordAdapterRequest(labels AdapterLabels) {
 	me.Called(labels)
+}
+
+// RecordAdapterRequest mock
+func (me *MetricsEngineMock) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo) {
 }
 
 // RecordAdapterBidReceived mock

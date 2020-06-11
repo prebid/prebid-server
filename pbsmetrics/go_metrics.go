@@ -2,6 +2,7 @@ package pbsmetrics
 
 import (
 	"fmt"
+	"net/http/httptrace"
 	"sync"
 	"time"
 
@@ -73,11 +74,11 @@ type AdapterMetrics struct {
 	BidsReceivedMeter metrics.Meter
 	PanicMeter        metrics.Meter
 	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
-	ConnSuccess       metrics.Counter
 	ConnError         metrics.Counter
 	ConnCreated       metrics.Counter
 	ConnReused        metrics.Counter
 	ConnWasIdle       metrics.Counter
+	ConnIdleTime      metrics.Histogram
 }
 
 type MarkupDeliveryMetrics struct {
@@ -239,11 +240,10 @@ func makeBlankAdapterMetrics() *AdapterMetrics {
 		BidsReceivedMeter: blankMeter,
 		PanicMeter:        blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
-		ConnSuccess:       metrics.NilCounter{},
 		ConnError:         metrics.NilCounter{},
 		ConnCreated:       metrics.NilCounter{},
 		ConnReused:        metrics.NilCounter{},
-		ConnWasIdle:       metrics.NilCounter{},
+		ConnIdleTime:      &metrics.NilHistogram{},
 	}
 	for _, err := range AdapterErrors() {
 		newAdapter.ErrorMeters[err] = blankMeter
@@ -279,11 +279,10 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
 		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative),
 	}
-	am.ConnSuccess = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_success", registry)
 	am.ConnError = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_error", registry)
 	am.ConnCreated = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_created", registry)
 	am.ConnReused = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_reused", registry)
-	am.ConnWasIdle = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_idle", registry)
+	am.ConnIdleTime = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.connection_idle_time", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
 	for err := range am.ErrorMeters {
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
@@ -452,20 +451,26 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 	if labels.CookieFlag == CookieFlagNo {
 		am.NoCookieMeter.Mark(1)
 	}
+}
 
-	if labels.GotConn {
-		am.ConnSuccess.Inc(1)
-		if labels.ReusedConn {
-			am.ConnReused.Inc(1)
-		} else {
-			am.ConnCreated.Inc(1)
-		}
-		if labels.WasIdleConn {
-			am.ConnWasIdle.Inc(1)
-		}
-	} else {
+func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo) {
+	am, ok := me.AdapterMetrics[adapterName]
+	if !ok {
+		glog.Errorf("Trying to log adapter connection metrics for %s: adapter metrics not found", string(adapterName))
+		return
+	}
+
+	if !connSuccess {
 		am.ConnError.Inc(1)
 	}
+
+	if info.Reused {
+		am.ConnReused.Inc(1)
+	} else {
+		am.ConnCreated.Inc(1)
+	}
+
+	am.ConnIdleTime.Update(int64(info.IdleTime))
 }
 
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.

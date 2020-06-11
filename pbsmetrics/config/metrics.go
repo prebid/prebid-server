@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net/http/httptrace"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -118,6 +119,13 @@ func (me *MultiMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabe
 	}
 }
 
+// RecordAdapterConnections across all engines
+func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterConnections(bidderName, connSuccess, info)
+	}
+}
+
 // RecordAdapterBidReceived across all engines
 func (me *MultiMetricsEngine) RecordAdapterBidReceived(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	for _, thisME := range *me {
@@ -228,6 +236,10 @@ func (me *DummyMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels
 
 // RecordAdapterRequest as a noop
 func (me *DummyMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
+}
+
+// RecordAdapterConnections as a noop
+func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo) {
 }
 
 // RecordAdapterBidReceived as a noop

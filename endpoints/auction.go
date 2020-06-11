@@ -126,7 +126,6 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 				CookieFlag:  labels.CookieFlag,
 				AdapterBids: pbsmetrics.AdapterBidPresent,
 			}
-			ctx = exchange.AddClientTrace(ctx, &blabels)
 			if skip := a.processUserSync(req, bidder, blabels, ex, &ctx); skip == true {
 				continue
 			}
