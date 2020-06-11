@@ -12,13 +12,9 @@
       "type": "string",
       "description": "Identifier for specific ad placement is SOMA `adspaceId`"
     },
-    "instl": {
-      "type": "integer",
-      "description": "A flag that shows if fullscreen ads is requested. 0 = not interstitial ad, 1 = the ad is interstitial or full screen."
-    },
-    "secure": {
-      "type": "integer",
-      "description": "A flag that shows if the ads is secured. 0 = not secure uses http, 1 = the ad is secure uses https."
+    "endpoint": {
+      "type": "string",
+      "description": "An optional endpoint the bid request can be send to. Used mainly for testing."
     }
   },
   "required": ["publisherId","adspaceId"]

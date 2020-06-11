@@ -40,7 +40,7 @@ func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
 func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
-	// Use ext of first imp to retrieve params which are valid for all imps
+	// Use ext of first imp to retrieve params which are valid for all imps, e.g. publisherId
 	smaatoParams, err := parseSmaatoParams(&request.Imp[0])
 	if err != nil {
 		errs = append(errs, err)
@@ -59,10 +59,9 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 
 	if request.Site != nil {
 		siteCopy := *request.Site
-		siteCopy.Publisher.ID = smaatoParams.PublisherId
+		siteCopy.Publisher.ID = smaatoParams.PublisherID
 		request.Site = &siteCopy
 	}
-	thisURI := a.URI
 
 	// If all the requests are invalid, Call to adaptor is skipped
 	if len(request.Imp) == 0 {
@@ -75,12 +74,17 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		return nil, errs
 	}
 
+	uri := a.URI
+	if smaatoParams.Endpoint != "" {
+		uri = smaatoParams.Endpoint
+	}
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     thisURI,
+		Uri:     uri,
 		Body:    reqJSON,
 		Headers: headers,
 	}}, errs
@@ -179,7 +183,7 @@ func parseImpressionObject(imp *openrtb.Imp) error {
 			return err
 		}
 
-		imp.TagID = smaatoParams.AdSpaceId
+		imp.TagID = smaatoParams.AdSpaceID
 		imp.Ext = nil
 
 		return nil
