@@ -97,9 +97,10 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	}
 
 	var errors []error
+	var err error
 	requestsData := make([]*requestData, 0, len(request.Imp))
 	for _, auction := range request.Imp {
-		err := a.addNewBid(&requestsData, &auction, request, consentString)
+		requestsData, err = a.addNewBid(requestsData, &auction, request, consentString)
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -118,28 +119,28 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 }
 
 func (a *AdOceanAdapter) addNewBid(
-	requestsData *[]*requestData,
+	requestsData []*requestData,
 	imp *openrtb.Imp,
 	request *openrtb.BidRequest,
 	consentString string,
-) error {
+) ([]*requestData, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return &errortypes.BadInput{
+		return requestsData, &errortypes.BadInput{
 			Message: "Error parsing bidderExt object",
 		}
 	}
 
 	var adOceanExt openrtb_ext.ExtImpAdOcean
 	if err := json.Unmarshal(bidderExt.Bidder, &adOceanExt); err != nil {
-		return &errortypes.BadInput{
+		return requestsData, &errortypes.BadInput{
 			Message: "Error parsing adOceanExt parameters",
 		}
 	}
 
-	addedToExistingRequest := addToExistingRequest(*requestsData, &adOceanExt, imp, (request.Test == 1))
+	addedToExistingRequest := addToExistingRequest(requestsData, &adOceanExt, imp, (request.Test == 1))
 	if addedToExistingRequest {
-		return nil
+		return requestsData, nil
 	}
 
 	slaveSizes := map[string]string{}
@@ -147,7 +148,7 @@ func (a *AdOceanAdapter) addNewBid(
 
 	url, err := a.makeURL(&adOceanExt, imp, request, slaveSizes, consentString)
 	if err != nil {
-		return err
+		return requestsData, err
 	}
 
 	headers := http.Header{}
@@ -168,13 +169,13 @@ func (a *AdOceanAdapter) addNewBid(
 		headers.Add("Referer", request.Site.Page)
 	}
 
-	*requestsData = append(*requestsData, &requestData{
+	requestsData = append(requestsData, &requestData{
 		Url:        url,
 		Headers:    &headers,
 		SlaveSizes: slaveSizes,
 	})
 
-	return nil
+	return requestsData, nil
 }
 
 func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.ExtImpAdOcean, imp *openrtb.Imp, testImp bool) bool {
