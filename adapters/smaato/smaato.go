@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -91,12 +92,15 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
 	adType := response.Headers.Get("X-SMT-ADTYPE")
+	adType = "Img"
 
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 
 			adm, err := getADM(adType, bid.AdM)
+			logf("adm: %s, %v", adType, err)
+
 			if err != nil {
 				continue
 			}
@@ -171,5 +175,11 @@ func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
 	return &SmaatoAdapter{
 		http: a,
 		URI:  uri,
+	}
+}
+
+func logf(msg string, args ...interface{}) {
+	if glog.V(2) {
+		glog.Infof("[SMAATO] "+msg, args...)
 	}
 }

@@ -25,7 +25,7 @@ type img struct {
 func extractAdmImage(adType string, adapterResponseAdm string) (string, error) {
 	var imgMarkup string
 	var err error
-	if strings.EqualFold(adType, "img") {
+	if strings.EqualFold(adType, "Img") {
 		var imageAd imageAd
 		err := json.Unmarshal([]byte(adapterResponseAdm), &imageAd)
 		var image = imageAd.Image
