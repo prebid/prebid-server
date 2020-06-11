@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
@@ -13,8 +14,11 @@ import (
 )
 
 const bidTypeExtKey = "BidType"
-const smtAdTypeImg = "Img"
-const smtAdTypeRichmedia = "Richmedia"
+
+const (
+	smtAdTypeImg       string = "Img"
+	smtAdTypeRichmedia        = "Richmedia"
+)
 
 // SmaatoAdapter describes a Smaato prebid server adapter.
 type SmaatoAdapter struct {
@@ -91,20 +95,15 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
-	adType := response.Headers.Get("X-SMT-ADTYPE")
-	adType = "Img"
-
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 
-			adm, err := getADM(adType, bid.AdM)
-			logf("adm: %s, %v", adType, err)
-
-			if err != nil {
-				continue
+			var markupError error
+			bid.AdM, markupError = renderAdMarkup(getAdMarkupType(response, bid.AdM), bid.AdM)
+			if markupError != nil {
+				continue // no bid when broken ad markup
 			}
-			bid.AdM = adm
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
@@ -113,6 +112,26 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		}
 	}
 	return bidResponse, nil
+}
+
+func renderAdMarkup(adMarkupType string, adMarkup string) (string, error) {
+	var markupError error
+	var adm string
+	switch adMarkupType {
+	case smtAdTypeImg:
+		adm, markupError = extractAdmImage(adMarkup)
+	default:
+		return "", fmt.Errorf("Unknown markup type %s", adMarkupType)
+	}
+	return adm, markupError
+}
+
+func getAdMarkupType(response *adapters.ResponseData, adMarkup string) string {
+	admType := response.Headers.Get("X-SMT-ADTYPE")
+	if admType == "" && strings.HasPrefix(adMarkup, `{"image":`) {
+		admType = smtAdTypeImg
+	}
+	return admType
 }
 
 func assignBannerSize(banner *openrtb.Banner) error {
@@ -158,16 +177,6 @@ func parseImpressionObject(imp *openrtb.Imp) (string, error) {
 		return smaatoExt.PublisherId, nil
 	}
 	return "", fmt.Errorf("invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
-}
-
-func getADM(adType string, adapterResponseAdm string) (string, error) {
-
-	if adType == smtAdTypeImg {
-		imageMarkup, err := extractAdmImage(adType, adapterResponseAdm)
-		return imageMarkup, err
-	}
-	admError := fmt.Errorf("unknown adtype set = %s, returning unformatted ADM", adType)
-	return adapterResponseAdm, admError
 }
 
 func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {

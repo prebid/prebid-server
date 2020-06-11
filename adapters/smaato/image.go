@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"strings"
 )
 
 type imageAd struct {
@@ -22,24 +21,24 @@ type img struct {
 	Ctaurl string `json:"ctaurl"`
 }
 
-func extractAdmImage(adType string, adapterResponseAdm string) (string, error) {
+func extractAdmImage(adapterResponseAdm string) (string, error) {
 	var imgMarkup string
 	var err error
-	if strings.EqualFold(adType, "Img") {
-		var imageAd imageAd
-		err := json.Unmarshal([]byte(adapterResponseAdm), &imageAd)
-		var image = imageAd.Image
 
-		if err == nil {
-			var clickEvent string
-			for _, clicktracker := range image.Clicktrackers {
-				clickEvent += "fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'), " +
-					"{cache: 'no-cache'});"
-			}
-			imgMarkup = fmt.Sprintf(`<div onclick="%s"><a href="%s"><img src="%s" width="%d" height="%d"/></a></div>`, clickEvent, image.Img.Ctaurl, image.
-				Img.URL, image.Img.W, image.Img.
-				H)
+	var imageAd imageAd
+	err = json.Unmarshal([]byte(adapterResponseAdm), &imageAd)
+	var image = imageAd.Image
+
+	if err == nil {
+		var clickEvent string
+		for _, clicktracker := range image.Clicktrackers {
+			clickEvent += "fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'), " +
+				"{cache: 'no-cache'});"
 		}
+		imgMarkup = fmt.Sprintf(`<div onclick="%s"><a href="%s"><img src="%s" width="%d" height="%d"/></a></div>`, clickEvent, image.Img.Ctaurl, image.
+			Img.URL, image.Img.W, image.Img.
+			H)
 	}
+
 	return imgMarkup, err
 }
