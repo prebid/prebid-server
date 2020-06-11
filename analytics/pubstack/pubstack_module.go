@@ -74,19 +74,19 @@ func (p *PubstackModule) applyConfiguration(cfg *Configuration) {
 	newEventChannelMap := make(map[string]*eventchannel.EventChannel)
 
 	if cfg.Features[amp] {
-		newEventChannelMap[amp] = eventchannel.NewChannel(cfg.Endpoint, amp, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		newEventChannelMap[amp] = eventchannel.NewEventChannel(cfg.Endpoint, amp, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if cfg.Features[auction] {
-		newEventChannelMap[auction] = eventchannel.NewChannel(cfg.Endpoint, auction, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		newEventChannelMap[auction] = eventchannel.NewEventChannel(cfg.Endpoint, auction, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if cfg.Features[cookieSync] {
-		newEventChannelMap[cookieSync] = eventchannel.NewChannel(cfg.Endpoint, cookieSync, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		newEventChannelMap[cookieSync] = eventchannel.NewEventChannel(cfg.Endpoint, cookieSync, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if cfg.Features[VIDEO] {
-		newEventChannelMap[VIDEO] = eventchannel.NewChannel(cfg.Endpoint, VIDEO, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		newEventChannelMap[VIDEO] = eventchannel.NewEventChannel(cfg.Endpoint, VIDEO, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if cfg.Features[setUiud] {
-		newEventChannelMap[setUiud] = eventchannel.NewChannel(cfg.Endpoint, setUiud, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		newEventChannelMap[setUiud] = eventchannel.NewEventChannel(cfg.Endpoint, setUiud, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 
 	p.eventChannels = newEventChannelMap

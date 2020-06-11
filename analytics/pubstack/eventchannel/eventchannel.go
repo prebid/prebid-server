@@ -20,7 +20,7 @@ func (c *EventChannel) resetMetrics() {
 	c.metrics.eventError = 0
 }
 
-type ChannelMetrics struct {
+type EventChannelMetrics struct {
 	bufferSize int64
 	eventCount int64
 	eventError int64
@@ -31,7 +31,7 @@ type EventChannel struct {
 	gz      *gzip.Writer
 	buff    *bytes.Buffer
 	ch      chan []byte
-	metrics ChannelMetrics
+	metrics EventChannelMetrics
 }
 
 // Add : add a new event to be processed
@@ -105,7 +105,7 @@ func (c *EventChannel) flush() {
 	}
 }
 
-func NewChannel(intake, route string, maxSize, maxCount int64, maxTime time.Duration) *EventChannel {
+func NewEventChannel(intake, route string, maxSize, maxCount int64, maxTime time.Duration) *EventChannel {
 	u, _ := url.Parse(intake)
 	u.Path = path.Join(u.Path, "intake", route)
 
@@ -116,7 +116,7 @@ func NewChannel(intake, route string, maxSize, maxCount int64, maxTime time.Dura
 		gz:      gzw,
 		buff:    b,
 		ch:      make(chan []byte),
-		metrics: ChannelMetrics{},
+		metrics: EventChannelMetrics{},
 	}
 
 	termCh := make(chan os.Signal)
