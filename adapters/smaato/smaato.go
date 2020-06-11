@@ -13,9 +13,12 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+type smaatoParams openrtb_ext.ExtImpSmaato
+type adMarkupType string
+
 const (
-	smtAdTypeImg       = "Img"
-	smtAdTypeRichmedia = "Richmedia"
+	smtAdTypeImg       adMarkupType = "Img"
+	smtAdTypeRichmedia              = "Richmedia"
 )
 
 // SmaatoAdapter describes a Smaato prebid server adapter.
@@ -38,10 +41,10 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	errs := make([]error, 0, len(request.Imp))
 
 	var err error
-	publisherID := ""
+	var smaatoParams smaatoParams
 
 	for i := 0; i < len(request.Imp); i++ {
-		publisherID, err = parseImpressionObject(&request.Imp[i])
+		smaatoParams, err = parseImpressionObject(&request.Imp[i])
 		// If the parsing is failed, remove imp and add the error.
 		if err != nil {
 			errs = append(errs, err)
@@ -52,7 +55,7 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 
 	if request.Site != nil {
 		siteCopy := *request.Site
-		siteCopy.Publisher.ID = publisherID
+		siteCopy.Publisher.ID = smaatoParams.PublisherId
 		request.Site = &siteCopy
 	}
 	thisURI := a.URI
@@ -121,7 +124,7 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	return bidResponse, nil
 }
 
-func renderAdMarkup(adMarkupType string, adMarkup string) (string, error) {
+func renderAdMarkup(adMarkupType adMarkupType, adMarkup string) (string, error) {
 	var markupError error
 	var adm string
 	switch adMarkupType {
@@ -133,8 +136,8 @@ func renderAdMarkup(adMarkupType string, adMarkup string) (string, error) {
 	return adm, markupError
 }
 
-func getAdMarkupType(response *adapters.ResponseData, adMarkup string) string {
-	admType := response.Headers.Get("X-SMT-ADTYPE")
+func getAdMarkupType(response *adapters.ResponseData, adMarkup string) adMarkupType {
+	admType := adMarkupType(response.Headers.Get("X-SMT-ADTYPE"))
 	if admType == "" && strings.HasPrefix(adMarkup, `{"image":`) {
 		admType = smtAdTypeImg
 	}
@@ -160,30 +163,29 @@ func assignBannerSize(banner *openrtb.Banner) error {
 }
 
 // parseImpressionObject parse the imp to get it ready to send to smaato
-func parseImpressionObject(imp *openrtb.Imp) (string, error) {
-	// SMAATO supports banner impressions.
+func parseImpressionObject(imp *openrtb.Imp) (smaatoParams, error) {
+	smaatoParams, err := parseSmaatoParams(imp)
+	if err != nil {
+		return smaatoParams, err
+	}
 
+	// SMAATO supports banner impressions.
 	if imp.Banner != nil {
 		if err := assignBannerSize(imp.Banner); err != nil {
-			return "", err
-		}
-
-		smaatoParams, err := parseSmaatoParams(imp)
-		if err != nil {
-			return "", err
+			return smaatoParams, err
 		}
 
 		imp.TagID = smaatoParams.AdSpaceId
 		imp.Ext = nil
 
-		return smaatoParams.PublisherId, nil
+		return smaatoParams, nil
 	}
-	return "", fmt.Errorf("invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
+	return smaatoParams, fmt.Errorf("invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
 }
 
-func parseSmaatoParams(imp *openrtb.Imp) (openrtb_ext.ExtImpSmaato, error) {
+func parseSmaatoParams(imp *openrtb.Imp) (smaatoParams, error) {
 	var bidderExt adapters.ExtImpBidder
-	var smaatoExt openrtb_ext.ExtImpSmaato
+	var smaatoExt smaatoParams
 
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return smaatoExt, err

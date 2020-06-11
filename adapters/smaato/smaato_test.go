@@ -12,7 +12,7 @@ func TestJsonSamples(t *testing.T) {
 
 func TestRenderAdMarkup(t *testing.T) {
 	type args struct {
-		adType             string
+		adType             adMarkupType
 		adapterResponseAdm string
 	}
 	tests := []struct {
