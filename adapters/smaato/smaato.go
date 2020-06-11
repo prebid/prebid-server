@@ -161,22 +161,30 @@ func parseImpressionObject(imp *openrtb.Imp) (string, error) {
 			return "", err
 		}
 
-		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		smaatoParams, err := parseSmaatoParams(imp)
+		if err != nil {
 			return "", err
 		}
 
-		var smaatoExt openrtb_ext.ExtImpSmaato
-		if err := json.Unmarshal(bidderExt.Bidder, &smaatoExt); err != nil {
-			return "", err
-		}
-
-		imp.TagID = smaatoExt.AdSpaceId
+		imp.TagID = smaatoParams.AdSpaceId
 		imp.Ext = nil
 
-		return smaatoExt.PublisherId, nil
+		return smaatoParams.PublisherId, nil
 	}
 	return "", fmt.Errorf("invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
+}
+
+func parseSmaatoParams(imp *openrtb.Imp) (openrtb_ext.ExtImpSmaato, error) {
+	var bidderExt adapters.ExtImpBidder
+	var smaatoExt openrtb_ext.ExtImpSmaato
+
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return smaatoExt, err
+	}
+	if err := json.Unmarshal(bidderExt.Bidder, &smaatoExt); err != nil {
+		return smaatoExt, err
+	}
+	return smaatoExt, nil
 }
 
 func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
