@@ -2,7 +2,6 @@ package avocet
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"reflect"
 	"testing"
@@ -10,6 +9,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -113,7 +113,7 @@ func TestAvocetAdapter_MakeBids(t *testing.T) {
 				&adapters.ResponseData{StatusCode: http.StatusBadRequest, Body: []byte("message")},
 			},
 			nil,
-			[]error{errors.New("received status code: 400 error: message")},
+			[]error{&errortypes.BadServerResponse{Message: "received status code: 400 error: message"}},
 		},
 		{
 			"200 response containing banner bids",

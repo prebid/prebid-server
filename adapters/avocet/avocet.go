@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -22,7 +23,9 @@ func (a *AvocetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	headers.Add("Accept", "application/json")
 	body, err := json.Marshal(request)
 	if err != nil {
-		return nil, []error{fmt.Errorf("serializing request: %s", err.Error())}
+		return nil, []error{&errortypes.FailedToRequestBids{
+			Message: err.Error(),
+		}}
 	}
 	reqData := &adapters.RequestData{
 		Method:  http.MethodPost,
@@ -55,13 +58,17 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		} else {
 			errStr = "null"
 		}
-		return nil, []error{fmt.Errorf("received status code: %v error: %s", response.StatusCode, errStr)}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("received status code: %v error: %s", response.StatusCode, errStr),
+		}}
 	}
 
 	var br openrtb.BidResponse
 	err := json.Unmarshal(response.Body, &br)
 	if err != nil {
-		return nil, []error{fmt.Errorf("decoding avocet response body: %s", err.Error())}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: err.Error(),
+		}}
 	}
 	var errs []error
 
