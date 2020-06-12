@@ -22,7 +22,7 @@ func (a *AvocetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	headers.Add("Accept", "application/json")
 	body, err := json.Marshal(request)
 	if err != nil {
-		return nil, []error{fmt.Errorf("serializing request: %w", err)}
+		return nil, []error{fmt.Errorf("serializing request: %s", err.Error())}
 	}
 	reqData := &adapters.RequestData{
 		Method:  http.MethodPost,
@@ -61,7 +61,7 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	var br openrtb.BidResponse
 	err := json.Unmarshal(response.Body, &br)
 	if err != nil {
-		return nil, []error{fmt.Errorf("decoding avocet response body: %w", err)}
+		return nil, []error{fmt.Errorf("decoding avocet response body: %s", err.Error())}
 	}
 	var errs []error
 
