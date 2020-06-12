@@ -11,7 +11,7 @@
     },
     "siteId": {
       "type": "integer",
-      "description": "The page id.",
+      "description": "The site id.",
       "minimum": 1
     },
     "pageId": {
