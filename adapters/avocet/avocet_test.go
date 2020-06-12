@@ -46,8 +46,8 @@ func TestAvocetAdapter_MakeRequests(t *testing.T) {
 					Uri:    "https://bid.avct.cloud",
 					Body:   []byte(`{"id":"","imp":null}`),
 					Headers: map[string][]string{
-						"Accept":       []string{"application/json"},
-						"Content-Type": []string{"application/json;charset=utf-8"},
+						"Accept":       {"application/json"},
+						"Content-Type": {"application/json;charset=utf-8"},
 					},
 				},
 			},
