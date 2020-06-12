@@ -39,6 +39,10 @@ func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
 func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
+	if len(request.Imp) == 0 {
+		errs = append(errs, &errortypes.BadInput{Message: "no impressions in bid request"})
+		return nil, errs
+	}
 
 	// Use ext of first imp to retrieve params which are valid for all imps, e.g. publisherId
 	smaatoParams, err := parseSmaatoParams(&request.Imp[0])
