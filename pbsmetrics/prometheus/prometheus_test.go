@@ -1,6 +1,7 @@
 package prometheusmetrics
 
 import (
+	"net/http/httptrace"
 	"testing"
 	"time"
 
@@ -942,6 +943,151 @@ func TestTimeoutNotifications(t *testing.T) {
 			successLabel: requestFailed,
 		})
 
+}
+
+func TestRecordAdapterConnections(t *testing.T) {
+	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
+
+	type testIn struct {
+		adapterName openrtb_ext.BidderName
+		connSuccess bool
+		gotConnInfo httptrace.GotConnInfo
+	}
+
+	type testOut struct {
+		expectedConnErrorCount   int64
+		expectedConnReusedCount  int64
+		expectedConnCreatedCount int64
+		expectedConnIdleTime     int64
+	}
+
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "Successful, new connection created, was idle",
+			in: testIn{
+				adapterName: openrtb_ext.BidderAppnexus,
+				connSuccess: true,
+				gotConnInfo: httptrace.GotConnInfo{
+					Reused:   false,
+					WasIdle:  true,
+					IdleTime: time.Second,
+				},
+			},
+			out: testOut{
+				expectedConnErrorCount:   0,
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 1,
+				expectedConnIdleTime:     1000,
+			},
+		},
+		{
+			description: "Successful, new connection created, not idle",
+			in: testIn{
+				adapterName: openrtb_ext.BidderAppnexus,
+				connSuccess: true,
+				gotConnInfo: httptrace.GotConnInfo{
+					Reused:  false,
+					WasIdle: false,
+				},
+			},
+			out: testOut{
+				expectedConnErrorCount:   0,
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 1,
+				expectedConnIdleTime:     0,
+			},
+		},
+		{
+			description: "Successful, was reused, was idle",
+			in: testIn{
+				adapterName: openrtb_ext.BidderAppnexus,
+				connSuccess: true,
+				gotConnInfo: httptrace.GotConnInfo{
+					Reused:   true,
+					WasIdle:  true,
+					IdleTime: time.Second,
+				},
+			},
+			out: testOut{
+				expectedConnErrorCount:   0,
+				expectedConnReusedCount:  1,
+				expectedConnCreatedCount: 0,
+				expectedConnIdleTime:     1000,
+			},
+		},
+		{
+			description: "Successful, was reused, not idle",
+			in: testIn{
+				adapterName: openrtb_ext.BidderAppnexus,
+				connSuccess: true,
+				gotConnInfo: httptrace.GotConnInfo{
+					Reused:  true,
+					WasIdle: false,
+				},
+			},
+			out: testOut{
+				expectedConnErrorCount:   0,
+				expectedConnReusedCount:  1,
+				expectedConnCreatedCount: 0,
+				expectedConnIdleTime:     0,
+			},
+		},
+		{
+			description: "Unsuccessful connection",
+			in: testIn{
+				adapterName: openrtb_ext.BidderAppnexus,
+				connSuccess: false,
+				gotConnInfo: httptrace.GotConnInfo{},
+			},
+			out: testOut{
+				expectedConnErrorCount:   1,
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 0,
+				expectedConnIdleTime:     0,
+			},
+		},
+		{
+			description: "Fake bidder, nothing gets updated",
+			in: testIn{
+				adapterName: fakeBidder,
+				connSuccess: false,
+				gotConnInfo: httptrace.GotConnInfo{},
+			},
+			out: testOut{
+				expectedConnErrorCount:   0,
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 0,
+				expectedConnIdleTime:     0,
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		//registry := metrics.NewRegistry()
+		//m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: false})
+		m := createMetricsForTesting()
+
+		m.RecordAdapterConnections(test.in.adapterName, test.in.connSuccess, test.in.gotConnInfo)
+
+		// func assertCounterVecValue(t *testing.T, description, name string, counterVec *prometheus.CounterVec, expected float64, labels prometheus.Labels) {
+		assertCounterVecValue(t, test.description, "", m.adapterFailedConnections,
+			float64(test.out.expectedConnErrorCount),
+			prometheus.Labels{
+				adapterLabel: string(test.in.adapterName),
+			})
+
+		//assert.Equal(t, test.out.expectedConnErrorCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnError.Count(), "Test [%d] incorrect number of successful connections to adapter", i)
+		//assert.Equal(t, test.out.expectedConnReusedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnReused.Count(), "Test [%d] incorrect number of reused connections to adapter", i)
+		//assert.Equal(t, test.out.expectedConnCreatedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnCreated.Count(), "Test [%d] incorrect number of new connections to adapter created", i)
+		//assert.Equal(t, test.out.expectedConnIdleTime, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnIdleTime.Max(), "Test [%d] incorrect max idle time in connection to adapter", i)
+		//if test.out.expectedConnIdleTime > 0 {
+		//	assert.Equal(t, int64(1), m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnIdleTime.Count(), "Test [%d] incorrect number of entries in idle time in connection to adapter histogram", i)
+		//}
+	}
 }
 
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {

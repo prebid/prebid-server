@@ -1,13 +1,17 @@
 package pbsmetrics
 
 import (
+	"net/http/httptrace"
 	"testing"
+	"time"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
+
+const OneSecond time.Duration = time.Second
 
 func TestNewMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
@@ -107,6 +111,11 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".request_time", adapterMetrics.RequestTimer)
 	ensureContains(t, registry, name+".prices", adapterMetrics.PriceHistogram)
 	ensureContainsBidTypeMetrics(t, registry, name, adapterMetrics.MarkupMetrics)
+
+	ensureContains(t, registry, name+".connections_error", adapterMetrics.ConnError)
+	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
+	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
+	ensureContains(t, registry, name+".connection_idle_time", adapterMetrics.ConnIdleTime)
 }
 
 func TestRecordBidTypeDisabledConfig(t *testing.T) {
@@ -167,6 +176,143 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 			assert.Len(t, m.accountMetrics[test.PubID].adapterMetrics, 0, "Test failed. Account metrics that contain adapter information are disabled, therefore we expect no entries in m.accountMetrics[accountId].adapterMetrics, we have %d \n", len(m.accountMetrics[test.PubID].adapterMetrics))
 		} else {
 			assert.NotEqual(t, 0, len(m.accountMetrics[test.PubID].adapterMetrics), "Test failed. Account metrics that contain adapter information are disabled, therefore we expect no entries in m.accountMetrics[accountId].adapterMetrics, we have %d \n", len(m.accountMetrics[test.PubID].adapterMetrics))
+		}
+	}
+}
+
+func TestRecordAdapterConnections(t *testing.T) {
+	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
+
+	type testIn struct {
+		adapterName openrtb_ext.BidderName
+		connSuccess bool
+		gotConnInfo httptrace.GotConnInfo
+	}
+
+	type testOut struct {
+		expectedConnErrorCount   int64
+		expectedConnReusedCount  int64
+		expectedConnCreatedCount int64
+		expectedConnIdleTime     int64
+	}
+
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "Successful, new connection created, was idle",
+			in: testIn{
+				adapterName: openrtb_ext.BidderAppnexus,
+				connSuccess: true,
+				gotConnInfo: httptrace.GotConnInfo{
+					Reused:   false,
+					WasIdle:  true,
+					IdleTime: OneSecond,
+				},
+			},
+			out: testOut{
+				expectedConnErrorCount:   0,
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 1,
+				expectedConnIdleTime:     1000,
+			},
+		},
+		{
+			description: "Successful, new connection created, not idle",
+			in: testIn{
+				adapterName: openrtb_ext.BidderAppnexus,
+				connSuccess: true,
+				gotConnInfo: httptrace.GotConnInfo{
+					Reused:  false,
+					WasIdle: false,
+				},
+			},
+			out: testOut{
+				expectedConnErrorCount:   0,
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 1,
+				expectedConnIdleTime:     0,
+			},
+		},
+		{
+			description: "Successful, was reused, was idle",
+			in: testIn{
+				adapterName: openrtb_ext.BidderAppnexus,
+				connSuccess: true,
+				gotConnInfo: httptrace.GotConnInfo{
+					Reused:   true,
+					WasIdle:  true,
+					IdleTime: OneSecond,
+				},
+			},
+			out: testOut{
+				expectedConnErrorCount:   0,
+				expectedConnReusedCount:  1,
+				expectedConnCreatedCount: 0,
+				expectedConnIdleTime:     1000,
+			},
+		},
+		{
+			description: "Successful, was reused, not idle",
+			in: testIn{
+				adapterName: openrtb_ext.BidderAppnexus,
+				connSuccess: true,
+				gotConnInfo: httptrace.GotConnInfo{
+					Reused:  true,
+					WasIdle: false,
+				},
+			},
+			out: testOut{
+				expectedConnErrorCount:   0,
+				expectedConnReusedCount:  1,
+				expectedConnCreatedCount: 0,
+				expectedConnIdleTime:     0,
+			},
+		},
+		{
+			description: "Unsuccessful connection",
+			in: testIn{
+				adapterName: openrtb_ext.BidderAppnexus,
+				connSuccess: false,
+				gotConnInfo: httptrace.GotConnInfo{},
+			},
+			out: testOut{
+				expectedConnErrorCount:   1,
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 0,
+				expectedConnIdleTime:     0,
+			},
+		},
+		{
+			description: "Fake bidder, nothing gets updated",
+			in: testIn{
+				adapterName: fakeBidder,
+				connSuccess: false,
+				gotConnInfo: httptrace.GotConnInfo{},
+			},
+			out: testOut{
+				expectedConnErrorCount:   0,
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 0,
+				expectedConnIdleTime:     0,
+			},
+		},
+	}
+
+	for i, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: false})
+
+		m.RecordAdapterConnections(test.in.adapterName, test.in.connSuccess, test.in.gotConnInfo)
+
+		assert.Equal(t, test.out.expectedConnErrorCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnError.Count(), "Test [%d] incorrect number of successful connections to adapter", i)
+		assert.Equal(t, test.out.expectedConnReusedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnReused.Count(), "Test [%d] incorrect number of reused connections to adapter", i)
+		assert.Equal(t, test.out.expectedConnCreatedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnCreated.Count(), "Test [%d] incorrect number of new connections to adapter created", i)
+		assert.Equal(t, test.out.expectedConnIdleTime, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnIdleTime.Max(), "Test [%d] incorrect max idle time in connection to adapter", i)
+		if test.out.expectedConnIdleTime > 0 {
+			assert.Equal(t, int64(1), m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnIdleTime.Count(), "Test [%d] incorrect number of entries in idle time in connection to adapter histogram", i)
 		}
 	}
 }

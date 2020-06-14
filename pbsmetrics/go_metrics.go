@@ -279,9 +279,9 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
 		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative),
 	}
-	am.ConnError = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_error", registry)
-	am.ConnCreated = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_created", registry)
-	am.ConnReused = metrics.GetOrRegisterCounter("%[1]s.%[2]s.connections_reused", registry)
+	am.ConnError = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_error", adapterOrAccount, exchange), registry)
+	am.ConnCreated = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_created", adapterOrAccount, exchange), registry)
+	am.ConnReused = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_reused", adapterOrAccount, exchange), registry)
 	am.ConnIdleTime = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.connection_idle_time", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
 	for err := range am.ErrorMeters {
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
@@ -462,15 +462,14 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, 
 
 	if !connSuccess {
 		am.ConnError.Inc(1)
-	}
-
-	if info.Reused {
-		am.ConnReused.Inc(1)
 	} else {
-		am.ConnCreated.Inc(1)
+		if info.Reused {
+			am.ConnReused.Inc(1)
+		} else {
+			am.ConnCreated.Inc(1)
+		}
+		am.ConnIdleTime.Update(info.IdleTime.Milliseconds())
 	}
-
-	am.ConnIdleTime.Update(int64(info.IdleTime))
 }
 
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.
