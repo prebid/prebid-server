@@ -142,6 +142,8 @@ func renderAdMarkup(adMarkupType adMarkupType, adMarkup string) (string, error) 
 	switch adMarkupType {
 	case smtAdTypeImg:
 		adm, markupError = extractAdmImage(adMarkup)
+	case smtAdTypeRichmedia:
+		adm, markupError = extractAdmRichMedia(adMarkup)
 	default:
 		return "", fmt.Errorf("Unknown markup type %s", adMarkupType)
 	}
