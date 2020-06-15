@@ -153,6 +153,9 @@ func getAdMarkupType(response *adapters.ResponseData, adMarkup string) adMarkupT
 	if admType == "" && strings.HasPrefix(adMarkup, `{"image":`) {
 		admType = smtAdTypeImg
 	}
+	if admType == "" && strings.HasPrefix(adMarkup, `{"richmedia":`) {
+		admType = smtAdTypeRichmedia
+	}
 	return admType
 }
 

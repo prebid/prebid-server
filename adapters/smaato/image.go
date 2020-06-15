@@ -31,14 +31,22 @@ func extractAdmImage(adapterResponseAdm string) (string, error) {
 
 	if err == nil {
 		var clickEvent string
+		var impressionTracker string
+
 		for _, clicktracker := range image.Clicktrackers {
 			clickEvent += "fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'), " +
 				"{cache: 'no-cache'});"
 		}
-		imgMarkup = fmt.Sprintf(`<div onclick="%s"><a href="%s"><img src="%s" width="%d" height="%d"/></a></div>`, clickEvent, image.Img.Ctaurl, image.
-			Img.URL, image.Img.W, image.Img.
-			H)
-	}
 
+		for _, impression := range image.Impressiontrackers {
+
+			impressionTracker += fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression)
+		}
+
+		imgMarkup = fmt.Sprintf(`<div onclick="%s"><a href="%s"><img src="%s" width="%d" height="%d"/></a>%s</div>`,
+			clickEvent, image.Img.Ctaurl, image.
+				Img.URL, image.Img.W, image.Img.
+				H, impressionTracker)
+	}
 	return imgMarkup, err
 }
