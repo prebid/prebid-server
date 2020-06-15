@@ -18,6 +18,10 @@ type AvocetAdapter struct {
 }
 
 func (a *AvocetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	if len(request.Imp) == 0 {
+		return nil, nil
+	}
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -56,7 +60,7 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		if len(response.Body) > 0 {
 			errStr = string(response.Body)
 		} else {
-			errStr = "null"
+			errStr = "no response body"
 		}
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("received status code: %v error: %s", response.StatusCode, errStr),

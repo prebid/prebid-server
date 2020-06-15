@@ -34,24 +34,34 @@ func TestAvocetAdapter_MakeRequests(t *testing.T) {
 		wantErrs []error
 	}{
 		{
-			"makes POST request with JSON content",
-			fields{Endpoint: "https://bid.avct.cloud"},
-			args{
+			name:   "return nil if zero imps",
+			fields: fields{Endpoint: "https://bid.avct.cloud"},
+			args: args{
 				&openrtb.BidRequest{},
 				nil,
 			},
-			reqData{
+			want:     nil,
+			wantErrs: nil,
+		},
+		{
+			name:   "makes POST request with JSON content",
+			fields: fields{Endpoint: "https://bid.avct.cloud"},
+			args: args{
+				&openrtb.BidRequest{Imp: []openrtb.Imp{{}}},
+				nil,
+			},
+			want: reqData{
 				&adapters.RequestData{
 					Method: http.MethodPost,
 					Uri:    "https://bid.avct.cloud",
-					Body:   []byte(`{"id":"","imp":null}`),
+					Body:   []byte(`{"id":"","imp":[{"id":""}]}`),
 					Headers: map[string][]string{
 						"Accept":       {"application/json"},
 						"Content-Type": {"application/json;charset=utf-8"},
 					},
 				},
 			},
-			nil,
+			wantErrs: nil,
 		},
 	}
 	for _, tt := range tests {
@@ -94,36 +104,36 @@ func TestAvocetAdapter_MakeBids(t *testing.T) {
 		errs   []error
 	}{
 		{
-			"204 No Content indicates no bids",
-			fields{Endpoint: "https://bid.avct.cloud"},
-			args{
+			name:   "204 No Content indicates no bids",
+			fields: fields{Endpoint: "https://bid.avct.cloud"},
+			args: args{
 				nil,
 				nil,
 				&adapters.ResponseData{StatusCode: http.StatusNoContent},
 			},
-			nil,
-			nil,
+			want: nil,
+			errs: nil,
 		},
 		{
-			"Non-200 return error",
-			fields{Endpoint: "https://bid.avct.cloud"},
-			args{
+			name:   "Non-200 return error",
+			fields: fields{Endpoint: "https://bid.avct.cloud"},
+			args: args{
 				nil,
 				nil,
 				&adapters.ResponseData{StatusCode: http.StatusBadRequest, Body: []byte("message")},
 			},
-			nil,
-			[]error{&errortypes.BadServerResponse{Message: "received status code: 400 error: message"}},
+			want: nil,
+			errs: []error{&errortypes.BadServerResponse{Message: "received status code: 400 error: message"}},
 		},
 		{
-			"200 response containing banner bids",
-			fields{Endpoint: "https://bid.avct.cloud"},
-			args{
+			name:   "200 response containing banner bids",
+			fields: fields{Endpoint: "https://bid.avct.cloud"},
+			args: args{
 				nil,
 				nil,
 				&adapters.ResponseData{StatusCode: http.StatusOK, Body: validBannerBidResponseBody},
 			},
-			&adapters.BidderResponse{
+			want: &adapters.BidderResponse{
 				Currency: "USD",
 				Bids: []*adapters.TypedBid{
 					{
@@ -132,17 +142,17 @@ func TestAvocetAdapter_MakeBids(t *testing.T) {
 					},
 				},
 			},
-			nil,
+			errs: nil,
 		},
 		{
-			"200 response containing video bids",
-			fields{Endpoint: "https://bid.avct.cloud"},
-			args{
+			name:   "200 response containing video bids",
+			fields: fields{Endpoint: "https://bid.avct.cloud"},
+			args: args{
 				nil,
 				nil,
 				&adapters.ResponseData{StatusCode: http.StatusOK, Body: validVideoBidResponseBody},
 			},
-			&adapters.BidderResponse{
+			want: &adapters.BidderResponse{
 				Currency: "USD",
 				Bids: []*adapters.TypedBid{
 					{
@@ -154,7 +164,7 @@ func TestAvocetAdapter_MakeBids(t *testing.T) {
 					},
 				},
 			},
-			nil,
+			errs: nil,
 		},
 	}
 	for _, tt := range tests {
@@ -186,19 +196,19 @@ func Test_getBidType(t *testing.T) {
 		want openrtb_ext.BidType
 	}{
 		{
-			"VPAID 1.0",
-			args{openrtb.Bid{API: openrtb.APIFrameworkVPAID10}, avocetBidExt{}},
-			openrtb_ext.BidTypeVideo,
+			name: "VPAID 1.0",
+			args: args{openrtb.Bid{API: openrtb.APIFrameworkVPAID10}, avocetBidExt{}},
+			want: openrtb_ext.BidTypeVideo,
 		},
 		{
-			"VPAID 2.0",
-			args{openrtb.Bid{API: openrtb.APIFrameworkVPAID20}, avocetBidExt{}},
-			openrtb_ext.BidTypeVideo,
+			name: "VPAID 2.0",
+			args: args{openrtb.Bid{API: openrtb.APIFrameworkVPAID20}, avocetBidExt{}},
+			want: openrtb_ext.BidTypeVideo,
 		},
 		{
-			"other",
-			args{openrtb.Bid{}, avocetBidExt{}},
-			openrtb_ext.BidTypeBanner,
+			name: "other",
+			args: args{openrtb.Bid{}, avocetBidExt{}},
+			want: openrtb_ext.BidTypeBanner,
 		},
 	}
 	for _, tt := range tests {
