@@ -583,6 +583,9 @@ func TestPanicRecovery(t *testing.T) {
 		panic("panic!")
 	}
 	recovered := e.recoverSafely(panicker, chBids)
+	request := &openrtb.BidRequest{
+		ID: "req-123",
+	}
 	apnLabels := pbsmetrics.AdapterLabels{
 		Source:      pbsmetrics.DemandWeb,
 		RType:       pbsmetrics.ReqTypeORTB2Web,
@@ -592,7 +595,7 @@ func TestPanicRecovery(t *testing.T) {
 		CookieFlag:  pbsmetrics.CookieFlagYes,
 		AdapterBids: pbsmetrics.AdapterBidNone,
 	}
-	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, &apnLabels, nil)
+	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, request, &apnLabels, nil)
 }
 
 func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {

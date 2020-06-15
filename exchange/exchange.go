@@ -373,7 +373,10 @@ func (e *exchange) recoverSafely(inner func(openrtb_ext.BidderName, openrtb_ext.
 	return func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 		defer func() {
 			if r := recover(); r != nil {
-				glog.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. Stack trace is: %v", coreBidder, r, string(debug.Stack()))
+				glog.Errorf(
+					"OpenRTB auction recovered panic from Bidder %s: %v. "+
+						"Account id: %s, Request id: %s, Stack trace is: %v",
+					coreBidder, r, bidlabels.PubID, request.ID, string(debug.Stack()))
 				e.me.RecordAdapterPanic(*bidlabels)
 				// Let the master request know that there is no data here
 				brw := new(bidResponseWrapper)
