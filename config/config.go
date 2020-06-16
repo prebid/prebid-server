@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"net/url"
 	"reflect"
 	"strings"
@@ -17,7 +18,7 @@ import (
 	validator "github.com/asaskevich/govalidator"
 )
 
-// Configuration
+// Configuration specifies the static configuration for the application.
 type Configuration struct {
 	ExternalURL string     `mapstructure:"external_url"`
 	Host        string     `mapstructure:"host"`
@@ -66,6 +67,8 @@ type Configuration struct {
 	PemCertsFile string `mapstructure:"certificates_file"`
 	// Custom headers to handle request timeouts from queueing infrastructure
 	RequestTimeoutHeaders RequestTimeoutHeaders `mapstructure:"request_timeout_headers"`
+	// RequestValidation specifies the request validation options.
+	RequestValidation RequestValidation `mapstructure:"request_validation"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -223,13 +226,42 @@ type HostCookie struct {
 	TTL int64 `mapstructure:"ttl_days"`
 }
 
+func (cfg *HostCookie) TTLDuration() time.Duration {
+	return time.Duration(cfg.TTL) * time.Hour * 24
+}
+
 type RequestTimeoutHeaders struct {
 	RequestTimeInQueue    string `mapstructure:"request_time_in_queue"`
 	RequestTimeoutInQueue string `mapstructure:"request_timeout_in_queue"`
 }
 
-func (cfg *HostCookie) TTLDuration() time.Duration {
-	return time.Duration(cfg.TTL) * time.Hour * 24
+// RequestValidation specifies the request validation options.
+type RequestValidation struct {
+	PrivateIPNetworks       []string `mapstructure:"private_ip_networks"`
+	PrivateIPNetworksParsed []*net.IPNet
+}
+
+func (r *RequestValidation) parse() error {
+	ipNets := make([]*net.IPNet, 0, len(r.PrivateIPNetworks))
+	invalid := strings.Builder{}
+
+	for _, v := range r.PrivateIPNetworks {
+		v := strings.TrimSpace(v)
+
+		if _, ipNet, err := net.ParseCIDR(v); err != nil {
+			fmt.Fprintf(&invalid, "'%s', ", v)
+		} else {
+			ipNets = append(ipNets, ipNet)
+		}
+	}
+
+	if invalid.Len() > 0 {
+		msg := invalid.String()[:invalid.Len()-2]
+		return fmt.Errorf("Invalid private IP networks: %v", msg)
+	}
+
+	r.PrivateIPNetworksParsed = ipNets
+	return nil
 }
 
 const (
@@ -458,6 +490,21 @@ func New(v *viper.Viper) (*Configuration, error) {
 	}
 	c.setDerivedDefaults()
 
+	if err := c.RequestValidation.parse(); err != nil {
+		return nil, err
+	}
+
+	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
+		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
+		return nil, err
+	}
+
+	glog.Info("Logging the resolved configuration:")
+	logGeneral(reflect.ValueOf(c), "  \t")
+	if errs := c.validate(); len(errs) > 0 {
+		return &c, errs
+	}
+
 	// To look for a request's publisher_id in the NonStandardPublishers list in
 	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
 	c.GDPR.NonStandardPublisherMap = make(map[string]int)
@@ -477,17 +524,6 @@ func New(v *viper.Viper) (*Configuration, error) {
 	c.BlacklistedAcctMap = make(map[string]bool)
 	for i := 0; i < len(c.BlacklistedAccts); i++ {
 		c.BlacklistedAcctMap[c.BlacklistedAccts[i]] = true
-	}
-
-	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
-		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
-		return nil, err
-	}
-
-	glog.Info("Logging the resolved configuration:")
-	logGeneral(reflect.ValueOf(c), "  \t")
-	if errs := c.validate(); len(errs) > 0 {
-		return &c, errs
 	}
 
 	return &c, nil

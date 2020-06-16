@@ -53,7 +53,6 @@ func TestIsSecure(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		// Build Request
 		request, err := http.NewRequest("GET", test.url, nil)
 		if err != nil {
 			t.Fatalf("Unable to create test http request. Err: %v", err)
@@ -70,78 +69,142 @@ func TestIsSecure(t *testing.T) {
 	}
 }
 
-func TestGetIP(t *testing.T) {
+func TestFindIP(t *testing.T) {
+	alwaysTrue := func(net.IP) bool { return true }
+	alwaysFalse := func(net.IP) bool { return false }
+
 	testCases := []struct {
-		description     string
-		xForwardedFor   string
-		xRealIP         string
-		remoteAddr      string
-		privateNetworks []string
-		expectedIP      string
+		description   string
+		trueClientIP  string
+		xForwardedFor string
+		xRealIP       string
+		remoteAddr    string
+		matcher       IPAddressMatcher
+		expected      string
 	}{
 		{
-			description: "No Address Found",
-			expectedIP:  "",
+			description: "No Address",
+			expected:    "",
 		},
 		{
-			description:   "IPv4 - XForwardedFor - Single Address - Not Private",
-			xForwardedFor: "192.168.1.2",
-			expectedIP:    "192.168.1.2",
+			description:   "False Matcher",
+			trueClientIP:  "1.1.1.1",
+			xForwardedFor: "2.2.2.2, 3.3.3.3",
+			xRealIP:       "4.4.4.4",
+			remoteAddr:    "5.5.5.5:5",
+			matcher:       alwaysFalse,
+			expected:      "",
 		},
 		{
-			description:     "IPv4 - XForwardedFor - Single Address - Private",
-			xForwardedFor:   "192.168.1.2",
-			privateNetworks: []string{"192.168.1.2/16"},
-			expectedIP:      "",
+			description:   "Specific Matcher - IPv4 - X Forwarded For",
+			xForwardedFor: "2.2.2.2, 3.3.3.3",
+			matcher:       func(ip net.IP) bool { return net.IP.Equal(ip, net.ParseIP("3.3.3.3")) },
+			expected:      "3.3.3.3",
 		},
 		{
-			description:   "IPv4 - XForwardedFor - First Address - Not Private",
-			xForwardedFor: "192.168.1.2, 192.168.1.3",
-			expectedIP:    "192.168.1.2",
+			description:   "Specific Matcher - IPv6 - X Forwarded For",
+			xForwardedFor: "2222::2222, 3333::3333",
+			matcher:       func(ip net.IP) bool { return net.IP.Equal(ip, net.ParseIP("3333::3333")) },
+			expected:      "3333::3333",
 		},
 		{
-			description:     "IPv4 - XForwardedFor - First Address- Private",
-			xForwardedFor:   "192.168.1.2, 193.1.2.3",
-			privateNetworks: []string{"192.168.1.2/16"},
-			expectedIP:      "193.1.2.3",
+			description:   "True Matcher - True Client IP",
+			trueClientIP:  "1.1.1.1",
+			xForwardedFor: "2.2.2.2, 3.3.3.3",
+			xRealIP:       "4.4.4.4",
+			remoteAddr:    "5.5.5.5:5",
+			matcher:       alwaysTrue,
+			expected:      "1.1.1.1",
 		},
 		{
-			description: "IPv4 - XRealIP - Not Private",
-			xRealIP:     "192.168.1.2",
-			expectedIP:  "192.168.1.2",
+			description:   "True Matcher - True Client IP - Ignore Whitespace",
+			trueClientIP:  "   1.1.1.1 ",
+			xForwardedFor: "2.2.2.2, 3.3.3.3",
+			xRealIP:       "4.4.4.4",
+			remoteAddr:    "5.5.5.5:5",
+			matcher:       alwaysTrue,
+			expected:      "1.1.1.1",
 		},
 		{
-			description:     "IPv4 - XRealIP - Private",
-			xRealIP:         "192.168.1.2",
-			privateNetworks: []string{"192.168.1.2/16"},
-			expectedIP:      "",
+			description:   "True Matcher - X Forwarded For",
+			trueClientIP:  "",
+			xForwardedFor: "2.2.2.2, 3.3.3.3",
+			xRealIP:       "4.4.4.4",
+			remoteAddr:    "5.5.5.5:5",
+			matcher:       alwaysTrue,
+			expected:      "2.2.2.2",
 		},
 		{
-			description: "IPv4 - RemoteAddress - Not Private",
-			remoteAddr:  "192.168.1.2:8080",
-			expectedIP:  "192.168.1.2",
+			description:   "True Matcher - X Forwarded For - Ignore Whitespace",
+			trueClientIP:  "",
+			xForwardedFor: "   2.2.2.2, 3.3.3.3 ",
+			xRealIP:       "4.4.4.4",
+			remoteAddr:    "5.5.5.5:5",
+			matcher:       alwaysTrue,
+			expected:      "2.2.2.2",
 		},
 		{
-			description:     "IPv4 - RemoteAddress - Private",
-			remoteAddr:      "192.168.1.2:8080",
-			privateNetworks: []string{"192.168.1.2/16"},
-			expectedIP:      "",
+			description:   "True Matcher - X Real IP",
+			trueClientIP:  "",
+			xForwardedFor: "",
+			xRealIP:       "4.4.4.4",
+			remoteAddr:    "5.5.5.5:5",
+			matcher:       alwaysTrue,
+			expected:      "4.4.4.4",
 		},
-		// ipv6
 		{
-			description:   "Malformed - XForwardedFor",
+			description:   "True Matcher - X Real IP - Ignore Whitespace",
+			trueClientIP:  "",
+			xForwardedFor: "",
+			xRealIP:       "   4.4.4.4 ",
+			remoteAddr:    "5.5.5.5:5",
+			matcher:       alwaysTrue,
+			expected:      "4.4.4.4",
+		},
+		{
+			description:   "True Matcher - Remote Address IPv4",
+			trueClientIP:  "",
+			xForwardedFor: "",
+			xRealIP:       "",
+			remoteAddr:    "5.5.5.5:80",
+			matcher:       alwaysTrue,
+			expected:      "5.5.5.5",
+		},
+		{
+			description:   "True Matcher - Remote Address IPv6",
+			trueClientIP:  "",
+			xForwardedFor: "",
+			xRealIP:       "",
+			remoteAddr:    "[5555::5555]:80",
+			matcher:       alwaysTrue,
+			expected:      "5555::5555",
+		},
+		{
+			description:   "True Matcher - Malformed - All",
+			trueClientIP:  "malformed",
 			xForwardedFor: "malformed",
-			expectedIP:    "",
+			xRealIP:       "malformed",
+			remoteAddr:    "malformed",
+			matcher:       alwaysTrue,
+			expected:      "",
 		},
 		{
-			description: "Malformed - XRealIP",
-			xRealIP:     "malformed",
-			expectedIP:  "",
+			description:   "True Matcher - Malformed - Some",
+			trueClientIP:  "malformed",
+			xForwardedFor: "malformed",
+			xRealIP:       "4.4.4.4",
+			remoteAddr:    "malformed",
+			matcher:       alwaysTrue,
+			expected:      "4.4.4.4",
 		},
 		{
-			description: "Malformed - RemoteAddress",
-			remoteAddr:  "malformed",
-			expectedIP:  "",
+			description:   "True Matcher - Malformed - X Forwarded For",
+			trueClientIP:  "malformed",
+			xForwardedFor: "malformed, 4.4.4.4, malformed",
+			xRealIP:       "malformed",
+			remoteAddr:    "malformed",
+			matcher:       alwaysTrue,
+			expected:      "4.4.4.4",
 		},
 	}
 
@@ -151,6 +214,9 @@ func TestGetIP(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Unable to create test http request. Err: %v", err)
 		}
+		if test.trueClientIP != "" {
+			request.Header.Add("True-Client-IP", test.trueClientIP)
+		}
 		if test.xForwardedFor != "" {
 			request.Header.Add("X-Forwarded-For", test.xForwardedFor)
 		}
@@ -159,24 +225,14 @@ func TestGetIP(t *testing.T) {
 		}
 		request.RemoteAddr = test.remoteAddr
 
-		// Parse Private Networks
-		privateNetworks := make([]*net.IPNet, 0, len(test.privateNetworks))
-		for _, n := range test.privateNetworks {
-			_, ipNet, err := net.ParseCIDR(n)
-			if err != nil {
-				t.Fatalf("%s: %v", test.description, err)
-			}
-			privateNetworks = append(privateNetworks, ipNet)
-		}
-
 		// Run Test
-		result := GetIP(request, privateNetworks)
+		result := FindIP(request, test.matcher)
 
 		// Assertions
-		if test.expectedIP == "" {
+		if test.expected == "" {
 			assert.Empty(t, result, test.description+":result")
 		} else {
-			assert.Equal(t, net.ParseIP(test.expectedIP), result, test.description+":result")
+			assert.Equal(t, net.ParseIP(test.expected), result, test.description+":result")
 		}
 	}
 }

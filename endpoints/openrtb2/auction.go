@@ -33,7 +33,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util"
+	"github.com/prebid/prebid-server/util/httputil"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -935,7 +935,7 @@ func validateRegs(regs *openrtb.Regs) error {
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
 func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	setDeviceImplicitly(httpReq, bidReq)
+	setDeviceImplicitly(httpReq, bidReq, deps.cfg.RequestValidation)
 
 	// Per the OpenRTB spec: A bid request must not contain both a Site and an App object.
 	if bidReq.App == nil {
@@ -947,8 +947,8 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
-func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	setIPImplicitly(httpReq, bidReq) // Fixes #230
+func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, validation config.RequestValidation) {
+	setIPImplicitly(httpReq, bidReq, validation)
 	setUAImplicitly(httpReq, bidReq)
 }
 
@@ -1148,24 +1148,17 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 
 // todo: pass down non-local validator service
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
-func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, validation config.RequestValidation) {
 	if bidReq.Device == nil {
 		bidReq.Device = &openrtb.Device{}
 	}
 
 	if bidReq.Device.IP == "" && bidReq.Device.IPv6 == "" {
-		ips := httputils.GetIPs(httpReq)
-		for _, ip := range ips {
-			// todo: comntinue if local / should be ignored
-
+		if ip := httputil.FindIP(httpReq, validation.IsPublicIP); ip != nil {
 			if ip4 := ip.To4(); len(ip4) == net.IPv4len {
-				bidReq.Device.IP = ip.String()
-				break
-			}
-
-			if len(ip) != net.IPv6len {
+				bidReq.Device.IP = ip4.String()
+			} else if len(ip) == net.IPv6len {
 				bidReq.Device.IPv6 = ip.String()
-				break
 			}
 		}
 	}

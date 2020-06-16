@@ -12,9 +12,9 @@ import (
 
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/httputil"
 
 	"github.com/blang/semver"
 	"github.com/buger/jsonparser"
@@ -235,7 +235,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 	if pbsReq.Device == nil {
 		pbsReq.Device = &openrtb.Device{}
 	}
-	pbsReq.Device.IP = prebid.GetIP(r)
+	pbsReq.Device.IP = "" //prebid.GetIP(r)
 
 	if pbsReq.SDK == nil {
 		pbsReq.SDK = &SDK{}
@@ -291,7 +291,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 		pbsReq.IsDebug = true
 	}
 
-	if prebid.IsSecure(r) {
+	if httputil.IsSecure(r) {
 		pbsReq.Secure = 1
 	}
 

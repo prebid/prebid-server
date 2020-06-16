@@ -9,6 +9,7 @@ import (
 var (
 	xForwardedProto = http.CanonicalHeaderKey("X-Forwarded-Proto")
 	xForwardedFor   = http.CanonicalHeaderKey("X-Forwarded-For")
+	xTrueClientIP   = http.CanonicalHeaderKey("True-Client-IP")
 	xRealIP         = http.CanonicalHeaderKey("X-Real-IP")
 )
 
@@ -33,41 +34,50 @@ func IsSecure(r *http.Request) bool {
 	return false
 }
 
-// GetIP returns the first IP address found in the request not matching a private network.
-func GetIP(r *http.Request, privateNetworks []*net.IPNet) net.IP {
-	if ip := getFirstForwardedFor(r, privateNetworks); ip != nil {
+// IPAddressMatcher should return true when a desired IP address is found.
+type IPAddressMatcher func(net.IP) bool
+
+// FindIP returns the first IP address found in the request matching the predicate f.
+func FindIP(r *http.Request, m IPAddressMatcher) net.IP {
+	if ip := getTrueClientIP(r, m); ip != nil {
 		return ip
 	}
 
-	if ip := getRealIP(r); ip != nil && !containsIP(ip, privateNetworks) {
+	if ip := getFirstForwardedFor(r, m); ip != nil {
 		return ip
 	}
 
-	if ip := getRemoteAddr(r); ip != nil && !containsIP(ip, privateNetworks) {
+	if ip := getRealIP(r, m); ip != nil {
+		return ip
+	}
+
+	if ip := getRemoteAddr(r, m); ip != nil {
 		return ip
 	}
 
 	return nil
 }
 
-func containsIP(ip net.IP, privateNetworks []*net.IPNet) bool {
-	for _, network := range privateNetworks {
-		if network.Contains(ip) {
-			return true
+func getTrueClientIP(r *http.Request, m IPAddressMatcher) net.IP {
+	if tci := r.Header.Get(xTrueClientIP); tci != "" {
+		tci = strings.TrimSpace(tci)
+
+		if ip := net.ParseIP(tci); ip != nil && m(ip) {
+			return ip
 		}
 	}
 
-	return false
+	return nil
 }
 
-func getFirstForwardedFor(r *http.Request, privateNetworks []*net.IPNet) net.IP {
+func getFirstForwardedFor(r *http.Request, m IPAddressMatcher) net.IP {
 	if xff := r.Header.Get(xForwardedFor); xff != "" {
 		xffParts := strings.Split(xff, ",")
 
 		for _, part := range xffParts {
 			part = strings.TrimSpace(part)
 
-			if ip := net.ParseIP(part); ip != nil && !containsIP(ip, privateNetworks) {
+			if ip := net.ParseIP(part); ip != nil && m(ip) {
 				return ip
 			}
 		}
@@ -76,18 +86,23 @@ func getFirstForwardedFor(r *http.Request, privateNetworks []*net.IPNet) net.IP 
 	return nil
 }
 
-func getRealIP(r *http.Request) net.IP {
+func getRealIP(r *http.Request, m IPAddressMatcher) net.IP {
 	if xri := r.Header.Get(xRealIP); xri != "" {
 		xri = strings.TrimSpace(xri)
-		return net.ParseIP(xri)
+
+		if ip := net.ParseIP(xri); ip != nil && m(ip) {
+			return ip
+		}
 	}
 
 	return nil
 }
 
-func getRemoteAddr(r *http.Request) net.IP {
-	if ip, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		return net.ParseIP(ip)
+func getRemoteAddr(r *http.Request, m IPAddressMatcher) net.IP {
+	if ipRaw, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		if ip := net.ParseIP(ipRaw); ip != nil && m(ip) {
+			return ip
+		}
 	}
 
 	return nil

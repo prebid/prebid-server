@@ -2,7 +2,7 @@ package config
 
 import (
 	"bytes"
-	"fmt"
+	"net"
 	"strings"
 	"testing"
 	"time"
@@ -405,24 +405,129 @@ func TestLimitTimeout(t *testing.T) {
 }
 
 func TestCookieSizeError(t *testing.T) {
-	type aTest struct {
-		cookieHost  *HostCookie
+	testCases := []struct {
+		description string
+		cookieSize  int
 		expectError bool
+	}{
+		{"MIN_COOKIE_SIZE_BYTES + 1", MIN_COOKIE_SIZE_BYTES + 1, false},
+		{"MIN_COOKIE_SIZE_BYTES", MIN_COOKIE_SIZE_BYTES, false},
+		{"MIN_COOKIE_SIZE_BYTES - 1", MIN_COOKIE_SIZE_BYTES - 1, true},
+		{"Zero", 0, false},
+		{"Negative", -100, true},
 	}
-	testCases := []aTest{
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 1 << 15}, expectError: false}, //32 KB, no error
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 800}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 500}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 0}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 200}, expectError: true},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: -100}, expectError: true},
-	}
-	for i := range testCases {
-		if testCases[i].expectError {
-			assert.Error(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCookie.MaxCookieSizeBytes less than MIN_COOKIE_SIZE_BYTES = %d and not equal to zero should return an error", MIN_COOKIE_SIZE_BYTES))
+
+	for _, test := range testCases {
+		resultErr := isValidCookieSize(test.cookieSize)
+
+		if test.expectError {
+			assert.Error(t, resultErr, test.description)
 		} else {
-			assert.NoError(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCookie.MaxCookieSizeBytes greater than MIN_COOKIE_SIZE_BYTES = %d or equal to zero should not return an error", MIN_COOKIE_SIZE_BYTES))
+			assert.NoError(t, resultErr, test.description)
 		}
+	}
+}
+
+func TestRequestValidationParse(t *testing.T) {
+	testCases := []struct {
+		description   string
+		networks      []string
+		expected      []*net.IPNet
+		expectedError string
+	}{
+		{
+			description: "Empty",
+			networks:    []string{},
+			expected:    []*net.IPNet{},
+		},
+		{
+			description: "One - IPv4",
+			networks: []string{
+				"1.1.1.1/24"},
+			expected: []*net.IPNet{&net.IPNet{
+				IP: []byte{1, 1, 1, 0}, Mask: []byte{255, 255, 255, 0}}},
+		},
+		{
+			description: "One - IPv4 - Ignore Whitespace",
+			networks: []string{
+				"   1.1.1.1/24 "},
+			expected: []*net.IPNet{&net.IPNet{
+				IP: []byte{1, 1, 1, 0}, Mask: []byte{255, 255, 255, 0}}},
+		},
+		{
+			description: "Many - IPv4",
+			networks: []string{
+				"1.1.1.1/24",
+				"2.2.2.2/16"},
+			expected: []*net.IPNet{
+				&net.IPNet{IP: []byte{1, 1, 1, 0}, Mask: []byte{255, 255, 255, 0}},
+				&net.IPNet{IP: []byte{2, 2, 0, 0}, Mask: []byte{255, 255, 0, 0}}},
+		},
+		{
+			description: "One - IPv6",
+			networks: []string{
+				"0101:2222::/16"},
+			expected: []*net.IPNet{
+				&net.IPNet{IP: []byte{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Mask: []byte{255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}},
+		},
+		{
+			description: "One - IPv6 - Ignore Whitespace",
+			networks: []string{
+				"   0101:2222::/16 "},
+			expected: []*net.IPNet{
+				&net.IPNet{IP: []byte{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Mask: []byte{255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}},
+		},
+		{
+			description: "Many - IPv6",
+			networks: []string{
+				"0101:2222::/16",
+				"0101:0202:0303::/32"},
+			expected: []*net.IPNet{
+				&net.IPNet{IP: []byte{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Mask: []byte{255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+				&net.IPNet{IP: []byte{1, 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Mask: []byte{255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}},
+		},
+		{
+			description:   "Malformed",
+			networks:      []string{"malformed"},
+			expectedError: "Invalid private IP networks: 'malformed'",
+		},
+		{
+			description:   "Malformed - Ignore Whitespace",
+			networks:      []string{"   malformed "},
+			expectedError: "Invalid private IP networks: 'malformed'",
+		},
+		{
+			description:   "Malformed - Missing Network Mask - IPv4",
+			networks:      []string{"1.1.1.1"},
+			expectedError: "Invalid private IP networks: '1.1.1.1'",
+		},
+		{
+			description:   "Malformed - Missing Network Mask - IPv6",
+			networks:      []string{"1111::1111"},
+			expectedError: "Invalid private IP networks: '1111::1111'",
+		},
+		{
+			description:   "Malformed - Mixed",
+			networks:      []string{"1.1.1.1/24", "malformed"},
+			expectedError: "Invalid private IP networks: 'malformed'",
+		},
+	}
+
+	for _, test := range testCases {
+		requestValidation := &RequestValidation{
+			PrivateIPNetworks: test.networks,
+		}
+
+		resultErr := requestValidation.parse()
+
+		if test.expectedError == "" {
+			assert.NoError(t, resultErr, test.description+":error")
+		} else {
+			assert.Error(t, resultErr, test.description+":error")
+			assert.Equal(t, test.expectedError, resultErr.Error(), test.description+":error message")
+		}
+
+		assert.ElementsMatch(t, requestValidation.PrivateIPNetworksParsed, test.expected, test.description+":networks")
 	}
 }
 
