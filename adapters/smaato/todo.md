@@ -1,1 +1,0 @@
-- Check how to safely unmarshal json if json structure is wrong.
