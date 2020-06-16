@@ -35,24 +35,17 @@
       "expectedRequest": {
         "uri": "https://adweb.videostepstage.com/bid/VideoAdContent",
         "body": {
-          "AdFormats": [
-            {
-              "h": 150,
-              "w": 300
-            }
-          ],
-          "Aver": "1.0.0",
-          "BidParamsJson": "{placementIds:[\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\"],bidVersion:\"1\"}",
+          "Aver": "prebid_1.0.0",
+          "BidParamsJson": "{\"PlacementIds\":[\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\"],\"BidVersion\":\"1\",\"Properties\":{\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\":{\"Formats\":[{\"w\":300,\"h\":150}],\"ImpId\":\"test-imp-id\"}}}",
           "Bvid": "111",
-          "Gdpr": "1",
-          "Gdpr_consent": "",
+          "Gdpr": true,
+          "GdprConsent": "",
           "Height": "500",
-          "Impid": "test-imp-id",
           "IntegType": 0,
           "Kw": "",
           "Lid": "123",
           "Location": "https://publisher.com/url",
-          "PsbDebug": true,
+          "IsTestBid": true,
           "Width": "500"
         }
       },

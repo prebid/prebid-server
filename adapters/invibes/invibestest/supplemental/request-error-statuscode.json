@@ -11,8 +11,12 @@
       {
         "id": "test-imp-id",
         "banner": {
-          "w": 300,
-          "h": 150
+          "format": [
+            {
+              "w": 300,
+              "h": 150
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -42,41 +46,14 @@
         }
       },
       "mockResponse": {
-        "status": 200,
-        "body": {
-          "currency": "EUR",
-          "bids": [
-            {
-              "id": "1234",
-              "impid": "test-imp-id",
-              "price": 0.5,
-              "adm": "<div>abc</div>",
-              "crid": "29681110",
-              "width": 300,
-              "height": 250
-            }
-          ]
-        }
+        "status": 500
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "currency": "EUR",
-      "bids": [
-        {
-          "bid": {
-            "id": "1234",
-            "impid": "test-imp-id",
-            "price": 0.5,
-            "adm": "<div>abc</div>",
-            "crid": "29681110",
-            "w": 300,
-            "h": 250
-          },
-          "type": "banner"
-        }
-      ]
+      "value": "Unexpected status code: 500.",
+      "comparison": "literal"
     }
   ]
 }

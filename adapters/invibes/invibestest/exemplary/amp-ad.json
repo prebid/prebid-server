@@ -7,6 +7,11 @@
     "user": {
       "id": "123"
     },
+    "device": {
+      "w": 1000,
+      "h": 500,
+      "IPv6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -16,7 +21,10 @@
         },
         "ext": {
           "bidder": {
-            "placementId": "2eb6bd58-865c-47ce-af7f-a918108c3fd2"
+            "placementId": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+            "debug": {
+              "testAmp": "true"
+            }
           }
         }
       }
@@ -32,51 +40,33 @@
           "Bvid": "",
           "Gdpr": true,
           "GdprConsent": "",
-          "Height": "",
-          "IntegType": 0,
+          "Height": "500",
+          "IntegType": 2,
           "Kw": "",
           "Lid": "123",
           "Location": "https://publisher.com/url",
           "IsTestBid": false,
-          "Width": ""
+          "Width": "1000"
         }
       },
       "mockResponse": {
         "status": 200,
         "body": {
-          "currency": "EUR",
-          "bids": [
-            {
-              "id": "1234",
-              "impid": "test-imp-id",
-              "price": 0.5,
-              "adm": "<div>abc</div>",
-              "crid": "29681110",
-              "width": 300,
-              "height": 250
-            }
-          ]
+          "VideoAdContentResult": {
+            "Ads": [
+              {
+                "VideoExposedID": "eb6bd58-865c-47ce-af7f-a918108c3fd2",
+                "BidModel": {
+                  "Currency": "EUR",
+                  "Width": 300,
+                  "Height": 150
+                },
+                "BidPrice": 1
+              }
+            ]
+          }
         }
       }
-    }
-  ],
-  "expectedBidResponses": [
-    {
-      "currency": "EUR",
-      "bids": [
-        {
-          "bid": {
-            "id": "1234",
-            "impid": "test-imp-id",
-            "price": 0.5,
-            "adm": "<div>abc</div>",
-            "crid": "29681110",
-            "w": 300,
-            "h": 250
-          },
-          "type": "banner"
-        }
-      ]
     }
   ]
 }
