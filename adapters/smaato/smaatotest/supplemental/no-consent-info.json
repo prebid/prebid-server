@@ -29,36 +29,18 @@
           }
         }
       }
-    ],
-    "device": {
-      "ua": "test-user-agent",
-      "ip": "123.123.123.123",
-      "language": "en",
-      "dnt": 0
-    },
-    "user": {
-      "ext": {
-        "consent": "gdprConsentString"
-      }
-    },
-    "regs": {
-      "coppa": 1,
-      "ext": {
-        "gdpr": 1,
-        "us_privacy": "uspConsentString"
-      }
-    }
+    ]
   },
   "httpCalls": [
     {
       "expectedRequest": {
         "headers": {
-          "Content-Type": ["application/json;charset=utf-8"],
-          "Accept": ["application/json"],
-          "User-Agent": ["test-user-agent"],
-          "X-Forwarded-For": ["123.123.123.123"],
-          "Accept-Language": ["en"],
-          "Dnt": ["0"]
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
         },
         "uri": "https://prebid-test.smaatolabs.net/bidder",
         "body": {
@@ -83,24 +65,6 @@
               }
             }
           ],
-          "user": {
-            "ext": {
-              "consent": "gdprConsentString"
-            }
-          },
-          "device": {
-            "ua": "test-user-agent",
-            "ip": "123.123.123.123",
-            "language": "en",
-            "dnt": 0
-          },
-          "regs": {
-            "coppa": 1,
-            "ext": {
-              "gdpr": 1,
-              "us_privacy": "uspConsentString"
-            }
-          },
           "site": {
             "page": "prebid.org",
             "publisher": {
