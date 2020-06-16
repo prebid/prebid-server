@@ -269,7 +269,7 @@ func (a *ConsumableAdapter) MakeBids(
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: getMediaTypeForImp(getImp(bid.ImpID, internalRequest.Imp)),
+				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
 	}
@@ -301,16 +301,6 @@ func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb
 	}
 
 	return &bidderExt, &consumableExt, nil
-}
-
-func getMediaTypeForImp(imp *openrtb.Imp) openrtb_ext.BidType {
-	// TODO: Whatever logic we need here possibly as follows - may always be Video when we bid
-	if imp.Banner != nil {
-		return openrtb_ext.BidTypeBanner
-	} else if imp.Video != nil {
-		return openrtb_ext.BidTypeVideo
-	}
-	return openrtb_ext.BidTypeVideo
 }
 
 func testConsumableBidder(testClock instant, endpoint string) *ConsumableAdapter {
