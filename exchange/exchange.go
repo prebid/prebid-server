@@ -48,7 +48,7 @@ type exchange struct {
 	currencyConverter   *currencies.RateConverter
 	UsersyncIfAmbiguous bool
 	defaultTTLs         config.DefaultTTLs
-	enforceCCPA         bool
+	privacyConfig       config.Privacy
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -77,7 +77,11 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e.currencyConverter = currencyConverter
 	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
 	e.defaultTTLs = cfg.CacheURL.DefaultTTLs
-	e.enforceCCPA = cfg.CCPA.Enforce
+	e.privacyConfig = config.Privacy{
+		CCPA: cfg.CCPA,
+		GDPR: cfg.GDPR,
+		LMT:  cfg.LMT,
+	}
 	return e
 }
 
@@ -100,7 +104,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous, e.enforceCCPA)
+	cleanRequests, aliases, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous, e.privacyConfig)
 
 	// List of bidders we have requests for.
 	liveAdapters := listBiddersWithRequests(cleanRequests)
