@@ -32,10 +32,16 @@
         }
       }
     ],
+    "user": {
+      "ext": {
+        "consent": "gdprConsentString"
+      }
+    },
     "regs": {
       "coppa": 1,
       "ext": {
-        "gdpr": 0
+        "gdpr": 1,
+        "us_privacy": "uspConsentString"
       }
     }
   },
@@ -65,10 +71,16 @@
               }
             }
           ],
+          "user": {
+            "ext": {
+              "consent": "gdprConsentString"
+            }
+          },
           "regs": {
             "coppa": 1,
             "ext": {
-              "gdpr": 0
+              "gdpr": 1,
+              "us_privacy": "uspConsentString"
             }
           },
           "site": {
