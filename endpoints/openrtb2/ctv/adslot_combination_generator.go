@@ -20,6 +20,7 @@ type PodDurationCombination struct {
 	stats               stats             // metrics information
 	combinations        [][]uint64        // May contains some/all combinations at given point of time
 	state               snapshot          // state configurations in case of lazy loading
+	order               int               // Indicates generation order e.g. maxads to min ads
 }
 
 // stats holds the metrics information for given point of time
@@ -50,7 +51,8 @@ type snapshot struct {
 // Init ...initializes with following
 // 1. Determines the number of combinations to be generated
 // 2. Intializes the c.state values required for c.Next() and iteratoor
-func (c *PodDurationCombination) Init(podMinDuration, podMaxDuration uint64, config *openrtb_ext.VideoAdPod, durationAdsMap [][2]uint64) {
+// generationOrder indicates how combinations should be generated.
+func (c *PodDurationCombination) Init(podMinDuration, podMaxDuration uint64, config *openrtb_ext.VideoAdPod, durationAdsMap [][2]uint64, generationOrder int) {
 
 	c.podMinDuration = podMinDuration
 	c.podMaxDuration = podMaxDuration
@@ -84,13 +86,17 @@ func (c *PodDurationCombination) Init(podMinDuration, podMaxDuration uint64, con
 	c.stats.totalExpectedCombinations = compute(c, c.maxAds, true)
 	subtractUnwantedRepeatations(c)
 	// c.combinations = make([][]uint64, c.totalExpectedCombinations)
-	// print("Allow Repeatation = %v", c.allowRepetitationsForEligibleDurations)
-	// print("Total possible combinations (without validations) = %v ", c.totalExpectedCombinations)
+	// Logf("Allow Repeatation = %v", c.allowRepetitationsForEligibleDurations)
+	// Logf("Total possible combinations (without validations) = %v ", c.totalExpectedCombinations)
 
 	/// new states
 	c.state.start = uint64(0)
 	c.state.index = 0
 	c.state.r = c.minAds
+	c.order = generationOrder
+	if c.order == MaxToMin {
+		c.state.r = c.maxAds
+	}
 	c.state.resetFlags = true
 }
 
@@ -122,7 +128,7 @@ func isValidCombination(c *PodDurationCombination, combination []uint64) bool {
 		currentRepeationCnt := repeationMap[duration]
 		noOfAdsPresent := c.slotDurationAdMap[duration]
 		if currentRepeationCnt > noOfAdsPresent {
-			print("count = %v :: Discarding combination '%v' as only '%v' ad is present for duration %v", c.stats.currentCombinationCount, combination, noOfAdsPresent, duration)
+			Logf("count = %v :: Discarding combination '%v' as only '%v' ad is present for duration %v", c.stats.currentCombinationCount, combination, noOfAdsPresent, duration)
 			c.stats.repeatationsCount++
 			return false
 		}
@@ -133,7 +139,7 @@ func isValidCombination(c *PodDurationCombination, combination []uint64) bool {
 
 	if !(totalAdDuration >= c.podMinDuration && totalAdDuration <= c.podMaxDuration) {
 		// totalAdDuration is not within range of Pod min and max duration
-		print("count = %v :: Discarding combination '%v' as either total Ad duration (%v) < %v (Pod min duration) or > %v (Pod Max duration)", c.stats.currentCombinationCount, combination, totalAdDuration, c.podMinDuration, c.podMaxDuration)
+		Logf("count = %v :: Discarding combination '%v' as either total Ad duration (%v) < %v (Pod min duration) or > %v (Pod Max duration)", c.stats.currentCombinationCount, combination, totalAdDuration, c.podMinDuration, c.podMaxDuration)
 		c.stats.outOfRangeCount++
 		return false
 	}
@@ -173,7 +179,7 @@ func compute(c *PodDurationCombination, noOfAds uint64, recursion bool) uint64 {
 	noOfCombinations = nmrt.Div(&nmrt, d3)
 	// store pure combination with repeatation in combinationCountMap
 	c.combinationCountMap[r] = noOfCombinations.Uint64()
-	//print("%v", noOfCombinations)
+	//Logf("%v", noOfCombinations)
 	if recursion {
 
 		// add only if it  is  withing limit of c.minads
@@ -202,12 +208,6 @@ func fact(no uint64) big.Int {
 	return *mult
 }
 
-// wrapper around print function
-func print(format string, v ...interface{}) {
-	// log.Printf(format, v...)
-	Logf(format, v)
-}
-
 //searchAll - searches all valid combinations
 // valid combinations are those which satisifies following
 // 1. sum of duration is within range of pod min and max values
@@ -218,12 +218,20 @@ func (c *PodDurationCombination) searchAll() [][]uint64 {
 	start := uint64(0)
 	index := uint64(0)
 
-	for r := c.minAds; r <= c.maxAds; r++ {
-		data := make([]uint64, r)
-		c.search(data, start, index, r, false, 0)
+	if c.order == MinToMax {
+		for r := c.minAds; r <= c.maxAds; r++ {
+			data := make([]uint64, r)
+			c.search(data, start, index, r, false, 0)
+		}
 	}
-	// print("Total combinations generated = %v", c.currentCombinationCount)
-	// print("Total combinations expected = %v", c.totalExpectedCombinations)
+	if c.order == MaxToMin {
+		for r := c.maxAds; r >= c.minAds; r-- {
+			data := make([]uint64, r)
+			c.search(data, start, index, r, false, 0)
+		}
+	}
+	// Logf("Total combinations generated = %v", c.currentCombinationCount)
+	// Logf("Total combinations expected = %v", c.totalExpectedCombinations)
 	// result := make([][]uint64, c.totalExpectedCombinations)
 	result := make([][]uint64, c.stats.validCombinationCount)
 	copy(result, c.combinations)
@@ -261,15 +269,12 @@ func (c *PodDurationCombination) lazyNext() []uint64 {
 	}
 	c.state.stateUpdated = false
 	c.state.valueUpdated = false
-	for ; r <= c.maxAds; r++ {
+	var result []uint64
+	if (c.order == MinToMax && r <= c.maxAds) || (c.order == MaxToMin && r >= c.minAds) {
+		// for ;  r <= c.maxAds; r++ {
 		c.search(*data, start, uint64(index), r, true, 0)
 		c.state.stateUpdated = false // reset
 		c.state.valueUpdated = false
-		break
-	}
-
-	var result []uint64
-	if r <= c.maxAds {
 		result = make([]uint64, len(*data))
 		copy(result, *data)
 	} else {
@@ -297,7 +302,7 @@ func (c *PodDurationCombination) search(data []uint64, start, index, r uint64, l
 			c.combinations = append(c.combinations, data1)
 			c.stats.currentCombinationCount++
 		}
-		//print("%v", data1)
+		//Logf("%v", data1)
 		c.state.valueUpdated = true
 		return data1
 
@@ -376,7 +381,12 @@ func updateState(c *PodDurationCombination, lazyLoad bool, r uint64, reursionCou
 			c.state.start = 0
 			c.state.index = 0
 			c.state.combinationCounter = 0
-			c.state.r++
+			if c.order == MinToMax {
+				c.state.r++
+			}
+			if c.order == MaxToMin {
+				c.state.r--
+			}
 		}
 		c.state.stateUpdated = true
 	}

@@ -52,6 +52,7 @@ var Logf = func(msg string, args ...interface{}) {
 	if glog.V(3) {
 		glog.Infof(msg, args...)
 	}
+	//fmt.Printf(msg+"\n", args...)
 }
 
 func JLogf(msg string, obj interface{}) {
