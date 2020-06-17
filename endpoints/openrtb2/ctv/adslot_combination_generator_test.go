@@ -1,6 +1,7 @@
 package ctv
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
@@ -128,66 +129,91 @@ func BenchmarkPodDurationCombinationGenerator(b *testing.B) {
 	}
 }
 
-func TestPodDurationCombinationGenerator(t *testing.T) {
+// TestMaxToMinCombinationGenerator tests the genreration of
+// combinations from min to max combinations
+//  e.g.
+//  1
+//  1 2
+//  1 2 3
+//  1 2 3 4
+func TestMinToMaxCombinationGenerator(t *testing.T) {
 	for _, test := range testBidResponseMaxDurations {
-
 		t.Run(test.scenario, func(t *testing.T) {
 			c := new(PodDurationCombination)
-			//log.Printf("Input = %v", test.responseMaxDurations)
-
 			config := new(openrtb_ext.VideoAdPod)
 			config.MinAds = &test.minAds
 			config.MaxAds = &test.maxAds
-
-			c.Init(uint64(test.podMinDuration), uint64(test.podMaxDuration), config, test.responseMaxDurations)
-			expectedOutput := c.searchAll()
-			// determine expected size of expected output
-			// subtract invalid combinations size
-
-			actualOutput := make([][]uint64, len(expectedOutput))
-
-			cnt := 0
-			for true {
-				comb := c.Next()
-				if comb == nil || len(comb) == 0 {
-					break
-				}
-				print("%v", comb)
-				//fmt.Print("count = ", c.currentCombinationCount, " :: ", comb, "\n")
-				//fmt.Println("e = ", (expectedOutput)[cnt], "\t : a = ", comb)
-				val := make([]uint64, len(comb))
-				copy(val, comb)
-				actualOutput[cnt] = val
-				cnt++
-			}
-
-			if expectedOutput != nil {
-				// compare results
-				for i := uint64(0); i < uint64(len(expectedOutput)); i++ {
-					if expectedOutput[i] == nil {
-						continue
-					}
-					for j := uint64(0); j < uint64(len(expectedOutput[i])); j++ {
-						if expectedOutput[i][j] == actualOutput[i][j] {
-						} else {
-
-							assert.Fail(t, "expectedOutput[", i, "][", j, "] != actualOutput[", i, "][", j, "] ", expectedOutput[i][j], " !=", actualOutput[i][j])
-
-						}
-					}
-
-				}
-			}
-
-			assert.Equal(t, expectedOutput, actualOutput)
-			assert.ElementsMatch(t, expectedOutput, actualOutput)
-
-			print("config = %v", test)
-			print("Total combinations generated = %v", c.stats.currentCombinationCount)
-			print("Total valid combinations  = %v", c.stats.validCombinationCount)
-			print("Total repeated combinations  = %v", c.stats.repeatationsCount)
-			print("Total outofrange combinations  = %v", c.stats.outOfRangeCount)
-			print("Total combinations expected = %v", c.stats.totalExpectedCombinations)
+			c.Init(uint64(test.podMinDuration), uint64(test.podMaxDuration), config, test.responseMaxDurations, MinToMax)
+			validator(t, c)
 		})
 	}
+}
+
+// TestMaxToMinCombinationGenerator tests the genreration of
+// combinations from max to min combinations
+//  e.g.
+//  1 2 3 4
+//  1 2 3
+//  1 2
+//  1
+func TestMaxToMinCombinationGenerator(t *testing.T) {
+	for _, test := range testBidResponseMaxDurations {
+		t.Run(test.scenario, func(t *testing.T) {
+			c := new(PodDurationCombination)
+			config := new(openrtb_ext.VideoAdPod)
+			config.MinAds = &test.minAds
+			config.MaxAds = &test.maxAds
+			c.Init(uint64(test.podMinDuration), uint64(test.podMaxDuration), config, test.responseMaxDurations, MaxToMin)
+			validator(t, c)
+		})
+	}
+}
+
+func validator(t *testing.T, c *PodDurationCombination) {
+	expectedOutput := c.searchAll()
+	// determine expected size of expected output
+	// subtract invalid combinations size
+	actualOutput := make([][]uint64, len(expectedOutput))
+
+	cnt := 0
+	for true {
+		comb := c.Next()
+		if comb == nil || len(comb) == 0 {
+			break
+		}
+		Logf("%v", comb)
+		//fmt.Print("count = ", c.currentCombinationCount, " :: ", comb, "\n")
+		fmt.Println("e = ", (expectedOutput)[cnt], "\t : a = ", comb)
+		val := make([]uint64, len(comb))
+		copy(val, comb)
+		actualOutput[cnt] = val
+		cnt++
+	}
+
+	if expectedOutput != nil {
+		// compare results
+		for i := uint64(0); i < uint64(len(expectedOutput)); i++ {
+			if expectedOutput[i] == nil {
+				continue
+			}
+			for j := uint64(0); j < uint64(len(expectedOutput[i])); j++ {
+				if expectedOutput[i][j] == actualOutput[i][j] {
+				} else {
+
+					assert.Fail(t, "expectedOutput[", i, "][", j, "] != actualOutput[", i, "][", j, "] ", expectedOutput[i][j], " !=", actualOutput[i][j])
+
+				}
+			}
+
+		}
+	}
+
+	assert.Equal(t, expectedOutput, actualOutput)
+	assert.ElementsMatch(t, expectedOutput, actualOutput)
+
+	Logf("Total combinations generated = %v", c.stats.currentCombinationCount)
+	Logf("Total valid combinations  = %v", c.stats.validCombinationCount)
+	Logf("Total repeated combinations  = %v", c.stats.repeatationsCount)
+	Logf("Total outofrange combinations  = %v", c.stats.outOfRangeCount)
+	Logf("Total combinations expected = %v", c.stats.totalExpectedCombinations)
 }
