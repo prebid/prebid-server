@@ -1,38 +1,37 @@
 {
     "mockBidRequest": {
-        "id": "test-request-id",
-        "test": 1,
-        "imp": [
-            {
-                "id": "test-imp-id",
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 250
-                        },
-                        {
-                            "w": 300,
-                            "h": 600
-                        }
-                    ]
-                },
-                "tagid": "1",
-                "ext": {
-                    "bidder": {
-                        "TagID": "1"
-                    }
-                }
-            }
-        ],
-        "site": {
-            "id": "1",
-            "domain": "test.domain.com"
-        },
-        "device": {
-            "ip": "123.123.123.123"
-        }
-    },
+      "id": "test-request-id",
+      "imp": [
+          {
+              "id": "test-imp-id",
+              "banner": {
+                  "format": [
+                      {
+                          "w": 300,
+                          "h": 250
+                      },
+                      {
+                          "w": 300,
+                          "h": 600
+                      }
+                  ]
+              },
+              "tagid": "1",
+              "ext": {
+                  "bidder": {
+                      "TagID": "1"
+                  }
+              }
+          }
+      ],
+      "site": {
+          "id": "1",
+          "domain": "test.com"
+      },
+      "device": {
+          "ip": "123.123.123.123"
+      }
+  },
   
     "httpCalls": [
       {
@@ -40,7 +39,6 @@
           "uri": "http://eu-ams-1.admanmedia.com/?c=o&m=ortb",
           "body": {
             "id": "test-request-id",
-            "test": 1,
             "imp": [
                 {
                     "id": "test-imp-id",
@@ -66,7 +64,7 @@
             ],
             "site": {
                 "id": "1",
-                "domain": "test.domain.com"
+                "domain": "test.com"
             },
             "device": {
                 "ip": "123.123.123.123"
@@ -84,7 +82,7 @@
                             "id": "test_bid_id",
                             "impid": "test-imp-id",
                             "price": 0.27543,
-                            "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://eu-ams-1.admanmedia.com/?c=o&m=adm&k=88cf39c4ec89ff7945ed94dfb4da1950\"></iframe>",
+                            "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://eu-ams-1.admanmedia.com/?c=o&m=adm&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
                             "cid": "test_cid",
                             "crid": "test_crid",
                             "dealid": "test_dealid",
@@ -101,7 +99,7 @@
                 }
             ],
             "cur": "USD"
-            }
+          }
         }
       }
     ],
@@ -109,11 +107,12 @@
     "expectedBidResponses": [
       {
         "bids":[
-            {
+          {
+            "bid":  {
                 "id": "test_bid_id",
                 "impid": "test-imp-id",
                 "price": 0.27543,
-                "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://eu-ams-1.admanmedia.com/?c=o&m=adm&k=88cf39c4ec89ff7945ed94dfb4da1950\"></iframe>",
+                "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://eu-ams-1.admanmedia.com/?c=o&m=adm&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
                 "cid": "test_cid",
                 "crid": "test_crid",
                 "dealid": "test_dealid",
@@ -123,9 +122,10 @@
                     "prebid": {
                         "type": "banner"
                     }
-                },
-                "type": "banner"
-            }
+                }
+            },
+            "type": "banner"
+          }
         ]
       }
     ]
