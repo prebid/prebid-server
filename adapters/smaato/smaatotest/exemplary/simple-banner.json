@@ -54,11 +54,7 @@
       "expectedRequest": {
         "headers": {
           "Content-Type": ["application/json;charset=utf-8"],
-          "Accept": ["application/json"],
-          "User-Agent": ["test-user-agent"],
-          "X-Forwarded-For": ["123.123.123.123"],
-          "Accept-Language": ["en"],
-          "Dnt": ["0"]
+          "Accept": ["application/json"]
         },
         "uri": "https://prebid-test.smaatolabs.net/bidder",
         "body": {
