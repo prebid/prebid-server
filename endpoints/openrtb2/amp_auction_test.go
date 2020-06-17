@@ -832,6 +832,24 @@ func TestMultisize(t *testing.T) {
 	}.execute(t)
 }
 
+func TestSizeWithMultisize(t *testing.T) {
+	formatOverrideSpec{
+		width:     20,
+		height:    40,
+		multisize: "200x50,100x60",
+		expect: []openrtb.Format{{
+			W: 20,
+			H: 40,
+		}, {
+			W: 200,
+			H: 50,
+		}, {
+			W: 100,
+			H: 60,
+		}},
+	}.execute(t)
+}
+
 func TestHeightOnly(t *testing.T) {
 	formatOverrideSpec{
 		height: 200,
