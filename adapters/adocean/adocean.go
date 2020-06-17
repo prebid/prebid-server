@@ -53,7 +53,7 @@ type ResponseAdUnit struct {
 }
 
 type requestData struct {
-	Url        string
+	Url        *url.URL
 	Headers    *http.Header
 	SlaveSizes map[string]string
 }
@@ -110,7 +110,7 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	for _, requestData := range requestsData {
 		httpRequests = append(httpRequests, &adapters.RequestData{
 			Method:  "GET",
-			Uri:     requestData.Url,
+			Uri:     requestData.Url.String(),
 			Headers: *requestData.Headers,
 		})
 	}
@@ -182,8 +182,7 @@ func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.Ex
 	auctionID := imp.ID
 
 	for _, requestData := range requestsData {
-		endpointUrl, _ := url.Parse(requestData.Url)
-		queryParams := endpointUrl.Query()
+		queryParams := requestData.Url.Query()
 		masterID := queryParams["id"][0]
 
 		if masterID == newParams.MasterID {
@@ -194,10 +193,11 @@ func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.Ex
 			queryParams.Add("aid", newParams.SlaveID+":"+auctionID)
 			requestData.SlaveSizes[newParams.SlaveID] = getImpSizes(imp)
 			setSlaveSizesParam(&queryParams, requestData.SlaveSizes, testImp)
-			endpointUrl.RawQuery = queryParams.Encode()
-			newUri := endpointUrl.String()
-			if len(newUri) < maxUriLength {
-				requestData.Url = newUri
+
+			newUrl := *(requestData.Url)
+			newUrl.RawQuery = queryParams.Encode()
+			if len(newUrl.String()) < maxUriLength {
+				requestData.Url = &newUrl
 				return true
 			}
 
@@ -214,18 +214,18 @@ func (a *AdOceanAdapter) makeURL(
 	request *openrtb.BidRequest,
 	slaveSizes map[string]string,
 	consentString string,
-) (string, error) {
+) (*url.URL, error) {
 	endpointParams := macros.EndpointTemplateParams{Host: params.EmitterDomain}
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
-		return "", &errortypes.BadInput{
+		return nil, &errortypes.BadInput{
 			Message: "Unable to parse endpoint url template: " + err.Error(),
 		}
 	}
 
 	endpointURL, err := url.Parse(host)
 	if err != nil {
-		return "", &errortypes.BadInput{
+		return nil, &errortypes.BadInput{
 			Message: "Malformed URL: " + err.Error(),
 		}
 	}
@@ -254,7 +254,7 @@ func (a *AdOceanAdapter) makeURL(
 	setSlaveSizesParam(&queryParams, slaveSizes, (request.Test == 1))
 	endpointURL.RawQuery = queryParams.Encode()
 
-	return endpointURL.String(), nil
+	return endpointURL, nil
 }
 
 func getImpSizes(imp *openrtb.Imp) string {
