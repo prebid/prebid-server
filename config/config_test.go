@@ -115,6 +115,8 @@ adapters:
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
 certificates_file: /etc/ssl/cert.pem
+request_validation:
+    private_ip_networks: ["1.1.1.0/24"]
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -285,6 +287,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
+	cmpStrings(t, "request_validation.private_ip_networks", cfg.RequestValidation.PrivateIPNetworks[0], "1.1.1.0/24")
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
@@ -443,48 +446,60 @@ func TestRequestValidationParse(t *testing.T) {
 		{
 			description: "One - IPv4",
 			networks: []string{
-				"1.1.1.1/24"},
-			expected: []*net.IPNet{&net.IPNet{
-				IP: []byte{1, 1, 1, 0}, Mask: []byte{255, 255, 255, 0}}},
+				"1.1.1.1/24",
+			},
+			expected: []*net.IPNet{
+				&net.IPNet{IP: []byte{1, 1, 1, 0}, Mask: []byte{255, 255, 255, 0}},
+			},
 		},
 		{
 			description: "One - IPv4 - Ignore Whitespace",
 			networks: []string{
-				"   1.1.1.1/24 "},
-			expected: []*net.IPNet{&net.IPNet{
-				IP: []byte{1, 1, 1, 0}, Mask: []byte{255, 255, 255, 0}}},
+				"   1.1.1.1/24 ",
+			},
+			expected: []*net.IPNet{
+				&net.IPNet{IP: []byte{1, 1, 1, 0}, Mask: []byte{255, 255, 255, 0}},
+			},
 		},
 		{
 			description: "Many - IPv4",
 			networks: []string{
 				"1.1.1.1/24",
-				"2.2.2.2/16"},
+				"2.2.2.2/16",
+			},
 			expected: []*net.IPNet{
 				&net.IPNet{IP: []byte{1, 1, 1, 0}, Mask: []byte{255, 255, 255, 0}},
-				&net.IPNet{IP: []byte{2, 2, 0, 0}, Mask: []byte{255, 255, 0, 0}}},
+				&net.IPNet{IP: []byte{2, 2, 0, 0}, Mask: []byte{255, 255, 0, 0}},
+			},
 		},
 		{
 			description: "One - IPv6",
 			networks: []string{
-				"0101:2222::/16"},
+				"0101:0202::/16",
+			},
 			expected: []*net.IPNet{
-				&net.IPNet{IP: []byte{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Mask: []byte{255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}},
+				&net.IPNet{IP: []byte{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Mask: []byte{255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+			},
 		},
 		{
 			description: "One - IPv6 - Ignore Whitespace",
 			networks: []string{
-				"   0101:2222::/16 "},
+				"   0101:0202::/16 ",
+			},
 			expected: []*net.IPNet{
-				&net.IPNet{IP: []byte{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Mask: []byte{255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}},
+				&net.IPNet{IP: []byte{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Mask: []byte{255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+			},
 		},
 		{
 			description: "Many - IPv6",
 			networks: []string{
-				"0101:2222::/16",
-				"0101:0202:0303::/32"},
+				"0101:0202::/16",
+				"0101:0202:0303::/32",
+			},
 			expected: []*net.IPNet{
 				&net.IPNet{IP: []byte{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Mask: []byte{255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-				&net.IPNet{IP: []byte{1, 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Mask: []byte{255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}},
+				&net.IPNet{IP: []byte{1, 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Mask: []byte{255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+			},
 		},
 		{
 			description:   "Malformed",
@@ -503,13 +518,13 @@ func TestRequestValidationParse(t *testing.T) {
 		},
 		{
 			description:   "Malformed - Missing Network Mask - IPv6",
-			networks:      []string{"1111::1111"},
-			expectedError: "Invalid private IP networks: '1111::1111'",
+			networks:      []string{"0101:0202::"},
+			expectedError: "Invalid private IP networks: '0101:0202::'",
 		},
 		{
 			description:   "Malformed - Mixed",
-			networks:      []string{"1.1.1.1/24", "malformed"},
-			expectedError: "Invalid private IP networks: 'malformed'",
+			networks:      []string{"malformed1", "1.1.1.1/24", "malformed2"},
+			expectedError: "Invalid private IP networks: 'malformed1', 'malformed2'",
 		},
 	}
 
@@ -528,6 +543,46 @@ func TestRequestValidationParse(t *testing.T) {
 		}
 
 		assert.ElementsMatch(t, requestValidation.PrivateIPNetworksParsed, test.expected, test.description+":networks")
+	}
+}
+
+func TestNewCallsRequestValidation(t *testing.T) {
+	testCases := []struct {
+		description       string
+		privateIPNetworks string
+		expectedError     string
+		expectedIPs       []*net.IPNet
+	}{
+		{
+			description:       "Valid",
+			privateIPNetworks: `["1.1.1.0/24"]`,
+			expectedIPs: []*net.IPNet{
+				&net.IPNet{IP: []byte{1, 1, 1, 0}, Mask: []byte{255, 255, 255, 0}},
+			},
+		},
+		{
+			description:       "Invalid",
+			privateIPNetworks: `["1"]`,
+			expectedError:     "Invalid private IP networks: '1'",
+		},
+	}
+
+	for _, test := range testCases {
+		v := viper.New()
+		SetupViper(v, "")
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer([]byte(
+			`request_validation:
+    private_ip_networks: ` + test.privateIPNetworks)))
+
+		result, resultErr := New(v)
+
+		if test.expectedError == "" {
+			assert.NoError(t, resultErr, test.description+":err")
+			assert.ElementsMatch(t, test.expectedIPs, result.RequestValidation.PrivateIPNetworksParsed, test.description+":parsed")
+		} else {
+			assert.Error(t, resultErr, test.description+":err")
+		}
 	}
 }
 

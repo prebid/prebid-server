@@ -18,7 +18,7 @@ import (
 	validator "github.com/asaskevich/govalidator"
 )
 
-// Configuration specifies the static configuration for the application.
+// Configuration specifies the static application config.
 type Configuration struct {
 	ExternalURL string     `mapstructure:"external_url"`
 	Host        string     `mapstructure:"host"`
@@ -237,26 +237,26 @@ type RequestTimeoutHeaders struct {
 
 // RequestValidation specifies the request validation options.
 type RequestValidation struct {
-	PrivateIPNetworks       []string `mapstructure:"private_ip_networks"`
+	PrivateIPNetworks       []string `mapstructure:"private_ip_networks,flow"`
 	PrivateIPNetworksParsed []*net.IPNet
 }
 
 func (r *RequestValidation) parse() error {
 	ipNets := make([]*net.IPNet, 0, len(r.PrivateIPNetworks))
-	invalid := strings.Builder{}
+	invalidMsg := strings.Builder{}
 
 	for _, v := range r.PrivateIPNetworks {
 		v := strings.TrimSpace(v)
 
 		if _, ipNet, err := net.ParseCIDR(v); err != nil {
-			fmt.Fprintf(&invalid, "'%s', ", v)
+			fmt.Fprintf(&invalidMsg, "'%s', ", v)
 		} else {
 			ipNets = append(ipNets, ipNet)
 		}
 	}
 
-	if invalid.Len() > 0 {
-		msg := invalid.String()[:invalid.Len()-2]
+	if invalidMsg.Len() > 0 {
+		msg := invalidMsg.String()[:invalidMsg.Len()-2]
 		return fmt.Errorf("Invalid private IP networks: %v", msg)
 	}
 
