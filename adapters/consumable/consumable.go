@@ -268,7 +268,10 @@ func (a *ConsumableAdapter) MakeBids(
 			//bid.referrer = utils.getTopWindowUrl();
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
+				Bid: &bid,
+				// Consumable units are always HTML, never VAST.
+				// From Prebid's point of view, this means that Consumable units
+				// are always "banners".
 				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
