@@ -19,7 +19,7 @@ type adMarkupType string
 
 const (
 	smtAdTypeImg       adMarkupType = "Img"
-	smtAdTypeRichmedia              = "Richmedia"
+	smtAdTypeRichmedia adMarkupType = "Richmedia"
 )
 
 // SmaatoAdapter describes a Smaato prebid server adapter.
