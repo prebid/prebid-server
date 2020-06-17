@@ -153,17 +153,10 @@ func (a *SmartAdserverAdapter) MakeBids(internalRequest *openrtb.BidRequest, ext
 
 // BuildEndpointURL : Builds endpoint url
 func (a *SmartAdserverAdapter) BuildEndpointURL(params *openrtb_ext.ExtImpSmartadserver) (string, error) {
-
-	host := a.host
-	if params.Domain != "" {
-		host = params.Domain
-	}
-
-	uri, err := url.Parse(host)
-
+	uri, err := url.Parse(a.host)
 	if err != nil || uri.Scheme == "" || uri.Host == "" {
 		return "", &errortypes.BadInput{
-			Message: "Malformed URL: " + host + ".",
+			Message: "Malformed URL: " + a.host + ".",
 		}
 	}
 

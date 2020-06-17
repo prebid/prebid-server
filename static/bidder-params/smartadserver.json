@@ -5,10 +5,6 @@
 
   "type": "object",
   "properties": {
-    "domain": {
-      "type": "string",
-      "description": "Server domain."
-    },
     "siteId": {
       "type": "integer",
       "description": "The site id.",
