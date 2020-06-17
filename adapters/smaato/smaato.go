@@ -17,8 +17,13 @@ type adMarkupType string
 
 const (
 	smtAdTypeImg       adMarkupType = "Img"
-	smtAdTypeRichmedia              = "Richmedia"
+	smtAdTypeRichmedia adMarkupType = "Richmedia"
+	prebidClient                    = "prebid_server_0.1"
 )
+
+type ext struct {
+	PrebidClient string `json:"client"`
+}
 
 // SmaatoAdapter describes a Smaato prebid server adapter.
 type SmaatoAdapter struct {
@@ -66,10 +71,9 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		request.Site = &siteCopy
 	}
 
-	// If all the requests are invalid, Call to adaptor is skipped
-	if len(request.Imp) == 0 {
-		return nil, errs
-	}
+	//Setting cient info
+	ext := ext{PrebidClient: prebidClient}
+	request.Ext, err = json.Marshal(&ext)
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {

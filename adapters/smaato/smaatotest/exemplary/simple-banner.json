@@ -102,6 +102,9 @@
             "publisher": {
               "id": "1100042525"
             }
+          },
+          "ext": {
+            "client": "prebid_server_0.1"
           }
         }
       },
