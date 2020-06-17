@@ -9,9 +9,9 @@ import (
 
 // This file intends to test static/bidder-params/smaato.json
 
-// These also validate the format of the external API: request.imp[i].ext.smaato
+// These also validate the format of the external API: request.imp[i].bidRequestExt.smaato
 
-// TestValidParams makes sure that the Smaato schema accepts all imp.ext fields which Smaato supports.
+// TestValidParams makes sure that the Smaato schema accepts all imp.bidRequestExt fields which Smaato supports.
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -25,7 +25,7 @@ func TestValidParams(t *testing.T) {
 	}
 }
 
-// TestInvalidParams makes sure that the Smaato schema rejects all the imp.ext fields which are not support.
+// TestInvalidParams makes sure that the Smaato schema rejects all the imp.bidRequestExt fields which are not support.
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {

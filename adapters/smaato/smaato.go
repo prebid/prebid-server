@@ -17,13 +17,10 @@ type adMarkupType string
 
 const (
 	smtAdTypeImg       adMarkupType = "Img"
-	smtAdTypeRichmedia adMarkupType = "Richmedia"
-	prebidClient                    = "prebid_server_0.1"
+	smtAdTypeRichmedia              = "Richmedia"
 )
 
-type ext struct {
-	PrebidClient string `json:"client"`
-}
+const prebidClient string = "prebid_server_0.1"
 
 // SmaatoAdapter describes a Smaato prebid server adapter.
 type SmaatoAdapter struct {
@@ -48,7 +45,7 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		return nil, errs
 	}
 
-	// Use ext of first imp to retrieve params which are valid for all imps, e.g. publisherId
+	// Use bidRequestExt of first imp to retrieve params which are valid for all imps, e.g. publisherId
 	smaatoParams, err := parseSmaatoParams(&request.Imp[0])
 	if err != nil {
 		errs = append(errs, err)
@@ -72,8 +69,10 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	}
 
 	//Setting cient info
-	ext := ext{PrebidClient: prebidClient}
-	request.Ext, err = json.Marshal(&ext)
+	type bidRequestExt struct {
+		PrebidClient string `json:"client"`
+	}
+	request.Ext, _ = json.Marshal(bidRequestExt{PrebidClient: prebidClient})
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
