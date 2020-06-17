@@ -12,7 +12,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const client = "prebid_server_0.1"
+const clientVersion = "prebid_server_0.1"
 
 type smaatoParams openrtb_ext.ExtImpSmaato
 type adMarkupType string
@@ -72,7 +72,7 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	type bidRequestExt struct {
 		Client string `json:"client"`
 	}
-	request.Ext, _ = json.Marshal(bidRequestExt{Client: client})
+	request.Ext, _ = json.Marshal(bidRequestExt{Client: clientVersion})
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
