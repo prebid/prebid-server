@@ -389,7 +389,20 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			}
 		} else {
 			bidder.me.RecordTimeoutNotice(false)
+			if bidder.DebugConfig.TimeoutNotification.Log {
+				msg := fmt.Sprintf("TimeoutNotification: Failed to make timeout request: method(%s), uri(%s), error(%s)", toReq.Method, toReq.Uri, err.Error())
+				util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
+			}
 		}
+	} else if bidder.DebugConfig.TimeoutNotification.Log {
+		reqJSON, err := json.Marshal(req)
+		var msg string
+		if err == nil {
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errL[0].Error(), string(reqJSON))
+		} else {
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errL[0].Error(), err.Error())
+		}
+		util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
 	}
 
 }

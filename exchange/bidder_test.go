@@ -1229,6 +1229,64 @@ func TestSetAssetTypes(t *testing.T) {
 	}
 }
 
+func TestTimeoutNotificationOff(t *testing.T) {
+	respBody := "{\"bid\":false}"
+	respStatus := 200
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	bidderImpl := &notifingBidder{
+		notiRequest: adapters.RequestData{
+			Method:  "GET",
+			Uri:     server.URL + "/notify/me",
+			Body:    nil,
+			Headers: http.Header{},
+		},
+	}
+	bidder := &bidderAdapter{
+		Bidder:      bidderImpl,
+		Client:      server.Client(),
+		DebugConfig: config.Debug{},
+		me:          &metricsConfig.DummyMetricsEngine{},
+	}
+	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
+		t.Error("Failed to cast bidder to a TimeoutBidder")
+	} else {
+		bidder.doTimeoutNotification(tb, &adapters.RequestData{})
+	}
+}
+
+func TestTimeoutNotificationOn(t *testing.T) {
+	respBody := "{\"bid\":false}"
+	respStatus := 200
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	bidderImpl := &notifingBidder{
+		notiRequest: adapters.RequestData{
+			Method:  "GET",
+			Uri:     server.URL + "/notify/me",
+			Body:    nil,
+			Headers: http.Header{},
+		},
+	}
+	bidder := &bidderAdapter{
+		Bidder: bidderImpl,
+		Client: server.Client(),
+		DebugConfig: config.Debug{
+			TimeoutNotification: config.TimeoutNotification{
+				Log: true,
+			},
+		},
+		me: &metricsConfig.DummyMetricsEngine{},
+	}
+	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
+		t.Error("Failed to cast bidder to a TimeoutBidder")
+	} else {
+		bidder.doTimeoutNotification(tb, &adapters.RequestData{})
+	}
+}
+
 type goodSingleBidder struct {
 	bidRequest   *openrtb.BidRequest
 	httpRequest  *adapters.RequestData
@@ -1301,4 +1359,20 @@ func (bidder *bidRejector) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 func (bidder *bidRejector) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidder.httpResponse = response
 	return nil, []error{errors.New("Can't make a response.")}
+}
+
+type notifingBidder struct {
+	notiRequest adapters.RequestData
+}
+
+func (bidder *notifingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	return nil, nil
+}
+
+func (bidder *notifingBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	return nil, nil
+}
+
+func (bidder *notifingBidder) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+	return &bidder.notiRequest, nil
 }
