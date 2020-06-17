@@ -264,6 +264,16 @@ func (r *RequestValidation) parse() error {
 	return nil
 }
 
+func (r *RequestValidation) IsPublicNetwork(ip net.IP) bool {
+	for _, ipNet := range r.PrivateIPNetworksParsed {
+		if ipNet.Contains(ip) {
+			return false
+		}
+	}
+
+	return true
+}
+
 const (
 	dummyHost        string = "dummyhost.com"
 	dummyPublisherID string = "12"

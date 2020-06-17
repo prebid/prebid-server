@@ -227,6 +227,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
+	deps.sanitizeRequest(req)
+
 	errL := deps.validateRequest(req)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
@@ -250,32 +252,21 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-func (deps *endpointDeps) removeInvalidRequestValues(req *openrtb.BidRequest) []error {
+func (deps *endpointDeps) sanitizeRequest(req *openrtb.BidRequest) {
+	isPublicNetwork := deps.cfg.RequestValidation.IsPublicNetwork
 
 	if req.Device != nil {
 		if req.Device.IP != "" {
-			// todo: also verify address is not local
-			// todo: also verify address is ipv4
-			if ip := net.ParseIP(req.Device.IP); ip == nil {
+			if ip := net.ParseIP(req.Device.IP); ip == nil || ip.To4() == nil || !isPublicNetwork(ip) {
 				req.Device.IP = ""
 			}
 		}
 
 		if req.Device.IPv6 != "" {
-			// todo: also verify address is not local
-			// todo: also verify address is ipv4
-			if ip := net.ParseIP(req.Device.IP); ip == nil {
+			if ip := net.ParseIP(req.Device.IPv6); ip == nil || ip.To4() != nil || !isPublicNetwork(ip) {
 				req.Device.IPv6 = ""
 			}
 		}
-	}
-
-	if policy, err := ccpa.ReadPolicy(req); err == nil {
-		if err := policy.Validate(); err != nil {
-			errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("CCPA value is invalid and will be ignored. (%s)", err.Error())})
-		}
-	} else {
-		errL = append(errL, err)
 	}
 }
 
@@ -336,6 +327,14 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	if err := validateRegs(req.Regs); err != nil {
 		errL = append(errL, err)
 		return errL
+	}
+
+	if policy, err := ccpa.ReadPolicy(req); err == nil {
+		if err := policy.Validate(); err != nil {
+			errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("CCPA value is invalid and will be ignored. (%s)", err.Error())})
+		}
+	} else {
+		errL = append(errL, err)
 	}
 
 	impIDs := make(map[string]int, len(req.Imp))
@@ -947,8 +946,8 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
-func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, validation config.RequestValidation) {
-	setIPImplicitly(httpReq, bidReq, validation)
+func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, cfg config.RequestValidation) {
+	setIPImplicitly(httpReq, bidReq, cfg)
 	setUAImplicitly(httpReq, bidReq)
 }
 
@@ -990,7 +989,7 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
 	secure := int8(1)
 	for i := 0; i < len(imps); i++ {
-		if imps[i].Secure == nil && util.IsSecure(httpReq) {
+		if imps[i].Secure == nil && httputil.IsSecure(httpReq) {
 			imps[i].Secure = &secure
 		}
 	}
@@ -1148,13 +1147,13 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 
 // todo: pass down non-local validator service
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
-func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, validation config.RequestValidation) {
+func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, cfg config.RequestValidation) {
 	if bidReq.Device == nil {
 		bidReq.Device = &openrtb.Device{}
 	}
 
 	if bidReq.Device.IP == "" && bidReq.Device.IPv6 == "" {
-		if ip := httputil.FindIP(httpReq, validation.IsPublicIP); ip != nil {
+		if ip := httputil.FindIP(httpReq, cfg.IsPublicNetwork); ip != nil {
 			if ip4 := ip.To4(); len(ip4) == net.IPv4len {
 				bidReq.Device.IP = ip4.String()
 			} else if len(ip) == net.IPv6len {

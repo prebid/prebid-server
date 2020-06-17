@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -958,6 +959,76 @@ func TestCCPAInvalidValueWarning(t *testing.T) {
 
 	expectedError := errortypes.Warning{Message: "CCPA value is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)"}
 	assert.ElementsMatch(t, errL, []error{&expectedError})
+}
+
+func TestSanitizeRequest(t *testing.T) {
+	deps := &endpointDeps{
+		cfg: &config.Configuration{
+			RequestValidation: config.RequestValidation{
+				PrivateIPNetworksParsed: []*net.IPNet{
+					&net.IPNet{IP: []byte{2, 0, 0, 0}, Mask: []byte{255, 0, 0, 0}},
+				},
+			},
+		},
+	}
+
+	testCases := []struct {
+		description        string
+		req                *openrtb.BidRequest
+		expectedDeviceIP   string
+		expectedDeviceIPv6 string
+	}{
+		{
+			description: "Empty",
+			req: &openrtb.BidRequest{
+				Device: &openrtb.Device{
+					IP:   "",
+					IPv6: "",
+				},
+			},
+			expectedDeviceIP:   "",
+			expectedDeviceIPv6: "",
+		},
+		{
+			description: "Valid",
+			req: &openrtb.BidRequest{
+				Device: &openrtb.Device{
+					IP:   "1.1.1.1",
+					IPv6: "0101::",
+				},
+			},
+			expectedDeviceIP:   "1.1.1.1",
+			expectedDeviceIPv6: "0101::",
+		},
+		{
+			description: "Invalid - Swapped",
+			req: &openrtb.BidRequest{
+				Device: &openrtb.Device{
+					IP:   "0101::",
+					IPv6: "1.1.1.1",
+				},
+			},
+			expectedDeviceIP:   "",
+			expectedDeviceIPv6: "",
+		},
+		{
+			description: "Malformed",
+			req: &openrtb.BidRequest{
+				Device: &openrtb.Device{
+					IP:   "malformed",
+					IPv6: "malformed",
+				},
+			},
+			expectedDeviceIP:   "",
+			expectedDeviceIPv6: "",
+		},
+	}
+
+	for _, test := range testCases {
+		deps.sanitizeRequest(test.req)
+		assert.Equal(t, test.expectedDeviceIP, test.req.Device.IP, test.description+":ipv4")
+		assert.Equal(t, test.expectedDeviceIPv6, test.req.Device.IPv6, test.description+":ipv6")
+	}
 }
 
 // nobidExchange is a well-behaved exchange which always bids "no bid".
