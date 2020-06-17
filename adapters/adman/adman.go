@@ -13,36 +13,13 @@ import (
 
 // AdmanAdapter struct
 type AdmanAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
-}
-
-// Name return actual adapter name
-func (a *AdmanAdapter) Name() string {
-	return "adman"
-}
-
-func (a *AdmanAdapter) FamilyName() string {
-	return "adman"
-}
-
-// SkipNoCookies will not skip bids without synced users
-func (a *AdmanAdapter) SkipNoCookies() bool {
-	return false
-}
-
-// NewAdmanAdapter create a new SovrnSonobiAdapter instance
-func NewAdmanAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *AdmanAdapter {
-	return NewAdmanBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
+	URI string
 }
 
 // NewAdmanBidder Initializes the Bidder
-func NewAdmanBidder(client *http.Client, endpoint string) *AdmanAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
-
+func NewAdmanBidder(endpoint string) *AdmanAdapter {
 	return &AdmanAdapter{
-		http: a,
-		URI:  endpoint,
+		URI: endpoint,
 	}
 }
 
@@ -60,7 +37,7 @@ func (a *AdmanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 
 	for _, imp := range request.Imp {
 		reqCopy := *request
-		reqCopy.Imp = append(make([]openrtb.Imp, 0, 1), imp)
+		reqCopy.Imp = []openrtb.Imp{imp}
 
 		var bidderExt adapters.ExtImpBidder
 		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {

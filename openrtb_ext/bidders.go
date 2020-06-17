@@ -31,6 +31,7 @@ const (
 	BidderAdkernel         BidderName = "adkernel"
 	BidderAdkernelAdn      BidderName = "adkernelAdn"
 	BidderAdpone           BidderName = "adpone"
+	BidderAdman            BidderName = "adman"
 	BidderAdmixer          BidderName = "admixer"
 	BidderAdOcean          BidderName = "adocean"
 	BidderAdtelligent      BidderName = "adtelligent"
@@ -94,7 +95,6 @@ const (
 	BidderYieldmo          BidderName = "yieldmo"
 	BidderYieldone         BidderName = "yieldone"
 	BidderZeroClickFraud   BidderName = "zeroclickfraud"
-	BidderAdman			   BidderName = "adman"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
@@ -106,6 +106,7 @@ var BidderMap = map[string]BidderName{
 	"adhese":            BidderAdhese,
 	"adkernel":          BidderAdkernel,
 	"adkernelAdn":       BidderAdkernelAdn,
+	"adman":             BidderAdman,
 	"admixer":           BidderAdmixer,
 	"adocean":           BidderAdOcean,
 	"adpone":            BidderAdpone,
@@ -170,7 +171,6 @@ var BidderMap = map[string]BidderName{
 	"yieldmo":           BidderYieldmo,
 	"yieldone":          BidderYieldone,
 	"zeroclickfraud":    BidderZeroClickFraud,
-	"adman":			 BidderAdman,
 }
 
 // BidderList returns the values of the BidderMap
