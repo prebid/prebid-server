@@ -208,7 +208,7 @@ func diffErrorLists(t *testing.T, description string, actual []error, expected [
 	t.Helper()
 
 	if len(expected) != len(actual) {
-		t.Fatalf("%s had wrong error count. Expected %d, got %d", description, len(expected), len(actual))
+		t.Fatalf("%s had wrong error count. Expected %d, got %d (%v)", description, len(expected), len(actual), actual)
 	}
 	for i := 0; i < len(actual); i++ {
 		if expected[i].Comparison == "literal" {

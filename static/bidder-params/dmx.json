@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "District M DMX Adapter Params",
+  "description": "A schema which validates params accepted by the DMX adapter",
+  "type": "object",
+  "properties": {
+    "memberid" : {
+      "type": "string",
+      "description": "Represent boost MemberId from districtm UI"
+    },
+    "tagid": {
+      "type": "string",
+      "description": "Represent the placement ID, this value is optional"
+    },
+    "bidfloor": {
+      "type": "string",
+      "description": "The minimum price acceptable for a bid"
+    }
+  },
+
+  "required": ["memberid"]
+}

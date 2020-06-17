@@ -407,31 +407,34 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 }
 
 func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width uint64, height uint64, multisize string) []openrtb.Format {
+	var formats []openrtb.Format
 	if overrideWidth != 0 && overrideHeight != 0 {
-		return []openrtb.Format{{
+		formats = []openrtb.Format{{
 			W: overrideWidth,
 			H: overrideHeight,
 		}}
 	} else if overrideWidth != 0 && height != 0 {
-		return []openrtb.Format{{
+		formats = []openrtb.Format{{
 			W: overrideWidth,
 			H: height,
 		}}
 	} else if width != 0 && overrideHeight != 0 {
-		return []openrtb.Format{{
+		formats = []openrtb.Format{{
 			W: width,
 			H: overrideHeight,
 		}}
-	} else if parsedSizes := parseMultisize(multisize); len(parsedSizes) != 0 {
-		return parsedSizes
 	} else if width != 0 && height != 0 {
-		return []openrtb.Format{{
+		formats = []openrtb.Format{{
 			W: width,
 			H: height,
 		}}
 	}
 
-	return nil
+	if parsedSizes := parseMultisize(multisize); len(parsedSizes) != 0 {
+		formats = append(formats, parsedSizes...)
+	}
+
+	return formats
 }
 
 func setWidths(formats []openrtb.Format, width uint64) {
