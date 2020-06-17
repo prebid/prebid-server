@@ -180,15 +180,27 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	}
 
 	if debugLog != nil && debugLog.Enabled {
-		debugLog.BuildCacheString()
-		debugLog.CacheKey = hbCacheID
-		if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
-			toCache = append(toCache, prebid_cache_client.Cacheable{
-				Type:       debugLog.CacheType,
-				Data:       jsonBytes,
-				TTLSeconds: debugLog.TTL,
-				Key:        "log_" + debugLog.CacheKey,
-			})
+		if len(hbCacheID) == 0 {
+			if rawUuid, err := uuid.NewV4(); err == nil {
+				debugLog.CacheKey = rawUuid.String()
+				errs = append(errs, fmt.Errorf("[Debug cache ID: %s]", debugLog.CacheKey))
+			} else {
+				errs = append(errs, errors.New("failed to create debug cache key"))
+			}
+		} else {
+			debugLog.CacheKey = hbCacheID
+		}
+
+		if len(debugLog.CacheKey) > 0 {
+			debugLog.BuildCacheString()
+			if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
+				toCache = append(toCache, prebid_cache_client.Cacheable{
+					Type:       debugLog.CacheType,
+					Data:       jsonBytes,
+					TTLSeconds: debugLog.TTL,
+					Key:        "log_" + debugLog.CacheKey,
+				})
+			}
 		}
 	}
 

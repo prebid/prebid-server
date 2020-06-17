@@ -191,7 +191,9 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 		}
 
-	} else {
+	}
+
+	if !anyBidsReturned {
 		if debugLog != nil && debugLog.Enabled {
 			if rawUUID, err := uuid.NewV4(); err == nil {
 				debugLog.CacheKey = rawUUID.String()
