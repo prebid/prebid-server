@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -15,7 +14,7 @@ type Policy struct {
 	Value string
 }
 
-// ReadPolicy extracts the CCPA regulation policy from an OpenRTB regs ext.
+// ReadPolicy extracts the CCPA regulation policy from an OpenRTB request.
 func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
 	policy := Policy{}
 
@@ -33,6 +32,10 @@ func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
 // Write mutates an OpenRTB bid request with the context of the CCPA policy.
 func (p Policy) Write(req *openrtb.BidRequest) error {
 	if p.Value == "" {
+		return clearPolicy(req)
+	}
+
+	if req == nil {
 		return nil
 	}
 
@@ -41,12 +44,53 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 	}
 
 	if req.Regs.Ext == nil {
-		req.Regs.Ext = json.RawMessage(`{"us_privacy":"` + p.Value + `"}`)
+		ext, err := json.Marshal(openrtb_ext.ExtRegs{USPrivacy: p.Value})
+		if err == nil {
+			req.Regs.Ext = ext
+		}
+		return err
+	}
+
+	var extMap map[string]interface{}
+	err := json.Unmarshal(req.Regs.Ext, &extMap)
+	if err == nil {
+		extMap["us_privacy"] = p.Value
+		ext, err := json.Marshal(extMap)
+		if err == nil {
+			req.Regs.Ext = ext
+		}
+	}
+	return err
+}
+
+func clearPolicy(req *openrtb.BidRequest) error {
+	if req == nil {
 		return nil
 	}
 
-	var err error
-	req.Regs.Ext, err = jsonparser.Set(req.Regs.Ext, []byte(`"`+p.Value+`"`), "us_privacy")
+	if req.Regs == nil {
+		return nil
+	}
+
+	if len(req.Regs.Ext) == 0 {
+		return nil
+	}
+
+	var extMap map[string]interface{}
+	err := json.Unmarshal(req.Regs.Ext, &extMap)
+	if err == nil {
+		delete(extMap, "us_privacy")
+		if len(extMap) == 0 {
+			req.Regs.Ext = nil
+		} else {
+			ext, err := json.Marshal(extMap)
+			if err == nil {
+				req.Regs.Ext = ext
+			}
+			return err
+		}
+	}
+
 	return err
 }
 
