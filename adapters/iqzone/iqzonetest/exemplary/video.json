@@ -1,0 +1,83 @@
+{
+  "mockBidRequest": {
+    "id": "testid",
+    "imp": [
+      {
+        "id": "testimpid",
+        "video": {
+            "mimes": [
+              "video/mp4"
+            ],
+            "w": 640,
+            "h": 480
+          },
+        "ext": {
+          "bidder": {
+            "pubid": "19f1b372c7548ec1fe734d2c9f8dc688",
+            "placement": "dummyplacement"
+          }
+        }
+      }
+    ]
+  },
+  
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://nep.advangelists.com/xp/get?pubid=19f1b372c7548ec1fe734d2c9f8dc688",
+        "body":{
+          "id": "testid",
+          "imp": [{
+            "id": "testimpid",
+            "tagid": "dummyplacement",
+            "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              }
+          }]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "crid": "24080",
+                   "adid": "2068416",
+                  "price": 0.01,
+                  "id": "testid",
+                  "impid": "testimpid",
+                  "cid": "8048"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "crid": "24080",
+           "adid": "2068416",
+            "price": 0.01,
+            "id": "testid",
+            "impid": "testimpid",
+            "cid": "8048"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

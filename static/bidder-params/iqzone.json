@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "IQZone Adapter Params",
+  "description": "A schema which validates params accepted by the IQZone adapter",
+  "type": "object",
+  "properties": {
+    "pubid": {
+      "type": "string",
+      "description": "An id used to identify IQZone publisher.",
+      "minLength": 8
+    },
+    "placement": {
+      "type": "string",
+      "description": "An id used to identify placements."
+    }
+  },
+  "required": ["pubid"]
+}
