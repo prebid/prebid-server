@@ -40,6 +40,7 @@ type Metrics struct {
 	adapterRequests           *prometheus.CounterVec
 	adapterFailedConnections  *prometheus.CounterVec
 	adapterReusedConnections  *prometheus.CounterVec
+	adapterCreatedConnections *prometheus.CounterVec
 	adapterIdleConnectionTime *prometheus.HistogramVec
 	adapterRequestsTimer      *prometheus.HistogramVec
 	adapterUserSync           *prometheus.CounterVec
@@ -200,12 +201,17 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	metrics.adapterFailedConnections = newCounter(cfg, metrics.Registry,
 		"adapter_connection_errors",
 		"Count of connections that could not be established per bidder.",
-		[]string{adapterLabel, adapterConnErrorLabel})
+		[]string{adapterLabel})
+
+	metrics.adapterCreatedConnections = newCounter(cfg, metrics.Registry,
+		"adapter_connection_created",
+		"Count that keeps track of new connections when contacting adapter bidder endpoints.",
+		[]string{adapterLabel})
 
 	metrics.adapterReusedConnections = newCounter(cfg, metrics.Registry,
 		"adapter_connection_reused",
-		"Count that keeps track of new connections and reused connections when contacting adapter bidder endpoints.",
-		[]string{adapterLabel, adapterConnReusedLabel, adapterConnCreatedLabel})
+		"Count that keeps track of reused connections when contacting adapter bidder endpoints.",
+		[]string{adapterLabel})
 
 	metrics.adapterIdleConnectionTime = newHistogram(cfg, metrics.Registry,
 		"adapter_idle_connection_time",
@@ -353,20 +359,28 @@ func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 }
 
 func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo) {
-	m.adapterFailedConnections.With(prometheus.Labels{
-		adapterLabel:          string(adapterName),
-		adapterConnErrorLabel: strconv.FormatBool(!connSuccess),
-	}).Inc()
+	if connSuccess {
+		if info.Reused {
+			m.adapterReusedConnections.With(prometheus.Labels{
+				adapterLabel: string(adapterName),
+			}).Inc()
+		} else {
+			m.adapterCreatedConnections.With(prometheus.Labels{
+				adapterLabel: string(adapterName),
+			}).Inc()
+		}
 
-	m.adapterReusedConnections.With(prometheus.Labels{
-		adapterLabel:            string(adapterName),
-		adapterConnReusedLabel:  strconv.FormatBool(info.Reused),
-		adapterConnCreatedLabel: strconv.FormatBool(!info.Reused),
-	}).Inc()
+		if info.WasIdle {
+			m.adapterIdleConnectionTime.With(prometheus.Labels{
+				adapterLabel: string(adapterName),
+			}).Observe(float64(info.IdleTime))
+		}
+	} else {
+		m.adapterFailedConnections.With(prometheus.Labels{
+			adapterLabel: string(adapterName),
+		}).Inc()
+	}
 
-	m.adapterIdleConnectionTime.With(prometheus.Labels{
-		adapterLabel: string(adapterName),
-	}).Observe(float64(info.IdleTime))
 }
 
 func (m *Metrics) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
