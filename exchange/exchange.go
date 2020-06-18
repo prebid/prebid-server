@@ -374,8 +374,8 @@ func (e *exchange) recoverSafely(cleanRequests map[openrtb_ext.BidderName]*openr
 		defer func() {
 			if r := recover(); r != nil {
 
-				var allBidders string = ""
-				var sb strings.Builder
+				allBidders := ""
+				sb := strings.Builder{}
 				for k := range cleanRequests {
 					sb.WriteString(string(k))
 					sb.WriteString(",")
@@ -384,9 +384,8 @@ func (e *exchange) recoverSafely(cleanRequests map[openrtb_ext.BidderName]*openr
 					allBidders = sb.String()[:sb.Len()-1]
 				}
 
-				glog.Errorf(
-					"OpenRTB auction recovered panic from Bidder %s: %v. "+
-						"Account id: %s, All Bidders: %s, Stack trace is: %v",
+				glog.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. "+
+					"Account id: %s, All Bidders: %s, Stack trace is: %v",
 					coreBidder, r, bidlabels.PubID, allBidders, string(debug.Stack()))
 				e.me.RecordAdapterPanic(*bidlabels)
 				// Let the master request know that there is no data here
