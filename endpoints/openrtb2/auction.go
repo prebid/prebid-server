@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	nr "github.com/prebid/prebid-server/monitoring/newrelic"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
@@ -77,6 +79,7 @@ type endpointDeps struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
 
 	ao := analytics.AuctionObject{
 		Status: http.StatusOK,
@@ -102,6 +105,17 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
+
+		if rec := recover(); rec != nil {
+			// this is a failsafe for a situation that should never occur
+			// in general we want to `recover` as near to the `panic` as possible
+			// this `recover` is scoped to the entire request (but not any sub-goroutines)
+			// and allows for any other `defer`s to run first
+			w.WriteHeader(http.StatusNoContent)
+
+			glog.Errorf("%s\n%s", rec, debug.Stack())
+			nr.NoticeError(ctx, fmt.Errorf("panic recovered: %s\n%s", rec, debug.Stack()))
+		}
 	}()
 
 	req, errL := deps.parseRequest(r)
@@ -109,8 +123,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
-
-	ctx := r.Context()
 
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
