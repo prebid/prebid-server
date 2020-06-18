@@ -159,6 +159,36 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	// List of bidders we have requests for.
 	liveAdapters := listBiddersWithRequests(cleanRequests)
 
+	// Process the request to check for targeting parameters.
+	var targData *targetData
+	shouldCacheBids := false
+	shouldCacheVAST := false
+	var bidAdjustmentFactors map[string]float64
+	var requestExt openrtb_ext.ExtRequest
+	if len(bidRequest.Ext) > 0 {
+		err := json.Unmarshal(bidRequest.Ext, &requestExt)
+		if err != nil {
+			nr.NoticeError(ctx, fmt.Errorf("Error decoding Request.ext : %s", err.Error()))
+			return nil, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
+		}
+		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
+		if requestExt.Prebid.Cache != nil {
+			shouldCacheBids = requestExt.Prebid.Cache.Bids != nil
+			shouldCacheVAST = requestExt.Prebid.Cache.VastXML != nil
+		}
+
+		if requestExt.Prebid.Targeting != nil {
+			targData = &targetData{
+				priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
+				includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
+				includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
+				includeCacheBids:  shouldCacheBids,
+				includeCacheVast:  shouldCacheVAST,
+			}
+			targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
+		}
+	}
+
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
 	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids)
@@ -426,6 +456,7 @@ func (e *exchange) recoverSafely(cleanRequests map[openrtb_ext.BidderName]*openr
 	return func(ctx context.Context, txn *newrelic.Transaction, aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 		defer func() {
 			if r := recover(); r != nil {
+				nr.NoticeError(ctx, fmt.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. Stack trace is: %v", coreBidder, r, string(debug.Stack())))
 
 				allBidders := ""
 				sb := strings.Builder{}
@@ -441,6 +472,7 @@ func (e *exchange) recoverSafely(cleanRequests map[openrtb_ext.BidderName]*openr
 				glog.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. "+
 					"Account id: %s, All Bidders: %s, Stack trace is: %v",
 					coreBidder, r, bidlabels.PubID, allBidders, string(debug.Stack()))
+
 				e.me.RecordAdapterPanic(*bidlabels)
 				// Let the master request know that there is no data here
 				brw := new(bidResponseWrapper)
