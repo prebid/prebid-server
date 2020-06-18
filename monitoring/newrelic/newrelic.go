@@ -1,7 +1,10 @@
 package newrelic
 
 import (
+	"context"
 	"net/http"
+
+	"github.com/golang/glog"
 
 	"github.com/newrelic/go-agent/v3/integrations/nrlogrus"
 	"github.com/newrelic/go-agent/v3/newrelic"
@@ -23,6 +26,23 @@ func Make(cfg config.NewRelic) (*newrelic.Application, error) {
 		nrlogrus.ConfigLogger(l),
 		ConfigIgnoreStatusCodes([]int{http.StatusUnprocessableEntity, http.StatusBadGateway}),
 	)
+}
+
+// NoticeError ...
+func NoticeError(ctx context.Context, err error) {
+	// get newrelic transaction from context
+	if ctx == nil {
+		glog.Warningf("Context is nil, could not notice error: %v", err)
+		return
+	}
+
+	txn := newrelic.FromContext(ctx)
+	if txn == nil {
+		glog.Warningf("Newrelic transaction is nil, could not notice error: %v", err)
+		return
+	}
+
+	txn.NoticeError(err)
 }
 
 func getLogger(logLevel string) (*logrus.Logger, error) {
