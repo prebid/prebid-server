@@ -127,6 +127,7 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 			var markupError error
 			bid.AdM, markupError = renderAdMarkup(getAdMarkupType(response, bid.AdM), bid.AdM)
 			if markupError != nil {
+				fmt.Println(markupError)
 				continue // no bid when broken ad markup
 			}
 
