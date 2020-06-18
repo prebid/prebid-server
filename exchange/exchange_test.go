@@ -582,7 +582,15 @@ func TestPanicRecovery(t *testing.T) {
 	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 		panic("panic!")
 	}
-	recovered := e.recoverSafely(panicker, chBids)
+	cleanReqs := map[openrtb_ext.BidderName]*openrtb.BidRequest{
+		"bidder1": {
+			ID: "b-1",
+		},
+		"bidder2": {
+			ID: "b-2",
+		},
+	}
+	recovered := e.recoverSafely(cleanReqs, panicker, chBids)
 	apnLabels := pbsmetrics.AdapterLabels{
 		Source:      pbsmetrics.DemandWeb,
 		RType:       pbsmetrics.ReqTypeORTB2Web,
