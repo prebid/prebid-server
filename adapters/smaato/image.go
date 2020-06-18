@@ -34,7 +34,7 @@ func extractAdmImage(adapterResponseAdm string) (string, error) {
 		var impressionTracker string
 
 		for _, clicktracker := range image.Clicktrackers {
-			clickEvent += "fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'), " +
+			clickEvent += "fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'.replace(/\\+/g, ' ')), " +
 				"{cache: 'no-cache'});"
 		}
 
@@ -43,8 +43,8 @@ func extractAdmImage(adapterResponseAdm string) (string, error) {
 			impressionTracker += fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression)
 		}
 
-		imgMarkup = fmt.Sprintf(`<div onclick="%s"><a href="%s"><img src="%s" width="%d" height="%d"/></a>%s</div>`,
-			clickEvent, image.Img.Ctaurl, image.
+		imgMarkup = fmt.Sprintf(`<div style="cursor:pointer" onclick="%s;window.open(decodeURIComponent('%s'.replace(/\+/g, ' ')));"><img src="%s" width="%d" height="%d"/>%s</div>`,
+			clickEvent, url.QueryEscape(image.Img.Ctaurl), image.
 				Img.URL, image.Img.W, image.Img.
 				H, impressionTracker)
 	}

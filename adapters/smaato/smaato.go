@@ -12,15 +12,15 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+const clientVersion = "prebid_server_0.1"
+
 type smaatoParams openrtb_ext.ExtImpSmaato
 type adMarkupType string
 
 const (
 	smtAdTypeImg       adMarkupType = "Img"
-	smtAdTypeRichmedia              = "Richmedia"
+	smtAdTypeRichmedia adMarkupType = "Richmedia"
 )
-
-const prebidClient string = "prebid_server_0.1"
 
 // SmaatoAdapter describes a Smaato prebid server adapter.
 type SmaatoAdapter struct {
@@ -67,11 +67,11 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		request.Site = &siteCopy
 	}
 
-	//Setting cient info
+	// Setting ext client info
 	type bidRequestExt struct {
-		PrebidClient string `json:"client"`
+		Client string `json:"client"`
 	}
-	request.Ext, _ = json.Marshal(bidRequestExt{PrebidClient: prebidClient})
+	request.Ext, _ = json.Marshal(bidRequestExt{Client: clientVersion})
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
@@ -126,6 +126,7 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 			var markupError error
 			bid.AdM, markupError = renderAdMarkup(getAdMarkupType(response, bid.AdM), bid.AdM)
 			if markupError != nil {
+				fmt.Println(markupError)
 				continue // no bid when broken ad markup
 			}
 

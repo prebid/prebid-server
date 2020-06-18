@@ -42,7 +42,7 @@
             "application/json"
           ]
         },
-        "uri": "https://prebid-test.smaatolabs.net/bidder",
+        "uri": "https://prebid.ad.smaato.net/oapi/prebid",
         "body": {
           "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
           "imp": [
@@ -115,7 +115,7 @@
       "bids": [
         {
           "bid": {
-            "adm": "<div onclick=\"fetch(decodeURIComponent('%2F%2Fprebid-test.smaatolabs.net%2Ftrack%2Fclick%2F1'), {cache: 'no-cache'});fetch(decodeURIComponent('%2F%2Fprebid-test.smaatolabs.net%2Ftrack%2Fclick%2F2'), {cache: 'no-cache'});\"><a href=\"//prebid-test.smaatolabs.net/track/ctaurl/1\"><img src=\"//prebid-test.smaatolabs.net/img/320x50.jpg\" width=\"350\" height=\"50\"/></a><img src=\"//prebid-test.smaatolabs.net/track/imp/1\" alt=\"\" width=\"0\" height=\"0\"/><img src=\"//prebid-test.smaatolabs.net/track/imp/2\" alt=\"\" width=\"0\" height=\"0\"/></div>",
+            "adm": "<div style=\"cursor:pointer\" onclick=\"fetch(decodeURIComponent('%2F%2Fprebid-test.smaatolabs.net%2Ftrack%2Fclick%2F1'.replace(/\\+/g, ' ')), {cache: 'no-cache'});fetch(decodeURIComponent('%2F%2Fprebid-test.smaatolabs.net%2Ftrack%2Fclick%2F2'.replace(/\\+/g, ' ')), {cache: 'no-cache'});;window.open(decodeURIComponent('%2F%2Fprebid-test.smaatolabs.net%2Ftrack%2Fctaurl%2F1'.replace(/\\+/g, ' ')));\"><img src=\"//prebid-test.smaatolabs.net/img/320x50.jpg\" width=\"350\" height=\"50\"/><img src=\"//prebid-test.smaatolabs.net/track/imp/1\" alt=\"\" width=\"0\" height=\"0\"/><img src=\"//prebid-test.smaatolabs.net/track/imp/2\" alt=\"\" width=\"0\" height=\"0\"/></div>",
             "adomain": [
               "smaato.com"
             ],
