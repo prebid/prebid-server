@@ -406,7 +406,7 @@ type httpCallInfo struct {
 
 // This function adds an httptrace.ClientTrace object to the context so, if connection with the bidder
 // endpoint is established, we can keep track of whether the connection was newly created, reused, and
-// even know it was left idle and for how long.
+// even know if it was left idle and for how much time.
 func (bidder *bidderAdapter) AddClientTrace(ctx context.Context) context.Context {
 	trace := &httptrace.ClientTrace{
 		GotConn: func(info httptrace.GotConnInfo) {

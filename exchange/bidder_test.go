@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httptrace"
 	"testing"
 	"time"
 
@@ -15,9 +16,11 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	nativeResponse "github.com/mxmCherry/openrtb/native/response"
@@ -1230,6 +1233,59 @@ func TestSetAssetTypes(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestRecordAdapterConnectionsCall(t *testing.T) {
+	// Setup mock server
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+
+	// declare requestBid parameters
+	bidAdjustment := 2.0
+	mockBidderResponse := &adapters.BidderResponse{
+		Bids: []*adapters.TypedBid{
+			{
+				Bid: &openrtb.Bid{
+					Price: 3.0,
+				},
+				BidType:      openrtb_ext.BidTypeBanner,
+				DealPriority: 4,
+			},
+		},
+	}
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: mockBidderResponse,
+	}
+
+	// Setup mock metrics
+	metrics := &pbsmetrics.MetricsEngineMock{}
+	expectedAdapterName := openrtb_ext.BidderAppnexus
+	expectedConnectionSuccess := true
+	compareConnInfo := func(info httptrace.GotConnInfo) bool { return !info.Reused && !info.WasIdle && info.IdleTime == 0 }
+
+	metrics.On("RecordAdapterConnections", expectedAdapterName, expectedConnectionSuccess, mock.MatchedBy(compareConnInfo)).Once()
+
+	// Run requestBid using an http.Client with a mock handler
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, metrics, openrtb_ext.BidderAppnexus)
+	_, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencies.NewRateConverterDefault().Rates(), &adapters.ExtraRequestInfo{})
+
+	// Assert no errors
+	assert.Equal(t, 0, len(errs), "bidder.requestBid returned errors %v \n", errs)
+
+	// Assert RecordAdapterConnections() was called with the parameters we expected
+	metrics.AssertExpectations(t)
 }
 
 type goodSingleBidder struct {

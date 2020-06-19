@@ -981,7 +981,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 				expectedConnErrorCount:   0,
 				expectedConnReusedCount:  0,
 				expectedConnCreatedCount: 1,
-				expectedConnIdleTime:     1000,
+				expectedConnIdleTime:     1,
 			},
 		},
 		{
@@ -1016,7 +1016,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 				expectedConnErrorCount:   0,
 				expectedConnReusedCount:  1,
 				expectedConnCreatedCount: 0,
-				expectedConnIdleTime:     1000,
+				expectedConnIdleTime:     1,
 			},
 		},
 		{
@@ -1096,7 +1096,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		// Assert idle time if any
 		if test.out.expectedConnIdleTime > 0 {
 			result := getHistogramFromHistogramVec(m.adapterIdleConnectionTime, adapterLabel, string(test.in.adapterName))
-			assertHistogram(t, assertDesciptions[3], result, test.out.expectedConnIdleTime, float64(test.out.expectedConnIdleTime))
+			assertHistogram(t, assertDesciptions[3], result, test.out.expectedConnIdleTime, 1e+09)
 		}
 	}
 }

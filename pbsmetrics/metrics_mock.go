@@ -55,6 +55,7 @@ func (me *MetricsEngineMock) RecordAdapterRequest(labels AdapterLabels) {
 
 // RecordAdapterRequest mock
 func (me *MetricsEngineMock) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo) {
+	me.Called(bidderName, connSuccess, info)
 }
 
 // RecordAdapterBidReceived mock
