@@ -16,7 +16,7 @@ type RequestValidation struct {
 	IPv6PrivateNetworksParsed []net.IPNet
 }
 
-// Parse parses the string representation of the IPv4 and IPv6 private networks as net.IPNet structs, or returns an error if any one is invalid.
+// Parse converts the CIDR representation of the IPv4 and IPv6 private networks as net.IPNet structs, or returns an error if at least one is invalid.
 func (r *RequestValidation) Parse() error {
 	ipv4Nets, err := parseNetworks(r.IPv4PrivateNetworks, net.IPv4len)
 	if err != nil {

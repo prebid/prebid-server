@@ -117,6 +117,7 @@ account_required: true
 certificates_file: /etc/ssl/cert.pem
 request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
+    ipv6_private_networks: ["1111::/16", "2222::/16"]
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -288,6 +289,8 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
 	cmpStrings(t, "request_validation.ipv4_private_networks", cfg.RequestValidation.IPv4PrivateNetworks[0], "1.1.1.0/24")
+	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[0], "1111::/16")
+	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {

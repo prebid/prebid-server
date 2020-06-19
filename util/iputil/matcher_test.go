@@ -11,8 +11,8 @@ func TestPublicNetworkIPMatcher(t *testing.T) {
 	ipv4Network1 := net.IPNet{IP: net.ParseIP("1.0.0.0"), Mask: net.IPMask{255, 0, 0, 0}}
 	ipv4Network2 := net.IPNet{IP: net.ParseIP("2.0.0.0"), Mask: net.IPMask{255, 0, 0, 0}}
 
-	ipv6Network1 := net.IPNet{IP: net.ParseIP("0300::"), Mask: net.IPMask{255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
-	ipv6Network2 := net.IPNet{IP: net.ParseIP("0400::"), Mask: net.IPMask{255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+	ipv6Network1 := net.IPNet{IP: net.ParseIP("3300::"), Mask: net.IPMask{255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+	ipv6Network2 := net.IPNet{IP: net.ParseIP("4400::"), Mask: net.IPMask{255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 
 	testCases := []struct {
 		description         string
@@ -64,7 +64,7 @@ func TestPublicNetworkIPMatcher(t *testing.T) {
 		},
 		{
 			description:         "IPv6 - Public - None",
-			ip:                  net.ParseIP("0303::"),
+			ip:                  net.ParseIP("3333::"),
 			ver:                 IPv6,
 			ipv4PrivateNetworks: []net.IPNet{},
 			ipv6PrivateNetworks: []net.IPNet{},
@@ -72,7 +72,7 @@ func TestPublicNetworkIPMatcher(t *testing.T) {
 		},
 		{
 			description:         "IPv6 - Public - One",
-			ip:                  net.ParseIP("0404::"),
+			ip:                  net.ParseIP("4444::"),
 			ver:                 IPv6,
 			ipv4PrivateNetworks: []net.IPNet{},
 			ipv6PrivateNetworks: []net.IPNet{ipv6Network1},
@@ -80,7 +80,7 @@ func TestPublicNetworkIPMatcher(t *testing.T) {
 		},
 		{
 			description:         "IPv6 - Public - Many",
-			ip:                  net.ParseIP("0505::"),
+			ip:                  net.ParseIP("5555::"),
 			ver:                 IPv6,
 			ipv4PrivateNetworks: []net.IPNet{},
 			ipv6PrivateNetworks: []net.IPNet{ipv6Network1, ipv6Network2},
@@ -88,7 +88,7 @@ func TestPublicNetworkIPMatcher(t *testing.T) {
 		},
 		{
 			description:         "IPv6 - Private - One",
-			ip:                  net.ParseIP("0303::"),
+			ip:                  net.ParseIP("3333::"),
 			ver:                 IPv6,
 			ipv4PrivateNetworks: []net.IPNet{},
 			ipv6PrivateNetworks: []net.IPNet{ipv6Network1},
@@ -96,7 +96,7 @@ func TestPublicNetworkIPMatcher(t *testing.T) {
 		},
 		{
 			description:         "IPv6 - Private - Many",
-			ip:                  net.ParseIP("0404::"),
+			ip:                  net.ParseIP("4444::"),
 			ver:                 IPv6,
 			ipv4PrivateNetworks: []net.IPNet{},
 			ipv6PrivateNetworks: []net.IPNet{ipv6Network1, ipv6Network2},
@@ -104,7 +104,7 @@ func TestPublicNetworkIPMatcher(t *testing.T) {
 		},
 		{
 			description:         "Mixed - Unknown",
-			ip:                  nil,
+			ip:                  net.ParseIP("3.3.3.3"),
 			ver:                 IPvUnknown,
 			ipv4PrivateNetworks: []net.IPNet{ipv4Network1, ipv4Network1},
 			ipv6PrivateNetworks: []net.IPNet{ipv6Network1, ipv6Network2},
@@ -120,7 +120,7 @@ func TestPublicNetworkIPMatcher(t *testing.T) {
 		},
 		{
 			description:         "Mixed - Public - IPv6",
-			ip:                  net.ParseIP("0505::"),
+			ip:                  net.ParseIP("5555::"),
 			ver:                 IPv6,
 			ipv4PrivateNetworks: []net.IPNet{ipv4Network1, ipv4Network1},
 			ipv6PrivateNetworks: []net.IPNet{ipv6Network1, ipv6Network2},
@@ -136,7 +136,7 @@ func TestPublicNetworkIPMatcher(t *testing.T) {
 		},
 		{
 			description:         "Mixed - Private - IPv6",
-			ip:                  net.ParseIP("0303::"),
+			ip:                  net.ParseIP("3333::"),
 			ver:                 IPv6,
 			ipv4PrivateNetworks: []net.IPNet{ipv4Network1, ipv4Network1},
 			ipv6PrivateNetworks: []net.IPNet{ipv6Network1, ipv6Network2},
@@ -197,7 +197,7 @@ func TestVersionIPMatcher(t *testing.T) {
 		{
 			description:    "IPv6",
 			matcherVersion: IPv6,
-			ip:             net.ParseIP("0101::"),
+			ip:             net.ParseIP("1111::"),
 			ipVer:          IPv6,
 			expectedMatch:  true,
 		},

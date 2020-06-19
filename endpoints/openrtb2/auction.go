@@ -1147,19 +1147,20 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 	return string(value), true, nil
 }
 
-// todo: pass down non-local validator service
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
 func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, ipMatcher iputil.IPMatcher) {
-	if bidReq.Device == nil {
-		bidReq.Device = &openrtb.Device{}
-	}
-
-	if bidReq.Device.IP == "" && bidReq.Device.IPv6 == "" {
+	if bidReq.Device == nil || (bidReq.Device.IP == "" && bidReq.Device.IPv6 == "") {
 		if ip, ver := httputil.FindIP(httpReq, ipMatcher); ip != nil {
 			switch ver {
 			case iputil.IPv4:
+				if bidReq.Device == nil {
+					bidReq.Device = &openrtb.Device{}
+				}
 				bidReq.Device.IP = ip.String()
 			case iputil.IPv6:
+				if bidReq.Device == nil {
+					bidReq.Device = &openrtb.Device{}
+				}
 				bidReq.Device.IPv6 = ip.String()
 			}
 		}

@@ -657,7 +657,7 @@ func TestStoredRequests(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	edep := &endpointDeps{
+	deps := &endpointDeps{
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -676,7 +676,7 @@ func TestStoredRequests(t *testing.T) {
 	}
 
 	for i, requestData := range testStoredRequests {
-		newRequest, errList := edep.processStoredRequests(context.Background(), json.RawMessage(requestData))
+		newRequest, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
