@@ -195,10 +195,10 @@ func (me *MultiMetricsEngine) RecordTimeoutNotice(success bool) {
 	}
 }
 
-// RecordTCF across all engines
-func (me *MultiMetricsEngine) RecordTCF(version int) {
+// RecordTCFReq across all engines
+func (me *MultiMetricsEngine) RecordTCFReq(version int) {
 	for _, thisME := range *me {
-		thisME.RecordTCF(version)
+		thisME.RecordTCFReq(version)
 	}
 }
 
@@ -281,6 +281,6 @@ func (me *DummyMetricsEngine) RecordRequestQueueTime(success bool, requestType p
 func (me *DummyMetricsEngine) RecordTimeoutNotice(success bool) {
 }
 
-// RecordTCF as a noop
-func (me *DummyMetricsEngine) RecordTCF(version int) {
+// RecordReq as a noop
+func (me *DummyMetricsEngine) RecordTCFReq(version int) {
 }

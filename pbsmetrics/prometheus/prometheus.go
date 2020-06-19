@@ -88,6 +88,11 @@ const (
 	requestFailed     = "failed"
 )
 
+const (
+	sourceLabel   = "source"
+	sourceRequest = "request"
+)
+
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
 func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	requestTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
@@ -164,7 +169,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	metrics.tcfMetrics = newCounter(cfg, metrics.Registry,
 		"privacy_tcf",
 		"Count of TCF versions for requests under GDPR.",
-		[]string{versionLabel})
+		[]string{versionLabel, sourceLabel})
 
 	metrics.adapterBids = newCounter(cfg, metrics.Registry,
 		"adapter_bids",
@@ -430,12 +435,13 @@ func (m *Metrics) RecordTimeoutNotice(success bool) {
 	}
 }
 
-func (m *Metrics) RecordTCF(version int) {
+func (m *Metrics) RecordTCFReq(version int) {
 	var value string = "err"
 	if version > 0 {
 		value = fmt.Sprintf("v%d", version)
 	}
 	m.tcfMetrics.With(prometheus.Labels{
 		versionLabel: value,
+		sourceLabel:  sourceRequest,
 	}).Inc()
 }

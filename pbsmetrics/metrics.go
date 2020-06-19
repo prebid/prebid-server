@@ -276,5 +276,5 @@ type MetricsEngine interface {
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(sucess bool)
-	RecordTCF(version int)
+	RecordTCFReq(version int)
 }

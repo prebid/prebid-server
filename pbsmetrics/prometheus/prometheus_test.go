@@ -947,27 +947,30 @@ func TestTimeoutNotifications(t *testing.T) {
 func TestTCFMetrics(t *testing.T) {
 	m := createMetricsForTesting()
 
-	m.RecordTCF(0)
-	m.RecordTCF(1)
-	m.RecordTCF(2)
-	m.RecordTCF(1)
+	m.RecordTCFReq(0)
+	m.RecordTCFReq(1)
+	m.RecordTCFReq(2)
+	m.RecordTCFReq(1)
 
 	assertCounterVecValue(t, "", "privacy_tcf:err", m.tcfMetrics,
 		float64(1),
 		prometheus.Labels{
 			versionLabel: "err",
+			sourceLabel:  sourceRequest,
 		})
 
 	assertCounterVecValue(t, "", "privacy_tcf:v1", m.tcfMetrics,
 		float64(2),
 		prometheus.Labels{
 			versionLabel: "v1",
+			sourceLabel:  sourceRequest,
 		})
 
 	assertCounterVecValue(t, "", "privacy_tcf:v2", m.tcfMetrics,
 		float64(1),
 		prometheus.Labels{
 			versionLabel: "v2",
+			sourceLabel:  sourceRequest,
 		})
 }
 

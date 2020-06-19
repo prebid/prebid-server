@@ -25,7 +25,7 @@ type cleanMetrics struct {
 	// A simple flag if GDPR is being enforced on this request.
 	gdprEnforced bool
 	// a zero value means a missing or invalid GDPR string
-	tcfVersion int
+	gdprTcfVersion int
 }
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
@@ -79,14 +79,13 @@ func cleanOpenRTBRequests(ctx context.Context,
 		cleanMetrics.gdprEnforced = true
 		parsedConsent, err := vendorconsent.ParseString(consent)
 		if err == nil {
-			cleanMetrics.tcfVersion = int(parsedConsent.Version())
+			cleanMetrics.gdprTcfVersion = int(parsedConsent.Version())
 		}
 	}
 	// bidder level privacy policies
 	for bidder, bidReq := range requestsByBidder {
 
 		if gdpr == 1 {
-			cleanMetrics.gdprEnforced = true
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
 			var publisherID = labels.PubID
