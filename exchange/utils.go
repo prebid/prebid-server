@@ -49,6 +49,11 @@ func cleanOpenRTBRequests(ctx context.Context,
 		COPPA: orig.Regs != nil && orig.Regs.COPPA == 1,
 	}
 
+	// foo (99) -> appnexus (99)
+	// nosale: [foo]
+
+	// different seats on a bidder to have different nosale statuses
+
 	if enforceCCPA {
 		ccpaPolicy, _ := ccpa.ReadPolicy(orig)
 		privacyEnforcement.CCPA = ccpaPolicy.ShouldEnforce()

@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"net"
 	"net/url"
 	"reflect"
 	"strings"
@@ -235,45 +234,6 @@ type RequestTimeoutHeaders struct {
 	RequestTimeoutInQueue string `mapstructure:"request_timeout_in_queue"`
 }
 
-// RequestValidation specifies the request validation options.
-type RequestValidation struct {
-	PrivateIPNetworks       []string `mapstructure:"private_ip_networks,flow"`
-	PrivateIPNetworksParsed []*net.IPNet
-}
-
-func (r *RequestValidation) parse() error {
-	ipNets := make([]*net.IPNet, 0, len(r.PrivateIPNetworks))
-	invalidMsg := strings.Builder{}
-
-	for _, v := range r.PrivateIPNetworks {
-		v := strings.TrimSpace(v)
-
-		if _, ipNet, err := net.ParseCIDR(v); err != nil {
-			fmt.Fprintf(&invalidMsg, "'%s', ", v)
-		} else {
-			ipNets = append(ipNets, ipNet)
-		}
-	}
-
-	if invalidMsg.Len() > 0 {
-		msg := invalidMsg.String()[:invalidMsg.Len()-2]
-		return fmt.Errorf("Invalid private IP networks: %v", msg)
-	}
-
-	r.PrivateIPNetworksParsed = ipNets
-	return nil
-}
-
-func (r *RequestValidation) IsPublicNetwork(ip net.IP) bool {
-	for _, ipNet := range r.PrivateIPNetworksParsed {
-		if ipNet.Contains(ip) {
-			return false
-		}
-	}
-
-	return true
-}
-
 const (
 	dummyHost        string = "dummyhost.com"
 	dummyPublisherID string = "12"
@@ -500,7 +460,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 	}
 	c.setDerivedDefaults()
 
-	if err := c.RequestValidation.parse(); err != nil {
+	if err := c.RequestValidation.Parse(); err != nil {
 		return nil, err
 	}
 

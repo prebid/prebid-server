@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -34,6 +33,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
+	"github.com/prebid/prebid-server/util/iputil"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -44,7 +44,13 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
+
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
+
+	ipMatcher := iputil.PublicNetworkIPMatcher{
+		IPv4PrivateNetworks: cfg.RequestValidation.IPv4PrivateNetworksParsed,
+		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
+	}
 
 	return httprouter.Handle((&endpointDeps{
 		ex,
@@ -60,24 +66,26 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 		defReqJSON,
 		bidderMap,
 		nil,
-		nil}).Auction), nil
+		nil,
+		ipMatcher}).Auction), nil
 }
 
 type endpointDeps struct {
-	ex               exchange.Exchange
-	paramsValidator  openrtb_ext.BidderParamValidator
-	storedReqFetcher stored_requests.Fetcher
-	videoFetcher     stored_requests.Fetcher
-	categories       stored_requests.CategoryFetcher
-	cfg              *config.Configuration
-	metricsEngine    pbsmetrics.MetricsEngine
-	analytics        analytics.PBSAnalyticsModule
-	disabledBidders  map[string]string
-	defaultRequest   bool
-	defReqJSON       []byte
-	bidderMap        map[string]openrtb_ext.BidderName
-	cache            prebid_cache_client.Client
-	debugLogRegexp   *regexp.Regexp
+	ex                      exchange.Exchange
+	paramsValidator         openrtb_ext.BidderParamValidator
+	storedReqFetcher        stored_requests.Fetcher
+	videoFetcher            stored_requests.Fetcher
+	categories              stored_requests.CategoryFetcher
+	cfg                     *config.Configuration
+	metricsEngine           pbsmetrics.MetricsEngine
+	analytics               analytics.PBSAnalyticsModule
+	disabledBidders         map[string]string
+	defaultRequest          bool
+	defReqJSON              []byte
+	bidderMap               map[string]openrtb_ext.BidderName
+	cache                   prebid_cache_client.Client
+	debugLogRegexp          *regexp.Regexp
+	privateNetworkIPMatcher iputil.IPMatcher
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -227,8 +235,6 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
-	deps.sanitizeRequest(req)
-
 	errL := deps.validateRequest(req)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
@@ -250,24 +256,6 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 		}
 	}
 	return defaultTimeout
-}
-
-func (deps *endpointDeps) sanitizeRequest(req *openrtb.BidRequest) {
-	isPublicNetwork := deps.cfg.RequestValidation.IsPublicNetwork
-
-	if req.Device != nil {
-		if req.Device.IP != "" {
-			if ip := net.ParseIP(req.Device.IP); ip == nil || ip.To4() == nil || !isPublicNetwork(ip) {
-				req.Device.IP = ""
-			}
-		}
-
-		if req.Device.IPv6 != "" {
-			if ip := net.ParseIP(req.Device.IPv6); ip == nil || ip.To4() != nil || !isPublicNetwork(ip) {
-				req.Device.IPv6 = ""
-			}
-		}
-	}
 }
 
 func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
@@ -928,13 +916,27 @@ func validateRegs(regs *openrtb.Regs) error {
 	return nil
 }
 
+func sanitizeRequest(r *openrtb.BidRequest, ipMatcher iputil.IPMatcher) {
+	if r.Device != nil {
+		if ip, ver := iputil.ParseIP(r.Device.IP); ip == nil || ver != iputil.IPv4 || !ipMatcher.Match(ip, ver) {
+			r.Device.IP = ""
+		}
+
+		if ip, ver := iputil.ParseIP(r.Device.IPv6); ip == nil || ver != iputil.IPv6 || !ipMatcher.Match(ip, ver) {
+			r.Device.IPv6 = ""
+		}
+	}
+}
+
 // setFieldsImplicitly uses _implicit_ information from the httpReq to set values on bidReq.
 // This function does not consume the request body, which was set explicitly, but infers certain
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
 func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	setDeviceImplicitly(httpReq, bidReq, deps.cfg.RequestValidation)
+	sanitizeRequest(bidReq, deps.privateNetworkIPMatcher)
+
+	setDeviceImplicitly(httpReq, bidReq, deps.privateNetworkIPMatcher)
 
 	// Per the OpenRTB spec: A bid request must not contain both a Site and an App object.
 	if bidReq.App == nil {
@@ -946,8 +948,8 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
-func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, cfg config.RequestValidation) {
-	setIPImplicitly(httpReq, bidReq, cfg)
+func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, ipMatcher iputil.IPMatcher) {
+	setIPImplicitly(httpReq, bidReq, ipMatcher)
 	setUAImplicitly(httpReq, bidReq)
 }
 
@@ -1147,16 +1149,17 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 
 // todo: pass down non-local validator service
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
-func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, cfg config.RequestValidation) {
+func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, ipMatcher iputil.IPMatcher) {
 	if bidReq.Device == nil {
 		bidReq.Device = &openrtb.Device{}
 	}
 
 	if bidReq.Device.IP == "" && bidReq.Device.IPv6 == "" {
-		if ip := httputil.FindIP(httpReq, cfg.IsPublicNetwork); ip != nil {
-			if ip4 := ip.To4(); len(ip4) == net.IPv4len {
-				bidReq.Device.IP = ip4.String()
-			} else if len(ip) == net.IPv6len {
+		if ip, ver := httputil.FindIP(httpReq, ipMatcher); ip != nil {
+			switch ver {
+			case iputil.IPv4:
+				bidReq.Device.IP = ip.String()
+			case iputil.IPv6:
 				bidReq.Device.IPv6 = ip.String()
 			}
 		}
