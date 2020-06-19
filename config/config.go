@@ -826,8 +826,23 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")
 
+	/* IPv4
+	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+	/*  Link Local: 169.254.0.0/16
+	/*  Loopback:   127.0.0.0/8
+	/*
+	/* IPv6
+	/*  Loopback:     ::1/128
+	/*  Unique Local: fc00::/7
+	/*  Link Local:   fe80::/10
+	/*  Multicast:    ff00::/8
+	*/
+	v.SetDefault("request_validation.ipv4_private_networks", []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8"})
+	v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8"})
+
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.SetTypeByDefaultValue(true)
 	v.SetEnvPrefix("PBS")
 	v.AutomaticEnv()
 	v.ReadInConfig()
