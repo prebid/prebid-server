@@ -581,7 +581,15 @@ func TestPanicRecovery(t *testing.T) {
 	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 		panic("panic!")
 	}
-	recovered := e.recoverSafely(panicker, chBids)
+	cleanReqs := map[openrtb_ext.BidderName]*openrtb.BidRequest{
+		"bidder1": {
+			ID: "b-1",
+		},
+		"bidder2": {
+			ID: "b-2",
+		},
+	}
+	recovered := e.recoverSafely(cleanReqs, panicker, chBids)
 	apnLabels := pbsmetrics.AdapterLabels{
 		Source:      pbsmetrics.DemandWeb,
 		RType:       pbsmetrics.ReqTypeORTB2Web,
@@ -730,7 +738,17 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if len(errs) != 0 {
 		t.Fatalf("%s: Failed to parse aliases", filename)
 	}
-	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, spec.EnforceCCPA)
+
+	privacyConfig := config.Privacy{
+		CCPA: config.CCPA{
+			Enforce: spec.EnforceCCPA,
+		},
+		LMT: config.LMT{
+			Enforce: spec.EnforceLMT,
+		},
+	}
+
+	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig)
 	biddersInAuction := findBiddersInAuction(t, filename, &spec.IncomingRequest.OrtbRequest)
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
@@ -815,7 +833,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb.BidResponse
 	}
 }
 
-func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, enforceCCPA bool) Exchange {
+func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy) Exchange {
 	adapters := make(map[openrtb_ext.BidderName]adaptedBidder)
 	for _, bidderName := range openrtb_ext.BidderMap {
 		if spec, ok := expectations[string(bidderName)]; ok {
@@ -853,7 +871,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		gDPR:                gdpr.AlwaysAllow{},
 		currencyConverter:   currencies.NewRateConverterDefault(),
 		UsersyncIfAmbiguous: false,
-		enforceCCPA:         enforceCCPA,
+		privacyConfig:       privacyConfig,
 	}
 }
 
@@ -1619,6 +1637,7 @@ type exchangeSpec struct {
 	OutgoingRequests map[string]*bidderSpec `json:"outgoingRequests"`
 	Response         exchangeResponse       `json:"response,omitempty"`
 	EnforceCCPA      bool                   `json:"enforceCcpa"`
+	EnforceLMT       bool                   `json:"enforceLmt"`
 	DebugLog         *DebugLog              `json:"debuglog,omitempty"`
 }
 

@@ -226,7 +226,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	deps.setFieldsImplicitly(r, bidReq) // move after merge
 
 	errL = deps.validateRequest(bidReq)
-	if len(errL) > 0 {
+	if errortypes.ContainsFatalError(errL) {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
@@ -254,7 +254,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
-		errL = append(errL, acctIdErr)
+		errL := []error{err}
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}

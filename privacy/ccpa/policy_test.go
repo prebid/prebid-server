@@ -113,6 +113,48 @@ func TestWrite(t *testing.T) {
 			expected:    &openrtb.BidRequest{},
 		},
 		{
+			description: "Disabled - Nil Request",
+			policy:      Policy{Value: ""},
+			request:     nil,
+			expected:    nil,
+		},
+		{
+			description: "Disabled - Empty Regs.Ext",
+			policy:      Policy{Value: ""},
+			request:     &openrtb.BidRequest{Regs: &openrtb.Regs{}},
+			expected:    &openrtb.BidRequest{Regs: &openrtb.Regs{}},
+		},
+		{
+			description: "Disabled - Remove From Request",
+			policy:      Policy{Value: ""},
+			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"us_privacy":"toBeRemoved"}`)}},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{}},
+		},
+		{
+			description: "Disabled - Remove From Request, Leave Other req Values",
+			policy:      Policy{Value: ""},
+			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				COPPA: 42,
+				Ext:   json.RawMessage(`{"us_privacy":"toBeRemoved"}`)}},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				COPPA: 42}},
+		},
+		{
+			description: "Disabled - Remove From Request, Leave Other req.ext Values",
+			policy:      Policy{Value: ""},
+			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"existing":"any","us_privacy":"toBeRemoved"}`)}},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"existing":"any"}`)}},
+		},
+		{
+			description: "Enabled - Nil Request",
+			policy:      Policy{Value: "anyValue"},
+			request:     nil,
+			expected:    nil,
+		},
+		{
 			description: "Enabled With Nil Request Regs Object",
 			policy:      Policy{Value: "anyValue"},
 			request:     &openrtb.BidRequest{},

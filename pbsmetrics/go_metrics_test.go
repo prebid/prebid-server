@@ -53,6 +53,9 @@ func TestNewMetrics(t *testing.T) {
 
 	ensureContains(t, registry, "queued_requests.video.rejected", m.RequestsQueueTimer[ReqTypeVideo][false])
 	ensureContains(t, registry, "queued_requests.video.accepted", m.RequestsQueueTimer[ReqTypeVideo][true])
+
+	ensureContains(t, registry, "timeout_notification.ok", m.TimeoutNotificationSuccess)
+	ensureContains(t, registry, "timeout_notification.failed", m.TimeoutNotificationFailure)
 }
 
 func TestRecordBidType(t *testing.T) {

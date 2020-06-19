@@ -317,12 +317,16 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		return errL
 	}
 
-	if policy, err := ccpa.ReadPolicy(req); err == nil {
-		if err := policy.Validate(); err != nil {
-			errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("CCPA value is invalid and will be ignored. (%s)", err.Error())})
+	if policy, err := ccpa.ReadPolicy(req); err != nil {
+		errL = append(errL, errL...)
+		return errL
+	} else if err := policy.Validate(); err != nil {
+		errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
+
+		policy.Value = ""
+		if err := policy.Write(req); err != nil {
+			errL = append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
 		}
-	} else {
-		errL = append(errL, err)
 	}
 
 	impIDs := make(map[string]int, len(req.Imp))

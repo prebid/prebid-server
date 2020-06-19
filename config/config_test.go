@@ -43,6 +43,8 @@ gdpr:
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
 ccpa:
   enforce: true
+lmt:
+  enforce: true
 host_cookie:
   cookie_name: userid
   family: prebid
@@ -243,6 +245,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, false)
 
 	cmpBools(t, "ccpa.enforce", cfg.CCPA.Enforce, true)
+	cmpBools(t, "lmt.enforce", cfg.LMT.Enforce, true)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[0], "spamAppID")
@@ -470,6 +473,14 @@ func TestNewCallsRequestValidation(t *testing.T) {
 			assert.Error(t, resultErr, test.description+":err")
 		}
 	}
+}
+
+func TestValidateDebug(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.Debug.TimeoutNotification.SamplingRate = 1.1
+
+	err := cfg.validate()
+	assert.NotNil(t, err, "cfg.debug.timeout_notification.sampling_rate should not be allowed to be greater than 1.0, but it was allowed")
 }
 
 func newDefaultConfig(t *testing.T) *Configuration {

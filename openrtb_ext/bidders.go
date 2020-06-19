@@ -33,12 +33,14 @@ const (
 	BidderAdpone           BidderName = "adpone"
 	BidderAdmixer          BidderName = "admixer"
 	BidderAdOcean          BidderName = "adocean"
+	BidderAdtarget         BidderName = "adtarget"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
 	BidderAJA              BidderName = "aja"
 	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
 	BidderAdoppler         BidderName = "adoppler"
+	BidderAvocet           BidderName = "avocet"
 	BidderBeachfront       BidderName = "beachfront"
 	BidderBeintoo          BidderName = "beintoo"
 	BidderBrightroll       BidderName = "brightroll"
@@ -110,12 +112,14 @@ var BidderMap = map[string]BidderName{
 	"admixer":           BidderAdmixer,
 	"adocean":           BidderAdOcean,
 	"adpone":            BidderAdpone,
+	"adtarget":          BidderAdtarget,
 	"adtelligent":       BidderAdtelligent,
 	"advangelists":      BidderAdvangelists,
 	"aja":               BidderAJA,
 	"applogy":           BidderApplogy,
 	"appnexus":          BidderAppnexus,
 	"adoppler":          BidderAdoppler,
+	"avocet":            BidderAvocet,
 	"beachfront":        BidderBeachfront,
 	"beintoo":           BidderBeintoo,
 	"brightroll":        BidderBrightroll,
