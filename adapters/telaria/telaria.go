@@ -215,8 +215,10 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 
 	// Add the Extra from Imp to the top level Ext
 	if telariaImpExt != nil && telariaImpExt.Extra != nil {
-		// ignore the error because these params are optional
-		request.Ext, _ = json.Marshal(&telariaBidExt{Extra: telariaImpExt.Extra})
+		request.Ext, err = json.Marshal(&telariaBidExt{Extra: telariaImpExt.Extra})
+		if err != nil {
+			errors = append(errors, err)
+		}
 	}
 
 	if len(errors) > 0 {
