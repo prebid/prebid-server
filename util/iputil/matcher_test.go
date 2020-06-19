@@ -8,11 +8,11 @@ import (
 )
 
 func TestPublicNetworkIPMatcher(t *testing.T) {
-	ipv4Network1 := net.IPNet{IP: net.ParseIP("1.0.0.0"), Mask: net.IPMask{255, 0, 0, 0}}
-	ipv4Network2 := net.IPNet{IP: net.ParseIP("2.0.0.0"), Mask: net.IPMask{255, 0, 0, 0}}
+	ipv4Network1 := net.IPNet{IP: net.ParseIP("1.0.0.0"), Mask: net.CIDRMask(8, 32)}
+	ipv4Network2 := net.IPNet{IP: net.ParseIP("2.0.0.0"), Mask: net.CIDRMask(8, 32)}
 
-	ipv6Network1 := net.IPNet{IP: net.ParseIP("3300::"), Mask: net.IPMask{255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
-	ipv6Network2 := net.IPNet{IP: net.ParseIP("4400::"), Mask: net.IPMask{255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+	ipv6Network1 := net.IPNet{IP: net.ParseIP("3300::"), Mask: net.CIDRMask(8, 128)}
+	ipv6Network2 := net.IPNet{IP: net.ParseIP("4400::"), Mask: net.CIDRMask(8, 128)}
 
 	testCases := []struct {
 		description         string
@@ -146,16 +146,16 @@ func TestPublicNetworkIPMatcher(t *testing.T) {
 			description:         "Mixed - Public - IPv6 Encoded IPv4",
 			ip:                  net.ParseIP("::FFFF:1.1.1.1"),
 			ver:                 IPv6,
-			ipv4PrivateNetworks: []net.IPNet{{IP: net.ParseIP("1.0.0.0"), Mask: net.IPMask{255, 0, 0, 0}}},
-			ipv6PrivateNetworks: []net.IPNet{{IP: net.ParseIP("::FFFF:2.0.0.0"), Mask: net.IPMask{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0}}},
+			ipv4PrivateNetworks: []net.IPNet{{IP: net.ParseIP("1.0.0.0"), Mask: net.CIDRMask(8, 32)}},
+			ipv6PrivateNetworks: []net.IPNet{{IP: net.ParseIP("::FFFF:2.0.0.0"), Mask: net.CIDRMask(108, 128)}},
 			expected:            true,
 		},
 		{
 			description:         "Mixed - Private - IPv6 Encoded IPv4",
 			ip:                  net.ParseIP("::FFFF:2.2.2.2"),
 			ver:                 IPv6,
-			ipv4PrivateNetworks: []net.IPNet{{IP: net.ParseIP("1.0.0.0"), Mask: net.IPMask{255, 0, 0, 0}}},
-			ipv6PrivateNetworks: []net.IPNet{{IP: net.ParseIP("::FFFF:2.0.0.0"), Mask: net.IPMask{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0}}},
+			ipv4PrivateNetworks: []net.IPNet{{IP: net.ParseIP("1.0.0.0"), Mask: net.CIDRMask(8, 32)}},
+			ipv6PrivateNetworks: []net.IPNet{{IP: net.ParseIP("::FFFF:2.0.0.0"), Mask: net.CIDRMask(108, 128)}},
 			expected:            false,
 		},
 	}
