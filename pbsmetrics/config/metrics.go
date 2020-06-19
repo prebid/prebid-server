@@ -120,9 +120,9 @@ func (me *MultiMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabe
 }
 
 // RecordAdapterConnections across all engines
-func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo) {
+func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordAdapterConnections(bidderName, connSuccess, info)
+		thisME.RecordAdapterConnections(bidderName, connSuccess, info, obtainConnectionTime)
 	}
 }
 
@@ -239,7 +239,7 @@ func (me *DummyMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabe
 }
 
 // RecordAdapterConnections as a noop
-func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo) {
+func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
 }
 
 // RecordAdapterBidReceived as a noop

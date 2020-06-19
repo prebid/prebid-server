@@ -1274,8 +1274,9 @@ func TestRecordAdapterConnectionsCall(t *testing.T) {
 	expectedAdapterName := openrtb_ext.BidderAppnexus
 	expectedConnectionSuccess := true
 	compareConnInfo := func(info httptrace.GotConnInfo) bool { return !info.Reused && !info.WasIdle && info.IdleTime == 0 }
+	compareConnWaitTime := func(dur time.Duration) bool { return dur.Nanoseconds() > 0 }
 
-	metrics.On("RecordAdapterConnections", expectedAdapterName, expectedConnectionSuccess, mock.MatchedBy(compareConnInfo)).Once()
+	metrics.On("RecordAdapterConnections", expectedAdapterName, expectedConnectionSuccess, mock.MatchedBy(compareConnInfo), mock.MatchedBy(compareConnWaitTime)).Once()
 
 	// Run requestBid using an http.Client with a mock handler
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, metrics, openrtb_ext.BidderAppnexus)

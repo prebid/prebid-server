@@ -78,7 +78,8 @@ type AdapterMetrics struct {
 	ConnCreated       metrics.Counter
 	ConnReused        metrics.Counter
 	ConnWasIdle       metrics.Counter
-	ConnIdleTime      metrics.Histogram
+	ConnIdleTime      metrics.Timer
+	ConnWaitTime      metrics.Timer
 }
 
 type MarkupDeliveryMetrics struct {
@@ -243,7 +244,8 @@ func makeBlankAdapterMetrics() *AdapterMetrics {
 		ConnError:         metrics.NilCounter{},
 		ConnCreated:       metrics.NilCounter{},
 		ConnReused:        metrics.NilCounter{},
-		ConnIdleTime:      &metrics.NilHistogram{},
+		ConnIdleTime:      &metrics.NilTimer{},
+		ConnWaitTime:      &metrics.NilTimer{},
 	}
 	for _, err := range AdapterErrors() {
 		newAdapter.ErrorMeters[err] = blankMeter
@@ -282,7 +284,8 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.ConnError = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_error", adapterOrAccount, exchange), registry)
 	am.ConnCreated = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_created", adapterOrAccount, exchange), registry)
 	am.ConnReused = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_reused", adapterOrAccount, exchange), registry)
-	am.ConnIdleTime = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.connection_idle_time", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
+	am.ConnIdleTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_idle_time", adapterOrAccount, exchange), registry)
+	am.ConnWaitTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_wait_time", adapterOrAccount, exchange), registry)
 	for err := range am.ErrorMeters {
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
@@ -453,23 +456,28 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 	}
 }
 
-func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo) {
+func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
+	connSuccess bool,
+	info httptrace.GotConnInfo,
+	obtainConnectionTime time.Duration) {
+
 	am, ok := me.AdapterMetrics[adapterName]
 	if !ok {
 		glog.Errorf("Trying to log adapter connection metrics for %s: adapter metrics not found", string(adapterName))
 		return
 	}
 
-	if !connSuccess {
-		am.ConnError.Inc(1)
-	} else {
+	if connSuccess {
 		if info.Reused {
 			am.ConnReused.Inc(1)
 		} else {
 			am.ConnCreated.Inc(1)
 		}
-		am.ConnIdleTime.Update(info.IdleTime.Milliseconds())
+		am.ConnIdleTime.Update(info.IdleTime)
+	} else {
+		am.ConnError.Inc(1)
 	}
+	am.ConnWaitTime.Update(obtainConnectionTime)
 }
 
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.

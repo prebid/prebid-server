@@ -30,6 +30,7 @@ type Metrics struct {
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
 	timeout_notifications        *prometheus.CounterVec
+	DnsLookupWaitTime            *prometheus.Histogram
 
 	// Adapter Metrics
 	adapterBids               *prometheus.CounterVec
@@ -38,12 +39,13 @@ type Metrics struct {
 	adapterPanics             *prometheus.CounterVec
 	adapterPrices             *prometheus.HistogramVec
 	adapterRequests           *prometheus.CounterVec
+	adapterRequestsTimer      *prometheus.HistogramVec
+	adapterUserSync           *prometheus.CounterVec
 	adapterFailedConnections  *prometheus.CounterVec
 	adapterReusedConnections  *prometheus.CounterVec
 	adapterCreatedConnections *prometheus.CounterVec
 	adapterIdleConnectionTime *prometheus.HistogramVec
-	adapterRequestsTimer      *prometheus.HistogramVec
-	adapterUserSync           *prometheus.CounterVec
+	adapterConnectionWaitTime *prometheus.HistogramVec
 
 	// Account Metrics
 	accountRequests *prometheus.CounterVec
@@ -215,10 +217,23 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 
 	metrics.adapterIdleConnectionTime = newHistogram(cfg, metrics.Registry,
 		"adapter_idle_connection_time",
-		"Seconds that a connections to adapter bidder endpoints were kept idle.",
+		"Seconds that a connection to an adapter bidder endpoint was kept idle.",
 		[]string{adapterLabel},
 		requestTimeBuckets)
 
+	metrics.adapterConnectionWaitTime = newHistogram(cfg, metrics.Registry,
+		"adapter_connection_wait",
+		"Seconds from when the connection was requested until it is either created or reused",
+		[]string{adapterLabel},
+		requestTimeBuckets)
+
+	/* create single histogram
+	metrics.DnsLookupWaitTime = newHistogram(cfg, metrics.Registry,
+		"adapter_connection_wait",
+		"Seconds from when the connection was requested until it is either created or reused",
+		[]string{adapterLabel},
+		requestTimeBuckets)
+	*/
 	metrics.adapterRequestsTimer = newHistogram(cfg, metrics.Registry,
 		"adapter_request_time_seconds",
 		"Seconds to resolve each successful request labeled by adapter.",
@@ -358,7 +373,7 @@ func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	}
 }
 
-func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo) {
+func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
 	if connSuccess {
 		if info.Reused {
 			m.adapterReusedConnections.With(prometheus.Labels{
@@ -373,7 +388,7 @@ func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, c
 		if info.WasIdle {
 			m.adapterIdleConnectionTime.With(prometheus.Labels{
 				adapterLabel: string(adapterName),
-			}).Observe(float64(info.IdleTime))
+			}).Observe(info.IdleTime.Seconds())
 		}
 	} else {
 		m.adapterFailedConnections.With(prometheus.Labels{
@@ -381,6 +396,12 @@ func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, c
 		}).Inc()
 	}
 
+	m.adapterConnectionWaitTime.With(prometheus.Labels{
+		adapterLabel: string(adapterName),
+	}).Observe(obtainConnectionTime.Seconds())
+}
+
+func (m *Metrics) RecordAdapterDNSTime(dnsLookupTime time.Duration) {
 }
 
 func (m *Metrics) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {

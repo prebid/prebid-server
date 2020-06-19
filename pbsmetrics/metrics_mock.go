@@ -54,8 +54,8 @@ func (me *MetricsEngineMock) RecordAdapterRequest(labels AdapterLabels) {
 }
 
 // RecordAdapterRequest mock
-func (me *MetricsEngineMock) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo) {
-	me.Called(bidderName, connSuccess, info)
+func (me *MetricsEngineMock) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
+	me.Called(bidderName, connSuccess, info, obtainConnectionTime)
 }
 
 // RecordAdapterBidReceived mock

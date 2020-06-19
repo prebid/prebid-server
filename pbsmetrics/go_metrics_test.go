@@ -187,13 +187,15 @@ func TestRecordAdapterConnections(t *testing.T) {
 		adapterName openrtb_ext.BidderName
 		connSuccess bool
 		gotConnInfo httptrace.GotConnInfo
+		connWait    time.Duration
 	}
 
 	type testOut struct {
 		expectedConnErrorCount   int64
 		expectedConnReusedCount  int64
 		expectedConnCreatedCount int64
-		expectedConnIdleTime     int64
+		expectedConnIdleTime     time.Duration
+		expectedConnWaitTime     time.Duration
 	}
 
 	testCases := []struct {
@@ -202,25 +204,27 @@ func TestRecordAdapterConnections(t *testing.T) {
 		out         testOut
 	}{
 		{
-			description: "Successful, new connection created, was idle",
+			description: "Successful, new connection created, was idle, has connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
 				connSuccess: true,
 				gotConnInfo: httptrace.GotConnInfo{
 					Reused:   false,
 					WasIdle:  true,
-					IdleTime: OneSecond,
+					IdleTime: OneSecond * 2,
 				},
+				connWait: OneSecond * 5,
 			},
 			out: testOut{
 				expectedConnErrorCount:   0,
 				expectedConnReusedCount:  0,
 				expectedConnCreatedCount: 1,
-				expectedConnIdleTime:     1000,
+				expectedConnIdleTime:     OneSecond * 2,
+				expectedConnWaitTime:     OneSecond * 5,
 			},
 		},
 		{
-			description: "Successful, new connection created, not idle",
+			description: "Successful, new connection created, not idle, has connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
 				connSuccess: true,
@@ -228,34 +232,35 @@ func TestRecordAdapterConnections(t *testing.T) {
 					Reused:  false,
 					WasIdle: false,
 				},
+				connWait: OneSecond * 4,
 			},
 			out: testOut{
 				expectedConnErrorCount:   0,
-				expectedConnReusedCount:  0,
 				expectedConnCreatedCount: 1,
 				expectedConnIdleTime:     0,
+				expectedConnWaitTime:     OneSecond * 4,
 			},
 		},
 		{
-			description: "Successful, was reused, was idle",
+			description: "Successful, was reused, was idle, no connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
 				connSuccess: true,
 				gotConnInfo: httptrace.GotConnInfo{
 					Reused:   true,
 					WasIdle:  true,
-					IdleTime: OneSecond,
+					IdleTime: OneSecond * 3,
 				},
 			},
 			out: testOut{
-				expectedConnErrorCount:   0,
-				expectedConnReusedCount:  1,
-				expectedConnCreatedCount: 0,
-				expectedConnIdleTime:     1000,
+				expectedConnErrorCount:  0,
+				expectedConnReusedCount: 1,
+				expectedConnIdleTime:    OneSecond * 3,
+				expectedConnWaitTime:    0,
 			},
 		},
 		{
-			description: "Successful, was reused, not idle",
+			description: "Successful, was reused, not idle, has connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
 				connSuccess: true,
@@ -263,26 +268,25 @@ func TestRecordAdapterConnections(t *testing.T) {
 					Reused:  true,
 					WasIdle: false,
 				},
+				connWait: OneSecond * 5,
 			},
 			out: testOut{
-				expectedConnErrorCount:   0,
-				expectedConnReusedCount:  1,
-				expectedConnCreatedCount: 0,
-				expectedConnIdleTime:     0,
+				expectedConnErrorCount:  0,
+				expectedConnReusedCount: 1,
+				expectedConnWaitTime:    OneSecond * 5,
 			},
 		},
 		{
-			description: "Unsuccessful connection",
+			description: "Unsuccessful connection, wait time still updated",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
 				connSuccess: false,
 				gotConnInfo: httptrace.GotConnInfo{},
+				connWait:    OneSecond * 10,
 			},
 			out: testOut{
-				expectedConnErrorCount:   1,
-				expectedConnReusedCount:  0,
-				expectedConnCreatedCount: 0,
-				expectedConnIdleTime:     0,
+				expectedConnErrorCount: 1,
+				expectedConnWaitTime:   OneSecond * 10,
 			},
 		},
 		{
@@ -291,13 +295,9 @@ func TestRecordAdapterConnections(t *testing.T) {
 				adapterName: fakeBidder,
 				connSuccess: false,
 				gotConnInfo: httptrace.GotConnInfo{},
+				connWait:    0,
 			},
-			out: testOut{
-				expectedConnErrorCount:   0,
-				expectedConnReusedCount:  0,
-				expectedConnCreatedCount: 0,
-				expectedConnIdleTime:     0,
-			},
+			out: testOut{},
 		},
 	}
 
@@ -305,15 +305,16 @@ func TestRecordAdapterConnections(t *testing.T) {
 		registry := metrics.NewRegistry()
 		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: false})
 
-		m.RecordAdapterConnections(test.in.adapterName, test.in.connSuccess, test.in.gotConnInfo)
+		m.RecordAdapterConnections(test.in.adapterName, test.in.connSuccess, test.in.gotConnInfo, test.in.connWait)
 
 		assert.Equal(t, test.out.expectedConnErrorCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnError.Count(), "Test [%d] incorrect number of successful connections to adapter", i)
 		assert.Equal(t, test.out.expectedConnReusedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnReused.Count(), "Test [%d] incorrect number of reused connections to adapter", i)
 		assert.Equal(t, test.out.expectedConnCreatedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnCreated.Count(), "Test [%d] incorrect number of new connections to adapter created", i)
-		assert.Equal(t, test.out.expectedConnIdleTime, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnIdleTime.Max(), "Test [%d] incorrect max idle time in connection to adapter", i)
+		assert.Equal(t, test.out.expectedConnIdleTime.Nanoseconds(), m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnIdleTime.Sum(), "Test [%d] incorrect idle time in connection to adapter", i)
 		if test.out.expectedConnIdleTime > 0 {
 			assert.Equal(t, int64(1), m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnIdleTime.Count(), "Test [%d] incorrect number of entries in idle time in connection to adapter histogram", i)
 		}
+		assert.Equal(t, test.out.expectedConnWaitTime.Nanoseconds(), m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnWaitTime.Sum(), "Test [%d] incorrect wait time in connection to adapter", i)
 	}
 }
 
