@@ -100,6 +100,10 @@ func preloadLabelValues(m *Metrics) {
 		adapterLabel: adapterValues,
 	})
 
+	preloadLabelValuesForHistogram(m.adapterConnectionWaitTime, map[string][]string{
+		adapterLabel: adapterValues,
+	})
+
 	preloadLabelValuesForHistogram(m.adapterRequestsTimer, map[string][]string{
 		adapterLabel: adapterValues,
 	})
