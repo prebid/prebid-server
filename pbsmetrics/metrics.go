@@ -264,7 +264,7 @@ type MetricsEngine interface {
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo, obtainConnectionTime time.Duration)
-	//RecordAdapterDNSTime(dnsLookupTime time.Duration)
+	RecordDNSTime(dnsLookupTime time.Duration)
 	RecordAdapterPanic(labels AdapterLabels)
 	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
 	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.

@@ -180,6 +180,43 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 	}
 }
 
+func TestRecordDNSTime(t *testing.T) {
+	type testIn struct {
+		dnsLookupDuration time.Duration
+	}
+	type testOut struct {
+		expDuration time.Duration
+	}
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "Five second DNS lookup time",
+			in: testIn{
+				dnsLookupDuration: OneSecond * 5,
+			},
+			out: testOut{
+				expDuration: OneSecond * 5,
+			},
+		},
+		{
+			description: "Zero DNS lookup time",
+			in:          testIn{},
+			out:         testOut{},
+		},
+	}
+	for i, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
+
+		m.RecordDNSTime(test.in.dnsLookupDuration)
+
+		assert.Equal(t, test.out.expDuration.Nanoseconds(), m.DNSLookupTimer.Sum(), "Test [%d] incorrect DNS lookup time", i)
+	}
+}
+
 func TestRecordAdapterConnections(t *testing.T) {
 	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
 

@@ -948,6 +948,51 @@ func TestTimeoutNotifications(t *testing.T) {
 
 }
 
+func TestRecordDNSTime(t *testing.T) {
+	type testIn struct {
+		dnsLookupDuration time.Duration
+	}
+	type testOut struct {
+		expDuration float64
+		expCount    uint64
+	}
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "Five second DNS lookup time",
+			in: testIn{
+				dnsLookupDuration: OneSecond * 5,
+			},
+			out: testOut{
+				expDuration: 5,
+				expCount:    1,
+			},
+		},
+		{
+			description: "Zero DNS lookup time",
+			in:          testIn{},
+			out: testOut{
+				expDuration: 0,
+				expCount:    1,
+			},
+		},
+	}
+	for i, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordDNSTime(test.in.dnsLookupDuration)
+
+		m := dto.Metric{}
+		pm.dnsLookupTime.Write(&m)
+		histogram := *m.GetHistogram()
+
+		assert.Equal(t, test.out.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
+		assert.Equal(t, test.out.expDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+	}
+}
+
 func TestRecordAdapterConnections(t *testing.T) {
 
 	type testIn struct {

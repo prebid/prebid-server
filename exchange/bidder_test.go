@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
+	"github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
@@ -1235,7 +1236,7 @@ func TestSetAssetTypes(t *testing.T) {
 	}
 }
 
-func TestRecordAdapterConnectionsCall(t *testing.T) {
+func TestCallRecordAdapterConnections(t *testing.T) {
 	// Setup mock server
 	respStatus := 200
 	respBody := "{\"bid\":false}"
@@ -1287,6 +1288,47 @@ func TestRecordAdapterConnectionsCall(t *testing.T) {
 
 	// Assert RecordAdapterConnections() was called with the parameters we expected
 	metrics.AssertExpectations(t)
+}
+
+func TestCallRecordRecordDNSTime(t *testing.T) {
+	//setup mock server to run
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		if r.Method == "GET" {
+			w.Write([]byte("getBody"))
+		} else {
+			w.Write([]byte("postBody"))
+		}
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	//setup influx metrics that give us access to the DNSLookupTimer
+	cfg := config.Configuration{}
+	cfg.Metrics.Influxdb.Host = "localhost"
+	adapterList := openrtb_ext.BidderList()
+	influxEngine := pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList, config.DisabledMetrics{})
+	engineList := make(metricsConfig.MultiMetricsEngine, 2)
+	engineList[0] = influxEngine
+	engineList[1] = &metricsConfig.DummyMetricsEngine{}
+	var metricsEngine pbsmetrics.MetricsEngine
+	metricsEngine = &engineList
+
+	// Instantiate the bidder that will send the request
+	bidder := &bidderAdapter{
+		Bidder: &mixedMultiBidder{},
+		Client: server.Client(),
+		me:     metricsEngine,
+	}
+
+	// Run function
+	bidder.doRequest(context.Background(), &adapters.RequestData{
+		Method: "POST",
+		Uri:    server.URL,
+	})
+
+	// Assert DNS results, which should have recorded a zero duration
+	assert.Equal(t, int64(0), influxEngine.DNSLookupTimer.Sum(), "Incorrect DNS lookup time")
 }
 
 type goodSingleBidder struct {

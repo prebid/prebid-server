@@ -30,7 +30,7 @@ type Metrics struct {
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
 	timeout_notifications        *prometheus.CounterVec
-	DnsLookupWaitTime            *prometheus.Histogram
+	dnsLookupTime                prometheus.Histogram
 
 	// Adapter Metrics
 	adapterBids               *prometheus.CounterVec
@@ -132,7 +132,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"impressions_requests_legacy",
 		"Count of requested impressions to Prebid Server using the legacy endpoint.")
 
-	metrics.prebidCacheWriteTimer = newHistogram(cfg, metrics.Registry,
+	metrics.prebidCacheWriteTimer = newHistogramVec(cfg, metrics.Registry,
 		"prebidcache_write_time_seconds",
 		"Seconds to write to Prebid Cache labeled by success or failure. Failure timing is limited by Prebid Server enforced timeouts.",
 		[]string{successLabel},
@@ -143,7 +143,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of total requests to Prebid Server labeled by type and status.",
 		[]string{requestTypeLabel, requestStatusLabel})
 
-	metrics.requestsTimer = newHistogram(cfg, metrics.Registry,
+	metrics.requestsTimer = newHistogramVec(cfg, metrics.Registry,
 		"request_time_seconds",
 		"Seconds to resolve successful Prebid Server requests labeled by type.",
 		[]string{requestTypeLabel},
@@ -169,6 +169,11 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of timeout notifications triggered, and if they were successfully sent.",
 		[]string{successLabel})
 
+	metrics.dnsLookupTime = newHistogram(cfg, metrics.Registry,
+		"dns_lookup_time",
+		"Seconds to resolve DNS",
+		requestTimeBuckets)
+
 	metrics.adapterBids = newCounter(cfg, metrics.Registry,
 		"adapter_bids",
 		"Count of bids labeled by adapter and markup delivery type (adm or nurl).",
@@ -189,7 +194,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of panics labeled by adapter.",
 		[]string{adapterLabel})
 
-	metrics.adapterPrices = newHistogram(cfg, metrics.Registry,
+	metrics.adapterPrices = newHistogramVec(cfg, metrics.Registry,
 		"adapter_prices",
 		"Monetary value of the bids labeled by adapter.",
 		[]string{adapterLabel},
@@ -215,26 +220,19 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count that keeps track of reused connections when contacting adapter bidder endpoints.",
 		[]string{adapterLabel})
 
-	metrics.adapterIdleConnectionTime = newHistogram(cfg, metrics.Registry,
+	metrics.adapterIdleConnectionTime = newHistogramVec(cfg, metrics.Registry,
 		"adapter_idle_connection_time",
 		"Seconds that a connection to an adapter bidder endpoint was kept idle.",
 		[]string{adapterLabel},
 		requestTimeBuckets)
 
-	metrics.adapterConnectionWaitTime = newHistogram(cfg, metrics.Registry,
+	metrics.adapterConnectionWaitTime = newHistogramVec(cfg, metrics.Registry,
 		"adapter_connection_wait",
 		"Seconds from when the connection was requested until it is either created or reused",
 		[]string{adapterLabel},
 		requestTimeBuckets)
 
-	/* create single histogram
-	metrics.DnsLookupWaitTime = newHistogram(cfg, metrics.Registry,
-		"adapter_connection_wait",
-		"Seconds from when the connection was requested until it is either created or reused",
-		[]string{adapterLabel},
-		requestTimeBuckets)
-	*/
-	metrics.adapterRequestsTimer = newHistogram(cfg, metrics.Registry,
+	metrics.adapterRequestsTimer = newHistogramVec(cfg, metrics.Registry,
 		"adapter_request_time_seconds",
 		"Seconds to resolve each successful request labeled by adapter.",
 		[]string{adapterLabel},
@@ -250,7 +248,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of total requests to Prebid Server labeled by account.",
 		[]string{accountLabel})
 
-	metrics.requestsQueueTimer = newHistogram(cfg, metrics.Registry,
+	metrics.requestsQueueTimer = newHistogramVec(cfg, metrics.Registry,
 		"request_queue_time",
 		"Seconds request was waiting in queue",
 		[]string{requestTypeLabel, requestStatusLabel},
@@ -285,7 +283,7 @@ func newCounterWithoutLabels(cfg config.PrometheusMetrics, registry *prometheus.
 	return counter
 }
 
-func newHistogram(cfg config.PrometheusMetrics, registry *prometheus.Registry, name, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
+func newHistogramVec(cfg config.PrometheusMetrics, registry *prometheus.Registry, name, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
 	opts := prometheus.HistogramOpts{
 		Namespace: cfg.Namespace,
 		Subsystem: cfg.Subsystem,
@@ -294,6 +292,19 @@ func newHistogram(cfg config.PrometheusMetrics, registry *prometheus.Registry, n
 		Buckets:   buckets,
 	}
 	histogram := prometheus.NewHistogramVec(opts, labels)
+	registry.MustRegister(histogram)
+	return histogram
+}
+
+func newHistogram(cfg config.PrometheusMetrics, registry *prometheus.Registry, name, help string, buckets []float64) prometheus.Histogram {
+	opts := prometheus.HistogramOpts{
+		Namespace: cfg.Namespace,
+		Subsystem: cfg.Subsystem,
+		Name:      name,
+		Help:      help,
+		Buckets:   buckets,
+	}
+	histogram := prometheus.NewHistogram(opts)
 	registry.MustRegister(histogram)
 	return histogram
 }
@@ -373,6 +384,8 @@ func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	}
 }
 
+// Keeps track of created and resused connections to adapter bidders and logs its idle time as well
+// as the time from the connection request, to the connection creation, or reuse from the pool
 func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
 	if connSuccess {
 		if info.Reused {
@@ -401,7 +414,8 @@ func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, c
 	}).Observe(obtainConnectionTime.Seconds())
 }
 
-func (m *Metrics) RecordAdapterDNSTime(dnsLookupTime time.Duration) {
+func (m *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
+	m.dnsLookupTime.Observe(dnsLookupTime.Seconds())
 }
 
 func (m *Metrics) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {

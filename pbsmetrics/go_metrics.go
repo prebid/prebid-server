@@ -30,6 +30,7 @@ type Metrics struct {
 	PrebidCacheRequestTimerError   metrics.Timer
 	StoredReqCacheMeter            map[CacheResult]metrics.Meter
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
+	DNSLookupTimer                 metrics.Timer
 
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
@@ -122,6 +123,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		SafariRequestMeter:             blankMeter,
 		SafariNoCookieMeter:            blankMeter,
 		RequestTimer:                   blankTimer,
+		DNSLookupTimer:                 blankTimer,
 		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
@@ -192,6 +194,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
 	newMetrics.SafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", registry)
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
+	newMetrics.DNSLookupTimer = metrics.GetOrRegisterTimer("dns_lookup_time", registry)
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 
@@ -456,6 +459,8 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 	}
 }
 
+// Keeps track of created and resused connections to adapter bidders and logs its idle time as well
+// as the time from the connection request, to the connection creation, or reuse from the pool
 func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 	connSuccess bool,
 	info httptrace.GotConnInfo,
@@ -478,6 +483,10 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 		am.ConnError.Inc(1)
 	}
 	am.ConnWaitTime.Update(obtainConnectionTime)
+}
+
+func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
+	me.DNSLookupTimer.Update(dnsLookupTime)
 }
 
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.

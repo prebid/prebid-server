@@ -408,8 +408,7 @@ type httpCallInfo struct {
 // endpoint is established, we can keep track of whether the connection was newly created, reused, and
 // even know if it was left idle and for how much time.
 func (bidder *bidderAdapter) AddClientTrace(ctx context.Context) context.Context {
-	//var connStart, dnsStart time.Time
-	var connStart time.Time
+	var connStart, dnsStart time.Time
 
 	trace := &httptrace.ClientTrace{
 		// GetConn is called before a connection is created or retrieved from an idle pool
@@ -424,13 +423,13 @@ func (bidder *bidderAdapter) AddClientTrace(ctx context.Context) context.Context
 		},
 		// DNSStart is called when a DNS lookup begins.
 		DNSStart: func(info httptrace.DNSStartInfo) {
-			//dnsStart = time.Now()
+			dnsStart = time.Now()
 		},
 		// DNSDone is called when a DNS lookup ends.
 		DNSDone: func(info httptrace.DNSDoneInfo) {
-			//dnsLookupTime := time.Now().Sub(dnsStart)
+			dnsLookupTime := time.Now().Sub(dnsStart)
 
-			//bidder.me.RecordAdapterDNSTime(dnsLookupTime)
+			bidder.me.RecordDNSTime(dnsLookupTime)
 		},
 	}
 	return httptrace.WithClientTrace(ctx, trace)
