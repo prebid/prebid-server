@@ -39,7 +39,7 @@ func (adapter *IQZoneAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo 
 		bidRequest, err := adapter.buildAdapterRequest(request, &k, imps)
 		if err != nil {
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		} else {
 			result = append(result, bidRequest)
 		}
@@ -184,22 +184,21 @@ func (adapter *IQZoneAdapter) buildEndpointURL(params *openrtb_ext.ExtImpIQZone)
 
 //MakeBids translates IQZone bid response to prebid-server specific format
 func (adapter *IQZoneAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var msg = ""
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 	if response.StatusCode != http.StatusOK {
-		msg = fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)
+		msg := fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 
 	}
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		msg = fmt.Sprintf("Bad server response: %d", err)
+		msg := fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 	if len(bidResp.SeatBid) != 1 {
-		var msg = fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))
+		msg := fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 

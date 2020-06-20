@@ -42,4 +42,5 @@ var invalidParams = []string{
 	``,
 	`[]`,
 	`true`,
+	`{"pubid": 42}`,
 }
