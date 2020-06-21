@@ -35,8 +35,8 @@ func (a *AdmanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 
 	var adapterRequests []*adapters.RequestData
 
+	reqCopy := *request
 	for _, imp := range request.Imp {
-		reqCopy := *request
 		reqCopy.Imp = []openrtb.Imp{imp}
 
 		var bidderExt adapters.ExtImpBidder
