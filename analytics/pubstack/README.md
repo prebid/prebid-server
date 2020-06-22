@@ -15,7 +15,14 @@ Or using the pbs configuration file and by appending the following block:
 ```yaml
 analytics:
     pubstack:
+      # Required properties
       enabled: true
       endpoint: "https://openrtb.preview.pubstack.io/v1/openrtb2"
-      scopeid: <your scopeId here> # The scopeId provided by the Pubstack Support Team
+      scopeid: "<scopeId>" # The scopeId provided by the Pubstack Support Team
+      # Optional properties (advanced configuration)
+      configuration_refresh_delay: "2h" # Dynamic configuration delay
+      buffers: # Flush events to Pubstack when (first condition reached)
+        size: "2MB" # greater than 2MB
+        count : 100 # greater than 100 events
+        timeout: "15m" # greater than 15 minutes
 ```
