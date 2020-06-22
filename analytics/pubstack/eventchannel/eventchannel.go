@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"path"
+	"sync"
 	"syscall"
 	"time"
 
@@ -28,34 +28,56 @@ type Metrics struct {
 }
 
 type EventChannel struct {
-	intake  *url.URL
-	gz      *gzip.Writer
-	buff    *bytes.Buffer
-	ch      chan []byte
-	metrics Metrics
+	endpoint *url.URL
+	gz       *gzip.Writer
+	buff     *bytes.Buffer
+	ch       chan []byte
+	metrics  Metrics
+	mux      sync.Mutex
 }
 
-// Add : add a new event to be processed
+func NewEventChannel(endpoint *url.URL, maxSize, maxCount int64, maxTime time.Duration) *EventChannel {
+	b := bytes.NewBufferString("")
+	gzw := gzip.NewWriter(b)
+
+	c := EventChannel{
+		endpoint: endpoint,
+		gz:       gzw,
+		buff:     b,
+		ch:       make(chan []byte),
+		metrics:  Metrics{},
+	}
+
+	termCh := make(chan os.Signal)
+	signal.Notify(termCh, os.Interrupt, syscall.SIGTERM)
+
+	go c.batchAndSendEvents(maxSize, maxCount, maxTime, termCh)
+	return &c
+}
+
 func (c *EventChannel) Add(event []byte) {
 	c.ch <- event
 }
 
-func (c *EventChannel) forward(maxSize, maxCount int64, maxTime time.Duration, termCh chan os.Signal) {
+func (c *EventChannel) batchAndSendEvents(maxSize, maxCount int64, maxTime time.Duration, termCh chan os.Signal) {
 	ticker := time.NewTicker(maxTime)
 
 	for {
 		select {
 		// termination received
 		case <-termCh:
-			glog.Info("[pubstack] Termination signal received")
+			glog.Info("[pubstack] termination signal received")
 			c.flush()
 			return
 		// event is received
 		case event := <-c.ch:
+			c.mux.Lock()
 			_, err := c.gz.Write(event)
+			c.mux.Unlock()
+
 			if err != nil {
 				c.metrics.eventError++
-				glog.Warning("[pubstack] Fail to compress event")
+				glog.Warning("[pubstack] fail to compress, skip the event")
 				continue
 			}
 			c.metrics.eventCount++
@@ -63,7 +85,7 @@ func (c *EventChannel) forward(maxSize, maxCount int64, maxTime time.Duration, t
 			if c.metrics.eventCount >= maxCount || c.metrics.bufferSize >= maxSize {
 				c.flush()
 			}
-		// time between flushes has passed
+		// time between 2 flushes has passed
 		case <-ticker.C:
 			c.flush()
 		}
@@ -71,23 +93,35 @@ func (c *EventChannel) forward(maxSize, maxCount int64, maxTime time.Duration, t
 }
 
 func (c *EventChannel) flush() {
-	c.resetMetrics()
-	// finish writing gzip header
-	c.gz.Close()
+	c.mux.Lock()
+	defer c.mux.Unlock()
 
-	// read gzipped content
-	payload := make([]byte, c.buff.Len())
-	_, err := c.buff.Read(payload)
+	// finish writing gzip header
+	err := c.gz.Flush()
 	if err != nil {
-		glog.Warning("[pubstack] Fail to read gzipped buffer")
+		glog.Warning("[pubstack] fail to flush gzipped buffer")
+		return
 	}
 
-	// clean buffers and writers
-	c.buff = bytes.NewBufferString("")
-	c.gz = gzip.NewWriter(c.buff)
+	// copy the current buffer to send the payload in a new thread
+	payload := make([]byte, c.buff.Len())
+	_, err = c.buff.Read(payload)
+	if err != nil {
+		glog.Warning("[pubstack] fail to copy the buffer")
+		return
+	}
 
-	// send event to intake
-	req, err := http.NewRequest(http.MethodPost, c.intake.String(), bytes.NewReader(payload))
+	// reset buffers and writers
+	c.resetMetrics()
+	c.gz.Reset(c.buff)
+
+	// send event to intake (async)
+	go post(c.endpoint.String(), payload)
+
+}
+
+func post(endpoint string, payload []byte) {
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
 	if err != nil {
 		glog.Error(err)
 		return
@@ -104,25 +138,4 @@ func (c *EventChannel) flush() {
 		glog.Errorf("[pubstack] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 		return
 	}
-}
-
-func NewEventChannel(intake, route string, maxSize, maxCount int64, maxTime time.Duration) *EventChannel {
-	u, _ := url.Parse(intake)
-	u.Path = path.Join(u.Path, "intake", route)
-
-	b := bytes.NewBufferString("")
-	gzw := gzip.NewWriter(b)
-	c := EventChannel{
-		intake:  u,
-		gz:      gzw,
-		buff:    b,
-		ch:      make(chan []byte),
-		metrics: Metrics{},
-	}
-
-	termCh := make(chan os.Signal)
-	signal.Notify(termCh, os.Interrupt, syscall.SIGTERM)
-
-	go c.forward(maxSize, maxCount, maxTime, termCh)
-	return &c
 }

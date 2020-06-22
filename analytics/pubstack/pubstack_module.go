@@ -62,23 +62,32 @@ type PubstackModule struct {
 	buffsCfg      *bufferConfig
 }
 
+func buildUrlEndpoint(baseUrl string, module string) *url.URL {
+	endpoint, err := url.Parse(baseUrl)
+	if err != nil {
+		glog.Fatal(err)
+	}
+	endpoint.Path = path.Join(endpoint.Path, "intake", module)
+	return endpoint
+}
+
 func (p *PubstackModule) applyConfiguration(cfg *Configuration) {
 	newEventChannelMap := make(map[string]*eventchannel.EventChannel)
 
 	if cfg.Features[amp] {
-		newEventChannelMap[amp] = eventchannel.NewEventChannel(cfg.Endpoint, amp, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		newEventChannelMap[amp] = eventchannel.NewEventChannel(buildUrlEndpoint(cfg.Endpoint, amp), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if cfg.Features[auction] {
-		newEventChannelMap[auction] = eventchannel.NewEventChannel(cfg.Endpoint, auction, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		newEventChannelMap[auction] = eventchannel.NewEventChannel(buildUrlEndpoint(cfg.Endpoint, auction), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if cfg.Features[cookieSync] {
-		newEventChannelMap[cookieSync] = eventchannel.NewEventChannel(cfg.Endpoint, cookieSync, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		newEventChannelMap[cookieSync] = eventchannel.NewEventChannel(buildUrlEndpoint(cfg.Endpoint, cookieSync), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if cfg.Features[VIDEO] {
-		newEventChannelMap[VIDEO] = eventchannel.NewEventChannel(cfg.Endpoint, VIDEO, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		newEventChannelMap[VIDEO] = eventchannel.NewEventChannel(buildUrlEndpoint(cfg.Endpoint, VIDEO), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if cfg.Features[setUiud] {
-		newEventChannelMap[setUiud] = eventchannel.NewEventChannel(cfg.Endpoint, setUiud, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		newEventChannelMap[setUiud] = eventchannel.NewEventChannel(buildUrlEndpoint(cfg.Endpoint, setUiud), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 
 	p.eventChannels = newEventChannelMap
