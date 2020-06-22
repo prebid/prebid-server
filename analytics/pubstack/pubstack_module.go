@@ -10,19 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	units "github.com/docker/go-units"
+	"github.com/docker/go-units"
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/analytics/pubstack/eventchannel"
 	"github.com/prebid/prebid-server/analytics/pubstack/helpers"
 
 	"github.com/prebid/prebid-server/analytics"
 )
-
-type payload struct {
-	request  openrtb.BidRequest
-	response openrtb.BidResponse
-}
 
 type Configuration struct {
 	ScopeId  string          `json:"scopeId"`
@@ -213,25 +207,11 @@ func getConfiguration(scope string, intake string) (*Configuration, error) {
 
 	defer res.Body.Close()
 	c := Configuration{}
-	err = json.NewDecoder(res.Body).Decode(c)
+	err = json.NewDecoder(res.Body).Decode(&c)
 	if err != nil {
 		return nil, err
 	}
 	return &c, nil
-}
-
-func parseBuffersConfiguration(size, duration string) (int64, *time.Duration, error) {
-	u, err := units.FromHumanSize(size)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	pdur, err := time.ParseDuration(duration)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	return u, &pdur, nil
 }
 
 func NewPubstackModule(scope, intake, refreshConf string, evtCount int, size, duration string) (analytics.PBSAnalyticsModule, error) {
