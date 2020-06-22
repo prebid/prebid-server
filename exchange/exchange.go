@@ -197,10 +197,11 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		if debugLog != nil && debugLog.Enabled {
 			if rawUUID, err := uuid.NewV4(); err == nil {
 				debugLog.CacheKey = rawUUID.String()
-				errs = append(errs, fmt.Errorf("[Debug cache ID: %s]", debugLog.CacheKey))
 
 				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errs)
-				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+				bidRespCopy := bidResponseExt
+				bidRespCopy.Debug.ResolvedRequest = nil
+				if bidRespExtBytes, err := json.Marshal(bidRespCopy); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)
 				} else {
 					debugLog.Data.Response = "Unable to marshal response ext for debugging"

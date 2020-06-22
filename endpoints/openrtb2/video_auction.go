@@ -122,7 +122,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	defer func() {
 		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
-			err := putDebugLogError(deps.cache, &debugLog)
+			err := debugLog.PutDebugLogError(deps.cache, vo.Errors)
 			if err != nil {
 				vo.Errors = append(vo.Errors, err)
 			}
@@ -280,9 +280,17 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	if len(bidResp.AdPods) == 0 && debugLog.Enabled {
-		err := putDebugLogError(deps.cache, &debugLog)
+		err := debugLog.PutDebugLogError(deps.cache, vo.Errors)
 		if err != nil {
 			vo.Errors = append(vo.Errors, err)
+		} else {
+			bidResp.AdPods = append(bidResp.AdPods, &openrtb_ext.AdPod{
+				Targeting: []openrtb_ext.VideoTargeting{
+					{
+						HbCacheID: debugLog.CacheKey,
+					},
+				},
+			})
 		}
 	}
 
@@ -299,36 +307,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 
-}
-
-func putDebugLogError(cache prebid_cache_client.Client, debugLog *exchange.DebugLog) error {
-	if len(debugLog.Data.Response) == 0 {
-		debugLog.Data.Response = "No response created"
-	}
-
-	debugLog.BuildCacheString()
-
-	data, err := json.Marshal(debugLog.CacheString)
-	if err != nil {
-		return err
-	}
-
-	toCache := []prebid_cache_client.Cacheable{
-		{
-			Type:       debugLog.CacheType,
-			Data:       data,
-			TTLSeconds: debugLog.TTL,
-			Key:        "log_" + debugLog.CacheKey,
-		},
-	}
-
-	if cache != nil {
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(100)*time.Millisecond))
-		defer cancel()
-		cache.PutJson(ctx, toCache)
-	}
-
-	return nil
 }
 
 func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) *openrtb_ext.BidRequestVideo {
