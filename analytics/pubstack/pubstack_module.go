@@ -2,8 +2,6 @@ package pubstack
 
 import (
 	"encoding/json"
-	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -214,13 +212,8 @@ func getConfiguration(scope string, intake string) (*Configuration, error) {
 	}
 
 	defer res.Body.Close()
-	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, errors.New("fail to read payload body")
-	}
 	c := Configuration{}
-
-	err = json.Unmarshal(data, &c)
+	err = json.NewDecoder(res.Body).Decode(c)
 	if err != nil {
 		return nil, err
 	}
