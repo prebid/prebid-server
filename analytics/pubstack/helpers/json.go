@@ -22,7 +22,7 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, er
 		b = append(b, byte('\n'))
 		return b, nil
 	}
-	return []byte(""), fmt.Errorf("transactional logs error: auction object badly formed %v", err)
+	return nil, fmt.Errorf("transactional logs error: auction object badly formed %v", err)
 }
 
 func JsonifyVideoObject(vo *analytics.VideoObject, scope string) ([]byte, error) {
@@ -39,7 +39,7 @@ func JsonifyVideoObject(vo *analytics.VideoObject, scope string) ([]byte, error)
 		b = append(b, byte('\n'))
 		return b, nil
 	}
-	return []byte(""), fmt.Errorf("transactional logs error: video object badly formed %v", err)
+	return nil, fmt.Errorf("transactional logs error: video object badly formed %v", err)
 }
 
 func JsonifyCookieSync(cso *analytics.CookieSyncObject, scope string) ([]byte, error) {
@@ -57,7 +57,7 @@ func JsonifyCookieSync(cso *analytics.CookieSyncObject, scope string) ([]byte, e
 		b = append(b, byte('\n'))
 		return b, nil
 	}
-	return []byte(""), fmt.Errorf("Transactional Logs Error: Cookie sync object badly formed %v", err)
+	return nil, fmt.Errorf("Transactional Logs Error: Cookie sync object badly formed %v", err)
 }
 
 func JsonifySetUIDObject(so *analytics.SetUIDObject, scope string) ([]byte, error) {
@@ -74,7 +74,7 @@ func JsonifySetUIDObject(so *analytics.SetUIDObject, scope string) ([]byte, erro
 		b = append(b, byte('\n'))
 		return b, nil
 	}
-	return []byte(""), fmt.Errorf("Transactional Logs Error: Set UID object badly formed %v", err)
+	return nil, fmt.Errorf("Transactional Logs Error: Set UID object badly formed %v", err)
 }
 
 func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]byte, error) {
@@ -91,5 +91,5 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]byte, error) {
 		b = append(b, byte('\n'))
 		return b, nil
 	}
-	return []byte(""), fmt.Errorf("Transactional Logs Error: Amp object badly formed %v", err)
+	return nil, fmt.Errorf("Transactional Logs Error: Amp object badly formed %v", err)
 }
