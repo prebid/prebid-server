@@ -2,7 +2,7 @@ package pubstack
 
 import (
 	"encoding/json"
-	"net/http"
+	"github.com/prebid/prebid-server/analytics/clients"
 	"net/url"
 	"os"
 	"os/signal"
@@ -200,7 +200,7 @@ func getConfiguration(scope string, intake string) (*Configuration, error) {
 	q.Add("scopeId", scope)
 	u.RawQuery = q.Encode()
 
-	res, err := http.DefaultClient.Get(u.String())
+	res, err := clients.GetDefaultInstance().Get(u.String())
 	if err != nil {
 		return nil, err
 	}

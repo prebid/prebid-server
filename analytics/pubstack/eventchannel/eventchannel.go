@@ -3,6 +3,7 @@ package eventchannel
 import (
 	"bytes"
 	"compress/gzip"
+	"github.com/prebid/prebid-server/analytics/clients"
 	"net/http"
 	"net/url"
 	"os"
@@ -95,7 +96,7 @@ func (c *EventChannel) flush() {
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("Content-Encoding", "gzip")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := clients.GetDefaultInstance().Do(req)
 	if err != nil {
 		return
 	}
