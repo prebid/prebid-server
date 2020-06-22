@@ -168,7 +168,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 
 	metrics.tcfMetrics = newCounter(cfg, metrics.Registry,
 		"privacy_tcf",
-		"Count of TCF versions for requests under GDPR.",
+		"Count of TCF versions for requests where GDPR was enforced.",
 		[]string{versionLabel, sourceLabel})
 
 	metrics.adapterBids = newCounter(cfg, metrics.Registry,
