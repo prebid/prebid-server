@@ -263,10 +263,8 @@ func TestInit(t *testing.T) {
 			assert.False(t, intervalDiff > float64(errorMargin*100), "Interval between ticks should be: %d but was: %d", expectedIntervalDuration, intervalDuration)
 		}
 
-		assert.NotNil(t, currencyConverter.Rates(), "Rates shouldn't be nil")
 		assert.NotEqual(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated should be set")
-		rates := currencyConverter.Rates()
-		assert.Equal(t, expectedRates, rates, "Conversions.Rates weren't the expected ones")
+		assert.Equal(t, expectedRates, currencyConverter.Rates(), "Conversions.Rates weren't the expected ones")
 		assert.NotNil(t, currencyConverter.GetInfo(), "GetInfo() should not return nil")
 
 		if ticksCount == expectedTicks {

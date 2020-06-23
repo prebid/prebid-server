@@ -116,6 +116,9 @@ func (rc *RateConverter) Update() error {
 		rc.rates.Store(rates)
 		rc.lastUpdated.Store(time.Now())
 	} else {
+		if rc.CheckStaleRates() {
+			rc.rates.Store((*Rates)(nil))
+		}
 		glog.Errorf("Error updating conversion rates: %v", err)
 	}
 
@@ -165,11 +168,7 @@ func (rc *RateConverter) LastUpdated() time.Time {
 
 // Rates returns current conversions rates
 func (rc *RateConverter) Rates() Conversions {
-
-	rates := rc.rates.Load()
-	lastUpdated := rc.lastUpdated.Load()
-
-	if rates != nil && lastUpdated != nil && !rc.CheckStaleRates() {
+	if rates := rc.rates.Load(); rates != nil && rates != (*Rates)(nil) {
 		return rates.(*Rates)
 	}
 	return rc.constantRates
