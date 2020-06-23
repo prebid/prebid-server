@@ -24,28 +24,24 @@ type KubientAdapter struct {
 func (adapter *KubientAdapter) MakeRequests(
 	openRTBRequest *openrtb.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
-) (
-	requestsToBidder []*adapters.RequestData,
-	errs []error,
-) {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(openRTBRequest.Imp[0].Ext, &bidderExt); err != nil {
+) ([]*adapters.RequestData, []error) {
+	if len(openRTBRequest.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: "No impression in the bid request",
 		}}
 	}
-	var kubientExt openrtb_ext.ExtImpKubient
-	if err := json.Unmarshal(bidderExt.Bidder, &kubientExt); err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: "ext.bidder.zoneid is not provided",
-		}}
+	errs := make([]error, 0, len(openRTBRequest.Imp))
+	hasErrors := false
+	for _, impObj := range openRTBRequest.Imp {
+		err := checkImpExt(impObj)
+		if err != nil {
+			errs = append(errs, err)
+			hasErrors = true
+		}
 	}
-	if kubientExt.ZoneID == "" {
-		return nil, []error{&errortypes.BadInput{
-			Message: "zoneid is empty",
-		}}
+	if hasErrors {
+		return nil, errs
 	}
-
 	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
 		errs = append(errs, err)
@@ -54,15 +50,34 @@ func (adapter *KubientAdapter) MakeRequests(
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
-	requestToBidder := &adapters.RequestData{
+	requestsToBidder := []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     adapter.endpoint,
 		Body:    openRTBRequestJSON,
 		Headers: headers,
-	}
-	requestsToBidder = append(requestsToBidder, requestToBidder)
-
+	}}
 	return requestsToBidder, errs
+}
+
+func checkImpExt(impObj openrtb.Imp) error {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(impObj.Ext, &bidderExt); err != nil {
+		return &errortypes.BadInput{
+			Message: "ext.bidder not provided",
+		}
+	}
+	var kubientExt openrtb_ext.ExtImpKubient
+	if err := json.Unmarshal(bidderExt.Bidder, &kubientExt); err != nil {
+		return &errortypes.BadInput{
+			Message: "ext.bidder.zoneid is not provided",
+		}
+	}
+	if kubientExt.ZoneID == "" {
+		return &errortypes.BadInput{
+			Message: "zoneid is empty",
+		}
+	}
+	return nil
 }
 
 // MakeBids makes the bids

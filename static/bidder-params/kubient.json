@@ -9,6 +9,5 @@
       "description": "Zone ID identifies Kubient placement ID.",
       "minLength": 1
     }
-  },
-  "required": ["zoneid"]
+  }
 }
