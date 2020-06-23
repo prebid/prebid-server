@@ -39,11 +39,9 @@ type ParsedPolicy struct {
 	NoSaleSpecificBidders map[string]struct{}
 }
 
-// ReadPolicy extracts the user provided CCPA regulation values from an OpenRTB request.
-func ReadPolicy(req *openrtb.BidRequest) (RawPolicy, error) {
-	if req == nil {
-		return RawPolicy{}, nil
-	}
+// ReadPolicy extracts the CCPA regulation policy from an OpenRTB request.
+func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
+	policy := Policy{}
 
 	var value string
 	if req.Regs != nil && len(req.Regs.Ext) > 0 {
@@ -74,23 +72,11 @@ func ReadPolicy(req *openrtb.BidRequest) (RawPolicy, error) {
 
 // Write mutates an OpenRTB bid request with the context of the CCPA policy.
 func (p Policy) Write(req *openrtb.BidRequest) error {
-	var err error
-
-	err = p.writeRegsExt(req)
-	if err != nil {
-		return err
+	if p.Value == "" {
+		return clearPolicy(req)
 	}
 
-	err = p.writeExt(req)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (p Policy) writeRegsExt(req *openrtb.BidRequest) error {
-	if len(p.Value) == 0 {
+	if req == nil {
 		return nil
 	}
 
@@ -118,45 +104,32 @@ func (p Policy) writeRegsExt(req *openrtb.BidRequest) error {
 	return err
 }
 
-func (p Policy) writeExt(req *openrtb.BidRequest) error {
-	if len(p.NoSaleBidders) == 0 {
+func clearPolicy(req *openrtb.BidRequest) error {
+	if req == nil {
 		return nil
 	}
 
-	if len(req.Ext) == 0 {
-		ext := openrtb_ext.ExtRequest{}
-		ext.Prebid.NoSale = p.NoSaleBidders
+	if req.Regs == nil {
+		return nil
+	}
 
-		extJSON, err := json.Marshal(ext)
-		if err == nil {
-			req.Ext = extJSON
-		}
-
-		return err
+	if len(req.Regs.Ext) == 0 {
+		return nil
 	}
 
 	var extMap map[string]interface{}
-	if err := json.Unmarshal(req.Ext, &extMap); err != nil {
-		return err
-	}
-
-	var extMapPrebid map[string]interface{}
-	if v, exists := extMap["prebid"]; !exists {
-		extMapPrebid = make(map[string]interface{})
-		extMap["prebid"] = extMapPrebid
-	} else {
-		vCasted, ok := v.(map[string]interface{})
-		if !ok {
-			return errors.New("invalid data type for ext.prebid")
-		}
-		extMapPrebid = vCasted
-	}
-
-	extMapPrebid["nosale"] = p.NoSaleBidders
-
-	extJSON, err := json.Marshal(extMap)
+	err := json.Unmarshal(req.Regs.Ext, &extMap)
 	if err == nil {
-		req.Ext = extJSON
+		delete(extMap, "us_privacy")
+		if len(extMap) == 0 {
+			req.Regs.Ext = nil
+		} else {
+			ext, err := json.Marshal(extMap)
+			if err == nil {
+				req.Regs.Ext = ext
+			}
+			return err
+		}
 	}
 
 	return err

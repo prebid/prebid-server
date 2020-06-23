@@ -7,11 +7,12 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
 )
 
 func TestNewAdapterMap(t *testing.T) {
 	cfg := &config.Configuration{Adapters: blankAdapterConfig(openrtb_ext.BidderList())}
-	adapterMap := newAdapterMap(nil, cfg, adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()))
+	adapterMap := newAdapterMap(nil, cfg, adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), &metricsConfig.DummyMetricsEngine{})
 	for _, bidderName := range openrtb_ext.BidderMap {
 		if bidder, ok := adapterMap[bidderName]; bidder == nil || !ok {
 			t.Errorf("adapterMap missing expected Bidder: %s", string(bidderName))
@@ -38,7 +39,7 @@ func TestNewAdapterMapDisabledAdapters(t *testing.T) {
 			}
 		}
 	}
-	adapterMap := newAdapterMap(nil, &config.Configuration{Adapters: cfgAdapters}, adapters.ParseBidderInfos(cfgAdapters, "../static/bidder-info", bidderList))
+	adapterMap := newAdapterMap(nil, &config.Configuration{Adapters: cfgAdapters}, adapters.ParseBidderInfos(cfgAdapters, "../static/bidder-info", bidderList), &metricsConfig.DummyMetricsEngine{})
 	for _, bidderName := range openrtb_ext.BidderMap {
 		if bidder, ok := adapterMap[bidderName]; bidder == nil || !ok {
 			if inList(bidderList, bidderName) {

@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -241,6 +242,7 @@ func TestScrubUser(t *testing.T) {
 		BuyerUID: "anyBuyerUID",
 		Yob:      42,
 		Gender:   "anyGender",
+		Ext:      json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
 		Geo: &openrtb.Geo{
 			Lat:   123.456,
 			Lon:   678.89,
@@ -251,30 +253,32 @@ func TestScrubUser(t *testing.T) {
 	}
 
 	testCases := []struct {
-		expected    *openrtb.User
-		user        ScrubStrategyUser
-		geo         ScrubStrategyGeo
 		description string
+		expected    *openrtb.User
+		scrubUser   ScrubStrategyUser
+		scrubGeo    ScrubStrategyGeo
 	}{
 		{
-			description: "Demographic Age And Gender & Geo Full",
+			description: "User ID And Demographic & Geo Full",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
 				Yob:      0,
 				Gender:   "",
+				Ext:      json.RawMessage(`{}`),
 				Geo:      &openrtb.Geo{},
 			},
-			user: ScrubStrategyUserIDAndDemographic,
-			geo:  ScrubStrategyGeoFull,
+			scrubUser: ScrubStrategyUserIDAndDemographic,
+			scrubGeo:  ScrubStrategyGeoFull,
 		},
 		{
-			description: "Demographic Age And Gender & Geo Reduced",
+			description: "User ID And Demographic & Geo Reduced",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
 				Yob:      0,
 				Gender:   "",
+				Ext:      json.RawMessage(`{}`),
 				Geo: &openrtb.Geo{
 					Lat:   123.46,
 					Lon:   678.89,
@@ -283,16 +287,17 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			user: ScrubStrategyUserIDAndDemographic,
-			geo:  ScrubStrategyGeoReducedPrecision,
+			scrubUser: ScrubStrategyUserIDAndDemographic,
+			scrubGeo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "Demographic Full & Geo None",
+			description: "User ID And Demographic & Geo None",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
 				Yob:      0,
 				Gender:   "",
+				Ext:      json.RawMessage(`{}`),
 				Geo: &openrtb.Geo{
 					Lat:   123.456,
 					Lon:   678.89,
@@ -301,28 +306,30 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			user: ScrubStrategyUserIDAndDemographic,
-			geo:  ScrubStrategyGeoNone,
+			scrubUser: ScrubStrategyUserIDAndDemographic,
+			scrubGeo:  ScrubStrategyGeoNone,
 		},
 		{
-			description: "Demographic Buyer ID & Geo Full",
+			description: "User ID & Geo Full",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
 				Yob:      42,
 				Gender:   "anyGender",
+				Ext:      json.RawMessage(`{}`),
 				Geo:      &openrtb.Geo{},
 			},
-			user: ScrubStrategyUserID,
-			geo:  ScrubStrategyGeoFull,
+			scrubUser: ScrubStrategyUserID,
+			scrubGeo:  ScrubStrategyGeoFull,
 		},
 		{
-			description: "Demographic Buyer ID & Geo Reduced",
+			description: "User ID & Geo Reduced",
 			expected: &openrtb.User{
 				ID:       "",
 				BuyerUID: "",
 				Yob:      42,
 				Gender:   "anyGender",
+				Ext:      json.RawMessage(`{}`),
 				Geo: &openrtb.Geo{
 					Lat:   123.46,
 					Lon:   678.89,
@@ -331,34 +338,68 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			user: ScrubStrategyUserID,
-			geo:  ScrubStrategyGeoReducedPrecision,
+			scrubUser: ScrubStrategyUserID,
+			scrubGeo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "Demographic None & Geo None",
+			description: "User ID & Geo None",
+			expected: &openrtb.User{
+				ID:       "",
+				BuyerUID: "",
+				Yob:      42,
+				Gender:   "anyGender",
+				Ext:      json.RawMessage(`{}`),
+				Geo: &openrtb.Geo{
+					Lat:   123.456,
+					Lon:   678.89,
+					Metro: "some metro",
+					City:  "some city",
+					ZIP:   "some zip",
+				},
+			},
+			scrubUser: ScrubStrategyUserID,
+			scrubGeo:  ScrubStrategyGeoNone,
+		},
+		{
+			description: "User None & Geo Full",
 			expected: &openrtb.User{
 				ID:       "anyID",
 				BuyerUID: "anyBuyerUID",
 				Yob:      42,
 				Gender:   "anyGender",
-				Geo: &openrtb.Geo{
-					Lat:   123.456,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
+				Ext:      json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+				Geo:      &openrtb.Geo{},
 			},
-			user: ScrubStrategyUserNone,
-			geo:  ScrubStrategyGeoNone,
+			scrubUser: ScrubStrategyUserNone,
+			scrubGeo:  ScrubStrategyGeoFull,
 		},
 		{
-			description: "Demographic BuyerIDOnly & Geo None",
+			description: "User None & Geo Reduced",
 			expected: &openrtb.User{
-				ID:       "",
-				BuyerUID: "",
+				ID:       "anyID",
+				BuyerUID: "anyBuyerUID",
 				Yob:      42,
 				Gender:   "anyGender",
+				Ext:      json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+				Geo: &openrtb.Geo{
+					Lat:   123.46,
+					Lon:   678.89,
+					Metro: "some metro",
+					City:  "some city",
+					ZIP:   "some zip",
+				},
+			},
+			scrubUser: ScrubStrategyUserNone,
+			scrubGeo:  ScrubStrategyGeoReducedPrecision,
+		},
+		{
+			description: "User None & Geo None",
+			expected: &openrtb.User{
+				ID:       "anyID",
+				BuyerUID: "anyBuyerUID",
+				Yob:      42,
+				Gender:   "anyGender",
+				Ext:      json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
 				Geo: &openrtb.Geo{
 					Lat:   123.456,
 					Lon:   678.89,
@@ -367,13 +408,13 @@ func TestScrubUser(t *testing.T) {
 					ZIP:   "some zip",
 				},
 			},
-			user: ScrubStrategyUserID,
-			geo:  ScrubStrategyGeoNone,
+			scrubUser: ScrubStrategyUserNone,
+			scrubGeo:  ScrubStrategyGeoNone,
 		},
 	}
 
 	for _, test := range testCases {
-		result := NewScrubber().ScrubUser(user, test.user, test.geo)
+		result := NewScrubber().ScrubUser(user, test.scrubUser, test.scrubGeo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
@@ -551,4 +592,93 @@ func TestScrubGeoPrecision(t *testing.T) {
 func TestScrubGeoPrecisionWhenNil(t *testing.T) {
 	result := scrubGeoPrecision(nil)
 	assert.Nil(t, result)
+}
+
+func TestScrubUserExtIDs(t *testing.T) {
+	testCases := []struct {
+		description string
+		userExt     json.RawMessage
+		expected    json.RawMessage
+	}{
+		{
+			description: "Nil",
+			userExt:     nil,
+			expected:    nil,
+		},
+		{
+			description: "Empty String",
+			userExt:     json.RawMessage(``),
+			expected:    json.RawMessage(``),
+		},
+		{
+			description: "Empty Object",
+			userExt:     json.RawMessage(`{}`),
+			expected:    json.RawMessage(`{}`),
+		},
+		{
+			description: "Do Nothing When Malformed",
+			userExt:     json.RawMessage(`malformed`),
+			expected:    json.RawMessage(`malformed`),
+		},
+		{
+			description: "Do Nothing When No IDs Present",
+			userExt:     json.RawMessage(`{"anyExisting":42}}`),
+			expected:    json.RawMessage(`{"anyExisting":42}}`),
+		},
+		{
+			description: "Remove eids + digitrust",
+			userExt:     json.RawMessage(`{"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}],"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			expected:    json.RawMessage(`{}`),
+		},
+		{
+			description: "Remove eids + digitrust - With Other Data",
+			userExt:     json.RawMessage(`{"anyExisting":42,"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}],"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			expected:    json.RawMessage(`{"anyExisting":42}`),
+		},
+		{
+			description: "Remove eids + digitrust - With Other Nested Data",
+			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}],"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
+		},
+		{
+			description: "Remove eids Only",
+			userExt:     json.RawMessage(`{"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
+			expected:    json.RawMessage(`{}`),
+		},
+		{
+			description: "Remove eids Only - Empty Array",
+			userExt:     json.RawMessage(`{"eids":[]}`),
+			expected:    json.RawMessage(`{}`),
+		},
+		{
+			description: "Remove eids Only - With Other Data",
+			userExt:     json.RawMessage(`{"anyExisting":42,"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
+			expected:    json.RawMessage(`{"anyExisting":42}`),
+		},
+		{
+			description: "Remove eids Only - With Other Nested Data",
+			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
+			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
+		},
+		{
+			description: "Remove digitrust Only",
+			userExt:     json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			expected:    json.RawMessage(`{}`),
+		},
+		{
+			description: "Remove digitrust Only - With Other Data",
+			userExt:     json.RawMessage(`{"anyExisting":42,"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			expected:    json.RawMessage(`{"anyExisting":42}`),
+		},
+		{
+			description: "Remove digitrust Only - With Other Nested Data",
+			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
+		},
+	}
+
+	for _, test := range testCases {
+		result := scrubUserExtIDs(test.userExt)
+		assert.Equal(t, test.expected, result, test.description)
+	}
 }

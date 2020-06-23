@@ -8,12 +8,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 
 	"github.com/prebid/prebid-server/gdpr"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
+	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -132,7 +134,7 @@ func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb.Bid, mockServerU
 		adapterMap[bidder] = adaptBidder(&mockTargetingBidder{
 			mockServerURL: mockServerURL,
 			bids:          bids,
-		}, client)
+		}, client, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 	}
 	return adapterMap
 }

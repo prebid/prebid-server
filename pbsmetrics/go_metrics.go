@@ -48,6 +48,9 @@ type Metrics struct {
 	ImpsTypeAudio  metrics.Meter
 	ImpsTypeNative metrics.Meter
 
+	TimeoutNotificationSuccess metrics.Meter
+	TimeoutNotificationFailure metrics.Meter
+
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
 	accountMetrics        map[string]*accountMetrics
@@ -131,6 +134,9 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		ImpsTypeAudio:  blankMeter,
 		ImpsTypeNative: blankMeter,
 
+		TimeoutNotificationSuccess: blankMeter,
+		TimeoutNotificationFailure: blankMeter,
+
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
 		MetricsDisabled: disableMetrics,
@@ -209,6 +215,9 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 
 	newMetrics.userSyncSet[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.sets", registry)
 	newMetrics.userSyncGDPRPrevent[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.gdpr_prevent", registry)
+
+	newMetrics.TimeoutNotificationSuccess = metrics.GetOrRegisterMeter("timeout_notification.ok", registry)
+	newMetrics.TimeoutNotificationFailure = metrics.GetOrRegisterMeter("timeout_notification.failed", registry)
 	return newMetrics
 }
 
@@ -542,6 +551,15 @@ func (me *Metrics) RecordRequestQueueTime(success bool, requestType RequestType,
 		me.RequestsQueueTimer[requestType][success].Update(length)
 	}
 
+}
+
+func (me *Metrics) RecordTimeoutNotice(success bool) {
+	if success {
+		me.TimeoutNotificationSuccess.Mark(1)
+	} else {
+		me.TimeoutNotificationFailure.Mark(1)
+	}
+	return
 }
 
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {
