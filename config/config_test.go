@@ -67,10 +67,12 @@ external_cache:
   host: www.externalprebidcache.net
   path: endpoints/cache
 http_client:
+  max_connections_per_host: 10
   max_idle_connections: 500
   max_idle_connections_per_host: 20
   idle_connection_timeout_seconds: 30
 http_client_cache:
+  max_connections_per_host: 5
   max_idle_connections: 1
   max_idle_connections_per_host: 2
   idle_connection_timeout_seconds: 3
@@ -217,9 +219,11 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
 	cmpStrings(t, "external_cache.host", cfg.ExtCacheURL.Host, "www.externalprebidcache.net")
 	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "endpoints/cache")
+	cmpInts(t, "http_client.max_connections_per_host", cfg.Client.MaxConnsPerHost, 10)
 	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
 	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
 	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
+	cmpInts(t, "http_client_cache.max_connections_per_host", cfg.CacheClient.MaxConnsPerHost, 5)
 	cmpInts(t, "http_client_cache.max_idle_connections", cfg.CacheClient.MaxIdleConns, 1)
 	cmpInts(t, "http_client_cache.max_idle_connections_per_host", cfg.CacheClient.MaxIdleConnsPerHost, 2)
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
