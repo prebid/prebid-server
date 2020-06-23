@@ -16,10 +16,10 @@
                         }
                     ]
                 },
-                "tagid": "100000000",
+                "tagid": "17",
                 "ext": {
                     "bidder": {
-                        "TagID": "100000000"
+                        "TagID": "17"
                     }
                 }
             }
@@ -53,10 +53,10 @@
                                 }
                             ]
                         },
-                        "tagid": "100000000",
+                        "tagid": "17",
                         "ext": {
                             "bidder": {
-                                "TagID": "100000000"
+                                "TagID": "17"
                             }
                         }
                     }
@@ -72,13 +72,13 @@
             }
 		},
 		"mockResponse": {
-			"status": 404,
-			"body": {}
-		}
+			"status": 200,
+			"body": ""
+        }
     }],
     "expectedMakeBidsErrors": [
         {
-          "value": "Unexpected status code: 404. Run with request.debug = 1 for more info",
+          "value": "json: cannot unmarshal string into Go value of type openrtb.BidResponse",
           "comparison": "literal"
         }
     ]
