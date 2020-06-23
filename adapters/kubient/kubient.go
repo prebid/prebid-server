@@ -28,6 +28,24 @@ func (adapter *KubientAdapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(openRTBRequest.Imp[0].Ext, &bidderExt); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: "ext.bidder not provided",
+		}}
+	}
+	var kubientExt openrtb_ext.ExtImpKubient
+	if err := json.Unmarshal(bidderExt.Bidder, &kubientExt); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: "ext.bidder.zoneid is not provided",
+		}}
+	}
+	if kubientExt.ZoneID == "" {
+		return nil, []error{&errortypes.BadInput{
+			Message: "zoneid is empty",
+		}}
+	}
+
 	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
 		errs = append(errs, err)
