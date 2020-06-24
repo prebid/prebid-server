@@ -38,7 +38,18 @@
     },
     "user": {
       "ext": {
-        "consent": "gdprConsentString"
+        "consent": "gdprConsentString",
+        "data": {
+          "keywords": [
+            "a",
+            "b"
+          ],
+          "gender": "M",
+          "yob": "1984",
+          "geo": {
+            "country": "ca"
+          }
+        }
       }
     },
     "regs": {
@@ -81,8 +92,22 @@
           ],
           "user": {
             "ext": {
-              "consent": "gdprConsentString"
-            }
+              "consent": "gdprConsentString",
+              "data": {
+                "keywords": [
+                  "a",
+                  "b"
+                ],
+                "gender": "M",
+                "yob": "1984",
+                "geo": {
+                  "country": "ca"
+                }
+              }
+            },
+            "gender": "M",
+            "keywords": "a,b",
+            "yob": 1984
           },
           "device": {
             "ua": "test-user-agent",

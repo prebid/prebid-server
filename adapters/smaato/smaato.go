@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
@@ -65,6 +66,24 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		siteCopy := *request.Site
 		siteCopy.Publisher = &openrtb.Publisher{ID: smaatoParams.PublisherID}
 		request.Site = &siteCopy
+	}
+
+	if request.User != nil && request.User.Ext != nil {
+		var result map[string]interface{}
+		err := json.Unmarshal([]byte(request.User.Ext), &result)
+
+		if err == nil {
+			dataObj := result["data"].(map[string]interface{})
+			userCopy := *request.User
+			userCopy.Gender = (dataObj["gender"]).(string)
+			userCopy.Yob, _ = strconv.ParseInt(dataObj["yob"].(string), 10, 32)
+			keywordStringArray := getStringArray(dataObj, "keywords")
+			userCopy.Keywords = strings.Join(keywordStringArray, ",")
+
+			request.User = &userCopy
+		} else {
+			errs = append(errs, err)
+		}
 	}
 
 	// Setting ext client info
@@ -214,4 +233,13 @@ func parseSmaatoParams(imp *openrtb.Imp) (smaatoParams, error) {
 		return smaatoExt, err
 	}
 	return smaatoExt, nil
+}
+
+func getStringArray(dataObj map[string]interface{}, key string) []string {
+	keywordArray := dataObj[key].([]interface{})
+	keywordStringArray := make([]string, len(keywordArray))
+	for i, v := range keywordArray {
+		keywordStringArray[i] = v.(string)
+	}
+	return keywordStringArray
 }
