@@ -101,7 +101,7 @@ func preloadLabelValues(m *Metrics) {
 	})
 
 	preloadLabelValuesForCounter(m.tcfMetrics, map[string][]string{
-		versionLabel: {"err", "v1", "v2"},
+		versionLabel: tcfVersionsAsString(),
 		sourceLabel:  {string(sourceRequest)},
 	})
 }

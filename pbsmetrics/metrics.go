@@ -248,6 +248,24 @@ func RequestActions() []RequestAction {
 	}
 }
 
+// TCFVersionValue : The possible values for TCF versions
+type TCFVersionValue string
+
+const (
+	TCFVersionErr TCFVersionValue = "err"
+	TCFVersionV1  TCFVersionValue = "v1"
+	TCFVersionV2  TCFVersionValue = "v2"
+)
+
+// TCFVersions rtuens the possible values for the TCF version
+func TCFVersions() []TCFVersionValue {
+	return []TCFVersionValue{
+		TCFVersionErr,
+		TCFVersionV1,
+		TCFVersionV2,
+	}
+}
+
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
 // The first three metrics function fire off once per incoming request, so total metrics
 // will equal the total number of incoming requests. The remaining 5 fire off per outgoing

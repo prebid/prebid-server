@@ -1,7 +1,6 @@
 package prometheusmetrics
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -44,6 +43,9 @@ type Metrics struct {
 
 	// Account Metrics
 	accountRequests *prometheus.CounterVec
+
+	// Lookup tables
+	tcfVersions []string
 }
 
 const (
@@ -170,6 +172,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"privacy_tcf",
 		"Count of TCF versions for requests where GDPR was enforced.",
 		[]string{versionLabel, sourceLabel})
+	metrics.tcfVersions = tcfVersionsAsString()
 
 	metrics.adapterBids = newCounter(cfg, metrics.Registry,
 		"adapter_bids",
@@ -436,9 +439,11 @@ func (m *Metrics) RecordTimeoutNotice(success bool) {
 }
 
 func (m *Metrics) RecordTCFReq(version int) {
-	var value string = "err"
-	if version > 0 {
-		value = fmt.Sprintf("v%d", version)
+	var value string
+	if version >= 0 && version < len(m.tcfVersions) {
+		value = m.tcfVersions[version]
+	} else {
+		value = m.tcfVersions[0]
 	}
 	m.tcfMetrics.With(prometheus.Labels{
 		versionLabel: value,
