@@ -72,8 +72,8 @@ func TestIsSecure(t *testing.T) {
 }
 
 func TestFindIP(t *testing.T) {
-	alwaysTrue := hardcodedResponseIPMatcher{response: true}
-	alwaysFalse := hardcodedResponseIPMatcher{response: false}
+	alwaysTrue := hardcodedResponseIPValidator{response: true}
+	alwaysFalse := hardcodedResponseIPValidator{response: false}
 
 	testCases := []struct {
 		description   string
@@ -81,7 +81,7 @@ func TestFindIP(t *testing.T) {
 		xForwardedFor string
 		xRealIP       string
 		remoteAddr    string
-		matcher       iputil.IPMatcher
+		validator     iputil.IPValidator
 		expectedIP    net.IP
 		expectedVer   iputil.IPVersion
 	}{
@@ -91,202 +91,202 @@ func TestFindIP(t *testing.T) {
 			expectedVer: iputil.IPvUnknown,
 		},
 		{
-			description:   "False Matcher - IPv4",
+			description:   "False Validator - IPv4",
 			trueClientIP:  "1.1.1.1",
 			xForwardedFor: "2.2.2.2, 3.3.3.3",
 			xRealIP:       "4.4.4.4",
 			remoteAddr:    "5.5.5.5:5",
-			matcher:       alwaysFalse,
+			validator:     alwaysFalse,
 			expectedIP:    nil,
 			expectedVer:   iputil.IPvUnknown,
 		},
 		{
-			description:   "False Matcher - IPv6",
+			description:   "False Validator - IPv6",
 			trueClientIP:  "1111::",
 			xForwardedFor: "2222::, 3333::",
 			xRealIP:       "4444::",
 			remoteAddr:    "[5555::]:5]",
-			matcher:       alwaysFalse,
+			validator:     alwaysFalse,
 			expectedIP:    nil,
 			expectedVer:   iputil.IPvUnknown,
 		},
 		{
-			description:   "True Matcher - IPv4 - True Client IP",
+			description:   "True Validator - IPv4 - True Client IP",
 			trueClientIP:  "1.1.1.1",
 			xForwardedFor: "2.2.2.2, 3.3.3.3",
 			xRealIP:       "4.4.4.4",
 			remoteAddr:    "5.5.5.5:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("1.1.1.1"),
 			expectedVer:   iputil.IPv4,
 		},
 		{
-			description:   "True Matcher - IPv4 - True Client IP - Ignore Whitespace",
+			description:   "True Validator - IPv4 - True Client IP - Ignore Whitespace",
 			trueClientIP:  "   1.1.1.1 ",
 			xForwardedFor: "2.2.2.2, 3.3.3.3",
 			xRealIP:       "4.4.4.4",
 			remoteAddr:    "5.5.5.5:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("1.1.1.1"),
 			expectedVer:   iputil.IPv4,
 		},
 		{
-			description:   "True Matcher - IPv4 - X Forwarded For",
+			description:   "True Validator - IPv4 - X Forwarded For",
 			trueClientIP:  "",
 			xForwardedFor: "2.2.2.2, 3.3.3.3",
 			xRealIP:       "4.4.4.4",
 			remoteAddr:    "5.5.5.5:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("2.2.2.2"),
 			expectedVer:   iputil.IPv4,
 		},
 		{
-			description:   "True Matcher - IPv4 - X Forwarded For - Ignore Whitespace",
+			description:   "True Validator - IPv4 - X Forwarded For - Ignore Whitespace",
 			trueClientIP:  "",
 			xForwardedFor: "   2.2.2.2, 3.3.3.3 ",
 			xRealIP:       "4.4.4.4",
 			remoteAddr:    "5.5.5.5:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("2.2.2.2"),
 			expectedVer:   iputil.IPv4,
 		},
 		{
-			description:   "True Matcher - IPv4 - X Real IP",
+			description:   "True Validator - IPv4 - X Real IP",
 			trueClientIP:  "",
 			xForwardedFor: "",
 			xRealIP:       "4.4.4.4",
 			remoteAddr:    "5.5.5.5:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("4.4.4.4"),
 			expectedVer:   iputil.IPv4,
 		},
 		{
-			description:   "True Matcher - IPv4 - X Real IP - Ignore Whitespace",
+			description:   "True Validator - IPv4 - X Real IP - Ignore Whitespace",
 			trueClientIP:  "",
 			xForwardedFor: "",
 			xRealIP:       "   4.4.4.4 ",
 			remoteAddr:    "5.5.5.5:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("4.4.4.4"),
 			expectedVer:   iputil.IPv4,
 		},
 		{
-			description:   "True Matcher - IPv4 - Remote Address",
+			description:   "True Validator - IPv4 - Remote Address",
 			trueClientIP:  "",
 			xForwardedFor: "",
 			xRealIP:       "",
 			remoteAddr:    "5.5.5.5:80",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("5.5.5.5"),
 			expectedVer:   iputil.IPv4,
 		},
 		{
-			description:   "True Matcher - IPv6 - True Client IP",
+			description:   "True Validator - IPv6 - True Client IP",
 			trueClientIP:  "1111::",
 			xForwardedFor: "2222::, 3333::",
 			xRealIP:       "4444::",
 			remoteAddr:    "[5555::]:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("1111::"),
 			expectedVer:   iputil.IPv6,
 		},
 		{
-			description:   "True Matcher - IPv6 - True Client IP - Ignore Whitespace",
+			description:   "True Validator - IPv6 - True Client IP - Ignore Whitespace",
 			trueClientIP:  "   1111:: ",
 			xForwardedFor: "2222::, 3333::",
 			xRealIP:       "4444::",
 			remoteAddr:    "[5555::]:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("1111::"),
 			expectedVer:   iputil.IPv6,
 		},
 		{
-			description:   "True Matcher - IPv6 - X Forwarded For",
+			description:   "True Validator - IPv6 - X Forwarded For",
 			trueClientIP:  "",
 			xForwardedFor: "2222::, 3333::",
 			xRealIP:       "4444::",
 			remoteAddr:    "[5555::]:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("2222::"),
 			expectedVer:   iputil.IPv6,
 		},
 		{
-			description:   "True Matcher - IPv6 - X Forwarded For - Ignore Whitespace",
+			description:   "True Validator - IPv6 - X Forwarded For - Ignore Whitespace",
 			trueClientIP:  "",
 			xForwardedFor: "   2222::, 3333:: ",
 			xRealIP:       "4444::",
 			remoteAddr:    "[5555::]:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("2222::"),
 			expectedVer:   iputil.IPv6,
 		},
 		{
-			description:   "True Matcher - IPv6 - X Real IP",
+			description:   "True Validator - IPv6 - X Real IP",
 			trueClientIP:  "",
 			xForwardedFor: "",
 			xRealIP:       "4444::",
 			remoteAddr:    "[5555::]:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("4444::"),
 			expectedVer:   iputil.IPv6,
 		},
 		{
-			description:   "True Matcher - IPv6 - X Real IP - Ignore Whitespace",
+			description:   "True Validator - IPv6 - X Real IP - Ignore Whitespace",
 			trueClientIP:  "",
 			xForwardedFor: "",
 			xRealIP:       "    4444:: ",
 			remoteAddr:    "[5555::]:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("4444::"),
 			expectedVer:   iputil.IPv6,
 		},
 		{
-			description:   "True Matcher - IPv6 - Remote Address",
+			description:   "True Validator - IPv6 - Remote Address",
 			trueClientIP:  "",
 			xForwardedFor: "",
 			xRealIP:       "",
 			remoteAddr:    "[5555::]:5",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("5555::"),
 			expectedVer:   iputil.IPv6,
 		},
 		{
-			description:   "True Matcher - Malformed - All",
+			description:   "True Validator - Malformed - All",
 			trueClientIP:  "malformed",
 			xForwardedFor: "malformed",
 			xRealIP:       "malformed",
 			remoteAddr:    "malformed",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    nil,
 			expectedVer:   iputil.IPvUnknown,
 		},
 		{
-			description:   "True Matcher - Malformed - Some",
+			description:   "True Validator - Malformed - Some",
 			trueClientIP:  "malformed",
 			xForwardedFor: "malformed",
 			xRealIP:       "4.4.4.4",
 			remoteAddr:    "malformed",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("4.4.4.4"),
 			expectedVer:   iputil.IPv4,
 		},
 		{
-			description:   "True Matcher - Malformed - X Forwarded For - IPv4",
+			description:   "True Validator - Malformed - X Forwarded For - IPv4",
 			trueClientIP:  "malformed",
 			xForwardedFor: "malformed, 4.4.4.4, 3333::, malformed",
 			xRealIP:       "malformed",
 			remoteAddr:    "malformed",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("4.4.4.4"),
 			expectedVer:   iputil.IPv4,
 		},
 		{
-			description:   "True Matcher - Malformed - X Forwarded For - IPv6",
+			description:   "True Validator - Malformed - X Forwarded For - IPv6",
 			trueClientIP:  "malformed",
 			xForwardedFor: "malformed, 3333::, 4.4.4.4, malformed",
 			xRealIP:       "malformed",
 			remoteAddr:    "malformed",
-			matcher:       alwaysTrue,
+			validator:     alwaysTrue,
 			expectedIP:    net.ParseIP("3333::"),
 			expectedVer:   iputil.IPv6,
 		},
@@ -310,7 +310,7 @@ func TestFindIP(t *testing.T) {
 		request.RemoteAddr = test.remoteAddr
 
 		// Run Test
-		ip, ver := FindIP(request, test.matcher)
+		ip, ver := FindIP(request, test.validator)
 
 		// Assertions
 		assert.Equal(t, test.expectedIP, ip, test.description+":ip")
@@ -318,10 +318,10 @@ func TestFindIP(t *testing.T) {
 	}
 }
 
-type hardcodedResponseIPMatcher struct {
+type hardcodedResponseIPValidator struct {
 	response bool
 }
 
-func (m hardcodedResponseIPMatcher) Match(net.IP, iputil.IPVersion) bool {
-	return m.response
+func (v hardcodedResponseIPValidator) IsValid(net.IP, iputil.IPVersion) bool {
+	return v.response
 }

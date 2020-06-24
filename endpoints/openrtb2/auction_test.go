@@ -672,7 +672,7 @@ func TestStoredRequests(t *testing.T) {
 		openrtb_ext.BidderMap,
 		nil,
 		nil,
-		hardcodedResponseIPMatcher{response: true},
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	for i, requestData := range testStoredRequests {
@@ -711,7 +711,7 @@ func TestOversizedRequest(t *testing.T) {
 		openrtb_ext.BidderMap,
 		nil,
 		nil,
-		hardcodedResponseIPMatcher{response: true},
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -746,7 +746,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		openrtb_ext.BidderMap,
 		nil,
 		nil,
-		hardcodedResponseIPMatcher{response: true},
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -886,7 +886,7 @@ func TestDisabledBidder(t *testing.T) {
 		openrtb_ext.BidderMap,
 		nil,
 		nil,
-		hardcodedResponseIPMatcher{response: true},
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -922,7 +922,7 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 		openrtb_ext.BidderMap,
 		nil,
 		nil,
-		hardcodedResponseIPMatcher{response: true},
+		hardcodedResponseIPValidator{response: true},
 	}
 	errs := deps.validateImpExt(imp, nil, 0)
 	assert.JSONEq(t, `{"appnexus":{"placement_id":555}}`, string(imp.Ext))
@@ -963,7 +963,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		openrtb_ext.BidderMap,
 		nil,
 		nil,
-		hardcodedResponseIPMatcher{response: true},
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	ui := uint64(1)
@@ -1007,7 +1007,7 @@ func TestCCPAInvalid(t *testing.T) {
 		openrtb_ext.BidderMap,
 		nil,
 		nil,
-		hardcodedResponseIPMatcher{response: true},
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	ui := uint64(1)
@@ -1043,7 +1043,7 @@ func TestSanitizeRequest(t *testing.T) {
 	testCases := []struct {
 		description  string
 		req          *openrtb.BidRequest
-		ipMatcher    iputil.IPMatcher
+		ipValidator  iputil.IPValidator
 		expectedIPv4 string
 		expectedIPv6 string
 	}{
@@ -1066,7 +1066,7 @@ func TestSanitizeRequest(t *testing.T) {
 					IPv6: "1111::",
 				},
 			},
-			ipMatcher:    hardcodedResponseIPMatcher{response: true},
+			ipValidator:  hardcodedResponseIPValidator{response: true},
 			expectedIPv4: "1.1.1.1",
 			expectedIPv6: "1111::",
 		},
@@ -1078,7 +1078,7 @@ func TestSanitizeRequest(t *testing.T) {
 					IPv6: "1111::",
 				},
 			},
-			ipMatcher:    hardcodedResponseIPMatcher{response: false},
+			ipValidator:  hardcodedResponseIPValidator{response: false},
 			expectedIPv4: "",
 			expectedIPv6: "",
 		},
@@ -1090,7 +1090,7 @@ func TestSanitizeRequest(t *testing.T) {
 					IPv6: "1.1.1.1",
 				},
 			},
-			ipMatcher:    hardcodedResponseIPMatcher{response: true},
+			ipValidator:  hardcodedResponseIPValidator{response: true},
 			expectedIPv4: "",
 			expectedIPv6: "",
 		},
@@ -1108,7 +1108,7 @@ func TestSanitizeRequest(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		sanitizeRequest(test.req, test.ipMatcher)
+		sanitizeRequest(test.req, test.ipValidator)
 		assert.Equal(t, test.expectedIPv4, test.req.Device.IP, test.description+":ipv4")
 		assert.Equal(t, test.expectedIPv6, test.req.Device.IPv6, test.description+":ipv6")
 	}
@@ -1538,10 +1538,10 @@ func newBidderInfo(cfg config.Adapter) adapters.BidderInfo {
 	}
 }
 
-type hardcodedResponseIPMatcher struct {
+type hardcodedResponseIPValidator struct {
 	response bool
 }
 
-func (m hardcodedResponseIPMatcher) Match(net.IP, iputil.IPVersion) bool {
-	return m.response
+func (v hardcodedResponseIPValidator) IsValid(net.IP, iputil.IPVersion) bool {
+	return v.response
 }

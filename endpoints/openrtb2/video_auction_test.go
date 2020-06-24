@@ -1125,7 +1125,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *p
 		openrtb_ext.BidderMap,
 		nil,
 		nil,
-		hardcodedResponseIPMatcher{response: true},
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	return deps, theMetrics, mockModule
@@ -1167,7 +1167,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		openrtb_ext.BidderMap,
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
-		hardcodedResponseIPMatcher{response: true},
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	return deps

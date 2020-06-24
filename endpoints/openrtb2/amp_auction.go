@@ -59,7 +59,7 @@ func NewAmpEndpoint(
 
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	ipMatcher := iputil.PublicNetworkIPMatcher{
+	ipValidator := iputil.PublicNetworkIPValidator{
 		IPv4PrivateNetworks: cfg.RequestValidation.IPv4PrivateNetworksParsed,
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
@@ -79,7 +79,7 @@ func NewAmpEndpoint(
 		bidderMap,
 		nil,
 		nil,
-		ipMatcher}).AmpAuction), nil
+		ipValidator}).AmpAuction), nil
 
 }
 

@@ -217,7 +217,7 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
-var ipv4Matcher iputil.IPMatcher = iputil.VersionIPMatcher{iputil.IPv4}
+var ipv4Validator iputil.IPValidator = iputil.VersionIPValidator{iputil.IPv4}
 
 func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.Cache, hostCookieConfig *config.HostCookie) (*PBSRequest, error) {
 	defer r.Body.Close()
@@ -238,7 +238,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 	if pbsReq.Device == nil {
 		pbsReq.Device = &openrtb.Device{}
 	}
-	if ip, _ := httputil.FindIP(r, ipv4Matcher); ip != nil {
+	if ip, _ := httputil.FindIP(r, ipv4Validator); ip != nil {
 		pbsReq.Device.IP = ip.String()
 	}
 

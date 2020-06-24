@@ -36,42 +36,42 @@ func IsSecure(r *http.Request) bool {
 	return false
 }
 
-// FindIP returns the first ip address found in the http request matching the predicate m.
-func FindIP(r *http.Request, m iputil.IPMatcher) (net.IP, iputil.IPVersion) {
-	if ip, ver := findTrueClientIP(r, m); ip != nil {
+// FindIP returns the first ip address found in the http request matching the predicate v.
+func FindIP(r *http.Request, v iputil.IPValidator) (net.IP, iputil.IPVersion) {
+	if ip, ver := findTrueClientIP(r, v); ip != nil {
 		return ip, ver
 	}
 
-	if ip, ver := findForwardedFor(r, m); ip != nil {
+	if ip, ver := findForwardedFor(r, v); ip != nil {
 		return ip, ver
 	}
 
-	if ip, ver := findRealIP(r, m); ip != nil {
+	if ip, ver := findRealIP(r, v); ip != nil {
 		return ip, ver
 	}
 
-	if ip, ver := findRemoteAddr(r, m); ip != nil {
+	if ip, ver := findRemoteAddr(r, v); ip != nil {
 		return ip, ver
 	}
 
 	return nil, iputil.IPvUnknown
 }
 
-func findTrueClientIP(r *http.Request, m iputil.IPMatcher) (net.IP, iputil.IPVersion) {
-	if v := r.Header.Get(trueClientIP); v != "" {
-		v = strings.TrimSpace(v)
-		if ip, ver := iputil.ParseIP(v); ip != nil && m.Match(ip, ver) {
+func findTrueClientIP(r *http.Request, v iputil.IPValidator) (net.IP, iputil.IPVersion) {
+	if value := r.Header.Get(trueClientIP); value != "" {
+		value = strings.TrimSpace(value)
+		if ip, ver := iputil.ParseIP(value); ip != nil && v.IsValid(ip, ver) {
 			return ip, ver
 		}
 	}
 	return nil, iputil.IPvUnknown
 }
 
-func findForwardedFor(r *http.Request, m iputil.IPMatcher) (net.IP, iputil.IPVersion) {
-	if v := r.Header.Get(xForwardedFor); v != "" {
-		for _, p := range strings.Split(v, ",") {
+func findForwardedFor(r *http.Request, v iputil.IPValidator) (net.IP, iputil.IPVersion) {
+	if value := r.Header.Get(xForwardedFor); value != "" {
+		for _, p := range strings.Split(value, ",") {
 			p = strings.TrimSpace(p)
-			if ip, ver := iputil.ParseIP(p); ip != nil && m.Match(ip, ver) {
+			if ip, ver := iputil.ParseIP(p); ip != nil && v.IsValid(ip, ver) {
 				return ip, ver
 			}
 		}
@@ -79,19 +79,19 @@ func findForwardedFor(r *http.Request, m iputil.IPMatcher) (net.IP, iputil.IPVer
 	return nil, iputil.IPvUnknown
 }
 
-func findRealIP(r *http.Request, m iputil.IPMatcher) (net.IP, iputil.IPVersion) {
-	if v := r.Header.Get(xRealIP); v != "" {
-		v = strings.TrimSpace(v)
-		if ip, ver := iputil.ParseIP(v); ip != nil && m.Match(ip, ver) {
+func findRealIP(r *http.Request, v iputil.IPValidator) (net.IP, iputil.IPVersion) {
+	if value := r.Header.Get(xRealIP); value != "" {
+		value = strings.TrimSpace(value)
+		if ip, ver := iputil.ParseIP(value); ip != nil && v.IsValid(ip, ver) {
 			return ip, ver
 		}
 	}
 	return nil, iputil.IPvUnknown
 }
 
-func findRemoteAddr(r *http.Request, m iputil.IPMatcher) (net.IP, iputil.IPVersion) {
+func findRemoteAddr(r *http.Request, v iputil.IPValidator) (net.IP, iputil.IPVersion) {
 	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		if ip, ver := iputil.ParseIP(host); ip != nil && m.Match(ip, ver) {
+		if ip, ver := iputil.ParseIP(host); ip != nil && v.IsValid(ip, ver) {
 			return ip, ver
 		}
 	}

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPublicNetworkIPMatcher(t *testing.T) {
+func TestPublicNetworkIPValidator(t *testing.T) {
 	ipv4Network1 := net.IPNet{IP: net.ParseIP("1.0.0.0"), Mask: net.CIDRMask(8, 32)}
 	ipv4Network2 := net.IPNet{IP: net.ParseIP("2.0.0.0"), Mask: net.CIDRMask(8, 32)}
 
@@ -161,62 +161,62 @@ func TestPublicNetworkIPMatcher(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		requestValidation := PublicNetworkIPMatcher{
+		requestValidation := PublicNetworkIPValidator{
 			IPv4PrivateNetworks: test.ipv4PrivateNetworks,
 			IPv6PrivateNetworks: test.ipv6PrivateNetworks,
 		}
 
-		result := requestValidation.Match(test.ip, test.ver)
+		result := requestValidation.IsValid(test.ip, test.ver)
 
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
-func TestVersionIPMatcher(t *testing.T) {
+func TestVersionIPValidator(t *testing.T) {
 	testCases := []struct {
-		description    string
-		matcherVersion IPVersion
-		ip             net.IP
-		ipVer          IPVersion
-		expectedMatch  bool
+		description      string
+		validatorVersion IPVersion
+		ip               net.IP
+		ipVer            IPVersion
+		expected         bool
 	}{
 		{
-			description:    "IPv4",
-			matcherVersion: IPv4,
-			ip:             net.ParseIP("1.1.1.1"),
-			ipVer:          IPv4,
-			expectedMatch:  true,
+			description:      "IPv4",
+			validatorVersion: IPv4,
+			ip:               net.ParseIP("1.1.1.1"),
+			ipVer:            IPv4,
+			expected:         true,
 		},
 		{
-			description:    "IPv4 - Given Unknown",
-			matcherVersion: IPv4,
-			ip:             nil,
-			ipVer:          IPvUnknown,
-			expectedMatch:  false,
+			description:      "IPv4 - Given Unknown",
+			validatorVersion: IPv4,
+			ip:               nil,
+			ipVer:            IPvUnknown,
+			expected:         false,
 		},
 		{
-			description:    "IPv6",
-			matcherVersion: IPv6,
-			ip:             net.ParseIP("1111::"),
-			ipVer:          IPv6,
-			expectedMatch:  true,
+			description:      "IPv6",
+			validatorVersion: IPv6,
+			ip:               net.ParseIP("1111::"),
+			ipVer:            IPv6,
+			expected:         true,
 		},
 		{
-			description:    "IPv6 - Given Unknown",
-			matcherVersion: IPv6,
-			ip:             nil,
-			ipVer:          IPvUnknown,
-			expectedMatch:  false,
+			description:      "IPv6 - Given Unknown",
+			validatorVersion: IPv6,
+			ip:               nil,
+			ipVer:            IPvUnknown,
+			expected:         false,
 		},
 	}
 
 	for _, test := range testCases {
-		m := VersionIPMatcher{
-			Version: test.matcherVersion,
+		m := VersionIPValidator{
+			Version: test.validatorVersion,
 		}
 
-		result := m.Match(test.ip, test.ipVer)
+		result := m.IsValid(test.ip, test.ipVer)
 
-		assert.Equal(t, test.expectedMatch, result)
+		assert.Equal(t, test.expected, result)
 	}
 }

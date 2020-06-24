@@ -43,7 +43,7 @@ func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamVal
 
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	ipMatcher := iputil.PublicNetworkIPMatcher{
+	ipValidator := iputil.PublicNetworkIPValidator{
 		IPv4PrivateNetworks: cfg.RequestValidation.IPv4PrivateNetworksParsed,
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
@@ -65,7 +65,7 @@ func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamVal
 		bidderMap,
 		cache,
 		videoEndpointRegexp,
-		ipMatcher}).VideoAuctionEndpoint), nil
+		ipValidator}).VideoAuctionEndpoint), nil
 }
 
 /*

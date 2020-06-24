@@ -20,9 +20,8 @@ func ParseIP(v string) (net.IP, IPVersion) {
 	if ip := net.ParseIP(v); ip != nil {
 		if strings.ContainsRune(v, ':') {
 			return ip, IPv6
-		} else {
-			return ip, IPv4
 		}
+		return ip, IPv4
 	}
 	return nil, IPvUnknown
 }
