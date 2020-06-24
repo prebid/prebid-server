@@ -176,6 +176,9 @@ func (rc *RateConverter) Rates() Conversions {
 
 // CheckStaleRates checks if loaded third party conversion rates are stale
 func (rc *RateConverter) CheckStaleRates() bool {
+	if rc.staleRatesThreshold <= 0 {
+		return false
+	}
 	currentTime := time.Now().UTC()
 	if lastUpdated := rc.lastUpdated.Load(); lastUpdated != nil {
 		delta := currentTime.Sub(lastUpdated.(time.Time).UTC())

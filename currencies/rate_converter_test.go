@@ -529,6 +529,51 @@ func TestUseConstantRatesUntilFetchIsSuccessful(t *testing.T) {
 	assert.Equal(t, currencyConverter.Rates(), expectedRates, "Rates() should return expected rates")
 }
 
+func TestRatesAreNeverStale(t *testing.T) {
+	callCnt := 0
+	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
+		func(rw http.ResponseWriter, req *http.Request) {
+			if callCnt == 0 {
+				rw.WriteHeader(http.StatusOK)
+				rw.Write([]byte(getMockRates()))
+			} else {
+				rw.WriteHeader(http.StatusNotFound)
+			}
+			callCnt++
+		}),
+	)
+
+	defer mockedHttpServer.Close()
+
+	expectedRates := &currencies.Rates{
+		DataAsOf: time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
+		Conversions: map[string]map[string]float64{
+			"USD": {
+				"GBP": 0.77208,
+			},
+			"GBP": {
+				"USD": 1.2952,
+			},
+		},
+	}
+
+	// Execute:
+	currencyConverter := currencies.NewRateConverter(
+		&http.Client{},
+		mockedHttpServer.URL,
+		time.Duration(100)*time.Millisecond,
+		time.Duration(0)*time.Millisecond,
+	)
+
+	// Verify:
+	// Rates are valid at t=0 and are then invalid at 100ms
+	assert.Equal(t, currencyConverter.Rates(), expectedRates, "Rates() should return expected rates")
+
+	time.Sleep(500 * time.Millisecond)
+	// Rates have been invalid for ~400ms
+	assert.Equal(t, currencyConverter.Rates(), expectedRates, "Rates() should return expected rates")
+}
+
 func TestRace(t *testing.T) {
 
 	// This test is checking that no race conditions appear in rate converter.
