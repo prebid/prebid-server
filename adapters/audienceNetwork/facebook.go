@@ -281,7 +281,7 @@ func modifyImpCustom(jsonData []byte, imp *openrtb.Imp) ([]byte, error) {
 	} else if len(impSlice) == 0 {
 		return jsonData, errors.New("unable to find imp[0] in json data")
 	} else if impMap, ok = impSlice[0].(map[string]interface{}); !ok {
-		return jsonData, errors.New("unexpected type of imp[0] found in json data")
+		return jsonData, errors.New("unexpected type for imp[0] found in json data")
 	}
 
 	switch impType {
