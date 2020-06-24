@@ -78,7 +78,22 @@ data:
   PBS_MONITORING_NEWRELIC_LICENSE_KEY: {{ default "ThisValueIs40CharacterNewRelicLicenseKey" (env "PBS_MONITORING_NEWRELIC_LICENSE_KEY") | quote }}
   PBS_MONITORING_NEWRELIC_LOG_LEVEL: "error" # // values: https://github.com/sirupsen/logrus/blob/39a5ad12948d094ddd5d5a6a4a4281f453d77562/logrus.go#L25
 
-  PBS_ADAPTERS_RUBICON_DISABLED: "false"
+  # rubicon values
+  PBS_ADAPTERS_RUBICON_DISABLED:                "false"
+  PBS_ADAPTERS_RUBICON_XAPI_USERNAME:           "username"
+  PBS_ADAPTERS_RUBICON_XAPI_PASSWORD:           "password"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_EAST:   "http://exapi-us-east.rubiconproject.com/a/api/exchange.json"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_WEST:   "http://exapi-us-west.rubiconproject.com/a/api/exchange.json"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_EU:        "http://exapi-eu.rubiconproject.com/a/api/exchange.json"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_APAC:      "http://exapi-apac.rubiconproject.com/a/api/exchange.json"
+
+  # liftoff values
+  PBS_ADAPTERS_LIFTOFF_DISABLED: "false"
+  PBS_ADAPTERS_LIFTOFF_XAPI_USERNAME: "username"
+  PBS_ADAPTERS_LIFTOFF_XAPI_PASSWORD: "password"
+  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_US_EAST: "http://liftoff-us-east.com/givemeads"
+  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_EU: "http://liftoff-eu.com/givemeads"
+  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_APAC: "http://liftoff-apac.com/givemeads"
 ---
 ########################################################################################################################
 ## WORKLOAD-RELATED MANIFESTS
