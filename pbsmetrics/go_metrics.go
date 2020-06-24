@@ -462,7 +462,6 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 // Keeps track of created and resused connections to adapter bidders and logs its idle time as well
 // as the time from the connection request, to the connection creation, or reuse from the pool
 func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
-	connSuccess bool,
 	info httptrace.GotConnInfo,
 	obtainConnectionTime time.Duration) {
 
@@ -472,17 +471,24 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 		return
 	}
 
-	if connSuccess {
-		if info.Reused {
-			am.ConnReused.Inc(1)
-		} else {
-			am.ConnCreated.Inc(1)
-		}
-		am.ConnIdleTime.Update(info.IdleTime)
+	if info.Reused {
+		am.ConnReused.Inc(1)
 	} else {
-		am.ConnError.Inc(1)
+		am.ConnCreated.Inc(1)
+	}
+	if info.WasIdle {
+		am.ConnIdleTime.Update(info.IdleTime)
 	}
 	am.ConnWaitTime.Update(obtainConnectionTime)
+}
+
+func (me *Metrics) RecordAdapterFailedConnections(adapterName openrtb_ext.BidderName) {
+	am, ok := me.AdapterMetrics[adapterName]
+	if !ok {
+		glog.Errorf("Trying to log adapter connection metrics for %s: adapter metrics not found", string(adapterName))
+		return
+	}
+	am.ConnError.Inc(1)
 }
 
 func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {

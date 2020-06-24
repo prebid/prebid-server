@@ -122,9 +122,15 @@ func (me *MultiMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabe
 // Keeps track of created and resused connections to adapter bidders and logs its idle time as well
 // as the time from the connection request, to the connection creation, or reuse from the pool
 // across all engines
-func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
+func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordAdapterConnections(bidderName, connSuccess, info, obtainConnectionTime)
+		thisME.RecordAdapterConnections(bidderName, info, obtainConnectionTime)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordAdapterFailedConnections(bidderName openrtb_ext.BidderName) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterFailedConnections(bidderName)
 	}
 }
 
@@ -248,7 +254,11 @@ func (me *DummyMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabe
 }
 
 // RecordAdapterConnections as a noop
-func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
+func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
+}
+
+// RecordAdapterFailedConnections as a noop
+func (me *DummyMetricsEngine) RecordAdapterFailedConnections(bidderName openrtb_ext.BidderName) {
 }
 
 // Times the DNS resolution process

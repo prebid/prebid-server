@@ -338,6 +338,7 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 			}
 
 		}
+		bidder.me.RecordAdapterFailedConnections(bidder.BidderName)
 		return &httpCallInfo{
 			request: req,
 			err:     err,
@@ -432,7 +433,7 @@ func (bidder *bidderAdapter) AddClientTrace(ctx context.Context) context.Context
 		GotConn: func(info httptrace.GotConnInfo) {
 			obtainConnTime := time.Now().Sub(connStart)
 
-			bidder.me.RecordAdapterConnections(bidder.BidderName, true, info, obtainConnTime)
+			bidder.me.RecordAdapterConnections(bidder.BidderName, info, obtainConnTime)
 		},
 		// DNSStart is called when a DNS lookup begins.
 		DNSStart: func(info httptrace.DNSStartInfo) {

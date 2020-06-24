@@ -197,8 +197,10 @@ func TestBidderTimeout(t *testing.T) {
 	defer server.Close()
 
 	bidder := &bidderAdapter{
-		Bidder: &mixedMultiBidder{},
-		Client: server.Client(),
+		Bidder:     &mixedMultiBidder{},
+		BidderName: openrtb_ext.BidderAppnexus,
+		Client:     server.Client(),
+		me:         &metricsConf.DummyMetricsEngine{},
 	}
 
 	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
@@ -1273,11 +1275,10 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	// Setup mock metrics
 	metrics := &pbsmetrics.MetricsEngineMock{}
 	expectedAdapterName := openrtb_ext.BidderAppnexus
-	expectedConnectionSuccess := true
 	compareConnInfo := func(info httptrace.GotConnInfo) bool { return !info.Reused && !info.WasIdle && info.IdleTime == 0 }
 	compareConnWaitTime := func(dur time.Duration) bool { return dur.Nanoseconds() > 0 }
 
-	metrics.On("RecordAdapterConnections", expectedAdapterName, expectedConnectionSuccess, mock.MatchedBy(compareConnInfo), mock.MatchedBy(compareConnWaitTime)).Once()
+	metrics.On("RecordAdapterConnections", expectedAdapterName, mock.MatchedBy(compareConnInfo), mock.MatchedBy(compareConnWaitTime)).Once()
 
 	// Run requestBid using an http.Client with a mock handler
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, metrics, openrtb_ext.BidderAppnexus)

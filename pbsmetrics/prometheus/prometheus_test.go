@@ -997,13 +997,11 @@ func TestRecordAdapterConnections(t *testing.T) {
 
 	type testIn struct {
 		adapterName openrtb_ext.BidderName
-		connSuccess bool
 		gotConnInfo httptrace.GotConnInfo
 		connWait    time.Duration
 	}
 
 	type testOut struct {
-		expectedConnErrorCount   int64
 		expectedConnReusedCount  int64
 		expectedConnCreatedCount int64
 		expectedConnIdleCount    uint64
@@ -1021,7 +1019,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 			description: "Successful, new connection created, was idle, has connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
-				connSuccess: true,
 				gotConnInfo: httptrace.GotConnInfo{
 					Reused:   false,
 					WasIdle:  true,
@@ -1030,7 +1027,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 				connWait: OneSecond * 5,
 			},
 			out: testOut{
-				expectedConnErrorCount:   0,
 				expectedConnReusedCount:  0,
 				expectedConnCreatedCount: 1,
 				expectedConnIdleCount:    1,
@@ -1043,7 +1039,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 			description: "Successful, new connection created, not idle, has connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
-				connSuccess: true,
 				gotConnInfo: httptrace.GotConnInfo{
 					Reused:  false,
 					WasIdle: false,
@@ -1051,7 +1046,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 				connWait: OneSecond * 4,
 			},
 			out: testOut{
-				expectedConnErrorCount:   0,
 				expectedConnReusedCount:  0,
 				expectedConnCreatedCount: 1,
 				expectedConnIdleCount:    0,
@@ -1064,7 +1058,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 			description: "Successful, was reused, was idle, no connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
-				connSuccess: true,
 				gotConnInfo: httptrace.GotConnInfo{
 					Reused:   true,
 					WasIdle:  true,
@@ -1072,7 +1065,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 				},
 			},
 			out: testOut{
-				expectedConnErrorCount:   0,
 				expectedConnReusedCount:  1,
 				expectedConnCreatedCount: 0,
 				expectedConnIdleCount:    1,
@@ -1085,7 +1077,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 			description: "Successful, was reused, not idle, has connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
-				connSuccess: true,
 				gotConnInfo: httptrace.GotConnInfo{
 					Reused:  true,
 					WasIdle: false,
@@ -1093,31 +1084,12 @@ func TestRecordAdapterConnections(t *testing.T) {
 				connWait: OneSecond * 5,
 			},
 			out: testOut{
-				expectedConnErrorCount:   0,
 				expectedConnReusedCount:  1,
 				expectedConnCreatedCount: 0,
 				expectedConnIdleCount:    0,
 				expectedConnIdleTime:     0,
 				expectedConnWaitCount:    1,
 				expectedConnWaitTime:     5,
-			},
-		},
-		{
-			description: "Unsuccessful connection, wait time still updated",
-			in: testIn{
-				adapterName: openrtb_ext.BidderAppnexus,
-				connSuccess: false,
-				gotConnInfo: httptrace.GotConnInfo{},
-				connWait:    OneSecond * 10,
-			},
-			out: testOut{
-				expectedConnErrorCount:   1,
-				expectedConnReusedCount:  0,
-				expectedConnCreatedCount: 0,
-				expectedConnIdleCount:    0,
-				expectedConnIdleTime:     0,
-				expectedConnWaitCount:    1,
-				expectedConnWaitTime:     10,
 			},
 		},
 	}
@@ -1134,15 +1106,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 			fmt.Sprintf("[%d] Metric: adapterWaitConnectionTime; Desc: %s", i, test.description),
 		}
 
-		m.RecordAdapterConnections(test.in.adapterName, test.in.connSuccess, test.in.gotConnInfo, test.in.connWait)
-
-		// Assert connection error was accounted correctly
-		assertCounterVecValue(t,
-			assertDesciptions[0],
-			"adapter_connection_errors",
-			m.adapterFailedConnections,
-			float64(test.out.expectedConnErrorCount),
-			prometheus.Labels{adapterLabel: string(test.in.adapterName)})
+		m.RecordAdapterConnections(test.in.adapterName, test.in.gotConnInfo, test.in.connWait)
 
 		// Assert number of reused connections
 		assertCounterVecValue(t,
@@ -1170,6 +1134,22 @@ func TestRecordAdapterConnections(t *testing.T) {
 		assert.Equal(t, test.out.expectedConnWaitCount, histogram.GetSampleCount(), assertDesciptions[5])
 		assert.Equal(t, test.out.expectedConnWaitTime, histogram.GetSampleSum(), assertDesciptions[6])
 	}
+}
+
+func TestRecordAdapterFailedConnections(t *testing.T) {
+	// Create metrics
+	m := createMetricsForTesting()
+
+	// Run test
+	m.RecordAdapterFailedConnections(openrtb_ext.BidderAppnexus)
+
+	// Assert connection error was accounted correctly
+	assertCounterVecValue(t,
+		"Metric: adapterFailedConnections",
+		"adapter_connection_errors",
+		m.adapterFailedConnections,
+		float64(1),
+		prometheus.Labels{adapterLabel: string(openrtb_ext.BidderAppnexus)})
 }
 
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {

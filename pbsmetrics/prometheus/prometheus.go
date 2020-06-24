@@ -384,34 +384,35 @@ func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	}
 }
 
-// Keeps track of created and resused connections to adapter bidders and logs its idle time as well
+// Keeps track of created and reused connections to adapter bidders and logs its idle time as well
 // as the time from the connection request, to the connection creation, or reuse from the pool
-func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, connSuccess bool, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
-	if connSuccess {
-		if info.Reused {
-			m.adapterReusedConnections.With(prometheus.Labels{
-				adapterLabel: string(adapterName),
-			}).Inc()
-		} else {
-			m.adapterCreatedConnections.With(prometheus.Labels{
-				adapterLabel: string(adapterName),
-			}).Inc()
-		}
-
-		if info.WasIdle {
-			m.adapterIdleConnectionTime.With(prometheus.Labels{
-				adapterLabel: string(adapterName),
-			}).Observe(info.IdleTime.Seconds())
-		}
-	} else {
-		m.adapterFailedConnections.With(prometheus.Labels{
+func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
+	if info.Reused {
+		m.adapterReusedConnections.With(prometheus.Labels{
 			adapterLabel: string(adapterName),
 		}).Inc()
+	} else {
+		m.adapterCreatedConnections.With(prometheus.Labels{
+			adapterLabel: string(adapterName),
+		}).Inc()
+	}
+
+	if info.WasIdle {
+		m.adapterIdleConnectionTime.With(prometheus.Labels{
+			adapterLabel: string(adapterName),
+		}).Observe(info.IdleTime.Seconds())
 	}
 
 	m.adapterConnectionWaitTime.With(prometheus.Labels{
 		adapterLabel: string(adapterName),
 	}).Observe(obtainConnectionTime.Seconds())
+}
+
+// Keeps track of failed connections per adapter
+func (m *Metrics) RecordAdapterFailedConnections(adapterName openrtb_ext.BidderName) {
+	m.adapterFailedConnections.With(prometheus.Labels{
+		adapterLabel: string(adapterName),
+	}).Inc()
 }
 
 func (m *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
