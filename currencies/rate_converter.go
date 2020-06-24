@@ -168,7 +168,7 @@ func (rc *RateConverter) LastUpdated() time.Time {
 
 // Rates returns current conversions rates
 func (rc *RateConverter) Rates() Conversions {
-	if rates := rc.rates.Load(); rates != nil && rates != (*Rates)(nil) {
+	if rates := rc.rates.Load(); rates != (*Rates)(nil) && rates != nil {
 		return rates.(*Rates)
 	}
 	return rc.constantRates
