@@ -566,15 +566,15 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 			description:         "IPv4 - Defined In Request - Private Network",
 			reqJSONFile:         "site-has-ipv4.json",
 			xForwardedForHeader: "1.1.1.1",
-			privateNetworksIPv4: []net.IPNet{{IP: net.IP{8, 8, 8, 0}, Mask: net.CIDRMask(24, 32)}},
-			expectedDeviceIPv4:  "1.1.1.1", // Hardcoded value in test file.
+			privateNetworksIPv4: []net.IPNet{{IP: net.IP{8, 8, 8, 0}, Mask: net.CIDRMask(24, 32)}}, // Hardcoded value in test file.
+			expectedDeviceIPv4:  "1.1.1.1",
 		},
 		{
 			description:         "IPv6 - Defined In Request - Private Network",
 			reqJSONFile:         "site-has-ipv6.json",
 			xForwardedForHeader: "1111::",
-			privateNetworksIPv6: []net.IPNet{{IP: net.ParseIP("8800::"), Mask: net.CIDRMask(8, 128)}},
-			expectedDeviceIPv6:  "1111::", // Hardcoded value in test file.
+			privateNetworksIPv6: []net.IPNet{{IP: net.ParseIP("8800::"), Mask: net.CIDRMask(8, 128)}}, // Hardcoded value in test file.
+			expectedDeviceIPv6:  "1111::",
 		},
 	}
 
