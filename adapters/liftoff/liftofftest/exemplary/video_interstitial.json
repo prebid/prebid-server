@@ -85,12 +85,19 @@
                 "ext": {
                   "orientation": "h",
                   "placementtype": "interstitial",
+<<<<<<< HEAD
                   "skip": 1,
                   "skipdelay": 5
                 }
               },
               "ext": {
                 "rewarded": 0
+=======
+                  "rewarded": 0,
+                  "skip": 1,
+                  "skipdelay": 5
+                }
+>>>>>>> [PROG-1289] Liftoff adapter
               }
             }
           ]

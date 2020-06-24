@@ -146,6 +146,11 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderLiftoff: liftoff.NewLiftoffBidder(
 			client,
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].Endpoint,
+<<<<<<< HEAD
+=======
+			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.Username,
+			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.Password,
+>>>>>>> [PROG-1289] Liftoff adapter
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointAPAC),
