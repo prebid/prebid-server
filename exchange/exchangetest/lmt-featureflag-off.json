@@ -1,0 +1,63 @@
+{
+    "enforceLmt": false,
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [{
+                "id": "my-imp-id",
+                "video": {
+                    "mimes": ["video/mp4"]
+                },
+                "ext": {
+                    "appnexus": {
+                        "placementId": 1
+                    }
+                }
+            }],
+            "device": {
+                "lmt": 1
+            },
+            "user": {
+                "id": "some-id",
+                "buyeruid": "some-buyer-id"
+            }
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "imp": [{
+                        "id": "my-imp-id",
+                        "video": {
+                            "mimes": ["video/mp4"]
+                        },
+                        "ext": {
+                            "bidder": {
+                                "placementId": 1
+                            }
+                        }
+                    }],
+                    "device": {
+                        "lmt": 1
+                    },
+                    "user": {
+                        "id": "some-id",
+                        "buyeruid": "some-buyer-id"
+                    }
+                },
+                "bidAdjustment": 1.0
+            },
+            "mockResponse": {
+                "errors": ["appnexus-error"]
+            }
+        }
+    }
+}

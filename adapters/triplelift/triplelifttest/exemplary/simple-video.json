@@ -33,7 +33,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://tlx.3lift.net/s2s/auction?supplier_id=20",
+        "uri": "http://tlx.3lift.net/s2s/auction?sra=1&supplier_id=20",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -85,7 +85,7 @@
                   "adomain": [
                     "foo.com"
                   ],
-                  "iurl": "http://tlx.3lift.net/s2s/auction?supplier_id=20",
+                  "iurl": "http://tlx.3lift.net/s2s/auction?sra=1&supplier_id=20",
                   "cid": "958",
                   "crid": "29681110",
                   "h": 250,
@@ -122,7 +122,7 @@
             "adomain": [
               "foo.com"
             ],
-            "iurl": "http://tlx.3lift.net/s2s/auction?supplier_id=20",
+            "iurl": "http://tlx.3lift.net/s2s/auction?sra=1&supplier_id=20",
             "cid": "958",
             "crid": "29681110",
             "w": 300,

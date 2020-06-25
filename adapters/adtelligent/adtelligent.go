@@ -55,7 +55,6 @@ func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *
 
 	imps := request.Imp
 	request.Imp = make([]openrtb.Imp, 0, len(imps))
-
 	for sourceId, impIds := range imp2source {
 		request.Imp = request.Imp[:0]
 
