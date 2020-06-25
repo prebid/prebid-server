@@ -29,6 +29,26 @@ type SmaatoAdapter struct {
 	URI  string
 }
 
+//userExt defines User.Ext object for Smaato
+type userExt struct {
+	Data userExtData `json:"data"`
+}
+
+type userExtData struct {
+	Keywords []string `json:"keywords"`
+	Gender   string   `json:"gender"`
+	Yob      string   `json:"yob"`
+}
+
+//userExt defines Site.Ext object for Smaato
+type siteExt struct {
+	Data siteExtData `json:"data"`
+}
+
+type siteExtData struct {
+	Keywords []string `json:"keywords"`
+}
+
 // NewSmaatoBidder creates a Smaato bid adapter.
 func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
@@ -65,38 +85,30 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	if request.Site != nil {
 		siteCopy := *request.Site
 		siteCopy.Publisher = &openrtb.Publisher{ID: smaatoParams.PublisherID}
+
+		if request.Site.Ext != nil {
+			var siteExt siteExt
+			err := json.Unmarshal([]byte(request.Site.Ext), &siteExt)
+
+			if err == nil {
+				siteCopy.Keywords = strings.Join(siteExt.Data.Keywords, ",")
+			} else {
+				errs = append(errs, err)
+			}
+		}
 		request.Site = &siteCopy
 	}
 
 	if request.User != nil && request.User.Ext != nil {
-		var result map[string]interface{}
-		err := json.Unmarshal([]byte(request.User.Ext), &result)
+		var userExt userExt
+		err := json.Unmarshal([]byte(request.User.Ext), &userExt)
 
 		if err == nil {
-			dataObj := result["data"].(map[string]interface{})
 			userCopy := *request.User
-			userCopy.Gender = (dataObj["gender"]).(string)
-			userCopy.Yob, _ = strconv.ParseInt(dataObj["yob"].(string), 10, 32)
-			keywordStringArray := getStringArray(dataObj, "keywords")
-			userCopy.Keywords = strings.Join(keywordStringArray, ",")
-
+			userCopy.Gender = userExt.Data.Gender
+			userCopy.Yob, _ = strconv.ParseInt(userExt.Data.Yob, 10, 32)
+			userCopy.Keywords = strings.Join(userExt.Data.Keywords, ",")
 			request.User = &userCopy
-		} else {
-			errs = append(errs, err)
-		}
-	}
-
-	if request.Site != nil && request.Site.Ext != nil {
-		var result map[string]interface{}
-		err := json.Unmarshal([]byte(request.Site.Ext), &result)
-
-		if err == nil {
-			dataObj := result["data"].(map[string]interface{})
-			siteCopy := *request.Site
-			keywordStringArray := getStringArray(dataObj, "keywords")
-			siteCopy.Keywords = strings.Join(keywordStringArray, ",")
-
-			request.Site = &siteCopy
 		} else {
 			errs = append(errs, err)
 		}
@@ -200,9 +212,6 @@ func getAdMarkupType(response *adapters.ResponseData, adMarkup string) adMarkupT
 }
 
 func assignBannerSize(banner *openrtb.Banner) error {
-	if banner == nil {
-		return nil
-	}
 	if banner.W != nil && banner.H != nil {
 		return nil
 	}
@@ -223,7 +232,6 @@ func parseImpressionObject(imp *openrtb.Imp) error {
 	if err != nil {
 		return err
 	}
-
 	// SMAATO supports banner impressions.
 	if imp.Banner != nil {
 		if err := assignBannerSize(imp.Banner); err != nil {
@@ -232,7 +240,6 @@ func parseImpressionObject(imp *openrtb.Imp) error {
 
 		imp.TagID = smaatoParams.AdSpaceID
 		imp.Ext = nil
-
 		return nil
 	}
 	return fmt.Errorf("invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
@@ -249,13 +256,4 @@ func parseSmaatoParams(imp *openrtb.Imp) (smaatoParams, error) {
 		return smaatoExt, err
 	}
 	return smaatoExt, nil
-}
-
-func getStringArray(dataObj map[string]interface{}, key string) []string {
-	keywordArray := dataObj[key].([]interface{})
-	keywordStringArray := make([]string, len(keywordArray))
-	for i, v := range keywordArray {
-		keywordStringArray[i] = v.(string)
-	}
-	return keywordStringArray
 }
