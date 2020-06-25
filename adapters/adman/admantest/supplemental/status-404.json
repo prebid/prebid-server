@@ -35,7 +35,7 @@
     },
 	"httpCalls": [{
 		"expectedRequest": {
-			"uri": "http://eu-ams-1.admanmedia.com/?c=o&m=ortb",
+			"uri": "http://pub.admanmedia.com/?c=o&m=ortb",
 			"body": {
                 "id": "test-request-id",
                 "imp": [
