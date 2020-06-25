@@ -86,6 +86,22 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		}
 	}
 
+	if request.Site != nil && request.Site.Ext != nil {
+		var result map[string]interface{}
+		err := json.Unmarshal([]byte(request.Site.Ext), &result)
+
+		if err == nil {
+			dataObj := result["data"].(map[string]interface{})
+			siteCopy := *request.Site
+			keywordStringArray := getStringArray(dataObj, "keywords")
+			siteCopy.Keywords = strings.Join(keywordStringArray, ",")
+
+			request.Site = &siteCopy
+		} else {
+			errs = append(errs, err)
+		}
+	}
+
 	// Setting ext client info
 	type bidRequestExt struct {
 		Client string `json:"client"`
