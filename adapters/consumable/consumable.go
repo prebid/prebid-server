@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy/ccpa"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -32,6 +33,8 @@ type bidRequest struct {
 	Url                string      `json:"url,omitempty"`
 	EnableBotFiltering bool        `json:"enableBotFiltering,omitempty"`
 	Parallel           bool        `json:"parallel"`
+	CCPA               string      `json:"ccpa,omitempty"`
+	GDPR               *bidGdpr    `json:"gdpr,omitempty"`
 }
 
 type placement struct {
@@ -45,6 +48,11 @@ type placement struct {
 
 type user struct {
 	Key string `json:"key,omitempty"`
+}
+
+type bidGdpr struct {
+	Applies *bool  `json:"applies,omitempty"`
+	Consent string `json:"consent,omitempty"`
 }
 
 type bidResponse struct {
@@ -122,6 +130,34 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	if request.Site != nil {
 		body.Referrer = request.Site.Ref // Effectively the previous page to the page where the ad will be shown
 		body.Url = request.Site.Page     // where the impression will be made
+	}
+
+	gdpr := bidGdpr{}
+
+	ccpaPolicy, err := ccpa.ReadPolicy(request)
+	if err == nil {
+		body.CCPA = ccpaPolicy.Value
+	}
+
+	// TODO: Replace with gdpr.ReadPolicy when it is available
+	if request.Regs != nil && request.Regs.Ext != nil {
+		var extRegs openrtb_ext.ExtRegs
+		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
+			if extRegs.GDPR != nil {
+				applies := *extRegs.GDPR != 0
+				gdpr.Applies = &applies
+				body.GDPR = &gdpr
+			}
+		}
+	}
+
+	// TODO: Replace with gdpr.ReadPolicy when it is available
+	if request.User != nil && request.User.Ext != nil {
+		var extUser openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+			gdpr.Consent = extUser.Consent
+			body.GDPR = &gdpr
+		}
 	}
 
 	for i, impression := range request.Imp {
@@ -232,8 +268,11 @@ func (a *ConsumableAdapter) MakeBids(
 			//bid.referrer = utils.getTopWindowUrl();
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: getMediaTypeForImp(getImp(bid.ImpID, internalRequest.Imp)),
+				Bid: &bid,
+				// Consumable units are always HTML, never VAST.
+				// From Prebid's point of view, this means that Consumable units
+				// are always "banners".
+				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
 	}
@@ -265,16 +304,6 @@ func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb
 	}
 
 	return &bidderExt, &consumableExt, nil
-}
-
-func getMediaTypeForImp(imp *openrtb.Imp) openrtb_ext.BidType {
-	// TODO: Whatever logic we need here possibly as follows - may always be Video when we bid
-	if imp.Banner != nil {
-		return openrtb_ext.BidTypeBanner
-	} else if imp.Video != nil {
-		return openrtb_ext.BidTypeVideo
-	}
-	return openrtb_ext.BidTypeVideo
 }
 
 func testConsumableBidder(testClock instant, endpoint string) *ConsumableAdapter {

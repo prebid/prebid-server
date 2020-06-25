@@ -101,3 +101,8 @@ func (me *MetricsEngineMock) RecordPrebidCacheRequestTime(success bool, length t
 func (me *MetricsEngineMock) RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration) {
 	me.Called(success, requestType, length)
 }
+
+// RecordTimeoutNotice mock
+func (me *MetricsEngineMock) RecordTimeoutNotice(success bool) {
+	me.Called(success)
+}

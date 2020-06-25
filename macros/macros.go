@@ -11,6 +11,7 @@ type EndpointTemplateParams struct {
 	PublisherID string
 	ZoneID      string
 	SourceId    string
+	AccountID   string
 }
 
 // UserSyncTemplateParams specifies params for an user sync URL template

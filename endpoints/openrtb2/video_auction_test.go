@@ -1,12 +1,14 @@
 package openrtb2
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -859,12 +861,12 @@ func TestParseVideoRequestWithUserAgentAndHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}
-
 	headers := http.Header{}
 	headers.Add("User-Agent", "TestHeader")
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "TestHeaderSample", req.Device.UA, "Header should be taken from original request")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
@@ -882,7 +884,8 @@ func TestParseVideoRequestWithUserAgentAndEmptyHeader(t *testing.T) {
 	headers := http.Header{}
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "TestHeaderSample", req.Device.UA, "Header should be taken from original request")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
@@ -901,7 +904,8 @@ func TestParseVideoRequestWithoutUserAgentWithHeader(t *testing.T) {
 	headers.Add("User-Agent", "TestHeader")
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "TestHeader", req.Device.UA, "Device.ua should be taken from request header")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
@@ -919,7 +923,8 @@ func TestParseVideoRequestWithoutUserAgentAndEmptyHeader(t *testing.T) {
 	headers := http.Header{}
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "", req.Device.UA, "Device.ua should be empty")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
@@ -941,7 +946,8 @@ func TestParseVideoRequestWithEncodedUserAgentInHeader(t *testing.T) {
 	headers.Add("User-Agent", uaEncoded)
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, uaDecoded, req.Device.UA, "Device.ua should be taken from request header")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
@@ -962,7 +968,8 @@ func TestParseVideoRequestWithDecodedUserAgentInHeader(t *testing.T) {
 	headers.Add("User-Agent", uaDecoded)
 
 	deps := mockDeps(t, ex)
-	req, valErr, podErr := deps.parseVideoRequest(reqData, headers)
+	reqBody := string(getRequestPayload(t, reqData))
+	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, uaDecoded, req.Device.UA, "Device.ua should be taken from request header")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
@@ -989,10 +996,15 @@ func TestHandleErrorDebugLog(t *testing.T) {
 	err1 := errors.New("Error for testing handleError 1")
 	err2 := errors.New("Error for testing handleError 2")
 	debugLog := exchange.DebugLog{
-		EnableDebug: true,
-		CacheType:   prebid_cache_client.TypeXML,
-		Data:        "test debug data",
-		TTL:         int64(3600),
+		Enabled:   true,
+		CacheType: prebid_cache_client.TypeXML,
+		Data: exchange.DebugData{
+			Request:  "test request string",
+			Headers:  "test headers string",
+			Response: "test response string",
+		},
+		TTL:    int64(3600),
+		Regexp: regexp.MustCompile(`[<>]`),
 	}
 	handleError(&labels, recorder, []error{err1, err2}, &vo, &debugLog)
 
@@ -1003,6 +1015,96 @@ func TestHandleErrorDebugLog(t *testing.T) {
 	assert.Equal(t, "Error for testing handleError 1", vo.Errors[0].Error(), "Error in Analytics object should have test error message for first error")
 	assert.Equal(t, "Error for testing handleError 2", vo.Errors[1].Error(), "Error in Analytics object should have test error message for second error")
 	assert.NotEmpty(t, debugLog.CacheKey, "DebugLog CacheKey value should have been set")
+}
+
+func TestCreateImpressionTemplate(t *testing.T) {
+
+	imp := openrtb.Imp{}
+	imp.Video = &openrtb.Video{}
+	imp.Video.Protocols = []openrtb.Protocol{1, 2}
+	imp.Video.MIMEs = []string{"video/mp4"}
+	imp.Video.H = 200
+	imp.Video.W = 400
+	imp.Video.PlaybackMethod = []openrtb.PlaybackMethod{5, 6}
+
+	video := openrtb.Video{}
+	video.Protocols = []openrtb.Protocol{3, 4}
+	video.MIMEs = []string{"video/flv"}
+	video.H = 300
+	video.W = 0
+	video.PlaybackMethod = []openrtb.PlaybackMethod{7, 8}
+
+	res := createImpressionTemplate(imp, &video)
+	assert.Equal(t, res.Video.Protocols, []openrtb.Protocol{3, 4}, "Incorrect video protocols")
+	assert.Equal(t, res.Video.MIMEs, []string{"video/flv"}, "Incorrect video MIMEs")
+	assert.Equal(t, int(res.Video.H), 300, "Incorrect video height")
+	assert.Equal(t, int(res.Video.W), 0, "Incorrect video width")
+	assert.Equal(t, res.Video.PlaybackMethod, []openrtb.PlaybackMethod{7, 8}, "Incorrect video playback method")
+}
+
+func TestCCPA(t *testing.T) {
+	testCases := []struct {
+		description         string
+		testFilePath        string
+		expectConsentString bool
+	}{
+		{
+			description:         "Missing Consent",
+			testFilePath:        "sample-requests/video/video_valid_sample.json",
+			expectConsentString: false,
+		},
+		{
+			description:         "Valid Consent",
+			testFilePath:        "sample-requests/video/video_valid_sample_ccpa_valid.json",
+			expectConsentString: true,
+		},
+		{
+			description:         "Malformed Consent",
+			testFilePath:        "sample-requests/video/video_valid_sample_ccpa_malformed.json",
+			expectConsentString: false,
+		},
+	}
+
+	for _, test := range testCases {
+		// Load Test Request
+		requestContainerBytes, err := ioutil.ReadFile(test.testFilePath)
+		if err != nil {
+			t.Fatalf("%s: Failed to fetch a valid request: %v", test.description, err)
+		}
+		requestBytes := getRequestPayload(t, requestContainerBytes)
+
+		// Create HTTP Request + Response Recorder
+		httpRequest := httptest.NewRequest("POST", "/openrtb2/video", bytes.NewReader(requestBytes))
+		httpResponseRecorder := httptest.NewRecorder()
+
+		// Run Test
+		ex := &mockExchangeVideo{}
+		mockDeps(t, ex).VideoAuctionEndpoint(httpResponseRecorder, httpRequest, nil)
+
+		// Validate Request To Exchange
+		// - An error should never be generated for CCPA problems.
+		if ex.lastRequest == nil {
+			t.Fatalf("%s: The request never made it into the exchange.", test.description)
+		}
+		extRegs := &openrtb_ext.ExtRegs{}
+		if err = json.Unmarshal(ex.lastRequest.Regs.Ext, extRegs); err != nil {
+			t.Fatalf("%s: Failed to unmarshal reg.ext in request to the exchange: %v", test.description, err)
+		}
+		if test.expectConsentString {
+			assert.Len(t, extRegs.USPrivacy, 4, test.description+":consent")
+		} else {
+			assert.Empty(t, extRegs.USPrivacy, test.description+":consent")
+		}
+
+		// Validate HTTP Response
+		responseBytes := httpResponseRecorder.Body.Bytes()
+		response := &openrtb_ext.BidResponseVideo{}
+		if err := json.Unmarshal(responseBytes, response); err != nil {
+			t.Fatalf("%s: Unable to unmarshal response.", test.description)
+		}
+		assert.Len(t, ex.lastRequest.Imp, 11, test.description+":imps")
+		assert.Len(t, response.AdPods, 5, test.description+":adpods")
+	}
 }
 
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
@@ -1021,6 +1123,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *p
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 		nil,
 	}
 
@@ -1062,6 +1165,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		[]byte{},
 		openrtb_ext.BidderMap,
 		ex.cache,
+		regexp.MustCompile(`[<>]`),
 	}
 
 	return edep
@@ -1096,7 +1200,7 @@ type mockExchangeVideo struct {
 
 func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
-	if debugLog != nil && debugLog.EnableDebug {
+	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
 	}
 	ext := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"20.00","hb_pb_cat_dur":"20.00_395_30s","hb_size":"1x1", "hb_uuid":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"},"type":"video"},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
@@ -1132,4 +1236,20 @@ var testVideoStoredImpData = map[string]json.RawMessage{
 
 var testVideoStoredRequestData = map[string]json.RawMessage{
 	"80ce30c53c16e6ede735f123ef6e32361bfc7b22": json.RawMessage(`{"accountid": "11223344", "site": {"page": "mygame.foo.com"}}`),
+}
+
+func loadValidRequest(t *testing.T) *openrtb_ext.BidRequestVideo {
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	reqBody := getRequestPayload(t, reqData)
+
+	reqVideo := &openrtb_ext.BidRequestVideo{}
+	if err := json.Unmarshal(reqBody, reqVideo); err != nil {
+		t.Fatalf("Failed to unmarshal the request: %v", err)
+	}
+
+	return reqVideo
 }

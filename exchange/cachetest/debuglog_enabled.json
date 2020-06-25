@@ -1,9 +1,13 @@
 {    
     "debugLog": {
-        "EnableDebug": true,
+        "Enabled": true,
         "CacheType": "xml",
         "TTL": 3600,
-        "Data": "test debug data"
+        "Data": {
+            "Request": "test request string",
+            "Headers": "test headers string",
+            "Response": "test response string"
+        }
     },
     "bidRequest": {
         "imp": [{
@@ -42,7 +46,7 @@
         }, {
             "Type": "xml",
             "TTLSeconds": 3600,
-            "Data": "test debug data"
+            "Data": "\u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\n\u003cLog\u003e\u003cRequest\u003etest request string\u003c/Request\u003e\u003cHeaders\u003etest headers string\u003c/Headers\u003e\u003cResponse\u003etest response string\u003c/Response\u003e\u003c/Log\u003e"
         }
     ],
     "defaultTTLs": {

@@ -43,6 +43,8 @@ gdpr:
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
 ccpa:
   enforce: true
+lmt:
+  enforce: true
 host_cookie:
   cookie_name: userid
   family: prebid
@@ -65,10 +67,12 @@ external_cache:
   host: www.externalprebidcache.net
   path: endpoints/cache
 http_client:
+  max_connections_per_host: 10
   max_idle_connections: 500
   max_idle_connections_per_host: 20
   idle_connection_timeout_seconds: 30
 http_client_cache:
+  max_connections_per_host: 5
   max_idle_connections: 1
   max_idle_connections_per_host: 2
   idle_connection_timeout_seconds: 3
@@ -215,9 +219,11 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
 	cmpStrings(t, "external_cache.host", cfg.ExtCacheURL.Host, "www.externalprebidcache.net")
 	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "endpoints/cache")
+	cmpInts(t, "http_client.max_connections_per_host", cfg.Client.MaxConnsPerHost, 10)
 	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
 	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
 	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
+	cmpInts(t, "http_client_cache.max_connections_per_host", cfg.CacheClient.MaxConnsPerHost, 5)
 	cmpInts(t, "http_client_cache.max_idle_connections", cfg.CacheClient.MaxIdleConns, 1)
 	cmpInts(t, "http_client_cache.max_idle_connections_per_host", cfg.CacheClient.MaxIdleConnsPerHost, 2)
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
@@ -240,6 +246,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, false)
 
 	cmpBools(t, "ccpa.enforce", cfg.CCPA.Enforce, true)
+	cmpBools(t, "lmt.enforce", cfg.LMT.Enforce, true)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[0], "spamAppID")
@@ -424,6 +431,14 @@ func TestCookieSizeError(t *testing.T) {
 			assert.NoError(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCookie.MaxCookieSizeBytes greater than MIN_COOKIE_SIZE_BYTES = %d or equal to zero should not return an error", MIN_COOKIE_SIZE_BYTES))
 		}
 	}
+}
+
+func TestValidateDebug(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.Debug.TimeoutNotification.SamplingRate = 1.1
+
+	err := cfg.validate()
+	assert.NotNil(t, err, "cfg.debug.timeout_notification.sampling_rate should not be allowed to be greater than 1.0, but it was allowed")
 }
 
 func newDefaultConfig(t *testing.T) *Configuration {

@@ -437,8 +437,12 @@ func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error) {
-	return g.allowPI, nil
+func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, error) {
+	return g.allowPI, g.allowPI, nil
+}
+
+func (g *mockPermsSetUID) AMPException() bool {
+	return false
 }
 
 func newFakeSyncer(familyName string) usersync.Usersyncer {

@@ -8,5 +8,5 @@ import (
 )
 
 func NewAdvangelistsSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("advangelists", 61, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("advangelists", 0, temp, adapters.SyncTypeIframe)
 }

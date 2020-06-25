@@ -71,6 +71,17 @@ func TestRead(t *testing.T) {
 			},
 			expectedError: true,
 		},
+		{
+			description: "Injection Attack",
+			request: &openrtb.BidRequest{
+				Regs: &openrtb.Regs{
+					Ext: json.RawMessage(`{"us_privacy":"1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+				},
+			},
+			expectedPolicy: Policy{
+				Value: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -100,6 +111,48 @@ func TestWrite(t *testing.T) {
 			policy:      Policy{Value: ""},
 			request:     &openrtb.BidRequest{},
 			expected:    &openrtb.BidRequest{},
+		},
+		{
+			description: "Disabled - Nil Request",
+			policy:      Policy{Value: ""},
+			request:     nil,
+			expected:    nil,
+		},
+		{
+			description: "Disabled - Empty Regs.Ext",
+			policy:      Policy{Value: ""},
+			request:     &openrtb.BidRequest{Regs: &openrtb.Regs{}},
+			expected:    &openrtb.BidRequest{Regs: &openrtb.Regs{}},
+		},
+		{
+			description: "Disabled - Remove From Request",
+			policy:      Policy{Value: ""},
+			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"us_privacy":"toBeRemoved"}`)}},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{}},
+		},
+		{
+			description: "Disabled - Remove From Request, Leave Other req Values",
+			policy:      Policy{Value: ""},
+			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				COPPA: 42,
+				Ext:   json.RawMessage(`{"us_privacy":"toBeRemoved"}`)}},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				COPPA: 42}},
+		},
+		{
+			description: "Disabled - Remove From Request, Leave Other req.ext Values",
+			policy:      Policy{Value: ""},
+			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"existing":"any","us_privacy":"toBeRemoved"}`)}},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"existing":"any"}`)}},
+		},
+		{
+			description: "Enabled - Nil Request",
+			policy:      Policy{Value: "anyValue"},
+			request:     nil,
+			expected:    nil,
 		},
 		{
 			description: "Enabled With Nil Request Regs Object",
@@ -137,6 +190,32 @@ func TestWrite(t *testing.T) {
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`malformed`)}},
 			expectedError: true,
+		},
+		{
+			description: "Injection Attack With Nil Request Regs Object",
+			policy:      Policy{Value: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request:     &openrtb.BidRequest{},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"us_privacy":"1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+			}},
+		},
+		{
+			description: "Injection Attack With Nil Request Regs Ext Object",
+			policy:      Policy{Value: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request:     &openrtb.BidRequest{Regs: &openrtb.Regs{}},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"us_privacy":"1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+			}},
+		},
+		{
+			description: "Injection Attack With Existing Request Regs Ext Object",
+			policy:      Policy{Value: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""},
+			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"existing":"any"}`),
+			}},
+			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
+				Ext: json.RawMessage(`{"existing":"any","us_privacy":"1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+			}},
 		},
 	}
 

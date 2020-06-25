@@ -9,12 +9,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
 	"github.com/prebid/prebid-server/errortypes"
 
@@ -40,7 +41,9 @@ func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamVal
 	}
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, videoFetcher, categories, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, cache}).VideoAuctionEndpoint), nil
+	videoEndpointRegexp := regexp.MustCompile(`[<>]`)
+
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, videoFetcher, categories, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, cache, videoEndpointRegexp}).VideoAuctionEndpoint), nil
 }
 
 /*
@@ -89,29 +92,17 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		cacheTTL = int64(deps.cfg.CacheURL.DefaultTTLs.Video)
 	}
 	debugLog := exchange.DebugLog{
-		EnableDebug: strings.EqualFold(debugQuery, "true"),
-		CacheType:   prebid_cache_client.TypeXML,
-		TTL:         cacheTTL,
+		Enabled:   strings.EqualFold(debugQuery, "true"),
+		CacheType: prebid_cache_client.TypeXML,
+		TTL:       cacheTTL,
+		Regexp:    deps.debugLogRegexp,
 	}
 
 	defer func() {
 		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
-			debugLog.Data = fmt.Sprintf("<!--\n%s\n\nNo response created\n-->", debugLog.Data)
-			data, err := json.Marshal(debugLog.Data)
-			if err == nil {
-				toCache := []prebid_cache_client.Cacheable{
-					{
-						Type:       debugLog.CacheType,
-						Data:       data,
-						TTLSeconds: debugLog.TTL,
-						Key:        "log_" + debugLog.CacheKey,
-					},
-				}
-				if deps.cache != nil {
-					ctx, cancel := context.WithDeadline(context.Background(), start.Add(time.Duration(100)*time.Millisecond))
-					defer cancel()
-					deps.cache.PutJson(ctx, toCache)
-				}
+			err := putDebugLogError(deps.cache, &debugLog, start)
+			if err != nil {
+				vo.Errors = append(vo.Errors, err)
 			}
 		}
 		deps.metricsEngine.RecordRequest(labels)
@@ -130,12 +121,12 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	resolvedRequest := requestJson
-	if debugLog.EnableDebug {
-		debugLog.Data = fmt.Sprintf("Request:\n%s", string(requestJson))
+	if debugLog.Enabled {
+		debugLog.Data.Request = string(requestJson)
 		if headerBytes, err := json.Marshal(r.Header); err == nil {
-			debugLog.Data = fmt.Sprintf("%s\n\nHeaders:\n%s", debugLog.Data, string(headerBytes))
+			debugLog.Data.Headers = string(headerBytes)
 		} else {
-			debugLog.Data = fmt.Sprintf("%s\n\nUnable to marshal headers data\n", debugLog.Data)
+			debugLog.Data.Headers = fmt.Sprintf("Unable to marshal headers data: %s", err.Error())
 		}
 	}
 
@@ -182,7 +173,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	//create full open rtb req from full video request
 	mergeData(videoBidReq, bidReq)
 	// If debug query param is set, force the response to enable test flag
-	if debugLog.EnableDebug {
+	if debugLog.Enabled {
 		bidReq.Test = 1
 	}
 
@@ -213,7 +204,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	deps.setFieldsImplicitly(r, bidReq) // move after merge
 
 	errL = deps.validateRequest(bidReq)
-	if len(errL) > 0 {
+	if errortypes.ContainsFatalError(errL) {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
@@ -241,7 +232,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
-		errL = append(errL, acctIdErr)
+		errL := []error{err}
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
@@ -281,6 +272,34 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 }
 
+func putDebugLogError(cache prebid_cache_client.Client, debugLog *exchange.DebugLog, start time.Time) error {
+	debugLog.Data.Response = "No response created"
+
+	debugLog.BuildCacheString()
+
+	data, err := json.Marshal(debugLog.CacheString)
+	if err != nil {
+		return err
+	}
+
+	toCache := []prebid_cache_client.Cacheable{
+		{
+			Type:       debugLog.CacheType,
+			Data:       data,
+			TTLSeconds: debugLog.TTL,
+			Key:        "log_" + debugLog.CacheKey,
+		},
+	}
+
+	if cache != nil {
+		ctx, cancel := context.WithDeadline(context.Background(), start.Add(time.Duration(100)*time.Millisecond))
+		defer cancel()
+		cache.PutJson(ctx, toCache)
+	}
+
+	return nil
+}
+
 func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) *openrtb_ext.BidRequestVideo {
 	for i := len(podErrors) - 1; i >= 0; i-- {
 		videoReq.PodConfig.Pods = append(videoReq.PodConfig.Pods[:podErrors[i].PodIndex], videoReq.PodConfig.Pods[podErrors[i].PodIndex+1:]...)
@@ -289,7 +308,7 @@ func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []P
 }
 
 func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error, vo *analytics.VideoObject, debugLog *exchange.DebugLog) {
-	if debugLog != nil && debugLog.EnableDebug {
+	if debugLog != nil && debugLog.Enabled {
 		if rawUUID, err := uuid.NewV4(); err == nil {
 			debugLog.CacheKey = rawUUID.String()
 		}
@@ -381,11 +400,9 @@ func max(a, b int) int {
 }
 
 func createImpressionTemplate(imp openrtb.Imp, video *openrtb.Video) openrtb.Imp {
-	imp.Video = &openrtb.Video{}
-	imp.Video.W = video.W
-	imp.Video.H = video.H
-	imp.Video.Protocols = video.Protocols
-	imp.Video.MIMEs = video.MIMEs
+	//for every new impression we need to have it's own copy of video object, because we customize it in further processing
+	newVideo := *video
+	imp.Video = &newVideo
 	return imp
 }
 
