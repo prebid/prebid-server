@@ -1,7 +1,6 @@
 package ctv
 
 import (
-	"log"
 	"math/big"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
