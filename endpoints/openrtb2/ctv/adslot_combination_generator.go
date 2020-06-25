@@ -1,6 +1,7 @@
 package ctv
 
 import (
+	"log"
 	"math/big"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
@@ -208,7 +209,7 @@ func fact(no uint64) big.Int {
 	return *mult
 }
 
-//searchAll - searches all valid combinations
+// searchAll - searches all valid combinations
 // valid combinations are those which satisifies following
 // 1. sum of duration is within range of pod min and max values
 // 2. Each duration within combination honours number of ads value given in the request

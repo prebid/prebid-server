@@ -48,7 +48,7 @@ func GetUniqueBidID(bidID string, id int) string {
 	return fmt.Sprintf(CTVUniqueBidIDFormat, id, bidID)
 }
 
-var Logf = func(msg string, args ...interface{}) {
+func Logf(msg string, args ...interface{}) {
 	if glog.V(3) {
 		glog.Infof(msg, args...)
 	}

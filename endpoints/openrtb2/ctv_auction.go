@@ -17,7 +17,6 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/impressions"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
@@ -415,8 +414,8 @@ func (deps *ctvEndpointDeps) getAllAdPodImpsConfigs() {
 
 //getAdPodImpsConfigs will return number of impressions configurations within adpod
 func getAdPodImpsConfigs(imp *openrtb.Imp, adpod *openrtb_ext.VideoAdPod) []*ctv.ImpAdPodConfig {
-	impGen := impressions.NewImpressions(imp.Video.MinDuration, imp.Video.MaxDuration, adpod, impressions.MinMaxAlgorithm)
-	impRanges := impGen.Get()
+	impRanges := ctv.GetImpressions(imp.Video.MinDuration, imp.Video.MaxDuration, *adpod)
+
 	config := make([]*ctv.ImpAdPodConfig, len(impRanges))
 	for i, value := range impRanges {
 		config[i] = &ctv.ImpAdPodConfig{
