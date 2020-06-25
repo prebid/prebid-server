@@ -70,10 +70,6 @@ const (
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
 	successLabel         = "success"
-
-	adapterConnErrorLabel   = "adapter_connection_error"
-	adapterConnReusedLabel  = "adapter_connection_reused"
-	adapterConnCreatedLabel = "adapter_connection_created"
 )
 
 const (

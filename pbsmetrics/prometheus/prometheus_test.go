@@ -14,8 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const OneSecond time.Duration = time.Second
-
 func createMetricsForTesting() *Metrics {
 	return NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
@@ -964,7 +962,7 @@ func TestRecordDNSTime(t *testing.T) {
 		{
 			description: "Five second DNS lookup time",
 			in: testIn{
-				dnsLookupDuration: OneSecond * 5,
+				dnsLookupDuration: time.Second * 5,
 			},
 			out: testOut{
 				expDuration: 5,
@@ -1022,9 +1020,9 @@ func TestRecordAdapterConnections(t *testing.T) {
 				gotConnInfo: httptrace.GotConnInfo{
 					Reused:   false,
 					WasIdle:  true,
-					IdleTime: OneSecond * 2,
+					IdleTime: time.Second * 2,
 				},
-				connWait: OneSecond * 5,
+				connWait: time.Second * 5,
 			},
 			out: testOut{
 				expectedConnReusedCount:  0,
@@ -1043,7 +1041,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 					Reused:  false,
 					WasIdle: false,
 				},
-				connWait: OneSecond * 4,
+				connWait: time.Second * 4,
 			},
 			out: testOut{
 				expectedConnReusedCount:  0,
@@ -1061,7 +1059,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 				gotConnInfo: httptrace.GotConnInfo{
 					Reused:   true,
 					WasIdle:  true,
-					IdleTime: OneSecond * 3,
+					IdleTime: time.Second * 3,
 				},
 			},
 			out: testOut{
@@ -1081,7 +1079,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 					Reused:  true,
 					WasIdle: false,
 				},
-				connWait: OneSecond * 5,
+				connWait: time.Second * 5,
 			},
 			out: testOut{
 				expectedConnReusedCount:  1,

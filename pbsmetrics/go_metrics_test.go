@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const OneSecond time.Duration = time.Second
-
 func TestNewMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{})
@@ -195,10 +193,10 @@ func TestRecordDNSTime(t *testing.T) {
 		{
 			description: "Five second DNS lookup time",
 			in: testIn{
-				dnsLookupDuration: OneSecond * 5,
+				dnsLookupDuration: time.Second * 5,
 			},
 			out: testOut{
-				expDuration: OneSecond * 5,
+				expDuration: time.Second * 5,
 			},
 		},
 		{
@@ -245,15 +243,15 @@ func TestRecordAdapterConnections(t *testing.T) {
 				gotConnInfo: httptrace.GotConnInfo{
 					Reused:   false,
 					WasIdle:  true,
-					IdleTime: OneSecond * 2,
+					IdleTime: time.Second * 2,
 				},
-				connWait: OneSecond * 5,
+				connWait: time.Second * 5,
 			},
 			out: testOut{
 				expectedConnReusedCount:  0,
 				expectedConnCreatedCount: 1,
-				expectedConnIdleTime:     OneSecond * 2,
-				expectedConnWaitTime:     OneSecond * 5,
+				expectedConnIdleTime:     time.Second * 2,
+				expectedConnWaitTime:     time.Second * 5,
 			},
 		},
 		{
@@ -264,12 +262,12 @@ func TestRecordAdapterConnections(t *testing.T) {
 					Reused:  false,
 					WasIdle: false,
 				},
-				connWait: OneSecond * 4,
+				connWait: time.Second * 4,
 			},
 			out: testOut{
 				expectedConnCreatedCount: 1,
 				expectedConnIdleTime:     0,
-				expectedConnWaitTime:     OneSecond * 4,
+				expectedConnWaitTime:     time.Second * 4,
 			},
 		},
 		{
@@ -279,12 +277,12 @@ func TestRecordAdapterConnections(t *testing.T) {
 				gotConnInfo: httptrace.GotConnInfo{
 					Reused:   true,
 					WasIdle:  true,
-					IdleTime: OneSecond * 3,
+					IdleTime: time.Second * 3,
 				},
 			},
 			out: testOut{
 				expectedConnReusedCount: 1,
-				expectedConnIdleTime:    OneSecond * 3,
+				expectedConnIdleTime:    time.Second * 3,
 				expectedConnWaitTime:    0,
 			},
 		},
@@ -296,11 +294,11 @@ func TestRecordAdapterConnections(t *testing.T) {
 					Reused:  true,
 					WasIdle: false,
 				},
-				connWait: OneSecond * 5,
+				connWait: time.Second * 5,
 			},
 			out: testOut{
 				expectedConnReusedCount: 1,
-				expectedConnWaitTime:    OneSecond * 5,
+				expectedConnWaitTime:    time.Second * 5,
 			},
 		},
 		{
