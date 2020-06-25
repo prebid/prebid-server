@@ -952,21 +952,21 @@ func TestTCFMetrics(t *testing.T) {
 	m.RecordTCFReq(2)
 	m.RecordTCFReq(1)
 
-	assertCounterVecValue(t, "", "privacy_tcf:err", m.tcfMetrics,
+	assertCounterVecValue(t, "", "privacy_tcf:err", m.tcfVersion,
 		float64(1),
 		prometheus.Labels{
 			versionLabel: "err",
 			sourceLabel:  sourceRequest,
 		})
 
-	assertCounterVecValue(t, "", "privacy_tcf:v1", m.tcfMetrics,
+	assertCounterVecValue(t, "", "privacy_tcf:v1", m.tcfVersion,
 		float64(2),
 		prometheus.Labels{
 			versionLabel: "v1",
 			sourceLabel:  sourceRequest,
 		})
 
-	assertCounterVecValue(t, "", "privacy_tcf:v2", m.tcfMetrics,
+	assertCounterVecValue(t, "", "privacy_tcf:v2", m.tcfVersion,
 		float64(1),
 		prometheus.Labels{
 			versionLabel: "v2",

@@ -100,7 +100,7 @@ func preloadLabelValues(m *Metrics) {
 		requestStatusLabel: {requestSuccessLabel, requestRejectLabel},
 	})
 
-	preloadLabelValuesForCounter(m.tcfMetrics, map[string][]string{
+	preloadLabelValuesForCounter(m.tcfVersion, map[string][]string{
 		versionLabel: tcfVersionsAsString(),
 		sourceLabel:  {string(sourceRequest)},
 	})

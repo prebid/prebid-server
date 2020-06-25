@@ -53,7 +53,8 @@ type Metrics struct {
 	TimeoutNotificationFailure metrics.Meter
 
 	// TCF adaption metrics
-	TCFReqVersion []metrics.Meter
+	TCFReqVersion map[TCFVersionValue]metrics.Meter
+	TCFVersions   []TCFVersionValue
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -141,7 +142,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		TimeoutNotificationSuccess: blankMeter,
 		TimeoutNotificationFailure: blankMeter,
 
-		TCFReqVersion: make([]metrics.Meter, len(TCFVersions()), len(TCFVersions())),
+		TCFReqVersion: make(map[TCFVersionValue]metrics.Meter, len(TCFVersions())),
+		TCFVersions:   TCFVersions(),
 
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
@@ -165,8 +167,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		newMetrics.StoredImpCacheMeter[c] = blankMeter
 	}
 
-	for i := range TCFVersions() {
-		newMetrics.TCFReqVersion[i] = blankMeter
+	for _, v := range TCFVersions() {
+		newMetrics.TCFReqVersion[v] = blankMeter
 	}
 
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
@@ -234,8 +236,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.TimeoutNotificationSuccess = metrics.GetOrRegisterMeter("timeout_notification.ok", registry)
 	newMetrics.TimeoutNotificationFailure = metrics.GetOrRegisterMeter("timeout_notification.failed", registry)
 
-	for i, version := range TCFVersions() {
-		newMetrics.TCFReqVersion[i] = metrics.GetOrRegisterMeter(fmt.Sprintf("privacy.request.tcf.%s", string(version)), registry)
+	for _, version := range TCFVersions() {
+		newMetrics.TCFReqVersion[version] = metrics.GetOrRegisterMeter(fmt.Sprintf("privacy.request.tcf.%s", string(version)), registry)
 	}
 
 	return newMetrics
@@ -583,10 +585,11 @@ func (me *Metrics) RecordTimeoutNotice(success bool) {
 }
 
 func (me *Metrics) RecordTCFReq(version int) {
-	if version >= 0 && version < len(me.TCFReqVersion) {
-		me.TCFReqVersion[version].Mark(1)
+	if version >= 0 && version < len(me.TCFVersions) {
+		me.TCFReqVersion[me.TCFVersions[version]].Mark(1)
+		return
 	}
-	me.TCFReqVersion[0].Mark(1)
+	me.TCFReqVersion[TCFVersionErr].Mark(1)
 	return
 }
 

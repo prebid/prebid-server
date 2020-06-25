@@ -29,7 +29,7 @@ type Metrics struct {
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
 	timeoutNotifications         *prometheus.CounterVec
-	tcfMetrics                   *prometheus.CounterVec
+	tcfVersion                   *prometheus.CounterVec
 
 	// Adapter Metrics
 	adapterBids          *prometheus.CounterVec
@@ -168,7 +168,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of timeout notifications triggered, and if they were successfully sent.",
 		[]string{successLabel})
 
-	metrics.tcfMetrics = newCounter(cfg, metrics.Registry,
+	metrics.tcfVersion = newCounter(cfg, metrics.Registry,
 		"privacy_tcf",
 		"Count of TCF versions for requests where GDPR was enforced.",
 		[]string{versionLabel, sourceLabel})
@@ -445,7 +445,7 @@ func (m *Metrics) RecordTCFReq(version int) {
 	} else {
 		value = m.tcfVersions[0]
 	}
-	m.tcfMetrics.With(prometheus.Labels{
+	m.tcfVersion.With(prometheus.Labels{
 		versionLabel: value,
 		sourceLabel:  sourceRequest,
 	}).Inc()
