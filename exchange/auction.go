@@ -226,18 +226,16 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 
-	if debugLog != nil && debugLog.Enabled {
-		if len(hbCacheID) != 0 {
-			debugLog.CacheKey = hbCacheID
-			debugLog.BuildCacheString()
-			if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
-				toCache = append(toCache, prebid_cache_client.Cacheable{
-					Type:       debugLog.CacheType,
-					Data:       jsonBytes,
-					TTLSeconds: debugLog.TTL,
-					Key:        "log_" + debugLog.CacheKey,
-				})
-			}
+	if len(toCache) > 0 && debugLog != nil && debugLog.Enabled {
+		debugLog.CacheKey = hbCacheID
+		debugLog.BuildCacheString()
+		if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
+			toCache = append(toCache, prebid_cache_client.Cacheable{
+				Type:       debugLog.CacheType,
+				Data:       jsonBytes,
+				TTLSeconds: debugLog.TTL,
+				Key:        "log_" + debugLog.CacheKey,
+			})
 		}
 	}
 
