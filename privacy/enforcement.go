@@ -6,30 +6,28 @@ import (
 
 // Enforcement represents the privacy policies to enforce for an OpenRTB bid request.
 type Enforcement struct {
-	CCPA  bool
-	COPPA bool
-	GDPR  bool
+	CCPA    bool
+	COPPA   bool
+	GDPR    bool
+	GDPRGeo bool
+	LMT     bool
 }
 
 // Any returns true if at least one privacy policy requires enforcement.
 func (e Enforcement) Any() bool {
-	return e.CCPA || e.COPPA || e.GDPR
+	return e.CCPA || e.COPPA || e.GDPR || e.GDPRGeo || e.LMT
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
-func (e Enforcement) Apply(bidRequest *openrtb.BidRequest, isAMP bool) {
-	e.apply(bidRequest, isAMP, NewScrubber())
+func (e Enforcement) Apply(bidRequest *openrtb.BidRequest, ampGDPRException bool) {
+	e.apply(bidRequest, ampGDPRException, NewScrubber())
 }
 
-func (e Enforcement) apply(bidRequest *openrtb.BidRequest, isAMP bool, scrubber Scrubber) {
+func (e Enforcement) apply(bidRequest *openrtb.BidRequest, ampGDPRException bool, scrubber Scrubber) {
 	if bidRequest != nil && e.Any() {
-		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getDeviceMacAndIFA(), e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
-		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(isAMP), e.getGeoScrubStrategy())
+		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
+		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(ampGDPRException), e.getGeoScrubStrategy())
 	}
-}
-
-func (e Enforcement) getDeviceMacAndIFA() bool {
-	return e.COPPA
 }
 
 func (e Enforcement) getIPv6ScrubStrategy() ScrubStrategyIPV6 {
@@ -37,7 +35,7 @@ func (e Enforcement) getIPv6ScrubStrategy() ScrubStrategyIPV6 {
 		return ScrubStrategyIPV6Lowest32
 	}
 
-	if e.GDPR || e.CCPA {
+	if e.GDPR || e.CCPA || e.LMT {
 		return ScrubStrategyIPV6Lowest16
 	}
 
@@ -49,27 +47,25 @@ func (e Enforcement) getGeoScrubStrategy() ScrubStrategyGeo {
 		return ScrubStrategyGeoFull
 	}
 
-	if e.GDPR || e.CCPA {
+	if e.GDPRGeo || e.CCPA || e.LMT {
 		return ScrubStrategyGeoReducedPrecision
 	}
 
 	return ScrubStrategyGeoNone
 }
 
-func (e Enforcement) getUserScrubStrategy(isAMP bool) ScrubStrategyUser {
+func (e Enforcement) getUserScrubStrategy(ampGDPRException bool) ScrubStrategyUser {
 	if e.COPPA {
-		return ScrubStrategyUserFull
+		return ScrubStrategyUserIDAndDemographic
 	}
 
-	// There's no way for AMP to send a GDPR consent string yet so it's hard
-	// to know if the vendor is consented or not and therefore for AMP requests
-	// we keep the BuyerUID as is for GDPR.
-	if e.GDPR && isAMP {
+	if e.GDPR && ampGDPRException {
 		return ScrubStrategyUserNone
 	}
 
-	if e.GDPR || e.CCPA {
-		return ScrubStrategyUserBuyerIDOnly
+	// If no user scrubbing is needed, then return none, else scrub ID (COPPA checked above)
+	if e.CCPA || e.GDPR || e.LMT {
+		return ScrubStrategyUserID
 	}
 
 	return ScrubStrategyUserNone

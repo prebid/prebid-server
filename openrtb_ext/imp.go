@@ -20,6 +20,9 @@ type ExtImp struct {
 type ExtImpPrebid struct {
 	StoredRequest *ExtStoredRequest `json:"storedrequest"`
 
+	// Rewarded inventory signal, can be 0 or 1
+	IsRewardedInventory int8 `json:"is_rewarded_inventory"`
+
 	// NOTE: This is not part of the official API, we are not expecting clients
 	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
 	// at this time

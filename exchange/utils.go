@@ -7,11 +7,13 @@ import (
 	"math/rand"
 
 	"github.com/PubMatic-OpenWrap/openrtb"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
+	"github.com/PubMatic-OpenWrap/prebid-server/privacy/lmt"
 	"github.com/buger/jsonparser"
 )
 
@@ -26,8 +28,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
 	labels pbsmetrics.Labels,
 	gDPR gdpr.Permissions,
-	usersyncIfAmbiguous,
-	enforceCCPA bool) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
+	usersyncIfAmbiguous bool,
+	privacyConfig config.Privacy) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
 
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
@@ -43,30 +45,41 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
 	consent := extractConsent(orig)
-	isAMP := labels.RType == pbsmetrics.ReqTypeAMP
+	ampGDPRException := (labels.RType == pbsmetrics.ReqTypeAMP) && gDPR.AMPException()
 
+	var ccpaPolicy ccpa.Policy
+	if privacyConfig.CCPA.Enforce {
+		ccpaPolicy, _ = ccpa.ReadPolicy(orig)
+	}
+
+	var lmtPolicy lmt.Policy
+	if privacyConfig.LMT.Enforce {
+		lmtPolicy = lmt.ReadPolicy(orig)
+	}
+
+	// request level privacy policies
 	privacyEnforcement := privacy.Enforcement{
+		CCPA:  ccpaPolicy.ShouldEnforce(),
 		COPPA: orig.Regs != nil && orig.Regs.COPPA == 1,
+		LMT:   lmtPolicy.ShouldEnforce(),
 	}
 
-	if enforceCCPA {
-		ccpaPolicy, _ := ccpa.ReadPolicy(orig)
-		privacyEnforcement.CCPA = ccpaPolicy.ShouldEnforce()
-	}
-
+	// bidder level privacy policies
 	for bidder, bidReq := range requestsByBidder {
 
 		if gdpr == 1 {
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
 			var publisherID = labels.PubID
-			ok, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent)
+			ok, geo, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent)
 			privacyEnforcement.GDPR = !ok && err == nil
+			privacyEnforcement.GDPRGeo = !geo && err == nil
 		} else {
 			privacyEnforcement.GDPR = false
+			privacyEnforcement.GDPRGeo = false
 		}
 
-		privacyEnforcement.Apply(bidReq, isAMP)
+		privacyEnforcement.Apply(bidReq, ampGDPRException)
 	}
 
 	return

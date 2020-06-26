@@ -115,6 +115,9 @@ func TestMultiMetricsEngine(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		metricsEngine.RecordImps(impTypeLabels)
 	}
+
+	metricsEngine.RecordRequestQueueTime(false, pbsmetrics.ReqTypeVideo, time.Duration(1))
+
 	//Make the metrics engine, instantiated here with goEngine, fill its RequestStatuses[RequestType][pbsmetrics.RequestStatusXX] with the new boolean values added to pbsmetrics.Labels
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "RequestStatuses.Legacy.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeLegacy][pbsmetrics.RequestStatusOK].Count(), 0)
@@ -148,6 +151,9 @@ func TestMultiMetricsEngine(t *testing.T) {
 	}
 	VerifyMetrics(t, "AdapterMetrics.AppNexus.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].GotBidsMeter.Count(), 0)
 	VerifyMetrics(t, "AdapterMetrics.AppNexus.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].NoBidMeter.Count(), 5)
+
+	VerifyMetrics(t, "RecordRequestQueueTime.Video.Rejected", goEngine.RequestsQueueTimer[pbsmetrics.ReqTypeVideo][false].Count(), 1)
+	VerifyMetrics(t, "RecordRequestQueueTime.Video.Accepted", goEngine.RequestsQueueTimer[pbsmetrics.ReqTypeVideo][true].Count(), 0)
 }
 
 func VerifyMetrics(t *testing.T, name string, actual int64, expected int64) {

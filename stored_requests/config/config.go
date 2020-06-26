@@ -8,8 +8,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/backends/db_fetcher"
@@ -22,6 +20,8 @@ import (
 	apiEvents "github.com/PubMatic-OpenWrap/prebid-server/stored_requests/events/api"
 	httpEvents "github.com/PubMatic-OpenWrap/prebid-server/stored_requests/events/http"
 	postgresEvents "github.com/PubMatic-OpenWrap/prebid-server/stored_requests/events/postgres"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
 )
 
 // This gets set to the connection string used when a database connection is made. We only support a single

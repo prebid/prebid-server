@@ -48,26 +48,28 @@ func main() {
 */
 
 func InitPrebidServer(configFile string) {
+	//init contents	
 	rand.Seed(time.Now().UnixNano())
-	v := viper.New()
-	config.SetupViper(v, configFile)
-	v.SetConfigFile(configFile)
-	v.ReadInConfig()
-
-	cfg, err := config.New(v)
-
+	
+	//main contents
+	cfg, err := loadConfig(configFile)
 	if err != nil {
 		glog.Fatalf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
 
-	if err := serve(Rev, cfg); err != nil {
+	err = serve(Rev, cfg)
+	if err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
 }
 
-func loadConfig() (*config.Configuration, error) {
+//const configFileName = "pbs"
+
+func loadConfig(configFileName string) (*config.Configuration, error) {
 	v := viper.New()
-	config.SetupViper(v, "pbs") // filke = filename
+	config.SetupViper(v, configFileName)
+	v.SetConfigFile(configFileName)
+	v.ReadInConfig()
 	return config.New(v)
 }
 

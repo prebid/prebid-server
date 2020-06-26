@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/events"
+	"github.com/julienschmidt/httprouter"
 )
 
 type eventsAPI struct {

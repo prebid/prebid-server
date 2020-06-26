@@ -15,7 +15,7 @@ The AppNexus endpoint expects `imp.displaymanagerver` to be populated for mobile
 requests, however not all SDKs will populate this field. If the `imp.displaymanagerver` field
 is not supplied for an `imp`, but `request.app.ext.prebid.source`
 and `request.app.ext.prebid.version` are supplied, the adapter will fill in a value for
-`diplaymanagerver`. It will concatonate the two `app` fields as `<source>-<version>` fo fill in
+`diplaymanagerver`. It will concatenate the two `app` fields as `<source>-<version>` fo fill in
 the empty `displaymanagerver` before sending the request to AppNexus.
 
 ## Test Request
