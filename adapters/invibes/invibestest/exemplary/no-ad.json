@@ -5,7 +5,7 @@
       "page": "https://publisher.com/url"
     },
     "user": {
-      "id": "123"
+      "buyerUid": "123"
     },
     "imp": [
       {
@@ -31,7 +31,6 @@
       "expectedRequest": {
         "uri": "https://adweb.videostepstage.com/bid/VideoAdContent",
         "body": {
-          "Aver": "prebid_1.0.0",
           "BidParamsJson": "{\"PlacementIds\":[\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\"],\"BidVersion\":\"1\",\"Properties\":{\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\":{\"Formats\":[{\"w\":300,\"h\":150}],\"ImpId\":\"test-imp-id\"}}}",
           "Bvid": "",
           "Gdpr": true,

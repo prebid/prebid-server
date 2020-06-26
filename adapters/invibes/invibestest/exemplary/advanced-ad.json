@@ -45,7 +45,6 @@
       "expectedRequest": {
         "uri": "https://adweb.videostepstage.com/bid/VideoAdContent",
         "body": {
-          "Aver": "prebid_1.0.0",
           "BidParamsJson": "{\"PlacementIds\":[\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\"],\"BidVersion\":\"1\",\"Properties\":{\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\":{\"Formats\":[{\"w\":300,\"h\":150}],\"ImpId\":\"test-imp-id\"}}}",
           "Bvid": "",
           "Gdpr": false,
@@ -63,24 +62,30 @@
         "status": 200,
         "body": {
           "currency": "EUR",
-          "bids": [
+          "typedBids": [
             {
-              "id": "1234",
-              "impid": "test-imp-id1",
-              "price": 0.5,
-              "adm": "<div>abc</div>",
-              "crid": "29681110",
-              "width": 300,
-              "height": 250
+              "bid": {
+                "id": "1234",
+                "impid": "test-imp-id1",
+                "price": 0.5,
+                "adm": "<div>abc</div>",
+                "crid": "29681110",
+                "w": 300,
+                "h": 250
+              },
+              "dealPriority": 0
             },
             {
-              "id": "7890",
-              "impid": "test-imp-id2",
-              "price": 0.6,
-              "adm": "<div>abc2</div>",
-              "crid": "a555",
-              "width": 200,
-              "height": 200
+              "bid": {
+                "id": "7890",
+                "impid": "test-imp-id2",
+                "price": 0.6,
+                "adm": "<div>abc2</div>",
+                "crid": "a555",
+                "w": 200,
+                "h": 200
+              },
+              "dealPriority": 0
             }
           ]
         }

@@ -2,7 +2,7 @@
   "mockBidRequest": {
     "id": "test-request-id",
     "user": {
-      "id": "1"
+      "buyerUid": "1"
     },
     "imp": [
       {

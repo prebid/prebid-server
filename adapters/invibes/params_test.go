@@ -37,7 +37,6 @@ var validParams = []string{
 	`{"placementId":"123"}`,
 	`{"placementId":"123", "debug":{}}`,
 	`{"placementId":"123", "debug":{"testIp":"0.0.0.0"}}`,
-	`{"placementId":"123", "debug":{"testAmp":"true"}}`,
 	`{"placementId":"123", "debug":{"testBvid":"1234"}}`,
 }
 

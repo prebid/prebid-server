@@ -8,5 +8,4 @@ type ExtImpInvibes struct {
 type ExtImpInvibesDebug struct {
 	TestIp   string `json:"testIp,omitempty"`
 	TestBvid string `json:"testBvid,omitempty"`
-	TestAmp  string `json:"testAmp,omitempty"`
 }

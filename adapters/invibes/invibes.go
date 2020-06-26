@@ -18,37 +18,9 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
-// type InvibesBidResponse struct {
-// 	VideoAdContentResult VideoAdContentResult `json:"videoAdContentResult"`
-// }
-
-// type VideoAdContentResult struct {
-// 	Ads          []Ad          `json:"Ads"`
-// 	BidModel     BidModel      `json:"BidModel"`
-// 	AdPlacements []AdPlacement `json:"AdPlacements"`
-// }
-
-// type Ad struct {
-// 	VideoExposedID string  `json:"VideoExposedId"`
-// 	HTMLString     string  `json:"HtmlString"`
-// 	BidPrice       float64 `json:"BidPrice"`
-// }
-
-// type AdPlacement struct {
-// 	Ads      []Ad     `json:"Ads"`
-// 	BidModel BidModel `json:"BidModel"`
-// }
-
-// type BidModel struct {
-// 	PlacementID  string  `json:"PlacementId"`
-// 	CreativeHTML string  `json:"CreativeHtml"`
-// 	Width        *uint64 `json:"Width"`
-// 	Height       *uint64 `json:"Height"`
-// 	Currency     string  `json:"Currency"`
-// }
+const adapterVersion = "prebid_1.0.0"
 
 type InvibesAdRequest struct {
-	Aver          string
 	BidParamsJson string
 	Location      string
 	Lid           string
@@ -79,22 +51,14 @@ type InvibesInternalParams struct {
 	TestIp   string
 	TestBvid string
 }
-
-const adapterVersion = "prebid_1.0.0"
-const maxUriLength = 8000
-
 type BidServerBidderResponse struct {
-	Currency string               `json:"currency"`
-	Bids     []BidServerItemModel `json:"bids"`
+	Currency  string              `json:"currency"`
+	TypedBids []BidServerTypedBid `json:"typedBids"`
+	Error     string              `json:"error"`
 }
-type BidServerItemModel struct {
-	ID     string  `json:"id"`
-	ImpId  string  `json:"impId"`
-	Price  float64 `json:"price"`
-	CrId   string  `json:"crId"`
-	Width  uint64  `json:"width"`
-	Height uint64  `json:"height"`
-	AdM    string  `json:"adm"`
+type BidServerTypedBid struct {
+	Bid          openrtb.Bid `json:"bid"`
+	DealPriority int         `json:"dealPriority"`
 }
 
 func (a *InvibesInternalParams) IsTestRequest() bool {
@@ -149,14 +113,12 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	}
 
 	for _, imp := range request.Imp {
-
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errors = append(errors, &errortypes.BadInput{
 				Message: "Error parsing bidderExt object",
 			})
 		}
-
 		if len(errors) == 0 {
 			var invibesExt openrtb_ext.ExtImpInvibes
 			if err := json.Unmarshal(bidderExt.Bidder, &invibesExt); err != nil {
@@ -164,15 +126,12 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 					Message: "Error parsing invibesExt parameters",
 				})
 			}
-
 			if imp.Banner == nil {
 				errors = append(errors, &errortypes.BadInput{
 					Message: "Banner not specified",
 				})
 			}
-
 			if len(errors) == 0 {
-
 				currentBanner := *imp.Banner
 				var adFormats []openrtb.Format
 				if currentBanner.Format != nil {
@@ -191,11 +150,6 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 					ImpId:   imp.ID,
 					Formats: adFormats,
 				}
-
-				if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP || invibesExt.Debug.TestAmp == "true" {
-					invibesInternalParams.IsAmp = true
-				}
-
 				if invibesExt.Debug.TestIp != "" {
 					invibesInternalParams.TestIp = invibesExt.Debug.TestIp
 				}
@@ -204,6 +158,9 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				}
 			}
 		}
+	}
+	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
+		invibesInternalParams.IsAmp = true
 	}
 
 	if len(invibesInternalParams.BidParams.PlacementIds) == 0 {
@@ -246,25 +203,19 @@ func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInf
 		headers.Add("User-Agent", request.Device.UA)
 	}
 
-	pbsdebug := "false"
-	if invibesParams.IsTestRequest() {
-		pbsdebug = "true"
-	}
 	if invibesParams.TestIp != "" {
 		headers.Add("X-Forwarded-For", invibesParams.TestIp)
 	} else if request.Device != nil {
-		headers.Add("User-Agent", request.Device.UA)
-
 		if request.Device.IP != "" {
 			headers.Add("X-Forwarded-For", request.Device.IP)
 		} else if request.Device.IPv6 != "" {
 			headers.Add("X-Forwarded-For", request.Device.IPv6)
 		}
 	}
-	headers.Add("Pbsdebug", pbsdebug)
 	if request.Site != nil {
 		headers.Add("Referer", request.Site.Page)
 	}
+	headers.Add("Aver", adapterVersion)
 
 	return &adapters.RequestData{
 		Method:  "POST",
@@ -276,14 +227,9 @@ func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInf
 
 func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, request *openrtb.BidRequest) (*InvibesAdRequest, error) {
 	var lid string
-	if request.User != nil {
-		if request.User.BuyerUID != "" {
-			lid = request.User.BuyerUID
-		} else if request.User.ID != "" {
-			lid = request.User.ID
-		}
-	}
-	if lid == "" {
+	if request.User != nil && request.User.BuyerUID != "" {
+		lid = request.User.BuyerUID
+	} else {
 		return nil, &errortypes.BadInput{
 			Message: "No user id",
 		}
@@ -298,8 +244,7 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 	if invibesParams.IsAmp {
 		integType = 2
 	}
-	width := ""
-	height := ""
+	var width, height string
 	if request.Device != nil {
 		if request.Device.W > 0 {
 			width = strconv.FormatUint(request.Device.W, 10)
@@ -309,22 +254,13 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 			height = strconv.FormatUint(request.Device.H, 10)
 		}
 	}
-	if invibesParams.IsTestRequest() {
-		if width == "" {
-			width = "500"
-		}
-		if height == "" {
-			height = "500"
-		}
-	}
 
 	var invRequest InvibesAdRequest
 	bidParamsJson, err := json.Marshal(invibesParams.BidParams)
 	if err == nil {
 		invRequest = InvibesAdRequest{
-			Aver:          adapterVersion,
 			IsTestBid:     invibesParams.IsTestRequest(),
-			BidParamsJson: string(bidParamsJson), //"{placementIds:[\"" + params.PlacementId + "\"],bidVersion:\"1\"}",
+			BidParamsJson: string(bidParamsJson),
 			Location:      request.Site.Page,
 			Lid:           lid,
 			Kw:            request.Site.Keywords,
@@ -371,113 +307,21 @@ func (a *InvibesAdapter) MakeBids(
 		return nil, []error{err}
 	}
 
-	var parsedResponses = adapters.NewBidderResponseWithBidsCapacity(len(bidResponse.Bids))
+	var parsedResponses = adapters.NewBidderResponseWithBidsCapacity(len(bidResponse.TypedBids))
 	var errors []error
 	parsedResponses.Currency = bidResponse.Currency
 
-	for _, bid := range bidResponse.Bids {
+	if bidResponse.Error != "" {
+		return nil, []error{fmt.Errorf("Server error: %s.", bidResponse.Error)}
+	}
+	for _, typedbid := range bidResponse.TypedBids {
+		bid := typedbid.Bid
 		parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
-			Bid: &openrtb.Bid{
-				ID:    bid.ID,
-				ImpID: bid.ImpId,
-				Price: bid.Price,
-				AdM:   bid.AdM,
-				CrID:  bid.CrId,
-				W:     bid.Width,
-				H:     bid.Height,
-			},
-			BidType: openrtb_ext.BidTypeBanner,
+			Bid:          &bid,
+			BidType:      openrtb_ext.BidTypeBanner,
+			DealPriority: typedbid.DealPriority,
 		})
 	}
 
 	return parsedResponses, errors
 }
-
-// func (a *InvibesAdapter) MakeBids(
-// 	internalRequest *openrtb.BidRequest,
-// 	externalRequest *adapters.RequestData,
-// 	response *adapters.ResponseData,
-// ) (*adapters.BidderResponse, []error) {
-// 	if response.StatusCode != http.StatusOK {
-// 		return nil, []error{fmt.Errorf("Unexpected status code: %d.", response.StatusCode)}
-// 	}
-
-// 	bidResponses := InvibesBidResponse{}
-
-// 	currentRequest := *externalRequest
-// 	var impId string = ""
-// 	if len(currentRequest.Headers["Impid"]) > 0 {
-// 		impId = currentRequest.Headers["Impid"][0]
-// 	}
-// 	var pbsdebug bool = false
-// 	if len(currentRequest.Headers["Pbsdebug"]) > 0 {
-// 		pbsdebug = currentRequest.Headers["Pbsdebug"][0] == "true"
-// 	}
-
-// 	if err := json.Unmarshal(response.Body, &bidResponses); err != nil {
-// 		return nil, []error{err}
-// 	}
-
-// 	var parsedResponses = adapters.NewBidderResponseWithBidsCapacity(len(bidResponses.VideoAdContentResult.Ads))
-// 	var errors []error
-
-// 	bidModel := bidResponses.VideoAdContentResult.BidModel
-// 	invibesAds := bidResponses.VideoAdContentResult.Ads
-// 	if len(invibesAds) == 0 {
-// 		invibesAds = bidResponses.VideoAdContentResult.AdPlacements[0].Ads
-// 		if bidModel.Currency == "" {
-// 			bidModel = bidResponses.VideoAdContentResult.AdPlacements[0].BidModel
-// 		}
-// 	}
-
-// 	if bidModel.Currency != "" {
-// 		parsedResponses.Currency = bidModel.Currency
-// 	}
-
-// 	bidResponses.VideoAdContentResult.Ads = nil
-// 	for _, invibesAd := range invibesAds {
-// 		adContentResult := bidResponses.VideoAdContentResult
-// 		// adContentResult.Ads = []Ad{invibesAd}
-
-// 		// adjson, _ := json.Marshal(adContentResult)
-// 		// adresponse := string(adjson)
-
-// 		//todoav: use the commented version
-// 		// withScript := "<script id='ivCrHtmlS'>(function () {var i = (top.invibes = top.invibes || {}); var fullResponse = " + adresponse + "; debugger; i.bidResponse = fullResponse.videoAdContentResult;  })();"
-// 		// withScript = withScript + bidResponses.VideoAdContentResult.BidModel.CreativeHTML
-
-// 		getlinkurl := "getlink.js"
-// 		withScript := "<script id='ivCrHtmlS'>(function () {var i = (top.invibes = top.invibes || {}); var fullResponse = " + string(response.Body) + "; debugger; i.bidResponse = fullResponse.videoAdContentResult;  })();"
-// 		withScript = withScript + "(function() { var i = top.invibes = top.invibes || {}; if (i.creativeHtmlRan) { return; } i.creativeHtmlRan = true;  var d = top.document; var e = d.getElementById('divVideoStepAdTop') || d.getElementById('divVideoStepAdTop2') || d.getElementById('divVideoStepAdBottom'); if (e) e.parentNode.removeChild(e); var s = document.getElementById('ivCrHtmlS'); var d = document.createElement('div'); d.setAttribute('id', 'divVideoStepAdTop'); d.className += 'divVideoStep'; s.parentNode.insertBefore(d, s); var j = window.invibes = window.invibes || { }; j.getlinkUrl = '" + getlinkurl + "'; var t = document.createElement('script'); t.src = '" + getlinkurl + "'; s.parentNode.insertBefore(t, s); }()) </script>"
-
-// 		var bidPrice float64 = 0
-// 		if invibesAd.BidPrice > 0 {
-// 			bidPrice = invibesAd.BidPrice
-// 		} else if pbsdebug {
-// 			bidPrice = 0.000001
-// 		}
-
-// 		var wsize uint64 = 0
-// 		if adContentResult.BidModel.Width != nil {
-// 			wsize = *adContentResult.BidModel.Width
-// 		}
-// 		var hsize uint64 = 0
-// 		if adContentResult.BidModel.Height != nil {
-// 			hsize = *adContentResult.BidModel.Height
-// 		}
-// 		parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
-// 			Bid: &openrtb.Bid{
-// 				ID:    impId + "_" + invibesAd.VideoExposedID,
-// 				ImpID: "1",
-// 				Price: bidPrice,
-// 				AdM:   withScript,
-// 				CrID:  invibesAd.VideoExposedID,
-// 				W:     wsize,
-// 				H:     hsize,
-// 			},
-// 			BidType: openrtb_ext.BidTypeBanner,
-// 		})
-// 	}
-
-// 	return parsedResponses, errors
-// }
