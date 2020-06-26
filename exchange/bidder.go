@@ -94,7 +94,7 @@ func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		BidderName:  name,
 		Client:      client,
 		DebugConfig: cfg.Debug,
-		me:          me,
+		me:          bidderMetrics{engine: me, disabled: cfg.Metrics.Disabled},
 	}
 }
 
@@ -103,7 +103,12 @@ type bidderAdapter struct {
 	BidderName  openrtb_ext.BidderName
 	Client      *http.Client
 	DebugConfig config.Debug
-	me          pbsmetrics.MetricsEngine
+	me          bidderMetrics
+}
+
+type bidderMetrics struct {
+	engine   pbsmetrics.MetricsEngine
+	disabled config.DisabledMetrics
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
@@ -324,7 +329,11 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	}
 	httpReq.Header = req.Headers
 
-	ctx = bidder.AddClientTrace(ctx)
+	// If adapter connection metrics are not disabled, add the client trace
+	// to get complete connection info into our metrics
+	if !bidder.me.disabled.AccountAdapterDetails {
+		ctx = bidder.addClientTrace(ctx)
+	}
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {
@@ -338,7 +347,7 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 			}
 
 		}
-		bidder.me.RecordAdapterFailedConnections(bidder.BidderName)
+		bidder.me.engine.RecordAdapterFailedConnections(bidder.BidderName)
 		return &httpCallInfo{
 			request: req,
 			err:     err,
@@ -381,7 +390,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			httpReq.Header = req.Headers
 			httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 			success := (err == nil && httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
-			bidder.me.RecordTimeoutNotice(success)
+			bidder.me.engine.RecordTimeoutNotice(success)
 			if bidder.DebugConfig.TimeoutNotification.Log && !(bidder.DebugConfig.TimeoutNotification.FailOnly && success) {
 				var msg string
 				if err == nil {
@@ -393,7 +402,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 				util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
 			}
 		} else {
-			bidder.me.RecordTimeoutNotice(false)
+			bidder.me.engine.RecordTimeoutNotice(false)
 			if bidder.DebugConfig.TimeoutNotification.Log {
 				msg := fmt.Sprintf("TimeoutNotification: Failed to make timeout request: method(%s), uri(%s), error(%s)", toReq.Method, toReq.Uri, err.Error())
 				util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
@@ -421,7 +430,7 @@ type httpCallInfo struct {
 // This function adds an httptrace.ClientTrace object to the context so, if connection with the bidder
 // endpoint is established, we can keep track of whether the connection was newly created, reused, and
 // even know if it was left idle and for how much time.
-func (bidder *bidderAdapter) AddClientTrace(ctx context.Context) context.Context {
+func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context {
 	var connStart, dnsStart time.Time
 
 	trace := &httptrace.ClientTrace{
@@ -433,7 +442,7 @@ func (bidder *bidderAdapter) AddClientTrace(ctx context.Context) context.Context
 		GotConn: func(info httptrace.GotConnInfo) {
 			obtainConnTime := time.Now().Sub(connStart)
 
-			bidder.me.RecordAdapterConnections(bidder.BidderName, info, obtainConnTime)
+			bidder.me.engine.RecordAdapterConnections(bidder.BidderName, info, obtainConnTime)
 		},
 		// DNSStart is called when a DNS lookup begins.
 		DNSStart: func(info httptrace.DNSStartInfo) {
@@ -443,7 +452,7 @@ func (bidder *bidderAdapter) AddClientTrace(ctx context.Context) context.Context
 		DNSDone: func(info httptrace.DNSDoneInfo) {
 			dnsLookupTime := time.Now().Sub(dnsStart)
 
-			bidder.me.RecordDNSTime(dnsLookupTime)
+			bidder.me.engine.RecordDNSTime(dnsLookupTime)
 		},
 	}
 	return httptrace.WithClientTrace(ctx, trace)

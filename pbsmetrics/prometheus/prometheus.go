@@ -49,6 +49,8 @@ type Metrics struct {
 
 	// Account Metrics
 	accountRequests *prometheus.CounterVec
+
+	metricsDisabled config.DisabledMetrics
 }
 
 const (
@@ -93,7 +95,7 @@ const (
 )
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
-func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
+func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMetrics) *Metrics {
 	requestTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
 	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
@@ -101,6 +103,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
+	metrics.metricsDisabled = disabledMetrics
 
 	metrics.connectionsClosed = newCounterWithoutLabels(cfg, metrics.Registry,
 		"connections_closed",
@@ -201,32 +204,34 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of requests labeled by adapter, if has a cookie, and if it resulted in bids.",
 		[]string{adapterLabel, cookieLabel, hasBidsLabel})
 
-	metrics.adapterFailedConnections = newCounter(cfg, metrics.Registry,
-		"adapter_connection_errors",
-		"Count of connections that could not be established per bidder.",
-		[]string{adapterLabel})
+	if !metrics.metricsDisabled.AdapterConnectionMetrics {
+		metrics.adapterFailedConnections = newCounter(cfg, metrics.Registry,
+			"adapter_connection_errors",
+			"Count of connections that could not be established per bidder.",
+			[]string{adapterLabel})
 
-	metrics.adapterCreatedConnections = newCounter(cfg, metrics.Registry,
-		"adapter_connection_created",
-		"Count that keeps track of new connections when contacting adapter bidder endpoints.",
-		[]string{adapterLabel})
+		metrics.adapterCreatedConnections = newCounter(cfg, metrics.Registry,
+			"adapter_connection_created",
+			"Count that keeps track of new connections when contacting adapter bidder endpoints.",
+			[]string{adapterLabel})
 
-	metrics.adapterReusedConnections = newCounter(cfg, metrics.Registry,
-		"adapter_connection_reused",
-		"Count that keeps track of reused connections when contacting adapter bidder endpoints.",
-		[]string{adapterLabel})
+		metrics.adapterReusedConnections = newCounter(cfg, metrics.Registry,
+			"adapter_connection_reused",
+			"Count that keeps track of reused connections when contacting adapter bidder endpoints.",
+			[]string{adapterLabel})
 
-	metrics.adapterIdleConnectionTime = newHistogramVec(cfg, metrics.Registry,
-		"adapter_idle_connection_time",
-		"Seconds that a connection to an adapter bidder endpoint was kept idle.",
-		[]string{adapterLabel},
-		requestTimeBuckets)
+		metrics.adapterIdleConnectionTime = newHistogramVec(cfg, metrics.Registry,
+			"adapter_idle_connection_time",
+			"Seconds that a connection to an adapter bidder endpoint was kept idle.",
+			[]string{adapterLabel},
+			requestTimeBuckets)
 
-	metrics.adapterConnectionWaitTime = newHistogramVec(cfg, metrics.Registry,
-		"adapter_connection_wait",
-		"Seconds from when the connection was requested until it is either created or reused",
-		[]string{adapterLabel},
-		requestTimeBuckets)
+		metrics.adapterConnectionWaitTime = newHistogramVec(cfg, metrics.Registry,
+			"adapter_connection_wait",
+			"Seconds from when the connection was requested until it is either created or reused",
+			[]string{adapterLabel},
+			requestTimeBuckets)
+	}
 
 	metrics.adapterRequestsTimer = newHistogramVec(cfg, metrics.Registry,
 		"adapter_request_time_seconds",
@@ -383,6 +388,10 @@ func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 // Keeps track of created and reused connections to adapter bidders and logs its idle time as well
 // as the time from the connection request, to the connection creation, or reuse from the pool
 func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
+	if m.metricsDisabled.AdapterConnectionMetrics {
+		return
+	}
+
 	if info.Reused {
 		m.adapterReusedConnections.With(prometheus.Labels{
 			adapterLabel: string(adapterName),
@@ -406,6 +415,10 @@ func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, i
 
 // Keeps track of failed connections per adapter
 func (m *Metrics) RecordAdapterFailedConnections(adapterName openrtb_ext.BidderName) {
+	if m.metricsDisabled.AdapterConnectionMetrics {
+		return
+	}
+
 	m.adapterFailedConnections.With(prometheus.Labels{
 		adapterLabel: string(adapterName),
 	}).Inc()

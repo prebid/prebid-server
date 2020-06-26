@@ -200,7 +200,7 @@ func TestBidderTimeout(t *testing.T) {
 		Bidder:     &mixedMultiBidder{},
 		BidderName: openrtb_ext.BidderAppnexus,
 		Client:     server.Client(),
-		me:         &metricsConf.DummyMetricsEngine{},
+		me:         bidderMetrics{engine: &metricsConf.DummyMetricsEngine{}},
 	}
 
 	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
@@ -243,7 +243,7 @@ func TestConnectionClose(t *testing.T) {
 		Bidder:     &mixedMultiBidder{},
 		Client:     server.Client(),
 		BidderName: openrtb_ext.BidderAppnexus,
-		me:         &metricsConf.DummyMetricsEngine{},
+		me:         bidderMetrics{engine: &metricsConf.DummyMetricsEngine{}},
 	}
 
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
@@ -1319,7 +1319,7 @@ func TestCallRecordRecordDNSTime(t *testing.T) {
 	bidder := &bidderAdapter{
 		Bidder: &mixedMultiBidder{},
 		Client: server.Client(),
-		me:     metricsEngine,
+		me:     bidderMetrics{engine: metricsEngine},
 	}
 
 	// Run function
@@ -1350,7 +1350,7 @@ func TestTimeoutNotificationOff(t *testing.T) {
 		Bidder:      bidderImpl,
 		Client:      server.Client(),
 		DebugConfig: config.Debug{},
-		me:          &metricsConfig.DummyMetricsEngine{},
+		me:          bidderMetrics{engine: &metricsConf.DummyMetricsEngine{}},
 	}
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")
@@ -1381,7 +1381,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 				Log: true,
 			},
 		},
-		me: &metricsConfig.DummyMetricsEngine{},
+		me: bidderMetrics{engine: &metricsConf.DummyMetricsEngine{}},
 	}
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")

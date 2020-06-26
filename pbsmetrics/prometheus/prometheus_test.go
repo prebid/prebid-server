@@ -19,7 +19,7 @@ func createMetricsForTesting() *Metrics {
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "server",
-	})
+	}, config.DisabledMetrics{})
 }
 
 func TestMetricCountGatekeeping(t *testing.T) {
@@ -1014,7 +1014,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		out         testOut
 	}{
 		{
-			description: "Successful, new connection created, was idle, has connection wait",
+			description: "[1] Successful, new connection created, was idle, has connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
 				gotConnInfo: httptrace.GotConnInfo{
@@ -1034,7 +1034,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 			},
 		},
 		{
-			description: "Successful, new connection created, not idle, has connection wait",
+			description: "[2] Successful, new connection created, not idle, has connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
 				gotConnInfo: httptrace.GotConnInfo{
@@ -1053,7 +1053,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 			},
 		},
 		{
-			description: "Successful, was reused, was idle, no connection wait",
+			description: "[3] Successful, was reused, was idle, no connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
 				gotConnInfo: httptrace.GotConnInfo{
@@ -1072,7 +1072,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 			},
 		},
 		{
-			description: "Successful, was reused, not idle, has connection wait",
+			description: "[4] Successful, was reused, not idle, has connection wait",
 			in: testIn{
 				adapterName: openrtb_ext.BidderAppnexus,
 				gotConnInfo: httptrace.GotConnInfo{
@@ -1095,13 +1095,13 @@ func TestRecordAdapterConnections(t *testing.T) {
 	for i, test := range testCases {
 		m := createMetricsForTesting()
 		assertDesciptions := []string{
-			fmt.Sprintf("[%d] Metric: adapterFailedConnections; Desc: %s", i, test.description),
-			fmt.Sprintf("[%d] Metric: adapterReusedConnections; Desc: %s", i, test.description),
-			fmt.Sprintf("[%d] Metric: adapterCreatedConnections; Desc: %s", i, test.description),
-			fmt.Sprintf("[%d] Metric: adapterIdleConnectionCount; Desc: %s", i, test.description),
-			fmt.Sprintf("[%d] Metric: adapterIdleConnectionTime; Desc: %s", i, test.description),
-			fmt.Sprintf("[%d] Metric: adapterWaitConnectionCount; Desc: %s", i, test.description),
-			fmt.Sprintf("[%d] Metric: adapterWaitConnectionTime; Desc: %s", i, test.description),
+			fmt.Sprintf("[%d] Metric: adapterFailedConnections; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterReusedConnections; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterCreatedConnections; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterIdleConnectionCount; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterIdleConnectionTime; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterWaitConnectionCount; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterWaitConnectionTime; Desc: %s", i+1, test.description),
 		}
 
 		m.RecordAdapterConnections(test.in.adapterName, test.in.gotConnInfo, test.in.connWait)
@@ -1148,6 +1148,21 @@ func TestRecordAdapterFailedConnections(t *testing.T) {
 		m.adapterFailedConnections,
 		float64(1),
 		prometheus.Labels{adapterLabel: string(openrtb_ext.BidderAppnexus)})
+}
+
+func TestDisabeAdapterConnections(t *testing.T) {
+	prometheusMetrics := NewMetrics(config.PrometheusMetrics{
+		Port:      8080,
+		Namespace: "prebid",
+		Subsystem: "server",
+	}, config.DisabledMetrics{AdapterConnectionMetrics: true})
+
+	// Assert counter vector was not initialized
+	assert.Nil(t, prometheusMetrics.adapterFailedConnections, "Counter Vector adapterFailedConnections should be nil")
+	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
+	assert.Nil(t, prometheusMetrics.adapterCreatedConnections, "Counter Vector adapterCreatedConnections should be nil")
+	assert.Nil(t, prometheusMetrics.adapterIdleConnectionTime, "Counter Vector adapterIdleConnectionTime should be nil")
+	assert.Nil(t, prometheusMetrics.adapterConnectionWaitTime, "Counter Vector adapterConnectionWaitTime should be nil")
 }
 
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {

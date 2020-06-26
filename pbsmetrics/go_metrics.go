@@ -106,7 +106,7 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 // rather than loading legacy metrics that never get filled.
 // This will also eventually let us configure metrics, such as setting a limited set of metrics
 // for a production instance, and then expanding again when we need more debugging.
-func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableMetrics config.DisabledMetrics) *Metrics {
+func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disabledMetrics config.DisabledMetrics) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	blankTimer := &metrics.NilTimer{}
 
@@ -148,12 +148,12 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
-		MetricsDisabled: disableMetrics,
+		MetricsDisabled: disabledMetrics,
 
 		exchanges: exchanges,
 	}
 	for _, a := range exchanges {
-		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
+		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics(newMetrics.MetricsDisabled)
 	}
 
 	for _, t := range RequestTypes() {
@@ -232,7 +232,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 }
 
 // Part of setting up blank metrics, the adapter metrics.
-func makeBlankAdapterMetrics() *AdapterMetrics {
+func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMetrics {
 	blankMeter := &metrics.NilMeter{}
 	newAdapter := &AdapterMetrics{
 		NoCookieMeter:     blankMeter,
@@ -244,11 +244,13 @@ func makeBlankAdapterMetrics() *AdapterMetrics {
 		BidsReceivedMeter: blankMeter,
 		PanicMeter:        blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
-		ConnError:         metrics.NilCounter{},
-		ConnCreated:       metrics.NilCounter{},
-		ConnReused:        metrics.NilCounter{},
-		ConnIdleTime:      &metrics.NilTimer{},
-		ConnWaitTime:      &metrics.NilTimer{},
+	}
+	if disabledMetrics.AdapterConnectionMetrics {
+		newAdapter.ConnError = metrics.NilCounter{}
+		newAdapter.ConnCreated = metrics.NilCounter{}
+		newAdapter.ConnReused = metrics.NilCounter{}
+		newAdapter.ConnIdleTime = &metrics.NilTimer{}
+		newAdapter.ConnWaitTime = &metrics.NilTimer{}
 	}
 	for _, err := range AdapterErrors() {
 		newAdapter.ErrorMeters[err] = blankMeter
@@ -335,7 +337,7 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
 	if !me.MetricsDisabled.AccountAdapterDetails {
 		for _, a := range me.exchanges {
-			am.adapterMetrics[a] = makeBlankAdapterMetrics()
+			am.adapterMetrics[a] = makeBlankAdapterMetrics(me.MetricsDisabled)
 			registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
 		}
 	}
@@ -465,6 +467,10 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 	info httptrace.GotConnInfo,
 	obtainConnectionTime time.Duration) {
 
+	if me.MetricsDisabled.AdapterConnectionMetrics {
+		return
+	}
+
 	am, ok := me.AdapterMetrics[adapterName]
 	if !ok {
 		glog.Errorf("Trying to log adapter connection metrics for %s: adapter metrics not found", string(adapterName))
@@ -483,6 +489,11 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 }
 
 func (me *Metrics) RecordAdapterFailedConnections(adapterName openrtb_ext.BidderName) {
+
+	if me.MetricsDisabled.AdapterConnectionMetrics {
+		return
+	}
+
 	am, ok := me.AdapterMetrics[adapterName]
 	if !ok {
 		glog.Errorf("Trying to log adapter connection metrics for %s: adapter metrics not found", string(adapterName))

@@ -219,9 +219,10 @@ func TestRecordAdapterConnections(t *testing.T) {
 	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
 
 	type testIn struct {
-		adapterName openrtb_ext.BidderName
-		gotConnInfo httptrace.GotConnInfo
-		connWait    time.Duration
+		adapterName         openrtb_ext.BidderName
+		gotConnInfo         httptrace.GotConnInfo
+		connWait            time.Duration
+		connMetricsDisabled bool
 	}
 
 	type testOut struct {
@@ -245,7 +246,8 @@ func TestRecordAdapterConnections(t *testing.T) {
 					WasIdle:  true,
 					IdleTime: time.Second * 2,
 				},
-				connWait: time.Second * 5,
+				connWait:            time.Second * 5,
+				connMetricsDisabled: false,
 			},
 			out: testOut{
 				expectedConnReusedCount:  0,
@@ -262,7 +264,8 @@ func TestRecordAdapterConnections(t *testing.T) {
 					Reused:  false,
 					WasIdle: false,
 				},
-				connWait: time.Second * 4,
+				connWait:            time.Second * 4,
+				connMetricsDisabled: false,
 			},
 			out: testOut{
 				expectedConnCreatedCount: 1,
@@ -279,6 +282,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 					WasIdle:  true,
 					IdleTime: time.Second * 3,
 				},
+				connMetricsDisabled: false,
 			},
 			out: testOut{
 				expectedConnReusedCount: 1,
@@ -294,7 +298,8 @@ func TestRecordAdapterConnections(t *testing.T) {
 					Reused:  true,
 					WasIdle: false,
 				},
-				connWait: time.Second * 5,
+				connWait:            time.Second * 5,
+				connMetricsDisabled: false,
 			},
 			out: testOut{
 				expectedConnReusedCount: 1,
@@ -304,9 +309,24 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "Fake bidder, nothing gets updated",
 			in: testIn{
-				adapterName: fakeBidder,
-				gotConnInfo: httptrace.GotConnInfo{},
-				connWait:    0,
+				adapterName:         fakeBidder,
+				gotConnInfo:         httptrace.GotConnInfo{},
+				connWait:            0,
+				connMetricsDisabled: false,
+			},
+			out: testOut{},
+		},
+		{
+			description: "Adapter connection metrics are disabled, nothing gets updated",
+			in: testIn{
+				adapterName: openrtb_ext.BidderAppnexus,
+				gotConnInfo: httptrace.GotConnInfo{
+					Reused:   false,
+					WasIdle:  true,
+					IdleTime: time.Second * 2,
+				},
+				connWait:            time.Second * 5,
+				connMetricsDisabled: true,
 			},
 			out: testOut{},
 		},
@@ -314,7 +334,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 
 	for i, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: false})
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterConnectionMetrics: test.in.connMetricsDisabled})
 
 		m.RecordAdapterConnections(test.in.adapterName, test.in.gotConnInfo, test.in.connWait)
 
@@ -332,16 +352,25 @@ func TestRecordAdapterFailedConnections(t *testing.T) {
 	testCases := []struct {
 		description           string
 		inAdapterName         openrtb_ext.BidderName
+		inConnMetricsDisabled bool
 		outExpectedErrorCount int64
 	}{
 		{
 			description:           "Real bidder, updates count",
 			inAdapterName:         openrtb_ext.BidderAppnexus,
+			inConnMetricsDisabled: false,
 			outExpectedErrorCount: int64(1),
 		},
 		{
 			description:           "Fake bidder, nothing gets updated",
 			inAdapterName:         openrtb_ext.BidderName("fooAdvertising"),
+			inConnMetricsDisabled: false,
+			outExpectedErrorCount: int64(0),
+		},
+		{
+			description:           "Real bidder but adapter connection metrics are disabled so nothing gets updated",
+			inAdapterName:         openrtb_ext.BidderAppnexus,
+			inConnMetricsDisabled: true,
 			outExpectedErrorCount: int64(0),
 		},
 	}
@@ -349,7 +378,7 @@ func TestRecordAdapterFailedConnections(t *testing.T) {
 	for _, test := range testCases {
 		// Create metrics
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: false})
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterConnectionMetrics: test.inConnMetricsDisabled})
 
 		// Run test
 		m.RecordAdapterFailedConnections(test.inAdapterName)
