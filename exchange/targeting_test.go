@@ -8,12 +8,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
+	metricsConfig "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
@@ -106,7 +108,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
-	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{}, &categoriesFetcher)
+	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{}, &categoriesFetcher, nil)
 
 	if err != nil {
 		t.Fatalf("Unexpected errors running auction: %v", err)
@@ -132,7 +134,7 @@ func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb.Bid, mockServerU
 		adapterMap[bidder] = adaptBidder(&mockTargetingBidder{
 			mockServerURL: mockServerURL,
 			bids:          bids,
-		}, client)
+		}, client, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 	}
 	return adapterMap
 }

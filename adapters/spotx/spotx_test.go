@@ -26,7 +26,7 @@ func TestSpotxMakeBid(t *testing.T) {
 	request := &openrtb.BidRequest{
 		ID: "1559039248176",
 		Imp: []openrtb.Imp{
-			openrtb.Imp{
+			{
 				ID: "28635736ddc2bb",
 				Video: &openrtb.Video{
 					MIMEs: []string{"video/3gpp"},

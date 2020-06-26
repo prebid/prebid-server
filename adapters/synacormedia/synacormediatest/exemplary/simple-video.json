@@ -10,7 +10,6 @@
     "imp": [
       {
         "id": "i3",
-        "tagid": "3020",
         "video": {
           "w": 300,
           "h": 250,
@@ -21,8 +20,9 @@
         },
         "metric": [],
         "ext": {
-          "bidder":{
-            "seatId":"1927"
+          "bidder": {
+            "seatId":"prebid",
+            "tagId": "demo1"
           }
         }
       }
@@ -31,7 +31,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://1927.technoratimedia.com/openrtb/bids/1927",
+        "uri": "http://prebid.technoratimedia.com/openrtb/bids/prebid",
         "body": {
           "id": "1",
           "site": {
@@ -40,12 +40,12 @@
             "publisher": {}
           },
           "ext": {
-            "seatId": "1927"
+            "seatId": "prebid"
           },
           "imp": [
             {
               "id": "i3",
-              "tagid": "3020",
+              "tagid": "demo1",
               "video": {
                 "w": 300,
                 "h": 250,
@@ -56,7 +56,8 @@
               },
               "ext": {
                 "bidder":{
-                  "seatId":"1927"
+                  "seatId":"prebid",
+                  "tagId": "demo1"
                 }
               }
             }

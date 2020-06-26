@@ -1,0 +1,11 @@
+maintainer:
+  email: "kamil@adtarget.com.tr"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

@@ -1,0 +1,134 @@
+{
+  "mockBidRequest": {
+    "id": "abc",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "imp123",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "pub_id": "test",
+            "zone_id": "N4zTDq3PPEHBIODv7cXK",
+            "force_bid": true
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://market-east.smrtb.com/json/publisher/rtb?pubid=test",
+        "body":{
+          "id": "abc",
+          "site": {
+            "page": "prebid.org"
+          },
+          "imp": [{
+            "id": "imp123",
+            "tagid": "N4zTDq3PPEHBIODv7cXK",
+            "banner": {
+              "format": [{
+                "w": 300,
+                "h": 250
+              }],
+              "w": 300,
+              "h": 250
+            },
+            "ext": {
+              "bidder": {
+                "pub_id": "test",
+                "zone_id": "N4zTDq3PPEHBIODv7cXK",
+                "force_bid": true
+              }
+            }
+          }],
+          "ext": {
+            "pub_id": "test"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "abc",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "adm": "<b>hi</b>",
+                  "crid": "test_banner_crid",
+                  "cid": "test_cid",
+                  "impid": "imp123",
+                  "id": "1",
+                  "price": 0.01,
+                  "ext": {
+                    "format": "BANNER"
+                  }
+                }
+              ]
+            },
+            {
+              "bid": [
+                {
+                  "adm": "<VAST></VAST>",
+                  "crid": "test_video_crid",
+                  "cid": "test_cid",
+                  "impid": "imp123",
+                  "id": "2",
+                  "price": 0.01,
+                  "ext": {
+                    "format": "VIDEO"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adm": "<b>hi</b>",
+            "crid": "test_banner_crid",
+            "cid": "test_cid",
+            "impid": "imp123",
+            "price": 0.01,
+            "id": "1"
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "adm": "<VAST></VAST>",
+            "crid": "test_video_crid",
+            "cid": "test_cid",
+            "impid": "imp123",
+            "price": 0.01,
+            "id": "2"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

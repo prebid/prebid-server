@@ -14,7 +14,7 @@ func TestSpotxParams(t *testing.T) {
 
 func testValidParams(t *testing.T) {
 
-	params := []string {
+	params := []string{
 		`{"channel_id": "12345", "ad_unit": "instream"}`,
 		`{"channel_id": "12345", "ad_unit": "instream", "secure": true}`,
 		`{"channel_id": "12345", "ad_unit": "instream", "secure": true, "ad_volume": 0.4}`,
@@ -35,7 +35,7 @@ func testValidParams(t *testing.T) {
 
 // TestInvalidParams makes sure that the 33Across schema rejects all the imp.ext fields we don't support.
 func testInvalidParams(t *testing.T) {
-	params := []string {
+	params := []string{
 		`{"channel_id": "1234", "ad_unit": "instream", "secure": true, "ad_volume": 0.4, "price_floor": 10, "hide_skin": false}`,
 		`{"channel_id": "12345", "ad_unit": "outstream1", "secure": true, "ad_volume": 0.4, "price_floor": 10, "hide_skin": false}`,
 		`{"ad_unit": "instream", "secure": true, "ad_volume": 0.4, "price_floor": 10, "hide_skin": false}`,

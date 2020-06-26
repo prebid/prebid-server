@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -46,14 +47,9 @@ type Cacheable struct {
 	Key        string
 }
 
-func NewClient(conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
+func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
 	return &clientImpl{
-		httpClient: &http.Client{
-			Transport: &http.Transport{
-				MaxIdleConns:    10,
-				IdleConnTimeout: 65,
-			},
-		},
+		httpClient:        httpClient,
 		putUrl:            conf.GetBaseURL() + "/cache",
 		externalCacheHost: extCache.Host,
 		externalCachePath: extCache.Path,
@@ -92,15 +88,13 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 
 	postBody, err := encodeValues(values)
 	if err != nil {
-		glog.Errorf("Error creating JSON for prebid cache: %v", err)
-		errs = append(errs, fmt.Errorf("Error creating JSON for prebid cache: %v", err))
+		logError(&errs, "Error creating JSON for prebid cache: %v", err)
 		return uuidsToReturn, errs
 	}
 
 	httpReq, err := http.NewRequest("POST", c.putUrl, bytes.NewReader(postBody))
 	if err != nil {
-		glog.Errorf("Error creating POST request to prebid cache: %v", err)
-		errs = append(errs, fmt.Errorf("Error creating POST request to prebid cache: %v", err))
+		logError(&errs, "Error creating POST request to prebid cache: %v", err)
 		return uuidsToReturn, errs
 	}
 
@@ -112,9 +106,7 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 	elapsedTime := time.Since(startTime)
 	if err != nil {
 		c.metrics.RecordPrebidCacheRequestTime(false, elapsedTime)
-		friendlyErr := fmt.Errorf("Error sending the request to Prebid Cache: %v; Duration=%v", err, elapsedTime)
-		glog.Error(friendlyErr)
-		errs = append(errs, friendlyErr)
+		logError(&errs, "Error sending the request to Prebid Cache: %v; Duration=%v, Items=%v, Payload Size=%v", err, elapsedTime, len(values), len(postBody))
 		return uuidsToReturn, errs
 	}
 	defer anResp.Body.Close()
@@ -122,23 +114,19 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 
 	responseBody, err := ioutil.ReadAll(anResp.Body)
 	if anResp.StatusCode != 200 {
-		glog.Errorf("Prebid Cache call to %s returned %d: %s", putURL, anResp.StatusCode, responseBody)
-		errs = append(errs, fmt.Errorf("Prebid Cache call to %s returned %d: %s", putURL, anResp.StatusCode, responseBody))
+		logError(&errs, "Prebid Cache call to %s returned %d: %s", putURL, anResp.StatusCode, responseBody)
 		return uuidsToReturn, errs
 	}
 
 	currentIndex := 0
 	processResponse := func(uuidObj []byte, _ jsonparser.ValueType, _ int, err error) {
 		if uuid, valueType, _, err := jsonparser.Get(uuidObj, "uuid"); err != nil {
-			glog.Errorf("Prebid Cache returned a bad value at index %d. Error was: %v. Response body was: %s", currentIndex, err, string(responseBody))
-			errs = append(errs, fmt.Errorf("Prebid Cache returned a bad value at index %d. Error was: %v. Response body was: %s", currentIndex, err, string(responseBody)))
+			logError(&errs, "Prebid Cache returned a bad value at index %d. Error was: %v. Response body was: %s", currentIndex, err, string(responseBody))
 		} else if valueType != jsonparser.String {
-			glog.Errorf("Prebid Cache returned a %v at index %d in: %v", valueType, currentIndex, string(responseBody))
-			errs = append(errs, fmt.Errorf("Prebid Cache returned a %v at index %d in: %v", valueType, currentIndex, string(responseBody)))
+			logError(&errs, "Prebid Cache returned a %v at index %d in: %v", valueType, currentIndex, string(responseBody))
 		} else {
 			if uuidsToReturn[currentIndex], err = jsonparser.ParseString(uuid); err != nil {
-				glog.Errorf("Prebid Cache response index %d could not be parsed as string: %v", currentIndex, err)
-				errs = append(errs, fmt.Errorf("Prebid Cache response index %d could not be parsed as string: %v", currentIndex, err))
+				logError(&errs, "Prebid Cache response index %d could not be parsed as string: %v", currentIndex, err)
 				uuidsToReturn[currentIndex] = ""
 			}
 		}
@@ -146,17 +134,20 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 	}
 
 	if _, err := jsonparser.ArrayEach(responseBody, processResponse, "responses"); err != nil {
-		glog.Errorf("Error interpreting Prebid Cache response: %v\nResponse was: %s", err, string(responseBody))
-		errs = append(errs, fmt.Errorf("Error interpreting Prebid Cache response: %v\nResponse was: %s", err, string(responseBody)))
+		logError(&errs, "Error interpreting Prebid Cache response: %v\nResponse was: %s", err, string(responseBody))
 		return uuidsToReturn, errs
 	}
 
 	return uuidsToReturn, errs
 }
 
+func logError(errs *[]error, format string, a ...interface{}) {
+	msg := fmt.Sprintf(format, a...)
+	glog.Error(msg)
+	*errs = append(*errs, errors.New(msg))
+}
+
 func encodeValues(values []Cacheable) ([]byte, error) {
-	// This function assumes that m is non-nil and has at least one element.
-	// clientImp.PutBids should respect this.
 	var buf bytes.Buffer
 	buf.WriteString(`{"puts":[`)
 	for i := 0; i < len(values); i++ {

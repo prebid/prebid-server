@@ -142,6 +142,14 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 		}
 	}
 
+	if imp.Video != nil {
+		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
+			imp.Video.Ext = json.RawMessage(`{"rewarded":1}`)
+		} else {
+			imp.Video.Ext = nil
+		}
+	}
+
 	return nil
 }
 
@@ -168,6 +176,11 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
+	// overrride default currency
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {

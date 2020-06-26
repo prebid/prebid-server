@@ -1,0 +1,36 @@
+{
+  "mockBidRequest": {
+    "id": "9ed903f4-383d-406b-8011-4f06526cb02c",
+    "source": {
+      "tid": "9ed903f4-383d-406b-8011-4f06526cb02c"
+    },
+    "tmax": 1000,
+    "imp": [],
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "includewinners": true,
+          "includebidderkeys": false
+        }
+      }
+    },
+    "site": {
+      "publisher": {
+        "id": "1"
+      },
+      "page": "http://example.com/test.html"
+    },
+    "device": {
+      "w": 1280,
+      "h": 720,
+      "ip": "192.168.1.1"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No impression in the bid request",
+      "comparison": "literal"
+    }
+  ]
+}
