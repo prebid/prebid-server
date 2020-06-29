@@ -26,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/iputil"
 )
 
 const defaultAmpRequestTimeoutMillis = 900
@@ -58,6 +59,11 @@ func NewAmpEndpoint(
 
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
+	ipValidator := iputil.PublicNetworkIPValidator{
+		IPv4PrivateNetworks: cfg.RequestValidation.IPv4PrivateNetworksParsed,
+		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
+	}
+
 	return httprouter.Handle((&endpointDeps{
 		ex,
 		validator,
@@ -72,7 +78,8 @@ func NewAmpEndpoint(
 		defReqJSON,
 		bidderMap,
 		nil,
-		nil}).AmpAuction), nil
+		nil,
+		ipValidator}).AmpAuction), nil
 
 }
 
