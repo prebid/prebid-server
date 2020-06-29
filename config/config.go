@@ -17,7 +17,7 @@ import (
 	validator "github.com/asaskevich/govalidator"
 )
 
-// Configuration
+// Configuration specifies the static application config.
 type Configuration struct {
 	ExternalURL string     `mapstructure:"external_url"`
 	Host        string     `mapstructure:"host"`
@@ -69,6 +69,8 @@ type Configuration struct {
 	RequestTimeoutHeaders RequestTimeoutHeaders `mapstructure:"request_timeout_headers"`
 	// Debug/logging flags go here
 	Debug Debug `mapstructure:"debug"`
+	// RequestValidation specifies the request validation options.
+	RequestValidation RequestValidation `mapstructure:"request_validation"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -239,13 +241,13 @@ type HostCookie struct {
 	TTL int64 `mapstructure:"ttl_days"`
 }
 
+func (cfg *HostCookie) TTLDuration() time.Duration {
+	return time.Duration(cfg.TTL) * time.Hour * 24
+}
+
 type RequestTimeoutHeaders struct {
 	RequestTimeInQueue    string `mapstructure:"request_time_in_queue"`
 	RequestTimeoutInQueue string `mapstructure:"request_timeout_in_queue"`
-}
-
-func (cfg *HostCookie) TTLDuration() time.Duration {
-	return time.Duration(cfg.TTL) * time.Hour * 24
 }
 
 const (
@@ -498,6 +500,15 @@ func New(v *viper.Viper) (*Configuration, error) {
 	}
 	c.setDerivedDefaults()
 
+	if err := c.RequestValidation.Parse(); err != nil {
+		return nil, err
+	}
+
+	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
+		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
+		return nil, err
+	}
+
 	// To look for a request's publisher_id in the NonStandardPublishers list in
 	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
 	c.GDPR.NonStandardPublisherMap = make(map[string]int)
@@ -517,11 +528,6 @@ func New(v *viper.Viper) (*Configuration, error) {
 	c.BlacklistedAcctMap = make(map[string]bool)
 	for i := 0; i < len(c.BlacklistedAccts); i++ {
 		c.BlacklistedAcctMap[c.BlacklistedAccts[i]] = true
-	}
-
-	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
-		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
-		return nil, err
 	}
 
 	glog.Info("Logging the resolved configuration:")
@@ -875,8 +881,23 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("debug.timeout_notification.sampling_rate", 0.0)
 	v.SetDefault("debug.timeout_notification.fail_only", false)
 
+	/* IPv4
+	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+	/*  Link Local: 169.254.0.0/16
+	/*  Loopback:   127.0.0.0/8
+	/*
+	/* IPv6
+	/*  Loopback:     ::1/128
+	/*  Unique Local: fc00::/7
+	/*  Link Local:   fe80::/10
+	/*  Multicast:    ff00::/8
+	*/
+	v.SetDefault("request_validation.ipv4_private_networks", []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8"})
+	v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8"})
+
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.SetTypeByDefaultValue(true)
 	v.SetEnvPrefix("PBS")
 	v.AutomaticEnv()
 	v.ReadInConfig()
