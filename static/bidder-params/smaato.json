@@ -11,10 +11,6 @@
     "adspaceId": {
       "type": "string",
       "description": "Identifier for specific ad placement is SOMA `adspaceId`"
-    },
-    "endpoint": {
-      "type": "string",
-      "description": "An optional endpoint the bid request can be send to. Used mainly for testing."
     }
   },
   "required": ["publisherId","adspaceId"]

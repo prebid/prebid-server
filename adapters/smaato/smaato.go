@@ -127,9 +127,6 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	}
 
 	uri := a.URI
-	if smaatoParams.Endpoint != "" {
-		uri = smaatoParams.Endpoint
-	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
