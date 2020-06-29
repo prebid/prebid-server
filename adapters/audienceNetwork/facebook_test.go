@@ -2,7 +2,6 @@ package audienceNetwork
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -101,7 +100,7 @@ func TestNewFacebookBidderMissingPlatformID(t *testing.T) {
 
 	expected := &adapters.MisconfiguredBidder{
 		Name:  "audienceNetwork",
-		Error: fmt.Errorf("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
+		Error: errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
 	}
 
 	assert.Equal(t, expected, result)
