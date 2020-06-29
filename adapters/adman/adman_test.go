@@ -7,6 +7,6 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	admanAdapter := NewAdmanBidder("http://eu-ams-1.admanmedia.com/?c=o&m=ortb")
+	admanAdapter := NewAdmanBidder("http://pub.admanmedia.com/?c=o&m=ortb")
 	adapterstest.RunJSONBidderTest(t, "admantest", admanAdapter)
 }

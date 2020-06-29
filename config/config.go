@@ -773,7 +773,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adhese.endpoint", "https://ads-{{.AccountID}}.adhese.com/json")
 	v.SetDefault("adapters.adkernel.endpoint", "http://{{.Host}}/hb?zone={{.ZoneID}}")
 	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
-	v.SetDefault("adapters.adman.endpoint", "http://eu-ams-1.admanmedia.com/?c=o&m=ortb")
+	v.SetDefault("adapters.adman.endpoint", "http://pub.admanmedia.com/?c=o&m=ortb")
 	v.SetDefault("adapters.admixer.endpoint", "http://inv-nets.admixer.net/pbs.aspx")
 	v.SetDefault("adapters.adocean.endpoint", "https://{{.Host}}")
 	v.SetDefault("adapters.adoppler.endpoint", "http://app.trustedmarketplace.io/ads")
