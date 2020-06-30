@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/coocood/freecache"
-	"github.com/golang/glog"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
+	"github.com/coocood/freecache"
+	"github.com/golang/glog"
 )
 
 // NewCache returns an in-memory Cache which evicts items if:

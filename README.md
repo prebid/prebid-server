@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/PubMatic-OpenWrap/prebid-server.svg?branch=master)](https://travis-ci.org/PubMatic-OpenWrap/prebid-server)
+[![Build Status](https://travis-ci.org/prebid/prebid-server.svg?branch=master)](https://travis-ci.org/prebid/prebid-server)
 [![Go Report Card](https://goreportcard.com/badge/github.com/PubMatic-OpenWrap/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/PubMatic-OpenWrap/prebid-server)
 
 # Prebid Server
@@ -18,9 +18,10 @@ For more information, see:
 
 ## Installation
 
-First install [Go 1.12](https://golang.org/doc/install) latest version.
+First install [Go](https://golang.org/doc/install) version 1.13 or newer.
+
 Note that prebid-server is using [Go modules](https://blog.golang.org/using-go-modules).
-If using Go version <1.13 and are inside GOPATH `GO111MODULE` needs to be set to `GO111MODULE=on`.
+We officially support the most recent two major versions of the Go runtime. However, if you'd like to use a version <1.13 and are inside GOPATH `GO111MODULE` needs to be set to `GO111MODULE=on`.
 
 Download and prepare Prebid Server:
 

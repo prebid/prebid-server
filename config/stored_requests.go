@@ -402,7 +402,7 @@ func (cfg *PostgresUpdatePolling) validate(errs configErrors) configErrors {
 	return errs
 }
 
-// MakeQuery builds a query which can fetch numReqs Stored Requetss and numImps Stored Imps.
+// MakeQuery builds a query which can fetch numReqs Stored Requests and numImps Stored Imps.
 // See the docs on PostgresConfig.QueryTemplate for a description of how it works.
 func (cfg *PostgresFetcherQueriesSlim) MakeQuery(numReqs int, numImps int) (query string) {
 	return resolve(cfg.QueryTemplate, numReqs, numImps)

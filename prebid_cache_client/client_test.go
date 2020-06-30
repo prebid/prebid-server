@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -17,7 +18,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// Prevents #197
 func TestEmptyPut(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Errorf("The server should not be called.")
@@ -72,32 +72,70 @@ func TestBadResponse(t *testing.T) {
 }
 
 func TestCancelledContext(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-	})
-	server := httptest.NewServer(handler)
-	defer server.Close()
-
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
-	metricsMock.On("RecordPrebidCacheRequestTime", false, mock.Anything).Once()
-
-	client := &clientImpl{
-		httpClient: server.Client(),
-		putUrl:     server.URL,
-		metrics:    metricsMock,
+	testCases := []struct {
+		description         string
+		cacheable           []Cacheable
+		expectedItems       int
+		expectedPayloadSize int
+	}{
+		{
+			description: "1 Item",
+			cacheable: []Cacheable{
+				{
+					Type: TypeJSON,
+					Data: json.RawMessage("true"),
+				},
+			},
+			expectedItems:       1,
+			expectedPayloadSize: 39,
+		},
+		{
+			description: "2 Items",
+			cacheable: []Cacheable{
+				{
+					Type: TypeJSON,
+					Data: json.RawMessage("true"),
+				},
+				{
+					Type: TypeJSON,
+					Data: json.RawMessage("false"),
+				},
+			},
+			expectedItems:       2,
+			expectedPayloadSize: 69,
+		},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	ids, _ := client.PutJson(ctx, []Cacheable{{
-		Type: TypeJSON,
-		Data: json.RawMessage("true"),
-	},
+	// Initialize Stub Server
+	stubHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
 	})
-	assertIntEqual(t, len(ids), 1)
-	assertStringEqual(t, ids[0], "")
+	stubServer := httptest.NewServer(stubHandler)
+	defer stubServer.Close()
 
-	metricsMock.AssertExpectations(t)
+	// Run Tests
+	for _, testCase := range testCases {
+		metricsMock := &pbsmetrics.MetricsEngineMock{}
+		metricsMock.On("RecordPrebidCacheRequestTime", false, mock.Anything).Once()
+
+		client := &clientImpl{
+			httpClient: stubServer.Client(),
+			putUrl:     stubServer.URL,
+			metrics:    metricsMock,
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		ids, errs := client.PutJson(ctx, testCase.cacheable)
+
+		expectedErrorMessage := fmt.Sprintf("Items=%v, Payload Size=%v", testCase.expectedItems, testCase.expectedPayloadSize)
+
+		assert.Equal(t, testCase.expectedItems, len(ids), testCase.description+":ids")
+		assert.Len(t, errs, 1)
+		assert.Contains(t, errs[0].Error(), "Error sending the request to Prebid Cache: context canceled", testCase.description+":error")
+		assert.Contains(t, errs[0].Error(), expectedErrorMessage, testCase.description+":error_dimensions")
+		metricsMock.AssertExpectations(t)
+	}
 }
 
 func TestSuccessfulPut(t *testing.T) {
@@ -195,11 +233,9 @@ func TestStripCacheHostAndPath(t *testing.T) {
 		},
 	}
 	for _, test := range testInput {
-		//start client
-		cacheClient := NewClient(&inCacheURL, &test.inExtCacheURL, &metricsConf.DummyMetricsEngine{})
+		cacheClient := NewClient(&http.Client{}, &inCacheURL, &test.inExtCacheURL, &metricsConf.DummyMetricsEngine{})
 		cHost, cPath := cacheClient.GetExtCacheData()
 
-		//assert
 		assert.Equal(t, test.expectedHost, cHost)
 		assert.Equal(t, test.expectedPath, cPath)
 	}

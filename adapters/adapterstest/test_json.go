@@ -208,7 +208,7 @@ func diffErrorLists(t *testing.T, description string, actual []error, expected [
 	t.Helper()
 
 	if len(expected) != len(actual) {
-		t.Fatalf("%s had wrong error count. Expected %d, got %d", description, len(expected), len(actual))
+		t.Fatalf("%s had wrong error count. Expected %d, got %d (%v)", description, len(expected), len(actual), actual)
 	}
 	for i := 0; i < len(actual); i++ {
 		if expected[i].Comparison == "literal" {
@@ -301,7 +301,7 @@ func diffJson(t *testing.T, description string, actual []byte, expected []byte) 
 	if diff.Modified() {
 		var left interface{}
 		if err := json.Unmarshal(actual, &left); err != nil {
-			t.Fatalf("%s json did not match, but unmarhsalling failed. %v", description, err)
+			t.Fatalf("%s json did not match, but unmarshalling failed. %v", description, err)
 		}
 		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
 			ShowArrayIndex: true,

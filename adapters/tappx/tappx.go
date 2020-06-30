@@ -3,18 +3,17 @@ package tappx
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
-	"strconv"
-	"text/template"
-	"time"
-
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/macros"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/golang/glog"
+	"net/http"
+	"net/url"
+	"strconv"
+	"text/template"
+	"time"
 )
 
 const TAPPX_BIDDER_VERSION = "1.1"

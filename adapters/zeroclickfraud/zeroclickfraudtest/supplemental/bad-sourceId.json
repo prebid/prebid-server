@@ -1,0 +1,35 @@
+{
+  "mockBidRequest": {
+    "id": "bad-sourceId-test",
+    "imp": [
+      {
+        "id": "bad-sourceId-test-imp",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": 
+        {
+          "bidder":
+          {
+              "host": "q.0cf.io",
+              "sourceId": 0
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid/Missing SourceId",
+      "comparison": "literal"
+    } 
+  ]
+
+  
+}

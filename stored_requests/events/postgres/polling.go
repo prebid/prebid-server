@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/events"
+	"github.com/golang/glog"
 )
 
 // PollForUpdates returns an EventProducer which checks the database for updates every refreshRate.

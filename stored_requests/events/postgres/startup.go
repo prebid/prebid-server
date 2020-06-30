@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/golang/glog"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/events"
+	"github.com/golang/glog"
 )
 
 // This function queries the database to get all the data, and is guaranteed to return

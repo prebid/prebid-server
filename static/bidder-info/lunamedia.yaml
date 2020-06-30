@@ -1,0 +1,13 @@
+maintainer:
+  email: "josh@lunamedia.io"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+   

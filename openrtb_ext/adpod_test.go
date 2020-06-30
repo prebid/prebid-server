@@ -1,11 +1,6 @@
 package openrtb_ext
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
+/*
 func TestVideoAdPod_Validate(t *testing.T) {
 	type fields struct {
 		MinAds                      *int
@@ -304,3 +299,6 @@ func TestExtVideoAdPod_Validate(t *testing.T) {
 		})
 	}
 }
+
+
+*/

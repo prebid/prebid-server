@@ -407,6 +407,7 @@ type auctionMockPermissions struct {
 	allowBidderSync  bool
 	allowHostCookies bool
 	allowPI          bool
+	allowGeo         bool
 }
 
 func (m *auctionMockPermissions) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
@@ -417,8 +418,12 @@ func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder o
 	return m.allowBidderSync, nil
 }
 
-func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error) {
-	return m.allowPI, nil
+func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, error) {
+	return m.allowPI, m.allowGeo, nil
+}
+
+func (m *auctionMockPermissions) AMPException() bool {
+	return false
 }
 
 func TestBidSizeValidate(t *testing.T) {

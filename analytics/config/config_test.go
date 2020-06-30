@@ -22,7 +22,7 @@ func TestSampleModule(t *testing.T) {
 		Response: &openrtb.BidResponse{},
 	})
 	if count != 1 {
-		t.Errorf("PBSAnalyticsModule failed at LogAuctionObejct")
+		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
 	am.LogSetUIDObject(&analytics.SetUIDObject{
@@ -33,12 +33,12 @@ func TestSampleModule(t *testing.T) {
 		Success: true,
 	})
 	if count != 2 {
-		t.Errorf("PBSAnalyticsModule failed at LogSetUIDObejct")
+		t.Errorf("PBSAnalyticsModule failed at LogSetUIDObject")
 	}
 
 	am.LogCookieSyncObject(&analytics.CookieSyncObject{})
 	if count != 3 {
-		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObejct")
+		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObject")
 	}
 
 	am.LogAmpObject(&analytics.AmpObject{})

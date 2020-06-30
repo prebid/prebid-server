@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/prebid"
+	"github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/backends/empty_fetcher"
@@ -55,7 +57,9 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 		disabledBidders,
 		defRequest,
 		defReqJSON,
-		bidderMap}).Auction), nil
+		bidderMap,
+		nil,
+		nil}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -71,6 +75,8 @@ type endpointDeps struct {
 	defaultRequest   bool
 	defReqJSON       []byte
 	bidderMap        map[string]openrtb_ext.BidderName
+	cache            prebid_cache_client.Client
+	debugLogRegexp   *regexp.Regexp
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -103,7 +109,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, errL := deps.parseRequest(r)
 
-	if fatalError(errL) && writeError(errL, w, &labels) {
+	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
 
@@ -137,7 +143,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories, nil)
 	ao.Request = req
 	ao.Response = response
 	if err != nil {
@@ -309,7 +315,12 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	if err := ccpaPolicy.Validate(); err != nil {
-		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("CCPA value is invalid and will be ignored. (%s)", err.Error())})
+		errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
+
+		ccpaPolicy.Value = ""
+		if err := ccpaPolicy.Write(req); err != nil {
+			errL = append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
+		}
 	}
 
 	impIDs := make(map[string]int, len(req.Imp))
@@ -323,7 +334,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
-		if fatalError(errs) {
+		if errortypes.ContainsFatalError(errs) {
 			return errL
 		}
 	}
@@ -1185,8 +1196,8 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 		httpStatus := http.StatusBadRequest
 		metricsStatus := pbsmetrics.RequestStatusBadInput
 		for _, err := range errs {
-			erVal := errortypes.DecodeError(err)
-			if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
+			erVal := errortypes.ReadCode(err)
+			if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.BlacklistedAcctErrorCode {
 				httpStatus = http.StatusServiceUnavailable
 				metricsStatus = pbsmetrics.RequestStatusBlacklisted
 				break
@@ -1200,17 +1211,6 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 		rc = true
 	}
 	return rc
-}
-
-// Checks to see if an error in an error list is a fatal error
-func fatalError(errL []error) bool {
-	for _, err := range errL {
-		errCode := errortypes.DecodeError(err)
-		if errCode != errortypes.BidderTemporarilyDisabledCode && errCode != errortypes.WarningCode && errCode != errortypes.BidderFailedSchemaValidationCode {
-			return true
-		}
-	}
-	return false
 }
 
 // Returns the effective publisher ID
