@@ -117,9 +117,11 @@ func (rc *RateConverter) Update() error {
 		rc.lastUpdated.Store(time.Now())
 	} else {
 		if rc.CheckStaleRates() {
-			rc.rates.Store((*Rates)(nil))
+			rc.ClearRates()
+			glog.Errorf("Error updating conversion rates, falling back to constant rates: %v", err)
+		} else {
+			glog.Errorf("Error updating conversion rates: %v", err)
 		}
-		glog.Errorf("Error updating conversion rates: %v", err)
 	}
 
 	return err
@@ -168,10 +170,22 @@ func (rc *RateConverter) LastUpdated() time.Time {
 
 // Rates returns current conversions rates
 func (rc *RateConverter) Rates() Conversions {
-	if rates := rc.rates.Load(); rates != (*Rates)(nil) && rates != nil {
+	if rates := rc.rates.Load(); rc.CheckRatesCleared(rates) && rates != nil {
 		return rates.(*Rates)
 	}
 	return rc.constantRates
+}
+
+// ClearRates sets the rates to nil
+func (rc *RateConverter) ClearRates() {
+	// atomic.Value field rates must be of type *Rates so we cast nil to that type
+	rc.rates.Store((*Rates)(nil))
+}
+
+// CheckRatesCleared checks if rates were once present and have been cleared
+func (rc *RateConverter) CheckRatesCleared(rates interface{}) bool {
+	// atomic.Value field rates is an empty interface and will be of type *Rates the first time rates are stored
+	return rates != (*Rates)(nil)
 }
 
 // CheckStaleRates checks if loaded third party conversion rates are stale
