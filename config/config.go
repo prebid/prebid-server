@@ -710,6 +710,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	// for them and specify all the parameters they need for them to work correctly.
 	v.SetDefault("adapters.audiencenetwork.disabled", true)
 	v.SetDefault("adapters.rubicon.disabled", true)
+	v.SetDefault("adapters.liftoff.disabled", true)
 
 	v.SetDefault("adapters.33across.endpoint", "http://ssc.33across.com/api/v1/hb")
 	v.SetDefault("adapters.33across.partner_id", "")
@@ -742,6 +743,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.kidoz.endpoint", "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server")
 	v.SetDefault("adapters.kubient.endpoint", "http://kbntx.ch/prebid")
 	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
+	v.SetDefault("adapters.liftoff.endpoint", "http://liftoff.com/givemeads")
 	v.SetDefault("adapters.lockerdome.endpoint", "https://lockerdome.com/ladbid/prebidserver/openrtb2")
 	v.SetDefault("adapters.marsmedia.endpoint", "https://bid306.rtbsrv.com/bidder/?bid=f3xtet")
 	v.SetDefault("adapters.mgid.endpoint", "https://prebid.mgid.com/prebid/")
