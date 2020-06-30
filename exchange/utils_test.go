@@ -148,7 +148,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 			inSourceExt:  json.RawMessage(``),
 			inExt:        json.RawMessage(``),
 			outSourceExt: json.RawMessage(``),
-			outExt:       json.RawMessage(`{"prebid":{}}`),
+			outExt: json.RawMessage(``),
 		},
 		{
 			description:  "No schains in root ext and empty source ext",

@@ -30,9 +30,6 @@
     "appnexus": {
       "expectRequest": {
         "ortbRequest": {
-          "ext": {
-            "prebid": {}
-          },
           "id": "some-request-id",
           "site": {
             "page": "test.somepage.com"

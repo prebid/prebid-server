@@ -179,6 +179,9 @@ func splitBidRequest(req *openrtb.BidRequest,
 }
 
 func prepareExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) {
+	if len(req.Ext) == 0 {
+		return
+	}
 	extCopy := *unpackedExt
 	extCopy.Prebid.SChains = nil
 	reqExt, err := json.Marshal(extCopy)
