@@ -75,8 +75,12 @@
     {
       "expectedRequest": {
         "headers": {
-          "Content-Type": ["application/json;charset=utf-8"],
-          "Accept": ["application/json"]
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
         },
         "uri": "https://prebid.ad.smaato.net/oapi/prebid",
         "body": {
@@ -102,23 +106,12 @@
             }
           ],
           "user": {
-            "ext": {
-              "consent": "gdprConsentString",
-              "data": {
-                "keywords": [
-                  "a",
-                  "b"
-                ],
-                "gender": "M",
-                "yob": "1984",
-                "geo": {
-                  "country": "ca"
-                }
-              }
-            },
             "gender": "M",
             "keywords": "a,b",
-            "yob": 1984
+            "yob": 1984,
+            "ext": {
+              "consent": "gdprConsentString"
+            }
           },
           "device": {
             "ua": "test-user-agent",
@@ -138,17 +131,6 @@
               "id": "1100042525"
             },
             "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
-            "ext": {
-              "data": {
-                "keywords": [
-                  "power tools"
-                ],
-                "search": "drill",
-                "content": {
-                  "userrating": 4
-                }
-              }
-            },
             "keywords": "power tools"
           },
           "ext": {

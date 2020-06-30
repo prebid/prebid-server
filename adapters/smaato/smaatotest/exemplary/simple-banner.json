@@ -103,18 +103,7 @@
           ],
           "user": {
             "ext": {
-              "consent": "gdprConsentString",
-              "data": {
-                "keywords": [
-                  "a",
-                  "b"
-                ],
-                "gender": "M",
-                "yob": "1984",
-                "geo": {
-                  "country": "ca"
-                }
-              }
+              "consent": "gdprConsentString"
             },
             "gender": "M",
             "keywords": "a,b",
@@ -138,17 +127,6 @@
               "id": "1100042525"
             },
             "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
-            "ext": {
-              "data": {
-                "keywords": [
-                  "power tools"
-                ],
-                "search": "drill",
-                "content": {
-                  "userrating": 4
-                }
-              }
-            },
             "keywords": "power tools"
           },
           "ext": {

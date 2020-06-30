@@ -92,6 +92,7 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 
 			if err == nil {
 				siteCopy.Keywords = strings.Join(siteExt.Data.Keywords, ",")
+				siteCopy.Ext = nil
 			} else {
 				errs = append(errs, err)
 			}
@@ -101,16 +102,20 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 
 	if request.User != nil && request.User.Ext != nil {
 		var userExt userExt
-		err := json.Unmarshal([]byte(request.User.Ext), &userExt)
+		var userExtRaw map[string]json.RawMessage
+		rawExtErr := json.Unmarshal(request.User.Ext, &userExtRaw)
+		userExtErr := json.Unmarshal([]byte(request.User.Ext), &userExt)
 
-		if err == nil {
+		if rawExtErr == nil && userExtErr == nil {
 			userCopy := *request.User
 			userCopy.Gender = userExt.Data.Gender
 			userCopy.Yob, _ = strconv.ParseInt(userExt.Data.Yob, 10, 32)
 			userCopy.Keywords = strings.Join(userExt.Data.Keywords, ",")
+			delete(userExtRaw, "data")
+			userCopy.Ext, _ = json.Marshal(userExtRaw)
 			request.User = &userCopy
 		} else {
-			errs = append(errs, err)
+			errs = append(errs, rawExtErr, userExtErr)
 		}
 	}
 
