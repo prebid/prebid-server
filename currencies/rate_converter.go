@@ -170,7 +170,9 @@ func (rc *RateConverter) LastUpdated() time.Time {
 
 // Rates returns current conversions rates
 func (rc *RateConverter) Rates() Conversions {
-	if rates := rc.rates.Load(); rc.CheckRatesCleared(rates) && rates != nil {
+	// atomic.Value field rates is an empty interface and will be of type *Rates the first time rates are stored
+	// or nil if the rates have never been stored
+	if rates := rc.rates.Load(); rates != (*Rates)(nil) && rates != nil {
 		return rates.(*Rates)
 	}
 	return rc.constantRates
@@ -180,12 +182,6 @@ func (rc *RateConverter) Rates() Conversions {
 func (rc *RateConverter) ClearRates() {
 	// atomic.Value field rates must be of type *Rates so we cast nil to that type
 	rc.rates.Store((*Rates)(nil))
-}
-
-// CheckRatesCleared checks if rates were once present and have been cleared
-func (rc *RateConverter) CheckRatesCleared(rates interface{}) bool {
-	// atomic.Value field rates is an empty interface and will be of type *Rates the first time rates are stored
-	return rates != (*Rates)(nil)
 }
 
 // CheckStaleRates checks if loaded third party conversion rates are stale
