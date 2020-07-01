@@ -105,8 +105,6 @@ func NewLiftoffBidder(client *http.Client, uri string, user string, pass string,
 
 // MakeRequests ...
 func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	fmt.Println("Making liftoff request")
-
 	numRequests := len(request.Imp)
 
 	requestData := make([]*adapters.RequestData, 0, numRequests)
