@@ -2,7 +2,7 @@ package config
 
 import (
 	"bytes"
-	"fmt"
+	"net"
 	"strings"
 	"testing"
 	"time"
@@ -119,6 +119,9 @@ adapters:
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
 certificates_file: /etc/ssl/cert.pem
+request_validation:
+    ipv4_private_networks: ["1.1.1.0/24"]
+    ipv6_private_networks: ["1111::/16", "2222::/16"]
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -292,6 +295,9 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
+	cmpStrings(t, "request_validation.ipv4_private_networks", cfg.RequestValidation.IPv4PrivateNetworks[0], "1.1.1.0/24")
+	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[0], "1111::/16")
+	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
@@ -412,23 +418,63 @@ func TestLimitTimeout(t *testing.T) {
 }
 
 func TestCookieSizeError(t *testing.T) {
-	type aTest struct {
-		cookieHost  *HostCookie
+	testCases := []struct {
+		description string
+		cookieSize  int
 		expectError bool
+	}{
+		{"MIN_COOKIE_SIZE_BYTES + 1", MIN_COOKIE_SIZE_BYTES + 1, false},
+		{"MIN_COOKIE_SIZE_BYTES", MIN_COOKIE_SIZE_BYTES, false},
+		{"MIN_COOKIE_SIZE_BYTES - 1", MIN_COOKIE_SIZE_BYTES - 1, true},
+		{"Zero", 0, false},
+		{"Negative", -100, true},
 	}
-	testCases := []aTest{
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 1 << 15}, expectError: false}, //32 KB, no error
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 800}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 500}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 0}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 200}, expectError: true},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: -100}, expectError: true},
-	}
-	for i := range testCases {
-		if testCases[i].expectError {
-			assert.Error(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCookie.MaxCookieSizeBytes less than MIN_COOKIE_SIZE_BYTES = %d and not equal to zero should return an error", MIN_COOKIE_SIZE_BYTES))
+
+	for _, test := range testCases {
+		resultErr := isValidCookieSize(test.cookieSize)
+
+		if test.expectError {
+			assert.Error(t, resultErr, test.description)
 		} else {
-			assert.NoError(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCookie.MaxCookieSizeBytes greater than MIN_COOKIE_SIZE_BYTES = %d or equal to zero should not return an error", MIN_COOKIE_SIZE_BYTES))
+			assert.NoError(t, resultErr, test.description)
+		}
+	}
+}
+
+func TestNewCallsRequestValidation(t *testing.T) {
+	testCases := []struct {
+		description       string
+		privateIPNetworks string
+		expectedError     string
+		expectedIPs       []net.IPNet
+	}{
+		{
+			description:       "Valid",
+			privateIPNetworks: `["1.1.1.0/24"]`,
+			expectedIPs:       []net.IPNet{{IP: net.IP{1, 1, 1, 0}, Mask: net.CIDRMask(24, 32)}},
+		},
+		{
+			description:       "Invalid",
+			privateIPNetworks: `["1"]`,
+			expectedError:     "Invalid private IPv4 networks: '1'",
+		},
+	}
+
+	for _, test := range testCases {
+		v := viper.New()
+		SetupViper(v, "")
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer([]byte(
+			`request_validation:
+    ipv4_private_networks: ` + test.privateIPNetworks)))
+
+		result, resultErr := New(v)
+
+		if test.expectedError == "" {
+			assert.NoError(t, resultErr, test.description+":err")
+			assert.ElementsMatch(t, test.expectedIPs, result.RequestValidation.IPv4PrivateNetworksParsed, test.description+":parsed")
+		} else {
+			assert.Error(t, resultErr, test.description+":err")
 		}
 	}
 }

@@ -16,19 +16,18 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/currencies"
-	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
-
-	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
+
+	"github.com/buger/jsonparser"
+	"github.com/mxmCherry/openrtb"
 	"github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
@@ -1837,7 +1836,7 @@ func (c *wellBehavedCache) GetExtCacheData() (string, string) {
 	return "www.pbcserver.com", "/pbcache/endpoint"
 }
 
-func (c *wellBehavedCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
+func (c *wellBehavedCache) PutJson(ctx context.Context, values []pbc.Cacheable) ([]string, []error) {
 	ids := make([]string, len(values))
 	for i := 0; i < len(values); i++ {
 		ids[i] = strconv.Itoa(i)
