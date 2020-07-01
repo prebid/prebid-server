@@ -107,7 +107,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	cleanRequests, aliases, cleanMetrics, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous, e.privacyConfig)
 
 	if cleanMetrics.gdprEnforced {
-		e.me.RecordTCFReq(cleanMetrics.gdprTcfVersion)
+		e.me.RecordTCFReq(pbsmetrics.TCFVersionToValue(cleanMetrics.gdprTcfVersion))
 	}
 	// List of bidders we have requests for.
 	liveAdapters := listBiddersWithRequests(cleanRequests)

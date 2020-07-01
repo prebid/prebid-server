@@ -266,6 +266,17 @@ func TCFVersions() []TCFVersionValue {
 	}
 }
 
+// TCFVersionToValue takes an integer TCF version and returns the corresponding TCFVersionValue
+func TCFVersionToValue(version int) TCFVersionValue {
+	switch {
+	case version == 1:
+		return TCFVersionV1
+	case version == 2:
+		return TCFVersionV2
+	}
+	return TCFVersionErr
+}
+
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
 // The first three metrics function fire off once per incoming request, so total metrics
 // will equal the total number of incoming requests. The remaining 5 fire off per outgoing
@@ -294,5 +305,5 @@ type MetricsEngine interface {
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(sucess bool)
-	RecordTCFReq(version int)
+	RecordTCFReq(version TCFVersionValue)
 }

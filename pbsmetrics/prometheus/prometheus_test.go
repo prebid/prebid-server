@@ -947,10 +947,10 @@ func TestTimeoutNotifications(t *testing.T) {
 func TestTCFMetrics(t *testing.T) {
 	m := createMetricsForTesting()
 
-	m.RecordTCFReq(0)
-	m.RecordTCFReq(1)
-	m.RecordTCFReq(2)
-	m.RecordTCFReq(1)
+	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(0))
+	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(1))
+	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(2))
+	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(1))
 
 	assertCounterVecValue(t, "", "privacy_tcf:err", m.tcfVersion,
 		float64(1),

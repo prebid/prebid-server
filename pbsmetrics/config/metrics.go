@@ -196,7 +196,7 @@ func (me *MultiMetricsEngine) RecordTimeoutNotice(success bool) {
 }
 
 // RecordTCFReq across all engines
-func (me *MultiMetricsEngine) RecordTCFReq(version int) {
+func (me *MultiMetricsEngine) RecordTCFReq(version pbsmetrics.TCFVersionValue) {
 	for _, thisME := range *me {
 		thisME.RecordTCFReq(version)
 	}
@@ -282,5 +282,5 @@ func (me *DummyMetricsEngine) RecordTimeoutNotice(success bool) {
 }
 
 // RecordReq as a noop
-func (me *DummyMetricsEngine) RecordTCFReq(version int) {
+func (me *DummyMetricsEngine) RecordTCFReq(version pbsmetrics.TCFVersionValue) {
 }

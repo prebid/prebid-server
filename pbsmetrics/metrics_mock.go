@@ -108,6 +108,6 @@ func (me *MetricsEngineMock) RecordTimeoutNotice(success bool) {
 }
 
 // RecordTCFReq mock
-func (me *MetricsEngineMock) RecordTCFReq(version int) {
+func (me *MetricsEngineMock) RecordTCFReq(version TCFVersionValue) {
 	me.Called(version)
 }

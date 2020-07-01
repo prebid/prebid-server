@@ -54,7 +54,6 @@ type Metrics struct {
 
 	// TCF adaption metrics
 	TCFReqVersion map[TCFVersionValue]metrics.Meter
-	TCFVersions   []TCFVersionValue
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -143,7 +142,6 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		TimeoutNotificationFailure: blankMeter,
 
 		TCFReqVersion: make(map[TCFVersionValue]metrics.Meter, len(TCFVersions())),
-		TCFVersions:   TCFVersions(),
 
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
@@ -584,13 +582,8 @@ func (me *Metrics) RecordTimeoutNotice(success bool) {
 	return
 }
 
-func (me *Metrics) RecordTCFReq(version int) {
-	if version >= 0 && version < len(me.TCFVersions) {
-		key := me.TCFVersions[version]
-		me.TCFReqVersion[key].Mark(1)
-		return
-	}
-	me.TCFReqVersion[TCFVersionErr].Mark(1)
+func (me *Metrics) RecordTCFReq(version TCFVersionValue) {
+	me.TCFReqVersion[version].Mark(1)
 	return
 }
 
