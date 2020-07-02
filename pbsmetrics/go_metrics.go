@@ -583,7 +583,12 @@ func (me *Metrics) RecordTimeoutNotice(success bool) {
 }
 
 func (me *Metrics) RecordTCFReq(version TCFVersionValue) {
-	me.TCFReqVersion[version].Mark(1)
+	met, ok := me.TCFReqVersion[version]
+	if ok {
+		met.Mark(1)
+	} else {
+		me.TCFReqVersion[TCFVersionErr].Mark(1)
+	}
 	return
 }
 
