@@ -3,7 +3,7 @@
 
 Please contact Smaato Support or prebid@smaato.com to get set up with a publisherId and adslot.
 
-Following example includes sample `imp` object with publisherId and adSlot can be used to test Smaato Adapter
+Following example includes sample `imp` object with publisherId and adSlot which can be used to test Smaato Adapter
 
 ```
 "imp":[
