@@ -1,11 +1,11 @@
 maintainer:
   email: "grid-tech@themediagrid.com"
 capabilities:
-  site:
+  app:
     mediaTypes:
       - banner
       - video
-  app:
+  site:
     mediaTypes:
       - banner
       - video
