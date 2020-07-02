@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -1252,7 +1253,7 @@ func TestTimeoutNotificationOff(t *testing.T) {
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")
 	} else {
-		bidder.doTimeoutNotification(tb, &adapters.RequestData{})
+		bidder.doTimeoutNotification(tb, &adapters.RequestData{}, glog.Warningf)
 	}
 }
 
@@ -1283,8 +1284,9 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")
 	} else {
-		bidder.doTimeoutNotification(tb, &adapters.RequestData{})
+		bidder.doTimeoutNotification(tb, &adapters.RequestData{}, glog.Warningf)
 	}
+
 }
 
 type goodSingleBidder struct {
