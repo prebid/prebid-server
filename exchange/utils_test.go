@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/stretchr/testify/assert"
@@ -24,11 +25,15 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error) {
+func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, error) {
 	if bidder == "appnexus" {
-		return true, nil
+		return true, true, nil
 	}
-	return false, nil
+	return false, false, nil
+}
+
+func (p *permissionsMock) AMPException() bool {
+	return false
 }
 
 func assertReq(t *testing.T, reqByBidders map[openrtb_ext.BidderName]*openrtb.BidRequest,
@@ -65,8 +70,17 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 			applyCOPPA: false, consentedVendors: map[string]bool{"appnexus": true, "brightroll": true}},
 	}
 
+	privacyConfig := config.Privacy{
+		CCPA: config.CCPA{
+			Enforce: true,
+		},
+		LMT: config.LMT{
+			Enforce: true,
+		},
+	}
+
 	for _, test := range testCases {
-		reqByBidders, _, err := cleanOpenRTBRequests(context.Background(), test.req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, true)
+		reqByBidders, _, err := cleanOpenRTBRequests(context.Background(), test.req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -95,9 +109,80 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		req := newCCPABidRequest(t)
+		req := newBidRequest(t)
+		req.Regs = &openrtb.Regs{
+			Ext: json.RawMessage(`{"us_privacy":"1-Y-"}`),
+		}
 
-		results, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, test.enforceCCPA)
+		privacyConfig := config.Privacy{
+			CCPA: config.CCPA{
+				Enforce: test.enforceCCPA,
+			},
+		}
+
+		results, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
+		result := results["appnexus"]
+
+		assert.Nil(t, errs)
+
+		if test.expectDataScrub {
+			assert.Equal(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
+			assert.Equal(t, result.Device.DIDMD5, "", test.description+":Device.DIDMD5")
+		} else {
+			assert.NotEqual(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
+			assert.NotEqual(t, result.Device.DIDMD5, "", test.description+":Device.DIDMD5")
+		}
+	}
+}
+
+func TestCleanOpenRTBRequestsLMT(t *testing.T) {
+	var (
+		enabled  int8 = 1
+		disabled int8 = 0
+	)
+	testCases := []struct {
+		description     string
+		lmt             *int8
+		enforceLMT      bool
+		expectDataScrub bool
+	}{
+		{
+			description:     "Feature Flag Enabled - OpenTRB Enabled",
+			lmt:             &enabled,
+			enforceLMT:      true,
+			expectDataScrub: true,
+		},
+		{
+			description:     "Feature Flag Disabled - OpenTRB Enabled",
+			lmt:             &enabled,
+			enforceLMT:      false,
+			expectDataScrub: false,
+		},
+		{
+			description:     "Feature Flag Enabled - OpenTRB Disabled",
+			lmt:             &disabled,
+			enforceLMT:      true,
+			expectDataScrub: false,
+		},
+		{
+			description:     "Feature Flag Disabled - OpenTRB Disabled",
+			lmt:             &disabled,
+			enforceLMT:      false,
+			expectDataScrub: false,
+		},
+	}
+
+	for _, test := range testCases {
+		req := newBidRequest(t)
+		req.Device.Lmt = test.lmt
+
+		privacyConfig := config.Privacy{
+			LMT: config.LMT{
+				Enforce: test.enforceLMT,
+			},
+		}
+
+		results, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -159,8 +244,7 @@ func newAdapterAliasBidRequest(t *testing.T) *openrtb.BidRequest {
 	}
 }
 
-func newCCPABidRequest(t *testing.T) *openrtb.BidRequest {
-	dnt := int8(1)
+func newBidRequest(t *testing.T) *openrtb.BidRequest {
 	return &openrtb.BidRequest{
 		Site: &openrtb.Site{
 			Page:   "www.some.domain.com",
@@ -174,7 +258,6 @@ func newCCPABidRequest(t *testing.T) *openrtb.BidRequest {
 			UA:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36",
 			IFA:      "ifa",
 			IP:       "132.173.230.74",
-			DNT:      &dnt,
 			Language: "EN",
 		},
 		Source: &openrtb.Source{
@@ -184,9 +267,6 @@ func newCCPABidRequest(t *testing.T) *openrtb.BidRequest {
 			ID:       "our-id",
 			BuyerUID: "their-id",
 			Ext:      json.RawMessage(`{"digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
-		},
-		Regs: &openrtb.Regs{
-			Ext: json.RawMessage(`{"us_privacy":"1-Y-"}`),
 		},
 		Imp: []openrtb.Imp{{
 			ID: "some-imp-id",

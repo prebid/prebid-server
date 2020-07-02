@@ -3,8 +3,10 @@ package exchange
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	uuid "github.com/gofrs/uuid"
@@ -14,6 +16,36 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
+
+type DebugLog struct {
+	Enabled     bool
+	CacheType   prebid_cache_client.PayloadType
+	Data        DebugData
+	TTL         int64
+	CacheKey    string
+	CacheString string
+	Regexp      *regexp.Regexp
+}
+
+type DebugData struct {
+	Request  string
+	Headers  string
+	Response string
+}
+
+func (d *DebugLog) BuildCacheString() {
+	if d.Regexp != nil {
+		d.Data.Request = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Request, ""))
+		d.Data.Headers = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Headers, ""))
+		d.Data.Response = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Response, ""))
+	}
+
+	d.Data.Request = fmt.Sprintf("<Request>%s</Request>", d.Data.Request)
+	d.Data.Headers = fmt.Sprintf("<Headers>%s</Headers>", d.Data.Headers)
+	d.Data.Response = fmt.Sprintf("<Response>%s</Response>", d.Data.Response)
+
+	d.CacheString = fmt.Sprintf("%s<Log>%s%s%s</Log>", xml.Header, d.Data.Request, d.Data.Headers, d.Data.Response)
+}
 
 func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int) *auction {
 	winningBids := make(map[string]*pbsOrtbBid, numImps)
@@ -147,9 +179,10 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 
-	if debugLog != nil && debugLog.EnableDebug {
+	if debugLog != nil && debugLog.Enabled {
+		debugLog.BuildCacheString()
 		debugLog.CacheKey = hbCacheID
-		if jsonBytes, err := json.Marshal(debugLog.Data); err == nil {
+		if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
 			toCache = append(toCache, prebid_cache_client.Cacheable{
 				Type:       debugLog.CacheType,
 				Data:       jsonBytes,

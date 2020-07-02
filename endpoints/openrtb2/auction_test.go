@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -29,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -175,7 +177,7 @@ func TestBadNativeRequests(t *testing.T) {
 	tests.assert(t)
 }
 
-// TestAliasedRequests makes sure we handle (defuault) aliased bidders properly
+// TestAliasedRequests makes sure we handle (default) aliased bidders properly
 func TestAliasedRequests(t *testing.T) {
 	tests := &getResponseFromDirectory{
 		dir:           "sample-requests/aliased",
@@ -289,7 +291,7 @@ func (gr *getResponseFromDirectory) assert(t *testing.T) {
 			filesToAssert = append(filesToAssert, gr.dir+"/"+fileInfo.Name())
 		}
 	} else {
-		// Just test the single `gr.file`, and not the entiriety of files that may be found in `gr.dir`
+		// Just test the single `gr.file`, and not the entirety of files that may be found in `gr.dir`
 		filesToAssert = append(filesToAssert, gr.dir+"/"+gr.file)
 	}
 
@@ -526,26 +528,79 @@ func TestAuctionTypeDefault(t *testing.T) {
 	}
 }
 
-// TestImplicitIPs prevents #230
-func TestImplicitIPs(t *testing.T) {
-	ex := &nobidExchange{}
-	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
-	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	endpoint, _ := NewEndpoint(ex, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
-
-	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
-	httpReq.Header.Set("X-Forwarded-For", "123.456.78.90")
-	recorder := httptest.NewRecorder()
-
-	endpoint(recorder, httpReq, nil)
-
-	if ex.gotRequest == nil {
-		t.Fatalf("The request never made it into the Exchange.")
+func TestImplicitIPsEndToEnd(t *testing.T) {
+	testCases := []struct {
+		description         string
+		reqJSONFile         string
+		xForwardedForHeader string
+		privateNetworksIPv4 []net.IPNet
+		privateNetworksIPv6 []net.IPNet
+		expectedDeviceIPv4  string
+		expectedDeviceIPv6  string
+	}{
+		{
+			description:         "IPv4",
+			reqJSONFile:         "site.json",
+			xForwardedForHeader: "1.1.1.1",
+			expectedDeviceIPv4:  "1.1.1.1",
+		},
+		{
+			description:         "IPv6",
+			reqJSONFile:         "site.json",
+			xForwardedForHeader: "1111::",
+			expectedDeviceIPv6:  "1111::",
+		},
+		{
+			description:         "IPv4 - Defined In Request",
+			reqJSONFile:         "site-has-ipv4.json",
+			xForwardedForHeader: "1.1.1.1",
+			expectedDeviceIPv4:  "8.8.8.8", // Hardcoded value in test file.
+		},
+		{
+			description:         "IPv6 - Defined In Request",
+			reqJSONFile:         "site-has-ipv6.json",
+			xForwardedForHeader: "1111::",
+			expectedDeviceIPv6:  "8888::", // Hardcoded value in test file.
+		},
+		{
+			description:         "IPv4 - Defined In Request - Private Network",
+			reqJSONFile:         "site-has-ipv4.json",
+			xForwardedForHeader: "1.1.1.1",
+			privateNetworksIPv4: []net.IPNet{{IP: net.IP{8, 8, 8, 0}, Mask: net.CIDRMask(24, 32)}}, // Hardcoded value in test file.
+			expectedDeviceIPv4:  "1.1.1.1",
+		},
+		{
+			description:         "IPv6 - Defined In Request - Private Network",
+			reqJSONFile:         "site-has-ipv6.json",
+			xForwardedForHeader: "1111::",
+			privateNetworksIPv6: []net.IPNet{{IP: net.ParseIP("8800::"), Mask: net.CIDRMask(8, 128)}}, // Hardcoded value in test file.
+			expectedDeviceIPv6:  "1111::",
+		},
 	}
 
-	if ex.gotRequest.Device.IP != "123.456.78.90" {
-		t.Errorf("Bad device IP. Expected 123.456.78.90, got %s", ex.gotRequest.Device.IP)
+	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	for _, test := range testCases {
+		exchange := &nobidExchange{}
+		cfg := &config.Configuration{
+			MaxRequestSize: maxSize,
+			RequestValidation: config.RequestValidation{
+				IPv4PrivateNetworksParsed: test.privateNetworksIPv4,
+				IPv6PrivateNetworksParsed: test.privateNetworksIPv6,
+			},
+		}
+		endpoint, _ := NewEndpoint(exchange, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, cfg, metrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
+
+		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, test.reqJSONFile)))
+		httpReq.Header.Set("X-Forwarded-For", test.xForwardedForHeader)
+
+		endpoint(httptest.NewRecorder(), httpReq, nil)
+
+		result := exchange.gotRequest
+		if !assert.NotEmpty(t, result, test.description+"Request received by the exchange.") {
+			t.FailNow()
+		}
+		assert.Equal(t, test.expectedDeviceIPv4, result.Device.IP, test.description+":ipv4")
+		assert.Equal(t, test.expectedDeviceIPv6, result.Device.IPv6, test.description+":ipv6")
 	}
 }
 
@@ -602,10 +657,26 @@ func TestStoredRequests(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	edep := &endpointDeps{&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, false, []byte{}, openrtb_ext.BidderMap, nil}
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BidderMap,
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
 
 	for i, requestData := range testStoredRequests {
-		newRequest, errList := edep.processStoredRequests(context.Background(), json.RawMessage(requestData))
+		newRequest, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
@@ -639,6 +710,8 @@ func TestOversizedRequest(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BidderMap,
 		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -672,6 +745,8 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BidderMap,
 		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -805,11 +880,13 @@ func TestDisabledBidder(t *testing.T) {
 		},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{"unknownbidder": "The biddder 'unknownbidder' has been disabled."},
+		map[string]string{"unknownbidder": "The bidder 'unknownbidder' has been disabled."},
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
 		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -839,15 +916,17 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 		&config.Configuration{MaxRequestSize: int64(8096)},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{"unknownbidder": "The biddder 'unknownbidder' has been disabled."},
+		map[string]string{"unknownbidder": "The bidder 'unknownbidder' has been disabled."},
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
 		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
 	}
 	errs := deps.validateImpExt(imp, nil, 0)
 	assert.JSONEq(t, `{"appnexus":{"placement_id":555}}`, string(imp.Ext))
-	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The biddder 'unknownbidder' has been disabled."}}, errs)
+	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'unknownbidder' has been disabled."}}, errs)
 }
 
 func TestEffectivePubID(t *testing.T) {
@@ -883,6 +962,8 @@ func TestCurrencyTrunc(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BidderMap,
 		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	ui := uint64(1)
@@ -910,7 +991,7 @@ func TestCurrencyTrunc(t *testing.T) {
 	assert.ElementsMatch(t, errL, []error{&expectedError})
 }
 
-func TestCCPAInvalidValueWarning(t *testing.T) {
+func TestCCPAInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		&nobidExchange{},
 		newParamsValidator(t),
@@ -925,6 +1006,8 @@ func TestCCPAInvalidValueWarning(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BidderMap,
 		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	ui := uint64(1)
@@ -937,21 +1020,98 @@ func TestCCPAInvalidValueWarning(t *testing.T) {
 					W: &ui,
 					H: &ui,
 				},
-				Ext: json.RawMessage("{\"appnexus\": {\"placementId\": 5667}}"),
+				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
 			},
 		},
 		Site: &openrtb.Site{
 			ID: "myID",
 		},
 		Regs: &openrtb.Regs{
-			Ext: json.RawMessage("{\"us_privacy\":\"invalid by length\"}"),
+			Ext: json.RawMessage(`{"us_privacy":"invalid by length"}`),
 		},
 	}
 
 	errL := deps.validateRequest(&req)
 
-	expectedError := errortypes.Warning{Message: "CCPA value is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)"}
-	assert.ElementsMatch(t, errL, []error{&expectedError})
+	expectedWarning := errortypes.InvalidPrivacyConsent{Message: "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)"}
+	assert.ElementsMatch(t, errL, []error{&expectedWarning})
+
+	assert.Empty(t, req.Regs.Ext, "Invalid Consent Removed From Request")
+}
+
+func TestSanitizeRequest(t *testing.T) {
+	testCases := []struct {
+		description  string
+		req          *openrtb.BidRequest
+		ipValidator  iputil.IPValidator
+		expectedIPv4 string
+		expectedIPv6 string
+	}{
+		{
+			description: "Empty",
+			req: &openrtb.BidRequest{
+				Device: &openrtb.Device{
+					IP:   "",
+					IPv6: "",
+				},
+			},
+			expectedIPv4: "",
+			expectedIPv6: "",
+		},
+		{
+			description: "Valid",
+			req: &openrtb.BidRequest{
+				Device: &openrtb.Device{
+					IP:   "1.1.1.1",
+					IPv6: "1111::",
+				},
+			},
+			ipValidator:  hardcodedResponseIPValidator{response: true},
+			expectedIPv4: "1.1.1.1",
+			expectedIPv6: "1111::",
+		},
+		{
+			description: "Invalid",
+			req: &openrtb.BidRequest{
+				Device: &openrtb.Device{
+					IP:   "1.1.1.1",
+					IPv6: "1111::",
+				},
+			},
+			ipValidator:  hardcodedResponseIPValidator{response: false},
+			expectedIPv4: "",
+			expectedIPv6: "",
+		},
+		{
+			description: "Invalid - Wrong IP Types",
+			req: &openrtb.BidRequest{
+				Device: &openrtb.Device{
+					IP:   "1111::",
+					IPv6: "1.1.1.1",
+				},
+			},
+			ipValidator:  hardcodedResponseIPValidator{response: true},
+			expectedIPv4: "",
+			expectedIPv6: "",
+		},
+		{
+			description: "Malformed",
+			req: &openrtb.BidRequest{
+				Device: &openrtb.Device{
+					IP:   "malformed",
+					IPv6: "malformed",
+				},
+			},
+			expectedIPv4: "",
+			expectedIPv6: "",
+		},
+	}
+
+	for _, test := range testCases {
+		sanitizeRequest(test.req, test.ipValidator)
+		assert.Equal(t, test.expectedIPv4, test.req.Device.IP, test.description+":ipv4")
+		assert.Equal(t, test.expectedIPv6, test.req.Device.IPv6, test.description+":ipv6")
+	}
 }
 
 // nobidExchange is a well-behaved exchange which always bids "no bid".
@@ -1376,4 +1536,12 @@ func newBidderInfo(cfg config.Adapter) adapters.BidderInfo {
 	return adapters.BidderInfo{
 		Status: status,
 	}
+}
+
+type hardcodedResponseIPValidator struct {
+	response bool
+}
+
+func (v hardcodedResponseIPValidator) IsValid(net.IP, iputil.IPVersion) bool {
+	return v.response
 }

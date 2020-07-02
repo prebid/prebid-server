@@ -1,0 +1,94 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "https://good.site/url"
+        },
+        "cur": ["EUR"],
+        "imp": [{
+            "id": "test-imp-id",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "uid": 7
+                }
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://localhost/prebid",
+            "body": {
+                "id": "test-request-id",
+                "site": {
+                    "page": "https://good.site/url"
+                },
+                "cur": ["EUR"],
+                "imp": [{
+                    "id": "test-imp-id",
+                    "banner": {
+                        "format": [{
+                            "w": 300,
+                            "h": 250
+                        }]
+                    },
+                    "ext": {
+                        "bidder": {
+                            "uid": 7
+                        }
+                    }
+                }]
+            }
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "cur": ["EUR"],
+                "seatbid": [
+                    {
+                        "bid": [
+                            {
+                                "crid": "2_261",
+                                "price": 0.500000,
+                                "adm": "some-test-ad",
+                                "impid": "test-imp-id",
+                                "auid": 46,
+                                "h": 250,
+                                "adomain": [
+                                    "goodadvertiser.com"
+                                ],
+                                "w": 300
+                            }
+                        ],
+                        "seat": "51"
+                    }
+                ]
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "EUR",
+        "bids": [{
+            "bid": {
+                "price": 0.5,
+                "adm": "some-test-ad",
+                "impid": "test-imp-id",
+                "id": "test-request-id",
+                "h": 250,
+                "adomain": [
+                    "goodadvertiser.com"
+                ],
+                "crid": "2_261",
+                "w": 300
+            },
+            "type": "banner"
+        }]
+    }]
+}

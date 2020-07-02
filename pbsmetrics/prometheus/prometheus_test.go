@@ -571,7 +571,7 @@ func TestAdapterRequestMetrics(t *testing.T) {
 		var totalCount float64
 		var totalCookieNoCount float64
 		var totalCookieYesCount float64
-		var totalCookieUnknowmCount float64
+		var totalCookieUnknownCount float64
 		var totalHasBidsCount float64
 		processMetrics(m.adapterRequests, func(m dto.Metric) {
 			isMetricForAdapter := false
@@ -597,7 +597,7 @@ func TestAdapterRequestMetrics(t *testing.T) {
 						case string(pbsmetrics.CookieFlagYes):
 							totalCookieYesCount += value
 						case string(pbsmetrics.CookieFlagUnknown):
-							totalCookieUnknowmCount += value
+							totalCookieUnknownCount += value
 						}
 					}
 				}
@@ -606,7 +606,7 @@ func TestAdapterRequestMetrics(t *testing.T) {
 		assert.Equal(t, test.expectedCount, totalCount, test.description+":total")
 		assert.Equal(t, test.expectedCookieNoCount, totalCookieNoCount, test.description+":cookie=no")
 		assert.Equal(t, test.expectedCookieYesCount, totalCookieYesCount, test.description+":cookie=yes")
-		assert.Equal(t, test.expectedCookieUnknownCount, totalCookieUnknowmCount, test.description+":cookie=unknown")
+		assert.Equal(t, test.expectedCookieUnknownCount, totalCookieUnknownCount, test.description+":cookie=unknown")
 		assert.Equal(t, test.expectedHasBidsCount, totalHasBidsCount, test.description+":hasBids")
 	}
 }
@@ -881,6 +881,69 @@ func TestMetricAccumulationSpotCheck(t *testing.T) {
 		expectedValue)
 }
 
+func TestRecordRequestQueueTimeMetric(t *testing.T) {
+	performTest := func(m *Metrics, requestStatus bool, requestType pbsmetrics.RequestType, timeInSec float64) {
+		m.RecordRequestQueueTime(requestStatus, requestType, time.Duration(timeInSec*float64(time.Second)))
+	}
+
+	testCases := []struct {
+		description   string
+		status        string
+		testCase      func(m *Metrics)
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description: "Success",
+			status:      requestSuccessLabel,
+			testCase: func(m *Metrics) {
+				performTest(m, true, pbsmetrics.ReqTypeVideo, 2)
+			},
+			expectedCount: 1,
+			expectedSum:   2,
+		},
+		{
+			description: "TimeoutError",
+			status:      requestRejectLabel,
+			testCase: func(m *Metrics) {
+				performTest(m, false, pbsmetrics.ReqTypeVideo, 50)
+			},
+			expectedCount: 1,
+			expectedSum:   50,
+		},
+	}
+
+	m := createMetricsForTesting()
+	for _, test := range testCases {
+
+		test.testCase(m)
+
+		result := getHistogramFromHistogramVecByTwoKeys(m.requestsQueueTimer, requestTypeLabel, "video", requestStatusLabel, test.status)
+		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
+	}
+}
+
+func TestTimeoutNotifications(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordTimeoutNotice(true)
+	m.RecordTimeoutNotice(true)
+	m.RecordTimeoutNotice(false)
+
+	assertCounterVecValue(t, "", "timeout_notifications:ok", m.timeout_notifications,
+		float64(2),
+		prometheus.Labels{
+			successLabel: requestSuccessful,
+		})
+
+	assertCounterVecValue(t, "", "timeout_notifications:fail", m.timeout_notifications,
+		float64(1),
+		prometheus.Labels{
+			successLabel: requestFailed,
+		})
+
+}
+
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {
 	m := dto.Metric{}
 	counter.Write(&m)
@@ -900,6 +963,24 @@ func getHistogramFromHistogramVec(histogram *prometheus.HistogramVec, labelKey, 
 		for _, label := range m.GetLabel() {
 			if label.GetName() == labelKey && label.GetValue() == labelValue {
 				result = *m.GetHistogram()
+			}
+		}
+	})
+	return result
+}
+
+func getHistogramFromHistogramVecByTwoKeys(histogram *prometheus.HistogramVec, label1Key, label1Value, label2Key, label2Value string) dto.Histogram {
+	var result dto.Histogram
+	processMetrics(histogram, func(m dto.Metric) {
+		for ind, label := range m.GetLabel() {
+			if label.GetName() == label1Key && label.GetValue() == label1Value {
+				valInd := ind
+				if ind == 1 {
+					valInd = 0
+				}
+				if m.Label[valInd].GetName() == label2Key && m.Label[valInd].GetValue() == label2Value {
+					result = *m.GetHistogram()
+				}
 			}
 		}
 	})

@@ -1,0 +1,11 @@
+maintainer:
+  email: "y1dev@platform-one.co.jp"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video

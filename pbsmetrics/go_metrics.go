@@ -24,6 +24,7 @@ type Metrics struct {
 	SafariRequestMeter             metrics.Meter
 	SafariNoCookieMeter            metrics.Meter
 	RequestTimer                   metrics.Timer
+	RequestsQueueTimer             map[RequestType]map[bool]metrics.Timer
 	PrebidCacheRequestTimerSuccess metrics.Timer
 	PrebidCacheRequestTimerError   metrics.Timer
 	StoredReqCacheMeter            map[CacheResult]metrics.Meter
@@ -46,6 +47,9 @@ type Metrics struct {
 	ImpsTypeVideo  metrics.Meter
 	ImpsTypeAudio  metrics.Meter
 	ImpsTypeNative metrics.Meter
+
+	TimeoutNotificationSuccess metrics.Meter
+	TimeoutNotificationFailure metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -111,6 +115,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		SafariRequestMeter:             blankMeter,
 		SafariNoCookieMeter:            blankMeter,
 		RequestTimer:                   blankTimer,
+		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
 		StoredReqCacheMeter:            make(map[CacheResult]metrics.Meter),
@@ -129,6 +134,9 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		ImpsTypeAudio:  blankMeter,
 		ImpsTypeNative: blankMeter,
 
+		TimeoutNotificationSuccess: blankMeter,
+		TimeoutNotificationFailure: blankMeter,
+
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
 		MetricsDisabled: disableMetrics,
@@ -146,6 +154,11 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		}
 	}
 
+	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
+	//boolean value represents 2 general request statuses: accepted and rejected
+	newMetrics.RequestsQueueTimer["video"] = make(map[bool]metrics.Timer)
+	newMetrics.RequestsQueueTimer["video"][true] = blankTimer
+	newMetrics.RequestsQueueTimer["video"][false] = blankTimer
 	return newMetrics
 }
 
@@ -191,13 +204,20 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 			statusMap[stat] = metrics.GetOrRegisterMeter("requests."+string(stat)+"."+string(typ), registry)
 		}
 	}
+
 	for _, cacheRes := range CacheResults() {
 		newMetrics.StoredReqCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_request_cache_%s", string(cacheRes)), registry)
 		newMetrics.StoredImpCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_imp_cache_%s", string(cacheRes)), registry)
 	}
 
+	newMetrics.RequestsQueueTimer["video"][true] = metrics.GetOrRegisterTimer("queued_requests.video.accepted", registry)
+	newMetrics.RequestsQueueTimer["video"][false] = metrics.GetOrRegisterTimer("queued_requests.video.rejected", registry)
+
 	newMetrics.userSyncSet[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.sets", registry)
 	newMetrics.userSyncGDPRPrevent[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.gdpr_prevent", registry)
+
+	newMetrics.TimeoutNotificationSuccess = metrics.GetOrRegisterMeter("timeout_notification.ok", registry)
+	newMetrics.TimeoutNotificationFailure = metrics.GetOrRegisterMeter("timeout_notification.failed", registry)
 	return newMetrics
 }
 
@@ -524,6 +544,22 @@ func (me *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Durati
 	} else {
 		me.PrebidCacheRequestTimerError.Update(length)
 	}
+}
+
+func (me *Metrics) RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration) {
+	if requestType == ReqTypeVideo { //remove this check when other request types are supported
+		me.RequestsQueueTimer[requestType][success].Update(length)
+	}
+
+}
+
+func (me *Metrics) RecordTimeoutNotice(success bool) {
+	if success {
+		me.TimeoutNotificationSuccess.Mark(1)
+	} else {
+		me.TimeoutNotificationFailure.Mark(1)
+	}
+	return
 }
 
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {

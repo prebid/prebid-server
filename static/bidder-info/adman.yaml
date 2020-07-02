@@ -1,0 +1,11 @@
+maintainer:
+  email: "prebid@admanmedia.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

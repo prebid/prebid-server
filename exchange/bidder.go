@@ -10,13 +10,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/config/util"
+
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	nativeResponse "github.com/mxmCherry/openrtb/native/response"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -82,16 +87,20 @@ type pbsOrtbSeatBid struct {
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client) adaptedBidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me pbsmetrics.MetricsEngine) adaptedBidder {
 	return &bidderAdapter{
-		Bidder: bidder,
-		Client: client,
+		Bidder:      bidder,
+		Client:      client,
+		DebugConfig: cfg.Debug,
+		me:          me,
 	}
 }
 
 type bidderAdapter struct {
-	Bidder adapters.Bidder
-	Client *http.Client
+	Bidder      adapters.Bidder
+	Client      *http.Client
+	DebugConfig config.Debug
+	me          pbsmetrics.MetricsEngine
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
@@ -208,7 +217,7 @@ func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest) (*nativeRespo
 	var errs []error
 	var nativeMarkup *nativeResponse.Response
 	if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
-		// Some bidders are returning non-IAB complaiant native markup. In this case Prebid server will not be able to add types. E.g Facebook
+		// Some bidders are returning non-IAB compliant native markup. In this case Prebid server will not be able to add types. E.g Facebook
 		return nil, errs
 	}
 
@@ -224,26 +233,43 @@ func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest) (*nativeRespo
 	}
 
 	for _, asset := range nativeMarkup.Assets {
-		setAssetTypes(asset, nativePayload)
+		if err := setAssetTypes(asset, nativePayload); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	return nativeMarkup, errs
 }
 
-func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Request) {
+func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Request) error {
 	if asset.Img != nil {
-		tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
-		if tempAsset.Img.Type != 0 {
-			asset.Img.Type = tempAsset.Img.Type
+		if tempAsset, err := getAssetByID(asset.ID, nativePayload.Assets); err == nil {
+			if tempAsset.Img != nil {
+				if tempAsset.Img.Type != 0 {
+					asset.Img.Type = tempAsset.Img.Type
+				}
+			} else {
+				return fmt.Errorf("Response has an Image asset with ID:%d present that doesn't exist in the request", asset.ID)
+			}
+		} else {
+			return err
 		}
 	}
 
 	if asset.Data != nil {
-		tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
-		if tempAsset.Data.Type != 0 {
-			asset.Data.Type = tempAsset.Data.Type
+		if tempAsset, err := getAssetByID(asset.ID, nativePayload.Assets); err == nil {
+			if tempAsset.Data != nil {
+				if tempAsset.Data.Type != 0 {
+					asset.Data.Type = tempAsset.Data.Type
+				}
+			} else {
+				return fmt.Errorf("Response has a Data asset with ID:%d present that doesn't exist in the request", asset.ID)
+			}
+		} else {
+			return err
 		}
 	}
+	return nil
 }
 
 func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Native, error) {
@@ -255,13 +281,13 @@ func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Na
 	return nil, errors.New("Could not find native imp")
 }
 
-func getAssetByID(id int64, assets []nativeRequests.Asset) nativeRequests.Asset {
+func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset, error) {
 	for _, asset := range assets {
 		if id == asset.ID {
-			return asset
+			return asset, nil
 		}
 	}
-	return nativeRequests.Asset{}
+	return nativeRequests.Asset{}, fmt.Errorf("Unable to find asset with ID:%d in the request", id)
 }
 
 // makeExt transforms information about the HTTP call into the contract class for the PBS response.
@@ -348,9 +374,35 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 		httpReq, err := http.NewRequest(toReq.Method, toReq.Uri, bytes.NewBuffer(toReq.Body))
 		if err == nil {
 			httpReq.Header = req.Headers
-			ctxhttp.Do(ctx, bidder.Client, httpReq)
-			// No validation yet on sending notifications
+			httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
+			success := (err == nil && httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
+			bidder.me.RecordTimeoutNotice(success)
+			if bidder.DebugConfig.TimeoutNotification.Log && !(bidder.DebugConfig.TimeoutNotification.FailOnly && success) {
+				var msg string
+				if err == nil {
+					msg = fmt.Sprintf("TimeoutNotification: status:(%d) body:%s", httpResp.StatusCode, string(toReq.Body))
+				} else {
+					msg = fmt.Sprintf("TimeoutNotification: error:(%s) body:%s", err.Error(), string(toReq.Body))
+				}
+				// If logging is turned on, and logging is not disallowed via FailOnly
+				util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
+			}
+		} else {
+			bidder.me.RecordTimeoutNotice(false)
+			if bidder.DebugConfig.TimeoutNotification.Log {
+				msg := fmt.Sprintf("TimeoutNotification: Failed to make timeout request: method(%s), uri(%s), error(%s)", toReq.Method, toReq.Uri, err.Error())
+				util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
+			}
 		}
+	} else if bidder.DebugConfig.TimeoutNotification.Log {
+		reqJSON, err := json.Marshal(req)
+		var msg string
+		if err == nil {
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errL[0].Error(), string(reqJSON))
+		} else {
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errL[0].Error(), err.Error())
+		}
+		util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
 	}
 
 }
