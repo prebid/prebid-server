@@ -27,12 +27,13 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/httputil"
+	"github.com/prebid/prebid-server/util/iputil"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -43,7 +44,13 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
+
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
+
+	ipValidator := iputil.PublicNetworkIPValidator{
+		IPv4PrivateNetworks: cfg.RequestValidation.IPv4PrivateNetworksParsed,
+		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
+	}
 
 	return httprouter.Handle((&endpointDeps{
 		ex,
@@ -59,24 +66,26 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 		defReqJSON,
 		bidderMap,
 		nil,
-		nil}).Auction), nil
+		nil,
+		ipValidator}).Auction), nil
 }
 
 type endpointDeps struct {
-	ex               exchange.Exchange
-	paramsValidator  openrtb_ext.BidderParamValidator
-	storedReqFetcher stored_requests.Fetcher
-	videoFetcher     stored_requests.Fetcher
-	categories       stored_requests.CategoryFetcher
-	cfg              *config.Configuration
-	metricsEngine    pbsmetrics.MetricsEngine
-	analytics        analytics.PBSAnalyticsModule
-	disabledBidders  map[string]string
-	defaultRequest   bool
-	defReqJSON       []byte
-	bidderMap        map[string]openrtb_ext.BidderName
-	cache            prebid_cache_client.Client
-	debugLogRegexp   *regexp.Regexp
+	ex                        exchange.Exchange
+	paramsValidator           openrtb_ext.BidderParamValidator
+	storedReqFetcher          stored_requests.Fetcher
+	videoFetcher              stored_requests.Fetcher
+	categories                stored_requests.CategoryFetcher
+	cfg                       *config.Configuration
+	metricsEngine             pbsmetrics.MetricsEngine
+	analytics                 analytics.PBSAnalyticsModule
+	disabledBidders           map[string]string
+	defaultRequest            bool
+	defReqJSON                []byte
+	bidderMap                 map[string]openrtb_ext.BidderName
+	cache                     prebid_cache_client.Client
+	debugLogRegexp            *regexp.Regexp
+	privateNetworkIPValidator iputil.IPValidator
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -308,17 +317,14 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		return errL
 	}
 
-	ccpaPolicy, ccpaPolicyErr := ccpa.ReadPolicy(req)
-	if ccpaPolicyErr != nil {
-		errL = append(errL, ccpaPolicyErr)
+	if policy, err := ccpa.ReadPolicy(req); err != nil {
+		errL = append(errL, errL...)
 		return errL
-	}
-
-	if err := ccpaPolicy.Validate(); err != nil {
+	} else if err := policy.Validate(); err != nil {
 		errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
 
-		ccpaPolicy.Value = ""
-		if err := ccpaPolicy.Write(req); err != nil {
+		policy.Value = ""
+		if err := policy.Write(req); err != nil {
 			errL = append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
 		}
 	}
@@ -914,13 +920,27 @@ func validateRegs(regs *openrtb.Regs) error {
 	return nil
 }
 
+func sanitizeRequest(r *openrtb.BidRequest, ipValidator iputil.IPValidator) {
+	if r.Device != nil {
+		if ip, ver := iputil.ParseIP(r.Device.IP); ip == nil || ver != iputil.IPv4 || !ipValidator.IsValid(ip, ver) {
+			r.Device.IP = ""
+		}
+
+		if ip, ver := iputil.ParseIP(r.Device.IPv6); ip == nil || ver != iputil.IPv6 || !ipValidator.IsValid(ip, ver) {
+			r.Device.IPv6 = ""
+		}
+	}
+}
+
 // setFieldsImplicitly uses _implicit_ information from the httpReq to set values on bidReq.
 // This function does not consume the request body, which was set explicitly, but infers certain
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
 func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	setDeviceImplicitly(httpReq, bidReq)
+	sanitizeRequest(bidReq, deps.privateNetworkIPValidator)
+
+	setDeviceImplicitly(httpReq, bidReq, deps.privateNetworkIPValidator)
 
 	// Per the OpenRTB spec: A bid request must not contain both a Site and an App object.
 	if bidReq.App == nil {
@@ -932,8 +952,8 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
-func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	setIPImplicitly(httpReq, bidReq) // Fixes #230
+func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, ipValidtor iputil.IPValidator) {
+	setIPImplicitly(httpReq, bidReq, ipValidtor)
 	setUAImplicitly(httpReq, bidReq)
 }
 
@@ -975,7 +995,7 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
 	secure := int8(1)
 	for i := 0; i < len(imps); i++ {
-		if imps[i].Secure == nil && prebid.IsSecure(httpReq) {
+		if imps[i].Secure == nil && httputil.IsSecure(httpReq) {
 			imps[i].Secure = &secure
 		}
 	}
@@ -1132,13 +1152,21 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 }
 
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
-func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	if bidReq.Device == nil || bidReq.Device.IP == "" {
-		if ip := prebid.GetIP(httpReq); ip != "" {
-			if bidReq.Device == nil {
-				bidReq.Device = &openrtb.Device{}
+func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, ipValidator iputil.IPValidator) {
+	if bidReq.Device == nil || (bidReq.Device.IP == "" && bidReq.Device.IPv6 == "") {
+		if ip, ver := httputil.FindIP(httpReq, ipValidator); ip != nil {
+			switch ver {
+			case iputil.IPv4:
+				if bidReq.Device == nil {
+					bidReq.Device = &openrtb.Device{}
+				}
+				bidReq.Device.IP = ip.String()
+			case iputil.IPv6:
+				if bidReq.Device == nil {
+					bidReq.Device = &openrtb.Device{}
+				}
+				bidReq.Device.IPv6 = ip.String()
 			}
-			bidReq.Device.IP = ip
 		}
 	}
 }

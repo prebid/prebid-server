@@ -17,7 +17,7 @@ import (
 	validator "github.com/asaskevich/govalidator"
 )
 
-// Configuration
+// Configuration specifies the static application config.
 type Configuration struct {
 	ExternalURL string     `mapstructure:"external_url"`
 	Host        string     `mapstructure:"host"`
@@ -69,11 +69,14 @@ type Configuration struct {
 	RequestTimeoutHeaders RequestTimeoutHeaders `mapstructure:"request_timeout_headers"`
 	// Debug/logging flags go here
 	Debug Debug `mapstructure:"debug"`
+	// RequestValidation specifies the request validation options.
+	RequestValidation RequestValidation `mapstructure:"request_validation"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
 
 type HTTPClient struct {
+	MaxConnsPerHost     int `mapstructure:"max_connections_per_host"`
 	MaxIdleConns        int `mapstructure:"max_idle_connections"`
 	MaxIdleConnsPerHost int `mapstructure:"max_idle_connections_per_host"`
 	IdleConnTimeout     int `mapstructure:"idle_connection_timeout_seconds"`
@@ -212,6 +215,7 @@ type Analytics struct {
 type CurrencyConverter struct {
 	FetchURL             string `mapstructure:"fetch_url"`
 	FetchIntervalSeconds int    `mapstructure:"fetch_interval_seconds"`
+	StaleRatesSeconds    int    `mapstructure:"stale_rates_seconds"`
 }
 
 func (cfg *CurrencyConverter) validate(errs configErrors) configErrors {
@@ -238,13 +242,13 @@ type HostCookie struct {
 	TTL int64 `mapstructure:"ttl_days"`
 }
 
+func (cfg *HostCookie) TTLDuration() time.Duration {
+	return time.Duration(cfg.TTL) * time.Hour * 24
+}
+
 type RequestTimeoutHeaders struct {
 	RequestTimeInQueue    string `mapstructure:"request_time_in_queue"`
 	RequestTimeoutInQueue string `mapstructure:"request_timeout_in_queue"`
-}
-
-func (cfg *HostCookie) TTLDuration() time.Duration {
-	return time.Duration(cfg.TTL) * time.Hour * 24
 }
 
 const (
@@ -497,6 +501,15 @@ func New(v *viper.Viper) (*Configuration, error) {
 	}
 	c.setDerivedDefaults()
 
+	if err := c.RequestValidation.Parse(); err != nil {
+		return nil, err
+	}
+
+	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
+		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
+		return nil, err
+	}
+
 	// To look for a request's publisher_id in the NonStandardPublishers list in
 	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
 	c.GDPR.NonStandardPublisherMap = make(map[string]int)
@@ -516,11 +529,6 @@ func New(v *viper.Viper) (*Configuration, error) {
 	c.BlacklistedAcctMap = make(map[string]bool)
 	for i := 0; i < len(c.BlacklistedAccts); i++ {
 		c.BlacklistedAcctMap[c.BlacklistedAccts[i]] = true
-	}
-
-	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
-		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
-		return nil, err
 	}
 
 	glog.Info("Logging the resolved configuration:")
@@ -563,6 +571,7 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdtarget, "https://sync.console.adtarget.com.tr/csync?t=p&ep=0&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadtarget%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7Buid%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdtelligent, "https://sync.adtelligent.com/csync?t=p&ep=0&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadtelligent%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7Buid%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdmixer, "https://inv-nets.admixer.net/adxcm.aspx?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir=1&rurl="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadmixer%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%24visitor_cookie%24%24")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdman, "https://sync.admanmedia.com/pbs.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadman%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BUID%5D")
 	// openrtb_ext.BidderAdOcean doesn't have a good default.
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdvangelists, "https://nep.advangelists.com/xp/user-sync?acctid={aid}&&redirect="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadvangelists%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAJA, "https://ad.as.amanad.adtdp.com/v1/sync/ssp?ssp=4&gdpr={{.GDPR}}&us_privacy={{.USPrivacy}}&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Daja%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%25s")
@@ -668,9 +677,11 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
 	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
+	v.SetDefault("http_client.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
 	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)
+	v.SetDefault("http_client_cache.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client_cache.max_idle_connections", 10)
 	v.SetDefault("http_client_cache.max_idle_connections_per_host", 2)
 	v.SetDefault("http_client_cache.idle_connection_timeout_seconds", 60)
@@ -763,6 +774,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adhese.endpoint", "https://ads-{{.AccountID}}.adhese.com/json")
 	v.SetDefault("adapters.adkernel.endpoint", "http://{{.Host}}/hb?zone={{.ZoneID}}")
 	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
+	v.SetDefault("adapters.adman.endpoint", "http://pub.admanmedia.com/?c=o&m=ortb")
 	v.SetDefault("adapters.admixer.endpoint", "http://inv-nets.admixer.net/pbs.aspx")
 	v.SetDefault("adapters.adocean.endpoint", "https://{{.Host}}")
 	v.SetDefault("adapters.adoppler.endpoint", "http://app.trustedmarketplace.io/ads")
@@ -780,7 +792,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.beintoo.endpoint", "https://ib.beintoo.com/um")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.consumable.endpoint", "https://e.serverbid.com/api/v2")
-	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
+	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/cvx/server/hb/ortb/25")
 	v.SetDefault("adapters.cpmstar.endpoint", "https://server.cpmstar.com/openrtbbidrq.aspx")
 	v.SetDefault("adapters.datablocks.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
 	v.SetDefault("adapters.emx_digital.endpoint", "https://hb.emxdgt.com")
@@ -855,6 +867,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
+	v.SetDefault("currency_converter.stale_rates_seconds", 0)
 	v.SetDefault("default_request.type", "")
 	v.SetDefault("default_request.file.name", "")
 	v.SetDefault("default_request.alias_info", false)
@@ -870,8 +883,23 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("debug.timeout_notification.sampling_rate", 0.0)
 	v.SetDefault("debug.timeout_notification.fail_only", false)
 
+	/* IPv4
+	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+	/*  Link Local: 169.254.0.0/16
+	/*  Loopback:   127.0.0.0/8
+	/*
+	/* IPv6
+	/*  Loopback:     ::1/128
+	/*  Unique Local: fc00::/7
+	/*  Link Local:   fe80::/10
+	/*  Multicast:    ff00::/8
+	*/
+	v.SetDefault("request_validation.ipv4_private_networks", []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8"})
+	v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8"})
+
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.SetTypeByDefaultValue(true)
 	v.SetEnvPrefix("PBS")
 	v.AutomaticEnv()
 	v.ReadInConfig()
