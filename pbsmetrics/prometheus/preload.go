@@ -99,6 +99,11 @@ func preloadLabelValues(m *Metrics) {
 		requestTypeLabel:   {string(pbsmetrics.ReqTypeVideo)},
 		requestStatusLabel: {requestSuccessLabel, requestRejectLabel},
 	})
+
+	preloadLabelValuesForCounter(m.tcfVersion, map[string][]string{
+		versionLabel: tcfVersionsAsString(),
+		sourceLabel:  {string(sourceRequest)},
+	})
 }
 
 func preloadLabelValuesForCounter(counter *prometheus.CounterVec, labelsWithValues map[string][]string) {

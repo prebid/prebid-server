@@ -76,3 +76,12 @@ func requestTypesAsString() []string {
 	}
 	return valuesAsString
 }
+
+func tcfVersionsAsString() []string {
+	values := pbsmetrics.TCFVersions()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
