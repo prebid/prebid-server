@@ -41,6 +41,16 @@ type RequestLabels struct {
 	RequestStatus RequestStatus
 }
 
+// PrivacyLabels defines metrics describing the result of privacy enforcement.
+type PrivacyLabels struct {
+	CCPAEnforced   bool
+	CCPAProvided   bool
+	COPPAEnforced  bool
+	GDPREnforced   bool
+	GDPRTCFVersion TCFVersionValue
+	LMTEnforced    bool
+}
+
 // Label typecasting. Se below the type definitions for possible values
 
 // DemandSource : Demand source enumeration
@@ -257,7 +267,7 @@ const (
 	TCFVersionV2  TCFVersionValue = "v2"
 )
 
-// TCFVersions rtuens the possible values for the TCF version
+// TCFVersions returns the possible values for the TCF version
 func TCFVersions() []TCFVersionValue {
 	return []TCFVersionValue{
 		TCFVersionErr,
@@ -305,5 +315,5 @@ type MetricsEngine interface {
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(sucess bool)
-	RecordTCFReq(version TCFVersionValue)
+	RecordRequestPrivacy(privacy PrivacyLabels)
 }

@@ -53,7 +53,11 @@ type Metrics struct {
 	TimeoutNotificationFailure metrics.Meter
 
 	// TCF adaption metrics
-	TCFReqVersion map[TCFVersionValue]metrics.Meter
+	PrivacyCCPARequest       metrics.Meter
+	PrivacyCCPARequestOptOut metrics.Meter
+	PrivacyCOPPARequest      metrics.Meter
+	PrivacyLMTRequest        metrics.Meter
+	PrivacyTCFRequestVersion map[TCFVersionValue]metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -141,7 +145,11 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		TimeoutNotificationSuccess: blankMeter,
 		TimeoutNotificationFailure: blankMeter,
 
-		TCFReqVersion: make(map[TCFVersionValue]metrics.Meter, len(TCFVersions())),
+		PrivacyCCPARequest:       blankMeter,
+		PrivacyCCPARequestOptOut: blankMeter,
+		PrivacyCOPPARequest:      blankMeter,
+		PrivacyLMTRequest:        blankMeter,
+		PrivacyTCFRequestVersion: make(map[TCFVersionValue]metrics.Meter, len(TCFVersions())),
 
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
@@ -149,6 +157,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 
 		exchanges: exchanges,
 	}
+
 	for _, a := range exchanges {
 		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
 	}
@@ -166,7 +175,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	}
 
 	for _, v := range TCFVersions() {
-		newMetrics.TCFReqVersion[v] = blankMeter
+		newMetrics.PrivacyTCFRequestVersion[v] = blankMeter
 	}
 
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
@@ -234,8 +243,12 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.TimeoutNotificationSuccess = metrics.GetOrRegisterMeter("timeout_notification.ok", registry)
 	newMetrics.TimeoutNotificationFailure = metrics.GetOrRegisterMeter("timeout_notification.failed", registry)
 
+	newMetrics.PrivacyCCPARequest = metrics.GetOrRegisterMeter("privacy.request.ccpa.specified", registry)
+	newMetrics.PrivacyCCPARequestOptOut = metrics.GetOrRegisterMeter("privacy.request.ccpa.opt-out", registry)
+	newMetrics.PrivacyCOPPARequest = metrics.GetOrRegisterMeter("privacy.request.coppa", registry)
+	newMetrics.PrivacyLMTRequest = metrics.GetOrRegisterMeter("privacy.request.lmt", registry)
 	for _, version := range TCFVersions() {
-		newMetrics.TCFReqVersion[version] = metrics.GetOrRegisterMeter(fmt.Sprintf("privacy.request.tcf.%s", string(version)), registry)
+		newMetrics.PrivacyTCFRequestVersion[version] = metrics.GetOrRegisterMeter(fmt.Sprintf("privacy.request.tcf.%s", string(version)), registry)
 	}
 
 	return newMetrics
@@ -582,12 +595,28 @@ func (me *Metrics) RecordTimeoutNotice(success bool) {
 	return
 }
 
-func (me *Metrics) RecordTCFReq(version TCFVersionValue) {
-	met, ok := me.TCFReqVersion[version]
-	if ok {
-		met.Mark(1)
-	} else {
-		me.TCFReqVersion[TCFVersionErr].Mark(1)
+func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
+	if privacy.CCPAProvided {
+		me.PrivacyCCPARequest.Mark(1)
+		if privacy.CCPAEnforced {
+			me.PrivacyCCPARequestOptOut.Mark(1)
+		}
+	}
+
+	if privacy.COPPAEnforced {
+		me.PrivacyCOPPARequest.Mark(1)
+	}
+
+	if privacy.GDPREnforced {
+		if metric, ok := me.PrivacyTCFRequestVersion[privacy.GDPRTCFVersion]; ok {
+			metric.Mark(1)
+		} else {
+			me.PrivacyTCFRequestVersion[TCFVersionErr].Mark(1)
+		}
+	}
+
+	if privacy.LMTEnforced {
+		me.PrivacyLMTRequest.Mark(1)
 	}
 	return
 }
