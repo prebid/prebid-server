@@ -210,6 +210,7 @@ func (adg *AdgenerationAdapter) MakeBids(internalRequest *openrtb.BidRequest, ex
 				Bid:     &bid,
 				BidType: bitType,
 			})
+			bidResponse.Currency = adg.getCurrency(internalRequest)
 			return bidResponse, nil
 		}
 	}
