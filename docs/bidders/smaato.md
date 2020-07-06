@@ -1,7 +1,17 @@
 
 # Smaato Bidder
 
-Please contact Smaato Support or prebid@smaato.com to get set up with a publisherId and adslot.
+```
+Module Name: Smaato Bidder Adapter
+Module Type: Bidder Adapter
+Maintainer: prebid@smaato.com
+```
+
+### Description
+
+Please contact Smaato Support or prebid@smaato.com to get set up with a publisherId and adspaceId.
+
+### Test Parameters:  
 
 Following example includes sample `imp` object with publisherId and adSlot which can be used to test Smaato Adapter
 
@@ -23,8 +33,8 @@ Following example includes sample `imp` object with publisherId and adSlot which
          },
          "ext":{
             "smaato":{
-               "publisherId":“1100042525”,
-               "adSlot":"130563103"
+               "publisherId":"100042525",
+               "adspaceId":"130563103"
             }
          }
       }

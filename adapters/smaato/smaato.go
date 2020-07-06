@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
@@ -35,9 +34,9 @@ type userExt struct {
 }
 
 type userExtData struct {
-	Keywords []string `json:"keywords"`
-	Gender   string   `json:"gender"`
-	Yob      string   `json:"yob"`
+	Keywords string `json:"keywords"`
+	Gender   string `json:"gender"`
+	Yob      int64  `json:"yob"`
 }
 
 //userExt defines Site.Ext object for Smaato
@@ -46,7 +45,7 @@ type siteExt struct {
 }
 
 type siteExtData struct {
-	Keywords []string `json:"keywords"`
+	Keywords string `json:"keywords"`
 }
 
 // NewSmaatoBidder creates a Smaato bid adapter.
@@ -89,13 +88,12 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		if request.Site.Ext != nil {
 			var siteExt siteExt
 			err := json.Unmarshal([]byte(request.Site.Ext), &siteExt)
-
-			if err == nil {
-				siteCopy.Keywords = strings.Join(siteExt.Data.Keywords, ",")
-				siteCopy.Ext = nil
-			} else {
+			if err != nil {
 				errs = append(errs, err)
+				return nil, errs
 			}
+			siteCopy.Keywords = siteExt.Data.Keywords
+			siteCopy.Ext = nil
 		}
 		request.Site = &siteCopy
 	}
@@ -103,20 +101,24 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	if request.User != nil && request.User.Ext != nil {
 		var userExt userExt
 		var userExtRaw map[string]json.RawMessage
-		rawExtErr := json.Unmarshal(request.User.Ext, &userExtRaw)
-		userExtErr := json.Unmarshal([]byte(request.User.Ext), &userExt)
 
-		if rawExtErr == nil && userExtErr == nil {
-			userCopy := *request.User
-			userCopy.Gender = userExt.Data.Gender
-			userCopy.Yob, _ = strconv.ParseInt(userExt.Data.Yob, 10, 32)
-			userCopy.Keywords = strings.Join(userExt.Data.Keywords, ",")
-			delete(userExtRaw, "data")
-			userCopy.Ext, _ = json.Marshal(userExtRaw)
-			request.User = &userCopy
-		} else {
-			errs = append(errs, rawExtErr, userExtErr)
+		rawExtErr := json.Unmarshal(request.User.Ext, &userExtRaw)
+		if rawExtErr != nil {
+			errs = append(errs, rawExtErr)
+			return nil, errs
 		}
+
+		userExtErr := json.Unmarshal([]byte(request.User.Ext), &userExt)
+		if userExtErr != nil {
+			errs = append(errs, userExtErr)
+			return nil, errs
+		}
+
+		userCopy := *request.User
+		extractUserExtAttributes(userExt, &userCopy)
+		delete(userExtRaw, "data")
+		userCopy.Ext, _ = json.Marshal(userExtRaw)
+		request.User = &userCopy
 	}
 
 	// Setting ext client info
@@ -258,4 +260,21 @@ func parseSmaatoParams(imp *openrtb.Imp) (smaatoParams, error) {
 		return smaatoExt, err
 	}
 	return smaatoExt, nil
+}
+
+func extractUserExtAttributes(userExt userExt, userCopy *openrtb.User) {
+	gender := userExt.Data.Gender
+	if gender != "" {
+		userCopy.Gender = gender
+	}
+
+	yob := userExt.Data.Yob
+	if yob != 0 {
+		userCopy.Yob = yob
+	}
+
+	keywords := userExt.Data.Keywords
+	if keywords != "" {
+		userCopy.Keywords = keywords
+	}
 }

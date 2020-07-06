@@ -8,9 +8,7 @@
       "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
       "ext": {
         "data": {
-          "keywords": [
-            "power tools"
-          ],
+          "keywords": "power tools",
           "search": "drill",
           "content": {
             "userrating": 4
@@ -51,12 +49,9 @@
       "ext": {
         "consent": "gdprConsentString",
         "data": {
-          "keywords": [
-            "a",
-            "b"
-          ],
+          "keywords": "a,b",
           "gender": "M",
-          "yob": "1984",
+          "yob": 1984,
           "geo": {
             "country": "ca"
           }
