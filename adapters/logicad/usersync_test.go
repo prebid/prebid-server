@@ -10,7 +10,7 @@ import (
 )
 
 func TestLogicadSyncer(t *testing.T) {
-	syncURL := "https://cd-p31.ladsp.jp/cookiesender?r=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ru=localhost%2Fsetuid%3Fbidder%3Dlogicad%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID"
+	syncURL := "https://cr-p31.ladsp.jp/cookiesender?r=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ru=localhost%2Fsetuid%3Fbidder%3Dlogicad%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID"
 	syncURLTemplate := template.Must(
 		template.New("sync-template").Parse(syncURL),
 	)
@@ -24,7 +24,7 @@ func TestLogicadSyncer(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, "https://cd-p31.ladsp.jp/cookiesender?r=true&gdpr=1&gdpr_consent=A&ru=localhost%2Fsetuid%3Fbidder%3Dlogicad%26gdpr%3D1%26gdpr_consent%3DA%26uid%3D%24UID", syncInfo.URL)
+	assert.Equal(t, "https://cr-p31.ladsp.jp/cookiesender?r=true&gdpr=1&gdpr_consent=A&ru=localhost%2Fsetuid%3Fbidder%3Dlogicad%26gdpr%3D1%26gdpr_consent%3DA%26uid%3D%24UID", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
 	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
