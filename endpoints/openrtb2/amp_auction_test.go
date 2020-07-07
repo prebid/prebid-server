@@ -122,9 +122,8 @@ func TestAMPPageInfo(t *testing.T) {
 }
 
 func TestGDPRConsent(t *testing.T) {
-	consent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	consent := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
 	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
-
 	digitrust := &openrtb_ext.ExtUserDigiTrust{
 		ID:   "anyDigitrustID",
 		KeyV: 1,
@@ -824,6 +823,24 @@ func TestMultisize(t *testing.T) {
 	formatOverrideSpec{
 		multisize: "200x50,100x60",
 		expect: []openrtb.Format{{
+			W: 200,
+			H: 50,
+		}, {
+			W: 100,
+			H: 60,
+		}},
+	}.execute(t)
+}
+
+func TestSizeWithMultisize(t *testing.T) {
+	formatOverrideSpec{
+		width:     20,
+		height:    40,
+		multisize: "200x50,100x60",
+		expect: []openrtb.Format{{
+			W: 20,
+			H: 40,
+		}, {
 			W: 200,
 			H: 50,
 		}, {

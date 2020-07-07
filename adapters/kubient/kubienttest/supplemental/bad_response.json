@@ -13,7 +13,9 @@
           ]
         },
         "ext": {
-          "bidder": {}
+          "bidder": {
+            "zoneid": "23"
+          }
         }
       }
     ]
@@ -36,7 +38,9 @@
                 ]
               },
               "ext": {
-                "bidder": {}
+                "bidder": {
+                  "zoneid": "23"
+                }
               }
             }
           ]

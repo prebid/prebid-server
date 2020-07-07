@@ -12,8 +12,10 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/stretchr/testify/assert"
 
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
@@ -64,7 +66,7 @@ func TestSingleBidder(t *testing.T) {
 		},
 		bidResponse: mockBidderResponse,
 	}
-	bidder := adaptBidder(bidderImpl, server.Client())
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 	currencyConverter := currencies.NewRateConverterDefault()
 	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
 
@@ -152,7 +154,7 @@ func TestMultiBidder(t *testing.T) {
 			}},
 		bidResponse: mockBidderResponse,
 	}
-	bidder := adaptBidder(bidderImpl, server.Client())
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 	currencyConverter := currencies.NewRateConverterDefault()
 	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
 
@@ -510,11 +512,12 @@ func TestMultiCurrencies(t *testing.T) {
 		)
 
 		// Execute:
-		bidder := adaptBidder(bidderImpl, server.Client())
+		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 		currencyConverter := currencies.NewRateConverter(
 			&http.Client{},
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Second,
+			time.Duration(24)*time.Hour,
 		)
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
@@ -658,7 +661,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 		}
 
 		// Execute:
-		bidder := adaptBidder(bidderImpl, server.Client())
+		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 		currencyConverter := currencies.NewRateConverterDefault()
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
@@ -824,11 +827,12 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 		}
 
 		// Execute:
-		bidder := adaptBidder(bidderImpl, server.Client())
+		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 		currencyConverter := currencies.NewRateConverter(
 			&http.Client{},
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Second,
+			time.Duration(24)*time.Hour,
 		)
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
@@ -939,7 +943,7 @@ func TestServerCallDebugging(t *testing.T) {
 			Headers: http.Header{},
 		},
 	}
-	bidder := adaptBidder(bidderImpl, server.Client())
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 	currencyConverter := currencies.NewRateConverterDefault()
 
 	bids, _ := bidder.requestBid(
@@ -1051,7 +1055,7 @@ func TestMobileNativeTypes(t *testing.T) {
 			},
 			bidResponse: tc.mockBidderResponse,
 		}
-		bidder := adaptBidder(bidderImpl, server.Client())
+		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 		currencyConverter := currencies.NewRateConverterDefault()
 
 		seatBids, _ := bidder.requestBid(
@@ -1072,7 +1076,7 @@ func TestMobileNativeTypes(t *testing.T) {
 }
 
 func TestErrorReporting(t *testing.T) {
-	bidder := adaptBidder(&bidRejector{}, nil)
+	bidder := adaptBidder(&bidRejector{}, nil, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 	currencyConverter := currencies.NewRateConverterDefault()
 	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
 	if bids != nil {
@@ -1227,6 +1231,64 @@ func TestSetAssetTypes(t *testing.T) {
 	}
 }
 
+func TestTimeoutNotificationOff(t *testing.T) {
+	respBody := "{\"bid\":false}"
+	respStatus := 200
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	bidderImpl := &notifingBidder{
+		notiRequest: adapters.RequestData{
+			Method:  "GET",
+			Uri:     server.URL + "/notify/me",
+			Body:    nil,
+			Headers: http.Header{},
+		},
+	}
+	bidder := &bidderAdapter{
+		Bidder:      bidderImpl,
+		Client:      server.Client(),
+		DebugConfig: config.Debug{},
+		me:          &metricsConfig.DummyMetricsEngine{},
+	}
+	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
+		t.Error("Failed to cast bidder to a TimeoutBidder")
+	} else {
+		bidder.doTimeoutNotification(tb, &adapters.RequestData{})
+	}
+}
+
+func TestTimeoutNotificationOn(t *testing.T) {
+	respBody := "{\"bid\":false}"
+	respStatus := 200
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	bidderImpl := &notifingBidder{
+		notiRequest: adapters.RequestData{
+			Method:  "GET",
+			Uri:     server.URL + "/notify/me",
+			Body:    nil,
+			Headers: http.Header{},
+		},
+	}
+	bidder := &bidderAdapter{
+		Bidder: bidderImpl,
+		Client: server.Client(),
+		DebugConfig: config.Debug{
+			TimeoutNotification: config.TimeoutNotification{
+				Log: true,
+			},
+		},
+		me: &metricsConfig.DummyMetricsEngine{},
+	}
+	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
+		t.Error("Failed to cast bidder to a TimeoutBidder")
+	} else {
+		bidder.doTimeoutNotification(tb, &adapters.RequestData{})
+	}
+}
+
 type goodSingleBidder struct {
 	bidRequest   *openrtb.BidRequest
 	httpRequest  *adapters.RequestData
@@ -1299,4 +1361,20 @@ func (bidder *bidRejector) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 func (bidder *bidRejector) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidder.httpResponse = response
 	return nil, []error{errors.New("Can't make a response.")}
+}
+
+type notifingBidder struct {
+	notiRequest adapters.RequestData
+}
+
+func (bidder *notifingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	return nil, nil
+}
+
+func (bidder *notifingBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	return nil, nil
+}
+
+func (bidder *notifingBidder) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+	return &bidder.notiRequest, nil
 }

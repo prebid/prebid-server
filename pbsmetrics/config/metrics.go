@@ -188,6 +188,20 @@ func (me *MultiMetricsEngine) RecordRequestQueueTime(success bool, requestType p
 	}
 }
 
+// RecordTimeoutNotice across all engines
+func (me *MultiMetricsEngine) RecordTimeoutNotice(success bool) {
+	for _, thisME := range *me {
+		thisME.RecordTimeoutNotice(success)
+	}
+}
+
+// RecordTCFReq across all engines
+func (me *MultiMetricsEngine) RecordTCFReq(version pbsmetrics.TCFVersionValue) {
+	for _, thisME := range *me {
+		thisME.RecordTCFReq(version)
+	}
+}
+
 // DummyMetricsEngine is a Noop metrics engine in case no metrics are configured. (may also be useful for tests)
 type DummyMetricsEngine struct{}
 
@@ -261,4 +275,12 @@ func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(success bool, length 
 
 // RecordRequestQueueTime as a noop
 func (me *DummyMetricsEngine) RecordRequestQueueTime(success bool, requestType pbsmetrics.RequestType, length time.Duration) {
+}
+
+// RecordTimeoutNotice as a noop
+func (me *DummyMetricsEngine) RecordTimeoutNotice(success bool) {
+}
+
+// RecordReq as a noop
+func (me *DummyMetricsEngine) RecordTCFReq(version pbsmetrics.TCFVersionValue) {
 }

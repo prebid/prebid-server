@@ -83,7 +83,6 @@ func checkRequest(request *openrtb.BidRequest) error {
 		}
 	}
 
-	request.Test = 0 // don't forward test flag to PN adserver
 	return nil
 }
 

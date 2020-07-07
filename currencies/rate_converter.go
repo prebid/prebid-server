@@ -12,14 +12,15 @@ import (
 
 // RateConverter holds the currencies conversion rates dictionary
 type RateConverter struct {
-	httpClient       httpClient
-	done             chan bool
-	updateNotifier   chan<- int
-	fetchingInterval time.Duration
-	syncSourceURL    string
-	rates            atomic.Value // Should only hold Rates struct
-	lastUpdated      atomic.Value // Should only hold time.Time
-	constantRates    Conversions
+	httpClient          httpClient
+	done                chan bool
+	updateNotifier      chan<- int
+	fetchingInterval    time.Duration
+	staleRatesThreshold time.Duration
+	syncSourceURL       string
+	rates               atomic.Value // Should only hold Rates struct
+	lastUpdated         atomic.Value // Should only hold time.Time
+	constantRates       Conversions
 }
 
 // NewRateConverter returns a new RateConverter
@@ -27,11 +28,13 @@ func NewRateConverter(
 	httpClient httpClient,
 	syncSourceURL string,
 	fetchingInterval time.Duration,
+	staleRatesThreshold time.Duration,
 ) *RateConverter {
 	return NewRateConverterWithNotifier(
 		httpClient,
 		syncSourceURL,
 		fetchingInterval,
+		staleRatesThreshold,
 		nil, // no notifier channel specified, won't send any notifications
 	)
 }
@@ -40,7 +43,7 @@ func NewRateConverter(
 // By default there will be no currencies conversions done.
 // `currencies.ConstantRate` will be used.
 func NewRateConverterDefault() *RateConverter {
-	return NewRateConverter(&http.Client{}, "", time.Duration(0))
+	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0))
 }
 
 // NewRateConverterWithNotifier returns a new RateConverter
@@ -51,22 +54,24 @@ func NewRateConverterWithNotifier(
 	httpClient httpClient,
 	syncSourceURL string,
 	fetchingInterval time.Duration,
+	staleRatesThreshold time.Duration,
 	updateNotifier chan<- int,
 ) *RateConverter {
 	rc := &RateConverter{
-		httpClient:       httpClient,
-		done:             make(chan bool),
-		updateNotifier:   updateNotifier,
-		fetchingInterval: fetchingInterval,
-		syncSourceURL:    syncSourceURL,
-		rates:            atomic.Value{},
-		lastUpdated:      atomic.Value{},
+		httpClient:          httpClient,
+		done:                make(chan bool),
+		updateNotifier:      updateNotifier,
+		fetchingInterval:    fetchingInterval,
+		staleRatesThreshold: staleRatesThreshold,
+		syncSourceURL:       syncSourceURL,
+		rates:               atomic.Value{},
+		lastUpdated:         atomic.Value{},
+		constantRates:       NewConstantRates(),
 	}
 
 	// In case host do not want to support currency lookup
 	// we just stop here and do nothing
 	if rc.fetchingInterval == time.Duration(0) {
-		rc.constantRates = NewConstantRates()
 		return rc
 	}
 
@@ -111,7 +116,12 @@ func (rc *RateConverter) Update() error {
 		rc.rates.Store(rates)
 		rc.lastUpdated.Store(time.Now())
 	} else {
-		glog.Errorf("Error updating conversion rates: %v", err)
+		if rc.CheckStaleRates() {
+			rc.ClearRates()
+			glog.Errorf("Error updating conversion rates, falling back to constant rates: %v", err)
+		} else {
+			glog.Errorf("Error updating conversion rates: %v", err)
+		}
 	}
 
 	return err
@@ -160,14 +170,33 @@ func (rc *RateConverter) LastUpdated() time.Time {
 
 // Rates returns current conversions rates
 func (rc *RateConverter) Rates() Conversions {
-	if rc.constantRates != nil {
-		// Converter is not active, returning the constant rates
-		return rc.constantRates
-	}
-	if rates := rc.rates.Load(); rates != nil {
+	// atomic.Value field rates is an empty interface and will be of type *Rates the first time rates are stored
+	// or nil if the rates have never been stored
+	if rates := rc.rates.Load(); rates != (*Rates)(nil) && rates != nil {
 		return rates.(*Rates)
 	}
-	return nil
+	return rc.constantRates
+}
+
+// ClearRates sets the rates to nil
+func (rc *RateConverter) ClearRates() {
+	// atomic.Value field rates must be of type *Rates so we cast nil to that type
+	rc.rates.Store((*Rates)(nil))
+}
+
+// CheckStaleRates checks if loaded third party conversion rates are stale
+func (rc *RateConverter) CheckStaleRates() bool {
+	if rc.staleRatesThreshold <= 0 {
+		return false
+	}
+	currentTime := time.Now().UTC()
+	if lastUpdated := rc.lastUpdated.Load(); lastUpdated != nil {
+		delta := currentTime.Sub(lastUpdated.(time.Time).UTC())
+		if delta.Seconds() > rc.staleRatesThreshold.Seconds() {
+			return true
+		}
+	}
+	return false
 }
 
 // GetInfo returns setup information about the converter

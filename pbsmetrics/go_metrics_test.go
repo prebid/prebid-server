@@ -53,6 +53,13 @@ func TestNewMetrics(t *testing.T) {
 
 	ensureContains(t, registry, "queued_requests.video.rejected", m.RequestsQueueTimer[ReqTypeVideo][false])
 	ensureContains(t, registry, "queued_requests.video.accepted", m.RequestsQueueTimer[ReqTypeVideo][true])
+
+	ensureContains(t, registry, "timeout_notification.ok", m.TimeoutNotificationSuccess)
+	ensureContains(t, registry, "timeout_notification.failed", m.TimeoutNotificationFailure)
+	ensureContains(t, registry, "privacy.request.tcf.v1", m.TCFReqVersion[TCFVersionV1])
+	ensureContains(t, registry, "privacy.request.tcf.v2", m.TCFReqVersion[TCFVersionV2])
+	ensureContains(t, registry, "privacy.request.tcf.err", m.TCFReqVersion[TCFVersionErr])
+
 }
 
 func TestRecordBidType(t *testing.T) {

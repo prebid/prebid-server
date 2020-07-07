@@ -46,6 +46,16 @@ If bidder is going to support long form video make sure bidder has:
 Note: `bid.bidVideo.PrimaryCategory` or `TypedBid.bid.Cat` should be specified.
 To learn more about IAB categories, please refer to this convenience link (not the final official definition): [IAB categories](https://adtagmacros.com/list-of-iab-categories-for-advertisement/)
 
+### Timeout notification support
+This is an optional feature. If you wish to get timeout notifications when a bid request from PBS times out, you can implement the
+`MakeTimeoutNotification` method in your adapter. If you do not wish timeout notification, do not implement the method.
+
+`func (a *Adapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error)`
+
+Here the `RequestData` supplied as an argument is the request returned from `MakeRequests` that timed out. If an adapter generates
+multiple requests, and more than one of them times out, then there will be a call to `MakeTimeoutNotification` for each failed
+request. The function should then return a `RequestData` object that will be the timeout notification to be sent to the bidder, or a list of errors encountered trying to create the timeout notification request. Timeout notifications will not generate subsequent timeout notifications if they timeout or fail.
+
 ## Test Your Bidder
 
 ### Automated Tests
