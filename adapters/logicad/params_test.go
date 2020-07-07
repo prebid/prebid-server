@@ -41,4 +41,5 @@ var invalidParams = []string{
 	``,
 	`[]`,
 	`true`,
+	`{"tid": 42}`,
 }
