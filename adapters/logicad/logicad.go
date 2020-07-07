@@ -16,18 +16,12 @@ type LogicadAdapter struct {
 }
 
 func (adapter *LogicadAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
-		errs = append(errs, &errortypes.BadInput{Message: "No impression in the bid request"})
-		return nil, errs
+		return nil, []error{&errortypes.BadInput{Message: "No impression in the bid request"}}
 	}
-	pub2impressions, imps, err := getImpressionsInfo(request.Imp)
-	if len(imps) == 0 {
-		return nil, err
-	}
-	errs = append(errs, err...)
 
-	if len(pub2impressions) == 0 {
+	pub2impressions, imps, errs := getImpressionsInfo(request.Imp)
+	if len(pub2impressions) == 0 || len(imps) == 0 {
 		return nil, errs
 	}
 
@@ -36,7 +30,6 @@ func (adapter *LogicadAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 		bidRequest, err := adapter.buildAdapterRequest(request, &k, imps)
 		if err != nil {
 			errs = append(errs, err)
-			return nil, errs
 		} else {
 			result = append(result, bidRequest)
 		}
@@ -55,15 +48,15 @@ func getImpressionsInfo(imps []openrtb.Imp) (map[openrtb_ext.ExtImpLogicad][]ope
 			errors = append(errors, err)
 			continue
 		}
-		if err := validateImpression(impExt); err != nil {
+		if err := validateImpression(&impExt); err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		if res[*impExt] == nil {
-			res[*impExt] = make([]openrtb.Imp, 0)
+		if res[impExt] == nil {
+			res[impExt] = make([]openrtb.Imp, 0)
 		}
-		res[*impExt] = append(res[*impExt], imp)
+		res[impExt] = append(res[impExt], imp)
 		resImps = append(resImps, imp)
 	}
 	return res, resImps, errors
@@ -76,20 +69,21 @@ func validateImpression(impExt *openrtb_ext.ExtImpLogicad) error {
 	return nil
 }
 
-func getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpLogicad, error) {
+func getImpressionExt(imp *openrtb.Imp) (openrtb_ext.ExtImpLogicad, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: err.Error(),
-		}
-	}
 	var logicadExt openrtb_ext.ExtImpLogicad
-	if err := json.Unmarshal(bidderExt.Bidder, &logicadExt); err != nil {
-		return nil, &errortypes.BadInput{
+
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return logicadExt, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
-	return &logicadExt, nil
+	if err := json.Unmarshal(bidderExt.Bidder, &logicadExt); err != nil {
+		return logicadExt, &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
+	return logicadExt, nil
 }
 
 func (adapter *LogicadAdapter) buildAdapterRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpLogicad, imps []openrtb.Imp) (*adapters.RequestData, error) {
@@ -123,22 +117,21 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 
 //MakeBids translates Logicad bid response to prebid-server specific format
 func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var msg = ""
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 	if response.StatusCode != http.StatusOK {
-		msg = fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)
+		msg := fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 
 	}
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		msg = fmt.Sprintf("Bad server response: %d", err)
+		msg := fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 	if len(bidResp.SeatBid) != 1 {
-		var msg = fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))
+		msg := fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 
