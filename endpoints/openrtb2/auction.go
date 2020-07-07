@@ -290,6 +290,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		if err := validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
 			return []error{err}
 		}
+
+		if err := validateSChains(bidExt); err != nil {
+			return []error{err}
+		}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -360,6 +364,11 @@ func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases 
 		}
 	}
 	return nil
+}
+
+func validateSChains(req *openrtb_ext.ExtRequest) error {
+	_, err := exchange.BidderToPrebidSChains(req)
+	return err
 }
 
 func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]string, index int) []error {

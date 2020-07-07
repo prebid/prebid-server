@@ -37,12 +37,12 @@ type ExtRequestPrebidSChainSChain struct {
 
 // ExtRequestPrebidSChainSChainNode defines the contract for bidrequest.ext.prebid.schains[i].schain[i].nodes
 type ExtRequestPrebidSChainSChainNode struct {
-	Asi    string          `json:"asi"`
-	Sid    string          `json:"sid"`
-	Rid    string          `json:"rid,omitempty"`
+	ASI    string          `json:"asi"`
+	SID    string          `json:"sid"`
+	RID    string          `json:"rid,omitempty"`
 	Name   string          `json:"name,omitempty"`
 	Domain string          `json:"domain,omitempty"`
-	Hp     int             `json:"hp"`
+	HP     int             `json:"hp"`
 	Ext    json.RawMessage `json:"ext,omitempty"`
 }
 

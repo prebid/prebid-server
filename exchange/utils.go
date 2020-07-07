@@ -28,26 +28,27 @@ type cleanMetrics struct {
 	gdprTcfVersion int
 }
 
-func bidderToPrebidSChains(req *openrtb_ext.ExtRequest) map[string]*openrtb_ext.ExtRequestPrebidSChainSChain {
+func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
-	if req.Prebid.SChains == nil || len(req.Prebid.SChains) == 0 {
-		return bidderToSChains
+	if len(req.Prebid.SChains) == 0 {
+		return bidderToSChains, nil
 	}
 
 	for _, schainWrapper := range req.Prebid.SChains {
 		if schainWrapper != nil && len(schainWrapper.Bidders) > 0 {
 			for _, bidder := range schainWrapper.Bidders {
 				if _, present := bidderToSChains[bidder]; present {
-					delete(bidderToSChains, bidder)
-					continue
+					return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
+						"it must contain no more than one per bidder.", bidder)
+				} else {
+					bidderToSChains[bidder] = &schainWrapper.SChain
 				}
-				bidderToSChains[bidder] = &schainWrapper.SChain
 			}
 		}
 	}
 
-	return bidderToSChains
+	return bidderToSChains, nil
 }
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
@@ -145,9 +146,13 @@ func splitBidRequest(req *openrtb.BidRequest,
 		if err != nil {
 			return nil, []error{err}
 		}
-		sChainsByBidder = bidderToPrebidSChains(&requestExt)
+
+		sChainsByBidder, err = BidderToPrebidSChains(&requestExt)
+		if err != nil {
+			return nil, []error{err}
+		}
 	} else {
-		sChainsByBidder = make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, 0)
+		sChainsByBidder = make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 	}
 
 	for bidder, imps := range impsByBidder {
@@ -185,10 +190,9 @@ func prepareExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) {
 	extCopy := *unpackedExt
 	extCopy.Prebid.SChains = nil
 	reqExt, err := json.Marshal(extCopy)
-	if err != nil {
-		return
+	if err == nil {
+		req.Ext = reqExt
 	}
-	req.Ext = reqExt
 }
 
 func prepareSource(req *openrtb.BidRequest, bidder string, sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain) {
@@ -215,11 +219,10 @@ func prepareSource(req *openrtb.BidRequest, bidder string, sChainsByBidder map[s
 		SChain: *selectedSChain,
 	}
 	sourceExt, err := json.Marshal(schain)
-	if err != nil {
-		return
+	if err == nil {
+		source.Ext = sourceExt
+		req.Source = &source
 	}
-	source.Ext = sourceExt
-	req.Source = &source
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
