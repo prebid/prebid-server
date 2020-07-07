@@ -30,7 +30,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://pbs.ladsp.com/adrequest/prebidserver",
+        "uri": "https://localhost/adrequest/prebidserver",
         "body": {
           "id": "testid",
           "imp": [

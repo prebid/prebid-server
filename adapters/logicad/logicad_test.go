@@ -6,5 +6,5 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "logicadtest", NewLogicadBidder("https://pbs.ladsp.com/adrequest/prebidserver"))
+	adapterstest.RunJSONBidderTest(t, "logicadtest", NewLogicadBidder("https://localhost/adrequest/prebidserver"))
 }
