@@ -477,7 +477,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
 			consent = extUser.Consent
 			digitrustData = extUser.DigiTrust
-			eids = encodeEids(&extUser.Eids)
+			eids = encodeEids(extUser.Eids)
 		}
 	}
 
@@ -523,13 +523,13 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	}, errors
 }
 
-func encodeEids(eids *[]openrtb_ext.ExtUserEid) string {
-	if *eids == nil {
+func encodeEids(eids []openrtb_ext.ExtUserEid) string {
+	if eids == nil {
 		return ""
 	}
 
 	eidsMap := make(map[string]map[string][]int)
-	for _, eid := range *eids {
+	for _, eid := range eids {
 		_, ok := eidsMap[eid.Source]
 		if !ok {
 			eidsMap[eid.Source] = make(map[string][]int)
@@ -539,8 +539,12 @@ func encodeEids(eids *[]openrtb_ext.ExtUserEid) string {
 		}
 	}
 
-	eidsString, _ := json.Marshal(eidsMap)
-	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(eidsString)
+	encodedEids := ""
+	if eidsString, err := json.Marshal(eidsMap); err == nil {
+		encodedEids = base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(eidsString)
+	}
+
+	return encodedEids
 }
 
 func getIPSafely(device *openrtb.Device) string {
