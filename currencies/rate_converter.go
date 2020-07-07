@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/errortypes"
 )
 
-//TODO(bfs): move into clock package
-// copied from: https://github.com/efritz/glock/blob/master/clock.go
+// parts copied from: https://github.com/efritz/glock
 type Clock interface {
 	// Now returns the current time.
 	Now() time.Time
@@ -28,13 +28,19 @@ type Clock interface {
 
 	// Until returns the duration until t.
 	Until(t time.Time) time.Duration
-
-	// NewTicker will construct a ticker which will continually fire,
-	// pausing for the given duration in between invocations.
-	// NewTicker(duration time.Duration) Ticker
 }
 
-// ********************************************************************************* //
+// Ticker is a wrapper around a time.Ticker, which allows interface
+// access  to the underlying channel (instead of bare access like the
+// time.Ticker struct allows).
+type Ticker interface {
+	// Chan returns the underlying ticker channel.
+	Chan() <-chan time.Time
+
+	// Stop stops the ticker.
+	Stop()
+}
+
 type RealClock struct{}
 
 // NewRealClock returns a Clock whose implementation falls back to the
@@ -63,14 +69,6 @@ func (c *RealClock) Until(t time.Time) time.Duration {
 	return time.Until(t)
 }
 
-// func (c *RealClock) NewTicker(duration time.Duration) Ticker {
-// 	return &realTicker{
-// 		ticker: time.NewTicker(duration),
-// 	}
-// }
-//END TODO
-// ********************************************************************************* //
-
 // RateConverter holds the currencies conversion rates dictionary
 type RateConverter struct {
 	httpClient          httpClient
@@ -90,12 +88,14 @@ func NewRateConverter(
 	syncSourceURL string,
 	fetchingInterval time.Duration,
 	staleRatesThreshold time.Duration,
+	clock Clock,
 ) *RateConverter {
 	return NewRateConverterWithNotifier(
 		httpClient,
 		syncSourceURL,
 		fetchingInterval,
 		staleRatesThreshold,
+		clock,
 		nil, // no notifier channel specified, won't send any notifications
 	)
 }
@@ -104,7 +104,7 @@ func NewRateConverter(
 // By default there will be no currencies conversions done.
 // `currencies.ConstantRate` will be used.
 func NewRateConverterDefault() *RateConverter {
-	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0))
+	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0), NewRealClock())
 }
 
 // NewRateConverterWithNotifier returns a new RateConverter
@@ -116,6 +116,7 @@ func NewRateConverterWithNotifier(
 	syncSourceURL string,
 	fetchingInterval time.Duration,
 	staleRatesThreshold time.Duration,
+	clock Clock,
 	updateNotifier chan<- int,
 ) *RateConverter {
 	rc := &RateConverter{
@@ -127,7 +128,7 @@ func NewRateConverterWithNotifier(
 		rates:               atomic.Value{},
 		lastUpdated:         atomic.Value{},
 		constantRates:       NewConstantRates(),
-		clock:               NewRealClock(),
+		clock:               clock,
 	}
 
 	return rc
@@ -143,6 +144,10 @@ func (rc *RateConverter) fetch() (*Rates, error) {
 	response, err := rc.httpClient.Do(request)
 	if err != nil {
 		return nil, err
+	}
+
+	if response.StatusCode >= 400 {
+		return nil, &errortypes.BadServerResponse{Message: "error"}
 	}
 
 	defer response.Body.Close()
@@ -216,6 +221,7 @@ func (rc *RateConverter) CheckStaleRates() bool {
 	if rc.staleRatesThreshold <= 0 {
 		return false
 	}
+
 	currentTime := rc.clock.Now().UTC()
 	if lastUpdated := rc.lastUpdated.Load(); lastUpdated != nil {
 		delta := currentTime.Sub(lastUpdated.(time.Time).UTC())
