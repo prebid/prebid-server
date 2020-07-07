@@ -21,7 +21,6 @@ import (
 )
 
 const MAX_IMPRESSIONS_PUBMATIC = 30
-const bidTypeExtKey = "BidType"
 const PUBMATIC = "[PUBMATIC]"
 const buyId = "buyid"
 const buyIdTargetingKey = "hb_buyid_pubmatic"
@@ -49,6 +48,15 @@ type pubmaticParams struct {
 	AdSlot      string            `json:"adSlot"`
 	WrapExt     json.RawMessage   `json:"wrapper,omitempty"`
 	Keywords    map[string]string `json:"keywords,omitempty"`
+}
+
+type pubmaticBidExtVideo struct {
+	Duration *int `json:"duration,omitempty"`
+}
+
+type pubmaticBidExt struct {
+	BidType           *int                 `json:"BidType,omitempty"`
+	VideoCreativeInfo *pubmaticBidExtVideo `json:"video,omitempty"`
 }
 
 const (
@@ -292,7 +300,11 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				DealId:      bid.DealID,
 			}
 
-			mediaType := getBidType(bid.Ext)
+			var bidExt pubmaticBidExt
+			mediaType := openrtb_ext.BidTypeBanner
+			if err := json.Unmarshal(bid.Ext, &bidExt); err == nil {
+				mediaType = getBidType(&bidExt)
+			}
 			pbid.CreativeMediaType = string(mediaType)
 			bids = append(bids, &pbid)
 			logf("%s Returned Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
@@ -672,9 +684,22 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			bid := sb.Bid[i]
 			// Copy SeatBid Ext to Bid.Ext
 			bid.Ext = copySBExtToBidExt(sb.Ext, bid.Ext)
+			impVideo := &openrtb_ext.ExtBidPrebidVideo{
+				PrimaryCategory: head(bid.Cat),
+			}
+			var bidExt *pubmaticBidExt
+			bidType := openrtb_ext.BidTypeBanner
+			if err := json.Unmarshal(bid.Ext, &bidExt); err == nil && bidExt != nil {
+				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
+					impVideo.Duration = *bidExt.VideoCreativeInfo.Duration
+				}
+				bidType = getBidType(bidExt)
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:        &bid,
-				BidType:    getBidType(bid.Ext),
+				BidType:    bidType,
+				BidVideo:   impVideo,
 				BidTargets: targets,
 			})
 		}
@@ -683,28 +708,20 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 }
 
 // getBidType returns the bid type specified in the response bid.ext
-func getBidType(bidExt json.RawMessage) openrtb_ext.BidType {
+func getBidType(bidExt *pubmaticBidExt) openrtb_ext.BidType {
 	// setting "banner" as the default bid type
 	bidType := openrtb_ext.BidTypeBanner
-	if bidExt != nil {
-		bidExtMap := make(map[string]interface{})
-		extbyte, err := json.Marshal(bidExt)
-		if err == nil {
-			err = json.Unmarshal(extbyte, &bidExtMap)
-			if err == nil && bidExtMap[bidTypeExtKey] != nil {
-				bidTypeVal := int(bidExtMap[bidTypeExtKey].(float64))
-				switch bidTypeVal {
-				case 0:
-					bidType = openrtb_ext.BidTypeBanner
-				case 1:
-					bidType = openrtb_ext.BidTypeVideo
-				case 2:
-					bidType = openrtb_ext.BidTypeNative
-				default:
-					// default value is banner
-					bidType = openrtb_ext.BidTypeBanner
-				}
-			}
+	if bidExt != nil && bidExt.BidType != nil {
+		switch *bidExt.BidType {
+		case 0:
+			bidType = openrtb_ext.BidTypeBanner
+		case 1:
+			bidType = openrtb_ext.BidTypeVideo
+		case 2:
+			bidType = openrtb_ext.BidTypeNative
+		default:
+			// default value is banner
+			bidType = openrtb_ext.BidTypeBanner
 		}
 	}
 	return bidType
@@ -772,4 +789,12 @@ func getMapFromJSON(ext json.RawMessage) map[string]interface{} {
 		}
 	}
 	return nil
+}
+
+func head(s []string) string {
+	if len(s) == 0 {
+		return ""
+	}
+
+	return s[0]
 }
