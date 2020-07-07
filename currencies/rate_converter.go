@@ -10,10 +10,70 @@ import (
 	"github.com/golang/glog"
 )
 
+//TODO(bfs): move into clock package
+// copied from: https://github.com/efritz/glock/blob/master/clock.go
+type Clock interface {
+	// Now returns the current time.
+	Now() time.Time
+
+	// After returns a channel which receives the current time after
+	// the given duration elapses.
+	After(duration time.Duration) <-chan time.Time
+
+	// Sleep blocks until the given duration elapses.
+	Sleep(duration time.Duration)
+
+	// Since returns the time elapsed since t.
+	Since(t time.Time) time.Duration
+
+	// Until returns the duration until t.
+	Until(t time.Time) time.Duration
+
+	// NewTicker will construct a ticker which will continually fire,
+	// pausing for the given duration in between invocations.
+	// NewTicker(duration time.Duration) Ticker
+}
+
+// ********************************************************************************* //
+type RealClock struct{}
+
+// NewRealClock returns a Clock whose implementation falls back to the
+// methods available in the time package.
+func NewRealClock() Clock {
+	return &RealClock{}
+}
+
+func (c *RealClock) Now() time.Time {
+	return time.Now()
+}
+
+func (c *RealClock) After(duration time.Duration) <-chan time.Time {
+	return time.After(duration)
+}
+
+func (c *RealClock) Sleep(duration time.Duration) {
+	time.Sleep(duration)
+}
+
+func (c *RealClock) Since(t time.Time) time.Duration {
+	return time.Since(t)
+}
+
+func (c *RealClock) Until(t time.Time) time.Duration {
+	return time.Until(t)
+}
+
+// func (c *RealClock) NewTicker(duration time.Duration) Ticker {
+// 	return &realTicker{
+// 		ticker: time.NewTicker(duration),
+// 	}
+// }
+//END TODO
+// ********************************************************************************* //
+
 // RateConverter holds the currencies conversion rates dictionary
 type RateConverter struct {
 	httpClient          httpClient
-	done                chan bool
 	updateNotifier      chan<- int
 	fetchingInterval    time.Duration
 	staleRatesThreshold time.Duration
@@ -21,6 +81,7 @@ type RateConverter struct {
 	rates               atomic.Value // Should only hold Rates struct
 	lastUpdated         atomic.Value // Should only hold time.Time
 	constantRates       Conversions
+	clock               Clock
 }
 
 // NewRateConverter returns a new RateConverter
@@ -59,7 +120,6 @@ func NewRateConverterWithNotifier(
 ) *RateConverter {
 	rc := &RateConverter{
 		httpClient:          httpClient,
-		done:                make(chan bool),
 		updateNotifier:      updateNotifier,
 		fetchingInterval:    fetchingInterval,
 		staleRatesThreshold: staleRatesThreshold,
@@ -67,16 +127,8 @@ func NewRateConverterWithNotifier(
 		rates:               atomic.Value{},
 		lastUpdated:         atomic.Value{},
 		constantRates:       NewConstantRates(),
+		clock:               NewRealClock(),
 	}
-
-	// In case host do not want to support currency lookup
-	// we just stop here and do nothing
-	if rc.fetchingInterval == time.Duration(0) {
-		return rc
-	}
-
-	rc.Update()                   // Make sure to populate data before to return the converter
-	go rc.startPeriodicFetching() // Start periodic ticking
 
 	return rc
 }
@@ -114,7 +166,7 @@ func (rc *RateConverter) Update() error {
 	rates, err := rc.fetch()
 	if err == nil {
 		rc.rates.Store(rates)
-		rc.lastUpdated.Store(time.Now())
+		rc.lastUpdated.Store(rc.clock.Now())
 	} else {
 		if rc.CheckStaleRates() {
 			rc.ClearRates()
@@ -127,37 +179,12 @@ func (rc *RateConverter) Update() error {
 	return err
 }
 
-// startPeriodicFetching starts the periodic fetching at the given interval
-// triggers a first fetch when called before the first tick happen in order to initialize currencies rates map
-// returns a chan in which the number of data updates everytime a new update was done
-func (rc *RateConverter) startPeriodicFetching() {
-
-	ticker := time.NewTicker(rc.fetchingInterval)
-	updatesTicksCount := 0
-
-	for {
-		select {
-		case <-ticker.C:
-			// Retries are handled by clients directly.
-			rc.Update()
-			updatesTicksCount++
-			if rc.updateNotifier != nil {
-				rc.updateNotifier <- updatesTicksCount
-			}
-		case <-rc.done:
-			if ticker != nil {
-				ticker.Stop()
-				ticker = nil
-			}
-			return
-		}
-	}
+func (rc *RateConverter) Run() error {
+	return rc.Update()
 }
 
-// StopPeriodicFetching stops the periodic fetching while keeping the latest currencies rates map
-func (rc *RateConverter) StopPeriodicFetching() {
-	rc.done <- true
-	close(rc.done)
+func (rc *RateConverter) GetRunNotifier() chan<- int {
+	return rc.updateNotifier
 }
 
 // LastUpdated returns time when currencies rates were updated
@@ -189,7 +216,7 @@ func (rc *RateConverter) CheckStaleRates() bool {
 	if rc.staleRatesThreshold <= 0 {
 		return false
 	}
-	currentTime := time.Now().UTC()
+	currentTime := rc.clock.Now().UTC()
 	if lastUpdated := rc.lastUpdated.Load(); lastUpdated != nil {
 		delta := currentTime.Sub(lastUpdated.(time.Time).UTC())
 		if delta.Seconds() > rc.staleRatesThreshold.Seconds() {

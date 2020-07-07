@@ -53,8 +53,13 @@ func loadConfig() (*config.Configuration, error) {
 func serve(revision string, cfg *config.Configuration) error {
 	fetchingInterval := time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds) * time.Second
 	staleRatesThreshold := time.Duration(cfg.CurrencyConverter.StaleRatesSeconds) * time.Second
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL,
-		fetchingInterval, staleRatesThreshold)
+	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, fetchingInterval, staleRatesThreshold)
+	
+	// Only schedule periodic currency lookup if host specifies a fetching interval
+	if fetchingInterval > 0 {
+		currencyConverterTickerTask := currencies.NewTickerTask(fetchingInterval, currencyConverter)
+		currencyConverterTickerTask.Start(true)
+	}
 
 	r, err := router.New(cfg, currencyConverter)
 	if err != nil {
