@@ -85,10 +85,6 @@ func preloadLabelValues(m *Metrics) {
 	})
 
 	if !m.metricsDisabled.AdapterConnectionMetrics {
-		preloadLabelValuesForCounter(m.adapterFailedConnections, map[string][]string{
-			adapterLabel: adapterValues,
-		})
-
 		preloadLabelValuesForCounter(m.adapterCreatedConnections, map[string][]string{
 			adapterLabel: adapterValues,
 		})

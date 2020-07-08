@@ -42,7 +42,6 @@ type Metrics struct {
 	adapterRequests           *prometheus.CounterVec
 	adapterRequestsTimer      *prometheus.HistogramVec
 	adapterUserSync           *prometheus.CounterVec
-	adapterFailedConnections  *prometheus.CounterVec
 	adapterReusedConnections  *prometheus.CounterVec
 	adapterCreatedConnections *prometheus.CounterVec
 	adapterIdleConnectionTime *prometheus.HistogramVec
@@ -217,11 +216,6 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		[]string{adapterLabel, cookieLabel, hasBidsLabel})
 
 	if !metrics.metricsDisabled.AdapterConnectionMetrics {
-		metrics.adapterFailedConnections = newCounter(cfg, metrics.Registry,
-			"adapter_connection_errors",
-			"Count of connections that could not be established per bidder.",
-			[]string{adapterLabel})
-
 		metrics.adapterCreatedConnections = newCounter(cfg, metrics.Registry,
 			"adapter_connection_created",
 			"Count that keeps track of new connections when contacting adapter bidder endpoints.",
@@ -423,17 +417,6 @@ func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, i
 	m.adapterConnectionWaitTime.With(prometheus.Labels{
 		adapterLabel: string(adapterName),
 	}).Observe(obtainConnectionTime.Seconds())
-}
-
-// Keeps track of failed connections per adapter
-func (m *Metrics) RecordAdapterFailedConnections(adapterName openrtb_ext.BidderName) {
-	if m.metricsDisabled.AdapterConnectionMetrics {
-		return
-	}
-
-	m.adapterFailedConnections.With(prometheus.Labels{
-		adapterLabel: string(adapterName),
-	}).Inc()
 }
 
 func (m *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {

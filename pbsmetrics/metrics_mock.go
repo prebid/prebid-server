@@ -58,11 +58,9 @@ func (me *MetricsEngineMock) RecordAdapterConnections(bidderName openrtb_ext.Bid
 	me.Called(bidderName, info, obtainConnectionTime)
 }
 
-func (me *MetricsEngineMock) RecordAdapterFailedConnections(bidderName openrtb_ext.BidderName) {
-}
-
 // RecordDNSTime mock
 func (me *MetricsEngineMock) RecordDNSTime(dnsLookupTime time.Duration) {
+	me.Called(dnsLookupTime)
 }
 
 // RecordAdapterBidReceived mock

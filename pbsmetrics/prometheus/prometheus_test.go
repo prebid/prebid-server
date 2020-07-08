@@ -1134,22 +1134,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 	}
 }
 
-func TestRecordAdapterFailedConnections(t *testing.T) {
-	// Create metrics
-	m := createMetricsForTesting()
-
-	// Run test
-	m.RecordAdapterFailedConnections(openrtb_ext.BidderAppnexus)
-
-	// Assert connection error was accounted correctly
-	assertCounterVecValue(t,
-		"Metric: adapterFailedConnections",
-		"adapter_connection_errors",
-		m.adapterFailedConnections,
-		float64(1),
-		prometheus.Labels{adapterLabel: string(openrtb_ext.BidderAppnexus)})
-}
-
 func TestDisableAdapterConnections(t *testing.T) {
 	prometheusMetrics := NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
@@ -1158,7 +1142,6 @@ func TestDisableAdapterConnections(t *testing.T) {
 	}, config.DisabledMetrics{AdapterConnectionMetrics: true})
 
 	// Assert counter vector was not initialized
-	assert.Nil(t, prometheusMetrics.adapterFailedConnections, "Counter Vector adapterFailedConnections should be nil")
 	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
 	assert.Nil(t, prometheusMetrics.adapterCreatedConnections, "Counter Vector adapterCreatedConnections should be nil")
 	assert.Nil(t, prometheusMetrics.adapterIdleConnectionTime, "Counter Vector adapterIdleConnectionTime should be nil")

@@ -94,7 +94,7 @@ func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		BidderName:  name,
 		Client:      client,
 		DebugConfig: cfg.Debug,
-		me:          bidderMetrics{engine: me, disabled: cfg.Metrics.Disabled},
+		me:          bidderMetrics{engine: me, disabledMetrics: cfg.Metrics.Disabled},
 	}
 }
 
@@ -107,8 +107,8 @@ type bidderAdapter struct {
 }
 
 type bidderMetrics struct {
-	engine   pbsmetrics.MetricsEngine
-	disabled config.DisabledMetrics
+	engine          pbsmetrics.MetricsEngine
+	disabledMetrics config.DisabledMetrics
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
@@ -331,7 +331,7 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 
 	// If adapter connection metrics are not disabled, add the client trace
 	// to get complete connection info into our metrics
-	if !bidder.me.disabled.AccountAdapterDetails {
+	if !bidder.me.disabledMetrics.AccountAdapterDetails {
 		ctx = bidder.addClientTrace(ctx)
 	}
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
@@ -347,7 +347,6 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 			}
 
 		}
-		bidder.me.engine.RecordAdapterFailedConnections(bidder.BidderName)
 		return &httpCallInfo{
 			request: req,
 			err:     err,

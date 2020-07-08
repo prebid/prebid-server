@@ -79,7 +79,6 @@ type AdapterMetrics struct {
 	BidsReceivedMeter metrics.Meter
 	PanicMeter        metrics.Meter
 	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
-	ConnError         metrics.Counter
 	ConnCreated       metrics.Counter
 	ConnReused        metrics.Counter
 	ConnWasIdle       metrics.Counter
@@ -266,7 +265,6 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
 	}
 	if disabledMetrics.AdapterConnectionMetrics {
-		newAdapter.ConnError = metrics.NilCounter{}
 		newAdapter.ConnCreated = metrics.NilCounter{}
 		newAdapter.ConnReused = metrics.NilCounter{}
 		newAdapter.ConnIdleTime = &metrics.NilTimer{}
@@ -306,7 +304,6 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
 		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative),
 	}
-	am.ConnError = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_error", adapterOrAccount, exchange), registry)
 	am.ConnCreated = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_created", adapterOrAccount, exchange), registry)
 	am.ConnReused = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_reused", adapterOrAccount, exchange), registry)
 	am.ConnIdleTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_idle_time", adapterOrAccount, exchange), registry)
@@ -506,20 +503,6 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 		am.ConnIdleTime.Update(info.IdleTime)
 	}
 	am.ConnWaitTime.Update(obtainConnectionTime)
-}
-
-func (me *Metrics) RecordAdapterFailedConnections(adapterName openrtb_ext.BidderName) {
-
-	if me.MetricsDisabled.AdapterConnectionMetrics {
-		return
-	}
-
-	am, ok := me.AdapterMetrics[adapterName]
-	if !ok {
-		glog.Errorf("Trying to log adapter connection metrics for %s: adapter metrics not found", string(adapterName))
-		return
-	}
-	am.ConnError.Inc(1)
 }
 
 func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {

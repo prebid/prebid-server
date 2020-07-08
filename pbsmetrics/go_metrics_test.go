@@ -114,7 +114,6 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".prices", adapterMetrics.PriceHistogram)
 	ensureContainsBidTypeMetrics(t, registry, name, adapterMetrics.MarkupMetrics)
 
-	ensureContains(t, registry, name+".connections_error", adapterMetrics.ConnError)
 	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
 	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
 	ensureContains(t, registry, name+".connection_idle_time", adapterMetrics.ConnIdleTime)
@@ -349,46 +348,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 			assert.Equal(t, int64(1), m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnIdleTime.Count(), "Test [%d] incorrect number of entries in idle time in connection to adapter histogram", i)
 		}
 		assert.Equal(t, test.out.expectedConnWaitTime.Nanoseconds(), m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnWaitTime.Sum(), "Test [%d] incorrect wait time in connection to adapter", i)
-	}
-}
-
-func TestRecordAdapterFailedConnections(t *testing.T) {
-	testCases := []struct {
-		description           string
-		inAdapterName         openrtb_ext.BidderName
-		inConnMetricsDisabled bool
-		outExpectedErrorCount int64
-	}{
-		{
-			description:           "Real bidder, updates count",
-			inAdapterName:         openrtb_ext.BidderAppnexus,
-			inConnMetricsDisabled: false,
-			outExpectedErrorCount: int64(1),
-		},
-		{
-			description:           "Fake bidder, nothing gets updated",
-			inAdapterName:         openrtb_ext.BidderName("fooAdvertising"),
-			inConnMetricsDisabled: false,
-			outExpectedErrorCount: int64(0),
-		},
-		{
-			description:           "Real bidder but adapter connection metrics are disabled so nothing gets updated",
-			inAdapterName:         openrtb_ext.BidderAppnexus,
-			inConnMetricsDisabled: true,
-			outExpectedErrorCount: int64(0),
-		},
-	}
-
-	for _, test := range testCases {
-		// Create metrics
-		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterConnectionMetrics: test.inConnMetricsDisabled})
-
-		// Run test
-		m.RecordAdapterFailedConnections(test.inAdapterName)
-
-		// Assert connection error was accounted correctly
-		assert.Equal(t, test.outExpectedErrorCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnError.Count(), "Incorrect number of successful connections to adapter")
 	}
 }
 

@@ -128,12 +128,6 @@ func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.Bi
 	}
 }
 
-func (me *MultiMetricsEngine) RecordAdapterFailedConnections(bidderName openrtb_ext.BidderName) {
-	for _, thisME := range *me {
-		thisME.RecordAdapterFailedConnections(bidderName)
-	}
-}
-
 // Times the DNS resolution process
 func (me *MultiMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 	for _, thisME := range *me {
@@ -262,10 +256,6 @@ func (me *DummyMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabe
 
 // RecordAdapterConnections as a noop
 func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
-}
-
-// RecordAdapterFailedConnections as a noop
-func (me *DummyMetricsEngine) RecordAdapterFailedConnections(bidderName openrtb_ext.BidderName) {
 }
 
 // Times the DNS resolution process
