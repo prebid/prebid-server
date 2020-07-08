@@ -1242,6 +1242,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		openrtb_ext.BidderMap,
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
+		hardcodedResponseIPValidator{response: true},
 	}
 
 	return edep
