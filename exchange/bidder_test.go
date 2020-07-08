@@ -526,6 +526,7 @@ func TestMultiCurrencies(t *testing.T) {
 			&http.Client{},
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Second,
+			time.Duration(24)*time.Hour,
 		)
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
@@ -840,6 +841,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			&http.Client{},
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Second,
+			time.Duration(24)*time.Hour,
 		)
 		seatBid, errs := bidder.requestBid(
 			context.Background(),

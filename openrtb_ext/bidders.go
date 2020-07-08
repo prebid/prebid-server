@@ -31,6 +31,7 @@ const (
 	BidderAdkernel         BidderName = "adkernel"
 	BidderAdkernelAdn      BidderName = "adkernelAdn"
 	BidderAdpone           BidderName = "adpone"
+	BidderAdman            BidderName = "adman"
 	BidderAdmixer          BidderName = "admixer"
 	BidderAdOcean          BidderName = "adocean"
 	BidderAdtarget         BidderName = "adtarget"
@@ -78,6 +79,7 @@ const (
 	BidderRTBHouse         BidderName = "rtbhouse"
 	BidderRubicon          BidderName = "rubicon"
 	BidderSharethrough     BidderName = "sharethrough"
+	BidderSmartadserver    BidderName = "smartadserver"
 	BidderSmartRTB         BidderName = "smartrtb"
 	BidderSomoaudience     BidderName = "somoaudience"
 	BidderSonobi           BidderName = "sonobi"
@@ -109,6 +111,7 @@ var BidderMap = map[string]BidderName{
 	"adhese":            BidderAdhese,
 	"adkernel":          BidderAdkernel,
 	"adkernelAdn":       BidderAdkernelAdn,
+	"adman":             BidderAdman,
 	"admixer":           BidderAdmixer,
 	"adocean":           BidderAdOcean,
 	"adpone":            BidderAdpone,
@@ -157,6 +160,7 @@ var BidderMap = map[string]BidderName{
 	"rtbhouse":          BidderRTBHouse,
 	"rubicon":           BidderRubicon,
 	"sharethrough":      BidderSharethrough,
+	"smartadserver":     BidderSmartadserver,
 	"smartrtb":          BidderSmartRTB,
 	"somoaudience":      BidderSomoaudience,
 	"sonobi":            BidderSonobi,

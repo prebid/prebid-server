@@ -81,12 +81,6 @@
                             "tagid": "pub1_plmt1"
                         }
                     ],
-                    "ext": {
-                        "appnexus": {
-                            "hb_source": 5
-                        },
-                        "prebid": {}
-                    },
                     "site": {
                         "domain": "prebid.org",
                         "page": "prebid.org",
@@ -158,12 +152,6 @@
                             "tagid": "pub2_plmt2"
                         }
                     ],
-                    "ext": {
-                        "appnexus": {
-                            "hb_source": 5
-                        },
-                        "prebid": {}
-                    },
                     "site": {
                         "domain": "prebid.org",
                         "page": "prebid.org",

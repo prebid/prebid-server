@@ -29,7 +29,8 @@ type Metrics struct {
 	requestsWithoutCookie        *prometheus.CounterVec
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
-	timeout_notifications        *prometheus.CounterVec
+	timeoutNotifications         *prometheus.CounterVec
+	tcfVersion                   *prometheus.CounterVec
 	dnsLookupTime                prometheus.Histogram
 
 	// Adapter Metrics
@@ -72,6 +73,7 @@ const (
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
 	successLabel         = "success"
+	versionLabel         = "version"
 )
 
 const (
@@ -92,6 +94,11 @@ const (
 const (
 	requestSuccessful = "ok"
 	requestFailed     = "failed"
+)
+
+const (
+	sourceLabel   = "source"
+	sourceRequest = "request"
 )
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
@@ -163,7 +170,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of stored request cache requests attempts by hits or miss.",
 		[]string{cacheResultLabel})
 
-	metrics.timeout_notifications = newCounter(cfg, metrics.Registry,
+	metrics.timeoutNotifications = newCounter(cfg, metrics.Registry,
 		"timeout_notification",
 		"Count of timeout notifications triggered, and if they were successfully sent.",
 		[]string{successLabel})
@@ -172,6 +179,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"dns_lookup_time",
 		"Seconds to resolve DNS",
 		requestTimeBuckets)
+
+	metrics.tcfVersion = newCounter(cfg, metrics.Registry,
+		"privacy_tcf",
+		"Count of TCF versions for requests where GDPR was enforced.",
+		[]string{versionLabel, sourceLabel})
 
 	metrics.adapterBids = newCounter(cfg, metrics.Registry,
 		"adapter_bids",
@@ -512,12 +524,19 @@ func (m *Metrics) RecordRequestQueueTime(success bool, requestType pbsmetrics.Re
 
 func (m *Metrics) RecordTimeoutNotice(success bool) {
 	if success {
-		m.timeout_notifications.With(prometheus.Labels{
+		m.timeoutNotifications.With(prometheus.Labels{
 			successLabel: requestSuccessful,
 		}).Inc()
 	} else {
-		m.timeout_notifications.With(prometheus.Labels{
+		m.timeoutNotifications.With(prometheus.Labels{
 			successLabel: requestFailed,
 		}).Inc()
 	}
+}
+
+func (m *Metrics) RecordTCFReq(version pbsmetrics.TCFVersionValue) {
+	m.tcfVersion.With(prometheus.Labels{
+		versionLabel: string(version),
+		sourceLabel:  sourceRequest,
+	}).Inc()
 }

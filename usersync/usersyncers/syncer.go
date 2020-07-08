@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/adkernel"
 	"github.com/prebid/prebid-server/adapters/adkernelAdn"
+	"github.com/prebid/prebid-server/adapters/adman"
 	"github.com/prebid/prebid-server/adapters/admixer"
 	"github.com/prebid/prebid-server/adapters/adocean"
 	"github.com/prebid/prebid-server/adapters/adpone"
@@ -50,6 +51,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
+	"github.com/prebid/prebid-server/adapters/smartadserver"
 	"github.com/prebid/prebid-server/adapters/smartrtb"
 	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sonobi"
@@ -83,6 +85,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdform, adform.NewAdformSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdkernel, adkernel.NewAdkernelSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdkernelAdn, adkernelAdn.NewAdkernelAdnSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdman, adman.NewAdmanSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdmixer, admixer.NewAdmixerSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdOcean, adocean.NewAdOceanSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdpone, adpone.NewadponeSyncer)
@@ -127,6 +130,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSomoaudience, somoaudience.NewSomoaudienceSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSonobi, sonobi.NewSonobiSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSovrn, sovrn.NewSovrnSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartadserver, smartadserver.NewSmartadserverSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartRTB, smartrtb.NewSmartRTBSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSynacormedia, synacormedia.NewSynacorMediaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTelaria, telaria.NewTelariaSyncer)

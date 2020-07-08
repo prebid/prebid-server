@@ -932,13 +932,13 @@ func TestTimeoutNotifications(t *testing.T) {
 	m.RecordTimeoutNotice(true)
 	m.RecordTimeoutNotice(false)
 
-	assertCounterVecValue(t, "", "timeout_notifications:ok", m.timeout_notifications,
+	assertCounterVecValue(t, "", "timeout_notifications:ok", m.timeoutNotifications,
 		float64(2),
 		prometheus.Labels{
 			successLabel: requestSuccessful,
 		})
 
-	assertCounterVecValue(t, "", "timeout_notifications:fail", m.timeout_notifications,
+	assertCounterVecValue(t, "", "timeout_notifications:fail", m.timeoutNotifications,
 		float64(1),
 		prometheus.Labels{
 			successLabel: requestFailed,
@@ -1150,7 +1150,7 @@ func TestRecordAdapterFailedConnections(t *testing.T) {
 		prometheus.Labels{adapterLabel: string(openrtb_ext.BidderAppnexus)})
 }
 
-func TestDisabeAdapterConnections(t *testing.T) {
+func TestDisableAdapterConnections(t *testing.T) {
 	prometheusMetrics := NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
@@ -1163,6 +1163,36 @@ func TestDisabeAdapterConnections(t *testing.T) {
 	assert.Nil(t, prometheusMetrics.adapterCreatedConnections, "Counter Vector adapterCreatedConnections should be nil")
 	assert.Nil(t, prometheusMetrics.adapterIdleConnectionTime, "Counter Vector adapterIdleConnectionTime should be nil")
 	assert.Nil(t, prometheusMetrics.adapterConnectionWaitTime, "Counter Vector adapterConnectionWaitTime should be nil")
+}
+
+func TestTCFMetrics(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(0))
+	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(1))
+	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(2))
+	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(1))
+
+	assertCounterVecValue(t, "", "privacy_tcf:err", m.tcfVersion,
+		float64(1),
+		prometheus.Labels{
+			versionLabel: "err",
+			sourceLabel:  sourceRequest,
+		})
+
+	assertCounterVecValue(t, "", "privacy_tcf:v1", m.tcfVersion,
+		float64(2),
+		prometheus.Labels{
+			versionLabel: "v1",
+			sourceLabel:  sourceRequest,
+		})
+
+	assertCounterVecValue(t, "", "privacy_tcf:v2", m.tcfVersion,
+		float64(1),
+		prometheus.Labels{
+			versionLabel: "v2",
+			sourceLabel:  sourceRequest,
+		})
 }
 
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {

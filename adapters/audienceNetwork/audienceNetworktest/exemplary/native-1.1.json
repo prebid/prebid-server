@@ -56,12 +56,6 @@
                             "tagid": "123_456"
                         }
                     ],
-                    "ext": {
-                        "appnexus": {
-                            "hb_source": 5
-                        },
-                        "prebid": {}
-                    },
                     "site": {
                         "domain": "prebid.org",
                         "page": "prebid.org",
