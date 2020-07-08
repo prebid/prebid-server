@@ -1277,7 +1277,7 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	// Setup mock metrics
 	metrics := &pbsmetrics.MetricsEngineMock{}
 	expectedAdapterName := openrtb_ext.BidderAppnexus
-	compareConnInfo := func(info httptrace.GotConnInfo) bool { return !info.Reused && !info.WasIdle && info.IdleTime == 0 }
+	compareConnInfo := func(info httptrace.GotConnInfo) bool { return !info.Reused }
 	compareConnWaitTime := func(dur time.Duration) bool { return dur.Nanoseconds() > 0 }
 
 	metrics.On("RecordAdapterConnections", expectedAdapterName, mock.MatchedBy(compareConnInfo), mock.MatchedBy(compareConnWaitTime)).Once()

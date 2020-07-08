@@ -44,7 +44,6 @@ type Metrics struct {
 	adapterUserSync           *prometheus.CounterVec
 	adapterReusedConnections  *prometheus.CounterVec
 	adapterCreatedConnections *prometheus.CounterVec
-	adapterIdleConnectionTime *prometheus.HistogramVec
 	adapterConnectionWaitTime *prometheus.HistogramVec
 
 	// Account Metrics
@@ -226,12 +225,6 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 			"Count that keeps track of reused connections when contacting adapter bidder endpoints.",
 			[]string{adapterLabel})
 
-		metrics.adapterIdleConnectionTime = newHistogramVec(cfg, metrics.Registry,
-			"adapter_idle_connection_time",
-			"Seconds that a connection to an adapter bidder endpoint was kept idle.",
-			[]string{adapterLabel},
-			requestTimeBuckets)
-
 		metrics.adapterConnectionWaitTime = newHistogramVec(cfg, metrics.Registry,
 			"adapter_connection_wait",
 			"Seconds from when the connection was requested until it is either created or reused",
@@ -406,12 +399,6 @@ func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, i
 		m.adapterCreatedConnections.With(prometheus.Labels{
 			adapterLabel: string(adapterName),
 		}).Inc()
-	}
-
-	if info.WasIdle {
-		m.adapterIdleConnectionTime.With(prometheus.Labels{
-			adapterLabel: string(adapterName),
-		}).Observe(info.IdleTime.Seconds())
 	}
 
 	m.adapterConnectionWaitTime.With(prometheus.Labels{

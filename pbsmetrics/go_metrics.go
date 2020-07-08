@@ -81,8 +81,6 @@ type AdapterMetrics struct {
 	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
 	ConnCreated       metrics.Counter
 	ConnReused        metrics.Counter
-	ConnWasIdle       metrics.Counter
-	ConnIdleTime      metrics.Timer
 	ConnWaitTime      metrics.Timer
 }
 
@@ -267,7 +265,6 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 	if disabledMetrics.AdapterConnectionMetrics {
 		newAdapter.ConnCreated = metrics.NilCounter{}
 		newAdapter.ConnReused = metrics.NilCounter{}
-		newAdapter.ConnIdleTime = &metrics.NilTimer{}
 		newAdapter.ConnWaitTime = &metrics.NilTimer{}
 	}
 	for _, err := range AdapterErrors() {
@@ -306,7 +303,6 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	}
 	am.ConnCreated = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_created", adapterOrAccount, exchange), registry)
 	am.ConnReused = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_reused", adapterOrAccount, exchange), registry)
-	am.ConnIdleTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_idle_time", adapterOrAccount, exchange), registry)
 	am.ConnWaitTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_wait_time", adapterOrAccount, exchange), registry)
 	for err := range am.ErrorMeters {
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
@@ -498,9 +494,6 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 		am.ConnReused.Inc(1)
 	} else {
 		am.ConnCreated.Inc(1)
-	}
-	if info.WasIdle {
-		am.ConnIdleTime.Update(info.IdleTime)
 	}
 	am.ConnWaitTime.Update(obtainConnectionTime)
 }

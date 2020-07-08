@@ -1002,8 +1002,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 	type testOut struct {
 		expectedConnReusedCount  int64
 		expectedConnCreatedCount int64
-		expectedConnIdleCount    uint64
-		expectedConnIdleTime     float64
 		expectedConnWaitCount    uint64
 		expectedConnWaitTime     float64
 	}
@@ -1027,8 +1025,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 			out: testOut{
 				expectedConnReusedCount:  0,
 				expectedConnCreatedCount: 1,
-				expectedConnIdleCount:    1,
-				expectedConnIdleTime:     2,
 				expectedConnWaitCount:    1,
 				expectedConnWaitTime:     5,
 			},
@@ -1046,8 +1042,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 			out: testOut{
 				expectedConnReusedCount:  0,
 				expectedConnCreatedCount: 1,
-				expectedConnIdleCount:    0,
-				expectedConnIdleTime:     0,
 				expectedConnWaitCount:    1,
 				expectedConnWaitTime:     4,
 			},
@@ -1065,8 +1059,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 			out: testOut{
 				expectedConnReusedCount:  1,
 				expectedConnCreatedCount: 0,
-				expectedConnIdleCount:    1,
-				expectedConnIdleTime:     3,
 				expectedConnWaitCount:    1,
 				expectedConnWaitTime:     0,
 			},
@@ -1084,8 +1076,6 @@ func TestRecordAdapterConnections(t *testing.T) {
 			out: testOut{
 				expectedConnReusedCount:  1,
 				expectedConnCreatedCount: 0,
-				expectedConnIdleCount:    0,
-				expectedConnIdleTime:     0,
 				expectedConnWaitCount:    1,
 				expectedConnWaitTime:     5,
 			},
@@ -1095,11 +1085,8 @@ func TestRecordAdapterConnections(t *testing.T) {
 	for i, test := range testCases {
 		m := createMetricsForTesting()
 		assertDesciptions := []string{
-			fmt.Sprintf("[%d] Metric: adapterFailedConnections; Desc: %s", i+1, test.description),
 			fmt.Sprintf("[%d] Metric: adapterReusedConnections; Desc: %s", i+1, test.description),
 			fmt.Sprintf("[%d] Metric: adapterCreatedConnections; Desc: %s", i+1, test.description),
-			fmt.Sprintf("[%d] Metric: adapterIdleConnectionCount; Desc: %s", i+1, test.description),
-			fmt.Sprintf("[%d] Metric: adapterIdleConnectionTime; Desc: %s", i+1, test.description),
 			fmt.Sprintf("[%d] Metric: adapterWaitConnectionCount; Desc: %s", i+1, test.description),
 			fmt.Sprintf("[%d] Metric: adapterWaitConnectionTime; Desc: %s", i+1, test.description),
 		}
@@ -1108,7 +1095,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 
 		// Assert number of reused connections
 		assertCounterVecValue(t,
-			assertDesciptions[1],
+			assertDesciptions[0],
 			"adapter_connection_reused",
 			m.adapterReusedConnections,
 			float64(test.out.expectedConnReusedCount),
@@ -1116,21 +1103,16 @@ func TestRecordAdapterConnections(t *testing.T) {
 
 		// Assert number of new created connections
 		assertCounterVecValue(t,
-			assertDesciptions[2],
+			assertDesciptions[1],
 			"adapter_connection_created",
 			m.adapterCreatedConnections,
 			float64(test.out.expectedConnCreatedCount),
 			prometheus.Labels{adapterLabel: string(test.in.adapterName)})
 
-		// Assert idle time if any
-		singleHistogram := getHistogramFromHistogramVec(m.adapterIdleConnectionTime, adapterLabel, string(test.in.adapterName))
-		assert.Equal(t, test.out.expectedConnIdleCount, singleHistogram.GetSampleCount(), assertDesciptions[3])
-		assert.Equal(t, test.out.expectedConnIdleTime, singleHistogram.GetSampleSum(), assertDesciptions[4])
-
 		// Assert connection wait time
 		histogram := getHistogramFromHistogramVec(m.adapterConnectionWaitTime, adapterLabel, string(test.in.adapterName))
-		assert.Equal(t, test.out.expectedConnWaitCount, histogram.GetSampleCount(), assertDesciptions[5])
-		assert.Equal(t, test.out.expectedConnWaitTime, histogram.GetSampleSum(), assertDesciptions[6])
+		assert.Equal(t, test.out.expectedConnWaitCount, histogram.GetSampleCount(), assertDesciptions[2])
+		assert.Equal(t, test.out.expectedConnWaitTime, histogram.GetSampleSum(), assertDesciptions[3])
 	}
 }
 
@@ -1144,7 +1126,6 @@ func TestDisableAdapterConnections(t *testing.T) {
 	// Assert counter vector was not initialized
 	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
 	assert.Nil(t, prometheusMetrics.adapterCreatedConnections, "Counter Vector adapterCreatedConnections should be nil")
-	assert.Nil(t, prometheusMetrics.adapterIdleConnectionTime, "Counter Vector adapterIdleConnectionTime should be nil")
 	assert.Nil(t, prometheusMetrics.adapterConnectionWaitTime, "Counter Vector adapterConnectionWaitTime should be nil")
 }
 
