@@ -26,7 +26,7 @@ type InvibesAdRequest struct {
 	Lid           string
 	IsTestBid     bool
 	Kw            string
-	IntegType     int
+	IsAmp         bool
 	Width         string
 	Height        string
 	GdprConsent   string
@@ -44,6 +44,7 @@ type InvibesPlacementProperty struct {
 }
 type InvibesInternalParams struct {
 	BidParams   InvibesBidParams
+	Host        string
 	IsAmp       bool
 	Gdpr        string
 	GdprConsent string
@@ -145,6 +146,7 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 					}
 				}
 
+				invibesInternalParams.Host = invibesExt.Host
 				invibesInternalParams.BidParams.PlacementIds = append(invibesInternalParams.BidParams.PlacementIds, strings.TrimSpace(invibesExt.PlacementId))
 				invibesInternalParams.BidParams.Properties[invibesExt.PlacementId] = InvibesPlacementProperty{
 					ImpId:   imp.ID,
@@ -182,7 +184,7 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInfo *adapters.ExtraRequestInfo, existingRequests []*adapters.RequestData, request *openrtb.BidRequest) (*adapters.RequestData, error) {
 
-	url, err := a.makeURL(request)
+	url, err := a.makeURL(request, invibesParams.Host)
 	if err != nil {
 		return nil, err
 	}
@@ -226,13 +228,9 @@ func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInf
 }
 
 func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, request *openrtb.BidRequest) (*InvibesAdRequest, error) {
-	var lid string
+	var lid string = ""
 	if request.User != nil && request.User.BuyerUID != "" {
 		lid = request.User.BuyerUID
-	} else {
-		return nil, &errortypes.BadInput{
-			Message: "No user id",
-		}
 	}
 	if request.Site == nil {
 		return nil, &errortypes.BadInput{
@@ -240,10 +238,6 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 		}
 	}
 
-	integType := 0
-	if invibesParams.IsAmp {
-		integType = 2
-	}
 	var width, height string
 	if request.Device != nil {
 		if request.Device.W > 0 {
@@ -264,7 +258,7 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 			Location:      request.Site.Page,
 			Lid:           lid,
 			Kw:            request.Site.Keywords,
-			IntegType:     integType,
+			IsAmp:         invibesParams.IsAmp,
 			Width:         width,
 			Height:        height,
 			GdprConsent:   invibesParams.GdprConsent,
@@ -276,9 +270,9 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 	return &invRequest, err
 }
 
-func (a *InvibesAdapter) makeURL(request *openrtb.BidRequest) (string, error) {
+func (a *InvibesAdapter) makeURL(request *openrtb.BidRequest, host string) (string, error) {
 	var endpointURL *url.URL
-	endpointParams := macros.EndpointTemplateParams{}
+	endpointParams := macros.EndpointTemplateParams{Host: host}
 	host, err := macros.ResolveMacros(a.EndpointTemplate, endpointParams)
 
 	if err == nil {

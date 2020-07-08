@@ -33,7 +33,7 @@
           "Gdpr": true,
           "GdprConsent": "",
           "Height": "",
-          "IntegType": 0,
+          "IsAmp": false,
           "Kw": "",
           "Lid": "123",
           "Location": "https://publisher.com/url",

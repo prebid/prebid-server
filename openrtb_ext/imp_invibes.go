@@ -2,6 +2,7 @@ package openrtb_ext
 
 type ExtImpInvibes struct {
 	PlacementId string             `json:"placementId,omitempty"`
+	Host        string             `json:"host"`
 	Debug       ExtImpInvibesDebug `json:"debug,omitempty"`
 }
 

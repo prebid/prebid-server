@@ -50,7 +50,7 @@
           "Gdpr": false,
           "GdprConsent": "consent_userext",
           "Height": "500",
-          "IntegType": 0,
+          "IsAmp": false,
           "Kw": "w1,w2",
           "Lid": "lidtest",
           "Location": "https://publisher.com/url",

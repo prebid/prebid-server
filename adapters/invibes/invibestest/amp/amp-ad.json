@@ -40,7 +40,7 @@
           "Gdpr": true,
           "GdprConsent": "",
           "Height": "500",
-          "IntegType": 2,
+          "IsAmp": true,
           "Kw": "",
           "Lid": "123",
           "Location": "https://publisher.com/url",
