@@ -140,6 +140,107 @@ func TestCharacterEscape(t *testing.T) {
 	}
 }
 
+// TestEnabledTestFlag asserts HttpCalls object are included inside the json "debug" field of the bidResponse extension when the
+// openrtb.BidRequest "Test" value is set to 1
+func TestEnabledTestFlag(t *testing.T) {
+
+	// Expected values
+	expectedExtHttpCallUri := "http://ib.adnxs.com/openrtb2?query1&query2"
+	expectedExtHttpCallRequestBody := "{\"key\":\"val\"}"
+	expectedExtHttpCallResponseBody := `{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`
+	expectedExtHttpCallStatus := 200
+
+	// Set up exchange
+	cfg := &config.Configuration{
+		Adapters: make(map[string]config.Adapter, 1),
+	}
+	cfg.Adapters["appnexus"] = config.Adapter{
+		Endpoint: "http://ib.adnxs.com/openrtb2?query1&query2", //Note the '&' character in there
+	}
+
+	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
+	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
+	defer server.Close()
+
+	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
+
+	// Init buildBidResponse parameters
+	liveAdapters := make([]openrtb_ext.BidderName, 1)
+	liveAdapters[0] = "appnexus"
+
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, 1)
+	adapterBids["appnexus"] = &pbsOrtbSeatBid{currency: "USD"}
+
+	bidRequest := &openrtb.BidRequest{
+		Test: 1,
+		ID:   "some-request-id",
+		Imp: []openrtb.Imp{{
+			ID:     "some-impression-id",
+			Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+		}},
+		Site:   &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+		Device: &openrtb.Device{UA: "curl/7.54.0", IP: "::1"},
+		AT:     1,
+		TMax:   500,
+		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`),
+	}
+
+	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`)
+
+	// Include test info in mock HttpCalls
+	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, 1)
+	adapterExtra["appnexus"] = &seatResponseExtra{
+		ResponseTimeMillis: 5,
+		Errors:             []openrtb_ext.ExtBidderError{{Code: 999, Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\""}},
+		HttpCalls: []*openrtb_ext.ExtHttpCall{
+			{
+				Uri:          expectedExtHttpCallUri,
+				RequestBody:  expectedExtHttpCallRequestBody,
+				ResponseBody: expectedExtHttpCallResponseBody,
+				Status:       expectedExtHttpCallStatus,
+			},
+		},
+	}
+
+	var errList []error
+
+	// Run test
+	outBidResponse, err := e.buildBidResponse(context.Background(),
+		liveAdapters,
+		adapterBids,
+		bidRequest,
+		resolvedRequest,
+		adapterExtra,
+		nil,
+		nil,
+		errList)
+
+	// Assert no test error
+	assert.NoError(t, err, "e.buildBidResponse returned an error: %v \n", err)
+	assert.NotNil(t, outBidResponse.Ext, "outBidResponse.Ext should not be nil \n")
+
+	// compare outBidResponse.Debug.HttpCalls.Uri
+	actualExtHttpCallUri, err := jsonparser.GetString(outBidResponse.Ext, "debug", "httpcalls", "appnexus", "[0]", "uri")
+	assert.NoErrorf(t, err, "[TestFlagEnabled] Error found while trying to json parse the ext.debug.httpcalls.uri field from outBidResponse.Ext = %v \n", string(outBidResponse.Ext))
+	assert.Equal(t, expectedExtHttpCallUri, actualExtHttpCallUri, "[TestGetBidCacheInfo] ext.debug.httpcalls.uri should equal \"%s\" \n", expectedExtHttpCallUri)
+
+	// compare outBidResponse.Debug.HttpCalls.RequestBody
+	actualExtHttpCallRequestBody, err := jsonparser.GetString(outBidResponse.Ext, "debug", "httpcalls", "appnexus", "[0]", "requestbody")
+	assert.NoErrorf(t, err, "[TestFlagEnabled] Error found while trying to json parse the ext.debug.httpcalls.requestbody field from outBidResponse. Message: %v \n", err)
+	assert.Equal(t, expectedExtHttpCallRequestBody, actualExtHttpCallRequestBody, "[TestGetBidCacheInfo] ext.debug.httpcalls.requestbody should equal \"%s\" \n", expectedExtHttpCallRequestBody)
+
+	// compare outBidResponse.Debug.HttpCalls.RequestBody
+	actualExtHttpCallResponseBody, err := jsonparser.GetString(outBidResponse.Ext, "debug", "httpcalls", "appnexus", "[0]", "responsebody")
+	assert.NoErrorf(t, err, "[TestFlagEnabled] Error found while trying to json parse the ext.debug.httpcalls.responsebody field from outBidResponse. Message: %v \n", err)
+	assert.Equal(t, expectedExtHttpCallResponseBody, actualExtHttpCallResponseBody, "[TestGetBidCacheInfo] ext.debug.httpcalls.responsebody should equal \"%s\" \n", expectedExtHttpCallRequestBody)
+
+	// compare outBidResponse.Debug.HttpCalls.RequestBody
+	actualExtHttpCallStatus, err := jsonparser.GetInt(outBidResponse.Ext, "debug", "httpcalls", "appnexus", "[0]", "status")
+	assert.NoErrorf(t, err, "[TestFlagEnabled] Error found while trying to json parse the ext.debug.httpcalls.status field from outBidResponse. Message: %v \n", err)
+	assert.Equal(t, int64(expectedExtHttpCallStatus), actualExtHttpCallStatus, "[TestGetBidCacheInfo] ext.debug.httpcalls.status should equal \"%d\" \n", expectedExtHttpCallStatus)
+}
+
 func TestGetBidCacheInfo(t *testing.T) {
 	testUUID := "CACHE_UUID_1234"
 	testExternalCacheHost := "https://www.externalprebidcache.net"
