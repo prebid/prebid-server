@@ -65,6 +65,7 @@ const (
 	BidderLifestreet       BidderName = "lifestreet"
 	BidderLiftoff          BidderName = "liftoff"
 	BidderLockerDome       BidderName = "lockerdome"
+	BidderLogicad          BidderName = "logicad"
 	BidderLunaMedia        BidderName = "lunamedia"
 	BidderMarsmedia        BidderName = "marsmedia"
 	BidderMgid             BidderName = "mgid"
@@ -147,6 +148,7 @@ var BidderMap = map[string]BidderName{
 	"lifestreet":        BidderLifestreet,
 	"liftoff":           BidderLiftoff,
 	"lockerdome":        BidderLockerDome,
+	"logicad":           BidderLogicad,
 	"lunamedia":         BidderLunaMedia,
 	"marsmedia":         BidderMarsmedia,
 	"mgid":              BidderMgid,
