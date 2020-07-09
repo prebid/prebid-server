@@ -68,7 +68,7 @@ func TestSingleBidder(t *testing.T) {
 	}
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 	currencyConverter := currencies.NewRateConverterDefault()
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false)
 
 	// Make sure the goodSingleBidder was called with the expected arguments.
 	if bidderImpl.httpResponse == nil {
@@ -114,6 +114,66 @@ func TestSingleBidder(t *testing.T) {
 	}
 }
 
+func TestSingleBidderModifiesTestFlagValue(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+
+	bidAdjustment := 2.0
+	firstInitialPrice := 3.0
+	secondInitialPrice := 4.0
+	mockBidderResponse := &adapters.BidderResponse{
+		Bids: []*adapters.TypedBid{
+			{
+				Bid: &openrtb.Bid{
+					Price: firstInitialPrice,
+				},
+				BidType:      openrtb_ext.BidTypeBanner,
+				DealPriority: 4,
+			},
+			{
+				Bid: &openrtb.Bid{
+					Price: secondInitialPrice,
+				},
+				BidType:      openrtb_ext.BidTypeVideo,
+				DealPriority: 5,
+			},
+		},
+	}
+
+	bidderImpl := &requestModifyingBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: mockBidderResponse,
+	}
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
+	currencyConverter := currencies.NewRateConverterDefault()
+
+	// An openrtb.BidRequest with the test flag on that should make requestBid(...) log httpCalls to our return seatBid object
+	bidRequestTestFlagOn := &openrtb.BidRequest{Test: 1}
+	seatBid, errs := bidder.requestBid(context.Background(), bidRequestTestFlagOn, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false)
+
+	// Assertions
+	if len(errs) != 0 {
+		t.Errorf("bidder.Bid returned %d errors. Expected 0", len(errs))
+	}
+
+	// Make sure the requestModifyingBidder's MakeRequest() function effectively modifies the openrtb.BidRequest copy Test flag
+	assert.Equal(t, int8(0), bidRequestTestFlagOn.Test, "bidRequestCopy.Test should have been set to zero inside the MakeRequest() function\n")
+
+	// Make sure seatBid.httpCalls were recorded despite the fact that the openrtb.BidRequest Test flag was set to zero inside the the
+	// requestModifyingBidder MakeRequest() function
+	assert.Greater(t, len(seatBid.httpCalls), 0, "The bidder should log HttpCalls when request.test == 1. Found %d", len(seatBid.httpCalls))
+}
+
 // TestMultiBidder makes sure all the requests get sent, and the responses processed.
 // Because this is done in parallel, it should be run under the race detector.
 func TestMultiBidder(t *testing.T) {
@@ -156,7 +216,7 @@ func TestMultiBidder(t *testing.T) {
 	}
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 	currencyConverter := currencies.NewRateConverterDefault()
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false)
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -526,6 +586,7 @@ func TestMultiCurrencies(t *testing.T) {
 			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
+			false,
 		)
 
 		// Verify:
@@ -670,6 +731,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
+			false,
 		)
 
 		// Verify:
@@ -843,6 +905,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
+			false,
 		)
 
 		// Verify:
@@ -955,6 +1018,7 @@ func TestServerCallDebugging(t *testing.T) {
 		1.0,
 		currencyConverter.Rates(),
 		&adapters.ExtraRequestInfo{},
+		false,
 	)
 
 	if len(bids.httpCalls) != 1 {
@@ -1065,6 +1129,7 @@ func TestMobileNativeTypes(t *testing.T) {
 			1.0,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
+			false,
 		)
 
 		var actualValue string
@@ -1078,7 +1143,7 @@ func TestMobileNativeTypes(t *testing.T) {
 func TestErrorReporting(t *testing.T) {
 	bidder := adaptBidder(&bidRejector{}, nil, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{})
 	currencyConverter := currencies.NewRateConverterDefault()
-	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
+	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false)
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -1302,6 +1367,30 @@ func (bidder *goodSingleBidder) MakeRequests(request *openrtb.BidRequest, reqInf
 }
 
 func (bidder *goodSingleBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	bidder.httpResponse = response
+	return bidder.bidResponse, nil
+}
+
+type requestModifyingBidder struct {
+	bidRequest   *openrtb.BidRequest
+	httpRequest  *adapters.RequestData
+	httpResponse *adapters.ResponseData
+	bidResponse  *adapters.BidderResponse
+}
+
+func (bidder *requestModifyingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	//This bidder modifies the requests of the request argument which is a shallow copy of the original *openrtb.BidRequest
+	if request.Test == 1 {
+		request.Test = 0
+	} else {
+		request.Test = 1
+	}
+
+	bidder.bidRequest = request
+	return []*adapters.RequestData{bidder.httpRequest}, nil
+}
+
+func (bidder *requestModifyingBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidder.httpResponse = response
 	return bidder.bidResponse, nil
 }

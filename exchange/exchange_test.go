@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
+	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
@@ -126,7 +127,7 @@ func TestCharacterEscape(t *testing.T) {
 	var errList []error
 
 	/* 	4) Build bid response 									*/
-	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, nil, nil, errList)
+	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, nil, nil, false, errList)
 
 	/* 	5) Assert we have no errors and one '&' character as we are supposed to 	*/
 	if err != nil {
@@ -137,6 +138,162 @@ func TestCharacterEscape(t *testing.T) {
 	}
 	if bytes.Contains(bidResp.Ext, []byte("u0026")) {
 		t.Errorf("exchange.buildBidResponse() did not correctly print the '&' characters %s", string(bidResp.Ext))
+	}
+}
+
+// TestDisplayTestOutput asserts the HttpCalls object is included inside the json "debug" field of the bidResponse extension when the
+// openrtb.BidRequest "Test" value is set to 1 or the openrtb.BidRequest.Ext.Debug boolean field is set to true
+func TestDisplayTestOutput(t *testing.T) {
+
+	// Define test cases
+	type inTest struct {
+		test  int8
+		debug bool
+	}
+	type outTest struct {
+		debugInfoIncluded bool
+	}
+	type aTest struct {
+		desc string
+		in   inTest
+		out  outTest
+	}
+	testCases := []aTest{
+		{
+			desc: "[1] test flag equals zero, ext debug flag false, no debug info expected",
+			in:   inTest{},
+			out:  outTest{},
+		},
+		{
+			desc: "[2] test flag equals zero, ext debug flag true, debug info expected",
+			in:   inTest{debug: true},
+			out:  outTest{debugInfoIncluded: true},
+		},
+		{
+			desc: "[3] test flag equals 1, ext debug flag false, debug info expected",
+			in:   inTest{test: 1, debug: false},
+			out:  outTest{debugInfoIncluded: true},
+		},
+		{
+			desc: "[4] test flag equals 1, ext debug flag true, debug info expected",
+			in:   inTest{test: 1, debug: true},
+			out:  outTest{debugInfoIncluded: true},
+		},
+		{
+			desc: "[5] test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
+			in:   inTest{test: 2, debug: false},
+			out:  outTest{},
+		},
+		{
+			desc: "[6] test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
+			in:   inTest{test: -1, debug: true},
+			out:  outTest{debugInfoIncluded: true},
+		},
+	}
+
+	// Set up test
+	noBidServer := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(204)
+	}
+	server := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer server.Close()
+
+	cfg := &config.Configuration{
+		Adapters: make(map[string]config.Adapter, len(openrtb_ext.BidderMap)),
+	}
+	for _, bidder := range openrtb_ext.BidderList() {
+		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
+			Endpoint: server.URL,
+		}
+	}
+	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))] = config.Adapter{
+		Endpoint:   server.URL,
+		PlatformID: "abc",
+	}
+	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderBeachfront))] = config.Adapter{
+		Endpoint:         server.URL,
+		ExtraAdapterInfo: "{\"video_endpoint\":\"" + server.URL + "\"}",
+	}
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	bidRequest := &openrtb.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb.Imp{{
+			ID:     "some-impression-id",
+			Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+		}},
+		Site:   &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+		Device: &openrtb.Device{UA: "curl/7.54.0", IP: "::1"},
+		AT:     1,
+		TMax:   500,
+	}
+	mockBidderResponse := &adapters.BidderResponse{
+		Bids: []*adapters.TypedBid{
+			{
+				Bid: &openrtb.Bid{
+					Price: 1.00,
+				},
+				BidType:      openrtb_ext.BidTypeBanner,
+				DealPriority: 4,
+			},
+		},
+	}
+
+	bidderImpl := &requestModifyingBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: mockBidderResponse,
+	}
+
+	e := new(exchange)
+	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
+		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}),
+	}
+	e.cache = &wellBehavedCache{}
+	e.cacheTime = 5 * time.Millisecond
+	e.me = &metricsConf.DummyMetricsEngine{}
+	e.gDPR = gdpr.AlwaysAllow{}
+	e.currencyConverter = currencies.NewRateConverterDefault()
+	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
+	e.defaultTTLs = cfg.CacheURL.DefaultTTLs
+	e.privacyConfig = config.Privacy{
+		CCPA: cfg.CCPA,
+		GDPR: cfg.GDPR,
+		LMT:  cfg.LMT,
+	}
+
+	// Run tests
+	for i, test := range testCases {
+		bidRequest.Test = test.in.test
+
+		if test.in.debug {
+			bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
+		} else {
+			bidRequest.Ext = nil
+		}
+
+		outBidResponse, err := e.HoldAuction(context.Background(), bidRequest, &emptyUsersync{}, pbsmetrics.Labels{}, &categoriesFetcher, nil)
+		// Assert no HoldAuction error
+		assert.NoError(t, err, "ex.HoldAuction returned an error: %v \n", err)
+		assert.NotNil(t, outBidResponse.Ext, "outBidResponse.Ext should not be nil \n")
+
+		// compare outBidResponse.Ext.Debug.HttpCalls.Uri to make sure Ext, Debug, and HttpCalls where included in the response
+		actualExtHttpCallUri, err := jsonparser.GetString(outBidResponse.Ext, "debug", "httpcalls", "appnexus", "[0]", "uri")
+		if test.out.debugInfoIncluded {
+			assert.NoErrorf(t, err, "[%d] Error found while trying to json parse the ext.debug.httpcalls.uri field from outBidResponse.Ext = %v \n", i+1, string(outBidResponse.Ext))
+			assert.Greater(t, len(actualExtHttpCallUri), 0, "[%d] ext.debug.httpcalls.uri should be populated by a non empty string: \"%s\" \n", i+1, actualExtHttpCallUri)
+		} else {
+			assert.Errorf(t, err, "[%d] We didn't get an error when trying to jsonparse the ext.debug.httpcalls.uri which means it does exist. outBidResponse.Ext = %v \n", i+1, string(outBidResponse.Ext))
+		}
 	}
 }
 
@@ -278,7 +435,7 @@ func TestGetBidCacheInfo(t *testing.T) {
 	var errList []error
 
 	/* 	4) Build bid response 									*/
-	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, nil, errList)
+	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, nil, false, errList)
 
 	/* 	5) Assert we have no errors and the bid response we expected*/
 	assert.NoError(t, err, "[TestGetBidCacheInfo] buildBidResponse() threw an error")
@@ -449,7 +606,7 @@ func TestBidResponseCurrency(t *testing.T) {
 
 	// Run tests
 	for i := range testCases {
-		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, resolvedRequest, adapterExtra, nil, nil, errList)
+		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, resolvedRequest, adapterExtra, nil, nil, false, errList)
 		assert.NoError(t, err, fmt.Sprintf("[TEST_FAILED] e.buildBidResponse resturns error in test: %s Error message: %s \n", testCases[i].description, err))
 		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}
@@ -1699,7 +1856,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo, debugMode bool) (seatBid *pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(name)]; ok {
 		if expectedRequest != nil {
 			if expectedRequest.BidAdjustment != bidAdjustment {
@@ -1861,6 +2018,6 @@ func (e *mockUsersync) GetId(bidder openrtb_ext.BidderName) (id string, exists b
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (posb *pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo, debugMode bool) (posb *pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
