@@ -1,0 +1,38 @@
+{
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [{
+      "id": "my-imp-id",
+      "banner": {
+        "format": [{
+          "w": 300,
+          "h": 600
+        }]
+      },
+      "pmp": {
+        "deals": [{
+          "id": "some-deal-id"
+        }]
+      },
+      "ext": {
+        "appnexus": {
+          "placementId": 12883451
+        }
+      }
+    }],
+    "device": {
+      "ipv6": "8888::"
+    },
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "pricegranularity": "low"
+        },
+        "cache": {
+          "bids": {}
+        }
+      }
+    }
+  }
