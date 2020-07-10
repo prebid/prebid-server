@@ -255,7 +255,7 @@ func removeWrapper(ad string) string {
 func NewAdgenerationAdapter(endpoint string) *AdgenerationAdapter {
 	return &AdgenerationAdapter{
 		endpoint,
-		"1.0.0",
+		"1.0.1",
 		"JPY",
 	}
 }

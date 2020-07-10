@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 )
 
@@ -172,5 +173,84 @@ func TestCreateAd(t *testing.T) {
 	vastAd := createAd(&adgVastResponse, adgVastImpId)
 	if vastAd != matchVastTag {
 		t.Errorf("%v does not match createAd.", adgVastResponse)
+	}
+}
+
+func TestMakeBids(t *testing.T) {
+	bidder := NewAdgenerationAdapter("https://d.socdm.com/adsv/v1")
+	internalRequest := &openrtb.BidRequest{
+		ID: "test-success-bid-request",
+		Imp: []openrtb.Imp{
+			{ID: "bidRequest-success-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "id": "58278" }}`)},
+		},
+		Device: &openrtb.Device{UA: "testUA", IP: "testIP"},
+		Site:   &openrtb.Site{Page: "https://supership.com"},
+		User:   &openrtb.User{BuyerUID: "buyerID"},
+	}
+	externalRequest := adapters.RequestData{}
+	response := adapters.ResponseData{
+		StatusCode: 200,
+		Body:       ([]byte)("{\n \"ad\": \"<!DOCTYPE html>\\n<head>\\n<meta charset=\\\"UTF-8\\\">\\n<script src=\\\"test.com\\\"></script>\\n<body>\\n<div id=\\\"medibasspContainer\\\">\\n<iframe src=\\\"https://dummy-iframe.com></iframe>\\n</div>\\n</body>\\n\",\n \"beacon\": \"<img src=\\\"https://dummy-beacon.com\\\">\",\n \"beaconurl\": \"https://tg.socdm.com/bc/v3?b=beaconID&t=.gif\",\n \"cpm\": 30,\n \"creativeid\": \"Dummy_supership.jp\",\n \"displaytype\": \"1\",\n \"h\": 250,\n \"ids\": {\n \"anid\": \"\",\n \"diid\": \"\",\n \"idfa\": \"\",\n \"soc\": \"Soc\"\n },\n \"location_params\": null,\n \"locationid\": \"58278\",\n \"results\": [\n {\n \"ad\": \"<div id=\\\"medibasspContainer\\\">\\n<iframe src=\\\"https://dummy-iframe.com></iframe>\\n</div>\",\n \"beacon\": \"<img src=\\\"https://dummy-beacon.com\\\">\",\n \"beaconurl\": \"ttps://dummy-beacon.com\",\n \"cpm\": 30,\n \"creativeid\": \"Dummy_supership.jp\",\n \"h\": 250,\n \"landing_url\": \"\",\n \"scheduleid\": \"512601\",\n \"trackers\": {\n \"imp\": [\n \"https://tg.socdm.com/bc/v3?b=beaconID.gif\"\n ],\n \"viewable_imp\": [\n \"https://tg.socdm.com/aux/inview\"\n ],\n \"viewable_measured\": [\n \"https://tg.socdm.com/aux/measured\"\n ]\n },\n \"ttl\": 10,\n \"w\": 300,\n \"weight\": 1\n }\n ],\n \"dealid\": \"test-deal-id\",\n \"rotation\": \"0\",\n \"scheduleid\": \"512601\",\n \"sdktype\": \"0\",\n \"trackers\": {\n \"imp\": [\n \"https://tg.socdm.com/bc/v3?b=beaconID.gif\"\n ],\n \"viewable_imp\": [\n \"https://tg.socdm.com/aux/inview\"\n ],\n \"viewable_measured\": [\n \"https://tg.socdm.com/aux/measured\"\n ]\n },\n \"ttl\": 10,\n \"w\": 300\n}"),
+	}
+	// default Currency InternalRequest
+	defaultCurBidderRespoonse, errs := bidder.MakeBids(internalRequest, &externalRequest, &response)
+	if len(errs) > 0 {
+		t.Errorf("MakeBids return errors. errors: %v", errs)
+	}
+	checkBidResponse(t, defaultCurBidderRespoonse, bidder.defaultCurrency)
+
+	// Specified Currency InternalRequest
+	usdCur := "USD"
+	internalRequest.Cur = []string{usdCur}
+	specifiedCurBidderResponse, errs := bidder.MakeBids(internalRequest, &externalRequest, &response)
+	if len(errs) > 0 {
+		t.Errorf("MakeBids return errors. errors: %v", errs)
+	}
+	checkBidResponse(t, specifiedCurBidderResponse, usdCur)
+
+}
+
+func checkBidResponse(t *testing.T, bidderRespoonse *adapters.BidderResponse, currency string) {
+
+	var expectedAdM string = "<div id=\"medibasspContainer\">\n<iframe src=\"https://dummy-iframe.com></iframe>\n</div>\n<img src=\"https://dummy-beacon.com\">"
+	var expectedID string = "58278"
+	var expectedImpID = "bidRequest-success-test"
+	var expectedPrice float64 = 30.0
+	var expectedW uint64 = 300
+	var expectedH uint64 = 250
+	var expectedCrID string = "Dummy_supership.jp"
+	var extectedDealID string = "test-deal-id"
+
+	// Currency
+	if bidderRespoonse.Currency != currency {
+		t.Errorf("Currency %v does not equal %v", bidderRespoonse.Currency, currency)
+	}
+	// Bids
+	if len(bidderRespoonse.Bids) != 1 {
+		t.Errorf("Incorrect number of bids returned. len:%d", len(bidderRespoonse.Bids))
+	}
+	if bidderRespoonse.Bids[0].Bid.ID != expectedID {
+		t.Errorf("ID %s does not equal %s.", bidderRespoonse.Bids[0].Bid.ID, expectedID)
+	}
+	if bidderRespoonse.Bids[0].Bid.ImpID != expectedImpID {
+		t.Errorf("ImpID %s does not equal %s.", bidderRespoonse.Bids[0].Bid.ID, expectedImpID)
+	}
+	if bidderRespoonse.Bids[0].Bid.AdM != expectedAdM {
+		t.Errorf("AdM %s does not equal %s.", bidderRespoonse.Bids[0].Bid.AdM, expectedAdM)
+	}
+	if bidderRespoonse.Bids[0].Bid.Price != expectedPrice {
+		t.Errorf("Price %f does not equal %f.", bidderRespoonse.Bids[0].Bid.Price, expectedPrice)
+	}
+	if bidderRespoonse.Bids[0].Bid.W != expectedW {
+		t.Errorf("W %d does not equal %d.", bidderRespoonse.Bids[0].Bid.W, expectedW)
+	}
+	if bidderRespoonse.Bids[0].Bid.H != expectedH {
+		t.Errorf("H %d does not equal %d.", bidderRespoonse.Bids[0].Bid.H, expectedH)
+	}
+	if bidderRespoonse.Bids[0].Bid.CrID != expectedCrID {
+		t.Errorf("CrID %s does not equal %s.", bidderRespoonse.Bids[0].Bid.CrID, expectedCrID)
+	}
+	if bidderRespoonse.Bids[0].Bid.DealID != extectedDealID {
+		t.Errorf("DealID %s does not equal %s.", bidderRespoonse.Bids[0].Bid.DealID, extectedDealID)
 	}
 }
