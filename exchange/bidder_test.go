@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -1258,35 +1260,55 @@ func TestTimeoutNotificationOff(t *testing.T) {
 }
 
 func TestTimeoutNotificationOn(t *testing.T) {
+	ctx, cancelFunc := context.WithDeadline(context.Background(), time.Now().Add(-7*time.Hour))
+	cancelFunc()
 	respBody := "{\"bid\":false}"
 	respStatus := 200
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
 	defer server.Close()
-
-	bidderImpl := &notifingBidder{
-		notiRequest: adapters.RequestData{
-			Method:  "GET",
-			Uri:     server.URL + "/notify/me",
-			Body:    nil,
-			Headers: http.Header{},
-		},
+	bidRequest := adapters.RequestData{
+		Method: "POST",
+		Uri:    server.URL,
+		Body:   []byte("{\"id\":\"this-id\",\"app\":{\"publisher\":{\"id\":\"pub-id\"}}}"),
 	}
+
+	var buf bytes.Buffer
+
+	mylogger := func(msg string, args ...interface{}) {
+		buf.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
+	}
+
+	// Leaving the mock bidder implementation commented out for reference while testing the
+	// facebook actual.
+	//bidderImpl := &notifingBidder{
+	//	notiRequest: adapters.RequestData{
+	//		Method:  "GET",
+	//		Uri:     server.URL + "/notify/me",
+	//		Body:    nil,
+	//		Headers: http.Header{},
+	//	},
+	//}
+	bidderImpl := audienceNetwork.NewFacebookBidder(server.Client(), "test-platform-id", "test-app-secret")
 	bidder := &bidderAdapter{
 		Bidder: bidderImpl,
 		Client: server.Client(),
 		DebugConfig: config.Debug{
 			TimeoutNotification: config.TimeoutNotification{
-				Log: true,
+				Log:          true,
+				SamplingRate: 1.0,
 			},
 		},
 		me: &metricsConfig.DummyMetricsEngine{},
 	}
-	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
+	if _, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")
 	} else {
-		bidder.doTimeoutNotification(tb, &adapters.RequestData{}, glog.Warningf)
+		bidder.doRequestImpl(ctx, &bidRequest, mylogger)
 	}
-
+	time.Sleep(300 * time.Millisecond)
+	expected := "TimeoutNotification: error:(context deadline exceeded) body:\n"
+	actual := buf.String()
+	assert.EqualValues(t, expected, actual)
 }
 
 type goodSingleBidder struct {
@@ -1364,11 +1386,12 @@ func (bidder *bidRejector) MakeBids(internalRequest *openrtb.BidRequest, externa
 }
 
 type notifingBidder struct {
+	requests    []*adapters.RequestData
 	notiRequest adapters.RequestData
 }
 
 func (bidder *notifingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	return nil, nil
+	return bidder.requests, nil
 }
 
 func (bidder *notifingBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
