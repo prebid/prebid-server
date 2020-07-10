@@ -8,7 +8,12 @@
       "type": "string",
       "minLength": 1,
       "description": "An ID which identifies the site selling the impression"
+    },
+    "host": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Ad server host"
     }
   },
-  "required": ["placementId"]
+  "required": ["placementId", "host"]
 }
