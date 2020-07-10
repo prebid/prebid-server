@@ -384,8 +384,8 @@ func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	}
 }
 
-// Keeps track of created and reused connections to adapter bidders and logs its idle time as well
-// as the time from the connection request, to the connection creation, or reuse from the pool
+// Keeps track of created and reused connections to adapter bidders and the time from the
+// connection request, to the connection creation, or reuse from the pool across all engines
 func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
 	if m.metricsDisabled.AdapterConnectionMetrics {
 		return

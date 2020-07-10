@@ -119,9 +119,8 @@ func (me *MultiMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabe
 	}
 }
 
-// Keeps track of created and resused connections to adapter bidders and logs its idle time as well
-// as the time from the connection request, to the connection creation, or reuse from the pool
-// across all engines
+// Keeps track of created and reused connections to adapter bidders and the time from the
+// connection request, to the connection creation, or reuse from the pool across all engines
 func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
 	for _, thisME := range *me {
 		thisME.RecordAdapterConnections(bidderName, info, obtainConnectionTime)
