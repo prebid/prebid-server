@@ -210,7 +210,7 @@ func TestMakeBids(t *testing.T) {
 
 }
 
-func checkBidResponse(t *testing.T, bidderRespoonse *adapters.BidderResponse, currency string) {
+func checkBidResponse(t *testing.T, bidderRespoonse *adapters.BidderResponse, expectedCurrency string) {
 
 	var expectedAdM string = "<div id=\"medibasspContainer\">\n<iframe src=\"https://dummy-iframe.com></iframe>\n</div>\n<img src=\"https://dummy-beacon.com\">"
 	var expectedID string = "58278"
@@ -222,8 +222,8 @@ func checkBidResponse(t *testing.T, bidderRespoonse *adapters.BidderResponse, cu
 	var extectedDealID string = "test-deal-id"
 
 	// Currency
-	if bidderRespoonse.Currency != currency {
-		t.Errorf("Currency %v does not equal %v", bidderRespoonse.Currency, currency)
+	if bidderRespoonse.Currency != expectedCurrency {
+		t.Errorf("Currency %v does not equal %v", bidderRespoonse.Currency, expectedCurrency)
 	}
 	// Bids
 	if len(bidderRespoonse.Bids) != 1 {
