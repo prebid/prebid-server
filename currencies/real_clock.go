@@ -1,5 +1,3 @@
-// parts copied from: https://github.com/efritz/glock
-
 package currencies
 
 import (
@@ -16,10 +14,6 @@ func NewRealClock() Clock {
 
 func (c *RealClock) Now() time.Time {
 	return time.Now()
-}
-
-func (c *RealClock) After(duration time.Duration) <-chan time.Time {
-	return time.After(duration)
 }
 
 func (c *RealClock) Sleep(duration time.Duration) {
