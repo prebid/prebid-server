@@ -129,7 +129,7 @@ func TestReadWriteRates(t *testing.T) {
 			time.Duration(24)*time.Hour,
 			currencies.NewMockClockAt(tt.giveFrozenTime),
 		)
-		err := currencyConverter.Update()
+		err := currencyConverter.Run()
 
 		if tt.wantUpdateErr {
 			assert.NotNil(t, err)
@@ -192,7 +192,7 @@ func TestRateStaleness(t *testing.T) {
 	)
 
 	// First Update call results in error
-	err1 := currencyConverter.Update()
+	err1 := currencyConverter.Run()
 	assert.NotNil(t, err1)
 
 	// Verify constant rates are used and last update ts is not set
@@ -200,7 +200,7 @@ func TestRateStaleness(t *testing.T) {
 	assert.Equal(t, time.Time{}, currencyConverter.LastUpdated(), "LastUpdated return is incorrect")
 
 	// Second Update call is successful and yields valid rates
-	err2 := currencyConverter.Update()
+	err2 := currencyConverter.Run()
 	assert.Nil(t, err2)
 
 	// Verify rates are valid and last update timestamp is set
@@ -212,7 +212,7 @@ func TestRateStaleness(t *testing.T) {
 	mockClock.Advance(twentyNineSec)
 
 	// Third Update call results in error
-	err3 := currencyConverter.Update()
+	err3 := currencyConverter.Run()
 	assert.NotNil(t, err3)
 
 	// Verify rates are valid and last update ts is set
@@ -224,7 +224,7 @@ func TestRateStaleness(t *testing.T) {
 	mockClock.Advance(twoSec)
 
 	// Fourth Update call results in error
-	err4 := currencyConverter.Update()
+	err4 := currencyConverter.Run()
 	assert.NotNil(t, err4)
 
 	// Verify constant rates are used and last update ts is set
@@ -232,7 +232,7 @@ func TestRateStaleness(t *testing.T) {
 	assert.Equal(t, frozenTime, currencyConverter.LastUpdated(), "LastUpdated return is incorrect")
 
 	// Fifth Update call is successful and yields valid rates
-	err5 := currencyConverter.Update()
+	err5 := currencyConverter.Run()
 	assert.Nil(t, err5)
 
 	// Verify rates are valid and last update ts has changed
@@ -283,7 +283,7 @@ func TestRatesAreNeverStale(t *testing.T) {
 	)
 
 	// First Update call is successful and yields valid rates
-	err1 := currencyConverter.Update()
+	err1 := currencyConverter.Run()
 	assert.Nil(t, err1)
 
 	// Verify rates are valid and last update timestamp is correct
@@ -295,7 +295,7 @@ func TestRatesAreNeverStale(t *testing.T) {
 	mockClock.Advance(twentyFourHours)
 
 	// Second Update call results in error but rates from a day ago are still valid
-	err2 := currencyConverter.Update()
+	err2 := currencyConverter.Run()
 	assert.NotNil(t, err2)
 
 	// Verify rates are valid and last update ts is correct

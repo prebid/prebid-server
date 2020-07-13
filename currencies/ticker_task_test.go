@@ -270,7 +270,7 @@ func TestRace(t *testing.T) {
 					// based on the tick ms
 					tickMs := tickTime.UnixNano() / int64(time.Millisecond)
 					if tickMs%2 == 0 {
-						err := currencyConverter.Update()
+						err := currencyConverter.Run()
 						assert.Nil(t, err)
 					} else {
 						rate, err := currencyConverter.Rates().GetRate("USD", "GBP")

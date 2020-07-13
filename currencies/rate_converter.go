@@ -109,14 +109,14 @@ func (rc *RateConverter) fetch() (*Rates, error) {
 }
 
 // Update updates the internal currencies rates from remote sources
-func (rc *RateConverter) Update() error {
+func (rc *RateConverter) update() error {
 	rates, err := rc.fetch()
 	if err == nil {
 		rc.rates.Store(rates)
 		rc.lastUpdated.Store(rc.clock.Now())
 	} else {
-		if rc.CheckStaleRates() {
-			rc.ClearRates()
+		if rc.checkStaleRates() {
+			rc.clearRates()
 			glog.Errorf("Error updating conversion rates, falling back to constant rates: %v", err)
 		} else {
 			glog.Errorf("Error updating conversion rates: %v", err)
@@ -127,7 +127,7 @@ func (rc *RateConverter) Update() error {
 }
 
 func (rc *RateConverter) Run() error {
-	return rc.Update()
+	return rc.update()
 }
 
 func (rc *RateConverter) GetRunNotifier() chan<- int {
@@ -152,14 +152,14 @@ func (rc *RateConverter) Rates() Conversions {
 	return rc.constantRates
 }
 
-// ClearRates sets the rates to nil
-func (rc *RateConverter) ClearRates() {
+// clearRates sets the rates to nil
+func (rc *RateConverter) clearRates() {
 	// atomic.Value field rates must be of type *Rates so we cast nil to that type
 	rc.rates.Store((*Rates)(nil))
 }
 
-// CheckStaleRates checks if loaded third party conversion rates are stale
-func (rc *RateConverter) CheckStaleRates() bool {
+// checkStaleRates checks if loaded third party conversion rates are stale
+func (rc *RateConverter) checkStaleRates() bool {
 	if rc.staleRatesThreshold <= 0 {
 		return false
 	}
