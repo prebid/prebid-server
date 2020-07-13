@@ -17,6 +17,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/clock"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -531,7 +532,7 @@ func TestMultiCurrencies(t *testing.T) {
 			// time.Duration(10)*time.Second,
 			time.Duration(10)*time.Millisecond,
 			time.Duration(24)*time.Hour,
-			currencies.NewRealClock(),
+			clock.NewRealClock(),
 		)
 		time.Sleep(time.Duration(500) * time.Millisecond)
 		currencyConverterTickerTask := currencies.NewTickerTask(time.Duration(10)*time.Second, currencyConverter)
@@ -857,7 +858,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Second,
 			time.Duration(24)*time.Hour,
-			currencies.NewRealClock(),
+			clock.NewRealClock(),
 		)
 		seatBid, errs := bidder.requestBid(
 			context.Background(),

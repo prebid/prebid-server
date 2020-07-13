@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/clock"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/stretchr/testify/assert"
 )
@@ -127,7 +128,7 @@ func TestReadWriteRates(t *testing.T) {
 			url,
 			time.Duration(24)*time.Hour,
 			time.Duration(24)*time.Hour,
-			currencies.NewMockClockAt(tt.giveFrozenTime),
+			clock.NewMockClockAt(tt.giveFrozenTime),
 		)
 		err := currencyConverter.Run()
 
@@ -180,7 +181,7 @@ func TestRateStaleness(t *testing.T) {
 	}
 
 	frozenTime := time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC)
-	mockClock := currencies.NewMockClockAt(frozenTime)
+	mockClock := clock.NewMockClockAt(frozenTime)
 
 	// Execute:
 	currencyConverter := currencies.NewRateConverter(
@@ -271,7 +272,7 @@ func TestRatesAreNeverStale(t *testing.T) {
 	}
 
 	frozenTime := time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC)
-	mockClock := currencies.NewMockClockAt(frozenTime)
+	mockClock := clock.NewMockClockAt(frozenTime)
 
 	// Execute:
 	currencyConverter := currencies.NewRateConverter(

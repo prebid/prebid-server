@@ -1,6 +1,6 @@
 // parts copied from: https://github.com/efritz/glock
 
-package currencies
+package clock
 
 import (
 	"time"

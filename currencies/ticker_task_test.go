@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/clock"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,7 +34,7 @@ func TestStop(t *testing.T) {
 		mockedHttpServer.URL,
 		fetchingInterval,
 		time.Duration(24)*time.Hour,
-		currencies.NewRealClock(),
+		clock.NewRealClock(),
 		ticks,
 	)
 	ticker := currencies.NewTickerTask(fetchingInterval, currencyConverter)
@@ -74,7 +75,7 @@ func TestFetchingIntervalNotSet(t *testing.T) {
 		mockedHttpServer.URL,
 		fetchingInterval,
 		time.Duration(24)*time.Hour,
-		currencies.NewRealClock(),
+		clock.NewRealClock(),
 	)
 	ticker := currencies.NewTickerTask(fetchingInterval, currencyConverter)
 	ticker.Start(true)
@@ -109,7 +110,7 @@ func TestInit(t *testing.T) {
 		mockedHttpServer.URL,
 		fetchingInterval,
 		time.Duration(24)*time.Hour,
-		currencies.NewRealClock(),
+		clock.NewRealClock(),
 		ticks,
 	)
 	ticker := currencies.NewTickerTask(fetchingInterval, currencyConverter)
@@ -183,7 +184,7 @@ func TestRates(t *testing.T) {
 		mockedHttpServer.URL,
 		fetchingInterval,
 		time.Duration(24)*time.Hour,
-		currencies.NewRealClock(),
+		clock.NewRealClock(),
 		ticks,
 	)
 	ticker := currencies.NewTickerTask(fetchingInterval, currencyConverter)
@@ -245,7 +246,7 @@ func TestRace(t *testing.T) {
 		"currency.fake.com",
 		fetchingInterval,
 		time.Duration(24)*time.Hour,
-		currencies.NewRealClock(),
+		clock.NewRealClock(),
 	)
 	ticker := currencies.NewTickerTask(fetchingInterval, currencyConverter)
 	ticker.Start(true)

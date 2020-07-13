@@ -1,4 +1,4 @@
-package currencies
+package clock
 
 import (
 	"testing"

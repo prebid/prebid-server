@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/clock"
 	"github.com/prebid/prebid-server/errortypes"
 )
 
@@ -21,7 +22,7 @@ type RateConverter struct {
 	rates               atomic.Value // Should only hold Rates struct
 	lastUpdated         atomic.Value // Should only hold time.Time
 	constantRates       Conversions
-	clock               Clock
+	pbsClock            clock.Clock
 }
 
 // NewRateConverter returns a new RateConverter
@@ -30,14 +31,14 @@ func NewRateConverter(
 	syncSourceURL string,
 	fetchingInterval time.Duration,
 	staleRatesThreshold time.Duration,
-	clock Clock,
+	pbsClock clock.Clock,
 ) *RateConverter {
 	return NewRateConverterWithNotifier(
 		httpClient,
 		syncSourceURL,
 		fetchingInterval,
 		staleRatesThreshold,
-		clock,
+		pbsClock,
 		nil, // no notifier channel specified, won't send any notifications
 	)
 }
@@ -46,7 +47,7 @@ func NewRateConverter(
 // By default there will be no currencies conversions done.
 // `currencies.ConstantRate` will be used.
 func NewRateConverterDefault() *RateConverter {
-	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0), NewRealClock())
+	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0), clock.NewRealClock())
 }
 
 // NewRateConverterWithNotifier returns a new RateConverter
@@ -58,7 +59,7 @@ func NewRateConverterWithNotifier(
 	syncSourceURL string,
 	fetchingInterval time.Duration,
 	staleRatesThreshold time.Duration,
-	clock Clock,
+	pbsClock clock.Clock,
 	updateNotifier chan<- int,
 ) *RateConverter {
 	rc := &RateConverter{
@@ -70,7 +71,7 @@ func NewRateConverterWithNotifier(
 		rates:               atomic.Value{},
 		lastUpdated:         atomic.Value{},
 		constantRates:       NewConstantRates(),
-		clock:               clock,
+		pbsClock:            pbsClock,
 	}
 
 	return rc
@@ -113,7 +114,7 @@ func (rc *RateConverter) update() error {
 	rates, err := rc.fetch()
 	if err == nil {
 		rc.rates.Store(rates)
-		rc.lastUpdated.Store(rc.clock.Now())
+		rc.lastUpdated.Store(rc.pbsClock.Now())
 	} else {
 		if rc.checkStaleRates() {
 			rc.clearRates()
@@ -164,7 +165,7 @@ func (rc *RateConverter) checkStaleRates() bool {
 		return false
 	}
 
-	currentTime := rc.clock.Now().UTC()
+	currentTime := rc.pbsClock.Now().UTC()
 	if lastUpdated := rc.lastUpdated.Load(); lastUpdated != nil {
 		delta := currentTime.Sub(lastUpdated.(time.Time).UTC())
 		if delta.Seconds() > rc.staleRatesThreshold.Seconds() {

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prebid/prebid-server/clock"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
@@ -53,7 +54,7 @@ func loadConfig() (*config.Configuration, error) {
 func serve(revision string, cfg *config.Configuration) error {
 	fetchingInterval := time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds) * time.Second
 	staleRatesThreshold := time.Duration(cfg.CurrencyConverter.StaleRatesSeconds) * time.Second
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, fetchingInterval, staleRatesThreshold, currencies.NewRealClock())
+	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, fetchingInterval, staleRatesThreshold, clock.NewRealClock())
 	
 	currencyConverterTickerTask := currencies.NewTickerTask(fetchingInterval, currencyConverter)
 	currencyConverterTickerTask.Start(true)
