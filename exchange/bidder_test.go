@@ -2,23 +2,32 @@ package exchange
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httptrace"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
+	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+	nativeResponse "github.com/mxmCherry/openrtb/native/response"
 )
 
-/*
 // TestSingleBidder makes sure that the following things work if the Bidder needs only one request.
 //
 // 1. The Bidder implementation is called with the arguments we expect.
@@ -1284,7 +1293,7 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	// Assert RecordAdapterConnections() was called with the parameters we expected
 	metrics.AssertExpectations(t)
 }
-*/
+
 type DNSDoneTripper struct{}
 
 func (DNSDoneTripper) RoundTrip(req *http.Request) (*http.Response, error) {
