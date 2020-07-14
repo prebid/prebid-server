@@ -76,7 +76,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		parsedConsent, err := vendorconsent.ParseString(consent)
 		if err == nil {
 			version := int(parsedConsent.Version())
-			privacyLabels.GDPRTCFVersion = pbsmetrics.TCFVersionValue(version)
+			privacyLabels.GDPRTCFVersion = pbsmetrics.TCFVersionToValue(version)
 		}
 	}
 
