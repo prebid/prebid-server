@@ -41,9 +41,9 @@
                 }
             }
         ],
-        "site": {
-            "domain": "prebid.org",
-            "page": "prebid.org"
+        "app": {
+            "id": "app-abc",
+            "bundle": "com.prebid"
         },
         "device": {
             "ip": "152.193.6.74"
@@ -81,9 +81,9 @@
                             "tagid": "pub1_plmt1"
                         }
                     ],
-                    "site": {
-                        "domain": "prebid.org",
-                        "page": "prebid.org",
+                    "app": {
+                        "id": "app-abc",
+                        "bundle": "com.prebid",
                         "publisher": {
                             "id": "pub1"
                         }
@@ -152,9 +152,9 @@
                             "tagid": "pub2_plmt2"
                         }
                     ],
-                    "site": {
-                        "domain": "prebid.org",
-                        "page": "prebid.org",
+                    "app": {
+                        "id": "app-abc",
+                        "bundle": "com.prebid",
                         "publisher": {
                             "id": "pub2"
                         }
