@@ -114,8 +114,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	} else {
 		for _, oneReqData := range reqData {
 			go func(data *adapters.RequestData) {
-				txn := newrelic.FromContext(ctx)
-				ctx := newrelic.NewContext(ctx, txn.NewGoroutine())
 				responseChannel <- bidder.doRequest(ctx, data)
 			}(oneReqData) // Method arg avoids a race condition on oneReqData
 		}

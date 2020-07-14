@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -574,7 +575,7 @@ func TestPanicRecovery(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	e := NewExchange(&http.Client{}, nil, cfg, theMetrics, adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
 	chBids := make(chan *bidResponseWrapper, 1)
-	panicker := func(ctx context.Context, aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
+	panicker := func(ctx context.Context, txn *newrelic.Transaction, aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 		panic("panic!")
 	}
 	recovered := e.recoverSafely(panicker, chBids)
@@ -587,7 +588,7 @@ func TestPanicRecovery(t *testing.T) {
 		CookieFlag:  pbsmetrics.CookieFlagYes,
 		AdapterBids: pbsmetrics.AdapterBidNone,
 	}
-	recovered(context.Background(), openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, &apnLabels, nil)
+	recovered(context.Background(), nil, openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, &apnLabels, nil)
 }
 
 func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
