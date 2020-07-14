@@ -604,6 +604,189 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 	}
 }
 
+func TestImplicitDNT(t *testing.T) {
+	var (
+		disabled int8 = 0
+		enabled  int8 = 1
+	)
+	testCases := []struct {
+		description     string
+		dntHeader       string
+		request         openrtb.BidRequest
+		expectedRequest openrtb.BidRequest
+	}{
+		{
+			description:     "Device Missing - Not Set In Header",
+			dntHeader:       "",
+			request:         openrtb.BidRequest{},
+			expectedRequest: openrtb.BidRequest{},
+		},
+		{
+			description: "Device Missing - Set To 0 In Header",
+			dntHeader:   "0",
+			request:     openrtb.BidRequest{},
+			expectedRequest: openrtb.BidRequest{
+				Device: &openrtb.Device{
+					DNT: &disabled,
+				},
+			},
+		},
+		{
+			description: "Device Missing - Set To 1 In Header",
+			dntHeader:   "1",
+			request:     openrtb.BidRequest{},
+			expectedRequest: openrtb.BidRequest{
+				Device: &openrtb.Device{
+					DNT: &enabled,
+				},
+			},
+		},
+		{
+			description: "Not Set In Request - Not Set In Header",
+			dntHeader:   "",
+			request: openrtb.BidRequest{
+				Device: &openrtb.Device{},
+			},
+			expectedRequest: openrtb.BidRequest{
+				Device: &openrtb.Device{},
+			},
+		},
+		{
+			description: "Not Set In Request - Set To 0 In Header",
+			dntHeader:   "0",
+			request: openrtb.BidRequest{
+				Device: &openrtb.Device{},
+			},
+			expectedRequest: openrtb.BidRequest{
+				Device: &openrtb.Device{
+					DNT: &disabled,
+				},
+			},
+		},
+		{
+			description: "Not Set In Request - Set To 1 In Header",
+			dntHeader:   "1",
+			request: openrtb.BidRequest{
+				Device: &openrtb.Device{},
+			},
+			expectedRequest: openrtb.BidRequest{
+				Device: &openrtb.Device{
+					DNT: &enabled,
+				},
+			},
+		},
+		{
+			description: "Set In Request - Not Set In Header",
+			dntHeader:   "",
+			request: openrtb.BidRequest{
+				Device: &openrtb.Device{
+					DNT: &enabled,
+				},
+			},
+			expectedRequest: openrtb.BidRequest{
+				Device: &openrtb.Device{
+					DNT: &enabled,
+				},
+			},
+		},
+		{
+			description: "Set In Request - Set To 0 In Header",
+			dntHeader:   "0",
+			request: openrtb.BidRequest{
+				Device: &openrtb.Device{
+					DNT: &enabled,
+				},
+			},
+			expectedRequest: openrtb.BidRequest{
+				Device: &openrtb.Device{
+					DNT: &enabled,
+				},
+			},
+		},
+		{
+			description: "Set In Request - Set To 1 In Header",
+			dntHeader:   "1",
+			request: openrtb.BidRequest{
+				Device: &openrtb.Device{
+					DNT: &enabled,
+				},
+			},
+			expectedRequest: openrtb.BidRequest{
+				Device: &openrtb.Device{
+					DNT: &enabled,
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", nil)
+		httpReq.Header.Set("DNT", test.dntHeader)
+		setDoNotTrackImplicitly(httpReq, &test.request)
+		assert.Equal(t, test.expectedRequest, test.request)
+	}
+}
+
+func TestImplicitDNTEndToEnd(t *testing.T) {
+	var (
+		disabled int8 = 0
+		enabled  int8 = 1
+	)
+	testCases := []struct {
+		description string
+		reqJSONFile string
+		dntHeader   string
+		expectedDNT *int8
+	}{
+		{
+			description: "Not Set In Request - Not Set In Header",
+			reqJSONFile: "site.json",
+			dntHeader:   "",
+			expectedDNT: nil,
+		},
+		{
+			description: "Not Set In Request - Set To 0 In Header",
+			reqJSONFile: "site.json",
+			dntHeader:   "0",
+			expectedDNT: &disabled,
+		},
+		{
+			description: "Not Set In Request - Set To 1 In Header",
+			reqJSONFile: "site.json",
+			dntHeader:   "1",
+			expectedDNT: &enabled,
+		},
+		{
+			description: "Set In Request - Not Set In Header",
+			reqJSONFile: "site-has-dnt.json",
+			dntHeader:   "",
+			expectedDNT: &enabled, // Hardcoded value in test file.
+		},
+		{
+			description: "Set In Request - Not Overwritten By Header",
+			reqJSONFile: "site-has-dnt.json",
+			dntHeader:   "0",
+			expectedDNT: &enabled, // Hardcoded value in test file.
+		},
+	}
+
+	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	for _, test := range testCases {
+		exchange := &nobidExchange{}
+		endpoint, _ := NewEndpoint(exchange, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, metrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
+
+		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, test.reqJSONFile)))
+		httpReq.Header.Set("DNT", test.dntHeader)
+
+		endpoint(httptest.NewRecorder(), httpReq, nil)
+
+		result := exchange.gotRequest
+		if !assert.NotEmpty(t, result, test.description+"Request received by the exchange.") {
+			t.FailNow()
+		}
+		assert.Equal(t, test.expectedDNT, result.Device.DNT, test.description+":dnt")
+	}
+}
 func TestImplicitSecure(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set(http.CanonicalHeaderKey("X-Forwarded-Proto"), "https")
