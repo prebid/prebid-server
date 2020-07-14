@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
@@ -297,9 +298,13 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	bidsFound := false
 
 	for bidderName, req := range cleanRequests {
+		txn := newrelic.FromContext(ctx)
+
 		// Here we actually call the adapters and collect the bids.
 		coreBidder := resolveBidder(string(bidderName), aliases)
-		bidderRunner := e.recoverSafely(func(ctx context.Context, aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
+		bidderRunner := e.recoverSafely(func(ctx context.Context, txn *newrelic.Transaction, aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
+			ctx = newrelic.NewContext(ctx, txn)
+
 			// Passing in aName so a doesn't change out from under the go routine
 			if bidlabels.Adapter == "" {
 				glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", aName, coreBidder)
@@ -345,7 +350,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			}
 			chBids <- brw
 		}, chBids)
-		go bidderRunner(ctx, bidderName, coreBidder, req, blabels[coreBidder], conversions)
+		go bidderRunner(ctx, txn.NewGoroutine(), bidderName, coreBidder, req, blabels[coreBidder], conversions)
 	}
 	// Wait for the bidders to do their thing
 	for i := 0; i < len(cleanRequests); i++ {
@@ -361,8 +366,8 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	return adapterBids, adapterExtra, bidsFound
 }
 
-func (e *exchange) recoverSafely(inner func(context.Context, openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels, currencies.Conversions), chBids chan *bidResponseWrapper) func(context.Context, openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels, currencies.Conversions) {
-	return func(ctx context.Context, aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
+func (e *exchange) recoverSafely(inner func(context.Context, *newrelic.Transaction, openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels, currencies.Conversions), chBids chan *bidResponseWrapper) func(context.Context, *newrelic.Transaction, openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels, currencies.Conversions) {
+	return func(ctx context.Context, txn *newrelic.Transaction, aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 		defer func() {
 			if r := recover(); r != nil {
 				nr.NoticeError(ctx, fmt.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. Stack trace is: %v", coreBidder, r, string(debug.Stack())))
@@ -374,7 +379,7 @@ func (e *exchange) recoverSafely(inner func(context.Context, openrtb_ext.BidderN
 				chBids <- brw
 			}
 		}()
-		inner(ctx, aName, coreBidder, request, bidlabels, conversions)
+		inner(ctx, txn, aName, coreBidder, request, bidlabels, conversions)
 	}
 }
 
