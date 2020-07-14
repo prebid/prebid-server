@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/prebid/go-gdpr/vendorconsent"
+
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
@@ -16,6 +18,15 @@ import (
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/lmt"
 )
+
+// cleanMetrics is a struct to export any metrics data resulting from cleanOpenRTBRequests(). It starts with just
+// the TCF version, but made a struct to facilitate future expansion
+type cleanMetrics struct {
+	// A simple flag if GDPR is being enforced on this request.
+	gdprEnforced bool
+	// a zero value means a missing or invalid GDPR string
+	gdprTcfVersion int
+}
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
 //
@@ -29,7 +40,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	labels pbsmetrics.Labels,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
-	privacyConfig config.Privacy) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
+	privacyConfig config.Privacy) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, cleanMetrics cleanMetrics, errs []error) {
 
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
@@ -64,6 +75,13 @@ func cleanOpenRTBRequests(ctx context.Context,
 		LMT:   lmtPolicy.ShouldEnforce(),
 	}
 
+	if gdpr == 1 {
+		cleanMetrics.gdprEnforced = true
+		parsedConsent, err := vendorconsent.ParseString(consent)
+		if err == nil {
+			cleanMetrics.gdprTcfVersion = int(parsedConsent.Version())
+		}
+	}
 	// bidder level privacy policies
 	for bidder, bidReq := range requestsByBidder {
 

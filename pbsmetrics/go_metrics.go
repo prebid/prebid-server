@@ -48,8 +48,12 @@ type Metrics struct {
 	ImpsTypeAudio  metrics.Meter
 	ImpsTypeNative metrics.Meter
 
+	// Notification timeout metrics
 	TimeoutNotificationSuccess metrics.Meter
 	TimeoutNotificationFailure metrics.Meter
+
+	// TCF adaption metrics
+	TCFReqVersion map[TCFVersionValue]metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -137,6 +141,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		TimeoutNotificationSuccess: blankMeter,
 		TimeoutNotificationFailure: blankMeter,
 
+		TCFReqVersion: make(map[TCFVersionValue]metrics.Meter, len(TCFVersions())),
+
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
 		MetricsDisabled: disableMetrics,
@@ -152,6 +158,15 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		for _, s := range RequestStatuses() {
 			newMetrics.RequestStatuses[t][s] = blankMeter
 		}
+	}
+
+	for _, c := range CacheResults() {
+		newMetrics.StoredReqCacheMeter[c] = blankMeter
+		newMetrics.StoredImpCacheMeter[c] = blankMeter
+	}
+
+	for _, v := range TCFVersions() {
+		newMetrics.TCFReqVersion[v] = blankMeter
 	}
 
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
@@ -218,6 +233,11 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 
 	newMetrics.TimeoutNotificationSuccess = metrics.GetOrRegisterMeter("timeout_notification.ok", registry)
 	newMetrics.TimeoutNotificationFailure = metrics.GetOrRegisterMeter("timeout_notification.failed", registry)
+
+	for _, version := range TCFVersions() {
+		newMetrics.TCFReqVersion[version] = metrics.GetOrRegisterMeter(fmt.Sprintf("privacy.request.tcf.%s", string(version)), registry)
+	}
+
 	return newMetrics
 }
 
@@ -558,6 +578,16 @@ func (me *Metrics) RecordTimeoutNotice(success bool) {
 		me.TimeoutNotificationSuccess.Mark(1)
 	} else {
 		me.TimeoutNotificationFailure.Mark(1)
+	}
+	return
+}
+
+func (me *Metrics) RecordTCFReq(version TCFVersionValue) {
+	met, ok := me.TCFReqVersion[version]
+	if ok {
+		met.Mark(1)
+	} else {
+		me.TCFReqVersion[TCFVersionErr].Mark(1)
 	}
 	return
 }
