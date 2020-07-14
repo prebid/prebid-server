@@ -309,16 +309,6 @@ func (me *DummyMetricsEngine) RecordTimeoutNotice(success bool) {
 func (me *DummyMetricsEngine) RecordTCFReq(version pbsmetrics.TCFVersionValue) {
 }
 
-/*
-   // RoundTripFunc .
-   type RoundTripFunc func(req *http.Request) *http.Response
-
-   // RoundTrip .
-   func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-       return f(req), nil
-   }
-*/
-
 // MockMetricsEngine will have fields to update via the MetricsEngine interface methods
 type MockMetricsData struct {
 	DNSLookupTimer float64
