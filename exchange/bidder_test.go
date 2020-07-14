@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httptrace"
+	"strings"
 	"testing"
 	"time"
 
@@ -1293,6 +1295,23 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	metrics.AssertExpectations(t)
 }
 
+type DNSDoneTripper struct{}
+
+func (DNSDoneTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	//Access the httptrace.ClientTrace
+	trace := httptrace.ContextClientTrace(req.Context())
+
+	//Force DNSDone call defined in exchange/bidder.go
+	trace.DNSDone(httptrace.DNSDoneInfo{})
+
+	resp := &http.Response{
+		StatusCode: 200,
+		Header:     map[string][]string{"Location": {"http://www.example.com/"}},
+		Body:       ioutil.NopCloser(strings.NewReader("postBody")),
+	}
+	return resp, nil
+}
+
 func TestCallRecordRecordDNSTime(t *testing.T) {
 	//setup mock server to run
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1317,21 +1336,24 @@ func TestCallRecordRecordDNSTime(t *testing.T) {
 	var metricsEngine pbsmetrics.MetricsEngine
 	metricsEngine = &engineList
 
-	// Instantiate the bidder that will send the request
+	// Instantiate the bidder that will send the request but make sure our mock
+	// round tripper gets used so DNSDone(httptrace.DNSDoneInfo{}) gets called
+	mockClient := server.Client()
+	mockClient.Transport = DNSDoneTripper{}
 	bidder := &bidderAdapter{
 		Bidder: &mixedMultiBidder{},
-		Client: server.Client(),
+		Client: mockClient,
 		me:     bidderMetrics{engine: metricsEngine},
 	}
 
-	// Run function
+	// Run test
 	bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
 	})
 
 	// Assert DNS results, which should have recorded a zero duration
-	assert.Equal(t, int64(0), influxEngine.DNSLookupTimer.Sum(), "Incorrect DNS lookup time")
+	assert.Greater(t, influxEngine.DNSLookupTimer.Sum(), int64(0), "Function ClientTracer.DNSDone(info httptrace.DNSStartInfo) should have been called and seems it wasn't")
 }
 
 func TestTimeoutNotificationOff(t *testing.T) {
