@@ -1248,9 +1248,6 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
 	defer server.Close()
 
-	requestHeaders := http.Header{}
-	requestHeaders.Add("Content-Type", "application/json")
-
 	// declare requestBid parameters
 	bidAdjustment := 2.0
 	mockBidderResponse := &adapters.BidderResponse{
@@ -1312,28 +1309,20 @@ func (DNSDoneTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestCallRecordRecordDNSTime(t *testing.T) {
-	// setup an http.Client that runs our mock RoundTripper
-	mockClient := &http.Client{
-		Transport: DNSDoneTripper{},
-	}
-
 	// setup a mock metrics engine that'll give us access to it's counters
 	mockMetricsData := &metricsConfig.MockMetricsData{}
-	mockMetricsEngine := metricsConfig.NewMockMetricsEngine(mockMetricsData)
 
-	// Instantiate the bidder that will send the request. We'll make sure our
-	// mock round tripper gets used so DNSDone(httptrace.DNSDoneInfo{}) gets called
+	// Instantiate the bidder that will send the request. We'll make sure to use an
+	// http.Client that runs our mock RoundTripper so DNSDone(httptrace.DNSDoneInfo{})
+	// gets called
 	bidder := &bidderAdapter{
 		Bidder: &mixedMultiBidder{},
-		Client: mockClient,
-		me:     bidderMetrics{engine: mockMetricsEngine},
+		Client: &http.Client{Transport: DNSDoneTripper{}},
+		me:     bidderMetrics{engine: metricsConfig.NewMockMetricsEngine(mockMetricsData)},
 	}
 
 	// Run test
-	bidder.doRequest(context.Background(), &adapters.RequestData{
-		Method: "POST",
-		Uri:    "http://www.example.com/",
-	})
+	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"})
 
 	// Assert DNS results, mock metrics should have recorded a 1.00 duration
 	assert.Equal(t, mockMetricsData.DNSLookupTimer, 1.00, "Function ClientTracer.DNSDone(info httptrace.DNSStartInfo) should have been called and seems it wasn't")
