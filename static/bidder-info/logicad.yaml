@@ -1,11 +1,10 @@
 maintainer:
-  email: "grid-tech@themediagrid.com"
+  email: "prebid@so-netmedia.jp"
 capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - video
   site:
     mediaTypes:
       - banner
-      - video
+  app:
+    mediaTypes:
+      - banner
+
