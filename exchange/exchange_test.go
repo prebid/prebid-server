@@ -1830,6 +1830,18 @@ func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
 	})
 }
 
+func mockSlowHandler(statusCode int, getBody string, postBody string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(500 * time.Millisecond)
+		w.WriteHeader(statusCode)
+		if r.Method == "GET" {
+			w.Write([]byte(getBody))
+		} else {
+			w.Write([]byte(postBody))
+		}
+	})
+}
+
 type wellBehavedCache struct{}
 
 func (c *wellBehavedCache) GetExtCacheData() (string, string) {

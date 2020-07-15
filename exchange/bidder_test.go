@@ -1266,7 +1266,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	cancelFunc()
 	respBody := "{\"bid\":false}"
 	respStatus := 200
-	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	server := httptest.NewServer(mockSlowHandler(respStatus, "getBody", respBody))
 	defer server.Close()
 	bidRequest := adapters.RequestData{
 		Method: "POST",
