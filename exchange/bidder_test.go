@@ -1289,8 +1289,17 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	//	},
 	//}
 	bidderImpl := audienceNetwork.NewFacebookBidder(server.Client(), "test-platform-id", "test-app-secret")
+	bidderInfo := adapters.BidderInfo{
+		Status: adapters.StatusActive,
+		Capabilities: &adapters.CapabilitiesInfo{
+			App: &adapters.PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+			},
+		},
+	}
+	ibidder := adapters.EnforceBidderInfo(bidderImpl, bidderInfo)
 	bidder := &bidderAdapter{
-		Bidder: bidderImpl,
+		Bidder: ibidder,
 		Client: server.Client(),
 		DebugConfig: config.Debug{
 			TimeoutNotification: config.TimeoutNotification{
@@ -1300,8 +1309,12 @@ func TestTimeoutNotificationOn(t *testing.T) {
 		},
 		me: &metricsConfig.DummyMetricsEngine{},
 	}
-	if _, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
-		t.Error("Failed to cast bidder to a TimeoutBidder")
+	var corebidder adapters.Bidder = bidder.Bidder
+	if b, ok := corebidder.(*adapters.InfoAwareBidder); ok {
+		corebidder = b.Bidder
+	}
+	if _, ok := corebidder.(adapters.TimeoutBidder); !ok {
+		t.Fatal("Failed to cast bidder to a TimeoutBidder")
 	} else {
 		bidder.doRequestImpl(ctx, &bidRequest, mylogger)
 	}

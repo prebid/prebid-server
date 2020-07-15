@@ -329,7 +329,13 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			err = &errortypes.Timeout{Message: err.Error()}
-			if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); ok {
+			var corebidder adapters.Bidder = bidder.Bidder
+			// The bidder adapter normally stores an info-aware bidder (a bidder wrapper)
+			// rather than the actual bidder. So we need to unpack that first.
+			if b, ok := corebidder.(*adapters.InfoAwareBidder); ok {
+				corebidder = b.Bidder
+			}
+			if tb, ok := corebidder.(adapters.TimeoutBidder); ok {
 				// Toss the timeout notification call into a go routine, as we are out of time'
 				// and cannot delay processing. We don't do anything result, as there is not much
 				// we can do about a timeout notification failure. We do not want to get stuck in
