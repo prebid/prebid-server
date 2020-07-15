@@ -135,6 +135,92 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 	}
 }
 
+func TestCleanOpenRTBRequestsSChain(t *testing.T) {
+	testCases := []struct {
+		description  string
+		inSourceExt  json.RawMessage
+		inExt        json.RawMessage
+		outSourceExt json.RawMessage
+		outExt       json.RawMessage
+		hasError     bool
+	}{
+		{
+			description:  "Empty root ext and source ext",
+			inSourceExt:  json.RawMessage(``),
+			inExt:        json.RawMessage(``),
+			outSourceExt: json.RawMessage(``),
+			outExt:       json.RawMessage(``),
+			hasError:     false,
+		},
+		{
+			description:  "No schains in root ext and empty source ext",
+			inSourceExt:  json.RawMessage(``),
+			inExt:        json.RawMessage(`{"prebid":{"schains":[]}}`),
+			outSourceExt: json.RawMessage(``),
+			outExt:       json.RawMessage(`{"prebid":{}}`),
+			hasError:     false,
+		},
+		{
+			description:  "Use source schain -- no bidder schain or wildcard schain in ext.prebid.schains",
+			inSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
+			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["bidder1"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
+			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
+			outExt:       json.RawMessage(`{"prebid":{}}`),
+			hasError:     false,
+		},
+		{
+			description:  "Use schain for bidder in ext.prebid.schains",
+			inSourceExt:  json.RawMessage(``),
+			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
+			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
+			outExt:       json.RawMessage(`{"prebid":{}}`),
+			hasError:     false,
+		},
+		{
+			description:  "Use wildcard schain in ext.prebid.schains",
+			inSourceExt:  json.RawMessage(``),
+			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
+			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
+			outExt:       json.RawMessage(`{"prebid":{}}`),
+			hasError:     false,
+		},
+		{
+			description:  "Use schain for bidder in ext.prebid.schains instead of wildcard",
+			inSourceExt:  json.RawMessage(``),
+			inExt:        json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"},"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"wildcard.com","sid":"wildcard1","rid":"WildcardReq1","hp":1}],"ver":"1.0"}} ]}}`),
+			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
+			outExt:       json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"}}}`),
+			hasError:     false,
+		},
+		{
+			description:  "Use source schain -- multiple (two) bidder schains in ext.prebid.schains",
+			inSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
+			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
+			outSourceExt: nil,
+			outExt:       nil,
+			hasError:     true,
+		},
+	}
+
+	for _, test := range testCases {
+		req := newBidRequest(t)
+		req.Source.Ext = test.inSourceExt
+		req.Ext = test.inExt
+
+		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, config.Privacy{})
+		result := results["appnexus"]
+
+		if test.hasError == true {
+			assert.NotNil(t, errs)
+			assert.Nil(t, result)
+		} else {
+			assert.Nil(t, errs)
+			assert.Equal(t, test.outSourceExt, result.Source.Ext, test.description+":Source.Ext")
+			assert.Equal(t, test.outExt, result.Ext, test.description+":Ext")
+		}
+	}
+}
+
 func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 	var (
 		enabled  int8 = 1
@@ -302,5 +388,99 @@ func TestRandomizeList(t *testing.T) {
 	if len(adapters) != 1 {
 		t.Errorf("RandomizeList, expected a list of 1, found %d", len(adapters))
 	}
+}
 
+func TestBidderToPrebidChains(t *testing.T) {
+	input := openrtb_ext.ExtRequest{
+		Prebid: openrtb_ext.ExtRequestPrebid{
+			SChains: []*openrtb_ext.ExtRequestPrebidSChain{
+				{
+					Bidders: []string{"Bidder1", "Bidder2"},
+					SChain: openrtb_ext.ExtRequestPrebidSChainSChain{
+						Complete: 1,
+						Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+							{
+								ASI:    "asi1",
+								SID:    "sid1",
+								Name:   "name1",
+								RID:    "rid1",
+								Domain: "domain1",
+								HP:     1,
+							},
+							{
+								ASI:    "asi2",
+								SID:    "sid2",
+								Name:   "name2",
+								RID:    "rid2",
+								Domain: "domain2",
+								HP:     2,
+							},
+						},
+						Ver: "version1",
+					},
+				},
+				{
+					Bidders: []string{"Bidder3", "Bidder4"},
+					SChain:  openrtb_ext.ExtRequestPrebidSChainSChain{},
+				},
+			},
+		},
+	}
+
+	output, err := BidderToPrebidSChains(&input)
+
+	assert.Nil(t, err)
+	assert.Equal(t, len(output), 4)
+	assert.Same(t, output["Bidder1"], &input.Prebid.SChains[0].SChain)
+	assert.Same(t, output["Bidder2"], &input.Prebid.SChains[0].SChain)
+	assert.Same(t, output["Bidder3"], &input.Prebid.SChains[1].SChain)
+	assert.Same(t, output["Bidder4"], &input.Prebid.SChains[1].SChain)
+}
+
+func TestBidderToPrebidChainsDiscardMultipleChainsForBidder(t *testing.T) {
+	input := openrtb_ext.ExtRequest{
+		Prebid: openrtb_ext.ExtRequestPrebid{
+			SChains: []*openrtb_ext.ExtRequestPrebidSChain{
+				{
+					Bidders: []string{"Bidder1"},
+					SChain:  openrtb_ext.ExtRequestPrebidSChainSChain{},
+				},
+				{
+					Bidders: []string{"Bidder1", "Bidder2"},
+					SChain:  openrtb_ext.ExtRequestPrebidSChainSChain{},
+				},
+			},
+		},
+	}
+
+	output, err := BidderToPrebidSChains(&input)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, output)
+}
+
+func TestBidderToPrebidChainsNilSChains(t *testing.T) {
+	input := openrtb_ext.ExtRequest{
+		Prebid: openrtb_ext.ExtRequestPrebid{
+			SChains: nil,
+		},
+	}
+
+	output, err := BidderToPrebidSChains(&input)
+
+	assert.Nil(t, err)
+	assert.Equal(t, len(output), 0)
+}
+
+func TestBidderToPrebidChainsZeroLengthSChains(t *testing.T) {
+	input := openrtb_ext.ExtRequest{
+		Prebid: openrtb_ext.ExtRequestPrebid{
+			SChains: []*openrtb_ext.ExtRequestPrebidSChain{},
+		},
+	}
+
+	output, err := BidderToPrebidSChains(&input)
+
+	assert.Nil(t, err)
+	assert.Equal(t, len(output), 0)
 }
