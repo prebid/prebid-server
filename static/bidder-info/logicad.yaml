@@ -1,0 +1,10 @@
+maintainer:
+  email: "prebid@so-netmedia.jp"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+  app:
+    mediaTypes:
+      - banner
+

@@ -480,7 +480,33 @@ func getUserExt() []byte {
 		KeyV: 1,
 		Pref: 0,
 	}
+
+	eids := []openrtb_ext.ExtUserEid{
+		{
+			Source: "test.com",
+			Uids: []openrtb_ext.ExtUserEidUid{
+				{
+					ID:    "some_user_id",
+					Atype: 1,
+				},
+				{
+					ID: "other_user_id",
+				},
+			},
+		},
+		{
+			Source: "test2.org",
+			Uids: []openrtb_ext.ExtUserEidUid{
+				{
+					ID:    "other_user_id",
+					Atype: 2,
+				},
+			},
+		},
+	}
+
 	userExt := openrtb_ext.ExtUser{
+		Eids:      eids,
 		Consent:   "abc",
 		DigiTrust: &digitrust,
 	}
@@ -519,13 +545,16 @@ func assertAdformServerRequest(testData aBidInfo, r *http.Request, isOpenRtb boo
 	}
 
 	var midsWithCurrency = ""
+	var queryString = ""
 	if isOpenRtb {
 		midsWithCurrency = "bWlkPTMyMzQ0JnJjdXI9RVVSJm1rdj1jb2xvcjpyZWQsYWdlOjMwLTQwJm1rdz1yZWQsYmx1ZQ&bWlkPTMyMzQ1JnJjdXI9RVVS&bWlkPTMyMzQ2JnJjdXI9RVVS"
+		queryString = "CC=1&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&eids=eyJ0ZXN0LmNvbSI6eyJvdGhlcl91c2VyX2lkIjpbMF0sInNvbWVfdXNlcl9pZCI6WzFdfSwidGVzdDIub3JnIjp7Im90aGVyX3VzZXJfaWQiOlsyXX19&fd=1&gdpr=1&gdpr_consent=abc&ip=111.111.111.111&pt=gross&rp=4&stid=transaction-id&" + midsWithCurrency
 	} else {
 		midsWithCurrency = "bWlkPTMyMzQ0JnJjdXI9VVNEJm1rdj1jb2xvcjpyZWQsYWdlOjMwLTQwJm1rdz1yZWQsYmx1ZQ&bWlkPTMyMzQ1JnJjdXI9VVNE&bWlkPTMyMzQ2JnJjdXI9VVNE" // no way to pass currency in legacy adapter
+		queryString = "CC=1&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&fd=1&gdpr=1&gdpr_consent=abc&ip=111.111.111.111&pt=gross&rp=4&stid=transaction-id&" + midsWithCurrency
 	}
 
-	if ok, err := equal("CC=1&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&fd=1&gdpr=1&gdpr_consent=abc&ip=111.111.111.111&pt=gross&rp=4&stid=transaction-id&"+midsWithCurrency, r.URL.RawQuery, "Query string"); !ok {
+	if ok, err := equal(queryString, r.URL.RawQuery, "Query string"); !ok {
 		return err
 	}
 	if ok, err := equal("application/json;charset=utf-8", r.Header.Get("Content-Type"), "Content type"); !ok {
