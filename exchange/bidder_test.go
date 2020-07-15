@@ -1290,7 +1290,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	//		Headers: http.Header{},
 	//	},
 	//}
-	bidderImpl := audienceNetwork.NewFacebookBidder(server.Client(), "test-platform-id", "test-app-secret")
+	bidderImpl := audienceNetwork.NewFacebookBidder("test-platform-id", "test-app-secret")
 	bidderInfo := adapters.BidderInfo{
 		Status: adapters.StatusActive,
 		Capabilities: &adapters.CapabilitiesInfo{
