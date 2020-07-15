@@ -14,7 +14,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -1280,17 +1279,15 @@ func TestTimeoutNotificationOn(t *testing.T) {
 		buf.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
 	}
 
-	// Leaving the mock bidder implementation commented out for reference while testing the
-	// facebook actual.
-	//bidderImpl := &notifingBidder{
-	//	notiRequest: adapters.RequestData{
-	//		Method:  "GET",
-	//		Uri:     server.URL + "/notify/me",
-	//		Body:    nil,
-	//		Headers: http.Header{},
-	//	},
-	//}
-	bidderImpl := audienceNetwork.NewFacebookBidder("test-platform-id", "test-app-secret")
+	bidderImpl := &notifingBidder{
+		notiRequest: adapters.RequestData{
+			Method:  "GET",
+			Uri:     server.URL + "/notify/me",
+			Body:    nil,
+			Headers: http.Header{},
+		},
+	}
+	// bidderImpl := audienceNetwork.NewFacebookBidder("test-platform-id", "test-app-secret")
 	bidderInfo := adapters.BidderInfo{
 		Status: adapters.StatusActive,
 		Capabilities: &adapters.CapabilitiesInfo{
