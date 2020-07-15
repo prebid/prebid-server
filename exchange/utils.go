@@ -28,6 +28,29 @@ type cleanMetrics struct {
 	gdprTcfVersion int
 }
 
+func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
+	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
+
+	if len(req.Prebid.SChains) == 0 {
+		return bidderToSChains, nil
+	}
+
+	for _, schainWrapper := range req.Prebid.SChains {
+		if schainWrapper != nil && len(schainWrapper.Bidders) > 0 {
+			for _, bidder := range schainWrapper.Bidders {
+				if _, present := bidderToSChains[bidder]; present {
+					return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
+						"it must contain no more than one per bidder.", bidder)
+				} else {
+					bidderToSChains[bidder] = &schainWrapper.SChain
+				}
+			}
+		}
+	}
+
+	return bidderToSChains, nil
+}
+
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
 //
 //   1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
@@ -103,12 +126,35 @@ func cleanOpenRTBRequests(ctx context.Context,
 	return
 }
 
-func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
+func splitBidRequest(req *openrtb.BidRequest,
+	impsByBidder map[string][]openrtb.Imp,
+	aliases map[string]string,
+	usersyncs IdFetcher,
+	blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
+	labels pbsmetrics.Labels) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
+
 	requestsByBidder := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(impsByBidder))
 	explicitBuyerUIDs, err := extractBuyerUIDs(req.User)
 	if err != nil {
 		return nil, []error{err}
 	}
+
+	var requestExt openrtb_ext.ExtRequest
+	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
+	if len(req.Ext) > 0 {
+		err := json.Unmarshal(req.Ext, &requestExt)
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		sChainsByBidder, err = BidderToPrebidSChains(&requestExt)
+		if err != nil {
+			return nil, []error{err}
+		}
+	} else {
+		sChainsByBidder = make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
+	}
+
 	for bidder, imps := range impsByBidder {
 		reqCopy := *req
 		coreBidder := resolveBidder(bidder, aliases)
@@ -128,9 +174,55 @@ func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.
 			blabels[coreBidder].CookieFlag = pbsmetrics.CookieFlagYes
 		}
 		reqCopy.Imp = imps
+
+		prepareSource(&reqCopy, bidder, sChainsByBidder)
+		prepareExt(&reqCopy, &requestExt)
+
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
 	}
 	return requestsByBidder, nil
+}
+
+func prepareExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) {
+	if len(req.Ext) == 0 {
+		return
+	}
+	extCopy := *unpackedExt
+	extCopy.Prebid.SChains = nil
+	reqExt, err := json.Marshal(extCopy)
+	if err == nil {
+		req.Ext = reqExt
+	}
+}
+
+func prepareSource(req *openrtb.BidRequest, bidder string, sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain) {
+	const sChainWildCard = "*"
+	var selectedSChain *openrtb_ext.ExtRequestPrebidSChainSChain
+
+	wildCardSChain := sChainsByBidder[sChainWildCard]
+	bidderSChain := sChainsByBidder[bidder]
+
+	// source should not be modified
+	if bidderSChain == nil && wildCardSChain == nil {
+		return
+	}
+
+	if bidderSChain != nil {
+		selectedSChain = bidderSChain
+	} else {
+		selectedSChain = wildCardSChain
+	}
+
+	// set source
+	var source openrtb.Source
+	schain := openrtb_ext.ExtRequestPrebidSChain{
+		SChain: *selectedSChain,
+	}
+	sourceExt, err := json.Marshal(schain)
+	if err == nil {
+		source.Ext = sourceExt
+		req.Source = &source
+	}
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
