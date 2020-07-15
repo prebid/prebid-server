@@ -104,8 +104,6 @@ type bidderAdapter struct {
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo, debugMode bool) (*pbsOrtbSeatBid, []error) {
-	testFlag := debugMode || request.Test == 1
-
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -141,7 +139,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	for i := 0; i < len(reqData); i++ {
 		httpInfo := <-responseChannel
 		// If this is a test bid, capture debugging info from the requests.
-		if testFlag {
+		if debugMode {
 			seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
 		}
 

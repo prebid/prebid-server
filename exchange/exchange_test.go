@@ -206,14 +206,6 @@ func TestDisplayTestOutput(t *testing.T) {
 			Endpoint: server.URL,
 		}
 	}
-	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))] = config.Adapter{
-		Endpoint:   server.URL,
-		PlatformID: "abc",
-	}
-	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderBeachfront))] = config.Adapter{
-		Endpoint:         server.URL,
-		ExtraAdapterInfo: "{\"video_endpoint\":\"" + server.URL + "\"}",
-	}
 
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
@@ -232,17 +224,6 @@ func TestDisplayTestOutput(t *testing.T) {
 		AT:     1,
 		TMax:   500,
 	}
-	mockBidderResponse := &adapters.BidderResponse{
-		Bids: []*adapters.TypedBid{
-			{
-				Bid: &openrtb.Bid{
-					Price: 1.00,
-				},
-				BidType:      openrtb_ext.BidTypeBanner,
-				DealPriority: 4,
-			},
-		},
-	}
 
 	bidderImpl := &requestModifyingBidder{
 		httpRequest: &adapters.RequestData{
@@ -251,7 +232,7 @@ func TestDisplayTestOutput(t *testing.T) {
 			Body:    []byte("{\"key\":\"val\"}"),
 			Headers: http.Header{},
 		},
-		bidResponse: mockBidderResponse,
+		bidResponse: &adapters.BidderResponse{},
 	}
 
 	e := new(exchange)
@@ -259,17 +240,9 @@ func TestDisplayTestOutput(t *testing.T) {
 		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}),
 	}
 	e.cache = &wellBehavedCache{}
-	e.cacheTime = 5 * time.Millisecond
 	e.me = &metricsConf.DummyMetricsEngine{}
 	e.gDPR = gdpr.AlwaysAllow{}
 	e.currencyConverter = currencies.NewRateConverterDefault()
-	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
-	e.defaultTTLs = cfg.CacheURL.DefaultTTLs
-	e.privacyConfig = config.Privacy{
-		CCPA: cfg.CCPA,
-		GDPR: cfg.GDPR,
-		LMT:  cfg.LMT,
-	}
 
 	// Run tests
 	for i, test := range testCases {
@@ -281,7 +254,9 @@ func TestDisplayTestOutput(t *testing.T) {
 			bidRequest.Ext = nil
 		}
 
+		// Run test
 		outBidResponse, err := e.HoldAuction(context.Background(), bidRequest, &emptyUsersync{}, pbsmetrics.Labels{}, &categoriesFetcher, nil)
+
 		// Assert no HoldAuction error
 		assert.NoError(t, err, "ex.HoldAuction returned an error: %v \n", err)
 		assert.NotNil(t, outBidResponse.Ext, "outBidResponse.Ext should not be nil \n")

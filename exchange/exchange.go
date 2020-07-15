@@ -118,7 +118,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	shouldCacheVAST := false
 	var bidAdjustmentFactors map[string]float64
 	var requestExt openrtb_ext.ExtRequest
-	debugInfo := false
+	debugInfo := bidRequest.Test == 1
 	if len(bidRequest.Ext) > 0 {
 		err := json.Unmarshal(bidRequest.Ext, &requestExt)
 		if err != nil {
@@ -140,10 +140,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 			targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 		}
-		if requestExt.Prebid.Debug || bidRequest.Test == 1 {
-			// means the bidResponse will be returned with debug information.
-			debugInfo = true
-		}
+		// if true, the bidResponse will be returned with debug information.
+		debugInfo = debugInfo || requestExt.Prebid.Debug
 	}
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
@@ -667,7 +665,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		ResponseTimeMillis:   make(map[openrtb_ext.BidderName]int, len(adapterBids)),
 		RequestTimeoutMillis: req.TMax,
 	}
-	if req.Test == 1 || includeDebugInfo {
+	if includeDebugInfo {
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
 			HttpCalls: make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
 		}
@@ -678,7 +676,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 
 	for bidderName, responseExtra := range adapterExtra {
 
-		if req.Test == 1 || includeDebugInfo {
+		if includeDebugInfo {
 			bidResponseExt.Debug.HttpCalls[bidderName] = responseExtra.HttpCalls
 		}
 		// Only make an entry for bidder errors if the bidder reported any.
