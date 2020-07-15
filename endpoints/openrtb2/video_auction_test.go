@@ -1110,7 +1110,7 @@ func TestCCPA(t *testing.T) {
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	mockModule := &mockAnalyticsModule{}
-	edep := &endpointDeps{
+	deps := &endpointDeps{
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
@@ -1125,9 +1125,10 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *p
 		openrtb_ext.BidderMap,
 		nil,
 		nil,
+		hardcodedResponseIPValidator{response: true},
 	}
 
-	return edep, theMetrics, mockModule
+	return deps, theMetrics, mockModule
 }
 
 type mockAnalyticsModule struct {
@@ -1151,7 +1152,7 @@ func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) { return }
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	edep := &endpointDeps{
+	deps := &endpointDeps{
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
@@ -1166,9 +1167,10 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		openrtb_ext.BidderMap,
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
+		hardcodedResponseIPValidator{response: true},
 	}
 
-	return edep
+	return deps
 }
 
 type mockCacheClient struct {
