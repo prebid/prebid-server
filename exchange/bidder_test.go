@@ -201,7 +201,7 @@ func TestBidderTimeout(t *testing.T) {
 		Bidder:     &mixedMultiBidder{},
 		BidderName: openrtb_ext.BidderAppnexus,
 		Client:     server.Client(),
-		me:         bidderMetrics{engine: &metricsConf.DummyMetricsEngine{}},
+		me:         &metricsConf.DummyMetricsEngine{},
 	}
 
 	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
@@ -244,7 +244,7 @@ func TestConnectionClose(t *testing.T) {
 		Bidder:     &mixedMultiBidder{},
 		Client:     server.Client(),
 		BidderName: openrtb_ext.BidderAppnexus,
-		me:         bidderMetrics{engine: &metricsConf.DummyMetricsEngine{}},
+		me:         &metricsConf.DummyMetricsEngine{},
 	}
 
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
@@ -1319,7 +1319,7 @@ func TestCallRecordRecordDNSTime(t *testing.T) {
 	bidder := &bidderAdapter{
 		Bidder: &mixedMultiBidder{},
 		Client: &http.Client{Transport: DNSDoneTripper{}},
-		me:     bidderMetrics{engine: metricsMock},
+		me:     metricsMock,
 	}
 
 	// Run test
@@ -1344,10 +1344,10 @@ func TestTimeoutNotificationOff(t *testing.T) {
 		},
 	}
 	bidder := &bidderAdapter{
-		Bidder:      bidderImpl,
-		Client:      server.Client(),
-		DebugConfig: config.Debug{},
-		me:          bidderMetrics{engine: &metricsConf.DummyMetricsEngine{}},
+		Bidder: bidderImpl,
+		Client: server.Client(),
+		config: bidderAdapterConfig{DebugConfig: config.Debug{}},
+		me:     &metricsConf.DummyMetricsEngine{},
 	}
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")
@@ -1373,12 +1373,14 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	bidder := &bidderAdapter{
 		Bidder: bidderImpl,
 		Client: server.Client(),
-		DebugConfig: config.Debug{
-			TimeoutNotification: config.TimeoutNotification{
-				Log: true,
+		config: bidderAdapterConfig{
+			DebugConfig: config.Debug{
+				TimeoutNotification: config.TimeoutNotification{
+					Log: true,
+				},
 			},
 		},
-		me: bidderMetrics{engine: &metricsConf.DummyMetricsEngine{}},
+		me: &metricsConf.DummyMetricsEngine{},
 	}
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")
