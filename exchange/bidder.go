@@ -312,6 +312,10 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 // doRequest makes a request, handles the response, and returns the data needed by the
 // Bidder interface.
 func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData) *httpCallInfo {
+	return bidder.doRequestImpl(ctx, req, glog.Warningf)
+}
+
+func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg) *httpCallInfo {
 	httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(req.Body))
 	if err != nil {
 		return &httpCallInfo{
@@ -325,12 +329,18 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			err = &errortypes.Timeout{Message: err.Error()}
-			if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); ok {
+			var corebidder adapters.Bidder = bidder.Bidder
+			// The bidder adapter normally stores an info-aware bidder (a bidder wrapper)
+			// rather than the actual bidder. So we need to unpack that first.
+			if b, ok := corebidder.(*adapters.InfoAwareBidder); ok {
+				corebidder = b.Bidder
+			}
+			if tb, ok := corebidder.(adapters.TimeoutBidder); ok {
 				// Toss the timeout notification call into a go routine, as we are out of time'
 				// and cannot delay processing. We don't do anything result, as there is not much
 				// we can do about a timeout notification failure. We do not want to get stuck in
 				// a loop of trying to report timeouts to the timeout notifications.
-				go bidder.doTimeoutNotification(tb, req)
+				go bidder.doTimeoutNotification(tb, req, logger)
 			}
 
 		}
@@ -366,7 +376,7 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	}
 }
 
-func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.TimeoutBidder, req *adapters.RequestData) {
+func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.TimeoutBidder, req *adapters.RequestData, logger util.LogMsg) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 	toReq, errL := timeoutBidder.MakeTimeoutNotification(req)
@@ -385,13 +395,13 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 					msg = fmt.Sprintf("TimeoutNotification: error:(%s) body:%s", err.Error(), string(toReq.Body))
 				}
 				// If logging is turned on, and logging is not disallowed via FailOnly
-				util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
+				util.LogRandomSample(msg, logger, bidder.DebugConfig.TimeoutNotification.SamplingRate)
 			}
 		} else {
 			bidder.me.RecordTimeoutNotice(false)
 			if bidder.DebugConfig.TimeoutNotification.Log {
 				msg := fmt.Sprintf("TimeoutNotification: Failed to make timeout request: method(%s), uri(%s), error(%s)", toReq.Method, toReq.Uri, err.Error())
-				util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
+				util.LogRandomSample(msg, logger, bidder.DebugConfig.TimeoutNotification.SamplingRate)
 			}
 		}
 	} else if bidder.DebugConfig.TimeoutNotification.Log {
@@ -402,7 +412,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 		} else {
 			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errL[0].Error(), err.Error())
 		}
-		util.LogRandomSample(msg, glog.Warningf, bidder.DebugConfig.TimeoutNotification.SamplingRate)
+		util.LogRandomSample(msg, logger, bidder.DebugConfig.TimeoutNotification.SamplingRate)
 	}
 
 }
