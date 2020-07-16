@@ -27,6 +27,8 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
+type DebugContextKey string
+
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
@@ -119,6 +121,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	var bidAdjustmentFactors map[string]float64
 	var requestExt openrtb_ext.ExtRequest
 	debugInfo := bidRequest.Test == 1
+
 	if len(bidRequest.Ext) > 0 {
 		err := json.Unmarshal(bidRequest.Ext, &requestExt)
 		if err != nil {
@@ -146,13 +149,13 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
-	auctionCtx, cancel := e.makeAuctionContext(ctx, shouldCacheBids) //Why no context for `shouldCacheVast`?
+	auctionCtx, cancel := e.makeAuctionContext(ctx, shouldCacheBids, debugInfo) //Why no context for `shouldCacheVast`?
 	defer cancel()
 
 	// Get currency rates conversions for the auction
 	conversions := e.currencyConverter.Rates()
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions, debugInfo)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 
 	var auc *auction = nil
 	var bidResponseExt *openrtb_ext.ExtBidResponse = nil
@@ -287,7 +290,7 @@ func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo, bidCategory m
 	}
 }
 
-func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {
+func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool, debugInfo bool) (auctionCtx context.Context, cancel context.CancelFunc) {
 	auctionCtx = ctx
 	cancel = func() {}
 	if needsCache {
@@ -295,11 +298,16 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auc
 			auctionCtx, cancel = context.WithDeadline(ctx, deadline.Add(-e.cacheTime))
 		}
 	}
+	// Don't populate context unless `debugInfo` is true
+	if debugInfo {
+		key := DebugContextKey("debugInfo")
+		auctionCtx = context.WithValue(auctionCtx, key, "true")
+	}
 	return
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, conversions currencies.Conversions, debugInfo bool) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
+func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, conversions currencies.Conversions) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(cleanRequests))
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(cleanRequests))
@@ -329,7 +337,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			}
 			var reqInfo adapters.ExtraRequestInfo
 			reqInfo.PbsEntryPoint = bidlabels.RType
-			bids, err := e.adapterMap[coreBidder].requestBid(ctx, request, aName, adjustmentFactor, conversions, &reqInfo, debugInfo)
+			bids, err := e.adapterMap[coreBidder].requestBid(ctx, request, aName, adjustmentFactor, conversions, &reqInfo)
 
 			// Add in time reporting
 			elapsed := time.Since(start)

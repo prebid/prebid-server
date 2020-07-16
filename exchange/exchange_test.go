@@ -141,7 +141,7 @@ func TestCharacterEscape(t *testing.T) {
 	}
 }
 
-// TestDisplayTestOutput asserts the HttpCalls object is included inside the json "debug" field of the bidResponse extension when the
+// TestDebugBehaviour asserts the HttpCalls object is included inside the json "debug" field of the bidResponse extension when the
 // openrtb.BidRequest "Test" value is set to 1 or the openrtb.BidRequest.Ext.Debug boolean field is set to true
 func TestDebugBehaviour(t *testing.T) {
 
@@ -817,12 +817,26 @@ func TestTimeoutComputation(t *testing.T) {
 	ctx, cancel := context.WithDeadline(context.Background(), deadline)
 	defer cancel()
 
-	auctionCtx, cancel := ex.makeAuctionContext(ctx, true)
+	auctionCtx, cancel := ex.makeAuctionContext(ctx, true, false)
 	defer cancel()
 
 	if finalDeadline, ok := auctionCtx.Deadline(); !ok || deadline.Add(-time.Duration(cacheTimeMillis)*time.Millisecond) != finalDeadline {
 		t.Errorf("The auction should allocate cacheTime amount of time from the whole request timeout.")
 	}
+}
+
+func TestSetDebugContextKey(t *testing.T) {
+	// Setup test
+	ex := exchange{}
+
+	// Run test
+	auctionCtx, cancel := ex.makeAuctionContext(context.Background(), false, true)
+	defer cancel()
+
+	// Assert DebugContextKeyWas set in `makeAuctionContext`
+	debugInfo := auctionCtx.Value(DebugContextKey("debugInfo"))
+	assert.NotNil(t, debugInfo, "Something wrong while retrieving context value for `debugInfo`")
+	assert.Equal(t, "true", debugInfo, "The value mapped to DebugContextKey(`debugInfo`) in the context should be `true`")
 }
 
 // TestExchangeJSON executes tests for all the *.json files in exchangetest.
@@ -1822,7 +1836,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo, debugMode bool) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (seatBid *pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(name)]; ok {
 		if expectedRequest != nil {
 			if expectedRequest.BidAdjustment != bidAdjustment {
@@ -1984,6 +1998,6 @@ func (e *mockUsersync) GetId(bidder openrtb_ext.BidderName) (id string, exists b
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo, debugMode bool) (posb *pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (posb *pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
