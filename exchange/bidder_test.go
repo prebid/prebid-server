@@ -1239,8 +1239,8 @@ func TestTimeoutNotificationOff(t *testing.T) {
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
 	defer server.Close()
 
-	bidderImpl := &notifingBidder{
-		notiRequest: adapters.RequestData{
+	bidderImpl := &notifyingBidder{
+		notifyRequest: adapters.RequestData{
 			Method:  "GET",
 			Uri:     server.URL + "/notify/me",
 			Body:    nil,
@@ -1261,44 +1261,28 @@ func TestTimeoutNotificationOff(t *testing.T) {
 }
 
 func TestTimeoutNotificationOn(t *testing.T) {
-	ctx, cancelFunc := context.WithDeadline(context.Background(), time.Now().Add(-7*time.Hour))
+	// Expire context immediately to force timeout handler.
+	ctx, cancelFunc := context.WithDeadline(context.Background(), time.Now())
 	cancelFunc()
-	respBody := "{\"bid\":false}"
-	respStatus := 200
-	server := httptest.NewServer(mockSlowHandler(respStatus, "getBody", respBody))
+
+	// Notification logic is hardcoded for 200ms. We need to wait for a little longer than that.
+	server := httptest.NewServer(mockSlowHandler(205*time.Millisecond, 200, `{"bid":false}`))
 	defer server.Close()
-	bidRequest := adapters.RequestData{
-		Method: "POST",
-		Uri:    server.URL,
-		Body:   []byte("{\"id\":\"this-id\",\"app\":{\"publisher\":{\"id\":\"pub-id\"}}}"),
-	}
 
-	var buf bytes.Buffer
-
-	mylogger := func(msg string, args ...interface{}) {
-		buf.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
-	}
-
-	bidderImpl := &notifingBidder{
-		notiRequest: adapters.RequestData{
+	bidder := &notifyingBidder{
+		notifyRequest: adapters.RequestData{
 			Method:  "GET",
 			Uri:     server.URL + "/notify/me",
 			Body:    nil,
 			Headers: http.Header{},
 		},
 	}
-	// bidderImpl := audienceNetwork.NewFacebookBidder("test-platform-id", "test-app-secret")
-	bidderInfo := adapters.BidderInfo{
-		Status: adapters.StatusActive,
-		Capabilities: &adapters.CapabilitiesInfo{
-			App: &adapters.PlatformInfo{
-				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
-			},
-		},
-	}
-	ibidder := adapters.EnforceBidderInfo(bidderImpl, bidderInfo)
-	bidder := &bidderAdapter{
-		Bidder: ibidder,
+
+	// Wrap with BidderInfo to mimic exchange.go flow.
+	bidderWrappedWithInfo := wrapWithBidderInfo(bidder)
+
+	bidderAdapter := &bidderAdapter{
+		Bidder: bidderWrappedWithInfo,
 		Client: server.Client(),
 		DebugConfig: config.Debug{
 			TimeoutNotification: config.TimeoutNotification{
@@ -1308,19 +1292,47 @@ func TestTimeoutNotificationOn(t *testing.T) {
 		},
 		me: &metricsConfig.DummyMetricsEngine{},
 	}
-	var corebidder adapters.Bidder = bidder.Bidder
-	if b, ok := corebidder.(*adapters.InfoAwareBidder); ok {
-		corebidder = b.Bidder
+
+	// Unwrap To Mimic exchange.go Casting Code
+	var coreBidder adapters.Bidder = bidderAdapter.Bidder
+	if b, ok := coreBidder.(*adapters.InfoAwareBidder); ok {
+		coreBidder = b.Bidder
 	}
-	if _, ok := corebidder.(adapters.TimeoutBidder); !ok {
+	if _, ok := coreBidder.(adapters.TimeoutBidder); !ok {
 		t.Fatal("Failed to cast bidder to a TimeoutBidder")
-	} else {
-		bidder.doRequestImpl(ctx, &bidRequest, mylogger)
 	}
-	time.Sleep(300 * time.Millisecond)
-	expected := "TimeoutNotification: error:(context deadline exceeded) body:\n"
-	actual := buf.String()
-	assert.EqualValues(t, expected, actual)
+
+	bidRequest := adapters.RequestData{
+		Method: "POST",
+		Uri:    server.URL,
+		Body:   []byte(`{"id":"this-id","app":{"publisher":{"id":"pub-id"}}}`),
+	}
+
+	var loggerBuffer bytes.Buffer
+	logger := func(msg string, args ...interface{}) {
+		loggerBuffer.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
+	}
+
+	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger)
+
+	// Wait a little longer than the 205ms mock server sleep.
+	time.Sleep(210 * time.Millisecond)
+
+	logExpected := "TimeoutNotification: error:(context deadline exceeded) body:\n"
+	logActual := loggerBuffer.String()
+	assert.EqualValues(t, logExpected, logActual)
+}
+
+func wrapWithBidderInfo(bidder adapters.Bidder) adapters.Bidder {
+	bidderInfo := adapters.BidderInfo{
+		Status: adapters.StatusActive,
+		Capabilities: &adapters.CapabilitiesInfo{
+			App: &adapters.PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+			},
+		},
+	}
+	return adapters.EnforceBidderInfo(bidder, bidderInfo)
 }
 
 type goodSingleBidder struct {
@@ -1397,19 +1409,19 @@ func (bidder *bidRejector) MakeBids(internalRequest *openrtb.BidRequest, externa
 	return nil, []error{errors.New("Can't make a response.")}
 }
 
-type notifingBidder struct {
-	requests    []*adapters.RequestData
-	notiRequest adapters.RequestData
+type notifyingBidder struct {
+	requests      []*adapters.RequestData
+	notifyRequest adapters.RequestData
 }
 
-func (bidder *notifingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (bidder *notifyingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	return bidder.requests, nil
 }
 
-func (bidder *notifingBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (bidder *notifyingBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	return nil, nil
 }
 
-func (bidder *notifingBidder) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
-	return &bidder.notiRequest, nil
+func (bidder *notifyingBidder) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+	return &bidder.notifyRequest, nil
 }
