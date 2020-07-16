@@ -331,7 +331,7 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 
 	// If adapter connection metrics are not disabled, add the client trace
 	// to get complete connection info into our metrics
-	if !bidder.me.disabledMetrics.AccountAdapterDetails {
+	if !bidder.me.disabledMetrics.AdapterConnectionMetrics {
 		ctx = bidder.addClientTrace(ctx)
 	}
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
