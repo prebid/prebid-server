@@ -7,6 +7,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -190,14 +191,14 @@ func TestMakeBids(t *testing.T) {
 	externalRequest := adapters.RequestData{}
 	response := adapters.ResponseData{
 		StatusCode: 200,
-		Body:       ([]byte)("{\n \"ad\": \"<!DOCTYPE html>\\n<head>\\n<meta charset=\\\"UTF-8\\\">\\n<script src=\\\"test.com\\\"></script>\\n<body>\\n<div id=\\\"medibasspContainer\\\">\\n<iframe src=\\\"https://dummy-iframe.com></iframe>\\n</div>\\n</body>\\n\",\n \"beacon\": \"<img src=\\\"https://dummy-beacon.com\\\">\",\n \"beaconurl\": \"https://tg.socdm.com/bc/v3?b=beaconID&t=.gif\",\n \"cpm\": 30,\n \"creativeid\": \"Dummy_supership.jp\",\n \"displaytype\": \"1\",\n \"h\": 250,\n \"ids\": {\n \"anid\": \"\",\n \"diid\": \"\",\n \"idfa\": \"\",\n \"soc\": \"Soc\"\n },\n \"location_params\": null,\n \"locationid\": \"58278\",\n \"results\": [\n {\n \"ad\": \"<div id=\\\"medibasspContainer\\\">\\n<iframe src=\\\"https://dummy-iframe.com></iframe>\\n</div>\",\n \"beacon\": \"<img src=\\\"https://dummy-beacon.com\\\">\",\n \"beaconurl\": \"ttps://dummy-beacon.com\",\n \"cpm\": 30,\n \"creativeid\": \"Dummy_supership.jp\",\n \"h\": 250,\n \"landing_url\": \"\",\n \"scheduleid\": \"512601\",\n \"trackers\": {\n \"imp\": [\n \"https://tg.socdm.com/bc/v3?b=beaconID.gif\"\n ],\n \"viewable_imp\": [\n \"https://tg.socdm.com/aux/inview\"\n ],\n \"viewable_measured\": [\n \"https://tg.socdm.com/aux/measured\"\n ]\n },\n \"ttl\": 10,\n \"w\": 300,\n \"weight\": 1\n }\n ],\n \"dealid\": \"test-deal-id\",\n \"rotation\": \"0\",\n \"scheduleid\": \"512601\",\n \"sdktype\": \"0\",\n \"trackers\": {\n \"imp\": [\n \"https://tg.socdm.com/bc/v3?b=beaconID.gif\"\n ],\n \"viewable_imp\": [\n \"https://tg.socdm.com/aux/inview\"\n ],\n \"viewable_measured\": [\n \"https://tg.socdm.com/aux/measured\"\n ]\n },\n \"ttl\": 10,\n \"w\": 300\n}"),
+		Body:       ([]byte)("{\n \"ad\": \"<!DOCTYPE html>\\n<body>\\n<div>\\n<iframe></iframe>\\n</div>\\n</body>\\n\",\n \"beacon\": \"<img src=\\\"https://dummy-beacon.com\\\">\",\n \"cpm\": 30,\n \"creativeid\": \"Dummy_supership.jp\",\n \"h\": 250,\n \"locationid\": \"58278\",\n \"results\": [{}],\n \"dealid\": \"test-deal-id\",\n \"w\": 300\n }"),
 	}
 	// default Currency InternalRequest
-	defaultCurBidderRespoonse, errs := bidder.MakeBids(internalRequest, &externalRequest, &response)
+	defaultCurBidderResponse, errs := bidder.MakeBids(internalRequest, &externalRequest, &response)
 	if len(errs) > 0 {
 		t.Errorf("MakeBids return errors. errors: %v", errs)
 	}
-	checkBidResponse(t, defaultCurBidderRespoonse, bidder.defaultCurrency)
+	checkBidResponse(t, defaultCurBidderResponse, bidder.defaultCurrency)
 
 	// Specified Currency InternalRequest
 	usdCur := "USD"
@@ -210,9 +211,12 @@ func TestMakeBids(t *testing.T) {
 
 }
 
-func checkBidResponse(t *testing.T, bidderRespoonse *adapters.BidderResponse, expectedCurrency string) {
+func checkBidResponse(t *testing.T, bidderResponse *adapters.BidderResponse, expectedCurrency string) {
+	if bidderResponse == nil {
+		t.Errorf("actual bidResponse is nil.")
+	}
 
-	var expectedAdM string = "<div id=\"medibasspContainer\">\n<iframe src=\"https://dummy-iframe.com></iframe>\n</div>\n<img src=\"https://dummy-beacon.com\">"
+	var expectedAdM string = "<div>\n<iframe></iframe>\n</div>\n<img src=\"https://dummy-beacon.com\">"
 	var expectedID string = "58278"
 	var expectedImpID = "bidRequest-success-test"
 	var expectedPrice float64 = 30.0
@@ -221,36 +225,14 @@ func checkBidResponse(t *testing.T, bidderRespoonse *adapters.BidderResponse, ex
 	var expectedCrID string = "Dummy_supership.jp"
 	var extectedDealID string = "test-deal-id"
 
-	// Currency
-	if bidderRespoonse.Currency != expectedCurrency {
-		t.Errorf("Currency %v does not equal %v", bidderRespoonse.Currency, expectedCurrency)
-	}
-	// Bids
-	if len(bidderRespoonse.Bids) != 1 {
-		t.Errorf("Incorrect number of bids returned. len:%d", len(bidderRespoonse.Bids))
-	}
-	if bidderRespoonse.Bids[0].Bid.ID != expectedID {
-		t.Errorf("ID %s does not equal %s.", bidderRespoonse.Bids[0].Bid.ID, expectedID)
-	}
-	if bidderRespoonse.Bids[0].Bid.ImpID != expectedImpID {
-		t.Errorf("ImpID %s does not equal %s.", bidderRespoonse.Bids[0].Bid.ID, expectedImpID)
-	}
-	if bidderRespoonse.Bids[0].Bid.AdM != expectedAdM {
-		t.Errorf("AdM %s does not equal %s.", bidderRespoonse.Bids[0].Bid.AdM, expectedAdM)
-	}
-	if bidderRespoonse.Bids[0].Bid.Price != expectedPrice {
-		t.Errorf("Price %f does not equal %f.", bidderRespoonse.Bids[0].Bid.Price, expectedPrice)
-	}
-	if bidderRespoonse.Bids[0].Bid.W != expectedW {
-		t.Errorf("W %d does not equal %d.", bidderRespoonse.Bids[0].Bid.W, expectedW)
-	}
-	if bidderRespoonse.Bids[0].Bid.H != expectedH {
-		t.Errorf("H %d does not equal %d.", bidderRespoonse.Bids[0].Bid.H, expectedH)
-	}
-	if bidderRespoonse.Bids[0].Bid.CrID != expectedCrID {
-		t.Errorf("CrID %s does not equal %s.", bidderRespoonse.Bids[0].Bid.CrID, expectedCrID)
-	}
-	if bidderRespoonse.Bids[0].Bid.DealID != extectedDealID {
-		t.Errorf("DealID %s does not equal %s.", bidderRespoonse.Bids[0].Bid.DealID, extectedDealID)
-	}
+	assert.Equal(t, expectedCurrency, bidderResponse.Currency)
+	assert.Equal(t, 1, len(bidderResponse.Bids))
+	assert.Equal(t, expectedID, bidderResponse.Bids[0].Bid.ID)
+	assert.Equal(t, expectedImpID, bidderResponse.Bids[0].Bid.ImpID)
+	assert.Equal(t, expectedAdM, bidderResponse.Bids[0].Bid.AdM)
+	assert.Equal(t, expectedPrice, bidderResponse.Bids[0].Bid.Price)
+	assert.Equal(t, expectedW, bidderResponse.Bids[0].Bid.W)
+	assert.Equal(t, expectedH, bidderResponse.Bids[0].Bid.H)
+	assert.Equal(t, expectedCrID, bidderResponse.Bids[0].Bid.CrID)
+	assert.Equal(t, extectedDealID, bidderResponse.Bids[0].Bid.DealID)
 }
