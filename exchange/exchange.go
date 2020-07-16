@@ -211,7 +211,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// Build the response
-	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, bidResponseExt, debugInfo, errs)
+	return e.buildBidResponse(auctionCtx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, bidResponseExt, errs)
 }
 
 type DealTierInfo struct {
@@ -300,8 +300,7 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool, debu
 	}
 	// Don't populate context unless `debugInfo` is true
 	if debugInfo {
-		key := DebugContextKey("debugInfo")
-		auctionCtx = context.WithValue(auctionCtx, key, "true")
+		auctionCtx = context.WithValue(auctionCtx, DebugContextKey("debugInfo"), "true")
 	}
 	return
 }
@@ -456,7 +455,7 @@ func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderError {
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, debugInfo bool, errList []error) (*openrtb.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, errList []error) (*openrtb.BidResponse, error) {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -480,7 +479,8 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	bidResponse.SeatBid = seatBids
 
 	if bidResponseExt == nil {
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, debugInfo, errList)
+		debugInfo := ctx.Value(DebugContextKey("debugInfo"))
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, debugInfo != nil, errList)
 	}
 	buffer := &bytes.Buffer{}
 	enc := json.NewEncoder(buffer)
