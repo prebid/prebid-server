@@ -1311,30 +1311,6 @@ func (bidder *goodSingleBidder) MakeBids(internalRequest *openrtb.BidRequest, ex
 	return bidder.bidResponse, nil
 }
 
-type requestModifyingBidder struct {
-	bidRequest   *openrtb.BidRequest
-	httpRequest  *adapters.RequestData
-	httpResponse *adapters.ResponseData
-	bidResponse  *adapters.BidderResponse
-}
-
-func (bidder *requestModifyingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	//This bidder modifies the requests of the request argument which is a shallow copy of the original *openrtb.BidRequest
-	if request.Test == 1 {
-		request.Test = 0
-	} else {
-		request.Test = 1
-	}
-
-	bidder.bidRequest = request
-	return []*adapters.RequestData{bidder.httpRequest}, nil
-}
-
-func (bidder *requestModifyingBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	bidder.httpResponse = response
-	return bidder.bidResponse, nil
-}
-
 type goodMultiHTTPCallsBidder struct {
 	bidRequest        *openrtb.BidRequest
 	httpRequest       []*adapters.RequestData

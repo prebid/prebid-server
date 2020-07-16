@@ -143,7 +143,7 @@ func TestCharacterEscape(t *testing.T) {
 
 // TestDisplayTestOutput asserts the HttpCalls object is included inside the json "debug" field of the bidResponse extension when the
 // openrtb.BidRequest "Test" value is set to 1 or the openrtb.BidRequest.Ext.Debug boolean field is set to true
-func TestDisplayTestOutput(t *testing.T) {
+func TestDebugBehaviour(t *testing.T) {
 
 	// Define test cases
 	type inTest struct {
@@ -161,12 +161,12 @@ func TestDisplayTestOutput(t *testing.T) {
 	testCases := []aTest{
 		{
 			desc: "[1] test flag equals zero, ext debug flag false, no debug info expected",
-			in:   inTest{},
-			out:  outTest{},
+			in:   inTest{test: 0, debug: false},
+			out:  outTest{debugInfoIncluded: false},
 		},
 		{
 			desc: "[2] test flag equals zero, ext debug flag true, debug info expected",
-			in:   inTest{debug: true},
+			in:   inTest{test: 0, debug: true},
 			out:  outTest{debugInfoIncluded: true},
 		},
 		{
@@ -182,7 +182,7 @@ func TestDisplayTestOutput(t *testing.T) {
 		{
 			desc: "[5] test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
 			in:   inTest{test: 2, debug: false},
-			out:  outTest{},
+			out:  outTest{debugInfoIncluded: false},
 		},
 		{
 			desc: "[6] test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
@@ -197,15 +197,6 @@ func TestDisplayTestOutput(t *testing.T) {
 	}
 	server := httptest.NewServer(http.HandlerFunc(noBidServer))
 	defer server.Close()
-
-	cfg := &config.Configuration{
-		Adapters: make(map[string]config.Adapter, len(openrtb_ext.BidderMap)),
-	}
-	for _, bidder := range openrtb_ext.BidderList() {
-		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
-			Endpoint: server.URL,
-		}
-	}
 
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
@@ -225,7 +216,7 @@ func TestDisplayTestOutput(t *testing.T) {
 		TMax:   500,
 	}
 
-	bidderImpl := &requestModifyingBidder{
+	bidderImpl := &goodSingleBidder{
 		httpRequest: &adapters.RequestData{
 			Method:  "POST",
 			Uri:     server.URL,
