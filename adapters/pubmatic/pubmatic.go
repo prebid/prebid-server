@@ -561,9 +561,12 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			impVideo := &openrtb_ext.ExtBidPrebidVideo{
-				PrimaryCategory: head(bid.Cat),
+			impVideo := &openrtb_ext.ExtBidPrebidVideo{}
+
+			if len(bid.Cat) > 1 {
+				bid.Cat = []string{bid.Cat[0]}
 			}
+
 			var bidExt *pubmaticBidExt
 			bidType := openrtb_ext.BidTypeBanner
 			if err := json.Unmarshal(bid.Ext, &bidExt); err == nil && bidExt != nil {
@@ -624,12 +627,4 @@ func NewPubmaticBidder(client *http.Client, uri string) *PubmaticAdapter {
 		http: a,
 		URI:  uri,
 	}
-}
-
-func head(s []string) string {
-	if len(s) == 0 {
-		return ""
-	}
-
-	return s[0]
 }
