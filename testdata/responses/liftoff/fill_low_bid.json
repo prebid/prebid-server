@@ -23,7 +23,15 @@
           ],
           "lurl": "http://rtbnotify.liftoff.io/EXCHANGE?id=72b866b0-9508-41df-8e46-830080942b52&code=${AUCTION_LOSS}&cpm=${AUCTION_PRICE}",
           "w": 320,
-          "h": 480
+          "h": 480,
+          "ext": {
+            "imptrackers": [
+              "https://lb-www2.foobar.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}",
+              "https://lb-www2.foobar2.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}",
+              "https://lb-www2.foobar3.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}",
+              "https://lb-www2.foobar4.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}"
+            ]
+          }
         }
       ]
     }
