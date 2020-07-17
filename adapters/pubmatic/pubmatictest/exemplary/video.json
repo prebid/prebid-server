@@ -144,8 +144,7 @@
               "adm": "some-test-ad",
               "adomain": ["pubmatic.com"],
               "cat": [
-                "IAB-1",
-                "IAB-2"
+                "IAB-1"
               ],
               "crid": "29681110",
               "w": 300,
@@ -162,8 +161,7 @@
             },
             "type": "video",
             "video" :{
-              "duration" : 5,
-              "primary_category" : "IAB-1"  
+              "duration" : 5
             }
           }
         ]

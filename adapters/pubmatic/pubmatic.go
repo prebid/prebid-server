@@ -684,9 +684,13 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			bid := sb.Bid[i]
 			// Copy SeatBid Ext to Bid.Ext
 			bid.Ext = copySBExtToBidExt(sb.Ext, bid.Ext)
-			impVideo := &openrtb_ext.ExtBidPrebidVideo{
-				PrimaryCategory: head(bid.Cat),
+
+			impVideo := &openrtb_ext.ExtBidPrebidVideo{}
+
+			if len(bid.Cat) > 1 {
+				bid.Cat = []string{bid.Cat[0]}
 			}
+
 			var bidExt *pubmaticBidExt
 			bidType := openrtb_ext.BidTypeBanner
 			if err := json.Unmarshal(bid.Ext, &bidExt); err == nil && bidExt != nil {
