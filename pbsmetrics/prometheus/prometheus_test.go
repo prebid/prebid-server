@@ -944,33 +944,96 @@ func TestTimeoutNotifications(t *testing.T) {
 
 }
 
-func TestTCFMetrics(t *testing.T) {
+func TestRecordRequestPrivacy(t *testing.T) {
 	m := createMetricsForTesting()
 
-	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(0))
-	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(1))
-	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(2))
-	m.RecordTCFReq(pbsmetrics.TCFVersionToValue(1))
+	// CCPA
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		CCPAEnforced: true,
+		CCPAProvided: true,
+	})
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		CCPAEnforced: true,
+		CCPAProvided: false,
+	})
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		CCPAEnforced: false,
+		CCPAProvided: true,
+	})
 
-	assertCounterVecValue(t, "", "privacy_tcf:err", m.tcfVersion,
+	// COPPA
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		COPPAEnforced: true,
+	})
+
+	// LMT
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		LMTEnforced: true,
+	})
+
+	// GDPR
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: pbsmetrics.TCFVersionErr,
+	})
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: pbsmetrics.TCFVersionV1,
+	})
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: pbsmetrics.TCFVersionV2,
+	})
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: pbsmetrics.TCFVersionV1,
+	})
+
+	assertCounterVecValue(t, "", "privacy_ccpa", m.privacyCCPA,
 		float64(1),
 		prometheus.Labels{
-			versionLabel: "err",
-			sourceLabel:  sourceRequest,
+			sourceLabel: sourceRequest,
+			optOutLabel: "true",
 		})
 
-	assertCounterVecValue(t, "", "privacy_tcf:v1", m.tcfVersion,
+	assertCounterVecValue(t, "", "privacy_ccpa", m.privacyCCPA,
+		float64(1),
+		prometheus.Labels{
+			sourceLabel: sourceRequest,
+			optOutLabel: "false",
+		})
+
+	assertCounterVecValue(t, "", "privacy_coppa", m.privacyCOPPA,
+		float64(1),
+		prometheus.Labels{
+			sourceLabel: sourceRequest,
+		})
+
+	assertCounterVecValue(t, "", "privacy_lmt", m.privacyLMT,
+		float64(1),
+		prometheus.Labels{
+			sourceLabel: sourceRequest,
+		})
+
+	assertCounterVecValue(t, "", "privacy_tcf:err", m.privacyTCF,
+		float64(1),
+		prometheus.Labels{
+			sourceLabel:  sourceRequest,
+			versionLabel: "err",
+		})
+
+	assertCounterVecValue(t, "", "privacy_tcf:v1", m.privacyTCF,
 		float64(2),
 		prometheus.Labels{
-			versionLabel: "v1",
 			sourceLabel:  sourceRequest,
+			versionLabel: "v1",
 		})
 
-	assertCounterVecValue(t, "", "privacy_tcf:v2", m.tcfVersion,
+	assertCounterVecValue(t, "", "privacy_tcf:v2", m.privacyTCF,
 		float64(1),
 		prometheus.Labels{
-			versionLabel: "v2",
 			sourceLabel:  sourceRequest,
+			versionLabel: "v2",
 		})
 }
 
