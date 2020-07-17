@@ -1,6 +1,6 @@
 // parts copied from: https://github.com/efritz/glock
 
-package clock
+package timeutil
 
 import (
 	"sync"
@@ -18,7 +18,7 @@ type (
 )
 
 // Make sure MockClock conforms to the interfaces
-var _ Clock = &MockClock{}
+var _ Time = &MockClock{}
 
 // NewMockClock creates a new MockClock with the internal time set
 // to time.Now()
@@ -32,14 +32,6 @@ func NewMockClockAt(now time.Time) *MockClock {
 	return &MockClock{
 		fakeTime: now,
 	}
-}
-
-// SetCurrent sets the internal MockClock time to the supplied time.
-func (mc *MockClock) SetCurrent(current time.Time) {
-	mc.nowLock.Lock()
-	defer mc.nowLock.Unlock()
-
-	mc.fakeTime = current
 }
 
 // Advance will advance the internal MockClock time by the supplied time.
@@ -56,14 +48,4 @@ func (mc *MockClock) Now() time.Time {
 	defer mc.nowLock.RUnlock()
 
 	return mc.fakeTime
-}
-
-// Since returns the time elapsed since t.
-func (mc *MockClock) Since(t time.Time) time.Duration {
-	return mc.Now().Sub(t)
-}
-
-// Until returns the duration until t.
-func (mc *MockClock) Until(t time.Time) time.Duration {
-	return t.Sub(mc.Now())
 }

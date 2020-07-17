@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/clock"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/util/timeutil"
 )
 
 // RateConverter holds the currencies conversion rates dictionary
@@ -22,7 +22,7 @@ type RateConverter struct {
 	rates               atomic.Value // Should only hold Rates struct
 	lastUpdated         atomic.Value // Should only hold time.Time
 	constantRates       Conversions
-	pbsClock            clock.Clock
+	clock               timeutil.Time
 }
 
 // NewRateConverter returns a new RateConverter
@@ -31,14 +31,14 @@ func NewRateConverter(
 	syncSourceURL string,
 	fetchingInterval time.Duration,
 	staleRatesThreshold time.Duration,
-	pbsClock clock.Clock,
+	clock timeutil.Time,
 ) *RateConverter {
 	return NewRateConverterWithNotifier(
 		httpClient,
 		syncSourceURL,
 		fetchingInterval,
 		staleRatesThreshold,
-		pbsClock,
+		clock,
 		nil, // no notifier channel specified, won't send any notifications
 	)
 }
@@ -47,7 +47,7 @@ func NewRateConverter(
 // By default there will be no currencies conversions done.
 // `currencies.ConstantRate` will be used.
 func NewRateConverterDefault() *RateConverter {
-	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0), clock.NewRealClock())
+	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0), timeutil.NewRealClock())
 }
 
 // NewRateConverterWithNotifier returns a new RateConverter
@@ -59,10 +59,10 @@ func NewRateConverterWithNotifier(
 	syncSourceURL string,
 	fetchingInterval time.Duration,
 	staleRatesThreshold time.Duration,
-	pbsClock clock.Clock,
+	clock timeutil.Time,
 	updateNotifier chan<- int,
 ) *RateConverter {
-	rc := &RateConverter{
+	return &RateConverter{
 		httpClient:          httpClient,
 		updateNotifier:      updateNotifier,
 		fetchingInterval:    fetchingInterval,
@@ -71,10 +71,8 @@ func NewRateConverterWithNotifier(
 		rates:               atomic.Value{},
 		lastUpdated:         atomic.Value{},
 		constantRates:       NewConstantRates(),
-		pbsClock:            pbsClock,
+		clock:               clock,
 	}
-
-	return rc
 }
 
 // fetch allows to retrieve the currencies rates from the syncSourceURL provided
@@ -114,7 +112,7 @@ func (rc *RateConverter) update() error {
 	rates, err := rc.fetch()
 	if err == nil {
 		rc.rates.Store(rates)
-		rc.lastUpdated.Store(rc.pbsClock.Now())
+		rc.lastUpdated.Store(rc.clock.Now())
 	} else {
 		if rc.checkStaleRates() {
 			rc.clearRates()
@@ -165,7 +163,7 @@ func (rc *RateConverter) checkStaleRates() bool {
 		return false
 	}
 
-	currentTime := rc.pbsClock.Now().UTC()
+	currentTime := rc.clock.Now().UTC()
 	if lastUpdated := rc.lastUpdated.Load(); lastUpdated != nil {
 		delta := currentTime.Sub(lastUpdated.(time.Time).UTC())
 		if delta.Seconds() > rc.staleRatesThreshold.Seconds() {

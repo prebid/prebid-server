@@ -17,13 +17,13 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/clock"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
+	"github.com/prebid/prebid-server/util/timeutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
@@ -529,18 +529,12 @@ func TestMultiCurrencies(t *testing.T) {
 		currencyConverter := currencies.NewRateConverter(
 			&http.Client{},
 			mockedHTTPServer.URL,
-			// time.Duration(10)*time.Second,
 			time.Duration(10)*time.Millisecond,
 			time.Duration(24)*time.Hour,
-			clock.NewRealClock(),
+			timeutil.NewRealClock(),
 		)
 		time.Sleep(time.Duration(500) * time.Millisecond)
-		currencyConverterTickerTask := currencies.NewTickerTask(time.Duration(10)*time.Second, currencyConverter)
-		currencyConverterTickerTask.Start(true)
-
-		fmt.Println("START")
-		fmt.Println(currencyConverter.Rates())
-		fmt.Println("END")
+		currencyConverter.Run()
 
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
@@ -561,8 +555,6 @@ func TestMultiCurrencies(t *testing.T) {
 		}
 		assert.ElementsMatch(t, tc.expectedBids, resultLightBids, tc.description)
 		assert.ElementsMatch(t, tc.expectedBadCurrencyErrors, errs, tc.description)
-
-		currencyConverterTickerTask.Stop()
 	}
 }
 
@@ -858,7 +850,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Second,
 			time.Duration(24)*time.Hour,
-			clock.NewRealClock(),
+			timeutil.NewRealClock(),
 		)
 		seatBid, errs := bidder.requestBid(
 			context.Background(),

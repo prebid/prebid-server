@@ -9,54 +9,53 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/clock"
 	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/util/timeutil"
 	"github.com/stretchr/testify/assert"
 )
 
+type MockRunner struct {
+	updateNotifier chan<- int
+}
+
+func (mcc *MockRunner) Run() error                 { return nil }
+func (mcc *MockRunner) GetRunNotifier() chan<- int { return mcc.updateNotifier }
+
 func TestStop(t *testing.T) {
 	// Setup:
-	calledURLs := []string{}
-	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
-		func(rw http.ResponseWriter, req *http.Request) {
-			calledURLs = append(calledURLs, req.RequestURI)
-			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(getMockRates()))
-		}),
-	)
+	ticks := make(chan int)
+	mockRunner := &MockRunner{updateNotifier: ticks}
+	interval := time.Duration(1) * time.Millisecond
+	ticker := currencies.NewTickerTask(interval, mockRunner)
 
 	// Execute:
 	expectedTicks := 2
-	ticks := make(chan int)
-	fetchingInterval := time.Duration(100) * time.Millisecond
-	currencyConverter := currencies.NewRateConverterWithNotifier(
-		&http.Client{},
-		mockedHttpServer.URL,
-		fetchingInterval,
-		time.Duration(24)*time.Hour,
-		clock.NewRealClock(),
-		ticks,
-	)
-	ticker := currencies.NewTickerTask(fetchingInterval, currencyConverter)
-	ticker.Start(true)
+	ticker.Start()
 
 	// Let the currency converter fetch 2 times before stopping it
 	for ticksCount := range ticks {
-		if ticksCount == expectedTicks {
+		if ticksCount >= expectedTicks {
 			ticker.Stop()
 			break
 		}
 	}
-	lastFetched := time.Now()
 
 	// Verify:
-	// Check for the next 1 second that no fetch was triggered
-	time.Sleep(1 * time.Second)
+	// Give the ticker enough time to tick again if it didn't stop
+	time.Sleep(2 * time.Millisecond)
 
-	assert.False(t, currencyConverter.LastUpdated().After(lastFetched), "LastUpdated() shouldn't be after `lastFetched` since the periodic fetching is stopped")
+	// Verify no additional data was received because the ticker was stopped
+	var moreTicks bool
+	select {
+	case <-ticks:
+		moreTicks = true
+	default:
+		moreTicks = false
+	}
+	assert.Equal(t, moreTicks, false)
 }
 
-func TestFetchingIntervalNotSet(t *testing.T) {
+func TestIntervalNotSet(t *testing.T) {
 
 	// Setup:
 	calledURLs := []string{}
@@ -69,16 +68,16 @@ func TestFetchingIntervalNotSet(t *testing.T) {
 	)
 
 	// Execute:
-	fetchingInterval := time.Duration(0)
+	interval := time.Duration(0)
 	currencyConverter := currencies.NewRateConverter(
 		&http.Client{},
 		mockedHttpServer.URL,
-		fetchingInterval,
+		interval,
 		time.Duration(24)*time.Hour,
-		clock.NewRealClock(),
+		timeutil.NewRealClock(),
 	)
-	ticker := currencies.NewTickerTask(fetchingInterval, currencyConverter)
-	ticker.Start(true)
+	ticker := currencies.NewTickerTask(interval, currencyConverter)
+	ticker.Start()
 
 	// Verify:
 	// Check for the next 1 second that no fetch was triggered
@@ -104,17 +103,17 @@ func TestInit(t *testing.T) {
 	expectedTicks := 5
 	ticksTimes := []time.Time{}
 	ticks := make(chan int)
-	fetchingInterval := time.Duration(100) * time.Millisecond
+	interval := time.Duration(100) * time.Millisecond
 	currencyConverter := currencies.NewRateConverterWithNotifier(
 		&http.Client{},
 		mockedHttpServer.URL,
-		fetchingInterval,
+		interval,
 		time.Duration(24)*time.Hour,
-		clock.NewRealClock(),
+		timeutil.NewRealClock(),
 		ticks,
 	)
-	ticker := currencies.NewTickerTask(fetchingInterval, currencyConverter)
-	ticker.Start(true)
+	ticker := currencies.NewTickerTask(interval, currencyConverter)
+	ticker.Start()
 
 	// Verify:
 	errorMargin := 0.1 // 10% error margin
@@ -135,8 +134,8 @@ func TestInit(t *testing.T) {
 		ticksTimes = append(ticksTimes, time.Now())
 		if len(ticksTimes) > 1 {
 			intervalDuration := ticksTimes[len(ticksTimes)-1].Truncate(time.Millisecond).Sub(ticksTimes[len(ticksTimes)-2].Truncate(time.Millisecond))
-			intervalDiff := float64(float64(intervalDuration.Nanoseconds()) / float64(fetchingInterval.Nanoseconds()))
-			assert.False(t, intervalDiff > float64(errorMargin*100), "Interval between ticks should be: %d but was: %d", fetchingInterval, intervalDuration)
+			intervalDiff := float64(float64(intervalDuration.Nanoseconds()) / float64(interval.Nanoseconds()))
+			assert.False(t, intervalDiff > float64(errorMargin*100), "Interval between ticks should be: %d but was: %d", interval, intervalDuration)
 		}
 
 		assert.NotEqual(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated should be set")
@@ -178,17 +177,17 @@ func TestRates(t *testing.T) {
 
 	// Execute:
 	ticks := make(chan int)
-	fetchingInterval := time.Duration(100) * time.Millisecond
+	interval := time.Duration(100) * time.Millisecond
 	currencyConverter := currencies.NewRateConverterWithNotifier(
 		&http.Client{},
 		mockedHttpServer.URL,
-		fetchingInterval,
+		interval,
 		time.Duration(24)*time.Hour,
-		clock.NewRealClock(),
+		timeutil.NewRealClock(),
 		ticks,
 	)
-	ticker := currencies.NewTickerTask(fetchingInterval, currencyConverter)
-	ticker.Start(true)
+	ticker := currencies.NewTickerTask(interval, currencyConverter)
+	ticker.Start()
 
 	rates := currencyConverter.Rates()
 
@@ -240,16 +239,16 @@ func TestRace(t *testing.T) {
 	// Execute:
 
 	// Create a rate converter which will be fetching new values every 10 ms
-	fetchingInterval := time.Duration(10) * time.Millisecond
+	interval := time.Duration(10) * time.Millisecond
 	currencyConverter := currencies.NewRateConverter(
 		mockedHttpClient,
 		"currency.fake.com",
-		fetchingInterval,
+		interval,
 		time.Duration(24)*time.Hour,
-		clock.NewRealClock(),
+		timeutil.NewRealClock(),
 	)
-	ticker := currencies.NewTickerTask(fetchingInterval, currencyConverter)
-	ticker.Start(true)
+	ticker := currencies.NewTickerTask(interval, currencyConverter)
+	ticker.Start()
 	defer ticker.Stop()
 
 	// Create 50 clients asking for updates and rates conversion at random intervals

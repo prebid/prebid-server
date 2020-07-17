@@ -10,59 +10,56 @@ type Runner interface {
 }
 
 type TickerTask struct {
-	fetchingInterval time.Duration
-	taskRunner       Runner
-	done             chan bool
+	interval time.Duration
+	runner   Runner
+	done     chan bool
 }
 
-func NewTickerTask(fetchingInterval time.Duration, taskRunner Runner) TickerTask {
+func NewTickerTask(interval time.Duration, runner Runner) TickerTask {
 	return TickerTask{
-		fetchingInterval: fetchingInterval,
-		taskRunner:       taskRunner,
-		done:             make(chan bool),
+		interval: interval,
+		runner:   runner,
+		done:     make(chan bool),
 	}
 }
 
-func (tt *TickerTask) Start(runOnStart bool) {
-	// Only schedule periodic task if a fetching interval has been specified
-	if tt.fetchingInterval <= 0 {
+// Start runs the task immediately and then schedules the task to run periodically
+// if a positive fetching interval has been specified.
+func (tt *TickerTask) Start() {
+	if tt.interval <= 0 {
 		return
 	}
 
-	if runOnStart == true {
-		tt.taskRunner.Run()
-	}
+	tt.runner.Run()
 
 	go tt.run()
 }
 
-// Stop stops periodic task but the task runner maintains state
+// Stop stops the periodic task but the task runner maintains state
 func (tt *TickerTask) Stop() {
 	tt.done <- true
 	close(tt.done)
 }
 
-// Start begins periodic fetching at the given interval
-// It triggers a run before beginning the timer if specified
-// It returns a chan in which the number of data updates everytime a new update was done
+// run creates a ticker that ticks at the specified interval. On each tick,
+// the task is executed.
+// It returns a chan which receives the number of times the task has run since it was last started.
 func (tt *TickerTask) run() {
-	ticker := time.NewTicker(tt.fetchingInterval)
+	ticker := time.NewTicker(tt.interval)
 	ticksCount := 0
 
 	for {
 		select {
 		case <-ticker.C:
-			// Retries are handled by clients directly
-			tt.taskRunner.Run()
+			tt.runner.Run()
 			ticksCount++
 
-			if runNotifier := tt.taskRunner.GetRunNotifier(); runNotifier != nil {
+			if runNotifier := tt.runner.GetRunNotifier(); runNotifier != nil {
 				runNotifier <- ticksCount
 			}
 		case <-tt.done:
 			if ticker != nil {
 				ticker.Stop()
-				ticker = nil
 			}
 			return
 		}
