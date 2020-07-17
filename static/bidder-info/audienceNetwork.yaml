@@ -1,11 +1,6 @@
 maintainer:
   email: "none"
 capabilities:
-  site:
-    mediaTypes:
-      - banner
-      - video
-      - native
   app:
     mediaTypes:
       - banner

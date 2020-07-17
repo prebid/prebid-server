@@ -54,6 +54,12 @@ func (this *FacebookAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *
 		}}
 	}
 
+	if request.Site != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Site impressions are not supported.",
+		}}
+	}
+
 	return this.buildRequests(request)
 }
 
@@ -143,10 +149,6 @@ func (this *FacebookAdapter) modifyRequest(out *openrtb.BidRequest) error {
 		app := *out.App
 		app.Publisher = &openrtb.Publisher{ID: pubId}
 		out.App = &app
-	} else {
-		site := *out.Site
-		site.Publisher = &openrtb.Publisher{ID: pubId}
-		out.Site = &site
 	}
 
 	if err = this.modifyImp(imp); err != nil {
@@ -468,15 +470,11 @@ func (fa *FacebookAdapter) MakeTimeoutNotification(req *adapters.RequestData) (*
 		return &adapters.RequestData{}, []error{err}
 	}
 
-	// The publisher ID is either in the app object or the site object, depending on the supply of the request so we need
-	// to check both
+	// The publisher ID is expected in the app object
 	pubID, err = jsonparser.GetString(req.Body, "app", "publisher", "id")
 	if err != nil {
-		pubID, err = jsonparser.GetString(req.Body, "site", "publisher", "id")
-		if err != nil {
-			return &adapters.RequestData{}, []error{
-				errors.New("path [app|site].publisher.id not found in the request"),
-			}
+		return &adapters.RequestData{}, []error{
+			errors.New("path app.publisher.id not found in the request"),
 		}
 	}
 
