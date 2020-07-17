@@ -8,15 +8,16 @@ import (
 func preloadLabelValues(m *Metrics) {
 	var (
 		actionValues          = actionsAsString()
-		adapterValues         = adaptersAsString()
 		adapterErrorValues    = adapterErrorsAsString()
+		adapterValues         = adaptersAsString()
 		bidTypeValues         = []string{markupDeliveryAdm, markupDeliveryNurl}
 		boolValues            = boolValuesAsString()
 		cacheResultValues     = cacheResultsAsString()
-		cookieValues          = cookieTypesAsString()
 		connectionErrorValues = []string{connectionAcceptError, connectionCloseError}
+		cookieValues          = cookieTypesAsString()
 		requestStatusValues   = requestStatusesAsString()
 		requestTypeValues     = requestTypesAsString()
+		sourceValues          = []string{sourceRequest}
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
@@ -100,9 +101,22 @@ func preloadLabelValues(m *Metrics) {
 		requestStatusLabel: {requestSuccessLabel, requestRejectLabel},
 	})
 
-	preloadLabelValuesForCounter(m.tcfVersion, map[string][]string{
+	preloadLabelValuesForCounter(m.privacyCCPA, map[string][]string{
+		sourceLabel: sourceValues,
+		optOutLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.privacyCOPPA, map[string][]string{
+		sourceLabel: sourceValues,
+	})
+
+	preloadLabelValuesForCounter(m.privacyLMT, map[string][]string{
+		sourceLabel: sourceValues,
+	})
+
+	preloadLabelValuesForCounter(m.privacyTCF, map[string][]string{
+		sourceLabel:  sourceValues,
 		versionLabel: tcfVersionsAsString(),
-		sourceLabel:  {string(sourceRequest)},
 	})
 }
 

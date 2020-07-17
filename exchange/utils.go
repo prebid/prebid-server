@@ -19,15 +19,6 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 )
 
-// cleanMetrics is a struct to export any metrics data resulting from cleanOpenRTBRequests(). It starts with just
-// the TCF version, but made a struct to facilitate future expansion
-type cleanMetrics struct {
-	// A simple flag if GDPR is being enforced on this request.
-	gdprEnforced bool
-	// a zero value means a missing or invalid GDPR string
-	gdprTcfVersion int
-}
-
 func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
@@ -63,7 +54,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	labels pbsmetrics.Labels,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
-	privacyConfig config.Privacy) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, cleanMetrics cleanMetrics, errs []error) {
+	privacyConfig config.Privacy) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
@@ -98,13 +89,20 @@ func cleanOpenRTBRequests(ctx context.Context,
 		LMT:   lmtPolicy.ShouldEnforce(),
 	}
 
+	privacyLabels.CCPAProvided = ccpaPolicy.Value != ""
+	privacyLabels.CCPAEnforced = privacyEnforcement.CCPA
+	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
+	privacyLabels.LMTEnforced = privacyEnforcement.LMT
+
 	if gdpr == 1 {
-		cleanMetrics.gdprEnforced = true
+		privacyLabels.GDPREnforced = true
 		parsedConsent, err := vendorconsent.ParseString(consent)
 		if err == nil {
-			cleanMetrics.gdprTcfVersion = int(parsedConsent.Version())
+			version := int(parsedConsent.Version())
+			privacyLabels.GDPRTCFVersion = pbsmetrics.TCFVersionToValue(version)
 		}
 	}
+
 	// bidder level privacy policies
 	for bidder, bidReq := range requestsByBidder {
 

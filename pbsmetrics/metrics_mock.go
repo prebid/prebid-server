@@ -107,7 +107,7 @@ func (me *MetricsEngineMock) RecordTimeoutNotice(success bool) {
 	me.Called(success)
 }
 
-// RecordTCFReq mock
-func (me *MetricsEngineMock) RecordTCFReq(version TCFVersionValue) {
-	me.Called(version)
+// RecordRequestPrivacy mock
+func (me *MetricsEngineMock) RecordRequestPrivacy(privacy PrivacyLabels) {
+	me.Called(privacy)
 }
