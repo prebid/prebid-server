@@ -211,10 +211,10 @@ func (me *MultiMetricsEngine) RecordTimeoutNotice(success bool) {
 	}
 }
 
-// RecordTCFReq across all engines
-func (me *MultiMetricsEngine) RecordTCFReq(version pbsmetrics.TCFVersionValue) {
+// RecordRequestPrivacy across all engines
+func (me *MultiMetricsEngine) RecordRequestPrivacy(privacy pbsmetrics.PrivacyLabels) {
 	for _, thisME := range *me {
-		thisME.RecordTCFReq(version)
+		thisME.RecordRequestPrivacy(privacy)
 	}
 }
 
@@ -305,6 +305,6 @@ func (me *DummyMetricsEngine) RecordRequestQueueTime(success bool, requestType p
 func (me *DummyMetricsEngine) RecordTimeoutNotice(success bool) {
 }
 
-// RecordReq as a noop
-func (me *DummyMetricsEngine) RecordTCFReq(version pbsmetrics.TCFVersionValue) {
+// RecordRequestPrivacy as a noop
+func (me *DummyMetricsEngine) RecordRequestPrivacy(privacy pbsmetrics.PrivacyLabels) {
 }

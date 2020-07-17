@@ -30,8 +30,11 @@ type Metrics struct {
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
 	timeoutNotifications         *prometheus.CounterVec
-	tcfVersion                   *prometheus.CounterVec
 	dnsLookupTime                prometheus.Histogram
+	privacyCCPA                  *prometheus.CounterVec
+	privacyCOPPA                 *prometheus.CounterVec
+	privacyLMT                   *prometheus.CounterVec
+	privacyTCF                   *prometheus.CounterVec
 
 	// Adapter Metrics
 	adapterBids               *prometheus.CounterVec
@@ -67,6 +70,7 @@ const (
 	isNativeLabel        = "native"
 	isVideoLabel         = "video"
 	markupDeliveryLabel  = "delivery"
+	optOutLabel          = "opt_out"
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
@@ -178,10 +182,25 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Seconds to resolve DNS",
 		requestTimeBuckets)
 
-	metrics.tcfVersion = newCounter(cfg, metrics.Registry,
+	metrics.privacyCCPA = newCounter(cfg, metrics.Registry,
+		"privacy_ccpa",
+		"Count of total requests to Prebid Server where CCPA was provided by source and opt-out .",
+		[]string{sourceLabel, optOutLabel})
+
+	metrics.privacyCOPPA = newCounter(cfg, metrics.Registry,
+		"privacy_coppa",
+		"Count of total requests to Prebid Server where the COPPA flag was set by source",
+		[]string{sourceLabel})
+
+	metrics.privacyTCF = newCounter(cfg, metrics.Registry,
 		"privacy_tcf",
-		"Count of TCF versions for requests where GDPR was enforced.",
+		"Count of TCF versions for requests where GDPR was enforced by source and version.",
 		[]string{versionLabel, sourceLabel})
+
+	metrics.privacyLMT = newCounter(cfg, metrics.Registry,
+		"privacy_lmt",
+		"Count of total requests to Prebid Server where the LMT flag was set by source",
+		[]string{sourceLabel})
 
 	metrics.adapterBids = newCounter(cfg, metrics.Registry,
 		"adapter_bids",
@@ -504,9 +523,30 @@ func (m *Metrics) RecordTimeoutNotice(success bool) {
 	}
 }
 
-func (m *Metrics) RecordTCFReq(version pbsmetrics.TCFVersionValue) {
-	m.tcfVersion.With(prometheus.Labels{
-		versionLabel: string(version),
-		sourceLabel:  sourceRequest,
-	}).Inc()
+func (m *Metrics) RecordRequestPrivacy(privacy pbsmetrics.PrivacyLabels) {
+	if privacy.CCPAProvided {
+		m.privacyCCPA.With(prometheus.Labels{
+			sourceLabel: sourceRequest,
+			optOutLabel: strconv.FormatBool(privacy.CCPAEnforced),
+		}).Inc()
+	}
+
+	if privacy.COPPAEnforced {
+		m.privacyCOPPA.With(prometheus.Labels{
+			sourceLabel: sourceRequest,
+		}).Inc()
+	}
+
+	if privacy.GDPREnforced {
+		m.privacyTCF.With(prometheus.Labels{
+			versionLabel: string(privacy.GDPRTCFVersion),
+			sourceLabel:  sourceRequest,
+		}).Inc()
+	}
+
+	if privacy.LMTEnforced {
+		m.privacyLMT.With(prometheus.Labels{
+			sourceLabel: sourceRequest,
+		}).Inc()
+	}
 }

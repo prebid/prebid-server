@@ -15,7 +15,9 @@ import (
 // permissionsMock mocks the Permissions interface for tests
 //
 // It only allows appnexus for GDPR consent
-type permissionsMock struct{}
+type permissionsMock struct {
+	personalInfoAllowed bool
+}
 
 func (p *permissionsMock) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
 	return true, nil
@@ -26,10 +28,7 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 }
 
 func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, error) {
-	if bidder == "appnexus" {
-		return true, true, nil
-	}
-	return false, false, nil
+	return p.personalInfoAllowed, p.personalInfoAllowed, nil
 }
 
 func (p *permissionsMock) AMPException() bool {
@@ -80,7 +79,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqByBidders, _, _, err := cleanOpenRTBRequests(context.Background(), test.req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
+		reqByBidders, _, _, err := cleanOpenRTBRequests(context.Background(), test.req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -92,26 +91,48 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 
 func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 	testCases := []struct {
-		description     string
-		enforceCCPA     bool
-		expectDataScrub bool
+		description         string
+		ccpaConsent         string
+		enforceCCPA         bool
+		expectDataScrub     bool
+		expectPrivacyLabels pbsmetrics.PrivacyLabels
 	}{
 		{
-			description:     "Feature Flag Enabled",
+			description:     "Feature Flag Enabled - Opt Out",
+			ccpaConsent:     "1-Y-",
 			enforceCCPA:     true,
 			expectDataScrub: true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: true,
+				CCPAEnforced: true,
+			},
+		},
+		{
+			description:     "Feature Flag Enabled - Opt In",
+			ccpaConsent:     "1-N-",
+			enforceCCPA:     true,
+			expectDataScrub: false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: true,
+				CCPAEnforced: false,
+			},
 		},
 		{
 			description:     "Feature Flag Disabled",
+			ccpaConsent:     "1-Y-",
 			enforceCCPA:     false,
 			expectDataScrub: false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: false,
+				CCPAEnforced: false,
+			},
 		},
 	}
 
 	for _, test := range testCases {
 		req := newBidRequest(t)
 		req.Regs = &openrtb.Regs{
-			Ext: json.RawMessage(`{"us_privacy":"1-Y-"}`),
+			Ext: json.RawMessage(`{"us_privacy":"` + test.ccpaConsent + `"}`),
 		}
 
 		privacyConfig := config.Privacy{
@@ -120,11 +141,10 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			},
 		}
 
-		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
-
 		if test.expectDataScrub {
 			assert.Equal(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
 			assert.Equal(t, result.Device.DIDMD5, "", test.description+":Device.DIDMD5")
@@ -132,6 +152,51 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			assert.NotEqual(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
 			assert.NotEqual(t, result.Device.DIDMD5, "", test.description+":Device.DIDMD5")
 		}
+		assert.Equal(t, test.expectPrivacyLabels, privacyLabels, test.description+":PrivacyLabels")
+	}
+}
+
+func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
+	testCases := []struct {
+		description         string
+		coppa               int8
+		expectDataScrub     bool
+		expectPrivacyLabels pbsmetrics.PrivacyLabels
+	}{
+		{
+			description:     "Enabled",
+			coppa:           1,
+			expectDataScrub: true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				COPPAEnforced: true,
+			},
+		},
+		{
+			description:     "Disabled",
+			coppa:           0,
+			expectDataScrub: false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				COPPAEnforced: false,
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		req := newBidRequest(t)
+		req.Regs = &openrtb.Regs{COPPA: test.coppa}
+
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, config.Privacy{})
+		result := results["appnexus"]
+
+		assert.Nil(t, errs)
+		if test.expectDataScrub {
+			assert.Equal(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
+			assert.Equal(t, result.User.Yob, int64(0), test.description+":User.Yob")
+		} else {
+			assert.NotEqual(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
+			assert.NotEqual(t, result.User.Yob, int64(0), test.description+":User.Yob")
+		}
+		assert.Equal(t, test.expectPrivacyLabels, privacyLabels, test.description+":PrivacyLabels")
 	}
 }
 
@@ -227,34 +292,47 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 		disabled int8 = 0
 	)
 	testCases := []struct {
-		description     string
-		lmt             *int8
-		enforceLMT      bool
-		expectDataScrub bool
+		description         string
+		lmt                 *int8
+		enforceLMT          bool
+		expectDataScrub     bool
+		expectPrivacyLabels pbsmetrics.PrivacyLabels
 	}{
 		{
 			description:     "Feature Flag Enabled - OpenTRB Enabled",
 			lmt:             &enabled,
 			enforceLMT:      true,
 			expectDataScrub: true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				LMTEnforced: true,
+			},
 		},
 		{
 			description:     "Feature Flag Disabled - OpenTRB Enabled",
 			lmt:             &enabled,
 			enforceLMT:      false,
 			expectDataScrub: false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				LMTEnforced: false,
+			},
 		},
 		{
 			description:     "Feature Flag Enabled - OpenTRB Disabled",
 			lmt:             &disabled,
 			enforceLMT:      true,
 			expectDataScrub: false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				LMTEnforced: false,
+			},
 		},
 		{
 			description:     "Feature Flag Disabled - OpenTRB Disabled",
 			lmt:             &disabled,
 			enforceLMT:      false,
 			expectDataScrub: false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				LMTEnforced: false,
+			},
 		},
 	}
 
@@ -268,11 +346,10 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 			},
 		}
 
-		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
-
 		if test.expectDataScrub {
 			assert.Equal(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
 			assert.Equal(t, result.Device.DIDMD5, "", test.description+":Device.DIDMD5")
@@ -280,6 +357,88 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 			assert.NotEqual(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
 			assert.NotEqual(t, result.Device.DIDMD5, "", test.description+":Device.DIDMD5")
 		}
+		assert.Equal(t, test.expectPrivacyLabels, privacyLabels, test.description+":PrivacyLabels")
+	}
+}
+
+func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
+	testCases := []struct {
+		description         string
+		gdpr                string
+		gdprConsent         string
+		gdprScrub           bool
+		enforceGDPR         bool
+		expectPrivacyLabels pbsmetrics.PrivacyLabels
+	}{
+		{
+			description: "Enforce - TCF Invalid",
+			gdpr:        "1",
+			gdprConsent: "malformed",
+			gdprScrub:   false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				GDPREnforced:   true,
+				GDPRTCFVersion: "",
+			},
+		},
+		{
+			description: "Enforce - TCF 1",
+			gdpr:        "1",
+			gdprConsent: "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:   true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				GDPREnforced:   true,
+				GDPRTCFVersion: pbsmetrics.TCFVersionV1,
+			},
+		},
+		{
+			description: "Enforce - TCF 2",
+			gdpr:        "1",
+			gdprConsent: "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			gdprScrub:   true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				GDPREnforced:   true,
+				GDPRTCFVersion: pbsmetrics.TCFVersionV2,
+			},
+		},
+		{
+			description: "Not Enforce - TCF 1",
+			gdpr:        "0",
+			gdprConsent: "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:   false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				GDPREnforced:   false,
+				GDPRTCFVersion: "",
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		req := newBidRequest(t)
+		req.User.Ext = json.RawMessage(`{"consent":"` + test.gdprConsent + `"}`)
+		req.Regs = &openrtb.Regs{
+			Ext: json.RawMessage(`{"gdpr":` + test.gdpr + `}`),
+		}
+
+		privacyConfig := config.Privacy{
+			GDPR: config.GDPR{
+				TCF2: config.TCF2{
+					Enabled: true,
+				},
+			},
+		}
+
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: !test.gdprScrub}, true, privacyConfig)
+		result := results["appnexus"]
+
+		assert.Nil(t, errs)
+		if test.gdprScrub {
+			assert.Equal(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
+			assert.Equal(t, result.Device.DIDMD5, "", test.description+":Device.DIDMD5")
+		} else {
+			assert.NotEqual(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
+			assert.NotEqual(t, result.Device.DIDMD5, "", test.description+":Device.DIDMD5")
+		}
+		assert.Equal(t, test.expectPrivacyLabels, privacyLabels, test.description+":PrivacyLabels")
 	}
 }
 
@@ -352,6 +511,7 @@ func newBidRequest(t *testing.T) *openrtb.BidRequest {
 		User: &openrtb.User{
 			ID:       "our-id",
 			BuyerUID: "their-id",
+			Yob:      1982,
 			Ext:      json.RawMessage(`{"digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
 		},
 		Imp: []openrtb.Imp{{
