@@ -191,7 +191,7 @@ func TestMakeBids(t *testing.T) {
 	externalRequest := adapters.RequestData{}
 	response := adapters.ResponseData{
 		StatusCode: 200,
-		Body:       ([]byte)("{\n \"ad\": \"<!DOCTYPE html>\\n<body>\\n<div>\\n<iframe></iframe>\\n</div>\\n</body>\\n\",\n \"beacon\": \"<img src=\\\"https://dummy-beacon.com\\\">\",\n \"cpm\": 30,\n \"creativeid\": \"Dummy_supership.jp\",\n \"h\": 250,\n \"locationid\": \"58278\",\n \"results\": [{}],\n \"dealid\": \"test-deal-id\",\n \"w\": 300\n }"),
+		Body:       ([]byte)("{\n \"ad\": \"testAd\",\n \"cpm\": 30,\n \"creativeid\": \"Dummy_supership.jp\",\n \"h\": 250,\n \"locationid\": \"58278\",\n \"results\": [{}],\n \"dealid\": \"test-deal-id\",\n \"w\": 300\n }"),
 	}
 	// default Currency InternalRequest
 	defaultCurBidderResponse, errs := bidder.MakeBids(internalRequest, &externalRequest, &response)
@@ -216,7 +216,8 @@ func checkBidResponse(t *testing.T, bidderResponse *adapters.BidderResponse, exp
 		t.Errorf("actual bidResponse is nil.")
 	}
 
-	var expectedAdM string = "<div>\n<iframe></iframe>\n</div>\n<img src=\"https://dummy-beacon.com\">"
+	// AdM is assured by TestCreateAd and JSON tests
+	var expectedAdM string = "testAd"
 	var expectedID string = "58278"
 	var expectedImpID = "bidRequest-success-test"
 	var expectedPrice float64 = 30.0
