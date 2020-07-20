@@ -15,7 +15,7 @@ var maxTime = 2 * time.Hour
 
 func TestEventChannel_isBufferFull(t *testing.T) {
 
-	send := func(_ []byte) {}
+	send := func(_ []byte) error { return nil }
 
 	eventChannel := NewEventChannel(send, maxByteSize, maxEventCount, maxTime)
 	eventChannel.buffer([]byte("one"))
@@ -35,7 +35,7 @@ func TestEventChannel_isBufferFull(t *testing.T) {
 
 func TestEventChannel_reset(t *testing.T) {
 
-	send := func(_ []byte) {}
+	send := func(_ []byte) error { return nil }
 
 	eventChannel := NewEventChannel(send, maxByteSize, maxEventCount, maxTime)
 	assert.Equal(t, eventChannel.metrics.eventCount, int64(0))
@@ -56,8 +56,9 @@ func TestEventChannel_reset(t *testing.T) {
 
 func TestEventChannel_flush(t *testing.T) {
 	data := bytes.Buffer{}
-	send := func(payload []byte) {
+	send := func(payload []byte) error {
 		data.Write(payload)
+		return nil
 	}
 	maxByteSize := int64(15)
 	maxEventCount := int64(3)

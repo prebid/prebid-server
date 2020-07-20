@@ -3,6 +3,7 @@ package pubstack
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/prebid/prebid-server/analytics/clients"
 	"github.com/prebid/prebid-server/analytics/pubstack/eventchannel"
 	"io/ioutil"
 	"os"
@@ -57,18 +58,20 @@ func loadJsonFromFile() (*analytics.AuctionObject, error) {
 
 func TestPubstackModule(t *testing.T) {
 
+	client := clients.GetDefaultHttpInstance()
+
 	// Loading Issues
-	_, err := NewPubstackModule("scope", "http://localhost:11287", "1z", 100, "90MB", "15m")
+	_, err := NewPubstackModule(client, "scope", "http://localhost:11287", "1z", 100, "90MB", "15m")
 	assert.NotEqual(t, err, nil) // should raise an error since  we can't parse args // configRefreshDelay
 
-	_, err = NewPubstackModule("scope", "http://localhost:11287", "1h", 100, "90z", "15m")
+	_, err = NewPubstackModule(client, "scope", "http://localhost:11287", "1h", 100, "90z", "15m")
 	assert.NotEqual(t, err, nil) // should raise an error since  we can't parse args // maxByte
 
-	_, err = NewPubstackModule("scope", "http://localhost:11287", "1h", 100, "90MB", "15z")
+	_, err = NewPubstackModule(client, "scope", "http://localhost:11287", "1h", 100, "90MB", "15z")
 	assert.NotEqual(t, err, nil) // should raise an error since  we can't parse args // maxTime
 
 	// Loading OK
-	module, err := NewPubstackModule("scope", "http://localhost:11287", "1h", 100, "90MB", "15m")
+	module, err := NewPubstackModule(client, "scope", "http://localhost:11287", "1h", 100, "90MB", "15m")
 	assert.Equal(t, err, nil)
 
 	// Default Configuration
@@ -85,8 +88,9 @@ func TestPubstackModule(t *testing.T) {
 
 	// Process Auction Event
 	data := bytes.Buffer{}
-	send := func(payload []byte) {
+	send := func(payload []byte) error {
 		data.Write(payload)
+		return nil
 	}
 	mockedEvent, err := loadJsonFromFile()
 

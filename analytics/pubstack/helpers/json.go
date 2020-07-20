@@ -56,7 +56,6 @@ func JsonifyCookieSync(cso *analytics.CookieSyncObject, scope string) ([]byte, e
 }
 
 func JsonifySetUIDObject(so *analytics.SetUIDObject, scope string) ([]byte, error) {
-	type alias analytics.SetUIDObject
 	b, err := json.Marshal(&struct {
 		Scope string `json:"scope"`
 		*analytics.SetUIDObject

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/docker/go-units"
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/analytics/clients"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -17,7 +17,7 @@ func (p *PubstackModule) fetchAndUpdateConfig(refreshDelay time.Duration, endCh 
 	for {
 		select {
 		case <-tick.C:
-			config, err := fetchConfig(p.cfg.ScopeId, p.cfg.Endpoint)
+			config, err := fetchConfig(p.httpClient, p.cfg.ScopeId, p.cfg.Endpoint)
 			if err != nil {
 				glog.Errorf("[pubstack] Fail to fetch remote configuration: %v", err)
 				continue
@@ -29,19 +29,22 @@ func (p *PubstackModule) fetchAndUpdateConfig(refreshDelay time.Duration, endCh 
 	}
 }
 
-func fetchConfig(scope string, intake string) (*Configuration, error) {
+func fetchConfig(client *http.Client, scope string, intake string) (*Configuration, error) {
 	u, err := url.Parse(intake)
 	if err != nil {
 		return nil, err
 	}
 
 	u.Path = path.Join(u.Path, "bootstrap")
-	q, _ := url.ParseQuery(u.RawQuery)
+	q, err := url.ParseQuery(u.RawQuery)
+	if err != nil {
+		return nil, err
+	}
 
 	q.Add("scopeId", scope)
 	u.RawQuery = q.Encode()
 
-	res, err := clients.GetDefaultHttpInstance().Get(u.String())
+	res, err := client.Get(u.String())
 	if err != nil {
 		return nil, err
 	}

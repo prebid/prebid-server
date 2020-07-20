@@ -3,6 +3,7 @@ package pubstack
 import (
 	"fmt"
 	"github.com/prebid/prebid-server/analytics/pubstack/eventchannel"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -38,6 +39,7 @@ type bufferConfig struct {
 
 type PubstackModule struct {
 	eventChannels map[string]*eventchannel.EventChannel
+	httpClient    *http.Client
 	configCh      chan *Configuration
 	scope         string
 	cfg           *Configuration
@@ -45,7 +47,7 @@ type PubstackModule struct {
 	mux           sync.Mutex
 }
 
-func NewPubstackModule(scope, endpoint, configRefreshDelay string, maxEventCount int, maxByteSize, maxTime string) (analytics.PBSAnalyticsModule, error) {
+func NewPubstackModule(client *http.Client, scope, endpoint, configRefreshDelay string, maxEventCount int, maxByteSize, maxTime string) (analytics.PBSAnalyticsModule, error) {
 	glog.Infof("[pubstack] Initializing module scope=%s endpoint=%s\n", scope, endpoint)
 
 	// parse args
@@ -60,12 +62,13 @@ func NewPubstackModule(scope, endpoint, configRefreshDelay string, maxEventCount
 		return nil, fmt.Errorf("fail to parse the module args, arg=analytics.pubstack.buffers, :%v", err)
 	}
 
-	defaultFeatures := make(map[string]bool)
-	defaultFeatures[auction] = false
-	defaultFeatures[video] = false
-	defaultFeatures[amp] = false
-	defaultFeatures[cookieSync] = false
-	defaultFeatures[setUID] = false
+	defaultFeatures := map[string]bool{
+		auction:    false,
+		video:      false,
+		amp:        false,
+		cookieSync: false,
+		setUID:     false,
+	}
 
 	defaultConfig := &Configuration{
 		ScopeId:  scope,
@@ -75,6 +78,7 @@ func NewPubstackModule(scope, endpoint, configRefreshDelay string, maxEventCount
 
 	pb := PubstackModule{
 		scope:         scope,
+		httpClient:    client,
 		cfg:           defaultConfig,
 		buffsCfg:      bufferCfg,
 		configCh:      make(chan *Configuration),
@@ -183,7 +187,7 @@ func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
 }
 
 func (p *PubstackModule) setup() {
-	config, err := fetchConfig(p.cfg.ScopeId, p.cfg.Endpoint)
+	config, err := fetchConfig(p.httpClient, p.cfg.ScopeId, p.cfg.Endpoint)
 	if err != nil {
 		glog.Errorf("[pubstack] Fail to fetch remote configuration: %v", err)
 		return
@@ -221,26 +225,23 @@ func (p *PubstackModule) configure(config *Configuration) {
 	}
 
 	if p.isFeatureEnable(amp) {
-		p.eventChannels[amp] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.cfg.Endpoint, amp), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		p.eventChannels[amp] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, amp), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if p.isFeatureEnable(auction) {
-		p.eventChannels[auction] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.cfg.Endpoint, auction), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		p.eventChannels[auction] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, auction), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if p.isFeatureEnable(cookieSync) {
-		p.eventChannels[cookieSync] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.cfg.Endpoint, cookieSync), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		p.eventChannels[cookieSync] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, cookieSync), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if p.isFeatureEnable(video) {
-		p.eventChannels[video] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.cfg.Endpoint, video), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		p.eventChannels[video] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, video), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 	if p.isFeatureEnable(setUID) {
-		p.eventChannels[setUID] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.cfg.Endpoint, setUID), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+		p.eventChannels[setUID] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, setUID), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 }
 
 func (p *PubstackModule) isFeatureEnable(feature string) bool {
 	val, ok := p.cfg.Features[feature]
-	if !(ok && val) {
-		return false
-	}
-	return true
+	return ok && val
 }
