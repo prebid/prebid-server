@@ -32,14 +32,13 @@ func NewRateConverter(
 	syncSourceURL string,
 	fetchingInterval time.Duration,
 	staleRatesThreshold time.Duration,
-	clock timeutil.Time,
 ) *RateConverter {
 	return NewRateConverterWithNotifier(
 		httpClient,
 		syncSourceURL,
 		fetchingInterval,
 		staleRatesThreshold,
-		clock,
+		timeutil.NewRealClock(),
 		nil, // no notifier channel specified, won't send any notifications
 	)
 }
@@ -48,7 +47,7 @@ func NewRateConverter(
 // By default there will be no currencies conversions done.
 // `currencies.ConstantRate` will be used.
 func NewRateConverterDefault() *RateConverter {
-	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0), timeutil.NewRealClock())
+	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0))
 }
 
 // NewRateConverterWithNotifier returns a new RateConverter

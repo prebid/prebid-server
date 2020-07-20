@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/currencies"
-	"github.com/prebid/prebid-server/util/timeutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,6 +23,29 @@ func getMockRates() []byte {
 			}
 		}
 	}`)
+}
+
+type MockClock struct {
+	fakeTime time.Time
+}
+
+// NewMockClockAt creates a new MockClock with the internal time set
+// to the provided time.
+func NewMockClockAt(now time.Time) *MockClock {
+	return &MockClock{
+		fakeTime: now,
+	}
+}
+
+// Advance will advance the internal MockClock time by the supplied time.
+func (mc *MockClock) Advance(duration time.Duration) {
+	now := mc.fakeTime.Add(duration)
+	mc.fakeTime = now
+}
+
+// Now returns the current time internal to the MockClock
+func (mc *MockClock) Now() time.Time {
+	return mc.fakeTime
 }
 
 func formatTestErrorMsg(desc string, message string, args ...interface{}) string {
@@ -123,12 +145,13 @@ func TestReadWriteRates(t *testing.T) {
 		} else {
 			url = mockedHttpServer.URL
 		}
-		currencyConverter := currencies.NewRateConverter(
+		currencyConverter := currencies.NewRateConverterWithNotifier(
 			&http.Client{},
 			url,
 			time.Duration(24)*time.Hour,
 			time.Duration(24)*time.Hour,
-			timeutil.NewMockClockAt(tt.giveFrozenTime),
+			NewMockClockAt(tt.giveFrozenTime),
+			nil,
 		)
 		err := currencyConverter.Run()
 
@@ -181,15 +204,16 @@ func TestRateStaleness(t *testing.T) {
 	}
 
 	frozenTime := time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC)
-	mockClock := timeutil.NewMockClockAt(frozenTime)
+	mockClock := NewMockClockAt(frozenTime)
 
 	// Execute:
-	currencyConverter := currencies.NewRateConverter(
+	currencyConverter := currencies.NewRateConverterWithNotifier(
 		&http.Client{},
 		mockedHttpServer.URL,
 		time.Duration(100)*time.Millisecond,
 		time.Duration(30)*time.Second, // stale rates threshold
 		mockClock,
+		nil,
 	)
 
 	// First Update call results in error
@@ -272,15 +296,16 @@ func TestRatesAreNeverStale(t *testing.T) {
 	}
 
 	frozenTime := time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC)
-	mockClock := timeutil.NewMockClockAt(frozenTime)
+	mockClock := NewMockClockAt(frozenTime)
 
 	// Execute:
-	currencyConverter := currencies.NewRateConverter(
+	currencyConverter := currencies.NewRateConverterWithNotifier(
 		&http.Client{},
 		mockedHttpServer.URL,
 		time.Duration(100)*time.Millisecond,
 		time.Duration(0)*time.Millisecond, // stale rates threshold
 		mockClock,
+		nil,
 	)
 
 	// First Update call is successful and yields valid rates

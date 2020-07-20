@@ -23,7 +23,6 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
-	"github.com/prebid/prebid-server/util/timeutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
@@ -531,7 +530,6 @@ func TestMultiCurrencies(t *testing.T) {
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Millisecond,
 			time.Duration(24)*time.Hour,
-			timeutil.NewRealClock(),
 		)
 		time.Sleep(time.Duration(500) * time.Millisecond)
 		currencyConverter.Run()
@@ -850,7 +848,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Second,
 			time.Duration(24)*time.Hour,
-			timeutil.NewRealClock(),
 		)
 		seatBid, errs := bidder.requestBid(
 			context.Background(),

@@ -75,7 +75,6 @@ func TestIntervalNotSet(t *testing.T) {
 		mockedHttpServer.URL,
 		interval,
 		time.Duration(24)*time.Hour,
-		timeutil.NewRealClock(),
 	)
 	ticker := currencies.NewTickerTask(interval, currencyConverter)
 	ticker.Start()
@@ -246,7 +245,6 @@ func TestRace(t *testing.T) {
 		"currency.fake.com",
 		interval,
 		time.Duration(24)*time.Hour,
-		timeutil.NewRealClock(),
 	)
 	ticker := currencies.NewTickerTask(interval, currencyConverter)
 	ticker.Start()
