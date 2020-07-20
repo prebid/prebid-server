@@ -9,12 +9,20 @@ import (
 	"github.com/prebid/prebid-server/config"
 )
 
+type analyticsModule analytics.PBSAnalyticsModule
+
+type pbsAnalyticsModule struct {
+	enabledModules []analyticsModule
+}
+
 //Modules that need to be logged to need to be initialized here
 func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
-	modules := make(enabledAnalytics, 0)
+
+	instance := &pbsAnalyticsModule{enabledModules: make([]analyticsModule, 0)}
+
 	if len(analytics.File.Filename) > 0 {
 		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
-			modules = append(modules, mod)
+			instance.enabledModules = append(instance.enabledModules, mod)
 		} else {
 			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
 		}
@@ -29,43 +37,40 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 			analytics.Pubstack.Buffers.BufferSize,
 			analytics.Pubstack.Buffers.Timeout)
 		if err == nil {
-			modules = append(modules, pubstackModule)
+			instance.enabledModules = append(instance.enabledModules, pubstackModule)
 		} else {
 			glog.Fatalf("Could not initialize PubstackModule: %v", err)
 		}
 	}
-	return modules
+	return instance
 }
 
-//Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
-type enabledAnalytics []analytics.PBSAnalyticsModule
-
-func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {
-	for _, module := range ea {
+func (pam pbsAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
+	for _, module := range pam.enabledModules {
 		module.LogAuctionObject(ao)
 	}
 }
 
-func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject) {
-	for _, module := range ea {
+func (pam pbsAnalyticsModule) LogVideoObject(vo *analytics.VideoObject) {
+	for _, module := range pam.enabledModules {
 		module.LogVideoObject(vo)
 	}
 }
 
-func (ea enabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
-	for _, module := range ea {
+func (pam pbsAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
+	for _, module := range pam.enabledModules {
 		module.LogCookieSyncObject(cso)
 	}
 }
 
-func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
-	for _, module := range ea {
+func (pam pbsAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {
+	for _, module := range pam.enabledModules {
 		module.LogSetUIDObject(so)
 	}
 }
 
-func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject) {
-	for _, module := range ea {
+func (pam pbsAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) {
+	for _, module := range pam.enabledModules {
 		module.LogAmpObject(ao)
 	}
 }

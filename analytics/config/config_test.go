@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"os"
 	"testing"
@@ -67,9 +68,11 @@ func (m *sampleModule) LogSetUIDObject(so *analytics.SetUIDObject) { *m.count++ 
 func (m *sampleModule) LogAmpObject(ao *analytics.AmpObject) { *m.count++ }
 
 func initAnalytics(count *int) analytics.PBSAnalyticsModule {
-	modules := make(enabledAnalytics, 0)
-	modules = append(modules, &sampleModule{count})
-	return &modules
+	instance := &pbsAnalyticsModule{
+		enabledModules: make([]analyticsModule, 0),
+	}
+	instance.enabledModules = append(instance.enabledModules, &sampleModule{count})
+	return instance
 }
 
 func TestNewPBSAnalytics(t *testing.T) {
@@ -79,13 +82,9 @@ func TestNewPBSAnalytics(t *testing.T) {
 		}
 	}
 	defer os.RemoveAll(TEST_DIR)
-	mod := NewPBSAnalytics(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
-	switch modType := mod.(type) {
-	case enabledAnalytics:
-		if len(enabledAnalytics(modType)) != 1 {
-			t.Fatalf("Failed to add analytics module")
-		}
-	default:
-		t.Fatalf("Failed to initialize analytics module")
-	}
+	pbsAnalytics := NewPBSAnalytics(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
+	instance := pbsAnalytics.(*pbsAnalyticsModule)
+
+	assert.Equal(t, len(instance.enabledModules), 1)
+	assert.NotNil(t, instance.enabledModules[0].(analyticsModule))
 }
