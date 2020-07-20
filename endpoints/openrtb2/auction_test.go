@@ -165,7 +165,7 @@ func TestBadRequests(t *testing.T) {
 	tests.assert(t)
 }
 
-// TestBadRequests makes sure we return 400s on requests with bad Native requests.
+// TestBadNativeRequests makes sure we return 400s on requests with bad Native requests.
 func TestBadNativeRequests(t *testing.T) {
 	tests := &getResponseFromDirectory{
 		dir:           "sample-requests/invalid-native",
@@ -299,18 +299,18 @@ func (gr *getResponseFromDirectory) assert(t *testing.T) {
 	// Test the one or more test files appended to `filesToAssert`
 	for _, testFile := range filesToAssert {
 		fileData = readFile(t, testFile)
-		code, msg := gr.doRequest(t, gr.payloadGetter(t, fileData))
+		code, requestUsed := gr.doRequest(t, gr.payloadGetter(t, fileData))
 		fmt.Printf("Processing %s\n", testFile)
-		assertResponseCode(t, testFile, code, gr.expectedCode, msg)
+		assertResponseCode(t, testFile, code, gr.expectedCode, requestUsed)
 
 		expectMsg := gr.messageGetter(t, fileData)
-		if gr.description != "" {
-			if len(expectMsg) > 0 {
-				assert.Equal(t, string(expectMsg), msg, "Test failed. %s. Filename: \n", gr.description, testFile)
-			} else {
-				assert.Equal(t, string(expectMsg), msg, "file %s had bad response body", testFile)
-			}
+		//if gr.description != "" {
+		if len(expectMsg) > 0 {
+			assert.Equal(t, string(expectMsg), requestUsed, "Test failed. %s. Filename: \n", gr.description, testFile)
+		} else {
+			assert.Equal(t, string(expectMsg), requestUsed, "file %s had bad response body", testFile)
 		}
+		//}
 	}
 }
 
