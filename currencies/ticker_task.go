@@ -6,7 +6,7 @@ import (
 
 type Runner interface {
 	Run() error
-	GetRunNotifier() chan<- int
+	Notify()
 }
 
 type TickerTask struct {
@@ -42,21 +42,15 @@ func (tt *TickerTask) Stop() {
 }
 
 // run creates a ticker that ticks at the specified interval. On each tick,
-// the task is executed.
-// It returns a chan which receives the number of times the task has run since it was last started.
+// the task is executed and the runner is notified
 func (tt *TickerTask) run() {
 	ticker := time.NewTicker(tt.interval)
-	ticksCount := 0
 
 	for {
 		select {
 		case <-ticker.C:
 			tt.runner.Run()
-			ticksCount++
-
-			if runNotifier := tt.runner.GetRunNotifier(); runNotifier != nil {
-				runNotifier <- ticksCount
-			}
+			tt.runner.Notify()
 		case <-tt.done:
 			if ticker != nil {
 				ticker.Stop()

@@ -16,6 +16,7 @@ import (
 type RateConverter struct {
 	httpClient          httpClient
 	updateNotifier      chan<- int
+	runCount            int
 	fetchingInterval    time.Duration
 	staleRatesThreshold time.Duration
 	syncSourceURL       string
@@ -129,8 +130,11 @@ func (rc *RateConverter) Run() error {
 	return rc.update()
 }
 
-func (rc *RateConverter) GetRunNotifier() chan<- int {
-	return rc.updateNotifier
+func (rc *RateConverter) Notify() {
+	rc.runCount++
+	if rc.updateNotifier != nil {
+		rc.updateNotifier <- rc.runCount
+	}
 }
 
 // LastUpdated returns time when currencies rates were updated

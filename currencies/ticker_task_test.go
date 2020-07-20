@@ -16,10 +16,11 @@ import (
 
 type MockRunner struct {
 	updateNotifier chan<- int
+	runCount       int
 }
 
-func (mcc *MockRunner) Run() error                 { return nil }
-func (mcc *MockRunner) GetRunNotifier() chan<- int { return mcc.updateNotifier }
+func (mcc *MockRunner) Run() error { return nil }
+func (mcc *MockRunner) Notify()    { mcc.runCount++; mcc.updateNotifier <- mcc.runCount }
 
 func TestStop(t *testing.T) {
 	// Setup:
