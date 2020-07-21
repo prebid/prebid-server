@@ -5,126 +5,107 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strings"
+	"os"
+	"path"
+	"path/filepath"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-// NewFileFetcher _immediately_ loads stored request data from local files.
-// These are stored in memory for low-latency reads.
-//
-// This expects each file in the directory to be named "{config_id}.json".
-// For example, when asked to fetch the request with ID == "23", it will return the data from "directory/23.json".
+// NewFileFetcher lazy-loads various kinds of objects from the given directory
+// Expected directory structure:
+// - stored_requests/{id}.json for stored requests
+// - stored_imps/{id}.json for stored imps
+// - {adserver}.json non-publisher specific primary adserver categories
+// - {adserver}/{adserver}_{account_id}.json publisher specific categories for primary adserver
 func NewFileFetcher(directory string) (stored_requests.AllFetcher, error) {
-	storedData, err := collectStoredData(directory, FileSystem{make(map[string]FileSystem), make(map[string]json.RawMessage)}, nil)
-	return &eagerFetcher{storedData, nil}, err
-}
-
-type eagerFetcher struct {
-	FileSystem FileSystem
-	Categories map[string]map[string]stored_requests.Category
-}
-
-func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
-	storedRequests := fetcher.FileSystem.Directories["stored_requests"].Files
-	storedImpressions := fetcher.FileSystem.Directories["stored_imps"].Files
-	errs := appendErrors("Request", requestIDs, storedRequests, nil)
-	errs = appendErrors("Imp", impIDs, storedImpressions, errs)
-	return storedRequests, storedImpressions, errs
-}
-
-func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
-	fileName := primaryAdServer
-
-	if len(publisherId) != 0 {
-		fileName = primaryAdServer + "_" + publisherId
-	}
-
-	if fetcher.Categories == nil {
-		fetcher.Categories = make(map[string]map[string]stored_requests.Category)
-	}
-	if data, ok := fetcher.Categories[fileName]; ok {
-		return data[iabCategory].Id, nil
-	}
-
-	if primaryAdServerDir, found := fetcher.FileSystem.Directories[primaryAdServer]; found {
-
-		if file, ok := primaryAdServerDir.Files[fileName]; ok {
-
-			tmp := make(map[string]stored_requests.Category)
-
-			if err := json.Unmarshal(file, &tmp); err != nil {
-				return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
-			}
-			fetcher.Categories[fileName] = tmp
-			resultCategory := tmp[iabCategory].Id
-			primaryAdServerDir.Files[fileName] = nil
-
-			if len(resultCategory) == 0 {
-				return "", fmt.Errorf("Unable to find category for adserver '%s', publisherId: '%s', iab category: '%s'", primaryAdServer, publisherId, iabCategory)
-			}
-			return resultCategory, nil
-		} else {
-			return "", fmt.Errorf("Unable to find mapping file for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
-
-		}
-
-	}
-
-	return "", fmt.Errorf("Category '%s' not found for server: '%s', publisherId: '%s'",
-		iabCategory, primaryAdServer, publisherId)
-
-}
-
-type FileSystem struct {
-	Directories map[string]FileSystem
-	Files       map[string]json.RawMessage
-}
-
-func collectStoredData(directory string, fileSystem FileSystem, err error) (FileSystem, error) {
+	_, err := ioutil.ReadDir(directory)
 	if err != nil {
-		return FileSystem{nil, nil}, err
+		return &fileFetcher{}, err
 	}
-	fileInfos, err := ioutil.ReadDir(directory)
-	if err != nil {
-		return FileSystem{nil, nil}, err
-	}
-	data := make(map[string]json.RawMessage)
-
-	for _, fileInfo := range fileInfos {
-		if fileInfo.IsDir() {
-
-			fs := FileSystem{make(map[string]FileSystem), make(map[string]json.RawMessage)}
-			fileSys, innerErr := collectStoredData(directory+"/"+fileInfo.Name(), fs, err)
-			if innerErr != nil {
-				return FileSystem{nil, nil}, innerErr
-			}
-			fileSystem.Directories[fileInfo.Name()] = fileSys
-
-		} else {
-			if strings.HasSuffix(fileInfo.Name(), ".json") { // Skip the .gitignore
-				fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
-				if err != nil {
-					return FileSystem{nil, nil}, err
-				}
-				data[strings.TrimSuffix(fileInfo.Name(), ".json")] = json.RawMessage(fileData)
-
+	// read - but don't store - all the files to warm os cache
+	go filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+		if err == nil && filepath.Ext(path) == ".json" {
+			if _, err := ioutil.ReadFile(path); err != nil {
+				glog.Warningf("Error reading %s: %v", path, err)
 			}
 		}
-
-	}
-	fileSystem.Files = data
-	return fileSystem, err
+		return nil
+	})
+	return &fileFetcher{
+		StoredRequestsDir: path.Join(directory, "stored_requests"),
+		StoredImpsDir:     path.Join(directory, "stored_imps"),
+		AccountsDir:       path.Join(directory, "accounts"),
+		CategoriesDir:     path.Clean(directory),
+		Categories:        make(map[string]map[string]stored_requests.Category),
+	}, nil
 }
 
-func appendErrors(dataType string, ids []string, data map[string]json.RawMessage, errs []error) []error {
+type fileFetcher struct {
+	StoredRequestsDir string
+	StoredImpsDir     string
+	AccountsDir       string
+	CategoriesDir     string
+	Categories        map[string]map[string]stored_requests.Category
+}
+
+func readJSONFile(dir string, key string) (json.RawMessage, error) {
+	f := path.Join(dir, key) + ".json"
+	if fileData, err := ioutil.ReadFile(f); err != nil {
+		return nil, err
+	} else {
+		return json.RawMessage(fileData), nil
+	}
+}
+
+func fetchObjects(dir string, dataType string, ids []string) (jsons map[string]json.RawMessage, errs []error) {
+	jsons = make(map[string]json.RawMessage)
 	for _, id := range ids {
-		if _, ok := data[id]; !ok {
+		if data, err := readJSONFile(dir, id); err == nil {
+			jsons[id] = data
+		} else {
 			errs = append(errs, stored_requests.NotFoundError{
 				ID:       id,
 				DataType: dataType,
 			})
 		}
 	}
-	return errs
+	return jsons, errs
+}
+
+// FetchRequests fetches the stored requests for the given IDs.
+func (fetcher *fileFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requests map[string]json.RawMessage, imps map[string]json.RawMessage, errs []error) {
+	requests, reqErrs := fetchObjects(fetcher.StoredRequestsDir, "Request", requestIDs)
+	imps, impErrs := fetchObjects(fetcher.StoredImpsDir, "Imp", impIDs)
+	return requests, imps, append(reqErrs, impErrs...)
+}
+
+// FetchCategories fetches the ad-server/publisher specific category for the given IAB category
+func (fetcher *fileFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
+	var fileName string
+	if len(publisherId) != 0 {
+		fileName = path.Join(primaryAdServer, fmt.Sprintf("%s_%s", primaryAdServer, publisherId))
+	} else {
+		fileName = path.Join(primaryAdServer, primaryAdServer)
+	}
+
+	data := fetcher.Categories[fileName]
+	if data == nil {
+		if file, err := readJSONFile(fetcher.CategoriesDir, fileName); err == nil {
+			data = make(map[string]stored_requests.Category)
+
+			if err := json.Unmarshal(file, &data); err != nil {
+				return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
+			}
+			fetcher.Categories[fileName] = data
+		} else {
+			return "", fmt.Errorf("Unable to find mapping file for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
+		}
+	}
+
+	if resultCategory, ok := data[iabCategory]; ok {
+		return resultCategory.Id, nil
+	}
+	return "", fmt.Errorf("Unable to find category for adserver '%s', publisherId: '%s', iab category: '%s'", primaryAdServer, publisherId, iabCategory)
 }
