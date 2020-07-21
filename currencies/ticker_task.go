@@ -25,33 +25,33 @@ func NewTickerTask(interval time.Duration, runner Runner) TickerTask {
 
 // Start runs the task immediately and then schedules the task to run periodically
 // if a positive fetching interval has been specified.
-func (tt *TickerTask) Start() {
-	if tt.interval <= 0 {
+func (t *TickerTask) Start() {
+	if t.interval <= 0 {
 		return
 	}
 
-	tt.runner.Run()
+	t.runner.Run()
 
-	go tt.run()
+	go t.run()
 }
 
 // Stop stops the periodic task but the task runner maintains state
-func (tt *TickerTask) Stop() {
-	tt.done <- true
-	close(tt.done)
+func (t *TickerTask) Stop() {
+	t.done <- true
+	close(t.done)
 }
 
 // run creates a ticker that ticks at the specified interval. On each tick,
 // the task is executed and the runner is notified
-func (tt *TickerTask) run() {
-	ticker := time.NewTicker(tt.interval)
+func (t *TickerTask) run() {
+	ticker := time.NewTicker(t.interval)
 
 	for {
 		select {
 		case <-ticker.C:
-			tt.runner.Run()
-			tt.runner.Notify()
-		case <-tt.done:
+			t.runner.Run()
+			t.runner.Notify()
+		case <-t.done:
 			if ticker != nil {
 				ticker.Stop()
 			}
