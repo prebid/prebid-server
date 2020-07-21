@@ -3,10 +3,7 @@ package eventchannel
 import (
 	"bytes"
 	"compress/gzip"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/golang/glog"
@@ -25,12 +22,12 @@ type EventChannel struct {
 	gz   *gzip.Writer
 	buff *bytes.Buffer
 
-	ch      chan []byte
-	endCh   chan int
-	metrics Metrics
-	mux     sync.Mutex
-	send    Sender
-	limit   Limit
+	ch          chan []byte
+	endCh       chan int
+	metrics     Metrics
+	muxGzBuffer sync.RWMutex
+	send        Sender
+	limit       Limit
 }
 
 func NewEventChannel(sender Sender, maxByteSize, maxEventCount int64, maxTime time.Duration) *EventChannel {
@@ -47,10 +44,7 @@ func NewEventChannel(sender Sender, maxByteSize, maxEventCount int64, maxTime ti
 		limit:   Limit{maxByteSize, maxEventCount, maxTime},
 	}
 
-	termCh := make(chan os.Signal)
-	signal.Notify(termCh, os.Interrupt, syscall.SIGTERM)
-
-	go c.start(termCh)
+	go c.start()
 	return &c
 }
 
@@ -63,8 +57,8 @@ func (c *EventChannel) Close() {
 }
 
 func (c *EventChannel) buffer(event []byte) {
-	c.mux.Lock()
-	defer c.mux.Unlock()
+	c.muxGzBuffer.RLock()
+	defer c.muxGzBuffer.RUnlock()
 
 	_, err := c.gz.Write(event)
 	if err != nil {
@@ -94,8 +88,8 @@ func (c *EventChannel) reset() {
 }
 
 func (c *EventChannel) flush() {
-	c.mux.Lock()
-	defer c.mux.Unlock()
+	c.muxGzBuffer.Lock()
+	defer c.muxGzBuffer.Unlock()
 
 	// finish writing gzip header
 	err := c.gz.Flush()
@@ -119,17 +113,12 @@ func (c *EventChannel) flush() {
 	go c.send(payload)
 }
 
-func (c *EventChannel) start(termCh chan os.Signal) {
+func (c *EventChannel) start() {
 	ticker := time.NewTicker(c.limit.maxTime)
 
 	for {
 		select {
 		case <-c.endCh:
-			c.flush()
-			return
-		// termination received
-		case <-termCh:
-			glog.Info("[pubstack] termination signal received")
 			c.flush()
 			return
 		// event is received

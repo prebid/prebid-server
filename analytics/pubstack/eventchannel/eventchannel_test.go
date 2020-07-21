@@ -60,16 +60,34 @@ func TestEventChannel_flush(t *testing.T) {
 		data.Write(payload)
 		return nil
 	}
-	maxByteSize := int64(15)
-	maxEventCount := int64(3)
-	maxTime := 2 * time.Hour
-
 	eventChannel := NewEventChannel(send, maxByteSize, maxEventCount, maxTime)
 
 	eventChannel.buffer([]byte("one"))
 	eventChannel.buffer([]byte("two"))
 	eventChannel.buffer([]byte("three"))
 	eventChannel.flush()
+	time.Sleep(10 * time.Millisecond)
+
+	gr, _ := gzip.NewReader(bytes.NewBuffer(data.Bytes()))
+	defer gr.Close()
+
+	received, _ := ioutil.ReadAll(gr)
+	assert.Equal(t, string(received), "onetwothree")
+}
+
+func TestEventChannel_end(t *testing.T) {
+	data := bytes.Buffer{}
+	send := func(payload []byte) error {
+		data.Write(payload)
+		return nil
+	}
+
+	eventChannel := NewEventChannel(send, 15000, 15000, 2*time.Hour)
+
+	eventChannel.buffer([]byte("one"))
+	eventChannel.buffer([]byte("two"))
+	eventChannel.buffer([]byte("three"))
+
 	time.Sleep(10 * time.Millisecond)
 
 	gr, _ := gzip.NewReader(bytes.NewBuffer(data.Bytes()))

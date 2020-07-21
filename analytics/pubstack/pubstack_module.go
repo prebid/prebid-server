@@ -41,10 +41,11 @@ type PubstackModule struct {
 	eventChannels map[string]*eventchannel.EventChannel
 	httpClient    *http.Client
 	configCh      chan *Configuration
+	endCh         chan os.Signal
 	scope         string
 	cfg           *Configuration
 	buffsCfg      *bufferConfig
-	mux           sync.Mutex
+	muxConfig     sync.RWMutex
 }
 
 func NewPubstackModule(client *http.Client, scope, endpoint, configRefreshDelay string, maxEventCount int, maxByteSize, maxTime string) (analytics.PBSAnalyticsModule, error) {
@@ -81,22 +82,22 @@ func NewPubstackModule(client *http.Client, scope, endpoint, configRefreshDelay 
 		httpClient:    client,
 		cfg:           defaultConfig,
 		buffsCfg:      bufferCfg,
+		endCh:         make(chan os.Signal),
 		configCh:      make(chan *Configuration),
 		eventChannels: make(map[string]*eventchannel.EventChannel),
 	}
-	endCh := make(chan os.Signal)
-	signal.Notify(endCh, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(pb.endCh, os.Interrupt, syscall.SIGTERM)
 
 	go pb.setup()
-	go pb.start(refreshDelay, endCh)
+	go pb.start(refreshDelay)
 
 	glog.Info("[pubstack] Pubstack analytics configured and ready")
 	return &pb, nil
 }
 
 func (p *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
-	p.mux.Lock()
-	defer p.mux.Unlock()
+	p.muxConfig.RLock()
+	defer p.muxConfig.RUnlock()
 
 	if !p.isFeatureEnable(auction) {
 		return
@@ -113,8 +114,8 @@ func (p *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
 }
 
 func (p *PubstackModule) LogVideoObject(vo *analytics.VideoObject) {
-	p.mux.Lock()
-	defer p.mux.Unlock()
+	p.muxConfig.RLock()
+	defer p.muxConfig.RUnlock()
 
 	if !p.isFeatureEnable(video) {
 		return
@@ -131,8 +132,8 @@ func (p *PubstackModule) LogVideoObject(vo *analytics.VideoObject) {
 }
 
 func (p *PubstackModule) LogSetUIDObject(so *analytics.SetUIDObject) {
-	p.mux.Lock()
-	defer p.mux.Unlock()
+	p.muxConfig.RLock()
+	defer p.muxConfig.RUnlock()
 
 	if !p.isFeatureEnable(setUID) {
 		return
@@ -149,8 +150,8 @@ func (p *PubstackModule) LogSetUIDObject(so *analytics.SetUIDObject) {
 }
 
 func (p *PubstackModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
-	p.mux.Lock()
-	defer p.mux.Unlock()
+	p.muxConfig.RLock()
+	defer p.muxConfig.RUnlock()
 
 	if !p.isFeatureEnable(cookieSync) {
 		return
@@ -168,8 +169,8 @@ func (p *PubstackModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 }
 
 func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
-	p.mux.Lock()
-	defer p.mux.Unlock()
+	p.muxConfig.RLock()
+	defer p.muxConfig.RUnlock()
 
 	if !p.isFeatureEnable(amp) {
 		return
@@ -195,17 +196,17 @@ func (p *PubstackModule) setup() {
 	p.configCh <- config
 }
 
-func (p *PubstackModule) start(refreshDelay time.Duration, endCh chan os.Signal) {
+func (p *PubstackModule) start(refreshDelay time.Duration) {
 
-	// update periodically the config
-	go p.fetchAndUpdateConfig(refreshDelay, endCh)
+	go p.fetchAndUpdateConfig(refreshDelay)
 
 	for {
 		select {
 		case config := <-p.configCh:
 			p.configure(config)
 			glog.Infof("[pubstack] Updating config: %v", p.cfg)
-		case <-endCh:
+		case <-p.endCh:
+			p.closeAllEventChannels()
 			return
 		}
 	}
@@ -213,16 +214,11 @@ func (p *PubstackModule) start(refreshDelay time.Duration, endCh chan os.Signal)
 }
 
 func (p *PubstackModule) configure(config *Configuration) {
-	p.mux.Lock()
-	defer p.mux.Unlock()
+	p.muxConfig.Lock()
+	defer p.muxConfig.Unlock()
 
 	p.cfg = config
-
-	// close previous instance
-	for key, ch := range p.eventChannels {
-		ch.Close()
-		delete(p.eventChannels, key)
-	}
+	p.closeAllEventChannels()
 
 	if p.isFeatureEnable(amp) {
 		p.eventChannels[amp] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, amp), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
@@ -238,6 +234,13 @@ func (p *PubstackModule) configure(config *Configuration) {
 	}
 	if p.isFeatureEnable(setUID) {
 		p.eventChannels[setUID] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, setUID), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+	}
+}
+
+func (p *PubstackModule) closeAllEventChannels() {
+	for key, ch := range p.eventChannels {
+		ch.Close()
+		delete(p.eventChannels, key)
 	}
 }
 

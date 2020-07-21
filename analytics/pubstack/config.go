@@ -6,12 +6,11 @@ import (
 	"github.com/golang/glog"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"time"
 )
 
-func (p *PubstackModule) fetchAndUpdateConfig(refreshDelay time.Duration, endCh chan os.Signal) {
+func (p *PubstackModule) fetchAndUpdateConfig(refreshDelay time.Duration) {
 	tick := time.NewTicker(refreshDelay)
 
 	for {
@@ -23,7 +22,7 @@ func (p *PubstackModule) fetchAndUpdateConfig(refreshDelay time.Duration, endCh 
 				continue
 			}
 			p.configCh <- config
-		case <-endCh:
+		case <-p.endCh:
 			return
 		}
 	}
