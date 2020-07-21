@@ -1,11 +1,12 @@
 package pubstack
 
 import (
-	"bytes"
 	"encoding/json"
-	"github.com/prebid/prebid-server/analytics/clients"
 	"github.com/prebid/prebid-server/analytics/pubstack/eventchannel"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -58,21 +59,29 @@ func loadJsonFromFile() (*analytics.AuctionObject, error) {
 
 func TestPubstackModule(t *testing.T) {
 
-	client := clients.GetDefaultHttpInstance()
+	remoteConfig := &Configuration{}
+	server := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		defer req.Body.Close()
+		data, _ := json.Marshal(remoteConfig)
+		res.Write(data)
+	}))
+	client := server.Client()
+
+	defer server.Close()
 
 	// Loading Issues
-	_, err := NewPubstackModule(client, "scope", "http://localhost:11287", "1z", 100, "90MB", "15m")
-	assert.NotEqual(t, err, nil) // should raise an error since  we can't parse args // configRefreshDelay
+	_, err := NewPubstackModule(client, "scope", server.URL, "1z", 100, "90MB", "15m")
+	assert.NotNil(t, err) // should raise an error since  we can't parse args // configRefreshDelay
 
-	_, err = NewPubstackModule(client, "scope", "http://localhost:11287", "1h", 100, "90z", "15m")
-	assert.NotEqual(t, err, nil) // should raise an error since  we can't parse args // maxByte
+	_, err = NewPubstackModule(client, "scope", server.URL, "1h", 100, "90z", "15m")
+	assert.NotNil(t, err) // should raise an error since  we can't parse args // maxByte
 
-	_, err = NewPubstackModule(client, "scope", "http://localhost:11287", "1h", 100, "90MB", "15z")
-	assert.NotEqual(t, err, nil) // should raise an error since  we can't parse args // maxTime
+	_, err = NewPubstackModule(client, "scope", server.URL, "1h", 100, "90MB", "15z")
+	assert.NotNil(t, err) // should raise an error since  we can't parse args // maxTime
 
 	// Loading OK
-	module, err := NewPubstackModule(client, "scope", "http://localhost:11287", "1h", 100, "90MB", "15m")
-	assert.Equal(t, err, nil)
+	module, err := NewPubstackModule(client, "scope", server.URL, "10ms", 100, "90MB", "15m")
+	assert.Nil(t, err)
 
 	// Default Configuration
 	pubstack, ok := module.(*PubstackModule)
@@ -87,48 +96,88 @@ func TestPubstackModule(t *testing.T) {
 	assert.Equal(t, len(pubstack.eventChannels), 0)
 
 	// Process Auction Event
-	data := bytes.Buffer{}
-	send := func(payload []byte) error {
-		data.Write(payload)
+	counter := 0
+	send := func(_ []byte) error {
+		counter++
 		return nil
 	}
-	mockedEvent, err := loadJsonFromFile()
+	mockedEvent, _ := loadJsonFromFile()
 
 	pubstack.eventChannels[auction] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
+	pubstack.eventChannels[video] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
+	pubstack.eventChannels[amp] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
+	pubstack.eventChannels[setUID] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
+	pubstack.eventChannels[cookieSync] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
+
 	pubstack.LogAuctionObject(mockedEvent)
-	time.Sleep(2 * time.Millisecond) // process channel
-	assert.Equal(t, data.Len(), 0)
+	pubstack.LogAmpObject(&analytics.AmpObject{
+		Status: http.StatusOK,
+	})
+	pubstack.LogCookieSyncObject(&analytics.CookieSyncObject{
+		Status: http.StatusOK,
+	})
+	pubstack.LogVideoObject(&analytics.VideoObject{
+		Status: http.StatusOK,
+	})
+	pubstack.LogSetUIDObject(&analytics.SetUIDObject{
+		Status: http.StatusOK,
+	})
+
+	pubstack.closeAllEventChannels()
+	time.Sleep(10 * time.Millisecond) // process channel
+	assert.Equal(t, counter, 0)
 
 	// Hot-Reload config
 	newFeatures := make(map[string]bool)
 	newFeatures[auction] = true
 	newFeatures[video] = true
-	newFeatures[amp] = false
-	newFeatures[cookieSync] = false
-	newFeatures[setUID] = false
+	newFeatures[amp] = true
+	newFeatures[cookieSync] = true
+	newFeatures[setUID] = true
 
-	newConfig := &Configuration{
+	remoteConfig = &Configuration{
 		ScopeId:  "new-scope",
 		Endpoint: "new-endpoint",
 		Features: newFeatures,
 	}
 
-	pubstack.configCh <- newConfig
+	endpoint, _ := url.Parse(server.URL)
+	pubstack.reloadConfig(endpoint)
+
 	time.Sleep(2 * time.Millisecond) // process channel
 	assert.Equal(t, len(pubstack.cfg.Features), 5)
 	assert.Equal(t, pubstack.cfg.Features[auction], true)
 	assert.Equal(t, pubstack.cfg.Features[video], true)
-	assert.Equal(t, pubstack.cfg.Features[amp], false)
-	assert.Equal(t, pubstack.cfg.Features[setUID], false)
-	assert.Equal(t, pubstack.cfg.Features[cookieSync], false)
+	assert.Equal(t, pubstack.cfg.Features[amp], true)
+	assert.Equal(t, pubstack.cfg.Features[setUID], true)
+	assert.Equal(t, pubstack.cfg.Features[cookieSync], true)
 	assert.Equal(t, pubstack.cfg.ScopeId, "new-scope")
 	assert.Equal(t, pubstack.cfg.Endpoint, "new-endpoint")
-	assert.Equal(t, len(pubstack.eventChannels), 2)
+	assert.Equal(t, len(pubstack.eventChannels), 5)
 
-	data.Reset()
+	counter = 0
 	pubstack.eventChannels[auction] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
+	pubstack.eventChannels[video] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
+	pubstack.eventChannels[amp] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
+	pubstack.eventChannels[setUID] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
+	pubstack.eventChannels[cookieSync] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
+
 	pubstack.LogAuctionObject(mockedEvent)
-	time.Sleep(2 * time.Millisecond) // process channel (auction is disabled)
-	assert.NotEqual(t, data.Len(), 0)
+	pubstack.LogAmpObject(&analytics.AmpObject{
+		Status: http.StatusOK,
+	})
+	pubstack.LogCookieSyncObject(&analytics.CookieSyncObject{
+		Status: http.StatusOK,
+	})
+	pubstack.LogVideoObject(&analytics.VideoObject{
+		Status: http.StatusOK,
+	})
+	pubstack.LogSetUIDObject(&analytics.SetUIDObject{
+		Status: http.StatusOK,
+	})
+	pubstack.closeAllEventChannels()
+	time.Sleep(10 * time.Millisecond)
+
+	assert.Equal(t, counter, 5)
 
 }

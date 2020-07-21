@@ -43,7 +43,6 @@ func NewEventChannel(sender Sender, maxByteSize, maxEventCount int64, maxTime ti
 		send:    sender,
 		limit:   Limit{maxByteSize, maxEventCount, maxTime},
 	}
-
 	go c.start()
 	return &c
 }
@@ -90,6 +89,10 @@ func (c *EventChannel) reset() {
 func (c *EventChannel) flush() {
 	c.muxGzBuffer.Lock()
 	defer c.muxGzBuffer.Unlock()
+
+	if c.metrics.eventCount == 0 || c.metrics.bufferSize == 0 {
+		return
+	}
 
 	// finish writing gzip header
 	err := c.gz.Flush()

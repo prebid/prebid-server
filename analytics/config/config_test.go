@@ -76,15 +76,52 @@ func initAnalytics(count *int) analytics.PBSAnalyticsModule {
 }
 
 func TestNewPBSAnalytics(t *testing.T) {
+	pbsAnalytics := NewPBSAnalytics(&config.Analytics{})
+	instance := pbsAnalytics.(*pbsAnalyticsModule)
+
+	assert.Equal(t, len(instance.enabledModules), 0)
+}
+
+func TestNewPBSAnalytics_FileLogger(t *testing.T) {
 	if _, err := os.Stat(TEST_DIR); os.IsNotExist(err) {
 		if err = os.MkdirAll(TEST_DIR, 0755); err != nil {
 			t.Fatalf("Could not create test directory for FileLogger")
 		}
 	}
 	defer os.RemoveAll(TEST_DIR)
+
 	pbsAnalytics := NewPBSAnalytics(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
 	instance := pbsAnalytics.(*pbsAnalyticsModule)
 
 	assert.Equal(t, len(instance.enabledModules), 1)
 	assert.NotNil(t, instance.enabledModules[0].(analyticsModule))
+}
+
+func TestNewPBSAnalytics_Pubstack(t *testing.T) {
+
+	pbsAnalyticsWithoutError := NewPBSAnalytics(&config.Analytics{
+		Pubstack: config.Pubstack{
+			Enabled:   true,
+			ScopeId:   "scopeId",
+			IntakeUrl: "https://pubstack.io/intake",
+			Buffers: config.PubstackBuffer{
+				BufferSize: "100KB",
+				EventCount: 0,
+				Timeout:    "30s",
+			},
+			ConfRefresh: "2h",
+		},
+	})
+	instanceWithoutError := pbsAnalyticsWithoutError.(*pbsAnalyticsModule)
+
+	assert.Equal(t, len(instanceWithoutError.enabledModules), 1)
+	assert.NotNil(t, instanceWithoutError.enabledModules[0].(analyticsModule))
+
+	pbsAnalyticsWithError := NewPBSAnalytics(&config.Analytics{
+		Pubstack: config.Pubstack{
+			Enabled: true,
+		},
+	})
+	instanceWithError := pbsAnalyticsWithError.(*pbsAnalyticsModule)
+	assert.Equal(t, len(instanceWithError.enabledModules), 0)
 }

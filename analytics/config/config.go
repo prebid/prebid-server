@@ -39,7 +39,7 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 		if err == nil {
 			instance.enabledModules = append(instance.enabledModules, pubstackModule)
 		} else {
-			glog.Fatalf("Could not initialize PubstackModule: %v", err)
+			glog.Errorf("Could not initialize PubstackModule: %v", err)
 		}
 	}
 	return instance

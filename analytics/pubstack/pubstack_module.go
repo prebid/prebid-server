@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/prebid/prebid-server/analytics/pubstack/eventchannel"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"sync"
@@ -41,7 +42,7 @@ type PubstackModule struct {
 	eventChannels map[string]*eventchannel.EventChannel
 	httpClient    *http.Client
 	configCh      chan *Configuration
-	endCh         chan os.Signal
+	sigTermCh     chan os.Signal
 	scope         string
 	cfg           *Configuration
 	buffsCfg      *bufferConfig
@@ -82,14 +83,20 @@ func NewPubstackModule(client *http.Client, scope, endpoint, configRefreshDelay 
 		httpClient:    client,
 		cfg:           defaultConfig,
 		buffsCfg:      bufferCfg,
-		endCh:         make(chan os.Signal),
+		sigTermCh:     make(chan os.Signal),
 		configCh:      make(chan *Configuration),
 		eventChannels: make(map[string]*eventchannel.EventChannel),
+		muxConfig:     sync.RWMutex{},
 	}
-	signal.Notify(pb.endCh, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(pb.sigTermCh, os.Interrupt, syscall.SIGTERM)
 
-	go pb.setup()
-	go pb.start(refreshDelay)
+	configUrl, err := url.Parse(pb.cfg.Endpoint + "/bootstrap?scopeId=" + pb.cfg.ScopeId)
+	if err != nil {
+		glog.Error(err)
+		return nil, err
+	}
+	go pb.start(configUrl, refreshDelay)
+	go func() { _ = pb.reloadConfig(configUrl) }()
 
 	glog.Info("[pubstack] Pubstack analytics configured and ready")
 	return &pb, nil
@@ -187,33 +194,40 @@ func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
 
 }
 
-func (p *PubstackModule) setup() {
-	config, err := fetchConfig(p.httpClient, p.cfg.ScopeId, p.cfg.Endpoint)
+func (p *PubstackModule) reloadConfig(configUrl *url.URL) error {
+	config, err := fetchConfig(p.httpClient, configUrl)
 	if err != nil {
-		glog.Errorf("[pubstack] Fail to fetch remote configuration: %v", err)
-		return
+		return err
 	}
 	p.configCh <- config
+	return nil
 }
 
-func (p *PubstackModule) start(refreshDelay time.Duration) {
+func (p *PubstackModule) start(configUrl *url.URL, refreshDelay time.Duration) {
 
-	go p.fetchAndUpdateConfig(refreshDelay)
+	tick := time.NewTicker(refreshDelay)
 
 	for {
 		select {
-		case config := <-p.configCh:
-			p.configure(config)
-			glog.Infof("[pubstack] Updating config: %v", p.cfg)
-		case <-p.endCh:
+		case <-p.sigTermCh:
 			p.closeAllEventChannels()
 			return
+		case config := <-p.configCh:
+			p.updateConfig(config)
+			glog.Infof("[pubstack] Updating config: %v", p.cfg)
+		case <-tick.C:
+			go func() {
+				err := p.reloadConfig(configUrl)
+				if err != nil {
+					glog.Errorf("[pubstack] Fail to fetch remote configuration: %v", err)
+				}
+			}()
 		}
 	}
 
 }
 
-func (p *PubstackModule) configure(config *Configuration) {
+func (p *PubstackModule) updateConfig(config *Configuration) {
 	p.muxConfig.Lock()
 	defer p.muxConfig.Unlock()
 

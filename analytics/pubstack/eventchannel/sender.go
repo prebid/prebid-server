@@ -38,7 +38,7 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 func BuildEndpointSender(client *http.Client, baseUrl string, module string) Sender {
 	endpoint, err := url.Parse(baseUrl)
 	if err != nil {
-		glog.Fatal(err)
+		glog.Error(err)
 	}
 	endpoint.Path = path.Join(endpoint.Path, "intake", module)
 	return NewHttpSender(client, endpoint.String())
