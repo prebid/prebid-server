@@ -85,6 +85,20 @@ func preloadLabelValues(m *Metrics) {
 		hasBidsLabel: boolValues,
 	})
 
+	if !m.metricsDisabled.AdapterConnectionMetrics {
+		preloadLabelValuesForCounter(m.adapterCreatedConnections, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+
+		preloadLabelValuesForCounter(m.adapterReusedConnections, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+
+		preloadLabelValuesForHistogram(m.adapterConnectionWaitTime, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+	}
+
 	preloadLabelValuesForHistogram(m.adapterRequestsTimer, map[string][]string{
 		adapterLabel: adapterValues,
 	})

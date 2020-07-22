@@ -37,7 +37,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	}
 	if cfg.Metrics.Prometheus.Port != 0 {
 		// Set up the Prometheus metrics.
-		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus)
+		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus, cfg.Metrics.Disabled)
 		engineList = append(engineList, returnEngine.PrometheusMetrics)
 	}
 
@@ -115,6 +115,21 @@ func (me *MultiMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels
 func (me *MultiMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	for _, thisME := range *me {
 		thisME.RecordAdapterRequest(labels)
+	}
+}
+
+// Keeps track of created and reused connections to adapter bidders and the time from the
+// connection request, to the connection creation, or reuse from the pool across all engines
+func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterConnections(bidderName, connWasReused, connWaitTime)
+	}
+}
+
+// Times the DNS resolution process
+func (me *MultiMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordDNSTime(dnsLookupTime)
 	}
 }
 
@@ -235,6 +250,14 @@ func (me *DummyMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels
 
 // RecordAdapterRequest as a noop
 func (me *DummyMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
+}
+
+// RecordAdapterConnections as a noop
+func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+}
+
+// RecordDNSTime as a noop
+func (me *DummyMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 }
 
 // RecordAdapterBidReceived as a noop
