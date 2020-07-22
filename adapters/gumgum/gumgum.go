@@ -157,13 +157,12 @@ func getMediaTypeForImpID(impID string, imps []openrtb.Imp) openrtb_ext.BidType 
 }
 
 func validateVideoParams(video *openrtb.Video) (err error) {
-	if video.W != 0 && video.H != 0 && video.MinDuration != 0 && video.MaxDuration != 0 && video.Placement != 0 && video.Linearity != 0 {
-		return
-	} else {
+	if video.W == 0 || video.H == 0 || video.MinDuration == 0 || video.MaxDuration == 0 || video.Placement == 0 || video.Linearity == 0 {
 		return &errortypes.BadInput{
-			Message: "Invalid or missing video fields",
+			Message: "Invalid or missing video field(s)",
 		}
 	}
+	return nil
 }
 
 // NewGumGumBidder configures bidder endpoint.
