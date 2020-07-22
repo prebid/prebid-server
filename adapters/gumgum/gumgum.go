@@ -109,7 +109,6 @@ func (g *GumGumAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			// TODO: have gumgum server send mediaType in ext
 			mediaType := getMediaTypeForImpID(sb.Bid[i].ImpID, internalRequest.Imp)
 			if mediaType == openrtb_ext.BidTypeVideo {
 				price := strconv.FormatFloat(sb.Bid[i].Price, 'f', -1, 64)
