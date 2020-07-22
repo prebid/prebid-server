@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptrace"
 	"time"
 
 	"github.com/golang/glog"
@@ -87,20 +88,30 @@ type pbsOrtbSeatBid struct {
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me pbsmetrics.MetricsEngine) adaptedBidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me pbsmetrics.MetricsEngine, name openrtb_ext.BidderName) adaptedBidder {
 	return &bidderAdapter{
-		Bidder:      bidder,
-		Client:      client,
-		DebugConfig: cfg.Debug,
-		me:          me,
+		Bidder:     bidder,
+		BidderName: name,
+		Client:     client,
+		me:         me,
+		config: bidderAdapterConfig{
+			Debug:              cfg.Debug,
+			DisableConnMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
+		},
 	}
 }
 
 type bidderAdapter struct {
-	Bidder      adapters.Bidder
-	Client      *http.Client
-	DebugConfig config.Debug
-	me          pbsmetrics.MetricsEngine
+	Bidder     adapters.Bidder
+	BidderName openrtb_ext.BidderName
+	Client     *http.Client
+	me         pbsmetrics.MetricsEngine
+	config     bidderAdapterConfig
+}
+
+type bidderAdapterConfig struct {
+	Debug              config.Debug
+	DisableConnMetrics bool
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
@@ -325,6 +336,11 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	}
 	httpReq.Header = req.Headers
 
+	// If adapter connection metrics are not disabled, add the client trace
+	// to get complete connection info into our metrics
+	if !bidder.config.DisableConnMetrics {
+		ctx = bidder.addClientTrace(ctx)
+	}
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {
@@ -387,7 +403,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 			success := (err == nil && httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
 			bidder.me.RecordTimeoutNotice(success)
-			if bidder.DebugConfig.TimeoutNotification.Log && !(bidder.DebugConfig.TimeoutNotification.FailOnly && success) {
+			if bidder.config.Debug.TimeoutNotification.Log && !(bidder.config.Debug.TimeoutNotification.FailOnly && success) {
 				var msg string
 				if err == nil {
 					msg = fmt.Sprintf("TimeoutNotification: status:(%d) body:%s", httpResp.StatusCode, string(toReq.Body))
@@ -395,16 +411,16 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 					msg = fmt.Sprintf("TimeoutNotification: error:(%s) body:%s", err.Error(), string(toReq.Body))
 				}
 				// If logging is turned on, and logging is not disallowed via FailOnly
-				util.LogRandomSample(msg, logger, bidder.DebugConfig.TimeoutNotification.SamplingRate)
+				util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
 			}
 		} else {
 			bidder.me.RecordTimeoutNotice(false)
-			if bidder.DebugConfig.TimeoutNotification.Log {
+			if bidder.config.Debug.TimeoutNotification.Log {
 				msg := fmt.Sprintf("TimeoutNotification: Failed to make timeout request: method(%s), uri(%s), error(%s)", toReq.Method, toReq.Uri, err.Error())
-				util.LogRandomSample(msg, logger, bidder.DebugConfig.TimeoutNotification.SamplingRate)
+				util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
 			}
 		}
-	} else if bidder.DebugConfig.TimeoutNotification.Log {
+	} else if bidder.config.Debug.TimeoutNotification.Log {
 		reqJSON, err := json.Marshal(req)
 		var msg string
 		if err == nil {
@@ -412,7 +428,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 		} else {
 			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errL[0].Error(), err.Error())
 		}
-		util.LogRandomSample(msg, logger, bidder.DebugConfig.TimeoutNotification.SamplingRate)
+		util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
 	}
 
 }
@@ -421,4 +437,35 @@ type httpCallInfo struct {
 	request  *adapters.RequestData
 	response *adapters.ResponseData
 	err      error
+}
+
+// This function adds an httptrace.ClientTrace object to the context so, if connection with the bidder
+// endpoint is established, we can keep track of whether the connection was newly created, reused, and
+// the time from the connection request, to the connection creation.
+func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context {
+	var connStart, dnsStart time.Time
+
+	trace := &httptrace.ClientTrace{
+		// GetConn is called before a connection is created or retrieved from an idle pool
+		GetConn: func(hostPort string) {
+			connStart = time.Now()
+		},
+		// GotConn is called after a successful connection is obtained
+		GotConn: func(info httptrace.GotConnInfo) {
+			connWaitTime := time.Now().Sub(connStart)
+
+			bidder.me.RecordAdapterConnections(bidder.BidderName, info.Reused, connWaitTime)
+		},
+		// DNSStart is called when a DNS lookup begins.
+		DNSStart: func(info httptrace.DNSStartInfo) {
+			dnsStart = time.Now()
+		},
+		// DNSDone is called when a DNS lookup ends.
+		DNSDone: func(info httptrace.DNSDoneInfo) {
+			dnsLookupTime := time.Now().Sub(dnsStart)
+
+			bidder.me.RecordDNSTime(dnsLookupTime)
+		},
+	}
+	return httptrace.WithClientTrace(ctx, trace)
 }

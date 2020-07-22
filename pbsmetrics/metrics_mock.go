@@ -52,6 +52,16 @@ func (me *MetricsEngineMock) RecordAdapterRequest(labels AdapterLabels) {
 	me.Called(labels)
 }
 
+// RecordAdapterConnections mock
+func (me *MetricsEngineMock) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+	me.Called(bidderName, connWasReused, connWaitTime)
+}
+
+// RecordDNSTime mock
+func (me *MetricsEngineMock) RecordDNSTime(dnsLookupTime time.Duration) {
+	me.Called(dnsLookupTime)
+}
+
 // RecordAdapterBidReceived mock
 func (me *MetricsEngineMock) RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	me.Called(labels, bidType, hasAdm)

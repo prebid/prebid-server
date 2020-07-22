@@ -301,6 +301,8 @@ type MetricsEngine interface {
 	RecordLegacyImps(labels Labels, numImps int)           // RecordImps for the legacy engine
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
+	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration)
+	RecordDNSTime(dnsLookupTime time.Duration)
 	RecordAdapterPanic(labels AdapterLabels)
 	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
 	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
