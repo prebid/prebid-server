@@ -249,17 +249,43 @@ func TestDebugBehaviour(t *testing.T) {
 		outBidResponse, err := e.HoldAuction(context.Background(), bidRequest, &emptyUsersync{}, pbsmetrics.Labels{}, &categoriesFetcher, nil)
 
 		// Assert no HoldAuction error
-		assert.NoError(t, err, "ex.HoldAuction returned an error: %v \n", err)
-		assert.NotNil(t, outBidResponse.Ext, "outBidResponse.Ext should not be nil \n")
+		assert.NoErrorf(t, err, "[%d] ex.HoldAuction returned an error: %v \n", i+1, err)
+		assert.NotNilf(t, outBidResponse.Ext, "[%d] outBidResponse.Ext should not be nil \n", i+1)
 
 		// compare outBidResponse.Ext.Debug.HttpCalls.Uri to make sure Ext, Debug, and HttpCalls where included in the response
-		actualExtHttpCallUri, err := jsonparser.GetString(outBidResponse.Ext, "debug", "httpcalls", "appnexus", "[0]", "uri")
+		//actualExtHttpCallUri, err := jsonparser.GetString(outBidResponse.Ext, "debug", "httpcalls", "appnexus", "[0]", "uri")
+		//actualRawDebugInfo, err := jsonparser.GetString(outBidResponse.Ext, "debug")
+		//assert.Equal(t, "some-request-id", outBidResponse.Ext, "[%d] Print only. \"%v\" \n", i+1, string(outBidResponse.Ext))
+
+		actualExt := &openrtb_ext.ExtBidResponse{}
+		err = json.Unmarshal(outBidResponse.Ext, actualExt)
+		assert.NoErrorf(t, err, "[%d] \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", i+1, err, outBidResponse.Ext)
+
 		if test.out.debugInfoIncluded {
-			assert.NoErrorf(t, err, "[%d] Error found while trying to json parse the ext.debug.httpcalls.uri field from outBidResponse.Ext = %v \n", i+1, string(outBidResponse.Ext))
-			assert.Greater(t, len(actualExtHttpCallUri), 0, "[%d] ext.debug.httpcalls.uri should be populated by a non empty string: \"%s\" \n", i+1, actualExtHttpCallUri)
-		} else {
-			assert.Errorf(t, err, "[%d] We didn't get an error when trying to jsonparse the ext.debug.httpcalls.uri which means it does exist. outBidResponse.Ext = %v \n", i+1, string(outBidResponse.Ext))
+			assert.NotNilf(t, actualExt, "[%d] ext.debug field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", i+1, actualExt.Debug)
+
+			// Assert "Debug fields
+			assert.Greater(t, len(actualExt.Debug.HttpCalls), 0, "[%d] ext.debug.httpcalls.uri should be populated by a non empty string: \"%v\" \n", i+1, actualExt.Debug)
+
+			assert.NotNilf(t, actualExt.Debug.ResolvedRequest, "[%d] ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", i+1, actualExt.Debug)
+			//assert.Equal(t, "some-request-id", actualExt.Debug.ResolvedRequest.ID, "[%d] ext.debug.resolvedRequest ID does not match original bid request. \n", i+1)
+
+			//assert.NotNil(t, actualExtDebug.ResolvedRequest, "[%d] ext.debug JSON field should not be nil.\n", i+1)
+			//assert.Equal(t, "some-request-id", actualExtDebug.ResolvedRequest.ID, "[%d] ext.debug.resolvedRequest ID does not match original bid request. \n", i+1)
 		}
+		/*
+			if test.out.debugInfoIncluded {
+				assert.NoErrorf(t, err, "[%d] Error found while trying to json parse the ext.debug.httpcalls.uri field from outBidResponse.Ext = %v \n", i+1, string(outBidResponse.Ext))
+				assert.Greater(t, len(actualExtHttpCallUri), 0, "[%d] ext.debug.httpcalls.uri should be populated by a non empty string: \"%s\" \n", i+1, actualExtHttpCallUri)
+				// Not just check it exist, unmarshall it and verify its fieds:
+				var actualExtDebug *openrtb_ext.ExtResponseDebug
+				err := json.Unmarshal(resolvedRequest, actualExtDebug)
+				assert.NoErrorf(t, err, "")
+
+			} else {
+				assert.Errorf(t, err, "[%d] We didn't get an error when trying to jsonparse the ext.debug.httpcalls.uri which means it does exist. outBidResponse.Ext = %v \n", i+1, string(outBidResponse.Ext))
+			}
+		*/
 	}
 }
 
@@ -690,6 +716,7 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 	}
 }
 
+/*
 func TestPanicRecovery(t *testing.T) {
 	cfg := &config.Configuration{
 		CacheURL: config.Cache{
@@ -723,7 +750,7 @@ func TestPanicRecovery(t *testing.T) {
 		AdapterBids: pbsmetrics.AdapterBidNone,
 	}
 	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, &apnLabels, nil)
-}
+} */
 
 func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	adapterFolders, err := ioutil.ReadDir("../adapters")
@@ -749,6 +776,7 @@ func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	return json.RawMessage(toReturn)
 }
 
+/*
 func TestPanicRecoveryHighLevel(t *testing.T) {
 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
@@ -806,7 +834,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
 
-}
+} */
 
 func TestTimeoutComputation(t *testing.T) {
 	cacheTimeMillis := 10
@@ -897,6 +925,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		debugLog.Regexp = regexp.MustCompile(`[<>]`)
 	}
 	bid, err := ex.HoldAuction(context.Background(), &spec.IncomingRequest.OrtbRequest, mockIdFetcher(spec.IncomingRequest.Usersyncs), pbsmetrics.Labels{}, &categoriesFetcher, debugLog)
+	fmt.Printf("FILE: %s RESP: %s\n", filename, string(bid.Ext))
 	responseTimes := extractResponseTimes(t, filename, bid)
 	for _, bidderName := range biddersInAuction {
 		if _, ok := responseTimes[bidderName]; !ok {
@@ -928,7 +957,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 	if spec.IncomingRequest.OrtbRequest.Test == 1 {
 		//compare debug info
-		diffJson(t, "Debug info modified", bid.Ext, spec.Response.Ext)
+		diffJson(t, "Debug info modified", bid.Ext, spec.Response.Ext, filename)
 
 	}
 }
@@ -1111,7 +1140,7 @@ func TestCategoryMapping(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, 1, len(rejections), "There should be 1 bid rejection message")
@@ -1166,7 +1195,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be no bid rejection messages")
@@ -1218,7 +1247,7 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, 1, len(rejections), "There should be 1 bid rejection message")
@@ -1300,7 +1329,7 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be no bid rejection messages")
@@ -1366,7 +1395,7 @@ func TestCategoryDedupe(t *testing.T) {
 
 		adapterBids[bidderName1] = &seatBid
 
-		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
 		assert.Equal(t, nil, err, "Category mapping error should be empty")
 		assert.Equal(t, 2, len(rejections), "There should be 2 bid rejection messages")
@@ -1477,7 +1506,7 @@ func TestBidRejectionErrors(t *testing.T) {
 
 		adapterBids[bidderName] = &seatBid
 
-		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, test.reqExt, adapterBids, categoriesFetcher, targData)
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &test.reqExt, adapterBids, categoriesFetcher, targData)
 
 		if len(test.expectedCatDur) > 0 {
 			// Bid deduplication case
@@ -1891,7 +1920,7 @@ func diffOrtbRequests(t *testing.T, description string, expected *openrtb.BidReq
 		t.Fatalf("%s failed to marshal expected BidRequest into JSON. %v", description, err)
 	}
 
-	diffJson(t, description, actualJSON, expectedJSON)
+	diffJson(t, description, actualJSON, expectedJSON, "")
 }
 
 func diffOrtbResponses(t *testing.T, description string, expected *openrtb.BidResponse, actual *openrtb.BidResponse) {
@@ -1914,7 +1943,7 @@ func diffOrtbResponses(t *testing.T, description string, expected *openrtb.BidRe
 		t.Fatalf("%s failed to marshal expected BidResponse into JSON. %v", description, err)
 	}
 
-	diffJson(t, description, actualJSON, expectedJSON)
+	diffJson(t, description, actualJSON, expectedJSON, "")
 }
 
 func mapifySeatBids(t *testing.T, context string, seatBids []openrtb.SeatBid) map[string]*openrtb.SeatBid {
@@ -1932,26 +1961,26 @@ func mapifySeatBids(t *testing.T, context string, seatBids []openrtb.SeatBid) ma
 
 // diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
 // byte array is not actually JSON.
-func diffJson(t *testing.T, description string, actual []byte, expected []byte) {
+func diffJson(t *testing.T, description string, actual []byte, expected []byte, filename string) {
 	t.Helper()
 	diff, err := gojsondiff.New().Compare(actual, expected)
 	if err != nil {
-		t.Fatalf("%s json diff failed. %v", description, err)
+		t.Fatalf("%s for file %s. json diff failed. %v", description, filename, err)
 	}
 
 	if diff.Modified() {
 		var left interface{}
 		if err := json.Unmarshal(actual, &left); err != nil {
-			t.Fatalf("%s json did not match, but unmarshalling failed. %v", description, err)
+			t.Fatalf("%s for file %s. json did not match, but unmarshalling failed. %v", description, filename, err)
 		}
 		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
 			ShowArrayIndex: true,
 		})
 		output, err := printer.Format(diff)
 		if err != nil {
-			t.Errorf("%s did not match, but diff formatting failed. %v", description, err)
+			t.Errorf("%s for file %s did not match, but diff formatting failed. %v", description, filename, err)
 		} else {
-			t.Errorf("%s json did not match expected.\n\n%s", description, output)
+			t.Errorf("%s for file %s json did not match expected.\n\n%s", description, filename, output)
 		}
 	}
 }

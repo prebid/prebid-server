@@ -88,8 +88,16 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {
+	targData, bidAdjustmentFactors, requestExt, debugInfo, shouldCacheBids, err := extractBidRequesteExtInfo(bidRequest)
+	if err != nil {
+		return nil, err
+	}
+	if targData != nil {
+		targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
+	}
+
 	// Snapshot of resolved bid request for debug if test request
-	resolvedRequest, err := buildResolvedRequest(bidRequest)
+	resolvedRequest, err := buildResolvedRequest(bidRequest, debugInfo)
 	if err != nil {
 		glog.Errorf("Error marshalling bid request for debug: %v", err)
 	}
@@ -106,46 +114,13 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, cleanMetrics, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous, e.privacyConfig)
+	cleanRequests, aliases, cleanMetrics, errs := cleanOpenRTBRequests(ctx, bidRequest, requestExt, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous, e.privacyConfig)
 
 	if cleanMetrics.gdprEnforced {
 		e.me.RecordTCFReq(pbsmetrics.TCFVersionToValue(cleanMetrics.gdprTcfVersion))
 	}
 	// List of bidders we have requests for.
 	liveAdapters := listBiddersWithRequests(cleanRequests)
-
-	// Process the request to check for targeting parameters.
-	var targData *targetData
-	shouldCacheBids := false
-	shouldCacheVAST := false
-	var bidAdjustmentFactors map[string]float64
-	var requestExt openrtb_ext.ExtRequest
-	debugInfo := bidRequest.Test == 1
-
-	if len(bidRequest.Ext) > 0 {
-		err := json.Unmarshal(bidRequest.Ext, &requestExt)
-		if err != nil {
-			return nil, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
-		}
-		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
-		if requestExt.Prebid.Cache != nil {
-			shouldCacheBids = requestExt.Prebid.Cache.Bids != nil
-			shouldCacheVAST = requestExt.Prebid.Cache.VastXML != nil
-		}
-
-		if requestExt.Prebid.Targeting != nil {
-			targData = &targetData{
-				priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
-				includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
-				includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
-				includeCacheBids:  shouldCacheBids,
-				includeCacheVast:  shouldCacheVAST,
-			}
-			targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
-		}
-		// if true, the bidResponse will be returned with debug information.
-		debugInfo = debugInfo || requestExt.Prebid.Debug
-	}
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
@@ -163,6 +138,9 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.
+		//if requestExt == nil {
+		//requestExt = &openrtb_ext.ExtRequest{}
+		//}
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
 			var err error
 			var rejections []string
@@ -491,7 +469,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	return bidResponse, err
 }
 
-func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
+func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -502,6 +480,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 
 	dedupe := make(map[string]bidDedupe)
 
+	// applyCategoryMapping doesn't get called unless requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
@@ -667,7 +646,7 @@ func getPrimaryAdServer(adServerId int) (string, error) {
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, req *openrtb.BidRequest, resolvedRequest json.RawMessage, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse {
+func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, req *openrtb.BidRequest, resolvedRequest json.RawMessage, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse { //*openrtb_ext.ExtRequest
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
 		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError, len(adapterBids)),
 		ResponseTimeMillis:   make(map[openrtb_ext.BidderName]int, len(adapterBids)),
@@ -677,7 +656,8 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
 			HttpCalls: make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
 		}
-		if err := json.Unmarshal(resolvedRequest, &bidResponseExt.Debug.ResolvedRequest); err != nil {
+		bidResponseExt.Debug.ResolvedRequest = &openrtb.BidRequest{}
+		if err := json.Unmarshal(resolvedRequest, bidResponseExt.Debug.ResolvedRequest); err != nil {
 			glog.Errorf("Error unmarshalling bid request snapshot: %v", err)
 		}
 	}
@@ -786,8 +766,8 @@ func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auc *auction) (openrtb_ext.E
 }
 
 // Returns a snapshot of resolved bid request for debug if test field is set in the incomming request
-func buildResolvedRequest(bidRequest *openrtb.BidRequest) (json.RawMessage, error) {
-	if bidRequest.Test == 1 {
+func buildResolvedRequest(bidRequest *openrtb.BidRequest, debugInfo bool) (json.RawMessage, error) {
+	if debugInfo {
 		return json.Marshal(bidRequest)
 	}
 	return nil, nil

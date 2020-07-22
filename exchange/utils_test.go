@@ -80,7 +80,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqByBidders, _, _, err := cleanOpenRTBRequests(context.Background(), test.req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
+		reqByBidders, _, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -120,7 +120,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			},
 		}
 
-		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
+		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -137,77 +137,219 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 
 func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 	testCases := []struct {
-		description  string
-		inSourceExt  json.RawMessage
-		inExt        json.RawMessage
-		outSourceExt json.RawMessage
-		outExt       json.RawMessage
-		hasError     bool
+		description      string
+		inSourceExt      json.RawMessage
+		inUnmarshaledExt *openrtb_ext.ExtRequest
+		outSourceExt     json.RawMessage
+		outRequestExt    json.RawMessage
+		//outUnmarshaledExt *openrtb_ext.ExtRequest
+		hasError bool
 	}{
 		{
-			description:  "Empty root ext and source ext",
-			inSourceExt:  json.RawMessage(``),
-			inExt:        json.RawMessage(``),
-			outSourceExt: json.RawMessage(``),
-			outExt:       json.RawMessage(``),
-			hasError:     false,
+			description:      "[1] Empty root ext and source ext",
+			inSourceExt:      json.RawMessage(``),
+			inUnmarshaledExt: &openrtb_ext.ExtRequest{},
+			outSourceExt:     json.RawMessage(``),
+			outRequestExt:    json.RawMessage(``),
+			hasError:         false,
 		},
 		{
-			description:  "No schains in root ext and empty source ext",
-			inSourceExt:  json.RawMessage(``),
-			inExt:        json.RawMessage(`{"prebid":{"schains":[]}}`),
-			outSourceExt: json.RawMessage(``),
-			outExt:       json.RawMessage(`{"prebid":{}}`),
-			hasError:     false,
+			description: "[2] No schains in root ext and empty source ext",
+			inSourceExt: json.RawMessage(``),
+			//inExt:        json.RawMessage(`{"prebid":{"schains":[]}}`),
+			inUnmarshaledExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					SChains: []*openrtb_ext.ExtRequestPrebidSChain{},
+				},
+			},
+			outSourceExt:  json.RawMessage(``),
+			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			hasError:      false,
 		},
 		{
-			description:  "Use source schain -- no bidder schain or wildcard schain in ext.prebid.schains",
-			inSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["bidder1"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			outExt:       json.RawMessage(`{"prebid":{}}`),
-			hasError:     false,
+			description: "[3] Use source schain -- no bidder schain or wildcard schain in ext.prebid.schains",
+			inSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
+			//inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["bidder1"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
+			inUnmarshaledExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					SChains: []*openrtb_ext.ExtRequestPrebidSChain{
+						{
+							Bidders: []string{"bidder1"},
+							SChain: openrtb_ext.ExtRequestPrebidSChainSChain{
+								Complete: 1,
+								Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+									{
+										ASI: "directseller.com",
+										SID: "00001",
+										RID: "BidRequest1",
+										HP:  1,
+									},
+								},
+								Ver: "1.0",
+							},
+						},
+					},
+				},
+			},
+			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
+			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			hasError:      false,
 		},
 		{
-			description:  "Use schain for bidder in ext.prebid.schains",
-			inSourceExt:  json.RawMessage(``),
-			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outExt:       json.RawMessage(`{"prebid":{}}`),
-			hasError:     false,
+			description: "[4] Use schain for bidder in ext.prebid.schains",
+			inSourceExt: json.RawMessage(``),
+			//inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
+			inUnmarshaledExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					SChains: []*openrtb_ext.ExtRequestPrebidSChain{
+						{
+							Bidders: []string{"appnexus"},
+							SChain: openrtb_ext.ExtRequestPrebidSChainSChain{
+								Complete: 1,
+								Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+									{
+										ASI: "directseller.com",
+										SID: "00001",
+										RID: "BidRequest1",
+										HP:  1,
+									},
+								},
+								Ver: "1.0",
+							},
+						},
+					},
+				},
+			},
+			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
+			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			hasError:      false,
 		},
 		{
-			description:  "Use wildcard schain in ext.prebid.schains",
-			inSourceExt:  json.RawMessage(``),
-			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outExt:       json.RawMessage(`{"prebid":{}}`),
-			hasError:     false,
+			description: "[5] Use wildcard schain in ext.prebid.schains",
+			inSourceExt: json.RawMessage(``),
+			//inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
+			inUnmarshaledExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					SChains: []*openrtb_ext.ExtRequestPrebidSChain{
+						{
+							Bidders: []string{"*"},
+							SChain: openrtb_ext.ExtRequestPrebidSChainSChain{
+								Complete: 1,
+								Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+									{
+										ASI: "directseller.com",
+										SID: "00001",
+										RID: "BidRequest1",
+										HP:  1,
+									},
+								},
+								Ver: "1.0",
+							},
+						},
+					},
+				},
+			},
+			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
+			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			hasError:      false,
 		},
 		{
-			description:  "Use schain for bidder in ext.prebid.schains instead of wildcard",
-			inSourceExt:  json.RawMessage(``),
-			inExt:        json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"},"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"wildcard.com","sid":"wildcard1","rid":"WildcardReq1","hp":1}],"ver":"1.0"}} ]}}`),
-			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outExt:       json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"}}}`),
-			hasError:     false,
+			description: "[6] Use schain for bidder in ext.prebid.schains instead of wildcard",
+			inSourceExt: json.RawMessage(``),
+			//inExt: json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"},"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"wildcard.com","sid":"wildcard1","rid":"WildcardReq1","hp":1}],"ver":"1.0"}} ]}}`),
+			inUnmarshaledExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Aliases: map[string]string{"appnexus": "alias1"},
+					SChains: []*openrtb_ext.ExtRequestPrebidSChain{
+						{
+							Bidders: []string{"appnexus"},
+							SChain: openrtb_ext.ExtRequestPrebidSChainSChain{
+								Complete: 1,
+								Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+									{
+										ASI: "directseller.com",
+										SID: "00001",
+										RID: "BidRequest1",
+										HP:  1,
+									},
+								},
+								Ver: "1.0",
+							},
+						},
+						{
+							Bidders: []string{"*"},
+							SChain: openrtb_ext.ExtRequestPrebidSChainSChain{
+								Complete: 1,
+								Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+									{
+										ASI: "wildcard.com",
+										SID: "wildcard1",
+										RID: "WildcardReq1",
+										HP:  1,
+									},
+								},
+								Ver: "1.0",
+							},
+						},
+					},
+				},
+			},
+			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
+			outRequestExt: json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"}}}`),
+			hasError:      false,
 		},
 		{
-			description:  "Use source schain -- multiple (two) bidder schains in ext.prebid.schains",
-			inSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt: nil,
-			outExt:       nil,
-			hasError:     true,
+			description: "[7] Use source schain -- multiple (two) bidder schains in ext.prebid.schains",
+			inSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
+			//inExt:       json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
+			inUnmarshaledExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					SChains: []*openrtb_ext.ExtRequestPrebidSChain{
+						{
+							Bidders: []string{"appnexus"},
+							SChain: openrtb_ext.ExtRequestPrebidSChainSChain{
+								Complete: 1,
+								Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+									{
+										ASI: "directseller1.com",
+										SID: "00001",
+										RID: "BidRequest1",
+										HP:  1,
+									},
+								},
+								Ver: "1.0",
+							},
+						},
+						{
+							Bidders: []string{"appnexus"},
+							SChain: openrtb_ext.ExtRequestPrebidSChainSChain{
+								Complete: 1,
+								Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+									{
+										ASI: "directseller2.com",
+										SID: "00002",
+										RID: "BidRequest2",
+										HP:  1,
+									},
+								},
+								Ver: "1.0",
+							},
+						},
+					},
+				},
+			},
+			outSourceExt:  nil,
+			outRequestExt: nil,
+			hasError:      true,
 		},
 	}
 
 	for _, test := range testCases {
 		req := newBidRequest(t)
 		req.Source.Ext = test.inSourceExt
-		req.Ext = test.inExt
+		//req.Ext = test.inExt
 
-		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, config.Privacy{})
+		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, test.inUnmarshaledExt, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, config.Privacy{})
 		result := results["appnexus"]
 
 		if test.hasError == true {
@@ -216,7 +358,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		} else {
 			assert.Nil(t, errs)
 			assert.Equal(t, test.outSourceExt, result.Source.Ext, test.description+":Source.Ext")
-			assert.Equal(t, test.outExt, result.Ext, test.description+":Ext")
+			assert.Equal(t, test.outRequestExt, result.Ext, test.description+":Ext")
 		}
 	}
 }
@@ -268,7 +410,7 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 			},
 		}
 
-		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
+		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, privacyConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)

@@ -31,18 +31,17 @@ type cleanMetrics struct {
 func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
-	if len(req.Prebid.SChains) == 0 {
-		return bidderToSChains, nil
-	}
-
-	for _, schainWrapper := range req.Prebid.SChains {
-		if schainWrapper != nil && len(schainWrapper.Bidders) > 0 {
-			for _, bidder := range schainWrapper.Bidders {
-				if _, present := bidderToSChains[bidder]; present {
-					return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
-						"it must contain no more than one per bidder.", bidder)
-				} else {
-					bidderToSChains[bidder] = &schainWrapper.SChain
+	//if len(req.Prebid.SChains) == 0 {
+	if req != nil && req.Prebid.SChains != nil {
+		for _, schainWrapper := range req.Prebid.SChains {
+			if schainWrapper != nil && len(schainWrapper.Bidders) > 0 {
+				for _, bidder := range schainWrapper.Bidders {
+					if _, present := bidderToSChains[bidder]; present {
+						return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
+							"it must contain no more than one per bidder.", bidder)
+					} else {
+						bidderToSChains[bidder] = &schainWrapper.SChain
+					}
 				}
 			}
 		}
@@ -58,6 +57,7 @@ func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext
 //   3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
 func cleanOpenRTBRequests(ctx context.Context,
 	orig *openrtb.BidRequest,
+	requestExt *openrtb_ext.ExtRequest,
 	usersyncs IdFetcher,
 	blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
 	labels pbsmetrics.Labels,
@@ -75,7 +75,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	requestsByBidder, errs = splitBidRequest(orig, impsByBidder, aliases, usersyncs, blables, labels)
+	requestsByBidder, errs = splitBidRequest(orig, requestExt, impsByBidder, aliases, usersyncs, blables, labels)
 
 	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
 	consent := extractConsent(orig)
@@ -127,6 +127,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 }
 
 func splitBidRequest(req *openrtb.BidRequest,
+	requestExt *openrtb_ext.ExtRequest,
 	impsByBidder map[string][]openrtb.Imp,
 	aliases map[string]string,
 	usersyncs IdFetcher,
@@ -139,20 +140,16 @@ func splitBidRequest(req *openrtb.BidRequest,
 		return nil, []error{err}
 	}
 
-	var requestExt openrtb_ext.ExtRequest
 	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
-	if len(req.Ext) > 0 {
-		err := json.Unmarshal(req.Ext, &requestExt)
-		if err != nil {
-			return nil, []error{err}
-		}
 
-		sChainsByBidder, err = BidderToPrebidSChains(&requestExt)
-		if err != nil {
-			return nil, []error{err}
-		}
-	} else {
-		sChainsByBidder = make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
+	sChainsByBidder, err = BidderToPrebidSChains(requestExt)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	reqExt, err := prepareExt(req, requestExt)
+	if err != nil {
+		return nil, []error{err}
 	}
 
 	for bidder, imps := range impsByBidder {
@@ -176,23 +173,26 @@ func splitBidRequest(req *openrtb.BidRequest,
 		reqCopy.Imp = imps
 
 		prepareSource(&reqCopy, bidder, sChainsByBidder)
-		prepareExt(&reqCopy, &requestExt)
+		//prepareExt(&reqCopy, requestExt)
+		//if len(req.Ext) > 0 {
+		//	reqCopy.Ext = reqExt
+		//}
+		reqCopy.Ext = reqExt
 
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
 	}
 	return requestsByBidder, nil
 }
 
-func prepareExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) {
-	if len(req.Ext) == 0 {
-		return
+// Removes openrtb.BidRequest.Prebid.SChains and marshals back to openrtb.BidRequest.Ext
+func prepareExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
+	if unpackedExt == nil {
+		unpackedExt = &openrtb_ext.ExtRequest{}
 	}
+
 	extCopy := *unpackedExt
 	extCopy.Prebid.SChains = nil
-	reqExt, err := json.Marshal(extCopy)
-	if err == nil {
-		req.Ext = reqExt
-	}
+	return json.Marshal(extCopy)
 }
 
 func prepareSource(req *openrtb.BidRequest, bidder string, sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain) {
@@ -247,7 +247,7 @@ func extractBuyerUIDs(user *openrtb.User) (map[string]string, error) {
 	// as long as user.ext.prebid exists.
 	buyerUIDs := userExt.Prebid.BuyerUIDs
 	userExt.Prebid = nil
-	if userExt.Consent != "" || userExt.DigiTrust != nil {
+	if userExt.Consent != "" || userExt.DigiTrust != nil { //why do we need to preserve user.Ext when these two have velues? Where are they used?
 		if newUserExtBytes, err := json.Marshal(userExt); err != nil {
 			return nil, err
 		} else {
@@ -435,4 +435,41 @@ func randomizeList(list []openrtb_ext.BidderName) {
 		j = perm[i]
 		list[i], list[j] = list[j], list[i]
 	}
+}
+
+// Process the request to check for targeting parameters.
+func extractBidRequesteExtInfo(bidRequest *openrtb.BidRequest) (*targetData, map[string]float64, *openrtb_ext.ExtRequest, bool, bool, error) {
+	var targData *targetData
+	var bidAdjustmentFactors map[string]float64
+	//var requestExt *openrtb_ext.ExtRequest
+	requestExt := &openrtb_ext.ExtRequest{}
+	//requestExt := openrtb_ext.ExtRequest{}
+	debugInfo := bidRequest.Test == 1
+	shouldCacheBids := false
+	shouldCacheVAST := false
+
+	if len(bidRequest.Ext) > 0 {
+		err := json.Unmarshal(bidRequest.Ext, &requestExt)
+		if err != nil {
+			return nil, bidAdjustmentFactors, requestExt, debugInfo, shouldCacheBids, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
+		}
+		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
+		if requestExt.Prebid.Cache != nil {
+			shouldCacheBids = requestExt.Prebid.Cache.Bids != nil
+			shouldCacheVAST = requestExt.Prebid.Cache.VastXML != nil
+		}
+
+		if requestExt.Prebid.Targeting != nil {
+			targData = &targetData{
+				priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
+				includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
+				includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
+				includeCacheBids:  shouldCacheBids,
+				includeCacheVast:  shouldCacheVAST,
+			}
+		}
+		// if true, the bidResponse will be returned with debug information.
+		debugInfo = debugInfo || requestExt.Prebid.Debug
+	}
+	return targData, bidAdjustmentFactors, requestExt, debugInfo, shouldCacheBids, nil
 }
