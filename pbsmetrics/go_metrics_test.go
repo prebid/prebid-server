@@ -1,7 +1,6 @@
 package pbsmetrics
 
 import (
-	"net/http/httptrace"
 	"testing"
 	"time"
 
@@ -120,6 +119,7 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 
 	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
 	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
+	ensureContains(t, registry, name+".connection_wait_time", adapterMetrics.ConnWaitTime)
 }
 
 func TestRecordBidTypeDisabledConfig(t *testing.T) {
@@ -185,39 +185,29 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 }
 
 func TestRecordDNSTime(t *testing.T) {
-	type testIn struct {
-		dnsLookupDuration time.Duration
-	}
-	type testOut struct {
-		expDuration time.Duration
-	}
 	testCases := []struct {
-		description string
-		in          testIn
-		out         testOut
+		description         string
+		inDnsLookupDuration time.Duration
+		outExpDuration      time.Duration
 	}{
 		{
-			description: "Five second DNS lookup time",
-			in: testIn{
-				dnsLookupDuration: time.Second * 5,
-			},
-			out: testOut{
-				expDuration: time.Second * 5,
-			},
+			description:         "Five second DNS lookup time",
+			inDnsLookupDuration: time.Second * 5,
+			outExpDuration:      time.Second * 5,
 		},
 		{
-			description: "Zero DNS lookup time",
-			in:          testIn{},
-			out:         testOut{},
+			description:         "Zero DNS lookup time",
+			inDnsLookupDuration: time.Duration(0),
+			outExpDuration:      time.Duration(0),
 		},
 	}
-	for i, test := range testCases {
+	for _, test := range testCases {
 		registry := metrics.NewRegistry()
 		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
 
-		m.RecordDNSTime(test.in.dnsLookupDuration)
+		m.RecordDNSTime(test.inDnsLookupDuration)
 
-		assert.Equal(t, test.out.expDuration.Nanoseconds(), m.DNSLookupTimer.Sum(), "Test [%d] incorrect DNS lookup time", i)
+		assert.Equal(t, test.outExpDuration.Nanoseconds(), m.DNSLookupTimer.Sum(), test.description)
 	}
 }
 
@@ -226,7 +216,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 
 	type testIn struct {
 		adapterName         openrtb_ext.BidderName
-		gotConnInfo         httptrace.GotConnInfo
+		connWasReused       bool
 		connWait            time.Duration
 		connMetricsDisabled bool
 	}
@@ -245,10 +235,8 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "Successful, new connection created, has connection wait",
 			in: testIn{
-				adapterName: openrtb_ext.BidderAppnexus,
-				gotConnInfo: httptrace.GotConnInfo{
-					Reused: false,
-				},
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       false,
 				connWait:            time.Second * 5,
 				connMetricsDisabled: false,
 			},
@@ -261,10 +249,8 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "Successful, new connection created, has connection wait",
 			in: testIn{
-				adapterName: openrtb_ext.BidderAppnexus,
-				gotConnInfo: httptrace.GotConnInfo{
-					Reused: false,
-				},
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       false,
 				connWait:            time.Second * 4,
 				connMetricsDisabled: false,
 			},
@@ -276,10 +262,8 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "Successful, was reused, no connection wait",
 			in: testIn{
-				adapterName: openrtb_ext.BidderAppnexus,
-				gotConnInfo: httptrace.GotConnInfo{
-					Reused: true,
-				},
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       true,
 				connMetricsDisabled: false,
 			},
 			out: testOut{
@@ -290,10 +274,8 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "Successful, was reused, has connection wait",
 			in: testIn{
-				adapterName: openrtb_ext.BidderAppnexus,
-				gotConnInfo: httptrace.GotConnInfo{
-					Reused: true,
-				},
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       true,
 				connWait:            time.Second * 5,
 				connMetricsDisabled: false,
 			},
@@ -306,7 +288,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 			description: "Fake bidder, nothing gets updated",
 			in: testIn{
 				adapterName:         fakeBidder,
-				gotConnInfo:         httptrace.GotConnInfo{},
+				connWasReused:       false,
 				connWait:            0,
 				connMetricsDisabled: false,
 			},
@@ -315,10 +297,8 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "Adapter connection metrics are disabled, nothing gets updated",
 			in: testIn{
-				adapterName: openrtb_ext.BidderAppnexus,
-				gotConnInfo: httptrace.GotConnInfo{
-					Reused: false,
-				},
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       false,
 				connWait:            time.Second * 5,
 				connMetricsDisabled: true,
 			},
@@ -330,7 +310,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		registry := metrics.NewRegistry()
 		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterConnectionMetrics: test.in.connMetricsDisabled})
 
-		m.RecordAdapterConnections(test.in.adapterName, test.in.gotConnInfo, test.in.connWait)
+		m.RecordAdapterConnections(test.in.adapterName, test.in.connWasReused, test.in.connWait)
 
 		assert.Equal(t, test.out.expectedConnReusedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnReused.Count(), "Test [%d] incorrect number of reused connections to adapter", i)
 		assert.Equal(t, test.out.expectedConnCreatedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnCreated.Count(), "Test [%d] incorrect number of new connections to adapter created", i)

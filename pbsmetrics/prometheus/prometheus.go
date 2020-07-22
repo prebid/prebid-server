@@ -1,7 +1,6 @@
 package prometheusmetrics
 
 import (
-	"net/http/httptrace"
 	"strconv"
 	"time"
 
@@ -30,7 +29,7 @@ type Metrics struct {
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
 	timeoutNotifications         *prometheus.CounterVec
-	dnsLookupTime                prometheus.Histogram
+	dnsLookupTimer               prometheus.Histogram
 	privacyCCPA                  *prometheus.CounterVec
 	privacyCOPPA                 *prometheus.CounterVec
 	privacyLMT                   *prometheus.CounterVec
@@ -105,7 +104,7 @@ const (
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
 func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMetrics) *Metrics {
-	requestTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
+	standardTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
 	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
 	queuedRequestTimeBuckets := []float64{0, 1, 5, 30, 60, 120, 180, 240, 300}
@@ -155,7 +154,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"request_time_seconds",
 		"Seconds to resolve successful Prebid Server requests labeled by type.",
 		[]string{requestTypeLabel},
-		requestTimeBuckets)
+		standardTimeBuckets)
 
 	metrics.requestsWithoutCookie = newCounter(cfg, metrics.Registry,
 		"requests_without_cookie",
@@ -177,10 +176,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of timeout notifications triggered, and if they were successfully sent.",
 		[]string{successLabel})
 
-	metrics.dnsLookupTime = newHistogram(cfg, metrics.Registry,
+	metrics.dnsLookupTimer = newHistogram(cfg, metrics.Registry,
 		"dns_lookup_time",
 		"Seconds to resolve DNS",
-		requestTimeBuckets)
+		standardTimeBuckets)
 
 	metrics.privacyCCPA = newCounter(cfg, metrics.Registry,
 		"privacy_ccpa",
@@ -248,14 +247,14 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 			"adapter_connection_wait",
 			"Seconds from when the connection was requested until it is either created or reused",
 			[]string{adapterLabel},
-			requestTimeBuckets)
+			standardTimeBuckets)
 	}
 
 	metrics.adapterRequestsTimer = newHistogramVec(cfg, metrics.Registry,
 		"adapter_request_time_seconds",
 		"Seconds to resolve each successful request labeled by adapter.",
 		[]string{adapterLabel},
-		requestTimeBuckets)
+		standardTimeBuckets)
 
 	metrics.adapterUserSync = newCounter(cfg, metrics.Registry,
 		"adapter_user_sync",
@@ -405,12 +404,12 @@ func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 
 // Keeps track of created and reused connections to adapter bidders and the time from the
 // connection request, to the connection creation, or reuse from the pool across all engines
-func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
+func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
 	if m.metricsDisabled.AdapterConnectionMetrics {
 		return
 	}
 
-	if info.Reused {
+	if connWasReused {
 		m.adapterReusedConnections.With(prometheus.Labels{
 			adapterLabel: string(adapterName),
 		}).Inc()
@@ -422,11 +421,11 @@ func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, i
 
 	m.adapterConnectionWaitTime.With(prometheus.Labels{
 		adapterLabel: string(adapterName),
-	}).Observe(obtainConnectionTime.Seconds())
+	}).Observe(connWaitTime.Seconds())
 }
 
 func (m *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
-	m.dnsLookupTime.Observe(dnsLookupTime.Seconds())
+	m.dnsLookupTimer.Observe(dnsLookupTime.Seconds())
 }
 
 func (m *Metrics) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {

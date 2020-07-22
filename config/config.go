@@ -382,7 +382,7 @@ type DisabledMetrics struct {
 
 	// True if we don't want to collect metrics about the connections prebid
 	// server establishes with bidder servers such as the number of connections
-	// that were created or reused and the connection idle and waiting times.
+	// that were created or reused.
 	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
 }
 

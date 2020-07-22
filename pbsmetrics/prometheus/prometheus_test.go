@@ -2,7 +2,6 @@ package prometheusmetrics
 
 import (
 	"fmt"
-	"net/http/httptrace"
 	"testing"
 	"time"
 
@@ -983,7 +982,7 @@ func TestRecordDNSTime(t *testing.T) {
 		pm.RecordDNSTime(test.in.dnsLookupDuration)
 
 		m := dto.Metric{}
-		pm.dnsLookupTime.Write(&m)
+		pm.dnsLookupTimer.Write(&m)
 		histogram := *m.GetHistogram()
 
 		assert.Equal(t, test.out.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
@@ -994,9 +993,9 @@ func TestRecordDNSTime(t *testing.T) {
 func TestRecordAdapterConnections(t *testing.T) {
 
 	type testIn struct {
-		adapterName openrtb_ext.BidderName
-		gotConnInfo httptrace.GotConnInfo
-		connWait    time.Duration
+		adapterName   openrtb_ext.BidderName
+		connWasReused bool
+		connWait      time.Duration
 	}
 
 	type testOut struct {
@@ -1014,13 +1013,9 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[1] Successful, new connection created, was idle, has connection wait",
 			in: testIn{
-				adapterName: openrtb_ext.BidderAppnexus,
-				gotConnInfo: httptrace.GotConnInfo{
-					Reused:   false,
-					WasIdle:  true,
-					IdleTime: time.Second * 2,
-				},
-				connWait: time.Second * 5,
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: false,
+				connWait:      time.Second * 5,
 			},
 			out: testOut{
 				expectedConnReusedCount:  0,
@@ -1032,12 +1027,9 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[2] Successful, new connection created, not idle, has connection wait",
 			in: testIn{
-				adapterName: openrtb_ext.BidderAppnexus,
-				gotConnInfo: httptrace.GotConnInfo{
-					Reused:  false,
-					WasIdle: false,
-				},
-				connWait: time.Second * 4,
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: false,
+				connWait:      time.Second * 4,
 			},
 			out: testOut{
 				expectedConnReusedCount:  0,
@@ -1049,12 +1041,8 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[3] Successful, was reused, was idle, no connection wait",
 			in: testIn{
-				adapterName: openrtb_ext.BidderAppnexus,
-				gotConnInfo: httptrace.GotConnInfo{
-					Reused:   true,
-					WasIdle:  true,
-					IdleTime: time.Second * 3,
-				},
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: true,
 			},
 			out: testOut{
 				expectedConnReusedCount:  1,
@@ -1066,12 +1054,9 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[4] Successful, was reused, not idle, has connection wait",
 			in: testIn{
-				adapterName: openrtb_ext.BidderAppnexus,
-				gotConnInfo: httptrace.GotConnInfo{
-					Reused:  true,
-					WasIdle: false,
-				},
-				connWait: time.Second * 5,
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: true,
+				connWait:      time.Second * 5,
 			},
 			out: testOut{
 				expectedConnReusedCount:  1,
@@ -1091,7 +1076,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 			fmt.Sprintf("[%d] Metric: adapterWaitConnectionTime; Desc: %s", i+1, test.description),
 		}
 
-		m.RecordAdapterConnections(test.in.adapterName, test.in.gotConnInfo, test.in.connWait)
+		m.RecordAdapterConnections(test.in.adapterName, test.in.connWasReused, test.in.connWait)
 
 		// Assert number of reused connections
 		assertCounterVecValue(t,

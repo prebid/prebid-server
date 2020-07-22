@@ -95,8 +95,8 @@ func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		Client:     client,
 		me:         me,
 		config: bidderAdapterConfig{
-			DebugConfig:          cfg.Debug,
-			LogConnectionMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
+			Debug:              cfg.Debug,
+			DisableConnMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
 		},
 	}
 }
@@ -110,8 +110,8 @@ type bidderAdapter struct {
 }
 
 type bidderAdapterConfig struct {
-	DebugConfig          config.Debug
-	LogConnectionMetrics bool
+	Debug              config.Debug
+	DisableConnMetrics bool
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
@@ -338,7 +338,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 
 	// If adapter connection metrics are not disabled, add the client trace
 	// to get complete connection info into our metrics
-	if !bidder.config.LogConnectionMetrics {
+	if !bidder.config.DisableConnMetrics {
 		ctx = bidder.addClientTrace(ctx)
 	}
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
@@ -403,7 +403,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 			success := (err == nil && httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
 			bidder.me.RecordTimeoutNotice(success)
-			if bidder.config.DebugConfig.TimeoutNotification.Log && !(bidder.config.DebugConfig.TimeoutNotification.FailOnly && success) {
+			if bidder.config.Debug.TimeoutNotification.Log && !(bidder.config.Debug.TimeoutNotification.FailOnly && success) {
 				var msg string
 				if err == nil {
 					msg = fmt.Sprintf("TimeoutNotification: status:(%d) body:%s", httpResp.StatusCode, string(toReq.Body))
@@ -411,16 +411,16 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 					msg = fmt.Sprintf("TimeoutNotification: error:(%s) body:%s", err.Error(), string(toReq.Body))
 				}
 				// If logging is turned on, and logging is not disallowed via FailOnly
-				util.LogRandomSample(msg, logger, bidder.config.DebugConfig.TimeoutNotification.SamplingRate)
+				util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
 			}
 		} else {
 			bidder.me.RecordTimeoutNotice(false)
-			if bidder.config.DebugConfig.TimeoutNotification.Log {
+			if bidder.config.Debug.TimeoutNotification.Log {
 				msg := fmt.Sprintf("TimeoutNotification: Failed to make timeout request: method(%s), uri(%s), error(%s)", toReq.Method, toReq.Uri, err.Error())
-				util.LogRandomSample(msg, logger, bidder.config.DebugConfig.TimeoutNotification.SamplingRate)
+				util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
 			}
 		}
-	} else if bidder.config.DebugConfig.TimeoutNotification.Log {
+	} else if bidder.config.Debug.TimeoutNotification.Log {
 		reqJSON, err := json.Marshal(req)
 		var msg string
 		if err == nil {
@@ -428,7 +428,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 		} else {
 			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errL[0].Error(), err.Error())
 		}
-		util.LogRandomSample(msg, logger, bidder.config.DebugConfig.TimeoutNotification.SamplingRate)
+		util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
 	}
 
 }
@@ -452,9 +452,9 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		},
 		// GotConn is called after a successful connection is obtained
 		GotConn: func(info httptrace.GotConnInfo) {
-			obtainConnTime := time.Now().Sub(connStart)
+			connWaitTime := time.Now().Sub(connStart)
 
-			bidder.me.RecordAdapterConnections(bidder.BidderName, info, obtainConnTime)
+			bidder.me.RecordAdapterConnections(bidder.BidderName, info.Reused, connWaitTime)
 		},
 		// DNSStart is called when a DNS lookup begins.
 		DNSStart: func(info httptrace.DNSStartInfo) {

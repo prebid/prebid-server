@@ -1252,17 +1252,6 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 
 	// declare requestBid parameters
 	bidAdjustment := 2.0
-	mockBidderResponse := &adapters.BidderResponse{
-		Bids: []*adapters.TypedBid{
-			{
-				Bid: &openrtb.Bid{
-					Price: 3.0,
-				},
-				BidType:      openrtb_ext.BidTypeBanner,
-				DealPriority: 4,
-			},
-		},
-	}
 
 	bidderImpl := &goodSingleBidder{
 		httpRequest: &adapters.RequestData{
@@ -1271,16 +1260,15 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 			Body:    []byte("{\"key\":\"val\"}"),
 			Headers: http.Header{},
 		},
-		bidResponse: mockBidderResponse,
+		bidResponse: &adapters.BidderResponse{},
 	}
 
-	// Setup mock metrics
+	// setup a mock metrics engine and its expectation
 	metrics := &pbsmetrics.MetricsEngineMock{}
 	expectedAdapterName := openrtb_ext.BidderAppnexus
-	compareConnInfo := func(info httptrace.GotConnInfo) bool { return !info.Reused }
 	compareConnWaitTime := func(dur time.Duration) bool { return dur.Nanoseconds() > 0 }
 
-	metrics.On("RecordAdapterConnections", expectedAdapterName, mock.MatchedBy(compareConnInfo), mock.MatchedBy(compareConnWaitTime)).Once()
+	metrics.On("RecordAdapterConnections", expectedAdapterName, false, mock.MatchedBy(compareConnWaitTime)).Once()
 
 	// Run requestBid using an http.Client with a mock handler
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, metrics, openrtb_ext.BidderAppnexus)
@@ -1348,7 +1336,7 @@ func TestTimeoutNotificationOff(t *testing.T) {
 	bidder := &bidderAdapter{
 		Bidder: bidderImpl,
 		Client: server.Client(),
-		config: bidderAdapterConfig{DebugConfig: config.Debug{}},
+		config: bidderAdapterConfig{Debug: config.Debug{}},
 		me:     &metricsConf.DummyMetricsEngine{},
 	}
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
@@ -1383,7 +1371,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 		Bidder: bidderWrappedWithInfo,
 		Client: server.Client(),
 		config: bidderAdapterConfig{
-			DebugConfig: config.Debug{
+			Debug: config.Debug{
 				TimeoutNotification: config.TimeoutNotification{
 					Log:          true,
 					SamplingRate: 1.0,

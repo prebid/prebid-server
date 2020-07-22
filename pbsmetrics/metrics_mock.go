@@ -1,7 +1,6 @@
 package pbsmetrics
 
 import (
-	"net/http/httptrace"
 	"time"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -54,8 +53,8 @@ func (me *MetricsEngineMock) RecordAdapterRequest(labels AdapterLabels) {
 }
 
 // RecordAdapterConnections mock
-func (me *MetricsEngineMock) RecordAdapterConnections(bidderName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
-	me.Called(bidderName, info, obtainConnectionTime)
+func (me *MetricsEngineMock) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+	me.Called(bidderName, connWasReused, connWaitTime)
 }
 
 // RecordDNSTime mock

@@ -1,7 +1,6 @@
 package pbsmetrics
 
 import (
-	"net/http/httptrace"
 	"time"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -302,7 +301,7 @@ type MetricsEngine interface {
 	RecordLegacyImps(labels Labels, numImps int)           // RecordImps for the legacy engine
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
-	RecordAdapterConnections(adapterName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration)
+	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration)
 	RecordDNSTime(dnsLookupTime time.Duration)
 	RecordAdapterPanic(labels AdapterLabels)
 	// This records whether or not a bid of a particular type uses `adm` or `nurl`.

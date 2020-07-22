@@ -1,7 +1,6 @@
 package config
 
 import (
-	"net/http/httptrace"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -121,9 +120,9 @@ func (me *MultiMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabe
 
 // Keeps track of created and reused connections to adapter bidders and the time from the
 // connection request, to the connection creation, or reuse from the pool across all engines
-func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
+func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordAdapterConnections(bidderName, info, obtainConnectionTime)
+		thisME.RecordAdapterConnections(bidderName, connWasReused, connWaitTime)
 	}
 }
 
@@ -254,10 +253,10 @@ func (me *DummyMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabe
 }
 
 // RecordAdapterConnections as a noop
-func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, info httptrace.GotConnInfo, obtainConnectionTime time.Duration) {
+func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
 }
 
-// Times the DNS resolution process
+// RecordDNSTime as a noop
 func (me *DummyMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 }
 

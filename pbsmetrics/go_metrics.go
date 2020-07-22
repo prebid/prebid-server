@@ -2,7 +2,6 @@ package pbsmetrics
 
 import (
 	"fmt"
-	"net/http/httptrace"
 	"sync"
 	"time"
 
@@ -275,7 +274,7 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		PanicMeter:        blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
 	}
-	if disabledMetrics.AdapterConnectionMetrics {
+	if !disabledMetrics.AdapterConnectionMetrics {
 		newAdapter.ConnCreated = metrics.NilCounter{}
 		newAdapter.ConnReused = metrics.NilCounter{}
 		newAdapter.ConnWaitTime = &metrics.NilTimer{}
@@ -490,8 +489,8 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 // Keeps track of created and reused connections to adapter bidders and the time from the
 // connection request, to the connection creation, or reuse from the pool across all engines
 func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
-	info httptrace.GotConnInfo,
-	obtainConnectionTime time.Duration) {
+	connWasReused bool,
+	connWaitTime time.Duration) {
 
 	if me.MetricsDisabled.AdapterConnectionMetrics {
 		return
@@ -499,16 +498,16 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 
 	am, ok := me.AdapterMetrics[adapterName]
 	if !ok {
-		glog.Errorf("Trying to log adapter connection metrics for %s: adapter metrics not found", string(adapterName))
+		glog.Errorf("Trying to log adapter connection metrics for %s: adapter not found", string(adapterName))
 		return
 	}
 
-	if info.Reused {
+	if connWasReused {
 		am.ConnReused.Inc(1)
 	} else {
 		am.ConnCreated.Inc(1)
 	}
-	am.ConnWaitTime.Update(obtainConnectionTime)
+	am.ConnWaitTime.Update(connWaitTime)
 }
 
 func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
