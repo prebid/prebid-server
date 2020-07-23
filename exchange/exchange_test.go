@@ -160,32 +160,32 @@ func TestDebugBehaviour(t *testing.T) {
 	}
 	testCases := []aTest{
 		{
-			desc: "[1] test flag equals zero, ext debug flag false, no debug info expected",
+			desc: "test flag equals zero, ext debug flag false, no debug info expected",
 			in:   inTest{test: 0, debug: false},
 			out:  outTest{debugInfoIncluded: false},
 		},
 		{
-			desc: "[2] test flag equals zero, ext debug flag true, debug info expected",
+			desc: "test flag equals zero, ext debug flag true, debug info expected",
 			in:   inTest{test: 0, debug: true},
 			out:  outTest{debugInfoIncluded: true},
 		},
 		{
-			desc: "[3] test flag equals 1, ext debug flag false, debug info expected",
+			desc: "test flag equals 1, ext debug flag false, debug info expected",
 			in:   inTest{test: 1, debug: false},
 			out:  outTest{debugInfoIncluded: true},
 		},
 		{
-			desc: "[4] test flag equals 1, ext debug flag true, debug info expected",
+			desc: "test flag equals 1, ext debug flag true, debug info expected",
 			in:   inTest{test: 1, debug: true},
 			out:  outTest{debugInfoIncluded: true},
 		},
 		{
-			desc: "[5] test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
+			desc: "test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
 			in:   inTest{test: 2, debug: false},
 			out:  outTest{debugInfoIncluded: false},
 		},
 		{
-			desc: "[6] test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
+			desc: "test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
 			in:   inTest{test: -1, debug: true},
 			out:  outTest{debugInfoIncluded: true},
 		},
@@ -236,7 +236,7 @@ func TestDebugBehaviour(t *testing.T) {
 	e.currencyConverter = currencies.NewRateConverterDefault()
 
 	// Run tests
-	for i, test := range testCases {
+	for _, test := range testCases {
 		bidRequest.Test = test.in.test
 
 		if test.in.debug {
@@ -249,43 +249,20 @@ func TestDebugBehaviour(t *testing.T) {
 		outBidResponse, err := e.HoldAuction(context.Background(), bidRequest, &emptyUsersync{}, pbsmetrics.Labels{}, &categoriesFetcher, nil)
 
 		// Assert no HoldAuction error
-		assert.NoErrorf(t, err, "[%d] ex.HoldAuction returned an error: %v \n", i+1, err)
-		assert.NotNilf(t, outBidResponse.Ext, "[%d] outBidResponse.Ext should not be nil \n", i+1)
-
-		// compare outBidResponse.Ext.Debug.HttpCalls.Uri to make sure Ext, Debug, and HttpCalls where included in the response
-		//actualExtHttpCallUri, err := jsonparser.GetString(outBidResponse.Ext, "debug", "httpcalls", "appnexus", "[0]", "uri")
-		//actualRawDebugInfo, err := jsonparser.GetString(outBidResponse.Ext, "debug")
-		//assert.Equal(t, "some-request-id", outBidResponse.Ext, "[%d] Print only. \"%v\" \n", i+1, string(outBidResponse.Ext))
+		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
+		assert.NotNilf(t, outBidResponse.Ext, "%s. outBidResponse.Ext should not be nil \n", test.desc)
 
 		actualExt := &openrtb_ext.ExtBidResponse{}
 		err = json.Unmarshal(outBidResponse.Ext, actualExt)
-		assert.NoErrorf(t, err, "[%d] \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", i+1, err, outBidResponse.Ext)
+		assert.NoErrorf(t, err, "%s. \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", test.desc, err, outBidResponse.Ext)
 
 		if test.out.debugInfoIncluded {
-			assert.NotNilf(t, actualExt, "[%d] ext.debug field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", i+1, actualExt.Debug)
+			assert.NotNilf(t, actualExt, "%s. ext.debug field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", test.desc, actualExt.Debug)
 
 			// Assert "Debug fields
-			assert.Greater(t, len(actualExt.Debug.HttpCalls), 0, "[%d] ext.debug.httpcalls.uri should be populated by a non empty string: \"%v\" \n", i+1, actualExt.Debug)
-
-			assert.NotNilf(t, actualExt.Debug.ResolvedRequest, "[%d] ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", i+1, actualExt.Debug)
-			//assert.Equal(t, "some-request-id", actualExt.Debug.ResolvedRequest.ID, "[%d] ext.debug.resolvedRequest ID does not match original bid request. \n", i+1)
-
-			//assert.NotNil(t, actualExtDebug.ResolvedRequest, "[%d] ext.debug JSON field should not be nil.\n", i+1)
-			//assert.Equal(t, "some-request-id", actualExtDebug.ResolvedRequest.ID, "[%d] ext.debug.resolvedRequest ID does not match original bid request. \n", i+1)
+			assert.Greater(t, len(actualExt.Debug.HttpCalls), 0, "%s. ext.debug.httpcalls.uri should be populated by a non empty string: \"%v\" \n", test.desc, actualExt.Debug)
+			assert.NotNilf(t, actualExt.Debug.ResolvedRequest, "%s. ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", test.desc, actualExt.Debug)
 		}
-		/*
-			if test.out.debugInfoIncluded {
-				assert.NoErrorf(t, err, "[%d] Error found while trying to json parse the ext.debug.httpcalls.uri field from outBidResponse.Ext = %v \n", i+1, string(outBidResponse.Ext))
-				assert.Greater(t, len(actualExtHttpCallUri), 0, "[%d] ext.debug.httpcalls.uri should be populated by a non empty string: \"%s\" \n", i+1, actualExtHttpCallUri)
-				// Not just check it exist, unmarshall it and verify its fieds:
-				var actualExtDebug *openrtb_ext.ExtResponseDebug
-				err := json.Unmarshal(resolvedRequest, actualExtDebug)
-				assert.NoErrorf(t, err, "")
-
-			} else {
-				assert.Errorf(t, err, "[%d] We didn't get an error when trying to jsonparse the ext.debug.httpcalls.uri which means it does exist. outBidResponse.Ext = %v \n", i+1, string(outBidResponse.Ext))
-			}
-		*/
 	}
 }
 
@@ -716,7 +693,6 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 	}
 }
 
-/*
 func TestPanicRecovery(t *testing.T) {
 	cfg := &config.Configuration{
 		CacheURL: config.Cache{
@@ -750,7 +726,7 @@ func TestPanicRecovery(t *testing.T) {
 		AdapterBids: pbsmetrics.AdapterBidNone,
 	}
 	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, &apnLabels, nil)
-} */
+}
 
 func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	adapterFolders, err := ioutil.ReadDir("../adapters")
@@ -776,7 +752,6 @@ func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	return json.RawMessage(toReturn)
 }
 
-/*
 func TestPanicRecoveryHighLevel(t *testing.T) {
 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
@@ -834,7 +809,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
 
-} */
+}
 
 func TestTimeoutComputation(t *testing.T) {
 	cacheTimeMillis := 10
@@ -864,7 +839,7 @@ func TestSetDebugContextKey(t *testing.T) {
 	// Assert DebugContextKeyWas set in `makeAuctionContext`
 	debugInfo := auctionCtx.Value(DebugContextKey("debugInfo"))
 	assert.NotNil(t, debugInfo, "Something wrong while retrieving context value for `debugInfo`")
-	assert.Equal(t, "true", debugInfo, "The value mapped to DebugContextKey(`debugInfo`) in the context should be `true`")
+	assert.Equal(t, true, debugInfo.(bool), "The value mapped to DebugContextKey(`debugInfo`) in the context should be `true`")
 }
 
 // TestExchangeJSON executes tests for all the *.json files in exchangetest.
@@ -925,7 +900,6 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		debugLog.Regexp = regexp.MustCompile(`[<>]`)
 	}
 	bid, err := ex.HoldAuction(context.Background(), &spec.IncomingRequest.OrtbRequest, mockIdFetcher(spec.IncomingRequest.Usersyncs), pbsmetrics.Labels{}, &categoriesFetcher, debugLog)
-	fmt.Printf("FILE: %s RESP: %s\n", filename, string(bid.Ext))
 	responseTimes := extractResponseTimes(t, filename, bid)
 	for _, bidderName := range biddersInAuction {
 		if _, ok := responseTimes[bidderName]; !ok {
@@ -957,7 +931,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 	if spec.IncomingRequest.OrtbRequest.Test == 1 {
 		//compare debug info
-		diffJson(t, "Debug info modified", bid.Ext, spec.Response.Ext, filename)
+		diffJson(t, "Debug info modified", bid.Ext, spec.Response.Ext)
 
 	}
 }
@@ -1920,7 +1894,7 @@ func diffOrtbRequests(t *testing.T, description string, expected *openrtb.BidReq
 		t.Fatalf("%s failed to marshal expected BidRequest into JSON. %v", description, err)
 	}
 
-	diffJson(t, description, actualJSON, expectedJSON, "")
+	diffJson(t, description, actualJSON, expectedJSON)
 }
 
 func diffOrtbResponses(t *testing.T, description string, expected *openrtb.BidResponse, actual *openrtb.BidResponse) {
@@ -1943,7 +1917,7 @@ func diffOrtbResponses(t *testing.T, description string, expected *openrtb.BidRe
 		t.Fatalf("%s failed to marshal expected BidResponse into JSON. %v", description, err)
 	}
 
-	diffJson(t, description, actualJSON, expectedJSON, "")
+	diffJson(t, description, actualJSON, expectedJSON)
 }
 
 func mapifySeatBids(t *testing.T, context string, seatBids []openrtb.SeatBid) map[string]*openrtb.SeatBid {
@@ -1961,26 +1935,26 @@ func mapifySeatBids(t *testing.T, context string, seatBids []openrtb.SeatBid) ma
 
 // diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
 // byte array is not actually JSON.
-func diffJson(t *testing.T, description string, actual []byte, expected []byte, filename string) {
+func diffJson(t *testing.T, description string, actual []byte, expected []byte) {
 	t.Helper()
 	diff, err := gojsondiff.New().Compare(actual, expected)
 	if err != nil {
-		t.Fatalf("%s for file %s. json diff failed. %v", description, filename, err)
+		t.Fatalf("%s json diff failed. %v", description, err)
 	}
 
 	if diff.Modified() {
 		var left interface{}
 		if err := json.Unmarshal(actual, &left); err != nil {
-			t.Fatalf("%s for file %s. json did not match, but unmarshalling failed. %v", description, filename, err)
+			t.Fatalf("%s json did not match, but unmarshalling failed. %v", description, err)
 		}
 		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
 			ShowArrayIndex: true,
 		})
 		output, err := printer.Format(diff)
 		if err != nil {
-			t.Errorf("%s for file %s did not match, but diff formatting failed. %v", description, filename, err)
+			t.Errorf("%s did not match, but diff formatting failed. %v", description, err)
 		} else {
-			t.Errorf("%s for file %s json did not match expected.\n\n%s", description, filename, output)
+			t.Errorf("%s json did not match expected.\n\n%s", description, output)
 		}
 	}
 }

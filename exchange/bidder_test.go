@@ -1024,7 +1024,7 @@ func TestMobileNativeTypes(t *testing.T) {
 		var actualValue string
 		for _, bid := range seatBids.bids {
 			actualValue = bid.bid.AdM
-			diffJson(t, tc.description, []byte(actualValue), []byte(tc.expectedValue), "")
+			diffJson(t, tc.description, []byte(actualValue), []byte(tc.expectedValue))
 		}
 	}
 }

@@ -138,9 +138,9 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.
-		//if requestExt == nil {
-		//requestExt = &openrtb_ext.ExtRequest{}
-		//}
+		if requestExt == nil {
+			requestExt = &openrtb_ext.ExtRequest{}
+		}
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
 			var err error
 			var rejections []string
@@ -278,7 +278,7 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool, debu
 	}
 	// Don't populate context unless `debugInfo` is true
 	if debugInfo {
-		auctionCtx = context.WithValue(auctionCtx, DebugContextKey("debugInfo"), "true")
+		auctionCtx = context.WithValue(auctionCtx, DebugContextKey("debugInfo"), debugInfo)
 	}
 	return
 }
@@ -457,8 +457,8 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	bidResponse.SeatBid = seatBids
 
 	if bidResponseExt == nil {
-		debugInfo := ctx.Value(DebugContextKey("debugInfo"))
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, debugInfo != nil, errList)
+		debugInfo := ctx.Value(DebugContextKey("debugInfo")) != nil
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, debugInfo, errList)
 	}
 	buffer := &bytes.Buffer{}
 	enc := json.NewEncoder(buffer)
@@ -480,7 +480,8 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 
 	dedupe := make(map[string]bidDedupe)
 
-	// applyCategoryMapping doesn't get called unless requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil
+	// applyCategoryMapping doesn't get called unless
+	// requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
@@ -646,7 +647,7 @@ func getPrimaryAdServer(adServerId int) (string, error) {
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, req *openrtb.BidRequest, resolvedRequest json.RawMessage, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse { //*openrtb_ext.ExtRequest
+func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, req *openrtb.BidRequest, resolvedRequest json.RawMessage, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
 		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError, len(adapterBids)),
 		ResponseTimeMillis:   make(map[openrtb_ext.BidderName]int, len(adapterBids)),
@@ -654,9 +655,9 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 	}
 	if debugInfo {
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
-			HttpCalls: make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
+			HttpCalls:       make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
+			ResolvedRequest: &openrtb.BidRequest{},
 		}
-		bidResponseExt.Debug.ResolvedRequest = &openrtb.BidRequest{}
 		if err := json.Unmarshal(resolvedRequest, bidResponseExt.Debug.ResolvedRequest); err != nil {
 			glog.Errorf("Error unmarshalling bid request snapshot: %v", err)
 		}

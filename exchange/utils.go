@@ -179,7 +179,6 @@ func splitBidRequest(req *openrtb.BidRequest,
 	return requestsByBidder, nil
 }
 
-// Removes openrtb.BidRequest.Prebid.SChains and marshals back to openrtb.BidRequest.Ext
 func prepareExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
 	if len(req.Ext) == 0 || unpackedExt == nil {
 		return json.RawMessage(``), nil
@@ -242,7 +241,7 @@ func extractBuyerUIDs(user *openrtb.User) (map[string]string, error) {
 	// as long as user.ext.prebid exists.
 	buyerUIDs := userExt.Prebid.BuyerUIDs
 	userExt.Prebid = nil
-	if userExt.Consent != "" || userExt.DigiTrust != nil { //why do we need to preserve user.Ext when these two have velues? Where are they used?
+	if userExt.Consent != "" || userExt.DigiTrust != nil {
 		if newUserExtBytes, err := json.Marshal(userExt); err != nil {
 			return nil, err
 		} else {
@@ -436,17 +435,21 @@ func randomizeList(list []openrtb_ext.BidderName) {
 func extractBidRequesteExtInfo(bidRequest *openrtb.BidRequest) (*targetData, map[string]float64, *openrtb_ext.ExtRequest, bool, bool, error) {
 	var targData *targetData
 	var bidAdjustmentFactors map[string]float64
-	//var requestExt *openrtb_ext.ExtRequest
 	requestExt := &openrtb_ext.ExtRequest{}
-	//requestExt := openrtb_ext.ExtRequest{}
-	debugInfo := bidRequest.Test == 1
+	debugInfo := false
 	shouldCacheBids := false
 	shouldCacheVAST := false
+
+	if bidRequest == nil {
+		return targData, bidAdjustmentFactors, requestExt, debugInfo, shouldCacheBids, nil
+	}
+
+	debugInfo = bidRequest.Test == 1
 
 	if len(bidRequest.Ext) > 0 {
 		err := json.Unmarshal(bidRequest.Ext, &requestExt)
 		if err != nil {
-			return nil, bidAdjustmentFactors, requestExt, debugInfo, shouldCacheBids, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
+			return targData, bidAdjustmentFactors, requestExt, debugInfo, shouldCacheBids, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
 		}
 		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
 		if requestExt.Prebid.Cache != nil {
