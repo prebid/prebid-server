@@ -39,6 +39,12 @@ import (
 
 const storedRequestTimeoutMillis = 50
 
+var (
+	dntKey      string = http.CanonicalHeaderKey("DNT")
+	dntDisabled int8   = 0
+	dntEnabled  int8   = 1
+)
+
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
@@ -290,6 +296,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		if err := validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
 			return []error{err}
 		}
+
+		if err := validateSChains(bidExt); err != nil {
+			return []error{err}
+		}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -360,6 +370,11 @@ func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases 
 		}
 	}
 	return nil
+}
+
+func validateSChains(req *openrtb_ext.ExtRequest) error {
+	_, err := exchange.BidderToPrebidSChains(req)
+	return err
 }
 
 func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]string, index int) []error {
@@ -955,6 +970,8 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, ipValidtor iputil.IPValidator) {
 	setIPImplicitly(httpReq, bidReq, ipValidtor)
 	setUAImplicitly(httpReq, bidReq)
+	setDoNotTrackImplicitly(httpReq, bidReq)
+
 }
 
 // setAuctionTypeImplicitly sets the auction type to 1 if it wasn't on the request,
@@ -1179,6 +1196,24 @@ func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 				bidReq.Device = &openrtb.Device{}
 			}
 			bidReq.Device.UA = ua
+		}
+	}
+}
+
+func setDoNotTrackImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.Device == nil || bidReq.Device.DNT == nil {
+		dnt := httpReq.Header.Get(dntKey)
+		if dnt == "0" || dnt == "1" {
+			if bidReq.Device == nil {
+				bidReq.Device = &openrtb.Device{}
+			}
+
+			switch dnt {
+			case "0":
+				bidReq.Device.DNT = &dntDisabled
+			case "1":
+				bidReq.Device.DNT = &dntEnabled
+			}
 		}
 	}
 }

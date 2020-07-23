@@ -379,6 +379,11 @@ type Metrics struct {
 type DisabledMetrics struct {
 	// True if we want to stop collecting account-to-adapter metrics
 	AccountAdapterDetails bool `mapstructure:"account_adapter_details"`
+
+	// True if we don't want to collect metrics about the connections prebid
+	// server establishes with bidder servers such as the number of connections
+	// that were created or reused.
+	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
 }
 
 func (cfg *Metrics) validate(errs configErrors) configErrors {
@@ -689,6 +694,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("http_client_cache.idle_connection_timeout_seconds", 60)
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
+	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
 	v.SetDefault("metrics.influxdb.username", "")
@@ -794,7 +800,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/cvx/server/hb/ortb/25")
 	v.SetDefault("adapters.cpmstar.endpoint", "https://server.cpmstar.com/openrtbbidrq.aspx")
 	v.SetDefault("adapters.datablocks.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
-	v.SetDefault("adapters.dmx.endpoint", "https://dmx.districtm.io/b/v2")
+	v.SetDefault("adapters.dmx.endpoint", "https://dmx-direct.districtm.io/b/v2")
 	v.SetDefault("adapters.emx_digital.endpoint", "https://hb.emxdgt.com")
 	v.SetDefault("adapters.engagebdr.endpoint", "http://dsp.bnmla.com/hb")
 	v.SetDefault("adapters.eplanning.endpoint", "http://rtb.e-planning.net/pbs/1")
@@ -805,7 +811,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.improvedigital.endpoint", "http://ad.360yield.com/pbs")
 	v.SetDefault("adapters.ix.endpoint", "http://appnexus-us-east.lb.indexww.com/transbidder?p=184932")
 	v.SetDefault("adapters.kidoz.endpoint", "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server")
-	v.SetDefault("adapters.kubient.endpoint", "http://kbntx.ch/prebid")
+	v.SetDefault("adapters.kubient.endpoint", "https://kssp.kbntx.ch/prebid")
 	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
 	v.SetDefault("adapters.lockerdome.endpoint", "https://lockerdome.com/ladbid/prebidserver/openrtb2")
 	v.SetDefault("adapters.logicad.endpoint", "https://pbs.ladsp.com/adrequest/prebidserver")
