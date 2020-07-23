@@ -379,6 +379,11 @@ type Metrics struct {
 type DisabledMetrics struct {
 	// True if we want to stop collecting account-to-adapter metrics
 	AccountAdapterDetails bool `mapstructure:"account_adapter_details"`
+
+	// True if we don't want to collect metrics about the connections prebid
+	// server establishes with bidder servers such as the number of connections
+	// that were created or reused.
+	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
 }
 
 func (cfg *Metrics) validate(errs configErrors) configErrors {
@@ -688,6 +693,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("http_client_cache.idle_connection_timeout_seconds", 60)
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
+	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
 	v.SetDefault("metrics.influxdb.username", "")
