@@ -388,6 +388,14 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 
 	setAmpExt(req.Site, "1")
 
+	account := httpRequest.FormValue("account")
+	if account != "" {
+		if req.Site.Publisher == nil {
+			req.Site.Publisher = &openrtb.Publisher{}
+		}
+		req.Site.Publisher.ID = account
+	}
+
 	slot := httpRequest.FormValue("slot")
 	if slot != "" {
 		req.Imp[0].TagID = slot

@@ -29,6 +29,7 @@ type Metrics struct {
 	PrebidCacheRequestTimerError   metrics.Timer
 	StoredReqCacheMeter            map[CacheResult]metrics.Meter
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
+	DNSLookupTimer                 metrics.Timer
 
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
@@ -53,7 +54,11 @@ type Metrics struct {
 	TimeoutNotificationFailure metrics.Meter
 
 	// TCF adaption metrics
-	TCFReqVersion map[TCFVersionValue]metrics.Meter
+	PrivacyCCPARequest       metrics.Meter
+	PrivacyCCPARequestOptOut metrics.Meter
+	PrivacyCOPPARequest      metrics.Meter
+	PrivacyLMTRequest        metrics.Meter
+	PrivacyTCFRequestVersion map[TCFVersionValue]metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -77,6 +82,9 @@ type AdapterMetrics struct {
 	BidsReceivedMeter metrics.Meter
 	PanicMeter        metrics.Meter
 	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
+	ConnCreated       metrics.Counter
+	ConnReused        metrics.Counter
+	ConnWaitTime      metrics.Timer
 }
 
 type MarkupDeliveryMetrics struct {
@@ -102,7 +110,7 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 // rather than loading legacy metrics that never get filled.
 // This will also eventually let us configure metrics, such as setting a limited set of metrics
 // for a production instance, and then expanding again when we need more debugging.
-func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableMetrics config.DisabledMetrics) *Metrics {
+func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disabledMetrics config.DisabledMetrics) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	blankTimer := &metrics.NilTimer{}
 
@@ -119,6 +127,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		SafariRequestMeter:             blankMeter,
 		SafariNoCookieMeter:            blankMeter,
 		RequestTimer:                   blankTimer,
+		DNSLookupTimer:                 blankTimer,
 		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
@@ -141,16 +150,21 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		TimeoutNotificationSuccess: blankMeter,
 		TimeoutNotificationFailure: blankMeter,
 
-		TCFReqVersion: make(map[TCFVersionValue]metrics.Meter, len(TCFVersions())),
+		PrivacyCCPARequest:       blankMeter,
+		PrivacyCCPARequestOptOut: blankMeter,
+		PrivacyCOPPARequest:      blankMeter,
+		PrivacyLMTRequest:        blankMeter,
+		PrivacyTCFRequestVersion: make(map[TCFVersionValue]metrics.Meter, len(TCFVersions())),
 
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
-		MetricsDisabled: disableMetrics,
+		MetricsDisabled: disabledMetrics,
 
 		exchanges: exchanges,
 	}
+
 	for _, a := range exchanges {
-		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
+		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics(newMetrics.MetricsDisabled)
 	}
 
 	for _, t := range RequestTypes() {
@@ -166,7 +180,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	}
 
 	for _, v := range TCFVersions() {
-		newMetrics.TCFReqVersion[v] = blankMeter
+		newMetrics.PrivacyTCFRequestVersion[v] = blankMeter
 	}
 
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
@@ -200,6 +214,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
 	newMetrics.SafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", registry)
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
+	newMetrics.DNSLookupTimer = metrics.GetOrRegisterTimer("dns_lookup_time", registry)
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 
@@ -234,15 +249,19 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.TimeoutNotificationSuccess = metrics.GetOrRegisterMeter("timeout_notification.ok", registry)
 	newMetrics.TimeoutNotificationFailure = metrics.GetOrRegisterMeter("timeout_notification.failed", registry)
 
+	newMetrics.PrivacyCCPARequest = metrics.GetOrRegisterMeter("privacy.request.ccpa.specified", registry)
+	newMetrics.PrivacyCCPARequestOptOut = metrics.GetOrRegisterMeter("privacy.request.ccpa.opt-out", registry)
+	newMetrics.PrivacyCOPPARequest = metrics.GetOrRegisterMeter("privacy.request.coppa", registry)
+	newMetrics.PrivacyLMTRequest = metrics.GetOrRegisterMeter("privacy.request.lmt", registry)
 	for _, version := range TCFVersions() {
-		newMetrics.TCFReqVersion[version] = metrics.GetOrRegisterMeter(fmt.Sprintf("privacy.request.tcf.%s", string(version)), registry)
+		newMetrics.PrivacyTCFRequestVersion[version] = metrics.GetOrRegisterMeter(fmt.Sprintf("privacy.request.tcf.%s", string(version)), registry)
 	}
 
 	return newMetrics
 }
 
 // Part of setting up blank metrics, the adapter metrics.
-func makeBlankAdapterMetrics() *AdapterMetrics {
+func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMetrics {
 	blankMeter := &metrics.NilMeter{}
 	newAdapter := &AdapterMetrics{
 		NoCookieMeter:     blankMeter,
@@ -254,6 +273,11 @@ func makeBlankAdapterMetrics() *AdapterMetrics {
 		BidsReceivedMeter: blankMeter,
 		PanicMeter:        blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
+	}
+	if !disabledMetrics.AdapterConnectionMetrics {
+		newAdapter.ConnCreated = metrics.NilCounter{}
+		newAdapter.ConnReused = metrics.NilCounter{}
+		newAdapter.ConnWaitTime = &metrics.NilTimer{}
 	}
 	for _, err := range AdapterErrors() {
 		newAdapter.ErrorMeters[err] = blankMeter
@@ -289,6 +313,9 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
 		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative),
 	}
+	am.ConnCreated = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_created", adapterOrAccount, exchange), registry)
+	am.ConnReused = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_reused", adapterOrAccount, exchange), registry)
+	am.ConnWaitTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_wait_time", adapterOrAccount, exchange), registry)
 	for err := range am.ErrorMeters {
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
@@ -335,7 +362,7 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
 	if !me.MetricsDisabled.AccountAdapterDetails {
 		for _, a := range me.exchanges {
-			am.adapterMetrics[a] = makeBlankAdapterMetrics()
+			am.adapterMetrics[a] = makeBlankAdapterMetrics(me.MetricsDisabled)
 			registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
 		}
 	}
@@ -457,6 +484,34 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 	if labels.CookieFlag == CookieFlagNo {
 		am.NoCookieMeter.Mark(1)
 	}
+}
+
+// Keeps track of created and reused connections to adapter bidders and the time from the
+// connection request, to the connection creation, or reuse from the pool across all engines
+func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
+	connWasReused bool,
+	connWaitTime time.Duration) {
+
+	if me.MetricsDisabled.AdapterConnectionMetrics {
+		return
+	}
+
+	am, ok := me.AdapterMetrics[adapterName]
+	if !ok {
+		glog.Errorf("Trying to log adapter connection metrics for %s: adapter not found", string(adapterName))
+		return
+	}
+
+	if connWasReused {
+		am.ConnReused.Inc(1)
+	} else {
+		am.ConnCreated.Inc(1)
+	}
+	am.ConnWaitTime.Update(connWaitTime)
+}
+
+func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
+	me.DNSLookupTimer.Update(dnsLookupTime)
 }
 
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.
@@ -582,12 +637,28 @@ func (me *Metrics) RecordTimeoutNotice(success bool) {
 	return
 }
 
-func (me *Metrics) RecordTCFReq(version TCFVersionValue) {
-	met, ok := me.TCFReqVersion[version]
-	if ok {
-		met.Mark(1)
-	} else {
-		me.TCFReqVersion[TCFVersionErr].Mark(1)
+func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
+	if privacy.CCPAProvided {
+		me.PrivacyCCPARequest.Mark(1)
+		if privacy.CCPAEnforced {
+			me.PrivacyCCPARequestOptOut.Mark(1)
+		}
+	}
+
+	if privacy.COPPAEnforced {
+		me.PrivacyCOPPARequest.Mark(1)
+	}
+
+	if privacy.GDPREnforced {
+		if metric, ok := me.PrivacyTCFRequestVersion[privacy.GDPRTCFVersion]; ok {
+			metric.Mark(1)
+		} else {
+			me.PrivacyTCFRequestVersion[TCFVersionErr].Mark(1)
+		}
+	}
+
+	if privacy.LMTEnforced {
+		me.PrivacyLMTRequest.Mark(1)
 	}
 	return
 }

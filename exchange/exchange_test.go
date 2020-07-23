@@ -228,7 +228,7 @@ func TestDebugBehaviour(t *testing.T) {
 
 	e := new(exchange)
 	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}),
+		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus),
 	}
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.DummyMetricsEngine{}
@@ -1967,6 +1967,15 @@ func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
 		} else {
 			w.Write([]byte(postBody))
 		}
+	})
+}
+
+func mockSlowHandler(delay time.Duration, statusCode int, body string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(delay)
+
+		w.WriteHeader(statusCode)
+		w.Write([]byte(body))
 	})
 }
 
