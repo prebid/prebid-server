@@ -1,0 +1,61 @@
+E0722 23:34:31.057288   39465 facebook.go:432] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
+E0722 23:34:31.068684   39465 facebook.go:432] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
+E0722 23:34:31.094113   39465 facebook.go:432] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
+E0722 23:34:31.101978   39465 facebook.go:432] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
+E0722 23:34:31.111547   39465 facebook.go:432] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
+E0722 23:34:31.119548   39465 facebook.go:432] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
+E0722 23:34:31.127315   39465 facebook.go:440] No facebook app secret specified. Calls to the Audience Network will fail. Did you set adapters.facebook.app_secret in the app config?
+FILE: exchange/exchangetest/aliases.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}],"districtm":[{"code":999,"message":"districtm-error"}]},"responsetimemillis":{"appnexus":0,"districtm":0}}
+
+FILE: exchange/exchangetest/bid-consolidation-test.json RESP: {"responsetimemillis":{"appnexus":0,"rubicon":0}}
+
+FILE: exchange/exchangetest/bidadjustmentfactors.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}],"districtm":[{"code":999,"message":"districtm-error"}]},"responsetimemillis":{"appnexus":0,"districtm":0}}
+
+FILE: exchange/exchangetest/ccpa-featureflag-off.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}]},"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/ccpa-featureflag-on.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}]},"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/debuglog_disabled.json RESP: {"debug":{"httpcalls":{"appnexus":null},"resolvedrequest":{"id":"some-request-id","imp":[{"id":"my-imp-id","video":{"mimes":["video/mp4"]},"ext":{"appnexus":{"placementId":1}}},{"id":"imp-id-2","video":{"mimes":["video/mp4"]},"ext":{"appnexus":{"placementId":1}}}],"site":{"page":"test.somepage.com"},"test":1,"ext":{"prebid":{"targeting":{"includebrandcategory":{"primaryadserver":1,"publisher":"","withcategory":true}}}}}},"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/debuglog_enabled.json RESP: {"debug":{"httpcalls":{"appnexus":null},"resolvedrequest":{"id":"some-request-id","imp":[{"id":"my-imp-id","video":{"mimes":["video/mp4"]},"ext":{"appnexus":{"placementId":1}}},{"id":"imp-id-2","video":{"mimes":["video/mp4"]},"ext":{"appnexus":{"placementId":1}}}],"site":{"page":"test.somepage.com"},"test":1,"ext":{"prebid":{"targeting":{"includebrandcategory":{"primaryadserver":1,"publisher":"","withcategory":true}}}}}},"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/explicit-buyeruid.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}]},"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/include-brand-category.json RESP: {"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/lmt-featureflag-off.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}]},"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/lmt-featureflag-on.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}]},"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/request-multi-bidders-debug-info.json RESP: {"debug":{"httpcalls":{"appnexus":[{"uri":"appnexusTest.com","requestbody":"appnexusTestRequestBody","responsebody":"appnexusTestResponseBody","status":200}],"audienceNetwork":[{"uri":"audienceNetworkTest.com","requestbody":"audienceNetworkTestRequestBody","responsebody":"audienceNetworkTestResponseBody","status":200}]},"resolvedrequest":{"id":"some-request-id","imp":[{"id":"my-imp-id","video":{"mimes":["video/mp4"]},"ext":{"appnexus":{"placementId":1},"audienceNetwork":{"placementId":"some-placement"}}},{"id":"imp-id-2","video":{"mimes":["video/mp4"]},"ext":{"appnexus":{"placementId":2},"audienceNetwork":{"placementId":"some-other-placement"}}}],"site":{"page":"test.somepage.com"},"test":1,"ext":{"prebid":{"targeting":{"durationRangeSec":[15,30],"includebrandcategory":{"primaryadserver":1,"publisher":"","withCategory":true,"translateCategories":true}}}}}},"responsetimemillis":{"appnexus":0,"audienceNetwork":0}}
+
+FILE: exchange/exchangetest/request-multi-bidders-one-no-resp.json RESP: {"responsetimemillis":{"appnexus":0,"audienceNetwork":0}}
+
+FILE: exchange/exchangetest/request-no-user.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}]},"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/request-other-user-ext.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}]},"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/request-other-user.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}]},"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/request-user-no-prebid.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}]},"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/targeting-cache-vast-banner.json RESP: {"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/targeting-cache-vast.json RESP: {"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/targeting-cache-zero.json RESP: {"responsetimemillis":{"appnexus":0}}
+
+FILE: exchange/exchangetest/targeting-mobile.json RESP: {"responsetimemillis":{"appnexus":0,"audienceNetwork":0}}
+
+FILE: exchange/exchangetest/targeting-no-winners.json RESP: {"responsetimemillis":{"appnexus":0,"audienceNetwork":0}}
+
+FILE: exchange/exchangetest/targeting-only-winners.json RESP: {"responsetimemillis":{"appnexus":0,"audienceNetwork":0}}
+
+FILE: exchange/exchangetest/targeting-with-winners.json RESP: {"responsetimemillis":{"appnexus":0,"audienceNetwork":0}}
+
+FILE: exchange/exchangetest/tmax.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}]},"responsetimemillis":{"appnexus":0},"tmaxrequest":500}
+
+FILE: exchange/exchangetest/tricky-userids.json RESP: {"errors":{"appnexus":[{"code":999,"message":"appnexus-error"}],"districtm":[{"code":999,"message":"districtm-error"}],"rubicon":[{"code":999,"message":"appnexus-error"}]},"responsetimemillis":{"appnexus":0,"districtm":0,"rubicon":0}}
+
+PASS
+ok  	github.com/prebid/prebid-server/exchange	0.334s

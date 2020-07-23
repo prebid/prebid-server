@@ -31,7 +31,6 @@ type cleanMetrics struct {
 func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
-	//if len(req.Prebid.SChains) == 0 {
 	if req != nil && req.Prebid.SChains != nil {
 		for _, schainWrapper := range req.Prebid.SChains {
 			if schainWrapper != nil && len(schainWrapper.Bidders) > 0 {
@@ -173,10 +172,6 @@ func splitBidRequest(req *openrtb.BidRequest,
 		reqCopy.Imp = imps
 
 		prepareSource(&reqCopy, bidder, sChainsByBidder)
-		//prepareExt(&reqCopy, requestExt)
-		//if len(req.Ext) > 0 {
-		//	reqCopy.Ext = reqExt
-		//}
 		reqCopy.Ext = reqExt
 
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
@@ -186,8 +181,8 @@ func splitBidRequest(req *openrtb.BidRequest,
 
 // Removes openrtb.BidRequest.Prebid.SChains and marshals back to openrtb.BidRequest.Ext
 func prepareExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
-	if unpackedExt == nil {
-		unpackedExt = &openrtb_ext.ExtRequest{}
+	if len(req.Ext) == 0 || unpackedExt == nil {
+		return json.RawMessage(``), nil
 	}
 
 	extCopy := *unpackedExt
