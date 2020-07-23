@@ -564,7 +564,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			impVideo := &openrtb_ext.ExtBidPrebidVideo{}
 
 			if len(bid.Cat) > 1 {
-				bid.Cat = []string{bid.Cat[0]}
+				bid.Cat = bid.Cat[0:1]
 			}
 
 			var bidExt *pubmaticBidExt
