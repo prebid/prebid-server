@@ -154,7 +154,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	} else {
 		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
-	labels.PubID = effectivePubID(req.Site.Publisher)
+	setEffectiveAmpPubID(req, r.URL.Query())
+	labels.PubID = req.Site.Publisher.ID
 	// Blacklist account now that we have resolved the value
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
 		errL = append(errL, acctIdErr)
@@ -259,6 +260,21 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if err := enc.Encode(ampResponse); err != nil {
 		labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Failed to send response: %v", err))
+	}
+}
+
+// Sets the effective publisher ID for an AMP request
+func setEffectiveAmpPubID(req *openrtb.BidRequest, urlValues url.Values) {
+	// Try to look for the pub ID in the ususal places first
+	setEffectivePubID(req)
+
+	// For amp requests, the publisher ID could be sent via the account
+	// query string
+	if req.Site.Publisher.ID == pbsmetrics.PublisherUnknown {
+		if acc := urlValues.Get("account"); acc != "" {
+			// Amp requests can only have Site. Never App
+			req.Site.Publisher.ID = acc
+		}
 	}
 }
 

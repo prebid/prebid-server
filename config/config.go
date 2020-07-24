@@ -73,6 +73,8 @@ type Configuration struct {
 	Debug Debug `mapstructure:"debug"`
 	// RequestValidation specifies the request validation options.
 	RequestValidation RequestValidation `mapstructure:"request_validation"`
+	// If req.Source.TID should be filled with a randomly generated UUID or not, if it is empty
+	AutoSourceTIDFill bool `mapstructure:"auto_source_tid_fill"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -975,6 +977,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("blacklisted_accts", []string{""})
 	v.SetDefault("account_required", false)
 	v.SetDefault("certificates_file", "")
+	v.SetDefault("auto_source_tid_fill", true)
 
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")

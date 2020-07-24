@@ -1112,14 +1112,112 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'unknownbidder' has been disabled."}}, errs)
 }
 
-func TestEffectivePubID(t *testing.T) {
-	var pub openrtb.Publisher
-	assert.Equal(t, pbsmetrics.PublisherUnknown, effectivePubID(nil), "effectivePubID failed for nil Publisher.")
-	assert.Equal(t, pbsmetrics.PublisherUnknown, effectivePubID(&pub), "effectivePubID failed for empty Publisher.")
-	pub.ID = "123"
-	assert.Equal(t, "123", effectivePubID(&pub), "effectivePubID failed for standard Publisher.")
-	pub.Ext = json.RawMessage(`{"prebid": {"parentAccount": "abc"} }`)
-	assert.Equal(t, "abc", effectivePubID(&pub), "effectivePubID failed for parentAccount.")
+func TestSetEffectivePubID(t *testing.T) {
+	testPubID := "test-pub"
+	testPubExt := openrtb_ext.ExtPublisher{
+		Prebid: &openrtb_ext.ExtPublisherPrebid{
+			ParentAccount: &testPubID,
+		},
+	}
+	testPubExtJSON, err := json.Marshal(testPubExt)
+	assert.NoError(t, err)
+
+	testCases := []struct {
+		req           *openrtb.BidRequest
+		expectedPubID string
+		description   string
+	}{
+		{
+			req: &openrtb.BidRequest{
+				App: &openrtb.App{
+					Publisher: nil,
+				},
+			},
+			expectedPubID: pbsmetrics.PublisherUnknown,
+			description:   "No publisher ID provided",
+		},
+		{
+			req: &openrtb.BidRequest{
+				App: &openrtb.App{
+					Publisher: &openrtb.Publisher{
+						ID: testPubID,
+					},
+				},
+			},
+			expectedPubID: testPubID,
+			description:   "Publisher ID present in req.App.Publisher.ID",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: &openrtb.Publisher{
+						ID: testPubID,
+					},
+				},
+			},
+			expectedPubID: testPubID,
+			description:   "Publisher ID present in req.Site.Publisher.ID",
+		},
+		{
+			req: &openrtb.BidRequest{
+				App: &openrtb.App{
+					Publisher: &openrtb.Publisher{
+						ID:  "",
+						Ext: testPubExtJSON,
+					},
+				},
+			},
+			expectedPubID: testPubID,
+			description:   "Publisher ID present in req.App.Publisher.Ext.Prebid.ParentAccount",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: &openrtb.Publisher{
+						ID:  "",
+						Ext: testPubExtJSON,
+					},
+				},
+			},
+			expectedPubID: testPubID,
+			description:   "Publisher ID present in req.Site.Publisher.Ext.Prebid.ParentAccount",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: &openrtb.Publisher{
+						ID:  "some-pub",
+						Ext: testPubExtJSON,
+					},
+				},
+			},
+			expectedPubID: testPubID,
+			description:   "Publisher ID present in both req.Site.Publisher.ID and req.Site.Publisher.Ext.Prebid.ParentAccount",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: &openrtb.Publisher{
+						ID: "",
+					},
+				},
+			},
+			expectedPubID: pbsmetrics.PublisherUnknown,
+			description:   "req.Site.Publisher present but ID set to empty string",
+		},
+	}
+
+	for _, test := range testCases {
+		setEffectivePubID(test.req)
+		if test.req.Site != nil {
+			assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
+				"should return the expected Publisher ID for test case: %s", test.description)
+		} else {
+			assert.Equal(t, test.expectedPubID, test.req.App.Publisher.ID,
+				"should return the expected Publisher ID for test case: %s", test.description)
+		}
+
+	}
 }
 
 func validRequest(t *testing.T, filename string) string {
@@ -1341,6 +1439,49 @@ func TestSanitizeRequest(t *testing.T) {
 		sanitizeRequest(test.req, test.ipValidator)
 		assert.Equal(t, test.expectedIPv4, test.req.Device.IP, test.description+":ipv4")
 		assert.Equal(t, test.expectedIPv6, test.req.Device.IPv6, test.description+":ipv6")
+	}
+}
+
+func TestValidateAndFillSourceTID(t *testing.T) {
+	testTID := "some-tid"
+	testCases := []struct {
+		req           *openrtb.BidRequest
+		expectRandTID bool
+		expectedTID   string
+		description   string
+	}{
+		{
+			req:           &openrtb.BidRequest{},
+			expectRandTID: true,
+			description:   "req.Source not present. Expecting a randomly generated TID value",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Source: &openrtb.Source{},
+			},
+			expectRandTID: true,
+			description:   "req.Source.TID not present. Expecting a randomly generated TID value",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Source: &openrtb.Source{
+					TID: testTID,
+				},
+			},
+			expectRandTID: false,
+			expectedTID:   testTID,
+			description:   "req.Source.TID present. Expecting no change",
+		},
+	}
+
+	for _, test := range testCases {
+		_ = validateAndFillSourceTID(test.req)
+		if test.expectRandTID {
+			assert.NotEmpty(t, test.req.Source.TID, test.description)
+			assert.NotEqual(t, test.expectedTID, test.req.Source.TID, test.description)
+		} else {
+			assert.Equal(t, test.expectedTID, test.req.Source.TID, test.description)
+		}
 	}
 }
 

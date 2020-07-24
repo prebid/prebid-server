@@ -121,6 +121,90 @@ func TestAMPPageInfo(t *testing.T) {
 	assert.Equal(t, "test.somepage.co.uk", exchange.lastRequest.Site.Domain)
 }
 
+func TestSetEffectiveAmpPubID(t *testing.T) {
+	testPubID := "test-pub"
+	testPubExt := openrtb_ext.ExtPublisher{
+		Prebid: &openrtb_ext.ExtPublisherPrebid{
+			ParentAccount: &testPubID,
+		},
+	}
+	testPubExtJSON, err := json.Marshal(testPubExt)
+	assert.NoError(t, err)
+	testURLValues := url.Values{}
+	testURLValues.Add("account", testPubID)
+
+	testCases := []struct {
+		req           *openrtb.BidRequest
+		urlValues     url.Values
+		expectedPubID string
+		description   string
+	}{
+		{
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: nil,
+				},
+			},
+			urlValues:     url.Values{},
+			expectedPubID: pbsmetrics.PublisherUnknown,
+			description:   "No publisher ID provided",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: nil,
+				},
+			},
+			urlValues:     testURLValues,
+			expectedPubID: testPubID,
+			description:   "req.Site.Publisher not present but Publisher ID present in query string",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: &openrtb.Publisher{
+						ID: "some-pub",
+					},
+				},
+			},
+			urlValues:     testURLValues,
+			expectedPubID: "some-pub",
+			description:   "Publisher ID present in req.Site.Publisher.ID",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: &openrtb.Publisher{
+						ID:  "some-pub",
+						Ext: testPubExtJSON,
+					},
+				},
+			},
+			urlValues:     testURLValues,
+			expectedPubID: testPubID,
+			description:   "Publisher ID present in req.Site.Publisher.Ext.Prebid.ParentAccount",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: &openrtb.Publisher{
+						ID: "",
+					},
+				},
+			},
+			urlValues:     testURLValues,
+			expectedPubID: testPubID,
+			description:   "Publisher ID present in query string",
+		},
+	}
+
+	for _, test := range testCases {
+		setEffectiveAmpPubID(test.req, test.urlValues)
+		assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
+			"should return the expected Publisher ID for test case: %s", test.description)
+	}
+}
+
 func TestGDPRConsent(t *testing.T) {
 	consent := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
 	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
