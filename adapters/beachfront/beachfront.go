@@ -498,7 +498,6 @@ func getParallelVideoRequests(request  *openrtb.BidRequest) ([]videoRequest, []e
 	bfReq.Request = *request
 	bfReq, secure = prepVideoRequest(bfReq)
 
-	bfReq.Request.Imp = make([]openrtb.Imp, len(request.Imp))
 	for i := 0; i < len(request.Imp); i++ {
 		bfReq.Request.Imp[i], secure = prepImp(bfReq.Request.Imp[i], beachfrontExt, secure)
 	}
