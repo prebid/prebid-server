@@ -452,7 +452,7 @@ func getMultiVideoRequests(request  *openrtb.BidRequest) ([]videoRequest, []erro
 		}
 	}
 
-	if bfReqs[0].Request.Device != nil && bfReqs[0].Request.Device.IP != "" {
+	if bfReqs[0].Request.Device != nil {
 		bfReqs[0].Request.Device.IP = getIP(bfReqs[0].Request.Device.IP)
 	}
 
