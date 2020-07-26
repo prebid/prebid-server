@@ -31,7 +31,7 @@ const minBidFloor = 0.01
 const DefaultVideoWidth = 300
 const DefaultVideoHeight = 250
 
-const dBUGGING_MULTI_VIDEO = true
+const dbuggingMultiVideo = true
 
 type BeachfrontAdapter struct {
 	bannerEndpoint string
@@ -236,9 +236,9 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 
 		request.Imp = videoImps
 
-		if dBUGGING_MULTI_VIDEO {
+		if dbuggingMultiVideo {
 
-			videoList, videoErrs = getMultiVideoRequests(request)
+			videoList, videoErrs = getParallelVideoRequests(request)
 			errs = append(errs, videoErrs...)
 
 			if videoList[0].VideoResponseType == "nurl" || videoList[0].VideoResponseType == "both" {
@@ -250,7 +250,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 			}
 		} else {
 
-			videoList, videoErrs = getVideoRequests(request)
+			videoList, videoErrs = getSequentialVideoRequests(request)
 			errs = append(errs, videoErrs...)
 
 			for i := 0; i < len(videoList); i++ {
@@ -352,7 +352,7 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerRequest, []error) {
 		}
 	}
 
-	var t = fallBackDeviceType(request)
+	var t = fallBackDeviceType(*request)
 
 	if t == openrtb.DeviceTypeMobileTablet {
 		bfr.Page = request.App.Bundle
@@ -399,7 +399,7 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerRequest, []error) {
 	return bfr, errs
 }
 
-func fallBackDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
+func fallBackDeviceType(request openrtb.BidRequest) openrtb.DeviceType {
 	if request.Site != nil {
 		return openrtb.DeviceTypePersonalComputer
 	}
@@ -407,12 +407,9 @@ func fallBackDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
 	return openrtb.DeviceTypeMobileTablet
 }
 
-func getMultiVideoRequests(request  *openrtb.BidRequest) ([]videoRequest, []error) {
-	var bfReqs = make([]videoRequest, 1)
-	var errs = make([]error, 0, len(request.Imp))
-	var secure int8
-
+func prepVideoRequestExt(request  *openrtb.BidRequest, errs []error) (openrtb_ext.ExtImpBeachfront, string, string, []error) {
 	beachfrontExt, err := getBeachfrontExtension(request.Imp[0])
+	var t string
 
 	if err != nil {
 		// Failed to extract the beachfrontExt, so this request is junk.
@@ -425,165 +422,122 @@ func getMultiVideoRequests(request  *openrtb.BidRequest) ([]videoRequest, []erro
 		errs = append(errs, err)
 	}
 
-	bfReqs[0].AppId = appid
-
 	if beachfrontExt.VideoResponseType != "" {
-		bfReqs[0].VideoResponseType = beachfrontExt.VideoResponseType
+		t = beachfrontExt.VideoResponseType
 	} else {
-		bfReqs[0].VideoResponseType = "nurl"
+		t = "nurl"
+	}
+	return beachfrontExt, appid, t, errs
+}
+
+func prepVideoRequest(bfReq videoRequest) (videoRequest, int8) {
+	var secure int8 = 0
+
+	if bfReq.Request.Site != nil && bfReq.Request.Site.Domain == "" && bfReq.Request.Site.Page != "" {
+		bfReq.Request.Site.Domain = getDomain(bfReq.Request.Site.Page)
+
+		secure = isSecure(bfReq.Request.Site.Page)
 	}
 
-	bfReqs[0].Request = *request
-
-	if bfReqs[0].Request.Site != nil && bfReqs[0].Request.Site.Domain == "" && bfReqs[0].Request.Site.Page != "" {
-		bfReqs[0].Request.Site.Domain = getDomain(bfReqs[0].Request.Site.Page)
-
-		secure = isSecure(bfReqs[0].Request.Site.Page)
-	}
-
-	if bfReqs[0].Request.App != nil && bfReqs[0].Request.App.Domain == "" && bfReqs[0].Request.App.Bundle != "" {
-		if bfReqs[0].Request.App.Bundle != "" {
-			var chunks = strings.Split(strings.Trim(bfReqs[0].Request.App.Bundle, "_"), ".")
+	if bfReq.Request.App != nil && bfReq.Request.App.Domain == "" && bfReq.Request.App.Bundle != "" {
+		if bfReq.Request.App.Bundle != "" {
+			var chunks = strings.Split(strings.Trim(bfReq.Request.App.Bundle, "_"), ".")
 
 			if len(chunks) > 1 {
-				bfReqs[0].Request.App.Domain =
+				bfReq.Request.App.Domain =
 					fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
 			}
 		}
+
 	}
 
-	if bfReqs[0].Request.Device != nil {
-		bfReqs[0].Request.Device.IP = getIP(bfReqs[0].Request.Device.IP)
+	if bfReq.Request.Device.DeviceType == 0 {
+		// More fine grained deviceType methods will be added in the future
+		bfReq.Request.Device.DeviceType = fallBackDeviceType(bfReq.Request)
 	}
 
-	if len(bfReqs[0].Request.Cur) == 0 {
-		bfReqs[0].Request.Cur = make([]string, 1)
-		bfReqs[0].Request.Cur[0] = "USD"
+	if bfReq.Request.Device != nil {
+		bfReq.Request.Device.IP = getIP(bfReq.Request.Device.IP)
 	}
 
+	if len(bfReq.Request.Cur) == 0 {
+		bfReq.Request.Cur = make([]string, 1)
+		bfReq.Request.Cur[0] = "USD"
+	}
 
-	bfReqs[0].Request.Imp = make([]openrtb.Imp, len(request.Imp))
+	return bfReq, secure
+}
+
+func prepImp(imp openrtb.Imp, beachfrontExt openrtb_ext.ExtImpBeachfront, secure int8) (openrtb.Imp, int8) {
+	imp.Banner = nil
+	imp.Ext = nil
+	imp.Secure = &secure
+
+	if beachfrontExt.BidFloor <= minBidFloor {
+		imp.BidFloor = 0
+	} else {
+		imp.BidFloor = beachfrontExt.BidFloor
+	}
+
+	if imp.Video.H == 0 && imp.Video.W == 0 {
+		imp.Video.W = DefaultVideoWidth
+		imp.Video.H = DefaultVideoHeight
+	}
+
+	return imp, secure
+}
+
+func getParallelVideoRequests(request  *openrtb.BidRequest) ([]videoRequest, []error) {
+	var bfReq videoRequest
+	var errs = make([]error, 0, len(request.Imp))
+	var secure int8
+	var beachfrontExt openrtb_ext.ExtImpBeachfront
+
+	beachfrontExt, bfReq.AppId, bfReq.VideoResponseType, errs = prepVideoRequestExt(request, errs)
+
+	bfReq.Request = *request
+	bfReq, secure = prepVideoRequest(bfReq)
+
+	bfReq.Request.Imp = make([]openrtb.Imp, len(request.Imp))
 	for i := 0; i < len(request.Imp); i++ {
-		imp := request.Imp[i]
-
-		imp.Banner = nil
-		imp.Ext = nil
-		imp.Secure = &secure
-
-		if beachfrontExt.BidFloor <= minBidFloor {
-			imp.BidFloor = 0
-		} else {
-			imp.BidFloor = beachfrontExt.BidFloor
-		}
-
-		if imp.Video.H == 0 && imp.Video.W == 0 {
-			imp.Video.W = DefaultVideoWidth
-			imp.Video.H = DefaultVideoHeight
-		}
-
-		bfReqs[0].Request.Imp[i] = imp
+		bfReq.Request.Imp[i], secure = prepImp(bfReq.Request.Imp[i], beachfrontExt, secure)
 	}
 
+	var bfReqs = make([]videoRequest, 1)
+	bfReqs[0] = bfReq
 	return bfReqs, errs
 }
 
-func getVideoRequests(request *openrtb.BidRequest) ([]videoRequest, []error) {
-	var bfReqs = make([]videoRequest, len(request.Imp))
+/*
+
+ */
+func getSequentialVideoRequests(request *openrtb.BidRequest) ([]videoRequest, []error) {
+	var bfReqs = make([]videoRequest, 1)
 	var errs = make([]error, 0, len(request.Imp))
-	var failedRequestIndicies = make([]int, 0)
+	var secure int8
+	var failedRequestIndices = make([]int, 0)
+	var beachfrontExt openrtb_ext.ExtImpBeachfront
+	var lastErrorCount = 0
 
 	for i := 0; i < len(request.Imp); i++ {
-		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
-
-		if err != nil {
-			// Failed to extract the beachfrontExt, so this request is junk.
-			failedRequestIndicies = append(failedRequestIndicies, i)
-			errs = append(errs, err)
+		beachfrontExt, bfReqs[i].AppId, bfReqs[i].VideoResponseType, errs = prepVideoRequestExt(request, errs)
+		if len(errs) > lastErrorCount {
+			failedRequestIndices = append(failedRequestIndices, i)
+			lastErrorCount = len(errs)
 			continue
-		}
-
-		appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeVideo)
-
-		if err != nil {
-			// Failed to get an appid, so this request is junk.
-			failedRequestIndicies = append(failedRequestIndicies, i)
-			errs = append(errs, err)
-			continue
-		}
-
-		bfReqs[i].AppId = appid
-
-		if beachfrontExt.VideoResponseType != "" {
-			bfReqs[i].VideoResponseType = beachfrontExt.VideoResponseType
-		} else {
-			bfReqs[i].VideoResponseType = "nurl"
 		}
 
 		bfReqs[i].Request = *request
-		var secure int8
-
-		if bfReqs[i].Request.Site != nil && bfReqs[i].Request.Site.Domain == "" && bfReqs[i].Request.Site.Page != "" {
-			bfReqs[i].Request.Site.Domain = getDomain(bfReqs[i].Request.Site.Page)
-
-			secure = isSecure(bfReqs[i].Request.Site.Page)
-		}
-
-		if bfReqs[i].Request.App != nil && bfReqs[i].Request.App.Domain == "" && bfReqs[i].Request.App.Bundle != "" {
-			if bfReqs[i].Request.App.Bundle != "" {
-				var chunks = strings.Split(strings.Trim(bfReqs[i].Request.App.Bundle, "_"), ".")
-
-				if len(chunks) > 1 {
-					bfReqs[i].Request.App.Domain =
-						fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
-				}
-			}
-
-		}
-
-		if bfReqs[i].Request.Device.DeviceType == 0 {
-			// More fine graned deviceType methods will be added in the future
-			bfReqs[i].Request.Device.DeviceType = fallBackDeviceType(request)
-		}
-
-		if bfReqs[i].Request.Device != nil && bfReqs[i].Request.Device.IP != "" {
-			bfReqs[i].Request.Device.IP = getIP(bfReqs[i].Request.Device.IP)
-		}
-
-		if len(bfReqs[i].Request.Cur) == 0 {
-			bfReqs[i].Request.Cur = make([]string, 1)
-			bfReqs[i].Request.Cur[0] = "USD"
-		}
-
-		imp := request.Imp[i]
-
-		imp.Banner = nil
-		imp.Ext = nil
-		imp.Secure = &secure
-
-		if beachfrontExt.BidFloor <= minBidFloor {
-			imp.BidFloor = 0
-		} else {
-			imp.BidFloor = beachfrontExt.BidFloor
-		}
-
-		if imp.Video.H == 0 && imp.Video.W == 0 {
-			imp.Video.W = DefaultVideoWidth
-			imp.Video.H = DefaultVideoHeight
-		}
-
-		bfReqs[i].Request.Imp = nil
-		bfReqs[i].Request.Imp = make([]openrtb.Imp, 1, 1)
-		bfReqs[i].Request.Imp[0] = imp
-
+		bfReqs[i].Request.Imp[0], secure = prepImp(bfReqs[i].Request.Imp[0], beachfrontExt, secure)
 	}
 
 	// Strip out any failed requests
-	if len(failedRequestIndicies) > 0 {
-		for i := 0; i < len(failedRequestIndicies); i++ {
-			bfReqs = removeVideoElement(bfReqs, failedRequestIndicies[i])
+	if len(failedRequestIndices) > 0 {
+		for i := 0; i < len(failedRequestIndices); i++ {
+			bfReqs = removeVideoElement(bfReqs, failedRequestIndices[i])
 		}
-
 	}
+
 	return bfReqs, errs
 }
 
