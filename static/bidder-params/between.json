@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "BetweenDigital Adapter Params",
+  "description": "A schema which validates params accepted by the BetweenDigital adapter",
+  "type": "object",
+  "properties": {
+  },
+  "required": []
+}
