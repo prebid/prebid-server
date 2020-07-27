@@ -31,8 +31,6 @@ const minBidFloor = 0.01
 const DefaultVideoWidth = 300
 const DefaultVideoHeight = 250
 
-const dbuggingMultiVideo = true
-
 type BeachfrontAdapter struct {
 	bannerEndpoint string
 	extraInfo      ExtraInfo
@@ -40,6 +38,7 @@ type BeachfrontAdapter struct {
 
 type ExtraInfo struct {
 	VideoEndpoint string `json:"video_endpoint,omitempty"`
+	VideoSequential int8 `json:"video_sequential,omitempty"`
 }
 
 type requests struct {
@@ -53,12 +52,6 @@ type requests struct {
 // ---------------------------------------------------
 
 type videoRequest struct {
-	AppId             string             `json:"appId"`
-	VideoResponseType string             `json:"videoResponseType"`
-	Request           openrtb.BidRequest `json:"request"`
-}
-
-type multiVideoRequest struct {
 	AppId             string             `json:"appId"`
 	VideoResponseType string             `json:"videoResponseType"`
 	Request           openrtb.BidRequest `json:"request"`
@@ -116,7 +109,7 @@ type videoBidExtension struct {
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	beachfrontRequests, errs := preprocess(request)
+	beachfrontRequests, errs := preprocess(request, a.extraInfo.VideoSequential == 0)
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -190,11 +183,10 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
 
 		if err == nil {
-			bytes = append([]byte(`{"isPrebid":true,`), bytes[1:]...)
 			reqs[j+admBump] = &adapters.RequestData{
 				Method:  "POST",
 				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
-				Body:    bytes,
+				Body:    append([]byte(`{"isPrebid":true,`), bytes[1:]...),
 				Headers: headers,
 			}
 		} else {
@@ -205,7 +197,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	return reqs, errs
 }
 
-func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []error) {
+func preprocess(request *openrtb.BidRequest, videoSequential bool) (beachfrontReqs requests, errs []error) {
 	var videoImps = make([]openrtb.Imp, 0)
 	var bannerImps = make([]openrtb.Imp, 0)
 
@@ -236,20 +228,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 
 		request.Imp = videoImps
 
-		if dbuggingMultiVideo {
-
-			videoList, videoErrs = getParallelVideoRequests(request)
-			errs = append(errs, videoErrs...)
-
-			if videoList[0].VideoResponseType == "nurl" || videoList[0].VideoResponseType == "both" {
-				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoList[0])
-			}
-
-			if videoList[0].VideoResponseType == "adm" || videoList[0].VideoResponseType == "both" {
-				beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, videoList[0])
-			}
-		} else {
-
+		if videoSequential {
 			videoList, videoErrs = getSequentialVideoRequests(request)
 			errs = append(errs, videoErrs...)
 
@@ -262,7 +241,17 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 					beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, videoList[i])
 				}
 			}
+		} else {
+			videoList, videoErrs = getParallelVideoRequests(request)
+			errs = append(errs, videoErrs...)
 
+			if videoList[0].VideoResponseType == "nurl" || videoList[0].VideoResponseType == "both" {
+				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoList[0])
+			}
+
+			if videoList[0].VideoResponseType == "adm" || videoList[0].VideoResponseType == "both" {
+				beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, videoList[0])
+			}
 		}
 	}
 
@@ -579,7 +568,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		// If we unmarshal without an error, this is an AdM video
 		if err := json.Unmarshal(bids[i].Ext, &dur); err == nil {
 			var impVideo openrtb_ext.ExtBidPrebidVideo
-			impVideo.Duration = int(dur.Duration)
+			impVideo.Duration = dur.Duration
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &bids[i],
