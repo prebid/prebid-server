@@ -173,7 +173,7 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
         },
         "includewinners": false, // Optional param defaulting to true
         "includebidderkeys": false // Optional param defaulting to true
-        "includeformat": false //Optional param defaulting to false
+        "includeformat": false // Optional param defaulting to false
       }
     }
   }
