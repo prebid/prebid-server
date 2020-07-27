@@ -19,13 +19,14 @@ import (
 )
 
 type DebugLog struct {
-	Enabled     bool
-	CacheType   prebid_cache_client.PayloadType
-	Data        DebugData
-	TTL         int64
-	CacheKey    string
-	CacheString string
-	Regexp      *regexp.Regexp
+	Enabled       bool
+	CacheType     prebid_cache_client.PayloadType
+	Data          DebugData
+	TTL           int64
+	CacheKey      string
+	CacheString   string
+	Regexp        *regexp.Regexp
+	CacheDeadline int
 }
 
 type DebugData struct {
@@ -86,7 +87,7 @@ func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, errors []e
 	}
 
 	if cache != nil {
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(100)*time.Millisecond))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(d.CacheDeadline)*time.Millisecond))
 		defer cancel()
 		cache.PutJson(ctx, toCache)
 	}

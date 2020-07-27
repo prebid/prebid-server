@@ -921,6 +921,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if spec.DebugLog != nil {
 		*debugLog = *spec.DebugLog
 		debugLog.Regexp = regexp.MustCompile(`[<>]`)
+		debugLog.CacheDeadline = 100
 	}
 	bid, err := ex.HoldAuction(context.Background(), &spec.IncomingRequest.OrtbRequest, mockIdFetcher(spec.IncomingRequest.Usersyncs), pbsmetrics.Labels{}, &categoriesFetcher, debugLog)
 	responseTimes := extractResponseTimes(t, filename, bid)
