@@ -31,6 +31,7 @@ const (
 	BidderAdkernel         BidderName = "adkernel"
 	BidderAdkernelAdn      BidderName = "adkernelAdn"
 	BidderAdpone           BidderName = "adpone"
+	BidderAdman            BidderName = "adman"
 	BidderAdmixer          BidderName = "admixer"
 	BidderAdOcean          BidderName = "adocean"
 	BidderAdtarget         BidderName = "adtarget"
@@ -40,6 +41,7 @@ const (
 	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
 	BidderAdoppler         BidderName = "adoppler"
+	BidderAvocet           BidderName = "avocet"
 	BidderBeachfront       BidderName = "beachfront"
 	BidderBeintoo          BidderName = "beintoo"
 	BidderBrightroll       BidderName = "brightroll"
@@ -62,6 +64,7 @@ const (
 	BidderKubient          BidderName = "kubient"
 	BidderLifestreet       BidderName = "lifestreet"
 	BidderLockerDome       BidderName = "lockerdome"
+	BidderLogicad          BidderName = "logicad"
 	BidderLunaMedia        BidderName = "lunamedia"
 	BidderMarsmedia        BidderName = "marsmedia"
 	BidderMgid             BidderName = "mgid"
@@ -77,6 +80,7 @@ const (
 	BidderRTBHouse         BidderName = "rtbhouse"
 	BidderRubicon          BidderName = "rubicon"
 	BidderSharethrough     BidderName = "sharethrough"
+	BidderSmartadserver    BidderName = "smartadserver"
 	BidderSmartRTB         BidderName = "smartrtb"
 	BidderSomoaudience     BidderName = "somoaudience"
 	BidderSonobi           BidderName = "sonobi"
@@ -108,6 +112,7 @@ var BidderMap = map[string]BidderName{
 	"adhese":            BidderAdhese,
 	"adkernel":          BidderAdkernel,
 	"adkernelAdn":       BidderAdkernelAdn,
+	"adman":             BidderAdman,
 	"admixer":           BidderAdmixer,
 	"adocean":           BidderAdOcean,
 	"adpone":            BidderAdpone,
@@ -118,6 +123,7 @@ var BidderMap = map[string]BidderName{
 	"applogy":           BidderApplogy,
 	"appnexus":          BidderAppnexus,
 	"adoppler":          BidderAdoppler,
+	"avocet":            BidderAvocet,
 	"beachfront":        BidderBeachfront,
 	"beintoo":           BidderBeintoo,
 	"brightroll":        BidderBrightroll,
@@ -140,6 +146,7 @@ var BidderMap = map[string]BidderName{
 	"kubient":           BidderKubient,
 	"lifestreet":        BidderLifestreet,
 	"lockerdome":        BidderLockerDome,
+	"logicad":           BidderLogicad,
 	"lunamedia":         BidderLunaMedia,
 	"marsmedia":         BidderMarsmedia,
 	"mgid":              BidderMgid,
@@ -155,6 +162,7 @@ var BidderMap = map[string]BidderName{
 	"rtbhouse":          BidderRTBHouse,
 	"rubicon":           BidderRubicon,
 	"sharethrough":      BidderSharethrough,
+	"smartadserver":     BidderSmartadserver,
 	"smartrtb":          BidderSmartRTB,
 	"somoaudience":      BidderSomoaudience,
 	"sonobi":            BidderSonobi,

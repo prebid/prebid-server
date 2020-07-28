@@ -3,8 +3,8 @@ RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y wget
 RUN cd /tmp && \
-    wget https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz && \
-    tar -xf go1.12.7.linux-amd64.tar.gz && \
+    wget https://dl.google.com/go/go1.14.2.linux-amd64.tar.gz && \
+    tar -xf go1.14.2.linux-amd64.tar.gz && \
     mv go /usr/local
 RUN mkdir -p /app/prebid-server/
 WORKDIR /app/prebid-server/
