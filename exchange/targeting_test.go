@@ -257,42 +257,6 @@ type TargetingTestData struct {
 	ExpectedBidTargetsByBidder map[string]map[openrtb_ext.BidderName]map[string]string
 }
 
-func TestSetTargeting(t *testing.T) {
-	for _, test := range TargetingTests {
-		auc := &test.Auction
-		// Set rounded prices from the auction data
-		auc.setRoundedPrices(test.TargetData.priceGranularity)
-		winningBids := make(map[string]*pbsOrtbBid)
-		// Set winning bids from the auction data
-		for imp, bidsByBidder := range auc.winningBidsByBidder {
-			for _, bid := range bidsByBidder {
-				if winningBid, ok := winningBids[imp]; ok {
-					if winningBid.bid.Price < bid.bid.Price {
-						winningBids[imp] = bid
-					}
-				} else {
-					winningBids[imp] = bid
-				}
-			}
-		}
-		auc.winningBids = winningBids
-		targData := test.TargetData
-		targData.setTargeting(auc, test.IsApp, test.CategoryMapping)
-		for imp, targetsByBidder := range test.ExpectedBidTargetsByBidder {
-			for bidder, expected := range targetsByBidder {
-				assert.Equal(t,
-					expected,
-					auc.winningBidsByBidder[imp][bidder].bidTargets,
-					"Test: %s\nTargeting failed for bidder %s on imp %s.",
-					test.Description,
-					string(bidder),
-					imp)
-			}
-		}
-	}
-
-}
-
 var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Targeting winners only (most basic targeting example)",
@@ -409,4 +373,40 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			},
 		},
 	},
+}
+
+func TestSetTargeting(t *testing.T) {
+	for _, test := range TargetingTests {
+		auc := &test.Auction
+		// Set rounded prices from the auction data
+		auc.setRoundedPrices(test.TargetData.priceGranularity)
+		winningBids := make(map[string]*pbsOrtbBid)
+		// Set winning bids from the auction data
+		for imp, bidsByBidder := range auc.winningBidsByBidder {
+			for _, bid := range bidsByBidder {
+				if winningBid, ok := winningBids[imp]; ok {
+					if winningBid.bid.Price < bid.bid.Price {
+						winningBids[imp] = bid
+					}
+				} else {
+					winningBids[imp] = bid
+				}
+			}
+		}
+		auc.winningBids = winningBids
+		targData := test.TargetData
+		targData.setTargeting(auc, test.IsApp, test.CategoryMapping)
+		for imp, targetsByBidder := range test.ExpectedBidTargetsByBidder {
+			for bidder, expected := range targetsByBidder {
+				assert.Equal(t,
+					expected,
+					auc.winningBidsByBidder[imp][bidder].bidTargets,
+					"Test: %s\nTargeting failed for bidder %s on imp %s.",
+					test.Description,
+					string(bidder),
+					imp)
+			}
+		}
+	}
+
 }
