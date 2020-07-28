@@ -221,8 +221,8 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 	return true, nil
 }
 
-func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, error) {
-	return true, true, nil
+func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+	return true, true, true, nil
 }
 
 func (a AlwaysAllow) AMPException() bool {
