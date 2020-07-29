@@ -27,83 +27,84 @@ func TestExternalCacheURLValidate(t *testing.T) {
 		out  testOut
 	}{
 		{
-			"[1] With http://",
+			"With http://",
 			ExternalCache{Host: "http://www.google.com", Path: "/path/v1"},
 			testOut{expectError: false, expectedHost: "www.google.com", expectedPath: "/path/v1"},
 		},
 		{
-			"[2] Without http://",
+			"Without http://",
 			ExternalCache{Host: "www.google.com", Path: "/path/v1"},
 			testOut{expectError: false, expectedHost: "www.google.com", expectedPath: "/path/v1"},
 		},
 		{
-			"[3] No scheme but '//' prefix",
+			"No scheme but '//' prefix",
 			ExternalCache{Host: "//www.google.com", Path: "/path/v1"},
 			testOut{expectError: false, expectedHost: "www.google.com", expectedPath: "/path/v1"},
 		},
 		{
-			"[4] // appears twice",
+			"// appears twice",
 			ExternalCache{Host: "//www.google.com//", Path: "path/v1"},
 			testOut{expectError: true, expectedHost: "www.google.com", expectedPath: "//path/v1"},
 		},
 		{
-			"[5] Host has an only // value",
+			"Host has an only // value",
 			ExternalCache{Host: "//", Path: "path/v1"},
 			testOut{expectError: false, expectedHost: "path", expectedPath: "/v1"},
 		},
 		{
-			"[6] only scheme host, valid path",
+			"only scheme host, valid path",
 			ExternalCache{Host: "http://", Path: "/path/v1"},
 			testOut{expectError: true, expectedHost: "", expectedPath: "/path/v1"},
 		},
 		{
-			"[7] No host, path only",
+			"No host, path only",
 			ExternalCache{Host: "", Path: "path/v1"},
 			testOut{expectError: true, expectedHost: "", expectedPath: "path/v1"},
 		},
 		{
-			"[8] No host, nor path",
+			"No host, nor path",
 			ExternalCache{Host: "", Path: ""},
 			testOut{expectError: false, expectedHost: "", expectedPath: ""},
 		},
 		{
-			"[9] Invalid http at the end",
+			"Invalid http at the end",
 			ExternalCache{Host: "www.google.com", Path: "http://"},
 			testOut{expectError: true, expectedHost: "www.google.com", expectedPath: "/http://"},
 		},
 		{
-			"[10] Scheme longer than host",
+			"Scheme longer than host",
 			ExternalCache{Host: "unknownscheme://host", Path: "/path/v1"},
 			testOut{expectError: false, expectedHost: "host", expectedPath: "/path/v1"},
 		},
 		{
-			"[11] Wrong colon side in scheme",
+			"Wrong colon side in scheme",
 			ExternalCache{Host: "http//:www.appnexus.com", Path: "/path/v1"},
 			testOut{expectError: true, expectedHost: "", expectedPath: "http//:www.appnexus.com/path/v1"},
 		},
 		{
-			"[12] host with scheme, no path",
+			"host with scheme, no path",
 			ExternalCache{Host: "http://www.appnexus.com", Path: ""},
 			testOut{expectError: false, expectedHost: "www.appnexus.com", expectedPath: ""},
 		},
 		{
-			"[13] scheme, no host nor path",
+			"scheme, no host nor path",
 			ExternalCache{Host: "http://", Path: ""},
 			testOut{expectError: false, expectedHost: "", expectedPath: ""},
 		},
 	}
-	for i, test := range testCases {
-		actualHost, actualPath, err := test.data.validate()
+	for _, test := range testCases {
+		var errs configErrors
+		errs = test.data.validate(errs)
 
 		if test.out.expectError {
-			assert.Errorf(t, err, "Test case %d was NOT supposed to throw an error \n", i+1)
-			//continue
+			assert.Errorf(t, errs[0], "Test case was supposed to throw an error. Desc: %s \n", test.desc)
+			continue
 		} else {
-			assert.NoErrorf(t, err, "Test case %d was supposed to throw an error. errMsg = %v \n", i+1, err)
+			assert.Equal(t, 0, len(errs), "Test case was supposed to NOT throw an error. Desc: %s errMsg = %v \n", test.desc, errs)
 		}
 
-		assert.Equal(t, test.out.expectedHost, actualHost, "Test case %d host does not match \n", i+1)
-		assert.Equal(t, test.out.expectedPath, actualPath, "Test case %d path does not match \n", i+1)
+		assert.Equal(t, test.out.expectedHost, test.data.Host, "Test case host does not match. Desc: %s  \n", test.desc)
+		assert.Equal(t, test.out.expectedPath, test.data.Path, "Test case path does not match. Desc: %s  \n", test.desc)
 	}
 }
 
@@ -316,7 +317,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
 	cmpStrings(t, "external_cache.host", cfg.ExtCacheURL.Host, "www.externalprebidcache.net")
-	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "endpoints/cache")
+	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "/endpoints/cache")
 	cmpInts(t, "http_client.max_connections_per_host", cfg.Client.MaxConnsPerHost, 10)
 	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
 	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)

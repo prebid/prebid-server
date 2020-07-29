@@ -111,7 +111,7 @@ func (cfg *Configuration) validate() configErrors {
 	errs = cfg.CurrencyConverter.validate(errs)
 	errs = validateAdapters(cfg.Adapters, errs)
 	errs = cfg.Debug.validate(errs)
-	cfg.ExtCacheURL, errs = cfg.ExtCacheURL.validate(errs)
+	errs = cfg.ExtCacheURL.validate(errs)
 	return errs
 }
 
@@ -129,16 +129,14 @@ func (cfg *AuctionTimeouts) validate(errs configErrors) configErrors {
 	return errs
 }
 
-func (data ExternalCache) validate() (string, string, error) {
-	// Solves test 8
+func (data *ExternalCache) validate(errs configErrors) configErrors {
 	if data.Host == "" {
-		if data.Path == "" {
-			// Blank Host and Path will not throw an error
-			return "", "", nil
-		} else {
-			// Throw an error because we have a blank HOst nad a non-blank Path
-			return "", data.Path, fmt.Errorf("Could not parse URL with empty Host: %s \n", data.Host+data.Path)
+		if data.Path != "" {
+			// Throw an error because we have a blank Host nad a non-blank Path
+			errs = append(errs, fmt.Errorf("Could not parse URL with empty Host: %s \n", data.Host+data.Path))
 		}
+		// Blank host and path are valid and will not throw an error
+		return errs
 	}
 
 	// Add "/" suffix to the path if missing
@@ -153,25 +151,22 @@ func (data ExternalCache) validate() (string, string, error) {
 
 	u, err := url.Parse(data.Host + data.Path)
 	if err != nil {
-		// fulfills 11
-		return data.Host, data.Path, err
+		return append(errs, err)
 	}
+	data.Host = u.Host
+	data.Path = u.Path
 
-	// err == nil
-	if u.Host == "" {
-		// fulfills 6, 7
-		if u.Path != "" {
-			return u.Host, u.Path, fmt.Errorf("Could not parse invalid URL: %s \n", data.Host+data.Path)
+	if data.Host == "" {
+		if data.Path != "" {
+			return append(errs, fmt.Errorf("Could not parse invalid URL: %s \n", data.Host+data.Path))
 		}
 	}
-	// fulfills 9
-	if strings.Index(u.Path, "//") != -1 {
-		return u.Host, u.Path, fmt.Errorf("Could not parse invalid URL: %s \n", data.Host+data.Path)
+
+	if strings.Index(data.Path, "//") != -1 {
+		errs = append(errs, fmt.Errorf("Could not parse invalid URL: %s \n", data.Host+data.Path))
 	}
 
-	//u.Host != "" u.Path == "" || u.Path != ""
-	// fulfills 1, 3, 5, 10, 12, and 13
-	return u.Host, u.Path, err
+	return errs
 }
 
 // LimitAuctionTimeout returns the min of requested or cfg.MaxAuctionTimeout.
