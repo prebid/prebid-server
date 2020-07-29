@@ -132,14 +132,14 @@ func (cfg *AuctionTimeouts) validate(errs configErrors) configErrors {
 func (data *ExternalCache) validate(errs configErrors) configErrors {
 	if data.Host == "" {
 		if data.Path != "" {
-			// Throw an error because we have a blank Host nad a non-blank Path
+			// Throw an error because we have a blank Host and a non-blank Path
 			errs = append(errs, fmt.Errorf("Could not parse URL with empty Host: %s \n", data.Host+data.Path))
 		}
 		// Blank host and path are valid and will not throw an error
 		return errs
 	}
 
-	// Add "/" suffix to the path if missing
+	// Add "/" prefix to the path if missing
 	if data.Path != "" && !strings.HasPrefix(data.Path, "/") && !strings.HasSuffix(data.Host, "/") {
 		data.Path = "/" + data.Path
 	}
