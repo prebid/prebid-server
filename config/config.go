@@ -111,6 +111,7 @@ func (cfg *Configuration) validate() configErrors {
 	errs = cfg.CurrencyConverter.validate(errs)
 	errs = validateAdapters(cfg.Adapters, errs)
 	errs = cfg.Debug.validate(errs)
+	cfg.ExtCacheURL, errs = cfg.ExtCacheURL.validate(errs)
 	return errs
 }
 
@@ -126,6 +127,51 @@ func (cfg *AuctionTimeouts) validate(errs configErrors) configErrors {
 		errs = append(errs, fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default))
 	}
 	return errs
+}
+
+func (data ExternalCache) validate() (string, string, error) {
+	// Solves test 8
+	if data.Host == "" {
+		if data.Path == "" {
+			// Blank Host and Path will not throw an error
+			return "", "", nil
+		} else {
+			// Throw an error because we have a blank HOst nad a non-blank Path
+			return "", data.Path, fmt.Errorf("Could not parse URL with empty Host: %s \n", data.Host+data.Path)
+		}
+	}
+
+	// Add "/" suffix to the path if missing
+	if data.Path != "" && !strings.HasPrefix(data.Path, "/") && !strings.HasSuffix(data.Host, "/") {
+		data.Path = "/" + data.Path
+	}
+
+	// Add "//" suffix hosts that don't come with a scheme
+	if strings.Index(data.Host, "//") == -1 {
+		data.Host = "//" + data.Host
+	}
+
+	u, err := url.Parse(data.Host + data.Path)
+	if err != nil {
+		// fulfills 11
+		return data.Host, data.Path, err
+	}
+
+	// err == nil
+	if u.Host == "" {
+		// fulfills 6, 7
+		if u.Path != "" {
+			return u.Host, u.Path, fmt.Errorf("Could not parse invalid URL: %s \n", data.Host+data.Path)
+		}
+	}
+	// fulfills 9
+	if strings.Index(u.Path, "//") != -1 {
+		return u.Host, u.Path, fmt.Errorf("Could not parse invalid URL: %s \n", data.Host+data.Path)
+	}
+
+	//u.Host != "" u.Path == "" || u.Path != ""
+	// fulfills 1, 3, 5, 10, 12, and 13
+	return u.Host, u.Path, err
 }
 
 // LimitAuctionTimeout returns the min of requested or cfg.MaxAuctionTimeout.

@@ -14,6 +14,99 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestExternalCacheURLValidate(t *testing.T) {
+	type testOut struct {
+		expectError  bool
+		expectedHost string
+		expectedPath string
+	}
+
+	testCases := []struct {
+		desc string
+		data ExternalCache
+		out  testOut
+	}{
+		{
+			"[1] With http://",
+			ExternalCache{Host: "http://www.google.com", Path: "/path/v1"},
+			testOut{expectError: false, expectedHost: "www.google.com", expectedPath: "/path/v1"},
+		},
+		{
+			"[2] Without http://",
+			ExternalCache{Host: "www.google.com", Path: "/path/v1"},
+			testOut{expectError: false, expectedHost: "www.google.com", expectedPath: "/path/v1"},
+		},
+		{
+			"[3] No scheme but '//' prefix",
+			ExternalCache{Host: "//www.google.com", Path: "/path/v1"},
+			testOut{expectError: false, expectedHost: "www.google.com", expectedPath: "/path/v1"},
+		},
+		{
+			"[4] // appears twice",
+			ExternalCache{Host: "//www.google.com//", Path: "path/v1"},
+			testOut{expectError: true, expectedHost: "www.google.com", expectedPath: "//path/v1"},
+		},
+		{
+			"[5] Host has an only // value",
+			ExternalCache{Host: "//", Path: "path/v1"},
+			testOut{expectError: false, expectedHost: "path", expectedPath: "/v1"},
+		},
+		{
+			"[6] only scheme host, valid path",
+			ExternalCache{Host: "http://", Path: "/path/v1"},
+			testOut{expectError: true, expectedHost: "", expectedPath: "/path/v1"},
+		},
+		{
+			"[7] No host, path only",
+			ExternalCache{Host: "", Path: "path/v1"},
+			testOut{expectError: true, expectedHost: "", expectedPath: "path/v1"},
+		},
+		{
+			"[8] No host, nor path",
+			ExternalCache{Host: "", Path: ""},
+			testOut{expectError: false, expectedHost: "", expectedPath: ""},
+		},
+		{
+			"[9] Invalid http at the end",
+			ExternalCache{Host: "www.google.com", Path: "http://"},
+			testOut{expectError: true, expectedHost: "www.google.com", expectedPath: "/http://"},
+		},
+		{
+			"[10] Scheme longer than host",
+			ExternalCache{Host: "unknownscheme://host", Path: "/path/v1"},
+			testOut{expectError: false, expectedHost: "host", expectedPath: "/path/v1"},
+		},
+		{
+			"[11] Wrong colon side in scheme",
+			ExternalCache{Host: "http//:www.appnexus.com", Path: "/path/v1"},
+			testOut{expectError: true, expectedHost: "", expectedPath: "http//:www.appnexus.com/path/v1"},
+		},
+		{
+			"[12] host with scheme, no path",
+			ExternalCache{Host: "http://www.appnexus.com", Path: ""},
+			testOut{expectError: false, expectedHost: "www.appnexus.com", expectedPath: ""},
+		},
+		{
+			"[13] scheme, no host nor path",
+			ExternalCache{Host: "http://", Path: ""},
+			testOut{expectError: false, expectedHost: "", expectedPath: ""},
+		},
+	}
+	for i, test := range testCases {
+		actualHost, actualPath, err := test.data.validate()
+
+		if test.out.expectError {
+			assert.Errorf(t, err, "Test case %d was NOT supposed to throw an error \n", i+1)
+			//continue
+		} else {
+			assert.NoErrorf(t, err, "Test case %d was supposed to throw an error. errMsg = %v \n", i+1, err)
+		}
+
+		assert.Equal(t, test.out.expectedHost, actualHost, "Test case %d host does not match \n", i+1)
+		assert.Equal(t, test.out.expectedPath, actualPath, "Test case %d path does not match \n", i+1)
+	}
+}
+
 func TestDefaults(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
