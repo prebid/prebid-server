@@ -211,7 +211,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 	}{
 		{
 			description:   "Empty root ext and source ext, nil unmarshaled ext",
-			inExt:         json.RawMessage(``),
+			inExt:         nil,
 			inSourceExt:   json.RawMessage(``),
 			outSourceExt:  json.RawMessage(``),
 			outRequestExt: json.RawMessage(``),
@@ -278,12 +278,16 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 	for _, test := range testCases {
 		req := newBidRequest(t)
 		req.Source.Ext = test.inSourceExt
-		req.Ext = test.inExt
 
-		_, _, unmarshaledExt, _, _, err := extractBidRequesteExtInfo(req)
-		assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
+		var extRequest *openrtb_ext.ExtRequest
+		if test.inExt != nil {
+			req.Ext = test.inExt
+			_, _, unmarshaledExt, _, _, err := extractBidRequesteExtInfo(req)
+			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
+			extRequest = unmarshaledExt
+		}
 
-		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, unmarshaledExt, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, config.Privacy{})
+		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, extRequest, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, config.Privacy{})
 		result := results["appnexus"]
 
 		if test.hasError == true {
@@ -320,7 +324,7 @@ func TestExtractBidRequesteExtInfo(t *testing.T) {
 				requestExt:           openrtb_ext.ExtRequest{},
 				debugInfo:            false,
 				shouldCacheBids:      false,
-				expectError:          false,
+				expectError:          true,
 			},
 		},
 		{

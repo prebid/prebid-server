@@ -22,7 +22,7 @@ import (
 func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
-	if req != nil && req.Prebid.SChains != nil {
+	if req != nil {
 		for _, schainWrapper := range req.Prebid.SChains {
 			if schainWrapper != nil && len(schainWrapper.Bidders) > 0 {
 				for _, bidder := range schainWrapper.Bidders {
@@ -144,7 +144,7 @@ func splitBidRequest(req *openrtb.BidRequest,
 		return nil, []error{err}
 	}
 
-	reqExt, err := prepareExt(req, requestExt)
+	reqExt, err := parseExt(req, requestExt)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -177,7 +177,7 @@ func splitBidRequest(req *openrtb.BidRequest,
 	return requestsByBidder, nil
 }
 
-func prepareExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
+func parseExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
 	if len(req.Ext) == 0 || unpackedExt == nil {
 		return json.RawMessage(``), nil
 	}
@@ -439,7 +439,7 @@ func extractBidRequesteExtInfo(bidRequest *openrtb.BidRequest) (*targetData, map
 	shouldCacheVAST := false
 
 	if bidRequest == nil {
-		return targData, bidAdjustmentFactors, requestExt, debugInfo, shouldCacheBids, nil
+		return targData, bidAdjustmentFactors, requestExt, debugInfo, shouldCacheBids, fmt.Errorf("Error bidRequest should not be nil")
 	}
 
 	debugInfo = bidRequest.Test == 1
