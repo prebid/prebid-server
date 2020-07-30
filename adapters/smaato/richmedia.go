@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 type richMediaAd struct {
@@ -30,22 +31,22 @@ func extractAdmRichMedia(adapterResponseAdm string) (string, error) {
 	var richMedia = richMediaAd.RichMedia
 
 	if err == nil {
-		var clickEvent string
-		var impressionTracker string
+		var clickEvent strings.Builder
+		var impressionTracker strings.Builder
 
 		for _, clicktracker := range richMedia.Clicktrackers {
-			clickEvent += "fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'), " +
-				"{cache: 'no-cache'});"
+			clickEvent.WriteString("fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'), " +
+				"{cache: 'no-cache'});")
 		}
 		for _, impression := range richMedia.Impressiontrackers {
 
-			impressionTracker += fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression)
+			impressionTracker.WriteString(fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression))
 		}
 
 		richMediaMarkup = fmt.Sprintf(`<div onclick="%s">%s%s</div>`,
-			clickEvent,
+			&clickEvent,
 			richMedia.MediaData.Content,
-			impressionTracker)
+			&impressionTracker)
 	}
 	return richMediaMarkup, err
 }

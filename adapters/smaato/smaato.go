@@ -117,7 +117,11 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		userCopy := *request.User
 		extractUserExtAttributes(userExt, &userCopy)
 		delete(userExtRaw, "data")
-		userCopy.Ext, _ = json.Marshal(userExtRaw)
+		userCopy.Ext, err = json.Marshal(userExtRaw)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
 		request.User = &userCopy
 	}
 
@@ -125,8 +129,11 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	type bidRequestExt struct {
 		Client string `json:"client"`
 	}
-	request.Ext, _ = json.Marshal(bidRequestExt{Client: clientVersion})
-
+	request.Ext, err = json.Marshal(bidRequestExt{Client: clientVersion})
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
+	}
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
@@ -215,19 +222,20 @@ func getAdMarkupType(response *adapters.ResponseData, adMarkup string) adMarkupT
 	return admType
 }
 
-func assignBannerSize(banner *openrtb.Banner) error {
+func assignBannerSize(banner *openrtb.Banner) (*openrtb.Banner, error) {
 	if banner.W != nil && banner.H != nil {
-		return nil
+		return banner, nil
 	}
 	if len(banner.Format) == 0 {
-		return fmt.Errorf("No sizes provided for Banner %v", banner.Format)
+		return banner, fmt.Errorf("No sizes provided for Banner %v", banner.Format)
 	}
+	bannerCopy := banner
+	bannerCopy.W = new(uint64)
+	*bannerCopy.W = banner.Format[0].W
+	bannerCopy.H = new(uint64)
+	*bannerCopy.H = banner.Format[0].H
 
-	banner.W = new(uint64)
-	*banner.W = banner.Format[0].W
-	banner.H = new(uint64)
-	*banner.H = banner.Format[0].H
-	return nil
+	return bannerCopy, nil
 }
 
 // parseImpressionObject parse the imp to get it ready to send to smaato
@@ -238,10 +246,11 @@ func parseImpressionObject(imp *openrtb.Imp) error {
 	}
 	// SMAATO supports banner impressions.
 	if imp.Banner != nil {
-		if err := assignBannerSize(imp.Banner); err != nil {
+		bannerCopy, err := assignBannerSize(imp.Banner)
+		if err != nil {
 			return err
 		}
-
+		imp.Banner = bannerCopy
 		imp.TagID = smaatoParams.AdSpaceID
 		imp.Ext = nil
 		return nil

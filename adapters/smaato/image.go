@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 type imageAd struct {
@@ -30,23 +31,23 @@ func extractAdmImage(adapterResponseAdm string) (string, error) {
 	var image = imageAd.Image
 
 	if err == nil {
-		var clickEvent string
-		var impressionTracker string
+		var clickEvent strings.Builder
+		var impressionTracker strings.Builder
 
 		for _, clicktracker := range image.Clicktrackers {
-			clickEvent += "fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'.replace(/\\+/g, ' ')), " +
-				"{cache: 'no-cache'});"
+			clickEvent.WriteString("fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'.replace(/\\+/g, ' ')), " +
+				"{cache: 'no-cache'});")
 		}
 
 		for _, impression := range image.Impressiontrackers {
 
-			impressionTracker += fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression)
+			impressionTracker.WriteString(fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression))
 		}
 
 		imgMarkup = fmt.Sprintf(`<div style="cursor:pointer" onclick="%s;window.open(decodeURIComponent('%s'.replace(/\+/g, ' ')));"><img src="%s" width="%d" height="%d"/>%s</div>`,
-			clickEvent, url.QueryEscape(image.Img.Ctaurl), image.
+			&clickEvent, url.QueryEscape(image.Img.Ctaurl), image.
 				Img.URL, image.Img.W, image.Img.
-				H, impressionTracker)
+				H, &impressionTracker)
 	}
 	return imgMarkup, err
 }
