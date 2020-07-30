@@ -2,7 +2,7 @@ package config
 
 import (
 	"bytes"
-	"fmt"
+	"net"
 	"strings"
 	"testing"
 	"time"
@@ -33,6 +33,7 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_required", cfg.AccountRequired, false)
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
+	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
 }
 
@@ -42,6 +43,8 @@ gdpr:
   usersync_if_ambiguous: true
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
 ccpa:
+  enforce: true
+lmt:
   enforce: true
 host_cookie:
   cookie_name: userid
@@ -65,10 +68,12 @@ external_cache:
   host: www.externalprebidcache.net
   path: endpoints/cache
 http_client:
+  max_connections_per_host: 10
   max_idle_connections: 500
   max_idle_connections_per_host: 20
   idle_connection_timeout_seconds: 30
 http_client_cache:
+  max_connections_per_host: 5
   max_idle_connections: 1
   max_idle_connections_per_host: 2
   idle_connection_timeout_seconds: 3
@@ -85,6 +90,7 @@ metrics:
     metric_send_interval: 30
   disabled_metrics:
     account_adapter_details: true
+    adapter_connections_metrics: true
 datacache:
   type: postgres
   filename: /usr/db/db.db
@@ -115,6 +121,9 @@ adapters:
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
 certificates_file: /etc/ssl/cert.pem
+request_validation:
+    ipv4_private_networks: ["1.1.1.0/24"]
+    ipv6_private_networks: ["1111::/16", "2222::/16"]
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -215,9 +224,11 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
 	cmpStrings(t, "external_cache.host", cfg.ExtCacheURL.Host, "www.externalprebidcache.net")
 	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "endpoints/cache")
+	cmpInts(t, "http_client.max_connections_per_host", cfg.Client.MaxConnsPerHost, 10)
 	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
 	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
 	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
+	cmpInts(t, "http_client_cache.max_connections_per_host", cfg.CacheClient.MaxConnsPerHost, 5)
 	cmpInts(t, "http_client_cache.max_idle_connections", cfg.CacheClient.MaxIdleConns, 1)
 	cmpInts(t, "http_client_cache.max_idle_connections_per_host", cfg.CacheClient.MaxIdleConnsPerHost, 2)
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
@@ -240,6 +251,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, false)
 
 	cmpBools(t, "ccpa.enforce", cfg.CCPA.Enforce, true)
+	cmpBools(t, "lmt.enforce", cfg.LMT.Enforce, true)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[0], "spamAppID")
@@ -284,7 +296,11 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
+	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
+	cmpStrings(t, "request_validation.ipv4_private_networks", cfg.RequestValidation.IPv4PrivateNetworks[0], "1.1.1.0/24")
+	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[0], "1111::/16")
+	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
@@ -405,25 +421,73 @@ func TestLimitTimeout(t *testing.T) {
 }
 
 func TestCookieSizeError(t *testing.T) {
-	type aTest struct {
-		cookieHost  *HostCookie
+	testCases := []struct {
+		description string
+		cookieSize  int
 		expectError bool
+	}{
+		{"MIN_COOKIE_SIZE_BYTES + 1", MIN_COOKIE_SIZE_BYTES + 1, false},
+		{"MIN_COOKIE_SIZE_BYTES", MIN_COOKIE_SIZE_BYTES, false},
+		{"MIN_COOKIE_SIZE_BYTES - 1", MIN_COOKIE_SIZE_BYTES - 1, true},
+		{"Zero", 0, false},
+		{"Negative", -100, true},
 	}
-	testCases := []aTest{
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 1 << 15}, expectError: false}, //32 KB, no error
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 800}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 500}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 0}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 200}, expectError: true},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: -100}, expectError: true},
-	}
-	for i := range testCases {
-		if testCases[i].expectError {
-			assert.Error(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCookie.MaxCookieSizeBytes less than MIN_COOKIE_SIZE_BYTES = %d and not equal to zero should return an error", MIN_COOKIE_SIZE_BYTES))
+
+	for _, test := range testCases {
+		resultErr := isValidCookieSize(test.cookieSize)
+
+		if test.expectError {
+			assert.Error(t, resultErr, test.description)
 		} else {
-			assert.NoError(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCookie.MaxCookieSizeBytes greater than MIN_COOKIE_SIZE_BYTES = %d or equal to zero should not return an error", MIN_COOKIE_SIZE_BYTES))
+			assert.NoError(t, resultErr, test.description)
 		}
 	}
+}
+
+func TestNewCallsRequestValidation(t *testing.T) {
+	testCases := []struct {
+		description       string
+		privateIPNetworks string
+		expectedError     string
+		expectedIPs       []net.IPNet
+	}{
+		{
+			description:       "Valid",
+			privateIPNetworks: `["1.1.1.0/24"]`,
+			expectedIPs:       []net.IPNet{{IP: net.IP{1, 1, 1, 0}, Mask: net.CIDRMask(24, 32)}},
+		},
+		{
+			description:       "Invalid",
+			privateIPNetworks: `["1"]`,
+			expectedError:     "Invalid private IPv4 networks: '1'",
+		},
+	}
+
+	for _, test := range testCases {
+		v := viper.New()
+		SetupViper(v, "")
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer([]byte(
+			`request_validation:
+    ipv4_private_networks: ` + test.privateIPNetworks)))
+
+		result, resultErr := New(v)
+
+		if test.expectedError == "" {
+			assert.NoError(t, resultErr, test.description+":err")
+			assert.ElementsMatch(t, test.expectedIPs, result.RequestValidation.IPv4PrivateNetworksParsed, test.description+":parsed")
+		} else {
+			assert.Error(t, resultErr, test.description+":err")
+		}
+	}
+}
+
+func TestValidateDebug(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.Debug.TimeoutNotification.SamplingRate = 1.1
+
+	err := cfg.validate()
+	assert.NotNil(t, err, "cfg.debug.timeout_notification.sampling_rate should not be allowed to be greater than 1.0, but it was allowed")
 }
 
 func newDefaultConfig(t *testing.T) *Configuration {

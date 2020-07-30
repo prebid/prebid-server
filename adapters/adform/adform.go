@@ -42,6 +42,7 @@ type adformRequest struct {
 	consent       string
 	digitrust     *adformDigitrust
 	currency      string
+	eids          string
 }
 
 type adformDigitrust struct {
@@ -279,6 +280,9 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 
 	parameters.Add("gdpr", r.gdprApplies)
 	parameters.Add("gdpr_consent", r.consent)
+	if r.eids != "" {
+		parameters.Add("eids", r.eids)
+	}
 
 	URL := *a.URL
 	URL.RawQuery = parameters.Encode()
@@ -465,6 +469,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		}
 	}
 
+	eids := ""
 	consent := ""
 	var digitrustData *openrtb_ext.ExtUserDigiTrust
 	if request.User != nil {
@@ -472,6 +477,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
 			consent = extUser.Consent
 			digitrustData = extUser.DigiTrust
+			eids = encodeEids(extUser.Eids)
 		}
 	}
 
@@ -513,7 +519,32 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		consent:       consent,
 		digitrust:     digitrust,
 		currency:      requestCurrency,
+		eids:          eids,
 	}, errors
+}
+
+func encodeEids(eids []openrtb_ext.ExtUserEid) string {
+	if eids == nil {
+		return ""
+	}
+
+	eidsMap := make(map[string]map[string][]int)
+	for _, eid := range eids {
+		_, ok := eidsMap[eid.Source]
+		if !ok {
+			eidsMap[eid.Source] = make(map[string][]int)
+		}
+		for _, uid := range eid.Uids {
+			eidsMap[eid.Source][uid.ID] = append(eidsMap[eid.Source][uid.ID], uid.Atype)
+		}
+	}
+
+	encodedEids := ""
+	if eidsString, err := json.Marshal(eidsMap); err == nil {
+		encodedEids = base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(eidsString)
+	}
+
+	return encodedEids
 }
 
 func getIPSafely(device *openrtb.Device) string {

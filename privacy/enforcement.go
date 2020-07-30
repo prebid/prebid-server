@@ -6,14 +6,16 @@ import (
 
 // Enforcement represents the privacy policies to enforce for an OpenRTB bid request.
 type Enforcement struct {
-	CCPA  bool
-	COPPA bool
-	GDPR  bool
+	CCPA    bool
+	COPPA   bool
+	GDPR    bool
+	GDPRGeo bool
+	LMT     bool
 }
 
 // Any returns true if at least one privacy policy requires enforcement.
 func (e Enforcement) Any() bool {
-	return e.CCPA || e.COPPA || e.GDPR
+	return e.CCPA || e.COPPA || e.GDPR || e.GDPRGeo || e.LMT
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
@@ -33,7 +35,7 @@ func (e Enforcement) getIPv6ScrubStrategy() ScrubStrategyIPV6 {
 		return ScrubStrategyIPV6Lowest32
 	}
 
-	if e.GDPR || e.CCPA {
+	if e.GDPR || e.CCPA || e.LMT {
 		return ScrubStrategyIPV6Lowest16
 	}
 
@@ -45,7 +47,7 @@ func (e Enforcement) getGeoScrubStrategy() ScrubStrategyGeo {
 		return ScrubStrategyGeoFull
 	}
 
-	if e.GDPR || e.CCPA {
+	if e.GDPRGeo || e.CCPA || e.LMT {
 		return ScrubStrategyGeoReducedPrecision
 	}
 
@@ -60,5 +62,11 @@ func (e Enforcement) getUserScrubStrategy(ampGDPRException bool) ScrubStrategyUs
 	if e.GDPR && ampGDPRException {
 		return ScrubStrategyUserNone
 	}
-	return ScrubStrategyUserID
+
+	// If no user scrubbing is needed, then return none, else scrub ID (COPPA checked above)
+	if e.CCPA || e.GDPR || e.LMT {
+		return ScrubStrategyUserID
+	}
+
+	return ScrubStrategyUserNone
 }

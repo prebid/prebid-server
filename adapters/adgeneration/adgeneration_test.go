@@ -5,7 +5,9 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -173,4 +175,65 @@ func TestCreateAd(t *testing.T) {
 	if vastAd != matchVastTag {
 		t.Errorf("%v does not match createAd.", adgVastResponse)
 	}
+}
+
+func TestMakeBids(t *testing.T) {
+	bidder := NewAdgenerationAdapter("https://d.socdm.com/adsv/v1")
+	internalRequest := &openrtb.BidRequest{
+		ID: "test-success-bid-request",
+		Imp: []openrtb.Imp{
+			{ID: "bidRequest-success-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "id": "58278" }}`)},
+		},
+		Device: &openrtb.Device{UA: "testUA", IP: "testIP"},
+		Site:   &openrtb.Site{Page: "https://supership.com"},
+		User:   &openrtb.User{BuyerUID: "buyerID"},
+	}
+	externalRequest := adapters.RequestData{}
+	response := adapters.ResponseData{
+		StatusCode: 200,
+		Body:       ([]byte)("{\n \"ad\": \"testAd\",\n \"cpm\": 30,\n \"creativeid\": \"Dummy_supership.jp\",\n \"h\": 250,\n \"locationid\": \"58278\",\n \"results\": [{}],\n \"dealid\": \"test-deal-id\",\n \"w\": 300\n }"),
+	}
+	// default Currency InternalRequest
+	defaultCurBidderResponse, errs := bidder.MakeBids(internalRequest, &externalRequest, &response)
+	if len(errs) > 0 {
+		t.Errorf("MakeBids return errors. errors: %v", errs)
+	}
+	checkBidResponse(t, defaultCurBidderResponse, bidder.defaultCurrency)
+
+	// Specified Currency InternalRequest
+	usdCur := "USD"
+	internalRequest.Cur = []string{usdCur}
+	specifiedCurBidderResponse, errs := bidder.MakeBids(internalRequest, &externalRequest, &response)
+	if len(errs) > 0 {
+		t.Errorf("MakeBids return errors. errors: %v", errs)
+	}
+	checkBidResponse(t, specifiedCurBidderResponse, usdCur)
+
+}
+
+func checkBidResponse(t *testing.T, bidderResponse *adapters.BidderResponse, expectedCurrency string) {
+	if bidderResponse == nil {
+		t.Errorf("actual bidResponse is nil.")
+	}
+
+	// AdM is assured by TestCreateAd and JSON tests
+	var expectedAdM string = "testAd"
+	var expectedID string = "58278"
+	var expectedImpID = "bidRequest-success-test"
+	var expectedPrice float64 = 30.0
+	var expectedW uint64 = 300
+	var expectedH uint64 = 250
+	var expectedCrID string = "Dummy_supership.jp"
+	var extectedDealID string = "test-deal-id"
+
+	assert.Equal(t, expectedCurrency, bidderResponse.Currency)
+	assert.Equal(t, 1, len(bidderResponse.Bids))
+	assert.Equal(t, expectedID, bidderResponse.Bids[0].Bid.ID)
+	assert.Equal(t, expectedImpID, bidderResponse.Bids[0].Bid.ImpID)
+	assert.Equal(t, expectedAdM, bidderResponse.Bids[0].Bid.AdM)
+	assert.Equal(t, expectedPrice, bidderResponse.Bids[0].Bid.Price)
+	assert.Equal(t, expectedW, bidderResponse.Bids[0].Bid.W)
+	assert.Equal(t, expectedH, bidderResponse.Bids[0].Bid.H)
+	assert.Equal(t, expectedCrID, bidderResponse.Bids[0].Bid.CrID)
+	assert.Equal(t, extectedDealID, bidderResponse.Bids[0].Bid.DealID)
 }

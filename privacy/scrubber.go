@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
@@ -104,11 +105,13 @@ func (scrubber) ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo Sc
 	case ScrubStrategyUserIDAndDemographic:
 		userCopy.BuyerUID = ""
 		userCopy.ID = ""
+		userCopy.Ext = scrubUserExtIDs(userCopy.Ext)
 		userCopy.Yob = 0
 		userCopy.Gender = ""
 	case ScrubStrategyUserID:
 		userCopy.BuyerUID = ""
 		userCopy.ID = ""
+		userCopy.Ext = scrubUserExtIDs(userCopy.Ext)
 	}
 
 	switch geo {
@@ -178,4 +181,30 @@ func scrubGeoPrecision(geo *openrtb.Geo) *openrtb.Geo {
 	geoCopy.Lat = float64(int(geo.Lat*100.0+0.5)) / 100.0 // Round Latitude
 	geoCopy.Lon = float64(int(geo.Lon*100.0+0.5)) / 100.0 // Round Longitude
 	return &geoCopy
+}
+
+func scrubUserExtIDs(userExt json.RawMessage) json.RawMessage {
+	if len(userExt) == 0 {
+		return userExt
+	}
+
+	var userExtParsed map[string]json.RawMessage
+	err := json.Unmarshal(userExt, &userExtParsed)
+	if err != nil {
+		return userExt
+	}
+
+	_, hasEids := userExtParsed["eids"]
+	_, hasDigitrust := userExtParsed["digitrust"]
+	if hasEids || hasDigitrust {
+		delete(userExtParsed, "eids")
+		delete(userExtParsed, "digitrust")
+
+		result, err := json.Marshal(userExtParsed)
+		if err == nil {
+			return result
+		}
+	}
+
+	return userExt
 }

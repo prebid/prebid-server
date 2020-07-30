@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/spf13/viper"
 )
@@ -56,10 +57,11 @@ func TestViperEnv(t *testing.T) {
 	ttl := forceEnv(t, "PBS_HOST_COOKIE_TTL_DAYS", "60")
 	defer ttl()
 
-	// Basic config set
-	compareStrings(t, "Viper error: port expected to be %s, found %s", "7777", v.Get("port").(string))
-	// Nested config set
-	compareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", v.Get("adapters.pubmatic.endpoint").(string))
-	// Config set with underscores
-	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", v.Get("host_cookie.ttl_days").(string))
+	ipv4Networks := forceEnv(t, "PBS_REQUEST_VALIDATION_IPV4_PRIVATE_NETWORKS", "1.1.1.1/24 2.2.2.2/24")
+	defer ipv4Networks()
+
+	assert.Equal(t, 7777, v.Get("port"), "Basic Config")
+	assert.Equal(t, "not_an_endpoint", v.Get("adapters.pubmatic.endpoint"), "Nested Config")
+	assert.Equal(t, 60, v.Get("host_cookie.ttl_days"), "Config With Underscores")
+	assert.ElementsMatch(t, []string{"1.1.1.1/24", "2.2.2.2/24"}, v.Get("request_validation.ipv4_private_networks"), "Arrays")
 }

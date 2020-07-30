@@ -122,9 +122,8 @@ func TestAMPPageInfo(t *testing.T) {
 }
 
 func TestGDPRConsent(t *testing.T) {
-	consent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	consent := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
 	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
-
 	digitrust := &openrtb_ext.ExtUserDigiTrust{
 		ID:   "anyDigitrustID",
 		KeyV: 1,
@@ -756,8 +755,9 @@ func TestQueryParamOverrides(t *testing.T) {
 	curl := "http://example.com"
 	slot := "1234"
 	timeout := int64(500)
+	account := "12345"
 
-	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s&debug=1&curl=%s&slot=%s&timeout=%d", requestID, curl, slot, timeout), nil)
+	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s&debug=1&curl=%s&slot=%s&timeout=%d&account=%s", requestID, curl, slot, timeout, account), nil)
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
@@ -784,6 +784,10 @@ func TestQueryParamOverrides(t *testing.T) {
 
 	if resolvedRequest.Site == nil || resolvedRequest.Site.Page != curl {
 		t.Errorf("Expected Site.Page to equal curl (%s), got: %s", curl, resolvedRequest.Site.Page)
+	}
+
+	if resolvedRequest.Site == nil || resolvedRequest.Site.Publisher == nil || resolvedRequest.Site.Publisher.ID != account {
+		t.Errorf("Expected Site.Publisher.ID to equal (%s), got: %s", account, resolvedRequest.Site.Publisher.ID)
 	}
 }
 
@@ -833,6 +837,24 @@ func TestMultisize(t *testing.T) {
 	}.execute(t)
 }
 
+func TestSizeWithMultisize(t *testing.T) {
+	formatOverrideSpec{
+		width:     20,
+		height:    40,
+		multisize: "200x50,100x60",
+		expect: []openrtb.Format{{
+			W: 20,
+			H: 40,
+		}, {
+			W: 200,
+			H: 50,
+		}, {
+			W: 100,
+			H: 60,
+		}},
+	}.execute(t)
+}
+
 func TestHeightOnly(t *testing.T) {
 	formatOverrideSpec{
 		height: 200,
@@ -859,6 +881,7 @@ type formatOverrideSpec struct {
 	overrideWidth  uint64
 	overrideHeight uint64
 	multisize      string
+	account        string
 	expect         []openrtb.Format
 }
 
@@ -880,7 +903,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		openrtb_ext.BidderMap,
 	)
 
-	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize)
+	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s&account=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize, s.account)
 	request := httptest.NewRequest("GET", url, nil)
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)

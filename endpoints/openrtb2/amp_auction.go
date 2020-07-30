@@ -26,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/iputil"
 )
 
 const defaultAmpRequestTimeoutMillis = 900
@@ -58,6 +59,11 @@ func NewAmpEndpoint(
 
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
+	ipValidator := iputil.PublicNetworkIPValidator{
+		IPv4PrivateNetworks: cfg.RequestValidation.IPv4PrivateNetworksParsed,
+		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
+	}
+
 	return httprouter.Handle((&endpointDeps{
 		ex,
 		validator,
@@ -72,7 +78,8 @@ func NewAmpEndpoint(
 		defReqJSON,
 		bidderMap,
 		nil,
-		nil}).AmpAuction), nil
+		nil,
+		ipValidator}).AmpAuction), nil
 
 }
 
@@ -381,6 +388,14 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 
 	setAmpExt(req.Site, "1")
 
+	account := httpRequest.FormValue("account")
+	if account != "" {
+		if req.Site.Publisher == nil {
+			req.Site.Publisher = &openrtb.Publisher{}
+		}
+		req.Site.Publisher.ID = account
+	}
+
 	slot := httpRequest.FormValue("slot")
 	if slot != "" {
 		req.Imp[0].TagID = slot
@@ -407,31 +422,34 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 }
 
 func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width uint64, height uint64, multisize string) []openrtb.Format {
+	var formats []openrtb.Format
 	if overrideWidth != 0 && overrideHeight != 0 {
-		return []openrtb.Format{{
+		formats = []openrtb.Format{{
 			W: overrideWidth,
 			H: overrideHeight,
 		}}
 	} else if overrideWidth != 0 && height != 0 {
-		return []openrtb.Format{{
+		formats = []openrtb.Format{{
 			W: overrideWidth,
 			H: height,
 		}}
 	} else if width != 0 && overrideHeight != 0 {
-		return []openrtb.Format{{
+		formats = []openrtb.Format{{
 			W: width,
 			H: overrideHeight,
 		}}
-	} else if parsedSizes := parseMultisize(multisize); len(parsedSizes) != 0 {
-		return parsedSizes
 	} else if width != 0 && height != 0 {
-		return []openrtb.Format{{
+		formats = []openrtb.Format{{
 			W: width,
 			H: height,
 		}}
 	}
 
-	return nil
+	if parsedSizes := parseMultisize(multisize); len(parsedSizes) != 0 {
+		formats = append(formats, parsedSizes...)
+	}
+
+	return formats
 }
 
 func setWidths(formats []openrtb.Format, width uint64) {
