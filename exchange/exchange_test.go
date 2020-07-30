@@ -113,9 +113,6 @@ func TestCharacterEscape(t *testing.T) {
 		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`),
 	}
 
-	//resolvedRequest json.RawMessage
-	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`)
-
 	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, 1)
 	adapterExtra["appnexus"] = &seatResponseExtra{
@@ -127,7 +124,7 @@ func TestCharacterEscape(t *testing.T) {
 	var errList []error
 
 	/* 	4) Build bid response 									*/
-	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, nil, nil, errList)
+	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, errList)
 
 	/* 	5) Assert we have no errors and one '&' character as we are supposed to 	*/
 	if err != nil {
@@ -262,6 +259,12 @@ func TestDebugBehaviour(t *testing.T) {
 			// Assert "Debug fields
 			assert.Greater(t, len(actualExt.Debug.HttpCalls), 0, "%s. ext.debug.httpcalls.uri should be populated by a non empty string: \"%v\" \n", test.desc, actualExt.Debug)
 			assert.NotNilf(t, actualExt.Debug.ResolvedRequest, "%s. ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", test.desc, actualExt.Debug)
+
+			//marshalledBidRequest, merr := json.Marshal(bidRequest)
+			//assert.NoErrorf(t, merr, "%s. Error marshaling bidRequest. Message: %v \n", test.desc, merr)
+
+			//assert.Equal(t, bidRequest, actualExt.Debug.ResolvedRequest, "%s. ResolvedRequest in Debug field is not equap to the marshalled bidRequest \n", test.desc)
+			diffJson(t, test.desc, bidRequest.Ext, actualExt.Debug.ResolvedRequest.Ext)
 		}
 	}
 }
@@ -356,9 +359,6 @@ func TestGetBidCacheInfo(t *testing.T) {
 		},
 	}
 
-	//resolvedRequest json.RawMessage
-	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`)
-
 	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
 	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
 		bidderName: {
@@ -404,7 +404,7 @@ func TestGetBidCacheInfo(t *testing.T) {
 	var errList []error
 
 	/* 	4) Build bid response 									*/
-	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, nil, errList)
+	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, errList)
 
 	/* 	5) Assert we have no errors and the bid response we expected*/
 	assert.NoError(t, err, "[TestGetBidCacheInfo] buildBidResponse() threw an error")
@@ -467,8 +467,6 @@ func TestBidResponseCurrency(t *testing.T) {
 		TMax:   500,
 		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`),
 	}
-
-	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`)
 
 	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
 		"appnexus": {ResponseTimeMillis: 5},
@@ -575,7 +573,7 @@ func TestBidResponseCurrency(t *testing.T) {
 
 	// Run tests
 	for i := range testCases {
-		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, resolvedRequest, adapterExtra, nil, nil, errList)
+		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, nil, errList)
 		assert.NoError(t, err, fmt.Sprintf("[TEST_FAILED] e.buildBidResponse resturns error in test: %s Error message: %s \n", testCases[i].description, err))
 		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}

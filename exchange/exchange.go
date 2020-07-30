@@ -96,12 +96,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
 
-	// Snapshot of resolved bid request for debug if test request
-	resolvedRequest, err := buildResolvedRequest(bidRequest, debugInfo)
-	if err != nil {
-		glog.Errorf("Error marshalling bid request for debug: %v", err)
-	}
-
 	for _, impInRequest := range bidRequest.Imp {
 		var impLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
 			BannerImps: impInRequest.Banner != nil,
@@ -163,7 +157,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 
 			if debugLog != nil && debugLog.Enabled {
-				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, debugInfo, errs)
+				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errs)
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)
 				} else {
@@ -188,7 +182,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// Build the response
-	return e.buildBidResponse(auctionCtx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, bidResponseExt, errs)
+	return e.buildBidResponse(auctionCtx, liveAdapters, adapterBids, bidRequest, adapterExtra, auc, bidResponseExt, errs)
 }
 
 type DealTierInfo struct {
@@ -432,7 +426,7 @@ func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderError {
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, errList []error) (*openrtb.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, errList []error) (*openrtb.BidResponse, error) {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -457,7 +451,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 
 	if bidResponseExt == nil {
 		debugInfo := ctx.Value(DebugContextKey("debugInfo")) != nil
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, debugInfo, errList)
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errList)
 	}
 	buffer := &bytes.Buffer{}
 	enc := json.NewEncoder(buffer)
@@ -646,7 +640,7 @@ func getPrimaryAdServer(adServerId int) (string, error) {
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, req *openrtb.BidRequest, resolvedRequest json.RawMessage, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse {
+func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, req *openrtb.BidRequest, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
 		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError, len(adapterBids)),
 		ResponseTimeMillis:   make(map[openrtb_ext.BidderName]int, len(adapterBids)),
@@ -655,10 +649,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 	if debugInfo {
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
 			HttpCalls:       make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
-			ResolvedRequest: &openrtb.BidRequest{},
-		}
-		if err := json.Unmarshal(resolvedRequest, bidResponseExt.Debug.ResolvedRequest); err != nil {
-			glog.Errorf("Error unmarshalling bid request snapshot: %v", err)
+			ResolvedRequest: req,
 		}
 	}
 
