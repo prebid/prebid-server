@@ -173,6 +173,7 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
         },
         "includewinners": false, // Optional param defaulting to true
         "includebidderkeys": false // Optional param defaulting to true
+        "includeformat": false // Optional param defaulting to false
       }
     }
   }
@@ -183,6 +184,8 @@ The list of price granularity ranges must be given in order of increasing `max` 
 For backwards compatibility the following strings will also be allowed as price granularity definitions. There is no guarantee that these will be honored in the future. "One of ['low', 'med', 'high', 'auto', 'dense']" See [price granularity definitions](http://prebid.org/prebid-mobile/adops-price-granularity.html)
 
 One of "includewinners" or "includebidderkeys" must be true (both default to true if unset). If both were false, then no targeting keys would be set, which is better configured by omitting targeting altogether.
+
+The parameter "includeformat" indicates the type of the bid (banner, video, etc) for multiformat requests. It will add the key `hb_format` and/or `hb_format_{bidderName}` as per "includewinners" and "includebidderkeys" above.
 
 MediaType PriceGranularity (PBS-Java only) - when a single OpenRTB request contains multiple impressions with different mediatypes, or a single impression supports multiple formats, the different mediatypes may need different price granularities. If `mediatypepricegranularity` is present, `pricegranularity` would only be used for any mediatypes not specified. 
 
