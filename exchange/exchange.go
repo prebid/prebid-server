@@ -37,7 +37,7 @@ const DebugContextKey = ContextKey("debugInfo")
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error)
+	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error)
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -54,7 +54,6 @@ type exchange struct {
 	gDPR                gdpr.Permissions
 	currencyConverter   *currencies.RateConverter
 	UsersyncIfAmbiguous bool
-	defaultTTLs         config.DefaultTTLs
 	privacyConfig       config.Privacy
 	eeaCountries        map[string]struct{}
 }
@@ -89,7 +88,6 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e.gDPR = gDPR
 	e.currencyConverter = currencyConverter
 	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
-	e.defaultTTLs = cfg.CacheURL.DefaultTTLs
 	e.privacyConfig = config.Privacy{
 		CCPA: cfg.CCPA,
 		GDPR: cfg.GDPR,
@@ -98,7 +96,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	return e
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {
 
 	requestExt, err := extractBidRequestExt(bidRequest)
 	if err != nil {
@@ -203,7 +201,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				}
 			}
 
-			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory, debugLog)
+			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &account.CacheTTL, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}

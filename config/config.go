@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -40,6 +41,7 @@ type Configuration struct {
 	StoredRequests    StoredRequests  `mapstructure:"stored_requests"`
 	StoredRequestsAMP StoredRequests  `mapstructure:"stored_amp_req"`
 	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
+	Accounts          StoredRequests  `mapstructure:"accounts"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo StoredRequests `mapstructure:"stored_video_req"`
 
@@ -65,6 +67,11 @@ type Configuration struct {
 	BlacklistedAcctMap map[string]bool
 	// Is publisher/account ID required to be submitted in the OpenRTB2 request
 	AccountRequired bool `mapstructure:"account_required"`
+	// AccountDefaults defines default settings for valid accounts that are partially defined
+	// and provides a way to set global settings that can be overridden at account level.
+	AccountDefaults Account `mapstructure:"account_defaults"`
+	// accountDefaultsJSON is the internal serialized form of AccountDefaults used for json merge
+	accountDefaultsJSON json.RawMessage
 	// Local private file containing SSL certificates
 	PemCertsFile string `mapstructure:"certificates_file"`
 	// Custom headers to handle request timeouts from queueing infrastructure
@@ -119,6 +126,16 @@ func (cfg *Configuration) validate() configErrors {
 	errs = validateAdapters(cfg.Adapters, errs)
 	errs = cfg.Debug.validate(errs)
 	errs = cfg.ExtCacheURL.validate(errs)
+	if cfg.AccountDefaults.Disabled {
+		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
+	}
+	// Temporary validation of accounts config (only files is supported)
+	if cfg.Accounts.Postgres.ConnectionInfo.Database != "" {
+		errs = append(errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
+	}
+	if cfg.Accounts.HTTP.Endpoint != "" {
+		errs = append(errs, errors.New("accounts.http: retrieving accounts via http not available, use accounts.files"))
+	}
 	return errs
 }
 
@@ -589,6 +606,12 @@ func New(v *viper.Viper) (*Configuration, error) {
 		return nil, err
 	}
 
+	// Update account defaults and generate base json for patch
+	c.AccountDefaults.CacheTTL = c.CacheURL.DefaultTTLs // comment this out to set explicitly in config
+	if err := c.MarshalAccountDefaults(); err != nil {
+		return nil, err
+	}
+
 	// To look for a request's publisher_id in the NonStandardPublishers list in
 	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
 	c.GDPR.NonStandardPublisherMap = make(map[string]int)
@@ -620,6 +643,20 @@ func New(v *viper.Viper) (*Configuration, error) {
 	}
 
 	return &c, nil
+}
+
+// MarshalAccountDefaults compiles AccountDefaults into the JSON format used for merge patch
+func (cfg *Configuration) MarshalAccountDefaults() error {
+	var err error
+	if cfg.accountDefaultsJSON, err = json.Marshal(cfg.AccountDefaults); err != nil {
+		glog.Warningf("converting %+v to json: %v", cfg.AccountDefaults, err)
+	}
+	return err
+}
+
+// AccountDefaultsJSON returns the precompiled JSON form of account_defaults
+func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
+	return cfg.accountDefaultsJSON
 }
 
 //Allows for protocol relative URL if scheme is empty
@@ -976,6 +1013,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("blacklisted_apps", []string{""})
 	v.SetDefault("blacklisted_accts", []string{""})
 	v.SetDefault("account_required", false)
+	v.SetDefault("account_defaults.disabled", false)
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
 

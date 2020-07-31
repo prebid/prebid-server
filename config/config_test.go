@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"net"
 	"os"
 	"strings"
@@ -638,6 +639,18 @@ func TestValidateDebug(t *testing.T) {
 
 	err := cfg.validate()
 	assert.NotNil(t, err, "cfg.debug.timeout_notification.sampling_rate should not be allowed to be greater than 1.0, but it was allowed")
+}
+
+func TestValidateAccountsConfigRestrictions(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.Accounts.Files.Enabled = true
+	cfg.Accounts.HTTP.Endpoint = "http://localhost"
+	cfg.Accounts.Postgres.ConnectionInfo.Database = "accounts"
+
+	errs := cfg.validate()
+	assert.Len(t, errs, 2)
+	assert.Contains(t, errs, errors.New("accounts.http: retrieving accounts via http not available, use accounts.files"))
+	assert.Contains(t, errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
 }
 
 func newDefaultConfig(t *testing.T) *Configuration {
