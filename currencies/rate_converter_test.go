@@ -1,13 +1,16 @@
 package currencies_test
 
 import (
-	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/util/task"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,49 +28,30 @@ func getMockRates() []byte {
 	}`)
 }
 
-type MockClock struct {
-	fakeTime time.Time
+// FakeTime implements the Time interface
+type FakeTime struct {
+	time time.Time
 }
 
-// NewMockClockAt creates a new MockClock with the internal time set
-// to the provided time.
-func NewMockClockAt(now time.Time) *MockClock {
-	return &MockClock{
-		fakeTime: now,
-	}
-}
-
-// Advance will advance the internal MockClock time by the supplied time.
-func (mc *MockClock) Advance(duration time.Duration) {
-	now := mc.fakeTime.Add(duration)
-	mc.fakeTime = now
-}
-
-// Now returns the current time internal to the MockClock
-func (mc *MockClock) Now() time.Time {
-	return mc.fakeTime
-}
-
-func formatTestErrorMsg(desc string, message string, args ...interface{}) string {
-	message = fmt.Sprintf(message, args)
-	return fmt.Sprintf("Test Case: %s \n Message: %s", desc, message)
+func (mc *FakeTime) Now() time.Time {
+	return mc.time
 }
 
 func TestReadWriteRates(t *testing.T) {
 	// Setup
-	mockServerHandler := func(mockResponse []byte, mockCode int) http.Handler {
+	mockServerHandler := func(mockResponse []byte, mockStatus int) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			rw.WriteHeader(mockCode)
+			rw.WriteHeader(mockStatus)
 			rw.Write([]byte(mockResponse))
 		})
 	}
 
 	tests := []struct {
 		description       string
-		giveFrozenTime    time.Time
+		giveFakeTime      time.Time
 		giveMockUrl       string
 		giveMockResponse  []byte
-		giveMockCode      int
+		giveMockStatus    int
 		wantUpdateErr     bool
 		wantConstantRates bool
 		wantLastUpdated   time.Time
@@ -75,60 +59,56 @@ func TestReadWriteRates(t *testing.T) {
 		wantConversions   map[string]map[string]float64
 	}{
 		{
-			description:       "Fetching currency rates successfully",
-			giveFrozenTime:    time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
-			giveMockResponse:  getMockRates(),
-			giveMockCode:      200,
-			wantUpdateErr:     false,
-			wantConstantRates: false,
-			wantLastUpdated:   time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
-			wantDataAsOf:      time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
-			wantConversions:   map[string]map[string]float64{"USD": {"GBP": 0.77208}, "GBP": {"USD": 1.2952}},
+			description:      "Fetching currency rates successfully",
+			giveFakeTime:     time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
+			giveMockResponse: getMockRates(),
+			giveMockStatus:   200,
+			wantLastUpdated:  time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
+			wantDataAsOf:     time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
+			wantConversions:  map[string]map[string]float64{"USD": {"GBP": 0.77208}, "GBP": {"USD": 1.2952}},
 		},
 		{
-			description:       "Currency rates endpoint returns empty response",
-			giveFrozenTime:    time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
-			giveMockResponse:  []byte("{}"),
-			giveMockCode:      200,
-			wantUpdateErr:     false,
-			wantConstantRates: false,
-			wantLastUpdated:   time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
-			wantDataAsOf:      time.Time{},
-			wantConversions:   map[string]map[string]float64(nil),
+			description:      "Currency rates endpoint returns empty response",
+			giveFakeTime:     time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
+			giveMockResponse: []byte("{}"),
+			giveMockStatus:   200,
+			wantLastUpdated:  time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
+			wantDataAsOf:     time.Time{},
+			wantConversions:  nil,
 		},
 		{
 			description:       "Currency rates endpoint returns nil response",
-			giveFrozenTime:    time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
+			giveFakeTime:      time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
 			giveMockResponse:  nil,
-			giveMockCode:      200,
+			giveMockStatus:    200,
 			wantUpdateErr:     true,
 			wantConstantRates: true,
 			wantLastUpdated:   time.Time{},
 		},
 		{
 			description:       "Currency rates endpoint returns non-2xx status code",
-			giveFrozenTime:    time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
+			giveFakeTime:      time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
 			giveMockResponse:  []byte(`{"message": "Not Found"}`),
-			giveMockCode:      404,
+			giveMockStatus:    404,
 			wantUpdateErr:     true,
 			wantConstantRates: true,
 			wantLastUpdated:   time.Time{},
 		},
 		{
 			description:       "Currency rates endpoint returns invalid json response",
-			giveFrozenTime:    time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
+			giveFakeTime:      time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
 			giveMockResponse:  []byte(`{"message": Invalid-JSON-No-Surrounding-Quotes}`),
-			giveMockCode:      200,
+			giveMockStatus:    200,
 			wantUpdateErr:     true,
 			wantConstantRates: true,
 			wantLastUpdated:   time.Time{},
 		},
 		{
 			description:       "Currency rates endpoint url is invalid",
-			giveFrozenTime:    time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
+			giveFakeTime:      time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
 			giveMockUrl:       "invalidurl",
 			giveMockResponse:  getMockRates(),
-			giveMockCode:      200,
+			giveMockStatus:    200,
 			wantUpdateErr:     true,
 			wantConstantRates: true,
 			wantLastUpdated:   time.Time{},
@@ -136,7 +116,7 @@ func TestReadWriteRates(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		mockedHttpServer := httptest.NewServer(mockServerHandler(tt.giveMockResponse, tt.giveMockCode))
+		mockedHttpServer := httptest.NewServer(mockServerHandler(tt.giveMockResponse, tt.giveMockStatus))
 		defer mockedHttpServer.Close()
 
 		var url string
@@ -145,13 +125,12 @@ func TestReadWriteRates(t *testing.T) {
 		} else {
 			url = mockedHttpServer.URL
 		}
-		currencyConverter := currencies.NewRateConverterWithNotifier(
+		currencyConverter := currencies.NewConfiguredRateConverter(
 			&http.Client{},
 			url,
-			time.Duration(24)*time.Hour,
-			time.Duration(24)*time.Hour,
-			NewMockClockAt(tt.giveFrozenTime),
-			nil,
+			24*time.Hour,
+			24*time.Hour,
+			&FakeTime{time: tt.giveFakeTime},
 		)
 		err := currencyConverter.Run()
 
@@ -175,11 +154,11 @@ func TestReadWriteRates(t *testing.T) {
 }
 
 func TestRateStaleness(t *testing.T) {
-	callCnt := 0
+	callCount := 0
 	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
 		func(rw http.ResponseWriter, req *http.Request) {
-			callCnt++
-			if callCnt == 2 || callCnt >= 5 {
+			callCount++
+			if callCount == 2 || callCount >= 5 {
 				rw.WriteHeader(http.StatusOK)
 				rw.Write([]byte(getMockRates()))
 			} else {
@@ -203,17 +182,16 @@ func TestRateStaleness(t *testing.T) {
 		},
 	}
 
-	frozenTime := time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC)
-	mockClock := NewMockClockAt(frozenTime)
+	initialFakeTime := time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC)
+	fakeTime := &FakeTime{time: initialFakeTime}
 
 	// Execute:
-	currencyConverter := currencies.NewRateConverterWithNotifier(
+	currencyConverter := currencies.NewConfiguredRateConverter(
 		&http.Client{},
 		mockedHttpServer.URL,
-		time.Duration(100)*time.Millisecond,
-		time.Duration(30)*time.Second, // stale rates threshold
-		mockClock,
-		nil,
+		100*time.Millisecond,
+		30*time.Second, // stale rates threshold
+		fakeTime,
 	)
 
 	// First Update call results in error
@@ -230,48 +208,46 @@ func TestRateStaleness(t *testing.T) {
 
 	// Verify rates are valid and last update timestamp is set
 	assert.Equal(t, expectedRates, currencyConverter.Rates(), "Conversions.Rates weren't the expected ones")
-	assert.Equal(t, frozenTime, currencyConverter.LastUpdated(), "LastUpdated should be set")
+	assert.Equal(t, initialFakeTime, currencyConverter.LastUpdated(), "LastUpdated should be set")
 
 	// Advance time so the rates fall just short of being considered stale
-	twentyNineSec := time.Duration(29) * time.Second
-	mockClock.Advance(twentyNineSec)
+	fakeTime.time = fakeTime.time.Add(29 * time.Second)
 
-	// Third Update call results in error
+	// Third Update call results in error but stale rate threshold has not been exceeded
 	err3 := currencyConverter.Run()
 	assert.NotNil(t, err3)
 
-	// Verify rates are valid and last update ts is set
+	// Verify rates are valid and last update ts has not changed
 	assert.Equal(t, expectedRates, currencyConverter.Rates(), "Conversions.Rates weren't the expected ones")
-	assert.Equal(t, frozenTime, currencyConverter.LastUpdated(), "LastUpdated should be set")
+	assert.Equal(t, initialFakeTime, currencyConverter.LastUpdated(), "LastUpdated should be set")
 
 	// Advance time just past the threshold so the rates are considered stale
-	twoSec := time.Duration(2) * time.Second
-	mockClock.Advance(twoSec)
+	fakeTime.time = fakeTime.time.Add(2 * time.Second)
 
-	// Fourth Update call results in error
+	// Fourth Update call results in error and stale rate threshold has been exceeded
 	err4 := currencyConverter.Run()
 	assert.NotNil(t, err4)
 
-	// Verify constant rates are used and last update ts is set
+	// Verify constant rates are used and last update ts has not changed
 	assert.Equal(t, &currencies.ConstantRates{}, currencyConverter.Rates(), "Rates should return constant rates")
-	assert.Equal(t, frozenTime, currencyConverter.LastUpdated(), "LastUpdated return is incorrect")
+	assert.Equal(t, initialFakeTime, currencyConverter.LastUpdated(), "LastUpdated return is incorrect")
 
 	// Fifth Update call is successful and yields valid rates
 	err5 := currencyConverter.Run()
 	assert.Nil(t, err5)
 
 	// Verify rates are valid and last update ts has changed
-	thirtyOneSec := time.Duration(31) * time.Second
+	thirtyOneSec := 31 * time.Second
 	assert.Equal(t, expectedRates, currencyConverter.Rates(), "Conversions.Rates weren't the expected ones")
-	assert.Equal(t, (frozenTime.Add(thirtyOneSec)), currencyConverter.LastUpdated(), "LastUpdated should be set")
+	assert.Equal(t, (initialFakeTime.Add(thirtyOneSec)), currencyConverter.LastUpdated(), "LastUpdated should be set")
 }
 
-func TestRatesAreNeverStale(t *testing.T) {
-	callCnt := 0
+func TestRatesAreNeverConsideredStale(t *testing.T) {
+	callCount := 0
 	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
 		func(rw http.ResponseWriter, req *http.Request) {
-			callCnt++
-			if callCnt == 1 {
+			callCount++
+			if callCount == 1 {
 				rw.WriteHeader(http.StatusOK)
 				rw.Write([]byte(getMockRates()))
 			} else {
@@ -295,17 +271,16 @@ func TestRatesAreNeverStale(t *testing.T) {
 		},
 	}
 
-	frozenTime := time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC)
-	mockClock := NewMockClockAt(frozenTime)
+	initialFakeTime := time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC)
+	fakeTime := &FakeTime{time: initialFakeTime}
 
 	// Execute:
-	currencyConverter := currencies.NewRateConverterWithNotifier(
+	currencyConverter := currencies.NewConfiguredRateConverter(
 		&http.Client{},
 		mockedHttpServer.URL,
-		time.Duration(100)*time.Millisecond,
-		time.Duration(0)*time.Millisecond, // stale rates threshold
-		mockClock,
-		nil,
+		100*time.Millisecond,
+		0*time.Millisecond, // stale rates threshold
+		fakeTime,
 	)
 
 	// First Update call is successful and yields valid rates
@@ -314,11 +289,10 @@ func TestRatesAreNeverStale(t *testing.T) {
 
 	// Verify rates are valid and last update timestamp is correct
 	assert.Equal(t, expectedRates, currencyConverter.Rates(), "Conversions.Rates weren't the expected ones")
-	assert.Equal(t, frozenTime, currencyConverter.LastUpdated(), "LastUpdated should be set")
+	assert.Equal(t, fakeTime.time, currencyConverter.LastUpdated(), "LastUpdated should be set")
 
-	// Advance time so the rates fall just short of being considered stale
-	twentyFourHours := time.Duration(24) * time.Hour
-	mockClock.Advance(twentyFourHours)
+	// Advance time so the current time is well past the the time the rates were last updated
+	fakeTime.time = initialFakeTime.Add(24 * time.Hour)
 
 	// Second Update call results in error but rates from a day ago are still valid
 	err2 := currencyConverter.Run()
@@ -326,5 +300,96 @@ func TestRatesAreNeverStale(t *testing.T) {
 
 	// Verify rates are valid and last update ts is correct
 	assert.Equal(t, expectedRates, currencyConverter.Rates(), "Conversions.Rates weren't the expected ones")
-	assert.Equal(t, frozenTime, currencyConverter.LastUpdated(), "LastUpdated should be set")
+	assert.Equal(t, initialFakeTime, currencyConverter.LastUpdated(), "LastUpdated should be set")
+}
+
+func TestRace(t *testing.T) {
+	// This test is checking that no race conditions appear in rate converter.
+	// It simulate multiple clients (in different goroutines) asking for updates
+	// and rates while the rate converter is also updating periodically.
+
+	// Setup:
+	// Using an HTTP client mock preventing any http client overload while using
+	// very small update intervals (less than 50ms) in this test.
+	// See #722
+	mockedHttpClient := &mockHttpClient{
+		responseBody: `{
+			"dataAsOf":"2018-09-12",
+			"conversions":{
+				"USD":{
+					"GBP":0.77208
+				},
+				"GBP":{
+					"USD":1.2952
+				}
+			}
+		}`,
+	}
+
+	// Execute:
+	// Create a rate converter which will be fetching new values every 10 ms
+	interval := 10 * time.Millisecond
+	currencyConverter := currencies.NewRateConverter(
+		mockedHttpClient,
+		"currency.fake.com",
+		interval,
+		24*time.Hour,
+	)
+	ticker := task.NewTickerTask(interval, currencyConverter)
+	ticker.Start()
+	defer ticker.Stop()
+
+	// Create 50 clients asking for updates and rates conversion at random intervals
+	// from 1ms to 50ms for 10 seconds
+	var wg sync.WaitGroup
+	clientsCount := 50
+	wg.Add(clientsCount)
+	dones := make([]chan bool, clientsCount)
+
+	for c := 0; c < clientsCount; c++ {
+		dones[c] = make(chan bool)
+		go func(done chan bool, clientNum int) {
+			randomTickInterval := time.Duration(clientNum+1) * time.Millisecond
+			clientTicker := time.NewTicker(randomTickInterval)
+			for {
+				select {
+				case tickTime := <-clientTicker.C:
+					// Either ask for an Update() or for GetRate()
+					// based on the tick ms
+					tickMs := tickTime.UnixNano() / int64(time.Millisecond)
+					if tickMs%2 == 0 {
+						err := currencyConverter.Run()
+						assert.Nil(t, err)
+					} else {
+						rate, err := currencyConverter.Rates().GetRate("USD", "GBP")
+						assert.Nil(t, err)
+						assert.Equal(t, float64(0.77208), rate)
+					}
+				case <-done:
+					wg.Done()
+					return
+				}
+			}
+		}(dones[c], c)
+	}
+
+	time.Sleep(10 * time.Second)
+	// Sending stop signals to all clients
+	for i := range dones {
+		dones[i] <- true
+	}
+	wg.Wait()
+}
+
+// mockHttpClient is a simple http client mock returning a constant response body
+type mockHttpClient struct {
+	responseBody string
+}
+
+func (m *mockHttpClient) Do(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		Status:     "200 OK",
+		StatusCode: http.StatusOK,
+		Body:       ioutil.NopCloser(strings.NewReader(m.responseBody)),
+	}, nil
 }

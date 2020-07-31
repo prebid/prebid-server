@@ -2,6 +2,7 @@ package currencies
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"sync/atomic"
@@ -15,15 +16,13 @@ import (
 // RateConverter holds the currencies conversion rates dictionary
 type RateConverter struct {
 	httpClient          httpClient
-	updateNotifier      chan<- int
-	runCount            int
 	fetchingInterval    time.Duration
 	staleRatesThreshold time.Duration
 	syncSourceURL       string
 	rates               atomic.Value // Should only hold Rates struct
 	lastUpdated         atomic.Value // Should only hold time.Time
 	constantRates       Conversions
-	clock               timeutil.Time
+	time                timeutil.Time
 }
 
 // NewRateConverter returns a new RateConverter
@@ -33,13 +32,12 @@ func NewRateConverter(
 	fetchingInterval time.Duration,
 	staleRatesThreshold time.Duration,
 ) *RateConverter {
-	return NewRateConverterWithNotifier(
+	return NewConfiguredRateConverter(
 		httpClient,
 		syncSourceURL,
 		fetchingInterval,
 		staleRatesThreshold,
-		timeutil.NewRealClock(),
-		nil, // no notifier channel specified, won't send any notifications
+		&timeutil.RealTime{},
 	)
 }
 
@@ -50,28 +48,24 @@ func NewRateConverterDefault() *RateConverter {
 	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0))
 }
 
-// NewRateConverterWithNotifier returns a new RateConverter
-// it allow to pass an update chan in which the number of ticks will be passed after each tick
-// allowing clients to listen on updates
-// Do not use this method
-func NewRateConverterWithNotifier(
+// NewConfiguredRateConverter returns a new RateConverter
+// Do not call this method directly; it is to improve testability only
+func NewConfiguredRateConverter(
 	httpClient httpClient,
 	syncSourceURL string,
 	fetchingInterval time.Duration,
 	staleRatesThreshold time.Duration,
-	clock timeutil.Time,
-	updateNotifier chan<- int,
+	time timeutil.Time,
 ) *RateConverter {
 	return &RateConverter{
 		httpClient:          httpClient,
-		updateNotifier:      updateNotifier,
 		fetchingInterval:    fetchingInterval,
 		staleRatesThreshold: staleRatesThreshold,
 		syncSourceURL:       syncSourceURL,
 		rates:               atomic.Value{},
 		lastUpdated:         atomic.Value{},
 		constantRates:       NewConstantRates(),
-		clock:               clock,
+		time:                time,
 	}
 }
 
@@ -88,7 +82,8 @@ func (rc *RateConverter) fetch() (*Rates, error) {
 	}
 
 	if response.StatusCode >= 400 {
-		return nil, &errortypes.BadServerResponse{Message: "error"}
+		message := fmt.Sprintf("The currency rates request failed with status code %d", response.StatusCode)
+		return nil, &errortypes.BadServerResponse{Message: message}
 	}
 
 	defer response.Body.Close()
@@ -112,7 +107,7 @@ func (rc *RateConverter) update() error {
 	rates, err := rc.fetch()
 	if err == nil {
 		rc.rates.Store(rates)
-		rc.lastUpdated.Store(rc.clock.Now())
+		rc.lastUpdated.Store(rc.time.Now())
 	} else {
 		if rc.checkStaleRates() {
 			rc.clearRates()
@@ -127,13 +122,6 @@ func (rc *RateConverter) update() error {
 
 func (rc *RateConverter) Run() error {
 	return rc.update()
-}
-
-func (rc *RateConverter) Notify() {
-	rc.runCount++
-	if rc.updateNotifier != nil {
-		rc.updateNotifier <- rc.runCount
-	}
 }
 
 // LastUpdated returns time when currencies rates were updated
@@ -166,7 +154,7 @@ func (rc *RateConverter) checkStaleRates() bool {
 		return false
 	}
 
-	currentTime := rc.clock.Now().UTC()
+	currentTime := rc.time.Now().UTC()
 	if lastUpdated := rc.lastUpdated.Load(); lastUpdated != nil {
 		delta := currentTime.Sub(lastUpdated.(time.Time).UTC())
 		if delta.Seconds() > rc.staleRatesThreshold.Seconds() {

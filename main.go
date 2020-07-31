@@ -11,7 +11,8 @@ import (
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/router"
 	"github.com/prebid/prebid-server/server"
-	
+	"github.com/prebid/prebid-server/util/task"
+
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
@@ -55,7 +56,7 @@ func serve(revision string, cfg *config.Configuration) error {
 	staleRatesThreshold := time.Duration(cfg.CurrencyConverter.StaleRatesSeconds) * time.Second
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, fetchingInterval, staleRatesThreshold)
 	
-	currencyConverterTickerTask := currencies.NewTickerTask(fetchingInterval, currencyConverter)
+	currencyConverterTickerTask := task.NewTickerTask(fetchingInterval, currencyConverter)
 	currencyConverterTickerTask.Start()
 
 	r, err := router.New(cfg, currencyConverter)
