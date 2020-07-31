@@ -18,7 +18,7 @@ import (
 )
 
 type Configuration struct {
-	ScopeId  string          `json:"scopeId"`
+	ScopeID  string          `json:"scopeId"`
 	Endpoint string          `json:"endpoint"`
 	Features map[string]bool `json:"features"`
 }
@@ -73,7 +73,7 @@ func NewPubstackModule(client *http.Client, scope, endpoint, configRefreshDelay 
 	}
 
 	defaultConfig := &Configuration{
-		ScopeId:  scope,
+		ScopeID:  scope,
 		Endpoint: endpoint,
 		Features: defaultFeatures,
 	}
@@ -90,13 +90,18 @@ func NewPubstackModule(client *http.Client, scope, endpoint, configRefreshDelay 
 	}
 	signal.Notify(pb.sigTermCh, os.Interrupt, syscall.SIGTERM)
 
-	configUrl, err := url.Parse(pb.cfg.Endpoint + "/bootstrap?scopeId=" + pb.cfg.ScopeId)
+	configUrl, err := url.Parse(pb.cfg.Endpoint + "/bootstrap?scopeId=" + pb.cfg.ScopeID)
 	if err != nil {
 		glog.Error(err)
 		return nil, err
 	}
 	go pb.start(configUrl, refreshDelay)
-	go func() { _ = pb.reloadConfig(configUrl) }()
+	go func() {
+		err = pb.reloadConfig(configUrl)
+		if err != nil {
+			glog.Errorf("[pubstack] Fail to fetch remote configuration: %v", err)
+		}
+	}()
 
 	glog.Info("[pubstack] Pubstack analytics configured and ready")
 	return &pb, nil
@@ -230,6 +235,10 @@ func (p *PubstackModule) start(configUrl *url.URL, refreshDelay time.Duration) {
 func (p *PubstackModule) updateConfig(config *Configuration) {
 	p.muxConfig.Lock()
 	defer p.muxConfig.Unlock()
+
+	if p.cfg.isSameAs(config) {
+		return
+	}
 
 	p.cfg = config
 	p.closeAllEventChannels()

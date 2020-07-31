@@ -39,3 +39,13 @@ func newBufferConfig(count int, size, duration string) (*bufferConfig, error) {
 		pSize,
 	}, nil
 }
+
+func (a *Configuration) isSameAs(b *Configuration) bool {
+	sameEndpoint := a.Endpoint == b.Endpoint
+	sameScopeID := a.ScopeID == b.ScopeID
+	sameFeature := len(a.Features) == len(b.Features)
+	for key := range a.Features {
+		sameFeature = sameFeature && a.Features[key] == b.Features[key]
+	}
+	return sameFeature && sameEndpoint && sameScopeID
+}

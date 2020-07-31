@@ -101,7 +101,10 @@ func TestPubstackModule(t *testing.T) {
 		counter++
 		return nil
 	}
-	mockedEvent, _ := loadJsonFromFile()
+	mockedEvent, err := loadJsonFromFile()
+	if err != nil {
+		t.Fail()
+	}
 
 	pubstack.eventChannels[auction] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
 	pubstack.eventChannels[video] = eventchannel.NewEventChannel(send, 2000, 1, 10*time.Second)
@@ -136,7 +139,7 @@ func TestPubstackModule(t *testing.T) {
 	newFeatures[setUID] = true
 
 	remoteConfig = &Configuration{
-		ScopeId:  "new-scope",
+		ScopeID:  "new-scope",
 		Endpoint: "new-endpoint",
 		Features: newFeatures,
 	}
@@ -151,7 +154,7 @@ func TestPubstackModule(t *testing.T) {
 	assert.Equal(t, pubstack.cfg.Features[amp], true)
 	assert.Equal(t, pubstack.cfg.Features[setUID], true)
 	assert.Equal(t, pubstack.cfg.Features[cookieSync], true)
-	assert.Equal(t, pubstack.cfg.ScopeId, "new-scope")
+	assert.Equal(t, pubstack.cfg.ScopeID, "new-scope")
 	assert.Equal(t, pubstack.cfg.Endpoint, "new-endpoint")
 	assert.Equal(t, len(pubstack.eventChannels), 5)
 

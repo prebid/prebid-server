@@ -56,8 +56,8 @@ func (c *EventChannel) Close() {
 }
 
 func (c *EventChannel) buffer(event []byte) {
-	c.muxGzBuffer.RLock()
-	defer c.muxGzBuffer.RUnlock()
+	c.muxGzBuffer.Lock()
+	defer c.muxGzBuffer.Unlock()
 
 	_, err := c.gz.Write(event)
 	if err != nil {
@@ -70,10 +70,9 @@ func (c *EventChannel) buffer(event []byte) {
 }
 
 func (c *EventChannel) isBufferFull() bool {
-	if c.metrics.eventCount >= c.limit.maxEventCount || c.metrics.bufferSize >= c.limit.maxByteSize {
-		return true
-	}
-	return false
+	c.muxGzBuffer.RLock()
+	defer c.muxGzBuffer.RUnlock()
+	return c.metrics.eventCount >= c.limit.maxEventCount || c.metrics.bufferSize >= c.limit.maxByteSize
 }
 
 func (c *EventChannel) reset() {
