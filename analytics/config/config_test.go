@@ -68,18 +68,16 @@ func (m *sampleModule) LogSetUIDObject(so *analytics.SetUIDObject) { *m.count++ 
 func (m *sampleModule) LogAmpObject(ao *analytics.AmpObject) { *m.count++ }
 
 func initAnalytics(count *int) analytics.PBSAnalyticsModule {
-	instance := &pbsAnalyticsModule{
-		enabledModules: make([]analyticsModule, 0),
-	}
-	instance.enabledModules = append(instance.enabledModules, &sampleModule{count})
-	return instance
+	modules := make(enabledAnalytics, 0)
+	modules = append(modules, &sampleModule{count})
+	return &modules
 }
 
 func TestNewPBSAnalytics(t *testing.T) {
 	pbsAnalytics := NewPBSAnalytics(&config.Analytics{})
-	instance := pbsAnalytics.(*pbsAnalyticsModule)
+	instance := pbsAnalytics.(enabledAnalytics)
 
-	assert.Equal(t, len(instance.enabledModules), 0)
+	assert.Equal(t, len(instance), 0)
 }
 
 func TestNewPBSAnalytics_FileLogger(t *testing.T) {
@@ -89,12 +87,20 @@ func TestNewPBSAnalytics_FileLogger(t *testing.T) {
 		}
 	}
 	defer os.RemoveAll(TEST_DIR)
+	mod := NewPBSAnalytics(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
+	switch modType := mod.(type) {
+	case enabledAnalytics:
+		if len(enabledAnalytics(modType)) != 1 {
+			t.Fatalf("Failed to add analytics module")
+		}
+	default:
+		t.Fatalf("Failed to initialize analytics module")
+	}
 
 	pbsAnalytics := NewPBSAnalytics(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
-	instance := pbsAnalytics.(*pbsAnalyticsModule)
+	instance := pbsAnalytics.(enabledAnalytics)
 
-	assert.Equal(t, len(instance.enabledModules), 1)
-	assert.NotNil(t, instance.enabledModules[0].(analyticsModule))
+	assert.Equal(t, len(instance), 1)
 }
 
 func TestNewPBSAnalytics_Pubstack(t *testing.T) {
@@ -112,16 +118,15 @@ func TestNewPBSAnalytics_Pubstack(t *testing.T) {
 			ConfRefresh: "2h",
 		},
 	})
-	instanceWithoutError := pbsAnalyticsWithoutError.(*pbsAnalyticsModule)
+	instanceWithoutError := pbsAnalyticsWithoutError.(enabledAnalytics)
 
-	assert.Equal(t, len(instanceWithoutError.enabledModules), 1)
-	assert.NotNil(t, instanceWithoutError.enabledModules[0].(analyticsModule))
+	assert.Equal(t, len(instanceWithoutError), 1)
 
 	pbsAnalyticsWithError := NewPBSAnalytics(&config.Analytics{
 		Pubstack: config.Pubstack{
 			Enabled: true,
 		},
 	})
-	instanceWithError := pbsAnalyticsWithError.(*pbsAnalyticsModule)
-	assert.Equal(t, len(instanceWithError.enabledModules), 0)
+	instanceWithError := pbsAnalyticsWithError.(enabledAnalytics)
+	assert.Equal(t, len(instanceWithError), 0)
 }
