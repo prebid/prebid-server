@@ -156,8 +156,9 @@ type GDPR struct {
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
 	NonStandardPublisherMap map[string]int
-	TCF2                    TCF2 `mapstructure:"tcf2"`
-	AMPException            bool `mapstructure:"amp_exception"`
+	TCF2                    TCF2     `mapstructure:"tcf2"`
+	AMPException            bool     `mapstructure:"amp_exception"`
+	CountryList             []string `mapstructure:"country_list"`
 }
 
 func (cfg *GDPR) validate(errs configErrors) configErrors {
@@ -870,6 +871,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose_one_treatement.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatement.access_allowed", true)
 	v.SetDefault("gdpr.amp_exception", false)
+	v.SetDefault("gdpr.country_list", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
+		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
+		"LIE", "LTU", "LUX", "MLT", "MTQ", "MYT", "NLD", "NOR", "POL", "PRT", "REU", "ROU", "BLM", "MAF", "SPM",
+		"SVK", "SVN", "ESP", "SWE", "GBR"})
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
