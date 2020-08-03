@@ -24,14 +24,12 @@ func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext
 
 	if req != nil {
 		for _, schainWrapper := range req.Prebid.SChains {
-			if schainWrapper != nil && len(schainWrapper.Bidders) > 0 {
-				for _, bidder := range schainWrapper.Bidders {
-					if _, present := bidderToSChains[bidder]; present {
-						return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
-							"it must contain no more than one per bidder.", bidder)
-					} else {
-						bidderToSChains[bidder] = &schainWrapper.SChain
-					}
+			for _, bidder := range schainWrapper.Bidders {
+				if _, present := bidderToSChains[bidder]; present {
+					return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
+						"it must contain no more than one per bidder.", bidder)
+				} else {
+					bidderToSChains[bidder] = &schainWrapper.SChain
 				}
 			}
 		}
@@ -429,43 +427,53 @@ func randomizeList(list []openrtb_ext.BidderName) {
 	}
 }
 
-// Process the request to check for targeting parameters.
-func extractBidRequesteExtInfo(bidRequest *openrtb.BidRequest) (*targetData, map[string]float64, *openrtb_ext.ExtRequest, bool, bool, error) {
-	var targData *targetData
-	var bidAdjustmentFactors map[string]float64
+func extractBidRequesteExt(bidRequest *openrtb.BidRequest) (*openrtb_ext.ExtRequest, error) {
 	requestExt := &openrtb_ext.ExtRequest{}
-	debugInfo := false
-	shouldCacheBids := false
-	shouldCacheVAST := false
 
 	if bidRequest == nil {
-		return targData, bidAdjustmentFactors, requestExt, debugInfo, shouldCacheBids, fmt.Errorf("Error bidRequest should not be nil")
+		return requestExt, fmt.Errorf("Error bidRequest should not be nil")
 	}
-
-	debugInfo = bidRequest.Test == 1
 
 	if len(bidRequest.Ext) > 0 {
 		err := json.Unmarshal(bidRequest.Ext, &requestExt)
 		if err != nil {
-			return targData, bidAdjustmentFactors, requestExt, debugInfo, shouldCacheBids, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
+			return requestExt, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
 		}
-		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
-		if requestExt.Prebid.Cache != nil {
-			shouldCacheBids = requestExt.Prebid.Cache.Bids != nil
-			shouldCacheVAST = requestExt.Prebid.Cache.VastXML != nil
-		}
-
-		if requestExt.Prebid.Targeting != nil {
-			targData = &targetData{
-				priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
-				includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
-				includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
-				includeCacheBids:  shouldCacheBids,
-				includeCacheVast:  shouldCacheVAST,
-			}
-		}
-		// if true, the bidResponse will be returned with debug information.
-		debugInfo = debugInfo || requestExt.Prebid.Debug
 	}
-	return targData, bidAdjustmentFactors, requestExt, debugInfo, shouldCacheBids, nil
+	return requestExt, nil
+}
+
+func getExtCacheInfo(requestExt *openrtb_ext.ExtRequest) (shouldCacheBids bool, shouldCacheVAST bool) {
+	if requestExt != nil && requestExt.Prebid.Cache != nil {
+		shouldCacheBids = requestExt.Prebid.Cache.Bids != nil
+		shouldCacheVAST = requestExt.Prebid.Cache.VastXML != nil
+	}
+	return
+}
+
+func getExtTargetData(requestExt *openrtb_ext.ExtRequest, shouldCacheBids bool, shouldCacheVAST bool) *targetData {
+	var targData *targetData
+
+	if requestExt != nil && requestExt.Prebid.Targeting != nil {
+		targData = &targetData{
+			priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
+			includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
+			includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
+			includeCacheBids:  shouldCacheBids,
+			includeCacheVast:  shouldCacheVAST,
+		}
+	}
+	return targData
+}
+
+func getDebugInfo(bidRequest *openrtb.BidRequest, requestExt *openrtb_ext.ExtRequest) bool {
+	return (bidRequest != nil && bidRequest.Test == 1) || (requestExt != nil && requestExt.Prebid.Debug)
+}
+
+func getExtBidAdjustmentFactors(requestExt *openrtb_ext.ExtRequest) map[string]float64 {
+	var bidAdjustmentFactors map[string]float64
+	if requestExt != nil {
+		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
+	}
+	return bidAdjustmentFactors
 }

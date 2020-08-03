@@ -260,11 +260,10 @@ func TestDebugBehaviour(t *testing.T) {
 			assert.Greater(t, len(actualExt.Debug.HttpCalls), 0, "%s. ext.debug.httpcalls.uri should be populated by a non empty string: \"%v\" \n", test.desc, actualExt.Debug)
 			assert.NotNilf(t, actualExt.Debug.ResolvedRequest, "%s. ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", test.desc, actualExt.Debug)
 
-			//marshalledBidRequest, merr := json.Marshal(bidRequest)
-			//assert.NoErrorf(t, merr, "%s. Error marshaling bidRequest. Message: %v \n", test.desc, merr)
-
-			//assert.Equal(t, bidRequest, actualExt.Debug.ResolvedRequest, "%s. ResolvedRequest in Debug field is not equap to the marshalled bidRequest \n", test.desc)
-			diffJson(t, test.desc, bidRequest.Ext, actualExt.Debug.ResolvedRequest.Ext)
+			// If not nil, assert bid extension
+			if test.in.debug {
+				diffJson(t, test.desc, bidRequest.Ext, actualExt.Debug.ResolvedRequest.Ext)
+			}
 		}
 	}
 }
@@ -818,7 +817,7 @@ func TestTimeoutComputation(t *testing.T) {
 	ctx, cancel := context.WithDeadline(context.Background(), deadline)
 	defer cancel()
 
-	auctionCtx, cancel := ex.makeAuctionContext(ctx, true, false)
+	auctionCtx, cancel := ex.makeAuctionContext(ctx, true)
 	defer cancel()
 
 	if finalDeadline, ok := auctionCtx.Deadline(); !ok || deadline.Add(-time.Duration(cacheTimeMillis)*time.Millisecond) != finalDeadline {
@@ -827,17 +826,40 @@ func TestTimeoutComputation(t *testing.T) {
 }
 
 func TestSetDebugContextKey(t *testing.T) {
+	// Test cases
+	testCases := []struct {
+		desc              string
+		inDebugInfo       bool
+		expectedDebugInfo bool
+	}{
+		{
+			desc:              "debugInfo flag on, we expect to find DebugContextKey key in context",
+			inDebugInfo:       true,
+			expectedDebugInfo: true,
+		},
+		{
+			desc:              "debugInfo flag off, we don't expect to find DebugContextKey key in context",
+			inDebugInfo:       false,
+			expectedDebugInfo: false,
+		},
+	}
+
 	// Setup test
 	ex := exchange{}
 
-	// Run test
-	auctionCtx, cancel := ex.makeAuctionContext(context.Background(), false, true)
-	defer cancel()
+	// Run tests
+	for _, test := range testCases {
+		auctionCtx := ex.makeDebugContext(context.Background(), test.inDebugInfo)
 
-	// Assert DebugContextKeyWas set in `makeAuctionContext`
-	debugInfo := auctionCtx.Value(DebugContextKey("debugInfo"))
-	assert.NotNil(t, debugInfo, "Something wrong while retrieving context value for `debugInfo`")
-	assert.Equal(t, true, debugInfo.(bool), "The value mapped to DebugContextKey(`debugInfo`) in the context should be `true`")
+		debugInfo := auctionCtx.Value(DebugContextKey)
+
+		if test.expectedDebugInfo {
+			assert.NotNil(t, debugInfo, "%s. Flag set, `debugInfo` shouldn't be nil")
+			assert.Equal(t, true, debugInfo.(bool), "The value mapped to DebugContextKey(`debugInfo`) in the context should be `true`")
+		} else {
+			assert.Nil(t, debugInfo, "%s. Flag not set, `debugInfo` should be nil")
+		}
+	}
 }
 
 // TestExchangeJSON executes tests for all the *.json files in exchangetest.

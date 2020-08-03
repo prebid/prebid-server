@@ -150,7 +150,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	for i := 0; i < len(reqData); i++ {
 		httpInfo := <-responseChannel
 		// If this is a test bid, capture debugging info from the requests.
-		if debugInfo := ctx.Value(DebugContextKey("debugInfo")); debugInfo != nil {
+		if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil {
 			seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
 		}
 

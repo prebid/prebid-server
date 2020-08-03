@@ -3,6 +3,7 @@ package exchange
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -282,7 +283,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		var extRequest *openrtb_ext.ExtRequest
 		if test.inExt != nil {
 			req.Ext = test.inExt
-			_, _, unmarshaledExt, _, _, err := extractBidRequesteExtInfo(req)
+			unmarshaledExt, err := extractBidRequesteExt(req)
 			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
 			extRequest = unmarshaledExt
 		}
@@ -301,184 +302,287 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 	}
 }
 
-func TestExtractBidRequesteExtInfo(t *testing.T) {
-	type outTest struct {
-		targData             *targetData
-		bidAdjustmentFactors map[string]float64
-		requestExt           openrtb_ext.ExtRequest
-		debugInfo            bool
-		shouldCacheBids      bool
-		expectError          bool
-	}
+func TestExtractBidRequesteExt(t *testing.T) {
 	testCases := []struct {
-		desc         string
-		inBidRequest *openrtb.BidRequest
-		out          outTest
+		desc          string
+		inBidRequest  *openrtb.BidRequest
+		outRequestExt *openrtb_ext.ExtRequest
+		outError      error
 	}{
 		{
-			desc:         "Nil bid request",
-			inBidRequest: nil,
-			out: outTest{
-				targData:             nil,
-				bidAdjustmentFactors: nil,
-				requestExt:           openrtb_ext.ExtRequest{},
-				debugInfo:            false,
-				shouldCacheBids:      false,
-				expectError:          true,
-			},
+			desc:          "Valid",
+			inBidRequest:  &openrtb.BidRequest{Ext: json.RawMessage(`{"prebid":{"debug":true}}`)},
+			outRequestExt: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}},
+			outError:      nil,
 		},
 		{
-			desc:         "bid.Test is 0, bid.Ext is invalid JSON",
-			inBidRequest: &openrtb.BidRequest{Test: 0, Ext: json.RawMessage(`invalid`)},
-			out: outTest{
-				targData:             nil,
-				bidAdjustmentFactors: nil,
-				requestExt:           openrtb_ext.ExtRequest{},
-				debugInfo:            false,
-				shouldCacheBids:      false,
-				expectError:          true,
-			},
+			desc:          "bidRequest nil, we expect an error",
+			inBidRequest:  nil,
+			outRequestExt: &openrtb_ext.ExtRequest{},
+			outError:      fmt.Errorf("Error bidRequest should not be nil"),
 		},
 		{
-			desc:         "bid.Test is 0, bid.Ext empty",
-			inBidRequest: &openrtb.BidRequest{Test: 0, Ext: json.RawMessage(``)},
-			out: outTest{
-				targData:             nil,
-				bidAdjustmentFactors: nil,
-				requestExt:           openrtb_ext.ExtRequest{},
-				debugInfo:            false,
-				shouldCacheBids:      false,
-				expectError:          false,
-			},
+			desc:          "Non-nil bidRequest with empty Ext, we expect a blank requestExt",
+			inBidRequest:  &openrtb.BidRequest{},
+			outRequestExt: &openrtb_ext.ExtRequest{},
+			outError:      nil,
 		},
 		{
-			desc:         "bid.Test is 1, bid.Ext empty",
-			inBidRequest: &openrtb.BidRequest{Test: 1, Ext: json.RawMessage(``)},
-			out: outTest{
-				targData:             nil,
-				bidAdjustmentFactors: nil,
-				requestExt:           openrtb_ext.ExtRequest{},
-				debugInfo:            true,
-				shouldCacheBids:      false,
-				expectError:          false,
-			},
+			desc:          "Non-nil bidRequest with non-empty, invalid Ext, we expect unmarshaling error",
+			inBidRequest:  &openrtb.BidRequest{Ext: json.RawMessage(`invalid`)},
+			outRequestExt: &openrtb_ext.ExtRequest{},
+			outError:      fmt.Errorf("Error decoding Request.ext : invalid character 'i' looking for beginning of value"),
+		},
+	}
+	for _, test := range testCases {
+		actualRequestExt, actualErr := extractBidRequesteExt(test.inBidRequest)
+
+		assert.Equal(t, test.outRequestExt, actualRequestExt, "%s. Unexpected RequestExt value. \n", test.desc)
+		assert.Equal(t, test.outError, actualErr, "%s. Unexpected error value. \n", test.desc)
+	}
+}
+
+func TestGetExtCacheInfo(t *testing.T) {
+	testCases := []struct {
+		desc         string
+		inRequestExt *openrtb_ext.ExtRequest
+		outCacheBids bool
+		outCacheVAST bool
+	}{
+		{
+			desc:         "Nil inRequestExt, both cache flags false",
+			inRequestExt: nil,
+			outCacheBids: false,
+			outCacheVAST: false,
 		},
 		{
-			desc: "bid.Test is 0, bid.Ext's debug set to false",
-			inBidRequest: &openrtb.BidRequest{
-				Test: 0,
-				Ext:  json.RawMessage(`{"prebid":{"debug":false}}`),
-			},
-			out: outTest{
-				targData:             nil,
-				bidAdjustmentFactors: nil,
-				requestExt:           openrtb_ext.ExtRequest{},
-				debugInfo:            false,
-				shouldCacheBids:      false,
-				expectError:          false,
-			},
+			desc:         "Non-nil inRequestExt, nil Cache info, both cache flags false",
+			inRequestExt: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Cache: nil}},
+			outCacheBids: false,
+			outCacheVAST: false,
 		},
 		{
-			desc: "bid.Test is 0, bid.Ext's debug set to true",
-			inBidRequest: &openrtb.BidRequest{
-				Test: 0,
-				Ext:  json.RawMessage(`{"prebid":{"debug":true}}`),
-			},
-			out: outTest{
-				targData:             nil,
-				bidAdjustmentFactors: nil,
-				requestExt:           openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}},
-				debugInfo:            true,
-				shouldCacheBids:      false,
-				expectError:          false,
-			},
-		},
-		{
-			desc: "bid.Test is 0, bid.Ext's debug set to false, valid bid.Ext's targeting field",
-			inBidRequest: &openrtb.BidRequest{
-				Test: 0,
-				Ext:  json.RawMessage(`{"prebid":{"targeting": {"includewinners": true}}}`),
-			},
-			out: outTest{
-				targData: &targetData{
-					priceGranularity: openrtb_ext.PriceGranularity{
-						Precision: 2,
-						Ranges: []openrtb_ext.GranularityRange{
-							{
-								Max:       20,
-								Increment: 0.1,
-							},
-						},
+			desc: "Non-nil inRequestExt, non-nil Cache info, both ExtRequestPrebidCacheBids and ExtRequestPrebidCacheVAST nil",
+			inRequestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Cache: &openrtb_ext.ExtRequestPrebidCache{
+						Bids:    nil,
+						VastXML: nil,
 					},
-					includeWinners:    true,
-					includeBidderKeys: true,
-					includeCacheBids:  false,
-					includeCacheVast:  false,
 				},
-				bidAdjustmentFactors: nil,
-				requestExt: openrtb_ext.ExtRequest{
+			},
+			outCacheBids: false,
+			outCacheVAST: false,
+		},
+		{
+			desc: "Non-nil inRequestExt, non-nil Cache info, both ExtRequestPrebidCacheBids nil, shouldCacheVast true",
+			inRequestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Cache: &openrtb_ext.ExtRequestPrebidCache{
+						Bids:    nil,
+						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
+					},
+				},
+			},
+			outCacheBids: false,
+			outCacheVAST: true,
+		},
+		{
+			desc: "Non-nil inRequestExt, non-nil Cache info, both ExtRequestPrebidCacheVAST nil, shouldCacheBids true",
+			inRequestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Cache: &openrtb_ext.ExtRequestPrebidCache{
+						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
+						VastXML: nil,
+					},
+				},
+			},
+			outCacheBids: true,
+			outCacheVAST: false,
+		},
+		{
+			desc: "Non-nil inRequestExt, non-nil Cache info values, both shouldCacheBids and shouldCacheVAST return true",
+			inRequestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Cache: &openrtb_ext.ExtRequestPrebidCache{
+						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
+						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
+					},
+				},
+			},
+			outCacheBids: true,
+			outCacheVAST: true,
+		},
+	}
+	for _, test := range testCases {
+		shouldCacheBids, shouldCacheVAST := getExtCacheInfo(test.inRequestExt)
+
+		assert.Equal(t, test.outCacheBids, shouldCacheBids, "%s. Unexpected shouldCacheBids value. \n", test.desc)
+		assert.Equal(t, test.outCacheVAST, shouldCacheVAST, "%s. Unexpected shouldCacheVAST value. \n", test.desc)
+	}
+}
+
+func TestGetExtTargetData(t *testing.T) {
+	type inTest struct {
+		requestExt      *openrtb_ext.ExtRequest
+		shouldCacheBids bool
+		shouldCacheVAST bool
+	}
+	type outTest struct {
+		targetData    *targetData
+		nilTargetData bool
+	}
+	testCases := []struct {
+		desc string
+		in   inTest
+		out  outTest
+	}{
+		{
+			"nil requestExt, nil outTargetData",
+			inTest{
+				requestExt:      nil,
+				shouldCacheBids: true,
+				shouldCacheVAST: true,
+			},
+			outTest{targetData: nil, nilTargetData: true},
+		},
+		{
+			"Valid requestExt, nil Targeting field, nil outTargetData",
+			inTest{
+				requestExt: &openrtb_ext.ExtRequest{
+					Prebid: openrtb_ext.ExtRequestPrebid{
+						Targeting: nil,
+					},
+				},
+				shouldCacheBids: true,
+				shouldCacheVAST: true,
+			},
+			outTest{targetData: nil, nilTargetData: true},
+		},
+		{
+			"Valid targeting data in requestExt, valid outTargetData",
+			inTest{
+				requestExt: &openrtb_ext.ExtRequest{
 					Prebid: openrtb_ext.ExtRequestPrebid{
 						Targeting: &openrtb_ext.ExtRequestTargeting{
 							PriceGranularity: openrtb_ext.PriceGranularity{
 								Precision: 2,
-								Ranges: []openrtb_ext.GranularityRange{
-									{
-										Max:       20,
-										Increment: 0.1,
-									},
-								},
+								Ranges:    []openrtb_ext.GranularityRange{{Min: 0.00, Max: 5.00, Increment: 1.00}},
 							},
 							IncludeWinners:    true,
 							IncludeBidderKeys: true,
 						},
 					},
 				},
-				debugInfo:       false,
-				shouldCacheBids: false,
-				expectError:     false,
-			},
-		},
-		{
-			desc: "bid.Test is 0, bid.Ext's debug set to false, valid bid.Ext's cache field",
-			inBidRequest: &openrtb.BidRequest{
-				Test: 0,
-				Ext:  json.RawMessage(`{"prebid":{"cache": {"bids": {"appnexus":"aBid"}}}}`),
-			},
-			out: outTest{
-				targData:             nil,
-				bidAdjustmentFactors: nil,
-				requestExt: openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						Cache: &openrtb_ext.ExtRequestPrebidCache{
-							Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
-							VastXML: nil,
-						},
-					},
-				},
-				debugInfo:       false,
 				shouldCacheBids: true,
-				expectError:     false,
+				shouldCacheVAST: true,
+			},
+			outTest{
+				targetData: &targetData{
+					priceGranularity: openrtb_ext.PriceGranularity{
+						Precision: 2,
+						Ranges:    []openrtb_ext.GranularityRange{{Min: 0.00, Max: 5.00, Increment: 1.00}},
+					},
+					includeWinners:    true,
+					includeBidderKeys: true,
+					includeCacheBids:  true,
+					includeCacheVast:  true,
+				},
+				nilTargetData: false,
 			},
 		},
 	}
-	//
 	for _, test := range testCases {
-		actualTargData, actualBidAdjFactors, actualUnmarshaledExt, actualDebugInfo, actualShouldCacheBids, err := extractBidRequesteExtInfo(test.inBidRequest)
+		actualTargetData := getExtTargetData(test.in.requestExt, test.in.shouldCacheBids, test.in.shouldCacheVAST)
 
-		if test.out.expectError {
-			if !assert.Errorf(t, err, test.desc+":Expected test to throw an error") {
-				return
-			}
+		if test.out.nilTargetData {
+			assert.Nil(t, actualTargetData, "%s. Targeting data should be nil. \n", test.desc)
 		} else {
-			if !assert.NoErrorf(t, err, test.desc+":Test should have run with no errors: %v", err) {
-				return
-			}
+			assert.NotNil(t, actualTargetData, "%s. Targeting data should NOT be nil. \n", test.desc)
+			assert.Equal(t, *test.out.targetData, *actualTargetData, "%s. Unexpected targeting data value. \n", test.desc)
 		}
-		assert.Equal(t, test.out.targData, actualTargData, test.desc+":targetData")
-		assert.Equal(t, test.out.bidAdjustmentFactors, actualBidAdjFactors, test.desc+":bidAdjustmentFactors")
-		assert.Equal(t, test.out.requestExt, *actualUnmarshaledExt, test.desc+":requestExt")
-		assert.Equal(t, test.out.debugInfo, actualDebugInfo, test.desc+":debugInfo")
-		assert.Equal(t, test.out.shouldCacheBids, actualShouldCacheBids, test.desc+":shouldCacheBids")
+	}
+}
+
+func TestGetDebugInfo(t *testing.T) {
+	type inTest struct {
+		bidRequest *openrtb.BidRequest
+		requestExt *openrtb_ext.ExtRequest
+	}
+	testCases := []struct {
+		desc string
+		in   inTest
+		out  bool
+	}{
+		{
+			desc: "Nil bid request, nil requestExt",
+			in:   inTest{nil, nil},
+			out:  false,
+		},
+		{
+			desc: "bid request test == 0, nil requestExt",
+			in:   inTest{&openrtb.BidRequest{Test: 0}, nil},
+			out:  false,
+		},
+		{
+			desc: "Nil bid request, requestExt debug flag false",
+			in:   inTest{nil, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
+			out:  false,
+		},
+		{
+			desc: "bid request test == 0, requestExt debug flag false",
+			in:   inTest{&openrtb.BidRequest{Test: 0}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
+			out:  false,
+		},
+		{
+			desc: "bid request test == 1, requestExt debug flag false",
+			in:   inTest{&openrtb.BidRequest{Test: 1}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
+			out:  true,
+		},
+		{
+			desc: "bid request test == 0, requestExt debug flag true",
+			in:   inTest{&openrtb.BidRequest{Test: 0}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}}},
+			out:  true,
+		},
+		{
+			desc: "bid request test == 1, requestExt debug flag true",
+			in:   inTest{&openrtb.BidRequest{Test: 1}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}}},
+			out:  true,
+		},
+	}
+	for _, test := range testCases {
+		actualDebugInfo := getDebugInfo(test.in.bidRequest, test.in.requestExt)
+
+		assert.Equal(t, test.out, actualDebugInfo, "%s. Unexpected debug value. \n", test.desc)
+	}
+}
+
+func TestGetExtBidAdjustmentFactors(t *testing.T) {
+	testCases := []struct {
+		desc                    string
+		inRequestExt            *openrtb_ext.ExtRequest
+		outBidAdjustmentFactors map[string]float64
+	}{
+		{
+			desc:                    "Nil request ext",
+			inRequestExt:            nil,
+			outBidAdjustmentFactors: nil,
+		},
+		{
+			desc:                    "Non-nil request ext, nil BidAdjustmentFactors field",
+			inRequestExt:            &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: nil}},
+			outBidAdjustmentFactors: nil,
+		},
+		{
+			desc:                    "Non-nil request ext, valid BidAdjustmentFactors field",
+			inRequestExt:            &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: map[string]float64{"bid-factor": 1.0}}},
+			outBidAdjustmentFactors: map[string]float64{"bid-factor": 1.0},
+		},
+	}
+	for _, test := range testCases {
+		actualBidAdjustmentFactors := getExtBidAdjustmentFactors(test.inRequestExt)
+
+		assert.Equal(t, test.outBidAdjustmentFactors, actualBidAdjustmentFactors, "%s. Unexpected BidAdjustmentFactors value. \n", test.desc)
 	}
 }
 
