@@ -24,8 +24,7 @@ const (
 
 // SmaatoAdapter describes a Smaato prebid server adapter.
 type SmaatoAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	URI string
 }
 
 //userExt defines User.Ext object for Smaato
@@ -49,11 +48,9 @@ type siteExtData struct {
 }
 
 // NewSmaatoBidder creates a Smaato bid adapter.
-func NewSmaatoBidder(client *http.Client, uri string) *SmaatoAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
+func NewSmaatoBidder(uri string) *SmaatoAdapter {
 	return &SmaatoAdapter{
-		http: a,
-		URI:  uri,
+		URI: uri,
 	}
 }
 
@@ -212,14 +209,16 @@ func renderAdMarkup(adMarkupType adMarkupType, adMarkup string) (string, error) 
 }
 
 func getAdMarkupType(response *adapters.ResponseData, adMarkup string) adMarkupType {
-	admType := adMarkupType(response.Headers.Get("X-SMT-ADTYPE"))
-	if admType == "" && strings.HasPrefix(adMarkup, `{"image":`) {
-		admType = smtAdTypeImg
+	if admType := adMarkupType(response.Headers.Get("X-SMT-ADTYPE")); admType != "" {
+		return admType
 	}
-	if admType == "" && strings.HasPrefix(adMarkup, `{"richmedia":`) {
-		admType = smtAdTypeRichmedia
+	if strings.HasPrefix(adMarkup, `{"image":`) {
+		return smtAdTypeImg
 	}
-	return admType
+	if strings.HasPrefix(adMarkup, `{"richmedia":`) {
+		return smtAdTypeRichmedia
+	}
+	return ""
 }
 
 func assignBannerSize(banner *openrtb.Banner) (*openrtb.Banner, error) {
