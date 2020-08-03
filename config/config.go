@@ -209,7 +209,8 @@ type LMT struct {
 }
 
 type Analytics struct {
-	File FileLogs `mapstructure:"file"`
+	File     FileLogs `mapstructure:"file"`
+	Pubstack Pubstack `mapstructure:"pubstack"`
 }
 
 type CurrencyConverter struct {
@@ -228,6 +229,20 @@ func (cfg *CurrencyConverter) validate(errs configErrors) configErrors {
 // FileLogs Corresponding config for FileLogger as a PBS Analytics Module
 type FileLogs struct {
 	Filename string `mapstructure:"filename"`
+}
+
+type Pubstack struct {
+	Enabled     bool           `mapstructure:"enabled"`
+	ScopeId     string         `mapstructure:"scopeid"`
+	IntakeUrl   string         `mapstructure:"endpoint"`
+	Buffers     PubstackBuffer `mapstructure:"buffers"`
+	ConfRefresh string         `mapstructure:"configuration_refresh_delay"`
+}
+
+type PubstackBuffer struct {
+	BufferSize string `mapstructure:"size"`
+	EventCount int    `mapstructure:"count"`
+	Timeout    string `mapstructure:"timeout"`
 }
 
 type HostCookie struct {
@@ -855,6 +870,13 @@ func SetupViper(v *viper.Viper, filename string) {
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
+	v.SetDefault("analytics.pubstack.endpoint", "https://s2s.pbstck.com/v1")
+	v.SetDefault("analytics.pubstack.scopeid", "change-me")
+	v.SetDefault("analytics.pubstack.enabled", false)
+	v.SetDefault("analytics.pubstack.configuration_refresh_delay", "2h")
+	v.SetDefault("analytics.pubstack.buffers.size", "2MB")
+	v.SetDefault("analytics.pubstack.buffers.count", 100)
+	v.SetDefault("analytics.pubstack.buffers.timeout", "900s")
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.SetDefault("gdpr.host_vendor_id", 0)
 	v.SetDefault("gdpr.usersync_if_ambiguous", false)
