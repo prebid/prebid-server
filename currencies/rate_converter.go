@@ -22,7 +22,7 @@ type RateConverter struct {
 	rates               atomic.Value // Should only hold Rates struct
 	lastUpdated         atomic.Value // Should only hold time.Time
 	constantRates       Conversions
-	Time                timeutil.Time
+	time                timeutil.Time
 }
 
 // NewRateConverter returns a new RateConverter
@@ -40,7 +40,7 @@ func NewRateConverter(
 		rates:               atomic.Value{},
 		lastUpdated:         atomic.Value{},
 		constantRates:       NewConstantRates(),
-		Time:                &timeutil.RealTime{},
+		time:                &timeutil.RealTime{},
 	}
 }
 
@@ -89,7 +89,7 @@ func (rc *RateConverter) update() error {
 	rates, err := rc.fetch()
 	if err == nil {
 		rc.rates.Store(rates)
-		rc.lastUpdated.Store(rc.Time.Now())
+		rc.lastUpdated.Store(rc.time.Now())
 	} else {
 		if rc.checkStaleRates() {
 			rc.clearRates()
@@ -136,7 +136,7 @@ func (rc *RateConverter) checkStaleRates() bool {
 		return false
 	}
 
-	currentTime := rc.Time.Now().UTC()
+	currentTime := rc.time.Now().UTC()
 	if lastUpdated := rc.lastUpdated.Load(); lastUpdated != nil {
 		delta := currentTime.Sub(lastUpdated.(time.Time).UTC())
 		if delta.Seconds() > rc.staleRatesThreshold.Seconds() {

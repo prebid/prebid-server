@@ -1,4 +1,4 @@
-package currencies_test
+package currencies
 
 import (
 	"io/ioutil"
@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/util/task"
 	"github.com/stretchr/testify/assert"
 )
@@ -125,13 +124,13 @@ func TestReadWriteRates(t *testing.T) {
 		} else {
 			url = mockedHttpServer.URL
 		}
-		currencyConverter := currencies.NewRateConverter(
+		currencyConverter := NewRateConverter(
 			&http.Client{},
 			url,
 			24*time.Hour,
 			24*time.Hour,
 		)
-		currencyConverter.Time = &FakeTime{time: tt.giveFakeTime}
+		currencyConverter.time = &FakeTime{time: tt.giveFakeTime}
 		err := currencyConverter.Run()
 
 		if tt.wantUpdateErr {
@@ -141,9 +140,9 @@ func TestReadWriteRates(t *testing.T) {
 		}
 
 		if tt.wantConstantRates {
-			assert.Equal(t, currencyConverter.Rates(), &currencies.ConstantRates{}, tt.description)
+			assert.Equal(t, currencyConverter.Rates(), &ConstantRates{}, tt.description)
 		} else {
-			rates := currencyConverter.Rates().(*currencies.Rates)
+			rates := currencyConverter.Rates().(*Rates)
 			assert.Equal(t, tt.wantConversions, (*rates).Conversions, tt.description)
 			assert.Equal(t, tt.wantDataAsOf, (*rates).DataAsOf, tt.description)
 		}
@@ -170,7 +169,7 @@ func TestRateStaleness(t *testing.T) {
 
 	defer mockedHttpServer.Close()
 
-	expectedRates := &currencies.Rates{
+	expectedRates := &Rates{
 		DataAsOf: time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
 		Conversions: map[string]map[string]float64{
 			"USD": {
@@ -186,20 +185,20 @@ func TestRateStaleness(t *testing.T) {
 	fakeTime := &FakeTime{time: initialFakeTime}
 
 	// Execute:
-	currencyConverter := currencies.NewRateConverter(
+	currencyConverter := NewRateConverter(
 		&http.Client{},
 		mockedHttpServer.URL,
 		100*time.Millisecond,
 		30*time.Second, // stale rates threshold
 	)
-	currencyConverter.Time = fakeTime
+	currencyConverter.time = fakeTime
 
 	// First Update call results in error
 	err1 := currencyConverter.Run()
 	assert.NotNil(t, err1)
 
 	// Verify constant rates are used and last update ts is not set
-	assert.Equal(t, &currencies.ConstantRates{}, currencyConverter.Rates(), "Rates should return constant rates")
+	assert.Equal(t, &ConstantRates{}, currencyConverter.Rates(), "Rates should return constant rates")
 	assert.Equal(t, time.Time{}, currencyConverter.LastUpdated(), "LastUpdated return is incorrect")
 
 	// Second Update call is successful and yields valid rates
@@ -229,7 +228,7 @@ func TestRateStaleness(t *testing.T) {
 	assert.NotNil(t, err4)
 
 	// Verify constant rates are used and last update ts has not changed
-	assert.Equal(t, &currencies.ConstantRates{}, currencyConverter.Rates(), "Rates should return constant rates")
+	assert.Equal(t, &ConstantRates{}, currencyConverter.Rates(), "Rates should return constant rates")
 	assert.Equal(t, initialFakeTime, currencyConverter.LastUpdated(), "LastUpdated return is incorrect")
 
 	// Fifth Update call is successful and yields valid rates
@@ -259,7 +258,7 @@ func TestRatesAreNeverConsideredStale(t *testing.T) {
 
 	defer mockedHttpServer.Close()
 
-	expectedRates := &currencies.Rates{
+	expectedRates := &Rates{
 		DataAsOf: time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
 		Conversions: map[string]map[string]float64{
 			"USD": {
@@ -275,13 +274,13 @@ func TestRatesAreNeverConsideredStale(t *testing.T) {
 	fakeTime := &FakeTime{time: initialFakeTime}
 
 	// Execute:
-	currencyConverter := currencies.NewRateConverter(
+	currencyConverter := NewRateConverter(
 		&http.Client{},
 		mockedHttpServer.URL,
 		100*time.Millisecond,
 		0*time.Millisecond, // stale rates threshold
 	)
-	currencyConverter.Time = fakeTime
+	currencyConverter.time = fakeTime
 
 	// First Update call is successful and yields valid rates
 	err1 := currencyConverter.Run()
@@ -329,7 +328,7 @@ func TestRace(t *testing.T) {
 	// Execute:
 	// Create a rate converter which will be fetching new values every 1 ms
 	interval := 1 * time.Millisecond
-	currencyConverter := currencies.NewRateConverter(
+	currencyConverter := NewRateConverter(
 		mockedHttpClient,
 		"currency.fake.com",
 		interval,
