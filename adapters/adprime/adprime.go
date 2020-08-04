@@ -42,7 +42,7 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 		tagID, err = jsonparser.GetString(reqCopy.Imp[0].Ext, "TagID")
 		if err != nil {
-			fmt.Println(err, tagID, reqCopy.Imp[0].Ext)
+			fmt.Println(err, tagID, string(reqCopy.Imp[0].Ext))
 			errs = append(errs, err)
 			continue
 		}
