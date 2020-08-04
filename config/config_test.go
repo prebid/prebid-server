@@ -29,7 +29,7 @@ func TestExternalCacheURLValidate(t *testing.T) {
 		{
 			"With http://",
 			ExternalCache{Host: "http://www.google.com", Path: "/path/v1"},
-			testOut{expectError: false, expectedHost: "www.google.com", expectedPath: "/path/v1"},
+			testOut{expectError: true, expectedHost: "www.google.com", expectedPath: "/path/v1"},
 		},
 		{
 			"Without http://",
@@ -39,7 +39,7 @@ func TestExternalCacheURLValidate(t *testing.T) {
 		{
 			"No scheme but '//' prefix",
 			ExternalCache{Host: "//www.google.com", Path: "/path/v1"},
-			testOut{expectError: false, expectedHost: "www.google.com", expectedPath: "/path/v1"},
+			testOut{expectError: true, expectedHost: "www.google.com", expectedPath: "/path/v1"},
 		},
 		{
 			"// appears twice",
@@ -49,7 +49,7 @@ func TestExternalCacheURLValidate(t *testing.T) {
 		{
 			"Host has an only // value",
 			ExternalCache{Host: "//", Path: "path/v1"},
-			testOut{expectError: false, expectedHost: "path", expectedPath: "/v1"},
+			testOut{expectError: true, expectedHost: "path", expectedPath: "/v1"},
 		},
 		{
 			"only scheme host, valid path",
@@ -74,7 +74,7 @@ func TestExternalCacheURLValidate(t *testing.T) {
 		{
 			"Scheme longer than host",
 			ExternalCache{Host: "unknownscheme://host", Path: "/path/v1"},
-			testOut{expectError: false, expectedHost: "host", expectedPath: "/path/v1"},
+			testOut{expectError: true, expectedHost: "host", expectedPath: "/path/v1"},
 		},
 		{
 			"Wrong colon side in scheme",
@@ -82,14 +82,19 @@ func TestExternalCacheURLValidate(t *testing.T) {
 			testOut{expectError: true, expectedHost: "", expectedPath: "http//:www.appnexus.com/path/v1"},
 		},
 		{
+			"Missing '/' in scheme",
+			ExternalCache{Host: "http:/www.appnexus.com", Path: "/path/v1"},
+			testOut{expectError: true, expectedHost: "http:", expectedPath: "http//:www.appnexus.com/path/v1"},
+		},
+		{
 			"host with scheme, no path",
 			ExternalCache{Host: "http://www.appnexus.com", Path: ""},
-			testOut{expectError: false, expectedHost: "www.appnexus.com", expectedPath: ""},
+			testOut{expectError: true, expectedHost: "www.appnexus.com", expectedPath: ""},
 		},
 		{
 			"scheme, no host nor path",
 			ExternalCache{Host: "http://", Path: ""},
-			testOut{expectError: false, expectedHost: "", expectedPath: ""},
+			testOut{expectError: true, expectedHost: "", expectedPath: ""},
 		},
 	}
 	for _, test := range testCases {
@@ -97,7 +102,7 @@ func TestExternalCacheURLValidate(t *testing.T) {
 		errs = test.data.validate(errs)
 
 		if test.out.expectError {
-			assert.Errorf(t, errs[0], "Test case was supposed to throw an error. Desc: %s \n", test.desc)
+			assert.Greater(t, len(errs), 0, "Test case was supposed to throw an error. Desc: %s \n", test.desc)
 			continue
 		} else {
 			assert.Equal(t, 0, len(errs), "Test case was supposed to NOT throw an error. Desc: %s errMsg = %v \n", test.desc, errs)

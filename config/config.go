@@ -140,31 +140,29 @@ func (data *ExternalCache) validate(errs configErrors) configErrors {
 	}
 
 	// Add "/" prefix to the path if missing
+	var completeUrl string
 	if data.Path != "" && !strings.HasPrefix(data.Path, "/") && !strings.HasSuffix(data.Host, "/") {
-		data.Path = "/" + data.Path
+		completeUrl = data.Host + "/" + data.Path
+	} else {
+		completeUrl = data.Host + data.Path
 	}
 
-	// Add "//" suffix hosts that don't come with a scheme
-	if strings.Index(data.Host, "//") == -1 {
-		data.Host = "//" + data.Host
+	singleSlashPos := strings.Index(completeUrl, "/")
+	doubleSlashPos := strings.Index(completeUrl, "//")
+	if doubleSlashPos != -1 {
+		// scheme was found in host or path
+		return append(errs, fmt.Errorf("External cache URL host must not include protocol or scheme: %s \n", completeUrl))
+	} else if doubleSlashPos != singleSlashPos && singleSlashPos < len(data.Host) {
+		// Single forward slash was found in host
+		return append(errs, fmt.Errorf("Character '/' is not allowed as External cache URL host character: %s \n", completeUrl))
 	}
 
-	u, err := url.Parse(data.Host + data.Path)
+	u, err := url.Parse("//" + completeUrl)
 	if err != nil {
 		return append(errs, err)
 	}
 	data.Host = u.Host
 	data.Path = u.Path
-
-	if data.Host == "" {
-		if data.Path != "" {
-			return append(errs, fmt.Errorf("Could not parse invalid URL: %s \n", data.Host+data.Path))
-		}
-	}
-
-	if strings.Index(data.Path, "//") != -1 {
-		errs = append(errs, fmt.Errorf("Could not parse invalid URL: %s \n", data.Host+data.Path))
-	}
 
 	return errs
 }
