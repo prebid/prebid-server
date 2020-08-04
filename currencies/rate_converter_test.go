@@ -327,8 +327,8 @@ func TestRace(t *testing.T) {
 	}
 
 	// Execute:
-	// Create a rate converter which will be fetching new values every 10 ms
-	interval := 10 * time.Millisecond
+	// Create a rate converter which will be fetching new values every 1 ms
+	interval := 1 * time.Millisecond
 	currencyConverter := currencies.NewRateConverter(
 		mockedHttpClient,
 		"currency.fake.com",
@@ -339,10 +339,8 @@ func TestRace(t *testing.T) {
 	ticker.Start()
 	defer ticker.Stop()
 
-	// Create 50 clients asking for updates and rates conversion at random intervals
-	// from 1ms to 50ms for 10 seconds
 	var wg sync.WaitGroup
-	clientsCount := 50
+	clientsCount := 10
 	wg.Add(clientsCount)
 	dones := make([]chan bool, clientsCount)
 
@@ -353,11 +351,8 @@ func TestRace(t *testing.T) {
 			clientTicker := time.NewTicker(randomTickInterval)
 			for {
 				select {
-				case tickTime := <-clientTicker.C:
-					// Either ask for an Update() or for GetRate()
-					// based on the tick ms
-					tickMs := tickTime.UnixNano() / int64(time.Millisecond)
-					if tickMs%2 == 0 {
+				case <-clientTicker.C:
+					if clientNum < 5 {
 						err := currencyConverter.Run()
 						assert.Nil(t, err)
 					} else {
@@ -373,7 +368,7 @@ func TestRace(t *testing.T) {
 		}(dones[c], c)
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 	// Sending stop signals to all clients
 	for i := range dones {
 		dones[i] <- true
