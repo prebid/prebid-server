@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -45,12 +46,13 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			continue
 		}
 
+		tagID, err := jsonparser.GetString(reqCopy.Imp[0].Ext, "TagID")
 		if err = json.Unmarshal(bidderExt.Bidder, &adprimeExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		reqCopy.Imp[0].TagID = adprimeExt.TagID
+		reqCopy.Imp[0].TagID = tagID
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
