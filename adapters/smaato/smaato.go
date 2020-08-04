@@ -228,13 +228,13 @@ func assignBannerSize(banner *openrtb.Banner) (*openrtb.Banner, error) {
 	if len(banner.Format) == 0 {
 		return banner, fmt.Errorf("No sizes provided for Banner %v", banner.Format)
 	}
-	bannerCopy := banner
+	bannerCopy := *banner
 	bannerCopy.W = new(uint64)
 	*bannerCopy.W = banner.Format[0].W
 	bannerCopy.H = new(uint64)
 	*bannerCopy.H = banner.Format[0].H
 
-	return bannerCopy, nil
+	return &bannerCopy, nil
 }
 
 // parseImpressionObject parse the imp to get it ready to send to smaato
