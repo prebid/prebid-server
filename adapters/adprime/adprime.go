@@ -31,8 +31,8 @@ type adprimeParams struct {
 // MakeRequests create bid request for adprime demand
 func (a *AdprimeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var adprimeExt openrtb_ext.ExtImpAdprime
 	var err error
+	var tagID string
 
 	var adapterRequests []*adapters.RequestData
 
@@ -40,14 +40,8 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	for _, imp := range request.Imp {
 		reqCopy.Imp = []openrtb.Imp{imp}
 
-		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		tagID, err := jsonparser.GetString(reqCopy.Imp[0].Ext, "TagID")
-		if err = json.Unmarshal(bidderExt.Bidder, &adprimeExt); err != nil {
+		tagID, err = jsonparser.GetString(reqCopy.Imp[0].Ext, "TagID")
+		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
