@@ -28,7 +28,7 @@ func (t *TickerTask) Start() {
 	t.runner.Run()
 
 	if t.interval > 0 {
-		go t.run()
+		go t.runRecurring()
 	}
 }
 
@@ -39,7 +39,7 @@ func (t *TickerTask) Stop() {
 
 // run creates a ticker that ticks at the specified interval. On each tick,
 // the task is executed
-func (t *TickerTask) run() {
+func (t *TickerTask) runRecurring() {
 	ticker := time.NewTicker(t.interval)
 
 	for {

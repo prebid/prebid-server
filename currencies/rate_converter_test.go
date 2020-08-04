@@ -125,13 +125,13 @@ func TestReadWriteRates(t *testing.T) {
 		} else {
 			url = mockedHttpServer.URL
 		}
-		currencyConverter := currencies.NewConfiguredRateConverter(
+		currencyConverter := currencies.NewRateConverter(
 			&http.Client{},
 			url,
 			24*time.Hour,
 			24*time.Hour,
-			&FakeTime{time: tt.giveFakeTime},
 		)
+		currencyConverter.Time = &FakeTime{time: tt.giveFakeTime}
 		err := currencyConverter.Run()
 
 		if tt.wantUpdateErr {
@@ -186,13 +186,13 @@ func TestRateStaleness(t *testing.T) {
 	fakeTime := &FakeTime{time: initialFakeTime}
 
 	// Execute:
-	currencyConverter := currencies.NewConfiguredRateConverter(
+	currencyConverter := currencies.NewRateConverter(
 		&http.Client{},
 		mockedHttpServer.URL,
 		100*time.Millisecond,
 		30*time.Second, // stale rates threshold
-		fakeTime,
 	)
+	currencyConverter.Time = fakeTime
 
 	// First Update call results in error
 	err1 := currencyConverter.Run()
@@ -275,13 +275,13 @@ func TestRatesAreNeverConsideredStale(t *testing.T) {
 	fakeTime := &FakeTime{time: initialFakeTime}
 
 	// Execute:
-	currencyConverter := currencies.NewConfiguredRateConverter(
+	currencyConverter := currencies.NewRateConverter(
 		&http.Client{},
 		mockedHttpServer.URL,
 		100*time.Millisecond,
 		0*time.Millisecond, // stale rates threshold
-		fakeTime,
 	)
+	currencyConverter.Time = fakeTime
 
 	// First Update call is successful and yields valid rates
 	err1 := currencyConverter.Run()

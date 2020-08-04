@@ -22,7 +22,7 @@ type RateConverter struct {
 	rates               atomic.Value // Should only hold Rates struct
 	lastUpdated         atomic.Value // Should only hold time.Time
 	constantRates       Conversions
-	time                timeutil.Time
+	Time                timeutil.Time
 }
 
 // NewRateConverter returns a new RateConverter
@@ -32,31 +32,6 @@ func NewRateConverter(
 	fetchingInterval time.Duration,
 	staleRatesThreshold time.Duration,
 ) *RateConverter {
-	return NewConfiguredRateConverter(
-		httpClient,
-		syncSourceURL,
-		fetchingInterval,
-		staleRatesThreshold,
-		&timeutil.RealTime{},
-	)
-}
-
-// NewRateConverterDefault returns a RateConverter with default values.
-// By default there will be no currencies conversions done.
-// `currencies.ConstantRate` will be used.
-func NewRateConverterDefault() *RateConverter {
-	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0))
-}
-
-// NewConfiguredRateConverter returns a new RateConverter
-// Do not call this method directly; it is to improve testability only
-func NewConfiguredRateConverter(
-	httpClient httpClient,
-	syncSourceURL string,
-	fetchingInterval time.Duration,
-	staleRatesThreshold time.Duration,
-	time timeutil.Time,
-) *RateConverter {
 	return &RateConverter{
 		httpClient:          httpClient,
 		fetchingInterval:    fetchingInterval,
@@ -65,8 +40,15 @@ func NewConfiguredRateConverter(
 		rates:               atomic.Value{},
 		lastUpdated:         atomic.Value{},
 		constantRates:       NewConstantRates(),
-		time:                time,
+		Time:                &timeutil.RealTime{},
 	}
+}
+
+// NewRateConverterDefault returns a RateConverter with default values.
+// By default there will be no currencies conversions done.
+// `currencies.ConstantRate` will be used.
+func NewRateConverterDefault() *RateConverter {
+	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0))
 }
 
 // fetch allows to retrieve the currencies rates from the syncSourceURL provided
@@ -107,7 +89,7 @@ func (rc *RateConverter) update() error {
 	rates, err := rc.fetch()
 	if err == nil {
 		rc.rates.Store(rates)
-		rc.lastUpdated.Store(rc.time.Now())
+		rc.lastUpdated.Store(rc.Time.Now())
 	} else {
 		if rc.checkStaleRates() {
 			rc.clearRates()
@@ -154,7 +136,7 @@ func (rc *RateConverter) checkStaleRates() bool {
 		return false
 	}
 
-	currentTime := rc.time.Now().UTC()
+	currentTime := rc.Time.Now().UTC()
 	if lastUpdated := rc.lastUpdated.Load(); lastUpdated != nil {
 		delta := currentTime.Sub(lastUpdated.(time.Time).UTC())
 		if delta.Seconds() > rc.staleRatesThreshold.Seconds() {
