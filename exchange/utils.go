@@ -427,7 +427,7 @@ func randomizeList(list []openrtb_ext.BidderName) {
 	}
 }
 
-func extractBidRequesteExt(bidRequest *openrtb.BidRequest) (*openrtb_ext.ExtRequest, error) {
+func extractBidRequestExt(bidRequest *openrtb.BidRequest) (*openrtb_ext.ExtRequest, error) {
 	requestExt := &openrtb_ext.ExtRequest{}
 
 	if bidRequest == nil {

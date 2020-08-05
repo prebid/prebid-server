@@ -283,7 +283,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		var extRequest *openrtb_ext.ExtRequest
 		if test.inExt != nil {
 			req.Ext = test.inExt
-			unmarshaledExt, err := extractBidRequesteExt(req)
+			unmarshaledExt, err := extractBidRequestExt(req)
 			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
 			extRequest = unmarshaledExt
 		}
@@ -335,7 +335,7 @@ func TestExtractBidRequesteExt(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		actualRequestExt, actualErr := extractBidRequesteExt(test.inBidRequest)
+		actualRequestExt, actualErr := extractBidRequestExt(test.inBidRequest)
 
 		assert.Equal(t, test.outRequestExt, actualRequestExt, "%s. Unexpected RequestExt value. \n", test.desc)
 		assert.Equal(t, test.outError, actualErr, "%s. Unexpected error value. \n", test.desc)

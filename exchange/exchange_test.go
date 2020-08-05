@@ -852,13 +852,8 @@ func TestSetDebugContextKey(t *testing.T) {
 		auctionCtx := ex.makeDebugContext(context.Background(), test.inDebugInfo)
 
 		debugInfo := auctionCtx.Value(DebugContextKey)
-
-		if test.expectedDebugInfo {
-			assert.NotNil(t, debugInfo, "%s. Flag set, `debugInfo` shouldn't be nil")
-			assert.Equal(t, true, debugInfo.(bool), "The value mapped to DebugContextKey(`debugInfo`) in the context should be `true`")
-		} else {
-			assert.Nil(t, debugInfo, "%s. Flag not set, `debugInfo` should be nil")
-		}
+		assert.NotNil(t, debugInfo, "%s. Flag set, `debugInfo` shouldn't be nil")
+		assert.Equal(t, test.expectedDebugInfo, debugInfo.(bool), "Desc: %s. Incorrect value mapped to DebugContextKey(`debugInfo`) in the context\n", test.desc)
 	}
 }
 

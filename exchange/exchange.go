@@ -91,19 +91,21 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {
 
-	requestExt, err := extractBidRequesteExt(bidRequest)
+	requestExt, err := extractBidRequestExt(bidRequest)
 	if err != nil {
 		return nil, err
 	}
 
 	shouldCacheBids, shouldCacheVAST := getExtCacheInfo(requestExt)
-
 	targData := getExtTargetData(requestExt, shouldCacheBids, shouldCacheVAST)
 	if targData != nil {
 		targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
 
 	debugInfo := getDebugInfo(bidRequest, requestExt)
+	if debugInfo {
+		ctx = e.makeDebugContext(ctx, debugInfo)
+	}
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExt)
 
@@ -131,8 +133,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	auctionCtx, cancel := e.makeAuctionContext(ctx, shouldCacheBids)
 	defer cancel()
 
-	ctx = e.makeDebugContext(ctx, debugInfo)
-
 	// Get currency rates conversions for the auction
 	conversions := e.currencyConverter.Rates()
 
@@ -144,9 +144,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.
-		if requestExt == nil {
-			requestExt = &openrtb_ext.ExtRequest{}
-		}
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
 			var err error
 			var rejections []string
@@ -275,14 +272,8 @@ func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo, bidCategory m
 }
 
 func (e *exchange) makeDebugContext(ctx context.Context, debugInfo bool) (debugCtx context.Context) {
-	debugCtx = ctx
-
-	// Don't populate context unless `debugInfo` is true
-	if debugInfo {
-		debugCtx = context.WithValue(ctx, DebugContextKey, debugInfo)
-	}
-
-	return debugCtx
+	debugCtx = context.WithValue(ctx, DebugContextKey, debugInfo)
+	return
 }
 
 func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {
@@ -470,7 +461,8 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	bidResponse.SeatBid = seatBids
 
 	if bidResponseExt == nil {
-		debugInfo := ctx.Value(DebugContextKey) != nil
+		contextDebugValue := ctx.Value(DebugContextKey)
+		debugInfo := contextDebugValue != nil && contextDebugValue.(bool)
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errList)
 	}
 	buffer := &bytes.Buffer{}
