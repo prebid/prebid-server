@@ -1352,7 +1352,7 @@ func TestCategoryDedupe(t *testing.T) {
 	cats4 := []string{"IAB1-2000"}
 	bid1 := openrtb.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
 	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 15.0000, Cat: cats2, W: 1, H: 1}
-	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 20.0000, Cat: cats1, W: 1, H: 1}
 	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 20.0000, Cat: cats4, W: 1, H: 1}
 
 	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
@@ -1364,7 +1364,7 @@ func TestCategoryDedupe(t *testing.T) {
 	expectedCategories := map[string]string{
 		"bid_id1": "10.00_Electronics_30s",
 		"bid_id2": "14.00_Sports_50s",
-		"bid_id3": "10.00_Electronics_30s",
+		"bid_id3": "20.00_Electronics_30s",
 	}
 
 	numIterations := 10
@@ -1401,8 +1401,8 @@ func TestCategoryDedupe(t *testing.T) {
 	}
 
 	assert.Equal(t, numIterations, selectedBids["bid_id2"], "Bid 2 did not make it through every time")
-	assert.NotEqual(t, numIterations, selectedBids["bid_id1"], "Bid 1 made it through every time")
-	assert.NotEqual(t, numIterations, selectedBids["bid_id3"], "Bid 3 made it through every time")
+	assert.Equal(t, 0, selectedBids["bid_id1"], "Bid 1 should be rejected on every iteration due to lower price")
+	assert.Equal(t, numIterations, selectedBids["bid_id3"], "Bid 3 should be rejected on every iteration due to higher price")
 }
 
 func TestBidRejectionErrors(t *testing.T) {
