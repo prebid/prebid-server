@@ -2,7 +2,6 @@ package exchange
 
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/adapters/smaato"
 	"net/http"
 	"strings"
 
@@ -65,6 +64,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
+	"github.com/prebid/prebid-server/adapters/smaato"
 	"github.com/prebid/prebid-server/adapters/smartadserver"
 	"github.com/prebid/prebid-server/adapters/smartrtb"
 	"github.com/prebid/prebid-server/adapters/somoaudience"

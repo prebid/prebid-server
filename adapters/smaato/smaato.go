@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -14,7 +15,6 @@ import (
 
 const clientVersion = "prebid_server_0.1"
 
-type smaatoParams openrtb_ext.ExtImpSmaato
 type adMarkupType string
 
 const (
@@ -63,7 +63,7 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	}
 
 	// Use bidRequestExt of first imp to retrieve params which are valid for all imps, e.g. publisherId
-	smaatoParams, err := parseSmaatoParams(&request.Imp[0])
+	publisherId, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "publisherId")
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -80,7 +80,7 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	}
 	if request.Site != nil {
 		siteCopy := *request.Site
-		siteCopy.Publisher = &openrtb.Publisher{ID: smaatoParams.PublisherID}
+		siteCopy.Publisher = &openrtb.Publisher{ID: publisherId}
 
 		if request.Site.Ext != nil {
 			var siteExt siteExt
@@ -239,10 +239,11 @@ func assignBannerSize(banner *openrtb.Banner) (*openrtb.Banner, error) {
 
 // parseImpressionObject parse the imp to get it ready to send to smaato
 func parseImpressionObject(imp *openrtb.Imp) error {
-	smaatoParams, err := parseSmaatoParams(imp)
+	adSpaceID, err := jsonparser.GetString(imp.Ext, "bidder", "adspaceId")
 	if err != nil {
 		return err
 	}
+
 	// SMAATO supports banner impressions.
 	if imp.Banner != nil {
 		bannerCopy, err := assignBannerSize(imp.Banner)
@@ -250,24 +251,11 @@ func parseImpressionObject(imp *openrtb.Imp) error {
 			return err
 		}
 		imp.Banner = bannerCopy
-		imp.TagID = smaatoParams.AdSpaceID
+		imp.TagID = adSpaceID
 		imp.Ext = nil
 		return nil
 	}
 	return fmt.Errorf("invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
-}
-
-func parseSmaatoParams(imp *openrtb.Imp) (smaatoParams, error) {
-	var bidderExt adapters.ExtImpBidder
-	var smaatoExt smaatoParams
-
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return smaatoExt, err
-	}
-	if err := json.Unmarshal(bidderExt.Bidder, &smaatoExt); err != nil {
-		return smaatoExt, err
-	}
-	return smaatoExt, nil
 }
 
 func extractUserExtAttributes(userExt userExt, userCopy *openrtb.User) {

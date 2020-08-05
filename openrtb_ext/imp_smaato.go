@@ -6,5 +6,4 @@ package openrtb_ext
 type ExtImpSmaato struct {
 	PublisherID string `json:"publisherId"`
 	AdSpaceID   string `json:"adspaceId"`
-	Endpoint    string `json:"endpoint"`
 }

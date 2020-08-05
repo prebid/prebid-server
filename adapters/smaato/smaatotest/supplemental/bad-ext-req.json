@@ -47,7 +47,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "unexpected end of JSON input",
+      "value": "Key path not found",
       "comparison": "literal"
     }
   ]
