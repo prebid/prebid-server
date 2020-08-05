@@ -1402,7 +1402,7 @@ func TestCategoryDedupe(t *testing.T) {
 
 	assert.Equal(t, numIterations, selectedBids["bid_id2"], "Bid 2 did not make it through every time")
 	assert.Equal(t, 0, selectedBids["bid_id1"], "Bid 1 should be rejected on every iteration due to lower price")
-	assert.Equal(t, numIterations, selectedBids["bid_id3"], "Bid 3 should be rejected on every iteration due to higher price")
+	assert.Equal(t, numIterations, selectedBids["bid_id3"], "Bid 3 should be accepted on every iteration due to higher price")
 }
 
 func TestBidRejectionErrors(t *testing.T) {
