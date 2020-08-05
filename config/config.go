@@ -468,8 +468,7 @@ type Cache struct {
 	// adjusts the time dynamically.
 	ExpectedTimeMillis int `mapstructure:"expected_millis"`
 
-	DefaultTTLs         DefaultTTLs `mapstructure:"default_ttl_seconds"`
-	DebugDeadlineMillis int         `mapstructure:"debug_deadline_ms"`
+	DefaultTTLs DefaultTTLs `mapstructure:"default_ttl_seconds"`
 }
 
 // Default TTLs to use to cache bids for different types of imps.
@@ -694,7 +693,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("cache.default_ttl_seconds.video", 0)
 	v.SetDefault("cache.default_ttl_seconds.native", 0)
 	v.SetDefault("cache.default_ttl_seconds.audio", 0)
-	v.SetDefault("cache.debug_deadline_ms", 100)
 	v.SetDefault("external_cache.host", "")
 	v.SetDefault("external_cache.path", "")
 	v.SetDefault("recaptcha_secret", "")
