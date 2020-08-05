@@ -102,8 +102,8 @@ func TestNewHTTPEvents(t *testing.T) {
 
 func TestNewEmptyCache(t *testing.T) {
 	cache := newCache(&config.StoredRequests{InMemoryCache: config.InMemoryCache{Type: "none"}})
-	cache.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")}, nil)
-	reqs, _ := cache.Get(context.Background(), []string{"foo"}, nil)
+	cache.Requests.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")})
+	reqs := cache.Requests.Get(context.Background(), []string{"foo"})
 	if len(reqs) != 0 {
 		t.Errorf("The newCache method should return an empty cache if the config asks for it.")
 	}
@@ -117,8 +117,8 @@ func TestNewInMemoryCache(t *testing.T) {
 			ImpCacheSize:     100,
 		},
 	})
-	cache.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")}, nil)
-	reqs, _ := cache.Get(context.Background(), []string{"foo"}, nil)
+	cache.Requests.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")})
+	reqs := cache.Requests.Get(context.Background(), []string{"foo"})
 	if len(reqs) != 1 {
 		t.Errorf("The newCache method should return an in-memory cache if the config asks for it.")
 	}
