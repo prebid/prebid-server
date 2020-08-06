@@ -22,12 +22,8 @@ import (
 func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
-	if len(req.Prebid.SChains) == 0 {
-		return bidderToSChains, nil
-	}
-
-	for _, schainWrapper := range req.Prebid.SChains {
-		if schainWrapper != nil && len(schainWrapper.Bidders) > 0 {
+	if req != nil {
+		for _, schainWrapper := range req.Prebid.SChains {
 			for _, bidder := range schainWrapper.Bidders {
 				if _, present := bidderToSChains[bidder]; present {
 					return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
@@ -49,6 +45,7 @@ func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext
 //   3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
 func cleanOpenRTBRequests(ctx context.Context,
 	orig *openrtb.BidRequest,
+	requestExt *openrtb_ext.ExtRequest,
 	usersyncs IdFetcher,
 	blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
 	labels pbsmetrics.Labels,
@@ -66,7 +63,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	requestsByBidder, errs = splitBidRequest(orig, impsByBidder, aliases, usersyncs, blables, labels)
+	requestsByBidder, errs = splitBidRequest(orig, requestExt, impsByBidder, aliases, usersyncs, blables, labels)
 
 	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
 	consent := extractConsent(orig)
@@ -125,6 +122,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 }
 
 func splitBidRequest(req *openrtb.BidRequest,
+	requestExt *openrtb_ext.ExtRequest,
 	impsByBidder map[string][]openrtb.Imp,
 	aliases map[string]string,
 	usersyncs IdFetcher,
@@ -137,20 +135,16 @@ func splitBidRequest(req *openrtb.BidRequest,
 		return nil, []error{err}
 	}
 
-	var requestExt openrtb_ext.ExtRequest
 	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
-	if len(req.Ext) > 0 {
-		err := json.Unmarshal(req.Ext, &requestExt)
-		if err != nil {
-			return nil, []error{err}
-		}
 
-		sChainsByBidder, err = BidderToPrebidSChains(&requestExt)
-		if err != nil {
-			return nil, []error{err}
-		}
-	} else {
-		sChainsByBidder = make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
+	sChainsByBidder, err = BidderToPrebidSChains(requestExt)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	reqExt, err := getExtJson(req, requestExt)
+	if err != nil {
+		return nil, []error{err}
 	}
 
 	for bidder, imps := range impsByBidder {
@@ -174,23 +168,21 @@ func splitBidRequest(req *openrtb.BidRequest,
 		reqCopy.Imp = imps
 
 		prepareSource(&reqCopy, bidder, sChainsByBidder)
-		prepareExt(&reqCopy, &requestExt)
+		reqCopy.Ext = reqExt
 
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
 	}
 	return requestsByBidder, nil
 }
 
-func prepareExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) {
-	if len(req.Ext) == 0 {
-		return
+func getExtJson(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
+	if len(req.Ext) == 0 || unpackedExt == nil {
+		return json.RawMessage(``), nil
 	}
+
 	extCopy := *unpackedExt
 	extCopy.Prebid.SChains = nil
-	reqExt, err := json.Marshal(extCopy)
-	if err == nil {
-		req.Ext = reqExt
-	}
+	return json.Marshal(extCopy)
 }
 
 func prepareSource(req *openrtb.BidRequest, bidder string, sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain) {
@@ -433,4 +425,56 @@ func randomizeList(list []openrtb_ext.BidderName) {
 		j = perm[i]
 		list[i], list[j] = list[j], list[i]
 	}
+}
+
+func extractBidRequestExt(bidRequest *openrtb.BidRequest) (*openrtb_ext.ExtRequest, error) {
+	requestExt := &openrtb_ext.ExtRequest{}
+
+	if bidRequest == nil {
+		return requestExt, fmt.Errorf("Error bidRequest should not be nil")
+	}
+
+	if len(bidRequest.Ext) > 0 {
+		err := json.Unmarshal(bidRequest.Ext, &requestExt)
+		if err != nil {
+			return requestExt, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
+		}
+	}
+	return requestExt, nil
+}
+
+func getExtCacheInfo(requestExt *openrtb_ext.ExtRequest) (shouldCacheBids bool, shouldCacheVAST bool) {
+	if requestExt != nil && requestExt.Prebid.Cache != nil {
+		shouldCacheBids = requestExt.Prebid.Cache.Bids != nil
+		shouldCacheVAST = requestExt.Prebid.Cache.VastXML != nil
+	}
+	return
+}
+
+func getExtTargetData(requestExt *openrtb_ext.ExtRequest, shouldCacheBids bool, shouldCacheVAST bool) *targetData {
+	var targData *targetData
+
+	if requestExt != nil && requestExt.Prebid.Targeting != nil {
+		targData = &targetData{
+			priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
+			includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
+			includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
+			includeCacheBids:  shouldCacheBids,
+			includeCacheVast:  shouldCacheVAST,
+			includeFormat:     requestExt.Prebid.Targeting.IncludeFormat,
+		}
+	}
+	return targData
+}
+
+func getDebugInfo(bidRequest *openrtb.BidRequest, requestExt *openrtb_ext.ExtRequest) bool {
+	return (bidRequest != nil && bidRequest.Test == 1) || (requestExt != nil && requestExt.Prebid.Debug)
+}
+
+func getExtBidAdjustmentFactors(requestExt *openrtb_ext.ExtRequest) map[string]float64 {
+	var bidAdjustmentFactors map[string]float64
+	if requestExt != nil {
+		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
+	}
+	return bidAdjustmentFactors
 }
