@@ -938,54 +938,6 @@ func TestSuccessfulResponseLogging(t *testing.T) {
 	}
 }
 
-// TestServerCallDebugging makes sure that we log the server calls made by the Bidder on test bids.
-func TestServerCallDebugging(t *testing.T) {
-	respBody := "{\"bid\":false}"
-	respStatus := 200
-	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
-	defer server.Close()
-
-	reqBody := "{\"key\":\"val\"}"
-	reqUrl := server.URL
-	bidderImpl := &goodSingleBidder{
-		httpRequest: &adapters.RequestData{
-			Method:  "POST",
-			Uri:     reqUrl,
-			Body:    []byte(reqBody),
-			Headers: http.Header{},
-		},
-	}
-	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus)
-	currencyConverter := currencies.NewRateConverterDefault()
-
-	bids, _ := bidder.requestBid(
-		context.Background(),
-		&openrtb.BidRequest{
-			Test: 1,
-		},
-		"test",
-		1.0,
-		currencyConverter.Rates(),
-		&adapters.ExtraRequestInfo{},
-	)
-
-	if len(bids.httpCalls) != 1 {
-		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.httpCalls))
-	}
-	if bids.httpCalls[0].Uri != reqUrl {
-		t.Errorf("Wrong httpcalls URI. Expected %s, got %s", reqUrl, bids.httpCalls[0].Uri)
-	}
-	if bids.httpCalls[0].RequestBody != reqBody {
-		t.Errorf("Wrong httpcalls RequestBody. Expected %s, got %s", reqBody, bids.httpCalls[0].RequestBody)
-	}
-	if bids.httpCalls[0].ResponseBody != respBody {
-		t.Errorf("Wrong httpcalls ResponseBody. Expected %s, got %s", respBody, bids.httpCalls[0].ResponseBody)
-	}
-	if bids.httpCalls[0].Status != respStatus {
-		t.Errorf("Wrong httpcalls Status. Expected %d, got %d", respStatus, bids.httpCalls[0].Status)
-	}
-}
-
 func TestMobileNativeTypes(t *testing.T) {
 	respBody := "{\"bid\":false}"
 	respStatus := 200
