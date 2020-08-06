@@ -1,0 +1,9 @@
+maintainer:
+  email: "prebid@smaato.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
