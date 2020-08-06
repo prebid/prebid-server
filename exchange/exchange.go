@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"runtime/debug"
 	"sort"
@@ -591,14 +592,21 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 			}
 
 			if dupe, ok := dedupe[dupeKey]; ok {
-				// 50% chance for either bid with duplicate categoryDuration values to be kept
-				dupeBidPrice, dupeBidPriceErr := strconv.ParseFloat(dupe.bidPrice, 64)
-				if dupeBidPriceErr != nil {
+
+				dupeBidPrice, err := strconv.ParseFloat(dupe.bidPrice, 64)
+				if err != nil {
 					dupeBidPrice = 0
 				}
-				currBidPrice, currBidPriceErr := strconv.ParseFloat(pb, 64)
-				if currBidPriceErr != nil {
+				currBidPrice, err := strconv.ParseFloat(pb, 64)
+				if err != nil {
 					currBidPrice = 0
+				}
+				if dupeBidPrice == currBidPrice {
+					if rand.Intn(100) < 50 {
+						dupeBidPrice = -1
+					} else {
+						currBidPrice = -1
+					}
 				}
 
 				if dupeBidPrice < currBidPrice {
