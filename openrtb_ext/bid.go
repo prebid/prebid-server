@@ -99,6 +99,9 @@ const (
 	HbSizeConstantKey   TargetingKey = "hb_size"
 	HbDealIDConstantKey TargetingKey = "hb_deal"
 
+	// HbFormatKey is the format of the bid. For example, "video", "banner"
+	HbFormatKey TargetingKey = "hb_format"
+
 	// HbCacheKey and HbVastCacheKey store UUIDs which can be used to fetch things from prebid cache.
 	// Callers should *never* assume that either of these exist, since the call to the cache may always fail.
 	//
