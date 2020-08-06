@@ -462,7 +462,10 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 
 	if bidResponseExt == nil {
 		contextDebugValue := ctx.Value(DebugContextKey)
-		debugInfo := contextDebugValue != nil && contextDebugValue.(bool)
+		var debugInfo bool
+		if contextDebugValue != nil {
+			debugInfo = contextDebugValue.(bool)
+		}
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errList)
 	}
 	buffer := &bytes.Buffer{}
@@ -766,14 +769,6 @@ func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auc *auction) (openrtb_ext.E
 		}
 	}
 	return cacheInfo, found
-}
-
-// Returns a snapshot of resolved bid request for debug if test field is set in the incomming request
-func buildResolvedRequest(bidRequest *openrtb.BidRequest, debugInfo bool) (json.RawMessage, error) {
-	if debugInfo {
-		return json.Marshal(bidRequest)
-	}
-	return nil, nil
 }
 
 func listBiddersWithRequests(cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest) []openrtb_ext.BidderName {

@@ -257,7 +257,8 @@ func TestDebugBehaviour(t *testing.T) {
 			assert.NotNilf(t, actualExt, "%s. ext.debug field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", test.desc, actualExt.Debug)
 
 			// Assert "Debug fields
-			assert.Greater(t, len(actualExt.Debug.HttpCalls), 0, "%s. ext.debug.httpcalls.uri should be populated by a non empty string: \"%v\" \n", test.desc, actualExt.Debug)
+			assert.Greater(t, len(actualExt.Debug.HttpCalls), 0, "%s. ext.debug.httpcalls array should not be empty\n", test.desc)
+			assert.Equal(t, server.URL, actualExt.Debug.HttpCalls["appnexus"][0].Uri, "%s. ext.debug.httpcalls array should not be empty\n", test.desc)
 			assert.NotNilf(t, actualExt.Debug.ResolvedRequest, "%s. ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", test.desc, actualExt.Debug)
 
 			// If not nil, assert bid extension

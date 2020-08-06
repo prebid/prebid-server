@@ -142,7 +142,7 @@ func splitBidRequest(req *openrtb.BidRequest,
 		return nil, []error{err}
 	}
 
-	reqExt, err := parseExt(req, requestExt)
+	reqExt, err := getExtJson(req, requestExt)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -175,7 +175,7 @@ func splitBidRequest(req *openrtb.BidRequest,
 	return requestsByBidder, nil
 }
 
-func parseExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
+func getExtJson(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
 	if len(req.Ext) == 0 || unpackedExt == nil {
 		return json.RawMessage(``), nil
 	}
