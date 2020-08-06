@@ -49,7 +49,7 @@ type exchange struct {
 	UsersyncIfAmbiguous bool
 	defaultTTLs         config.DefaultTTLs
 	privacyConfig       config.Privacy
-	gdprCountries       map[string]struct{}
+	eeaCountries        map[string]struct{}
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -71,8 +71,8 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e := new(exchange)
 
 	var s struct{}
-	for _, c := range cfg.GDPR.CountryList {
-		e.gdprCountries[c] = s
+	for _, c := range cfg.GDPR.EEACountries {
+		e.eeaCountries[c] = s
 	}
 	e.adapterMap = newAdapterMap(client, cfg, infos, metricsEngine)
 	e.cache = cache
@@ -116,8 +116,11 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		geo = bidRequest.Device.Geo
 	}
 	if geo != nil {
-		if _, found := e.gdprCountries[geo.Country]; found {
+		if _, found := e.eeaCountries[geo.Country]; found {
 			usersyncIfAmbiguous = false
+		} else if len(geo.Country) == 3 {
+			// The country field is formatted properly as a three character country code
+			usersyncIfAmbiguous = true
 		}
 	}
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
