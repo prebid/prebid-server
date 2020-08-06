@@ -12,16 +12,48 @@ type ExtRequest struct {
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
-	Aliases              map[string]string      `json:"aliases,omitempty"`
-	BidAdjustmentFactors map[string]float64     `json:"bidadjustmentfactors,omitempty"`
-	Cache                *ExtRequestPrebidCache `json:"cache,omitempty"`
-	StoredRequest        *ExtStoredRequest      `json:"storedrequest,omitempty"`
-	Targeting            *ExtRequestTargeting   `json:"targeting,omitempty"`
-	SupportDeals         bool                   `json:"supportdeals,omitempty"`
+	Aliases              map[string]string         `json:"aliases,omitempty"`
+	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
+	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
+	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
+	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
+	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
+	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 
-	// NoSale allows publishers to explicitly declare relationships with bidders which do not constitute
-	// a sale per CCPA law. Values are either bidder names or a star ('*') to represent all bidders.
+	// NoSale specifies bidders with whom the publisher has a legal relationship where the
+	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
+	// The array may contain a single sstar ('*') entry to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
+}
+
+// ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains
+type ExtRequestPrebidSChain struct {
+	Bidders []string                     `json:"bidders,omitempty"`
+	SChain  ExtRequestPrebidSChainSChain `json:"schain"`
+}
+
+// ExtRequestPrebidSChainSChain defines the contract for bidrequest.ext.prebid.schains[i].schain
+type ExtRequestPrebidSChainSChain struct {
+	Complete int                                 `json:"complete"`
+	Nodes    []*ExtRequestPrebidSChainSChainNode `json:"nodes"`
+	Ver      string                              `json:"ver"`
+	Ext      json.RawMessage                     `json:"ext,omitempty"`
+}
+
+// ExtRequestPrebidSChainSChainNode defines the contract for bidrequest.ext.prebid.schains[i].schain[i].nodes
+type ExtRequestPrebidSChainSChainNode struct {
+	ASI    string          `json:"asi"`
+	SID    string          `json:"sid"`
+	RID    string          `json:"rid,omitempty"`
+	Name   string          `json:"name,omitempty"`
+	Domain string          `json:"domain,omitempty"`
+	HP     int             `json:"hp"`
+	Ext    json.RawMessage `json:"ext,omitempty"`
+}
+
+// SourceExt defines the contract for bidrequest.source.ext
+type SourceExt struct {
+	SChain ExtRequestPrebidSChainSChain `json:"schain"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache

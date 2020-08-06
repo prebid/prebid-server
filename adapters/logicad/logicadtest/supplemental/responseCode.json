@@ -1,0 +1,72 @@
+{
+  "mockBidRequest": {
+    "id": "testid",
+    "site": {
+      "id": "test"
+    },
+    "imp": [
+      {
+        "id": "testimpid",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "tid": "testtid"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://localhost/adrequest/prebidserver",
+        "body": {
+          "id": "testid",
+          "imp": [
+            {
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              },
+              "id": "testimpid",
+              "tagid": "testtid"
+            }
+          ],
+          "site": {
+            "id": "test"
+          }
+        }
+      },
+      "mockResponse": {
+        "body": {
+          "seatbid": []
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected http status code: 0",
+      "comparison": "literal"
+    }
+  ]
+}

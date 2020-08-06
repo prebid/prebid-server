@@ -19,13 +19,27 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 )
 
-// cleanMetrics is a struct to export any metrics data resulting from cleanOpenRTBRequests(). It starts with just
-// the TCF version, but made a struct to facilitate future expansion
-type cleanMetrics struct {
-	// A simple flag if GDPR is being enforced on this request.
-	gdprEnforced bool
-	// a zero value means a missing or invalid GDPR string
-	gdprTcfVersion int
+func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
+	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
+
+	if len(req.Prebid.SChains) == 0 {
+		return bidderToSChains, nil
+	}
+
+	for _, schainWrapper := range req.Prebid.SChains {
+		if schainWrapper != nil && len(schainWrapper.Bidders) > 0 {
+			for _, bidder := range schainWrapper.Bidders {
+				if _, present := bidderToSChains[bidder]; present {
+					return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
+						"it must contain no more than one per bidder.", bidder)
+				} else {
+					bidderToSChains[bidder] = &schainWrapper.SChain
+				}
+			}
+		}
+	}
+
+	return bidderToSChains, nil
 }
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
@@ -40,7 +54,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	labels pbsmetrics.Labels,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
-	privacyConfig config.Privacy) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, cleanMetrics cleanMetrics, errs []error) {
+	privacyConfig config.Privacy) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
@@ -78,13 +92,20 @@ func cleanOpenRTBRequests(ctx context.Context,
 		LMT:   lmtPolicy.ShouldEnforce(),
 	}
 
+	privacyLabels.CCPAProvided = ccpaPolicy.Value != ""
+	privacyLabels.CCPAEnforced = privacyEnforcement.CCPA
+	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
+	privacyLabels.LMTEnforced = privacyEnforcement.LMT
+
 	if gdpr == 1 {
-		cleanMetrics.gdprEnforced = true
+		privacyLabels.GDPREnforced = true
 		parsedConsent, err := vendorconsent.ParseString(consent)
 		if err == nil {
-			cleanMetrics.gdprTcfVersion = int(parsedConsent.Version())
+			version := int(parsedConsent.Version())
+			privacyLabels.GDPRTCFVersion = pbsmetrics.TCFVersionToValue(version)
 		}
 	}
+
 	// bidder level privacy policies
 	for bidder, bidReq := range requestsByBidder {
 
@@ -110,12 +131,35 @@ func cleanOpenRTBRequests(ctx context.Context,
 	return
 }
 
-func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
+func splitBidRequest(req *openrtb.BidRequest,
+	impsByBidder map[string][]openrtb.Imp,
+	aliases map[string]string,
+	usersyncs IdFetcher,
+	blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
+	labels pbsmetrics.Labels) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
+
 	requestsByBidder := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(impsByBidder))
 	explicitBuyerUIDs, err := extractBuyerUIDs(req.User)
 	if err != nil {
 		return nil, []error{err}
 	}
+
+	var requestExt openrtb_ext.ExtRequest
+	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
+	if len(req.Ext) > 0 {
+		err := json.Unmarshal(req.Ext, &requestExt)
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		sChainsByBidder, err = BidderToPrebidSChains(&requestExt)
+		if err != nil {
+			return nil, []error{err}
+		}
+	} else {
+		sChainsByBidder = make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
+	}
+
 	for bidder, imps := range impsByBidder {
 		reqCopy := *req
 		coreBidder := resolveBidder(bidder, aliases)
@@ -135,9 +179,55 @@ func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.
 			blabels[coreBidder].CookieFlag = pbsmetrics.CookieFlagYes
 		}
 		reqCopy.Imp = imps
+
+		prepareSource(&reqCopy, bidder, sChainsByBidder)
+		prepareExt(&reqCopy, &requestExt)
+
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
 	}
 	return requestsByBidder, nil
+}
+
+func prepareExt(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) {
+	if len(req.Ext) == 0 {
+		return
+	}
+	extCopy := *unpackedExt
+	extCopy.Prebid.SChains = nil
+	reqExt, err := json.Marshal(extCopy)
+	if err == nil {
+		req.Ext = reqExt
+	}
+}
+
+func prepareSource(req *openrtb.BidRequest, bidder string, sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain) {
+	const sChainWildCard = "*"
+	var selectedSChain *openrtb_ext.ExtRequestPrebidSChainSChain
+
+	wildCardSChain := sChainsByBidder[sChainWildCard]
+	bidderSChain := sChainsByBidder[bidder]
+
+	// source should not be modified
+	if bidderSChain == nil && wildCardSChain == nil {
+		return
+	}
+
+	if bidderSChain != nil {
+		selectedSChain = bidderSChain
+	} else {
+		selectedSChain = wildCardSChain
+	}
+
+	// set source
+	var source openrtb.Source
+	schain := openrtb_ext.ExtRequestPrebidSChain{
+		SChain: *selectedSChain,
+	}
+	sourceExt, err := json.Marshal(schain)
+	if err == nil {
+		source.Ext = sourceExt
+		req.Source = &source
+	}
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.

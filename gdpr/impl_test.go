@@ -276,7 +276,7 @@ func TestAllowPersonalInfoTCF2(t *testing.T) {
 		},
 	}
 
-	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : TCF2 with full consensts to purposes and vendors 2, 6, 8
+	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : TCF2 with full consents to purposes and vendors 2, 6, 8
 	// PI needs all purposes to succeed
 	testDefs := []tcf2TestDef{
 		{

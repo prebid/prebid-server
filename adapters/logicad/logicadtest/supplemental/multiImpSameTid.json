@@ -1,0 +1,112 @@
+{
+  "mockBidRequest": {
+    "id": "testid",
+    "imp": [
+      {
+        "id": "testimpid",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "tid": "testtid"
+          }
+        }
+      },
+      {
+        "id": "testimpid",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "tid": "testtid"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://localhost/adrequest/prebidserver",
+        "body": {
+          "id": "testid",
+          "imp": [
+            {
+              "id": "testimpid",
+              "tagid": "testtid",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            },
+            {
+              "id": "testimpid",
+              "tagid": "testtid",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "crid": "123",
+                  "adid": "456",
+                  "price": 0.12,
+                  "id": "testid",
+                  "impid": "testimpid",
+                  "cid": "789"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "crid": "123",
+            "adid": "456",
+            "price": 0.12,
+            "id": "testid",
+            "impid": "testimpid",
+            "cid": "789"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
