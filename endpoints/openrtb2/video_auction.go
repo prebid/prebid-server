@@ -520,7 +520,11 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 }
 
 func formatTargetingKey(key openrtb_ext.TargetingKey, bidderName string) string {
-	return fmt.Sprintf("%s_%s", string(key), bidderName)
+	fullKey := fmt.Sprintf("%s_%s", string(key), bidderName)
+	if len(fullKey) > exchange.MaxKeyLength {
+		return string(fullKey[0:exchange.MaxKeyLength])
+	}
+	return fullKey
 }
 
 func findAdPod(podInd int64, pods []*openrtb_ext.AdPod) *openrtb_ext.AdPod {
