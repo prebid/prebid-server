@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -130,41 +131,32 @@ func (cfg *AuctionTimeouts) validate(errs configErrors) configErrors {
 }
 
 func (data *ExternalCache) validate(errs configErrors) configErrors {
-	if data.Host == "" {
-		if data.Path != "" {
-			// Throw an error because we have a blank Host and a non-blank Path
-			errs = append(errs, fmt.Errorf("Could not parse URL with empty Host: %s \n", data.Host+data.Path))
-		}
-		// Blank host and path are valid and will not throw an error
-		return errs
+	if data.Host == "" && data.Path == "" {
+		return nil
 	}
-
-	// Add "/" prefix to the path if missing
-	var completeUrl string
-	if data.Path != "" && !strings.HasPrefix(data.Path, "/") && !strings.HasSuffix(data.Host, "/") {
-		completeUrl = data.Host + "/" + data.Path
-	} else {
-		completeUrl = data.Host + data.Path
+	if data.Host == "" && data.Path != "" || data.Host != "" && data.Path == "" {
+		return []error{errors.New("ExternalCache Host and Path must both be specified")}
 	}
-
-	singleSlashPos := strings.Index(completeUrl, "/")
-	doubleSlashPos := strings.Index(completeUrl, "//")
-	if doubleSlashPos != -1 {
-		// scheme was found in host or path
-		return append(errs, fmt.Errorf("External cache URL host must not include protocol or scheme: %s \n", completeUrl))
-	} else if doubleSlashPos != singleSlashPos && singleSlashPos < len(data.Host) {
-		// Single forward slash was found in host
-		return append(errs, fmt.Errorf("Character '/' is not allowed as External cache URL host character: %s \n", completeUrl))
+	if strings.HasSuffix(data.Host, "/") {
+		return []error{errors.New(fmt.Sprintf("ExternalCache Host '%s' must not end with a path separator", data.Host))}
 	}
-
-	u, err := url.Parse("//" + completeUrl)
+	if strings.ContainsAny(data.Host, "://") {
+		return []error{errors.New(fmt.Sprintf("ExternalCache Host must not specify a protocol. '%s'", data.Host))}
+	}
+	if !strings.HasPrefix(data.Path, "/") {
+		return []error{errors.New(fmt.Sprintf("ExternalCache Path '%s' must begin with a path separator", data.Path))}
+	}
+	url, err := url.Parse("https://" + data.Host + data.Path)
 	if err != nil {
-		return append(errs, err)
+		return []error{errors.New("ExternalCache has an invalid configuration")}
 	}
-	data.Host = u.Host
-	data.Path = u.Path
-
-	return errs
+	if url.Host != data.Host {
+		return []error{errors.New(fmt.Sprintf("ExternalCache Host '%s' is invalid", data.Host))}
+	}
+	if url.Path != data.Path {
+		return []error{errors.New("ExternalCache Path is invalid")}
+	}
+	return nil
 }
 
 // LimitAuctionTimeout returns the min of requested or cfg.MaxAuctionTimeout.
