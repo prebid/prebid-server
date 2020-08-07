@@ -24,10 +24,6 @@ func NewAdprimeBidder(endpoint string) *AdprimeAdapter {
 	}
 }
 
-type adprimeParams struct {
-	TagID string `json:"TagID"`
-}
-
 // MakeRequests create bid request for adprime demand
 func (a *AdprimeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
