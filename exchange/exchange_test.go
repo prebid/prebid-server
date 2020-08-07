@@ -1488,6 +1488,7 @@ func TestNoCategoryDedupe(t *testing.T) {
 	assert.NotEqual(t, 0, selectedBids["bid_id2"], "Bid 2 should be selected at least once")
 	assert.NotEqual(t, 0, selectedBids["bid_id1"], "Bid 3 should be selected at least once")
 	assert.NotEqual(t, 0, selectedBids["bid_id4"], "Bid 4 should be selected at least once")
+
 }
 
 func TestBidRejectionErrors(t *testing.T) {
