@@ -44,13 +44,6 @@ func NewRateConverter(
 	}
 }
 
-// NewRateConverterDefault returns a RateConverter with default values.
-// By default there will be no currencies conversions done.
-// `currencies.ConstantRate` will be used.
-func NewRateConverterDefault() *RateConverter {
-	return NewRateConverter(&http.Client{}, "", time.Duration(0), time.Duration(0))
-}
-
 // fetch allows to retrieve the currencies rates from the syncSourceURL provided
 func (rc *RateConverter) fetch() (*Rates, error) {
 	request, err := http.NewRequest("GET", rc.syncSourceURL, nil)
