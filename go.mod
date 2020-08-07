@@ -14,6 +14,7 @@ require (
 	github.com/cespare/xxhash v1.0.0 // indirect
 	github.com/chasex/glog v0.0.0-20160217080310-c62392af379c
 	github.com/coocood/freecache v1.0.1
+	github.com/docker/go-units v0.4.0
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5
 	github.com/evanphx/json-patch v0.0.0-20180720181644-f195058310bd
 	github.com/gofrs/uuid v3.2.0+incompatible
@@ -22,6 +23,7 @@ require (
 	github.com/influxdata/influxdb v1.6.1 // indirect
 	github.com/julienschmidt/httprouter v1.1.0
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
+	github.com/kr/pretty v0.2.0 // indirect
 	github.com/lib/pq v1.0.0
 	github.com/magiconair/properties v1.8.0
 	github.com/mattn/go-colorable v0.1.2 // indirect

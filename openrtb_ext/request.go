@@ -19,6 +19,7 @@ type ExtRequestPrebid struct {
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
+	Debug                bool                      `json:"debug,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains
@@ -85,6 +86,7 @@ type ExtRequestTargeting struct {
 	IncludeWinners       bool                     `json:"includewinners"`
 	IncludeBidderKeys    bool                     `json:"includebidderkeys"`
 	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory"`
+	IncludeFormat        bool                     `json:"includeformat"`
 	DurationRangeSec     []int                    `json:"durationrangesec"`
 }
 

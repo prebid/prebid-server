@@ -2,6 +2,7 @@ package pbsmetrics
 
 import (
 	"testing"
+	"time"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -115,6 +116,10 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".request_time", adapterMetrics.RequestTimer)
 	ensureContains(t, registry, name+".prices", adapterMetrics.PriceHistogram)
 	ensureContainsBidTypeMetrics(t, registry, name, adapterMetrics.MarkupMetrics)
+
+	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
+	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
+	ensureContains(t, registry, name+".connection_wait_time", adapterMetrics.ConnWaitTime)
 }
 
 func TestRecordBidTypeDisabledConfig(t *testing.T) {
@@ -176,6 +181,140 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 		} else {
 			assert.NotEqual(t, 0, len(m.accountMetrics[test.PubID].adapterMetrics), "Test failed. Account metrics that contain adapter information are disabled, therefore we expect no entries in m.accountMetrics[accountId].adapterMetrics, we have %d \n", len(m.accountMetrics[test.PubID].adapterMetrics))
 		}
+	}
+}
+
+func TestRecordDNSTime(t *testing.T) {
+	testCases := []struct {
+		description         string
+		inDnsLookupDuration time.Duration
+		outExpDuration      time.Duration
+	}{
+		{
+			description:         "Five second DNS lookup time",
+			inDnsLookupDuration: time.Second * 5,
+			outExpDuration:      time.Second * 5,
+		},
+		{
+			description:         "Zero DNS lookup time",
+			inDnsLookupDuration: time.Duration(0),
+			outExpDuration:      time.Duration(0),
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
+
+		m.RecordDNSTime(test.inDnsLookupDuration)
+
+		assert.Equal(t, test.outExpDuration.Nanoseconds(), m.DNSLookupTimer.Sum(), test.description)
+	}
+}
+
+func TestRecordAdapterConnections(t *testing.T) {
+	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
+
+	type testIn struct {
+		adapterName         openrtb_ext.BidderName
+		connWasReused       bool
+		connWait            time.Duration
+		connMetricsDisabled bool
+	}
+
+	type testOut struct {
+		expectedConnReusedCount  int64
+		expectedConnCreatedCount int64
+		expectedConnWaitTime     time.Duration
+	}
+
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "Successful, new connection created, has connection wait",
+			in: testIn{
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       false,
+				connWait:            time.Second * 5,
+				connMetricsDisabled: false,
+			},
+			out: testOut{
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 1,
+				expectedConnWaitTime:     time.Second * 5,
+			},
+		},
+		{
+			description: "Successful, new connection created, has connection wait",
+			in: testIn{
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       false,
+				connWait:            time.Second * 4,
+				connMetricsDisabled: false,
+			},
+			out: testOut{
+				expectedConnCreatedCount: 1,
+				expectedConnWaitTime:     time.Second * 4,
+			},
+		},
+		{
+			description: "Successful, was reused, no connection wait",
+			in: testIn{
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       true,
+				connMetricsDisabled: false,
+			},
+			out: testOut{
+				expectedConnReusedCount: 1,
+				expectedConnWaitTime:    0,
+			},
+		},
+		{
+			description: "Successful, was reused, has connection wait",
+			in: testIn{
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       true,
+				connWait:            time.Second * 5,
+				connMetricsDisabled: false,
+			},
+			out: testOut{
+				expectedConnReusedCount: 1,
+				expectedConnWaitTime:    time.Second * 5,
+			},
+		},
+		{
+			description: "Fake bidder, nothing gets updated",
+			in: testIn{
+				adapterName:         fakeBidder,
+				connWasReused:       false,
+				connWait:            0,
+				connMetricsDisabled: false,
+			},
+			out: testOut{},
+		},
+		{
+			description: "Adapter connection metrics are disabled, nothing gets updated",
+			in: testIn{
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       false,
+				connWait:            time.Second * 5,
+				connMetricsDisabled: true,
+			},
+			out: testOut{},
+		},
+	}
+
+	for i, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterConnectionMetrics: test.in.connMetricsDisabled})
+
+		m.RecordAdapterConnections(test.in.adapterName, test.in.connWasReused, test.in.connWait)
+
+		assert.Equal(t, test.out.expectedConnReusedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnReused.Count(), "Test [%d] incorrect number of reused connections to adapter", i)
+		assert.Equal(t, test.out.expectedConnCreatedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnCreated.Count(), "Test [%d] incorrect number of new connections to adapter created", i)
+		assert.Equal(t, test.out.expectedConnWaitTime.Nanoseconds(), m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnWaitTime.Sum(), "Test [%d] incorrect wait time in connection to adapter", i)
 	}
 }
 

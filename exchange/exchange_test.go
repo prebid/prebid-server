@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
+	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
@@ -112,9 +113,6 @@ func TestCharacterEscape(t *testing.T) {
 		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`),
 	}
 
-	//resolvedRequest json.RawMessage
-	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`)
-
 	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, 1)
 	adapterExtra["appnexus"] = &seatResponseExtra{
@@ -126,7 +124,7 @@ func TestCharacterEscape(t *testing.T) {
 	var errList []error
 
 	/* 	4) Build bid response 									*/
-	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, nil, nil, errList)
+	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, errList)
 
 	/* 	5) Assert we have no errors and one '&' character as we are supposed to 	*/
 	if err != nil {
@@ -137,6 +135,137 @@ func TestCharacterEscape(t *testing.T) {
 	}
 	if bytes.Contains(bidResp.Ext, []byte("u0026")) {
 		t.Errorf("exchange.buildBidResponse() did not correctly print the '&' characters %s", string(bidResp.Ext))
+	}
+}
+
+// TestDebugBehaviour asserts the HttpCalls object is included inside the json "debug" field of the bidResponse extension when the
+// openrtb.BidRequest "Test" value is set to 1 or the openrtb.BidRequest.Ext.Debug boolean field is set to true
+func TestDebugBehaviour(t *testing.T) {
+
+	// Define test cases
+	type inTest struct {
+		test  int8
+		debug bool
+	}
+	type outTest struct {
+		debugInfoIncluded bool
+	}
+	type aTest struct {
+		desc string
+		in   inTest
+		out  outTest
+	}
+	testCases := []aTest{
+		{
+			desc: "test flag equals zero, ext debug flag false, no debug info expected",
+			in:   inTest{test: 0, debug: false},
+			out:  outTest{debugInfoIncluded: false},
+		},
+		{
+			desc: "test flag equals zero, ext debug flag true, debug info expected",
+			in:   inTest{test: 0, debug: true},
+			out:  outTest{debugInfoIncluded: true},
+		},
+		{
+			desc: "test flag equals 1, ext debug flag false, debug info expected",
+			in:   inTest{test: 1, debug: false},
+			out:  outTest{debugInfoIncluded: true},
+		},
+		{
+			desc: "test flag equals 1, ext debug flag true, debug info expected",
+			in:   inTest{test: 1, debug: true},
+			out:  outTest{debugInfoIncluded: true},
+		},
+		{
+			desc: "test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
+			in:   inTest{test: 2, debug: false},
+			out:  outTest{debugInfoIncluded: false},
+		},
+		{
+			desc: "test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
+			in:   inTest{test: -1, debug: true},
+			out:  outTest{debugInfoIncluded: true},
+		},
+	}
+
+	// Set up test
+	noBidServer := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(204)
+	}
+	server := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer server.Close()
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	bidRequest := &openrtb.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb.Imp{{
+			ID:     "some-impression-id",
+			Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+		}},
+		Site:   &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+		Device: &openrtb.Device{UA: "curl/7.54.0", IP: "::1"},
+		AT:     1,
+		TMax:   500,
+	}
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: &adapters.BidderResponse{},
+	}
+
+	e := new(exchange)
+	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
+		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus),
+	}
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.DummyMetricsEngine{}
+	e.gDPR = gdpr.AlwaysAllow{}
+	e.currencyConverter = currencies.NewRateConverterDefault()
+
+	// Run tests
+	for _, test := range testCases {
+		bidRequest.Test = test.in.test
+
+		if test.in.debug {
+			bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
+		} else {
+			bidRequest.Ext = nil
+		}
+
+		// Run test
+		outBidResponse, err := e.HoldAuction(context.Background(), bidRequest, &emptyUsersync{}, pbsmetrics.Labels{}, &categoriesFetcher, nil)
+
+		// Assert no HoldAuction error
+		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
+		assert.NotNilf(t, outBidResponse.Ext, "%s. outBidResponse.Ext should not be nil \n", test.desc)
+
+		actualExt := &openrtb_ext.ExtBidResponse{}
+		err = json.Unmarshal(outBidResponse.Ext, actualExt)
+		assert.NoErrorf(t, err, "%s. \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", test.desc, err, outBidResponse.Ext)
+
+		if test.out.debugInfoIncluded {
+			assert.NotNilf(t, actualExt, "%s. ext.debug field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", test.desc, actualExt.Debug)
+
+			// Assert "Debug fields
+			assert.Greater(t, len(actualExt.Debug.HttpCalls), 0, "%s. ext.debug.httpcalls array should not be empty\n", test.desc)
+			assert.Equal(t, server.URL, actualExt.Debug.HttpCalls["appnexus"][0].Uri, "%s. ext.debug.httpcalls array should not be empty\n", test.desc)
+			assert.NotNilf(t, actualExt.Debug.ResolvedRequest, "%s. ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", test.desc, actualExt.Debug)
+
+			// If not nil, assert bid extension
+			if test.in.debug {
+				diffJson(t, test.desc, bidRequest.Ext, actualExt.Debug.ResolvedRequest.Ext)
+			}
+		}
 	}
 }
 
@@ -230,9 +359,6 @@ func TestGetBidCacheInfo(t *testing.T) {
 		},
 	}
 
-	//resolvedRequest json.RawMessage
-	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`)
-
 	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
 	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
 		bidderName: {
@@ -278,7 +404,7 @@ func TestGetBidCacheInfo(t *testing.T) {
 	var errList []error
 
 	/* 	4) Build bid response 									*/
-	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, nil, errList)
+	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, errList)
 
 	/* 	5) Assert we have no errors and the bid response we expected*/
 	assert.NoError(t, err, "[TestGetBidCacheInfo] buildBidResponse() threw an error")
@@ -341,8 +467,6 @@ func TestBidResponseCurrency(t *testing.T) {
 		TMax:   500,
 		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`),
 	}
-
-	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`)
 
 	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
 		"appnexus": {ResponseTimeMillis: 5},
@@ -449,7 +573,7 @@ func TestBidResponseCurrency(t *testing.T) {
 
 	// Run tests
 	for i := range testCases {
-		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, resolvedRequest, adapterExtra, nil, nil, errList)
+		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, nil, errList)
 		assert.NoError(t, err, fmt.Sprintf("[TEST_FAILED] e.buildBidResponse resturns error in test: %s Error message: %s \n", testCases[i].description, err))
 		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}
@@ -699,6 +823,38 @@ func TestTimeoutComputation(t *testing.T) {
 
 	if finalDeadline, ok := auctionCtx.Deadline(); !ok || deadline.Add(-time.Duration(cacheTimeMillis)*time.Millisecond) != finalDeadline {
 		t.Errorf("The auction should allocate cacheTime amount of time from the whole request timeout.")
+	}
+}
+
+func TestSetDebugContextKey(t *testing.T) {
+	// Test cases
+	testCases := []struct {
+		desc              string
+		inDebugInfo       bool
+		expectedDebugInfo bool
+	}{
+		{
+			desc:              "debugInfo flag on, we expect to find DebugContextKey key in context",
+			inDebugInfo:       true,
+			expectedDebugInfo: true,
+		},
+		{
+			desc:              "debugInfo flag off, we don't expect to find DebugContextKey key in context",
+			inDebugInfo:       false,
+			expectedDebugInfo: false,
+		},
+	}
+
+	// Setup test
+	ex := exchange{}
+
+	// Run tests
+	for _, test := range testCases {
+		auctionCtx := ex.makeDebugContext(context.Background(), test.inDebugInfo)
+
+		debugInfo := auctionCtx.Value(DebugContextKey)
+		assert.NotNil(t, debugInfo, "%s. Flag set, `debugInfo` shouldn't be nil")
+		assert.Equal(t, test.expectedDebugInfo, debugInfo.(bool), "Desc: %s. Incorrect value mapped to DebugContextKey(`debugInfo`) in the context\n", test.desc)
 	}
 }
 
@@ -974,7 +1130,7 @@ func TestCategoryMapping(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, 1, len(rejections), "There should be 1 bid rejection message")
@@ -1029,7 +1185,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be no bid rejection messages")
@@ -1081,7 +1237,7 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, 1, len(rejections), "There should be 1 bid rejection message")
@@ -1163,7 +1319,7 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be no bid rejection messages")
@@ -1229,7 +1385,7 @@ func TestCategoryDedupe(t *testing.T) {
 
 		adapterBids[bidderName1] = &seatBid
 
-		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
 		assert.Equal(t, nil, err, "Category mapping error should be empty")
 		assert.Equal(t, 2, len(rejections), "There should be 2 bid rejection messages")
@@ -1340,7 +1496,7 @@ func TestBidRejectionErrors(t *testing.T) {
 
 		adapterBids[bidderName] = &seatBid
 
-		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, test.reqExt, adapterBids, categoriesFetcher, targData)
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &test.reqExt, adapterBids, categoriesFetcher, targData)
 
 		if len(test.expectedCatDur) > 0 {
 			// Bid deduplication case

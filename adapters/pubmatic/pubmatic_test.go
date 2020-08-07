@@ -674,18 +674,18 @@ func TestPubmaticSampleRequest(t *testing.T) {
 }
 
 func TestGetBidTypeVideo(t *testing.T) {
-	extJSON := `{"BidType":1}`
-	extrm := json.RawMessage(extJSON)
-	actualBidTypeValue := getBidType(extrm)
+	pubmaticExt := new(pubmaticBidExt)
+	pubmaticExt.BidType = new(int)
+	*pubmaticExt.BidType = 1
+	actualBidTypeValue := getBidType(pubmaticExt)
 	if actualBidTypeValue != openrtb_ext.BidTypeVideo {
 		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeVideo, actualBidTypeValue)
 	}
 }
 
 func TestGetBidTypeForMissingBidTypeExt(t *testing.T) {
-	extJSON := `{}`
-	extrm := json.RawMessage(extJSON)
-	actualBidTypeValue := getBidType(extrm)
+	pubmaticExt := pubmaticBidExt{}
+	actualBidTypeValue := getBidType(&pubmaticExt)
 	// banner is the default bid type when no bidType key is present in the bid.ext
 	if actualBidTypeValue != "banner" {
 		t.Errorf("Expected Bid Type value was: banner, actual value is: %v", actualBidTypeValue)
@@ -693,27 +693,30 @@ func TestGetBidTypeForMissingBidTypeExt(t *testing.T) {
 }
 
 func TestGetBidTypeBanner(t *testing.T) {
-	extJSON := `{"BidType":0}`
-	extrm := json.RawMessage(extJSON)
-	actualBidTypeValue := getBidType(extrm)
+	pubmaticExt := new(pubmaticBidExt)
+	pubmaticExt.BidType = new(int)
+	*pubmaticExt.BidType = 0
+	actualBidTypeValue := getBidType(pubmaticExt)
 	if actualBidTypeValue != openrtb_ext.BidTypeBanner {
 		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeBanner, actualBidTypeValue)
 	}
 }
 
 func TestGetBidTypeNative(t *testing.T) {
-	extJSON := `{"BidType":2}`
-	extrm := json.RawMessage(extJSON)
-	actualBidTypeValue := getBidType(extrm)
+	pubmaticExt := new(pubmaticBidExt)
+	pubmaticExt.BidType = new(int)
+	*pubmaticExt.BidType = 2
+	actualBidTypeValue := getBidType(pubmaticExt)
 	if actualBidTypeValue != openrtb_ext.BidTypeNative {
 		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeNative, actualBidTypeValue)
 	}
 }
 
 func TestGetBidTypeForUnsupportedCode(t *testing.T) {
-	extJSON := `{"BidType":99}`
-	extrm := json.RawMessage(extJSON)
-	actualBidTypeValue := getBidType(extrm)
+	pubmaticExt := new(pubmaticBidExt)
+	pubmaticExt.BidType = new(int)
+	*pubmaticExt.BidType = 99
+	actualBidTypeValue := getBidType(pubmaticExt)
 	if actualBidTypeValue != openrtb_ext.BidTypeBanner {
 		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeBanner, actualBidTypeValue)
 	}
