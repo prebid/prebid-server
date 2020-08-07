@@ -1456,7 +1456,6 @@ func TestNoCategoryDedupe(t *testing.T) {
 			selectedBids[bidId]++
 		}
 	}
-
 	assert.Equal(t, numIterations, selectedBids["bid_id5"], "Bid 5 did not make it through every time")
 	assert.NotEqual(t, 0, selectedBids["bid_id1"], "Bid 1 should be selected at least once")
 	assert.NotEqual(t, 0, selectedBids["bid_id2"], "Bid 2 should be selected at least once")
