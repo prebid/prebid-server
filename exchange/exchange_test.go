@@ -1031,7 +1031,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 	}
 }
 
-func newExtRequest(withCategory bool) openrtb_ext.ExtRequest {
+func newExtRequest() openrtb_ext.ExtRequest {
 	priceGran := openrtb_ext.PriceGranularity{
 		Precision: 2,
 		Ranges: []openrtb_ext.GranularityRange{
@@ -1044,7 +1044,34 @@ func newExtRequest(withCategory bool) openrtb_ext.ExtRequest {
 	}
 
 	translateCategories := true
-	brandCat := openrtb_ext.ExtIncludeBrandCategory{PrimaryAdServer: 1, WithCategory: withCategory, TranslateCategories: &translateCategories}
+	brandCat := openrtb_ext.ExtIncludeBrandCategory{PrimaryAdServer: 1, WithCategory: true, TranslateCategories: &translateCategories}
+
+	reqExt := openrtb_ext.ExtRequestTargeting{
+		PriceGranularity:     priceGran,
+		IncludeWinners:       true,
+		IncludeBrandCategory: &brandCat,
+	}
+
+	return openrtb_ext.ExtRequest{
+		Prebid: openrtb_ext.ExtRequestPrebid{
+			Targeting: &reqExt,
+		},
+	}
+}
+
+func newExtRequestNoBrandCat() openrtb_ext.ExtRequest {
+	priceGran := openrtb_ext.PriceGranularity{
+		Precision: 2,
+		Ranges: []openrtb_ext.GranularityRange{
+			{
+				Min:       0.0,
+				Max:       20.0,
+				Increment: 2.0,
+			},
+		},
+	}
+
+	brandCat := openrtb_ext.ExtIncludeBrandCategory{WithCategory: false}
 
 	reqExt := openrtb_ext.ExtRequestTargeting{
 		PriceGranularity:     priceGran,
@@ -1066,7 +1093,7 @@ func TestCategoryMapping(t *testing.T) {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	requestExt := newExtRequest(true)
+	requestExt := newExtRequest()
 
 	targData := &targetData{
 		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
@@ -1122,7 +1149,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	requestExt := newExtRequest(false)
+	requestExt := newExtRequestNoBrandCat()
 
 	targData := &targetData{
 		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
@@ -1310,7 +1337,7 @@ func TestCategoryDedupe(t *testing.T) {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	requestExt := newExtRequest(true)
+	requestExt := newExtRequest()
 
 	targData := &targetData{
 		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
@@ -1383,94 +1410,14 @@ func TestCategoryDedupe(t *testing.T) {
 	assert.NotEqual(t, 0, selectedBids["bid_id5"], "Bid 5 should be accepted at least once")
 }
 
-func TestCategoryDedupe2(t *testing.T) {
+func TestNoCategoryDedupe(t *testing.T) {
 
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	requestExt := newExtRequest(false)
-
-	targData := &targetData{
-		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
-		includeWinners:   true,
-	}
-
-	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
-
-	cats1 := []string{"IAB1-3"}
-	cats2 := []string{"IAB1-4"}
-	// bid3 will be same price, category, and duration as bid1 so one of them should get removed
-	cats4 := []string{"IAB1-2000"}
-	bid1 := openrtb.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 14.0000, Cat: cats1, W: 1, H: 1}
-	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 14.0000, Cat: cats2, W: 1, H: 1}
-	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 20.0000, Cat: cats1, W: 1, H: 1}
-	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 20.0000, Cat: cats4, W: 1, H: 1}
-	bid5 := openrtb.Bid{ID: "bid_id5", ImpID: "imp_id5", Price: 10.0000, Cat: cats1, W: 1, H: 1}
-
-	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
-	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
-	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
-	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
-	bid1_5 := pbsOrtbBid{&bid5, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
-
-	selectedBids := make(map[string]int)
-	expectedCategories := map[string]string{
-		"bid_id1": "14.00_30s",
-		"bid_id2": "14.00_30s",
-		"bid_id3": "20.00_30s",
-		"bid_id4": "20.00_30s",
-		"bid_id5": "10.00_30s",
-	}
-
-	numIterations := 10
-
-	for i := 0; i < numIterations; i++ {
-		innerBids := []*pbsOrtbBid{
-			&bid1_1,
-			&bid1_2,
-			&bid1_3,
-			&bid1_4,
-			&bid1_5,
-		}
-
-		seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
-		bidderName1 := openrtb_ext.BidderName("appnexus")
-
-		adapterBids[bidderName1] = &seatBid
-
-		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
-
-		assert.Equal(t, nil, err, "Category mapping error should be empty")
-		assert.Equal(t, 2, len(rejections), "There should be 2 bid rejection messages")
-		assert.Regexpf(t, regexp.MustCompile(`bid rejected \[bid ID: bid_id(1|2)\] reason: Bid was deduplicated`), rejections[0], "Rejection message did not match expected")
-		assert.Regexpf(t, regexp.MustCompile(`bid rejected \[bid ID: bid_id(3|4)\] reason: Bid was deduplicated`), rejections[1], "Rejection message did not match expected")
-		assert.Equal(t, 3, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
-		assert.Equal(t, 3, len(bidCategory), "Bidders category mapping doesn't match")
-
-		for bidId, bidCat := range bidCategory {
-			assert.Equal(t, expectedCategories[bidId], bidCat, "Category mapping doesn't match")
-			selectedBids[bidId]++
-		}
-	}
-
-	assert.Equal(t, numIterations, selectedBids["bid_id5"], "Bid 5 did not make it through every time")
-	assert.NotEqual(t, 0, selectedBids["bid_id1"], "Bid 1 should be selected at least once")
-	assert.NotEqual(t, 0, selectedBids["bid_id2"], "Bid 2 should be selected at least once")
-	assert.NotEqual(t, 0, selectedBids["bid_id1"], "Bid 3 should be selected at least once")
-	assert.NotEqual(t, 0, selectedBids["bid_id4"], "Bid 4 should be selected at least once")
-
-}
-
-/*func TestNoCategoryDedupe(t *testing.T) {
-
-	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
-	if error != nil {
-		t.Errorf("Failed to create a category Fetcher: %v", error)
-	}
-
-	requestExt := newExtRequest(false)
+	requestExt := newExtRequestNoBrandCat()
 
 	targData := &targetData{
 		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
@@ -1541,7 +1488,7 @@ func TestCategoryDedupe2(t *testing.T) {
 	assert.NotEqual(t, 0, selectedBids["bid_id2"], "Bid 2 should be selected at least once")
 	assert.NotEqual(t, 0, selectedBids["bid_id1"], "Bid 3 should be selected at least once")
 	assert.NotEqual(t, 0, selectedBids["bid_id4"], "Bid 4 should be selected at least once")
-}*/
+}
 
 func TestBidRejectionErrors(t *testing.T) {
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
@@ -1549,7 +1496,7 @@ func TestBidRejectionErrors(t *testing.T) {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	requestExt := newExtRequest(true)
+	requestExt := newExtRequest()
 	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 50}
 
 	targData := &targetData{
@@ -1557,7 +1504,7 @@ func TestBidRejectionErrors(t *testing.T) {
 		includeWinners:   true,
 	}
 
-	invalidReqExt := newExtRequest(true)
+	invalidReqExt := newExtRequest()
 	invalidReqExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 50}
 	invalidReqExt.Prebid.Targeting.IncludeBrandCategory.PrimaryAdServer = 2
 	invalidReqExt.Prebid.Targeting.IncludeBrandCategory.Publisher = "some_publisher"
