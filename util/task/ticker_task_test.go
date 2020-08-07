@@ -17,7 +17,7 @@ func (mcc *MockRunner) Run() error {
 	return nil
 }
 
-func TestStartWithSingleRun(t *testing.T) {
+func TestSingleRun(t *testing.T) {
 	// Setup:
 	runner := &MockRunner{RunCount: 0}
 	interval := 0 * time.Millisecond
@@ -31,21 +31,7 @@ func TestStartWithSingleRun(t *testing.T) {
 	assert.Equal(t, runner.RunCount, 1, "runner should have run one time")
 }
 
-func TestStartWithPeriodicRun(t *testing.T) {
-	// Setup:
-	runner := &MockRunner{RunCount: 0}
-	interval := 10 * time.Millisecond
-	ticker := task.NewTickerTask(interval, runner)
-
-	// Execute:
-	ticker.Start()
-	time.Sleep(25 * time.Millisecond)
-
-	// Verify:
-	assert.Equal(t, runner.RunCount, 3, "runner should have run three times")
-}
-
-func TestStop(t *testing.T) {
+func TestPeriodicRunWithStop(t *testing.T) {
 	// Setup:
 	runner := &MockRunner{RunCount: 0}
 	interval := 10 * time.Millisecond
