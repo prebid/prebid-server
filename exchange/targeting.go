@@ -7,7 +7,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const maxKeyLength = 20
+const maxKeyLength = 30
 
 // targetData tracks information about the winning Bid in each Imp.
 //
