@@ -144,6 +144,13 @@ type BidRequestVideo struct {
 	// Description:
 	//   Indicates that the response should update key to include prefix and tier
 	SupportDeals bool `json:"supportdeals,omitempty"`
+
+	// Attribute:
+	//   addbiddernames
+	// Type:
+	//   boolean, optional
+	//  Flag indicating if the bidder name will be added to the hb_pb_cat_dur. Default is false.
+	AddBidderNames bool `json:"addbiddernames,omitempty"`
 }
 
 type PodConfig struct {

@@ -621,6 +621,7 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 		IncludeBrandCategory: inclBrandCat,
 		DurationRangeSec:     durationRangeSec,
 		IncludeBidderKeys:    true,
+		AddBidderNames:       videoRequest.AddBidderNames,
 	}
 
 	vastXml := openrtb_ext.ExtRequestPrebidCacheVAST{}
