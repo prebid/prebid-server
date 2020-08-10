@@ -128,7 +128,6 @@ func TestReadWriteRates(t *testing.T) {
 			&http.Client{},
 			url,
 			24*time.Hour,
-			24*time.Hour,
 		)
 		currencyConverter.time = &FakeTime{time: tt.giveFakeTime}
 		err := currencyConverter.Run()
@@ -188,7 +187,6 @@ func TestRateStaleness(t *testing.T) {
 	currencyConverter := NewRateConverter(
 		&http.Client{},
 		mockedHttpServer.URL,
-		100*time.Millisecond,
 		30*time.Second, // stale rates threshold
 	)
 	currencyConverter.time = fakeTime
@@ -277,7 +275,6 @@ func TestRatesAreNeverConsideredStale(t *testing.T) {
 	currencyConverter := NewRateConverter(
 		&http.Client{},
 		mockedHttpServer.URL,
-		100*time.Millisecond,
 		0*time.Millisecond, // stale rates threshold
 	)
 	currencyConverter.time = fakeTime
@@ -331,7 +328,6 @@ func TestRace(t *testing.T) {
 	currencyConverter := NewRateConverter(
 		mockedHttpClient,
 		"currency.fake.com",
-		interval,
 		24*time.Hour,
 	)
 	ticker := task.NewTickerTask(interval, currencyConverter)

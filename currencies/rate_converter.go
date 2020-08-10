@@ -16,7 +16,6 @@ import (
 // RateConverter holds the currencies conversion rates dictionary
 type RateConverter struct {
 	httpClient          httpClient
-	fetchingInterval    time.Duration
 	staleRatesThreshold time.Duration
 	syncSourceURL       string
 	rates               atomic.Value // Should only hold Rates struct
@@ -29,12 +28,10 @@ type RateConverter struct {
 func NewRateConverter(
 	httpClient httpClient,
 	syncSourceURL string,
-	fetchingInterval time.Duration,
 	staleRatesThreshold time.Duration,
 ) *RateConverter {
 	return &RateConverter{
 		httpClient:          httpClient,
-		fetchingInterval:    fetchingInterval,
 		staleRatesThreshold: staleRatesThreshold,
 		syncSourceURL:       syncSourceURL,
 		rates:               atomic.Value{},
@@ -146,10 +143,9 @@ func (rc *RateConverter) GetInfo() ConverterInfo {
 		rates = rc.Rates().GetRates()
 	}
 	return converterInfo{
-		source:           rc.syncSourceURL,
-		fetchingInterval: rc.fetchingInterval,
-		lastUpdated:      rc.LastUpdated(),
-		rates:            rates,
+		source:      rc.syncSourceURL,
+		lastUpdated: rc.LastUpdated(),
+		rates:       rates,
 	}
 }
 

@@ -14,8 +14,8 @@ type TickerTask struct {
 	done     chan struct{}
 }
 
-func NewTickerTask(interval time.Duration, runner Runner) TickerTask {
-	return TickerTask{
+func NewTickerTask(interval time.Duration, runner Runner) *TickerTask {
+	return &TickerTask{
 		interval: interval,
 		runner:   runner,
 		done:     make(chan struct{}),
@@ -50,4 +50,9 @@ func (t *TickerTask) runRecurring() {
 			return
 		}
 	}
+}
+
+// Interval returns the fetching interval in nanoseconds
+func (t *TickerTask) Interval() time.Duration {
+	return t.interval
 }
