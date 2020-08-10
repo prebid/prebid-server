@@ -81,6 +81,10 @@ func TestVideoEndpointImpressionsDuration(t *testing.T) {
 		t.Fatalf("The request never made it into the Exchange.")
 	}
 
+	var extData openrtb_ext.ExtRequest
+	json.Unmarshal(ex.lastRequest.Ext, &extData)
+	assert.True(t, extData.Prebid.Targeting.IncludeBidderKeys, "Request ext incorrect: IncludeBidderKeys should be true ")
+
 	assert.Len(t, ex.lastRequest.Imp, 22, "Incorrect number of impressions in request")
 	assert.Equal(t, ex.lastRequest.Imp[0].ID, "1_0", "Incorrect impression id in request")
 	assert.Equal(t, ex.lastRequest.Imp[0].Video.MaxDuration, int64(15), "Incorrect impression max duration in request")
@@ -1107,6 +1111,16 @@ func TestCCPA(t *testing.T) {
 		assert.Len(t, ex.lastRequest.Imp, 11, test.description+":imps")
 		assert.Len(t, response.AdPods, 5, test.description+":adpods")
 	}
+}
+
+func TestFormatTargetingKey(t *testing.T) {
+	res := formatTargetingKey(openrtb_ext.HbCategoryDurationKey, "appnexus")
+	assert.Equal(t, "hb_pb_cat_dur_appnex", res, "Tergeting key constructed incorrectly")
+}
+
+func TestFormatTargetingKeyLongKey(t *testing.T) {
+	res := formatTargetingKey(openrtb_ext.HbpbConstantKey, "20.00")
+	assert.Equal(t, "hb_pb_20.00", res, "Tergeting key constructed incorrectly")
 }
 
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
