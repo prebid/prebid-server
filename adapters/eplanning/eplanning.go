@@ -114,6 +114,13 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 	var pageDomain string
 	if request.Site != nil && request.Site.Domain != "" {
 		pageDomain = request.Site.Domain
+	} else if request.Site != nil && request.Site.Page != "" {
+		u, err := url.Parse(request.Site.Page)
+		if err != nil {
+			errors = append(errors, err)
+			return nil, errors
+		}
+		pageDomain = u.Hostname()
 	} else {
 		pageDomain = defaultPageURL
 	}
