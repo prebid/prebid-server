@@ -165,7 +165,7 @@ cache:
   query: uuid=%PBS_CACHE_UUID%
 external_cache:
   host: www.externalprebidcache.net
-  path: endpoints/cache
+  path: /endpoints/cache
 http_client:
   max_connections_per_host: 10
   max_idle_connections: 500
