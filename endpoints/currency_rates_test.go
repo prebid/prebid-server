@@ -8,26 +8,21 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/currencies"
-	"github.com/prebid/prebid-server/util/task"
 	"github.com/stretchr/testify/assert"
 )
-
-type FakeRunner struct{}
-
-func (fc *FakeRunner) Run() error { return nil }
 
 func TestCurrencyRatesEndpoint(t *testing.T) {
 	// Setup:
 	var testCases = []struct {
-		inputConverter  rateConverter
-		inputTickerTask *task.TickerTask
-		expectedBody    string
-		expectedCode    int
-		description     string
+		inputConverter        rateConverter
+		inputFetchingInterval time.Duration
+		expectedBody          string
+		expectedCode          int
+		description           string
 	}{
 		{
 			nil,
-			task.NewTickerTask(time.Duration(0), &FakeRunner{}),
+			time.Duration(0),
 			`{"active": false}`,
 			http.StatusOK,
 			"case 1 - rate converter is nil",
@@ -42,7 +37,7 @@ func TestCurrencyRatesEndpoint(t *testing.T) {
 					},
 				}),
 			),
-			task.NewTickerTask(5*time.Minute, &FakeRunner{}),
+			5 * time.Minute,
 			`{
 				"active": true,
 				"source": "https://sync.test.com",
@@ -63,7 +58,7 @@ func TestCurrencyRatesEndpoint(t *testing.T) {
 				time.Time{},
 				nil,
 			),
-			task.NewTickerTask(time.Duration(0), &FakeRunner{}),
+			time.Duration(0),
 			`{
 				"active": true,
 				"source": "",
@@ -77,14 +72,14 @@ func TestCurrencyRatesEndpoint(t *testing.T) {
 			newRateConverterMockWithInfo(
 				newUnmarshableConverterInfoMock(),
 			),
-			task.NewTickerTask(time.Duration(0), &FakeRunner{}),
+			time.Duration(0),
 			"",
 			http.StatusInternalServerError,
 			"case 4 - invalid rates input for marshaling",
 		},
 		{
 			newRateConverterMockWithNilInfo(),
-			task.NewTickerTask(time.Duration(0), &FakeRunner{}),
+			time.Duration(0),
 			`{
 				"active": true
 			 }`,
@@ -95,7 +90,7 @@ func TestCurrencyRatesEndpoint(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		handler := NewCurrencyRatesEndpoint(tc.inputConverter, tc.inputTickerTask)
+		handler := NewCurrencyRatesEndpoint(tc.inputConverter, tc.inputFetchingInterval)
 		w := httptest.NewRecorder()
 
 		// Execute:

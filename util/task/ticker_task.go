@@ -51,8 +51,3 @@ func (t *TickerTask) runRecurring() {
 		}
 	}
 }
-
-// Interval returns the fetching interval in nanoseconds
-func (t *TickerTask) Interval() time.Duration {
-	return t.interval
-}
