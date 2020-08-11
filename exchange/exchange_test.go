@@ -746,6 +746,9 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		LMT: config.LMT{
 			Enforce: spec.EnforceLMT,
 		},
+		GDPR: config.GDPR{
+			UsersyncIfAmbiguous: !spec.AssumeGDPRApplies,
+		},
 	}
 
 	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig)
@@ -863,15 +866,25 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		}
 	}
 
+	var s struct{}
+	eeac := make(map[string]struct{})
+	for _, c := range []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
+		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
+		"LIE", "LTU", "LUX", "MLT", "MTQ", "MYT", "NLD", "NOR", "POL", "PRT", "REU", "ROU", "BLM", "MAF", "SPM",
+		"SVK", "SVN", "ESP", "SWE", "GBR"} {
+		eeac[c] = s
+	}
+
 	return &exchange{
 		adapterMap:          adapters,
 		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
 		cache:               &wellBehavedCache{},
 		cacheTime:           0,
-		gDPR:                gdpr.AlwaysAllow{},
+		gDPR:                gdpr.AlwaysFail{},
 		currencyConverter:   currencies.NewRateConverterDefault(),
-		UsersyncIfAmbiguous: false,
+		UsersyncIfAmbiguous: privacyConfig.GDPR.UsersyncIfAmbiguous,
 		privacyConfig:       privacyConfig,
+		eeaCountries:        eeac,
 	}
 }
 
@@ -1633,12 +1646,13 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 }
 
 type exchangeSpec struct {
-	IncomingRequest  exchangeRequest        `json:"incomingRequest"`
-	OutgoingRequests map[string]*bidderSpec `json:"outgoingRequests"`
-	Response         exchangeResponse       `json:"response,omitempty"`
-	EnforceCCPA      bool                   `json:"enforceCcpa"`
-	EnforceLMT       bool                   `json:"enforceLmt"`
-	DebugLog         *DebugLog              `json:"debuglog,omitempty"`
+	IncomingRequest   exchangeRequest        `json:"incomingRequest"`
+	OutgoingRequests  map[string]*bidderSpec `json:"outgoingRequests"`
+	Response          exchangeResponse       `json:"response,omitempty"`
+	EnforceCCPA       bool                   `json:"enforceCcpa"`
+	EnforceLMT        bool                   `json:"enforceLmt"`
+	AssumeGDPRApplies bool                   `json:"assume_gdpr_applies"`
+	DebugLog          *DebugLog              `json:"debuglog,omitempty"`
 }
 
 type exchangeRequest struct {
