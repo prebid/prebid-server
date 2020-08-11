@@ -122,7 +122,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	defer func() {
 		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
-			err := debugLog.PutDebugLogError(deps.cache, vo.Errors)
+			err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
 			if err != nil {
 				vo.Errors = append(vo.Errors, err)
 			}
@@ -280,7 +280,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	if len(bidResp.AdPods) == 0 && debugLog.Enabled {
-		err := debugLog.PutDebugLogError(deps.cache, vo.Errors)
+		err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
 		if err != nil {
 			vo.Errors = append(vo.Errors, err)
 		} else {

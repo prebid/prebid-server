@@ -48,7 +48,7 @@ func (d *DebugLog) BuildCacheString() {
 	d.CacheString = fmt.Sprintf("%s<Log>%s%s%s</Log>", xml.Header, d.Data.Request, d.Data.Headers, d.Data.Response)
 }
 
-func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, errors []error) error {
+func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, timeout int, errors []error) error {
 	if len(d.Data.Response) == 0 && len(errors) == 0 {
 		d.Data.Response = "No response or errors created"
 	}
@@ -86,7 +86,7 @@ func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, errors []e
 	}
 
 	if cache != nil {
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(100)*time.Millisecond))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(timeout)*time.Millisecond))
 		defer cancel()
 		cache.PutJson(ctx, toCache)
 	}
