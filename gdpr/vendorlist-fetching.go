@@ -147,7 +147,7 @@ func saveOne(ctx context.Context, client *http.Client, url string, saver saveVen
 	return newList.Version()
 }
 
-func newVendorListCache(defaultVL api.VendorList) (save func(id uint16, list api.VendorList), load func(id uint16) api.VendorList) {
+func newVendorListCache(fallbackVL api.VendorList) (save func(id uint16, list api.VendorList), load func(id uint16) api.VendorList) {
 	cache := &sync.Map{}
 
 	save = func(id uint16, list api.VendorList) {
@@ -158,7 +158,7 @@ func newVendorListCache(defaultVL api.VendorList) (save func(id uint16, list api
 		if ok {
 			return list.(vendorlist.VendorList)
 		}
-		return defaultVL
+		return fallbackVL
 	}
 	return
 }
