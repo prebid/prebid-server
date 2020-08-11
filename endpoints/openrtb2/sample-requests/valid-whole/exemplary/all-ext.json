@@ -1,5 +1,6 @@
 {
   "description": "This demonstrates all of the OpenRTB extensions supported by Prebid Server. Very few requests will need all of these at once.",
+  "message": "Should requestPayload be called 'mockBidRequest' instead? endpoints/openrtb2/sample-requests/valid-whole/exemplary/all-ext.json",
 
   "requestPayload": {
     "id": "some-request-id",
@@ -80,5 +81,6 @@
         }
       }
     }
-  }
+  },
+  "mockBidResponse": { }
 }

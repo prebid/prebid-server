@@ -42,6 +42,7 @@ type getResponseFromDirectory struct {
 	file            string
 	payloadGetter   func(*testing.T, []byte) []byte
 	messageGetter   func(*testing.T, []byte) []byte
+	descGetter      func(*testing.T, []byte) string
 	expectedCode    int
 	aliased         bool
 	disabledBidders []string
@@ -126,6 +127,7 @@ func TestGoodRequests(t *testing.T) {
 		dir:           "sample-requests/valid-whole/exemplary",
 		payloadGetter: getRequestPayload,
 		messageGetter: nilReturner,
+		descGetter:    getDescription,
 		expectedCode:  http.StatusOK,
 		aliased:       true,
 	}
@@ -133,6 +135,7 @@ func TestGoodRequests(t *testing.T) {
 		dir:           "sample-requests/valid-whole/supplementary",
 		payloadGetter: noop,
 		messageGetter: nilReturner,
+		descGetter:    getDescription,
 		expectedCode:  http.StatusOK,
 		aliased:       true,
 	}
@@ -146,6 +149,7 @@ func TestGoodNativeRequests(t *testing.T) {
 		dir:           "sample-requests/valid-native",
 		payloadGetter: buildNativeRequest,
 		messageGetter: nilReturner,
+		descGetter:    getDescription,
 		expectedCode:  http.StatusOK,
 		aliased:       true,
 	}
@@ -159,6 +163,7 @@ func TestBadRequests(t *testing.T) {
 		dir:           "sample-requests/invalid-whole",
 		payloadGetter: getRequestPayload,
 		messageGetter: getMessage,
+		descGetter:    getDescription,
 		expectedCode:  http.StatusBadRequest,
 		aliased:       false,
 	}
@@ -171,6 +176,7 @@ func TestBadNativeRequests(t *testing.T) {
 		dir:           "sample-requests/invalid-native",
 		payloadGetter: buildNativeRequest,
 		messageGetter: nilReturner,
+		descGetter:    getDescription,
 		expectedCode:  http.StatusBadRequest,
 		aliased:       false,
 	}
@@ -183,6 +189,7 @@ func TestAliasedRequests(t *testing.T) {
 		dir:           "sample-requests/aliased",
 		payloadGetter: noop,
 		messageGetter: nilReturner,
+		descGetter:    getDescription,
 		expectedCode:  http.StatusOK,
 		aliased:       true,
 	}
@@ -195,6 +202,7 @@ func TestDisabledBidders(t *testing.T) {
 		dir:             "sample-requests/disabled/bad",
 		payloadGetter:   getRequestPayload,
 		messageGetter:   getMessage,
+		descGetter:      getDescription,
 		expectedCode:    http.StatusBadRequest,
 		aliased:         false,
 		disabledBidders: []string{"appnexus", "rubicon"},
@@ -207,6 +215,7 @@ func TestDisabledBidders(t *testing.T) {
 		dir:             "sample-requests/disabled/good",
 		payloadGetter:   noop,
 		messageGetter:   nilReturner,
+		descGetter:      getDescription,
 		expectedCode:    http.StatusOK,
 		aliased:         false,
 		disabledBidders: []string{"appnexus", "rubicon"},
@@ -226,6 +235,7 @@ func TestBlacklistRequests(t *testing.T) {
 		dir:           "sample-requests/blacklisted",
 		payloadGetter: getRequestPayload,
 		messageGetter: getMessage,
+		descGetter:    getDescription,
 		expectedCode:  http.StatusServiceUnavailable,
 		aliased:       false,
 	}
@@ -242,6 +252,7 @@ func TestRejectAccountRequired(t *testing.T) {
 			file:          "no-acct.json",
 			payloadGetter: getRequestPayload,
 			messageGetter: nilReturner,
+			descGetter:    getDescription,
 			expectedCode:  http.StatusOK,
 			accountReq:    false,
 		},
@@ -251,6 +262,7 @@ func TestRejectAccountRequired(t *testing.T) {
 			file:          "no-acct.json",
 			payloadGetter: getRequestPayload,
 			messageGetter: getMessage,
+			descGetter:    getDescription,
 			expectedCode:  http.StatusBadRequest,
 			accountReq:    true,
 		},
@@ -260,6 +272,7 @@ func TestRejectAccountRequired(t *testing.T) {
 			file:          "with-acct.json",
 			payloadGetter: getRequestPayload,
 			messageGetter: nilReturner,
+			descGetter:    getDescription,
 			expectedCode:  http.StatusOK,
 			aliased:       true,
 			accountReq:    true,
@@ -270,6 +283,7 @@ func TestRejectAccountRequired(t *testing.T) {
 			file:          "blacklisted-acct.json",
 			payloadGetter: getRequestPayload,
 			messageGetter: getMessage,
+			descGetter:    getDescription,
 			expectedCode:  http.StatusServiceUnavailable,
 			accountReq:    true,
 		},
@@ -304,13 +318,14 @@ func (gr *getResponseFromDirectory) assert(t *testing.T) {
 		assertResponseCode(t, testFile, code, gr.expectedCode, requestUsed)
 
 		expectMsg := gr.messageGetter(t, fileData)
-		//if gr.description != "" {
-		if len(expectMsg) > 0 {
-			assert.Equal(t, string(expectMsg), requestUsed, "Test failed. %s. Filename: \n", gr.description, testFile)
-		} else {
-			assert.Equal(t, string(expectMsg), requestUsed, "file %s had bad response body", testFile)
+		gr.description = gr.descGetter(t, fileData)
+		if gr.description != "" {
+			if len(expectMsg) > 0 {
+				assert.Equal(t, string(expectMsg), requestUsed, "Test failed. %s. Filename: \n", gr.description, testFile)
+			} else {
+				assert.Equal(t, string(expectMsg), requestUsed, "file %s had bad response body", testFile)
+			}
 		}
-		//}
 	}
 }
 
@@ -447,6 +462,17 @@ func getRequestPayload(t *testing.T, example []byte) []byte {
 		return value
 	}
 	return nil
+}
+
+func getDescription(t *testing.T, example []byte) string {
+	t.Helper()
+	if value, _, _, err := jsonparser.Get(example, "description"); err != nil {
+		t.Fatalf("Error parsing root.description from request: %v.", err)
+	} else {
+		return string(value)
+	}
+
+	return ""
 }
 
 // TestNilExchange makes sure we fail when given nil for the Exchange.

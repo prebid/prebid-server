@@ -1,5 +1,6 @@
 {
   "description": "This uses Appnexus to fetch the prebid sample ad, as seen on prebid.org.",
+  "message": "endpoints/openrtb2/sample-requests/valid-whole/exemplary/prebid-test-ad.json",
 
   "requestPayload": {
     "id": "some-request-id",
