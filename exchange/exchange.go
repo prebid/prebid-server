@@ -198,7 +198,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			if rawUUID, err := uuid.NewV4(); err == nil {
 				debugLog.CacheKey = rawUUID.String()
 
-				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errs)
+				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errs)
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)
 				} else {
