@@ -183,8 +183,8 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 
 // TCF1 defines the TCF1 specific configurations for GDPR
 type TCF1 struct {
-	FetchGVL       bool   `mapstructure:"fetch_gvl"`
-	DefaultGVLPath string `mapstructure:"default_gvl_path"`
+	FetchGVL        bool   `mapstructure:"fetch_gvl"`
+	FallbackGVLPath string `mapstructure:"fallback_gvl_path"`
 }
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -893,7 +893,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
 	v.SetDefault("gdpr.tcf1.fetch_gvl", true)
-	v.SetDefault("gdpr.tcf1.default_gvl_path", "./static/tcf1/default_gvl.json")
+	v.SetDefault("gdpr.tcf1.fallback_gvl_path", "./static/tcf1/fallback_gvl.json")
 	v.SetDefault("gdpr.tcf2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose1.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enabled", true)
