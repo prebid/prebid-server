@@ -94,7 +94,7 @@
 		"audio": 1800,
 		"native": 300
 	},
-	"targetDataIncludeWinners": true,
+	"targetDataIncludeWinners": false,
 	"targetDataIncludeBidderKeys": true,
 	"targetDataIncludeCacheBids": false,
 	"targetDataIncludeCacheVast": true
