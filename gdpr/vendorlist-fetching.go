@@ -158,7 +158,7 @@ func newVendorListCache(fallbackVL api.VendorList) (save func(id uint16, list ap
 		if ok {
 			return list.(vendorlist.VendorList)
 		}
-		return fallbackVL
+		return nil
 	}
 	return
 }
