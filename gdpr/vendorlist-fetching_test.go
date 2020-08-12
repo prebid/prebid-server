@@ -173,7 +173,7 @@ func TestDefaultVendorList(t *testing.T) {
 	assert.Equal(t, false, vendor.Purpose(2))
 }
 
-func TestDefaultVendorListPassthrough(t *testing.T) {
+func TestFallbackVendorListPassthrough(t *testing.T) {
 	firstVendorList := mockVendorListData(t, 1, map[uint16]*purposes{
 		32: {
 			purposes: []int{1, 2},
@@ -184,7 +184,7 @@ func TestDefaultVendorListPassthrough(t *testing.T) {
 			purposes: []int{2},
 		},
 	})
-	server := httptest.NewServer(http.HandlerFunc(mockServer(2, map[int]string{
+	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{
 		1: firstVendorList,
 		2: secondVendorList,
 	})))
@@ -204,7 +204,7 @@ func TestDefaultVendorListPassthrough(t *testing.T) {
 	assert.Equal(t, true, vendor.Purpose(2))
 }
 
-func TestDefaultVendorListNoFetch(t *testing.T) {
+func TestFallbackVendorListNoFetch(t *testing.T) {
 	firstVendorList := mockVendorListData(t, 1, map[uint16]*purposes{
 		32: {
 			purposes: []int{1, 2},
