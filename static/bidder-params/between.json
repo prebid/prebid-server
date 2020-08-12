@@ -4,6 +4,11 @@
   "description": "A schema which validates params accepted by the BetweenDigital adapter",
   "type": "object",
   "properties": {
+    "host": {
+      "type": "string",
+      "description": "Network Host to request from"
+    }
+
   },
   "required": []
 }

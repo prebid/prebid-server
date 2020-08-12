@@ -20,7 +20,7 @@
         },
         "ext": {
           "bidder": {
-            "zone": "3e56bd58-865c-47ce-af7f-a918108c3fd2"
+            "host": "127.0.0.1"
           }
         }
       }
@@ -29,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://ads.betweendigital.com/s2s",
+        "uri": "http://127.0.0.1/",
         "body": {
           "id": "test-request-id",
           "site": {
@@ -49,7 +49,11 @@
                   }
                 ]
               },
-              "tagid": "3e56bd58-865c-47ce-af7f-a918108c3fd2"
+              "ext": {
+                "bidder": {
+                  "host": "127.0.0.1"
+                }
+              }
             }
           ]
         }
@@ -63,7 +67,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 301",
+      "value": "ERR, response with status 301",
       "comparison": "literal"
     }
   ]

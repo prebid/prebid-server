@@ -7,6 +7,6 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	// to do: change to a production test endpoint
-	endpoint := "http://127.0.0.1:8000/openrtb2/auction"
-	adapterstest.RunJSONBidderTest(t, "between", NewBetweenBidder(endpoint))
+	//endpoint := "http://ads.betweendigital.com/s2s"
+	adapterstest.RunJSONBidderTest(t, "betweentest", NewBetweenBidder("http://{{.Host}}/"))
 }

@@ -8,7 +8,9 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	//"strconv"
 	"text/template"
 )
 
@@ -17,87 +19,167 @@ type BetweenAdapter struct {
 }
 
 func (a *BetweenAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errors []error
 
-	if len(request.Imp) == 0 {
+	errs := make([]error, 0, len(request.Imp))
+	headers := http.Header{
+		"Content-Type": {"application/json"},
+		"Accept":       {"application/json"},
+	}
+
+	// Pull the host and source ID info from the bidder params.
+	reqImps, err := splitImpressions(request.Imp)
+	if len(reqImps) == 0 {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("No Imps in Bid Request"),
 		}}
 	}
 
-	data, err := json.Marshal(request)
 	if err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Error in packaging request to JSON"),
-		}}
+		errs = append(errs, err)
 	}
 
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
+	requests := []*adapters.RequestData{}
 
-	if request.Device != nil {
-		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
-		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
-		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
+	for reqExt, reqImp := range reqImps {
+		request.Imp = reqImp
+		reqJson, err := json.Marshal(request)
+
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		//urlParams := macros.EndpointTemplateParams{Host: reqExt.Host, PublisherID: strconv.Itoa(reqExt.SourceId)}
+		urlParams := macros.EndpointTemplateParams{Host: reqExt.Host}
+		url, err := macros.ResolveMacros(a.EndpointTemplate, urlParams)
+
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		request := adapters.RequestData{
+			Method:  "POST",
+			Uri:     url,
+			Body:    reqJson,
+			Headers: headers}
+
+		requests = append(requests, &request)
 	}
-	if request.Site != nil {
-		addHeaderIfNonEmpty(headers, "Referer", request.Site.Page)
-	}
 
-	urlParams := macros.EndpointTemplateParams{Host: "127.0.0.1"}
-
-	url, err := macros.ResolveMacros(a.EndpointTemplate, urlParams)
-	glog.Error(url)
-	return []*adapters.RequestData{{
-		Method:  "POST",
-		Uri:     url,
-		Body:    data,
-		Headers: headers,
-	}}, errors
+	return requests, errs
 }
 
-// Adding header fields to request header
-func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
-	if len(headerValue) > 0 {
-		headers.Add(headerName, headerValue)
-	}
-}
+/*
+   internal original request in OpenRTB, external = result of us having converted it (what comes out of MakeRequests)
+*/
+func (a *BetweenAdapter) MakeBids(
+	internalRequest *openrtb.BidRequest,
+	externalRequest *adapters.RequestData,
+	response *adapters.ResponseData,
+) (*adapters.BidderResponse, []error) {
 
-// MakeBids make the bids for the bid response.
-func (a *BetweenAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
-		// no bid response
 		return nil, nil
 	}
 
-	if response.StatusCode != http.StatusOK {
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Bad request to dsp", response.StatusCode),
+		}}
+	} else if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Invalid Status Returned: %d. Run with request.debug = 1 for more info", response.StatusCode),
+			Message: fmt.Sprintf("ERR, response with status %d", response.StatusCode),
 		}}
 	}
 
 	var bidResp openrtb.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unable to unpackage bid response. Error: %s", err.Error()),
-		}}
+		return nil, []error{err}
 	}
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
-	for _, sb := range bidResp.SeatBid {
-		for i := range sb.Bid {
-			sb.Bid[i].ImpID = sb.Bid[i].ID
+	bidResponse := adapters.NewBidderResponse()
+	bidResponse.Currency = bidResp.Cur
+
+	for _, seatBid := range bidResp.SeatBid {
+		for i := 0; i < len(seatBid.Bid); i++ {
+			bid := seatBid.Bid[i]
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: "banner",
+				Bid:     &bid,
+				BidType: getMediaType(bid.ImpID, internalRequest.Imp),
 			})
 		}
 	}
 
 	return bidResponse, nil
+}
 
+func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpBetween][]openrtb.Imp, error) {
+
+	var m = make(map[openrtb_ext.ExtImpBetween][]openrtb.Imp)
+
+	for _, imp := range imps {
+		bidderParams, err := getBidderParams(&imp)
+		if err != nil {
+			return nil, err
+		}
+
+		m[*bidderParams] = append(m[*bidderParams], imp)
+	}
+
+	return m, nil
+}
+
+func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpBetween, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("Missing bidder ext: %s", err.Error()),
+		}
+	}
+	var betweenExt openrtb_ext.ExtImpBetween
+	if err := json.Unmarshal(bidderExt.Bidder, &betweenExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("Cannot Resolve host or sourceId: %s", err.Error()),
+		}
+	}
+
+	//if betweenExt.PublisherID < 1 {
+	//	return nil, &errortypes.BadInput{
+	//		Message: "Invalid/Missing SourceId",
+	//	}
+	//}
+
+	if len(betweenExt.Host) < 1 {
+		return nil, &errortypes.BadInput{
+			Message: "Invalid/Missing Host",
+		}
+	}
+
+	return &betweenExt, nil
+}
+
+func getMediaType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+
+	bidType := openrtb_ext.BidTypeBanner
+	// Later:
+	//for _, imp := range imps {
+	//	if imp.ID == impID {
+	//		if imp.Video != nil {
+	//			bidType = openrtb_ext.BidTypeVideo
+	//			break
+	//		} else if imp.Native != nil {
+	//			bidType = openrtb_ext.BidTypeNative
+	//			break
+	//		} else {
+	//			bidType = openrtb_ext.BidTypeBanner
+	//			break
+	//		}
+	//	}
+	//}
+
+	return bidType
 }
 
 func NewBetweenBidder(endpoint string) *BetweenAdapter {
