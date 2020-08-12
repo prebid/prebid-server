@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/prebid/prebid-server/config"
 )
 
@@ -137,6 +139,101 @@ func TestVendorListMaker(t *testing.T) {
 	assertStringsEqual(t, "https://vendorlist.consensu.org/v-12/vendorlist.json", vendorListURLMaker(12, 1))
 	assertStringsEqual(t, "https://vendorlist.consensu.org/v2/vendor-list.json", vendorListURLMaker(0, 2))
 	assertStringsEqual(t, "https://vendorlist.consensu.org/v2/archives/vendor-list-v7.json", vendorListURLMaker(7, 2))
+}
+
+func TestDefaultVendorList(t *testing.T) {
+	firstVendorList := mockVendorListData(t, 1, map[uint16]*purposes{
+		32: {
+			purposes: []int{1, 2},
+		},
+	})
+	secondVendorList := mockVendorListData(t, 2, map[uint16]*purposes{
+		12: {
+			purposes: []int{2},
+		},
+	})
+	server := httptest.NewServer(http.HandlerFunc(mockServer(2, map[int]string{
+		1: firstVendorList,
+		2: secondVendorList,
+	})))
+	defer server.Close()
+
+	testcfg := testConfig()
+	testcfg.TCF1.FetchGVL = true
+	testcfg.TCF1.FallbackGVLPath = "../static/tcf1/fallback_gvl.json"
+	fetcher := newVendorListFetcher(context.Background(), testcfg, server.Client(), testURLMaker(server), 1)
+
+	list, err := fetcher(context.Background(), 12)
+	assert.NoError(t, err, "Error with fetching default vendorlist: %v", err)
+	assert.Equal(t, uint16(214), list.Version(), "Expected to fetch default version 214, got %d", list.Version())
+
+	// Testing that we got the default vendorlist data, and not the version off the server.
+	vendor := list.Vendor(12)
+	assert.Equal(t, true, vendor.Purpose(1))
+	assert.Equal(t, false, vendor.Purpose(2))
+}
+
+func TestDefaultVendorListPassthrough(t *testing.T) {
+	firstVendorList := mockVendorListData(t, 1, map[uint16]*purposes{
+		32: {
+			purposes: []int{1, 2},
+		},
+	})
+	secondVendorList := mockVendorListData(t, 2, map[uint16]*purposes{
+		12: {
+			purposes: []int{2},
+		},
+	})
+	server := httptest.NewServer(http.HandlerFunc(mockServer(2, map[int]string{
+		1: firstVendorList,
+		2: secondVendorList,
+	})))
+	defer server.Close()
+
+	testcfg := testConfig()
+	testcfg.TCF1.FetchGVL = true
+	testcfg.TCF1.FallbackGVLPath = "../static/tcf1/fallback_gvl.json"
+	fetcher := newVendorListFetcher(context.Background(), testcfg, server.Client(), testURLMaker(server), 1)
+	list, err := fetcher(context.Background(), 2)
+	assert.NoError(t, err, "Error with fetching existing vendorlist: %v", err)
+	assert.Equal(t, uint16(2), list.Version(), "Expected to fetch mock list version 2, got version %d", list.Version())
+
+	// Testing that we got the testing vendorlist data, and not the default.
+	vendor := list.Vendor(12)
+	assert.Equal(t, false, vendor.Purpose(1))
+	assert.Equal(t, true, vendor.Purpose(2))
+}
+
+func TestDefaultVendorListNoFetch(t *testing.T) {
+	firstVendorList := mockVendorListData(t, 1, map[uint16]*purposes{
+		32: {
+			purposes: []int{1, 2},
+		},
+	})
+	secondVendorList := mockVendorListData(t, 2, map[uint16]*purposes{
+		12: {
+			purposes: []int{2},
+		},
+	})
+	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{
+		1: firstVendorList,
+		2: secondVendorList,
+	})))
+	defer server.Close()
+
+	testcfg := testConfig()
+	testcfg.TCF1.FetchGVL = false
+	testcfg.TCF1.FallbackGVLPath = "../static/tcf1/fallback_gvl.json"
+	fetcher := newVendorListFetcher(context.Background(), testcfg, server.Client(), testURLMaker(server), 1)
+	list, err := fetcher(context.Background(), 2)
+	assert.NoError(t, err, "Error with fetching default vendorlist: %v", err)
+	assert.Equal(t, uint16(214), list.Version(), "Expected to fetch default version 214, got %d", list.Version())
+
+	// Testing that we got the default vendorlist data, and not the version off the server.
+	vendor := list.Vendor(12)
+	assert.Equal(t, true, vendor.Purpose(1))
+	assert.Equal(t, false, vendor.Purpose(2))
+
 }
 
 // mockServer returns a handler which returns the given response for each global vendor list version.

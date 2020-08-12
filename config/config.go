@@ -156,6 +156,7 @@ type GDPR struct {
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
 	NonStandardPublisherMap map[string]int
+	TCF1                    TCF1 `mapstructure:"tcf1"`
 	TCF2                    TCF2 `mapstructure:"tcf2"`
 	AMPException            bool `mapstructure:"amp_exception"`
 }
@@ -178,6 +179,12 @@ func (t *GDPRTimeouts) InitTimeout() time.Duration {
 
 func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
+}
+
+// TCF1 defines the TCF1 specific configurations for GDPR
+type TCF1 struct {
+	FetchGVL        bool   `mapstructure:"fetch_gvl"`
+	FallbackGVLPath string `mapstructure:"fallback_gvl_path"`
 }
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -885,6 +892,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
+	v.SetDefault("gdpr.tcf1.fetch_gvl", true)
+	v.SetDefault("gdpr.tcf1.fallback_gvl_path", "./static/tcf1/fallback_gvl.json")
 	v.SetDefault("gdpr.tcf2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose1.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enabled", true)
