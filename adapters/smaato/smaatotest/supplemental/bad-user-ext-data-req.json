@@ -1,0 +1,67 @@
+{
+  "mockBidRequest": {
+    "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+    "site": {
+      "page": "prebid.org",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "imp": [
+      {
+        "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            },
+            {
+              "w": 320,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "1100042525",
+            "adspaceId": "130563103"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "user": {
+      "gender": "M",
+      "ext": {
+        "data": {
+          "keywords":"a,b",
+          "gender": "M",
+          "yob": "",
+          "geo": {
+            "country": "ca"
+          }
+        },
+        "consent":"yes"
+      }
+    },
+    "regs": {
+      "coppa": 1,
+      "ext": {
+        "gdpr": 1,
+        "us_privacy": "uspConsentString"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "json: cannot unmarshal string into Go struct field userExtData.data.yob of type int64",
+      "comparison": "literal"
+    }
+  ]
+}

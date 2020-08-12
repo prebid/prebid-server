@@ -19,6 +19,7 @@ type ExtRequestPrebid struct {
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
+	Debug                bool                      `json:"debug,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains

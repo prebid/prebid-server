@@ -3,6 +3,7 @@ package exchange
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -79,7 +80,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqByBidders, _, _, err := cleanOpenRTBRequests(context.Background(), test.req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+		reqByBidders, _, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -141,7 +142,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			},
 		}
 
-		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -185,7 +186,7 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 		req := newBidRequest(t)
 		req.Regs = &openrtb.Regs{COPPA: test.coppa}
 
-		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, config.Privacy{})
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, config.Privacy{})
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -202,77 +203,92 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 
 func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 	testCases := []struct {
-		description  string
-		inSourceExt  json.RawMessage
-		inExt        json.RawMessage
-		outSourceExt json.RawMessage
-		outExt       json.RawMessage
-		hasError     bool
+		description   string
+		inExt         json.RawMessage
+		inSourceExt   json.RawMessage
+		outSourceExt  json.RawMessage
+		outRequestExt json.RawMessage
+		hasError      bool
 	}{
 		{
-			description:  "Empty root ext and source ext",
-			inSourceExt:  json.RawMessage(``),
-			inExt:        json.RawMessage(``),
-			outSourceExt: json.RawMessage(``),
-			outExt:       json.RawMessage(``),
-			hasError:     false,
+			description:   "Empty root ext and source ext, nil unmarshaled ext",
+			inExt:         nil,
+			inSourceExt:   json.RawMessage(``),
+			outSourceExt:  json.RawMessage(``),
+			outRequestExt: json.RawMessage(``),
+			hasError:      false,
 		},
 		{
-			description:  "No schains in root ext and empty source ext",
-			inSourceExt:  json.RawMessage(``),
-			inExt:        json.RawMessage(`{"prebid":{"schains":[]}}`),
-			outSourceExt: json.RawMessage(``),
-			outExt:       json.RawMessage(`{"prebid":{}}`),
-			hasError:     false,
+			description:   "Empty root ext, source ext, and unmarshaled ext",
+			inExt:         json.RawMessage(``),
+			inSourceExt:   json.RawMessage(``),
+			outSourceExt:  json.RawMessage(``),
+			outRequestExt: json.RawMessage(``),
+			hasError:      false,
 		},
 		{
-			description:  "Use source schain -- no bidder schain or wildcard schain in ext.prebid.schains",
-			inSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["bidder1"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			outExt:       json.RawMessage(`{"prebid":{}}`),
-			hasError:     false,
+			description:   "No schains in root ext and empty source ext. Unmarshaled ext is equivalent to root ext",
+			inSourceExt:   json.RawMessage(``),
+			inExt:         json.RawMessage(`{"prebid":{"schains":[]}}`),
+			outSourceExt:  json.RawMessage(``),
+			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			hasError:      false,
 		},
 		{
-			description:  "Use schain for bidder in ext.prebid.schains",
-			inSourceExt:  json.RawMessage(``),
-			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outExt:       json.RawMessage(`{"prebid":{}}`),
-			hasError:     false,
+			description:   "Use source schain -- no bidder schain or wildcard schain in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
+			inSourceExt:   json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
+			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["bidder1"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
+			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
+			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			hasError:      false,
 		},
 		{
-			description:  "Use wildcard schain in ext.prebid.schains",
-			inSourceExt:  json.RawMessage(``),
-			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outExt:       json.RawMessage(`{"prebid":{}}`),
-			hasError:     false,
+			description:   "Use schain for bidder in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
+			inSourceExt:   json.RawMessage(``),
+			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
+			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
+			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			hasError:      false,
 		},
 		{
-			description:  "Use schain for bidder in ext.prebid.schains instead of wildcard",
-			inSourceExt:  json.RawMessage(``),
-			inExt:        json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"},"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"wildcard.com","sid":"wildcard1","rid":"WildcardReq1","hp":1}],"ver":"1.0"}} ]}}`),
-			outSourceExt: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outExt:       json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"}}}`),
-			hasError:     false,
+			description:   "Use wildcard schain in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
+			inSourceExt:   json.RawMessage(``),
+			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
+			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
+			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			hasError:      false,
 		},
 		{
-			description:  "Use source schain -- multiple (two) bidder schains in ext.prebid.schains",
-			inSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			inExt:        json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt: nil,
-			outExt:       nil,
-			hasError:     true,
+			description:   "Use schain for bidder in ext.prebid.schains instead of wildcard. Unmarshaled ext is equivalent to root ext",
+			inSourceExt:   json.RawMessage(``),
+			inExt:         json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"},"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"wildcard.com","sid":"wildcard1","rid":"WildcardReq1","hp":1}],"ver":"1.0"}} ]}}`),
+			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
+			outRequestExt: json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"}}}`),
+			hasError:      false,
+		},
+		{
+			description:   "Use source schain -- multiple (two) bidder schains in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
+			inSourceExt:   json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
+			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
+			outSourceExt:  nil,
+			outRequestExt: nil,
+			hasError:      true,
 		},
 	}
 
 	for _, test := range testCases {
 		req := newBidRequest(t)
 		req.Source.Ext = test.inSourceExt
-		req.Ext = test.inExt
 
-		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, config.Privacy{})
+		var extRequest *openrtb_ext.ExtRequest
+		if test.inExt != nil {
+			req.Ext = test.inExt
+			unmarshaledExt, err := extractBidRequestExt(req)
+			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
+			extRequest = unmarshaledExt
+		}
+
+		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, extRequest, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, config.Privacy{})
 		result := results["appnexus"]
 
 		if test.hasError == true {
@@ -281,8 +297,292 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		} else {
 			assert.Nil(t, errs)
 			assert.Equal(t, test.outSourceExt, result.Source.Ext, test.description+":Source.Ext")
-			assert.Equal(t, test.outExt, result.Ext, test.description+":Ext")
+			assert.Equal(t, test.outRequestExt, result.Ext, test.description+":Ext")
 		}
+	}
+}
+
+func TestExtractBidRequesteExt(t *testing.T) {
+	testCases := []struct {
+		desc          string
+		inBidRequest  *openrtb.BidRequest
+		outRequestExt *openrtb_ext.ExtRequest
+		outError      error
+	}{
+		{
+			desc:          "Valid",
+			inBidRequest:  &openrtb.BidRequest{Ext: json.RawMessage(`{"prebid":{"debug":true}}`)},
+			outRequestExt: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}},
+			outError:      nil,
+		},
+		{
+			desc:          "bidRequest nil, we expect an error",
+			inBidRequest:  nil,
+			outRequestExt: &openrtb_ext.ExtRequest{},
+			outError:      fmt.Errorf("Error bidRequest should not be nil"),
+		},
+		{
+			desc:          "Non-nil bidRequest with empty Ext, we expect a blank requestExt",
+			inBidRequest:  &openrtb.BidRequest{},
+			outRequestExt: &openrtb_ext.ExtRequest{},
+			outError:      nil,
+		},
+		{
+			desc:          "Non-nil bidRequest with non-empty, invalid Ext, we expect unmarshaling error",
+			inBidRequest:  &openrtb.BidRequest{Ext: json.RawMessage(`invalid`)},
+			outRequestExt: &openrtb_ext.ExtRequest{},
+			outError:      fmt.Errorf("Error decoding Request.ext : invalid character 'i' looking for beginning of value"),
+		},
+	}
+	for _, test := range testCases {
+		actualRequestExt, actualErr := extractBidRequestExt(test.inBidRequest)
+
+		assert.Equal(t, test.outRequestExt, actualRequestExt, "%s. Unexpected RequestExt value. \n", test.desc)
+		assert.Equal(t, test.outError, actualErr, "%s. Unexpected error value. \n", test.desc)
+	}
+}
+
+func TestGetExtCacheInfo(t *testing.T) {
+	testCases := []struct {
+		desc         string
+		inRequestExt *openrtb_ext.ExtRequest
+		outCacheBids bool
+		outCacheVAST bool
+	}{
+		{
+			desc:         "Nil inRequestExt, both cache flags false",
+			inRequestExt: nil,
+			outCacheBids: false,
+			outCacheVAST: false,
+		},
+		{
+			desc:         "Non-nil inRequestExt, nil Cache info, both cache flags false",
+			inRequestExt: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Cache: nil}},
+			outCacheBids: false,
+			outCacheVAST: false,
+		},
+		{
+			desc: "Non-nil inRequestExt, non-nil Cache info, both ExtRequestPrebidCacheBids and ExtRequestPrebidCacheVAST nil",
+			inRequestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Cache: &openrtb_ext.ExtRequestPrebidCache{
+						Bids:    nil,
+						VastXML: nil,
+					},
+				},
+			},
+			outCacheBids: false,
+			outCacheVAST: false,
+		},
+		{
+			desc: "Non-nil inRequestExt, non-nil Cache info, both ExtRequestPrebidCacheBids nil, shouldCacheVast true",
+			inRequestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Cache: &openrtb_ext.ExtRequestPrebidCache{
+						Bids:    nil,
+						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
+					},
+				},
+			},
+			outCacheBids: false,
+			outCacheVAST: true,
+		},
+		{
+			desc: "Non-nil inRequestExt, non-nil Cache info, both ExtRequestPrebidCacheVAST nil, shouldCacheBids true",
+			inRequestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Cache: &openrtb_ext.ExtRequestPrebidCache{
+						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
+						VastXML: nil,
+					},
+				},
+			},
+			outCacheBids: true,
+			outCacheVAST: false,
+		},
+		{
+			desc: "Non-nil inRequestExt, non-nil Cache info values, both shouldCacheBids and shouldCacheVAST return true",
+			inRequestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Cache: &openrtb_ext.ExtRequestPrebidCache{
+						Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
+						VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{},
+					},
+				},
+			},
+			outCacheBids: true,
+			outCacheVAST: true,
+		},
+	}
+	for _, test := range testCases {
+		shouldCacheBids, shouldCacheVAST := getExtCacheInfo(test.inRequestExt)
+
+		assert.Equal(t, test.outCacheBids, shouldCacheBids, "%s. Unexpected shouldCacheBids value. \n", test.desc)
+		assert.Equal(t, test.outCacheVAST, shouldCacheVAST, "%s. Unexpected shouldCacheVAST value. \n", test.desc)
+	}
+}
+
+func TestGetExtTargetData(t *testing.T) {
+	type inTest struct {
+		requestExt      *openrtb_ext.ExtRequest
+		shouldCacheBids bool
+		shouldCacheVAST bool
+	}
+	type outTest struct {
+		targetData    *targetData
+		nilTargetData bool
+	}
+	testCases := []struct {
+		desc string
+		in   inTest
+		out  outTest
+	}{
+		{
+			"nil requestExt, nil outTargetData",
+			inTest{
+				requestExt:      nil,
+				shouldCacheBids: true,
+				shouldCacheVAST: true,
+			},
+			outTest{targetData: nil, nilTargetData: true},
+		},
+		{
+			"Valid requestExt, nil Targeting field, nil outTargetData",
+			inTest{
+				requestExt: &openrtb_ext.ExtRequest{
+					Prebid: openrtb_ext.ExtRequestPrebid{
+						Targeting: nil,
+					},
+				},
+				shouldCacheBids: true,
+				shouldCacheVAST: true,
+			},
+			outTest{targetData: nil, nilTargetData: true},
+		},
+		{
+			"Valid targeting data in requestExt, valid outTargetData",
+			inTest{
+				requestExt: &openrtb_ext.ExtRequest{
+					Prebid: openrtb_ext.ExtRequestPrebid{
+						Targeting: &openrtb_ext.ExtRequestTargeting{
+							PriceGranularity: openrtb_ext.PriceGranularity{
+								Precision: 2,
+								Ranges:    []openrtb_ext.GranularityRange{{Min: 0.00, Max: 5.00, Increment: 1.00}},
+							},
+							IncludeWinners:    true,
+							IncludeBidderKeys: true,
+						},
+					},
+				},
+				shouldCacheBids: true,
+				shouldCacheVAST: true,
+			},
+			outTest{
+				targetData: &targetData{
+					priceGranularity: openrtb_ext.PriceGranularity{
+						Precision: 2,
+						Ranges:    []openrtb_ext.GranularityRange{{Min: 0.00, Max: 5.00, Increment: 1.00}},
+					},
+					includeWinners:    true,
+					includeBidderKeys: true,
+					includeCacheBids:  true,
+					includeCacheVast:  true,
+				},
+				nilTargetData: false,
+			},
+		},
+	}
+	for _, test := range testCases {
+		actualTargetData := getExtTargetData(test.in.requestExt, test.in.shouldCacheBids, test.in.shouldCacheVAST)
+
+		if test.out.nilTargetData {
+			assert.Nil(t, actualTargetData, "%s. Targeting data should be nil. \n", test.desc)
+		} else {
+			assert.NotNil(t, actualTargetData, "%s. Targeting data should NOT be nil. \n", test.desc)
+			assert.Equal(t, *test.out.targetData, *actualTargetData, "%s. Unexpected targeting data value. \n", test.desc)
+		}
+	}
+}
+
+func TestGetDebugInfo(t *testing.T) {
+	type inTest struct {
+		bidRequest *openrtb.BidRequest
+		requestExt *openrtb_ext.ExtRequest
+	}
+	testCases := []struct {
+		desc string
+		in   inTest
+		out  bool
+	}{
+		{
+			desc: "Nil bid request, nil requestExt",
+			in:   inTest{nil, nil},
+			out:  false,
+		},
+		{
+			desc: "bid request test == 0, nil requestExt",
+			in:   inTest{&openrtb.BidRequest{Test: 0}, nil},
+			out:  false,
+		},
+		{
+			desc: "Nil bid request, requestExt debug flag false",
+			in:   inTest{nil, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
+			out:  false,
+		},
+		{
+			desc: "bid request test == 0, requestExt debug flag false",
+			in:   inTest{&openrtb.BidRequest{Test: 0}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
+			out:  false,
+		},
+		{
+			desc: "bid request test == 1, requestExt debug flag false",
+			in:   inTest{&openrtb.BidRequest{Test: 1}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
+			out:  true,
+		},
+		{
+			desc: "bid request test == 0, requestExt debug flag true",
+			in:   inTest{&openrtb.BidRequest{Test: 0}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}}},
+			out:  true,
+		},
+		{
+			desc: "bid request test == 1, requestExt debug flag true",
+			in:   inTest{&openrtb.BidRequest{Test: 1}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}}},
+			out:  true,
+		},
+	}
+	for _, test := range testCases {
+		actualDebugInfo := getDebugInfo(test.in.bidRequest, test.in.requestExt)
+
+		assert.Equal(t, test.out, actualDebugInfo, "%s. Unexpected debug value. \n", test.desc)
+	}
+}
+
+func TestGetExtBidAdjustmentFactors(t *testing.T) {
+	testCases := []struct {
+		desc                    string
+		inRequestExt            *openrtb_ext.ExtRequest
+		outBidAdjustmentFactors map[string]float64
+	}{
+		{
+			desc:                    "Nil request ext",
+			inRequestExt:            nil,
+			outBidAdjustmentFactors: nil,
+		},
+		{
+			desc:                    "Non-nil request ext, nil BidAdjustmentFactors field",
+			inRequestExt:            &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: nil}},
+			outBidAdjustmentFactors: nil,
+		},
+		{
+			desc:                    "Non-nil request ext, valid BidAdjustmentFactors field",
+			inRequestExt:            &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{BidAdjustmentFactors: map[string]float64{"bid-factor": 1.0}}},
+			outBidAdjustmentFactors: map[string]float64{"bid-factor": 1.0},
+		},
+	}
+	for _, test := range testCases {
+		actualBidAdjustmentFactors := getExtBidAdjustmentFactors(test.inRequestExt)
+
+		assert.Equal(t, test.outBidAdjustmentFactors, actualBidAdjustmentFactors, "%s. Unexpected BidAdjustmentFactors value. \n", test.desc)
 	}
 }
 
@@ -346,7 +646,7 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 			},
 		}
 
-		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -427,7 +727,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			},
 		}
 
-		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: !test.gdprScrub}, true, privacyConfig)
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: !test.gdprScrub}, true, privacyConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
