@@ -196,7 +196,7 @@ func TestFallbackVendorListPassthrough(t *testing.T) {
 	fetcher := newVendorListFetcher(context.Background(), testcfg, server.Client(), testURLMaker(server), 1)
 	list, err := fetcher(context.Background(), 2)
 	assert.NoError(t, err, "Error with fetching existing vendorlist: %v", err)
-	assert.Equal(t, uint16(2), list.Version(), "Expected to fetch mock list version 1, got version %d", list.Version())
+	assert.Equal(t, uint16(2), list.Version(), "Expected to fetch mock list version 2, got version %d", list.Version())
 
 	// Testing that we got the testing vendorlist data, and not the default.
 	vendor := list.Vendor(12)
