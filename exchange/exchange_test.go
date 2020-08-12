@@ -1352,19 +1352,22 @@ func TestCategoryDedupe(t *testing.T) {
 	cats4 := []string{"IAB1-2000"}
 	bid1 := openrtb.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
 	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 15.0000, Cat: cats2, W: 1, H: 1}
-	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 20.0000, Cat: cats1, W: 1, H: 1}
 	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 20.0000, Cat: cats4, W: 1, H: 1}
+	bid5 := openrtb.Bid{ID: "bid_id5", ImpID: "imp_id5", Price: 20.0000, Cat: cats1, W: 1, H: 1}
 
 	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
 	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 50}, 0}
 	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
 	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_5 := pbsOrtbBid{&bid5, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
 
 	selectedBids := make(map[string]int)
 	expectedCategories := map[string]string{
 		"bid_id1": "10.00_Electronics_30s",
 		"bid_id2": "14.00_Sports_50s",
-		"bid_id3": "10.00_Electronics_30s",
+		"bid_id3": "20.00_Electronics_30s",
+		"bid_id5": "20.00_Electronics_30s",
 	}
 
 	numIterations := 10
@@ -1378,6 +1381,7 @@ func TestCategoryDedupe(t *testing.T) {
 			&bid1_2,
 			&bid1_3,
 			&bid1_4,
+			&bid1_5,
 		}
 
 		seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
@@ -1388,7 +1392,7 @@ func TestCategoryDedupe(t *testing.T) {
 		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
 		assert.Equal(t, nil, err, "Category mapping error should be empty")
-		assert.Equal(t, 2, len(rejections), "There should be 2 bid rejection messages")
+		assert.Equal(t, 3, len(rejections), "There should be 2 bid rejection messages")
 		assert.Regexpf(t, regexp.MustCompile(`bid rejected \[bid ID: bid_id(1|3)\] reason: Bid was deduplicated`), rejections[0], "Rejection message did not match expected")
 		assert.Equal(t, "bid rejected [bid ID: bid_id4] reason: Category mapping file for primary ad server: 'freewheel', publisher: '' not found", rejections[1], "Rejection message did not match expected")
 		assert.Equal(t, 2, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
@@ -1401,8 +1405,90 @@ func TestCategoryDedupe(t *testing.T) {
 	}
 
 	assert.Equal(t, numIterations, selectedBids["bid_id2"], "Bid 2 did not make it through every time")
-	assert.NotEqual(t, numIterations, selectedBids["bid_id1"], "Bid 1 made it through every time")
-	assert.NotEqual(t, numIterations, selectedBids["bid_id3"], "Bid 3 made it through every time")
+	assert.Equal(t, 0, selectedBids["bid_id1"], "Bid 1 should be rejected on every iteration due to lower price")
+	assert.NotEqual(t, 0, selectedBids["bid_id3"], "Bid 3 should be accepted at least once")
+	assert.NotEqual(t, 0, selectedBids["bid_id5"], "Bid 5 should be accepted at least once")
+}
+
+func TestNoCategoryDedupe(t *testing.T) {
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	requestExt := newExtRequestNoBrandCat()
+
+	targData := &targetData{
+		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		includeWinners:   true,
+	}
+
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
+
+	cats1 := []string{"IAB1-3"}
+	cats2 := []string{"IAB1-4"}
+	cats4 := []string{"IAB1-2000"}
+	bid1 := openrtb.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 14.0000, Cat: cats1, W: 1, H: 1}
+	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 14.0000, Cat: cats2, W: 1, H: 1}
+	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 20.0000, Cat: cats1, W: 1, H: 1}
+	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 20.0000, Cat: cats4, W: 1, H: 1}
+	bid5 := openrtb.Bid{ID: "bid_id5", ImpID: "imp_id5", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_5 := pbsOrtbBid{&bid5, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+
+	selectedBids := make(map[string]int)
+	expectedCategories := map[string]string{
+		"bid_id1": "14.00_30s",
+		"bid_id2": "14.00_30s",
+		"bid_id3": "20.00_30s",
+		"bid_id4": "20.00_30s",
+		"bid_id5": "10.00_30s",
+	}
+
+	numIterations := 10
+
+	// Run the function many times, this should be enough for the 50% chance of which bid to remove to remove bid1 sometimes
+	// and bid3 others. It's conceivably possible (but highly unlikely) that the same bid get chosen every single time, but
+	// if you notice false fails from this test increase numIterations to make it even less likely to happen.
+	for i := 0; i < numIterations; i++ {
+		innerBids := []*pbsOrtbBid{
+			&bid1_1,
+			&bid1_2,
+			&bid1_3,
+			&bid1_4,
+			&bid1_5,
+		}
+
+		seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+		bidderName1 := openrtb_ext.BidderName("appnexus")
+
+		adapterBids[bidderName1] = &seatBid
+
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
+
+		assert.Equal(t, nil, err, "Category mapping error should be empty")
+		assert.Equal(t, 2, len(rejections), "There should be 2 bid rejection messages")
+		assert.Regexpf(t, regexp.MustCompile(`bid rejected \[bid ID: bid_id(1|2)\] reason: Bid was deduplicated`), rejections[0], "Rejection message did not match expected")
+		assert.Regexpf(t, regexp.MustCompile(`bid rejected \[bid ID: bid_id(3|4)\] reason: Bid was deduplicated`), rejections[1], "Rejection message did not match expected")
+		assert.Equal(t, 3, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
+		assert.Equal(t, 3, len(bidCategory), "Bidders category mapping doesn't match")
+
+		for bidId, bidCat := range bidCategory {
+			assert.Equal(t, expectedCategories[bidId], bidCat, "Category mapping doesn't match")
+			selectedBids[bidId]++
+		}
+	}
+	assert.Equal(t, numIterations, selectedBids["bid_id5"], "Bid 5 did not make it through every time")
+	assert.NotEqual(t, 0, selectedBids["bid_id1"], "Bid 1 should be selected at least once")
+	assert.NotEqual(t, 0, selectedBids["bid_id2"], "Bid 2 should be selected at least once")
+	assert.NotEqual(t, 0, selectedBids["bid_id1"], "Bid 3 should be selected at least once")
+	assert.NotEqual(t, 0, selectedBids["bid_id4"], "Bid 4 should be selected at least once")
+
 }
 
 func TestBidRejectionErrors(t *testing.T) {
