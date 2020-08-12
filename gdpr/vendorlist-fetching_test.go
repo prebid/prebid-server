@@ -133,12 +133,43 @@ func TestMissingVendorlistFetch(t *testing.T) {
 	assertErr(t, err, false)
 }
 
-func TestVendorListMaker(t *testing.T) {
-	assertStringsEqual(t, "https://vendorlist.consensu.org/vendorlist.json", vendorListURLMaker(0, 1))
-	assertStringsEqual(t, "https://vendorlist.consensu.org/v-2/vendorlist.json", vendorListURLMaker(2, 1))
-	assertStringsEqual(t, "https://vendorlist.consensu.org/v-12/vendorlist.json", vendorListURLMaker(12, 1))
-	assertStringsEqual(t, "https://vendorlist.consensu.org/v2/vendor-list.json", vendorListURLMaker(0, 2))
-	assertStringsEqual(t, "https://vendorlist.consensu.org/v2/archives/vendor-list-v7.json", vendorListURLMaker(7, 2))
+func TestVendorListURLMaker(t *testing.T) {
+	testCases := []struct {
+		description string
+		tcfVersion  uint8
+		gvlVersion  uint16
+		expectedURL string
+	}{
+		{
+			description: "TCF1 - Latest",
+			tcfVersion:  1,
+			gvlVersion:  0, // Forces latest version.
+			expectedURL: "https://vendorlist.consensu.org/vendorlist.json",
+		},
+		{
+			description: "TCF1 - Specific",
+			tcfVersion:  1,
+			gvlVersion:  42,
+			expectedURL: "https://vendorlist.consensu.org/v-42/vendorlist.json",
+		},
+		{
+			description: "TCF2 - Latest",
+			tcfVersion:  2,
+			gvlVersion:  0, // Forces latest version.
+			expectedURL: "https://vendorlist.consensu.org/v2/vendor-list.json",
+		},
+		{
+			description: "TCF2 - Specific",
+			tcfVersion:  2,
+			gvlVersion:  42,
+			expectedURL: "https://vendorlist.consensu.org/v2/archives/vendor-list-v42.json",
+		},
+	}
+
+	for _, test := range testCases {
+		result := vendorListURLMaker(test.gvlVersion, test.tcfVersion)
+		assert.Equal(t, test.expectedURL, result)
+	}
 }
 
 func TestDefaultVendorList(t *testing.T) {
