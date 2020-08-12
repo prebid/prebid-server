@@ -173,7 +173,7 @@ func TestDefaultVendorList(t *testing.T) {
 	assert.Equal(t, false, vendor.Purpose(2))
 }
 
-func TestDefaultVendorListPassthrough(t *testing.T) {
+func TestFallbackVendorListPassthrough(t *testing.T) {
 	firstVendorList := mockVendorListData(t, 1, map[uint16]*purposes{
 		32: {
 			purposes: []int{1, 2},
@@ -184,7 +184,7 @@ func TestDefaultVendorListPassthrough(t *testing.T) {
 			purposes: []int{2},
 		},
 	})
-	server := httptest.NewServer(http.HandlerFunc(mockServer(2, map[int]string{
+	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{
 		1: firstVendorList,
 		2: secondVendorList,
 	})))
@@ -196,7 +196,7 @@ func TestDefaultVendorListPassthrough(t *testing.T) {
 	fetcher := newVendorListFetcher(context.Background(), testcfg, server.Client(), testURLMaker(server), 1)
 	list, err := fetcher(context.Background(), 2)
 	assert.NoError(t, err, "Error with fetching existing vendorlist: %v", err)
-	assert.Equal(t, uint16(2), list.Version(), "Expected to fetch mock list version 2, got version %d", list.Version())
+	assert.Equal(t, uint16(2), list.Version(), "Expected to fetch mock list version 1, got version %d", list.Version())
 
 	// Testing that we got the testing vendorlist data, and not the default.
 	vendor := list.Vendor(12)
@@ -204,7 +204,7 @@ func TestDefaultVendorListPassthrough(t *testing.T) {
 	assert.Equal(t, true, vendor.Purpose(2))
 }
 
-func TestDefaultVendorListNoFetch(t *testing.T) {
+func TestFallbackVendorListNoFetch(t *testing.T) {
 	firstVendorList := mockVendorListData(t, 1, map[uint16]*purposes{
 		32: {
 			purposes: []int{1, 2},
