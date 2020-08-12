@@ -130,7 +130,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 			var customCacheKey string
 			var catDur string
 			useCustomCacheKey := false
-			if competitiveExclusion && isOverallWinner {
+			if competitiveExclusion && isOverallWinner || includeBidderKeys {
 				// set custom cache key for winning bid when competitive exclusion applies
 				catDur = bidCategory[topBidPerBidder.bid.ID]
 				if len(catDur) > 0 {

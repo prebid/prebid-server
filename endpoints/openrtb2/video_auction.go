@@ -470,7 +470,7 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 			if err := json.Unmarshal(bid.Ext, &tempRespBidExt); err != nil {
 				return nil, err
 			}
-			if tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbVastCacheKey)] == "" {
+			if tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbVastCacheKey, seatBid.Seat)] == "" {
 				continue
 			}
 
@@ -479,9 +479,9 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 			podId, _ := strconv.ParseInt(podNum, 0, 64)
 
 			videoTargeting := openrtb_ext.VideoTargeting{
-				HbPb:       tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)],
-				HbPbCatDur: tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbCategoryDurationKey)],
-				HbCacheID:  tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbVastCacheKey)],
+				HbPb:       tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbpbConstantKey, seatBid.Seat)],
+				HbPbCatDur: tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbCategoryDurationKey, seatBid.Seat)],
+				HbCacheID:  tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbVastCacheKey, seatBid.Seat)],
 			}
 
 			adPod := findAdPod(podId, adPods)
@@ -517,6 +517,14 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 	}
 
 	return &openrtb_ext.BidResponseVideo{AdPods: adPods}, nil
+}
+
+func formatTargetingKey(key openrtb_ext.TargetingKey, bidderName string) string {
+	fullKey := fmt.Sprintf("%s_%s", string(key), bidderName)
+	if len(fullKey) > exchange.MaxKeyLength {
+		return string(fullKey[0:exchange.MaxKeyLength])
+	}
+	return fullKey
 }
 
 func findAdPod(podInd int64, pods []*openrtb_ext.AdPod) *openrtb_ext.AdPod {
@@ -623,9 +631,9 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 
 	targeting := openrtb_ext.ExtRequestTargeting{
 		PriceGranularity:     priceGranularity,
-		IncludeWinners:       true,
 		IncludeBrandCategory: inclBrandCat,
 		DurationRangeSec:     durationRangeSec,
+		IncludeBidderKeys:    true,
 	}
 
 	vastXml := openrtb_ext.ExtRequestPrebidCacheVAST{}
