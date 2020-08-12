@@ -27,8 +27,20 @@ type saveVendors func(uint16, api.VendorList)
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
 func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16, uint8) string, TCFVer uint8) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+	var fallbackVL api.VendorList = nil
+
+	if TCFVer == tCF1 && len(cfg.TCF1.FallbackGVLPath) > 0 {
+		fallbackVL = loadFallbackGVL(cfg.TCF1.FallbackGVLPath)
+	}
+
+	// If we are not going to try fetching the GVL dynamically, we have a simple fetcher
+	if !cfg.TCF1.FetchGVL && TCFVer == tCF1 && fallbackVL != nil {
+		return func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+			return fallbackVL, nil
+		}
+	}
 	// These save and load functions can be used to store & retrieve lists from our cache.
-	save, load := newVendorListCache()
+	save, load := newVendorListCache(fallbackVL)
 
 	withTimeout, cancel := context.WithTimeout(initCtx, cfg.Timeouts.InitTimeout())
 	defer cancel()
@@ -45,6 +57,9 @@ func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http
 		list = load(id)
 		if list != nil {
 			return list, nil
+		}
+		if fallbackVL != nil {
+			return fallbackVL, nil
 		}
 		return nil, fmt.Errorf("gdpr vendor list version %d does not exist, or has not been loaded yet. Try again in a few minutes", id)
 	}
@@ -132,7 +147,7 @@ func saveOne(ctx context.Context, client *http.Client, url string, saver saveVen
 	return newList.Version()
 }
 
-func newVendorListCache() (save func(id uint16, list api.VendorList), load func(id uint16) api.VendorList) {
+func newVendorListCache(fallbackVL api.VendorList) (save func(id uint16, list api.VendorList), load func(id uint16) api.VendorList) {
 	cache := &sync.Map{}
 
 	save = func(id uint16, list api.VendorList) {
@@ -143,7 +158,19 @@ func newVendorListCache() (save func(id uint16, list api.VendorList), load func(
 		if ok {
 			return list.(vendorlist.VendorList)
 		}
-		return nil
+		return fallbackVL
 	}
 	return
+}
+
+func loadFallbackGVL(fallbackGVLPath string) vendorlist.VendorList {
+	fallbackVLbody, err := ioutil.ReadFile(fallbackGVLPath)
+	if err != nil {
+		glog.Fatalf("Error reading from file %s: %v", fallbackGVLPath, err)
+	}
+	fallbackVL, err := vendorlist.ParseEagerly(fallbackVLbody)
+	if err != nil {
+		glog.Fatalf("Error processing default GVL from %s: %v", fallbackGVLPath, err)
+	}
+	return fallbackVL
 }
