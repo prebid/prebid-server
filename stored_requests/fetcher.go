@@ -23,11 +23,15 @@ type Fetcher interface {
 	//
 	// The returned objects can only be read from. They may not be written to.
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
+	// FetchAllRequests returns comprehensive maps containing all the requests and imps available in this fetcher
+	FetchAllRequests(ctx context.Context) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
 }
 
 type CategoryFetcher interface {
 	// FetchCategories fetches the ad-server/publisher specific category for the given IAB category
 	FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error)
+	// FetchAllCategories loads and stores all the category mappings defined in this fetcher
+	FetchAllCategories(ctx context.Context) (categories map[string]json.RawMessage, errs []error)
 }
 
 // AllFetcher is an interface that encapsulates both the original Fetcher and the CategoryFetcher
@@ -182,7 +186,17 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 }
 
 func (f *fetcherWithCache) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
-	return "", nil
+	return f.fetcher.FetchCategories(ctx, primaryAdServer, publisherId, iabCategory)
+}
+
+// FetchAllRequests is a passthrough to underlying Fetcher, needed to satisfy the Fetcher interface
+func (f *fetcherWithCache) FetchAllRequests(ctx context.Context) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	return f.fetcher.(Fetcher).FetchAllRequests(ctx)
+}
+
+// FetchAllCategories is a passthrough to underlying CategoryFetcher, needed to satisfy the CategoryFetcher interface
+func (f *fetcherWithCache) FetchAllCategories(ctx context.Context) (categories map[string]json.RawMessage, errs []error) {
+	return f.fetcher.(CategoryFetcher).FetchAllCategories(ctx)
 }
 
 func findLeftovers(ids []string, data map[string]json.RawMessage) (leftovers []string) {

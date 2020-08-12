@@ -939,6 +939,10 @@ func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs
 	return cf.data, nil, nil
 }
 
+func (cf mockAmpStoredReqFetcher) FetchAllRequests(ctx context.Context) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	return cf.data, nil, nil
+}
+
 type mockAmpExchange struct {
 	lastRequest *openrtb.BidRequest
 }

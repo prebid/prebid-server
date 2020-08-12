@@ -5,34 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
 // NewFileFetcher lazy-loads various kinds of objects from the given directory
-// Expected directory structure:
+// Expected directory structure depends on data type - stored requests or categories,
+// and may include:
 // - stored_requests/{id}.json for stored requests
 // - stored_imps/{id}.json for stored imps
 // - {adserver}.json non-publisher specific primary adserver categories
 // - {adserver}/{adserver}_{account_id}.json publisher specific categories for primary adserver
 func NewFileFetcher(directory string) (stored_requests.AllFetcher, error) {
-	_, err := ioutil.ReadDir(directory)
-	if err != nil {
+	if _, err := ioutil.ReadDir(directory); err != nil {
 		return &fileFetcher{}, err
 	}
-	// read - but don't store - all the files to warm os cache
-	go filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
-		if err == nil && filepath.Ext(path) == ".json" {
-			if _, err := ioutil.ReadFile(path); err != nil {
-				glog.Warningf("Error reading %s: %v", path, err)
-			}
-		}
-		return nil
-	})
 	return &fileFetcher{
 		StoredRequestsDir: path.Join(directory, "stored_requests"),
 		StoredImpsDir:     path.Join(directory, "stored_imps"),
@@ -74,11 +64,48 @@ func fetchObjects(dir string, dataType string, ids []string) (jsons map[string]j
 	return jsons, errs
 }
 
+func fetchAllObjects(dir string, glob string, dataType string) (jsons map[string]json.RawMessage, errs []error) {
+	var ids, files []string
+	var err error
+	path := filepath.Join(dir, glob)
+	if files, err = filepath.Glob(path); err != nil {
+		return nil, append(errs, fmt.Errorf("Error scanning for %s in %s: %v", dataType, path, err))
+	}
+	for _, f := range files {
+		fn := f[len(dir)+1:] // remove "<dir>/"
+		id := strings.TrimSuffix(fn, filepath.Ext(fn))
+		ids = append(ids, id)
+	}
+	return fetchObjects(dir, dataType, ids)
+}
+
 // FetchRequests fetches the stored requests for the given IDs.
 func (fetcher *fileFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requests map[string]json.RawMessage, imps map[string]json.RawMessage, errs []error) {
 	requests, reqErrs := fetchObjects(fetcher.StoredRequestsDir, "Request", requestIDs)
 	imps, impErrs := fetchObjects(fetcher.StoredImpsDir, "Imp", impIDs)
 	return requests, imps, append(reqErrs, impErrs...)
+}
+
+// FetchAllRequests returns comprehensive maps containing all the requests and imps in filesystem
+func (fetcher *fileFetcher) FetchAllRequests(ctx context.Context) (requests map[string]json.RawMessage, imps map[string]json.RawMessage, errs []error) {
+	requests, errs = fetchAllObjects(fetcher.StoredRequestsDir, "*.json", "Request")
+	imps, impErrs := fetchAllObjects(fetcher.StoredImpsDir, "*.json", "Imp")
+	return requests, imps, append(errs, impErrs...)
+}
+
+// FetchAllCategories loads and stores all the category mappings defined in the filesystem
+func (fetcher *fileFetcher) FetchAllCategories(ctx context.Context) (categories map[string]json.RawMessage, errs []error) {
+	categories, errs = fetchAllObjects(fetcher.CategoriesDir, "*/*.json", "Category")
+	for name, mapping := range categories {
+		data := make(map[string]stored_requests.Category)
+		if err := json.Unmarshal(mapping, &data); err != nil {
+			errs = append(errs, fmt.Errorf(`Unable to unmarshal categories from "%s/%s.json"`, fetcher.CategoriesDir, name))
+			delete(categories, name)
+		} else {
+			fetcher.Categories[name] = data
+		}
+	}
+	return categories, errs
 }
 
 // FetchCategories fetches the ad-server/publisher specific category for the given IAB category

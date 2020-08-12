@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/caches/nil_cache"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	apiEvents "github.com/prebid/prebid-server/stored_requests/events/api"
+	fileEvents "github.com/prebid/prebid-server/stored_requests/events/files"
 	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
 	postgresEvents "github.com/prebid/prebid-server/stored_requests/events/postgres"
 )
@@ -144,6 +145,7 @@ func resolvedStoredRequestsConfig(cfg *config.Configuration) (auc, amp config.St
 	// Auction endpoint uses non-Amp fields so can just copy the slin data
 	auc.Files.Enabled = sr.Files
 	auc.Files.Path = sr.Path
+	auc.Files.LazyLoad = sr.FilesLazyLoad
 	auc.Postgres.ConnectionInfo = sr.Postgres.ConnectionInfo
 	auc.Postgres.FetcherQueries.QueryTemplate = sr.Postgres.FetcherQueries.QueryTemplate
 	auc.Postgres.CacheInitialization.Timeout = sr.Postgres.CacheInitialization.Timeout
@@ -160,21 +162,12 @@ func resolvedStoredRequestsConfig(cfg *config.Configuration) (auc, amp config.St
 	auc.HTTPEvents.Endpoint = sr.HTTPEvents.Endpoint
 
 	// Amp endpoint uses all the slim data but some fields get replacyed by Amp* version of similar fields
-	amp.Files.Enabled = sr.Files
-	amp.Files.Path = sr.Path
-	amp.Postgres.ConnectionInfo = sr.Postgres.ConnectionInfo
+	amp = auc
 	amp.Postgres.FetcherQueries.QueryTemplate = sr.Postgres.FetcherQueries.AmpQueryTemplate
-	amp.Postgres.CacheInitialization.Timeout = sr.Postgres.CacheInitialization.Timeout
 	amp.Postgres.CacheInitialization.Query = sr.Postgres.CacheInitialization.AmpQuery
-	amp.Postgres.PollUpdates.RefreshRate = sr.Postgres.PollUpdates.RefreshRate
-	amp.Postgres.PollUpdates.Timeout = sr.Postgres.PollUpdates.Timeout
 	amp.Postgres.PollUpdates.Query = sr.Postgres.PollUpdates.AmpQuery
-	amp.HTTP.Endpoint = sr.HTTP.AmpEndpoint
-	amp.InMemoryCache = sr.InMemoryCache
-	amp.CacheEvents.Enabled = sr.CacheEventsAPI
 	amp.CacheEvents.Endpoint = "/storedrequests/amp"
-	amp.HTTPEvents.RefreshRate = sr.HTTPEvents.RefreshRate
-	amp.HTTPEvents.Timeout = sr.HTTPEvents.Timeout
+	amp.HTTP.Endpoint = sr.HTTP.AmpEndpoint
 	amp.HTTPEvents.Endpoint = sr.HTTPEvents.AmpEndpoint
 
 	return
@@ -201,6 +194,10 @@ func newFetcher(cfg *config.StoredRequestsSlim, client *http.Client, db *sql.DB)
 
 	if cfg.Files.Enabled {
 		fFetcher := newFilesystem(cfg.Files.Path)
+		if !cfg.Files.LazyLoad {
+			// Permanently load all categories in fetcher's internal static map
+			fFetcher.(stored_requests.CategoryFetcher).FetchAllCategories(context.Background())
+		}
 		idList = append(idList, fFetcher)
 	}
 	if cfg.Postgres.FetcherQueries.QueryTemplate != "" {
@@ -243,6 +240,9 @@ func newEventProducers(cfg *config.StoredRequestsSlim, client *http.Client, db *
 		if cfg.Postgres.PollUpdates.Query != "" {
 			eventProducers = append(eventProducers, newPostgresPolling(cfg.Postgres.PollUpdates, db, updateStartTime))
 		}
+	}
+	if cfg.Files.Enabled && !cfg.Files.LazyLoad {
+		eventProducers = append(eventProducers, fileEvents.NewFilesLoader(cfg.Files))
 	}
 	return
 }

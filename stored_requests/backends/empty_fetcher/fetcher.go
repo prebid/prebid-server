@@ -3,6 +3,7 @@ package empty_fetcher
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
@@ -27,6 +28,14 @@ func (fetcher EmptyFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	return
 }
 
+func (fetcher EmptyFetcher) FetchAllRequests(ctx context.Context) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	return
+}
+
 func (fetcher EmptyFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
+}
+
+func (fetcher EmptyFetcher) FetchAllCategories(ctx context.Context) (categories map[string]json.RawMessage, errs []error) {
+	return
 }

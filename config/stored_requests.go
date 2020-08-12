@@ -17,6 +17,10 @@ type StoredRequests struct {
 	Files bool `mapstructure:"filesystem"`
 	//If data should be loaded from file system, path should be specified in configuration
 	Path string `mapstructure:"directorypath"`
+	// Lazy-load the data.
+	//   false (default): preload all the files in cache
+	//   true: load data only when incoming requests ask for the stored resource
+	FilesLazyLoad bool `mapstructure:"filesystem_lazy_load"`
 	// Postgres configures Fetchers and EventProducers which read from a Postgres DB.
 	// Fetchers are in stored_requests/backends/db_fetcher/postgres.go
 	// EventProducers are in stored_requests/events/postgres
@@ -105,6 +109,10 @@ type FileFetcherConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 	// Path to the directory this file fetcher gets data from.
 	Path string `mapstructure:"directorypath"`
+	// Lazy-load the data.
+	//   false (default): preload all the files in cache
+	//   true: load data only when incoming requests ask for the stored resource
+	LazyLoad bool `mapstructure:"lazy_load"`
 }
 
 // HTTPFetcherConfigSlim configures a stored_requests/backends/http_fetcher/fetcher.go
@@ -133,6 +141,10 @@ func (cfg *StoredRequests) validate(errs configErrors) configErrors {
 		}
 		if cfg.Postgres.CacheInitialization.Query != "" {
 			errs = append(errs, errors.New("stored_requests.postgres.initialize_caches.query must be empty if stored_requests.in_memory_cache=none"))
+		}
+		if cfg.Files && !cfg.FilesLazyLoad {
+			// auto configure an in-memory static cache to replicate previous behavior (load and store all)
+			cfg.InMemoryCache.Type = "unbounded"
 		}
 	}
 	errs = cfg.InMemoryCache.validate(errs)
