@@ -628,14 +628,16 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 			var dupeKey string
 			if brandCatExt.WithCategory {
 				categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+				if addBidderNames {
+					categoryDuration = fmt.Sprintf("%s_%s", categoryDuration, bidderName.String())
+				}
 				dupeKey = category
 			} else {
 				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
+				if addBidderNames {
+					categoryDuration = fmt.Sprintf("%s_%s", categoryDuration, bidderName.String())
+				}
 				dupeKey = categoryDuration
-			}
-
-			if addBidderNames {
-				categoryDuration = fmt.Sprintf("%s_%s", categoryDuration, bidderName.String())
 			}
 
 			if dupe, ok := dedupe[dupeKey]; ok {
