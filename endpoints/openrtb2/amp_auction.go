@@ -154,8 +154,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	} else {
 		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
-	setEffectiveAmpPubID(req, r.URL.Query())
 	labels.PubID = req.Site.Publisher.ID
+
 	// Blacklist account now that we have resolved the value
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
 		errL = append(errL, acctIdErr)
@@ -271,7 +271,7 @@ func setEffectiveAmpPubID(req *openrtb.BidRequest, urlValues url.Values) {
 	// For amp requests, the publisher ID could be sent via the account
 	// query string
 	if req.Site.Publisher.ID == pbsmetrics.PublisherUnknown {
-		if acc := urlValues.Get("account"); acc != "" {
+		if acc := urlValues.Get("account"); acc != "" && acc != "ACCOUNT_ID" {
 			// Amp requests can only have Site. Never App
 			req.Site.Publisher.ID = acc
 		}
@@ -404,13 +404,7 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 
 	setAmpExt(req.Site, "1")
 
-	account := httpRequest.FormValue("account")
-	if account != "" {
-		if req.Site.Publisher == nil {
-			req.Site.Publisher = &openrtb.Publisher{}
-		}
-		req.Site.Publisher.ID = account
-	}
+	setEffectiveAmpPubID(req, httpRequest.URL.Query())
 
 	slot := httpRequest.FormValue("slot")
 	if slot != "" {
