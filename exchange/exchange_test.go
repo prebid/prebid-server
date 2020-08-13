@@ -1531,7 +1531,7 @@ func TestCategoryMappingBidderName(t *testing.T) {
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
 
 	cats1 := []string{"IAB1-1"}
-	cats2 := []string{"IAB1-2"}
+	cats2 := []string{"IAB1-1"}
 	bid1 := openrtb.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
 	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 10.0000, Cat: cats2, W: 1, H: 1}
 
@@ -1559,7 +1559,7 @@ func TestCategoryMappingBidderName(t *testing.T) {
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, 0, len(rejections), "There should be 0 bid rejection messages")
 	assert.Equal(t, "10.00_VideoGames_30s_appnexus1", bidCategory["bid_id1"], "Category mapping doesn't match")
-	assert.Equal(t, "10.00_HomeDecor_30s_appnexus2", bidCategory["bid_id2"], "Category mapping doesn't match")
+	assert.Equal(t, "10.00_VideoGames_30s_appnexus2", bidCategory["bid_id2"], "Category mapping doesn't match")
 	assert.Equal(t, 1, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
 	assert.Equal(t, 1, len(adapterBids[bidderName2].bids), "Bidders number doesn't match")
 	assert.Equal(t, 2, len(bidCategory), "Bidders category mapping doesn't match")
