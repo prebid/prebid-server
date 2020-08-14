@@ -1,6 +1,7 @@
 package prometheusmetrics
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -942,6 +943,46 @@ func TestTimeoutNotifications(t *testing.T) {
 			successLabel: requestFailed,
 		})
 
+}
+
+func TestRecordPodImpGenTime(t *testing.T) {
+	impressions := 4
+	testAlgorithmMetrics(t, impressions, func(m *Metrics) dto.Histogram {
+		m.RecordPodImpGenTime(pbsmetrics.PodLabels{AlgorithmName: "sample_imp_algo", NoOfImpressions: &impressions}, time.Now())
+		return getHistogramFromHistogramVec(m.podImpGenTimer, podNoOfImpressions, strconv.Itoa(impressions))
+	})
+}
+
+func TestRecordPodCombGenTime(t *testing.T) {
+	combinations := 5
+	testAlgorithmMetrics(t, combinations, func(m *Metrics) dto.Histogram {
+		m.RecordPodCombGenTime(pbsmetrics.PodLabels{AlgorithmName: "sample_comb_algo", NoOfCombinations: &combinations}, time.Now())
+		return getHistogramFromHistogramVec(m.podCombGenTimer, podTotalCombinations, strconv.Itoa(combinations))
+	})
+}
+
+func TestRecordPodCompetitiveExclusionTime(t *testing.T) {
+	totalBids := 8
+	testAlgorithmMetrics(t, totalBids, func(m *Metrics) dto.Histogram {
+		m.RecordPodCompititveExclusionTime(pbsmetrics.PodLabels{AlgorithmName: "sample_comt_excl_algo", NoOfResponseBids: &totalBids}, time.Now())
+		return getHistogramFromHistogramVec(m.podCompExclTimer, podNoOfResponseBids, strconv.Itoa(totalBids))
+	})
+}
+
+func testAlgorithmMetrics(t *testing.T, input int, f func(m *Metrics) dto.Histogram) {
+	// test input
+	adRequests := 2
+	m := createMetricsForTesting()
+	var result dto.Histogram
+	for req := 1; req <= adRequests; req++ {
+		result = f(m)
+	}
+
+	// assert observations
+	assert.Equal(t, uint64(adRequests), result.GetSampleCount(), "ad requests : count")
+	for _, bucket := range result.Bucket {
+		assert.Equal(t, uint64(adRequests), bucket.GetCumulativeCount(), "total observations")
+	}
 }
 
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {

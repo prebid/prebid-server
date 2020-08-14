@@ -562,6 +562,18 @@ func (me *Metrics) RecordTimeoutNotice(success bool) {
 	return
 }
 
+// RecordPodImpGenTime as a noop
+func (me *Metrics) RecordPodImpGenTime(labels PodLabels, startTime time.Time) {
+}
+
+// RecordPodCombGenTime as a noop
+func (me *Metrics) RecordPodCombGenTime(labels PodLabels, elapsedTime time.Duration) {
+}
+
+// RecordPodCompititveExclusionTime as a noop
+func (me *Metrics) RecordPodCompititveExclusionTime(labels PodLabels, elapsedTime time.Duration) {
+}
+
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {
 	met, ok := meters[bidder]
 	if ok {

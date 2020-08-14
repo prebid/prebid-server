@@ -42,6 +42,20 @@ type Metrics struct {
 
 	// Account Metrics
 	accountRequests *prometheus.CounterVec
+
+	// Ad Pod Metrics
+
+	// podImpGenTimer indicates time taken by impression generator
+	// algorithm to generate impressions for given ad pod request
+	podImpGenTimer *prometheus.HistogramVec
+
+	// podImpGenTimer indicates time taken by combination generator
+	// algorithm to generate combination based on bid response and ad pod request
+	podCombGenTimer *prometheus.HistogramVec
+
+	// podCompExclTimer indicates time taken by compititve exclusion
+	// algorithm to generate final pod response based on bid response and ad pod request
+	podCompExclTimer *prometheus.HistogramVec
 }
 
 const (
@@ -83,6 +97,14 @@ const (
 const (
 	requestSuccessful = "ok"
 	requestFailed     = "failed"
+)
+
+// pod specific constants
+const (
+	podAlgorithm         = "algorithm"
+	podNoOfImpressions   = "no_of_impressions"
+	podTotalCombinations = "total_combinations"
+	podNoOfResponseBids  = "no_of_response_bids"
 )
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
@@ -211,6 +233,28 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		[]string{requestTypeLabel, requestStatusLabel},
 		queuedRequestTimeBuckets)
 
+	// adpod specific metrics
+	metrics.podImpGenTimer = newHistogram(cfg, metrics.Registry,
+		"impr_gen",
+		"Time taken by Ad Pod Impression Generator in seconds", []string{podAlgorithm, podNoOfImpressions},
+		// 200 µS, 250 µS, 275 µS, 300 µS
+		//[]float64{0.000200000, 0.000250000, 0.000275000, 0.000300000})
+		// 100 µS, 200 µS, 300 µS, 400 µS, 500 µS,  600 µS,
+		[]float64{0.000100000, 0.000200000, 0.000300000, 0.000400000, 0.000500000, 0.000600000})
+
+	metrics.podCombGenTimer = newHistogram(cfg, metrics.Registry,
+		"comb_gen",
+		"Time taken by Ad Pod Combination Generator in seconds", []string{podAlgorithm, podTotalCombinations},
+		// 200 µS, 250 µS, 275 µS, 300 µS
+		//[]float64{0.000200000, 0.000250000, 0.000275000, 0.000300000})
+		[]float64{0.000100000, 0.000200000, 0.000300000, 0.000400000, 0.000500000, 0.000600000})
+
+	metrics.podCompExclTimer = newHistogram(cfg, metrics.Registry,
+		"comp_excl",
+		"Time taken by Ad Pod Compititve Exclusion in seconds", []string{podAlgorithm, podNoOfResponseBids},
+		// 200 µS, 250 µS, 275 µS, 300 µS
+		//[]float64{0.000200000, 0.000250000, 0.000275000, 0.000300000})
+		[]float64{0.000100000, 0.000200000, 0.000300000, 0.000400000, 0.000500000, 0.000600000})
 	preloadLabelValues(&metrics)
 
 	return &metrics
@@ -420,4 +464,45 @@ func (m *Metrics) RecordTimeoutNotice(success bool) {
 			successLabel: requestFailed,
 		}).Inc()
 	}
+}
+
+// pod specific metrics
+
+// recordAlgoTime is common method which handles algorithm time performance
+func recordAlgoTime(timer *prometheus.HistogramVec, labels pbsmetrics.PodLabels, elapsedTime time.Duration) {
+
+	pmLabels := prometheus.Labels{
+		podAlgorithm: labels.AlgorithmName,
+	}
+
+	if labels.NoOfImpressions != nil {
+		pmLabels[podNoOfImpressions] = strconv.Itoa(*labels.NoOfImpressions)
+	}
+	if labels.NoOfCombinations != nil {
+		pmLabels[podTotalCombinations] = strconv.Itoa(*labels.NoOfCombinations)
+	}
+	if labels.NoOfResponseBids != nil {
+		pmLabels[podNoOfResponseBids] = strconv.Itoa(*labels.NoOfResponseBids)
+	}
+
+	timer.With(pmLabels).Observe(elapsedTime.Seconds())
+}
+
+// RecordPodImpGenTime records number of impressions generated and time taken
+// by underneath algorithm to generate them
+func (m *Metrics) RecordPodImpGenTime(labels pbsmetrics.PodLabels, start time.Time) {
+	elapsedTime := time.Since(start)
+	recordAlgoTime(m.podImpGenTimer, labels, elapsedTime)
+}
+
+// RecordPodCombGenTime records number of combinations generated and time taken
+// by underneath algorithm to generate them
+func (m *Metrics) RecordPodCombGenTime(labels pbsmetrics.PodLabels, elapsedTime time.Duration) {
+	recordAlgoTime(m.podCombGenTimer, labels, elapsedTime)
+}
+
+// RecordPodCompititveExclusionTime records number of combinations comsumed for forming
+// final ad pod response and time taken by underneath algorithm to generate them
+func (m *Metrics) RecordPodCompititveExclusionTime(labels pbsmetrics.PodLabels, elapsedTime time.Duration) {
+	recordAlgoTime(m.podCompExclTimer, labels, elapsedTime)
 }

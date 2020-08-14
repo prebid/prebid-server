@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -421,4 +422,13 @@ func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []
 		return aliases, defReqJSON
 	}
 	return aliases, []byte{}
+}
+
+func GetPrometheusRegistry() *prometheus.Registry {
+	mEngine, ok := g_metrics.(*metricsConf.DetailedMetricsEngine)
+	if !ok || mEngine == nil || mEngine.PrometheusMetrics == nil {
+		return nil
+	}
+
+	return mEngine.PrometheusMetrics.Registry
 }
