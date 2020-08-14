@@ -956,7 +956,7 @@ func TestRecordPodImpGenTime(t *testing.T) {
 func TestRecordPodCombGenTime(t *testing.T) {
 	combinations := 5
 	testAlgorithmMetrics(t, combinations, func(m *Metrics) dto.Histogram {
-		m.RecordPodCombGenTime(pbsmetrics.PodLabels{AlgorithmName: "sample_comb_algo", NoOfCombinations: &combinations}, time.Now())
+		m.RecordPodCombGenTime(pbsmetrics.PodLabels{AlgorithmName: "sample_comb_algo", NoOfCombinations: &combinations}, time.Since(time.Now()))
 		return getHistogramFromHistogramVec(m.podCombGenTimer, podTotalCombinations, strconv.Itoa(combinations))
 	})
 }
@@ -964,7 +964,7 @@ func TestRecordPodCombGenTime(t *testing.T) {
 func TestRecordPodCompetitiveExclusionTime(t *testing.T) {
 	totalBids := 8
 	testAlgorithmMetrics(t, totalBids, func(m *Metrics) dto.Histogram {
-		m.RecordPodCompititveExclusionTime(pbsmetrics.PodLabels{AlgorithmName: "sample_comt_excl_algo", NoOfResponseBids: &totalBids}, time.Now())
+		m.RecordPodCompititveExclusionTime(pbsmetrics.PodLabels{AlgorithmName: "sample_comt_excl_algo", NoOfResponseBids: &totalBids}, time.Since(time.Now()))
 		return getHistogramFromHistogramVec(m.podCompExclTimer, podNoOfResponseBids, strconv.Itoa(totalBids))
 	})
 }

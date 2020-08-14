@@ -106,3 +106,18 @@ func (me *MetricsEngineMock) RecordRequestQueueTime(success bool, requestType Re
 func (me *MetricsEngineMock) RecordTimeoutNotice(success bool) {
 	me.Called(success)
 }
+
+// RecordPodImpGenTime mock
+func (me *MetricsEngineMock) RecordPodImpGenTime(labels PodLabels, startTime time.Time) {
+	me.Called(labels, startTime)
+}
+
+// RecordPodCombGenTime mock
+func (me *MetricsEngineMock) RecordPodCombGenTime(labels PodLabels, elapsedTime time.Duration) {
+	me.Called(labels, elapsedTime)
+}
+
+// RecordPodCompititveExclusionTime mock
+func (me *MetricsEngineMock) RecordPodCompititveExclusionTime(labels PodLabels, elapsedTime time.Duration) {
+	me.Called(labels, elapsedTime)
+}
