@@ -19,6 +19,8 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/stored_requests"
 	metrics "github.com/rcrowley/go-metrics"
+	"github.com/yudai/gojsondiff"
+	"github.com/yudai/gojsondiff/formatter"
 
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -139,8 +141,8 @@ func TestGoodRequests(t *testing.T) {
 		expectedCode:  http.StatusOK,
 		aliased:       true,
 	}
-	exemplary.assert(t)
-	supplementary.assert(t)
+	exemplary.assert2(t)
+	supplementary.assert2(t)
 }
 
 // TestGoodNativeRequests makes sure we return 200s on well-formed Native requests.
@@ -153,7 +155,7 @@ func TestGoodNativeRequests(t *testing.T) {
 		expectedCode:  http.StatusOK,
 		aliased:       true,
 	}
-	tests.assert(t)
+	tests.assert2(t)
 }
 
 // TestBadRequests makes sure we return 400s on bad requests.
@@ -167,7 +169,7 @@ func TestBadRequests(t *testing.T) {
 		expectedCode:  http.StatusBadRequest,
 		aliased:       false,
 	}
-	tests.assert(t)
+	tests.assert2(t)
 }
 
 // TestBadNativeRequests makes sure we return 400s on requests with bad Native requests.
@@ -180,7 +182,7 @@ func TestBadNativeRequests(t *testing.T) {
 		expectedCode:  http.StatusBadRequest,
 		aliased:       false,
 	}
-	tests.assert(t)
+	tests.assert2(t)
 }
 
 // TestAliasedRequests makes sure we handle (default) aliased bidders properly
@@ -193,7 +195,7 @@ func TestAliasedRequests(t *testing.T) {
 		expectedCode:  http.StatusOK,
 		aliased:       true,
 	}
-	tests.assert(t)
+	tests.assert2(t)
 }
 
 // TestDisabledBidders makes sure we don't break when encountering a disabled bidder
@@ -224,8 +226,8 @@ func TestDisabledBidders(t *testing.T) {
 			"rubicon":  {Disabled: true},
 		},
 	}
-	badTests.assert(t)
-	goodTests.assert(t)
+	badTests.assert2(t)
+	goodTests.assert2(t)
 }
 
 // TestBlacklistRequests makes sure we return 400s on blacklisted requests.
@@ -239,7 +241,7 @@ func TestBlacklistRequests(t *testing.T) {
 		expectedCode:  http.StatusServiceUnavailable,
 		aliased:       false,
 	}
-	tests.assert(t)
+	tests.assert2(t)
 }
 
 // TestRejectAccountRequired asserts we return a 400 code on a request that comes with no user id nor app id
@@ -248,48 +250,47 @@ func TestRejectAccountRequired(t *testing.T) {
 	tests := []*getResponseFromDirectory{
 		{
 			// Account not required and not provided in prebid request
-			dir:           "sample-requests/account-required",
-			file:          "no-acct.json",
+			dir:           "sample-requests/account-required/no-account",
 			payloadGetter: getRequestPayload,
 			messageGetter: nilReturner,
 			descGetter:    getDescription,
 			expectedCode:  http.StatusOK,
 			accountReq:    false,
 		},
-		{
-			// Account was required but not provided in prebid request
-			dir:           "sample-requests/account-required",
-			file:          "no-acct.json",
-			payloadGetter: getRequestPayload,
-			messageGetter: getMessage,
-			descGetter:    getDescription,
-			expectedCode:  http.StatusBadRequest,
-			accountReq:    true,
-		},
-		{
-			// Account is required, was provided and is not in the blacklisted accounts map
-			dir:           "sample-requests/account-required",
-			file:          "with-acct.json",
-			payloadGetter: getRequestPayload,
-			messageGetter: nilReturner,
-			descGetter:    getDescription,
-			expectedCode:  http.StatusOK,
-			aliased:       true,
-			accountReq:    true,
-		},
-		{
-			// Account is required, was provided in request and is found in the  blacklisted accounts map
-			dir:           "sample-requests/blacklisted",
-			file:          "blacklisted-acct.json",
-			payloadGetter: getRequestPayload,
-			messageGetter: getMessage,
-			descGetter:    getDescription,
-			expectedCode:  http.StatusServiceUnavailable,
-			accountReq:    true,
-		},
+		//{
+		//	// Account was required but not provided in prebid request
+		//	dir:           "sample-requests/account-required",
+		//	file:          "no-acct.json",
+		//	payloadGetter: getRequestPayload,
+		//	messageGetter: getMessage,
+		//	descGetter:    getDescription,
+		//	expectedCode:  http.StatusBadRequest,
+		//	accountReq:    true,
+		//},
+		//{
+		//	// Account is required, was provided and is not in the blacklisted accounts map
+		//	dir:           "sample-requests/account-required",
+		//	file:          "with-acct.json",
+		//	payloadGetter: getRequestPayload,
+		//	messageGetter: nilReturner,
+		//	descGetter:    getDescription,
+		//	expectedCode:  http.StatusOK,
+		//	aliased:       true,
+		//	accountReq:    true,
+		//},
+		//{
+		//	// Account is required, was provided in request and is found in the  blacklisted accounts map
+		//	dir:           "sample-requests/blacklisted",
+		//	file:          "blacklisted-acct.json",
+		//	payloadGetter: getRequestPayload,
+		//	messageGetter: getMessage,
+		//	descGetter:    getDescription,
+		//	expectedCode:  http.StatusServiceUnavailable,
+		//	accountReq:    true,
+		//},
 	}
 	for _, test := range tests {
-		test.assert(t)
+		test.assert2(t)
 	}
 }
 
@@ -325,6 +326,104 @@ func (gr *getResponseFromDirectory) assert(t *testing.T) {
 			} else {
 				assert.Equal(t, string(expectMsg), requestUsed, "file %s had bad response body", testFile)
 			}
+		}
+	}
+}
+
+// assertResponseFromDirectory makes sure that the payload from each file in dir gets the expected response status code
+// from the /openrtb2/auction endpoint.
+func (gr *getResponseFromDirectory) assert2(t *testing.T) {
+	//t *testing.T, dir string, payloadGetter func(*testing.T, []byte) []byte, messageGetter func(*testing.T, []byte) []byte, expectedCode int, aliased bool) {
+	t.Helper()
+	var filesToAssert []string
+	if gr.file == "" {
+		// Append every file found in `gr.dir` to the `filesToAssert` array and test them all
+		for _, fileInfo := range fetchFiles(t, gr.dir) {
+			filesToAssert = append(filesToAssert, gr.dir+"/"+fileInfo.Name())
+		}
+	} else {
+		// Just test the single `gr.file`, and not the entirety of files that may be found in `gr.dir`
+		filesToAssert = append(filesToAssert, gr.dir+"/"+gr.file)
+	}
+
+	var fileData []byte
+	// Test the one or more test files appended to `filesToAssert`
+	for _, testFile := range filesToAssert {
+		fileData = readFile(t, testFile)
+		var err error
+
+		//desc, err := jsonparser.GetString(fileData, "description")
+		//assert.NoError(t, err, "Error jsonparsing root.description from file %s. Desc: %v.", testFile, err)
+		desc := testFile
+
+		// Run test
+		testBidRequest, _, _, err := jsonparser.Get(fileData, "mockBidRequest")
+		assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", testFile, err)
+
+		accountReq := false
+		testConfig, err := jsonparser.GetBoolean(fileData, "mockConfig", "accountRequired")
+		if err != nil {
+			accountReq = testConfig
+		}
+
+		actualCode, actualBidResponse := gr.doRequest2(t, testBidRequest, accountReq)
+
+		//Compare status code
+		expectedCode, err := jsonparser.GetInt(fileData, "expectedReturnCode")
+		assert.NoError(t, err, "Error jsonparsing root.code from file %s. Desc: %v.", testFile, err)
+
+		assert.Equal(t, expectedCode, int64(actualCode), "Test failed. Filename: %s \n", testFile)
+
+		// Either assert bid response or expected error
+		if actualCode != 200 {
+			// Assert expected error
+			expectedError, err := jsonparser.GetString(fileData, "expectedErrorMessage")
+			assert.NoError(t, err, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
+
+			assert.True(t, strings.HasPrefix(actualBidResponse, expectedError), "Test failed. %s. Filename: %s \n", desc, testFile)
+		} else {
+			// Assert expected response
+			expectedBidResponse, _, _, err := jsonparser.Get(fileData, "expectedBidResponse")
+			assert.NoError(t, err, "Error jsonparsing root.expectedBidResponse from file %s. Desc: %v.", testFile, err)
+
+			//Compare expected bidResponse
+			//assert.Equal(t, expectedBidResponse, actualBidResponse, "Test failed. %s. Filename: \n", desc, testFile)
+			diffJson(t, desc, []byte(actualBidResponse), expectedBidResponse)
+		}
+	}
+}
+
+/*
+type testStruct struct {
+  desc string "description": "Invalid request: request missing required field: \"id\"\n",
+  "mockBidRequest": {},
+  "expectedBidResponse": {
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
+}
+*/
+// diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
+// byte array is not actually JSON.
+func diffJson(t *testing.T, description string, actual []byte, expected []byte) {
+	t.Helper()
+	diff, err := gojsondiff.New().Compare(actual, expected)
+	if err != nil {
+		t.Fatalf("%s json diff failed. %v", description, err)
+	}
+
+	if diff.Modified() {
+		var left interface{}
+		if err := json.Unmarshal(actual, &left); err != nil {
+			t.Fatalf("%s json did not match, but unmarshalling failed. %v", description, err)
+		}
+		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
+			ShowArrayIndex: true,
+		})
+		output, err := printer.Format(diff)
+		if err != nil {
+			t.Errorf("%s did not match, but diff formatting failed. %v", description, err)
+		} else {
+			t.Errorf("%s json did not match expected.\n\n%s", description, output)
 		}
 	}
 }
@@ -377,6 +476,39 @@ func (gr *getResponseFromDirectory) doRequest(t *testing.T, requestData []byte) 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
+	return recorder.Code, recorder.Body.String()
+}
+
+// doRequest2 just unmarshals!!
+func (gr *getResponseFromDirectory) doRequest2(t *testing.T, jsonRequestData []byte, accountReq bool) (int, string) {
+	aliasJSON := []byte{}
+	if gr.aliased { // Get with Jsonparser
+		aliasJSON = []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
+	}
+	disabledBidders := map[string]string{
+		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
+	}
+	bidderMap := exchange.DisableBidders(getBidderInfos(gr.adaptersConfig, openrtb_ext.BidderList()), disabledBidders)
+
+	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
+	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	endpoint, _ := NewEndpoint(
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize, BlacklistedApps: []string{"spam_app"}, BlacklistedAppMap: map[string]bool{"spam_app": true}, BlacklistedAccts: []string{"bad_acct"}, BlacklistedAcctMap: map[string]bool{"bad_acct": true}, AccountRequired: accountReq},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		disabledBidders,
+		aliasJSON,
+		bidderMap,
+	)
+
+	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(jsonRequestData))
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
 	return recorder.Code, recorder.Body.String()
 }
 

@@ -1,31 +1,38 @@
 {
-  "message": "Invalid request: request.ext.prebid.aliases.unknown refers to unknown bidder: other-unknown\n",
-  "requestPayload": {
-    "id": "some-request-id",
-    "site": {
-      "page": "test.somepage.com"
-    },
-    "imp": [
-      {
-        "id": "my-imp-id",
-        "video": {
-          "mimes": [
-            "video/mp4"
-          ]
-        },
-        "ext": {
-          "unknown": {
-            "placementId": 12883451
+  "description": "Invalid request: request.ext.prebid.aliases.unknown refers to unknown bidder: other-unknown\n",
+  "mockBidRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "ext": {
+            "unknown": {
+              "placementId": 12883451
+            }
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+          "aliases": {
+            "unknown": "other-unknown"
           }
         }
       }
-    ],
-    "ext": {
-      "prebid": {
-        "aliases": {
-          "unknown": "other-unknown"
-        }
-      }
-    }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

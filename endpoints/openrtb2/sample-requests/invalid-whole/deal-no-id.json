@@ -1,27 +1,34 @@
 {
-  "message": "Invalid request: request.imp[0].pmp.deals[0] missing required field: \"id\"\n",
-  "requestPayload": {
-    "id": "req-id",
-    "imp": [
-      {
-        "id": "imp-id",
-        "video": {
-          "mimes": [
-            "video/mp4"
-          ]
-        },
-        "pmp": {
-          "deals": [
-            {
-              "private_auction": 1,
-              "id": ""
-            }
-          ]
+  "description": "Invalid request: request.imp[0].pmp.deals[0] missing required field: \"id\"\n",
+  "mockBidRequest": {
+      "id": "req-id",
+      "imp": [
+        {
+          "id": "imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "pmp": {
+            "deals": [
+              {
+                "private_auction": 1,
+                "id": ""
+              }
+            ]
+          }
         }
+      ],
+      "app": {
+        "id": "app_001"
       }
-    ],
-    "app": {
-      "id": "app_001"
-    }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

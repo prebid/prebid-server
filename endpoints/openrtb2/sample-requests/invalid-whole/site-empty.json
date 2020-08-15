@@ -1,22 +1,29 @@
 {
-  "message": "Invalid request: request.site should include at least one of request.site.id or request.site.page.\n",
-  "requestPayload": {
-    "id": "req-id",
-    "site": {},
-    "imp": [
-      {
-        "id": "imp-id",
-        "video": {
-          "mimes": [
-            "video/mp4"
-          ]
-        },
-        "ext": {
-          "appnexus": {
-            "placementId": 12883451
+  "description": "Invalid request: request.site should include at least one of request.site.id or request.site.page.\n",
+  "mockBidRequest": {
+      "id": "req-id",
+      "site": {},
+      "imp": [
+        {
+          "id": "imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 12883451
+            }
           }
         }
-      }
-    ]
-  }
+      ]
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

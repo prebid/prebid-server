@@ -1,6 +1,6 @@
 {
-    "message": "Invalid request: json: cannot unmarshal object into Go struct field ExtAppPrebid.source of type string\n",
-    "requestPayload": {
+    "description": "Invalid request: json: cannot unmarshal object into Go struct field ExtAppPrebid.source of type string\n",
+    "mockBidRequest": {
         "id": "some-request-id",
         "app": {
             "ext": {
@@ -37,5 +37,12 @@
                 }
             }
         ]
-    }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }  

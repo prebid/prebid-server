@@ -1,44 +1,51 @@
 {
-  "message": "Invalid request: request.user contains a digitrust object that is not valid.\n",
-  "requestPayload": {
-    "id": "request-with-invalid-digitrust-obj",
-    "site": {
-      "page": "test.somepage.com"
-    },
-    "imp": [
-      {
-        "id": "my-imp-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 600
+  "description": "Invalid request: request.user contains a digitrust object that is not valid.\n",
+  "mockBidRequest": {
+      "id": "request-with-invalid-digitrust-obj",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 600
+              }
+            ]
+          },
+          "pmp": {
+            "deals": [
+              {
+                "id": "some-deal-id"
+              }
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 12883451
             }
-          ]
-        },
-        "pmp": {
-          "deals": [
-            {
-              "id": "some-deal-id"
-            }
-          ]
-        },
+          }
+        }
+      ],
+      "user": {
+        "yob": 1989,
         "ext": {
-          "appnexus": {
-            "placementId": 12883451
+          "digitrust": {
+            "id": "sample-digitrust-id",
+            "keyv": 1,
+            "pref": 1
           }
         }
       }
-    ],
-    "user": {
-      "yob": 1989,
-      "ext": {
-        "digitrust": {
-          "id": "sample-digitrust-id",
-          "keyv": 1,
-          "pref": 1
-        }
-      }
-    }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

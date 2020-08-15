@@ -1,12 +1,30 @@
 {
-    "context": 1,
-    "plcmttype": 1,
-    "assets": [
-        {
-            "img": {
-                "hmin": 30,
-                "wmin": -20
-            }
+  "description": "Native request",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"img\":{\"hmin\":30,\"wmin\":-20}}]}"
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
         }
+      }
     ]
+  },
+  "expectedBidResponse": {
+    "id": "req-id",
+    "bidid": "test bid id",
+    "nbr": 0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

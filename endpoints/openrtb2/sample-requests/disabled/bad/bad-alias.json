@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.ext.prebid.aliases.test1 refers to unknown bidder: appnexus\n",
-  "requestPayload": {
+  "description": "Invalid request: request.ext.prebid.aliases.test1 refers to unknown bidder: appnexus\n",
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "test.somepage.com"
@@ -27,5 +27,12 @@
         }
       }
     }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

@@ -1,29 +1,36 @@
 {
-  "message": "Invalid request: request.ext is invalid: request.ext.prebid.cache requires one of the \"bids\" or \"vastml\" properties\n",
-  "requestPayload": {
-    "id": "some-request-id",
-    "site": {
-      "page": "test.somepage.com"
-    },
-    "imp": [
-      {
-        "id": "my-imp-id",
-        "video": {
-          "mimes": [
-            "video/mp4"
-          ]
-        },
-        "ext": {
-          "appnexus": {
-            "placementId": 12883451
+  "description": "Invalid request: request.ext is invalid: request.ext.prebid.cache requires one of the \"bids\" or \"vastml\" properties\n",
+  "mockBidRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 12883451
+            }
           }
         }
+      ],
+      "ext": {
+        "prebid": {
+          "cache": {}
+        }
       }
-    ],
-    "ext": {
-      "prebid": {
-        "cache": {}
-      }
-    }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

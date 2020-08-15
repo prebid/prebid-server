@@ -1,4 +1,6 @@
 {
+  "description": "This demonstrates all of the OpenRTB extensions supported by Prebid Server. Very few requests will need all of these at once.",
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "test.somepage.com"
@@ -18,4 +20,11 @@
         }
       }
     ]
-  }
+  },
+  "expectedBidResponse": {
+    "id":"some-request-id",
+    "bidid":"test bid id",
+    "nbr":0
+  },
+  "expectedReturnCode": 200
+}

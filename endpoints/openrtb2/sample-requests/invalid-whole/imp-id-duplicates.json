@@ -1,44 +1,51 @@
 {
-  "message": "Invalid request: request.imp[0].id and request.imp[1].id are both \"some-impression-id\". Imp IDs must be unique.\n",
-  "requestPayload": {
-    "id": "some-request-id",
-    "site": {
-      "page": "prebid.org"
-    },
-    "imp": [
-      {
-        "id": "some-impression-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
-        },
-        "ext": {
-          "appnexus": {
-            "placementId": 12883451
-          }
-        }
+  "description": "Invalid request: request.imp[0].id and request.imp[1].id are both \"some-impression-id\". Imp IDs must be unique.\n",
+  "mockBidRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "prebid.org"
       },
-      {
-        "id": "some-impression-id",
-        "banner": {
-          "format": [
-            {
-              "w": 200,
-              "h": 250
+      "imp": [
+        {
+          "id": "some-impression-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 12883451
             }
-          ]
+          }
         },
-        "ext": {
-          "appnexus": {
-            "placementId": 10433395
+        {
+          "id": "some-impression-id",
+          "banner": {
+            "format": [
+              {
+                "w": 200,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 10433395
+            }
           }
         }
-      }
-    ],
-    "tmax": 500
-  }
+      ],
+      "tmax": 500
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

@@ -1,6 +1,7 @@
 {
-  "message": "Invalid request: request.imp must contain at least one element.\n",
-  "requestPayload": {
+  "mockBidRequest": {
     "id": "req-id"
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp must contain at least one element.\n"
 }

@@ -1,35 +1,44 @@
 {
-    "id": "some-request-id",
-    "site": {
-      "page": "test.somepage.com"
-    },
-    "imp": [
-      {
-        "id": "my-imp-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 600
+  "description": "a desc",
+  "mockBidRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 600
+              }
+            ]
+          },
+          "instl": 1,
+          "ext": {
+            "appnexus": {
+              "placementId": 12883451
             }
-          ]
-        },
-        "instl": 1,
-        "ext": {
-          "appnexus": {
-            "placementId": 12883451
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+          "targeting": {
+            "pricegranularity": "low"
+          },
+          "cache": {
+            "bids": {}
           }
         }
       }
-    ],
-    "ext": {
-      "prebid": {
-        "targeting": {
-          "pricegranularity": "low"
-        },
-        "cache": {
-          "bids": {}
-        }
-      }
-    }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 200
 }

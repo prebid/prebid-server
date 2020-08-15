@@ -1,8 +1,6 @@
 {
   "description": "This uses Appnexus to fetch the prebid sample ad, as seen on prebid.org.",
-  "message": "endpoints/openrtb2/sample-requests/valid-whole/exemplary/prebid-test-ad.json",
-
-  "requestPayload": {
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "prebid.org"
@@ -30,5 +28,11 @@
       }
     ],
     "tmax": 500
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 200
 }

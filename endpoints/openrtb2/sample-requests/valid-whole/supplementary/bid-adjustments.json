@@ -1,32 +1,41 @@
 {
-  "id": "some-request-id",
-  "site": {
-    "page": "test.somepage.com"
-  },
-  "imp": [
-    {
-      "id": "my-imp-id",
-      "video": {
-        "mimes": [
-          "video/mp4"
-        ]
-      },
-      "ext": {
-        "unknown": {
-          "placementId": 12883451
+  "description": "This demonstrates all of the OpenRTB extensions supported by Prebid Server. Very few requests will need all of these at once.",
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "unknown": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "bidadjustmentfactors": {
+          "appnexus": 2.0,
+          "unknown": 1.5
+        },
+        "aliases": {
+          "unknown": "appnexus"
         }
       }
     }
-  ],
-  "ext": {
-    "prebid": {
-      "bidadjustmentfactors": {
-        "appnexus": 2.0,
-        "unknown": 1.5
-      },
-      "aliases": {
-        "unknown": "appnexus"
-      }
-    }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 200
 }

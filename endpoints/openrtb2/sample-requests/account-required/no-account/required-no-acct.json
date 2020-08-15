@@ -3,11 +3,9 @@
   "mockConfig": {
     "accountRequired": true
   },
-
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {
-      "publisher": { "id": "not_bad_acct"},
       "page": "test.somepage.com"
     },
     "user": { },
@@ -65,6 +63,6 @@
       }
     }
   },
-  "expectedReturnCode": 200,
-  "expectedErrorMessage": "Invalid request: Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.\n",
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.\n"
 }

@@ -1,4 +1,6 @@
 {
+  "description": "a desc",
+  "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
       "page": "prebid.org",
@@ -37,5 +39,11 @@
         "us_privacy": "invalid by length. allowed since it only produces a warning."
       }
     }
-  }
-  
+  },
+  "expectedBidResponse": {
+      "id":"b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 200
+}

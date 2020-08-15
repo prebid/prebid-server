@@ -1,17 +1,24 @@
 {
-  "message": "Invalid request: Request imp[0].banner.format[0] should define *either* {w, h} (for static size requirements) *or* {wmin, wratio, hratio} (for flexible sizes) to be non-zero.\n",
-  "requestPayload": {
-    "id":"req-id",
-    "imp": [
-      {
-        "id": "imp-id",
-        "banner": {
-          "format": [{}]
+  "description": "Invalid request: Request imp[0].banner.format[0] should define *either* {w, h} (for static size requirements) *or* {wmin, wratio, hratio} (for flexible sizes) to be non-zero.\n",
+  "mockBidRequest": {
+      "id":"req-id",
+      "imp": [
+        {
+          "id": "imp-id",
+          "banner": {
+            "format": [{}]
+          }
         }
+      ],
+      "app": {
+        "id": "app_001"
       }
-    ],
-    "app": {
-      "id": "app_001"
-    }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

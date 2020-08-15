@@ -1,20 +1,27 @@
 {
-  "message": "Invalid request: request.imp[0].ext must contain at least one bidder\n",
-  "requestPayload": {
-    "id": "req-id",
-    "imp": [
-      {
-        "id": "imp-id",
-        "video": {
-          "mimes": [
-            "video/mp4"
-          ]
-        },
-        "ext": {}
+  "description": "Invalid request: request.imp[0].ext must contain at least one bidder\n",
+  "mockBidRequest": {
+      "id": "req-id",
+      "imp": [
+        {
+          "id": "imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "ext": {}
+        }
+      ],
+      "app": {
+        "id": "app_001"
       }
-    ],
-    "app": {
-      "id": "app_001"
-    }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

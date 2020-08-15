@@ -1,4 +1,6 @@
 {
+  "description": "Good request",
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "test.somepage.com"
@@ -49,4 +51,11 @@
         }
       }
     }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 200
+}

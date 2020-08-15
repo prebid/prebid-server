@@ -1,15 +1,22 @@
 {
-  "message": "Invalid request: request.imp[0].video.mimes must contain at least one supported MIME type\n",
-  "requestPayload": {
-    "id": "req-id",
-    "imp": [
-      {
-        "id": "imp-id",
-        "video": {}
+  "description": "Invalid request: request.imp[0].video.mimes must contain at least one supported MIME type\n",
+  "mockBidRequest": {
+      "id": "req-id",
+      "imp": [
+        {
+          "id": "imp-id",
+          "video": {}
+        }
+      ],
+      "app": {
+        "id": "app_001"
       }
-    ],
-    "app": {
-      "id": "app_001"
-    }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

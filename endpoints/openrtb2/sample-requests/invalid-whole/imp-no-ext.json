@@ -1,19 +1,26 @@
 {
-  "message": "Invalid request: request.imp[0].ext is required\n",
-  "requestPayload": {
-    "id": "req-id",
-    "imp": [
-      {
-        "id": "imp-id",
-        "video": {
-          "mimes": [
-            "video/mp4"
-          ]
+  "description": "Invalid request: request.imp[0].ext is required\n",
+  "mockBidRequest": {
+      "id": "req-id",
+      "imp": [
+        {
+          "id": "imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          }
         }
+      ],
+      "app": {
+        "id": "app_001"
       }
-    ],
-    "app": {
-      "id": "app_001"
-    }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }
