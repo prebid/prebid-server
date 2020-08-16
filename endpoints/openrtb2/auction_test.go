@@ -251,43 +251,44 @@ func TestRejectAccountRequired(t *testing.T) {
 		{
 			// Account not required and not provided in prebid request
 			dir:           "sample-requests/account-required/no-account",
+			file:          "not-required-no-acct.json",
 			payloadGetter: getRequestPayload,
 			messageGetter: nilReturner,
 			descGetter:    getDescription,
 			expectedCode:  http.StatusOK,
 			accountReq:    false,
 		},
-		//{
-		//	// Account was required but not provided in prebid request
-		//	dir:           "sample-requests/account-required",
-		//	file:          "no-acct.json",
-		//	payloadGetter: getRequestPayload,
-		//	messageGetter: getMessage,
-		//	descGetter:    getDescription,
-		//	expectedCode:  http.StatusBadRequest,
-		//	accountReq:    true,
-		//},
-		//{
-		//	// Account is required, was provided and is not in the blacklisted accounts map
-		//	dir:           "sample-requests/account-required",
-		//	file:          "with-acct.json",
-		//	payloadGetter: getRequestPayload,
-		//	messageGetter: nilReturner,
-		//	descGetter:    getDescription,
-		//	expectedCode:  http.StatusOK,
-		//	aliased:       true,
-		//	accountReq:    true,
-		//},
-		//{
-		//	// Account is required, was provided in request and is found in the  blacklisted accounts map
-		//	dir:           "sample-requests/blacklisted",
-		//	file:          "blacklisted-acct.json",
-		//	payloadGetter: getRequestPayload,
-		//	messageGetter: getMessage,
-		//	descGetter:    getDescription,
-		//	expectedCode:  http.StatusServiceUnavailable,
-		//	accountReq:    true,
-		//},
+		{
+			// Account was required but not provided in prebid request
+			dir:           "sample-requests/account-required/no-account",
+			file:          "required-no-acct.json",
+			payloadGetter: getRequestPayload,
+			messageGetter: getMessage,
+			descGetter:    getDescription,
+			expectedCode:  http.StatusBadRequest,
+			accountReq:    true,
+		},
+		{
+			// Account is required, was provided and is not in the blacklisted accounts map
+			dir:           "sample-requests/account-required/with-account",
+			file:          "required-with-acct.json",
+			payloadGetter: getRequestPayload,
+			messageGetter: nilReturner,
+			descGetter:    getDescription,
+			expectedCode:  http.StatusOK,
+			aliased:       true,
+			accountReq:    true,
+		},
+		{
+			// Account is required, was provided in request and is found in the  blacklisted accounts map
+			dir:           "sample-requests/account-required/with-account",
+			file:          "required-blacklisted-acct.json",
+			payloadGetter: getRequestPayload,
+			messageGetter: getMessage,
+			descGetter:    getDescription,
+			expectedCode:  http.StatusServiceUnavailable,
+			accountReq:    true,
+		},
 	}
 	for _, test := range tests {
 		test.assert2(t)
@@ -362,7 +363,7 @@ func (gr *getResponseFromDirectory) assert2(t *testing.T) {
 
 		accountReq := false
 		testConfig, err := jsonparser.GetBoolean(fileData, "mockConfig", "accountRequired")
-		if err != nil {
+		if err == nil {
 			accountReq = testConfig
 		}
 
@@ -380,7 +381,7 @@ func (gr *getResponseFromDirectory) assert2(t *testing.T) {
 			expectedError, err := jsonparser.GetString(fileData, "expectedErrorMessage")
 			assert.NoError(t, err, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
 
-			assert.True(t, strings.HasPrefix(actualBidResponse, expectedError), "Test failed. %s. Filename: %s \n", desc, testFile)
+			assert.True(t, strings.HasPrefix(actualBidResponse, expectedError), "Test failed. %s. Filename: %s \n", actualBidResponse, testFile)
 		} else {
 			// Assert expected response
 			expectedBidResponse, _, _, err := jsonparser.Get(fileData, "expectedBidResponse")
@@ -525,7 +526,9 @@ func TestBadAliasRequests(t *testing.T) {
 func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 	t.Helper()
 	fileData := readFile(t, filename)
-	requestData := getRequestPayload(t, fileData)
+	testBidRequest, _, _, err := jsonparser.Get(fileData, "mockBidRequest")
+	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", filename, err)
+
 	// aliasJSON lacks a comma after the "appnexus" entry so is bad JSON
 	aliasJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus" "test2": "rubicon", "test3": "openx"}}}}`)
 	disabledBidders := map[string]string{
@@ -539,7 +542,7 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	endpoint, _ := NewEndpoint(&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), disabledBidders, aliasJSON, bidderMap)
 
-	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
+	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(testBidRequest))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
@@ -990,7 +993,7 @@ func TestBadStoredRequests(t *testing.T) {
 		expectedCode:  http.StatusBadRequest,
 		aliased:       false,
 	}
-	tests.assert(t)
+	tests.assert2(t)
 }
 
 // Test the stored request functionality
@@ -1204,11 +1207,13 @@ func TestContentType(t *testing.T) {
 
 // TestDisabledBidder makes sure we pass when encountering a disabled bidder in the configuration.
 func TestDisabledBidder(t *testing.T) {
-	reqData, err := ioutil.ReadFile("sample-requests/invalid-whole/unknown-bidder.json")
+	filename := "sample-requests/invalid-whole/unknown-bidder.json"
+	fileData, err := ioutil.ReadFile(filename)
 	if err != nil {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}
-	reqBody := string(getRequestPayload(t, reqData))
+	testBidRequest, _, _, err := jsonparser.Get(fileData, "mockBidRequest")
+	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", filename, err)
 
 	deps := &endpointDeps{
 		&nobidExchange{},
@@ -1217,7 +1222,7 @@ func TestDisabledBidder(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{
-			MaxRequestSize: int64(len(reqBody)),
+			MaxRequestSize: int64(len(testBidRequest)),
 		},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -1230,7 +1235,7 @@ func TestDisabledBidder(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(string(testBidRequest)))
 	recorder := httptest.NewRecorder()
 
 	deps.Auction(recorder, req, nil)
@@ -1285,7 +1290,10 @@ func validRequest(t *testing.T, filename string) string {
 	if err != nil {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}
-	return string(requestData)
+	testBidRequest, _, _, err := jsonparser.Get(requestData, "mockBidRequest")
+	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", filename, err)
+
+	return string(testBidRequest)
 }
 
 func TestCurrencyTrunc(t *testing.T) {

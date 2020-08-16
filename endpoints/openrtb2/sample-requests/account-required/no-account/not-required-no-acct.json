@@ -68,6 +68,5 @@
       "bidid":"test bid id",
       "nbr":0
   },
-  "expectedReturnCode": 200,
-  "expectedErrorMessage": "Invalid request: Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.\n",
+  "expectedReturnCode": 200
 }
