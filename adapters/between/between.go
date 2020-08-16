@@ -10,7 +10,6 @@ import (
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
-	//"strconv"
 	"text/template"
 )
 
@@ -141,15 +140,9 @@ func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpBetween, error) {
 	var betweenExt openrtb_ext.ExtImpBetween
 	if err := json.Unmarshal(bidderExt.Bidder, &betweenExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Cannot Resolve host or sourceId: %s", err.Error()),
+			Message: fmt.Sprintf("Cannot resolve host: %s", err.Error()),
 		}
 	}
-
-	//if betweenExt.PublisherID < 1 {
-	//	return nil, &errortypes.BadInput{
-	//		Message: "Invalid/Missing SourceId",
-	//	}
-	//}
 
 	if len(betweenExt.Host) < 1 {
 		return nil, &errortypes.BadInput{

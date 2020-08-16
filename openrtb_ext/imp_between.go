@@ -1,5 +1,5 @@
 package openrtb_ext
 
 type ExtImpBetween struct {
-	Host string `json:"host,omitempty"`
+	Host string `json:"host"`
 }
