@@ -165,7 +165,7 @@ func TestDefaultVendorList(t *testing.T) {
 
 	list, err := fetcher(context.Background(), 12)
 	assert.NoError(t, err, "Error with fetching default vendorlist: %v", err)
-	assert.Equal(t, uint16(214), list.Version(), "Expected to fetch default version 214, got %d", list.Version())
+	assert.Equal(t, uint16(215), list.Version(), "Expected to fetch default version 215, got %d", list.Version())
 
 	// Testing that we got the default vendorlist data, and not the version off the server.
 	vendor := list.Vendor(12)
@@ -227,7 +227,7 @@ func TestFallbackVendorListNoFetch(t *testing.T) {
 	fetcher := newVendorListFetcher(context.Background(), testcfg, server.Client(), testURLMaker(server), 1)
 	list, err := fetcher(context.Background(), 2)
 	assert.NoError(t, err, "Error with fetching default vendorlist: %v", err)
-	assert.Equal(t, uint16(214), list.Version(), "Expected to fetch default version 214, got %d", list.Version())
+	assert.Equal(t, uint16(215), list.Version(), "Expected to fetch default version 215, got %d", list.Version())
 
 	// Testing that we got the default vendorlist data, and not the version off the server.
 	vendor := list.Vendor(12)
