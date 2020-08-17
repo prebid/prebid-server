@@ -657,7 +657,7 @@ var vendorList2Expected = testExpected{
 }
 
 var vendorListFallbackExpected = testExpected{
-	vendorListVersion: 214, // Values from hardcoded fallback file.
+	vendorListVersion: 215, // Values from hardcoded fallback file.
 	vendorID:          12,
 	vendorPurposes:    map[int]bool{1: true, 2: false, 3: true},
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	uuid "github.com/gofrs/uuid"
 	"github.com/golang/glog"
@@ -45,6 +46,52 @@ func (d *DebugLog) BuildCacheString() {
 	d.Data.Response = fmt.Sprintf("<Response>%s</Response>", d.Data.Response)
 
 	d.CacheString = fmt.Sprintf("%s<Log>%s%s%s</Log>", xml.Header, d.Data.Request, d.Data.Headers, d.Data.Response)
+}
+
+func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, timeout int, errors []error) error {
+	if len(d.Data.Response) == 0 && len(errors) == 0 {
+		d.Data.Response = "No response or errors created"
+	}
+
+	if len(errors) > 0 {
+		errStrings := []string{}
+		for _, err := range errors {
+			errStrings = append(errStrings, err.Error())
+		}
+		d.Data.Response = fmt.Sprintf("%s\nErrors:\n%s", d.Data.Response, strings.Join(errStrings, "\n"))
+	}
+
+	d.BuildCacheString()
+
+	if len(d.CacheKey) == 0 {
+		rawUUID, err := uuid.NewV4()
+		if err != nil {
+			return err
+		}
+		d.CacheKey = rawUUID.String()
+	}
+
+	data, err := json.Marshal(d.CacheString)
+	if err != nil {
+		return err
+	}
+
+	toCache := []prebid_cache_client.Cacheable{
+		{
+			Type:       d.CacheType,
+			Data:       data,
+			TTLSeconds: d.TTL,
+			Key:        "log_" + d.CacheKey,
+		},
+	}
+
+	if cache != nil {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(timeout)*time.Millisecond))
+		defer cancel()
+		cache.PutJson(ctx, toCache)
+	}
+
+	return nil
 }
 
 func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int) *auction {
@@ -179,9 +226,9 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 
-	if debugLog != nil && debugLog.Enabled {
-		debugLog.BuildCacheString()
+	if len(toCache) > 0 && debugLog != nil && debugLog.Enabled {
 		debugLog.CacheKey = hbCacheID
+		debugLog.BuildCacheString()
 		if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
 			toCache = append(toCache, prebid_cache_client.Cacheable{
 				Type:       debugLog.CacheType,
