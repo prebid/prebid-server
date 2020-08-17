@@ -30,8 +30,8 @@ type Permissions interface {
 }
 
 const (
-	tCF1 uint8 = 1
-	tCF2 uint8 = 2
+	tcf1Version uint8 = 1
+	tcf2Version uint8 = 2
 )
 
 // NewPermissions gets an instance of the Permissions for use elsewhere in the project.
@@ -45,8 +45,8 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 		cfg:       cfg,
 		vendorIDs: vendorIDs,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			tCF1: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tCF1),
-			tCF2: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tCF2)},
+			tcf1Version: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf1Version),
+			tcf2Version: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf2Version)},
 	}
 }
 

@@ -26,58 +26,70 @@ type saveVendors func(uint16, api.VendorList)
 //
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
-func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16, uint8) string, TCFVer uint8) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
-	var fallbackVL api.VendorList = nil
-
-	if TCFVer == tCF1 && len(cfg.TCF1.FallbackGVLPath) > 0 {
-		fallbackVL = loadFallbackGVL(cfg.TCF1.FallbackGVLPath)
+func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16, uint8) string, tcfVersion uint8) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+	var fallback api.VendorList
+	if tcfVersion == tcf1Version && len(cfg.TCF1.FallbackGVLPath) > 0 {
+		fallback = loadFallbackGVL(cfg.TCF1.FallbackGVLPath)
 	}
 
-	// If we are not going to try fetching the GVL dynamically, we have a simple fetcher
-	if !cfg.TCF1.FetchGVL && TCFVer == tCF1 && fallbackVL != nil {
+	// If we are not going to try fetching the GVL dynamically, we have a simple fetcher.
+	if !cfg.TCF1.FetchGVL && tcfVersion == tcf1Version {
+		if fallback != nil {
+			return func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+				return fallback, nil
+			}
+		}
 		return func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
-			return fallbackVL, nil
+			return nil, fmt.Errorf("gdpr vendor list version %d does not exist, or has not been loaded yet. Try again in a few minutes", id)
 		}
 	}
-	// These save and load functions can be used to store & retrieve lists from our cache.
-	save, load := newVendorListCache(fallbackVL)
 
-	withTimeout, cancel := context.WithTimeout(initCtx, cfg.Timeouts.InitTimeout())
+	cacheSave, cacheLoad := newVendorListCache(fallback)
+
+	preloadContext, cancel := context.WithTimeout(initCtx, cfg.Timeouts.InitTimeout())
 	defer cancel()
-	populateCache(withTimeout, client, urlMaker, save, TCFVer)
+	preloadCache(preloadContext, client, urlMaker, cacheSave, tcfVersion)
 
-	saveOneSometimes := newOccasionalSaver(cfg.Timeouts.ActiveTimeout(), TCFVer)
-
+	saveOneRateLimited := newOccasionalSaver(cfg.Timeouts.ActiveTimeout(), tcfVersion)
 	return func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
-		list := load(id)
-		if list != nil {
+		// Attempt To Load From Cache
+		if list := cacheLoad(id); list != nil {
 			return list, nil
 		}
-		saveOneSometimes(ctx, client, urlMaker(id, TCFVer), save)
-		list = load(id)
-		if list != nil {
+
+		// Attempt To Download
+		// - May not add to cache immediately.
+		saveOneRateLimited(ctx, client, urlMaker(id, tcfVersion), cacheSave)
+
+		// Attempt To Load From Cache Again
+		// - May have been added by the call to saveOneRateLimited.
+		if list := cacheLoad(id); list != nil {
 			return list, nil
 		}
-		if fallbackVL != nil {
-			return fallbackVL, nil
+
+		// Attempt To Use Hardcoded Fallback
+		if fallback != nil {
+			return fallback, nil
 		}
+
+		// Give Up
 		return nil, fmt.Errorf("gdpr vendor list version %d does not exist, or has not been loaded yet. Try again in a few minutes", id)
 	}
 }
 
-// populateCache saves all the known versions of the vendor list for future use.
-func populateCache(ctx context.Context, client *http.Client, urlMaker func(uint16, uint8) string, saver saveVendors, TCFVer uint8) {
-	latestVersion := saveOne(ctx, client, urlMaker(0, TCFVer), saver, TCFVer)
+// preloadCache saves all the known versions of the vendor list for future use.
+func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16, uint8) string, saver saveVendors, tcfVersion uint8) {
+	latestVersion := saveOne(ctx, client, urlMaker(0, tcfVersion), saver, tcfVersion)
 
 	for i := uint16(1); i < latestVersion; i++ {
-		saveOne(ctx, client, urlMaker(i, TCFVer), saver, TCFVer)
+		saveOne(ctx, client, urlMaker(i, tcfVersion), saver, tcfVersion)
 	}
 }
 
 // Make a URL which can be used to fetch a given version of the Global Vendor List. If the version is 0,
 // this will fetch the latest version.
-func vendorListURLMaker(version uint16, TCFVer uint8) string {
-	if TCFVer == 2 {
+func vendorListURLMaker(version uint16, tcfVersion uint8) string {
+	if tcfVersion == 2 {
 		if version == 0 {
 			return "https://vendorlist.consensu.org/v2/vendor-list.json"
 		}
@@ -109,7 +121,7 @@ func newOccasionalSaver(timeout time.Duration, TCFVer uint8) func(ctx context.Co
 	}
 }
 
-func saveOne(ctx context.Context, client *http.Client, url string, saver saveVendors, cTFVer uint8) uint16 {
+func saveOne(ctx context.Context, client *http.Client, url string, saver saveVendors, tcfVersion uint8) uint16 {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		glog.Errorf("Failed to build GET %s request. Cookie syncs may be affected: %v", url, err)
@@ -133,7 +145,7 @@ func saveOne(ctx context.Context, client *http.Client, url string, saver saveVen
 		return 0
 	}
 	var newList api.VendorList
-	if cTFVer == 2 {
+	if tcfVersion == 2 {
 		newList, err = vendorlist2.ParseEagerly(respBody)
 	} else {
 		newList, err = vendorlist.ParseEagerly(respBody)
@@ -158,19 +170,20 @@ func newVendorListCache(fallbackVL api.VendorList) (save func(id uint16, list ap
 		if ok {
 			return list.(vendorlist.VendorList)
 		}
-		return fallbackVL
+		return nil
 	}
 	return
 }
 
 func loadFallbackGVL(fallbackGVLPath string) vendorlist.VendorList {
-	fallbackVLbody, err := ioutil.ReadFile(fallbackGVLPath)
+	fallbackContents, err := ioutil.ReadFile(fallbackGVLPath)
 	if err != nil {
 		glog.Fatalf("Error reading from file %s: %v", fallbackGVLPath, err)
 	}
-	fallbackVL, err := vendorlist.ParseEagerly(fallbackVLbody)
+
+	fallback, err := vendorlist.ParseEagerly(fallbackContents)
 	if err != nil {
 		glog.Fatalf("Error processing default GVL from %s: %v", fallbackGVLPath, err)
 	}
-	return fallbackVL
+	return fallback
 }
