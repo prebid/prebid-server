@@ -284,6 +284,42 @@ func TestVideoEndpointDebugError(t *testing.T) {
 	assert.Equal(t, recorder.Code, 500, "Should catch error in request")
 }
 
+func TestVideoEndpointDebugNoAdPods(t *testing.T) {
+	ex := &mockExchangeVideoNoBids{
+		cache: &mockCacheClient{},
+	}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+	reqBody := string(getRequestPayload(t, reqData))
+	req := httptest.NewRequest("POST", "/openrtb2/video?debug=true", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps := mockDepsNoBids(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	if ex.lastRequest == nil {
+		t.Fatalf("The request never made it into the Exchange.")
+	}
+	if !ex.cache.called {
+		t.Fatalf("Cache was not called when it should have been")
+	}
+
+	respBytes := recorder.Body.Bytes()
+	resp := &openrtb_ext.BidResponseVideo{}
+	if err := json.Unmarshal(respBytes, resp); err != nil {
+		t.Fatalf("Unable to unmarshal response.")
+	}
+
+	assert.Len(t, resp.AdPods, 1, "Debug AdPod should be added to response")
+	assert.Empty(t, resp.AdPods[0].Errors, "AdPod Errors should be empty")
+	assert.Empty(t, resp.AdPods[0].Targeting[0].HbPb, "Hb_pb should be empty")
+	assert.Empty(t, resp.AdPods[0].Targeting[0].HbPbCatDur, "Hb_pb_cat_dur should be empty")
+	assert.NotEmpty(t, resp.AdPods[0].Targeting[0].HbCacheID, "Hb_cache_id should not be empty")
+	assert.Equal(t, int64(0), resp.AdPods[0].PodId, "Pod ID should be 0")
+}
+
 func TestVideoEndpointNoPods(t *testing.T) {
 	ex := &mockExchangeVideo{}
 	reqData, err := ioutil.ReadFile("sample-requests/video/video_invalid_sample.json")
@@ -1189,6 +1225,29 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	return deps
 }
 
+func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	edep := &endpointDeps{
+		ex,
+		newParamsValidator(t),
+		&mockVideoStoredReqFetcher{},
+		&mockVideoStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BidderMap,
+		ex.cache,
+		regexp.MustCompile(`[<>]`),
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	return edep
+}
+
 type mockCacheClient struct {
 	called bool
 }
@@ -1244,6 +1303,18 @@ func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb
 				{ID: "16", ImpID: "5_2", Ext: ext},
 			},
 		}},
+	}, nil
+}
+
+type mockExchangeVideoNoBids struct {
+	lastRequest *openrtb.BidRequest
+	cache       *mockCacheClient
+}
+
+func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+	m.lastRequest = bidRequest
+	return &openrtb.BidResponse{
+		SeatBid: []openrtb.SeatBid{{}},
 	}, nil
 }
 

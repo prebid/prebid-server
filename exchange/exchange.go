@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	uuid "github.com/gofrs/uuid"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
@@ -190,6 +191,23 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 		}
 
+	}
+
+	if !anyBidsReturned {
+		if debugLog != nil && debugLog.Enabled {
+			if rawUUID, err := uuid.NewV4(); err == nil {
+				debugLog.CacheKey = rawUUID.String()
+
+				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errs)
+				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+					debugLog.Data.Response = string(bidRespExtBytes)
+				} else {
+					debugLog.Data.Response = "Unable to marshal response ext for debugging"
+				}
+			} else {
+				errs = append(errs, err)
+			}
+		}
 	}
 
 	// Build the response
