@@ -38,28 +38,17 @@ import (
 
 const maxSize = 1024 * 256
 
-// Struct of data for the general purpose auction tester
-type getResponseFromDirectory struct {
-	dir             string
-	file            string
-	payloadGetter   func(*testing.T, []byte) []byte
-	messageGetter   func(*testing.T, []byte) []byte
-	descGetter      func(*testing.T, []byte) string
-	expectedCode    int
-	aliased         bool
-	disabledBidders []string
-	adaptersConfig  map[string]config.Adapter
-	accountReq      bool
-	description     string
-}
-
 func TestJsonSampleRequests(t *testing.T) {
 	testSuites := []struct {
 		description string
 		directory   string
 	}{
 		{
-			"TestGoodRequests makes sure we return 200s on good requests",
+			"Asserts 200s on bidRequests on exemplary folder",
+			"sample-requests/valid-whole/exemplary",
+		},
+		{
+			"Asserts 200s on bidRequests on exemplary folder",
 			"sample-requests/valid-whole/exemplary",
 		},
 		{
@@ -89,6 +78,10 @@ func TestJsonSampleRequests(t *testing.T) {
 		{
 			"TestRejectAccountRequired 2 asserts we return a 400 code on a request that comes with no user id nor app id if the `AccountRequired` field in the `config.Configuration` structure is set to true",
 			"sample-requests/account-required/with-account",
+		},
+		{
+			"TestBadStoredRequests tests diagnostic messages for invalid stored requests",
+			"sample-requests/invalid-stored",
 		},
 	}
 	for _, test := range testSuites {
@@ -205,195 +198,6 @@ func TestExplicitUserId(t *testing.T) {
 	}
 }
 
-// TestGoodRequests makes sure we return 200s on good requests.
-func TestGoodRequests(t *testing.T) {
-	exemplary := &getResponseFromDirectory{
-		dir: "sample-requests/valid-whole/exemplary",
-	}
-	supplementary := &getResponseFromDirectory{
-		dir: "sample-requests/valid-whole/supplementary",
-	}
-	exemplary.assert2(t)
-	supplementary.assert2(t)
-}
-
-// TestGoodNativeRequests makes sure we return 200s on well-formed Native requests.
-func TestGoodNativeRequests(t *testing.T) {
-	tests := &getResponseFromDirectory{
-		dir: "sample-requests/valid-native",
-	}
-	tests.assert2(t)
-}
-
-// TestBadRequests makes sure we return 400s on bad requests.
-func TestBadRequests(t *testing.T) {
-	// Need to turn off aliases for bad requests as applying the alias can fail on a bad request before the expected error is reached.
-	tests := &getResponseFromDirectory{
-		dir:           "sample-requests/invalid-whole",
-		payloadGetter: getRequestPayload,
-		messageGetter: getMessage,
-		descGetter:    getDescription,
-		expectedCode:  http.StatusBadRequest,
-		aliased:       false,
-	}
-	tests.assert2(t)
-}
-
-// TestBadNativeRequests makes sure we return 400s on requests with bad Native requests.
-func TestBadNativeRequests(t *testing.T) {
-	tests := &getResponseFromDirectory{
-		dir:           "sample-requests/invalid-native",
-		payloadGetter: buildNativeRequest,
-		messageGetter: nilReturner,
-		descGetter:    getDescription,
-		expectedCode:  http.StatusBadRequest,
-		aliased:       false,
-	}
-	tests.assert2(t)
-}
-
-// TestAliasedRequests makes sure we handle (default) aliased bidders properly
-func TestAliasedRequests(t *testing.T) {
-	tests := &getResponseFromDirectory{
-		dir:           "sample-requests/aliased",
-		payloadGetter: noop,
-		messageGetter: nilReturner,
-		descGetter:    getDescription,
-		expectedCode:  http.StatusOK,
-		aliased:       true,
-	}
-	tests.assert2(t)
-}
-
-/*
-// TestDisabledBidders makes sure we don't break when encountering a disabled bidder
-func TestDisabledBidders(t *testing.T) {
-	badTests := &getResponseFromDirectory{
-		dir:             "sample-requests/disabled/bad",
-		payloadGetter:   getRequestPayload,
-		messageGetter:   getMessage,
-		descGetter:      getDescription,
-		expectedCode:    http.StatusBadRequest,
-		aliased:         false,
-		disabledBidders: []string{"appnexus", "rubicon"},
-		adaptersConfig: map[string]config.Adapter{
-			"appnexus": {Disabled: true},
-			"rubicon":  {Disabled: true},
-		},
-	}
-	goodTests := &getResponseFromDirectory{
-		dir:             "sample-requests/disabled/good",
-		payloadGetter:   noop,
-		messageGetter:   nilReturner,
-		descGetter:      getDescription,
-		expectedCode:    http.StatusOK,
-		aliased:         false,
-		disabledBidders: []string{"appnexus", "rubicon"},
-		adaptersConfig: map[string]config.Adapter{
-			"appnexus": {Disabled: true},
-			"rubicon":  {Disabled: true},
-		},
-	}
-	badTests.assert2(t)
-	goodTests.assert2(t)
-}
-*/
-
-// TestBlacklistRequests makes sure we return 400s on blacklisted requests.
-func TestBlacklistRequests(t *testing.T) {
-	// Need to turn off aliases for bad requests as applying the alias can fail on a bad request before the expected error is reached.
-	tests := &getResponseFromDirectory{
-		dir: "sample-requests/blacklisted",
-	}
-	tests.assert2(t)
-}
-
-// TestRejectAccountRequired asserts we return a 400 code on a request that comes with no user id nor app id
-// if the `AccountRequired` field in the `config.Configuration` structure is set to true
-func TestRejectAccountRequired(t *testing.T) {
-	tests := []*getResponseFromDirectory{
-		{
-			// Account not required and not provided in prebid request
-			dir:           "sample-requests/account-required/no-account",
-			file:          "not-required-no-acct.json",
-			payloadGetter: getRequestPayload,
-			messageGetter: nilReturner,
-			descGetter:    getDescription,
-			expectedCode:  http.StatusOK,
-			accountReq:    false,
-		},
-		{
-			// Account was required but not provided in prebid request
-			dir:           "sample-requests/account-required/no-account",
-			file:          "required-no-acct.json",
-			payloadGetter: getRequestPayload,
-			messageGetter: getMessage,
-			descGetter:    getDescription,
-			expectedCode:  http.StatusBadRequest,
-			accountReq:    true,
-		},
-		{
-			// Account is required, was provided and is not in the blacklisted accounts map
-			dir:           "sample-requests/account-required/with-account",
-			file:          "required-with-acct.json",
-			payloadGetter: getRequestPayload,
-			messageGetter: nilReturner,
-			descGetter:    getDescription,
-			expectedCode:  http.StatusOK,
-			accountReq:    true,
-		},
-		{
-			// Account is required, was provided in request and is found in the  blacklisted accounts map
-			dir:           "sample-requests/account-required/with-account",
-			file:          "required-blacklisted-acct.json",
-			payloadGetter: getRequestPayload,
-			messageGetter: getMessage,
-			descGetter:    getDescription,
-			expectedCode:  http.StatusServiceUnavailable,
-			accountReq:    true,
-		},
-	}
-	for _, test := range tests {
-		test.assert2(t)
-	}
-}
-
-// assertResponseFromDirectory makes sure that the payload from each file in dir gets the expected response status code
-// from the /openrtb2/auction endpoint.
-func (gr *getResponseFromDirectory) assert(t *testing.T) {
-	//t *testing.T, dir string, payloadGetter func(*testing.T, []byte) []byte, messageGetter func(*testing.T, []byte) []byte, expectedCode int, aliased bool) {
-	t.Helper()
-	var filesToAssert []string
-	if gr.file == "" {
-		// Append every file found in `gr.dir` to the `filesToAssert` array and test them all
-		for _, fileInfo := range fetchFiles(t, gr.dir) {
-			filesToAssert = append(filesToAssert, gr.dir+"/"+fileInfo.Name())
-		}
-	} else {
-		// Just test the single `gr.file`, and not the entirety of files that may be found in `gr.dir`
-		filesToAssert = append(filesToAssert, gr.dir+"/"+gr.file)
-	}
-
-	var fileData []byte
-	// Test the one or more test files appended to `filesToAssert`
-	for _, testFile := range filesToAssert {
-		fileData = readFile(t, testFile)
-		code, requestUsed := gr.doRequest(t, gr.payloadGetter(t, fileData))
-		fmt.Printf("Processing %s\n", testFile)
-		assertResponseCode(t, testFile, code, gr.expectedCode, requestUsed)
-
-		expectMsg := gr.messageGetter(t, fileData)
-		gr.description = gr.descGetter(t, fileData)
-		if gr.description != "" {
-			if len(expectMsg) > 0 {
-				assert.Equal(t, string(expectMsg), requestUsed, "Test failed. %s. Filename: \n", gr.description, testFile)
-			} else {
-				assert.Equal(t, string(expectMsg), requestUsed, "file %s had bad response body", testFile)
-			}
-		}
-	}
-}
-
 func getTestFiles(dir string) ([]string, error) {
 	var filesToAssert []string
 
@@ -439,7 +243,10 @@ func doRequest(t *testing.T, jsonBidReq []byte, accountReq bool, aliasJSON []byt
 	return recorder.Code, recorder.Body.String()
 }
 
-//
+// TODO: After we get the correct descriptiosn on file level, uncomment the jsonparser line
+// TODO: Come up with a good comment here
+// TODO: Come up with a good comment on other newly created functions
+// TODO: Double check the error assertion process, take a look at Scott's in the adapter side and see whether or not we need anything else here
 func assertTestCaseData(t *testing.T, fileData []byte, testFile string, adaptersConfig map[string]config.Adapter) {
 	t.Helper()
 
@@ -491,78 +298,6 @@ func assertTestCaseData(t *testing.T, fileData []byte, testFile string, adapters
 	}
 }
 
-// assertResponseFromDirectory makes sure that the payload from each file in dir gets the expected response status code
-// from the /openrtb2/auction endpoint.
-func (gr *getResponseFromDirectory) assert2(t *testing.T) {
-	//t *testing.T, dir string, payloadGetter func(*testing.T, []byte) []byte, messageGetter func(*testing.T, []byte) []byte, expectedCode int, aliased bool) {
-	t.Helper()
-	var filesToAssert []string
-	if gr.file == "" {
-		// Append every file found in `gr.dir` to the `filesToAssert` array and test them all
-		for _, fileInfo := range fetchFiles(t, gr.dir) {
-			filesToAssert = append(filesToAssert, gr.dir+"/"+fileInfo.Name())
-		}
-	} else {
-		// Just test the single `gr.file`, and not the entirety of files that may be found in `gr.dir`
-		filesToAssert = append(filesToAssert, gr.dir+"/"+gr.file)
-	}
-
-	var fileData []byte
-	// Test the one or more test files appended to `filesToAssert`
-	for _, testFile := range filesToAssert {
-		fileData = readFile(t, testFile)
-		var err error
-
-		//desc, err := jsonparser.GetString(fileData, "description")
-		//assert.NoError(t, err, "Error jsonparsing root.description from file %s. Desc: %v.", testFile, err)
-		desc := testFile
-
-		// Run test
-		testBidRequest, _, _, err := jsonparser.Get(fileData, "mockBidRequest")
-		assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", testFile, err)
-
-		accountReq := false
-		testConfig, err := jsonparser.GetBoolean(fileData, "mockConfig", "accountRequired")
-		if err == nil {
-			accountReq = testConfig
-		}
-
-		actualCode, actualBidResponse := gr.doRequest2(t, testBidRequest, accountReq)
-
-		//Compare status code
-		expectedCode, err := jsonparser.GetInt(fileData, "expectedReturnCode")
-		assert.NoError(t, err, "Error jsonparsing root.code from file %s. Desc: %v.", testFile, err)
-
-		assert.Equal(t, expectedCode, int64(actualCode), "Test failed. Filename: %s \n", testFile)
-
-		// Either assert bid response or expected error
-		if actualCode != 200 {
-			// Assert expected error
-			expectedError, err := jsonparser.GetString(fileData, "expectedErrorMessage")
-			assert.NoError(t, err, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
-
-			assert.True(t, strings.HasPrefix(actualBidResponse, expectedError), "Test failed. %s. Filename: %s \n", actualBidResponse, testFile)
-		} else {
-			// Assert expected response
-			expectedBidResponse, _, _, err := jsonparser.Get(fileData, "expectedBidResponse")
-			assert.NoError(t, err, "Error jsonparsing root.expectedBidResponse from file %s. Desc: %v.", testFile, err)
-
-			//Compare expected bidResponse
-			//assert.Equal(t, expectedBidResponse, actualBidResponse, "Test failed. %s. Filename: \n", desc, testFile)
-			diffJson(t, desc, []byte(actualBidResponse), expectedBidResponse)
-		}
-	}
-}
-
-/*
-type testStruct struct {
-  desc string "description": "Invalid request: request missing required field: \"id\"\n",
-  "mockBidRequest": {},
-  "expectedBidResponse": {
-  "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
-}
-*/
 // diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
 // byte array is not actually JSON.
 func diffJson(t *testing.T, description string, actual []byte, expected []byte) {
@@ -605,72 +340,6 @@ func readFile(t *testing.T, filename string) []byte {
 		t.Fatalf("Failed to read file %s: %v", filename, err)
 	}
 	return data
-}
-
-// doRequest populates the app with mock dependencies and sends requestData to the /openrtb2/auction endpoint.
-func (gr *getResponseFromDirectory) doRequest(t *testing.T, requestData []byte) (int, string) {
-	aliasJSON := []byte{}
-	if gr.aliased {
-		aliasJSON = []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
-	}
-	disabledBidders := map[string]string{
-		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
-	}
-	bidderMap := exchange.DisableBidders(getBidderInfos(gr.adaptersConfig, openrtb_ext.BidderList()), disabledBidders)
-
-	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
-	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	endpoint, _ := NewEndpoint(
-		&nobidExchange{},
-		newParamsValidator(t),
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize, BlacklistedApps: []string{"spam_app"}, BlacklistedAppMap: map[string]bool{"spam_app": true}, BlacklistedAccts: []string{"bad_acct"}, BlacklistedAcctMap: map[string]bool{"bad_acct": true}, AccountRequired: gr.accountReq},
-		theMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		disabledBidders,
-		aliasJSON,
-		bidderMap,
-	)
-
-	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
-	recorder := httptest.NewRecorder()
-	endpoint(recorder, request, nil)
-	return recorder.Code, recorder.Body.String()
-}
-
-// doRequest2 just unmarshals!!
-func (gr *getResponseFromDirectory) doRequest2(t *testing.T, jsonRequestData []byte, accountReq bool) (int, string) {
-	aliasJSON := []byte{}
-	if gr.aliased {
-		aliasJSON = []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
-	}
-	disabledBidders := map[string]string{
-		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
-	}
-	bidderMap := exchange.DisableBidders(getBidderInfos(gr.adaptersConfig, openrtb_ext.BidderList()), disabledBidders)
-
-	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
-	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	endpoint, _ := NewEndpoint(
-		&nobidExchange{},
-		newParamsValidator(t),
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize, BlacklistedApps: []string{"spam_app"}, BlacklistedAppMap: map[string]bool{"spam_app": true}, BlacklistedAccts: []string{"bad_acct"}, BlacklistedAcctMap: map[string]bool{"bad_acct": true}, AccountRequired: accountReq},
-		theMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		disabledBidders,
-		aliasJSON,
-		bidderMap,
-	)
-
-	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(jsonRequestData))
-	recorder := httptest.NewRecorder()
-	endpoint(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
-	return recorder.Code, recorder.Body.String()
 }
 
 // TestBadAliasRequests() reuses two requests that would fail anyway.  Here, we
@@ -741,14 +410,6 @@ func buildNativeRequest(t *testing.T, nativeData []byte) []byte {
 	return buf.Bytes()
 }
 
-func noop(t *testing.T, data []byte) []byte {
-	return data
-}
-
-func nilReturner(t *testing.T, data []byte) []byte {
-	return nil
-}
-
 func getRequestPayload(t *testing.T, example []byte) []byte {
 	t.Helper()
 	if value, _, _, err := jsonparser.Get(example, "requestPayload"); err != nil {
@@ -757,17 +418,6 @@ func getRequestPayload(t *testing.T, example []byte) []byte {
 		return value
 	}
 	return nil
-}
-
-func getDescription(t *testing.T, example []byte) string {
-	t.Helper()
-	if value, _, _, err := jsonparser.Get(example, "description"); err != nil {
-		t.Fatalf("Error parsing root.description from request: %v.", err)
-	} else {
-		return string(value)
-	}
-
-	return ""
 }
 
 // TestNilExchange makes sure we fail when given nil for the Exchange.
@@ -1141,19 +791,6 @@ func TestRefererParsing(t *testing.T) {
 	if bidReq.Site.Page != "http://test.mysite.com" {
 		t.Errorf("Bad bidrequest.site.page. Expected mysite.com, got %s", bidReq.Site.Page)
 	}
-}
-
-// TestBadStoredRequests tests diagnostic messages for invalid stored requests
-func TestBadStoredRequests(t *testing.T) {
-	// Need to turn off aliases for bad requests as applying the alias can fail on a bad request before the expected error is reached.
-	tests := &getResponseFromDirectory{
-		dir:           "sample-requests/invalid-stored",
-		payloadGetter: getRequestPayload,
-		messageGetter: getMessage,
-		expectedCode:  http.StatusBadRequest,
-		aliased:       false,
-	}
-	tests.assert2(t)
 }
 
 // Test the stored request functionality
