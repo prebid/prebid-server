@@ -1,5 +1,3 @@
 {
-  "zone": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
-  "customFloor": 0.1,
-  "customParams": {"foo": "bar"}
+  "host": "127.0.0.1"
 }

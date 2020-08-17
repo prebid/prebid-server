@@ -25,7 +25,7 @@ func (a *BetweenAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		"Accept":       {"application/json"},
 	}
 
-	// Pull the host and source ID info from the bidder params.
+	// Pull the host info from the bidder params.
 	reqImps, err := splitImpressions(request.Imp)
 	if len(reqImps) == 0 {
 		return nil, []error{&errortypes.BadInput{
@@ -124,33 +124,34 @@ func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpBetween][]openr
 			return nil, err
 		}
 
-		m[*bidderParams] = append(m[*bidderParams], imp)
+		m[bidderParams] = append(m[bidderParams], imp)
 	}
 
 	return m, nil
 }
 
-func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpBetween, error) {
+func getBidderParams(imp *openrtb.Imp) (openrtb_ext.ExtImpBetween, error) {
 	var bidderExt adapters.ExtImpBidder
+	var betweenExt openrtb_ext.ExtImpBetween
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{
+		return betweenExt, &errortypes.BadInput{
 			Message: fmt.Sprintf("Missing bidder ext: %s", err.Error()),
 		}
 	}
-	var betweenExt openrtb_ext.ExtImpBetween
+
 	if err := json.Unmarshal(bidderExt.Bidder, &betweenExt); err != nil {
-		return nil, &errortypes.BadInput{
+		return betweenExt, &errortypes.BadInput{
 			Message: fmt.Sprintf("Cannot resolve host: %s", err.Error()),
 		}
 	}
 
 	if len(betweenExt.Host) < 1 {
-		return nil, &errortypes.BadInput{
+		return betweenExt, &errortypes.BadInput{
 			Message: "Invalid/Missing Host",
 		}
 	}
 
-	return &betweenExt, nil
+	return betweenExt, nil
 }
 
 func getMediaType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
