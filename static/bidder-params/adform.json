@@ -26,7 +26,7 @@
     "cdims": {
       "type": "string",
       "description": "Comma-separated creative dimentions.",
-      "pattern": "(^\\d+x\\d+)(:\\d+x\\d+)*$"
+      "pattern": "(^\\d+x\\d+)(,\\d+x\\d+)*$"
     },
     "minp": {
       "type": "number",
