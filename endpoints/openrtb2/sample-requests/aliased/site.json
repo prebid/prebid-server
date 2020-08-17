@@ -1,5 +1,8 @@
 {
   "description": "This demonstrates all of the OpenRTB extensions supported by Prebid Server. Very few requests will need all of these at once.",
+  "mockAliases": {
+      "aliases": "{\"ext\":{\"prebid\":{\"aliases\":{\"test1\":\"appnexus\",\"test2\":\"rubicon\",\"test3\":\"openx\"}}}}"
+  },
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {

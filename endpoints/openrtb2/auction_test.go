@@ -53,6 +53,88 @@ type getResponseFromDirectory struct {
 	description     string
 }
 
+func TestJsonSampleRequests(t *testing.T) {
+	testSuites := []struct {
+		description string
+		directory   string
+	}{
+		{
+			"TestGoodRequests makes sure we return 200s on good requests",
+			"sample-requests/valid-whole/exemplary",
+		},
+		{
+			"TestGoodNativeRequests makes sure we return 200s on well-formed Native requests.",
+			"sample-requests/valid-native",
+		},
+		{
+			"TestBadRequests makes sure we return 400s on bad requests.",
+			"sample-requests/invalid-whole",
+		},
+		{
+			"TestBadNativeRequests makes sure we return 400s on requests with bad Native requests.",
+			"sample-requests/invalid-native",
+		},
+		{
+			"TestAliasedRequests makes sure we handle (default) aliased bidders properly",
+			"sample-requests/aliased",
+		},
+		{
+			"TestBlacklistRequests makes sure we return 400s on blacklisted requests.",
+			"sample-requests/blacklisted",
+		},
+		{
+			"TestRejectAccountRequired asserts we return a 400 code on a request that comes with no user id nor app id if the `AccountRequired` field in the `config.Configuration` structure is set to true",
+			"sample-requests/account-required/no-account",
+		},
+		{
+			"TestRejectAccountRequired 2 asserts we return a 400 code on a request that comes with no user id nor app id if the `AccountRequired` field in the `config.Configuration` structure is set to true",
+			"sample-requests/account-required/with-account",
+		},
+	}
+	for _, test := range testSuites {
+		testCasefiles, err := getTestFiles(test.directory)
+		assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", test.description, test.directory)
+
+		for _, file := range testCasefiles {
+			data, err := ioutil.ReadFile(file)
+			assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file)
+
+			assertTestCaseData(t, data, file, nil)
+		}
+	}
+}
+
+func TestDisabledBidders(t *testing.T) {
+	testSuites := []struct {
+		description string
+		directory   string
+	}{
+		{
+			"TestDisabledBidders makes sure we don't break when encountering a disabled bidder",
+			"sample-requests/disabled/bad",
+		},
+		{
+			"TestDisabledBidders 2 makes sure we don't break when encountering a disabled bidder",
+			"sample-requests/disabled/good",
+		},
+	}
+	adaptersConfig := map[string]config.Adapter{
+		"appnexus": {Disabled: true},
+		"rubicon":  {Disabled: true},
+	}
+	for _, test := range testSuites {
+		testCasefiles, err := getTestFiles(test.directory)
+		assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", test.description, test.directory)
+
+		for _, file := range testCasefiles {
+			data, err := ioutil.ReadFile(file)
+			assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file)
+
+			assertTestCaseData(t, data, file, adaptersConfig)
+		}
+	}
+}
+
 // TestExplicitUserId makes sure that the cookie's ID doesn't override an explicit value sent in the request.
 func TestExplicitUserId(t *testing.T) {
 	cookieName := "userid"
@@ -126,20 +208,10 @@ func TestExplicitUserId(t *testing.T) {
 // TestGoodRequests makes sure we return 200s on good requests.
 func TestGoodRequests(t *testing.T) {
 	exemplary := &getResponseFromDirectory{
-		dir:           "sample-requests/valid-whole/exemplary",
-		payloadGetter: getRequestPayload,
-		messageGetter: nilReturner,
-		descGetter:    getDescription,
-		expectedCode:  http.StatusOK,
-		aliased:       true,
+		dir: "sample-requests/valid-whole/exemplary",
 	}
 	supplementary := &getResponseFromDirectory{
-		dir:           "sample-requests/valid-whole/supplementary",
-		payloadGetter: noop,
-		messageGetter: nilReturner,
-		descGetter:    getDescription,
-		expectedCode:  http.StatusOK,
-		aliased:       true,
+		dir: "sample-requests/valid-whole/supplementary",
 	}
 	exemplary.assert2(t)
 	supplementary.assert2(t)
@@ -148,12 +220,7 @@ func TestGoodRequests(t *testing.T) {
 // TestGoodNativeRequests makes sure we return 200s on well-formed Native requests.
 func TestGoodNativeRequests(t *testing.T) {
 	tests := &getResponseFromDirectory{
-		dir:           "sample-requests/valid-native",
-		payloadGetter: buildNativeRequest,
-		messageGetter: nilReturner,
-		descGetter:    getDescription,
-		expectedCode:  http.StatusOK,
-		aliased:       true,
+		dir: "sample-requests/valid-native",
 	}
 	tests.assert2(t)
 }
@@ -198,6 +265,7 @@ func TestAliasedRequests(t *testing.T) {
 	tests.assert2(t)
 }
 
+/*
 // TestDisabledBidders makes sure we don't break when encountering a disabled bidder
 func TestDisabledBidders(t *testing.T) {
 	badTests := &getResponseFromDirectory{
@@ -229,17 +297,13 @@ func TestDisabledBidders(t *testing.T) {
 	badTests.assert2(t)
 	goodTests.assert2(t)
 }
+*/
 
 // TestBlacklistRequests makes sure we return 400s on blacklisted requests.
 func TestBlacklistRequests(t *testing.T) {
 	// Need to turn off aliases for bad requests as applying the alias can fail on a bad request before the expected error is reached.
 	tests := &getResponseFromDirectory{
-		dir:           "sample-requests/blacklisted",
-		payloadGetter: getRequestPayload,
-		messageGetter: getMessage,
-		descGetter:    getDescription,
-		expectedCode:  http.StatusServiceUnavailable,
-		aliased:       false,
+		dir: "sample-requests/blacklisted",
 	}
 	tests.assert2(t)
 }
@@ -276,7 +340,6 @@ func TestRejectAccountRequired(t *testing.T) {
 			messageGetter: nilReturner,
 			descGetter:    getDescription,
 			expectedCode:  http.StatusOK,
-			aliased:       true,
 			accountReq:    true,
 		},
 		{
@@ -328,6 +391,103 @@ func (gr *getResponseFromDirectory) assert(t *testing.T) {
 				assert.Equal(t, string(expectMsg), requestUsed, "file %s had bad response body", testFile)
 			}
 		}
+	}
+}
+
+func getTestFiles(dir string) ([]string, error) {
+	var filesToAssert []string
+
+	fileList, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	// Append the path of  every file found in `dir` to the `filesToAssert` array
+	for _, fileInfo := range fileList {
+		filesToAssert = append(filesToAssert, dir+"/"+fileInfo.Name())
+	}
+
+	return filesToAssert, nil
+}
+
+func doRequest(t *testing.T, jsonBidReq []byte, accountReq bool, aliasJSON []byte, adaptersConfig map[string]config.Adapter) (int, string) {
+	disabledBidders := map[string]string{
+		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
+	}
+	bidderMap := exchange.DisableBidders(getBidderInfos(adaptersConfig, openrtb_ext.BidderList()), disabledBidders)
+
+	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
+	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+
+	endpoint, _ := NewEndpoint(
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize, BlacklistedApps: []string{"spam_app"}, BlacklistedAppMap: map[string]bool{"spam_app": true}, BlacklistedAccts: []string{"bad_acct"}, BlacklistedAcctMap: map[string]bool{"bad_acct": true}, AccountRequired: accountReq},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		disabledBidders,
+		aliasJSON,
+		bidderMap,
+	)
+
+	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(jsonBidReq))
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
+	return recorder.Code, recorder.Body.String()
+}
+
+//
+func assertTestCaseData(t *testing.T, fileData []byte, testFile string, adaptersConfig map[string]config.Adapter) {
+	t.Helper()
+
+	var err error
+
+	//desc, err := jsonparser.GetString(fileData, "description")
+	//assert.NoError(t, err, "Error jsonparsing root.description from file %s. Desc: %v.", testFile, err)
+	desc := testFile
+
+	// Run test
+	testBidRequest, _, _, err := jsonparser.Get(fileData, "mockBidRequest")
+	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", testFile, err)
+
+	accountReq := false
+	testConfig, err := jsonparser.GetBoolean(fileData, "mockConfig", "accountRequired")
+	if err == nil {
+		accountReq = testConfig
+	}
+
+	aliasJSON := []byte{}
+	aliases, err := jsonparser.GetString(fileData, "mockAliases", "aliases")
+	if err == nil {
+		aliasJSON = []byte(aliases)
+	}
+
+	actualCode, actualBidResponse := doRequest(t, testBidRequest, accountReq, aliasJSON, adaptersConfig)
+
+	//Compare status code
+	expectedCode, err := jsonparser.GetInt(fileData, "expectedReturnCode")
+	assert.NoError(t, err, "Error jsonparsing root.code from file %s. Desc: %v.", testFile, err)
+
+	assert.Equal(t, expectedCode, int64(actualCode), "Test failed. Filename: %s \n", testFile)
+
+	// Either assert bid response or expected error
+	if actualCode != 200 {
+		// Assert expected error
+		expectedError, err := jsonparser.GetString(fileData, "expectedErrorMessage")
+		assert.NoError(t, err, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
+
+		assert.True(t, strings.HasPrefix(actualBidResponse, expectedError), "Test failed. %s. Filename: %s \n", actualBidResponse, testFile)
+	} else {
+		// Assert expected response
+		expectedBidResponse, _, _, err := jsonparser.Get(fileData, "expectedBidResponse")
+		assert.NoError(t, err, "Error jsonparsing root.expectedBidResponse from file %s. Desc: %v.", testFile, err)
+
+		//Compare expected bidResponse
+		//assert.Equal(t, expectedBidResponse, actualBidResponse, "Test failed. %s. Filename: \n", desc, testFile)
+		diffJson(t, desc, []byte(actualBidResponse), expectedBidResponse)
 	}
 }
 
@@ -483,7 +643,7 @@ func (gr *getResponseFromDirectory) doRequest(t *testing.T, requestData []byte) 
 // doRequest2 just unmarshals!!
 func (gr *getResponseFromDirectory) doRequest2(t *testing.T, jsonRequestData []byte, accountReq bool) (int, string) {
 	aliasJSON := []byte{}
-	if gr.aliased { // Get with Jsonparser
+	if gr.aliased {
 		aliasJSON = []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
 	}
 	disabledBidders := map[string]string{
