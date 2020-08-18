@@ -164,7 +164,7 @@ func buildExtClear(ext json.RawMessage) (json.RawMessage, error) {
 		// Verify prebid is an object
 		prebidExtMap, ok := prebidExt.(map[string]interface{})
 		if !ok {
-			return nil, errors.New("ext.prebid is not a json object")
+			return nil, errors.New("request.ext.prebid is not a json object")
 		}
 
 		// Remove no sale member
@@ -197,7 +197,7 @@ func buildExtWrite(noSaleBidders []string, ext json.RawMessage) (json.RawMessage
 			if prebidExtMap, ok := prebidExtInterface.(map[string]interface{}); ok {
 				prebidExt = prebidExtMap
 			} else {
-				return nil, errors.New("ext.prebid is not a json object")
+				return nil, errors.New("request.ext.prebid is not a json object")
 			}
 		} else {
 			// Create New Empty Prebid Ext Map
