@@ -336,6 +336,22 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		policy.Value = ""
 		if err := policy.Write(req); err != nil {
 			errL = append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
+		errL = append(errL, err)
+		return errL
+	} else {
+		_, err := policy.Validate(); err != nil {
+			if err.ValueError != nil {
+				policy.Value = ""
+				if err := ccpaPolicy.Write(req); err != nil {
+					errL = append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
+				}
+				errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
+			}
+
+			if err.NoSaleBidderError != nil {
+				errL = append(errL, err.NoSaleBidderError)
+				return errL
+			}
 		}
 	}
 

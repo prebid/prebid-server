@@ -3,210 +3,210 @@ package ccpa
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"strings"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const (
-	ccpaVersion1      = '1'
-	ccpaNo            = 'N'
-	ccpaYes           = 'Y'
-	ccpaNotApplicable = '-'
-)
-
-const (
-	indexVersion                = 0
-	indexExplicitNotice         = 1
-	indexOptOutSale             = 2
-	indexLSPACoveredTransaction = 3
-)
-
-const allBidders = "*"
-
-// RawPolicy represents the user provided CCPA regulation values.
-type RawPolicy struct {
-	Value         string
+// Policy represents the CCPA regulatory information from the OpenRTB bid request.
+type Policy struct {
+	Consent       string
 	NoSaleBidders []string
 }
 
-// ParsedPolicy represents the parsed and validated CCPA regulation values.
-type ParsedPolicy struct {
-	OptOutSaleYes         bool
-	NoSaleAllBidders      bool
-	NoSaleSpecificBidders map[string]struct{}
-}
-
-// ReadPolicy extracts the CCPA regulation policy from an OpenRTB request.
+// ReadPolicy extracts the CCPA regulatory information from the OpenRTB bid request.
 func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
-	policy := Policy{}
+	var consent string
+	var noSaleBidders []string
 
-	var value string
+	if req == nil {
+		return Policy{}, nil
+	}
+
+	// Read consent from request.regs.ext
 	if req.Regs != nil && len(req.Regs.Ext) > 0 {
 		var ext openrtb_ext.ExtRegs
 		if err := json.Unmarshal(req.Regs.Ext, &ext); err != nil {
-			return RawPolicy{}, err
+			return Policy{}, err
 		}
-		value = ext.USPrivacy
+		consent = ext.USPrivacy
 	}
 
-	var noSaleBidders []string
+	// Read no sale bidders from request.ext.prebid
 	if len(req.Ext) > 0 {
 		var ext openrtb_ext.ExtRequest
 		if err := json.Unmarshal(req.Ext, &ext); err != nil {
-			return RawPolicy{}, err
+			return Policy{}, err
 		}
 		noSaleBidders = ext.Prebid.NoSale
 	}
 
-	result := RawPolicy{{
-		Value: value,
-		NoSaleBidders: noSaleBidders,
-	}
-	return result, nil
+	return Policy{consent, noSaleBidders}, nil
 }
 
-
-
-// Write mutates an OpenRTB bid request with the context of the CCPA policy.
-func (p Policy) Write(req *openrtb.BidRequest) error {
-	if p.Value == "" {
-		return clearPolicy(req)
-	}
-
+// Write mutates an OpenRTB bid request with the CCPA regulatory information.
+func (p Policy) Write(req *openrtb.BidRequest) (err error) {
 	if req == nil {
-		return nil
+		return
 	}
 
-	if req.Regs == nil {
-		req.Regs = &openrtb.Regs{}
+	regs, err := buildRegs(p.Consent, req.Regs)
+	if err != nil {
+		return
+	}
+	ext, err := buildExt(p.NoSaleBidders, req.Ext)
+	if err != nil {
+		return
 	}
 
-	if req.Regs.Ext == nil {
-		ext, err := json.Marshal(openrtb_ext.ExtRegs{USPrivacy: p.Value})
-		if err == nil {
-			req.Regs.Ext = ext
-		}
-		return err
-	}
+	req.Regs = regs
+	req.Ext = ext
 
-	var extMap map[string]interface{}
-	err := json.Unmarshal(req.Regs.Ext, &extMap)
-	if err == nil {
-		extMap["us_privacy"] = p.Value
-		ext, err := json.Marshal(extMap)
-		if err == nil {
-			req.Regs.Ext = ext
-		}
-	}
-	return err
+	return
 }
 
-func clearPolicy(req *openrtb.BidRequest) error {
-	if req == nil {
-		return nil
-	}
-
-	if req.Regs == nil {
-		return nil
-	}
-
-	if len(req.Regs.Ext) == 0 {
-		return nil
-	}
-
-	var extMap map[string]interface{}
-	err := json.Unmarshal(req.Regs.Ext, &extMap)
-	if err == nil {
-		delete(extMap, "us_privacy")
-		if len(extMap) == 0 {
-			req.Regs.Ext = nil
-		} else {
-			ext, err := json.Marshal(extMap)
-			if err == nil {
-				req.Regs.Ext = ext
-			}
-			return err
-		}
-	}
-
-	return err
-}
-
-// Validate returns an error if the CCPA policy does not adhere to the IAB spec or the NoSale list is invalid.
-func (p Policy) Validate(bidders []string) error {
-	if err := ValidateConsent(p.Value); err != nil {
-		return fmt.Errorf("request.regs.ext.us_privacy %s", err.Error())
-	}
-
-	if err := ValidateNoSaleBidders(p.NoSaleBidders); err != nil {
-		return fmt.Errorf("request.ext.prebid.nosale %s", err.Error())
-	}
-
-	return nil
-}
-
-// ValidateConsent returns an error if the CCPA consent string does not adhere to the IAB spec.
-func ValidateConsent(consent string) error {
+func buildRegs(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
 	if consent == "" {
-		return nil
+		return buildRegsClear(regs)
 	}
-
-	if len(consent) != 4 {
-		return errors.New("must contain 4 characters")
-	}
-
-	if consent[indexVersion] != ccpaVersion1 {
-		return errors.New("must specify version 1")
-	}
-
-	var c byte
-
-	c = consent[indexExplicitNotice]
-	if c != ccpaNo && c != ccpaYes && c != ccpaNotApplicable {
-		return errors.New("must specify 'N', 'Y', or '-' for the explicit notice")
-	}
-
-	c = consent[indexOptOutSale]
-	if c != ccpaNo && c != ccpaYes && c != ccpaNotApplicable {
-		return errors.New("must specify 'N', 'Y', or '-' for the opt-out sale")
-	}
-
-	c = consent[indexLSPACoveredTransaction]
-	if c != ccpaNo && c != ccpaYes && c != ccpaNotApplicable {
-		return errors.New("must specify 'N', 'Y', or '-' for the limited service provider agreement")
-	}
-
-	return nil
+	return buildRegsWrite(consent, regs)
 }
 
-func ValidateNoSaleBidders(noSaleBidders []string, bidders map[string]openrtb_ext.BidderName, aliases map[string]string) error {
-	if len(noSaleBidders) == 1 && noSaleBidders[0] == allBidders {
-		return nil
+func buildRegsClear(regs *openrtb.Regs) (*openrtb.Regs, error) {
+	if regs == nil || len(regs.Ext) == 0 {
+		return regs, nil
 	}
 
-	for _, bidder := range noSaleBidders {
-		if !validBidders.cotains[bidder] {
-			return fmt.Errorf("unrecognized bidder '%s'", bidder)
+	var extMap map[string]interface{}
+	err := json.Unmarshal(regs.Ext, &extMap)
+	if err == nil {
+		regsCopy := *regs
+
+		// Remove CCPA consent
+		delete(extMap, "us_privacy")
+
+		// Remove entire ext if it's empty
+		if len(extMap) == 0 {
+			regsCopy.Ext = nil
+			return &regsCopy, nil
 		}
-	}
 
-	return nil
+		ext, err := json.Marshal(extMap)
+		if err != nil {
+			return nil, err
+		}
+
+		regsCopy.Ext = ext
+		return &regsCopy, nil
+	}
+	return nil, err
 }
 
-// ShouldEnforce returns true when the opt-out signal is explicitly detected.
-func (p Policy) ShouldEnforce(bidder string) bool {
-	if err := p.Validate(); err != nil {
-		return false
+func buildRegsWrite(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
+	var regsCopy openrtb.Regs
+
+	if regs == nil {
+		regsCopy = openrtb.Regs{}
+	} else {
+		regsCopy = *regs
 	}
 
-	for _, b := range p.NoSaleBidders {
-		if b == allBidders || strings.EqualFold(b, bidder) {
-			return false
+	if regsCopy.Ext == nil {
+		ext, err := json.Marshal(openrtb_ext.ExtRegs{USPrivacy: consent})
+		if err != nil {
+			return nil, err
 		}
+
+		regsCopy.Ext = ext
+		return &regsCopy, nil
 	}
 
-	return p.Value != "" && p.Value[indexOptOutSale] == ccpaYes
+	var extMap map[string]interface{}
+	err := json.Unmarshal(regsCopy.Ext, &extMap)
+	if err == nil {
+		// Set CCPA consent
+		extMap["us_privacy"] = consent
+
+		ext, err := json.Marshal(extMap)
+		if err != nil {
+			return nil, err
+		}
+
+		regsCopy.Ext = ext
+		return &regsCopy, nil
+	}
+
+	return nil, err
+}
+
+func buildExt(noSaleBidders []string, ext json.RawMessage) (json.RawMessage, error) {
+	if len(noSaleBidders) == 0 {
+		return buildExtClear(ext)
+	}
+	return buildExtWrite(noSaleBidders, ext)
+}
+
+func buildExtClear(ext json.RawMessage) (json.RawMessage, error) {
+	if len(ext) == 0 {
+		return ext, nil
+	}
+
+	var extMap map[string]interface{}
+	err := json.Unmarshal(ext, &extMap)
+	if err == nil {
+		prebidExt, exists := extMap["prebid"]
+
+		// If there's no prebid, there's nothing to do
+		if !exists {
+			return ext, nil
+		}
+
+		// Verify prebid is an object
+		prebidExtMap, ok := prebidExt.(map[string]interface{})
+		if !ok {
+			return nil, errors.New("prebi is not a map")
+		}
+
+		// Remove no sale member
+		delete(prebidExtMap, "nosale")
+		if len(prebidExtMap) == 0 {
+			delete(extMap, "prebid")
+		}
+
+		// Remove entire ext if it's empty
+		if len(extMap) == 0 {
+			return nil, nil
+		}
+
+		return json.Marshal(extMap)
+	}
+	return nil, err
+}
+
+func buildExtWrite(noSaleBidders []string, ext json.RawMessage) (json.RawMessage, error) {
+	if len(ext) == 0 {
+		return json.Marshal(openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{NoSale: noSaleBidders}})
+	}
+
+	var extMap map[string]interface{}
+	err := json.Unmarshal(ext, &extMap)
+	if err == nil {
+		var prebidExt map[string]interface{}
+		if prebidExtInterface, exists := extMap["prebid"]; exists {
+			// Reference Existing Prebid Ext Map
+			if prebidExtMap, ok := prebidExtInterface.(map[string]interface{}); ok {
+				prebidExt = prebidExtMap
+			} else {
+				return nil, errors.New("prebid invalid")
+			}
+		} else {
+			// Create New Empty Prebid Ext Map
+			prebidExt = make(map[string]interface{})
+			extMap["prebid"] = prebidExt
+		}
+
+		prebidExt["nosale"] = noSaleBidders
+		return json.Marshal(extMap)
+	}
+	return nil, err
 }
