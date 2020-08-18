@@ -256,22 +256,12 @@ func TestVideoTwoPodsManyImps(t *testing.T) {
 	adPodId2 := reqDataExt2.Appnexus.AdPodId
 	adPodId3 := reqDataExt3.Appnexus.AdPodId
 
-	twoPodIdsEqual := false
-	if adPodId1 == adPodId2 {
-		assert.NotEqual(t, adPodId1, adPodId3, "Adpod ids for different pods should be different")
-		twoPodIdsEqual = true
-	}
+	podIds := make(map[string]int)
+	podIds[adPodId1] = podIds[adPodId1] + 1
+	podIds[adPodId2] = podIds[adPodId2] + 1
+	podIds[adPodId3] = podIds[adPodId3] + 1
 
-	if adPodId2 == adPodId3 {
-		assert.NotEqual(t, adPodId1, adPodId3, "Adpod ids for different pods should be different")
-		twoPodIdsEqual = true
-	}
-
-	if adPodId1 == adPodId3 {
-		assert.NotEqual(t, adPodId2, adPodId3, "Adpod ids for different pods should be different")
-		twoPodIdsEqual = true
-	}
-	assert.True(t, twoPodIdsEqual, "Two of 3 pod ids must be equal")
+	assert.Equal(t, len(podIds), 2, "Incorrect number of unique pod ids")
 }
 
 // ----------------------------------------------------------------------------
