@@ -174,10 +174,6 @@ func TestVideoTwoPods(t *testing.T) {
 
 	adPodId1 := reqDataExt1.Appnexus.AdPodId
 
-	assert.Equal(t, reqData1.Imp[0].ID, "1_0", "First request imps are incorrect")
-	assert.Equal(t, reqData1.Imp[1].ID, "1_1", "First request imps are incorrect")
-	assert.Equal(t, reqData1.Imp[2].ID, "1_2", "First request imps are incorrect")
-
 	var reqData2 *openrtb.BidRequest
 	error = json.Unmarshal(res[1].Body, &reqData2)
 	assert.Equal(t, error, nil, "Response body unmarshalling error should be nil")
@@ -189,11 +185,6 @@ func TestVideoTwoPods(t *testing.T) {
 	adPodId2 := reqDataExt2.Appnexus.AdPodId
 
 	assert.NotEqual(t, adPodId1, adPodId2, "AdPod id should be different for different pods")
-
-	assert.Equal(t, reqData2.Imp[0].ID, "2_0", "Second request imps are incorrect")
-	assert.Equal(t, reqData2.Imp[1].ID, "2_1", "Second request imps are incorrect")
-	assert.Equal(t, reqData2.Imp[2].ID, "2_2", "Second request imps are incorrect")
-
 }
 
 func TestVideoTwoPodsManyImps(t *testing.T) {
@@ -245,12 +236,6 @@ func TestVideoTwoPodsManyImps(t *testing.T) {
 	error = json.Unmarshal(reqData1.Ext, &reqDataExt1)
 	assert.Equal(t, error, nil, "Response ext unmarshalling error should be nil")
 
-	adPodId1 := reqDataExt1.Appnexus.AdPodId
-
-	assert.Equal(t, reqData1.Imp[0].ID, "1_0", "First request imps are incorrect")
-	assert.Equal(t, reqData1.Imp[1].ID, "1_1", "First request imps are incorrect")
-	assert.Equal(t, reqData1.Imp[2].ID, "1_2", "First request imps are incorrect")
-
 	var reqData2 *openrtb.BidRequest
 	error = json.Unmarshal(res[1].Body, &reqData2)
 	assert.Equal(t, error, nil, "Response body unmarshalling error should be nil")
@@ -258,14 +243,6 @@ func TestVideoTwoPodsManyImps(t *testing.T) {
 	var reqDataExt2 *appnexusReqExt
 	error = json.Unmarshal(reqData2.Ext, &reqDataExt2)
 	assert.Equal(t, error, nil, "Response ext unmarshalling error should be nil")
-
-	adPodId2 := reqDataExt2.Appnexus.AdPodId
-
-	assert.NotEqual(t, adPodId1, adPodId2, "AdPod id should be different for different pods")
-
-	assert.Equal(t, reqData2.Imp[0].ID, "2_0", "Second request imps are incorrect")
-	assert.Equal(t, reqData2.Imp[1].ID, "2_1", "Second request imps are incorrect")
-	assert.Equal(t, reqData2.Imp[2].ID, "2_2", "Second request imps are incorrect")
 
 	var reqData3 *openrtb.BidRequest
 	error = json.Unmarshal(res[2].Body, &reqData3)
@@ -275,14 +252,26 @@ func TestVideoTwoPodsManyImps(t *testing.T) {
 	error = json.Unmarshal(reqData3.Ext, &reqDataExt3)
 	assert.Equal(t, error, nil, "Response ext unmarshalling error should be nil")
 
+	adPodId1 := reqDataExt1.Appnexus.AdPodId
+	adPodId2 := reqDataExt2.Appnexus.AdPodId
 	adPodId3 := reqDataExt3.Appnexus.AdPodId
 
-	assert.Equal(t, adPodId2, adPodId3, "AdPod should be the same for the same pod")
+	twoPodIdsEqual := false
+	if adPodId1 == adPodId2 {
+		assert.NotEqual(t, adPodId1, adPodId3, "Adpod ids for different pods should be different")
+		twoPodIdsEqual = true
+	}
 
-	assert.Equal(t, reqData3.Imp[0].ID, "2_10", "Third request imps are incorrect")
-	assert.Equal(t, reqData3.Imp[1].ID, "2_11", "Third request imps are incorrect")
-	assert.Equal(t, reqData3.Imp[2].ID, "2_12", "Third request imps are incorrect")
+	if adPodId2 == adPodId3 {
+		assert.NotEqual(t, adPodId1, adPodId3, "Adpod ids for different pods should be different")
+		twoPodIdsEqual = true
+	}
 
+	if adPodId1 == adPodId3 {
+		assert.NotEqual(t, adPodId2, adPodId3, "Adpod ids for different pods should be different")
+		twoPodIdsEqual = true
+	}
+	assert.True(t, twoPodIdsEqual, "Two of 3 pod ids must be equal")
 }
 
 // ----------------------------------------------------------------------------
