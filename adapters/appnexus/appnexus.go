@@ -3,9 +3,12 @@ package appnexus
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
+	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
@@ -95,10 +98,11 @@ type appnexusBidExt struct {
 }
 
 type appnexusReqExtAppnexus struct {
-	IncludeBrandCategory    *bool `json:"include_brand_category,omitempty"`
-	BrandCategoryUniqueness *bool `json:"brand_category_uniqueness,omitempty"`
-	IsAMP                   int   `json:"is_amp,omitempty"`
-	HeaderBiddingSource     int   `json:"hb_source,omitempty"`
+	IncludeBrandCategory    *bool  `json:"include_brand_category,omitempty"`
+	BrandCategoryUniqueness *bool  `json:"brand_category_uniqueness,omitempty"`
+	IsAMP                   int    `json:"is_amp,omitempty"`
+	HeaderBiddingSource     int    `json:"hb_source,omitempty"`
+	AdPodId                 string `json:"adpod_id,omitempty"`
 }
 
 // Full request extension including appnexus extension object
@@ -354,14 +358,72 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	}
 	reqExt.Appnexus.IsAMP = isAMP
 	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
+
+	imps := request.Imp
 	var err error
+
+	// For long form requests adpod_id must be sent downstream.
+	// Adpod id is a unique identifier for pod
+	// All impressions in the same pod must have the same pod id in request extension
+	// For this all impressions in  request should belong to the same pod
+	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
+	if isVIDEO == 1 {
+		podImps := make(map[string]([]openrtb.Imp))
+		//find how many pods
+		for _, imp := range imps {
+			pod := strings.Split(imp.ID, "_")[0]
+			podImps[pod] = append(podImps[pod], imp)
+		}
+		if len(podImps) == 1 {
+			//if there is only one pod, just add adpod_id to ex and process as usual
+			reqExt.Appnexus.AdPodId, err = generatePodId()
+			if err != nil {
+				errs = append(errs, err)
+				return nil, errs
+			}
+
+		} else {
+
+			resArr := make([]*adapters.RequestData, 0, 0)
+			for _, podImps := range podImps {
+				reqExt.Appnexus.AdPodId, err = generatePodId()
+				if err != nil {
+					errs = append(errs, err)
+					return nil, errs
+				}
+				request.Ext, err = json.Marshal(reqExt)
+				if err != nil {
+					errs = append(errs, err)
+					return nil, errs
+				}
+				reqs, errors := splitRequests(podImps, request, thisURI, errs)
+				resArr = append(resArr, reqs...)
+				errs = append(errs, errors...)
+			}
+			return resArr, errs
+		}
+
+	}
+
 	request.Ext, err = json.Marshal(reqExt)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
 
-	imps := request.Imp
+	return splitRequests(imps, request, thisURI, errs)
+}
+
+func generatePodId() (string, error) {
+	val, err := rand.Int(rand.Reader, big.NewInt(int64(math.MaxInt64)))
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprint(val.Int64()), nil
+}
+
+func splitRequests(imps []openrtb.Imp, request *openrtb.BidRequest, uri string, errs []error) ([]*adapters.RequestData, []error) {
+
 	// Initial capacity for future array of requests, memory optimization.
 	// Let's say there are 35 impressions and limit impressions per request equals to 10.
 	// In this case we need to create 4 requests with 10, 10, 10 and 5 impressions.
@@ -393,7 +455,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 		resArr = append(resArr, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     thisURI,
+			Uri:     uri,
 			Body:    reqJSON,
 			Headers: headers,
 		})
