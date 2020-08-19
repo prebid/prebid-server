@@ -133,7 +133,9 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		geo = bidRequest.Device.Geo
 	}
 	if geo != nil {
-		if _, found := e.eeaCountries[geo.Country]; found {
+		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
+		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
+		if _, found := e.eeaCountries[strings.ToUpper(geo.Country)]; found {
 			usersyncIfAmbiguous = false
 		} else if len(geo.Country) == 3 {
 			// The country field is formatted properly as a three character country code

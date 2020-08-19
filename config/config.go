@@ -156,9 +156,13 @@ type GDPR struct {
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
 	NonStandardPublisherMap map[string]int
-	TCF2                    TCF2     `mapstructure:"tcf2"`
-	AMPException            bool     `mapstructure:"amp_exception"`
-	EEACountries            []string `mapstructure:"eea_countries"`
+	TCF2                    TCF2 `mapstructure:"tcf2"`
+	AMPException            bool `mapstructure:"amp_exception"`
+	// EEACountries (EEA = European Economic Area) are a list of countries where we should assume GDPR applies.
+	// If the gdpr flag is unset in a request, but geo.country is set, we will assume GDPR applies if and only
+	// if the country matches one on this list. If both the GDPR flag and country are not set, we default
+	// to UsersyncIfAmbiguous
+	EEACountries []string `mapstructure:"eea_countries"`
 }
 
 func (cfg *GDPR) validate(errs configErrors) configErrors {
