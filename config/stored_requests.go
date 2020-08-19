@@ -14,10 +14,10 @@ import (
 type DataType string
 
 const (
-	requestDataType  DataType = "Request"
-	impDataType      DataType = "Imp"
-	categoryDataType DataType = "Category"
-	videoDataType    DataType = "Video"
+	RequestDataType    DataType = "Request"
+	CategoryDataType   DataType = "Category"
+	VideoDataType      DataType = "Video"
+	AmpRequestDataType DataType = "Amp Request"
 )
 
 // StoredRequests configures the backend used to store requests on the server.
