@@ -139,7 +139,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	setEffectivePubID(req)
+	setEffectivePubID(req, false, r.URL.Query())
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 		labels.RType = pbsmetrics.ReqTypeORTB2App
@@ -1290,7 +1290,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 }
 
 // Sets the effective publisher ID
-func setEffectivePubID(req *openrtb.BidRequest) {
+func setEffectivePubID(req *openrtb.BidRequest, isAmp bool, urlValues url.Values) {
 	var pub *openrtb.Publisher
 	if req.App != nil {
 		if req.App.Publisher == nil {
@@ -1305,12 +1305,11 @@ func setEffectivePubID(req *openrtb.BidRequest) {
 		pub = req.Site.Publisher
 	}
 
-	if pub.Ext != nil {
-		var pubExt openrtb_ext.ExtPublisher
-		err := json.Unmarshal(pub.Ext, &pubExt)
-		if err == nil && pubExt.Prebid != nil && pubExt.Prebid.ParentAccount != nil &&
-			*pubExt.Prebid.ParentAccount != "" {
-			pub.ID = *pubExt.Prebid.ParentAccount
+	if pub.ID == "" && isAmp {
+		// For amp requests, the publisher ID could be sent via the account
+		// query string
+		if acc := urlValues.Get("account"); acc != "" && acc != "ACCOUNT_ID" {
+			pub.ID = acc
 		}
 	}
 

@@ -240,7 +240,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	setEffectivePubID(bidReq)
+	setEffectivePubID(bidReq, false, r.URL.Query())
 	if bidReq.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 		labels.PubID = bidReq.App.Publisher.ID

@@ -263,21 +263,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 }
 
-// Sets the effective publisher ID for an AMP request
-func setEffectiveAmpPubID(req *openrtb.BidRequest, urlValues url.Values) {
-	// Try to look for the pub ID in the ususal places first
-	setEffectivePubID(req)
-
-	// For amp requests, the publisher ID could be sent via the account
-	// query string
-	if req.Site.Publisher.ID == pbsmetrics.PublisherUnknown {
-		if acc := urlValues.Get("account"); acc != "" && acc != "ACCOUNT_ID" {
-			// Amp requests can only have Site. Never App
-			req.Site.Publisher.ID = acc
-		}
-	}
-}
-
 // parseRequest turns the HTTP request into an OpenRTB request.
 // If the errors list is empty, then the returned request will be valid according to the OpenRTB 2.5 spec.
 // In case of "strong recommendations" in the spec, it tends to be restrictive. If a better workaround is
@@ -404,7 +389,7 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 
 	setAmpExt(req.Site, "1")
 
-	setEffectiveAmpPubID(req, httpRequest.URL.Query())
+	setEffectivePubID(req, true, httpRequest.URL.Query())
 
 	slot := httpRequest.FormValue("slot")
 	if slot != "" {

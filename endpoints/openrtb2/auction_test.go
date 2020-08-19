@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -1121,9 +1122,13 @@ func TestSetEffectivePubID(t *testing.T) {
 	}
 	testPubExtJSON, err := json.Marshal(testPubExt)
 	assert.NoError(t, err)
+	testURLValues := url.Values{}
+	testURLValues.Add("account", testPubID)
 
 	testCases := []struct {
 		req           *openrtb.BidRequest
+		urlValues     url.Values
+		isAmp         bool
 		expectedPubID string
 		description   string
 	}{
@@ -1167,32 +1172,10 @@ func TestSetEffectivePubID(t *testing.T) {
 					},
 				},
 			},
+			isAmp:         true,
+			urlValues:     testURLValues,
 			expectedPubID: testPubID,
-			description:   "Publisher ID present in req.App.Publisher.Ext.Prebid.ParentAccount",
-		},
-		{
-			req: &openrtb.BidRequest{
-				Site: &openrtb.Site{
-					Publisher: &openrtb.Publisher{
-						ID:  "",
-						Ext: testPubExtJSON,
-					},
-				},
-			},
-			expectedPubID: testPubID,
-			description:   "Publisher ID present in req.Site.Publisher.Ext.Prebid.ParentAccount",
-		},
-		{
-			req: &openrtb.BidRequest{
-				Site: &openrtb.Site{
-					Publisher: &openrtb.Publisher{
-						ID:  "some-pub",
-						Ext: testPubExtJSON,
-					},
-				},
-			},
-			expectedPubID: testPubID,
-			description:   "Publisher ID present in both req.Site.Publisher.ID and req.Site.Publisher.Ext.Prebid.ParentAccount",
+			description:   "Publisher ID present in account query parameter for an amp req",
 		},
 		{
 			req: &openrtb.BidRequest{
@@ -1208,7 +1191,7 @@ func TestSetEffectivePubID(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		setEffectivePubID(test.req)
+		setEffectivePubID(test.req, test.isAmp, test.urlValues)
 		if test.req.Site != nil {
 			assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
 				"should return the expected Publisher ID for test case: %s", test.description)
