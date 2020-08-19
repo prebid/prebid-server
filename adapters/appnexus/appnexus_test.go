@@ -161,7 +161,7 @@ func TestVideoTwoPods(t *testing.T) {
 	res, err := a.MakeRequests(&req, &reqInfo)
 
 	assert.Equal(t, len(err), 0, "Errors array should be empty")
-	assert.Equal(t, len(res), 2, "Only one request should be returned")
+	assert.Equal(t, len(res), 2, "Two request should be returned")
 
 	var error error
 	var reqData1 *openrtb.BidRequest
@@ -225,7 +225,7 @@ func TestVideoTwoPodsManyImps(t *testing.T) {
 	res, err := a.MakeRequests(&req, &reqInfo)
 
 	assert.Equal(t, len(err), 0, "Errors array should be empty")
-	assert.Equal(t, len(res), 3, "Only one request should be returned")
+	assert.Equal(t, len(res), 3, "Three requests should be returned")
 
 	var error error
 	var reqData1 *openrtb.BidRequest
