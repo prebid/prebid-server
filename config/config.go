@@ -103,7 +103,9 @@ func (c configErrors) Error() string {
 func (cfg *Configuration) validate() configErrors {
 	var errs configErrors
 	errs = cfg.AuctionTimeouts.validate(errs)
-	errs = cfg.StoredRequests.validate(errs)
+	errs = cfg.StoredRequests.validate("stored_requests", RequestDataType, errs)
+	cfg.CategoryMapping.DataType = CategoryDataType // CategoryMapping has no other validation
+	cfg.StoredVideo.DataType = VideoDataType        // StoredVideo has no other validation
 	errs = cfg.Metrics.validate(errs)
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))

@@ -2,7 +2,6 @@ package config
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,8 +10,20 @@ import (
 	"github.com/golang/glog"
 )
 
+// DataType constants
+type DataType string
+
+const (
+	RequestDataType    DataType = "Request"
+	CategoryDataType   DataType = "Category"
+	VideoDataType      DataType = "Video"
+	AMPRequestDataType DataType = "Amp Request"
+)
+
 // StoredRequests configures the backend used to store requests on the server.
 type StoredRequests struct {
+	// DataType is a tag pushed from upstream indicating the type of object fetched here
+	DataType DataType
 	// Files should be true if Stored Requests should be loaded from the filesystem.
 	Files bool `mapstructure:"filesystem"`
 	//If data should be loaded from file system, path should be specified in configuration
@@ -39,6 +50,8 @@ type StoredRequests struct {
 
 // StoredRequestsSlim struct defines options for stored requests from a single endpoint
 type StoredRequestsSlim struct {
+	// DataType is a tag pushed from upstream indicating the type of object fetched here
+	DataType DataType
 	// Files should be used if Stored Requests should be loaded from the filesystem.
 	// Fetchers are in stored_requests/backends/file_system/fetcher.go
 	Files FileFetcherConfig `mapstructure:"filesystem"`
@@ -118,25 +131,26 @@ type HTTPFetcherConfig struct {
 	AmpEndpoint string `mapstructure:"amp_endpoint"`
 }
 
-func (cfg *StoredRequests) validate(errs configErrors) configErrors {
+func (cfg *StoredRequests) validate(section string, dataType DataType, errs configErrors) configErrors {
+	cfg.DataType = dataType
 	if cfg.InMemoryCache.Type == "none" {
 		if cfg.CacheEventsAPI {
-			errs = append(errs, errors.New("stored_requests.cache_events_api must be false if stored_requests.in_memory_cache=none"))
+			errs = append(errs, fmt.Errorf("%s: cache_events_api must be false if in_memory_cache=none", section))
 		}
 
 		if cfg.HTTPEvents.RefreshRate != 0 {
-			errs = append(errs, errors.New("stored_requests.http_events.refresh_rate_seconds must be 0 if stored_requests.in_memory_cache=none"))
+			errs = append(errs, fmt.Errorf("%s: http_events.refresh_rate_seconds must be 0 if in_memory_cache=none", section))
 		}
 
 		if cfg.Postgres.PollUpdates.Query != "" {
-			errs = append(errs, errors.New("stored_requests.postgres.poll_for_updates.query must be empty if stored_requests.in_memory_cache=none"))
+			errs = append(errs, fmt.Errorf("%s: postgres.poll_for_updates.query must be empty if in_memory_cache=none", section))
 		}
 		if cfg.Postgres.CacheInitialization.Query != "" {
-			errs = append(errs, errors.New("stored_requests.postgres.initialize_caches.query must be empty if stored_requests.in_memory_cache=none"))
+			errs = append(errs, fmt.Errorf("%s: postgres.initialize_caches.query must be empty if in_memory_cache=none", section))
 		}
 	}
-	errs = cfg.InMemoryCache.validate(errs)
-	errs = cfg.Postgres.validate(errs)
+	errs = cfg.InMemoryCache.validate(section, errs)
+	errs = cfg.Postgres.validate(section, errs)
 	return errs
 }
 
@@ -158,12 +172,12 @@ type PostgresConfig struct {
 	PollUpdates         PostgresUpdatePolling    `mapstructure:"poll_for_updates"`
 }
 
-func (cfg *PostgresConfig) validate(errs configErrors) configErrors {
+func (cfg *PostgresConfig) validate(section string, errs configErrors) configErrors {
 	if cfg.ConnectionInfo.Database == "" {
 		return errs
 	}
 
-	return cfg.PollUpdates.validate(errs)
+	return cfg.PollUpdates.validate(section, errs)
 }
 
 // PostgresConnection has options which put types to the Postgres Connection string. See:
@@ -298,29 +312,29 @@ type PostgresCacheInitializerSlim struct {
 	Query string `mapstructure:"query"`
 }
 
-func (cfg *PostgresCacheInitializerSlim) validate(errs configErrors) configErrors {
+func (cfg *PostgresCacheInitializerSlim) validate(section string, errs configErrors) configErrors {
 	if cfg.Query == "" {
 		return errs
 	}
 	if cfg.Timeout <= 0 {
-		errs = append(errs, errors.New("stored_requests.postgres.initialize_caches.timeout_ms must be positive"))
+		errs = append(errs, fmt.Errorf("%s: postgres.initialize_caches.timeout_ms must be positive", section))
 	}
 	if strings.Contains(cfg.Query, "$") {
-		errs = append(errs, errors.New("stored_requests.postgres.initialize_caches.query should not contain any wildcards (e.g. $1)"))
+		errs = append(errs, fmt.Errorf("%s: postgres.initialize_caches.query should not contain any wildcards (e.g. $1)", section))
 	}
 	return errs
 }
 
-func (cfg *PostgresCacheInitializer) validate(errs configErrors) configErrors {
+func (cfg *PostgresCacheInitializer) validate(section string, errs configErrors) configErrors {
 	if cfg.Query == "" && cfg.AmpQuery == "" {
 		return errs
 	}
 
 	slim := &PostgresCacheInitializerSlim{Timeout: cfg.Timeout, Query: cfg.Query}
-	errs = slim.validate(errs)
+	errs = slim.validate(section, errs)
 
 	if strings.Contains(cfg.AmpQuery, "$") {
-		errs = append(errs, errors.New("stored_requests.postgres.initialize_caches.amp_query should not contain any wildcards (e.g. $1)"))
+		errs = append(errs, fmt.Errorf("%s: postgres.initialize_caches.amp_query should not contain any wildcards (e.g. $1)", section))
 	}
 
 	return errs
@@ -370,34 +384,34 @@ type PostgresUpdatePolling struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *PostgresUpdatePollingSlim) validate(errs configErrors) configErrors {
+func (cfg *PostgresUpdatePollingSlim) validate(section string, errs configErrors) configErrors {
 	if cfg.Query == "" {
 		return errs
 	}
 
 	if cfg.RefreshRate <= 0 {
-		errs = append(errs, errors.New("stored_requests.postgres.poll_for_updates.refresh_rate_seconds must be > 0"))
+		errs = append(errs, fmt.Errorf("%s: postgres.poll_for_updates.refresh_rate_seconds must be > 0", section))
 	}
 
 	if cfg.Timeout <= 0 {
-		errs = append(errs, errors.New("stored_requests.postgres.poll_for_updates.timeout_ms must be > 0"))
+		errs = append(errs, fmt.Errorf("%s: postgres.poll_for_updates.timeout_ms must be > 0", section))
 	}
 
 	if !strings.Contains(cfg.Query, "$1") || strings.Contains(cfg.Query, "$2") {
-		errs = append(errs, errors.New("stored_requests.postgres.poll_for_updates.query must contain exactly one wildcard"))
+		errs = append(errs, fmt.Errorf("%s: postgres.poll_for_updates.query must contain exactly one wildcard", section))
 	}
 	return errs
 }
 
-func (cfg *PostgresUpdatePolling) validate(errs configErrors) configErrors {
+func (cfg *PostgresUpdatePolling) validate(section string, errs configErrors) configErrors {
 	if cfg.Query == "" && cfg.AmpQuery == "" {
 		return errs
 	}
 	slim := &PostgresUpdatePollingSlim{RefreshRate: cfg.RefreshRate, Timeout: cfg.Timeout, Query: cfg.Query}
-	errs = slim.validate(errs)
+	errs = slim.validate(section, errs)
 
 	if !strings.Contains(cfg.AmpQuery, "$1") || strings.Contains(cfg.AmpQuery, "$2") {
-		errs = append(errs, errors.New("stored_requests.postgres.poll_for_updates.amp_query must contain exactly one wildcard"))
+		errs = append(errs, fmt.Errorf("%s: postgres.poll_for_updates.amp_query must contain exactly one wildcard", section))
 	}
 	return errs
 }
@@ -473,29 +487,29 @@ type InMemoryCache struct {
 	ImpCacheSize int `mapstructure:"imp_cache_size_bytes"`
 }
 
-func (cfg *InMemoryCache) validate(errs configErrors) configErrors {
+func (cfg *InMemoryCache) validate(section string, errs configErrors) configErrors {
 	switch cfg.Type {
 	case "none":
 		// No errors for no config options
 	case "unbounded":
 		if cfg.TTL != 0 {
-			errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache must be 0 for unbounded caches. Got %d", cfg.TTL))
+			errs = append(errs, fmt.Errorf("%s: in_memory_cache must be 0 for unbounded caches. Got %d", section, cfg.TTL))
 		}
 		if cfg.RequestCacheSize != 0 {
-			errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache.request_cache_size_bytes must be 0 for unbounded caches. Got %d", cfg.RequestCacheSize))
+			errs = append(errs, fmt.Errorf("%s: in_memory_cache.request_cache_size_bytes must be 0 for unbounded caches. Got %d", section, cfg.RequestCacheSize))
 		}
 		if cfg.ImpCacheSize != 0 {
-			errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache.imp_cache_size_bytes must be 0 for unbounded caches. Got %d", cfg.ImpCacheSize))
+			errs = append(errs, fmt.Errorf("%s: in_memory_cache.imp_cache_size_bytes must be 0 for unbounded caches. Got %d", section, cfg.ImpCacheSize))
 		}
 	case "lru":
 		if cfg.RequestCacheSize <= 0 {
-			errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache.request_cache_size_bytes must be >= 0 when stored_requests.in_memory_cache.type=lru. Got %d", cfg.RequestCacheSize))
+			errs = append(errs, fmt.Errorf("%s: in_memory_cache.request_cache_size_bytes must be >= 0 when in_memory_cache.type=lru. Got %d", section, cfg.RequestCacheSize))
 		}
 		if cfg.ImpCacheSize <= 0 {
-			errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache.imp_cache_size_bytes must be >= 0 when stored_requests.in_memory_cache.type=lru. Got %d", cfg.ImpCacheSize))
+			errs = append(errs, fmt.Errorf("%s: in_memory_cache.imp_cache_size_bytes must be >= 0 when in_memory_cache.type=lru. Got %d", section, cfg.ImpCacheSize))
 		}
 	default:
-		errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache.type %s is invalid", cfg.Type))
+		errs = append(errs, fmt.Errorf("%s: in_memory_cache.type %s is invalid", section, cfg.Type))
 	}
 	return errs
 }
