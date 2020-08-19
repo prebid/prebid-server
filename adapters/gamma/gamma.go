@@ -246,12 +246,16 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 		}}
 	}
 
+	//(Section 7.1 No-Bid Signaling)
+	if gammaResp.SeatBid == nil || len(gammaResp.SeatBid) == 0 {
+		return nil, nil
+	}
+
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(gammaResp.SeatBid[0].Bid))
 	for _, sb := range gammaResp.SeatBid {
 		for i := range sb.Bid {
 			mediaType := getMediaTypeForImp(gammaResp.ID, internalRequest.Imp)
 			bid := convertBid(sb.Bid[i], mediaType)
-			//bid := sb.Bid[i]
 			if bid != nil {
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     bid,
@@ -259,7 +263,7 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 				})
 			} else {
 				return nil, []error{&errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Missing  Ad Markup. Run with request.debug = 1 for more info"),
+					Message: fmt.Sprintf("Missing Ad Markup. Run with request.debug = 1 for more info"),
 				}}
 			}
 		}
