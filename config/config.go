@@ -131,25 +131,36 @@ func (cfg *AuctionTimeouts) validate(errs configErrors) configErrors {
 }
 
 func (data *ExternalCache) validate(errs configErrors) configErrors {
-	if !(data.Host == "" && data.Path == "") {
-		// Either external cache host or path not empty, validate.
-		// Return an error if any of these is true
-		if data.Host == "" && data.Path != "" || data.Host != "" && data.Path == "" {
-			errs = append(errs, errors.New("External cache Host and Path must both be specified"))
-		} else if strings.HasSuffix(data.Host, "/") {
-			errs = append(errs, errors.New(fmt.Sprintf("External cache Host '%s' must not end with a path separator", data.Host)))
-		} else if strings.ContainsAny(data.Host, "://") {
-			errs = append(errs, errors.New(fmt.Sprintf("External cache Host must not specify a protocol. '%s'", data.Host)))
-		} else if !strings.HasPrefix(data.Path, "/") {
-			errs = append(errs, errors.New(fmt.Sprintf("External cache Path '%s' must begin with a path separator", data.Path)))
-		} else if url, err := url.Parse("https://" + data.Host + data.Path); err != nil {
-			errs = append(errs, errors.New("External cache holds invalid host or path values"))
-		} else if url.Host != data.Host {
-			errs = append(errs, errors.New(fmt.Sprintf("External cache Host '%s' is invalid", data.Host)))
-		} else if url.Path != data.Path {
-			errs = append(errs, errors.New("External cache Path is invalid"))
-		}
+	if data.Host == "" && data.Path == "" {
+		// Both host and path can be blank. No further validation needed
+		return errs
 	}
+
+	// Either host or path or both not empty, validate.
+	if data.Host == "" && data.Path != "" || data.Host != "" && data.Path == "" {
+		return append(errs, errors.New("External cache Host and Path must both be specified"))
+	}
+	if strings.HasSuffix(data.Host, "/") {
+		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' must not end with a path separator", data.Host)))
+	}
+	if strings.ContainsAny(data.Host, "://") {
+		return append(errs, errors.New(fmt.Sprintf("External cache Host must not specify a protocol. '%s'", data.Host)))
+	}
+	if !strings.HasPrefix(data.Path, "/") {
+		return append(errs, errors.New(fmt.Sprintf("External cache Path '%s' must begin with a path separator", data.Path)))
+	}
+
+	urlObj, err := url.Parse("https://" + data.Host + data.Path)
+	if err != nil {
+		return append(errs, errors.New("External cache holds invalid host or path values"))
+	}
+	if urlObj.Host != data.Host {
+		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' is invalid", data.Host)))
+	}
+	if urlObj.Path != data.Path {
+		return append(errs, errors.New("External cache Path is invalid"))
+	}
+
 	return errs
 }
 
