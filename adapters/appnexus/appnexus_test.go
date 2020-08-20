@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 	"time"
 
@@ -58,21 +59,23 @@ func TestVideoSinglePod(t *testing.T) {
 	req.Imp = append(req.Imp, openrtb.Imp{ID: "1_1", Ext: []byte(impExt)})
 	req.Imp = append(req.Imp, openrtb.Imp{ID: "1_2", Ext: []byte(impExt)})
 
-	res, err := a.MakeRequests(&req, &reqInfo)
+	result, err := a.MakeRequests(&req, &reqInfo)
 
 	assert.Equal(t, len(err), 0, "Errors array should be empty")
-	assert.Equal(t, len(res), 1, "Only one request should be returned")
+	assert.Equal(t, len(result), 1, "Only one request should be returned")
 
 	var error error
 	var reqData *openrtb.BidRequest
-	error = json.Unmarshal(res[0].Body, &reqData)
-	assert.Equal(t, error, nil, "Response body unmarshalling error should be nil")
+	error = json.Unmarshal(result[0].Body, &reqData)
+	assert.Nil(t, error, "Response body unmarshalling error should be nil")
 
 	var reqDataExt *appnexusReqExt
 	error = json.Unmarshal(reqData.Ext, &reqDataExt)
-	assert.Equal(t, error, nil, "Response ext unmarshalling error should be nil")
+	assert.Nil(t, error, "Response ext unmarshalling error should be nil")
 
-	assert.True(t, len(reqDataExt.Appnexus.AdPodId) > 0, "AdPod id doesn't present in Appnexus extension")
+	regMatch, matchErr := regexp.Match(`[0-9]19`, []byte(reqDataExt.Appnexus.AdPodId))
+	assert.Nil(t, matchErr, "Regex match error should be nil")
+	assert.True(t, regMatch, "AdPod id doesn't present in Appnexus extension or has incorrect format")
 }
 
 func TestVideoSinglePodManyImps(t *testing.T) {

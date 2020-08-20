@@ -3,12 +3,10 @@ package appnexus
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
-	"math/big"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -360,7 +358,6 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
 
 	imps := request.Imp
-	var err error
 
 	// For long form requests adpod_id must be sent downstream.
 	// Adpod id is a unique identifier for pod
@@ -368,61 +365,46 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	// For this all impressions in  request should belong to the same pod
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	if isVIDEO == 1 {
-		podImps := make(map[string]([]openrtb.Imp))
-		//find how many pods
-		for _, imp := range imps {
-			pod := strings.Split(imp.ID, "_")[0]
-			podImps[pod] = append(podImps[pod], imp)
+		podImps := groupByPods(imps)
+
+		requests := make([]*adapters.RequestData, 0, 0)
+		for _, podImps := range podImps {
+			reqExt.Appnexus.AdPodId = generatePodId()
+
+			reqs, errors := splitRequests(podImps, request, reqExt, thisURI, errs)
+			requests = append(requests, reqs...)
+			errs = append(errs, errors...)
 		}
-		if len(podImps) == 1 {
-			//if there is only one pod, just add adpod_id to ex and process as usual
-			reqExt.Appnexus.AdPodId, err = generatePodId()
-			if err != nil {
-				errs = append(errs, err)
-				return nil, errs
-			}
-
-		} else {
-
-			resArr := make([]*adapters.RequestData, 0, 0)
-			for _, podImps := range podImps {
-				reqExt.Appnexus.AdPodId, err = generatePodId()
-				if err != nil {
-					errs = append(errs, err)
-					return nil, errs
-				}
-				request.Ext, err = json.Marshal(reqExt)
-				if err != nil {
-					errs = append(errs, err)
-					return nil, errs
-				}
-				reqs, errors := splitRequests(podImps, request, thisURI, errs)
-				resArr = append(resArr, reqs...)
-				errs = append(errs, errors...)
-			}
-			return resArr, errs
-		}
-
+		return requests, errs
 	}
 
-	request.Ext, err = json.Marshal(reqExt)
+	return splitRequests(imps, request, reqExt, thisURI, errs)
+}
+
+func generatePodId() string {
+	val := rand.Int63()
+	return fmt.Sprint(val)
+}
+
+func groupByPods(imps []openrtb.Imp) map[string]([]openrtb.Imp) {
+	// find number of pods in response
+	podImps := make(map[string][]openrtb.Imp)
+	for _, imp := range imps {
+		pod := strings.Split(imp.ID, "_")[0]
+		podImps[pod] = append(podImps[pod], imp)
+	}
+	return podImps
+}
+
+func requestHelper(request *openrtb.BidRequest, requestExtension appnexusReqExt, errs []error) {
+	var err error
+	request.Ext, err = json.Marshal(requestExtension)
 	if err != nil {
 		errs = append(errs, err)
-		return nil, errs
 	}
-
-	return splitRequests(imps, request, thisURI, errs)
 }
 
-func generatePodId() (string, error) {
-	val, err := rand.Int(rand.Reader, big.NewInt(int64(math.MaxInt64)))
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprint(val.Int64()), nil
-}
-
-func splitRequests(imps []openrtb.Imp, request *openrtb.BidRequest, uri string, errs []error) ([]*adapters.RequestData, []error) {
+func splitRequests(imps []openrtb.Imp, request *openrtb.BidRequest, requestExtension appnexusReqExt, uri string, errs []error) ([]*adapters.RequestData, []error) {
 
 	// Initial capacity for future array of requests, memory optimization.
 	// Let's say there are 35 impressions and limit impressions per request equals to 10.
@@ -436,6 +418,8 @@ func splitRequests(imps []openrtb.Imp, request *openrtb.BidRequest, uri string, 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+
+	requestHelper(request, requestExtension, errs)
 
 	for impsLeft {
 
