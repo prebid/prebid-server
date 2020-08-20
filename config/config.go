@@ -181,6 +181,7 @@ type GDPR struct {
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
 	NonStandardPublisherMap map[string]int
+	TCF1                    TCF1 `mapstructure:"tcf1"`
 	TCF2                    TCF2 `mapstructure:"tcf2"`
 	AMPException            bool `mapstructure:"amp_exception"`
 }
@@ -203,6 +204,12 @@ func (t *GDPRTimeouts) InitTimeout() time.Duration {
 
 func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
+}
+
+// TCF1 defines the TCF1 specific configurations for GDPR
+type TCF1 struct {
+	FetchGVL        bool   `mapstructure:"fetch_gvl"`
+	FallbackGVLPath string `mapstructure:"fallback_gvl_path"`
 }
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -822,6 +829,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adocean.endpoint", "https://{{.Host}}")
 	v.SetDefault("adapters.adoppler.endpoint", "http://app.trustedmarketplace.io/ads")
 	v.SetDefault("adapters.adpone.endpoint", "http://rtb.adpone.com/bid-request?src=prebid_server")
+	v.SetDefault("adapters.adprime.endpoint", "http://delta.adprime.com/?c=o&m=ortb")
 	v.SetDefault("adapters.adtarget.endpoint", "http://ghb.console.adtarget.com.tr/pbs/ortb")
 	v.SetDefault("adapters.adtelligent.endpoint", "http://ghb.adtelligent.com/pbs/ortb")
 	v.SetDefault("adapters.advangelists.endpoint", "http://nep.advangelists.com/xp/get?pubid={{.PublisherID}}")
@@ -870,6 +878,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.rubicon.disabled", true)
 	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
 	v.SetDefault("adapters.sharethrough.endpoint", "http://btlr.sharethrough.com/FGMrCMMc/v1")
+	v.SetDefault("adapters.smaato.endpoint", "https://prebid.ad.smaato.net/oapi/prebid")
 	v.SetDefault("adapters.smartadserver.endpoint", "https://ssb.smartadserver.com")
 	v.SetDefault("adapters.smartrtb.endpoint", "http://market-east.smrtb.com/json/publisher/rtb?pubid={{.PublisherID}}")
 	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
@@ -908,6 +917,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
+	v.SetDefault("gdpr.tcf1.fetch_gvl", true)
+	v.SetDefault("gdpr.tcf1.fallback_gvl_path", "./static/tcf1/fallback_gvl.json")
 	v.SetDefault("gdpr.tcf2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose1.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enabled", true)

@@ -122,7 +122,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	defer func() {
 		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
-			err := putDebugLogError(deps.cache, &debugLog, start)
+			err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
 			if err != nil {
 				vo.Errors = append(vo.Errors, err)
 			}
@@ -279,6 +279,21 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		bidResp.Ext = response.Ext
 	}
 
+	if len(bidResp.AdPods) == 0 && debugLog.Enabled {
+		err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
+		if err != nil {
+			vo.Errors = append(vo.Errors, err)
+		} else {
+			bidResp.AdPods = append(bidResp.AdPods, &openrtb_ext.AdPod{
+				Targeting: []openrtb_ext.VideoTargeting{
+					{
+						HbCacheID: debugLog.CacheKey,
+					},
+				},
+			})
+		}
+	}
+
 	vo.VideoResponse = bidResp
 
 	resp, err := json.Marshal(bidResp)
@@ -292,34 +307,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 
-}
-
-func putDebugLogError(cache prebid_cache_client.Client, debugLog *exchange.DebugLog, start time.Time) error {
-	debugLog.Data.Response = "No response created"
-
-	debugLog.BuildCacheString()
-
-	data, err := json.Marshal(debugLog.CacheString)
-	if err != nil {
-		return err
-	}
-
-	toCache := []prebid_cache_client.Cacheable{
-		{
-			Type:       debugLog.CacheType,
-			Data:       data,
-			TTLSeconds: debugLog.TTL,
-			Key:        "log_" + debugLog.CacheKey,
-		},
-	}
-
-	if cache != nil {
-		ctx, cancel := context.WithDeadline(context.Background(), start.Add(time.Duration(100)*time.Millisecond))
-		defer cancel()
-		cache.PutJson(ctx, toCache)
-	}
-
-	return nil
 }
 
 func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) *openrtb_ext.BidRequestVideo {
@@ -470,7 +457,7 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 			if err := json.Unmarshal(bid.Ext, &tempRespBidExt); err != nil {
 				return nil, err
 			}
-			if tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbVastCacheKey)] == "" {
+			if tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbVastCacheKey, seatBid.Seat)] == "" {
 				continue
 			}
 
@@ -479,9 +466,9 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 			podId, _ := strconv.ParseInt(podNum, 0, 64)
 
 			videoTargeting := openrtb_ext.VideoTargeting{
-				HbPb:       tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)],
-				HbPbCatDur: tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbCategoryDurationKey)],
-				HbCacheID:  tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbVastCacheKey)],
+				HbPb:       tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbpbConstantKey, seatBid.Seat)],
+				HbPbCatDur: tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbCategoryDurationKey, seatBid.Seat)],
+				HbCacheID:  tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbVastCacheKey, seatBid.Seat)],
 			}
 
 			adPod := findAdPod(podId, adPods)
@@ -517,6 +504,14 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 	}
 
 	return &openrtb_ext.BidResponseVideo{AdPods: adPods}, nil
+}
+
+func formatTargetingKey(key openrtb_ext.TargetingKey, bidderName string) string {
+	fullKey := fmt.Sprintf("%s_%s", string(key), bidderName)
+	if len(fullKey) > exchange.MaxKeyLength {
+		return string(fullKey[0:exchange.MaxKeyLength])
+	}
+	return fullKey
 }
 
 func findAdPod(podInd int64, pods []*openrtb_ext.AdPod) *openrtb_ext.AdPod {
@@ -623,9 +618,9 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 
 	targeting := openrtb_ext.ExtRequestTargeting{
 		PriceGranularity:     priceGranularity,
-		IncludeWinners:       true,
 		IncludeBrandCategory: inclBrandCat,
 		DurationRangeSec:     durationRangeSec,
+		IncludeBidderKeys:    true,
 	}
 
 	vastXml := openrtb_ext.ExtRequestPrebidCacheVAST{}

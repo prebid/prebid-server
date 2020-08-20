@@ -10,12 +10,13 @@ type Enforcement struct {
 	COPPA   bool
 	GDPR    bool
 	GDPRGeo bool
+	GDPRID  bool
 	LMT     bool
 }
 
 // Any returns true if at least one privacy policy requires enforcement.
 func (e Enforcement) Any() bool {
-	return e.CCPA || e.COPPA || e.GDPR || e.GDPRGeo || e.LMT
+	return e.CCPA || e.COPPA || e.GDPR || e.GDPRGeo || e.GDPRID || e.LMT
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
@@ -64,7 +65,7 @@ func (e Enforcement) getUserScrubStrategy(ampGDPRException bool) ScrubStrategyUs
 	}
 
 	// If no user scrubbing is needed, then return none, else scrub ID (COPPA checked above)
-	if e.CCPA || e.GDPR || e.LMT {
+	if e.CCPA || e.GDPRID || e.LMT {
 		return ScrubStrategyUserID
 	}
 

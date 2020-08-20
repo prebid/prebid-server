@@ -1,0 +1,61 @@
+{
+  "mockBidRequest": {
+    "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+    "imp": [
+      {
+        "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+        "banner": {
+          "format": []
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "1100042525",
+            "adspaceId": "130563103"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "prebid.org",
+      "publisher": {
+        "id": "1"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"]
+        },
+        "uri": "https://prebid/bidder",
+        "body": {
+          "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+          "imp": [],
+          "site": {
+            "page": "prebid.org",
+            "publisher": {
+              "id": "1100042525"
+            }
+          },
+          "ext": {
+            "client": "prebid_server_0.1"
+          }
+        }
+      }
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No sizes provided for Banner []",
+      "comparison": "literal"
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unexpected status code: 0. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}
