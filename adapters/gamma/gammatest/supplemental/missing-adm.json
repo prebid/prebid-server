@@ -1,0 +1,76 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-video-id",
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "protocols": [
+                        2,
+                        5
+                    ],
+                    "w": 640,
+                    "h": 480
+                },
+                "ext": {
+                    "bidder": {
+                        "id": "sample-id",
+                        "zid": "sample-zone-id",
+                        "wid": "sample-web-id"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://hb.gammaplatform.com/adx/request/?id=sample-id&zid=sample-zone-id&wid=sample-web-id&bidid=test-imp-video-id&hb=pbmobile"
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "cur": "USD",
+                    "seatbid": [
+                        {
+                            "seat": "gamma",
+                            "bid": [
+                                {
+                                    "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                                    "impid": "test-imp-video-id",
+                                    "price": 0.500000,
+                                    "crid": "29484110",
+                                    "w": 640,
+                                    "h": 360
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBids": [
+        {
+            "bid": {
+                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                "impid": "test-imp-video-id",
+                "price": 0.500000,
+                "crid": "29484110",
+                "w": 640,
+                "h": 360
+            },
+            "type": "video"
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Missing Ad Markup. Run with request.debug = 1 for more info",
+            "comparison": "literal"
+        }
+    ]
+}
