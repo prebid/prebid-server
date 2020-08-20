@@ -160,10 +160,10 @@ func TestNewPostgresEventProducers(t *testing.T) {
 	mock.ExpectQuery("^" + regexp.QuoteMeta(ampCfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 
 	evProducers := newEventProducers(cfg, client, db, nil)
-	assertProducerLength(t, evProducers, 2)
+	assertProducerLength(t, evProducers, 1)
 
 	ampEvProducers := newEventProducers(ampCfg, client, db, nil)
-	assertProducerLength(t, ampEvProducers, 2)
+	assertProducerLength(t, ampEvProducers, 1)
 
 	assertExpectationsMet(t, mock)
 }
