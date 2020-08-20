@@ -48,6 +48,9 @@ func TestNewExchange(t *testing.T) {
 			ExpectedTimeMillis: 20,
 		},
 		Adapters: blankAdapterConfig(openrtb_ext.BidderList()),
+		GDPR: config.GDPR{
+			EEACountries: []string{"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA"},
+		},
 	}
 
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))

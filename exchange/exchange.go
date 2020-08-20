@@ -76,6 +76,7 @@ type bidResponseWrapper struct {
 func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) Exchange {
 	e := new(exchange)
 
+	e.eeaCountries = make(map[string]struct{}, len(cfg.GDPR.EEACountries))
 	var s struct{}
 	for _, c := range cfg.GDPR.EEACountries {
 		e.eeaCountries[c] = s
