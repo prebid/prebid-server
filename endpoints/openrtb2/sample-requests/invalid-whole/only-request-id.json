@@ -1,4 +1,5 @@
 {
+  "description": "Bid request is is missing imp array",
   "mockBidRequest": {
     "id": "req-id"
   },

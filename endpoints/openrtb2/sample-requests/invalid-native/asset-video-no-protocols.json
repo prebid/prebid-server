@@ -1,5 +1,5 @@
 {
-  "description": "Native request",
+  "description": "Native request with missing protocols array in a video asset in the imp.native.request field",
   "mockBidRequest": {
     "id": "req-id",
     "site": {
@@ -19,11 +19,6 @@
         }
       }
     ]
-  },
-  "expectedBidResponse": {
-    "id": "req-id",
-    "bidid": "test bid id",
-    "nbr": 0
   },
   "expectedReturnCode": 400,
   "expectedErrorMessage": "Invalid request"

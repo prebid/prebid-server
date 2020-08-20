@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: json: cannot unmarshal number into Go value of type openrtb.BidRequest\n",
+  "description": "Bid request is not an object, is a float. Expect error.",
   "mockBidRequest": 6.3,
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: json: cannot unmarshal number into Go value of type openrtb.BidRequest\n"
 }

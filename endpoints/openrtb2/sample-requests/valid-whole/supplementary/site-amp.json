@@ -1,5 +1,5 @@
 {
-  "description": "a desc",
+  "description": "Request that comes with a valid amp value in its site.ext field",
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {

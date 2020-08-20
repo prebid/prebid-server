@@ -1,4 +1,5 @@
 {
+  "description": "Bid request with negative tmax value. Expect error",
   "mockBidRequest": {
     "id": "req-id",
     "tmax": -2

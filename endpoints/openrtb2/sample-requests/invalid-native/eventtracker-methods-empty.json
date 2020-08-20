@@ -1,5 +1,5 @@
 {
-  "description": "Native request",
+  "description": "Bid request with empty methods array inside the native.request field in its only imp element",
   "mockBidRequest": {
     "id": "req-id",
     "site": {
@@ -19,11 +19,6 @@
         }
       }
     ]
-  },
-  "expectedBidResponse": {
-    "id": "req-id",
-    "bidid": "test bid id",
-    "nbr": 0
   },
   "expectedReturnCode": 400,
   "expectedErrorMessage": "Invalid request"

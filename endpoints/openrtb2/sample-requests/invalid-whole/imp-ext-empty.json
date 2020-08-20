@@ -1,27 +1,22 @@
 {
-  "description": "Invalid request: request.imp[0].ext must contain at least one bidder\n",
+  "description": "Bid request's sole imp element has empty extension",
   "mockBidRequest": {
-      "id": "req-id",
-      "imp": [
-        {
-          "id": "imp-id",
-          "video": {
-            "mimes": [
-              "video/mp4"
+    "id": "req-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
             ]
-          },
-          "ext": {}
-        }
-      ],
-      "app": {
-        "id": "app_001"
+        },
+        "ext": {}
       }
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+    ],
+    "app": {
+      "id": "app_001"
+    }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.imp[0].ext must contain at least one bidder\n"
 }

@@ -1,54 +1,49 @@
 {
-  "description": "Invalid request: request.site.ext.amp must be either 1, 0, or undefined\n",
+  "description": "Request's amp value in site's ext is invalid",
   "mockBidRequest": {
-      "id": "some-request-id",
-      "site": {
-        "page": "test.somepage.com",
-        "ext": {
-          "amp": 2
-        }
-      },
-      "imp": [
-        {
-          "id": "my-imp-id",
-          "banner": {
-            "format": [
-              {
-                "w": 300,
-                "h": 600
-              }
-            ]
-          },
-          "pmp": {
-            "deals": [
-              {
-                "id": "some-deal-id"
-              }
-            ]
-          },
-          "ext": {
-            "appnexus": {
-              "placementId": 12883451
-            }
-          }
-        }
-      ],
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com",
       "ext": {
-        "prebid": {
-          "targeting": {
-            "pricegranularity": "low"
-          },
-          "cache": {
-            "bids": {}
+        "amp": 2
+      }
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
           }
         }
       }
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+    ],
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "pricegranularity": "low"
+        },
+        "cache": {
+          "bids": {}
+        }
+      }
+    }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.site.ext.amp must be either 1, 0, or undefined\n"
 }

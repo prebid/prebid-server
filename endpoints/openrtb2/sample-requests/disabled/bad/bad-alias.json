@@ -1,5 +1,8 @@
 {
-  "description": "Invalid request: request.ext.prebid.aliases.test1 refers to unknown bidder: appnexus\n",
+  "description": "Request comes with an alias to a disabled bidder, we should throw error",
+  "mockConfig": {
+    "disabledAdapters": ["appnexus", "rubicon"]
+  },
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {
@@ -28,11 +31,6 @@
       }
     }
   },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
-  },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.ext.prebid.aliases.test1 refers to unknown bidder: appnexus\n"
 }

@@ -1,5 +1,5 @@
 {
-  "description": "a desc",
+  "description": "Well formed amp request with GDPR value and consent string",
   "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {

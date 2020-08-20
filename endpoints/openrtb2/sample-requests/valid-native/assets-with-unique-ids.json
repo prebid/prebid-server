@@ -1,5 +1,5 @@
 {
-  "description": "Native request",
+  "description": "Multi-asset native request with different ids",
   "mockBidRequest": {
     "id": "req-id",
     "site": {

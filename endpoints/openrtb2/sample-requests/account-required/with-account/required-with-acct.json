@@ -1,5 +1,5 @@
 {
-  "description": "This request comes with no account id",
+  "description": "This request comes account id which is required in the config",
   "mockConfig": {
     "accountRequired": true
   },

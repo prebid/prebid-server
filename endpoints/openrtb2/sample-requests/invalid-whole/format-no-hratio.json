@@ -1,5 +1,5 @@
 {
-  "description": "Invalid request: Request imp[0].banner.format[0] must define non-zero \"wmin\", \"wratio\", and \"hratio\" properties.\n",
+  "description": "Banner comes with a zero hratio value",
   "mockBidRequest": {
   		"id": "req-id",
   		"imp": [
@@ -18,11 +18,6 @@
             "id": "app_001"
           }
   },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
-  },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: Request imp[0].banner.format[0] must define non-zero \"wmin\", \"wratio\", and \"hratio\" properties.\n"
 }

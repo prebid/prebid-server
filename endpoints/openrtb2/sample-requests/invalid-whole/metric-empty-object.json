@@ -1,5 +1,5 @@
 {
-  "description": "Invalid request: request.imp[0].metric is not yet supported by prebid-server. Support may be added in the future\n",
+  "description": "Bid request's imp comes with elements in unsupported metric array",
   "mockBidRequest": {
       "id":"req-id",
       "imp":[
@@ -12,11 +12,6 @@
         "id": "app_001"
       }
   },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
-  },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.imp[0].metric is not yet supported by prebid-server. Support may be added in the future\n"
 }

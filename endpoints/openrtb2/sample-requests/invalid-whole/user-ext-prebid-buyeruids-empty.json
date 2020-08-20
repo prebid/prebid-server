@@ -1,41 +1,36 @@
 {
-  "description": "Invalid request: request.user.ext.prebid requires a \"buyeruids\" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.\n",
+  "description": "Bid request with an empty request.user.ext.prebid.buyeruids object",
   "mockBidRequest": {
-      "id": "request-without-user-ext-obj",
-      "site": {
-        "page": "test.somepage.com"
-      },
-      "imp": [
-        {
-          "id": "my-imp-id",
-          "banner": {
-            "format": [
-              {
-                "w": 300,
-                "h": 600
-              }
-            ]
-          },
-          "ext": {
-            "appnexus": {
-              "placementId": 12883451
+    "id": "request-without-user-ext-obj",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
             }
-          }
-        }
-      ],
-      "user": {
+          ]
+        },
         "ext": {
-          "prebid": {
-            "buyeruids": {}
+          "appnexus": {
+            "placementId": 12883451
           }
         }
       }
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+    ],
+    "user": {
+      "ext": {
+        "prebid": {
+          "buyeruids": {}
+        }
+      }
+    }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.user.ext.prebid requires a \"buyeruids\" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.\n"
 }

@@ -1,5 +1,5 @@
 {
-  "description": "a desc",
+  "description": "Well formed amp request with digitrust extension that should run properly",
   "mockBidRequest": {
     "id": "request-with-valid-digitrust-obj",
     "site": {

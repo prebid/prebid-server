@@ -1,29 +1,24 @@
 {
-  "description": "Invalid request: Request imp[0].banner.format[0] should define *either* {w, h} *or* {wmin, wratio, hratio}, but not both. If both are valid, send two \"format\" objects in the request.\n",
+  "description": "Banner comes with no width nor wratio value",
   "mockBidRequest": {
-      "id":"req-id",
-      "imp": [
-        {
-          "id": "imp-id",
-          "banner": {
-            "format": [
-              {
-                "w":30,
-                "wratio":23
-              }
-            ]
-          }
+    "id":"req-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [
+            {
+              "w":30,
+              "wratio":23
+            }
+          ]
         }
-      ],
-      "app": {
-        "id": "app_001"
       }
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+    ],
+    "app": {
+      "id": "app_001"
+    }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: Request imp[0].banner.format[0] should define *either* {w, h} *or* {wmin, wratio, hratio}, but not both. If both are valid, send two \"format\" objects in the request.\n"
 }

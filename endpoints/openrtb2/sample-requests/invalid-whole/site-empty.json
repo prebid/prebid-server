@@ -1,29 +1,24 @@
 {
-  "description": "Invalid request: request.site should include at least one of request.site.id or request.site.page.\n",
+  "description": "Bid request's site field is missing an id",
   "mockBidRequest": {
-      "id": "req-id",
-      "site": {},
-      "imp": [
-        {
-          "id": "imp-id",
-          "video": {
-            "mimes": [
-              "video/mp4"
+    "id": "req-id",
+    "site": {},
+    "imp": [
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
             ]
-          },
-          "ext": {
-            "appnexus": {
-              "placementId": 12883451
-            }
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
           }
         }
-      ]
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+      }
+    ]
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.site should include at least one of request.site.id or request.site.page.\n"
 }

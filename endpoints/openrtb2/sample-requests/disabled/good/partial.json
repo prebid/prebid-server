@@ -1,5 +1,8 @@
 {
-  "description": "Good request",
+  "description": "Request comes with some imps directed toward disabled adapters, but there's one non-disabled adapter and we expect a successful response",
+  "mockConfig": {
+    "disabledAdapters": ["appnexus", "rubicon"]
+  },
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {

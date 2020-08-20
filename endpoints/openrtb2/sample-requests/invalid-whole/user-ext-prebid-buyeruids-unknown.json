@@ -1,43 +1,38 @@
 {
-  "description": "Invalid request: request.user.ext.unknown is neither a known bidder name nor an alias in request.ext.prebid.aliases.\n",
+  "description": "Bid request with an unknown bidder name or alias inside the request.user.ext.unknown object",
   "mockBidRequest": {
-      "id": "request-without-user-ext-obj",
-      "site": {
-        "page": "test.somepage.com"
-      },
-      "imp": [
-        {
-          "id": "my-imp-id",
-          "banner": {
-            "format": [
-              {
-                "w": 300,
-                "h": 600
-              }
-            ]
-          },
-          "ext": {
-            "appnexus": {
-              "placementId": 12883451
+    "id": "request-without-user-ext-obj",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
             }
-          }
-        }
-      ],
-      "user": {
+          ]
+        },
         "ext": {
-          "prebid": {
-            "buyeruids": {
-              "unknown": "123"
-            }
+          "appnexus": {
+            "placementId": 12883451
           }
         }
       }
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+    ],
+    "user": {
+      "ext": {
+        "prebid": {
+          "buyeruids": {
+            "unknown": "123"
+          }
+        }
+      }
+    }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.user.ext.unknown is neither a known bidder name nor an alias in request.ext.prebid.aliases.\n"
 }

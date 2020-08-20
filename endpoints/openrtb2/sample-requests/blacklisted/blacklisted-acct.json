@@ -1,5 +1,8 @@
 {
-  "description": "This is a perfectly valid request except that it comes from a blacklisted Account",
+  "description": "This is a perfectly valid request except that it comes with a blacklisted Account",
+  "mockConfig": {
+    "blacklistedAccts": ["bad_acct"]
+  },
   "mockBidRequest": {
     "id": "some-request-id",
     "user": {
@@ -83,6 +86,5 @@
     }
   },
   "expectedReturnCode": 503,
-  "expectedErrorMessage": "Invalid request: Prebid-server has blacklisted Account ID: bad_acct, please reach out to the prebid server host.\n",
+  "expectedErrorMessage": "Invalid request: Prebid-server has blacklisted Account ID: bad_acct, please reach out to the prebid server host.\n"
 }
-

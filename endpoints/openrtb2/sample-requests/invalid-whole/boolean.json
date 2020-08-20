@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: json: cannot unmarshal bool into Go value of type openrtb.BidRequest\n",
+  "message": "Bid request is invalid because it's just a boolean value",
   "mockBidRequest": false,
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: json: cannot unmarshal bool into Go value of type openrtb.BidRequest\n"
 }

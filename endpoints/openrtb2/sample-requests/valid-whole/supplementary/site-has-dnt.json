@@ -1,5 +1,5 @@
 {
-  "description": "a desc",
+  "description": "Request that comes with a valid device and dnt fields",
   "mockBidRequest": {
       "id": "some-request-id",
       "site": {

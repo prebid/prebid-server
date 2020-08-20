@@ -1,24 +1,19 @@
 {
-  "description": "Invalid request: Request imp[0].banner.format[0] should define *either* {w, h} (for static size requirements) *or* {wmin, wratio, hratio} (for flexible sizes) to be non-zero.\n",
+  "description": "Banner does not define witdth nor height",
   "mockBidRequest": {
-      "id":"req-id",
-      "imp": [
-        {
-          "id": "imp-id",
-          "banner": {
-            "format": [{}]
-          }
+    "id":"req-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [{}]
         }
-      ],
-      "app": {
-        "id": "app_001"
       }
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+    ],
+    "app": {
+      "id": "app_001"
+    }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: Request imp[0].banner.format[0] should define *either* {w, h} (for static size requirements) *or* {wmin, wratio, hratio} (for flexible sizes) to be non-zero.\n"
 }

@@ -1,38 +1,33 @@
 {
-  "description": "Invalid request: ext.prebid.storedrequest.id must be a string\n",
+  "description": "Bid request with an invalid value for ext.prebid.storedrequest.id field",
   "mockBidRequest": {
-      "id": "some-request-id",
-      "site": {
-        "page": "test.somepage.com"
-      },
-      "imp": [
-        {
-          "id": "imp-id",
-          "video": {
-            "mimes": [
-              "video/mp4"
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
             ]
-          },
-          "ext": {
-            "appnexus": {
-              "placementId": 12883451
-            }
-          }
-        }
-      ],
-      "ext": {
-        "prebid": {
-          "storedrequest": {
-            "id": 13
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
           }
         }
       }
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+    ],
+    "ext": {
+      "prebid": {
+        "storedrequest": {
+          "id": 13
+        }
+      }
+    }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: ext.prebid.storedrequest.id must be a string\n"
 }

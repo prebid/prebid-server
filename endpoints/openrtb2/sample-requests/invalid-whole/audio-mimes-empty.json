@@ -1,24 +1,19 @@
 {
-  "description": "Invalid request: request.imp[0].audio.mimes must contain at least one supported MIME type\n",
+  "description": "Empty request.imp[0].audio.mimes array",
   "mockBidRequest": {
-      "id": "req-id",
-      "imp": [
-        {
-          "id": "imp-id",
-          "audio": {
-            "mimes": []
-          }
+    "id": "req-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "audio": {
+          "mimes": []
         }
-      ],
-      "app": {
-        "id": "app_001"
       }
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+    ],
+    "app": {
+      "id": "app_001"
+    }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.imp[0].audio.mimes must contain at least one supported MIME type\n"
 }

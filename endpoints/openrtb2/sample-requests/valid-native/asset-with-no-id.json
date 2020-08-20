@@ -1,5 +1,5 @@
 {
-  "description": "Native request",
+  "description": "Well formed native request that comes with no 'id' field",
   "mockBidRequest": {
     "id": "req-id",
     "site": {

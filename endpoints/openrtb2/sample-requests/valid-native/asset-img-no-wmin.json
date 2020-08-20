@@ -1,5 +1,5 @@
 {
-  "description": "Native request",
+  "description": "Well formed native request that defines a 'hmin' on its 'img' field",
   "mockBidRequest": {
     "id": "req-id",
     "site": {

@@ -1,29 +1,24 @@
 {
-  "description": "Invalid request: request.imp[0].ext.appnexus failed validation.\n(root): Invalid type. Expected: object, given: string\n",
+  "description": "Bid request's sole imp element has invalid ext value",
   "mockBidRequest": {
-      "id": "req-id",
-      "imp": [
-        {
-          "id": "imp-id",
-          "audio": {
-            "mimes": [
-              "video/mp4"
+    "id": "req-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "audio": {
+          "mimes": [
+            "video/mp4"
             ]
-          },
-          "ext": {
-            "appnexus": "invalidParams"
-          }
+        },
+        "ext": {
+          "appnexus": "invalidParams"
         }
-      ],
-      "app": {
-        "id": "app_001"
       }
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+    ],
+    "app": {
+      "id": "app_001"
+    }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.imp[0].ext.appnexus failed validation.\n(root): Invalid type. Expected: object, given: string\n"
 }

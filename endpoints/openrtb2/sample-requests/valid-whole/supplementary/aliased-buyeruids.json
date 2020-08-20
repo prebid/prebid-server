@@ -1,5 +1,5 @@
 {
-  "description": "This demonstrates all of the OpenRTB extensions supported by Prebid Server. Very few requests will need all of these at once.",
+  "description": "Well formed amp request that comes with user field and buyeruids values",
   "mockBidRequest": {
       "id": "request-without-user-ext-obj",
       "site": {

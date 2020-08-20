@@ -1,29 +1,24 @@
 {
-  "description": "Invalid request: request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.\n",
+  "description": "Request invalid because banner comes with a zero height value",
   "mockBidRequest": {
-      "id":"req-id",
-      "site": {
-        "id": "some-site"
-      },
-      "imp": [
-        {
-          "id":"imp-id",
-          "banner":{
-            "h": 0,
-            "w": 250
-          },
-          "ext": {
-            "appnexus": {
-              "placementId": 12883451
-            }
+    "id":"req-id",
+    "site": {
+      "id": "some-site"
+    },
+    "imp": [
+      {
+        "id":"imp-id",
+        "banner":{
+          "h": 0,
+          "w": 250
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
           }
         }
-      ]
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+      }
+    ]
   },
   "expectedReturnCode": 400,
   "expectedErrorMessage": "Invalid request"

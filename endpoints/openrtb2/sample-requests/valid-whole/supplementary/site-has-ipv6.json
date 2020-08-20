@@ -1,9 +1,9 @@
 {
-  "description": "a desc",
+  "description": "Well formed request with valid IPV6 in its device field",
   "mockBidRequest": {
-      "id": "some-request-id",
-      "site": {
-        "page": "test.somepage.com"
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
       },
       "imp": [{
         "id": "my-imp-id",

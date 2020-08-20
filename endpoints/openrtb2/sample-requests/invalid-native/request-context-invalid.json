@@ -1,5 +1,5 @@
 {
-  "description": "Native request",
+  "description": "Native request with an imp.native.request.context value that doesn't match that of the context_sub_type list",
   "mockBidRequest": {
     "id": "req-id",
     "site": {
@@ -19,11 +19,6 @@
         }
       }
     ]
-  },
-  "expectedBidResponse": {
-    "id": "req-id",
-    "bidid": "test bid id",
-    "nbr": 0
   },
   "expectedReturnCode": 400,
   "expectedErrorMessage": "Invalid request"

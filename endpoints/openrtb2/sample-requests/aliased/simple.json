@@ -1,6 +1,6 @@
 {
-  "description": "This demonstrates all of the OpenRTB extensions supported by Prebid Server. Very few requests will need all of these at once.",
-  "mockAliases": {
+  "description": "Imp extension doesn't come with valid bidder name but does come with valid bidder alias as defined in the mockAliases list.",
+  "mockConfig": {
       "aliases": "{\"ext\":{\"prebid\":{\"aliases\":{\"test1\":\"appnexus\",\"test2\":\"rubicon\",\"test3\":\"openx\"}}}}"
   },
   "mockBidRequest": {

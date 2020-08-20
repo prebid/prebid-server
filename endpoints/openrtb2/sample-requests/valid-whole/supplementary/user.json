@@ -1,5 +1,5 @@
 {
-  "description": "a desc",
+  "description": "Well formed amp request with valid User field",
   "mockBidRequest": {
     "id": "request-without-user-ext-obj",
     "site": {

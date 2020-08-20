@@ -38,82 +38,75 @@ import (
 
 const maxSize = 1024 * 256
 
+type testCaseData struct {
+	BidRequest           json.RawMessage  `json:"mockBidRequest"`
+	Config               testConfigValues `json:"mockConfig"`
+	ExpectedReturnCode   int              `json:"expectedReturnCode,omitempty"`
+	ExpectedErrorMessage string           `json:"expectedErrorMessage"`
+	ExpectedBidResponse  json.RawMessage  `json:"expectedBidResponse"`
+}
+
+type testConfigValues struct {
+	AccountReq            bool     `json:"accountRequired"`
+	AliasJSON             string   `json:"aliases"`
+	BlacklistedAccountArr []string `json:"blacklistedAccts"`
+	BlacklistedAppArr     []string `json:"blacklistedApps"`
+	AdapterList           []string `json:"adapterList"`
+
+	blacklistedAccountMap map[string]bool
+	blacklistedAppMap     map[string]bool
+	adaptersConfig        map[string]config.Adapter
+}
+
 func TestJsonSampleRequests(t *testing.T) {
 	testSuites := []struct {
 		description string
 		directory   string
 	}{
 		{
-			"Asserts 200s on bidRequests on exemplary folder",
+			"Assert 200s on all bidRequests from exemplary folder",
 			"sample-requests/valid-whole/exemplary",
 		},
 		{
-			"Asserts 200s on bidRequests on exemplary folder",
-			"sample-requests/valid-whole/exemplary",
-		},
-		{
-			"TestGoodNativeRequests makes sure we return 200s on well-formed Native requests.",
+			"Asserts we return 200s on well-formed Native requests.",
 			"sample-requests/valid-native",
 		},
 		{
-			"TestBadRequests makes sure we return 400s on bad requests.",
+			"Asserts we return 400s on requests that are not supposed to pass validation",
 			"sample-requests/invalid-whole",
 		},
 		{
-			"TestBadNativeRequests makes sure we return 400s on requests with bad Native requests.",
+			"Asserts we return 400s on requests with Native requests that don't pass validation",
 			"sample-requests/invalid-native",
 		},
 		{
-			"TestAliasedRequests makes sure we handle (default) aliased bidders properly",
+			"Makes sure we handle (default) aliased bidders properly",
 			"sample-requests/aliased",
 		},
 		{
-			"TestBlacklistRequests makes sure we return 400s on blacklisted requests.",
+			"Asserts we return 503s on requests with blacklisted accounts and apps.",
 			"sample-requests/blacklisted",
 		},
 		{
-			"TestRejectAccountRequired asserts we return a 400 code on a request that comes with no user id nor app id if the `AccountRequired` field in the `config.Configuration` structure is set to true",
+			"Assert that requests that come with no user id nor app id return error if the `AccountRequired` field in the `config.Configuration` structure is set to true",
 			"sample-requests/account-required/no-account",
 		},
 		{
-			"TestRejectAccountRequired 2 asserts we return a 400 code on a request that comes with no user id nor app id if the `AccountRequired` field in the `config.Configuration` structure is set to true",
+			"Assert requests that come with a valid user id nor app id when account is not required",
 			"sample-requests/account-required/with-account",
 		},
 		{
-			"TestBadStoredRequests tests diagnostic messages for invalid stored requests",
+			"Tests diagnostic messages for invalid stored requests",
 			"sample-requests/invalid-stored",
 		},
-	}
-	for _, test := range testSuites {
-		testCasefiles, err := getTestFiles(test.directory)
-		assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", test.description, test.directory)
-
-		for _, file := range testCasefiles {
-			data, err := ioutil.ReadFile(file)
-			assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file)
-
-			assertTestCaseData(t, data, file, nil)
-		}
-	}
-}
-
-func TestDisabledBidders(t *testing.T) {
-	testSuites := []struct {
-		description string
-		directory   string
-	}{
 		{
-			"TestDisabledBidders makes sure we don't break when encountering a disabled bidder",
+			"Make sure requests with disabled bidders will fail",
 			"sample-requests/disabled/bad",
 		},
 		{
-			"TestDisabledBidders 2 makes sure we don't break when encountering a disabled bidder",
+			"There are both disabled and non-disabled bidders, we expect a 200",
 			"sample-requests/disabled/good",
 		},
-	}
-	adaptersConfig := map[string]config.Adapter{
-		"appnexus": {Disabled: true},
-		"rubicon":  {Disabled: true},
 	}
 	for _, test := range testSuites {
 		testCasefiles, err := getTestFiles(test.directory)
@@ -123,7 +116,7 @@ func TestDisabledBidders(t *testing.T) {
 			data, err := ioutil.ReadFile(file)
 			assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file)
 
-			assertTestCaseData(t, data, file, adaptersConfig)
+			assertTestCaseData(t, data, file)
 		}
 	}
 }
@@ -141,7 +134,7 @@ func TestExplicitUserId(t *testing.T) {
 	ex := &mockExchange{}
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(`{
-		"id": "some-request-id",
+"id": "some-request-id",
 		"site": {
 			"page": "test.somepage.com"
 		},
@@ -214,11 +207,11 @@ func getTestFiles(dir string) ([]string, error) {
 	return filesToAssert, nil
 }
 
-func doRequest(t *testing.T, jsonBidReq []byte, accountReq bool, aliasJSON []byte, adaptersConfig map[string]config.Adapter) (int, string) {
+func doRequest(t *testing.T, test testCaseData) (int, string) {
 	disabledBidders := map[string]string{
 		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
 	}
-	bidderMap := exchange.DisableBidders(getBidderInfos(adaptersConfig, openrtb_ext.BidderList()), disabledBidders)
+	bidderMap := exchange.DisableBidders(getBidderInfos(test.Config.adaptersConfig, openrtb_ext.BidderList()), disabledBidders)
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
@@ -229,73 +222,128 @@ func doRequest(t *testing.T, jsonBidReq []byte, accountReq bool, aliasJSON []byt
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize, BlacklistedApps: []string{"spam_app"}, BlacklistedAppMap: map[string]bool{"spam_app": true}, BlacklistedAccts: []string{"bad_acct"}, BlacklistedAcctMap: map[string]bool{"bad_acct": true}, AccountRequired: accountReq},
+		&config.Configuration{
+			MaxRequestSize:     maxSize,
+			BlacklistedApps:    test.Config.BlacklistedAppArr,
+			BlacklistedAppMap:  test.Config.blacklistedAppMap,
+			BlacklistedAccts:   test.Config.BlacklistedAccountArr,
+			BlacklistedAcctMap: test.Config.blacklistedAccountMap,
+			AccountRequired:    test.Config.AccountReq,
+		},
 		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		disabledBidders,
-		aliasJSON,
+		[]byte(test.Config.AliasJSON),
 		bidderMap,
 	)
 
-	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(jsonBidReq))
+	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
 	return recorder.Code, recorder.Body.String()
 }
 
-// TODO: After we get the correct descriptiosn on file level, uncomment the jsonparser line
-// TODO: Come up with a good comment here
-// TODO: Come up with a good comment on other newly created functions
-// TODO: Double check the error assertion process, take a look at Scott's in the adapter side and see whether or not we need anything else here
-func assertTestCaseData(t *testing.T, fileData []byte, testFile string, adaptersConfig map[string]config.Adapter) {
+func jsonParse(t *testing.T, fileData []byte, testFile string) testCaseData {
 	t.Helper()
 
+	parsedTestData := testCaseData{}
 	var err error
 
-	//desc, err := jsonparser.GetString(fileData, "description")
-	//assert.NoError(t, err, "Error jsonparsing root.description from file %s. Desc: %v.", testFile, err)
-	desc := testFile
-
-	// Run test
-	testBidRequest, _, _, err := jsonparser.Get(fileData, "mockBidRequest")
+	// Get testCaseData values
+	parsedTestData.BidRequest, _, _, err = jsonparser.Get(fileData, "mockBidRequest")
 	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", testFile, err)
 
-	accountReq := false
-	testConfig, err := jsonparser.GetBoolean(fileData, "mockConfig", "accountRequired")
-	if err == nil {
-		accountReq = testConfig
-	}
-
-	aliasJSON := []byte{}
-	aliases, err := jsonparser.GetString(fileData, "mockAliases", "aliases")
-	if err == nil {
-		aliasJSON = []byte(aliases)
-	}
-
-	actualCode, actualBidResponse := doRequest(t, testBidRequest, accountReq, aliasJSON, adaptersConfig)
-
-	//Compare status code
-	expectedCode, err := jsonparser.GetInt(fileData, "expectedReturnCode")
+	parsedReturnCode, err := jsonparser.GetInt(fileData, "expectedReturnCode")
 	assert.NoError(t, err, "Error jsonparsing root.code from file %s. Desc: %v.", testFile, err)
 
-	assert.Equal(t, expectedCode, int64(actualCode), "Test failed. Filename: %s \n", testFile)
+	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
 
 	// Either assert bid response or expected error
-	if actualCode != 200 {
-		// Assert expected error
-		expectedError, err := jsonparser.GetString(fileData, "expectedErrorMessage")
+	if parsedTestData.ExpectedReturnCode != 200 {
+		// Get expected error
+		parsedTestData.ExpectedErrorMessage, err = jsonparser.GetString(fileData, "expectedErrorMessage")
 		assert.NoError(t, err, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
-
-		assert.True(t, strings.HasPrefix(actualBidResponse, expectedError), "Test failed. %s. Filename: %s \n", actualBidResponse, testFile)
 	} else {
 		// Assert expected response
-		expectedBidResponse, _, _, err := jsonparser.Get(fileData, "expectedBidResponse")
+		parsedTestData.ExpectedBidResponse, _, _, err = jsonparser.Get(fileData, "expectedBidResponse")
 		assert.NoError(t, err, "Error jsonparsing root.expectedBidResponse from file %s. Desc: %v.", testFile, err)
-
-		//Compare expected bidResponse
-		//assert.Equal(t, expectedBidResponse, actualBidResponse, "Test failed. %s. Filename: \n", desc, testFile)
-		diffJson(t, desc, []byte(actualBidResponse), expectedBidResponse)
 	}
+
+	// Get testCaseConfig values
+	testConfig, err := jsonparser.GetBoolean(fileData, "mockConfig", "accountRequired")
+	if err == nil {
+		parsedTestData.Config.AccountReq = testConfig
+	}
+
+	aliases, err := jsonparser.GetString(fileData, "mockAliases", "aliases")
+	if err == nil {
+		parsedTestData.Config.AliasJSON = aliases
+	}
+
+	parsedTestData.Config.BlacklistedAccountArr = parseStringArray(fileData, "blacklistedAccts")
+	parsedTestData.Config.BlacklistedAppArr = parseStringArray(fileData, "blacklistedApps")
+	parsedTestData.Config.AdapterList = parseStringArray(fileData, "adapterList")
+
+	return parsedTestData
+}
+
+func parseStringArray(fileData []byte, jsonField string) []string {
+	rarr := []string{}
+	jsonparser.ArrayEach(fileData, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		rarr = append(rarr, string(value))
+	}, "mockConfig", jsonField)
+	return rarr
+}
+
+func assertTestCaseData(t *testing.T, fileData []byte, testFile string) {
+	t.Helper()
+
+	// Retrieve values from JSON file
+	test := testCaseData{}
+	err := json.Unmarshal(fileData, &test)
+	if err != nil {
+		//Some test files come with malformed json that can be extracted with jsonparser
+		test = jsonParse(t, fileData, testFile)
+	}
+
+	test.Config = parseMaps(test.Config)
+
+	// Run test
+	actualCode, actualBidResponse := doRequest(t, test)
+
+	// Assertions
+	assert.Equal(t, test.ExpectedReturnCode, actualCode, "Test failed. Filename: %s \n", testFile)
+
+	// Either assert bid response or expected error
+	if test.ExpectedReturnCode != 200 {
+		// Assert expected error
+		assert.True(t, strings.HasPrefix(actualBidResponse, test.ExpectedErrorMessage), "Test failed. %s. Filename: %s \n", actualBidResponse, testFile)
+	} else {
+		// Assert expected response
+		diffJson(t, testFile, []byte(actualBidResponse), test.ExpectedBidResponse)
+	}
+}
+
+func parseMaps(tc testConfigValues) testConfigValues {
+	if len(tc.BlacklistedAccountArr) > 0 {
+		tc.blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccountArr))
+		for _, account := range tc.BlacklistedAccountArr {
+			tc.blacklistedAccountMap[account] = true
+		}
+	}
+	if len(tc.BlacklistedAppArr) > 0 {
+		tc.blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedAppArr))
+		for _, app := range tc.BlacklistedAppArr {
+			tc.blacklistedAppMap[app] = true
+		}
+	}
+	if len(tc.AdapterList) > 0 {
+		tc.adaptersConfig = make(map[string]config.Adapter, len(tc.AdapterList))
+		for _, adapterName := range tc.AdapterList {
+			tc.adaptersConfig[adapterName] = config.Adapter{Disabled: true}
+		}
+	}
+	return tc
 }
 
 // diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
@@ -1345,7 +1393,7 @@ func getMessage(t *testing.T, example []byte) []byte {
 // second below is identical to first but with extra '}' for invalid JSON
 var testStoredRequestData = map[string]json.RawMessage{
 	"2": json.RawMessage(`{
-		"tmax": 500,
+"tmax": 500,
 		"ext": {
 			"prebid": {
 				"targeting": {
@@ -1355,15 +1403,15 @@ var testStoredRequestData = map[string]json.RawMessage{
 		}
 	}`),
 	"3": json.RawMessage(`{
-                "tmax": 500,
-                "ext": {
-                        "prebid": {
-                                "targeting": {
-                                        "pricegranularity": "low"
-                                }
-                        }
-                }}
-        }`),
+"tmax": 500,
+				"ext": {
+						"prebid": {
+								"targeting": {
+										"pricegranularity": "low"
+								}
+						}
+				}}
+		}`),
 }
 
 // Stored Imp Requests
@@ -1372,7 +1420,7 @@ var testStoredRequestData = map[string]json.RawMessage{
 // third below has valid JSON and matches schema
 var testStoredImpData = map[string]json.RawMessage{
 	"1": json.RawMessage(`{
-		"id": "adUnit1",
+"id": "adUnit1",
 			"ext": {
 				"appnexus": {
 					"placementId": "abc",
@@ -1385,7 +1433,7 @@ var testStoredImpData = map[string]json.RawMessage{
 			}
 		}`),
 	"7": json.RawMessage(`{
-		"id": "adUnit1",
+"id": "adUnit1",
 			"ext": {
 				"appnexus": {
 					"placementId": 12345678,
@@ -1400,7 +1448,7 @@ var testStoredImpData = map[string]json.RawMessage{
 			}
 		}`),
 	"9": json.RawMessage(`{
-		"id": "adUnit1",
+"id": "adUnit1",
 			"ext": {
 				"appnexus": {
 					"placementId": 12345678,

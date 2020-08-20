@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request missing required field: \"id\"\n",
+  "description": "Bid request is null",
   "mockBidRequest": null,
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request missing required field: \"id\"\n"
 }

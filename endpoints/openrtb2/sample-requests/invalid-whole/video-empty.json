@@ -1,22 +1,17 @@
 {
-  "description": "Invalid request: request.imp[0].video.mimes must contain at least one supported MIME type\n",
+  "description": "Bid request's sole imp element has empty video field and does not define a Banner, Video nor Audio field",
   "mockBidRequest": {
-      "id": "req-id",
-      "imp": [
-        {
-          "id": "imp-id",
-          "video": {}
-        }
-      ],
-      "app": {
-        "id": "app_001"
+    "id": "req-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "video": {}
       }
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+    ],
+    "app": {
+      "id": "app_001"
+    }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.imp[0].video.mimes must contain at least one supported MIME type\n"
 }

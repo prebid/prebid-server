@@ -1,5 +1,5 @@
 {
-  "description": "This demonstrates all of the OpenRTB extensions supported by Prebid Server. Very few requests will need all of these at once.",
+  "description": "Well formed amp request with aliases that should run properly",
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {

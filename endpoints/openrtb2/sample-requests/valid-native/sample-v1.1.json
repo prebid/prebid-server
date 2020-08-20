@@ -1,5 +1,5 @@
 {
-  "description": "Native request",
+  "description": "Well formed native request with video asset",
   "mockBidRequest": {
     "id": "req-id",
     "site": {

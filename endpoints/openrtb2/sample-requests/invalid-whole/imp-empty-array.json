@@ -1,14 +1,9 @@
 {
-  "description": "Invalid request: request.imp must contain at least one element.\n",
+  "description": "Bid request comes with an empty Imp array",
   "mockBidRequest": {
-      "id": "req-id",
-      "imp": []
-  },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+    "id": "req-id",
+    "imp": []
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.imp must contain at least one element.\n"
 }
