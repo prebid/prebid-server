@@ -10,9 +10,11 @@ import (
 	"net/http"
 	"runtime/debug"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
+	uuid "github.com/gofrs/uuid"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
@@ -212,6 +214,23 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 		}
 
+	}
+
+	if !anyBidsReturned {
+		if debugLog != nil && debugLog.Enabled {
+			if rawUUID, err := uuid.NewV4(); err == nil {
+				debugLog.CacheKey = rawUUID.String()
+
+				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errs)
+				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+					debugLog.Data.Response = string(bidRespExtBytes)
+				} else {
+					debugLog.Data.Response = "Unable to marshal response ext for debugging"
+				}
+			} else {
+				errs = append(errs, err)
+			}
+		}
 	}
 
 	// Build the response
@@ -507,6 +526,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 		bidderName openrtb_ext.BidderName
 		bidIndex   int
 		bidID      string
+		bidPrice   string
 	}
 
 	dedupe := make(map[string]bidDedupe)
@@ -603,15 +623,34 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 			}
 
 			var categoryDuration string
+			var dupeKey string
 			if brandCatExt.WithCategory {
 				categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+				dupeKey = category
 			} else {
 				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
+				dupeKey = categoryDuration
 			}
 
-			if dupe, ok := dedupe[categoryDuration]; ok {
-				// 50% chance for either bid with duplicate categoryDuration values to be kept
-				if rand.Intn(100) < 50 {
+			if dupe, ok := dedupe[dupeKey]; ok {
+
+				dupeBidPrice, err := strconv.ParseFloat(dupe.bidPrice, 64)
+				if err != nil {
+					dupeBidPrice = 0
+				}
+				currBidPrice, err := strconv.ParseFloat(pb, 64)
+				if err != nil {
+					currBidPrice = 0
+				}
+				if dupeBidPrice == currBidPrice {
+					if rand.Intn(100) < 50 {
+						dupeBidPrice = -1
+					} else {
+						currBidPrice = -1
+					}
+				}
+
+				if dupeBidPrice < currBidPrice {
 					if dupe.bidderName == bidderName {
 						// An older bid from the current bidder
 						bidsToRemove = append(bidsToRemove, dupe.bidIndex)
@@ -635,7 +674,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 				}
 			}
 			res[bidID] = categoryDuration
-			dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID}
+			dedupe[dupeKey] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID, bidPrice: pb}
 		}
 
 		if len(bidsToRemove) > 0 {
