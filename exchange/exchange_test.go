@@ -1031,10 +1031,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 
 	var s struct{}
 	eeac := make(map[string]struct{})
-	for _, c := range []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
-		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
-		"LIE", "LTU", "LUX", "MLT", "MTQ", "MYT", "NLD", "NOR", "POL", "PRT", "REU", "ROU", "BLM", "MAF", "SPM",
-		"SVK", "SVN", "ESP", "SWE", "GBR"} {
+	for _, c := range []string{"FIN", "FRA", "GUF"} {
 		eeac[c] = s
 	}
 
