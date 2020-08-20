@@ -152,7 +152,7 @@ func (data *ExternalCache) validate(errs configErrors) configErrors {
 
 	urlObj, err := url.Parse("https://" + data.Host + data.Path)
 	if err != nil {
-		return append(errs, errors.New("External cache holds invalid host or path values"))
+		return append(errs, errors.New(fmt.Sprintf("External cache Path validation error: %s ", err.Error())))
 	}
 	if urlObj.Host != data.Host {
 		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' is invalid", data.Host)))

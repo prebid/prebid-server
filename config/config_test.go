@@ -15,101 +15,87 @@ import (
 )
 
 func TestExternalCacheURLValidate(t *testing.T) {
-	type testOut struct {
-		expectError  bool
-		expectedHost string
-		expectedPath string
-	}
-
 	testCases := []struct {
-		desc string
-		data ExternalCache
-		out  testOut
+		desc      string
+		data      ExternalCache
+		expErrors int
 	}{
 		{
-			"With http://",
-			ExternalCache{Host: "http://www.google.com", Path: "/path/v1"},
-			testOut{expectError: true, expectedHost: "www.google.com", expectedPath: "/path/v1"},
+			desc:      "With http://",
+			data:      ExternalCache{Host: "http://www.google.com", Path: "/path/v1"},
+			expErrors: 1,
 		},
 		{
-			"Without http://",
-			ExternalCache{Host: "www.google.com", Path: "/path/v1"},
-			testOut{expectError: false, expectedHost: "www.google.com", expectedPath: "/path/v1"},
+			desc:      "Without http://",
+			data:      ExternalCache{Host: "www.google.com", Path: "/path/v1"},
+			expErrors: 0,
 		},
 		{
-			"No scheme but '//' prefix",
-			ExternalCache{Host: "//www.google.com", Path: "/path/v1"},
-			testOut{expectError: true, expectedHost: "www.google.com", expectedPath: "/path/v1"},
+			desc:      "No scheme but '//' prefix",
+			data:      ExternalCache{Host: "//www.google.com", Path: "/path/v1"},
+			expErrors: 1,
 		},
 		{
-			"// appears twice",
-			ExternalCache{Host: "//www.google.com//", Path: "path/v1"},
-			testOut{expectError: true, expectedHost: "www.google.com", expectedPath: "//path/v1"},
+			desc:      "// appears twice",
+			data:      ExternalCache{Host: "//www.google.com//", Path: "path/v1"},
+			expErrors: 1,
 		},
 		{
-			"Host has an only // value",
-			ExternalCache{Host: "//", Path: "path/v1"},
-			testOut{expectError: true, expectedHost: "path", expectedPath: "/v1"},
+			desc:      "Host has an only // value",
+			data:      ExternalCache{Host: "//", Path: "path/v1"},
+			expErrors: 1,
 		},
 		{
-			"only scheme host, valid path",
-			ExternalCache{Host: "http://", Path: "/path/v1"},
-			testOut{expectError: true, expectedHost: "", expectedPath: "/path/v1"},
+			desc:      "only scheme host, valid path",
+			data:      ExternalCache{Host: "http://", Path: "/path/v1"},
+			expErrors: 1,
 		},
 		{
-			"No host, path only",
-			ExternalCache{Host: "", Path: "path/v1"},
-			testOut{expectError: true, expectedHost: "", expectedPath: "path/v1"},
+			desc:      "No host, path only",
+			data:      ExternalCache{Host: "", Path: "path/v1"},
+			expErrors: 1,
 		},
 		{
-			"No host, nor path",
-			ExternalCache{Host: "", Path: ""},
-			testOut{expectError: false, expectedHost: "", expectedPath: ""},
+			desc:      "No host, nor path",
+			data:      ExternalCache{Host: "", Path: ""},
+			expErrors: 0,
 		},
 		{
-			"Invalid http at the end",
-			ExternalCache{Host: "www.google.com", Path: "http://"},
-			testOut{expectError: true, expectedHost: "www.google.com", expectedPath: "/http://"},
+			desc:      "Invalid http at the end",
+			data:      ExternalCache{Host: "www.google.com", Path: "http://"},
+			expErrors: 1,
 		},
 		{
-			"Scheme longer than host",
-			ExternalCache{Host: "unknownscheme://host", Path: "/path/v1"},
-			testOut{expectError: true, expectedHost: "host", expectedPath: "/path/v1"},
+			desc:      "Host has an unknown scheme",
+			data:      ExternalCache{Host: "unknownscheme://host", Path: "/path/v1"},
+			expErrors: 1,
 		},
 		{
-			"Wrong colon side in scheme",
-			ExternalCache{Host: "http//:www.appnexus.com", Path: "/path/v1"},
-			testOut{expectError: true, expectedHost: "", expectedPath: "http//:www.appnexus.com/path/v1"},
+			desc:      "Wrong colon side in scheme",
+			data:      ExternalCache{Host: "http//:www.appnexus.com", Path: "/path/v1"},
+			expErrors: 1,
 		},
 		{
-			"Missing '/' in scheme",
-			ExternalCache{Host: "http:/www.appnexus.com", Path: "/path/v1"},
-			testOut{expectError: true, expectedHost: "http:", expectedPath: "http//:www.appnexus.com/path/v1"},
+			desc:      "Missing '/' in scheme",
+			data:      ExternalCache{Host: "http:/www.appnexus.com", Path: "/path/v1"},
+			expErrors: 1,
 		},
 		{
-			"host with scheme, no path",
-			ExternalCache{Host: "http://www.appnexus.com", Path: ""},
-			testOut{expectError: true, expectedHost: "www.appnexus.com", expectedPath: ""},
+			desc:      "host with scheme, no path",
+			data:      ExternalCache{Host: "http://www.appnexus.com", Path: ""},
+			expErrors: 1,
 		},
 		{
-			"scheme, no host nor path",
-			ExternalCache{Host: "http://", Path: ""},
-			testOut{expectError: true, expectedHost: "", expectedPath: ""},
+			desc:      "scheme, no host nor path",
+			data:      ExternalCache{Host: "http://", Path: ""},
+			expErrors: 1,
 		},
 	}
 	for _, test := range testCases {
 		var errs configErrors
 		errs = test.data.validate(errs)
 
-		if test.out.expectError {
-			assert.Greater(t, len(errs), 0, "Test case was supposed to throw an error. Desc: %s \n", test.desc)
-			continue
-		} else {
-			assert.Equal(t, 0, len(errs), "Test case was supposed to NOT throw an error. Desc: %s errMsg = %v \n", test.desc, errs)
-		}
-
-		assert.Equal(t, test.out.expectedHost, test.data.Host, "Test case host does not match. Desc: %s  \n", test.desc)
-		assert.Equal(t, test.out.expectedPath, test.data.Path, "Test case path does not match. Desc: %s  \n", test.desc)
+		assert.Equal(t, test.expErrors, len(errs), "Test case threw unexpected number of errors. Desc: %s errMsg = %v \n", test.desc, errs)
 	}
 }
 
