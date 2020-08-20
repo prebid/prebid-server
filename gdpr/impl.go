@@ -228,3 +228,22 @@ func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext
 func (a AlwaysAllow) AMPException() bool {
 	return false
 }
+
+// Exporting to allow for easy test setups
+type AlwaysFail struct{}
+
+func (a AlwaysFail) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+	return false, nil
+}
+
+func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	return false, nil
+}
+
+func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+	return false, false, false, nil
+}
+
+func (a AlwaysFail) AMPException() bool {
+	return false
+}
