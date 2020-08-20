@@ -28,6 +28,8 @@ type ExtImpPrebid struct {
 	// at this time
 	// https://github.com/PubMatic-OpenWrap/prebid-server/pull/846#issuecomment-476352224
 	Bidder map[string]json.RawMessage `json:"bidder"`
+
+	SKAdnetwork json.RawMessage `json:"skadn"`
 }
 
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest
