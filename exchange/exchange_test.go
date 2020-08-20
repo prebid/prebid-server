@@ -49,7 +49,7 @@ func TestNewExchange(t *testing.T) {
 		},
 		Adapters: blankAdapterConfig(openrtb_ext.BidderList()),
 		GDPR: config.GDPR{
-			EEACountries: []string{"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA"},
+			EEACountries: []string{"FIN", "FRA", "GUF"},
 		},
 	}
 
