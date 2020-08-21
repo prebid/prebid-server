@@ -20,14 +20,14 @@ const (
 	AMPRequestDataType DataType = "Amp Request"
 )
 
-// StoredRequests configures the backend used to store requests on the server.
+// StoredRequests struct defines options for stored requests for each data type
+// including some amp stored_requests options
 type StoredRequests struct {
 	// DataType is a tag pushed from upstream indicating the type of object fetched here
 	DataType DataType
-	// Files should be true if Stored Requests should be loaded from the filesystem.
-	Files bool `mapstructure:"filesystem"`
-	//If data should be loaded from file system, path should be specified in configuration
-	Path string `mapstructure:"directorypath"`
+	// Files should be used if Stored Requests should be loaded from the filesystem.
+	// Fetchers are in stored_requests/backends/file_system/fetcher.go
+	Files FileFetcherConfig `mapstructure:"filesystem"`
 	// Postgres configures Fetchers and EventProducers which read from a Postgres DB.
 	// Fetchers are in stored_requests/backends/db_fetcher/postgres.go
 	// EventProducers are in stored_requests/events/postgres
@@ -38,46 +38,12 @@ type StoredRequests struct {
 	// InMemoryCache configures an instance of stored_requests/caches/memory/cache.go.
 	// If non-nil, Stored Requests will be saved in an in-memory cache.
 	InMemoryCache InMemoryCache `mapstructure:"in_memory_cache"`
-	// CacheEventsAPI configures an instance of stored_requests/events/api/api.go.
-	// If non-nil, Stored Request Caches can be updated or invalidated through API endpoints.
-	// This is intended to be a useful development tool and not recommended for a production environment.
-	// It should not be exposed to public networks without authentication.
-	CacheEventsAPI bool `mapstructure:"cache_events_api"`
-	// HTTPEvents configures an instance of stored_requests/events/http/http.go.
-	// If non-nil, the server will use those endpoints to populate and update the cache.
-	HTTPEvents HTTPEventsConfig `mapstructure:"http_events"`
-}
-
-// StoredRequestsSlim struct defines options for stored requests from a single endpoint
-type StoredRequestsSlim struct {
-	// DataType is a tag pushed from upstream indicating the type of object fetched here
-	DataType DataType
-	// Files should be used if Stored Requests should be loaded from the filesystem.
-	// Fetchers are in stored_requests/backends/file_system/fetcher.go
-	Files FileFetcherConfig `mapstructure:"filesystem"`
-	// Postgres configures Fetchers and EventProducers which read from a Postgres DB.
-	// Fetchers are in stored_requests/backends/db_fetcher/postgres.go
-	// EventProducers are in stored_requests/events/postgres
-	Postgres PostgresConfigSlim `mapstructure:"postgres"`
-	// HTTP configures an instance of stored_requests/backends/http/http_fetcher.go.
-	// If non-nil, Stored Requests will be fetched from the endpoint described there.
-	HTTP HTTPFetcherConfigSlim `mapstructure:"http"`
-	// InMemoryCache configures an instance of stored_requests/caches/memory/cache.go.
-	// If non-nil, Stored Requests will be saved in an in-memory cache.
-	InMemoryCache InMemoryCache `mapstructure:"in_memory_cache"`
 	// CacheEvents configures an instance of stored_requests/events/api/api.go.
 	// This is a sub-object containing the endpoint name to use for this API endpoint.
 	CacheEvents CacheEventsConfig `mapstructure:"cache_events"`
 	// HTTPEvents configures an instance of stored_requests/events/http/http.go.
 	// If non-nil, the server will use those endpoints to populate and update the cache.
-	HTTPEvents HTTPEventsConfigSlim `mapstructure:"http_events"`
-}
-
-// HTTPEventsConfigSlim configures stored_requests/events/http/http.go
-type HTTPEventsConfigSlim struct {
-	Endpoint    string `mapstructure:"endpoint"`
-	RefreshRate int64  `mapstructure:"refresh_rate_seconds"`
-	Timeout     int    `mapstructure:"timeout_ms"`
+	HTTPEvents HTTPEventsConfig `mapstructure:"http_events"`
 }
 
 // HTTPEventsConfig configures stored_requests/events/http/http.go
@@ -93,14 +59,6 @@ func (cfg HTTPEventsConfig) TimeoutDuration() time.Duration {
 }
 
 func (cfg HTTPEventsConfig) RefreshRateDuration() time.Duration {
-	return time.Duration(cfg.RefreshRate) * time.Second
-}
-
-func (cfg HTTPEventsConfigSlim) TimeoutDuration() time.Duration {
-	return time.Duration(cfg.Timeout) * time.Millisecond
-}
-
-func (cfg HTTPEventsConfigSlim) RefreshRateDuration() time.Duration {
 	return time.Duration(cfg.RefreshRate) * time.Second
 }
 
@@ -120,22 +78,47 @@ type FileFetcherConfig struct {
 	Path string `mapstructure:"directorypath"`
 }
 
-// HTTPFetcherConfigSlim configures a stored_requests/backends/http_fetcher/fetcher.go
-type HTTPFetcherConfigSlim struct {
-	Endpoint string `mapstructure:"endpoint"`
-}
-
 // HTTPFetcherConfig configures a stored_requests/backends/http_fetcher/fetcher.go
 type HTTPFetcherConfig struct {
 	Endpoint    string `mapstructure:"endpoint"`
 	AmpEndpoint string `mapstructure:"amp_endpoint"`
 }
 
-func (cfg *StoredRequests) validate(section string, dataType DataType, errs configErrors) configErrors {
-	cfg.DataType = dataType
+// Migrate combined stored_requests+amp configuration to separate simple config sections
+func resolvedStoredRequestsConfig(cfg *Configuration) {
+	sr := &cfg.StoredRequests
+	amp := &cfg.StoredAmp
+
+	sr.CacheEvents.Endpoint = "/storedrequests/openrtb2" // why is this here and not SetDefault ?
+
+	// Amp uses the same config but some fields get replaced by Amp* version of similar fields
+	cfg.StoredAmp = cfg.StoredRequests
+	amp.Postgres.FetcherQueries.QueryTemplate = sr.Postgres.FetcherQueries.AmpQueryTemplate
+	amp.Postgres.CacheInitialization.Query = sr.Postgres.CacheInitialization.AmpQuery
+	amp.Postgres.PollUpdates.Query = sr.Postgres.PollUpdates.AmpQuery
+	amp.HTTP.Endpoint = sr.HTTP.AmpEndpoint
+	amp.CacheEvents.Endpoint = "/storedrequests/amp"
+	amp.HTTPEvents.Endpoint = sr.HTTPEvents.AmpEndpoint
+
+	// Set data types for each section
+	cfg.StoredRequests.DataType = RequestDataType
+	cfg.StoredAmp.DataType = AMPRequestDataType
+	cfg.StoredVideo.DataType = VideoDataType
+	cfg.CategoryMapping.DataType = CategoryDataType
+	return
+}
+
+func (cfg *StoredRequests) validate(section string, errs configErrors) configErrors {
+	errs = cfg.Postgres.validate(section, errs)
+
+	// Categories do not use cache so none of the following checks apply
+	if cfg.DataType == CategoryDataType {
+		return errs
+	}
+
 	if cfg.InMemoryCache.Type == "none" {
-		if cfg.CacheEventsAPI {
-			errs = append(errs, fmt.Errorf("%s: cache_events_api must be false if in_memory_cache=none", section))
+		if cfg.CacheEvents.Enabled {
+			errs = append(errs, fmt.Errorf("%s: cache_events must be disabled if in_memory_cache=none", section))
 		}
 
 		if cfg.HTTPEvents.RefreshRate != 0 {
@@ -150,17 +133,7 @@ func (cfg *StoredRequests) validate(section string, dataType DataType, errs conf
 		}
 	}
 	errs = cfg.InMemoryCache.validate(section, errs)
-	errs = cfg.Postgres.validate(section, errs)
 	return errs
-}
-
-// PostgresConfigSlim configures the Stored Request ecosystem to use Postgres. This must include a Fetcher,
-// and may optionally include some EventProducers to populate and refresh the caches.
-type PostgresConfigSlim struct {
-	ConnectionInfo      PostgresConnection           `mapstructure:"connection"`
-	FetcherQueries      PostgresFetcherQueriesSlim   `mapstructure:"fetcher"`
-	CacheInitialization PostgresCacheInitializerSlim `mapstructure:"initialize_caches"`
-	PollUpdates         PostgresUpdatePollingSlim    `mapstructure:"poll_for_updates"`
 }
 
 // PostgresConfig configures the Stored Request ecosystem to use Postgres. This must include a Fetcher,
@@ -256,32 +229,6 @@ type PostgresFetcherQueries struct {
 	AmpQueryTemplate string `mapstructure:"amp_query"`
 }
 
-type PostgresFetcherQueriesSlim struct {
-	// QueryTemplate is the Postgres Query which can be used to fetch configs from the database.
-	// It is a Template, rather than a full Query, because a single HTTP request may reference multiple Stored Requests.
-	//
-	// In the simplest case, this could be something like:
-	//   SELECT id, requestData, 'request' as type
-	//     FROM stored_requests
-	//     WHERE id in %REQUEST_ID_LIST%
-	//     UNION ALL
-	//   SELECT id, impData, 'imp' as type
-	//     FROM stored_imps
-	//     WHERE id in %IMP_ID_LIST%
-	//
-	// The MakeQuery function will transform this query into:
-	//   SELECT id, requestData, 'request' as type
-	//     FROM stored_requests
-	//     WHERE id in ($1)
-	//     UNION ALL
-	//   SELECT id, impData, 'imp' as type
-	//     FROM stored_imps
-	//     WHERE id in ($2, $3, $4, ...)
-	//
-	// ... where the number of "$x" args depends on how many IDs are nested within the HTTP request.
-	QueryTemplate string `mapstructure:"query"`
-}
-
 type PostgresCacheInitializer struct {
 	Timeout int `mapstructure:"timeout_ms"`
 	// Query should be something like:
@@ -298,21 +245,7 @@ type PostgresCacheInitializer struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-type PostgresCacheInitializerSlim struct {
-	Timeout int `mapstructure:"timeout_ms"`
-	// Query should be something like:
-	//
-	// SELECT id, requestData, 'request' AS type FROM stored_requests
-	// UNION ALL
-	// SELECT id, impData, 'imp' AS type FROM stored_imps
-	//
-	// This query will be run once on startup to fetch _all_ known Stored Request data from the database.
-	//
-	// For more details on the expected format of requestData and impData, see stored_requests/events/postgres/polling.go
-	Query string `mapstructure:"query"`
-}
-
-func (cfg *PostgresCacheInitializerSlim) validate(section string, errs configErrors) configErrors {
+func (cfg *PostgresCacheInitializer) validate(section string, errs configErrors) configErrors {
 	if cfg.Query == "" {
 		return errs
 	}
@@ -323,42 +256,6 @@ func (cfg *PostgresCacheInitializerSlim) validate(section string, errs configErr
 		errs = append(errs, fmt.Errorf("%s: postgres.initialize_caches.query should not contain any wildcards (e.g. $1)", section))
 	}
 	return errs
-}
-
-func (cfg *PostgresCacheInitializer) validate(section string, errs configErrors) configErrors {
-	if cfg.Query == "" && cfg.AmpQuery == "" {
-		return errs
-	}
-
-	slim := &PostgresCacheInitializerSlim{Timeout: cfg.Timeout, Query: cfg.Query}
-	errs = slim.validate(section, errs)
-
-	if strings.Contains(cfg.AmpQuery, "$") {
-		errs = append(errs, fmt.Errorf("%s: postgres.initialize_caches.amp_query should not contain any wildcards (e.g. $1)", section))
-	}
-
-	return errs
-}
-
-type PostgresUpdatePollingSlim struct {
-	// RefreshRate determines how frequently the Query and AmpQuery are run.
-	RefreshRate int `mapstructure:"refresh_rate_seconds"`
-
-	// Timeout is the amount of time before a call to the database is aborted.
-	Timeout int `mapstructure:"timeout_ms"`
-
-	// An example UpdateQuery is:
-	//
-	// SELECT id, requestData, 'request' AS type
-	//   FROM stored_requests
-	//   WHERE last_updated > $1
-	// UNION ALL
-	// SELECT id, requestData, 'imp' AS type
-	//   FROM stored_imps
-	//   WHERE last_updated > $1
-	//
-	// The code will be run periodically to fetch updates from the database.
-	Query string `mapstructure:"query"`
 }
 
 type PostgresUpdatePolling struct {
@@ -384,7 +281,7 @@ type PostgresUpdatePolling struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *PostgresUpdatePollingSlim) validate(section string, errs configErrors) configErrors {
+func (cfg *PostgresUpdatePolling) validate(section string, errs configErrors) configErrors {
 	if cfg.Query == "" {
 		return errs
 	}
@@ -403,28 +300,10 @@ func (cfg *PostgresUpdatePollingSlim) validate(section string, errs configErrors
 	return errs
 }
 
-func (cfg *PostgresUpdatePolling) validate(section string, errs configErrors) configErrors {
-	if cfg.Query == "" && cfg.AmpQuery == "" {
-		return errs
-	}
-	slim := &PostgresUpdatePollingSlim{RefreshRate: cfg.RefreshRate, Timeout: cfg.Timeout, Query: cfg.Query}
-	errs = slim.validate(section, errs)
-
-	if !strings.Contains(cfg.AmpQuery, "$1") || strings.Contains(cfg.AmpQuery, "$2") {
-		errs = append(errs, fmt.Errorf("%s: postgres.poll_for_updates.amp_query must contain exactly one wildcard", section))
-	}
-	return errs
-}
-
 // MakeQuery builds a query which can fetch numReqs Stored Requests and numImps Stored Imps.
 // See the docs on PostgresConfig.QueryTemplate for a description of how it works.
-func (cfg *PostgresFetcherQueriesSlim) MakeQuery(numReqs int, numImps int) (query string) {
+func (cfg *PostgresFetcherQueries) MakeQuery(numReqs int, numImps int) (query string) {
 	return resolve(cfg.QueryTemplate, numReqs, numImps)
-}
-
-// MakeAmpQuery is the equivalent of MakeQuery() for AMP.
-func (cfg *PostgresFetcherQueries) MakeAmpQuery(numReqs int, numImps int) string {
-	return resolve(cfg.AmpQueryTemplate, numReqs, numImps)
 }
 
 func resolve(template string, numReqs int, numImps int) (query string) {

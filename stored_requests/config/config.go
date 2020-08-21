@@ -41,7 +41,7 @@ type dbConnection struct {
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func CreateStoredRequests(cfg *config.StoredRequestsSlim, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *httprouter.Router, dbc *dbConnection) (fetcher stored_requests.AllFetcher, shutdown func()) {
+func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *httprouter.Router, dbc *dbConnection) (fetcher stored_requests.AllFetcher, shutdown func()) {
 	// Create database connection if given options for one
 	if cfg.Postgres.ConnectionInfo.Database != "" {
 		conn := cfg.Postgres.ConnectionInfo.ConnString()
@@ -107,9 +107,6 @@ func CreateStoredRequests(cfg *config.StoredRequestsSlim, metricsEngine pbsmetri
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
 func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *httprouter.Router) (db *sql.DB, shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, categoriesFetcher stored_requests.CategoryFetcher, videoFetcher stored_requests.Fetcher) {
-	// Build individual slim options from combined config struct
-	slimAuction, slimAmp := resolvedStoredRequestsConfig(cfg)
-
 	// TODO: Switch this to be set in config defaults
 	//if cfg.CategoryMapping.CacheEvents.Enabled && cfg.CategoryMapping.CacheEvents.Endpoint == "" {
 	//	cfg.CategoryMapping.CacheEvents.Endpoint = "/storedrequest/categorymapping"
@@ -117,8 +114,8 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.Metri
 
 	var dbc dbConnection
 
-	fetcher1, shutdown1 := CreateStoredRequests(&slimAuction, metricsEngine, client, router, &dbc)
-	fetcher2, shutdown2 := CreateStoredRequests(&slimAmp, metricsEngine, client, router, &dbc)
+	fetcher1, shutdown1 := CreateStoredRequests(&cfg.StoredRequests, metricsEngine, client, router, &dbc)
+	fetcher2, shutdown2 := CreateStoredRequests(&cfg.StoredAmp, metricsEngine, client, router, &dbc)
 	fetcher3, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, metricsEngine, client, router, &dbc)
 	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, &dbc)
 
@@ -139,41 +136,6 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.Metri
 	return
 }
 
-func resolvedStoredRequestsConfig(cfg *config.Configuration) (auc, amp config.StoredRequestsSlim) {
-	sr := &cfg.StoredRequests
-
-	// Auction endpoint uses non-Amp fields so can just copy the slin data
-	auc.DataType = sr.DataType
-	auc.Files.Enabled = sr.Files
-	auc.Files.Path = sr.Path
-	auc.Postgres.ConnectionInfo = sr.Postgres.ConnectionInfo
-	auc.Postgres.FetcherQueries.QueryTemplate = sr.Postgres.FetcherQueries.QueryTemplate
-	auc.Postgres.CacheInitialization.Timeout = sr.Postgres.CacheInitialization.Timeout
-	auc.Postgres.CacheInitialization.Query = sr.Postgres.CacheInitialization.Query
-	auc.Postgres.PollUpdates.RefreshRate = sr.Postgres.PollUpdates.RefreshRate
-	auc.Postgres.PollUpdates.Timeout = sr.Postgres.PollUpdates.Timeout
-	auc.Postgres.PollUpdates.Query = sr.Postgres.PollUpdates.Query
-	auc.HTTP.Endpoint = sr.HTTP.Endpoint
-	auc.InMemoryCache = sr.InMemoryCache
-	auc.CacheEvents.Enabled = sr.CacheEventsAPI
-	auc.CacheEvents.Endpoint = "/storedrequests/openrtb2"
-	auc.HTTPEvents.RefreshRate = sr.HTTPEvents.RefreshRate
-	auc.HTTPEvents.Timeout = sr.HTTPEvents.Timeout
-	auc.HTTPEvents.Endpoint = sr.HTTPEvents.Endpoint
-
-	// Amp endpoint uses all the slim data but some fields get replacyed by Amp* version of similar fields
-	amp = auc
-	amp.DataType = config.AMPRequestDataType
-	amp.Postgres.FetcherQueries.QueryTemplate = sr.Postgres.FetcherQueries.AmpQueryTemplate
-	amp.Postgres.CacheInitialization.Query = sr.Postgres.CacheInitialization.AmpQuery
-	amp.Postgres.PollUpdates.Query = sr.Postgres.PollUpdates.AmpQuery
-	amp.HTTP.Endpoint = sr.HTTP.AmpEndpoint
-	amp.CacheEvents.Endpoint = "/storedrequests/amp"
-	amp.HTTPEvents.Endpoint = sr.HTTPEvents.AmpEndpoint
-
-	return
-}
-
 func addListeners(cache stored_requests.Cache, eventProducers []events.EventProducer) (shutdown func()) {
 	listeners := make([]*events.EventListener, 0, len(eventProducers))
 
@@ -190,7 +152,7 @@ func addListeners(cache stored_requests.Cache, eventProducers []events.EventProd
 	}
 }
 
-func newFetcher(cfg *config.StoredRequestsSlim, client *http.Client, db *sql.DB) (fetcher stored_requests.AllFetcher) {
+func newFetcher(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fetcher stored_requests.AllFetcher) {
 	idList := make(stored_requests.MultiFetcher, 0, 3)
 
 	if cfg.Files.Enabled {
@@ -210,7 +172,7 @@ func newFetcher(cfg *config.StoredRequestsSlim, client *http.Client, db *sql.DB)
 	return
 }
 
-func newCache(cfg *config.StoredRequestsSlim) stored_requests.Cache {
+func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 	if cfg.InMemoryCache.Type == "none" {
 		glog.Infof("No Stored %s cache configured. The %s Fetcher backend will be used for all data requests", cfg.DataType, cfg.DataType)
 		return &nil_cache.NilCache{}
@@ -219,7 +181,7 @@ func newCache(cfg *config.StoredRequestsSlim) stored_requests.Cache {
 	return memory.NewCache(&cfg.InMemoryCache)
 }
 
-func newEventProducers(cfg *config.StoredRequestsSlim, client *http.Client, db *sql.DB, router *httprouter.Router) (eventProducers []events.EventProducer) {
+func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, router *httprouter.Router) (eventProducers []events.EventProducer) {
 	if cfg.CacheEvents.Enabled {
 		eventProducers = append(eventProducers, newEventsAPI(router, cfg.CacheEvents.Endpoint))
 	}
@@ -241,7 +203,7 @@ func newEventProducers(cfg *config.StoredRequestsSlim, client *http.Client, db *
 	return
 }
 
-func newPostgresPolling(cfg config.PostgresUpdatePollingSlim, db *sql.DB, startTime time.Time) events.EventProducer {
+func newPostgresPolling(cfg config.PostgresUpdatePolling, db *sql.DB, startTime time.Time) events.EventProducer {
 	timeout := time.Duration(cfg.Timeout) * time.Millisecond
 	ctxProducer := func() (ctx context.Context, canceller func()) {
 		return context.WithTimeout(context.Background(), timeout)
