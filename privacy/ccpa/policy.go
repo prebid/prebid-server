@@ -44,6 +44,16 @@ func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
 	return Policy{consent, noSaleBidders}, nil
 }
 
+// Clone makes a deep copy the Policy.
+func (p Policy) Clone() Policy {
+	if p.NoSaleBidders != nil {
+		noSaleBiddersCopy := make([]string, len(p.NoSaleBidders))
+		copy(noSaleBiddersCopy, p.NoSaleBidders)
+		p.NoSaleBidders = noSaleBiddersCopy
+	}
+	return p
+}
+
 // Write mutates an OpenRTB bid request with the CCPA regulatory information.
 func (p Policy) Write(req *openrtb.BidRequest) (err error) {
 	if req == nil {
@@ -61,7 +71,6 @@ func (p Policy) Write(req *openrtb.BidRequest) (err error) {
 
 	req.Regs = regs
 	req.Ext = ext
-
 	return
 }
 
@@ -78,65 +87,52 @@ func buildRegsClear(regs *openrtb.Regs) (*openrtb.Regs, error) {
 	}
 
 	var extMap map[string]interface{}
-	err := json.Unmarshal(regs.Ext, &extMap)
-	if err == nil {
-		regsCopy := *regs
-
-		// Remove CCPA consent
-		delete(extMap, "us_privacy")
-
-		// Remove entire ext if it's empty
-		if len(extMap) == 0 {
-			regsCopy.Ext = nil
-			return &regsCopy, nil
-		}
-
-		ext, err := json.Marshal(extMap)
-		if err != nil {
-			return nil, err
-		}
-
-		regsCopy.Ext = ext
-		return &regsCopy, nil
+	if err := json.Unmarshal(regs.Ext, &extMap); err != nil {
+		return nil, err
 	}
-	return nil, err
+
+	delete(extMap, "us_privacy")
+
+	// Remove entire ext if it's now empty
+	if len(extMap) == 0 {
+		regsResult := *regs
+		regsResult.Ext = nil
+		return &regsResult, nil
+	}
+
+	// Marshal ext if there are still other fields
+	var regsResult openrtb.Regs
+	ext, err := json.Marshal(extMap)
+	if err == nil {
+		regsResult = *regs
+		regsResult.Ext = ext
+	}
+	return &regsResult, err
 }
 
 func buildRegsWrite(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
-	var regsCopy openrtb.Regs
-
 	if regs == nil {
-		regsCopy = openrtb.Regs{}
-	} else {
-		regsCopy = *regs
+		return marshalRegsExt(openrtb.Regs{}, openrtb_ext.ExtRegs{USPrivacy: consent})
 	}
 
-	if regsCopy.Ext == nil {
-		ext, err := json.Marshal(openrtb_ext.ExtRegs{USPrivacy: consent})
-		if err != nil {
-			return nil, err
-		}
-
-		regsCopy.Ext = ext
-		return &regsCopy, nil
+	if regs.Ext == nil {
+		return marshalRegsExt(*regs, openrtb_ext.ExtRegs{USPrivacy: consent})
 	}
 
 	var extMap map[string]interface{}
-	err := json.Unmarshal(regsCopy.Ext, &extMap)
-	if err == nil {
-		// Set CCPA consent
-		extMap["us_privacy"] = consent
-
-		ext, err := json.Marshal(extMap)
-		if err != nil {
-			return nil, err
-		}
-
-		regsCopy.Ext = ext
-		return &regsCopy, nil
+	if err := json.Unmarshal(regs.Ext, &extMap); err != nil {
+		return nil, err
 	}
+	extMap["us_privacy"] = consent
+	return marshalRegsExt(*regs, extMap)
+}
 
-	return nil, err
+func marshalRegsExt(regs openrtb.Regs, ext interface{}) (*openrtb.Regs, error) {
+	extJSON, err := json.Marshal(ext)
+	if err == nil {
+		regs.Ext = extJSON
+	}
+	return &regs, err
 }
 
 func buildExt(noSaleBidders []string, ext json.RawMessage) (json.RawMessage, error) {
@@ -152,35 +148,33 @@ func buildExtClear(ext json.RawMessage) (json.RawMessage, error) {
 	}
 
 	var extMap map[string]interface{}
-	err := json.Unmarshal(ext, &extMap)
-	if err == nil {
-		prebidExt, exists := extMap["prebid"]
-
-		// If there's no prebid, there's nothing to do
-		if !exists {
-			return ext, nil
-		}
-
-		// Verify prebid is an object
-		prebidExtMap, ok := prebidExt.(map[string]interface{})
-		if !ok {
-			return nil, errors.New("request.ext.prebid is not a json object")
-		}
-
-		// Remove no sale member
-		delete(prebidExtMap, "nosale")
-		if len(prebidExtMap) == 0 {
-			delete(extMap, "prebid")
-		}
-
-		// Remove entire ext if it's empty
-		if len(extMap) == 0 {
-			return nil, nil
-		}
-
-		return json.Marshal(extMap)
+	if err := json.Unmarshal(ext, &extMap); err != nil {
+		return nil, err
 	}
-	return nil, err
+
+	prebidExt, exists := extMap["prebid"]
+	if !exists {
+		return ext, nil
+	}
+
+	// Verify prebid is an object
+	prebidExtMap, ok := prebidExt.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("request.ext.prebid is not a json object")
+	}
+
+	// Remove no sale member
+	delete(prebidExtMap, "nosale")
+	if len(prebidExtMap) == 0 {
+		delete(extMap, "prebid")
+	}
+
+	// Remove entire ext if it's empty
+	if len(extMap) == 0 {
+		return nil, nil
+	}
+
+	return json.Marshal(extMap)
 }
 
 func buildExtWrite(noSaleBidders []string, ext json.RawMessage) (json.RawMessage, error) {
@@ -189,24 +183,25 @@ func buildExtWrite(noSaleBidders []string, ext json.RawMessage) (json.RawMessage
 	}
 
 	var extMap map[string]interface{}
-	err := json.Unmarshal(ext, &extMap)
-	if err == nil {
-		var prebidExt map[string]interface{}
-		if prebidExtInterface, exists := extMap["prebid"]; exists {
-			// Reference Existing Prebid Ext Map
-			if prebidExtMap, ok := prebidExtInterface.(map[string]interface{}); ok {
-				prebidExt = prebidExtMap
-			} else {
-				return nil, errors.New("request.ext.prebid is not a json object")
-			}
-		} else {
-			// Create New Empty Prebid Ext Map
-			prebidExt = make(map[string]interface{})
-			extMap["prebid"] = prebidExt
-		}
-
-		prebidExt["nosale"] = noSaleBidders
-		return json.Marshal(extMap)
+	if err := json.Unmarshal(ext, &extMap); err != nil {
+		return nil, err
 	}
-	return nil, err
+
+	var prebidExt map[string]interface{}
+	if prebidExtInterface, exists := extMap["prebid"]; exists {
+		// Reference Existing Prebid Ext Map
+		if prebidExtMap, ok := prebidExtInterface.(map[string]interface{}); ok {
+			prebidExt = prebidExtMap
+		} else {
+			return nil, errors.New("request.ext.prebid is not a json object")
+		}
+	} else {
+		// Create New Empty Prebid Ext Map
+		prebidExt = make(map[string]interface{})
+		extMap["prebid"] = prebidExt
+	}
+
+	prebidExt["nosale"] = noSaleBidders
+	return json.Marshal(extMap)
+
 }

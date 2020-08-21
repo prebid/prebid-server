@@ -403,8 +403,8 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 
 	consent := readConsent(httpRequest.URL)
 	if consent != "" {
-		if policies, ok := privacy.ReadPoliciesFromConsent(consent); ok {
-			if err := policies.Write(req); err != nil {
+		if policy, ok := privacy.ReadPolicyFromConsent(consent); ok {
+			if err := policy.Write(req); err != nil {
 				return []error{err}
 			}
 		} else {

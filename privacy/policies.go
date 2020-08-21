@@ -7,54 +7,23 @@ import (
 	"github.com/prebid/prebid-server/privacy/gdpr"
 )
 
-// Policies represents the privacy regulations for an OpenRTB bid request.
-type Policies struct {
-	GDPR gdpr.Policy
-	CCPA ccpa.ParsedPolicy
-}
-
-type policyWriter interface {
+type PolicyWriter interface {
 	Write(req *openrtb.BidRequest) error
 }
 
-// Write mutates an OpenRTB bid request with the policies applied.
-func (p Policies) Write(req *openrtb.BidRequest) error {
-	return writePolicies(req, []policyWriter{
-		p.GDPR, p.CCPA,
-	})
-}
-
-func writePolicies(req *openrtb.BidRequest, writers []policyWriter) error {
-	for _, writer := range writers {
-		if err := writer.Write(req); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// ReadPoliciesFromConsent inspects the consent string kind and sets the corresponding values in a new Policies object.
-func ReadPoliciesFromConsent(consent string) (Policies, bool) {
+// ReadPolicyFromConsent inspects the consent string and returns a validated policy writer.
+func ReadPolicyFromConsent(consent string) (PolicyWriter, bool) {
 	if len(consent) == 0 {
-		return Policies{}, false
+		return nil, false
 	}
 
 	if err := gdpr.ValidateConsent(consent); err == nil {
-		return Policies{
-			GDPR: gdpr.Policy{
-				Consent: consent,
-			},
-		}, true
+		return gdpr.Policy{Consent: consent}, true
 	}
 
-	if err := ccpa.ValidateConsent(consent); err == nil {
-		return Policies{
-			CCPA: ccpa.Policy{
-				Value: consent,
-			},
-		}, true
+	if p, err := ccpa.Parse(ccpa.Policy{Consent: consent}, nil); err == nil {
+		return p, true
 	}
 
-	return Policies{}, false
+	return nil, false
 }

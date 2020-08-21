@@ -183,6 +183,30 @@ func TestRead(t *testing.T) {
 	}
 }
 
+func TestClone(t *testing.T) {
+	policy := Policy{
+		Consent:       "anyConsent",
+		NoSaleBidders: []string{"a", "b"},
+	}
+
+	clone := policy.Clone()
+	clone.NoSaleBidders[0] = "1"
+
+	assert.ElementsMatch(t, []string{"a", "b"}, policy.NoSaleBidders, "original")
+	assert.ElementsMatch(t, []string{"1", "b"}, clone.NoSaleBidders, "clone")
+}
+
+func TestCloneNilNoSale(t *testing.T) {
+	policy := Policy{
+		Consent:       "anyConsent",
+		NoSaleBidders: nil,
+	}
+
+	clone := policy.Clone()
+
+	assert.Nil(t, clone.NoSaleBidders)
+}
+
 func TestWrite(t *testing.T) {
 	testCases := []struct {
 		description   string

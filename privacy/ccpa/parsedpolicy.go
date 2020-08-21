@@ -3,6 +3,8 @@ package ccpa
 import (
 	"errors"
 	"fmt"
+
+	"github.com/mxmCherry/openrtb"
 )
 
 const (
@@ -23,28 +25,31 @@ const allBiddersMarker = "*"
 
 // ParsedPolicy represents parsed and validated CCPA regulatory information from the OpenRTB bid request.
 type ParsedPolicy struct {
-	Policy
-	isValid               bool
+	policy                Policy
 	consentOptOut         bool
 	noSaleForAllBidders   bool
 	noSaleSpecificBidders map[string]struct{}
+}
+
+// Write mutates an OpenRTB bid request with the CCPA regulatory information.
+func (p ParsedPolicy) Write(req *openrtb.BidRequest) error {
+	return p.policy.Write(req)
 }
 
 // Parse returns a parsed and validated ParsedPolicy which can be used for enforcement checks.
 func (p Policy) Parse(validBidders map[string]struct{}) (ParsedPolicy, error) {
 	consentOptOut, err := parseConsent(p.Consent)
 	if err != nil {
-		return ParsedPolicy{isValid: false}, fmt.Errorf("request.regs.ext.us_privacy is invalid. %s", err.Error())
+		return ParsedPolicy{}, fmt.Errorf("request.regs.ext.us_privacy is invalid. %s", err.Error())
 	}
 
 	noSaleForAllBidders, noSaleSpecificBidders, err := parseNoSaleBidders(p.NoSaleBidders, validBidders)
 	if err != nil {
-		return ParsedPolicy{isValid: false}, fmt.Errorf("request.ext.prebid.nosale is invalid. %s", err.Error())
+		return ParsedPolicy{}, fmt.Errorf("request.ext.prebid.nosale is invalid. %s", err.Error())
 	}
 
 	return ParsedPolicy{
-		Policy:                p,
-		isValid:               true,
+		policy:                p.Clone(),
 		consentOptOut:         consentOptOut,
 		noSaleForAllBidders:   noSaleForAllBidders,
 		noSaleSpecificBidders: noSaleSpecificBidders,
@@ -118,13 +123,15 @@ func (p ParsedPolicy) isNoSaleForBidder(bidder string) bool {
 
 // ShouldEnforce returns true when the opt-out signal is explicitly detected.
 func (p ParsedPolicy) ShouldEnforce(bidder string) bool {
-	if !p.isValid {
-		return false
-	}
-
 	if p.isNoSaleForBidder(bidder) {
 		return false
 	}
 
 	return p.consentOptOut
 }
+
+// p := ccpa.Read(req)
+// p.Clone()
+// p.Write() // amp query params -> p -> write
+// pp := p.Parse(bidders)
+// pp.ShouldEnforce(bidder)
