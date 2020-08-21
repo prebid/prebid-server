@@ -94,9 +94,9 @@ func (c *EventChannel) flush() {
 	}
 
 	// finish writing gzip header
-	err := c.gz.Flush()
+	err := c.gz.Close()
 	if err != nil {
-		glog.Warning("[pubstack] fail to flush gzipped buffer")
+		glog.Warning("[pubstack] fail to close gzipped buffer")
 		return
 	}
 
