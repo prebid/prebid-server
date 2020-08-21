@@ -10,9 +10,11 @@ import (
 	"net/http"
 	"runtime/debug"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
+	uuid "github.com/gofrs/uuid"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
@@ -53,6 +55,7 @@ type exchange struct {
 	UsersyncIfAmbiguous bool
 	defaultTTLs         config.DefaultTTLs
 	privacyConfig       config.Privacy
+	eeaCountries        map[string]struct{}
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -73,6 +76,11 @@ type bidResponseWrapper struct {
 func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) Exchange {
 	e := new(exchange)
 
+	e.eeaCountries = make(map[string]struct{}, len(cfg.GDPR.EEACountries))
+	var s struct{}
+	for _, c := range cfg.GDPR.EEACountries {
+		e.eeaCountries[c] = s
+	}
 	e.adapterMap = newAdapterMap(client, cfg, infos, metricsEngine)
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
@@ -119,9 +127,27 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		e.me.RecordImps(impLabels)
 	}
 
+	// Make our best guess if GDPR applies
+	usersyncIfAmbiguous := e.UsersyncIfAmbiguous
+	var geo *openrtb.Geo = nil
+	if bidRequest.User != nil && bidRequest.User.Geo != nil {
+		geo = bidRequest.User.Geo
+	} else if bidRequest.Device != nil && bidRequest.Device.Geo != nil {
+		geo = bidRequest.Device.Geo
+	}
+	if geo != nil {
+		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
+		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
+		if _, found := e.eeaCountries[strings.ToUpper(geo.Country)]; found {
+			usersyncIfAmbiguous = false
+		} else if len(geo.Country) == 3 {
+			// The country field is formatted properly as a three character country code
+			usersyncIfAmbiguous = true
+		}
+	}
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, bidRequest, requestExt, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous, e.privacyConfig)
+	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, bidRequest, requestExt, usersyncs, blabels, labels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -189,6 +215,23 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 		}
 
+	}
+
+	if !anyBidsReturned {
+		if debugLog != nil && debugLog.Enabled {
+			if rawUUID, err := uuid.NewV4(); err == nil {
+				debugLog.CacheKey = rawUUID.String()
+
+				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errs)
+				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+					debugLog.Data.Response = string(bidRespExtBytes)
+				} else {
+					debugLog.Data.Response = "Unable to marshal response ext for debugging"
+				}
+			} else {
+				errs = append(errs, err)
+			}
+		}
 	}
 
 	// Build the response
@@ -484,6 +527,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 		bidderName openrtb_ext.BidderName
 		bidIndex   int
 		bidID      string
+		bidPrice   string
 	}
 
 	dedupe := make(map[string]bidDedupe)
@@ -580,15 +624,34 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 			}
 
 			var categoryDuration string
+			var dupeKey string
 			if brandCatExt.WithCategory {
 				categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+				dupeKey = category
 			} else {
 				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
+				dupeKey = categoryDuration
 			}
 
-			if dupe, ok := dedupe[categoryDuration]; ok {
-				// 50% chance for either bid with duplicate categoryDuration values to be kept
-				if rand.Intn(100) < 50 {
+			if dupe, ok := dedupe[dupeKey]; ok {
+
+				dupeBidPrice, err := strconv.ParseFloat(dupe.bidPrice, 64)
+				if err != nil {
+					dupeBidPrice = 0
+				}
+				currBidPrice, err := strconv.ParseFloat(pb, 64)
+				if err != nil {
+					currBidPrice = 0
+				}
+				if dupeBidPrice == currBidPrice {
+					if rand.Intn(100) < 50 {
+						dupeBidPrice = -1
+					} else {
+						currBidPrice = -1
+					}
+				}
+
+				if dupeBidPrice < currBidPrice {
 					if dupe.bidderName == bidderName {
 						// An older bid from the current bidder
 						bidsToRemove = append(bidsToRemove, dupe.bidIndex)
@@ -612,7 +675,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 				}
 			}
 			res[bidID] = categoryDuration
-			dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID}
+			dedupe[dupeKey] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID, bidPrice: pb}
 		}
 
 		if len(bidsToRemove) > 0 {
