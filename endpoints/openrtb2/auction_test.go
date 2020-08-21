@@ -438,21 +438,6 @@ func assertResponseCode(t *testing.T, filename string, actual int, expected int,
 	}
 }
 
-// buildNativeRequest JSON-encodes the nativeData as a string, and puts it into request.imp[0].native.request
-// of a request which is valid otherwise.
-func buildNativeRequest(t *testing.T, nativeData []byte) []byte {
-	serialized, err := json.Marshal(string(nativeData))
-	if err != nil {
-		t.Fatalf("Failed to string-escape JSON data: %v", err)
-	}
-
-	buf := bytes.NewBuffer(nil)
-	buf.WriteString(`{"id":"req-id","site":{"page":"some.page.com"},"tmax":500,"imp":[{"id":"some-imp","native":{"request":`)
-	buf.Write(serialized)
-	buf.WriteString(`},"ext":{"appnexus":{"placementId":12883451}}}]}`)
-	return buf.Bytes()
-}
-
 func getRequestPayload(t *testing.T, example []byte) []byte {
 	t.Helper()
 	if value, _, _, err := jsonparser.Get(example, "requestPayload"); err != nil {
@@ -1370,15 +1355,6 @@ func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bi
 	return nil, errors.New("Critical, unrecoverable error.")
 }
 
-func getMessage(t *testing.T, example []byte) []byte {
-	if value, err := jsonparser.GetString(example, "message"); err != nil {
-		t.Fatalf("Error parsing root.message from request: %v.", err)
-	} else {
-		return []byte(value)
-	}
-	return nil
-}
-
 // StoredRequest testing
 
 // Test stored request data
@@ -1735,20 +1711,6 @@ func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidR
 			}},
 		}},
 	}, nil
-}
-
-func blankAdapterConfig(bidderList []openrtb_ext.BidderName, disabledBidders []string) map[string]config.Adapter {
-	adapters := make(map[string]config.Adapter)
-	for _, b := range bidderList {
-		adapters[string(b)] = config.Adapter{}
-	}
-	for _, b := range disabledBidders {
-		tmp := adapters[b]
-		tmp.Disabled = true
-		adapters[b] = tmp
-	}
-
-	return adapters
 }
 
 func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.BidderName) adapters.BidderInfos {
