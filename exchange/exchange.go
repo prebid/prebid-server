@@ -538,7 +538,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
 	var includeBrandCategory = brandCatExt != nil //if not present - category will no be appended
-	addBidderNames := requestExt.Prebid.Targeting.AddBidderNames
+	appendBidderNames := requestExt.Prebid.Targeting.AppendBidderNames
 
 	var primaryAdServer string
 	var publisher string
@@ -634,9 +634,8 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 				dupeKey = categoryDuration
 			}
 
-			if addBidderNames {
+			if appendBidderNames {
 				categoryDuration = fmt.Sprintf("%s_%s", categoryDuration, bidderName.String())
-				dupeKey = fmt.Sprintf("%s_%s", dupeKey, bidderName.String())
 			}
 
 			if dupe, ok := dedupe[dupeKey]; ok {
@@ -666,7 +665,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 						// An older bid from a different seatBid we've already finished with
 						oldSeatBid := (seatBids)[dupe.bidderName]
 						if len(oldSeatBid.bids) == 1 {
-							seatBidsToRemove = append(seatBidsToRemove, bidderName)
+							seatBidsToRemove = append(seatBidsToRemove, dupe.bidderName)
 							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						} else {
 							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
