@@ -39,11 +39,11 @@ import (
 const maxSize = 1024 * 256
 
 type testCaseData struct {
-	BidRequest           json.RawMessage  `json:"mockBidRequest"`
-	Config               testConfigValues `json:"mockConfig"`
-	ExpectedReturnCode   int              `json:"expectedReturnCode,omitempty"`
-	ExpectedErrorMessage string           `json:"expectedErrorMessage"`
-	ExpectedBidResponse  json.RawMessage  `json:"expectedBidResponse"`
+	BidRequest           json.RawMessage   `json:"mockBidRequest"`
+	Config               *testConfigValues `json:"mockConfig"`
+	ExpectedReturnCode   int               `json:"expectedReturnCode,omitempty"`
+	ExpectedErrorMessage string            `json:"expectedErrorMessage"`
+	ExpectedBidResponse  json.RawMessage   `json:"expectedBidResponse"`
 }
 
 type testConfigValues struct {
@@ -243,10 +243,10 @@ func doRequest(t *testing.T, test testCaseData) (int, string) {
 	return recorder.Code, recorder.Body.String()
 }
 
-func jsonParse(t *testing.T, fileData []byte, testFile string) testCaseData {
+func jsonParseTestFile(t *testing.T, fileData []byte, testFile string) *testCaseData {
 	t.Helper()
 
-	parsedTestData := testCaseData{}
+	parsedTestData := &testCaseData{}
 	var err error
 
 	// Get testCaseData values
@@ -258,31 +258,31 @@ func jsonParse(t *testing.T, fileData []byte, testFile string) testCaseData {
 
 	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
 
-	// Either assert bid response or expected error
 	if parsedTestData.ExpectedReturnCode != 200 {
-		// Get expected error
+		// Get expected error, fail if parsing error
 		parsedTestData.ExpectedErrorMessage, err = jsonparser.GetString(fileData, "expectedErrorMessage")
 		assert.NoError(t, err, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
 	} else {
-		// Assert expected response
+		// Get expected response, fail if parsing error
 		parsedTestData.ExpectedBidResponse, _, _, err = jsonparser.Get(fileData, "expectedBidResponse")
 		assert.NoError(t, err, "Error jsonparsing root.expectedBidResponse from file %s. Desc: %v.", testFile, err)
 	}
 
 	// Get testCaseConfig values
-	testConfig, err := jsonparser.GetBoolean(fileData, "mockConfig", "accountRequired")
+	parsedTestData.Config = &testConfigValues{}
+	accReq, err := jsonparser.GetBoolean(fileData, "mockConfig", "accountRequired")
 	if err == nil {
-		parsedTestData.Config.AccountReq = testConfig
+		parsedTestData.Config.AccountReq = accReq
 	}
 
-	aliases, err := jsonparser.GetString(fileData, "mockAliases", "aliases")
+	aliases, err := jsonparser.GetString(fileData, "mockConfig", "aliases")
 	if err == nil {
 		parsedTestData.Config.AliasJSON = aliases
 	}
 
 	parsedTestData.Config.BlacklistedAccountArr = parseStringArray(fileData, "blacklistedAccts")
 	parsedTestData.Config.BlacklistedAppArr = parseStringArray(fileData, "blacklistedApps")
-	parsedTestData.Config.AdapterList = parseStringArray(fileData, "adapterList")
+	parsedTestData.Config.AdapterList = parseStringArray(fileData, "disabledAdapters")
 
 	return parsedTestData
 }
@@ -299,17 +299,12 @@ func assertTestCaseData(t *testing.T, fileData []byte, testFile string) {
 	t.Helper()
 
 	// Retrieve values from JSON file
-	test := testCaseData{}
-	err := json.Unmarshal(fileData, &test)
-	if err != nil {
-		//Some test files come with malformed json that can be extracted with jsonparser
-		test = jsonParse(t, fileData, testFile)
-	}
+	test := jsonParseTestFile(t, fileData, testFile)
 
 	test.Config = parseMaps(test.Config)
 
 	// Run test
-	actualCode, actualBidResponse := doRequest(t, test)
+	actualCode, actualBidResponse := doRequest(t, *test)
 
 	// Assertions
 	assert.Equal(t, test.ExpectedReturnCode, actualCode, "Test failed. Filename: %s \n", testFile)
@@ -324,7 +319,7 @@ func assertTestCaseData(t *testing.T, fileData []byte, testFile string) {
 	}
 }
 
-func parseMaps(tc testConfigValues) testConfigValues {
+func parseMaps(tc *testConfigValues) *testConfigValues {
 	if len(tc.BlacklistedAccountArr) > 0 {
 		tc.blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccountArr))
 		for _, account := range tc.BlacklistedAccountArr {
