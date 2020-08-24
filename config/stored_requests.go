@@ -17,7 +17,7 @@ const (
 	RequestDataType    DataType = "Request"
 	CategoryDataType   DataType = "Category"
 	VideoDataType      DataType = "Video"
-	AmpRequestDataType DataType = "Amp Request"
+	AMPRequestDataType DataType = "Amp Request"
 )
 
 // StoredRequests configures the backend used to store requests on the server.

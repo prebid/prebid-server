@@ -163,7 +163,7 @@ func resolvedStoredRequestsConfig(cfg *config.Configuration) (auc, amp config.St
 
 	// Amp endpoint uses all the slim data but some fields get replacyed by Amp* version of similar fields
 	amp = auc
-	amp.DataType = config.AmpRequestDataType
+	amp.DataType = config.AMPRequestDataType
 	amp.Postgres.FetcherQueries.QueryTemplate = sr.Postgres.FetcherQueries.AmpQueryTemplate
 	amp.Postgres.CacheInitialization.Query = sr.Postgres.CacheInitialization.AmpQuery
 	amp.Postgres.PollUpdates.Query = sr.Postgres.PollUpdates.AmpQuery
