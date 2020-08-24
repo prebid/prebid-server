@@ -156,8 +156,6 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"liftoff": liftoff.NewLiftoffAdapter(
 			adapters.DefaultHTTPAdapterConfig,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
-			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username,
-			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointAPAC),

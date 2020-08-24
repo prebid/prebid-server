@@ -44,8 +44,6 @@ const (
 type LiftoffAdapter struct {
 	http             *adapters.HTTPAdapter
 	URI              string
-	Username         string
-	Password         string
 	SupportedRegions map[Region]string
 }
 
@@ -82,19 +80,17 @@ func (a *LiftoffAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 }
 
 // NewLiftoffAdapter ...
-func NewLiftoffAdapter(config *adapters.HTTPAdapterConfig, uri string, user string, pass string, useast string, eu string, apac string) *LiftoffAdapter {
-	return NewLiftoffBidder(adapters.NewHTTPAdapter(config).Client, uri, user, pass, useast, eu, apac)
+func NewLiftoffAdapter(config *adapters.HTTPAdapterConfig, uri string, useast string, eu string, apac string) *LiftoffAdapter {
+	return NewLiftoffBidder(adapters.NewHTTPAdapter(config).Client, uri, useast, eu, apac)
 }
 
 // NewLiftoffBidder ...
-func NewLiftoffBidder(client *http.Client, uri string, user string, pass string, useast string, eu string, apac string) *LiftoffAdapter {
+func NewLiftoffBidder(client *http.Client, uri string, useast string, eu string, apac string) *LiftoffAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
 
 	return &LiftoffAdapter{
-		http:     a,
-		URI:      uri,
-		Username: user,
-		Password: pass,
+		http: a,
+		URI:  uri,
 		SupportedRegions: map[Region]string{
 			USEast: useast,
 			EU:     eu,
@@ -224,7 +220,6 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			Headers: headers,
 		}
 
-		reqData.SetBasicAuth(a.Username, a.Password)
 		requestData = append(requestData, reqData)
 	}
 
