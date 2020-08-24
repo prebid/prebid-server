@@ -61,8 +61,8 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/prebid/adapters/s2s_pulsepoint"
-	"github.com/prebid/adapters/s2s_gumgum"
+	"prebid-server/adapters/s2s_pulsepoint"
+	"prebid-server/adapters/s2s_gumgum"
 )
 
 // The newAdapterMap function is segregated to its own file to make it a simple and clean location for each Adapter

@@ -1,4 +1,4 @@
-package gumgum
+package s2s_pulsepoint
 
 import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"

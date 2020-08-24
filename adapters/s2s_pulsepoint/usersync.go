@@ -1,4 +1,4 @@
-package gumgum
+package s2s_pulsepoint
 
 import (
 	"text/template"
