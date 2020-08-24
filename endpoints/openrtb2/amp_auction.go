@@ -154,7 +154,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	} else {
 		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
-	labels.PubID = req.Site.Publisher.ID
+	labels.PubID = getAccountID(req.Site.Publisher)
 
 	// Blacklist account now that we have resolved the value
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
@@ -389,7 +389,7 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 
 	setAmpExt(req.Site, "1")
 
-	setEffectivePubID(req, true, httpRequest.URL.Query())
+	setEffectiveAmpPubID(req, httpRequest.URL.Query())
 
 	slot := httpRequest.FormValue("slot")
 	if slot != "" {
@@ -558,4 +558,29 @@ func readConsent(url *url.URL) string {
 
 	// Fallback to 'gdpr_consent' for compatability until it's no longer used by AMP.
 	return url.Query().Get("gdpr_consent")
+}
+
+// Sets the effective publisher ID for amp request
+func setEffectiveAmpPubID(req *openrtb.BidRequest, urlValues url.Values) {
+	var pub *openrtb.Publisher
+	if req.App != nil {
+		if req.App.Publisher == nil {
+			req.App.Publisher = new(openrtb.Publisher)
+		}
+		pub = req.App.Publisher
+	}
+	if req.Site != nil {
+		if req.Site.Publisher == nil {
+			req.Site.Publisher = new(openrtb.Publisher)
+		}
+		pub = req.Site.Publisher
+	}
+
+	if pub.ID == "" {
+		// For amp requests, the publisher ID could be sent via the account
+		// query string
+		if acc := urlValues.Get("account"); acc != "" && acc != "ACCOUNT_ID" {
+			pub.ID = acc
+		}
+	}
 }

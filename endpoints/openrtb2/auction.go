@@ -139,11 +139,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	setEffectivePubID(req, false, r.URL.Query())
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 		labels.RType = pbsmetrics.ReqTypeORTB2App
-		labels.PubID = req.App.Publisher.ID
+		labels.PubID = getAccountID(req.App.Publisher)
 	} else { //req.Site != nil
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -151,7 +150,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		labels.PubID = req.Site.Publisher.ID
+		labels.PubID = getAccountID(req.Site.Publisher)
 	}
 
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
@@ -1289,33 +1288,21 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 	return rc
 }
 
-// Sets the effective publisher ID
-func setEffectivePubID(req *openrtb.BidRequest, isAmp bool, urlValues url.Values) {
-	var pub *openrtb.Publisher
-	if req.App != nil {
-		if req.App.Publisher == nil {
-			req.App.Publisher = new(openrtb.Publisher)
+// Returns the account ID for the request
+func getAccountID(pub *openrtb.Publisher) string {
+	if pub != nil {
+		if pub.Ext != nil {
+			var pubExt openrtb_ext.ExtPublisher
+			err := json.Unmarshal(pub.Ext, &pubExt)
+			if err == nil && pubExt.Prebid != nil && pubExt.Prebid.ParentAccount != nil && *pubExt.Prebid.ParentAccount != "" {
+				return *pubExt.Prebid.ParentAccount
+			}
 		}
-		pub = req.App.Publisher
-	}
-	if req.Site != nil {
-		if req.Site.Publisher == nil {
-			req.Site.Publisher = new(openrtb.Publisher)
-		}
-		pub = req.Site.Publisher
-	}
-
-	if pub.ID == "" && isAmp {
-		// For amp requests, the publisher ID could be sent via the account
-		// query string
-		if acc := urlValues.Get("account"); acc != "" && acc != "ACCOUNT_ID" {
-			pub.ID = acc
+		if pub.ID != "" {
+			return pub.ID
 		}
 	}
-
-	if pub.ID == "" {
-		pub.ID = pbsmetrics.PublisherUnknown
-	}
+	return pbsmetrics.PublisherUnknown
 }
 
 func validateAccount(cfg *config.Configuration, pubID string) error {

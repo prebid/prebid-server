@@ -1042,3 +1042,84 @@ func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool,
 
 	return json.Marshal(bidRequest)
 }
+
+func TestSetEffectiveAmpPubID(t *testing.T) {
+	testPubID := "test-pub"
+	testURLValues := url.Values{}
+	testURLValues.Add("account", testPubID)
+
+	testCases := []struct {
+		req           *openrtb.BidRequest
+		urlValues     url.Values
+		expectedPubID string
+		description   string
+	}{
+		{
+			req: &openrtb.BidRequest{
+				App: &openrtb.App{
+					Publisher: nil,
+				},
+			},
+			expectedPubID: "",
+			description:   "No publisher ID provided",
+		},
+		{
+			req: &openrtb.BidRequest{
+				App: &openrtb.App{
+					Publisher: &openrtb.Publisher{
+						ID: testPubID,
+					},
+				},
+			},
+			expectedPubID: testPubID,
+			description:   "Publisher ID present in req.App.Publisher.ID",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: &openrtb.Publisher{
+						ID: testPubID,
+					},
+				},
+			},
+			expectedPubID: testPubID,
+			description:   "Publisher ID present in req.Site.Publisher.ID",
+		},
+		{
+			req: &openrtb.BidRequest{
+				App: &openrtb.App{
+					Publisher: &openrtb.Publisher{
+						ID: "",
+					},
+				},
+			},
+			urlValues:     testURLValues,
+			expectedPubID: testPubID,
+			description:   "Publisher ID present in account query parameter",
+		},
+		{
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: &openrtb.Publisher{
+						ID: "",
+					},
+				},
+			},
+			expectedPubID: "",
+			description:   "req.Site.Publisher present but ID set to empty string",
+		},
+	}
+
+	for _, test := range testCases {
+		setEffectiveAmpPubID(test.req, test.urlValues)
+		if test.req.Site != nil {
+			assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
+				"should return the expected Publisher ID for test case: %s", test.description)
+		} else {
+			assert.Equal(t, test.expectedPubID, test.req.App.Publisher.ID,
+				"should return the expected Publisher ID for test case: %s", test.description)
+		}
+	}
+
+	fmt.Println("Ran tests")
+}

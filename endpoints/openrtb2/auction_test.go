@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -1113,96 +1112,6 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'unknownbidder' has been disabled."}}, errs)
 }
 
-func TestSetEffectivePubID(t *testing.T) {
-	testPubID := "test-pub"
-	testPubExt := openrtb_ext.ExtPublisher{
-		Prebid: &openrtb_ext.ExtPublisherPrebid{
-			ParentAccount: &testPubID,
-		},
-	}
-	testPubExtJSON, err := json.Marshal(testPubExt)
-	assert.NoError(t, err)
-	testURLValues := url.Values{}
-	testURLValues.Add("account", testPubID)
-
-	testCases := []struct {
-		req           *openrtb.BidRequest
-		urlValues     url.Values
-		isAmp         bool
-		expectedPubID string
-		description   string
-	}{
-		{
-			req: &openrtb.BidRequest{
-				App: &openrtb.App{
-					Publisher: nil,
-				},
-			},
-			expectedPubID: pbsmetrics.PublisherUnknown,
-			description:   "No publisher ID provided",
-		},
-		{
-			req: &openrtb.BidRequest{
-				App: &openrtb.App{
-					Publisher: &openrtb.Publisher{
-						ID: testPubID,
-					},
-				},
-			},
-			expectedPubID: testPubID,
-			description:   "Publisher ID present in req.App.Publisher.ID",
-		},
-		{
-			req: &openrtb.BidRequest{
-				Site: &openrtb.Site{
-					Publisher: &openrtb.Publisher{
-						ID: testPubID,
-					},
-				},
-			},
-			expectedPubID: testPubID,
-			description:   "Publisher ID present in req.Site.Publisher.ID",
-		},
-		{
-			req: &openrtb.BidRequest{
-				App: &openrtb.App{
-					Publisher: &openrtb.Publisher{
-						ID:  "",
-						Ext: testPubExtJSON,
-					},
-				},
-			},
-			isAmp:         true,
-			urlValues:     testURLValues,
-			expectedPubID: testPubID,
-			description:   "Publisher ID present in account query parameter for an amp req",
-		},
-		{
-			req: &openrtb.BidRequest{
-				Site: &openrtb.Site{
-					Publisher: &openrtb.Publisher{
-						ID: "",
-					},
-				},
-			},
-			expectedPubID: pbsmetrics.PublisherUnknown,
-			description:   "req.Site.Publisher present but ID set to empty string",
-		},
-	}
-
-	for _, test := range testCases {
-		setEffectivePubID(test.req, test.isAmp, test.urlValues)
-		if test.req.Site != nil {
-			assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
-				"should return the expected Publisher ID for test case: %s", test.description)
-		} else {
-			assert.Equal(t, test.expectedPubID, test.req.App.Publisher.ID,
-				"should return the expected Publisher ID for test case: %s", test.description)
-		}
-
-	}
-}
-
 func validRequest(t *testing.T, filename string) string {
 	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
 	if err != nil {
@@ -1348,6 +1257,62 @@ func TestSChainInvalid(t *testing.T) {
 
 	expectedError := fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
+}
+
+func TestGetAccountID(t *testing.T) {
+	testPubID := "test-pub"
+	testParentAccount := "test-account"
+	testPubExt := openrtb_ext.ExtPublisher{
+		Prebid: &openrtb_ext.ExtPublisherPrebid{
+			ParentAccount: &testParentAccount,
+		},
+	}
+	testPubExtJSON, err := json.Marshal(testPubExt)
+	assert.NoError(t, err)
+
+	testCases := []struct {
+		pub           *openrtb.Publisher
+		expectedPubID string
+		description   string
+	}{
+		{
+			pub: &openrtb.Publisher{
+				ID:  testPubID,
+				Ext: testPubExtJSON,
+			},
+			expectedPubID: testParentAccount,
+			description:   "Publisher.ID and Publisher.Ext.Prebid.ParentAccount both present",
+		},
+		{
+			pub: &openrtb.Publisher{
+				ID:  "",
+				Ext: testPubExtJSON,
+			},
+			expectedPubID: testParentAccount,
+			description:   "Only Publisher.Ext.Prebid.ParentAccount present",
+		},
+		{
+			pub: &openrtb.Publisher{
+				ID: testPubID,
+			},
+			expectedPubID: testPubID,
+			description:   "Only Publisher.ID present",
+		},
+		{
+			pub:           &openrtb.Publisher{},
+			expectedPubID: pbsmetrics.PublisherUnknown,
+			description:   "Neither Publisher.ID or Publisher.Ext.Prebid.ParentAccount present",
+		},
+		{
+			pub:           nil,
+			expectedPubID: pbsmetrics.PublisherUnknown,
+			description:   "Publisher is nil",
+		},
+	}
+
+	for _, test := range testCases {
+		getAccountID(test.pub)
+	}
 }
 
 func TestSanitizeRequest(t *testing.T) {
