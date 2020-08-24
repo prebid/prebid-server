@@ -9,5 +9,6 @@
       "description": "A tracking id used to identify GumGum zone.",
       "minLength": 8
     }
-  }
+  },
+  "required": ["zone"]
 }
