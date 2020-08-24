@@ -367,7 +367,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	if isVIDEO == 1 {
 		podImps := groupByPods(imps)
 
-		requests := make([]*adapters.RequestData, 0, 0)
+		requests := make([]*adapters.RequestData, 0, len(podImps))
 		for _, podImps := range podImps {
 			reqExt.Appnexus.AdPodId = generatePodId()
 
@@ -396,7 +396,7 @@ func groupByPods(imps []openrtb.Imp) map[string]([]openrtb.Imp) {
 	return podImps
 }
 
-func requestHelper(request *openrtb.BidRequest, requestExtension appnexusReqExt, errs []error) {
+func marshalAndSetRequestExt(request *openrtb.BidRequest, requestExtension appnexusReqExt, errs []error) {
 	var err error
 	request.Ext, err = json.Marshal(requestExtension)
 	if err != nil {
@@ -419,7 +419,7 @@ func splitRequests(imps []openrtb.Imp, request *openrtb.BidRequest, requestExten
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	requestHelper(request, requestExtension, errs)
+	marshalAndSetRequestExt(request, requestExtension, errs)
 
 	for impsLeft {
 

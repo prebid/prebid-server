@@ -61,20 +61,20 @@ func TestVideoSinglePod(t *testing.T) {
 
 	result, err := a.MakeRequests(&req, &reqInfo)
 
-	assert.Equal(t, len(err), 0, "Errors array should be empty")
-	assert.Equal(t, len(result), 1, "Only one request should be returned")
+	assert.Empty(t, err, "Errors array should be empty")
+	assert.Len(t, result, 1, "Only one request should be returned")
 
 	var error error
 	var reqData *openrtb.BidRequest
 	error = json.Unmarshal(result[0].Body, &reqData)
-	assert.Nil(t, error, "Response body unmarshalling error should be nil")
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
 
 	var reqDataExt *appnexusReqExt
 	error = json.Unmarshal(reqData.Ext, &reqDataExt)
-	assert.Nil(t, error, "Response ext unmarshalling error should be nil")
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
 	regMatch, matchErr := regexp.Match(`[0-9]19`, []byte(reqDataExt.Appnexus.AdPodId))
-	assert.Nil(t, matchErr, "Regex match error should be nil")
+	assert.NoError(t, matchErr, "Regex match error should be nil")
 	assert.True(t, regMatch, "AdPod id doesn't present in Appnexus extension or has incorrect format")
 }
 
@@ -111,27 +111,27 @@ func TestVideoSinglePodManyImps(t *testing.T) {
 
 	res, err := a.MakeRequests(&req, &reqInfo)
 
-	assert.Equal(t, len(err), 0, "Errors array should be empty")
-	assert.Equal(t, len(res), 2, "Two requests should be returned")
+	assert.Empty(t, err, "Errors array should be empty")
+	assert.Len(t, res, 2, "Two requests should be returned")
 
 	var error error
 	var reqData1 *openrtb.BidRequest
 	error = json.Unmarshal(res[0].Body, &reqData1)
-	assert.Equal(t, error, nil, "Response body unmarshalling error should be nil")
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
 
 	var reqDataExt1 *appnexusReqExt
 	error = json.Unmarshal(reqData1.Ext, &reqDataExt1)
-	assert.Equal(t, error, nil, "Response ext unmarshalling error should be nil")
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
 	adPodId1 := reqDataExt1.Appnexus.AdPodId
 
 	var reqData2 *openrtb.BidRequest
 	error = json.Unmarshal(res[1].Body, &reqData2)
-	assert.Equal(t, error, nil, "Response body unmarshalling error should be nil")
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
 
 	var reqDataExt2 *appnexusReqExt
 	error = json.Unmarshal(reqData2.Ext, &reqDataExt2)
-	assert.Equal(t, error, nil, "Response ext unmarshalling error should be nil")
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
 	adPodId2 := reqDataExt2.Appnexus.AdPodId
 
@@ -163,27 +163,27 @@ func TestVideoTwoPods(t *testing.T) {
 
 	res, err := a.MakeRequests(&req, &reqInfo)
 
-	assert.Equal(t, len(err), 0, "Errors array should be empty")
-	assert.Equal(t, len(res), 2, "Two request should be returned")
+	assert.Empty(t, err, "Errors array should be empty")
+	assert.Len(t, res, 2, "Two request should be returned")
 
 	var error error
 	var reqData1 *openrtb.BidRequest
 	error = json.Unmarshal(res[0].Body, &reqData1)
-	assert.Equal(t, error, nil, "Response body unmarshalling error should be nil")
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
 
 	var reqDataExt1 *appnexusReqExt
 	error = json.Unmarshal(reqData1.Ext, &reqDataExt1)
-	assert.Equal(t, error, nil, "Response ext unmarshalling error should be nil")
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
 	adPodId1 := reqDataExt1.Appnexus.AdPodId
 
 	var reqData2 *openrtb.BidRequest
 	error = json.Unmarshal(res[1].Body, &reqData2)
-	assert.Equal(t, error, nil, "Response body unmarshalling error should be nil")
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
 
 	var reqDataExt2 *appnexusReqExt
 	error = json.Unmarshal(reqData2.Ext, &reqDataExt2)
-	assert.Equal(t, error, nil, "Response ext unmarshalling error should be nil")
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
 	adPodId2 := reqDataExt2.Appnexus.AdPodId
 
@@ -227,33 +227,33 @@ func TestVideoTwoPodsManyImps(t *testing.T) {
 
 	res, err := a.MakeRequests(&req, &reqInfo)
 
-	assert.Equal(t, len(err), 0, "Errors array should be empty")
-	assert.Equal(t, len(res), 3, "Three requests should be returned")
+	assert.Len(t, err, 0, "Errors array should be empty")
+	assert.Len(t, res, 3, "Three requests should be returned")
 
 	var error error
 	var reqData1 *openrtb.BidRequest
 	error = json.Unmarshal(res[0].Body, &reqData1)
-	assert.Equal(t, error, nil, "Response body unmarshalling error should be nil")
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
 
 	var reqDataExt1 *appnexusReqExt
 	error = json.Unmarshal(reqData1.Ext, &reqDataExt1)
-	assert.Equal(t, error, nil, "Response ext unmarshalling error should be nil")
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
 	var reqData2 *openrtb.BidRequest
 	error = json.Unmarshal(res[1].Body, &reqData2)
-	assert.Equal(t, error, nil, "Response body unmarshalling error should be nil")
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
 
 	var reqDataExt2 *appnexusReqExt
 	error = json.Unmarshal(reqData2.Ext, &reqDataExt2)
-	assert.Equal(t, error, nil, "Response ext unmarshalling error should be nil")
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
 	var reqData3 *openrtb.BidRequest
 	error = json.Unmarshal(res[2].Body, &reqData3)
-	assert.Equal(t, error, nil, "Response body unmarshalling error should be nil")
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
 
 	var reqDataExt3 *appnexusReqExt
 	error = json.Unmarshal(reqData3.Ext, &reqDataExt3)
-	assert.Equal(t, error, nil, "Response ext unmarshalling error should be nil")
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
 	adPodId1 := reqDataExt1.Appnexus.AdPodId
 	adPodId2 := reqDataExt2.Appnexus.AdPodId
@@ -264,7 +264,7 @@ func TestVideoTwoPodsManyImps(t *testing.T) {
 	podIds[adPodId2] = podIds[adPodId2] + 1
 	podIds[adPodId3] = podIds[adPodId3] + 1
 
-	assert.Equal(t, len(podIds), 2, "Incorrect number of unique pod ids")
+	assert.Len(t, podIds, 2, "Incorrect number of unique pod ids")
 }
 
 // ----------------------------------------------------------------------------
