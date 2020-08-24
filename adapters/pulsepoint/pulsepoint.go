@@ -55,21 +55,21 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 				Message: err.Error(),
 			}
 		}
-		// if params.PublisherId == 0 {
-		// 	return nil, &errortypes.BadInput{
-		// 		Message: "Missing PublisherId param cp",
-		// 	}
-		// }
-		// if params.TagId == 0 {
-		// 	return nil, &errortypes.BadInput{
-		// 		Message: "Missing TagId param ct",
-		// 	}
-		// }
-		// if params.AdSize == "" {
-		// 	return nil, &errortypes.BadInput{
-		// 		Message: "Missing AdSize param cf",
-		// 	}
-		// }
+		if params.PublisherId == 0 {
+			return nil, &errortypes.BadInput{
+				Message: "Missing PublisherId param cp",
+			}
+		}
+		if params.TagId == 0 {
+			return nil, &errortypes.BadInput{
+				Message: "Missing TagId param ct",
+			}
+		}
+		if params.AdSize == "" {
+			return nil, &errortypes.BadInput{
+				Message: "Missing AdSize param cf",
+			}
+		}
 		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
 		if len(ppReq.Imp) <= i {
 			break
@@ -92,25 +92,23 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 				if err == nil {
 					ppReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
 				} else {
-					// return nil, &errortypes.BadInput{
-					// 	Message: fmt.Sprintf("Invalid Width param %s", size[0]),
-					// }
+					return nil, &errortypes.BadInput{
+						Message: fmt.Sprintf("Invalid Width param %s", size[0]),
+					}
 				}
 				height, err := strconv.Atoi(size[1])
 				if err == nil {
 					ppReq.Imp[i].Banner.H = openrtb.Uint64Ptr(uint64(height))
 				} else {
-					// return nil, &errortypes.BadInput{
-					// 	Message: fmt.Sprintf("Invalid Height param %s", size[1]),
-					// }
+					return nil, &errortypes.BadInput{
+						Message: fmt.Sprintf("Invalid Height param %s", size[1]),
+					}
 				}
 			} else {
-				// return nil, &errortypes.BadInput{
-				// 	Message: fmt.Sprintf("Invalid AdSize param %s", params.AdSize),
-				// }
+				return nil, &errortypes.BadInput{
+					Message: fmt.Sprintf("Invalid AdSize param %s", params.AdSize),
+				}
 			}
-		} else if ppReq.Imp[i].Video != nil {
-
 		}
 	}
 	reqJSON, err := json.Marshal(ppReq)
@@ -123,7 +121,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		bidder.Debug = append(bidder.Debug, debug)
 	}
 
-	httpReq, err := http.NewRequest("POST", "http://rts.lga.contextweb.com/rt-seller/bid/openrtb/playwire", bytes.NewBuffer(reqJSON))
+	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
