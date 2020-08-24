@@ -60,6 +60,9 @@ import (
 	"github.com/prebid/prebid-server/adapters/yieldmo"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+
+	"github.com/prebid/adapters/s2s_pulsepoint"
+	"github.com/prebid/adapters/s2s_gumgum"
 )
 
 // The newAdapterMap function is segregated to its own file to make it a simple and clean location for each Adapter
@@ -124,6 +127,8 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderVisx:             visx.NewVisxBidder(cfg.Adapters[string(openrtb_ext.BidderVisx)].Endpoint),
 		openrtb_ext.BidderVrtcal:           vrtcal.NewVrtcalBidder(cfg.Adapters[string(openrtb_ext.BidderVrtcal)].Endpoint),
 		openrtb_ext.BidderYieldmo:          yieldmo.NewYieldmoBidder(cfg.Adapters[string(openrtb_ext.BidderYieldmo)].Endpoint),
+		openrtb_ext.BidderS2SPulsepoint:    s2s_pulsepoint.NewGumGumBidder(cfg.Adapters[string(openrtb_ext.BidderS2SPulsepoint)].Endpoint),
+		openrtb_ext.BidderS2SGumGum:        s2s_gumgum.NewGumGumBidder(cfg.Adapters[string(openrtb_ext.BidderS2SGumGum)].Endpoint),
 	}
 
 	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{
