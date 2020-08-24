@@ -10,5 +10,5 @@ import (
 const testsDir = "liftofftest"
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, testsDir, NewLiftoffBidder(http.DefaultClient, "http://liftoff.com/givemeads", "xuser", "xpass", "http://liftoff-us-east.com/givemeads", "http://liftoff-eu.com/givemeads", "http://liftoff-apac.com/givemeads"))
+	adapterstest.RunJSONBidderTest(t, testsDir, NewLiftoffBidder(http.DefaultClient, "http://liftoff.com/givemeads", "http://liftoff-us-east.com/givemeads", "http://liftoff-eu.com/givemeads", "http://liftoff-apac.com/givemeads"))
 }
