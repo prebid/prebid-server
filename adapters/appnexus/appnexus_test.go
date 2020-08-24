@@ -227,7 +227,7 @@ func TestVideoTwoPodsManyImps(t *testing.T) {
 
 	res, err := a.MakeRequests(&req, &reqInfo)
 
-	assert.Len(t, err, 0, "Errors array should be empty")
+	assert.Empty(t, err, "Errors array should be empty")
 	assert.Len(t, res, 3, "Three requests should be returned")
 
 	var error error
