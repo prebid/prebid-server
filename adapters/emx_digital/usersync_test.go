@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEMXDigitalSyncer(t *testing.T) {
+func TestEMXDigitalSyncerTCF1(t *testing.T) {
 	syncURL := "https://cs.emxdgt.com/um?ssp=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect=localhost%2Fsetuid%3Fbidder%3Demx_digital%26uid%3D%24UID"
 	syncURLTemplate := template.Must(
 		template.New("sync-template").Parse(syncURL),
