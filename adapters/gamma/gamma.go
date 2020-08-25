@@ -16,6 +16,7 @@ import (
 type GammaAdapter struct {
 	URI string
 }
+
 type gammaBid struct {
 	openrtb.Bid        //base
 	VastXML     string `json:"vastXml,omitempty"`
@@ -247,11 +248,12 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	}
 
 	//(Section 7.1 No-Bid Signaling)
-	if gammaResp.SeatBid == nil || len(gammaResp.SeatBid) == 0 {
+	if len(gammaResp.SeatBid) == 0 {
 		return nil, nil
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(gammaResp.SeatBid[0].Bid))
+	errs := make([]error, 0, len(gammaResp.SeatBid[0].Bid))
 	for _, sb := range gammaResp.SeatBid {
 		for i := range sb.Bid {
 			mediaType := getMediaTypeForImp(gammaResp.ID, internalRequest.Imp)
@@ -262,13 +264,14 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 					BidType: mediaType,
 				})
 			} else {
-				return nil, []error{&errortypes.BadServerResponse{
+				err := &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Missing Ad Markup. Run with request.debug = 1 for more info"),
-				}}
+				}
+				errs = append(errs, err)
 			}
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 //Adding header fields to request header
