@@ -1619,6 +1619,78 @@ func TestBidRejectionErrors(t *testing.T) {
 	}
 }
 
+func TestCategoryMappingTwoBiddersOneBidEachNoCategorySamePrice(t *testing.T) {
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	requestExt := newExtRequestTranslateCategories(nil)
+
+	targData := &targetData{
+		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		includeWinners:   true,
+	}
+
+	requestExt.Prebid.Targeting.DurationRangeSec = []int{30}
+	requestExt.Prebid.Targeting.IncludeBrandCategory.WithCategory = false
+
+	cats1 := []string{"IAB1-3"}
+	cats2 := []string{"IAB1-4"}
+
+	bidApn1 := openrtb.Bid{ID: "bid_idApn1", ImpID: "imp_idApn1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bidApn2 := openrtb.Bid{ID: "bid_idApn2", ImpID: "imp_idApn2", Price: 10.0000, Cat: cats2, W: 1, H: 1}
+
+	bid1_Apn1 := pbsOrtbBid{&bidApn1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_Apn2 := pbsOrtbBid{&bidApn2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+
+	innerBidsApn1 := []*pbsOrtbBid{
+		&bid1_Apn1,
+	}
+
+	innerBidsApn2 := []*pbsOrtbBid{
+		&bid1_Apn2,
+	}
+
+	for i := 1; i < 10; i++ {
+		adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
+
+		seatBidApn1 := pbsOrtbSeatBid{innerBidsApn1, "USD", nil, nil}
+		bidderNameApn1 := openrtb_ext.BidderName("appnexus1")
+
+		seatBidApn2 := pbsOrtbSeatBid{innerBidsApn2, "USD", nil, nil}
+		bidderNameApn2 := openrtb_ext.BidderName("appnexus2")
+
+		adapterBids[bidderNameApn1] = &seatBidApn1
+		adapterBids[bidderNameApn2] = &seatBidApn2
+
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
+
+		assert.NoError(t, err, "Category mapping error should be empty")
+		assert.Len(t, rejections, 1, "There should be 1 bid rejection message")
+		assert.Regexpf(t, regexp.MustCompile(`bid rejected \[bid ID: bid_idApn(1|2)\] reason: Bid was deduplicated`), rejections[0], "Rejection message did not match expected")
+		assert.Len(t, bidCategory, 1, "Bidders category mapping should have only one element")
+
+		var resultBid string
+		for bidId := range bidCategory {
+			resultBid = bidId
+		}
+
+		if resultBid == "bid_idApn1" {
+			assert.Nil(t, seatBidApn2.bids, "Appnexus_2 seat bid should not have any bids back")
+			assert.Len(t, seatBidApn1.bids, 1, "Appnexus_1 seat bid should have only one back")
+
+		} else {
+			assert.Nil(t, seatBidApn1.bids, "Appnexus_1 seat bid should not have any bids back")
+			assert.Len(t, seatBidApn2.bids, 1, "Appnexus_2 seat bid should have only one back")
+
+		}
+
+	}
+
+}
+
 func TestUpdateRejections(t *testing.T) {
 	rejections := []string{}
 
