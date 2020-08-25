@@ -150,7 +150,7 @@ type BidRequestVideo struct {
 	// Type:
 	//   boolean, optional
 	//  Flag indicating if the bidder name will be added to the hb_pb_cat_dur. Default is false.
-	AppendBidderNames bool `json:"AppendBidderNames,omitempty"`
+	AppendBidderNames bool `json:"appendbiddernames,omitempty"`
 }
 
 type PodConfig struct {
