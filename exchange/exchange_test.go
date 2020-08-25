@@ -1666,10 +1666,10 @@ func TestCategoryMappingTwoBiddersOneBidEachNoCategorySamePrice(t *testing.T) {
 
 	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
 
-	assert.Equal(t, nil, err, "Category mapping error should be empty")
-	assert.Equal(t, 1, len(rejections), "There should be 1 bid rejection message")
+	assert.NoError(t, err, "Category mapping error should be empty")
+	assert.Len(t, rejections, 1, "There should be 1 bid rejection message")
 	assert.Regexpf(t, regexp.MustCompile(`bid rejected \[bid ID: bid_idApn(1|2)\] reason: Bid was deduplicated`), rejections[0], "Rejection message did not match expected")
-	assert.Equal(t, 1, len(bidCategory), "Bidders category mapping should have only one element")
+	assert.Len(t, bidCategory, 1, "Bidders category mapping should have only one element")
 
 	var resultBid string
 	for bidId := range bidCategory {
@@ -1678,11 +1678,11 @@ func TestCategoryMappingTwoBiddersOneBidEachNoCategorySamePrice(t *testing.T) {
 
 	if resultBid == "bid_idApn1" {
 		assert.Nil(t, seatBidApn2.bids, "Appnexus_2 seat bid should not have any bids back")
-		assert.Equal(t, 1, len(seatBidApn1.bids), "Appnexus_1 seat bid should have only one back")
+		assert.Len(t, seatBidApn1.bids, 1, "Appnexus_1 seat bid should have only one back")
 
 	} else {
 		assert.Nil(t, seatBidApn1.bids, "Appnexus_1 seat bid should not have any bids back")
-		assert.Equal(t, 1, len(seatBidApn2.bids), "Appnexus_2 seat bid should have only one back")
+		assert.Len(t, seatBidApn2.bids, 1, "Appnexus_2 seat bid should have only one back")
 
 	}
 }
