@@ -211,7 +211,7 @@ func convertBid(gBid gammaBid, mediaType openrtb_ext.BidType) *openrtb.Bid {
 			if len(gBid.VastURL) > 0 {
 				bid.NURL = gBid.VastURL
 			}
-			bid.AdM = url.QueryEscape(gBid.VastXML)
+			bid.AdM = gBid.VastXML
 		} else {
 			return nil
 		}
