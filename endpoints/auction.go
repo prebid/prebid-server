@@ -23,8 +23,6 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/privacy"
-	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -190,20 +188,20 @@ func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLab
 	}
 }
 
-func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprPrivacyPolicy gdprPolicy.Policy) bool {
-	switch gdprPrivacyPolicy.Signal {
+func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, privacyPolicies usersync.PrivacyPolicies) bool {
+	switch privacyPolicies.GDPRSignal {
 	case "0":
 		return true
 	case "1":
-		if gdprPrivacyPolicy.Consent == "" {
+		if privacyPolicies.GDPRConsent == "" {
 			return false
 		}
 		fallthrough
 	default:
-		if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, gdprPrivacyPolicy.Consent); !canSync || err != nil {
+		if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, privacyPolicies.GDPRConsent); !canSync || err != nil {
 			return false
 		}
-		canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, gdprPrivacyPolicy.Consent)
+		canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, privacyPolicies.GDPRConsent)
 		return canSync && err == nil
 	}
 }
@@ -510,13 +508,11 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 	uid, _, _ := req.Cookie.GetUID(syncer.FamilyName())
 	if uid == "" {
 		bidder.NoCookie = true
-		privacyPolicies := privacy.Policies{
-			GDPR: gdprPolicy.Policy{
-				Signal:  req.ParseGDPR(),
-				Consent: req.ParseConsent(),
-			},
+		privacyPolicies := usersync.PrivacyPolicies{
+			GDPRSignal:  req.ParseGDPR(),
+			GDPRConsent: req.ParseConsent(),
 		}
-		if a.shouldUsersync(*ctx, openrtb_ext.BidderName(syncerCode), privacyPolicies.GDPR) {
+		if a.shouldUsersync(*ctx, openrtb_ext.BidderName(syncerCode), privacyPolicies) {
 			syncInfo, err := syncer.GetUsersyncInfo(privacyPolicies)
 			if err == nil {
 				bidder.UsersyncInfo = syncInfo

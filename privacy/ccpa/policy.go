@@ -6,28 +6,29 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
 )
 
-// Policy represents the CCPA regulatory information from the OpenRTB bid request.
+// Policy represents the CCPA regulatory information from an OpenRTB bid request.
 type Policy struct {
 	Consent       string
 	NoSaleBidders []string
 }
 
-// ReadPolicy extracts the CCPA regulatory information from the OpenRTB bid request.
-func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
+// ReadFromRequest extracts the CCPA regulatory information from an OpenRTB bid request.
+func ReadFromRequest(req *openrtb.BidRequest) (Policy, error) {
 	var consent string
 	var noSaleBidders []string
 
 	if req == nil {
-		return Policy{}, nil
+		return PolicyFromRequest{}, nil
 	}
 
 	// Read consent from request.regs.ext
 	if req.Regs != nil && len(req.Regs.Ext) > 0 {
 		var ext openrtb_ext.ExtRegs
 		if err := json.Unmarshal(req.Regs.Ext, &ext); err != nil {
-			return Policy{}, err
+			return PolicyFromRequest{}, err
 		}
 		consent = ext.USPrivacy
 	}
@@ -36,42 +37,54 @@ func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
 	if len(req.Ext) > 0 {
 		var ext openrtb_ext.ExtRequest
 		if err := json.Unmarshal(req.Ext, &ext); err != nil {
-			return Policy{}, err
+			return PolicyFromRequest{}, err
 		}
 		noSaleBidders = ext.Prebid.NoSale
 	}
 
-	return Policy{consent, noSaleBidders}, nil
-}
-
-// Clone makes a deep copy the Policy.
-func (p Policy) Clone() Policy {
-	if p.NoSaleBidders != nil {
-		noSaleBiddersCopy := make([]string, len(p.NoSaleBidders))
-		copy(noSaleBiddersCopy, p.NoSaleBidders)
-		p.NoSaleBidders = noSaleBiddersCopy
-	}
-	return p
+	return PolicyFromRequest{consent, noSaleBidders}, nil
 }
 
 // Write mutates an OpenRTB bid request with the CCPA regulatory information.
-func (p Policy) Write(req *openrtb.BidRequest) (err error) {
+func (p PolicyFromRequest) Write(req *openrtb.BidRequest) error {
 	if req == nil {
-		return
+		return nil
 	}
 
 	regs, err := buildRegs(p.Consent, req.Regs)
 	if err != nil {
-		return
+		return err
 	}
 	ext, err := buildExt(p.NoSaleBidders, req.Ext)
 	if err != nil {
-		return
+		return err
 	}
 
 	req.Regs = regs
 	req.Ext = ext
-	return
+	return nil
+}
+
+type consentWriter struct {
+	consent string
+}
+
+func (c consentWriter) Write(req *openrtb.BidRequest) error {
+	if req == nil {
+		return nil
+	}
+
+	regs, err := buildRegs(c.consent, req.Regs)
+	if err != nil {
+		return err
+	}
+	req.Regs = regs
+
+	return nil
+}
+
+func NewConsentWriter(consent string) privacy.PolicyWriter {
+	return consentWriter{consent}
 }
 
 func buildRegs(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
@@ -123,6 +136,7 @@ func buildRegsWrite(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
 	if err := json.Unmarshal(regs.Ext, &extMap); err != nil {
 		return nil, err
 	}
+
 	extMap["us_privacy"] = consent
 	return marshalRegsExt(*regs, extMap)
 }
@@ -203,5 +217,17 @@ func buildExtWrite(noSaleBidders []string, ext json.RawMessage) (json.RawMessage
 
 	prebidExt["nosale"] = noSaleBidders
 	return json.Marshal(extMap)
+}
+
+// last bit, separate consent into it's own concept?
+type ConsentWriter struct {
+	Consent string
+}
+
+// other languagds have this. but not go.
+
+func (ConsentWriter) Write(req) {
 
 }
+
+// all will be good if i can create a ccpa consent writer

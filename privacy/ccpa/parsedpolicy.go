@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/errortypes"
 )
 
 const (
@@ -23,40 +23,43 @@ const (
 
 const allBiddersMarker = "*"
 
-// ParsedPolicy represents parsed and validated CCPA regulatory information from the OpenRTB bid request.
+// ParsedPolicy represents parsed and validated CCPA regulatory information. Use this object
+// to make enforcement decisions.
 type ParsedPolicy struct {
-	policy                Policy
-	consentOptOut         bool
+	consentSpecified      bool
+	consentOptOutSale     bool
 	noSaleForAllBidders   bool
 	noSaleSpecificBidders map[string]struct{}
 }
 
-// Write mutates an OpenRTB bid request with the CCPA regulatory information.
-func (p ParsedPolicy) Write(req *openrtb.BidRequest) error {
-	return p.policy.Write(req)
-}
-
-// Parse returns a parsed and validated ParsedPolicy which can be used for enforcement checks.
-func (p Policy) Parse(validBidders map[string]struct{}) (ParsedPolicy, error) {
+// Parse returns a parsed and validated ParsedPolicy intended for use in enforcement decisions.
+func (p PolicyFromRequest) Parse(validBidders map[string]struct{}) (ParsedPolicy, error) {
 	consentOptOut, err := parseConsent(p.Consent)
 	if err != nil {
-		return ParsedPolicy{}, fmt.Errorf("request.regs.ext.us_privacy is invalid. %s", err.Error())
+		msg := fmt.Sprintf("request.regs.ext.us_privacy is invalid: %s", err.Error())
+		return ParsedPolicy{}, &errortypes.InvalidPrivacyConsent{Message: msg}
 	}
 
 	noSaleForAllBidders, noSaleSpecificBidders, err := parseNoSaleBidders(p.NoSaleBidders, validBidders)
 	if err != nil {
-		return ParsedPolicy{}, fmt.Errorf("request.ext.prebid.nosale is invalid. %s", err.Error())
+		return ParsedPolicy{}, fmt.Errorf("request.ext.prebid.nosale is invalid: %s", err.Error())
 	}
 
 	return ParsedPolicy{
-		policy:                p.Clone(),
-		consentOptOut:         consentOptOut,
+		consentSpecified:      p.Consent != "",
+		consentOptOutSale:     consentOptOut,
 		noSaleForAllBidders:   noSaleForAllBidders,
 		noSaleSpecificBidders: noSaleSpecificBidders,
 	}, nil
 }
 
-func parseConsent(consent string) (consentOptOut bool, err error) {
+// ValidateConsent returns true if the consent string is empty or valid.
+func ValidateConsent(consent string) bool {
+	_, err := parseConsent(consent)
+	return err == nil
+}
+
+func parseConsent(consent string) (consentOptOutSale bool, err error) {
 	if consent == "" {
 		return false, nil
 	}
@@ -90,6 +93,8 @@ func parseConsent(consent string) (consentOptOut bool, err error) {
 }
 
 func parseNoSaleBidders(noSaleBidders []string, validBidders map[string]struct{}) (noSaleForAllBidders bool, noSaleSpecificBidders map[string]struct{}, err error) {
+	noSaleSpecificBidders = make(map[string]struct{})
+
 	if len(noSaleBidders) == 1 && noSaleBidders[0] == allBiddersMarker {
 		noSaleForAllBidders = true
 		return
@@ -97,7 +102,7 @@ func parseNoSaleBidders(noSaleBidders []string, validBidders map[string]struct{}
 
 	for _, bidder := range noSaleBidders {
 		if bidder == allBiddersMarker {
-			err = errors.New("err")
+			err = errors.New("can only specify all bidders if no other bidders are provided")
 			return
 		}
 
@@ -112,6 +117,11 @@ func parseNoSaleBidders(noSaleBidders []string, validBidders map[string]struct{}
 	return
 }
 
+// Specified returns true when consent is provided, as opposed to an empty string.
+func (p ParsedPolicy) Specified() bool {
+	return p.consentSpecified
+}
+
 func (p ParsedPolicy) isNoSaleForBidder(bidder string) bool {
 	if p.noSaleForAllBidders {
 		return true
@@ -123,15 +133,5 @@ func (p ParsedPolicy) isNoSaleForBidder(bidder string) bool {
 
 // ShouldEnforce returns true when the opt-out signal is explicitly detected.
 func (p ParsedPolicy) ShouldEnforce(bidder string) bool {
-	if p.isNoSaleForBidder(bidder) {
-		return false
-	}
-
-	return p.consentOptOut
+	return !p.isNoSaleForBidder(bidder) && p.consentOptOutSale
 }
-
-// p := ccpa.Read(req)
-// p.Clone()
-// p.Write() // amp query params -> p -> write
-// pp := p.Parse(bidders)
-// pp.ShouldEnforce(bidder)

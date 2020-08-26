@@ -76,9 +76,20 @@ func cleanOpenRTBRequests(ctx context.Context,
 	consent := extractConsent(orig)
 	ampGDPRException := (labels.RType == pbsmetrics.ReqTypeAMP) && gDPR.AMPException()
 
-	var ccpaPolicy ccpa.Policy
+	var ccpaPolicy ccpa.ParsedPolicy
 	if privacyConfig.CCPA.Enforce {
-		ccpaPolicy, _ = ccpa.ReadPolicy(orig)
+		policy, err := ccpa.ReadFromRequest(orig)
+		if err != nil {
+			errs = append(errs, err)
+			return
+		}
+
+		// buuild comvinarion of aliaes and built in bidders
+		ccpaPolicy, err = policy.Parse(nil)
+		if err != nil {
+			errs = append(errs, err)
+			return
+		}
 	}
 
 	var lmtPolicy lmt.Policy
@@ -92,7 +103,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		LMT:   lmtPolicy.ShouldEnforce(),
 	}
 
-	privacyLabels.CCPAProvided = ccpaPolicy.Value != ""
+	privacyLabels.CCPAProvided = ccpaPolicy.Value != "" // todo: add Specified helepr
 	privacyLabels.CCPAEnforced = privacyEnforcement.CCPA
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = privacyEnforcement.LMT
@@ -108,7 +119,6 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	// bidder level privacy policies
 	for bidder, bidReq := range requestsByBidder {
-
 		// CCPA
 		privacyEnforcement.CCPA = ccpaPolicy.ShouldEnforce(bidder.String())
 

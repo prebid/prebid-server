@@ -2,28 +2,25 @@ package privacy
 
 import (
 	"github.com/mxmCherry/openrtb"
-
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	"github.com/prebid/prebid-server/privacy/gdpr"
 )
 
+// PolicyWriter mutates an OpenRTB bid request with a policy's regulatory information.
 type PolicyWriter interface {
 	Write(req *openrtb.BidRequest) error
 }
 
-// ReadPolicyFromConsent inspects the consent string and returns a validated policy writer.
-func ReadPolicyFromConsent(consent string) (PolicyWriter, bool) {
-	if len(consent) == 0 {
-		return nil, false
-	}
+// NilPolicyWriter implements the PolicyWriter interface but performs no action.
+type NilPolicyWriter struct{}
 
-	if err := gdpr.ValidateConsent(consent); err == nil {
-		return gdpr.Policy{Consent: consent}, true
-	}
+func (NilPolicyWriter) Write(req *openrtb.BidRequest) error {
+	return nil
+}
 
-	if p, err := ccpa.Parse(ccpa.Policy{Consent: consent}, nil); err == nil {
-		return p, true
-	}
+// InvalidConsentError represents an error parsing or validating a consent string.
+type InvalidConsentError struct {
+	Message string
+}
 
-	return nil, false
+func (err *InvalidConsentError) Error() string {
+	return err.Message
 }

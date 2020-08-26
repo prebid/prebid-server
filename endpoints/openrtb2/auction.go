@@ -28,6 +28,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -303,55 +304,38 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
-		errL = append(errL, errors.New("request.site or request.app must be defined, but not both."))
-		return errL
+		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
 	if err := deps.validateSite(req.Site); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
 	if err := deps.validateApp(req.App); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
 	if err := validateUser(req.User, aliases); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
 	if err := validateRegs(req.Regs); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
-	if policy, err := ccpa.ReadPolicy(req); err != nil {
-		errL = append(errL, errL...)
-		return errL
-	} else if err := policy.Validate(); err != nil {
-		errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
+	if ccpaPolicy, err := ccpa.ReadFromRequest(req); err != nil {
+		return append(errL, errL...)
+	} else if _, err := ccpaPolicy.Parse(getValidBidders(aliases)); err == nil {
+		if _, isInvalidConsent := err.(*privacy.InvalidConsentError); isInvalidConsent {
+			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
 
-		policy.Value = ""
-		if err := policy.Write(req); err != nil {
-			errL = append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
-		errL = append(errL, err)
-		return errL
-	} else {
-		_, err := policy.Validate(); err != nil {
-			if err.ValueError != nil {
-				policy.Value = ""
-				if err := ccpaPolicy.Write(req); err != nil {
-					errL = append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
-				}
-				errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
+			// remove invalid consent from request
+			ccpaPolicy.Consent = ""
+			if err := ccpaPolicy.Write(req); err != nil {
+				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
 			}
-
-			if err.NoSaleBidderError != nil {
-				errL = append(errL, err.NoSaleBidderError)
-				return errL
-			}
+		} else {
+			return append(errL, errL...)
 		}
 	}
 
@@ -1308,4 +1292,18 @@ func validateAccount(cfg *config.Configuration, pubID string) error {
 		err = error(&errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, please reach out to the prebid server host.", pubID)})
 	}
 	return err
+}
+
+func getValidBidders(aliases map[string]string) map[string]struct{} {
+	validBidders := make(map[string]struct{})
+
+	for _, v := range openrtb_ext.BidderMap {
+		validBidders[v.String()] = struct{}{}
+	}
+
+	for k := range aliases {
+		validBidders[k] = struct{}{}
+	}
+
+	return validBidders
 }
