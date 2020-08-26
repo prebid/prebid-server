@@ -156,8 +156,8 @@ var impressionsTests = []struct {
 		impressionCount: 0,
 		freeTime:        90, closedMinDuration: 90,
 		closedMaxDuration:     90,
-		closedSlotMinDuration: 10,
-		closedSlotMaxDuration: 5,
+		closedSlotMinDuration: 7, // overlapping case. Hence as is
+		closedSlotMaxDuration: 9,
 	}},
 	{scenario: "TC20", out: expected{
 		impressionCount: 9,
@@ -327,8 +327,8 @@ var impressionsTests = []struct {
 		impressionCount: 0,
 		freeTime:        0, closedMinDuration: 5,
 		closedMaxDuration:     -5,
-		closedSlotMinDuration: 0,
-		closedSlotMaxDuration: -5,
+		closedSlotMinDuration: -3, // overlapping hence will as is
+		closedSlotMaxDuration: -4,
 	}}, {scenario: "TC46", out: expected{
 		impressionCount: 0,
 		freeTime:        0, closedMinDuration: -1,
@@ -363,8 +363,8 @@ var impressionsTests = []struct {
 		impressionCount: 3,
 		freeTime:        4, closedMinDuration: 35,
 		closedMaxDuration:     40,
-		closedSlotMinDuration: 15,
-		closedSlotMaxDuration: 10,
+		closedSlotMinDuration: 11,
+		closedSlotMaxDuration: 13,
 	}},
 	{scenario: "TC52", out: expected{
 		impressionCount: 3,
@@ -378,6 +378,12 @@ var impressionsTests = []struct {
 		closedMaxDuration:     126,
 		closedSlotMinDuration: 5,
 		closedSlotMaxDuration: 20,
+	}}, {scenario: "TC55", out: expected{
+		impressionCount: 6,
+		freeTime:        2, closedMinDuration: 1,
+		closedMaxDuration:     74,
+		closedSlotMinDuration: 12,
+		closedSlotMaxDuration: 12,
 	}},
 }
 
@@ -386,15 +392,15 @@ func TestGetImpressionsA1(t *testing.T) {
 		t.Run(impTest.scenario, func(t *testing.T) {
 			in := testdata.Input[impTest.scenario]
 			p := newTestPod(int64(in[0]), int64(in[1]), in[2], in[3], in[4], in[5])
-			// cfg, _ := getImpressions(p.podMinDuration, p.podMaxDuration, p.vPod)
+
 			cfg := newMaximizeForDuration(p.podMinDuration, p.podMaxDuration, p.vPod)
 			imps := cfg.Get()
 			expected := impTest.out
 			expectedImpressionBreak := testdata.Scenario[impTest.scenario].MaximizeForDuration
 			// assert.Equal(t, expected.impressionCount, len(pod.Slots), "expected impression count = %v . But Found %v", expectedImpressionCount, len(pod.Slots))
 			assert.Equal(t, expected.freeTime, cfg.freeTime, "expected Free Time = %v . But Found %v", expected.freeTime, cfg.freeTime)
-			assert.Equal(t, expected.closedMinDuration, cfg.internal.podMinDuration, "expected closedMinDuration= %v . But Found %v", expected.closedMinDuration, cfg.internal.podMinDuration)
-			assert.Equal(t, expected.closedMaxDuration, cfg.internal.podMaxDuration, "expected closedMinDuration= %v . But Found %v", expected.closedMaxDuration, cfg.internal.podMaxDuration)
+			// assert.Equal(t, expected.closedMinDuration, cfg.requested.podMinDuration, "expected closedMinDuration= %v . But Found %v", expected.closedMinDuration, cfg.requested.podMinDuration)
+			// assert.Equal(t, expected.closedMaxDuration, cfg.requested.podMaxDuration, "expected closedMinDuration= %v . But Found %v", expected.closedMaxDuration, cfg.requested.podMaxDuration)
 			assert.Equal(t, expected.closedSlotMinDuration, cfg.internal.slotMinDuration, "expected closedSlotMinDuration= %v . But Found %v", expected.closedSlotMinDuration, cfg.internal.slotMinDuration)
 			assert.Equal(t, expected.closedSlotMaxDuration, cfg.internal.slotMaxDuration, "expected closedSlotMinDuration= %v . But Found %v", expected.closedSlotMaxDuration, cfg.internal.slotMaxDuration)
 			assert.Equal(t, expectedImpressionBreak, imps, "2darray mismatch")

@@ -1,4 +1,4 @@
-package ctv
+package response
 
 import (
 	"fmt"
@@ -6,6 +6,10 @@ import (
 	"time"
 
 	"github.com/PubMatic-OpenWrap/openrtb"
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/combination"
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/constant"
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/types"
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/util"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
@@ -13,14 +17,14 @@ import (
 
 //IAdPodGenerator interface for generating AdPod from Ads
 type IAdPodGenerator interface {
-	GetAdPodBids() *AdPodBid
+	GetAdPodBids() *types.AdPodBid
 }
 type filteredBid struct {
-	bid        *Bid
-	reasonCode FilterReasonCode
+	bid        *types.Bid
+	reasonCode constant.FilterReasonCode
 }
 type highestCombination struct {
-	bids          []*Bid
+	bids          []*types.Bid
 	bidIDs        []string
 	durations     []int
 	price         float64
@@ -35,13 +39,13 @@ type AdPodGenerator struct {
 	IAdPodGenerator
 	request  *openrtb.BidRequest
 	impIndex int
-	buckets  BidsBuckets
-	comb     ICombination
+	buckets  types.BidsBuckets
+	comb     combination.ICombination
 	adpod    *openrtb_ext.VideoAdPod
 }
 
 //NewAdPodGenerator will generate adpod based on configuration
-func NewAdPodGenerator(request *openrtb.BidRequest, impIndex int, buckets BidsBuckets, comb ICombination, adpod *openrtb_ext.VideoAdPod) *AdPodGenerator {
+func NewAdPodGenerator(request *openrtb.BidRequest, impIndex int, buckets types.BidsBuckets, comb combination.ICombination, adpod *openrtb_ext.VideoAdPod) *AdPodGenerator {
 	return &AdPodGenerator{
 		request:  request,
 		impIndex: impIndex,
@@ -52,8 +56,8 @@ func NewAdPodGenerator(request *openrtb.BidRequest, impIndex int, buckets BidsBu
 }
 
 //GetAdPodBids will return Adpod based on configurations
-func (o *AdPodGenerator) GetAdPodBids() *AdPodBid {
-	defer TimeTrack(time.Now(), fmt.Sprintf("Tid:%v ImpId:%v adpodgenerator", o.request.ID, o.request.Imp[o.impIndex].ID))
+func (o *AdPodGenerator) GetAdPodBids() *types.AdPodBid {
+	defer util.TimeTrack(time.Now(), fmt.Sprintf("Tid:%v ImpId:%v adpodgenerator", o.request.ID, o.request.Imp[o.impIndex].ID))
 
 	results := o.getAdPodBids(10 * time.Millisecond)
 	adpodBid := o.getMaxAdPodBid(results)
@@ -66,7 +70,7 @@ func (o *AdPodGenerator) cleanup(wg *sync.WaitGroup, responseCh chan *highestCom
 		close(responseCh)
 		for extra := range responseCh {
 			if nil != extra {
-				Logf("Tid:%v ImpId:%v Delayed Response Durations:%v Bids:%v", o.request.ID, o.request.Imp[o.impIndex].ID, extra.durations, extra.bidIDs)
+				util.Logf("Tid:%v ImpId:%v Delayed Response Durations:%v Bids:%v", o.request.ID, o.request.Imp[o.impIndex].ID, extra.durations, extra.bidIDs)
 			}
 		}
 	}()
@@ -74,7 +78,7 @@ func (o *AdPodGenerator) cleanup(wg *sync.WaitGroup, responseCh chan *highestCom
 }
 
 func (o *AdPodGenerator) getAdPodBids(timeout time.Duration) []*highestCombination {
-	defer TimeTrack(time.Now(), fmt.Sprintf("Tid:%v ImpId:%v getAdPodBids", o.request.ID, o.request.Imp[o.impIndex].ID))
+	defer util.TimeTrack(time.Now(), fmt.Sprintf("Tid:%v ImpId:%v getAdPodBids", o.request.ID, o.request.Imp[o.impIndex].ID))
 
 	maxRoutines := 3
 	isTimedOutORReceivedAllResponses := false
@@ -97,7 +101,7 @@ func (o *AdPodGenerator) getAdPodBids(timeout time.Duration) []*highestCombinati
 				}
 				hbc := o.getUniqueBids(durations)
 				responseCh <- hbc
-				Logf("Tid:%v GetUniqueBids Durations:%v Price:%v Time:%v Bids:%v", o.request.ID, hbc.durations[:], hbc.price, hbc.timeTaken, hbc.bidIDs[:])
+				util.Logf("Tid:%v GetUniqueBids Durations:%v Price:%v Time:%v Bids:%v", o.request.ID, hbc.durations[:], hbc.price, hbc.timeTaken, hbc.bidIDs[:])
 			}
 			wg.Done()
 		}()
@@ -119,7 +123,7 @@ func (o *AdPodGenerator) getAdPodBids(timeout time.Duration) []*highestCombinati
 			}
 		case <-ticker.C:
 			isTimedOutORReceivedAllResponses = true
-			Logf("Tid:%v ImpId:%v GetAdPodBids Timeout Reached %v", o.request.ID, o.request.Imp[o.impIndex].ID, timeout)
+			util.Logf("Tid:%v ImpId:%v GetAdPodBids Timeout Reached %v", o.request.ID, o.request.Imp[o.impIndex].ID, timeout)
 		}
 	}
 
@@ -127,9 +131,9 @@ func (o *AdPodGenerator) getAdPodBids(timeout time.Duration) []*highestCombinati
 	return results[:]
 }
 
-func (o *AdPodGenerator) getMaxAdPodBid(results []*highestCombination) *AdPodBid {
+func (o *AdPodGenerator) getMaxAdPodBid(results []*highestCombination) *types.AdPodBid {
 	if 0 == len(results) {
-		Logf("Tid:%v ImpId:%v NoBid", o.request.ID, o.request.Imp[o.impIndex].ID)
+		util.Logf("Tid:%v ImpId:%v NoBid", o.request.ID, o.request.Imp[o.impIndex].ID)
 		return nil
 	}
 
@@ -137,7 +141,7 @@ func (o *AdPodGenerator) getMaxAdPodBid(results []*highestCombination) *AdPodBid
 	var maxResult *highestCombination
 	for _, result := range results {
 		for _, rc := range result.filteredBids {
-			if CTVRCDidNotGetChance == rc.bid.FilterReasonCode {
+			if constant.CTVRCDidNotGetChance == rc.bid.FilterReasonCode {
 				rc.bid.FilterReasonCode = rc.reasonCode
 			}
 		}
@@ -148,11 +152,11 @@ func (o *AdPodGenerator) getMaxAdPodBid(results []*highestCombination) *AdPodBid
 	}
 
 	if nil == maxResult {
-		Logf("Tid:%v ImpId:%v All Combination Filtered in Ad Exclusion", o.request.ID, o.request.Imp[o.impIndex].ID)
+		util.Logf("Tid:%v ImpId:%v All Combination Filtered in Ad Exclusion", o.request.ID, o.request.Imp[o.impIndex].ID)
 		return nil
 	}
 
-	adpodBid := &AdPodBid{
+	adpodBid := &types.AdPodBid{
 		Bids:    maxResult.bids[:],
 		Price:   maxResult.price,
 		ADomain: make([]string, 0),
@@ -169,17 +173,17 @@ func (o *AdPodGenerator) getMaxAdPodBid(results []*highestCombination) *AdPodBid
 		adpodBid.Cat = append(adpodBid.Cat, cat)
 	}
 
-	Logf("Tid:%v ImpId:%v Selected Durations:%v Price:%v Bids:%v", o.request.ID, o.request.Imp[o.impIndex].ID, maxResult.durations[:], maxResult.price, maxResult.bidIDs[:])
+	util.Logf("Tid:%v ImpId:%v Selected Durations:%v Price:%v Bids:%v", o.request.ID, o.request.Imp[o.impIndex].ID, maxResult.durations[:], maxResult.price, maxResult.bidIDs[:])
 
 	return adpodBid
 }
 
 func (o *AdPodGenerator) getUniqueBids(durationSequence []int) *highestCombination {
 	startTime := time.Now()
-	data := [][]*Bid{}
+	data := [][]*types.Bid{}
 	combinations := []int{}
 
-	defer TimeTrack(startTime, fmt.Sprintf("Tid:%v ImpId:%v getUniqueBids:%v", o.request.ID, o.request.Imp[o.impIndex].ID, durationSequence))
+	defer util.TimeTrack(startTime, fmt.Sprintf("Tid:%v ImpId:%v getUniqueBids:%v", o.request.ID, o.request.Imp[o.impIndex].ID, durationSequence))
 
 	uniqueDuration := 0
 	for index, duration := range durationSequence {
@@ -198,7 +202,7 @@ func (o *AdPodGenerator) getUniqueBids(durationSequence []int) *highestCombinati
 	return hbc
 }
 
-func findUniqueCombinations(data [][]*Bid, combination []int, maxCategoryScore, maxDomainScore int) *highestCombination {
+func findUniqueCombinations(data [][]*types.Bid, combination []int, maxCategoryScore, maxDomainScore int) *highestCombination {
 	// number of arrays
 	n := len(combination)
 	totalBids := 0
@@ -215,7 +219,7 @@ func findUniqueCombinations(data [][]*Bid, combination []int, maxCategoryScore, 
 
 	hc := &highestCombination{}
 	var ehc *highestCombination
-	var rc FilterReasonCode
+	var rc constant.FilterReasonCode
 	inext, jnext := n-1, 0
 	filterBids := map[string]*filteredBid{}
 
@@ -293,10 +297,10 @@ func findUniqueCombinations(data [][]*Bid, combination []int, maxCategoryScore, 
 	return hc
 }
 
-func evaluate(bids [][]*Bid, indices [][]int, totalBids int, maxCategoryScore, maxDomainScore int) (*highestCombination, int, int, FilterReasonCode) {
+func evaluate(bids [][]*types.Bid, indices [][]int, totalBids int, maxCategoryScore, maxDomainScore int) (*highestCombination, int, int, constant.FilterReasonCode) {
 
 	hbc := &highestCombination{
-		bids:          make([]*Bid, totalBids),
+		bids:          make([]*types.Bid, totalBids),
 		bidIDs:        make([]string, totalBids),
 		price:         0,
 		categoryScore: make(map[string]int),
@@ -319,7 +323,7 @@ func evaluate(bids [][]*Bid, indices [][]int, totalBids int, maxCategoryScore, m
 			for _, cat := range bid.Cat {
 				hbc.categoryScore[cat]++
 				if hbc.categoryScore[cat] > 1 && (hbc.categoryScore[cat]*100/totalBids) > maxCategoryScore {
-					return nil, inext, jnext, CTVRCCategoryExclusion
+					return nil, inext, jnext, constant.CTVRCCategoryExclusion
 				}
 			}
 
@@ -327,11 +331,11 @@ func evaluate(bids [][]*Bid, indices [][]int, totalBids int, maxCategoryScore, m
 			for _, domain := range bid.ADomain {
 				hbc.domainScore[domain]++
 				if hbc.domainScore[domain] > 1 && (hbc.domainScore[domain]*100/totalBids) > maxDomainScore {
-					return nil, inext, jnext, CTVRCDomainExclusion
+					return nil, inext, jnext, constant.CTVRCDomainExclusion
 				}
 			}
 		}
 	}
 
-	return hbc, -1, -1, CTVRCWinningBid
+	return hbc, -1, -1, constant.CTVRCWinningBid
 }

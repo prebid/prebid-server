@@ -1,7 +1,8 @@
-package ctv
+package types
 
 import (
 	"github.com/PubMatic-OpenWrap/openrtb"
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/constant"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
@@ -9,7 +10,7 @@ import (
 type Bid struct {
 	*openrtb.Bid
 	Duration         int
-	FilterReasonCode FilterReasonCode
+	FilterReasonCode constant.FilterReasonCode
 }
 
 //ExtCTVBidResponse object for ctv bid resposne object

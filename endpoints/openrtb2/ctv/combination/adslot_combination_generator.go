@@ -1,4 +1,4 @@
-package ctv
+package combination
 
 import (
 	"math/big"
@@ -6,9 +6,9 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
-//PodDurationCombination holds all the combinations based
+//generator holds all the combinations based
 //on Video Ad Pod request and Bid Response Max duration
-type PodDurationCombination struct {
+type generator struct {
 	podMinDuration      uint64            // Pod Minimum duration value present in origin Video Ad Pod Request
 	podMaxDuration      uint64            // Pod Maximum duration value present in origin Video Ad Pod Request
 	minAds              uint64            // Minimum Ads value present in origin Video Ad Pod Request
@@ -52,7 +52,7 @@ type snapshot struct {
 // 1. Determines the number of combinations to be generated
 // 2. Intializes the c.state values required for c.Next() and iteratoor
 // generationOrder indicates how combinations should be generated.
-func (c *PodDurationCombination) Init(podMinDuration, podMaxDuration uint64, config *openrtb_ext.VideoAdPod, durationAdsMap [][2]uint64, generationOrder int) {
+func (c *generator) Init(podMinDuration, podMaxDuration uint64, config *openrtb_ext.VideoAdPod, durationAdsMap [][2]uint64, generationOrder int) {
 
 	c.podMinDuration = podMinDuration
 	c.podMaxDuration = podMaxDuration
@@ -86,8 +86,8 @@ func (c *PodDurationCombination) Init(podMinDuration, podMaxDuration uint64, con
 	c.stats.totalExpectedCombinations = compute(c, c.maxAds, true)
 	subtractUnwantedRepeatations(c)
 	// c.combinations = make([][]uint64, c.totalExpectedCombinations)
-	// Logf("Allow Repeatation = %v", c.allowRepetitationsForEligibleDurations)
-	// Logf("Total possible combinations (without validations) = %v ", c.totalExpectedCombinations)
+	// util.Logf("Allow Repeatation = %v", c.allowRepetitationsForEligibleDurations)
+	// util.Logf("Total possible combinations (without validations) = %v ", c.totalExpectedCombinations)
 
 	/// new states
 	c.state.start = uint64(0)
@@ -102,7 +102,7 @@ func (c *PodDurationCombination) Init(podMinDuration, podMaxDuration uint64, con
 
 //Next - Get next ad slot combination
 //returns empty array if next combination is not present
-func (c *PodDurationCombination) Next() []uint64 {
+func (c *generator) Next() []uint64 {
 	if c.state.resetFlags {
 		reset(c)
 		c.state.resetFlags = false
@@ -117,7 +117,7 @@ func (c *PodDurationCombination) Next() []uint64 {
 	return comb
 }
 
-func isValidCombination(c *PodDurationCombination, combination []uint64) bool {
+func isValidCombination(c *generator, combination []uint64) bool {
 	// check if repeatations are allowed
 	repeationMap := make(map[uint64]uint64, len(c.slotDurations))
 	totalAdDuration := uint64(0)
@@ -128,7 +128,7 @@ func isValidCombination(c *PodDurationCombination, combination []uint64) bool {
 		currentRepeationCnt := repeationMap[duration]
 		noOfAdsPresent := c.slotDurationAdMap[duration]
 		if currentRepeationCnt > noOfAdsPresent {
-			Logf("count = %v :: Discarding combination '%v' as only '%v' ad is present for duration %v", c.stats.currentCombinationCount, combination, noOfAdsPresent, duration)
+			//util.Logf("count = %v :: Discarding combination '%v' as only '%v' ad is present for duration %v", c.stats.currentCombinationCount, combination, noOfAdsPresent, duration)
 			c.stats.repeatationsCount++
 			return false
 		}
@@ -139,7 +139,7 @@ func isValidCombination(c *PodDurationCombination, combination []uint64) bool {
 
 	if !(totalAdDuration >= c.podMinDuration && totalAdDuration <= c.podMaxDuration) {
 		// totalAdDuration is not within range of Pod min and max duration
-		Logf("count = %v :: Discarding combination '%v' as either total Ad duration (%v) < %v (Pod min duration) or > %v (Pod Max duration)", c.stats.currentCombinationCount, combination, totalAdDuration, c.podMinDuration, c.podMaxDuration)
+		//util.Logf("count = %v :: Discarding combination '%v' as either total Ad duration (%v) < %v (Pod min duration) or > %v (Pod Max duration)", c.stats.currentCombinationCount, combination, totalAdDuration, c.podMinDuration, c.podMaxDuration)
 		c.stats.outOfRangeCount++
 		return false
 	}
@@ -156,7 +156,7 @@ func isValidCombination(c *PodDurationCombination, combination []uint64) bool {
 // It operates recursively
 // c - algorithm config, noOfAds (r) - maxads requested (if recursion=true otherwise any valid value), recursion - whether to do recursion or not. if false then only single combination
 // for given noOfAds will be computed
-func compute(c *PodDurationCombination, noOfAds uint64, recursion bool) uint64 {
+func compute(c *generator, noOfAds uint64, recursion bool) uint64 {
 
 	// can not limit till  c.minAds
 	// because we want to construct
@@ -179,7 +179,7 @@ func compute(c *PodDurationCombination, noOfAds uint64, recursion bool) uint64 {
 	noOfCombinations = nmrt.Div(&nmrt, d3)
 	// store pure combination with repeatation in combinationCountMap
 	c.combinationCountMap[r] = noOfCombinations.Uint64()
-	//Logf("%v", noOfCombinations)
+	//util.Logf("%v", noOfCombinations)
 	if recursion {
 
 		// add only if it  is  withing limit of c.minads
@@ -208,18 +208,12 @@ func fact(no uint64) big.Int {
 	return *mult
 }
 
-// wrapper around print function
-func print(format string, v ...interface{}) {
-	// log.Printf(format, v...)
-	Logf(format, v)
-}
-
 //searchAll - searches all valid combinations
 // valid combinations are those which satisifies following
 // 1. sum of duration is within range of pod min and max values
 // 2. Each duration within combination honours number of ads value given in the request
 // 3. Number of durations in combination are within range of min and max ads
-func (c *PodDurationCombination) searchAll() [][]uint64 {
+func (c *generator) searchAll() [][]uint64 {
 	reset(c)
 	start := uint64(0)
 	index := uint64(0)
@@ -236,8 +230,8 @@ func (c *PodDurationCombination) searchAll() [][]uint64 {
 			c.search(data, start, index, r, false, 0)
 		}
 	}
-	// Logf("Total combinations generated = %v", c.currentCombinationCount)
-	// Logf("Total combinations expected = %v", c.totalExpectedCombinations)
+	// util.Logf("Total combinations generated = %v", c.currentCombinationCount)
+	// util.Logf("Total combinations expected = %v", c.totalExpectedCombinations)
 	// result := make([][]uint64, c.totalExpectedCombinations)
 	result := make([][]uint64, c.stats.validCombinationCount)
 	copy(result, c.combinations)
@@ -246,7 +240,7 @@ func (c *PodDurationCombination) searchAll() [][]uint64 {
 }
 
 //reset the internal counters
-func reset(c *PodDurationCombination) {
+func reset(c *generator) {
 	c.stats.currentCombinationCount = 0
 	c.stats.validCombinationCount = 0
 	c.stats.repeatationsCount = 0
@@ -259,7 +253,7 @@ func reset(c *PodDurationCombination) {
 // 1. sum of duration is within range of pod min and max values
 // 2. Each duration within combination honours number of ads value given in the request
 // 3. Number of durations in combination are within range of min and max ads
-func (c *PodDurationCombination) lazyNext() []uint64 {
+func (c *generator) lazyNext() []uint64 {
 	start := c.state.start
 	index := c.state.index
 	r := c.state.r
@@ -290,7 +284,7 @@ func (c *PodDurationCombination) lazyNext() []uint64 {
 }
 
 //search generates the combinations based on min and max number of ads
-func (c *PodDurationCombination) search(data []uint64, start, index, r uint64, lazyLoad bool, reursionCount int) []uint64 {
+func (c *generator) search(data []uint64, start, index, r uint64, lazyLoad bool, reursionCount int) []uint64 {
 
 	end := uint64(len(c.slotDurations) - 1)
 
@@ -308,7 +302,7 @@ func (c *PodDurationCombination) search(data []uint64, start, index, r uint64, l
 			c.combinations = append(c.combinations, data1)
 			c.stats.currentCombinationCount++
 		}
-		//Logf("%v", data1)
+		//util.Logf("%v", data1)
 		c.state.valueUpdated = true
 		return data1
 
@@ -346,7 +340,7 @@ func getNextElement(arr []uint64, val uint64) (uint64, uint64) {
 
 // updateState - is used in case of lazy loading
 // It maintains the state of iterator by updating the required flags
-func updateState(c *PodDurationCombination, lazyLoad bool, r uint64, reursionCount int, end uint64, i uint64, index uint64, valueAtEnd uint64) {
+func updateState(c *generator, lazyLoad bool, r uint64, reursionCount int, end uint64, i uint64, index uint64, valueAtEnd uint64) {
 
 	if lazyLoad {
 		c.state.start = i
@@ -400,7 +394,7 @@ func updateState(c *PodDurationCombination, lazyLoad bool, r uint64, reursionCou
 
 //shouldUpdateAndReturn checks if states should be updated in case of lazy loading
 //If required it updates the state
-func shouldUpdateAndReturn(c *PodDurationCombination, start, index, r uint64, lazyLoad bool, reursionCount int, i, end uint64) bool {
+func shouldUpdateAndReturn(c *generator, start, index, r uint64, lazyLoad bool, reursionCount int, i, end uint64) bool {
 	if lazyLoad && c.state.valueUpdated {
 		if uint64(reursionCount) <= r && !c.state.stateUpdated {
 			updateState(c, lazyLoad, r, reursionCount, end, i, index, c.slotDurations[end])
@@ -411,7 +405,7 @@ func shouldUpdateAndReturn(c *PodDurationCombination, start, index, r uint64, la
 }
 
 //getOccurance checks how many time given number is occured in c.state.lastCombination
-func getOccurance(c *PodDurationCombination, valToCheck uint64) uint64 {
+func getOccurance(c *generator, valToCheck uint64) uint64 {
 	occurance := uint64(0)
 	for i := len(c.state.lastCombination) - 1; i >= 0; i-- {
 		if c.state.lastCombination[i] == valToCheck {
@@ -423,7 +417,7 @@ func getOccurance(c *PodDurationCombination, valToCheck uint64) uint64 {
 
 // subtractUnwantedRepeatations ensures subtracting repeating combination counts
 // from combinations count computed by compute fuction for each r = min and max ads range
-func subtractUnwantedRepeatations(c *PodDurationCombination) {
+func subtractUnwantedRepeatations(c *generator) {
 
 	series := getRepeatitionBreakUp(c)
 
@@ -531,7 +525,7 @@ func subtractUnwantedRepeatations(c *PodDurationCombination) {
 }
 
 //getRepeatitionBreakUp
-func getRepeatitionBreakUp(c *PodDurationCombination) map[uint64]uint64 {
+func getRepeatitionBreakUp(c *generator) map[uint64]uint64 {
 	series := make(map[uint64]uint64, c.maxAds) // not using index 0
 	ads := c.maxAds
 	series[ads] = 1
@@ -557,37 +551,37 @@ func getRepeatitionBreakUp(c *PodDurationCombination) map[uint64]uint64 {
 // getInvalidCombinatioCount returns no of invalid combination due to one of the following reason
 // 1. Contains repeatition of durations, which has only one ad with it
 // 2. Sum of duration (combinationo) is out of Pod Min or Pod Max duration
-func (c *PodDurationCombination) getInvalidCombinatioCount() int {
+func (c *generator) getInvalidCombinatioCount() int {
 	return c.stats.repeatationsCount + c.stats.outOfRangeCount
 }
 
 // GetCurrentCombinationCount returns current combination count
 // irrespective of whether it is valid combination
-func (c *PodDurationCombination) GetCurrentCombinationCount() int {
+func (c *generator) GetCurrentCombinationCount() int {
 	return c.stats.currentCombinationCount
 }
 
 // GetExpectedCombinationCount returns total number for possible combinations without validations
 // but subtracts repeatations for duration with single ad
-func (c *PodDurationCombination) GetExpectedCombinationCount() uint64 {
+func (c *generator) GetExpectedCombinationCount() uint64 {
 	return c.stats.totalExpectedCombinations
 }
 
 // GetOutOfRangeCombinationsCount returns number of combinations currently rejected because of
 // not satisfying Pod Minimum and Maximum duration
-func (c *PodDurationCombination) GetOutOfRangeCombinationsCount() int {
+func (c *generator) GetOutOfRangeCombinationsCount() int {
 	return c.stats.outOfRangeCount
 }
 
 //GetRepeatedDurationCombinationCount returns number of combinations currently rejected because of containing
 //one or more repeatations of duration values, for which partners returned only single ad
-func (c *PodDurationCombination) GetRepeatedDurationCombinationCount() int {
+func (c *generator) GetRepeatedDurationCombinationCount() int {
 	return c.stats.repeatationsCount
 }
 
 // GetValidCombinationCount returns the number of valid combinations
 //  1. Within range of Pod min and max duration
 //  2. Repeatations are inline with input no of ads
-func (c *PodDurationCombination) GetValidCombinationCount() int {
+func (c *generator) GetValidCombinationCount() int {
 	return c.stats.validCombinationCount
 }
