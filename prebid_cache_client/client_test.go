@@ -234,7 +234,7 @@ func TestStripCacheHostAndPath(t *testing.T) {
 	}
 	for _, test := range testInput {
 		cacheClient := NewClient(&http.Client{}, &inCacheURL, &test.inExtCacheURL, &metricsConf.DummyMetricsEngine{})
-		cHost, cPath := cacheClient.GetExtCacheData()
+		_, cHost, cPath := cacheClient.GetExtCacheData()
 
 		assert.Equal(t, test.expectedHost, cHost)
 		assert.Equal(t, test.expectedPath, cPath)

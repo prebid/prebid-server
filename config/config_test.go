@@ -65,6 +65,7 @@ cache:
   host: prebidcache.net
   query: uuid=%PBS_CACHE_UUID%
 external_cache:
+  scheme: https
   host: www.externalprebidcache.net
   path: endpoints/cache
 http_client:
@@ -222,6 +223,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
+	cmpStrings(t, "external_cache.scheme", cfg.ExtCacheURL.Scheme, "https")
 	cmpStrings(t, "external_cache.host", cfg.ExtCacheURL.Host, "www.externalprebidcache.net")
 	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "endpoints/cache")
 	cmpInts(t, "http_client.max_connections_per_host", cfg.Client.MaxConnsPerHost, 10)
