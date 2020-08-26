@@ -20,10 +20,13 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
-const MAX_IMPRESSIONS_PUBMATIC = 30
-const PUBMATIC = "[PUBMATIC]"
-const buyId = "buyid"
-const buyIdTargetingKey = "hb_buyid_pubmatic"
+const (
+	MAX_IMPRESSIONS_PUBMATIC = 30
+	PUBMATIC                 = "[PUBMATIC]"
+	buyId                    = "buyid"
+	buyIdTargetingKey        = "hb_buyid_pubmatic"
+	skAdnetworkKey           = "skadn"
+)
 
 type PubmaticAdapter struct {
 	http *adapters.HTTPAdapter
@@ -613,13 +616,22 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 		}
 	}
 
+	imp.Ext = nil
+	impExt := ""
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
-		kvstr := makeKeywordStr(pubmaticExt.Keywords)
-		imp.Ext = json.RawMessage([]byte(kvstr))
-	} else {
-		imp.Ext = nil
+		impExt = makeKeywordStr(pubmaticExt.Keywords)
 	}
 
+	if bidderExt.Prebid != nil && bidderExt.Prebid.SKAdnetwork != nil {
+		if impExt == "" {
+			impExt = fmt.Sprintf(`"%s":%s`, skAdnetworkKey, string(bidderExt.Prebid.SKAdnetwork))
+		} else {
+			impExt = fmt.Sprintf(`%s,"%s":%s`, impExt, skAdnetworkKey, string(bidderExt.Prebid.SKAdnetwork))
+		}
+	}
+	if len(impExt) != 0 {
+		imp.Ext = json.RawMessage([]byte(fmt.Sprintf(`{%s}`, impExt)))
+	}
 	return nil
 
 }
@@ -635,7 +647,7 @@ func makeKeywordStr(keywords []*openrtb_ext.ExtImpPubmaticKeyVal) string {
 		}
 	}
 
-	kvStr := "{" + strings.Join(eachKv, ",") + "}"
+	kvStr := strings.Join(eachKv, ",")
 	return kvStr
 }
 
