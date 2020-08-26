@@ -90,6 +90,21 @@ func TestExternalCacheURLValidate(t *testing.T) {
 			data:      ExternalCache{Host: "http://", Path: ""},
 			expErrors: 1,
 		},
+		{
+			desc:      "Scheme Invalid",
+			data:      ExternalCache{Scheme: "invalid", Host: "www.google.com", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Scheme HTTP",
+			data:      ExternalCache{Scheme: "http", Host: "www.google.com", Path: "/path/v1"},
+			expErrors: 0,
+		},
+		{
+			desc:      "Scheme HTTPS",
+			data:      ExternalCache{Scheme: "https", Host: "www.google.com", Path: "/path/v1"},
+			expErrors: 0,
+		},
 	}
 	for _, test := range testCases {
 		var errs configErrors
