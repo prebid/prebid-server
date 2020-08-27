@@ -286,7 +286,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 
 	// If automatically filling source TID is enabled then validate that
 	// source.TID exists and If it doesn't, fill it with a randomly generated UUID
-	if deps.cfg.AutoSourceTIDFill {
+	if deps.cfg.AutoGenSourceTID {
 		if err := validateAndFillSourceTID(req); err != nil {
 			return []error{err}
 		}

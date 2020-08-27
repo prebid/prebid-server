@@ -1214,7 +1214,7 @@ func TestCCPAInvalid(t *testing.T) {
 
 func TestValidateSourceTID(t *testing.T) {
 	cfg := &config.Configuration{
-		AutoSourceTIDFill: true,
+		AutoGenSourceTID: true,
 	}
 
 	deps := &endpointDeps{

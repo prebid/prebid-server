@@ -74,7 +74,7 @@ type Configuration struct {
 	// RequestValidation specifies the request validation options.
 	RequestValidation RequestValidation `mapstructure:"request_validation"`
 	// When true, PBS will assign a randomly generated UUID to req.Source.TID if it is empty
-	AutoSourceTIDFill bool `mapstructure:"auto_source_tid_fill"`
+	AutoGenSourceTID bool `mapstructure:"auto_gen_source_tid"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -977,7 +977,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("blacklisted_accts", []string{""})
 	v.SetDefault("account_required", false)
 	v.SetDefault("certificates_file", "")
-	v.SetDefault("auto_source_tid_fill", true)
+	v.SetDefault("auto_gen_source_tid", true)
 
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")
