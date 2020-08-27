@@ -561,11 +561,11 @@ func readConsent(url *url.URL) (privacy.PolicyWriter, error) {
 	}
 
 	if gdpr.ValidateConsent(consent) {
-		return gdpr.NewConsentWriter(consent), nil
+		return gdpr.ConsentWriter{consent}, nil
 	}
 
 	if ccpa.ValidateConsent(consent) {
-		return ccpa.NewConsentWriter(consent), nil
+		return ccpa.ConsentWriter{consent}, nil
 	}
 
 	return privacy.NilPolicyWriter{}, &errortypes.InvalidPrivacyConsent{

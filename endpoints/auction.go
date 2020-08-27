@@ -23,6 +23,8 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/privacy"
+	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -188,20 +190,20 @@ func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLab
 	}
 }
 
-func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, privacyPolicies usersync.PrivacyPolicies) bool {
-	switch privacyPolicies.GDPRSignal {
+func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, privacyPolicies privacy.Policies) bool {
+	switch privacyPolicies.GDPR.Signal {
 	case "0":
 		return true
 	case "1":
-		if privacyPolicies.GDPRConsent == "" {
+		if privacyPolicies.GDPR.Consent == "" {
 			return false
 		}
 		fallthrough
 	default:
-		if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, privacyPolicies.GDPRConsent); !canSync || err != nil {
+		if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, privacyPolicies.GDPR.Consent); !canSync || err != nil {
 			return false
 		}
-		canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, privacyPolicies.GDPRConsent)
+		canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, privacyPolicies.GDPR.Consent)
 		return canSync && err == nil
 	}
 }
@@ -508,9 +510,11 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 	uid, _, _ := req.Cookie.GetUID(syncer.FamilyName())
 	if uid == "" {
 		bidder.NoCookie = true
-		privacyPolicies := usersync.PrivacyPolicies{
-			GDPRSignal:  req.ParseGDPR(),
-			GDPRConsent: req.ParseConsent(),
+		privacyPolicies := privacy.Policies{
+			GDPR: gdprPrivacy.Policy{
+				Signal:  req.ParseGDPR(),
+				Consent: req.ParseConsent(),
+			},
 		}
 		if a.shouldUsersync(*ctx, openrtb_ext.BidderName(syncerCode), privacyPolicies) {
 			syncInfo, err := syncer.GetUsersyncInfo(privacyPolicies)

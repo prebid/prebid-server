@@ -93,7 +93,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	var lmtPolicy lmt.Policy
 	if privacyConfig.LMT.Enforce {
-		lmtPolicy = lmt.ReadPolicy(orig)
+		lmtPolicy = lmt.ReadFromRequest(orig)
 	}
 
 	// request level privacy policies

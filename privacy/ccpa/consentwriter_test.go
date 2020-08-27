@@ -41,23 +41,11 @@ func TestConsentWriterWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		writer := &consentWriter{consent}
+		writer := ConsentWriter{consent}
 
 		err := writer.Write(test.request)
 
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, test.request, test.description)
-	}
-}
-
-func TestNewConsentWriter(t *testing.T) {
-	testCases := []string{
-		"",
-		"anyConsent",
-	}
-
-	for _, test := range testCases {
-		writer := NewConsentWriter(test).(consentWriter)
-		assert.Equal(t, test, writer.consent)
 	}
 }

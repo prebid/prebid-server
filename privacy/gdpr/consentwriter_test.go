@@ -88,7 +88,7 @@ func TestWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		writer := NewConsentWriter(test.consent)
+		writer := ConsentWriter{test.consent}
 		err := writer.Write(test.request)
 
 		if test.expectedError {

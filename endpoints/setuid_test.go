@@ -12,6 +12,7 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 
@@ -460,7 +461,7 @@ func (s fakeSyncer) FamilyName() string {
 }
 
 // GetUsersyncInfo implements the Usersyncer interface with a no-op.
-func (s fakeSyncer) GetUsersyncInfo(privacyPolicies usersync.PrivacyPolicies) (*usersync.UsersyncInfo, error) {
+func (s fakeSyncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.UsersyncInfo, error) {
 	return nil, nil
 }
 

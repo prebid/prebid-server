@@ -23,7 +23,7 @@ func TestSmartadserverSyncer(t *testing.T) {
 			Consent: "COyASAoOyASAoAfAAAENAfCAAAAAAAAAAAAAAAAAAAAA",
 		},
 		CCPA: ccpa.Policy{
-			Value: "1YNN",
+			Consent: "1YNN",
 		},
 	})
 

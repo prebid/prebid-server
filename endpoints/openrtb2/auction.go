@@ -329,7 +329,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
 
 			// remove invalid consent from request
-			consentWriter := ccpa.NewConsentWriter("")
+			consentWriter := ccpa.ConsentWriter{""}
 			if err := consentWriter.Write(req); err != nil {
 				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
 			}

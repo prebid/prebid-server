@@ -1,11 +1,13 @@
 package usersync
 
+import "github.com/prebid/prebid-server/privacy"
+
 type Usersyncer interface {
 	// GetUsersyncInfo returns basic info the browser needs in order to run a user sync.
 	// The returned UsersyncInfo object must not be mutated by callers.
 	//
 	// For more information about user syncs, see http://clearcode.cc/2015/12/cookie-syncing/
-	GetUsersyncInfo(privacyPolicies PrivacyPolicies) (*UsersyncInfo, error)
+	GetUsersyncInfo(privacyPolicies privacy.Policies) (*UsersyncInfo, error)
 
 	// FamilyName should be the same as the `BidderName` for this Usersyncer.
 	// This function only exists for legacy reasons.
@@ -34,10 +36,4 @@ type CookieSyncBidders struct {
 	BidderCode   string        `json:"bidder"`
 	NoCookie     bool          `json:"no_cookie,omitempty"`
 	UsersyncInfo *UsersyncInfo `json:"usersync,omitempty"`
-}
-
-type PrivacyPolicies struct {
-	GDPRSignal  string
-	GDPRConsent string
-	CCPAConsent string
 }

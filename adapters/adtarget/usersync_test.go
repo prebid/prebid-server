@@ -2,9 +2,10 @@ package adtarget
 
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/privacy/ccpa"
 	"testing"
 	"text/template"
+
+	"github.com/prebid/prebid-server/privacy/ccpa"
 
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/gdpr"
@@ -25,7 +26,7 @@ func TestAdtargetSyncer(t *testing.T) {
 			Consent: "123",
 		},
 		CCPA: ccpa.Policy{
-			Value: "1-YY",
+			Consent: "1-YY",
 		},
 	})
 
