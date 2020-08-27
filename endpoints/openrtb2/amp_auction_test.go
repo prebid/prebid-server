@@ -1045,25 +1045,26 @@ func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool,
 
 func TestSetEffectiveAmpPubID(t *testing.T) {
 	testPubID := "test-pub"
-	testURLValues := url.Values{}
-	testURLValues.Add("account", testPubID)
+	testURLQueryParams := url.Values{}
+	testURLQueryParams.Add("account", testPubID)
 
 	testCases := []struct {
-		req           *openrtb.BidRequest
-		urlValues     url.Values
-		expectedPubID string
-		description   string
+		description    string
+		req            *openrtb.BidRequest
+		urlQueryParams url.Values
+		expectedPubID  string
 	}{
 		{
+			description: "No publisher ID provided",
 			req: &openrtb.BidRequest{
 				App: &openrtb.App{
 					Publisher: nil,
 				},
 			},
 			expectedPubID: "",
-			description:   "No publisher ID provided",
 		},
 		{
+			description: "Publisher ID present in req.App.Publisher.ID",
 			req: &openrtb.BidRequest{
 				App: &openrtb.App{
 					Publisher: &openrtb.Publisher{
@@ -1072,9 +1073,9 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 				},
 			},
 			expectedPubID: testPubID,
-			description:   "Publisher ID present in req.App.Publisher.ID",
 		},
 		{
+			description: "Publisher ID present in req.Site.Publisher.ID",
 			req: &openrtb.BidRequest{
 				Site: &openrtb.Site{
 					Publisher: &openrtb.Publisher{
@@ -1083,9 +1084,9 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 				},
 			},
 			expectedPubID: testPubID,
-			description:   "Publisher ID present in req.Site.Publisher.ID",
 		},
 		{
+			description: "Publisher ID present in account query parameter",
 			req: &openrtb.BidRequest{
 				App: &openrtb.App{
 					Publisher: &openrtb.Publisher{
@@ -1093,11 +1094,11 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 					},
 				},
 			},
-			urlValues:     testURLValues,
-			expectedPubID: testPubID,
-			description:   "Publisher ID present in account query parameter",
+			urlQueryParams: testURLQueryParams,
+			expectedPubID:  testPubID,
 		},
 		{
+			description: "req.Site.Publisher present but ID set to empty string",
 			req: &openrtb.BidRequest{
 				Site: &openrtb.Site{
 					Publisher: &openrtb.Publisher{
@@ -1106,12 +1107,11 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 				},
 			},
 			expectedPubID: "",
-			description:   "req.Site.Publisher present but ID set to empty string",
 		},
 	}
 
 	for _, test := range testCases {
-		setEffectiveAmpPubID(test.req, test.urlValues)
+		setEffectiveAmpPubID(test.req, test.urlQueryParams)
 		if test.req.Site != nil {
 			assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
 				"should return the expected Publisher ID for test case: %s", test.description)

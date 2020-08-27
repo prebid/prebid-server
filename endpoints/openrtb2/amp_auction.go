@@ -561,15 +561,14 @@ func readConsent(url *url.URL) string {
 }
 
 // Sets the effective publisher ID for amp request
-func setEffectiveAmpPubID(req *openrtb.BidRequest, urlValues url.Values) {
+func setEffectiveAmpPubID(req *openrtb.BidRequest, urlQueryParams url.Values) {
 	var pub *openrtb.Publisher
 	if req.App != nil {
 		if req.App.Publisher == nil {
 			req.App.Publisher = new(openrtb.Publisher)
 		}
 		pub = req.App.Publisher
-	}
-	if req.Site != nil {
+	} else if req.Site != nil {
 		if req.Site.Publisher == nil {
 			req.Site.Publisher = new(openrtb.Publisher)
 		}
@@ -579,7 +578,7 @@ func setEffectiveAmpPubID(req *openrtb.BidRequest, urlValues url.Values) {
 	if pub.ID == "" {
 		// For amp requests, the publisher ID could be sent via the account
 		// query string
-		if acc := urlValues.Get("account"); acc != "" && acc != "ACCOUNT_ID" {
+		if acc := urlQueryParams.Get("account"); acc != "" && acc != "ACCOUNT_ID" {
 			pub.ID = acc
 		}
 	}

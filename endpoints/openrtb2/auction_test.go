@@ -1212,6 +1212,54 @@ func TestCCPAInvalid(t *testing.T) {
 	assert.Empty(t, req.Regs.Ext, "Invalid Consent Removed From Request")
 }
 
+func TestValidateSourceTID(t *testing.T) {
+	cfg := &config.Configuration{
+		AutoSourceTIDFill: true,
+	}
+
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		cfg,
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BidderMap,
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	ui := uint64(1)
+	req := openrtb.BidRequest{
+		ID: "someID",
+		Imp: []openrtb.Imp{
+			{
+				ID: "imp-ID",
+				Banner: &openrtb.Banner{
+					W: &ui,
+					H: &ui,
+				},
+				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
+			},
+		},
+		Site: &openrtb.Site{
+			ID: "myID",
+		},
+		Regs: &openrtb.Regs{
+			Ext: json.RawMessage(`{"us_privacy":"invalid by length"}`),
+		},
+	}
+
+	deps.validateRequest(&req)
+	assert.NotEmpty(t, req.Source.TID, "Expected req.Source.TID to be filled with a randomly generated UID")
+}
+
 func TestSChainInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		&nobidExchange{},
@@ -1271,47 +1319,48 @@ func TestGetAccountID(t *testing.T) {
 	assert.NoError(t, err)
 
 	testCases := []struct {
-		pub           *openrtb.Publisher
-		expectedPubID string
 		description   string
+		pub           *openrtb.Publisher
+		expectedAccID string
 	}{
 		{
+			description: "Publisher.ID and Publisher.Ext.Prebid.ParentAccount both present",
 			pub: &openrtb.Publisher{
 				ID:  testPubID,
 				Ext: testPubExtJSON,
 			},
-			expectedPubID: testParentAccount,
-			description:   "Publisher.ID and Publisher.Ext.Prebid.ParentAccount both present",
+			expectedAccID: testParentAccount,
 		},
 		{
+			description: "Only Publisher.Ext.Prebid.ParentAccount present",
 			pub: &openrtb.Publisher{
 				ID:  "",
 				Ext: testPubExtJSON,
 			},
-			expectedPubID: testParentAccount,
-			description:   "Only Publisher.Ext.Prebid.ParentAccount present",
+			expectedAccID: testParentAccount,
 		},
 		{
+			description: "Only Publisher.ID present",
 			pub: &openrtb.Publisher{
 				ID: testPubID,
 			},
-			expectedPubID: testPubID,
-			description:   "Only Publisher.ID present",
+			expectedAccID: testPubID,
 		},
 		{
-			pub:           &openrtb.Publisher{},
-			expectedPubID: pbsmetrics.PublisherUnknown,
 			description:   "Neither Publisher.ID or Publisher.Ext.Prebid.ParentAccount present",
+			pub:           &openrtb.Publisher{},
+			expectedAccID: pbsmetrics.PublisherUnknown,
 		},
 		{
-			pub:           nil,
-			expectedPubID: pbsmetrics.PublisherUnknown,
 			description:   "Publisher is nil",
+			pub:           nil,
+			expectedAccID: pbsmetrics.PublisherUnknown,
 		},
 	}
 
 	for _, test := range testCases {
-		getAccountID(test.pub)
+		acc := getAccountID(test.pub)
+		assert.Equal(t, test.expectedAccID, acc, "getAccountID should return expected account for test case: %s", test.description)
 	}
 }
 

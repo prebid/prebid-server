@@ -73,7 +73,7 @@ type Configuration struct {
 	Debug Debug `mapstructure:"debug"`
 	// RequestValidation specifies the request validation options.
 	RequestValidation RequestValidation `mapstructure:"request_validation"`
-	// If req.Source.TID should be filled with a randomly generated UUID or not, if it is empty
+	// When true, PBS will assign a randomly generated UUID to req.Source.TID if it is empty
 	AutoSourceTIDFill bool `mapstructure:"auto_source_tid_fill"`
 }
 
