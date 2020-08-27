@@ -1259,8 +1259,8 @@ func (m *mockCacheClient) PutJson(ctx context.Context, values []prebid_cache_cli
 	return []string{}, []error{}
 }
 
-func (m *mockCacheClient) GetExtCacheData() (string, string) {
-	return "", ""
+func (m *mockCacheClient) GetExtCacheData() (scheme string, host string, path string) {
+	return "", "", ""
 }
 
 type mockVideoStoredReqFetcher struct {
