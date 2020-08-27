@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
@@ -58,7 +60,7 @@ func TestSiteVideo(t *testing.T) {
 	mockAdapter := mockLegacyAdapter{}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	currencyConverter := currencies.NewRateConverterDefault()
+	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, openrtb_ext.BidderRubicon, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
 	if len(errs) > 0 {
 		t.Errorf("Unexpected error requesting bids: %v", errs)
@@ -92,7 +94,7 @@ func TestAppBanner(t *testing.T) {
 	mockAdapter := mockLegacyAdapter{}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	currencyConverter := currencies.NewRateConverterDefault()
+	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, openrtb_ext.BidderRubicon, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
 	if len(errs) > 0 {
 		t.Errorf("Unexpected error requesting bids: %v", errs)
@@ -138,7 +140,7 @@ func TestBidTransforms(t *testing.T) {
 	}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	currencyConverter := currencies.NewRateConverterDefault()
+	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	seatBid, errs := exchangeBidder.requestBid(context.Background(), newAppOrtbRequest(), openrtb_ext.BidderRubicon, bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
 	if len(errs) != 1 {
 		t.Fatalf("Bad error count. Expected 1, got %d", len(errs))
@@ -287,7 +289,7 @@ func TestErrorResponse(t *testing.T) {
 	}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	currencyConverter := currencies.NewRateConverterDefault()
+	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, openrtb_ext.BidderRubicon, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
 	if len(errs) != 1 {
 		t.Fatalf("Bad error count. Expected 1, got %d", len(errs))
@@ -326,7 +328,7 @@ func TestWithTargeting(t *testing.T) {
 		}},
 	}
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	currencyConverter := currencies.NewRateConverterDefault()
+	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	bid, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, openrtb_ext.BidderFacebook, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
 	if len(errs) != 0 {
 		t.Fatalf("This should not produce errors. Got %v", errs)

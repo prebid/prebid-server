@@ -14,7 +14,7 @@ type AdPod struct {
 }
 
 type VideoTargeting struct {
-	HbPb       string `json:"hb_pb"`
-	HbPbCatDur string `json:"hb_pb_cat_dur"`
-	HbCacheID  string `json:"hb_cache_id"`
+	HbPb       string `json:"hb_pb,omitempty"`
+	HbPbCatDur string `json:"hb_pb_cat_dur,omitempty"`
+	HbCacheID  string `json:"hb_cache_id,omitempty"`
 }

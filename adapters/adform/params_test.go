@@ -48,6 +48,10 @@ var validParams = []string{
 	`{"mid":"123","mkv":"color:"}`,
 	`{"mid":"123","mkw":"green,male"}`,
 	`{"mid":"123","mkv":" ","mkw":" "}`,
+	`{"mid":"123","cdims":"500x300,400x200","mkw":" "}`,
+	`{"mid":"123","cdims":"500x300","mkv":" ","mkw":" "}`,
+	`{"mid":"123","minp":2.1}`,
+	`{"mid":"123","url":"https://adform.com/page"}`,
 }
 
 var invalidParams = []string{
@@ -66,4 +70,8 @@ var invalidParams = []string{
 	`{"mid":"123","mkv":"color:blue,l&ngth:350"}`,
 	`{"mid":"123","mkv":"color::blue"}`,
 	`{"mid":"123","mkw":"fem&le"}`,
+	`{"mid":"123","minp":"2.1"}`,
+	`{"mid":"123","cdims":"500x300:400:200","mkw":" "}`,
+	`{"mid":"123","cdims":"500x300,400:200","mkv":" ","mkw":" "}`,
+	`{"mid":"123","url":10}`,
 }
