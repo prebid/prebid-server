@@ -19,7 +19,6 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/privacy"
 	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
 	"github.com/spf13/viper"
@@ -388,14 +387,12 @@ func TestShouldUsersync(t *testing.T) {
 			},
 			metricsEngine: nil,
 		}
-		privacyPolicies := privacy.Policies{
-			GDPR: gdprPolicy.Policy{
-				Signal:  gdprApplies,
-				Consent: consent,
-			},
+		gdprPrivacyPolicy := gdprPolicy.Policy{
+			Signal:  gdprApplies,
+			Consent: consent,
 		}
 
-		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, privacyPolicies)
+		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprPrivacyPolicy)
 		if allowSyncs != expectAllow {
 			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
 		}

@@ -190,20 +190,20 @@ func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLab
 	}
 }
 
-func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, privacyPolicies privacy.Policies) bool {
-	switch privacyPolicies.GDPR.Signal {
+func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprPrivacyPolicy gdprPrivacy.Policy) bool {
+	switch gdprPrivacyPolicy.Signal {
 	case "0":
 		return true
 	case "1":
-		if privacyPolicies.GDPR.Consent == "" {
+		if gdprPrivacyPolicy.Consent == "" {
 			return false
 		}
 		fallthrough
 	default:
-		if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, privacyPolicies.GDPR.Consent); !canSync || err != nil {
+		if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, gdprPrivacyPolicy.Consent); !canSync || err != nil {
 			return false
 		}
-		canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, privacyPolicies.GDPR.Consent)
+		canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, gdprPrivacyPolicy.Consent)
 		return canSync && err == nil
 	}
 }
@@ -516,7 +516,7 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 				Consent: req.ParseConsent(),
 			},
 		}
-		if a.shouldUsersync(*ctx, openrtb_ext.BidderName(syncerCode), privacyPolicies) {
+		if a.shouldUsersync(*ctx, openrtb_ext.BidderName(syncerCode), privacyPolicies.GDPR) {
 			syncInfo, err := syncer.GetUsersyncInfo(privacyPolicies)
 			if err == nil {
 				bidder.UsersyncInfo = syncInfo
