@@ -220,13 +220,16 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 		req.Ext = test.reqExt
 		req.Regs = &openrtb.Regs{Ext: test.reqRegsExt}
 
+		var reqExtStruct openrtb_ext.ExtRequest
+		err := json.Unmarshal(req.Ext, &reqExtStruct)
+		assert.NoError(t, err, test.description+":marshal_ext")
+
 		privacyConfig := config.Privacy{
 			CCPA: config.CCPA{
 				Enforce: true,
 			},
 		}
-
-		_, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+		_, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &reqExtStruct, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
