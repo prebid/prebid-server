@@ -31,9 +31,9 @@
             "path": "mvo"
           },
           "rubicon": {
-            "accountId": "15526",
-            "siteId": "335554",
-            "zoneId": "1764488"
+            "accountId": 15526,
+            "siteId": 335554,
+            "zoneId": 1764488
           },
           "sonobi": {
               "TagID": "12eb86143abb80d6a9c6"
