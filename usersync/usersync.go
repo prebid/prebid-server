@@ -30,14 +30,14 @@ type UsersyncInfo struct {
 	SupportCORS bool   `json:"supportCORS,omitempty"`
 }
 
-type PrivacyPolicies struct {
-	GDPRSignal  string
-	GDPRConsent string
-	CCPAConsent string
-}
-
 type CookieSyncBidders struct {
 	BidderCode   string        `json:"bidder"`
 	NoCookie     bool          `json:"no_cookie,omitempty"`
 	UsersyncInfo *UsersyncInfo `json:"usersync,omitempty"`
+}
+
+type PrivacyPolicies struct {
+	GDPRSignal  string
+	GDPRConsent string
+	CCPAConsent string
 }
