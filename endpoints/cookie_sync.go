@@ -248,8 +248,13 @@ func (req *cookieSyncRequest) filterForGDPR(permissions gdpr.Permissions) {
 }
 
 func (req *cookieSyncRequest) filterForCCPA() {
+	validBidders := make(map[string]struct{})
+	for _, v := range openrtb_ext.BidderMap {
+		validBidders[v.String()] = struct{}{}
+	}
+
 	ccpaPolicy := &ccpa.Policy{Consent: req.USPrivacy}
-	ccpaParsedPolicy, err := ccpaPolicy.Parse(nil) // need valid bidders
+	ccpaParsedPolicy, err := ccpaPolicy.Parse(validBidders)
 
 	if err == nil {
 		for i := 0; i < len(req.Bidders); i++ {

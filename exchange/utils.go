@@ -84,7 +84,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			return
 		}
 
-		ccpaPolicy, err = policy.Parse(getValidBidders(aliases))
+		ccpaPolicy, err = policy.Parse(GetValidBidders(aliases))
 		if err != nil {
 			errs = append(errs, err)
 			return
@@ -440,7 +440,7 @@ func parseAliases(orig *openrtb.BidRequest) (map[string]string, []error) {
 	return aliases, nil
 }
 
-func getValidBidders(aliases map[string]string) map[string]struct{} {
+func GetValidBidders(aliases map[string]string) map[string]struct{} {
 	validBidders := make(map[string]struct{})
 
 	for _, v := range openrtb_ext.BidderMap {

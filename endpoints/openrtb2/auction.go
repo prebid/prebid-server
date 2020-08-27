@@ -324,7 +324,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 
 	if ccpaPolicy, err := ccpa.ReadFromRequest(req); err != nil {
 		return append(errL, errL...)
-	} else if _, err := ccpaPolicy.Parse(getValidBidders(aliases)); err == nil {
+	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err == nil {
 		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
 			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
 
@@ -1291,18 +1291,4 @@ func validateAccount(cfg *config.Configuration, pubID string) error {
 		err = error(&errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, please reach out to the prebid server host.", pubID)})
 	}
 	return err
-}
-
-func getValidBidders(aliases map[string]string) map[string]struct{} {
-	validBidders := make(map[string]struct{})
-
-	for _, v := range openrtb_ext.BidderMap {
-		validBidders[v.String()] = struct{}{}
-	}
-
-	for k := range aliases {
-		validBidders[k] = struct{}{}
-	}
-
-	return validBidders
 }
