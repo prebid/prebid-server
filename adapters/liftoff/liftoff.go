@@ -59,10 +59,13 @@ func (a *LiftoffAdapter) SkipNoCookies() bool {
 
 type liftoffVideoExt struct {
 	PlacementType string `json:"placementtype"`
-	Rewarded      int    `json:"rewarded"`
 	Orientation   string `json:"orientation"`
 	Skip          int    `json:"skip"`
 	SkipDelay     int    `json:"skipdelay"`
+}
+
+type liftoffImpExt struct {
+	Rewarded int `json:"rewarded"`
 }
 
 type liftoffAppExt struct {
@@ -145,9 +148,9 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		}
 
 		placementType := Banner
+		rewarded := 0 // default is interstitial
 		if thisImp.Video != nil {
 			placementType = Interstitial
-			rewarded := 0 // default is interstitial
 			if liftoffExt.Video.Skip == 0 {
 				placementType = Rewarded
 				rewarded = 1
@@ -161,7 +164,6 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			videoCopy := *thisImp.Video
 			videoExt := liftoffVideoExt{
 				PlacementType: string(placementType),
-				Rewarded:      rewarded,
 				Orientation:   string(orientation),
 				Skip:          liftoffExt.Video.Skip,
 				SkipDelay:     liftoffExt.Video.SkipDelay,
@@ -196,7 +198,14 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			thisImp.Banner = &bannerCopy
 		}
 
-		thisImp.Ext = nil
+		impExt := liftoffImpExt{
+			Rewarded: rewarded,
+		}
+		thisImp.Ext, err = json.Marshal(&impExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
 
 		request.Imp = []openrtb.Imp{thisImp}
 		request.Cur = nil
