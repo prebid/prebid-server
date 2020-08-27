@@ -60,7 +60,7 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *Ext
 
 	// If all imps in bid request come with unsupported media types, exit
 	if numToFilter == len(request.Imp) {
-		return nil, append(errs, BadInput("Bid request didn't contain media types supported by bidder"))
+		return nil, append(errs, BadInput("Bid request didn't contain media types supported by the bidder"))
 	}
 
 	if numToFilter != 0 {

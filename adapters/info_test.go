@@ -85,7 +85,7 @@ func TestImpFiltering(t *testing.T) {
 				Site: &openrtb.Site{},
 			},
 			expectedErrors: []error{
-				&errortypes.BadInput{Message: "Bid request didn't contain media types supported by bidder"},
+				&errortypes.BadInput{Message: "Bid request didn't contain media types supported by the bidder"},
 			},
 			expectedImpLen: 0,
 		},
@@ -97,7 +97,7 @@ func TestImpFiltering(t *testing.T) {
 			},
 			expectedErrors: []error{
 				&errortypes.BadInput{Message: "request.imp[0] uses video, but this bidder doesn't support it"},
-				&errortypes.BadInput{Message: "Bid request didn't contain media types supported by bidder"},
+				&errortypes.BadInput{Message: "Bid request didn't contain media types supported by the bidder"},
 			},
 			expectedImpLen: 0,
 		},
@@ -115,7 +115,7 @@ func TestImpFiltering(t *testing.T) {
 				&errortypes.BadInput{Message: "request.imp[0] uses video, but this bidder doesn't support it"},
 				&errortypes.BadInput{Message: "request.imp[1] uses native, but this bidder doesn't support it"},
 				&errortypes.BadInput{Message: "request.imp[2] uses audio, but this bidder doesn't support it"},
-				&errortypes.BadInput{Message: "Bid request didn't contain media types supported by bidder"},
+				&errortypes.BadInput{Message: "Bid request didn't contain media types supported by the bidder"},
 			},
 			expectedImpLen: 0,
 		},
@@ -174,7 +174,7 @@ func TestImpFiltering(t *testing.T) {
 		}
 
 		// Extra MakeRequests() call check: our mockBidder returns an adapter request for every imp
-		assert.Equal(t, test.expectedImpLen, len(actualAdapterRequests), "Test failed. Incorrect lenght of filtered imps: %s", test.description)
+		assert.Len(t, actualAdapterRequests, test.expectedImpLen, "Test failed. Incorrect lenght of filtered imps: %s", test.description)
 	}
 }
 
