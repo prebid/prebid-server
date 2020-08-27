@@ -6,7 +6,6 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy"
 )
 
 // Policy represents the CCPA regulatory information from an OpenRTB bid request.
@@ -21,14 +20,14 @@ func ReadFromRequest(req *openrtb.BidRequest) (Policy, error) {
 	var noSaleBidders []string
 
 	if req == nil {
-		return PolicyFromRequest{}, nil
+		return Policy{}, nil
 	}
 
 	// Read consent from request.regs.ext
 	if req.Regs != nil && len(req.Regs.Ext) > 0 {
 		var ext openrtb_ext.ExtRegs
 		if err := json.Unmarshal(req.Regs.Ext, &ext); err != nil {
-			return PolicyFromRequest{}, err
+			return Policy{}, err
 		}
 		consent = ext.USPrivacy
 	}
@@ -37,16 +36,16 @@ func ReadFromRequest(req *openrtb.BidRequest) (Policy, error) {
 	if len(req.Ext) > 0 {
 		var ext openrtb_ext.ExtRequest
 		if err := json.Unmarshal(req.Ext, &ext); err != nil {
-			return PolicyFromRequest{}, err
+			return Policy{}, err
 		}
 		noSaleBidders = ext.Prebid.NoSale
 	}
 
-	return PolicyFromRequest{consent, noSaleBidders}, nil
+	return Policy{consent, noSaleBidders}, nil
 }
 
 // Write mutates an OpenRTB bid request with the CCPA regulatory information.
-func (p PolicyFromRequest) Write(req *openrtb.BidRequest) error {
+func (p Policy) Write(req *openrtb.BidRequest) error {
 	if req == nil {
 		return nil
 	}
@@ -63,28 +62,6 @@ func (p PolicyFromRequest) Write(req *openrtb.BidRequest) error {
 	req.Regs = regs
 	req.Ext = ext
 	return nil
-}
-
-type consentWriter struct {
-	consent string
-}
-
-func (c consentWriter) Write(req *openrtb.BidRequest) error {
-	if req == nil {
-		return nil
-	}
-
-	regs, err := buildRegs(c.consent, req.Regs)
-	if err != nil {
-		return err
-	}
-	req.Regs = regs
-
-	return nil
-}
-
-func NewConsentWriter(consent string) privacy.PolicyWriter {
-	return consentWriter{consent}
 }
 
 func buildRegs(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {

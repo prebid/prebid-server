@@ -23,7 +23,13 @@ const (
 
 const allBiddersMarker = "*"
 
-// ParsedPolicy represents parsed and validated CCPA regulatory information. Use this object
+// ValidateConsent returns true if the consent string is empty or valid per the IAB CCPA spec.
+func ValidateConsent(consent string) bool {
+	_, err := parseConsent(consent)
+	return err == nil
+}
+
+// ParsedPolicy represents parsed and validated CCPA regulatory information. Use this struct
 // to make enforcement decisions.
 type ParsedPolicy struct {
 	consentSpecified      bool
@@ -51,12 +57,6 @@ func (p Policy) Parse(validBidders map[string]struct{}) (ParsedPolicy, error) {
 		noSaleForAllBidders:   noSaleForAllBidders,
 		noSaleSpecificBidders: noSaleSpecificBidders,
 	}, nil
-}
-
-// ValidateConsent returns true if the consent string is empty or valid per the IAB CCPA spec.
-func ValidateConsent(consent string) bool {
-	_, err := parseConsent(consent)
-	return err == nil
 }
 
 func parseConsent(consent string) (consentOptOutSale bool, err error) {

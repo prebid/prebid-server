@@ -1,7 +1,6 @@
 package ccpa
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -9,7 +8,41 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestParesPolicyFromRequest(t *testing.T) {
+func TestValidateConsent(t *testing.T) {
+	testCases := []struct {
+		description string
+		consent     string
+		expected    bool
+	}{
+		{
+			description: "Empty String",
+			consent:     "",
+			expected:    true,
+		},
+		{
+			description: "Valid Consent With Opt Out",
+			consent:     "1NYN",
+			expected:    true,
+		},
+		{
+			description: "Valid Consent Without Opt Out",
+			consent:     "1NNN",
+			expected:    true,
+		},
+		{
+			description: "Invalid",
+			consent:     "malformed",
+			expected:    false,
+		},
+	}
+
+	for _, test := range testCases {
+		result := ValidateConsent(test.consent)
+		assert.Equal(t, test.expected, result, test.description)
+	}
+}
+
+func TestParse(t *testing.T) {
 	validBidders := map[string]struct{}{"a": {}}
 
 	testCases := []struct {
@@ -38,7 +71,7 @@ func TestParesPolicyFromRequest(t *testing.T) {
 			consent:       "1NYN",
 			noSaleBidders: []string{"a"},
 			expectedPolicy: ParsedPolicy{
-				policyWriter:          PolicyFromRequest{Consent: "1NYN", NoSaleBidders: []string{"a"}},
+				consentSpecified:      true,
 				consentOptOutSale:     true,
 				noSaleForAllBidders:   false,
 				noSaleSpecificBidders: map[string]struct{}{"a": {}},
@@ -47,7 +80,7 @@ func TestParesPolicyFromRequest(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		policy := PolicyFromRequest{Consent: test.consent, NoSaleBidders: test.noSaleBidders}
+		policy := Policy{test.consent, test.noSaleBidders}
 
 		result, err := policy.Parse(validBidders)
 
@@ -59,70 +92,6 @@ func TestParesPolicyFromRequest(t *testing.T) {
 
 		assert.Equal(t, test.expectedPolicy, result, test.description)
 	}
-}
-
-func TestParesPolicyFromConsent(t *testing.T) {
-	testCases := []struct {
-		description    string
-		consent        string
-		expectedPolicy ParsedPolicy
-		expectedError  string
-	}{
-		{
-			description: "Success",
-			consent:     "1NYN",
-			expectedPolicy: ParsedPolicy{
-				policyWriter:          PolicyFromConsent{Consent: "1NYN"},
-				consentOptOutSale:     true,
-				noSaleForAllBidders:   false,
-				noSaleSpecificBidders: map[string]struct{}{},
-			},
-		},
-		{
-			description:    "Error",
-			consent:        "malformed",
-			expectedPolicy: ParsedPolicy{},
-			expectedError:  "request.regs.ext.us_privacy is invalid: must contain 4 characters",
-		},
-	}
-
-	for _, test := range testCases {
-		policy := PolicyFromConsent{test.consent}
-
-		result, err := policy.Parse()
-
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description)
-		} else {
-			assert.EqualError(t, err, test.expectedError, test.description)
-		}
-
-		assert.Equal(t, test.expectedPolicy, result, test.description)
-	}
-}
-
-func TestWriteSuccess(t *testing.T) {
-	req := &openrtb.BidRequest{}
-	mockWriter := &mockPolicWriter{}
-	mockWriter.On("Write", req).Return(nil).Once()
-	parsedPolicy := &ParsedPolicy{policyWriter: mockWriter}
-
-	resultErr := parsedPolicy.Write(req)
-
-	mockWriter.AssertExpectations(t)
-	assert.NoError(t, resultErr)
-}
-
-func TestWriteError(t *testing.T) {
-	req := &openrtb.BidRequest{}
-	mockWriter := &mockPolicWriter{}
-	mockWriter.On("Write", req).Return(errors.New("foo")).Once()
-	parsedPolicy := &ParsedPolicy{policyWriter: mockWriter}
-
-	resultErr := parsedPolicy.Write(req)
-
-	mockWriter.AssertExpectations(t)
-	assert.Error(t, resultErr, "foo")
 }
 
 func TestParseConsent(t *testing.T) {
@@ -297,6 +266,40 @@ func TestParseNoSaleBidders(t *testing.T) {
 	}
 }
 
+func TestSpecified(t *testing.T) {
+	testCases := []struct {
+		description string
+		policy      ParsedPolicy
+		expected    bool
+	}{
+		{
+			description: "Specified",
+			policy: ParsedPolicy{
+				consentSpecified:      true,
+				consentOptOutSale:     false,
+				noSaleForAllBidders:   false,
+				noSaleSpecificBidders: map[string]struct{}{},
+			},
+			expected: true,
+		},
+		{
+			description: "Not Specified",
+			policy: ParsedPolicy{
+				consentSpecified:      false,
+				consentOptOutSale:     false,
+				noSaleForAllBidders:   false,
+				noSaleSpecificBidders: map[string]struct{}{},
+			},
+			expected: false,
+		},
+	}
+
+	for _, test := range testCases {
+		result := test.policy.Specified()
+		assert.Equal(t, test.expected, result, test.description)
+	}
+}
+
 func TestShouldEnforce(t *testing.T) {
 	testCases := []struct {
 		description string
@@ -307,6 +310,7 @@ func TestShouldEnforce(t *testing.T) {
 		{
 			description: "Not Enforced - All Bidders No Sale",
 			policy: ParsedPolicy{
+				consentSpecified:      true,
 				consentOptOutSale:     true,
 				noSaleForAllBidders:   true,
 				noSaleSpecificBidders: map[string]struct{}{},
@@ -317,6 +321,7 @@ func TestShouldEnforce(t *testing.T) {
 		{
 			description: "Not Enforced - Specific Bidders No Sale",
 			policy: ParsedPolicy{
+				consentSpecified:      true,
 				consentOptOutSale:     true,
 				noSaleForAllBidders:   false,
 				noSaleSpecificBidders: map[string]struct{}{"a": {}},
@@ -327,6 +332,7 @@ func TestShouldEnforce(t *testing.T) {
 		{
 			description: "Not Enforced - No Bidder No Sale",
 			policy: ParsedPolicy{
+				consentSpecified:      true,
 				consentOptOutSale:     false,
 				noSaleForAllBidders:   false,
 				noSaleSpecificBidders: map[string]struct{}{},
@@ -337,6 +343,7 @@ func TestShouldEnforce(t *testing.T) {
 		{
 			description: "Not Enforced - No Sale Case Sensitive",
 			policy: ParsedPolicy{
+				consentSpecified:      true,
 				consentOptOutSale:     false,
 				noSaleForAllBidders:   false,
 				noSaleSpecificBidders: map[string]struct{}{"A": {}},
@@ -347,6 +354,7 @@ func TestShouldEnforce(t *testing.T) {
 		{
 			description: "Enforced - No Bidder No Sale",
 			policy: ParsedPolicy{
+				consentSpecified:      true,
 				consentOptOutSale:     true,
 				noSaleForAllBidders:   false,
 				noSaleSpecificBidders: map[string]struct{}{},
@@ -357,6 +365,7 @@ func TestShouldEnforce(t *testing.T) {
 		{
 			description: "Enforced - No Sale Case Sensitive",
 			policy: ParsedPolicy{
+				consentSpecified:      true,
 				consentOptOutSale:     true,
 				noSaleForAllBidders:   false,
 				noSaleSpecificBidders: map[string]struct{}{"A": {}},

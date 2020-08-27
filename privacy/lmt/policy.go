@@ -15,8 +15,8 @@ type Policy struct {
 	SignalProvided bool
 }
 
-// ReadPolicy extracts the LMT (Limit Ad Tracking) policy from an OpenRTB bid request.
-func ReadPolicy(req *openrtb.BidRequest) Policy {
+// ReadFromRequest extracts the LMT (Limit Ad Tracking) policy from an OpenRTB bid request.
+func ReadFromRequest(req *openrtb.BidRequest) Policy {
 	policy := Policy{}
 
 	if req != nil && req.Device != nil && req.Device.Lmt != nil {

@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPolicyFromRequestRead(t *testing.T) {
+func TestReadFromRequest(t *testing.T) {
 	testCases := []struct {
 		description    string
 		request        *openrtb.BidRequest
-		expectedPolicy PolicyFromRequest
+		expectedPolicy Policy
 		expectedError  bool
 	}{
 		{
@@ -21,7 +21,7 @@ func TestPolicyFromRequestRead(t *testing.T) {
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`{"us_privacy":"ABC"}`)},
 				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
-			expectedPolicy: PolicyFromRequest{
+			expectedPolicy: Policy{
 				Consent:       "ABC",
 				NoSaleBidders: []string{"a", "b"},
 			},
@@ -29,7 +29,7 @@ func TestPolicyFromRequestRead(t *testing.T) {
 		{
 			description: "Nil Request",
 			request:     nil,
-			expectedPolicy: PolicyFromRequest{
+			expectedPolicy: Policy{
 				Consent:       "",
 				NoSaleBidders: nil,
 			},
@@ -40,7 +40,7 @@ func TestPolicyFromRequestRead(t *testing.T) {
 				Regs: nil,
 				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
-			expectedPolicy: PolicyFromRequest{
+			expectedPolicy: Policy{
 				Consent:       "",
 				NoSaleBidders: []string{"a", "b"},
 			},
@@ -51,7 +51,7 @@ func TestPolicyFromRequestRead(t *testing.T) {
 				Regs: &openrtb.Regs{},
 				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
-			expectedPolicy: PolicyFromRequest{
+			expectedPolicy: Policy{
 				Consent:       "",
 				NoSaleBidders: []string{"a", "b"},
 			},
@@ -62,7 +62,7 @@ func TestPolicyFromRequestRead(t *testing.T) {
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`{}`)},
 				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
-			expectedPolicy: PolicyFromRequest{
+			expectedPolicy: Policy{
 				Consent:       "",
 				NoSaleBidders: []string{"a", "b"},
 			},
@@ -73,7 +73,7 @@ func TestPolicyFromRequestRead(t *testing.T) {
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`{"anythingElse":"42"}`)},
 				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
 			},
-			expectedPolicy: PolicyFromRequest{
+			expectedPolicy: Policy{
 				Consent:       "",
 				NoSaleBidders: []string{"a", "b"},
 			},
@@ -100,7 +100,7 @@ func TestPolicyFromRequestRead(t *testing.T) {
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`{"us_privacy":"ABC"}`)},
 				Ext:  nil,
 			},
-			expectedPolicy: PolicyFromRequest{
+			expectedPolicy: Policy{
 				Consent:       "ABC",
 				NoSaleBidders: nil,
 			},
@@ -111,7 +111,7 @@ func TestPolicyFromRequestRead(t *testing.T) {
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`{"us_privacy":"ABC"}`)},
 				Ext:  json.RawMessage(`{}`),
 			},
-			expectedPolicy: PolicyFromRequest{
+			expectedPolicy: Policy{
 				Consent:       "ABC",
 				NoSaleBidders: nil,
 			},
@@ -122,7 +122,7 @@ func TestPolicyFromRequestRead(t *testing.T) {
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`{"us_privacy":"ABC"}`)},
 				Ext:  json.RawMessage(`{"anythingElse":"42"}`),
 			},
-			expectedPolicy: PolicyFromRequest{
+			expectedPolicy: Policy{
 				Consent:       "ABC",
 				NoSaleBidders: nil,
 			},
@@ -148,7 +148,7 @@ func TestPolicyFromRequestRead(t *testing.T) {
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`{"us_privacy":"1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`)},
 			},
-			expectedPolicy: PolicyFromRequest{
+			expectedPolicy: Policy{
 				Consent: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
 			},
 		},
@@ -161,47 +161,23 @@ func TestPolicyFromRequestRead(t *testing.T) {
 	}
 }
 
-func TestPolicyFromRequestClone(t *testing.T) {
-	policy := PolicyFromRequest{
-		Consent:       "anyConsent",
-		NoSaleBidders: []string{"a", "b"},
-	}
-
-	clone := policy.Clone()
-	clone.NoSaleBidders[0] = "1"
-
-	assert.ElementsMatch(t, []string{"a", "b"}, policy.NoSaleBidders, "original")
-	assert.ElementsMatch(t, []string{"1", "b"}, clone.NoSaleBidders, "clone")
-}
-
-func TestPolicyFromRequestCloneNilNoSale(t *testing.T) {
-	policy := PolicyFromRequest{
-		Consent:       "anyConsent",
-		NoSaleBidders: nil,
-	}
-
-	clone := policy.Clone()
-
-	assert.Nil(t, clone.NoSaleBidders)
-}
-
-func TestPolicyFromRequestWrite(t *testing.T) {
+func TestWrite(t *testing.T) {
 	testCases := []struct {
 		description   string
-		policy        PolicyFromRequest
+		policy        Policy
 		request       *openrtb.BidRequest
 		expected      *openrtb.BidRequest
 		expectedError bool
 	}{
 		{
 			description: "Nil Request",
-			policy:      PolicyFromRequest{Consent: "anyConsent", NoSaleBidders: []string{"a", "b"}},
+			policy:      Policy{Consent: "anyConsent", NoSaleBidders: []string{"a", "b"}},
 			request:     nil,
 			expected:    nil,
 		},
 		{
 			description: "Success",
-			policy:      PolicyFromRequest{Consent: "anyConsent", NoSaleBidders: []string{"a", "b"}},
+			policy:      Policy{Consent: "anyConsent", NoSaleBidders: []string{"a", "b"}},
 			request:     &openrtb.BidRequest{},
 			expected: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`{"us_privacy":"anyConsent"}`)},
@@ -210,7 +186,7 @@ func TestPolicyFromRequestWrite(t *testing.T) {
 		},
 		{
 			description: "Error Regs.Ext - No Partial Update To Request",
-			policy:      PolicyFromRequest{Consent: "anyConsent", NoSaleBidders: []string{"a", "b"}},
+			policy:      Policy{Consent: "anyConsent", NoSaleBidders: []string{"a", "b"}},
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`malformed}`)},
 			},
@@ -221,79 +197,13 @@ func TestPolicyFromRequestWrite(t *testing.T) {
 		},
 		{
 			description: "Error Ext - No Partial Update To Request",
-			policy:      PolicyFromRequest{Consent: "anyConsent", NoSaleBidders: []string{"a", "b"}},
+			policy:      Policy{Consent: "anyConsent", NoSaleBidders: []string{"a", "b"}},
 			request: &openrtb.BidRequest{
 				Ext: json.RawMessage(`malformed}`),
 			},
 			expectedError: true,
 			expected: &openrtb.BidRequest{
 				Ext: json.RawMessage(`malformed}`),
-			},
-		},
-	}
-
-	for _, test := range testCases {
-		err := test.policy.Write(test.request)
-		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, test.request, test.description)
-	}
-}
-
-func TestPolicyFromConsentRead(t *testing.T) {
-	testCases := []struct {
-		description    string
-		consent        string
-		expectedPolicy PolicyFromConsent
-	}{
-		{
-			description:    "Empty Cosent",
-			consent:        "",
-			expectedPolicy: PolicyFromConsent{},
-		},
-		{
-			description:    "Cosent",
-			consent:        "anyConsent",
-			expectedPolicy: PolicyFromConsent{Consent: "anyConsent"},
-		},
-	}
-
-	for _, test := range testCases {
-		result := ReadFromConsent(test.consent)
-		assert.Equal(t, test.expectedPolicy, result, test.description)
-	}
-}
-
-func TestPolicyFromConsentWrite(t *testing.T) {
-	testCases := []struct {
-		description   string
-		policy        PolicyFromConsent
-		request       *openrtb.BidRequest
-		expected      *openrtb.BidRequest
-		expectedError bool
-	}{
-		{
-			description: "Success",
-			policy:      PolicyFromConsent{Consent: "anyConsent"},
-			request:     &openrtb.BidRequest{},
-			expected: &openrtb.BidRequest{
-				Regs: &openrtb.Regs{Ext: json.RawMessage(`{"us_privacy":"anyConsent"}`)},
-			},
-		},
-		{
-			description: "Nil Request",
-			policy:      PolicyFromConsent{Consent: "anyConsent"},
-			request:     nil,
-			expected:    nil,
-		},
-		{
-			description: "Error Regs.Ext - No Update To Request",
-			policy:      PolicyFromConsent{Consent: "anyConsent"},
-			request: &openrtb.BidRequest{
-				Regs: &openrtb.Regs{Ext: json.RawMessage(`malformed}`)},
-			},
-			expectedError: true,
-			expected: &openrtb.BidRequest{
-				Regs: &openrtb.Regs{Ext: json.RawMessage(`malformed}`)},
 			},
 		},
 	}

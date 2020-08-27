@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRead(t *testing.T) {
+func TestReadFromRequest(t *testing.T) {
 	var one int8 = 1
 
 	testCases := []struct {
@@ -60,7 +60,7 @@ func TestRead(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		p := ReadPolicy(test.request)
+		p := ReadFromRequest(test.request)
 		assert.Equal(t, test.expectedPolicy, p, test.description)
 	}
 }
