@@ -160,7 +160,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			enforceCCPA:     false,
 			expectDataScrub: false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
-				CCPAProvided: false,
+				CCPAProvided: true,
 				CCPAEnforced: false,
 			},
 		},

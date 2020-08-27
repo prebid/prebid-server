@@ -73,15 +73,15 @@ func cleanOpenRTBRequests(ctx context.Context,
 	consent := extractConsent(orig)
 	ampGDPRException := (labels.RType == pbsmetrics.ReqTypeAMP) && gDPR.AMPException()
 
-	var ccpaPolicy ccpa.ParsedPolicy
-	if privacyConfig.CCPA.Enforce {
-		policy, err := ccpa.ReadFromRequest(orig)
-		if err != nil {
-			errs = append(errs, err)
-			return
-		}
+	ccpaPolicy, err := ccpa.ReadFromRequest(orig)
+	if err != nil {
+		errs = append(errs, err)
+		return
+	}
 
-		ccpaPolicy, err = policy.Parse(GetValidBidders(aliases))
+	var ccpaParsedPolicy ccpa.ParsedPolicy
+	if privacyConfig.CCPA.Enforce {
+		ccpaParsedPolicy, err = ccpaPolicy.Parse(GetValidBidders(aliases))
 		if err != nil {
 			errs = append(errs, err)
 			return
@@ -99,8 +99,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 		LMT:   lmtPolicy.ShouldEnforce(),
 	}
 
-	privacyLabels.CCPAProvided = ccpaPolicy.Specified()
-	privacyLabels.CCPAEnforced = ccpaPolicy.ShouldEnforce("")
+	privacyLabels.CCPAProvided = ccpaPolicy.Consent != ""
+	privacyLabels.CCPAEnforced = ccpaParsedPolicy.ShouldEnforce("")
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = privacyEnforcement.LMT
 
@@ -116,7 +116,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	// bidder level privacy policies
 	for bidder, bidReq := range requestsByBidder {
 		// CCPA
-		privacyEnforcement.CCPA = ccpaPolicy.ShouldEnforce(bidder.String())
+		privacyEnforcement.CCPA = ccpaParsedPolicy.ShouldEnforce(bidder.String())
 
 		// GDPR
 		if gdpr == 1 {
