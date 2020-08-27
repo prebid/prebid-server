@@ -33,7 +33,7 @@ type ParsedPolicy struct {
 }
 
 // Parse returns a parsed and validated ParsedPolicy intended for use in enforcement decisions.
-func (p PolicyFromRequest) Parse(validBidders map[string]struct{}) (ParsedPolicy, error) {
+func (p Policy) Parse(validBidders map[string]struct{}) (ParsedPolicy, error) {
 	consentOptOut, err := parseConsent(p.Consent)
 	if err != nil {
 		msg := fmt.Sprintf("request.regs.ext.us_privacy is invalid: %s", err.Error())
@@ -53,7 +53,7 @@ func (p PolicyFromRequest) Parse(validBidders map[string]struct{}) (ParsedPolicy
 	}, nil
 }
 
-// ValidateConsent returns true if the consent string is empty or valid.
+// ValidateConsent returns true if the consent string is empty or valid per the IAB CCPA spec.
 func ValidateConsent(consent string) bool {
 	_, err := parseConsent(consent)
 	return err == nil

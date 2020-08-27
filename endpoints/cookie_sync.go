@@ -119,9 +119,8 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 
 	parsedReq.filterForGDPR(deps.syncPermissions)
 
-	ccpaPolicy := ccpa.ReadFromConsent(privacyPolicy.CCPAConsent)
-	if ccpaParsedPolicy, err := ccpaPolicy.Parse(); err != nil {
-		parsedReq.filterForCCPA(ccpaParsedPolicy, deps.enforceCCPA)
+	if deps.enforceCCPA {
+		parsedReq.filterForCCPA()
 	}
 
 	// surviving bidders are not privacy blocked
@@ -242,17 +241,20 @@ func (req *cookieSyncRequest) filterForGDPR(permissions gdpr.Permissions) {
 	}
 }
 
-func (req *cookieSyncRequest) filterForCCPA(policy ccpa.ParsedPolicy, enforceCCPA bool) {
+func (req *cookieSyncRequest) filterForCCPA() {
 	if !enforceCCPA {
 		return
 	}
 
-	// let's do the parsing here instead?
+	ccpaPolicy := &ccpa.Policy{Consent: req.USPrivacy}
+	ccpaParsedPolicy, err := ccpaPolicy.Parse()
 
-	for i := 0; i < len(req.Bidders); i++ {
-		if policy.ShouldEnforce(req.Bidders[i]) {
-			req.Bidders = append(req.Bidders[:i], req.Bidders[i+1:]...)
-			i--
+	if err == nil {
+		for i := 0; i < len(req.Bidders); i++ {
+			if policy.ShouldEnforce(req.Bidders[i]) {
+				req.Bidders = append(req.Bidders[:i], req.Bidders[i+1:]...)
+				i--
+			}
 		}
 	}
 }

@@ -560,8 +560,8 @@ func readConsent(url *url.URL) (privacy.PolicyWriter, error) {
 		return privacy.NilPolicyWriter{}, nil
 	}
 
-	if err := gdpr.ValidateConsent(consent); err == nil {
-		return gdpr.Policy{Consent: consent}, nil
+	if gdpr.ValidateConsent(consent) {
+		return gdpr.NewConsentWriter(consent), nil
 	}
 
 	if ccpa.ValidateConsent(consent) {

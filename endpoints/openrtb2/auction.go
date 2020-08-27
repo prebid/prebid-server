@@ -28,7 +28,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -326,12 +325,12 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	if ccpaPolicy, err := ccpa.ReadFromRequest(req); err != nil {
 		return append(errL, errL...)
 	} else if _, err := ccpaPolicy.Parse(getValidBidders(aliases)); err == nil {
-		if _, isInvalidConsent := err.(*privacy.InvalidConsentError); isInvalidConsent {
+		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
 			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
 
 			// remove invalid consent from request
-			ccpaPolicy.Consent = ""
-			if err := ccpaPolicy.Write(req); err != nil {
+			consentWriter := ccpa.NewConsentWriter("")
+			if err := consentWriter.Write(req); err != nil {
 				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
 			}
 		} else {

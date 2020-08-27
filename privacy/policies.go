@@ -15,12 +15,3 @@ type NilPolicyWriter struct{}
 func (NilPolicyWriter) Write(req *openrtb.BidRequest) error {
 	return nil
 }
-
-// InvalidConsentError represents an error parsing or validating a consent string.
-type InvalidConsentError struct {
-	Message string
-}
-
-func (err *InvalidConsentError) Error() string {
-	return err.Message
-}

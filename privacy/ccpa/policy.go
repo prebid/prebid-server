@@ -218,16 +218,3 @@ func buildExtWrite(noSaleBidders []string, ext json.RawMessage) (json.RawMessage
 	prebidExt["nosale"] = noSaleBidders
 	return json.Marshal(extMap)
 }
-
-// last bit, separate consent into it's own concept?
-type ConsentWriter struct {
-	Consent string
-}
-
-// other languagds have this. but not go.
-
-func (ConsentWriter) Write(req) {
-
-}
-
-// all will be good if i can create a ccpa consent writer

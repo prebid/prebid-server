@@ -84,8 +84,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			return
 		}
 
-		// buuild comvinarion of aliaes and built in bidders
-		ccpaPolicy, err = policy.Parse(nil)
+		ccpaPolicy, err = policy.Parse(getValidBidders(aliases))
 		if err != nil {
 			errs = append(errs, err)
 			return
@@ -103,8 +102,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 		LMT:   lmtPolicy.ShouldEnforce(),
 	}
 
-	privacyLabels.CCPAProvided = ccpaPolicy.Value != "" // todo: add Specified helepr
-	privacyLabels.CCPAEnforced = privacyEnforcement.CCPA
+	privacyLabels.CCPAProvided = ccpaPolicy.Specified()
+	privacyLabels.CCPAEnforced = ccpaPolicy.ShouldEnforce("")
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = privacyEnforcement.LMT
 
@@ -439,6 +438,20 @@ func parseAliases(orig *openrtb.BidRequest) (map[string]string, []error) {
 		return nil, []error{err}
 	}
 	return aliases, nil
+}
+
+func getValidBidders(aliases map[string]string) map[string]struct{} {
+	validBidders := make(map[string]struct{})
+
+	for _, v := range openrtb_ext.BidderMap {
+		validBidders[v.String()] = struct{}{}
+	}
+
+	for k := range aliases {
+		validBidders[k] = struct{}{}
+	}
+
+	return validBidders
 }
 
 // Quick little randomizer for a list of strings. Stuffing it in utils to keep other files clean
