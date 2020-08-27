@@ -19,6 +19,7 @@ type ExtRequestPrebid struct {
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
+	Debug                bool                      `json:"debug,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains
@@ -66,7 +67,7 @@ func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 	}
 
 	if proxy.Bids == nil && proxy.VastXML == nil {
-		return errors.New(`request.ext.prebid.cache requires one of the "bids" or "vastml" properties`)
+		return errors.New(`request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)
 	}
 
 	*ert = ExtRequestPrebidCache(proxy)
@@ -85,6 +86,7 @@ type ExtRequestTargeting struct {
 	IncludeWinners       bool                     `json:"includewinners"`
 	IncludeBidderKeys    bool                     `json:"includebidderkeys"`
 	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory"`
+	IncludeFormat        bool                     `json:"includeformat"`
 	DurationRangeSec     []int                    `json:"durationrangesec"`
 }
 

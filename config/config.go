@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -111,6 +112,7 @@ func (cfg *Configuration) validate() configErrors {
 	errs = cfg.CurrencyConverter.validate(errs)
 	errs = validateAdapters(cfg.Adapters, errs)
 	errs = cfg.Debug.validate(errs)
+	errs = cfg.ExtCacheURL.validate(errs)
 	return errs
 }
 
@@ -125,6 +127,40 @@ func (cfg *AuctionTimeouts) validate(errs configErrors) configErrors {
 	if cfg.Max < cfg.Default {
 		errs = append(errs, fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default))
 	}
+	return errs
+}
+
+func (data *ExternalCache) validate(errs configErrors) configErrors {
+	if data.Host == "" && data.Path == "" {
+		// Both host and path can be blank. No further validation needed
+		return errs
+	}
+
+	// Either host or path or both not empty, validate.
+	if data.Host == "" && data.Path != "" || data.Host != "" && data.Path == "" {
+		return append(errs, errors.New("External cache Host and Path must both be specified"))
+	}
+	if strings.HasSuffix(data.Host, "/") {
+		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' must not end with a path separator", data.Host)))
+	}
+	if strings.ContainsAny(data.Host, "://") {
+		return append(errs, errors.New(fmt.Sprintf("External cache Host must not specify a protocol. '%s'", data.Host)))
+	}
+	if !strings.HasPrefix(data.Path, "/") {
+		return append(errs, errors.New(fmt.Sprintf("External cache Path '%s' must begin with a path separator", data.Path)))
+	}
+
+	urlObj, err := url.Parse("https://" + data.Host + data.Path)
+	if err != nil {
+		return append(errs, errors.New(fmt.Sprintf("External cache Path validation error: %s ", err.Error())))
+	}
+	if urlObj.Host != data.Host {
+		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' is invalid", data.Host)))
+	}
+	if urlObj.Path != data.Path {
+		return append(errs, errors.New("External cache Path is invalid"))
+	}
+
 	return errs
 }
 
@@ -156,8 +192,14 @@ type GDPR struct {
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
 	NonStandardPublisherMap map[string]int
+	TCF1                    TCF1 `mapstructure:"tcf1"`
 	TCF2                    TCF2 `mapstructure:"tcf2"`
 	AMPException            bool `mapstructure:"amp_exception"`
+	// EEACountries (EEA = European Economic Area) are a list of countries where we should assume GDPR applies.
+	// If the gdpr flag is unset in a request, but geo.country is set, we will assume GDPR applies if and only
+	// if the country matches one on this list. If both the GDPR flag and country are not set, we default
+	// to UsersyncIfAmbiguous
+	EEACountries []string `mapstructure:"eea_countries"`
 }
 
 func (cfg *GDPR) validate(errs configErrors) configErrors {
@@ -178,6 +220,12 @@ func (t *GDPRTimeouts) InitTimeout() time.Duration {
 
 func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
+}
+
+// TCF1 defines the TCF1 specific configurations for GDPR
+type TCF1 struct {
+	FetchGVL        bool   `mapstructure:"fetch_gvl"`
+	FallbackGVLPath string `mapstructure:"fallback_gvl_path"`
 }
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -209,7 +257,8 @@ type LMT struct {
 }
 
 type Analytics struct {
-	File FileLogs `mapstructure:"file"`
+	File     FileLogs `mapstructure:"file"`
+	Pubstack Pubstack `mapstructure:"pubstack"`
 }
 
 type CurrencyConverter struct {
@@ -228,6 +277,20 @@ func (cfg *CurrencyConverter) validate(errs configErrors) configErrors {
 // FileLogs Corresponding config for FileLogger as a PBS Analytics Module
 type FileLogs struct {
 	Filename string `mapstructure:"filename"`
+}
+
+type Pubstack struct {
+	Enabled     bool           `mapstructure:"enabled"`
+	ScopeId     string         `mapstructure:"scopeid"`
+	IntakeUrl   string         `mapstructure:"endpoint"`
+	Buffers     PubstackBuffer `mapstructure:"buffers"`
+	ConfRefresh string         `mapstructure:"configuration_refresh_delay"`
+}
+
+type PubstackBuffer struct {
+	BufferSize string `mapstructure:"size"`
+	EventCount int    `mapstructure:"count"`
+	Timeout    string `mapstructure:"timeout"`
 }
 
 type HostCookie struct {
@@ -782,6 +845,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adocean.endpoint", "https://{{.Host}}")
 	v.SetDefault("adapters.adoppler.endpoint", "http://app.trustedmarketplace.io/ads")
 	v.SetDefault("adapters.adpone.endpoint", "http://rtb.adpone.com/bid-request?src=prebid_server")
+	v.SetDefault("adapters.adprime.endpoint", "http://delta.adprime.com/?c=o&m=ortb")
 	v.SetDefault("adapters.adtarget.endpoint", "http://ghb.console.adtarget.com.tr/pbs/ortb")
 	v.SetDefault("adapters.adtelligent.endpoint", "http://ghb.adtelligent.com/pbs/ortb")
 	v.SetDefault("adapters.advangelists.endpoint", "http://nep.advangelists.com/xp/get?pubid={{.PublisherID}}")
@@ -856,12 +920,21 @@ func SetupViper(v *viper.Viper, filename string) {
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
+	v.SetDefault("analytics.pubstack.endpoint", "https://s2s.pbstck.com/v1")
+	v.SetDefault("analytics.pubstack.scopeid", "change-me")
+	v.SetDefault("analytics.pubstack.enabled", false)
+	v.SetDefault("analytics.pubstack.configuration_refresh_delay", "2h")
+	v.SetDefault("analytics.pubstack.buffers.size", "2MB")
+	v.SetDefault("analytics.pubstack.buffers.count", 100)
+	v.SetDefault("analytics.pubstack.buffers.timeout", "900s")
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.SetDefault("gdpr.host_vendor_id", 0)
 	v.SetDefault("gdpr.usersync_if_ambiguous", false)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
+	v.SetDefault("gdpr.tcf1.fetch_gvl", true)
+	v.SetDefault("gdpr.tcf1.fallback_gvl_path", "./static/tcf1/fallback_gvl.json")
 	v.SetDefault("gdpr.tcf2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose1.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enabled", true)
@@ -871,6 +944,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose_one_treatement.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatement.access_allowed", true)
 	v.SetDefault("gdpr.amp_exception", false)
+	v.SetDefault("gdpr.eea_countries", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
+		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
+		"LIE", "LTU", "LUX", "MLT", "MTQ", "MYT", "NLD", "NOR", "POL", "PRT", "REU", "ROU", "BLM", "MAF", "SPM",
+		"SVK", "SVN", "ESP", "SWE", "GBR"})
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")

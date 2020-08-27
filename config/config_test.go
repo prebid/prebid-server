@@ -14,6 +14,91 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestExternalCacheURLValidate(t *testing.T) {
+	testCases := []struct {
+		desc      string
+		data      ExternalCache
+		expErrors int
+	}{
+		{
+			desc:      "With http://",
+			data:      ExternalCache{Host: "http://www.google.com", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Without http://",
+			data:      ExternalCache{Host: "www.google.com", Path: "/path/v1"},
+			expErrors: 0,
+		},
+		{
+			desc:      "No scheme but '//' prefix",
+			data:      ExternalCache{Host: "//www.google.com", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "// appears twice",
+			data:      ExternalCache{Host: "//www.google.com//", Path: "path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Host has an only // value",
+			data:      ExternalCache{Host: "//", Path: "path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "only scheme host, valid path",
+			data:      ExternalCache{Host: "http://", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "No host, path only",
+			data:      ExternalCache{Host: "", Path: "path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "No host, nor path",
+			data:      ExternalCache{Host: "", Path: ""},
+			expErrors: 0,
+		},
+		{
+			desc:      "Invalid http at the end",
+			data:      ExternalCache{Host: "www.google.com", Path: "http://"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Host has an unknown scheme",
+			data:      ExternalCache{Host: "unknownscheme://host", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Wrong colon side in scheme",
+			data:      ExternalCache{Host: "http//:www.appnexus.com", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Missing '/' in scheme",
+			data:      ExternalCache{Host: "http:/www.appnexus.com", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "host with scheme, no path",
+			data:      ExternalCache{Host: "http://www.appnexus.com", Path: ""},
+			expErrors: 1,
+		},
+		{
+			desc:      "scheme, no host nor path",
+			data:      ExternalCache{Host: "http://", Path: ""},
+			expErrors: 1,
+		},
+	}
+	for _, test := range testCases {
+		var errs configErrors
+		errs = test.data.validate(errs)
+
+		assert.Equal(t, test.expErrors, len(errs), "Test case threw unexpected number of errors. Desc: %s errMsg = %v \n", test.desc, errs)
+	}
+}
+
 func TestDefaults(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
@@ -66,7 +151,7 @@ cache:
   query: uuid=%PBS_CACHE_UUID%
 external_cache:
   host: www.externalprebidcache.net
-  path: endpoints/cache
+  path: /endpoints/cache
 http_client:
   max_connections_per_host: 10
   max_idle_connections: 500
@@ -223,7 +308,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
 	cmpStrings(t, "external_cache.host", cfg.ExtCacheURL.Host, "www.externalprebidcache.net")
-	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "endpoints/cache")
+	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "/endpoints/cache")
 	cmpInts(t, "http_client.max_connections_per_host", cfg.Client.MaxConnsPerHost, 10)
 	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
 	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
