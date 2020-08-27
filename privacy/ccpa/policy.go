@@ -3,6 +3,7 @@ package ccpa
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -27,7 +28,7 @@ func ReadFromRequest(req *openrtb.BidRequest) (Policy, error) {
 	if req.Regs != nil && len(req.Regs.Ext) > 0 {
 		var ext openrtb_ext.ExtRegs
 		if err := json.Unmarshal(req.Regs.Ext, &ext); err != nil {
-			return Policy{}, err
+			return Policy{}, fmt.Errorf("error reading request.regs.ext: %s", err)
 		}
 		consent = ext.USPrivacy
 	}
@@ -36,7 +37,7 @@ func ReadFromRequest(req *openrtb.BidRequest) (Policy, error) {
 	if len(req.Ext) > 0 {
 		var ext openrtb_ext.ExtRequest
 		if err := json.Unmarshal(req.Ext, &ext); err != nil {
-			return Policy{}, err
+			return Policy{}, fmt.Errorf("error reading request.ext.prebid: %s", err)
 		}
 		noSaleBidders = ext.Prebid.NoSale
 	}

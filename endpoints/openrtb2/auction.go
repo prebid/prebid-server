@@ -323,7 +323,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	if ccpaPolicy, err := ccpa.ReadFromRequest(req); err != nil {
-		return append(errL, errL...)
+		return append(errL, err)
 	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
 		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
 			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
@@ -332,7 +332,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
 			}
 		} else {
-			return append(errL, errL...)
+			return append(errL, err)
 		}
 	}
 

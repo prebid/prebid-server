@@ -3,10 +3,12 @@ package exchange
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/stretchr/testify/assert"
@@ -188,6 +190,44 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			assert.NotEqual(t, result.Device.DIDMD5, "", test.description+":Device.DIDMD5")
 		}
 		assert.Equal(t, test.expectPrivacyLabels, privacyLabels, test.description+":PrivacyLabels")
+	}
+}
+
+func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
+	testCases := []struct {
+		description string
+		reqExt      json.RawMessage
+		reqRegsExt  json.RawMessage
+		expectError error
+	}{
+		{
+			description: "Invalid Consent",
+			reqExt:      json.RawMessage(`{"prebid":{"nosale":["*"]}}`),
+			reqRegsExt:  json.RawMessage(`{"us_privacy":"malformed"}`),
+			expectError: &errortypes.InvalidPrivacyConsent{"request.regs.ext.us_privacy must contain 4 characters"},
+		},
+		{
+			description: "Invalid No Sale Bidders",
+			reqExt:      json.RawMessage(`{"prebid":{"nosale":["*", "another"]}}`),
+			reqRegsExt:  json.RawMessage(`{"us_privacy":"1NYN"}`),
+			expectError: errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided"),
+		},
+	}
+
+	for _, test := range testCases {
+		req := newBidRequest(t)
+		req.Ext = test.reqExt
+		req.Regs = &openrtb.Regs{Ext: test.reqRegsExt}
+
+		privacyConfig := config.Privacy{
+			CCPA: config.CCPA{
+				Enforce: true,
+			},
+		}
+
+		_, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+
+		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
 }
 
