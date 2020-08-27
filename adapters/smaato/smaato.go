@@ -20,6 +20,7 @@ type adMarkupType string
 const (
 	smtAdTypeImg       adMarkupType = "Img"
 	smtAdTypeRichmedia adMarkupType = "Richmedia"
+	smtAdTypeVideo     adMarkupType = "Video"
 )
 
 // SmaatoAdapter describes a Smaato prebid server adapter.
@@ -63,7 +64,7 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	}
 
 	// Use bidRequestExt of first imp to retrieve params which are valid for all imps, e.g. publisherId
-	publisherId, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "publisherId")
+	publisherID, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "publisherId")
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -80,7 +81,7 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	}
 	if request.Site != nil {
 		siteCopy := *request.Site
-		siteCopy.Publisher = &openrtb.Publisher{ID: publisherId}
+		siteCopy.Publisher = &openrtb.Publisher{ID: publisherID}
 
 		if request.Site.Ext != nil {
 			var siteExt siteExt
@@ -179,15 +180,27 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 			bid := sb.Bid[i]
 
 			var markupError error
-			bid.AdM, markupError = renderAdMarkup(getAdMarkupType(response, bid.AdM), bid.AdM)
+			markupType := getAdMarkupType(response, bid.AdM)
+			bid.AdM, markupError = renderAdMarkup(markupType, bid.AdM)
 			if markupError != nil {
-				fmt.Println(markupError)
+				continue // no bid when broken ad markup
+			}
+
+			var bidType openrtb_ext.BidType
+			switch markupType {
+			case smtAdTypeImg:
+				bidType = openrtb_ext.BidTypeBanner
+			case smtAdTypeRichmedia:
+				bidType = openrtb_ext.BidTypeBanner
+			case smtAdTypeVideo:
+				bidType = openrtb_ext.BidTypeVideo
+			default:
 				continue // no bid when broken ad markup
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType: bidType,
 			})
 		}
 	}
@@ -202,6 +215,8 @@ func renderAdMarkup(adMarkupType adMarkupType, adMarkup string) (string, error) 
 		adm, markupError = extractAdmImage(adMarkup)
 	case smtAdTypeRichmedia:
 		adm, markupError = extractAdmRichMedia(adMarkup)
+	case smtAdTypeVideo:
+		adm, markupError = adMarkup, nil
 	default:
 		return "", fmt.Errorf("Unknown markup type %s", adMarkupType)
 	}
@@ -217,6 +232,9 @@ func getAdMarkupType(response *adapters.ResponseData, adMarkup string) adMarkupT
 	}
 	if strings.HasPrefix(adMarkup, `{"richmedia":`) {
 		return smtAdTypeRichmedia
+	}
+	if strings.HasPrefix(adMarkup, `<?xml`) {
+		return smtAdTypeVideo
 	}
 	return ""
 }
@@ -255,7 +273,14 @@ func parseImpressionObject(imp *openrtb.Imp) error {
 		imp.Ext = nil
 		return nil
 	}
-	return fmt.Errorf("invalid MediaType. SMAATO only supports Banner. Ignoring ImpID=%s", imp.ID)
+
+	if imp.Video != nil {
+		imp.TagID = adSpaceID
+		imp.Ext = nil
+		return nil
+	}
+
+	return fmt.Errorf("invalid MediaType. SMAATO only supports Banner and Video. Ignoring ImpID=%s", imp.ID)
 }
 
 func extractUserExtAttributes(userExt userExt, userCopy *openrtb.User) {
