@@ -76,7 +76,8 @@ func (s *accountService) Get(key string) (*cache.Account, error) {
 	defer cancel()
 	var id string
 	var priceGranularity sql.NullString
-	if err := s.shared.db.QueryRowContext(ctx, "SELECT uuid, price_granularity FROM accounts_account where uuid = $1 LIMIT 1", key).Scan(&id, &priceGranularity); err != nil {
+	var eventsEnabled sql.NullBool
+	if err := s.shared.db.QueryRowContext(ctx, "SELECT uuid, price_granularity, events_enabled FROM accounts_account where uuid = $1 LIMIT 1", key).Scan(&id, &priceGranularity, &eventsEnabled); err != nil {
 		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
 		return nil, err
 	}
@@ -85,6 +86,7 @@ func (s *accountService) Get(key string) (*cache.Account, error) {
 	if priceGranularity.Valid {
 		account.PriceGranularity = priceGranularity.String
 	}
+	account.EventsEnabled = eventsEnabled.Bool
 
 	buf := bytes.Buffer{}
 	if err := gob.NewEncoder(&buf).Encode(&account); err != nil {

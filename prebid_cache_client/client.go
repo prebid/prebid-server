@@ -45,6 +45,10 @@ type Cacheable struct {
 	Data       json.RawMessage
 	TTLSeconds int64
 	Key        string
+
+	BidID     string `json:"bidid"`     // this is "/vtrack" specific
+	Bidder    string `json:"bidder"`    // this is "/vtrack" specific
+	Timestamp int64  `json:"timestamp"` // this is "/vtrack" specific
 }
 
 func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
@@ -179,6 +183,26 @@ func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffe
 		buffer.WriteString(string(value.Key))
 		buffer.WriteString(`"`)
 	}
+
+	//vtrack specific
+	if len(value.BidID) > 0 {
+		buffer.WriteString(`,"bidid":"`)
+		buffer.WriteString(string(value.BidID))
+		buffer.WriteString(`"`)
+	}
+
+	if len(value.Bidder) > 0 {
+		buffer.WriteString(`,"bidder":"`)
+		buffer.WriteString(string(value.Bidder))
+		buffer.WriteString(`"`)
+	}
+
+	if value.Timestamp > 0 {
+		buffer.WriteString(`,"timestamp":"`)
+		buffer.WriteString(strconv.FormatInt(value.TTLSeconds, 10))
+		buffer.WriteString(`"`)
+	}
+
 	buffer.WriteByte('}')
 	return nil
 }

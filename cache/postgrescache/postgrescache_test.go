@@ -38,8 +38,8 @@ func stubnewShared(conf CacheConfig) *shared {
 func TestPostgresDbPriceGranularity(t *testing.T) {
 	defer testdb.Reset()
 
-	sql := "SELECT uuid, price_granularity FROM accounts_account where uuid = $1 LIMIT 1"
-	columns := []string{"uuid", "price_granularity"}
+	sql := "SELECT uuid, price_granularity, events_enabled FROM accounts_account where uuid = $1 LIMIT 1"
+	columns := []string{"uuid", "price_granularity", "events_enabled"}
 	result := `
 	  bdc928ef-f725-4688-8171-c104cc715bdf,med
 	  `
@@ -67,8 +67,8 @@ func TestPostgresDbPriceGranularity(t *testing.T) {
 func TestPostgresDbNullPriceGranularity(t *testing.T) {
 	defer testdb.Reset()
 
-	sql := "SELECT uuid, price_granularity FROM accounts_account where uuid = $1 LIMIT 1"
-	columns := []string{"uuid", "price_granularity"}
+	sql := "SELECT uuid, price_granularity, events_enabled FROM accounts_account where uuid = $1 LIMIT 1"
+	columns := []string{"uuid", "price_granularity", "events_enabled"}
 	result := `
 	  bdc928ef-f725-4688-8171-c104cc715bdf
 	  `
@@ -90,5 +90,69 @@ func TestPostgresDbNullPriceGranularity(t *testing.T) {
 	}
 	if account.PriceGranularity != "" {
 		t.Error("Expected null string")
+	}
+}
+
+func TestPostgresDbEventsEnabled(t *testing.T) {
+	defer testdb.Reset()
+
+	sql := "SELECT uuid, price_granularity, events_enabled  FROM accounts_account where uuid = $1 LIMIT 1"
+	columns := []string{"uuid", "price_granularity", "events_enabled"}
+	result := `
+	  bdc928ef-f725-4688-8171-c104cc715bdf,med,true
+	  `
+	testdb.StubQuery(sql, testdb.RowsFromCSVString(columns, result))
+
+	conf := CacheConfig{
+		TTL:  3434,
+		Size: 100,
+	}
+	dataCache := StubNew(conf)
+
+	account, err := dataCache.Accounts().Get("bdc928ef-f725-4688-8171-c104cc715bdf")
+	if err != nil {
+		t.Fatalf("test postgres db errored: %v", err)
+	}
+
+	if account.ID != "bdc928ef-f725-4688-8171-c104cc715bdf" {
+		t.Error("Expected bdc928ef-f725-4688-8171-c104cc715bdf")
+	}
+	if account.PriceGranularity != "med" {
+		t.Error("Expected med")
+	}
+	if account.EventsEnabled != true {
+		t.Error("Expected true")
+	}
+}
+
+func TestPostgresDbNullEventsEnabled(t *testing.T) {
+	defer testdb.Reset()
+
+	sql := "SELECT uuid, price_granularity, events_enabled  FROM accounts_account where uuid = $1 LIMIT 1"
+	columns := []string{"uuid", "price_granularity", "events_enabled"}
+	result := `
+	  bdc928ef-f725-4688-8171-c104cc715bdf
+	  `
+	testdb.StubQuery(sql, testdb.RowsFromCSVString(columns, result))
+
+	conf := CacheConfig{
+		TTL:  3434,
+		Size: 100,
+	}
+	dataCache := StubNew(conf)
+
+	account, err := dataCache.Accounts().Get("bdc928ef-f725-4688-8171-c104cc715bdf")
+	if err != nil {
+		t.Fatalf("test postgres db errored: %v", err)
+	}
+
+	if account.ID != "bdc928ef-f725-4688-8171-c104cc715bdf" {
+		t.Error("Expected bdc928ef-f725-4688-8171-c104cc715bdf")
+	}
+	if account.PriceGranularity != "" {
+		t.Error("Expected null string")
+	}
+	if account.EventsEnabled != false {
+		t.Error("Expected false")
 	}
 }
