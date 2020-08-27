@@ -22,6 +22,20 @@
       "type": "string",
       "description": "Comma-separated keywords. Forbidden symbols: &.",
       "pattern": "^[^&]*$"
+    },
+    "cdims": {
+      "type": "string",
+      "description": "Comma-separated creative dimentions.",
+      "pattern": "(^\\d+x\\d+)(,\\d+x\\d+)*$"
+    },
+    "minp": {
+      "type": "number",
+      "description": "The minimum CPM price.",
+      "minimum": 0
+    },
+    "url": {
+      "type": "string",
+      "description": "Custom URL for targeting."
     }
   },
   "required": ["mid"]

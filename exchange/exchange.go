@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	uuid "github.com/gofrs/uuid"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
@@ -54,6 +55,7 @@ type exchange struct {
 	UsersyncIfAmbiguous bool
 	defaultTTLs         config.DefaultTTLs
 	privacyConfig       config.Privacy
+	eeaCountries        map[string]struct{}
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -74,6 +76,11 @@ type bidResponseWrapper struct {
 func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) Exchange {
 	e := new(exchange)
 
+	e.eeaCountries = make(map[string]struct{}, len(cfg.GDPR.EEACountries))
+	var s struct{}
+	for _, c := range cfg.GDPR.EEACountries {
+		e.eeaCountries[c] = s
+	}
 	e.adapterMap = newAdapterMap(client, cfg, infos, metricsEngine)
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
@@ -120,9 +127,27 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		e.me.RecordImps(impLabels)
 	}
 
+	// Make our best guess if GDPR applies
+	usersyncIfAmbiguous := e.UsersyncIfAmbiguous
+	var geo *openrtb.Geo = nil
+	if bidRequest.User != nil && bidRequest.User.Geo != nil {
+		geo = bidRequest.User.Geo
+	} else if bidRequest.Device != nil && bidRequest.Device.Geo != nil {
+		geo = bidRequest.Device.Geo
+	}
+	if geo != nil {
+		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
+		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
+		if _, found := e.eeaCountries[strings.ToUpper(geo.Country)]; found {
+			usersyncIfAmbiguous = false
+		} else if len(geo.Country) == 3 {
+			// The country field is formatted properly as a three character country code
+			usersyncIfAmbiguous = true
+		}
+	}
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, bidRequest, requestExt, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous, e.privacyConfig)
+	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, bidRequest, requestExt, usersyncs, blabels, labels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -190,6 +215,23 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 		}
 
+	}
+
+	if !anyBidsReturned {
+		if debugLog != nil && debugLog.Enabled {
+			if rawUUID, err := uuid.NewV4(); err == nil {
+				debugLog.CacheKey = rawUUID.String()
+
+				bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errs)
+				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+					debugLog.Data.Response = string(bidRespExtBytes)
+				} else {
+					debugLog.Data.Response = "Unable to marshal response ext for debugging"
+				}
+			} else {
+				errs = append(errs, err)
+			}
+		}
 	}
 
 	// Build the response
@@ -618,7 +660,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 						// An older bid from a different seatBid we've already finished with
 						oldSeatBid := (seatBids)[dupe.bidderName]
 						if len(oldSeatBid.bids) == 1 {
-							seatBidsToRemove = append(seatBidsToRemove, bidderName)
+							seatBidsToRemove = append(seatBidsToRemove, dupe.bidderName)
 							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						} else {
 							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
