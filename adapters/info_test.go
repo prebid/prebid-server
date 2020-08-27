@@ -24,6 +24,7 @@ func TestAppNotSupported(t *testing.T) {
 	}
 	constrained := adapters.EnforceBidderInfo(bidder, info)
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
+		Imp: []openrtb.Imp{{ID: "imp-1", Banner: &openrtb.Banner{}}},
 		App: &openrtb.App{},
 	}, &adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 1) {
@@ -45,6 +46,7 @@ func TestSiteNotSupported(t *testing.T) {
 	}
 	constrained := adapters.EnforceBidderInfo(bidder, info)
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
+		Imp:  []openrtb.Imp{{ID: "imp-1", Banner: &openrtb.Banner{}}},
 		Site: &openrtb.Site{},
 	}, &adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 1) {
@@ -56,6 +58,7 @@ func TestSiteNotSupported(t *testing.T) {
 }
 
 func TestImpFiltering(t *testing.T) {
+	// Set up
 	bidder := &mockBidder{}
 	info := adapters.BidderInfo{
 		Capabilities: &adapters.CapabilitiesInfo{
@@ -69,48 +72,129 @@ func TestImpFiltering(t *testing.T) {
 	}
 
 	constrained := adapters.EnforceBidderInfo(bidder, info)
-	_, errs := constrained.MakeRequests(&openrtb.BidRequest{
-		Imp: []openrtb.Imp{
-			{
-				ID:    "imp-1",
-				Video: &openrtb.Video{},
+
+	// Define test cases
+	type testOut struct {
+		errors []error
+		impLen int
+	}
+	testCases := []struct {
+		description  string
+		inBidRequest *openrtb.BidRequest
+		out          testOut
+	}{
+		{
+			"Empty Imp array. MakeRequest() call not expected",
+			&openrtb.BidRequest{
+				Imp:  []openrtb.Imp{},
+				Site: &openrtb.Site{},
 			},
-			{
-				Native: &openrtb.Native{},
-			},
-			{
-				ID:     "imp-2",
-				Video:  &openrtb.Video{},
-				Native: &openrtb.Native{},
-			},
-			{
-				Banner: &openrtb.Banner{},
+			testOut{
+				errors: []error{
+					&errortypes.BadInput{Message: "Empty Imp array in bid request"},
+				},
+				impLen: 0,
 			},
 		},
-		Site: &openrtb.Site{},
-	}, &adapters.ExtraRequestInfo{})
-	if !assert.Len(t, errs, 6) {
-		return
+		{
+			"Sole imp in bid request is of wrong media type. MakeRequest() call not expected",
+			&openrtb.BidRequest{
+				Imp: []openrtb.Imp{{ID: "imp-1", Video: &openrtb.Video{}}},
+				App: &openrtb.App{},
+			},
+			testOut{
+				errors: []error{
+					&errortypes.BadInput{Message: "request.imp[0] uses video, but this bidder doesn't support it"},
+					&errortypes.BadInput{Message: "Bid request didn't contain media types supported by bidder"},
+				},
+				impLen: 0,
+			},
+		},
+		{
+			"All imps in bid request of wrong media type, MakeRequest() call not expected",
+			&openrtb.BidRequest{
+				Imp: []openrtb.Imp{
+					{ID: "imp-1", Video: &openrtb.Video{}},
+					{ID: "imp-2", Native: &openrtb.Native{}},
+					{ID: "imp-3", Audio: &openrtb.Audio{}},
+				},
+				App: &openrtb.App{},
+			},
+			testOut{
+				errors: []error{
+					&errortypes.BadInput{Message: "request.imp[0] uses video, but this bidder doesn't support it"},
+					&errortypes.BadInput{Message: "request.imp[1] uses native, but this bidder doesn't support it"},
+					&errortypes.BadInput{Message: "request.imp[2] uses audio, but this bidder doesn't support it"},
+					&errortypes.BadInput{Message: "Bid request didn't contain media types supported by bidder"},
+				},
+				impLen: 0,
+			},
+		},
+		{
+			"Some imps with correct media type, MakeRequest() call expected",
+			&openrtb.BidRequest{
+				Imp: []openrtb.Imp{
+					{
+						ID:    "imp-1",
+						Video: &openrtb.Video{},
+					},
+					{
+						Native: &openrtb.Native{},
+					},
+					{
+						ID:     "imp-2",
+						Video:  &openrtb.Video{},
+						Native: &openrtb.Native{},
+					},
+					{
+						Banner: &openrtb.Banner{},
+					},
+				},
+				Site: &openrtb.Site{},
+			},
+			testOut{
+				errors: []error{
+					&errortypes.BadInput{Message: "request.imp[1] uses native, but this bidder doesn't support it"},
+					&errortypes.BadInput{Message: "request.imp[2] uses native, but this bidder doesn't support it"},
+					&errortypes.BadInput{Message: "request.imp[3] uses banner, but this bidder doesn't support it"},
+					&errortypes.BadInput{Message: "request.imp[1] has no supported MediaTypes. It will be ignored"},
+					&errortypes.BadInput{Message: "request.imp[3] has no supported MediaTypes. It will be ignored"},
+				},
+				impLen: 2,
+			},
+		},
+		{
+			"All imps with correct media type, MakeRequest() call expected",
+			&openrtb.BidRequest{
+				Imp: []openrtb.Imp{
+					{ID: "imp-1", Video: &openrtb.Video{}},
+					{ID: "imp-2", Video: &openrtb.Video{}},
+				},
+				Site: &openrtb.Site{},
+			},
+			testOut{
+				errors: nil,
+				impLen: 2,
+			},
+		},
 	}
-	assert.EqualError(t, errs[0], "request.imp[1] uses native, but this bidder doesn't support it")
-	assert.EqualError(t, errs[1], "request.imp[2] uses native, but this bidder doesn't support it")
-	assert.EqualError(t, errs[2], "request.imp[3] uses banner, but this bidder doesn't support it")
-	assert.EqualError(t, errs[3], "request.imp[1] has no supported MediaTypes. It will be ignored")
-	assert.EqualError(t, errs[4], "request.imp[3] has no supported MediaTypes. It will be ignored")
-	assert.EqualError(t, errs[5], "mock MakeRequests error")
-	assert.IsType(t, &errortypes.BadInput{}, errs[0])
-	assert.IsType(t, &errortypes.BadInput{}, errs[1])
-	assert.IsType(t, &errortypes.BadInput{}, errs[2])
-	assert.IsType(t, &errortypes.BadInput{}, errs[3])
-	assert.IsType(t, &errortypes.BadInput{}, errs[4])
 
-	req := bidder.gotRequest
-	if !assert.Len(t, req.Imp, 2) {
-		return
+	//Run tests
+	for _, test := range testCases {
+		actualAdapterRequests, actualErrs := constrained.MakeRequests(test.inBidRequest, &adapters.ExtraRequestInfo{})
+
+		// assert errors array
+		if !assert.Equal(t, len(actualErrs), len(test.out.errors), "Test failed. Wrong number of errors in error list: %s", test.description) {
+			return
+		}
+
+		for i, expectedErr := range test.out.errors {
+			assert.EqualError(t, expectedErr, test.out.errors[i].Error(), "Test failed. Error[%d] in error list mismatch: %s", i, test.description)
+		}
+
+		// assert lenght of resulting imp
+		assert.Equal(t, test.out.impLen, len(actualAdapterRequests), "Test failed. Incorrect lenght of filtered imps: %s", test.description)
 	}
-	assert.Equal(t, "imp-1", req.Imp[0].ID)
-	assert.Equal(t, "imp-2", req.Imp[1].ID)
-	assert.Nil(t, req.Imp[1].Native)
 }
 
 type mockBidder struct {
@@ -118,8 +202,13 @@ type mockBidder struct {
 }
 
 func (m *mockBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	m.gotRequest = request
-	return nil, []error{errors.New("mock MakeRequests error")}
+	var adapterRequests []*adapters.RequestData
+
+	for i := 0; i < len(request.Imp); i++ {
+		adapterRequests = append(adapterRequests, &adapters.RequestData{})
+	}
+
+	return adapterRequests, nil
 }
 
 func (m *mockBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
