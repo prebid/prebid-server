@@ -57,7 +57,7 @@ func TestParse(t *testing.T) {
 			consent:        "malformed",
 			noSaleBidders:  []string{},
 			expectedPolicy: ParsedPolicy{},
-			expectedError:  "request.regs.ext.us_privacy is invalid: must contain 4 characters",
+			expectedError:  "request.regs.ext.us_privacy must contain 4 characters",
 		},
 		{
 			description:    "No Sale Error",

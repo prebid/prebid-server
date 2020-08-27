@@ -121,20 +121,35 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 		{
 			description:     "Feature Flag Enabled - No Sale Star - Doesn't Scrub",
 			reqExt:          json.RawMessage(`{"prebid":{"nosale":["*"]}}`),
+			ccpaConsent:     "1-Y-",
 			enforceCCPA:     true,
 			expectDataScrub: false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: true,
+				CCPAEnforced: false,
+			},
 		},
 		{
 			description:     "Feature Flag Enabled - No Sale Specific Bidder - Doesn't Scrub",
 			reqExt:          json.RawMessage(`{"prebid":{"nosale":["appnexus"]}}`),
+			ccpaConsent:     "1-Y-",
 			enforceCCPA:     true,
 			expectDataScrub: false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: true,
+				CCPAEnforced: true,
+			},
 		},
 		{
 			description:     "Feature Flag Enabled - No Sale Different Bidder - Scrubs",
 			reqExt:          json.RawMessage(`{"prebid":{"nosale":["rubicon"]}}`),
+			ccpaConsent:     "1-Y-",
 			enforceCCPA:     true,
 			expectDataScrub: true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: true,
+				CCPAEnforced: true,
+			},
 		},
 		{
 			description:     "Feature Flag Disabled",
@@ -150,6 +165,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 
 	for _, test := range testCases {
 		req := newBidRequest(t)
+		req.Ext = test.reqExt
 		req.Regs = &openrtb.Regs{
 			Ext: json.RawMessage(`{"us_privacy":"` + test.ccpaConsent + `"}`),
 		}

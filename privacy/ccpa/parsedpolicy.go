@@ -42,7 +42,7 @@ type ParsedPolicy struct {
 func (p Policy) Parse(validBidders map[string]struct{}) (ParsedPolicy, error) {
 	consentOptOut, err := parseConsent(p.Consent)
 	if err != nil {
-		msg := fmt.Sprintf("request.regs.ext.us_privacy is invalid: %s", err.Error())
+		msg := fmt.Sprintf("request.regs.ext.us_privacy %s", err.Error())
 		return ParsedPolicy{}, &errortypes.InvalidPrivacyConsent{Message: msg}
 	}
 
