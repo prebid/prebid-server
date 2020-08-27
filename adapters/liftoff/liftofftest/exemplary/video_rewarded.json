@@ -85,10 +85,12 @@
                 "ext": {
                   "orientation": "h",
                   "placementtype": "rewarded",
-                  "rewarded": 1,
                   "skip": 0,
                   "skipdelay": 0
                 }
+              },
+              "ext": {
+                "rewarded": 1
               }
             }
           ]

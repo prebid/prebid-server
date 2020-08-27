@@ -84,10 +84,12 @@
                 "ext": {
                   "orientation": "v",
                   "placementtype": "interstitial",
-                  "rewarded": 0,
                   "skip": 1,
                   "skipdelay": 5
                 }
+              },
+              "ext": {
+                "rewarded": 0
               }
             }
           ]
