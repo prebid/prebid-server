@@ -1,0 +1,56 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "app":{
+          "id":"test-app-id",
+          "name":"test-app-name",
+          "bundle":"test-app-bundle"
+      },
+  
+      "device":{
+          "ua":"test-device-ua",
+          "ip":"test-device-ip",
+        "ifa":"test-device-ifa",
+        "model":"test-device-model",
+        "os":"test-device-os",
+        "dnt":1
+      },
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 50
+              }
+            ]
+          },
+          "ext":{
+            "bidder":{
+              "id": "sample-id",
+              "zid": "sample-zone-id",
+              "wid": "sample-web-id"
+             }
+          }
+        }
+      ]
+    },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://hb.gammaplatform.com/adx/request/?id=sample-id&zid=sample-zone-id&wid=sample-web-id&bidid=test-imp-id&hb=pbmobile&device_ip=test-device-ip&device_model=test-device-model&device_os=test-device-os&device_ua=test-device-ua&device_ifa=test-device-ifa&app_id=test-app-id&app_bundle=test-app-bundle&app_name=test-app-name"
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "test-request-id",
+                "seatbid": [
+                ]
+            }
+        }
+      }
+    ],
+    "expectedMakeBidsErrors": []
+}
