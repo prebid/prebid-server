@@ -19,11 +19,11 @@ type BrightrollAdapter struct {
 }
 
 type ExtraInfo struct {
-	Accounts []Account `json:"account"`
+	Accounts []Accounts `json:"accounts"`
 }
 
-type Account struct {
-	Id       string   `json:"id"`
+type Accounts struct {
+	ID       string   `json:"id"`
 	Badv     []string `json:"badv"`
 	Bcat     []string `json:"bcat"`
 	Battr    []int8   `json:"battr"`
@@ -69,13 +69,16 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo 
 		errors = append(errors, err)
 		return nil, errors
 	}
-	var idx = -1
-	for i := 0; i < len(a.extraInfo.Accounts); i++ {
-		if a.extraInfo.Accounts[i].Id == brightrollExt.Publisher {
-			idx = i
+
+	var account *Accounts
+	for _, a := range a.extraInfo.Accounts {
+		if a.ID == brightrollExt.Publisher {
+			account = &a
+			break
 		}
 	}
-	if idx == -1 {
+
+	if account == nil {
 		err = &errortypes.BadInput{
 			Message: "Invalid publisher",
 		}
@@ -94,8 +97,8 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo 
 				bannerCopy.H = &(firstFormat.H)
 			}
 
-			if len(a.extraInfo.Accounts[idx].Battr) > 0 {
-				bannerCopy.BAttr = getBlockedCreativetypes(a.extraInfo.Accounts[idx].Battr)
+			if len(account.Battr) > 0 {
+				bannerCopy.BAttr = getBlockedCreativetypes(account.Battr)
 			}
 			request.Imp[i].Banner = &bannerCopy
 			validImpExists = true
@@ -103,14 +106,14 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo 
 			validImpExists = true
 			if brightrollExt.Publisher == "adthrive" {
 				videoCopy := *request.Imp[i].Video
-				if len(a.extraInfo.Accounts[idx].Battr) > 0 {
-					videoCopy.BAttr = getBlockedCreativetypes(a.extraInfo.Accounts[idx].Battr)
+				if len(account.Battr) > 0 {
+					videoCopy.BAttr = getBlockedCreativetypes(account.Battr)
 				}
 				request.Imp[i].Video = &videoCopy
 			}
 		}
-		if validImpExists && request.Imp[i].BidFloor == 0 && a.extraInfo.Accounts[idx].BidFloor > 0 {
-			request.Imp[i].BidFloor = a.extraInfo.Accounts[idx].BidFloor
+		if validImpExists && request.Imp[i].BidFloor == 0 && account.BidFloor > 0 {
+			request.Imp[i].BidFloor = account.BidFloor
 		}
 	}
 	if !validImpExists {
@@ -123,12 +126,12 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo 
 
 	request.AT = 1 //Defaulting to first price auction for all prebid requests
 
-	if len(a.extraInfo.Accounts[idx].Bcat) > 0 {
-		request.BCat = a.extraInfo.Accounts[idx].Bcat
+	if len(account.Bcat) > 0 {
+		request.BCat = account.Bcat
 	}
 
-	if len(a.extraInfo.Accounts[idx].Badv) > 0 {
-		request.BAdv = a.extraInfo.Accounts[idx].Badv
+	if len(account.Badv) > 0 {
+		request.BAdv = account.Badv
 	}
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
@@ -230,7 +233,7 @@ func NewBrightrollBidder(endpoint string, extraAdapterInfo string) *BrightrollAd
 	var extraInfo ExtraInfo
 
 	if len(extraAdapterInfo) == 0 {
-		extraAdapterInfo = "{\"account\":[]}"
+		extraAdapterInfo = "{\"accounts\":[]}"
 	}
 	err := json.Unmarshal([]byte(extraAdapterInfo), &extraInfo)
 
