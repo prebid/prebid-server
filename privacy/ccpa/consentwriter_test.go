@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConsentWriterWrite(t *testing.T) {
+func TestConsentWriter(t *testing.T) {
 	consent := "anyConsent"
 	testCases := []struct {
 		description   string
@@ -17,16 +17,16 @@ func TestConsentWriterWrite(t *testing.T) {
 		expectedError bool
 	}{
 		{
+			description: "Nil Request",
+			request:     nil,
+			expected:    nil,
+		},
+		{
 			description: "Success",
 			request:     &openrtb.BidRequest{},
 			expected: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`{"us_privacy":"anyConsent"}`)},
 			},
-		},
-		{
-			description: "Nil Request",
-			request:     nil,
-			expected:    nil,
 		},
 		{
 			description: "Error With Regs.Ext - Does Not Mutate",

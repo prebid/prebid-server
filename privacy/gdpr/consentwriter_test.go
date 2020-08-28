@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWrite(t *testing.T) {
+func TestConsentWriter(t *testing.T) {
 	testCases := []struct {
 		description   string
 		consent       string

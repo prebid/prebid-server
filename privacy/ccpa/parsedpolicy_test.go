@@ -266,7 +266,7 @@ func TestParseNoSaleBidders(t *testing.T) {
 	}
 }
 
-func TestSpecified(t *testing.T) {
+func TestCanEnforce(t *testing.T) {
 	testCases := []struct {
 		description string
 		policy      ParsedPolicy
@@ -295,7 +295,7 @@ func TestSpecified(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result := test.policy.Specified()
+		result := test.policy.CanEnforce()
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }

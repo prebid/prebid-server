@@ -117,8 +117,8 @@ func parseNoSaleBidders(noSaleBidders []string, validBidders map[string]struct{}
 	return
 }
 
-// Specified returns true when consent is provided, as opposed to an empty string.
-func (p ParsedPolicy) Specified() bool {
+// CanEnforce returns true when consent is specifically provided by the publisher, as opposed to an empty string.
+func (p ParsedPolicy) CanEnforce() bool {
 	return p.consentSpecified
 }
 
