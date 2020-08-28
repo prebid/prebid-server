@@ -14,7 +14,7 @@
       },
       "ext": {
           "appnexus": {
-            "placement_id": 19689655
+            "placement_id": 19689654
           },
           "emx_digital": {
               "tagid": "105251"
@@ -33,8 +33,8 @@
           },
           "rubicon": {
             "accountId": 15526,
-            "siteId": 110932,
-            "zoneId": 523774
+            "siteId": 335554,
+            "zoneId": 1764488
           },
           "sonobi": {
               "TagID": "12eb86143abb80d6a9c6"
