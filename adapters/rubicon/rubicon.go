@@ -672,10 +672,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 		if request.User != nil {
 			userCopy := *request.User
-			userExtRP := rubiconUserExt{
-				RP:          rubiconUserExtRP{Target: rubiconExt.Visitor},
-				LiverampIdl: "",
-			}
+			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
 
 			if request.User.Ext != nil {
 				var userExt *openrtb_ext.ExtUser
