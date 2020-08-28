@@ -10,10 +10,10 @@
       },
       "ext": {
           "appnexus": {
-            "placementId": "19689655"
+            "placement_id": 19689655
           },
           "districtm": {
-            "placementId": "19765947"
+            "placement_id": 19765947
           },
           "emx_digital": {
               "tagid": "107133"
@@ -31,12 +31,12 @@
             "path": "mvo"
           },
           "rubicon": {
-            "accountId": "15526",
-            "siteId": "335554",
-            "zoneId": "1764488"
+            "accountId": 15526,
+            "siteId": 335554,
+            "zoneId": 1764488
           },
           "sonobi": {
-              "ad_unit": "12eb86143abb80d6a9c6"
+              "TagID": "12eb86143abb80d6a9c6"
           }
       }
 }
