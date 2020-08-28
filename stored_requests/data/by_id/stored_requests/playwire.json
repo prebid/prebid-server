@@ -1,16 +1,3 @@
 {
-    "id": "playwire",
-    "banner": {
-        "format": [
-          {
-            "w": 300,
-            "h": 250
-          }
-        ]
-      },
-      "ext": {
-          "appnexus": {
-            "placement_id": 19689655
-          }
-      }
+    "tmax": 1000
 }
