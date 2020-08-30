@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
+
 	"net/http"
 	"text/template"
 )
@@ -27,14 +28,15 @@ func (a *BetweenAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 	// Pull the host info from the bidder params.
 	reqImps, err := splitImpressions(request.Imp)
-	if len(reqImps) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No Imps in Bid Request"),
-		}}
-	}
 
 	if err != nil {
 		errs = append(errs, err)
+	}
+
+	if len(reqImps) == 0 {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("No valid Imps in Bid Request"),
+		}}
 	}
 
 	requests := []*adapters.RequestData{}
@@ -48,7 +50,6 @@ func (a *BetweenAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			continue
 		}
 
-		//urlParams := macros.EndpointTemplateParams{Host: reqExt.Host, PublisherID: strconv.Itoa(reqExt.SourceId)}
 		urlParams := macros.EndpointTemplateParams{Host: reqExt.Host}
 		url, err := macros.ResolveMacros(a.EndpointTemplate, urlParams)
 
@@ -121,12 +122,17 @@ func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpBetween][]openr
 	for _, imp := range imps {
 		bidderParams, err := getBidderParams(&imp)
 		if err != nil {
-			return nil, err
+			continue
 		}
 
-		m[bidderParams] = append(m[bidderParams], imp)
+		_, ok := m[bidderParams]
+		if ok {
+			//unlikely todo: what if we have impressions with different hosts
+			//m[bidderParams] = append(v, imp)
+		} else {
+			m[bidderParams] = []openrtb.Imp{imp}
+		}
 	}
-
 	return m, nil
 }
 
