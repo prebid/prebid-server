@@ -1,119 +1,83 @@
 {
-  "mockBidRequest":
-  {
-    "id": "some-request-id",
+  "mockBidRequest": {
+    "id": "some-request-id1",
     "imp": [
       {
-        "id": "some-impression-id",
-        "banner":
-        {
+        "id": "some-impression-id1",
+        "banner": {
           "format": [
             {
-              "w": 300,
-              "h": 250
-            }]
+              "h": 250,
+              "w": 300
+            }
+          ],
+          "h": 250,
+          "w": 300
         },
-        "ext":
-        {
-          "bidder":
-          {
-            "host": "127.0.0.1",
-            "sourceId": 906295
+        "ext": {
+          "bidder": {
+            "host": "127.0.0.2"
           }
         }
-      },{
+      },
+      {
         "id": "some-impression-id2",
-        "banner":
-        {
-          "format": [{
-            "w": 300,
-            "h": 600
-          }]
+        "banner": {
+          "format": [
+            {
+              "h": 250,
+              "w": 300
+            }
+          ],
+          "h": 250,
+          "w": 300
         },
-        "ext":
-        {
-          "bidder":
-          {
-            "host": "127.0.0.1",
-            "sourceId": 906295
+        "ext": {
+          "bidder": {
+            "host": "127.0.0.2"
           }
         }
-      }],
-    "site":
-    {
-      "page": "prebid.org"
+      }
+    ],
+    "device": {
+      "ip": "8.8.8.12"
     },
-    "device":
-    {
-      "ip": "8.8.8.10"
-    },
-    "at": 1,
     "tmax": 500
   },
   "httpCalls": [
+
     {
-      "expectedRequest":
-      {
-        "uri": "http://127.0.0.1/",
-        "body":
-        {
-          "id": "some-request-id",
+      "expectedRequest": {
+        "uri": "http://127.0.0.2/",
+        "body": {
+          "id": "some-request-id1",
+
           "imp": [
             {
-              "id": "some-impression-id",
-              "banner":
-              {
+              "id": "some-impression-id1",
+              "banner": {
                 "format": [
                   {
-                    "w": 300,
-                    "h": 250
-                  }]
-              },
-              "ext":
-              {
-                "bidder":
-                {
-                  "host": "127.0.0.1",
-                  "sourceId": 906295
-                }
-              }
-            },{
-              "id": "some-impression-id2",
-              "banner":
-              {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 600
-                  }]
-              },
-              "ext":
-              {
-                "bidder":
-                {
-                  "host": "127.0.0.1",
-                  "sourceId": 906295
-                }
-              }
-            }],
-          "site":
-          {
-            "page": "prebid.org"
+                    "h": 250,
+                    "w": 300
+                  }
+                ],
+                "h": 250,
+                "w": 300
+              }, "ext": {"bidder": {"host": "127.0.0.2"}}
+            }
+          ],
+
+          "device": {
+            "ip": "8.8.8.12"
           },
-          "device":
-          {
-            "ip": "8.8.8.10"
-          },
-          "at": 1,
           "tmax": 500
         }
       },
-      "mockResponse":
-      {
+      "mockResponse": {
         "status": 200,
-        "body":
-        {
-          "id": "some-request-id",
+        "body": {
+          "id": "some-impression-id1",
           "bidid": "183975330-5-29038-2",
           "seatbid": [
             {
@@ -121,32 +85,33 @@
               "bid": [
                 {
                   "id": "2181314349",
-                  "impid": "some-impression-id",
-                  "adm": "<div>example banner</div>",
+                  "impid": "some-impression-id1",
+                  "adm": "<div>some adm</div>",
                   "price": 13.37,
                   "cid": "906293",
                   "adid": "906297",
                   "crid": "906299",
                   "w": 300,
                   "h": 250
-                }]
-            }],
-          "cur": "USD",
-          "ext":
-          {}
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+
         }
       }
-    }],
+    }
+  ],
   "expectedBidResponses": [
     {
       "currency": "USD",
       "bids": [
         {
-          "bid":
-          {
+          "bid": {
             "id": "2181314349",
-            "impid": "some-impression-id",
-            "adm": "<div>example banner</div>",
+            "impid": "some-impression-id1",
+            "adm": "<div>some adm</div>",
             "price": 13.37,
             "cid": "906293",
             "adid": "906297",
@@ -155,6 +120,8 @@
             "h": 250
           },
           "type": "banner"
-        }]
-    }]
+        }
+      ]
+    }
+  ]
 }

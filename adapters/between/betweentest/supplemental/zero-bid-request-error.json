@@ -12,7 +12,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "No Imps in Bid Request",
+      "value": "No valid Imps in Bid Request",
       "comparison": "literal"
     }
   ]
