@@ -38,13 +38,12 @@ type BeachfrontAdapter struct {
 
 type ExtraInfo struct {
 	VideoEndpoint string `json:"video_endpoint,omitempty"`
-	VideoSequential int8 `json:"video_sequential,omitempty"`
 }
 
 type requests struct {
 	Banner    bannerRequest
 	NurlVideo []videoRequest
-	ADMVideo  []videoRequest
+	ADMVideo  videoRequest
 }
 
 // ---------------------------------------------------
@@ -109,7 +108,7 @@ type videoBidExtension struct {
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	beachfrontRequests, errs := preprocess(request, a.extraInfo.VideoSequential == 0)
+	beachfrontRequests, errs := preprocess(request)
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -129,10 +128,12 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-	var reqCount = len(beachfrontRequests.ADMVideo) + len(beachfrontRequests.NurlVideo)
+	var reqCount = len(beachfrontRequests.NurlVideo)
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		reqCount++
 	}
+
+	reqCount = reqCount + len(beachfrontRequests.ADMVideo.Request.Imp)
 
 	var reqs = make([]*adapters.RequestData, reqCount)
 
@@ -162,21 +163,32 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
-	for j := 0; j < len(beachfrontRequests.ADMVideo); j++ {
-		bytes, err := json.Marshal(beachfrontRequests.ADMVideo[j].Request)
+	bumpAdm := false
+	// @TODO - get the false cases on these errors
+	for j := 0; j < len(beachfrontRequests.ADMVideo.Request.Imp); j++ {
+		bytes, err := json.Marshal(beachfrontRequests.ADMVideo.Request.Imp[j])
 		if err == nil {
-			reqs[j+nurlBump] = &adapters.RequestData{
-				Method:  "POST",
-				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
-				Body:    bytes,
-				Headers: headers,
+			ext, err := getBeachfrontExtension(beachfrontRequests.ADMVideo.Request.Imp[j])
+			if err == nil {
+				appId, _ := getAppId(ext, openrtb_ext.BidTypeVideo)
+				if err == nil {
+					reqs[j+nurlBump] = &adapters.RequestData{
+						Method:  "POST",
+						Uri:     a.extraInfo.VideoEndpoint + "=" + appId,
+						Body:    bytes,
+						Headers: headers,
+					}
+				}
 			}
-
-			admBump++
+			bumpAdm = true
 
 		} else {
 			errs = append(errs, err)
 		}
+	}
+
+	if bumpAdm {
+		admBump++
 	}
 
 	for j := 0; j < len(beachfrontRequests.NurlVideo); j++ {
@@ -197,12 +209,15 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	return reqs, errs
 }
 
-func preprocess(request *openrtb.BidRequest, videoSequential bool) (beachfrontReqs requests, errs []error) {
+func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []error) {
 	var videoImps = make([]openrtb.Imp, 0)
 	var bannerImps = make([]openrtb.Imp, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
-		if request.Imp[i].Banner != nil && ((request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
+		// @TODO - I should separate out these dimensional checks, add any errors to the stack, and
+		// set to some default if they are missing.
+		if request.Imp[i].Banner != nil && (
+			(request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
 			(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil)) {
 			bannerImps = append(bannerImps, request.Imp[i])
 		}
@@ -217,30 +232,51 @@ func preprocess(request *openrtb.BidRequest, videoSequential bool) (beachfrontRe
 		return
 	}
 
+	// @TODO - follow this in and see ...
 	if len(bannerImps) > 0 {
-		request.Imp = bannerImps
+		// request.Imp = bannerImps		// ... why was I doing this????
 		beachfrontReqs.Banner, errs = getBannerRequest(request)
 	}
 
+	/* We have video imps, so organize them into nurl imps and adm imps. The nurl imps will be
+		sent sequentially and the adm imps in parallel.
+	*/
 	if len(videoImps) > 0 {
-		var videoErrs []error
-		var videoList []videoRequest
+		admRequest := videoRequest{
+			AppId : "",
+			VideoResponseType : "",
+			Request : *request,
+		}
+		admRequest.Request.Imp = nil
 
-		request.Imp = videoImps
+		for i := 0; i < len(videoImps); i++ {
+			var ext openrtb_ext.ExtImpBeachfront
+			ext, errs = prepVideoRequestExt(videoImps[i], errs)
 
-		if videoSequential {
-			videoList, videoErrs = getSequentialVideoRequests(request)
-			errs = append(errs, videoErrs...)
-
-			for i := 0; i < len(videoList); i++ {
-				if videoList[i].VideoResponseType == "nurl" || videoList[i].VideoResponseType == "both" {
-					beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoList[i])
-				}
-
-				if videoList[i].VideoResponseType == "adm" || videoList[i].VideoResponseType == "both" {
-					beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, videoList[i])
-				}
+			// @TODO - define these strings in a struct
+			if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
+				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoRequest{
+						AppId: "",
+						VideoResponseType: ext.VideoResponseType,
+						Request: *request,
+					})
+				j := len(beachfrontReqs.NurlVideo) - 1
+				beachfrontReqs.NurlVideo[j].Request.Imp = nil
+				beachfrontReqs.NurlVideo[j].Request.Imp = append(
+					beachfrontReqs.NurlVideo[j].Request.Imp, videoImps[i])
+				beachfrontReqs.NurlVideo[j].Request.Imp[0].Ext, _ = json.Marshal(ext)
 			}
+
+			if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
+				admRequest.Request.Imp = append(admRequest.Request.Imp, videoImps[i])
+			}
+
+		}
+
+		beachfrontReqs.ADMVideo = admRequest
+		// Now I gotta stack of each. The nurls get done in sequence, so requests will include one for all
+		// adm and one for each nurl
+		/*
 		} else {
 			videoList, videoErrs = getParallelVideoRequests(request)
 			errs = append(errs, videoErrs...)
@@ -253,6 +289,7 @@ func preprocess(request *openrtb.BidRequest, videoSequential bool) (beachfrontRe
 				beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, videoList[0])
 			}
 		}
+		*/
 	}
 
 	return
@@ -396,27 +433,35 @@ func fallBackDeviceType(request openrtb.BidRequest) openrtb.DeviceType {
 	return openrtb.DeviceTypeMobileTablet
 }
 
-func prepVideoRequestExt(request  *openrtb.BidRequest, errs []error) (openrtb_ext.ExtImpBeachfront, string, string, []error) {
-	beachfrontExt, err := getBeachfrontExtension(request.Imp[0])
-	var t string
+/**
+A few modifications to the beachfront extension for a solitary Imp object
+ */
+func prepVideoRequestExt(requestImp  openrtb.Imp, errs []error) (openrtb_ext.ExtImpBeachfront, []error) {
+	if requestImp.Video == nil {
+		errs = append(errs, errors.New(
+			fmt.Sprintf("no valid video elements were found in impression id = %s", requestImp.ID),
+			),
+		)
+	}
+
+	beachfrontExt, err := getBeachfrontExtension(requestImp)
 
 	if err != nil {
 		// Failed to extract the beachfrontExt, so this request is junk.
 		errs = append(errs, err)
 	}
 
-	appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeVideo)
+	beachfrontExt.AppId, err = getAppId(beachfrontExt, openrtb_ext.BidTypeVideo)
 
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	if beachfrontExt.VideoResponseType != "" {
-		t = beachfrontExt.VideoResponseType
-	} else {
-		t = "nurl"
+	if beachfrontExt.VideoResponseType != "adm" {
+		beachfrontExt.VideoResponseType = "nurl"
 	}
-	return beachfrontExt, appid, t, errs
+
+	return beachfrontExt, errs
 }
 
 func prepVideoRequest(bfReq videoRequest) (videoRequest, int8) {
@@ -476,6 +521,7 @@ func prepImp(imp openrtb.Imp, beachfrontExt openrtb_ext.ExtImpBeachfront, secure
 	return imp, secure
 }
 
+/*
 func getParallelVideoRequests(request  *openrtb.BidRequest) ([]videoRequest, []error) {
 	var bfReq videoRequest
 	var errs = make([]error, 0, len(request.Imp))
@@ -500,12 +546,10 @@ func getParallelVideoRequests(request  *openrtb.BidRequest) ([]videoRequest, []e
 	bfReqs[0] = bfReq
 	return bfReqs, errs
 }
+*/
 
-/*
-
- */
 func getSequentialVideoRequests(request *openrtb.BidRequest) ([]videoRequest, []error) {
-	var bfReqs = make([]videoRequest, 1)
+	var bfReqs = make([]videoRequest, len(request.Imp))
 	var errs = make([]error, 0, len(request.Imp))
 	var secure int8
 	var failedRequestIndices = make([]int, 0)
@@ -513,7 +557,7 @@ func getSequentialVideoRequests(request *openrtb.BidRequest) ([]videoRequest, []
 	var lastErrorCount = 0
 
 	for i := 0; i < len(request.Imp); i++ {
-		beachfrontExt, bfReqs[i].AppId, bfReqs[i].VideoResponseType, errs = prepVideoRequestExt(request, errs)
+		beachfrontExt, errs = prepVideoRequestExt(request.Imp[i], errs)
 		if len(errs) > lastErrorCount {
 			failedRequestIndices = append(failedRequestIndices, i)
 			lastErrorCount = len(errs)
