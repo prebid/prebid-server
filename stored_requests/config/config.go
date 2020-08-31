@@ -48,12 +48,12 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine pbsmetrics.M
 
 		if dbc.conn == "" {
 			glog.Infof("Connecting to Postgres for Stored %s. DB=%s, host=%s, port=%d, user=%s",
-				cfg.DataType,
+				cfg.DataType(),
 				cfg.Postgres.ConnectionInfo.Database,
 				cfg.Postgres.ConnectionInfo.Host,
 				cfg.Postgres.ConnectionInfo.Port,
 				cfg.Postgres.ConnectionInfo.Username)
-			db := newPostgresDB(cfg.DataType, cfg.Postgres.ConnectionInfo)
+			db := newPostgresDB(cfg.DataType(), cfg.Postgres.ConnectionInfo)
 			dbc.conn = conn
 			dbc.db = db
 		}
@@ -156,25 +156,25 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fe
 	idList := make(stored_requests.MultiFetcher, 0, 3)
 
 	if cfg.Files.Enabled {
-		fFetcher := newFilesystem(cfg.DataType, cfg.Files.Path)
+		fFetcher := newFilesystem(cfg.DataType(), cfg.Files.Path)
 		idList = append(idList, fFetcher)
 	}
 	if cfg.Postgres.FetcherQueries.QueryTemplate != "" {
-		glog.Infof("Loading Stored %s data via Postgres.\nQuery: %s", cfg.DataType, cfg.Postgres.FetcherQueries.QueryTemplate)
+		glog.Infof("Loading Stored %s data via Postgres.\nQuery: %s", cfg.DataType(), cfg.Postgres.FetcherQueries.QueryTemplate)
 		idList = append(idList, db_fetcher.NewFetcher(db, cfg.Postgres.FetcherQueries.MakeQuery))
 	}
 	if cfg.HTTP.Endpoint != "" {
-		glog.Infof("Loading Stored %s data via HTTP. endpoint=%s", cfg.DataType, cfg.HTTP.Endpoint)
+		glog.Infof("Loading Stored %s data via HTTP. endpoint=%s", cfg.DataType(), cfg.HTTP.Endpoint)
 		idList = append(idList, http_fetcher.NewFetcher(client, cfg.HTTP.Endpoint))
 	}
 
-	fetcher = consolidate(cfg.DataType, idList)
+	fetcher = consolidate(cfg.DataType(), idList)
 	return
 }
 
 func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 	if cfg.InMemoryCache.Type == "none" {
-		glog.Infof("No Stored %s cache configured. The %s Fetcher backend will be used for all data requests", cfg.DataType, cfg.DataType)
+		glog.Infof("No Stored %s cache configured. The %s Fetcher backend will be used for all data requests", cfg.DataType(), cfg.DataType())
 		return &nil_cache.NilCache{}
 	}
 

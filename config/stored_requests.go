@@ -20,11 +20,15 @@ const (
 	AMPRequestDataType DataType = "Amp Request"
 )
 
+func (sr *StoredRequests) DataType() DataType {
+	return sr.dataType
+}
+
 // StoredRequests struct defines options for stored requests for each data type
 // including some amp stored_requests options
 type StoredRequests struct {
-	// DataType is a tag pushed from upstream indicating the type of object fetched here
-	DataType DataType
+	// dataType is a tag pushed from upstream indicating the type of object fetched here
+	dataType DataType
 	// Files should be used if Stored Requests should be loaded from the filesystem.
 	// Fetchers are in stored_requests/backends/file_system/fetcher.go
 	Files FileFetcherConfig `mapstructure:"filesystem"`
@@ -101,10 +105,10 @@ func resolvedStoredRequestsConfig(cfg *Configuration) {
 	amp.HTTPEvents.Endpoint = sr.HTTPEvents.AmpEndpoint
 
 	// Set data types for each section
-	cfg.StoredRequests.DataType = RequestDataType
-	cfg.StoredAmp.DataType = AMPRequestDataType
-	cfg.StoredVideo.DataType = VideoDataType
-	cfg.CategoryMapping.DataType = CategoryDataType
+	cfg.StoredRequests.dataType = RequestDataType
+	cfg.StoredAmp.dataType = AMPRequestDataType
+	cfg.StoredVideo.dataType = VideoDataType
+	cfg.CategoryMapping.dataType = CategoryDataType
 	return
 }
 
@@ -112,7 +116,7 @@ func (cfg *StoredRequests) validate(section string, errs configErrors) configErr
 	errs = cfg.Postgres.validate(section, errs)
 
 	// Categories do not use cache so none of the following checks apply
-	if cfg.DataType == CategoryDataType {
+	if cfg.dataType == CategoryDataType {
 		return errs
 	}
 
