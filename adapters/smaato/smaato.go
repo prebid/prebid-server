@@ -179,23 +179,20 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 
-			var markupError error
-			markupType := getAdMarkupType(response, bid.AdM)
-			bid.AdM, markupError = renderAdMarkup(markupType, bid.AdM)
-			if markupError != nil {
-				continue // no bid when broken ad markup
+			markupType, markupTypeErr := getAdMarkupType(response, bid.AdM)
+			if markupTypeErr != nil {
+				return nil, []error{markupTypeErr}
 			}
 
-			var bidType openrtb_ext.BidType
-			switch markupType {
-			case smtAdTypeImg:
-				bidType = openrtb_ext.BidTypeBanner
-			case smtAdTypeRichmedia:
-				bidType = openrtb_ext.BidTypeBanner
-			case smtAdTypeVideo:
-				bidType = openrtb_ext.BidTypeVideo
-			default:
-				continue // no bid when broken ad markup
+			var markupError error
+			bid.AdM, markupError = renderAdMarkup(markupType, bid.AdM)
+			if markupError != nil {
+				return nil, []error{markupError}
+			}
+
+			bidType, bidTypeErr := markupTypeToBidType(markupType)
+			if bidTypeErr != nil {
+				return nil, []error{bidTypeErr}
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -223,20 +220,33 @@ func renderAdMarkup(adMarkupType adMarkupType, adMarkup string) (string, error) 
 	return adm, markupError
 }
 
-func getAdMarkupType(response *adapters.ResponseData, adMarkup string) adMarkupType {
+func markupTypeToBidType(markupType adMarkupType) (openrtb_ext.BidType, error) {
+	switch markupType {
+	case smtAdTypeImg:
+		return openrtb_ext.BidTypeBanner, nil
+	case smtAdTypeRichmedia:
+		return openrtb_ext.BidTypeBanner, nil
+	case smtAdTypeVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	default:
+		return "", fmt.Errorf("Invalid markupType %s", markupType)
+	}
+}
+
+func getAdMarkupType(response *adapters.ResponseData, adMarkup string) (adMarkupType, error) {
 	if admType := adMarkupType(response.Headers.Get("X-SMT-ADTYPE")); admType != "" {
-		return admType
+		return admType, nil
 	}
 	if strings.HasPrefix(adMarkup, `{"image":`) {
-		return smtAdTypeImg
+		return smtAdTypeImg, nil
 	}
 	if strings.HasPrefix(adMarkup, `{"richmedia":`) {
-		return smtAdTypeRichmedia
+		return smtAdTypeRichmedia, nil
 	}
 	if strings.HasPrefix(adMarkup, `<?xml`) {
-		return smtAdTypeVideo
+		return smtAdTypeVideo, nil
 	}
-	return ""
+	return "", fmt.Errorf("Invalid ad markup %s", adMarkup)
 }
 
 func assignBannerSize(banner *openrtb.Banner) (*openrtb.Banner, error) {
