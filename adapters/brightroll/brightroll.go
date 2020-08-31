@@ -19,10 +19,10 @@ type BrightrollAdapter struct {
 }
 
 type ExtraInfo struct {
-	Accounts []Accounts `json:"accounts"`
+	Accounts []Account `json:"accounts"`
 }
 
-type Accounts struct {
+type Account struct {
 	ID       string   `json:"id"`
 	Badv     []string `json:"badv"`
 	Bcat     []string `json:"bcat"`
@@ -70,7 +70,7 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo 
 		return nil, errors
 	}
 
-	var account *Accounts
+	var account *Account
 	for _, a := range a.extraInfo.Accounts {
 		if a.ID == brightrollExt.Publisher {
 			account = &a
