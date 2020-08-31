@@ -1,0 +1,43 @@
+{
+    "id": "in_article_ios",
+    "banner": {
+        "format": [
+          {
+            "w": 320,
+            "h": 50
+          },
+          {
+            "w": 300,
+            "h": 250
+          }
+        ]
+      },
+      "ext": {
+          "appnexus": {
+            "placement_id": 19689654
+          },
+          "emx_digital": {
+              "tagid": "105251"
+          },
+          "openx": {
+            "unit": "541169197",
+            "delDomain": "playwire-d.openx.net"
+          },
+          "pubmatic": {
+            "publisherId": "158326"
+          },
+          "rhythmone": {
+            "placementId": "213224",
+            "zone": "1r",
+            "path": "mvo"
+          },
+          "rubicon": {
+            "accountId": 15526,
+            "siteId": 335554,
+            "zoneId": 1764488
+          },
+          "sonobi": {
+              "TagID": "12eb86143abb80d6a9c6"
+          }
+      }
+}
