@@ -268,6 +268,9 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	// vtrack endpoint
 	vtrackEndpoint := endpoints.NewVTrackEndpoint(cfg, dataCache, cacheClient, bidderInfos)
 
+	// event endpoint
+	eventEndpoint := endpoints.NewEventEndpoint(dataCache, pbsAnalytics)
+
 	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.POST("/openrtb2/video", videoEndpoint)
@@ -280,6 +283,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	r.GET("/", serveIndex)
 	r.ServeFiles("/static/*filepath", http.Dir("static"))
 	r.POST("/vtrack", vtrackEndpoint)
+	r.GET("/event", eventEndpoint)
 
 	userSyncDeps := &pbs.UserSyncDeps{
 		HostCookieConfig: &(cfg.HostCookie),

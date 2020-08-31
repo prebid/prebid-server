@@ -19,43 +19,43 @@ import (
 const maxSize = 1024 * 256
 
 // Mock pbs cache client
-type mockCacheClient struct {
+type vtrackMockCacheClient struct {
 	Fail  bool
 	Error error
 	Uuids []string
 }
 
-func (m *mockCacheClient) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
+func (m *vtrackMockCacheClient) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
 	if m.Fail {
 		return []string{}, []error{m.Error}
 	}
 	return m.Uuids, []error{}
 }
-func (m *mockCacheClient) GetExtCacheData() (string, string) {
+func (m *vtrackMockCacheClient) GetExtCacheData() (string, string) {
 	return "", ""
 }
 
 // Mock cache
-type MockCache struct {
-	accounts *mockAccountService
+type vtrackMockCache struct {
+	accounts *vtrackMockAccountService
 }
 
-func (c *MockCache) Accounts() cache.AccountsService {
+func (c *vtrackMockCache) Accounts() cache.AccountsService {
 	return c.accounts
 }
-func (c *MockCache) Config() cache.ConfigService {
+func (c *vtrackMockCache) Config() cache.ConfigService {
 	return nil
 }
-func (c *MockCache) Close() error {
+func (c *vtrackMockCache) Close() error {
 	return nil
 }
 
-type mockAccountService struct {
+type vtrackMockAccountService struct {
 	Fail  bool
 	Error error
 }
 
-func (s *mockAccountService) Get(id string) (*cache.Account, error) {
+func (s *vtrackMockAccountService) Get(id string) (*cache.Account, error) {
 	if s.Fail {
 		return nil, s.Error
 	}
@@ -65,7 +65,7 @@ func (s *mockAccountService) Get(id string) (*cache.Account, error) {
 		EventsEnabled: true,
 	}, nil
 }
-func (s *mockAccountService) Set(account *cache.Account) error {
+func (s *vtrackMockAccountService) Set(account *cache.Account) error {
 	return nil
 }
 
@@ -73,11 +73,11 @@ func (s *mockAccountService) Set(account *cache.Account) error {
 
 func TestShouldRespondWithBadRequestWhenAccountParameterIsMissing(t *testing.T) {
 	// mock pbs cache client
-	mockCacheClient := &mockCacheClient{}
+	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock cache
-	mockCache := &MockCache{
-		accounts: &mockAccountService{},
+	mockCache := &vtrackMockCache{
+		accounts: &vtrackMockAccountService{},
 	}
 
 	// prepare
@@ -105,11 +105,11 @@ func TestShouldRespondWithBadRequestWhenAccountParameterIsMissing(t *testing.T) 
 
 func TestShouldRespondWithBadRequestWhenRequestBodyIsEmpty(t *testing.T) {
 	// mock pbs cache client
-	mockCacheClient := &mockCacheClient{}
+	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock cache
-	mockCache := &MockCache{
-		accounts: &mockAccountService{},
+	mockCache := &vtrackMockCache{
+		accounts: &vtrackMockAccountService{},
 	}
 
 	// config
@@ -141,11 +141,11 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsEmpty(t *testing.T) {
 
 func TestShouldRespondWithBadRequestWhenRequestBodyIsInvalid(t *testing.T) {
 	// mock pbs cache client
-	mockCacheClient := &mockCacheClient{}
+	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock cache
-	mockCache := &MockCache{
-		accounts: &mockAccountService{},
+	mockCache := &vtrackMockCache{
+		accounts: &vtrackMockAccountService{},
 	}
 
 	// config
@@ -174,11 +174,11 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsInvalid(t *testing.T) {
 
 func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 	// mock pbs cache client
-	mockCacheClient := &mockCacheClient{}
+	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock cache
-	mockCache := &MockCache{
-		accounts: &mockAccountService{},
+	mockCache := &vtrackMockCache{
+		accounts: &vtrackMockAccountService{},
 	}
 
 	// config
@@ -216,11 +216,11 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 
 func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 	// mock pbs cache client
-	mockCacheClient := &mockCacheClient{}
+	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock cache
-	mockCache := &MockCache{
-		accounts: &mockAccountService{},
+	mockCache := &vtrackMockCache{
+		accounts: &vtrackMockAccountService{},
 	}
 
 	// config
@@ -260,11 +260,11 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 
 func TestShouldRespondWithInternalServerErrorWhenFetchingAccountFails(t *testing.T) {
 	// mock pbs cache client
-	mockCacheClient := &mockCacheClient{}
+	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock cache
-	mockCache := &MockCache{
-		accounts: &mockAccountService{
+	mockCache := &vtrackMockCache{
+		accounts: &vtrackMockAccountService{
 			Fail:  true,
 			Error: fmt.Errorf("failed retrieving account details"),
 		},
@@ -308,14 +308,14 @@ func TestShouldRespondWithInternalServerErrorWhenFetchingAccountFails(t *testing
 
 func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.T) {
 	// mock pbs cache client
-	mockCacheClient := &mockCacheClient{
+	mockCacheClient := &vtrackMockCacheClient{
 		Fail:  true,
 		Error: fmt.Errorf("pbs cache client failed"),
 	}
 
 	// mock cache
-	mockCache := &MockCache{
-		accounts: &mockAccountService{},
+	mockCache := &vtrackMockCache{
+		accounts: &vtrackMockAccountService{},
 	}
 
 	// config
@@ -360,11 +360,11 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 
 func TestShouldTolerateAccountNotFound(t *testing.T) {
 	// mock pbs cache client
-	mockCacheClient := &mockCacheClient{}
+	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock cache
-	mockCache := &MockCache{
-		accounts: &mockAccountService{
+	mockCache := &vtrackMockCache{
+		accounts: &vtrackMockAccountService{
 			Fail:  true,
 			Error: sql.ErrNoRows,
 		},
@@ -408,14 +408,14 @@ func TestShouldTolerateAccountNotFound(t *testing.T) {
 
 func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowed(t *testing.T) {
 	// mock pbs cache client
-	mockCacheClient := &mockCacheClient{
+	mockCacheClient := &vtrackMockCacheClient{
 		Fail:  false,
 		Uuids: []string{"uuid1"},
 	}
 
 	// mock cache
-	mockCache := &MockCache{
-		accounts: &mockAccountService{
+	mockCache := &vtrackMockCache{
+		accounts: &vtrackMockAccountService{
 			Fail: false,
 		},
 	}
@@ -478,14 +478,14 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 
 func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t *testing.T) {
 	// mock pbs cache client
-	mockCacheClient := &mockCacheClient{
+	mockCacheClient := &vtrackMockCacheClient{
 		Fail:  false,
 		Uuids: []string{"uuid1", "uuid2"},
 	}
 
 	// mock cache
-	mockCache := &MockCache{
-		accounts: &mockAccountService{
+	mockCache := &vtrackMockCache{
+		accounts: &vtrackMockAccountService{
 			Fail: false,
 		},
 	}
@@ -548,14 +548,14 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 
 func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidderIsAllowed(t *testing.T) {
 	// mock pbs cache client
-	mockCacheClient := &mockCacheClient{
+	mockCacheClient := &vtrackMockCacheClient{
 		Fail:  false,
 		Uuids: []string{"uuid1", "uuid2"},
 	}
 
 	// mock cache
-	mockCache := &MockCache{
-		accounts: &mockAccountService{
+	mockCache := &vtrackMockCache{
+		accounts: &vtrackMockAccountService{
 			Fail: false,
 		},
 	}
@@ -606,4 +606,9 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	// validate
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")
 	assert.Equal(t, "{\"responses\":[{\"uuid\":\"uuid1\"},{\"uuid\":\"uuid2\"}]}", string(d), "Expected 200 when account is found, request has unknown bidders but allowUnknownBidders is enabled")
+}
+
+func TestVastUrlShouldReturnExpectedUrl(t *testing.T) {
+	url := GetVastUrlTracking("http://external-url", "bidId", "bidder", "accountId", 1000)
+	assert.Equal(t, "http://external-url/event?t=imp&b=bidId&a=accountId&ts=1000&bidder=bidder&f=b", url, "Invalid vast url")
 }

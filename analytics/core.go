@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -20,6 +21,7 @@ type PBSAnalyticsModule interface {
 	LogCookieSyncObject(*CookieSyncObject)
 	LogSetUIDObject(*SetUIDObject)
 	LogAmpObject(*AmpObject)
+	LogNotificationEventObject(*NotificationEvent)
 }
 
 //Loggable object of a transaction at /openrtb2/auction endpoint
@@ -64,4 +66,13 @@ type CookieSyncObject struct {
 	Status       int
 	Errors       []error
 	BidderStatus []*usersync.CookieSyncBidders
+}
+
+// Loggable object of a Notification Event
+type NotificationEvent struct {
+	Type      string         `json:"type"`
+	Bidid     string         `json:"bidid"`
+	Account   *cache.Account `json:"account"`
+	Bidder    string         `json:"bidder"`
+	Timestamp int64          `json:"timestamp"`
 }

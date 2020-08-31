@@ -146,6 +146,23 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 }
 
 /**
+ * Create vast url tracking
+ */
+func GetVastUrlTracking(externalUrl string, bidid string, bidder string, accountId string, timestamp int64) string {
+
+	eventReq := &EventRequest{
+		Type:      IMP,
+		Bidid:     bidid,
+		AccountId: accountId,
+		Bidder:    bidder,
+		Timestamp: timestamp,
+		Format:    BLANK,
+	}
+
+	return EventRequestToUrl(externalUrl, eventReq)
+}
+
+/**
  * Parses a BidCacheRequest from an HTTP Request
  */
 func (v *vtrackEndpoint) parseVTrackRequest(httpRequest *http.Request) (req *BidCacheRequest, err error) {
@@ -278,7 +295,7 @@ func modifyVastXml(externalUrl string, data json.RawMessage, bidid string, bidde
 		return json.RawMessage(c)
 	}
 
-	vastUrlTracking := getVastUrlTracking(externalUrl, bidid, bidder, accountId, timestamp)
+	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountId, timestamp)
 	impressionUrl := "<![CDATA[" + vastUrlTracking + "]]>"
 
 	oi := strings.Index(c, ImpressionOpenTag)
@@ -288,23 +305,6 @@ func modifyVastXml(externalUrl string, data json.RawMessage, bidid string, bidde
 	}
 
 	return json.RawMessage(strings.Replace(c, ImpressionCloseTag, ImpressionCloseTag+ImpressionOpenTag+impressionUrl+ImpressionCloseTag, 1))
-}
-
-/**
- * Create vast url tracking
- */
-func getVastUrlTracking(externalUrl string, bidid string, bidder string, accountId string, timestamp int64) string {
-
-	eventReq := &EventRequest{
-		Type:      IMP,
-		Bidid:     bidid,
-		AccountId: accountId,
-		Bidder:    bidder,
-		Timestamp: timestamp,
-		Format:    BLANK,
-	}
-
-	return EventRequestToUrl(externalUrl, eventReq)
 }
 
 /**
