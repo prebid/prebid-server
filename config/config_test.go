@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"net"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -135,6 +136,8 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
+	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
+	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 }
 
 var fullConfig = []byte(`
@@ -285,6 +288,12 @@ adapters:
     usersync_url: http//test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
   adkerneladn:
      usersync_url: http:\\tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+`)
+
+var oldStoredRequestsConfig = []byte(`
+stored_requests:
+  filesystem: true
+  directorypath: "/somepath"
 `)
 
 func cmpStrings(t *testing.T, key string, a string, b string) {
@@ -440,15 +449,51 @@ func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
 		StoredRequests: StoredRequests{
-			Files: true,
+			Files: FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{
 				Type: "none",
 			},
 		},
+		StoredVideo: StoredRequests{
+			Files: FileFetcherConfig{Enabled: true},
+			InMemoryCache: InMemoryCache{
+				Type: "none",
+			},
+		},
+		CategoryMapping: StoredRequests{
+			Files: FileFetcherConfig{Enabled: true},
+		},
 	}
 
+	resolvedStoredRequestsConfig(&cfg)
 	err := cfg.validate()
 	assert.Nil(t, err, "OpenRTB filesystem config should work. %v", err)
+}
+
+func TestMigrateConfig(t *testing.T) {
+	v := viper.New()
+	SetupViper(v, "")
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(oldStoredRequestsConfig))
+	migrateConfig(v)
+	cfg, err := New(v)
+	assert.NoError(t, err, "Setting up config should work but it doesn't")
+	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
+	cmpStrings(t, "stored_requests.filesystem.path", "/somepath", cfg.StoredRequests.Files.Path)
+}
+
+func TestMigrateConfigFromEnv(t *testing.T) {
+	if oldval, ok := os.LookupEnv("PBS_STORED_REQUESTS_FILESYSTEM"); ok {
+		defer os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", oldval)
+	} else {
+		defer os.Unsetenv("PBS_STORED_REQUESTS_FILESYSTEM")
+	}
+	os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", "true")
+	v := viper.New()
+	SetupViper(v, "")
+	cfg, err := New(v)
+	assert.NoError(t, err, "Setting up config should work but it doesn't")
+	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 }
 
 func TestInvalidAdapterEndpointConfig(t *testing.T) {

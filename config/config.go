@@ -29,18 +29,19 @@ type Configuration struct {
 	EnableGzip  bool       `mapstructure:"enable_gzip"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
-	StatusResponse  string             `mapstructure:"status_response"`
-	AuctionTimeouts AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
-	CacheURL        Cache              `mapstructure:"cache"`
-	ExtCacheURL     ExternalCache      `mapstructure:"external_cache"`
-	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
-	HostCookie      HostCookie         `mapstructure:"host_cookie"`
-	Metrics         Metrics            `mapstructure:"metrics"`
-	DataCache       DataCache          `mapstructure:"datacache"`
-	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
-	CategoryMapping StoredRequestsSlim `mapstructure:"category_mapping"`
+	StatusResponse    string          `mapstructure:"status_response"`
+	AuctionTimeouts   AuctionTimeouts `mapstructure:"auction_timeouts_ms"`
+	CacheURL          Cache           `mapstructure:"cache"`
+	ExtCacheURL       ExternalCache   `mapstructure:"external_cache"`
+	RecaptchaSecret   string          `mapstructure:"recaptcha_secret"`
+	HostCookie        HostCookie      `mapstructure:"host_cookie"`
+	Metrics           Metrics         `mapstructure:"metrics"`
+	DataCache         DataCache       `mapstructure:"datacache"`
+	StoredRequests    StoredRequests  `mapstructure:"stored_requests"`
+	StoredRequestsAMP StoredRequests  `mapstructure:"stored_amp_req"`
+	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
-	StoredVideo StoredRequestsSlim `mapstructure:"stored_video_req"`
+	StoredVideo StoredRequests `mapstructure:"stored_video_req"`
 
 	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
 	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
@@ -103,7 +104,10 @@ func (c configErrors) Error() string {
 func (cfg *Configuration) validate() configErrors {
 	var errs configErrors
 	errs = cfg.AuctionTimeouts.validate(errs)
-	errs = cfg.StoredRequests.validate(errs)
+	errs = cfg.StoredRequests.validate("stored_req", errs)
+	errs = cfg.StoredRequestsAMP.validate("stored_amp_req", errs)
+	errs = cfg.CategoryMapping.validate("categories", errs)
+	errs = cfg.StoredVideo.validate("stored_video_req", errs)
 	errs = cfg.Metrics.validate(errs)
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
@@ -604,6 +608,9 @@ func New(v *viper.Viper) (*Configuration, error) {
 		c.BlacklistedAcctMap[c.BlacklistedAccts[i]] = true
 	}
 
+	// Migrate combo stored request config to separate stored_reqs and amp stored_reqs configs.
+	resolvedStoredRequestsConfig(&c)
+
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(); len(errs) > 0 {
@@ -721,6 +728,7 @@ func SetupViper(v *viper.Viper, filename string) {
 		v.AddConfigPath(".")
 		v.AddConfigPath("/etc/config")
 	}
+
 	// Fixes #475: Some defaults will be set just so they are accessible via environment variables
 	// (basically so viper knows they exist)
 	v.SetDefault("external_url", "http://localhost:8000")
@@ -779,7 +787,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("category_mapping.filesystem.enabled", true)
 	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
 	v.SetDefault("category_mapping.http.endpoint", "")
-	v.SetDefault("stored_requests.filesystem", false)
+	v.SetDefault("stored_requests.filesystem.enabled", false)
+	v.SetDefault("stored_requests.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.postgres.connection.dbname", "")
 	v.SetDefault("stored_requests.postgres.connection.host", "")
@@ -995,6 +1004,22 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetEnvPrefix("PBS")
 	v.AutomaticEnv()
 	v.ReadInConfig()
+
+	// Migrate config settings to maintain compatibility with old configs
+	migrateConfig(v)
+}
+
+func migrateConfig(v *viper.Viper) {
+	// if stored_requests.filesystem is not a map in conf file as expected from defaults,
+	// means we have old-style settings; migrate them to new filesystem map to avoid breaking viper
+	if _, ok := v.Get("stored_requests.filesystem").(map[string]interface{}); !ok {
+		glog.Warning("stored_requests.filesystem should be changed to stored_requests.filesystem.enabled")
+		glog.Warning("stored_requests.directorypath should be changed to stored_requests.filesystem.directorypath")
+		m := v.GetStringMap("stored_requests.filesystem")
+		m["enabled"] = v.GetBool("stored_requests.filesystem")
+		m["directorypath"] = v.GetString("stored_requests.directorypath")
+		v.Set("stored_requests.filesystem", m)
+	}
 }
 
 func setBidderDefaults(v *viper.Viper, bidder string) {
