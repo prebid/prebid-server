@@ -1,4 +1,4 @@
-package ctv
+package constant
 
 type ErrorCode = int
 type FilterReasonCode = int

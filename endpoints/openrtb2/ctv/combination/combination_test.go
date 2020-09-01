@@ -1,18 +1,19 @@
-package ctv
+package combination
 
 import (
 	"testing"
 
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/types"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCombination(t *testing.T) {
-	buckets := make(BidsBuckets)
+	buckets := make(types.BidsBuckets)
 
-	dBids := make([]*Bid, 0)
+	dBids := make([]*types.Bid, 0)
 	for i := 1; i <= 3; i++ {
-		bid := new(Bid)
+		bid := new(types.Bid)
 		bid.Duration = 10 * i
 		dBids = append(dBids, bid)
 		buckets[bid.Duration] = dBids

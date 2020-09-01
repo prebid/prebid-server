@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv"
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/util"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
@@ -80,13 +80,13 @@ func (c *config) Get() [][2]int64 {
 	}()
 
 	c.maxExpectedDurationMap = make(map[string][2]int, 0)
-	ctv.Logf("Step wise breakup ")
+	util.Logf("Step wise breakup ")
 	for impressions := range impsChan {
 		for index, impression := range impressions {
 			impKey := getKey(impression)
 			setMaximumRepeatations(c, impKey, index+1 == len(impressions))
 		}
-		ctv.Logf("%v", impressions)
+		util.Logf("%v", impressions)
 	}
 
 	// for impressions array
@@ -160,7 +160,7 @@ func (c config) getRepeations(impressionKey string) int {
 func get(c generator, ch chan [][2]int64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	imps := c.Get()
-	ctv.Logf("A2 Impressions = %v\n", imps)
+	util.Logf("A2 Impressions = %v\n", imps)
 	ch <- imps
 }
 
@@ -182,8 +182,8 @@ func computeMinDuration(c config, impressions [][2]int64, start int, end int) {
 			impression[MinDuration] = minDuration
 		} else {
 			// boundaries are not matching keep min value as is
-			ctv.Logf("False : minDuration (%v) >= r.slotMinDuration (%v)  &&  minDuration (%v)  <= impression[MaxDuration] (%v)", minDuration, r.slotMinDuration, minDuration, impression[MaxDuration])
-			ctv.Logf("Hence, setting request level slot minduration (%v) ", r.slotMinDuration)
+			util.Logf("False : minDuration (%v) >= r.slotMinDuration (%v)  &&  minDuration (%v)  <= impression[MaxDuration] (%v)", minDuration, r.slotMinDuration, minDuration, impression[MaxDuration])
+			util.Logf("Hence, setting request level slot minduration (%v) ", r.slotMinDuration)
 			impression[MinDuration] = r.slotMinDuration
 		}
 	}

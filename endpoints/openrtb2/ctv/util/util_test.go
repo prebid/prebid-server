@@ -1,4 +1,4 @@
-package ctv
+package util
 
 import (
 	"testing"

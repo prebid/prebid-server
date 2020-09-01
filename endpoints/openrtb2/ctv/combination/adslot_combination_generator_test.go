@@ -1,15 +1,20 @@
-package ctv
+package combination
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/util"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
 var testBidResponseMaxDurations = []struct {
-	scenario             string
+	scenario string
+	// index 0 = Max Duration of Ad present in Bid Response
+	// index 1 = Number of Ads for given Max Duration (Index 0)
 	responseMaxDurations [][2]uint64
 	podMinDuration       int // Pod Minimum duration value present in origin Video Ad Pod Request
 	podMaxDuration       int // Pod Maximum duration value present in origin Video Ad Pod Request
@@ -110,7 +115,7 @@ var testBidResponseMaxDurations = []struct {
 func BenchmarkPodDurationCombinationGenerator(b *testing.B) {
 	for _, test := range testBidResponseMaxDurations {
 		b.Run(test.scenario, func(b *testing.B) {
-			c := new(PodDurationCombination)
+			c := new(generator)
 			config := new(openrtb_ext.VideoAdPod)
 			config.MinAds = &test.minAds
 			config.MaxAds = &test.maxAds
@@ -138,8 +143,13 @@ func BenchmarkPodDurationCombinationGenerator(b *testing.B) {
 //  1 2 3 4
 func TestMinToMaxCombinationGenerator(t *testing.T) {
 	for _, test := range testBidResponseMaxDurations {
+		// if test.scenario != "TC1-Single_Value" {
+		// 	continue
+		// }
+		// eOut := readExpectedOutput()
+		// fmt.Println(eOut)
 		t.Run(test.scenario, func(t *testing.T) {
-			c := new(PodDurationCombination)
+			c := new(generator)
 			config := new(openrtb_ext.VideoAdPod)
 			config.MinAds = &test.minAds
 			config.MaxAds = &test.maxAds
@@ -159,7 +169,7 @@ func TestMinToMaxCombinationGenerator(t *testing.T) {
 func TestMaxToMinCombinationGenerator(t *testing.T) {
 	for _, test := range testBidResponseMaxDurations {
 		t.Run(test.scenario, func(t *testing.T) {
-			c := new(PodDurationCombination)
+			c := new(generator)
 			config := new(openrtb_ext.VideoAdPod)
 			config.MinAds = &test.minAds
 			config.MaxAds = &test.maxAds
@@ -169,7 +179,7 @@ func TestMaxToMinCombinationGenerator(t *testing.T) {
 	}
 }
 
-func validator(t *testing.T, c *PodDurationCombination) {
+func validator(t *testing.T, c *generator) {
 	expectedOutput := c.searchAll()
 	// determine expected size of expected output
 	// subtract invalid combinations size
@@ -181,7 +191,7 @@ func validator(t *testing.T, c *PodDurationCombination) {
 		if comb == nil || len(comb) == 0 {
 			break
 		}
-		Logf("%v", comb)
+		//ctv.Logf("%v", comb)
 		//fmt.Print("count = ", c.currentCombinationCount, " :: ", comb, "\n")
 		fmt.Println("e = ", (expectedOutput)[cnt], "\t : a = ", comb)
 		val := make([]uint64, len(comb))
@@ -211,9 +221,18 @@ func validator(t *testing.T, c *PodDurationCombination) {
 	assert.Equal(t, expectedOutput, actualOutput)
 	assert.ElementsMatch(t, expectedOutput, actualOutput)
 
-	Logf("Total combinations generated = %v", c.stats.currentCombinationCount)
-	Logf("Total valid combinations  = %v", c.stats.validCombinationCount)
-	Logf("Total repeated combinations  = %v", c.stats.repeatationsCount)
-	Logf("Total outofrange combinations  = %v", c.stats.outOfRangeCount)
-	Logf("Total combinations expected = %v", c.stats.totalExpectedCombinations)
+	util.Logf("Total combinations generated = %v", c.stats.currentCombinationCount)
+	util.Logf("Total valid combinations  = %v", c.stats.validCombinationCount)
+	util.Logf("Total repeated combinations  = %v", c.stats.repeatationsCount)
+	util.Logf("Total outofrange combinations  = %v", c.stats.outOfRangeCount)
+	util.Logf("Total combinations expected = %v", c.stats.totalExpectedCombinations)
+}
+
+func readExpectedOutput() map[string][][]int {
+	file, _ := os.Open("test_input/TC_1,json")
+	var bytes []byte
+	file.Read(bytes)
+	eOut := make(map[string][][]int, 0)
+	json.Unmarshal(bytes, eOut)
+	return eOut
 }

@@ -1,4 +1,4 @@
-package ctv
+package util
 
 import (
 	"encoding/json"
@@ -8,11 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/constant"
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/types"
 	"github.com/golang/glog"
 )
 
-func GetDurationWiseBidsBucket(bids []*Bid) BidsBuckets {
-	result := BidsBuckets{}
+func GetDurationWiseBidsBucket(bids []*types.Bid) types.BidsBuckets {
+	result := types.BidsBuckets{}
 
 	for i, bid := range bids {
 		result[bid.Duration] = append(result[bid.Duration], bids[i])
@@ -27,7 +29,7 @@ func GetDurationWiseBidsBucket(bids []*Bid) BidsBuckets {
 }
 
 func DecodeImpressionID(id string) (string, int) {
-	index := strings.LastIndex(id, CTVImpressionIDSeparator)
+	index := strings.LastIndex(id, constant.CTVImpressionIDSeparator)
 	if index == -1 {
 		return id, 0
 	}
@@ -41,11 +43,11 @@ func DecodeImpressionID(id string) (string, int) {
 }
 
 func GetCTVImpressionID(impID string, seqNo int) string {
-	return fmt.Sprintf(CTVImpressionIDFormat, impID, seqNo)
+	return fmt.Sprintf(constant.CTVImpressionIDFormat, impID, seqNo)
 }
 
 func GetUniqueBidID(bidID string, id int) string {
-	return fmt.Sprintf(CTVUniqueBidIDFormat, id, bidID)
+	return fmt.Sprintf(constant.CTVUniqueBidIDFormat, id, bidID)
 }
 
 var Logf = func(msg string, args ...interface{}) {
