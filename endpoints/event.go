@@ -40,23 +40,23 @@ const (
 	FORMAT_PARAMETER    = "f"
 	ANALYTICS_PARAMETER = "x"
 
-	TRACKING_PIXEL              = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABHNCSVQICAgIfAhkiAAAAA1JREFUCJljYGBgYAAAAAUAAYehTtQAAAAASUVORK5CYII="
+	TRACKING_PIXEL_PNG          = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABHNCSVQICAgIfAhkiAAAAA1JREFUCJljYGBgYAAAAAUAAYehTtQAAAAASUVORK5CYII="
 	TRACKING_PIXEL_CONTENT_TYPE = "image/png"
 )
 
 type EventRequest struct {
-	Type      Type      `json:"type"`
-	Bidid     string    `json:"bidid"`
-	AccountId string    `json:"account_id"`
-	Bidder    string    `json:"bidder"`
-	Timestamp int64     `json:"timestamp"`
-	Format    Format    `json:"format"`
-	Analytics Analytics `json:"analytics"`
+	Type      Type      `json:"type,omitempty"`
+	Bidid     string    `json:"bidid,omitempty"`
+	AccountId string    `json:"account_id,omitempty"`
+	Bidder    string    `json:"bidder,omitempty"`
+	Timestamp int64     `json:"timestamp,omitempty"`
+	Format    Format    `json:"format,omitempty"`
+	Analytics Analytics `json:"analytics,omitempty"`
 }
 
 type TrackingPixel struct {
-	Content     []byte `json:"content"`
-	ContentType string `json:"content_type"`
+	Content     []byte `json:"content,omitempty"`
+	ContentType string `json:"content_type,omitempty"`
 }
 
 type eventEndpoint struct {
@@ -353,7 +353,7 @@ func validateRequiredParameter(httpRequest *http.Request, parameter string) (str
  * Load tracking pixel from Base64 string
  */
 func loadTrackingPixel() *TrackingPixel {
-	reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(TRACKING_PIXEL))
+	reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(TRACKING_PIXEL_PNG))
 	buff := bytes.Buffer{}
 	_, err := buff.ReadFrom(reader)
 	if err != nil {
