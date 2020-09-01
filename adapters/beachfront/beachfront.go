@@ -163,25 +163,28 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
+	/*
 	bumpAdm := false
-	// @TODO - get the false cases on these errors
 	for j := 0; j < len(beachfrontRequests.ADMVideo.Request.Imp); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.ADMVideo.Request.Imp[j])
 		if err == nil {
 			ext, err := getBeachfrontExtension(beachfrontRequests.ADMVideo.Request.Imp[j])
 			if err == nil {
-				appId, _ := getAppId(ext, openrtb_ext.BidTypeVideo)
+				appId, err := getAppId(ext, openrtb_ext.BidTypeVideo)
 				if err == nil {
+					bumpAdm = true
 					reqs[j+nurlBump] = &adapters.RequestData{
 						Method:  "POST",
 						Uri:     a.extraInfo.VideoEndpoint + "=" + appId,
 						Body:    bytes,
 						Headers: headers,
 					}
+				} else {
+					errs = append(errs, err)
 				}
+			} else {
+				errs = append(errs, err)
 			}
-			bumpAdm = true
-
 		} else {
 			errs = append(errs, err)
 		}
@@ -190,12 +193,30 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	if bumpAdm {
 		admBump++
 	}
+	 */
+
+
+	if len(beachfrontRequests.ADMVideo.Request.Imp) > 0 {
+		bytes, err := json.Marshal(beachfrontRequests.ADMVideo.Request)
+		if err == nil {
+			appId := "yourmom"
+
+			reqs[admBump] = &adapters.RequestData{
+				Method:  "POST",
+				Uri:     a.extraInfo.VideoEndpoint + "=" + appId,
+				Body:    bytes,
+				Headers: headers,
+			}
+		} else {
+			errs = append(errs, err)
+		}
+	}
 
 	for j := 0; j < len(beachfrontRequests.NurlVideo); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
 
 		if err == nil {
-			reqs[j+admBump] = &adapters.RequestData{
+			reqs[j+nurlBump] = &adapters.RequestData{
 				Method:  "POST",
 				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
 				Body:    append([]byte(`{"isPrebid":true,`), bytes[1:]...),
@@ -297,7 +318,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 
 func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (string, error) {
 	var appid string
-	var error error
+	var err error
 
 	if fmt.Sprintf("%s", reflect.TypeOf(ext.AppId)) == "string" &&
 		ext.AppId != "" {
@@ -310,10 +331,10 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 			appid = ext.AppIds.Banner
 		}
 	} else {
-		error = errors.New("unable to determine the appId(s) from the supplied extension")
+		err = errors.New("unable to determine the appId(s) from the supplied extension")
 	}
 
-	return appid, error
+	return appid, err
 }
 
 /*
@@ -604,7 +625,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		errs = append(errs, err)
 	}
 
-	bids, errs = postprocess(response, xtrnal, externalRequest.Uri, internalRequest.ID)
+	bids, errs = postprocess(response, xtrnal, externalRequest.Uri)
 
 	if len(errs) != 0 {
 		return nil, errs
@@ -644,7 +665,7 @@ func (a *BeachfrontAdapter) getBidType(externalRequest *adapters.RequestData) op
 	return openrtb_ext.BidTypeBanner
 }
 
-func postprocess(response *adapters.ResponseData, xtrnal openrtb.BidRequest, uri string, id string) ([]openrtb.Bid, []error) {
+func postprocess(response *adapters.ResponseData, xtrnal openrtb.BidRequest, uri string) ([]openrtb.Bid, []error) {
 	var beachfrontResp []responseSlot
 	var errs = make([]error, 0)
 
@@ -659,14 +680,14 @@ func postprocess(response *adapters.ResponseData, xtrnal openrtb.BidRequest, uri
 			errs = append(errs, err)
 			return nil, errs
 		} else {
-			return postprocessBanner(beachfrontResp, id)
+			return postprocessBanner(beachfrontResp)
 		}
 	}
 
-	return postprocessVideo(openrtbResp.SeatBid[0].Bid, xtrnal, uri, id)
+	return postprocessVideo(openrtbResp.SeatBid[0].Bid, xtrnal, uri)
 }
 
-func postprocessBanner(beachfrontResp []responseSlot, id string) ([]openrtb.Bid, []error) {
+func postprocessBanner(beachfrontResp []responseSlot) ([]openrtb.Bid, []error) {
 
 	var bids = make([]openrtb.Bid, len(beachfrontResp))
 	var errs = make([]error, 0)
@@ -686,7 +707,7 @@ func postprocessBanner(beachfrontResp []responseSlot, id string) ([]openrtb.Bid,
 	return bids, errs
 }
 
-func postprocessVideo(bids []openrtb.Bid, xtrnal openrtb.BidRequest, uri string, id string) ([]openrtb.Bid, []error) {
+func postprocessVideo(bids []openrtb.Bid, xtrnal openrtb.BidRequest, uri string) ([]openrtb.Bid, []error) {
 
 	var errs = make([]error, 0)
 
