@@ -108,6 +108,9 @@ type videoBidExtension struct {
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var reqs = make([]*adapters.RequestData, 0)
+	var addCookie bool = false
+
 	beachfrontRequests, errs := preprocess(request)
 
 	headers := http.Header{}
@@ -128,54 +131,36 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-	var reqCount = len(beachfrontRequests.NurlVideo) + len(beachfrontRequests.ADMVideo)
-	if len(beachfrontRequests.Banner.Slots) > 0 {
-		reqCount++
-	}
-
-	var reqs = make([]*adapters.RequestData, reqCount)
-
-	var nurlBump = 0
-	var admBump = 0
 
 	// At most, I only ever have one banner request, and it does not need the cookie, so doing it first.
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		bytes, err := json.Marshal(beachfrontRequests.Banner)
 
 		if err == nil {
-			reqs[0] = &adapters.RequestData{
+			reqs = append(reqs, &adapters.RequestData{
 				Method:  "POST",
 				Uri:     a.bannerEndpoint,
 				Body:    bytes,
 				Headers: headers,
-			}
-
-			nurlBump++
-			admBump++
+			})
 		} else {
 			errs = append(errs, err)
 		}
 	}
 
-	if request.User != nil && request.User.BuyerUID != "" && reqCount > 0 {
-		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
-	}
 
-
-	bumpAdm := false
 	for j := 0; j < len(beachfrontRequests.ADMVideo); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.ADMVideo[j].Request)
 		if err == nil {
 			if err == nil {
 				if err == nil {
-					bumpAdm = true
-					reqs[j+nurlBump] = &adapters.RequestData{
+					reqs = append(reqs, &adapters.RequestData{
 						Method:  "POST",
-						Uri:     a.extraInfo.VideoEndpoint + "=" +
-							beachfrontRequests.ADMVideo[j].AppId,
+						Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
 						Body:    bytes,
 						Headers: headers,
-					}
+					})
+					addCookie = true
 				} else {
 					errs = append(errs, err)
 				}
@@ -187,54 +172,27 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-	if bumpAdm {
-		admBump++
-	}
-
-
-	/*
-	if len(beachfrontRequests.ADMVideo.Request.Imp) > 0 {
-		bytes, err := json.Marshal(beachfrontRequests.ADMVideo.Request)
-		if err == nil {
-			appId := "yourmom"
-
-			reqs[admBump] = &adapters.RequestData{
-				Method:  "POST",
-				Uri:     a.extraInfo.VideoEndpoint + "=" + appId,
-				Body:    bytes,
-				Headers: headers,
-			}
-		} else {
-			errs = append(errs, err)
-		}
-	}
-	 */
-
 	for j := 0; j < len(beachfrontRequests.NurlVideo); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
 
 		if err == nil {
-			reqs[j+nurlBump] = &adapters.RequestData{
+			reqs = append(reqs, &adapters.RequestData{
 				Method:  "POST",
-				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
+				Uri:     a.extraInfo.VideoEndpoint + "=" + "null" + nurlVideoEndpointSuffix,
 				Body:    append([]byte(`{"isPrebid":true,`), bytes[1:]...),
 				Headers: headers,
-			}
+			})
+			addCookie = true
 		} else {
 			errs = append(errs, err)
 		}
 	}
 
-	return reqs, errs
-}
-
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
+	if request.User != nil && request.User.BuyerUID != "" && addCookie {
+		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
-	return false
+
+	return reqs, errs
 }
 
 func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []error) {
