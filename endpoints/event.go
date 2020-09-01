@@ -40,8 +40,8 @@ const (
 	FORMAT_PARAMETER    = "f"
 	ANALYTICS_PARAMETER = "x"
 
-	TRACKING_PIXEL_PNG          = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABHNCSVQICAgIfAhkiAAAAA1JREFUCJljYGBgYAAAAAUAAYehTtQAAAAASUVORK5CYII="
-	TRACKING_PIXEL_CONTENT_TYPE = "image/png"
+	TRACKING_PIXEL_PNG              = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABHNCSVQICAgIfAhkiAAAAA1JREFUCJljYGBgYAAAAAUAAYehTtQAAAAASUVORK5CYII="
+	TRACKING_PIXEL_PNG_CONTENT_TYPE = "image/png"
 )
 
 type EventRequest struct {
@@ -141,7 +141,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		w.WriteHeader(http.StatusOK)
 		// Add tracking pixel if format == image
 		if eventRequest.Format == IMAGE {
-			w.Header().Add("Content-Type", TRACKING_PIXEL_CONTENT_TYPE)
+			w.Header().Add("Content-Type", TRACKING_PIXEL_PNG_CONTENT_TYPE)
 			w.Write(e.TrackingPixel.Content)
 		}
 
@@ -362,6 +362,6 @@ func loadTrackingPixel() *TrackingPixel {
 
 	return &TrackingPixel{
 		Content:     buff.Bytes(),
-		ContentType: TRACKING_PIXEL_CONTENT_TYPE,
+		ContentType: TRACKING_PIXEL_PNG_CONTENT_TYPE,
 	}
 }
