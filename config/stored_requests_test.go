@@ -203,7 +203,7 @@ func TestResolveConfig(t *testing.T) {
 
 	resolvedStoredRequestsConfig(cfg)
 	auc := &cfg.StoredRequests
-	amp := &cfg.StoredAmp
+	amp := &cfg.StoredRequestsAMP
 
 	// Auction should have the non-amp values in it
 	assertStringsEqual(t, auc.CacheEvents.Endpoint, "/storedrequests/openrtb2")

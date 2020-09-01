@@ -17,7 +17,7 @@ const (
 	RequestDataType    DataType = "Request"
 	CategoryDataType   DataType = "Category"
 	VideoDataType      DataType = "Video"
-	AMPRequestDataType DataType = "Amp Request"
+	AMPRequestDataType DataType = "AMP Request"
 )
 
 func (sr *StoredRequests) DataType() DataType {
@@ -91,12 +91,12 @@ type HTTPFetcherConfig struct {
 // Migrate combined stored_requests+amp configuration to separate simple config sections
 func resolvedStoredRequestsConfig(cfg *Configuration) {
 	sr := &cfg.StoredRequests
-	amp := &cfg.StoredAmp
+	amp := &cfg.StoredRequestsAMP
 
 	sr.CacheEvents.Endpoint = "/storedrequests/openrtb2" // why is this here and not SetDefault ?
 
 	// Amp uses the same config but some fields get replaced by Amp* version of similar fields
-	cfg.StoredAmp = cfg.StoredRequests
+	cfg.StoredRequestsAMP = cfg.StoredRequests
 	amp.Postgres.FetcherQueries.QueryTemplate = sr.Postgres.FetcherQueries.AmpQueryTemplate
 	amp.Postgres.CacheInitialization.Query = sr.Postgres.CacheInitialization.AmpQuery
 	amp.Postgres.PollUpdates.Query = sr.Postgres.PollUpdates.AmpQuery
@@ -106,7 +106,7 @@ func resolvedStoredRequestsConfig(cfg *Configuration) {
 
 	// Set data types for each section
 	cfg.StoredRequests.dataType = RequestDataType
-	cfg.StoredAmp.dataType = AMPRequestDataType
+	cfg.StoredRequestsAMP.dataType = AMPRequestDataType
 	cfg.StoredVideo.dataType = VideoDataType
 	cfg.CategoryMapping.dataType = CategoryDataType
 	return

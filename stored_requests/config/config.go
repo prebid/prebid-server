@@ -115,7 +115,7 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.Metri
 	var dbc dbConnection
 
 	fetcher1, shutdown1 := CreateStoredRequests(&cfg.StoredRequests, metricsEngine, client, router, &dbc)
-	fetcher2, shutdown2 := CreateStoredRequests(&cfg.StoredAmp, metricsEngine, client, router, &dbc)
+	fetcher2, shutdown2 := CreateStoredRequests(&cfg.StoredRequestsAMP, metricsEngine, client, router, &dbc)
 	fetcher3, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, metricsEngine, client, router, &dbc)
 	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, &dbc)
 

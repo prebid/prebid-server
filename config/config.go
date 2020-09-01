@@ -29,17 +29,17 @@ type Configuration struct {
 	EnableGzip  bool       `mapstructure:"enable_gzip"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
-	StatusResponse  string          `mapstructure:"status_response"`
-	AuctionTimeouts AuctionTimeouts `mapstructure:"auction_timeouts_ms"`
-	CacheURL        Cache           `mapstructure:"cache"`
-	ExtCacheURL     ExternalCache   `mapstructure:"external_cache"`
-	RecaptchaSecret string          `mapstructure:"recaptcha_secret"`
-	HostCookie      HostCookie      `mapstructure:"host_cookie"`
-	Metrics         Metrics         `mapstructure:"metrics"`
-	DataCache       DataCache       `mapstructure:"datacache"`
-	StoredRequests  StoredRequests  `mapstructure:"stored_requests"`
-	StoredAmp       StoredRequests  `mapstructure:"stored_amp_req"`
-	CategoryMapping StoredRequests  `mapstructure:"category_mapping"`
+	StatusResponse    string          `mapstructure:"status_response"`
+	AuctionTimeouts   AuctionTimeouts `mapstructure:"auction_timeouts_ms"`
+	CacheURL          Cache           `mapstructure:"cache"`
+	ExtCacheURL       ExternalCache   `mapstructure:"external_cache"`
+	RecaptchaSecret   string          `mapstructure:"recaptcha_secret"`
+	HostCookie        HostCookie      `mapstructure:"host_cookie"`
+	Metrics           Metrics         `mapstructure:"metrics"`
+	DataCache         DataCache       `mapstructure:"datacache"`
+	StoredRequests    StoredRequests  `mapstructure:"stored_requests"`
+	StoredRequestsAMP StoredRequests  `mapstructure:"stored_amp_req"`
+	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo StoredRequests `mapstructure:"stored_video_req"`
 
@@ -105,7 +105,7 @@ func (cfg *Configuration) validate() configErrors {
 	var errs configErrors
 	errs = cfg.AuctionTimeouts.validate(errs)
 	errs = cfg.StoredRequests.validate("stored_req", errs)
-	errs = cfg.StoredAmp.validate("stored_amp_req", errs)
+	errs = cfg.StoredRequestsAMP.validate("stored_amp_req", errs)
 	errs = cfg.CategoryMapping.validate("categories", errs)
 	errs = cfg.StoredVideo.validate("stored_video_req", errs)
 	errs = cfg.Metrics.validate(errs)
