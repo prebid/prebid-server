@@ -1120,6 +1120,4 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 				"should return the expected Publisher ID for test case: %s", test.description)
 		}
 	}
-
-	fmt.Println("Ran tests")
 }

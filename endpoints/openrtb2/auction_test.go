@@ -1442,24 +1442,25 @@ func TestSanitizeRequest(t *testing.T) {
 func TestValidateAndFillSourceTID(t *testing.T) {
 	testTID := "some-tid"
 	testCases := []struct {
+		description   string
 		req           *openrtb.BidRequest
 		expectRandTID bool
 		expectedTID   string
-		description   string
 	}{
 		{
+			description:   "req.Source not present. Expecting a randomly generated TID value",
 			req:           &openrtb.BidRequest{},
 			expectRandTID: true,
-			description:   "req.Source not present. Expecting a randomly generated TID value",
 		},
 		{
+			description: "req.Source.TID not present. Expecting a randomly generated TID value",
 			req: &openrtb.BidRequest{
 				Source: &openrtb.Source{},
 			},
 			expectRandTID: true,
-			description:   "req.Source.TID not present. Expecting a randomly generated TID value",
 		},
 		{
+			description: "req.Source.TID present. Expecting no change",
 			req: &openrtb.BidRequest{
 				Source: &openrtb.Source{
 					TID: testTID,
@@ -1467,7 +1468,6 @@ func TestValidateAndFillSourceTID(t *testing.T) {
 			},
 			expectRandTID: false,
 			expectedTID:   testTID,
-			description:   "req.Source.TID present. Expecting no change",
 		},
 	}
 
