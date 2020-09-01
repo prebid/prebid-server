@@ -43,7 +43,7 @@ type ExtraInfo struct {
 type requests struct {
 	Banner    bannerRequest
 	NurlVideo []videoRequest
-	ADMVideo  videoRequest
+	ADMVideo  []videoRequest
 }
 
 // ---------------------------------------------------
@@ -128,12 +128,10 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-	var reqCount = len(beachfrontRequests.NurlVideo)
+	var reqCount = len(beachfrontRequests.NurlVideo) + len(beachfrontRequests.ADMVideo)
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		reqCount++
 	}
-
-	reqCount = reqCount + len(beachfrontRequests.ADMVideo.Request.Imp)
 
 	var reqs = make([]*adapters.RequestData, reqCount)
 
@@ -163,19 +161,18 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
-	/*
+
 	bumpAdm := false
-	for j := 0; j < len(beachfrontRequests.ADMVideo.Request.Imp); j++ {
-		bytes, err := json.Marshal(beachfrontRequests.ADMVideo.Request.Imp[j])
+	for j := 0; j < len(beachfrontRequests.ADMVideo); j++ {
+		bytes, err := json.Marshal(beachfrontRequests.ADMVideo[j].Request)
 		if err == nil {
-			ext, err := getBeachfrontExtension(beachfrontRequests.ADMVideo.Request.Imp[j])
 			if err == nil {
-				appId, err := getAppId(ext, openrtb_ext.BidTypeVideo)
 				if err == nil {
 					bumpAdm = true
 					reqs[j+nurlBump] = &adapters.RequestData{
 						Method:  "POST",
-						Uri:     a.extraInfo.VideoEndpoint + "=" + appId,
+						Uri:     a.extraInfo.VideoEndpoint + "=" +
+							beachfrontRequests.ADMVideo[j].AppId,
 						Body:    bytes,
 						Headers: headers,
 					}
@@ -193,9 +190,9 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	if bumpAdm {
 		admBump++
 	}
-	 */
 
 
+	/*
 	if len(beachfrontRequests.ADMVideo.Request.Imp) > 0 {
 		bytes, err := json.Marshal(beachfrontRequests.ADMVideo.Request)
 		if err == nil {
@@ -211,6 +208,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 			errs = append(errs, err)
 		}
 	}
+	 */
 
 	for j := 0; j < len(beachfrontRequests.NurlVideo); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
@@ -228,6 +226,15 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}
 
 	return reqs, errs
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []error) {
@@ -263,12 +270,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 		sent sequentially and the adm imps in parallel.
 	*/
 	if len(videoImps) > 0 {
-		admRequest := videoRequest{
-			AppId : "",
-			VideoResponseType : "",
-			Request : *request,
-		}
-		admRequest.Request.Imp = nil
+		admRequests := make(map[string]videoRequest, 1)
 
 		for i := 0; i < len(videoImps); i++ {
 			var ext openrtb_ext.ExtImpBeachfront
@@ -276,10 +278,15 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 
 			// @TODO - define these strings in a struct
 			if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
+				requestStub := request
+				requestStub.Imp = nil
+
+				// The nurl requests use the app_id/exchange_id that is in the ext, so
+				// the one in the videoRequest object will stay blank
 				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoRequest{
 						AppId: "",
 						VideoResponseType: ext.VideoResponseType,
-						Request: *request,
+						Request: *requestStub,
 					})
 				j := len(beachfrontReqs.NurlVideo) - 1
 				beachfrontReqs.NurlVideo[j].Request.Imp = nil
@@ -288,13 +295,43 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 				beachfrontReqs.NurlVideo[j].Request.Imp[0].Ext, _ = json.Marshal(ext)
 			}
 
+			/*
+				The endpoint for adm can now take multiple imp elements and will return a response
+				containing multiple VAST impression elements in correspondence. The adm endpoint still
+				requires that the the exchange_id is specified on the url, and all imps will use that
+				exchange, so, what if you want imps from several exchanges? The only way I'm seeing to
+				do that is go through the request object, check for adm with the same exchange, build
+				a request for each exchange.
+			*/
 			if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
-				admRequest.Request.Imp = append(admRequest.Request.Imp, videoImps[i])
+				admRequest, exists := admRequests[ext.AppId]
+				if ! exists {
+					requestStub := request
+					requestStub.Imp = make([]openrtb.Imp,0)
+
+					admRequests[ext.AppId] = videoRequest{
+						AppId: ext.AppId,
+						VideoResponseType: ext.VideoResponseType,
+						Request: *requestStub,
+					}
+
+					admRequest = admRequests[ext.AppId]
+					admRequest.Request.Imp = append(admRequest.Request.Imp, videoImps[i])
+					beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, admRequest)
+				} else {
+					for k := 0; k < len(beachfrontReqs.ADMVideo);k++ {
+						if beachfrontReqs.ADMVideo[k].AppId == admRequest.AppId {
+							beachfrontReqs.ADMVideo[k].Request.Imp = append(
+								beachfrontReqs.ADMVideo[k].Request.Imp,
+								videoImps[i])
+							break
+						}
+					}
+				}
 			}
 
 		}
 
-		beachfrontReqs.ADMVideo = admRequest
 		// Now I gotta stack of each. The nurls get done in sequence, so requests will include one for all
 		// adm and one for each nurl
 		/*
