@@ -25,7 +25,7 @@ type filteredBid struct {
 	reasonCode constant.FilterReasonCode
 }
 type highestCombination struct {
-	bids              []*Bid
+	bids              []*types.Bid
 	bidIDs            []string
 	durations         []int
 	price             float64
@@ -48,7 +48,7 @@ type AdPodGenerator struct {
 }
 
 //NewAdPodGenerator will generate adpod based on configuration
-func NewAdPodGenerator(request *openrtb.BidRequest, impIndex int, buckets BidsBuckets, comb ICombination, adpod *openrtb_ext.VideoAdPod, met pbsmetrics.MetricsEngine) *AdPodGenerator {
+func NewAdPodGenerator(request *openrtb.BidRequest, impIndex int, buckets types.BidsBuckets, comb combination.ICombination, adpod *openrtb_ext.VideoAdPod, met pbsmetrics.MetricsEngine) *AdPodGenerator {
 	return &AdPodGenerator{
 		request:  request,
 		impIndex: impIndex,
@@ -83,7 +83,7 @@ func (o *AdPodGenerator) cleanup(wg *sync.WaitGroup, responseCh chan *highestCom
 
 func (o *AdPodGenerator) getAdPodBids(timeout time.Duration) []*highestCombination {
 	start := time.Now()
-	defer TimeTrack(start, fmt.Sprintf("Tid:%v ImpId:%v getAdPodBids", o.request.ID, o.request.Imp[o.impIndex].ID))
+	defer util.TimeTrack(start, fmt.Sprintf("Tid:%v ImpId:%v getAdPodBids", o.request.ID, o.request.Imp[o.impIndex].ID))
 
 	maxRoutines := 3
 	isTimedOutORReceivedAllResponses := false
@@ -145,14 +145,14 @@ func (o *AdPodGenerator) getAdPodBids(timeout time.Duration) []*highestCombinati
 	defer ticker.Stop()
 
 	labels := pbsmetrics.PodLabels{
-		AlgorithmName:    string(CombinationGeneratorV1),
+		AlgorithmName:    string(constant.CombinationGeneratorV1),
 		NoOfCombinations: new(int),
 	}
 	*labels.NoOfCombinations = combinationCount
 	o.met.RecordPodCombGenTime(labels, time.Duration(totalTimeByCombGen))
 
 	compExclLabels := pbsmetrics.PodLabels{
-		AlgorithmName:    string(CompetitiveExclusionV1),
+		AlgorithmName:    string(constant.CompetitiveExclusionV1),
 		NoOfResponseBids: new(int),
 	}
 	*compExclLabels.NoOfResponseBids = 0
