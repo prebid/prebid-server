@@ -1219,6 +1219,15 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 				"ext": {
 					"segments": ["999","888"]
 				}
+			},
+			{
+				"source": "liveramp.com",
+				"uids": [{
+					"id": "LIVERAMPID"
+				}],
+				"ext": {
+					"segments": ["111","222"]
+				}
 			}
 			]}`),
 		},
@@ -1239,7 +1248,7 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 	}
 
 	assert.NotNil(t, userExt.Eids)
-	assert.Equal(t, 3, len(userExt.Eids), "Eids values are not as expected!")
+	assert.Equal(t, 4, len(userExt.Eids), "Eids values are not as expected!")
 
 	assert.NotNil(t, userExt.TpID)
 	assert.Equal(t, 2, len(userExt.TpID), "TpID values are not as expected!")
@@ -1249,6 +1258,9 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 
 	// liveintent.com
 	assert.Equal(t, "liveintent.com", userExt.TpID[1].Source, "TpID source value is not as expected!")
+
+	// liveramp.com
+	assert.Equal(t, "LIVERAMPID", userExt.LiverampIdl, "Liveramp_idl value is not as expected!")
 
 	userExtRPTarget := make(map[string]interface{})
 	if err := json.Unmarshal(userExt.RP.Target, &userExtRPTarget); err != nil {

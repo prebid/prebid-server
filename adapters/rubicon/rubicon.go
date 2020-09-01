@@ -105,11 +105,12 @@ type rubiconExtUserTpID struct {
 }
 
 type rubiconUserExt struct {
-	Consent   string                        `json:"consent,omitempty"`
-	DigiTrust *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
-	Eids      []openrtb_ext.ExtUserEid      `json:"eids,omitempty"`
-	TpID      []rubiconExtUserTpID          `json:"tpid,omitempty"`
-	RP        rubiconUserExtRP              `json:"rp"`
+	Consent     string                        `json:"consent,omitempty"`
+	DigiTrust   *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
+	Eids        []openrtb_ext.ExtUserEid      `json:"eids,omitempty"`
+	TpID        []rubiconExtUserTpID          `json:"tpid,omitempty"`
+	RP          rubiconUserExtRP              `json:"rp"`
+	LiverampIdl string                        `json:"liveramp_idl,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -291,6 +292,12 @@ type rubiconBidExtRP struct {
 	Mime   string `json:"mime,omitempty"`
 	SizeID int    `json:"size_id,omitempty"`
 	AqID   string `json:"aqid,omitempty"`
+}
+
+type mappedRubiconUidsParam struct {
+	tpIds       []rubiconExtUserTpID
+	segments    []string
+	liverampIdl string
 }
 
 //MAS algorithm
@@ -736,13 +743,18 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 				// set user.ext.tpid
 				if len(userExt.Eids) > 0 {
-					if tpIds, segments, errors := getTpIdsAndSegments(userExt.Eids); len(errors) > 0 {
+					mappedRubiconUidsParam, errors := getTpIdsAndSegments(userExt.Eids)
+					if len(errors) > 0 {
 						errs = append(errs, errors...)
 						continue
-					} else if err := updateUserExtWithTpIdsAndSegments(&userExtRP, tpIds, segments); err != nil {
+					}
+
+					if err := updateUserExtWithTpIdsAndSegments(&userExtRP, mappedRubiconUidsParam); err != nil {
 						errs = append(errs, err)
 						continue
 					}
+
+					userExtRP.LiverampIdl = mappedRubiconUidsParam.liverampIdl
 				}
 			}
 
@@ -851,9 +863,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	return requestData, errs
 }
 
-func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, []string, []error) {
-	tpIds := make([]rubiconExtUserTpID, 0)
-	segments := make([]string, 0)
+func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) (mappedRubiconUidsParam, []error) {
+	rubiconUidsParam := mappedRubiconUidsParam{
+		tpIds:    make([]rubiconExtUserTpID, 0),
+		segments: make([]string, 0),
+	}
 	errs := make([]error, 0)
 
 	for _, eid := range eids {
@@ -873,7 +887,7 @@ func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, [
 					}
 
 					if eidUidExt.RtiPartner == "TDID" {
-						tpIds = append(tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
+						rubiconUidsParam.tpIds = append(rubiconUidsParam.tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
 					}
 				}
 			}
@@ -882,7 +896,7 @@ func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, [
 			if len(uids) > 0 {
 				uidId := uids[0].ID
 				if uidId != "" {
-					tpIds = append(tpIds, rubiconExtUserTpID{Source: "liveintent.com", UID: uidId})
+					rubiconUidsParam.tpIds = append(rubiconUidsParam.tpIds, rubiconExtUserTpID{Source: "liveintent.com", UID: uidId})
 				}
 
 				if eid.Ext != nil {
@@ -893,20 +907,28 @@ func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, [
 						})
 						continue
 					}
-					segments = eidExt.Segments
+					rubiconUidsParam.segments = eidExt.Segments
+				}
+			}
+		case "liveramp.com":
+			uids := eid.Uids
+			if len(uids) > 0 {
+				uidId := uids[0].ID
+				if uidId != "" && rubiconUidsParam.liverampIdl == "" {
+					rubiconUidsParam.liverampIdl = uidId
 				}
 			}
 		}
 	}
 
-	return tpIds, segments, errs
+	return rubiconUidsParam, errs
 }
 
-func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, tpIds []rubiconExtUserTpID, segments []string) error {
-	if len(tpIds) > 0 {
-		userExtRP.TpID = tpIds
+func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, rubiconUidsParam mappedRubiconUidsParam) error {
+	if len(rubiconUidsParam.tpIds) > 0 {
+		userExtRP.TpID = rubiconUidsParam.tpIds
 
-		if segments != nil {
+		if rubiconUidsParam.segments != nil {
 			userExtRPTarget := make(map[string]interface{})
 
 			if userExtRP.RP.Target != nil {
@@ -915,7 +937,7 @@ func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, tpIds []rubico
 				}
 			}
 
-			userExtRPTarget["LIseg"] = segments
+			userExtRPTarget["LIseg"] = rubiconUidsParam.segments
 
 			if target, err := json.Marshal(&userExtRPTarget); err != nil {
 				return &errortypes.BadInput{Message: err.Error()}
