@@ -50,6 +50,7 @@ func NewVTrackEndpoint(cfg *config.Configuration, dataCache cache.Cache, pbsCach
 		Cfg:         cfg,
 		DataCache:   dataCache,
 		BidderInfos: bidderInfos,
+		PbsCache:    pbsCache,
 	}
 
 	return vte.Handle

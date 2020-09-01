@@ -31,8 +31,8 @@ func (m *vtrackMockCacheClient) PutJson(ctx context.Context, values []prebid_cac
 	}
 	return m.Uuids, []error{}
 }
-func (m *vtrackMockCacheClient) GetExtCacheData() (string, string) {
-	return "", ""
+func (m *vtrackMockCacheClient) GetExtCacheData() (scheme string, host string, path string) {
+	return
 }
 
 // Mock cache
