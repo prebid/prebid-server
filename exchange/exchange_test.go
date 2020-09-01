@@ -274,9 +274,10 @@ func TestDebugBehaviour(t *testing.T) {
 	}
 }
 
-func TestGetBidCacheInfo(t *testing.T) {
+func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	testUUID := "CACHE_UUID_1234"
-	testExternalCacheHost := "https://www.externalprebidcache.net"
+	testExternalCacheScheme := "https"
+	testExternalCacheHost := "www.externalprebidcache.net"
 	testExternalCachePath := "endpoints/cache"
 
 	/* 1) An adapter 											*/
@@ -292,8 +293,9 @@ func TestGetBidCacheInfo(t *testing.T) {
 			Host: "www.internalprebidcache.net",
 		},
 		ExtCacheURL: config.ExternalCache{
-			Host: testExternalCacheHost,
-			Path: testExternalCachePath,
+			Scheme: testExternalCacheScheme,
+			Host:   testExternalCacheHost,
+			Path:   testExternalCachePath,
 		},
 	}
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
@@ -421,7 +423,7 @@ func TestGetBidCacheInfo(t *testing.T) {
 				Seat: string(bidderName),
 				Bid: []openrtb.Bid{
 					{
-						Ext: json.RawMessage(`{ "prebid": { "cache": { "bids": { "cacheId": "` + testUUID + `", "url": "` + testExternalCacheHost + `/` + testExternalCachePath + `?uuid=` + testUUID + `" }, "key": "", "url": "" }`),
+						Ext: json.RawMessage(`{ "prebid": { "cache": { "bids": { "cacheId": "` + testUUID + `", "url": "` + testExternalCacheScheme + `://` + testExternalCacheHost + `/` + testExternalCachePath + `?uuid=` + testUUID + `" }, "key": "", "url": "" }`),
 					},
 				},
 			},
@@ -444,6 +446,131 @@ func TestGetBidCacheInfo(t *testing.T) {
 	assert.NoErrorf(t, err, "[TestGetBidCacheInfo] Error found while trying to json parse the url field from actual build response. Message: %v \n", err)
 
 	assert.Equal(t, expCacheURL, cacheURL, "[TestGetBidCacheInfo] cacheId field in ext should equal \"%s\" \n", expCacheURL)
+}
+
+func TestGetBidCacheInfo(t *testing.T) {
+	bid := &openrtb.Bid{ID: "42"}
+	testCases := []struct {
+		description      string
+		scheme           string
+		host             string
+		path             string
+		bid              *pbsOrtbBid
+		auction          *auction
+		expectedFound    bool
+		expectedCacheID  string
+		expectedCacheURL string
+	}{
+		{
+			description:      "JSON Cache ID",
+			scheme:           "https",
+			host:             "prebid.org",
+			path:             "cache",
+			bid:              &pbsOrtbBid{bid: bid},
+			auction:          &auction{cacheIds: map[*openrtb.Bid]string{bid: "anyID"}},
+			expectedFound:    true,
+			expectedCacheID:  "anyID",
+			expectedCacheURL: "https://prebid.org/cache?uuid=anyID",
+		},
+		{
+			description:      "VAST Cache ID",
+			scheme:           "https",
+			host:             "prebid.org",
+			path:             "cache",
+			bid:              &pbsOrtbBid{bid: bid},
+			auction:          &auction{vastCacheIds: map[*openrtb.Bid]string{bid: "anyID"}},
+			expectedFound:    true,
+			expectedCacheID:  "anyID",
+			expectedCacheURL: "https://prebid.org/cache?uuid=anyID",
+		},
+		{
+			description:      "Cache ID Not Found",
+			scheme:           "https",
+			host:             "prebid.org",
+			path:             "cache",
+			bid:              &pbsOrtbBid{bid: bid},
+			auction:          &auction{},
+			expectedFound:    false,
+			expectedCacheID:  "",
+			expectedCacheURL: "",
+		},
+		{
+			description:      "Scheme Not Provided",
+			host:             "prebid.org",
+			path:             "cache",
+			bid:              &pbsOrtbBid{bid: bid},
+			auction:          &auction{cacheIds: map[*openrtb.Bid]string{bid: "anyID"}},
+			expectedFound:    true,
+			expectedCacheID:  "anyID",
+			expectedCacheURL: "prebid.org/cache?uuid=anyID",
+		},
+		{
+			description:      "Host And Path Not Provided - Without Scheme",
+			bid:              &pbsOrtbBid{bid: bid},
+			auction:          &auction{cacheIds: map[*openrtb.Bid]string{bid: "anyID"}},
+			expectedFound:    true,
+			expectedCacheID:  "anyID",
+			expectedCacheURL: "",
+		},
+		{
+			description:      "Host And Path Not Provided - With Scheme",
+			scheme:           "https",
+			bid:              &pbsOrtbBid{bid: bid},
+			auction:          &auction{cacheIds: map[*openrtb.Bid]string{bid: "anyID"}},
+			expectedFound:    true,
+			expectedCacheID:  "anyID",
+			expectedCacheURL: "",
+		},
+		{
+			description:      "Nil Bid",
+			scheme:           "https",
+			host:             "prebid.org",
+			path:             "cache",
+			bid:              nil,
+			auction:          &auction{cacheIds: map[*openrtb.Bid]string{bid: "anyID"}},
+			expectedFound:    false,
+			expectedCacheID:  "",
+			expectedCacheURL: "",
+		},
+		{
+			description:      "Nil Embedded Bid",
+			scheme:           "https",
+			host:             "prebid.org",
+			path:             "cache",
+			bid:              &pbsOrtbBid{bid: nil},
+			auction:          &auction{cacheIds: map[*openrtb.Bid]string{bid: "anyID"}},
+			expectedFound:    false,
+			expectedCacheID:  "",
+			expectedCacheURL: "",
+		},
+		{
+			description:      "Nil Auction",
+			scheme:           "https",
+			host:             "prebid.org",
+			path:             "cache",
+			bid:              &pbsOrtbBid{bid: bid},
+			auction:          nil,
+			expectedFound:    false,
+			expectedCacheID:  "",
+			expectedCacheURL: "",
+		},
+	}
+
+	for _, test := range testCases {
+		exchange := &exchange{
+			cache: &mockCache{
+				scheme: test.scheme,
+				host:   test.host,
+				path:   test.path,
+			},
+		}
+
+		cacheInfo, found := exchange.getBidCacheInfo(test.bid, test.auction)
+
+		assert.Equal(t, test.expectedFound, found, test.description+":found")
+		assert.Equal(t, test.expectedCacheID, cacheInfo.CacheId, test.description+":id")
+		assert.Equal(t, test.expectedCacheURL, cacheInfo.Url, test.description+":url")
+	}
 }
 
 func TestBidResponseCurrency(t *testing.T) {
@@ -2176,8 +2303,8 @@ func mockSlowHandler(delay time.Duration, statusCode int, body string) http.Hand
 
 type wellBehavedCache struct{}
 
-func (c *wellBehavedCache) GetExtCacheData() (string, string) {
-	return "www.pbcserver.com", "/pbcache/endpoint"
+func (c *wellBehavedCache) GetExtCacheData() (scheme string, host string, path string) {
+	return "https", "www.pbcserver.com", "/pbcache/endpoint"
 }
 
 func (c *wellBehavedCache) PutJson(ctx context.Context, values []pbc.Cacheable) ([]string, []error) {

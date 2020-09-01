@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"runtime/debug"
 	"sort"
 	"strconv"
@@ -107,7 +108,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	shouldCacheBids, shouldCacheVAST := getExtCacheInfo(requestExt)
 	targData := getExtTargetData(requestExt, shouldCacheBids, shouldCacheVAST)
 	if targData != nil {
-		targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
+		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
 
 	debugInfo := getDebugInfo(bidRequest, requestExt)
@@ -814,24 +815,50 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName, a
 
 // If bid got cached inside `(a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string)`,
 // a UUID should be found inside `a.cacheIds` or `a.vastCacheIds`. This function returns the UUID along with the internal cache URL
-func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auc *auction) (openrtb_ext.ExtBidPrebidCacheBids, bool) {
-	var cacheInfo openrtb_ext.ExtBidPrebidCacheBids
-	var cacheUUID string
-	var found bool = false
+func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auction *auction) (cacheInfo openrtb_ext.ExtBidPrebidCacheBids, found bool) {
+	uuid, found := findCacheID(bid, auction)
 
-	if auc != nil {
-		var extCacheHost, extCachePath string
-		if cacheUUID, found = auc.cacheIds[bid.bid]; found {
-			cacheInfo.CacheId = cacheUUID
-			extCacheHost, extCachePath = e.cache.GetExtCacheData()
-			cacheInfo.Url = extCacheHost + extCachePath + "?uuid=" + cacheUUID
-		} else if cacheUUID, found = auc.vastCacheIds[bid.bid]; found {
-			cacheInfo.CacheId = cacheUUID
-			extCacheHost, extCachePath = e.cache.GetExtCacheData()
-			cacheInfo.Url = extCacheHost + extCachePath + "?uuid=" + cacheUUID
+	if found {
+		cacheInfo.CacheId = uuid
+		cacheInfo.Url = buildCacheURL(e.cache, uuid)
+	}
+
+	return
+}
+
+func findCacheID(bid *pbsOrtbBid, auction *auction) (string, bool) {
+	if bid != nil && bid.bid != nil && auction != nil {
+		if id, found := auction.cacheIds[bid.bid]; found {
+			return id, true
+		}
+
+		if id, found := auction.vastCacheIds[bid.bid]; found {
+			return id, true
 		}
 	}
-	return cacheInfo, found
+
+	return "", false
+}
+
+func buildCacheURL(cache prebid_cache_client.Client, uuid string) string {
+	scheme, host, path := cache.GetExtCacheData()
+
+	if host == "" || path == "" {
+		return ""
+	}
+
+	query := url.Values{"uuid": []string{uuid}}
+	cacheURL := url.URL{
+		Scheme:   scheme,
+		Host:     host,
+		Path:     path,
+		RawQuery: query.Encode(),
+	}
+	cacheURL.Query()
+
+	// URLs without a scheme will begin with //, in which case we
+	// want to trim it off to keep compatbile with current behavior.
+	return strings.TrimPrefix(cacheURL.String(), "//")
 }
 
 func listBiddersWithRequests(cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest) []openrtb_ext.BidderName {
