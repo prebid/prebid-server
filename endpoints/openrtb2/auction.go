@@ -15,6 +15,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
@@ -141,7 +142,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 		labels.RType = pbsmetrics.ReqTypeORTB2App
-		labels.PubID = effectivePubID(req.App.Publisher)
+		labels.PubID = getAccountID(req.App.Publisher)
 	} else { //req.Site != nil
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -149,7 +150,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		labels.PubID = effectivePubID(req.Site.Publisher)
+		labels.PubID = getAccountID(req.Site.Publisher)
 	}
 
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
@@ -283,6 +284,14 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("A prebid request can only process one currency. Taking the first currency in the list, %s, as the active currency", req.Cur[0])})
 	}
 
+	// If automatically filling source TID is enabled then validate that
+	// source.TID exists and If it doesn't, fill it with a randomly generated UUID
+	if deps.cfg.AutoGenSourceTID {
+		if err := validateAndFillSourceTID(req); err != nil {
+			return []error{err}
+		}
+	}
+
 	var aliases map[string]string
 	if bidExt, err := deps.parseBidExt(req.Ext); err != nil {
 		return []error{err}
@@ -356,6 +365,20 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	return errL
+}
+
+func validateAndFillSourceTID(req *openrtb.BidRequest) error {
+	if req.Source == nil {
+		req.Source = &openrtb.Source{}
+	}
+	if req.Source.TID == "" {
+		if rawUUID, err := uuid.NewV4(); err == nil {
+			req.Source.TID = rawUUID.String()
+		} else {
+			return errors.New("req.Source.TID missing in the req and error creating a random UID")
+		}
+	}
+	return nil
 }
 
 func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
@@ -1265,8 +1288,8 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 	return rc
 }
 
-// Returns the effective publisher ID
-func effectivePubID(pub *openrtb.Publisher) string {
+// Returns the account ID for the request
+func getAccountID(pub *openrtb.Publisher) string {
 	if pub != nil {
 		if pub.Ext != nil {
 			var pubExt openrtb_ext.ExtPublisher

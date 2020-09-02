@@ -138,6 +138,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
 	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
+	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 }
 
 var fullConfig = []byte(`
@@ -224,6 +225,7 @@ adapters:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
+auto_gen_source_tid: false
 certificates_file: /etc/ssl/cert.pem
 request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
@@ -406,6 +408,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
+	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, false)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
