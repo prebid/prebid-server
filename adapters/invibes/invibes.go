@@ -32,6 +32,8 @@ type InvibesAdRequest struct {
 	GdprConsent   string
 	Gdpr          bool
 	Bvid          string
+	InvibBVLog    bool
+	VideoAdDebug  bool
 }
 type InvibesBidParams struct {
 	PlacementIds []string
@@ -51,6 +53,7 @@ type InvibesInternalParams struct {
 
 	TestIp   string
 	TestBvid string
+	TestLog  bool
 }
 type BidServerBidderResponse struct {
 	Currency  string              `json:"currency"`
@@ -158,6 +161,7 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				if invibesExt.Debug.TestBvid != "" {
 					invibesInternalParams.TestBvid = invibesExt.Debug.TestBvid
 				}
+				invibesInternalParams.TestLog = invibesExt.Debug.TestLog
 			}
 		}
 	}
@@ -264,6 +268,8 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 			GdprConsent:   invibesParams.GdprConsent,
 			Gdpr:          invibesParams.Gdpr != "0",
 			Bvid:          invibesParams.TestBvid,
+			InvibBVLog:    invibesParams.TestLog,
+			VideoAdDebug:  invibesParams.TestLog,
 		}
 	}
 

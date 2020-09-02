@@ -55,6 +55,8 @@
           "Lid": "lidtest",
           "Location": "https://publisher.com/url",
           "IsTestBid": false,
+          "InvibBVLog": false,
+          "VideoAdDebug": false,
           "Width": "1000"
         }
       },

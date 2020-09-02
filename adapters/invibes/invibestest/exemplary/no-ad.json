@@ -41,6 +41,8 @@
           "Lid": "123",
           "Location": "https://publisher.com/url",
           "IsTestBid": false,
+          "InvibBVLog": false,
+          "VideoAdDebug": false,
           "Width": ""
         }
       },

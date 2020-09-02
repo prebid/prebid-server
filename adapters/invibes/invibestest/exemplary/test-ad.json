@@ -23,7 +23,8 @@
             "placementId": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
             "debug": {
               "testIp": "89.1.1.1",
-              "testBvid": "111"
+              "testBvid": "111",
+              "testLog": false
             }
           }
         }
@@ -45,6 +46,8 @@
           "Lid": "123",
           "Location": "https://publisher.com/url",
           "IsTestBid": true,
+          "InvibBVLog": false,
+          "VideoAdDebug": false,
           "Width": ""
         }
       },

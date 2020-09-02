@@ -20,7 +20,10 @@
         },
         "ext": {
           "bidder": {
-            "placementId": "2eb6bd58-865c-47ce-af7f-a918108c3fd2"
+            "placementId": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+            "debug": {
+              "testLog": true
+            }
           }
         }
       }
@@ -41,6 +44,8 @@
           "Lid": "123",
           "Location": "https://publisher.com/url",
           "IsTestBid": false,
+          "InvibBVLog": true,
+          "VideoAdDebug": true,
           "Width": ""
         }
       },
