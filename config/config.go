@@ -74,6 +74,8 @@ type Configuration struct {
 	Debug Debug `mapstructure:"debug"`
 	// RequestValidation specifies the request validation options.
 	RequestValidation RequestValidation `mapstructure:"request_validation"`
+	// When true, PBS will assign a randomly generated UUID to req.Source.TID if it is empty
+	AutoGenSourceTID bool `mapstructure:"auto_gen_source_tid"`
 
 	// Deployment
 	DeployPIDEnabled bool        `mapstructure:"deploy_pid_enabled"`
@@ -1011,6 +1013,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("blacklisted_accts", []string{""})
 	v.SetDefault("account_required", false)
 	v.SetDefault("certificates_file", "")
+	v.SetDefault("auto_gen_source_tid", true)
 
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")
