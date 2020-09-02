@@ -56,7 +56,7 @@
           "dnt": 0,
           "ua": "",
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.9.0",
+          "adapterVersion": "1.0.0",
           "user": {
           }
         }
