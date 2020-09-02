@@ -178,7 +178,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		if err == nil {
 			reqs = append(reqs, &adapters.RequestData{
 				Method:  "POST",
-				Uri:     a.extraInfo.VideoEndpoint + "=" + "null" + nurlVideoEndpointSuffix,
+				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
 				Body:    append([]byte(`{"isPrebid":true,`), bytes[1:]...),
 				Headers: headers,
 			})
@@ -239,7 +239,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 				// The nurl requests uses the app_id/exchange_id that is in the ext, so
 				// the one in the videoRequest object will stay blank
 				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoRequest{
-						AppId: "",
+						AppId: ext.AppId,
 						VideoResponseType: ext.VideoResponseType,
 						Request: requestStub,
 					})
