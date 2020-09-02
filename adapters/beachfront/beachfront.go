@@ -236,8 +236,6 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 				requestStub := *request
 				requestStub.Imp = nil
 
-				// The nurl requests uses the app_id/exchange_id that is in the ext, so
-				// the one in the videoRequest object will stay blank
 				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoRequest{
 						AppId: ext.AppId,
 						VideoResponseType: ext.VideoResponseType,
@@ -486,55 +484,6 @@ func prepVideoRequest(bfReq videoRequest) (videoRequest, int8) {
 	}
 
 	return bfReq, secure
-}
-
-func prepImp(imp openrtb.Imp, beachfrontExt openrtb_ext.ExtImpBeachfront, secure int8) (openrtb.Imp, int8) {
-	imp.Banner = nil
-	imp.Ext = nil
-	imp.Secure = &secure
-
-	if beachfrontExt.BidFloor <= minBidFloor {
-		imp.BidFloor = 0
-	} else {
-		imp.BidFloor = beachfrontExt.BidFloor
-	}
-
-	if imp.Video.H == 0 && imp.Video.W == 0 {
-		imp.Video.W = DefaultVideoWidth
-		imp.Video.H = DefaultVideoHeight
-	}
-
-	return imp, secure
-}
-
-func getSequentialVideoRequests(request *openrtb.BidRequest) ([]videoRequest, []error) {
-	var bfReqs = make([]videoRequest, len(request.Imp))
-	var errs = make([]error, 0, len(request.Imp))
-	var secure int8
-	var failedRequestIndices = make([]int, 0)
-	var beachfrontExt openrtb_ext.ExtImpBeachfront
-	var lastErrorCount = 0
-
-	for i := 0; i < len(request.Imp); i++ {
-		beachfrontExt, errs = prepVideoRequestExt(request.Imp[i], errs)
-		if len(errs) > lastErrorCount {
-			failedRequestIndices = append(failedRequestIndices, i)
-			lastErrorCount = len(errs)
-			continue
-		}
-
-		bfReqs[i].Request = *request
-		bfReqs[i].Request.Imp[0], secure = prepImp(bfReqs[i].Request.Imp[0], beachfrontExt, secure)
-	}
-
-	// Strip out any failed requests
-	if len(failedRequestIndices) > 0 {
-		for i := 0; i < len(failedRequestIndices); i++ {
-			bfReqs = removeVideoElement(bfReqs, failedRequestIndices[i])
-		}
-	}
-
-	return bfReqs, errs
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
