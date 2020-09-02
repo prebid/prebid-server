@@ -161,48 +161,21 @@ func TestEventChannel_OutputFormat(t *testing.T) {
 	eventChannel := NewEventChannel(send, 15000, 10, 2*time.Minute)
 
 	eventChannel.Push([]byte("one"))
-	time.Sleep(5 * time.Millisecond)
+	time.Sleep(1 * time.Millisecond)
+
 	eventChannel.flush()
-	time.Sleep(5 * time.Millisecond)
+
 	eventChannel.Push([]byte("two"))
-	time.Sleep(5 * time.Millisecond)
+	time.Sleep(1 * time.Millisecond)
+
 	eventChannel.Push([]byte("three"))
+	time.Sleep(1 * time.Millisecond)
 
 	eventChannel.Close()
 
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(1 * time.Millisecond)
 
 	expected := append(toGzip("one"), toGzip("twothree")...)
 
 	assert.Equal(t, expected, data)
-}
-
-func TestEventChannelPushAndFlush(t *testing.T) {
-	data := make([]byte, 0)
-	send := newSender(&data)
-
-	eventChannel := NewEventChannel(send, maxByteSize, maxEventCount, maxTime)
-
-	eventChannel.Push([]byte("one"))
-	eventChannel.Push([]byte("two"))
-	eventChannel.flush()
-
-	time.Sleep(10 * time.Millisecond)
-
-	assert.Equal(t, "onetwo", string(data))
-}
-
-func TestEventChannelPushAndClose(t *testing.T) {
-	data := make([]byte, 0)
-	send := newSender(&data)
-
-	eventChannel := NewEventChannel(send, maxByteSize, maxEventCount, maxTime)
-
-	eventChannel.Push([]byte("one"))
-	eventChannel.Push([]byte("two"))
-	eventChannel.Close()
-
-	time.Sleep(10 * time.Millisecond)
-
-	assert.Equal(t, "onetwo", string(data))
 }
