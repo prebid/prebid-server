@@ -113,10 +113,11 @@ func (c configErrors) Error() string {
 func (cfg *Configuration) validate() configErrors {
 	var errs configErrors
 	errs = cfg.AuctionTimeouts.validate(errs)
-	errs = cfg.StoredRequests.validate("stored_req", errs)
-	errs = cfg.StoredRequestsAMP.validate("stored_amp_req", errs)
-	errs = cfg.CategoryMapping.validate("categories", errs)
-	errs = cfg.StoredVideo.validate("stored_video_req", errs)
+	errs = cfg.StoredRequests.validate(RequestDataType, errs)
+	errs = cfg.StoredRequestsAMP.validate(AMPRequestDataType, errs)
+	errs = cfg.Accounts.validate(AccountDataType, errs)
+	errs = cfg.CategoryMapping.validate(CategoryDataType, errs)
+	errs = cfg.StoredVideo.validate(VideoDataType, errs)
 	errs = cfg.Metrics.validate(errs)
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
@@ -128,13 +129,6 @@ func (cfg *Configuration) validate() configErrors {
 	errs = cfg.ExtCacheURL.validate(errs)
 	if cfg.AccountDefaults.Disabled {
 		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
-	}
-	// Temporary validation of accounts config (only files is supported)
-	if cfg.Accounts.Postgres.ConnectionInfo.Database != "" {
-		errs = append(errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
-	}
-	if cfg.Accounts.HTTP.Endpoint != "" {
-		errs = append(errs, errors.New("accounts.http: retrieving accounts via http not available, use accounts.files"))
 	}
 	return errs
 }
@@ -879,6 +873,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_video_req.http_events.endpoint", "")
 	v.SetDefault("stored_video_req.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_video_req.http_events.timeout_ms", 0)
+
+	v.SetDefault("accounts.filesystem.enabled", false)
+	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id/accounts")
+	v.SetDefault("accounts.in_memory_cache.type", "none")
 
 	for _, bidder := range openrtb_ext.BidderMap {
 		setBidderDefaults(v, strings.ToLower(string(bidder)))

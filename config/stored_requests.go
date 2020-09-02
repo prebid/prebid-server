@@ -18,7 +18,19 @@ const (
 	CategoryDataType   DataType = "Category"
 	VideoDataType      DataType = "Video"
 	AMPRequestDataType DataType = "AMP Request"
+	AccountDataType    DataType = "Account"
 )
+
+// Section returns the config section this type is defined in
+func (sr *StoredRequests) Section() string {
+	return map[DataType]string{
+		RequestDataType:    "stored_requests",
+		CategoryDataType:   "categories",
+		VideoDataType:      "stored_video_req",
+		AMPRequestDataType: "stored_amp_req",
+		AccountDataType:    "accounts",
+	}[sr.dataType]
+}
 
 func (sr *StoredRequests) DataType() DataType {
 	return sr.dataType
@@ -103,17 +115,19 @@ func resolvedStoredRequestsConfig(cfg *Configuration) {
 	amp.HTTP.Endpoint = sr.HTTP.AmpEndpoint
 	amp.CacheEvents.Endpoint = "/storedrequests/amp"
 	amp.HTTPEvents.Endpoint = sr.HTTPEvents.AmpEndpoint
-
-	// Set data types for each section
-	cfg.StoredRequests.dataType = RequestDataType
-	cfg.StoredRequestsAMP.dataType = AMPRequestDataType
-	cfg.StoredVideo.dataType = VideoDataType
-	cfg.CategoryMapping.dataType = CategoryDataType
 	return
 }
 
-func (cfg *StoredRequests) validate(section string, errs configErrors) configErrors {
-	errs = cfg.Postgres.validate(section, errs)
+func (cfg *StoredRequests) validate(dataType DataType, errs configErrors) configErrors {
+	cfg.dataType = dataType
+	if dataType == AccountDataType && cfg.HTTP.Endpoint != "" {
+		errs = append(errs, fmt.Errorf("%s.http: retrieving accounts via http not available, use accounts.files", cfg.Section()))
+	}
+	if dataType == AccountDataType && cfg.Postgres.ConnectionInfo.Database != "" {
+		errs = append(errs, fmt.Errorf("%s.postgres: retrieving accounts via postgres not available, use accounts.files", cfg.Section()))
+	} else {
+		errs = cfg.Postgres.validate(cfg.Section(), errs)
+	}
 
 	// Categories do not use cache so none of the following checks apply
 	if cfg.dataType == CategoryDataType {
@@ -122,21 +136,21 @@ func (cfg *StoredRequests) validate(section string, errs configErrors) configErr
 
 	if cfg.InMemoryCache.Type == "none" {
 		if cfg.CacheEvents.Enabled {
-			errs = append(errs, fmt.Errorf("%s: cache_events must be disabled if in_memory_cache=none", section))
+			errs = append(errs, fmt.Errorf("%s: cache_events must be disabled if in_memory_cache=none", cfg.Section()))
 		}
 
 		if cfg.HTTPEvents.RefreshRate != 0 {
-			errs = append(errs, fmt.Errorf("%s: http_events.refresh_rate_seconds must be 0 if in_memory_cache=none", section))
+			errs = append(errs, fmt.Errorf("%s: http_events.refresh_rate_seconds must be 0 if in_memory_cache=none", cfg.Section()))
 		}
 
 		if cfg.Postgres.PollUpdates.Query != "" {
-			errs = append(errs, fmt.Errorf("%s: postgres.poll_for_updates.query must be empty if in_memory_cache=none", section))
+			errs = append(errs, fmt.Errorf("%s: postgres.poll_for_updates.query must be empty if in_memory_cache=none", cfg.Section()))
 		}
 		if cfg.Postgres.CacheInitialization.Query != "" {
-			errs = append(errs, fmt.Errorf("%s: postgres.initialize_caches.query must be empty if in_memory_cache=none", section))
+			errs = append(errs, fmt.Errorf("%s: postgres.initialize_caches.query must be empty if in_memory_cache=none", cfg.Section()))
 		}
 	}
-	errs = cfg.InMemoryCache.validate(section, errs)
+	errs = cfg.InMemoryCache.validate(cfg.Section(), errs)
 	return errs
 }
 

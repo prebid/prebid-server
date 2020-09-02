@@ -467,6 +467,10 @@ func TestValidConfig(t *testing.T) {
 		CategoryMapping: StoredRequests{
 			Files: FileFetcherConfig{Enabled: true},
 		},
+		Accounts: StoredRequests{
+			Files:         FileFetcherConfig{Enabled: true},
+			InMemoryCache: InMemoryCache{Type: "none"},
+		},
 	}
 
 	resolvedStoredRequestsConfig(&cfg)
