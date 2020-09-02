@@ -200,8 +200,6 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 	var bannerImps = make([]openrtb.Imp, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
-		// @TODO - I should separate out these dimensional checks, add any errors to the stack, and
-		// set to some default if they are missing.
 		if request.Imp[i].Banner != nil && (
 			(request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
 			(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil)) {
@@ -218,17 +216,16 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 		return
 	}
 
-	// @TODO - follow this in and see ...
 	if len(bannerImps) > 0 {
 		// request.Imp = bannerImps		// ... why was I doing this????
 		beachfrontReqs.Banner, errs = getBannerRequest(request)
 	}
 
 	/* We have video imps, so organize them into nurl imps and adm imps. The nurl imps will be
-		sent sequentially and the adm imps in parallel.
+		sent sequentially and the adm imps in sequential / parallel.
 	*/
 	if len(videoImps) > 0 {
-		admRequests := make(map[string]videoRequest, 1)
+		admRequests := make(map[string]videoRequest, 0)
 
 		for i := 0; i < len(videoImps); i++ {
 			var ext openrtb_ext.ExtImpBeachfront
@@ -236,44 +233,39 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 
 			// @TODO - define these strings in a struct
 			if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
-				requestStub := request
+				requestStub := *request
 				requestStub.Imp = nil
 
-				// The nurl requests use the app_id/exchange_id that is in the ext, so
+				// The nurl requests uses the app_id/exchange_id that is in the ext, so
 				// the one in the videoRequest object will stay blank
 				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoRequest{
 						AppId: "",
 						VideoResponseType: ext.VideoResponseType,
-						Request: *requestStub,
+						Request: requestStub,
 					})
 				j := len(beachfrontReqs.NurlVideo) - 1
 				beachfrontReqs.NurlVideo[j].Request.Imp = nil
 				beachfrontReqs.NurlVideo[j].Request.Imp = append(
 					beachfrontReqs.NurlVideo[j].Request.Imp, videoImps[i])
 				beachfrontReqs.NurlVideo[j].Request.Imp[0].Ext, _ = json.Marshal(ext)
+				beachfrontReqs.NurlVideo[j], _ = prepVideoRequest(beachfrontReqs.NurlVideo[j])
 			}
 
-			/*
-				The endpoint for adm can now take multiple imp elements and will return a response
-				containing multiple VAST impression elements in correspondence. The adm endpoint still
-				requires that the the exchange_id is specified on the url, and all imps will use that
-				exchange, so, what if you want imps from several exchanges? The only way I'm seeing to
-				do that is go through the request object, check for adm with the same exchange, build
-				a request for each exchange.
-			*/
 			if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
 				admRequest, exists := admRequests[ext.AppId]
 				if ! exists {
-					requestStub := request
+					// requestStub is a copy of the pointer, request
+					requestStub := *request
 					requestStub.Imp = make([]openrtb.Imp,0)
 
 					admRequests[ext.AppId] = videoRequest{
 						AppId: ext.AppId,
 						VideoResponseType: ext.VideoResponseType,
-						Request: *requestStub,
+						Request: requestStub,
 					}
 
 					admRequest = admRequests[ext.AppId]
+					admRequest, _ = prepVideoRequest(admRequest)
 					admRequest.Request.Imp = append(admRequest.Request.Imp, videoImps[i])
 					beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, admRequest)
 				} else {
@@ -287,37 +279,20 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 					}
 				}
 			}
-
 		}
-
-		// Now I gotta stack of each. The nurls get done in sequence, so requests will include one for all
-		// adm and one for each nurl
-		/*
-		} else {
-			videoList, videoErrs = getParallelVideoRequests(request)
-			errs = append(errs, videoErrs...)
-
-			if videoList[0].VideoResponseType == "nurl" || videoList[0].VideoResponseType == "both" {
-				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoList[0])
-			}
-
-			if videoList[0].VideoResponseType == "adm" || videoList[0].VideoResponseType == "both" {
-				beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, videoList[0])
-			}
-		}
-		*/
 	}
 
 	return
 }
 
+/**
+Returns an authoritative appId (exchange_id) for a specific impression
+ */
 func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (string, error) {
 	var appid string
 	var err error
 
-	if fmt.Sprintf("%s", reflect.TypeOf(ext.AppId)) == "string" &&
-		ext.AppId != "" {
-
+	if fmt.Sprintf("%s", reflect.TypeOf(ext.AppId)) == "string" && ext.AppId != "" {
 		appid = ext.AppId
 	} else if fmt.Sprintf("%s", reflect.TypeOf(ext.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" {
 		if media == openrtb_ext.BidTypeVideo && ext.AppIds.Video != "" {
@@ -332,17 +307,13 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 	return appid, err
 }
 
-/*
-getBannerRequest, singular. A "Slot" is an "imp," and each Slot can have an AppId, so just one
-request to the beachfront banner endpoint gets all banner Imps.
-*/
-func getBannerRequest(request *openrtb.BidRequest) (bannerRequest, []error) {
+func impsToSlots(imps []openrtb.Imp) (bannerRequest, []error) {
 	var bfr bannerRequest
-	var errs = make([]error, 0, len(request.Imp))
+	var errs = make([]error, 0, len(imps))
 
-	for i := 0; i < len(request.Imp); i++ {
-
-		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
+	for i := 0; i < len(imps); i++ {
+		var imp = imps[i]
+		beachfrontExt, err := getBeachfrontExtension(imp)
 
 		if err != nil {
 			errs = append(errs, err)
@@ -359,7 +330,7 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerRequest, []error) {
 
 		slot := slot{
 			Id:       appid,
-			Slot:     request.Imp[i].ID,
+			Slot:     imp.ID,
 			Bidfloor: beachfrontExt.BidFloor,
 		}
 
@@ -367,21 +338,26 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerRequest, []error) {
 			slot.Bidfloor = 0
 		}
 
-		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
+		for j := 0; j < len(imp.Banner.Format); j++ {
 
 			slot.Sizes = append(slot.Sizes, size{
-				H: request.Imp[i].Banner.Format[j].H,
-				W: request.Imp[i].Banner.Format[j].W,
+				H: imp.Banner.Format[j].H,
+				W: imp.Banner.Format[j].W,
 			})
 		}
 
 		bfr.Slots = append(bfr.Slots, slot)
 	}
 
-	if len(bfr.Slots) == 0 {
-		return bfr, errs
+	if imps[0].Secure != nil {
+		bfr.Secure = *imps[0].Secure
 	}
 
+	return bfr, errs
+}
+
+func getBannerRequest(request *openrtb.BidRequest) (bannerRequest, []error) {
+	bfr, errs := impsToSlots(request.Imp)
 	if request.Device != nil {
 		bfr.IP = getIP(request.Device.IP)
 		bfr.DeviceModel = request.Device.Model
@@ -434,9 +410,6 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerRequest, []error) {
 	bfr.AdapterName = beachfrontAdapterName
 	bfr.AdapterVersion = beachfrontAdapterVersion
 
-	if request.Imp[0].Secure != nil {
-		bfr.Secure = *request.Imp[0].Secure
-	}
 
 	return bfr, errs
 }
@@ -449,9 +422,6 @@ func fallBackDeviceType(request openrtb.BidRequest) openrtb.DeviceType {
 	return openrtb.DeviceTypeMobileTablet
 }
 
-/**
-A few modifications to the beachfront extension for a solitary Imp object
- */
 func prepVideoRequestExt(requestImp  openrtb.Imp, errs []error) (openrtb_ext.ExtImpBeachfront, []error) {
 	if requestImp.Video == nil {
 		errs = append(errs, errors.New(
@@ -536,33 +506,6 @@ func prepImp(imp openrtb.Imp, beachfrontExt openrtb_ext.ExtImpBeachfront, secure
 
 	return imp, secure
 }
-
-/*
-func getParallelVideoRequests(request  *openrtb.BidRequest) ([]videoRequest, []error) {
-	var bfReq videoRequest
-	var errs = make([]error, 0, len(request.Imp))
-	var secure int8
-	var beachfrontExt openrtb_ext.ExtImpBeachfront
-
-
-	beachfrontExt, bfReq.AppId, bfReq.VideoResponseType, errs = prepVideoRequestExt(request, errs)
-
-	bfReq.Request = *request
-	bfReq, secure = prepVideoRequest(bfReq)
-
-	for i := 0; i < len(request.Imp); i++ {
-		if request.Imp[i].Video == nil {
-			continue
-		}
-		bfReq.Request.Imp[i], secure = prepImp(bfReq.Request.Imp[i], beachfrontExt, secure)
-		bfReq.Request.Imp[i].Video.Sequence = request.Imp[i].Video.Sequence
-	}
-
-	var bfReqs = make([]videoRequest, 1)
-	bfReqs[0] = bfReq
-	return bfReqs, errs
-}
-*/
 
 func getSequentialVideoRequests(request *openrtb.BidRequest) ([]videoRequest, []error) {
 	var bfReqs = make([]videoRequest, len(request.Imp))
