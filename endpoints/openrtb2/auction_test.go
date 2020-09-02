@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -38,7 +39,7 @@ import (
 
 const maxSize = 1024 * 256
 
-type testCaseData struct {
+type testCase struct {
 	BidRequest           json.RawMessage   `json:"mockBidRequest"`
 	Config               *testConfigValues `json:"mockConfig"`
 	ExpectedReturnCode   int               `json:"expectedReturnCode,omitempty"`
@@ -121,6 +122,146 @@ func TestJsonSampleRequests(t *testing.T) {
 	}
 }
 
+func getTestFiles(dir string) ([]string, error) {
+	var filesToAssert []string
+
+	fileList, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	// Append the path of every file found in `dir` to the `filesToAssert` array
+	for _, fileInfo := range fileList {
+		filesToAssert = append(filesToAssert, filepath.Join(dir, fileInfo.Name()))
+	}
+
+	return filesToAssert, nil
+}
+
+func assertTestCaseData(t *testing.T, fileData []byte, testFile string) {
+	t.Helper()
+
+	// Retrieve values from JSON file
+	test := jsonParseTestFile(t, fileData, testFile)
+
+	test.Config = parseMaps(test.Config)
+
+	// Run test
+	actualCode, actualBidResponse := doRequest(t, test)
+
+	// Assertions
+	assert.Equal(t, test.ExpectedReturnCode, actualCode, "Test failed. Filename: %s \n", testFile)
+
+	// Either assert bid response or expected error
+	if test.ExpectedReturnCode != 200 {
+		// Assert expected error
+		assert.True(t, strings.HasPrefix(actualBidResponse, test.ExpectedErrorMessage), "Test failed. %s. Filename: %s \n", actualBidResponse, testFile)
+	} else {
+		// Assert expected response
+		diffJson(t, testFile, []byte(actualBidResponse), test.ExpectedBidResponse)
+	}
+}
+
+func jsonParseTestFile(t *testing.T, fileData []byte, testFile string) testCase {
+	t.Helper()
+
+	parsedTestData := testCase{}
+	var err error
+
+	// Get testCase values
+	parsedTestData.BidRequest, _, _, err = jsonparser.Get(fileData, "mockBidRequest")
+	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", testFile, err)
+
+	parsedReturnCode, err := jsonparser.GetInt(fileData, "expectedReturnCode")
+	assert.NoError(t, err, "Error jsonparsing root.code from file %s. Desc: %v.", testFile, err)
+
+	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
+
+	if parsedTestData.ExpectedReturnCode != 200 {
+		// Get expected error, fail if parsing error
+		parsedTestData.ExpectedErrorMessage, err = jsonparser.GetString(fileData, "expectedErrorMessage")
+		assert.NoError(t, err, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
+	} else {
+		// Get expected response, fail if parsing error
+		parsedTestData.ExpectedBidResponse, _, _, err = jsonparser.Get(fileData, "expectedBidResponse")
+		assert.NoError(t, err, "Error jsonparsing root.expectedBidResponse from file %s. Desc: %v.", testFile, err)
+	}
+
+	// Get testCaseConfig values
+	parsedTestData.Config = &testConfigValues{}
+	accReq, err := jsonparser.GetBoolean(fileData, "mockConfig", "accountRequired")
+	if err == nil {
+		parsedTestData.Config.AccountReq = accReq
+	}
+
+	aliases, err := jsonparser.GetString(fileData, "mockConfig", "aliases")
+	if err == nil {
+		parsedTestData.Config.AliasJSON = aliases
+	}
+
+	parsedTestData.Config.BlacklistedAccountArr = parseStringArray(fileData, "blacklistedAccts")
+	parsedTestData.Config.BlacklistedAppArr = parseStringArray(fileData, "blacklistedApps")
+	parsedTestData.Config.AdapterList = parseStringArray(fileData, "disabledAdapters")
+
+	return parsedTestData
+}
+
+func parseStringArray(fileData []byte, jsonField string) []string {
+	rarr := []string{}
+	jsonparser.ArrayEach(fileData, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		rarr = append(rarr, string(value))
+	}, "mockConfig", jsonField)
+	return rarr
+}
+
+func parseMaps(tc *testConfigValues) *testConfigValues {
+	if len(tc.BlacklistedAccountArr) > 0 {
+		tc.blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccountArr))
+		for _, account := range tc.BlacklistedAccountArr {
+			tc.blacklistedAccountMap[account] = true
+		}
+	}
+	if len(tc.BlacklistedAppArr) > 0 {
+		tc.blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedAppArr))
+		for _, app := range tc.BlacklistedAppArr {
+			tc.blacklistedAppMap[app] = true
+		}
+	}
+	if len(tc.AdapterList) > 0 {
+		tc.adaptersConfig = make(map[string]config.Adapter, len(tc.AdapterList))
+		for _, adapterName := range tc.AdapterList {
+			tc.adaptersConfig[adapterName] = config.Adapter{Disabled: true}
+		}
+	}
+	return tc
+}
+
+// diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
+// byte array is not actually JSON.
+func diffJson(t *testing.T, description string, actual []byte, expected []byte) {
+	t.Helper()
+	diff, err := gojsondiff.New().Compare(actual, expected)
+	if err != nil {
+		t.Fatalf("%s json diff failed. %v", description, err)
+	}
+
+	if diff.Modified() {
+		var left interface{}
+		if err := json.Unmarshal(actual, &left); err != nil {
+			t.Fatalf("%s json did not match, but unmarshalling failed. %v", description, err)
+		}
+		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
+			ShowArrayIndex: true,
+		})
+		output, err := printer.Format(diff)
+		if err != nil {
+			t.Errorf("%s did not match, but diff formatting failed. %v", description, err)
+		} else {
+			t.Errorf("%s json did not match expected.\n\n%s", description, output)
+		}
+	}
+}
+
 // TestExplicitUserId makes sure that the cookie's ID doesn't override an explicit value sent in the request.
 func TestExplicitUserId(t *testing.T) {
 	cookieName := "userid"
@@ -173,8 +314,8 @@ func TestExplicitUserId(t *testing.T) {
 	})
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	endpoint, _ := NewEndpoint(ex, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, cfg, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
+	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	endpoint, _ := NewEndpoint(ex, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, cfg, metrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
 
 	endpoint(httptest.NewRecorder(), request, nil)
 
@@ -191,31 +332,13 @@ func TestExplicitUserId(t *testing.T) {
 	}
 }
 
-func getTestFiles(dir string) ([]string, error) {
-	var filesToAssert []string
-
-	fileList, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	// Append the path of  every file found in `dir` to the `filesToAssert` array
-	for _, fileInfo := range fileList {
-		filesToAssert = append(filesToAssert, dir+"/"+fileInfo.Name())
-	}
-
-	return filesToAssert, nil
-}
-
-func doRequest(t *testing.T, test testCaseData) (int, string) {
-	disabledBidders := map[string]string{
-		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
-	}
+func doRequest(t *testing.T, test testCase) (int, string) {
+	disabledBidders := map[string]string{}
 	bidderMap := exchange.DisableBidders(getBidderInfos(test.Config.adaptersConfig, openrtb_ext.BidderList()), disabledBidders)
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 
 	endpoint, _ := NewEndpoint(
 		&nobidExchange{},
@@ -230,7 +353,7 @@ func doRequest(t *testing.T, test testCaseData) (int, string) {
 			BlacklistedAcctMap: test.Config.blacklistedAccountMap,
 			AccountRequired:    test.Config.AccountReq,
 		},
-		theMetrics,
+		metrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
@@ -241,130 +364,6 @@ func doRequest(t *testing.T, test testCaseData) (int, string) {
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
 	return recorder.Code, recorder.Body.String()
-}
-
-func jsonParseTestFile(t *testing.T, fileData []byte, testFile string) *testCaseData {
-	t.Helper()
-
-	parsedTestData := &testCaseData{}
-	var err error
-
-	// Get testCaseData values
-	parsedTestData.BidRequest, _, _, err = jsonparser.Get(fileData, "mockBidRequest")
-	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", testFile, err)
-
-	parsedReturnCode, err := jsonparser.GetInt(fileData, "expectedReturnCode")
-	assert.NoError(t, err, "Error jsonparsing root.code from file %s. Desc: %v.", testFile, err)
-
-	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
-
-	if parsedTestData.ExpectedReturnCode != 200 {
-		// Get expected error, fail if parsing error
-		parsedTestData.ExpectedErrorMessage, err = jsonparser.GetString(fileData, "expectedErrorMessage")
-		assert.NoError(t, err, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
-	} else {
-		// Get expected response, fail if parsing error
-		parsedTestData.ExpectedBidResponse, _, _, err = jsonparser.Get(fileData, "expectedBidResponse")
-		assert.NoError(t, err, "Error jsonparsing root.expectedBidResponse from file %s. Desc: %v.", testFile, err)
-	}
-
-	// Get testCaseConfig values
-	parsedTestData.Config = &testConfigValues{}
-	accReq, err := jsonparser.GetBoolean(fileData, "mockConfig", "accountRequired")
-	if err == nil {
-		parsedTestData.Config.AccountReq = accReq
-	}
-
-	aliases, err := jsonparser.GetString(fileData, "mockConfig", "aliases")
-	if err == nil {
-		parsedTestData.Config.AliasJSON = aliases
-	}
-
-	parsedTestData.Config.BlacklistedAccountArr = parseStringArray(fileData, "blacklistedAccts")
-	parsedTestData.Config.BlacklistedAppArr = parseStringArray(fileData, "blacklistedApps")
-	parsedTestData.Config.AdapterList = parseStringArray(fileData, "disabledAdapters")
-
-	return parsedTestData
-}
-
-func parseStringArray(fileData []byte, jsonField string) []string {
-	rarr := []string{}
-	jsonparser.ArrayEach(fileData, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		rarr = append(rarr, string(value))
-	}, "mockConfig", jsonField)
-	return rarr
-}
-
-func assertTestCaseData(t *testing.T, fileData []byte, testFile string) {
-	t.Helper()
-
-	// Retrieve values from JSON file
-	test := jsonParseTestFile(t, fileData, testFile)
-
-	test.Config = parseMaps(test.Config)
-
-	// Run test
-	actualCode, actualBidResponse := doRequest(t, *test)
-
-	// Assertions
-	assert.Equal(t, test.ExpectedReturnCode, actualCode, "Test failed. Filename: %s \n", testFile)
-
-	// Either assert bid response or expected error
-	if test.ExpectedReturnCode != 200 {
-		// Assert expected error
-		assert.True(t, strings.HasPrefix(actualBidResponse, test.ExpectedErrorMessage), "Test failed. %s. Filename: %s \n", actualBidResponse, testFile)
-	} else {
-		// Assert expected response
-		diffJson(t, testFile, []byte(actualBidResponse), test.ExpectedBidResponse)
-	}
-}
-
-func parseMaps(tc *testConfigValues) *testConfigValues {
-	if len(tc.BlacklistedAccountArr) > 0 {
-		tc.blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccountArr))
-		for _, account := range tc.BlacklistedAccountArr {
-			tc.blacklistedAccountMap[account] = true
-		}
-	}
-	if len(tc.BlacklistedAppArr) > 0 {
-		tc.blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedAppArr))
-		for _, app := range tc.BlacklistedAppArr {
-			tc.blacklistedAppMap[app] = true
-		}
-	}
-	if len(tc.AdapterList) > 0 {
-		tc.adaptersConfig = make(map[string]config.Adapter, len(tc.AdapterList))
-		for _, adapterName := range tc.AdapterList {
-			tc.adaptersConfig[adapterName] = config.Adapter{Disabled: true}
-		}
-	}
-	return tc
-}
-
-// diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
-// byte array is not actually JSON.
-func diffJson(t *testing.T, description string, actual []byte, expected []byte) {
-	t.Helper()
-	diff, err := gojsondiff.New().Compare(actual, expected)
-	if err != nil {
-		t.Fatalf("%s json diff failed. %v", description, err)
-	}
-
-	if diff.Modified() {
-		var left interface{}
-		if err := json.Unmarshal(actual, &left); err != nil {
-			t.Fatalf("%s json did not match, but unmarshalling failed. %v", description, err)
-		}
-		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
-			ShowArrayIndex: true,
-		})
-		output, err := printer.Format(diff)
-		if err != nil {
-			t.Errorf("%s did not match, but diff formatting failed. %v", description, err)
-		} else {
-			t.Errorf("%s json did not match expected.\n\n%s", description, output)
-		}
-	}
 }
 
 // fetchFiles returns a list of the files from dir, or fails the test if an error occurs.
@@ -411,8 +410,8 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	endpoint, _ := NewEndpoint(&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), disabledBidders, aliasJSON, bidderMap)
+	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	endpoint, _ := NewEndpoint(&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, metrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), disabledBidders, aliasJSON, bidderMap)
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(testBidRequest))
 	recorder := httptest.NewRecorder()
@@ -452,8 +451,8 @@ func getRequestPayload(t *testing.T, example []byte) []byte {
 func TestNilExchange(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	_, err := NewEndpoint(nil, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
+	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	_, err := NewEndpoint(nil, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, metrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
 	}
@@ -463,8 +462,8 @@ func TestNilExchange(t *testing.T) {
 func TestNilValidator(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
+	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, metrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
 	}
@@ -474,8 +473,8 @@ func TestNilValidator(t *testing.T) {
 func TestExchangeError(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	endpoint, _ := NewEndpoint(&brokenExchange{}, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
+	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	endpoint, _ := NewEndpoint(&brokenExchange{}, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, metrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -825,7 +824,7 @@ func TestRefererParsing(t *testing.T) {
 func TestStoredRequests(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	deps := &endpointDeps{
 		&nobidExchange{},
 		newParamsValidator(t),
@@ -833,7 +832,7 @@ func TestStoredRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		metrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
