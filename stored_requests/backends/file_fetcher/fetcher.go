@@ -45,7 +45,7 @@ func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountID string)
 			DataType: "Account",
 		}}
 	}
-	return accountJSON, []error{}
+	return accountJSON, nil
 }
 
 func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {

@@ -875,7 +875,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_video_req.http_events.timeout_ms", 0)
 
 	v.SetDefault("accounts.filesystem.enabled", false)
-	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id/accounts")
+	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("accounts.in_memory_cache.type", "none")
 
 	for _, bidder := range openrtb_ext.BidderMap {

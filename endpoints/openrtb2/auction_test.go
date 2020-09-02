@@ -1993,21 +1993,25 @@ func TestGetAccount(t *testing.T) {
 		{accountID: unknown, required: false, disabled: false, err: nil},
 		{accountID: unknown, required: true, disabled: false, err: &errortypes.AcctRequired{}},
 		{accountID: unknown, required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: unknown, required: true, disabled: true, err: &errortypes.AcctRequired{}},
 
 		// pubID given but is not a valid host account (does not exist)
 		{accountID: "not_bad_acct", required: false, disabled: false, err: nil},
 		{accountID: "not_bad_acct", required: true, disabled: false, err: nil},
 		{accountID: "not_bad_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: "not_bad_acct", required: true, disabled: true, err: &errortypes.AcctRequired{}},
 
 		// pubID given and matches a valid host account with Disabled: false
 		{accountID: "valid_acct", required: false, disabled: false, err: nil},
 		{accountID: "valid_acct", required: true, disabled: false, err: nil},
 		{accountID: "valid_acct", required: false, disabled: true, err: nil},
+		{accountID: "valid_acct", required: true, disabled: true, err: nil},
 
 		// pubID given and matches a host account explicitly disabled (Disabled: true on account json)
 		{accountID: "disabled_acct", required: false, disabled: false, err: &errortypes.BlacklistedAcct{}},
 		{accountID: "disabled_acct", required: true, disabled: false, err: &errortypes.BlacklistedAcct{}},
 		{accountID: "disabled_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: "disabled_acct", required: true, disabled: true, err: &errortypes.BlacklistedAcct{}},
 	}
 
 	for _, test := range testCases {

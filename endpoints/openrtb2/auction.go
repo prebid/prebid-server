@@ -1322,7 +1322,7 @@ func (deps *endpointDeps) getAccount(ctx context.Context, pubID string) (account
 			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
 		}}
 	}
-	if accountJSON, accErrs := deps.accounts.FetchAccount(ctx, pubID); accErrs != nil || accountJSON == nil {
+	if accountJSON, accErrs := deps.accounts.FetchAccount(ctx, pubID); len(accErrs) > 0 || accountJSON == nil {
 		// pubID does not reference a valid account
 		if len(accErrs) > 0 {
 			errs = append(errs, errs...)
