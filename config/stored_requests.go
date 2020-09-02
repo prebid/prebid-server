@@ -115,22 +115,28 @@ func resolvedStoredRequestsConfig(cfg *Configuration) {
 	amp.HTTP.Endpoint = sr.HTTP.AmpEndpoint
 	amp.CacheEvents.Endpoint = "/storedrequests/amp"
 	amp.HTTPEvents.Endpoint = sr.HTTPEvents.AmpEndpoint
+
+	// Set data types for each section
+	cfg.StoredRequests.dataType = RequestDataType
+	cfg.StoredRequestsAMP.dataType = AMPRequestDataType
+	cfg.StoredVideo.dataType = VideoDataType
+	cfg.CategoryMapping.dataType = CategoryDataType
+	cfg.Accounts.dataType = AccountDataType
 	return
 }
 
-func (cfg *StoredRequests) validate(dataType DataType, errs configErrors) configErrors {
-	cfg.dataType = dataType
-	if dataType == AccountDataType && cfg.HTTP.Endpoint != "" {
+func (cfg *StoredRequests) validate(errs configErrors) configErrors {
+	if cfg.DataType() == AccountDataType && cfg.HTTP.Endpoint != "" {
 		errs = append(errs, fmt.Errorf("%s.http: retrieving accounts via http not available, use accounts.files", cfg.Section()))
 	}
-	if dataType == AccountDataType && cfg.Postgres.ConnectionInfo.Database != "" {
+	if cfg.DataType() == AccountDataType && cfg.Postgres.ConnectionInfo.Database != "" {
 		errs = append(errs, fmt.Errorf("%s.postgres: retrieving accounts via postgres not available, use accounts.files", cfg.Section()))
 	} else {
 		errs = cfg.Postgres.validate(cfg.Section(), errs)
 	}
 
 	// Categories do not use cache so none of the following checks apply
-	if cfg.dataType == CategoryDataType {
+	if cfg.DataType() == CategoryDataType {
 		return errs
 	}
 

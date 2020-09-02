@@ -113,11 +113,11 @@ func (c configErrors) Error() string {
 func (cfg *Configuration) validate() configErrors {
 	var errs configErrors
 	errs = cfg.AuctionTimeouts.validate(errs)
-	errs = cfg.StoredRequests.validate(RequestDataType, errs)
-	errs = cfg.StoredRequestsAMP.validate(AMPRequestDataType, errs)
-	errs = cfg.Accounts.validate(AccountDataType, errs)
-	errs = cfg.CategoryMapping.validate(CategoryDataType, errs)
-	errs = cfg.StoredVideo.validate(VideoDataType, errs)
+	errs = cfg.StoredRequests.validate(errs)
+	errs = cfg.StoredRequestsAMP.validate(errs)
+	errs = cfg.Accounts.validate(errs)
+	errs = cfg.CategoryMapping.validate(errs)
+	errs = cfg.StoredVideo.validate(errs)
 	errs = cfg.Metrics.validate(errs)
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
