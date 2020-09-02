@@ -138,7 +138,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
 	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
-	cmpBools(t, "auto_source_tid_fill", cfg.AutoSourceTIDFill, true)
+	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 }
 
 var fullConfig = []byte(`
