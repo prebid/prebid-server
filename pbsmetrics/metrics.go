@@ -41,6 +41,16 @@ type RequestLabels struct {
 	RequestStatus RequestStatus
 }
 
+// PrivacyLabels defines metrics describing the result of privacy enforcement.
+type PrivacyLabels struct {
+	CCPAEnforced   bool
+	CCPAProvided   bool
+	COPPAEnforced  bool
+	GDPREnforced   bool
+	GDPRTCFVersion TCFVersionValue
+	LMTEnforced    bool
+}
+
 // Label typecasting. Se below the type definitions for possible values
 
 // DemandSource : Demand source enumeration
@@ -257,7 +267,7 @@ const (
 	TCFVersionV2  TCFVersionValue = "v2"
 )
 
-// TCFVersions rtuens the possible values for the TCF version
+// TCFVersions returns the possible values for the TCF version
 func TCFVersions() []TCFVersionValue {
 	return []TCFVersionValue{
 		TCFVersionErr,
@@ -291,6 +301,8 @@ type MetricsEngine interface {
 	RecordLegacyImps(labels Labels, numImps int)           // RecordImps for the legacy engine
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
+	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration)
+	RecordDNSTime(dnsLookupTime time.Duration)
 	RecordAdapterPanic(labels AdapterLabels)
 	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
 	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
@@ -305,5 +317,5 @@ type MetricsEngine interface {
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(sucess bool)
-	RecordTCFReq(version TCFVersionValue)
+	RecordRequestPrivacy(privacy PrivacyLabels)
 }

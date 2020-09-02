@@ -1,0 +1,17 @@
+{
+  "mockBidRequest": {
+    "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+    "site": {
+      "page": "prebid.org",
+      "publisher": {
+        "id": "1"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "no impressions in bid request",
+      "comparison": "literal"
+    }
+  ]
+}

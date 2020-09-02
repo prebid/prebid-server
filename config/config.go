@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -28,18 +29,19 @@ type Configuration struct {
 	EnableGzip  bool       `mapstructure:"enable_gzip"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
-	StatusResponse  string             `mapstructure:"status_response"`
-	AuctionTimeouts AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
-	CacheURL        Cache              `mapstructure:"cache"`
-	ExtCacheURL     ExternalCache      `mapstructure:"external_cache"`
-	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
-	HostCookie      HostCookie         `mapstructure:"host_cookie"`
-	Metrics         Metrics            `mapstructure:"metrics"`
-	DataCache       DataCache          `mapstructure:"datacache"`
-	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
-	CategoryMapping StoredRequestsSlim `mapstructure:"category_mapping"`
+	StatusResponse    string          `mapstructure:"status_response"`
+	AuctionTimeouts   AuctionTimeouts `mapstructure:"auction_timeouts_ms"`
+	CacheURL          Cache           `mapstructure:"cache"`
+	ExtCacheURL       ExternalCache   `mapstructure:"external_cache"`
+	RecaptchaSecret   string          `mapstructure:"recaptcha_secret"`
+	HostCookie        HostCookie      `mapstructure:"host_cookie"`
+	Metrics           Metrics         `mapstructure:"metrics"`
+	DataCache         DataCache       `mapstructure:"datacache"`
+	StoredRequests    StoredRequests  `mapstructure:"stored_requests"`
+	StoredRequestsAMP StoredRequests  `mapstructure:"stored_amp_req"`
+	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
-	StoredVideo StoredRequestsSlim `mapstructure:"stored_video_req"`
+	StoredVideo StoredRequests `mapstructure:"stored_video_req"`
 
 	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
 	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
@@ -102,7 +104,10 @@ func (c configErrors) Error() string {
 func (cfg *Configuration) validate() configErrors {
 	var errs configErrors
 	errs = cfg.AuctionTimeouts.validate(errs)
-	errs = cfg.StoredRequests.validate(errs)
+	errs = cfg.StoredRequests.validate("stored_req", errs)
+	errs = cfg.StoredRequestsAMP.validate("stored_amp_req", errs)
+	errs = cfg.CategoryMapping.validate("categories", errs)
+	errs = cfg.StoredVideo.validate("stored_video_req", errs)
 	errs = cfg.Metrics.validate(errs)
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
@@ -111,6 +116,7 @@ func (cfg *Configuration) validate() configErrors {
 	errs = cfg.CurrencyConverter.validate(errs)
 	errs = validateAdapters(cfg.Adapters, errs)
 	errs = cfg.Debug.validate(errs)
+	errs = cfg.ExtCacheURL.validate(errs)
 	return errs
 }
 
@@ -125,6 +131,44 @@ func (cfg *AuctionTimeouts) validate(errs configErrors) configErrors {
 	if cfg.Max < cfg.Default {
 		errs = append(errs, fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default))
 	}
+	return errs
+}
+
+func (data *ExternalCache) validate(errs configErrors) configErrors {
+	if data.Host == "" && data.Path == "" {
+		// Both host and path can be blank. No further validation needed
+		return errs
+	}
+
+	if data.Scheme != "" && data.Scheme != "http" && data.Scheme != "https" {
+		return append(errs, errors.New("External cache Scheme must be http or https if specified"))
+	}
+
+	// Either host or path or both not empty, validate.
+	if data.Host == "" && data.Path != "" || data.Host != "" && data.Path == "" {
+		return append(errs, errors.New("External cache Host and Path must both be specified"))
+	}
+	if strings.HasSuffix(data.Host, "/") {
+		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' must not end with a path separator", data.Host)))
+	}
+	if strings.ContainsAny(data.Host, "://") {
+		return append(errs, errors.New(fmt.Sprintf("External cache Host must not specify a protocol. '%s'", data.Host)))
+	}
+	if !strings.HasPrefix(data.Path, "/") {
+		return append(errs, errors.New(fmt.Sprintf("External cache Path '%s' must begin with a path separator", data.Path)))
+	}
+
+	urlObj, err := url.Parse("https://" + data.Host + data.Path)
+	if err != nil {
+		return append(errs, errors.New(fmt.Sprintf("External cache Path validation error: %s ", err.Error())))
+	}
+	if urlObj.Host != data.Host {
+		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' is invalid", data.Host)))
+	}
+	if urlObj.Path != data.Path {
+		return append(errs, errors.New("External cache Path is invalid"))
+	}
+
 	return errs
 }
 
@@ -156,8 +200,14 @@ type GDPR struct {
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
 	NonStandardPublisherMap map[string]int
+	TCF1                    TCF1 `mapstructure:"tcf1"`
 	TCF2                    TCF2 `mapstructure:"tcf2"`
 	AMPException            bool `mapstructure:"amp_exception"`
+	// EEACountries (EEA = European Economic Area) are a list of countries where we should assume GDPR applies.
+	// If the gdpr flag is unset in a request, but geo.country is set, we will assume GDPR applies if and only
+	// if the country matches one on this list. If both the GDPR flag and country are not set, we default
+	// to UsersyncIfAmbiguous
+	EEACountries []string `mapstructure:"eea_countries"`
 }
 
 func (cfg *GDPR) validate(errs configErrors) configErrors {
@@ -178,6 +228,12 @@ func (t *GDPRTimeouts) InitTimeout() time.Duration {
 
 func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
+}
+
+// TCF1 defines the TCF1 specific configurations for GDPR
+type TCF1 struct {
+	FetchGVL        bool   `mapstructure:"fetch_gvl"`
+	FallbackGVLPath string `mapstructure:"fallback_gvl_path"`
 }
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -209,7 +265,8 @@ type LMT struct {
 }
 
 type Analytics struct {
-	File FileLogs `mapstructure:"file"`
+	File     FileLogs `mapstructure:"file"`
+	Pubstack Pubstack `mapstructure:"pubstack"`
 }
 
 type CurrencyConverter struct {
@@ -228,6 +285,20 @@ func (cfg *CurrencyConverter) validate(errs configErrors) configErrors {
 // FileLogs Corresponding config for FileLogger as a PBS Analytics Module
 type FileLogs struct {
 	Filename string `mapstructure:"filename"`
+}
+
+type Pubstack struct {
+	Enabled     bool           `mapstructure:"enabled"`
+	ScopeId     string         `mapstructure:"scopeid"`
+	IntakeUrl   string         `mapstructure:"endpoint"`
+	Buffers     PubstackBuffer `mapstructure:"buffers"`
+	ConfRefresh string         `mapstructure:"configuration_refresh_delay"`
+}
+
+type PubstackBuffer struct {
+	BufferSize string `mapstructure:"size"`
+	EventCount int    `mapstructure:"count"`
+	Timeout    string `mapstructure:"timeout"`
 }
 
 type HostCookie struct {
@@ -379,6 +450,11 @@ type Metrics struct {
 type DisabledMetrics struct {
 	// True if we want to stop collecting account-to-adapter metrics
 	AccountAdapterDetails bool `mapstructure:"account_adapter_details"`
+
+	// True if we don't want to collect metrics about the connections prebid
+	// server establishes with bidder servers such as the number of connections
+	// that were created or reused.
+	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
 }
 
 func (cfg *Metrics) validate(errs configErrors) configErrors {
@@ -418,13 +494,14 @@ type DataCache struct {
 	TTLSeconds int    `mapstructure:"ttl_seconds"`
 }
 
-// Data type where we store the external cache URL elements. This is completely unrelated to type Cache struct defined afterwards, because
-// the latter is used for internal cache URL while the following contains information of the external cache URL.
+// ExternalCache configures the externally accessible cache url.
 type ExternalCache struct {
-	Host string `mapstructure:"host"`
-	Path string `mapstructure:"path"`
+	Scheme string `mapstructure:"scheme"`
+	Host   string `mapstructure:"host"`
+	Path   string `mapstructure:"path"`
 }
 
+// Cache configures the url used internally by Prebid Server to communicate with Prebid Cache.
 type Cache struct {
 	Scheme string `mapstructure:"scheme"`
 	Host   string `mapstructure:"host"`
@@ -531,6 +608,9 @@ func New(v *viper.Viper) (*Configuration, error) {
 		c.BlacklistedAcctMap[c.BlacklistedAccts[i]] = true
 	}
 
+	// Migrate combo stored request config to separate stored_reqs and amp stored_reqs configs.
+	resolvedStoredRequestsConfig(&c)
+
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(); len(errs) > 0 {
@@ -598,6 +678,7 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderInvibes, "https://u2.videostep.com/User/getLid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirectUri="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dinvibes%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderLifestreet, "https://ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dlifestreet%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%24visitor_cookie%24%24")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderLockerDome, "https://lockerdome.com/usync/prebidserver?pid="+cfg.Adapters["lockerdome"].PlatformID+"&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dlockerdome%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7B%7Buid%7D%7D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderLogicad, "https://cr-p31.ladsp.jp/cookiesender/31?r=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ru="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dlogicad%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderLunaMedia, "https://api.lunamedia.io/xp/user-sync?redirect="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dlunamedia%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderMarsmedia, "https://dmp.rtbsrv.com/dmp/profiles/cm?p_id=179&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dmarsmedia%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUUID%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderMgid, "https://cm.mgid.com/m?cdsp=363893&adu="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dmgid%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7Bmuidn%7D")
@@ -648,6 +729,7 @@ func SetupViper(v *viper.Viper, filename string) {
 		v.AddConfigPath(".")
 		v.AddConfigPath("/etc/config")
 	}
+
 	// Fixes #475: Some defaults will be set just so they are accessible via environment variables
 	// (basically so viper knows they exist)
 	v.SetDefault("external_url", "http://localhost:8000")
@@ -666,6 +748,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("cache.default_ttl_seconds.video", 0)
 	v.SetDefault("cache.default_ttl_seconds.native", 0)
 	v.SetDefault("cache.default_ttl_seconds.audio", 0)
+	v.SetDefault("external_cache.scheme", "")
 	v.SetDefault("external_cache.host", "")
 	v.SetDefault("external_cache.path", "")
 	v.SetDefault("recaptcha_secret", "")
@@ -688,6 +771,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("http_client_cache.idle_connection_timeout_seconds", 60)
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
+	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
 	v.SetDefault("metrics.influxdb.username", "")
@@ -704,7 +788,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("category_mapping.filesystem.enabled", true)
 	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
 	v.SetDefault("category_mapping.http.endpoint", "")
-	v.SetDefault("stored_requests.filesystem", false)
+	v.SetDefault("stored_requests.filesystem.enabled", false)
+	v.SetDefault("stored_requests.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.postgres.connection.dbname", "")
 	v.SetDefault("stored_requests.postgres.connection.host", "")
@@ -764,12 +849,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	// Disabling adapters by default that require some specific config params.
 	// If you're using one of these, make sure you check out the documentation (https://github.com/prebid/prebid-server/tree/master/docs/bidders)
 	// for them and specify all the parameters they need for them to work correctly.
-	v.SetDefault("adapters.audiencenetwork.disabled", true)
-	v.SetDefault("adapters.rubicon.disabled", true)
 	v.SetDefault("adapters.33across.endpoint", "http://ssc.33across.com/api/v1/hb")
 	v.SetDefault("adapters.33across.partner_id", "")
-	v.SetDefault("adapters.dmx.endpoint", "https://dmx.districtm.io/b/v2")
-	v.SetDefault("adapters.adtelligent.endpoint", "http://hb.adtelligent.com/auction")
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
 	v.SetDefault("adapters.adgeneration.endpoint", "https://d.socdm.com/adsv/v1")
 	v.SetDefault("adapters.adhese.endpoint", "https://ads-{{.AccountID}}.adhese.com/json")
@@ -780,6 +861,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adocean.endpoint", "https://{{.Host}}")
 	v.SetDefault("adapters.adoppler.endpoint", "http://app.trustedmarketplace.io/ads")
 	v.SetDefault("adapters.adpone.endpoint", "http://rtb.adpone.com/bid-request?src=prebid_server")
+	v.SetDefault("adapters.adprime.endpoint", "http://delta.adprime.com/?c=o&m=ortb")
 	v.SetDefault("adapters.adtarget.endpoint", "http://ghb.console.adtarget.com.tr/pbs/ortb")
 	v.SetDefault("adapters.adtelligent.endpoint", "http://ghb.adtelligent.com/pbs/ortb")
 	v.SetDefault("adapters.advangelists.endpoint", "http://nep.advangelists.com/xp/get?pubid={{.PublisherID}}")
@@ -787,6 +869,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.applogy.endpoint", "http://rtb.applogy.com/v1/prebid")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
 	v.SetDefault("adapters.appnexus.platform_id", "5")
+	v.SetDefault("adapters.audiencenetwork.disabled", true)
 	v.SetDefault("adapters.avocet.disabled", true)
 	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
 	v.SetDefault("adapters.beachfront.extra_info", "{\"video_endpoint\":\"https://reachms.bfmio.com/bid.json?exchange_id\"}")
@@ -796,6 +879,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/cvx/server/hb/ortb/25")
 	v.SetDefault("adapters.cpmstar.endpoint", "https://server.cpmstar.com/openrtbbidrq.aspx")
 	v.SetDefault("adapters.datablocks.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
+	v.SetDefault("adapters.dmx.endpoint", "https://dmx-direct.districtm.io/b/v2")
 	v.SetDefault("adapters.emx_digital.endpoint", "https://hb.emxdgt.com")
 	v.SetDefault("adapters.engagebdr.endpoint", "http://dsp.bnmla.com/hb")
 	v.SetDefault("adapters.eplanning.endpoint", "http://rtb.e-planning.net/pbs/1")
@@ -807,9 +891,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.ix.endpoint", "http://appnexus-us-east.lb.indexww.com/transbidder?p=184932")
 	v.SetDefault("adapters.invibes.endpoint", "https://{{.Host}}/bid/ServerBidAdContent")
 	v.SetDefault("adapters.kidoz.endpoint", "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server")
-	v.SetDefault("adapters.kubient.endpoint", "http://kbntx.ch/prebid")
+	v.SetDefault("adapters.kubient.endpoint", "https://kssp.kbntx.ch/prebid")
 	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
 	v.SetDefault("adapters.lockerdome.endpoint", "https://lockerdome.com/ladbid/prebidserver/openrtb2")
+	v.SetDefault("adapters.logicad.endpoint", "https://pbs.ladsp.com/adrequest/prebidserver")
 	v.SetDefault("adapters.lunamedia.endpoint", "http://api.lunamedia.io/xp/get?pubid={{.PublisherID}}")
 	v.SetDefault("adapters.marsmedia.endpoint", "https://bid306.rtbsrv.com/bidder/?bid=f3xtet")
 	v.SetDefault("adapters.mgid.endpoint", "https://prebid.mgid.com/prebid/")
@@ -823,8 +908,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
 	v.SetDefault("adapters.rtbhouse.endpoint", "http://prebidserver-s2s-ams.creativecdn.com/bidder/prebidserver/bids")
+	v.SetDefault("adapters.rubicon.disabled", true)
 	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
 	v.SetDefault("adapters.sharethrough.endpoint", "http://btlr.sharethrough.com/FGMrCMMc/v1")
+	v.SetDefault("adapters.smaato.endpoint", "https://prebid.ad.smaato.net/oapi/prebid")
 	v.SetDefault("adapters.smartadserver.endpoint", "https://ssb.smartadserver.com")
 	v.SetDefault("adapters.smartrtb.endpoint", "http://market-east.smrtb.com/json/publisher/rtb?pubid={{.PublisherID}}")
 	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
@@ -850,12 +937,21 @@ func SetupViper(v *viper.Viper, filename string) {
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
+	v.SetDefault("analytics.pubstack.endpoint", "https://s2s.pbstck.com/v1")
+	v.SetDefault("analytics.pubstack.scopeid", "change-me")
+	v.SetDefault("analytics.pubstack.enabled", false)
+	v.SetDefault("analytics.pubstack.configuration_refresh_delay", "2h")
+	v.SetDefault("analytics.pubstack.buffers.size", "2MB")
+	v.SetDefault("analytics.pubstack.buffers.count", 100)
+	v.SetDefault("analytics.pubstack.buffers.timeout", "900s")
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.SetDefault("gdpr.host_vendor_id", 0)
 	v.SetDefault("gdpr.usersync_if_ambiguous", false)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
+	v.SetDefault("gdpr.tcf1.fetch_gvl", true)
+	v.SetDefault("gdpr.tcf1.fallback_gvl_path", "./static/tcf1/fallback_gvl.json")
 	v.SetDefault("gdpr.tcf2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose1.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enabled", true)
@@ -865,6 +961,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose_one_treatement.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatement.access_allowed", true)
 	v.SetDefault("gdpr.amp_exception", false)
+	v.SetDefault("gdpr.eea_countries", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
+		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
+		"LIE", "LTU", "LUX", "MLT", "MTQ", "MYT", "NLD", "NOR", "POL", "PRT", "REU", "ROU", "BLM", "MAF", "SPM",
+		"SVK", "SVN", "ESP", "SWE", "GBR"})
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
@@ -891,13 +991,14 @@ func SetupViper(v *viper.Viper, filename string) {
 	/*  Loopback:   127.0.0.0/8
 	/*
 	/* IPv6
-	/*  Loopback:     ::1/128
-	/*  Unique Local: fc00::/7
-	/*  Link Local:   fe80::/10
-	/*  Multicast:    ff00::/8
+	/*  Loopback:      ::1/128
+	/*  Documentation: 2001:db8::/32
+	/*  Unique Local:  fc00::/7
+	/*  Link Local:    fe80::/10
+	/*  Multicast:     ff00::/8
 	*/
 	v.SetDefault("request_validation.ipv4_private_networks", []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8"})
-	v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8"})
+	v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8", "2001:db8::/32"})
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -905,6 +1006,22 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetEnvPrefix("PBS")
 	v.AutomaticEnv()
 	v.ReadInConfig()
+
+	// Migrate config settings to maintain compatibility with old configs
+	migrateConfig(v)
+}
+
+func migrateConfig(v *viper.Viper) {
+	// if stored_requests.filesystem is not a map in conf file as expected from defaults,
+	// means we have old-style settings; migrate them to new filesystem map to avoid breaking viper
+	if _, ok := v.Get("stored_requests.filesystem").(map[string]interface{}); !ok {
+		glog.Warning("stored_requests.filesystem should be changed to stored_requests.filesystem.enabled")
+		glog.Warning("stored_requests.directorypath should be changed to stored_requests.filesystem.directorypath")
+		m := v.GetStringMap("stored_requests.filesystem")
+		m["enabled"] = v.GetBool("stored_requests.filesystem")
+		m["directorypath"] = v.GetString("stored_requests.directorypath")
+		v.Set("stored_requests.filesystem", m)
+	}
 }
 
 func setBidderDefaults(v *viper.Viper, bidder string) {

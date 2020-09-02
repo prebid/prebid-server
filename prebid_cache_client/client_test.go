@@ -186,58 +186,80 @@ func TestEncodeValueToBuffer(t *testing.T) {
 func TestStripCacheHostAndPath(t *testing.T) {
 	inCacheURL := config.Cache{ExpectedTimeMillis: 10}
 	type aTest struct {
-		inExtCacheURL config.ExternalCache
-		expectedHost  string
-		expectedPath  string
+		inExtCacheURL  config.ExternalCache
+		expectedScheme string
+		expectedHost   string
+		expectedPath   string
 	}
 	testInput := []aTest{
 		{
 			inExtCacheURL: config.ExternalCache{
-				Host: "prebid-server.prebid.org",
-				Path: "/pbcache/endpoint",
+				Scheme: "",
+				Host:   "prebid-server.prebid.org",
+				Path:   "/pbcache/endpoint",
 			},
-			expectedHost: "prebid-server.prebid.org",
-			expectedPath: "/pbcache/endpoint",
+			expectedScheme: "",
+			expectedHost:   "prebid-server.prebid.org",
+			expectedPath:   "/pbcache/endpoint",
 		},
 		{
 			inExtCacheURL: config.ExternalCache{
-				Host: "prebidcache.net",
-				Path: "",
+				Scheme: "https",
+				Host:   "prebid-server.prebid.org",
+				Path:   "/pbcache/endpoint",
 			},
-			expectedHost: "prebidcache.net",
-			expectedPath: "",
+			expectedScheme: "https",
+			expectedHost:   "prebid-server.prebid.org",
+			expectedPath:   "/pbcache/endpoint",
 		},
 		{
 			inExtCacheURL: config.ExternalCache{
-				Host: "",
-				Path: "",
+				Scheme: "",
+				Host:   "prebidcache.net",
+				Path:   "",
 			},
-			expectedHost: "",
-			expectedPath: "",
+			expectedScheme: "",
+			expectedHost:   "prebidcache.net",
+			expectedPath:   "",
 		},
 		{
 			inExtCacheURL: config.ExternalCache{
-				Host: "prebid-server.prebid.org",
-				Path: "pbcache/endpoint",
+				Scheme: "",
+				Host:   "",
+				Path:   "",
 			},
-			expectedHost: "prebid-server.prebid.org",
-			expectedPath: "/pbcache/endpoint",
+			expectedScheme: "",
+			expectedHost:   "",
+			expectedPath:   "",
 		},
 		{
 			inExtCacheURL: config.ExternalCache{
-				Host: "prebidcache.net",
-				Path: "/",
+				Scheme: "",
+				Host:   "prebid-server.prebid.org",
+				Path:   "pbcache/endpoint",
 			},
-			expectedHost: "prebidcache.net",
-			expectedPath: "",
+			expectedScheme: "",
+			expectedHost:   "prebid-server.prebid.org",
+			expectedPath:   "/pbcache/endpoint",
+		},
+		{
+			inExtCacheURL: config.ExternalCache{
+				Scheme: "",
+				Host:   "prebidcache.net",
+				Path:   "/",
+			},
+			expectedScheme: "",
+			expectedHost:   "prebidcache.net",
+			expectedPath:   "",
 		},
 	}
 	for _, test := range testInput {
 		cacheClient := NewClient(&http.Client{}, &inCacheURL, &test.inExtCacheURL, &metricsConf.DummyMetricsEngine{})
-		cHost, cPath := cacheClient.GetExtCacheData()
+		scheme, host, path := cacheClient.GetExtCacheData()
 
-		assert.Equal(t, test.expectedHost, cHost)
-		assert.Equal(t, test.expectedPath, cPath)
+		assert.Equal(t, test.expectedScheme, scheme)
+		assert.Equal(t, test.expectedHost, host)
+		assert.Equal(t, test.expectedPath, path)
 	}
 }
 

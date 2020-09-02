@@ -49,6 +49,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderInvibes):          syncConfig,
 			string(openrtb_ext.BidderLifestreet):       syncConfig,
 			string(openrtb_ext.BidderLockerDome):       syncConfig,
+			string(openrtb_ext.BidderLogicad):          syncConfig,
 			string(openrtb_ext.BidderLunaMedia):        syncConfig,
 			string(openrtb_ext.BidderMarsmedia):        syncConfig,
 			string(openrtb_ext.BidderMgid):             syncConfig,
@@ -93,8 +94,10 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderMobileFuse:   true,
 		openrtb_ext.BidderOrbidder:     true,
 		openrtb_ext.BidderPubnative:    true,
+		openrtb_ext.BidderSmaato:       true,
 		openrtb_ext.BidderTappx:        true,
 		openrtb_ext.BidderYeahmobi:     true,
+		openrtb_ext.BidderAdprime:      true,
 	}
 
 	for bidder, config := range cfg.Adapters {
