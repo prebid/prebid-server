@@ -215,6 +215,11 @@ func (f *mockFetcher) FetchRequests(ctx context.Context, requestIDs []string, im
 	return args.Get(0).(map[string]json.RawMessage), args.Get(1).(map[string]json.RawMessage), args.Get(2).([]error)
 }
 
+func (a *mockFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+	args := a.Called(ctx, accountID)
+	return args.Get(0).(json.RawMessage), args.Get(1).([]error)
+}
+
 func (f *mockFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
 }

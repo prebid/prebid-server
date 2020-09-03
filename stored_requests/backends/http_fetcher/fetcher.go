@@ -81,6 +81,10 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	return
 }
 
+func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
+}
+
 func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	if fetcher.Categories == nil {
 		fetcher.Categories = make(map[string]map[string]stored_requests.Category)

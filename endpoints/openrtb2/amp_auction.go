@@ -44,6 +44,7 @@ func NewAmpEndpoint(
 	ex exchange.Exchange,
 	validator openrtb_ext.BidderParamValidator,
 	requestsById stored_requests.Fetcher,
+	accounts stored_requests.AccountFetcher,
 	categories stored_requests.CategoryFetcher,
 	cfg *config.Configuration,
 	met pbsmetrics.MetricsEngine,
@@ -53,7 +54,7 @@ func NewAmpEndpoint(
 	bidderMap map[string]openrtb_ext.BidderName,
 ) (httprouter.Handle, error) {
 
-	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
+	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
 
@@ -69,6 +70,7 @@ func NewAmpEndpoint(
 		validator,
 		requestsById,
 		empty_fetcher.EmptyFetcher{},
+		accounts,
 		categories,
 		cfg,
 		met,
@@ -155,26 +157,30 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
 	labels.PubID = getAccountID(req.Site.Publisher)
-
-	// Blacklist account now that we have resolved the value
-	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
-		errL = append(errL, acctIdErr)
-		errCode := errortypes.ReadCode(acctIdErr)
-		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+	// Look up account now that we have resolved the pubID value
+	account, acctIDErrs := deps.getAccount(ctx, labels.PubID)
+	if len(acctIDErrs) > 0 {
+		errL = append(errL, acctIDErrs...)
+		httpStatus := http.StatusBadRequest
+		metricsStatus := pbsmetrics.RequestStatusBadInput
+		for _, er := range errL {
+			errCode := errortypes.ReadCode(er)
+			if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
+				httpStatus = http.StatusServiceUnavailable
+				metricsStatus = pbsmetrics.RequestStatusBlacklisted
+				break
+			}
 		}
+		w.WriteHeader(httpStatus)
+		labels.RequestStatus = metricsStatus
 		for _, err := range errortypes.FatalOnly(errL) {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		ao.Errors = append(ao.Errors, acctIdErr)
+		ao.Errors = append(ao.Errors, acctIDErrs...)
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories, nil)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, account, &deps.categories, nil)
 	ao.AuctionResponse = response
 
 	if err != nil {
