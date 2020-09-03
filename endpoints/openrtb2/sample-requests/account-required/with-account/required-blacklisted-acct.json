@@ -1,6 +1,6 @@
 {
   "description": "Account is required but request comes with a blacklisted account id",
-  "mockConfig": {
+  "config": {
     "accountRequired": true,
     "blacklistedAccts": ["bad_acct"]
   },

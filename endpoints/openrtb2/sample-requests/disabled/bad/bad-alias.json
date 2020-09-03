@@ -1,6 +1,6 @@
 {
   "description": "Request comes with an alias to a disabled bidder, we should throw error",
-  "mockConfig": {
+  "config": {
     "disabledAdapters": ["appnexus", "rubicon"]
   },
   "mockBidRequest": {

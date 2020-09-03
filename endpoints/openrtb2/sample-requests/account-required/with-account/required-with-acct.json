@@ -1,6 +1,6 @@
 {
-  "description": "This request comes account id which is required in the config",
-  "mockConfig": {
+  "description": "This request comes with an account id and which is required by the config",
+  "config": {
     "accountRequired": true
   },
 

@@ -1,6 +1,6 @@
 {
   "description": "This request comes with no account id and the mock config does not make it a requirement",
-  "mockConfig": {
+  "config": {
     "accountRequired": false
   },
   "mockBidRequest": {

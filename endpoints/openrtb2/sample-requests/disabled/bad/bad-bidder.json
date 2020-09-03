@@ -1,6 +1,6 @@
 {
   "description": "Request from an adapter faound in the disabled adapter list. We expect an error.",
-  "mockConfig": {
+  "config": {
     "disabledAdapters": ["appnexus", "rubicon"]
   },
   "mockBidRequest": {

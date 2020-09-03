@@ -41,7 +41,7 @@ const maxSize = 1024 * 256
 
 type testCase struct {
 	BidRequest           json.RawMessage   `json:"mockBidRequest"`
-	Config               *testConfigValues `json:"mockConfig"`
+	Config               *testConfigValues `json:"config"`
 	ExpectedReturnCode   int               `json:"expectedReturnCode,omitempty"`
 	ExpectedErrorMessage string            `json:"expectedErrorMessage"`
 	ExpectedBidResponse  json.RawMessage   `json:"expectedBidResponse"`
@@ -117,7 +117,7 @@ func TestJsonSampleRequests(t *testing.T) {
 			data, err := ioutil.ReadFile(file)
 			assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file)
 
-			assertTestCaseData(t, data, file)
+			runTestCase(t, data, file)
 		}
 	}
 }
@@ -138,11 +138,11 @@ func getTestFiles(dir string) ([]string, error) {
 	return filesToAssert, nil
 }
 
-func assertTestCaseData(t *testing.T, fileData []byte, testFile string) {
+func runTestCase(t *testing.T, fileData []byte, testFile string) {
 	t.Helper()
 
 	// Retrieve values from JSON file
-	test := jsonParseTestFile(t, fileData, testFile)
+	test := parseTestFile(t, fileData, testFile)
 
 	test.Config = parseMaps(test.Config)
 
@@ -155,14 +155,14 @@ func assertTestCaseData(t *testing.T, fileData []byte, testFile string) {
 	// Either assert bid response or expected error
 	if test.ExpectedReturnCode != 200 {
 		// Assert expected error
-		assert.True(t, strings.HasPrefix(actualBidResponse, test.ExpectedErrorMessage), "Test failed. %s. Filename: %s \n", actualBidResponse, testFile)
+		assert.True(t, strings.HasPrefix(actualBidResponse, test.ExpectedErrorMessage), "Actual: %s \nExpected: %s. Filename: %s \n", actualBidResponse, test.ExpectedErrorMessage, testFile)
 	} else {
 		// Assert expected response
 		diffJson(t, testFile, []byte(actualBidResponse), test.ExpectedBidResponse)
 	}
 }
 
-func jsonParseTestFile(t *testing.T, fileData []byte, testFile string) testCase {
+func parseTestFile(t *testing.T, fileData []byte, testFile string) testCase {
 	t.Helper()
 
 	parsedTestData := testCase{}
@@ -189,12 +189,12 @@ func jsonParseTestFile(t *testing.T, fileData []byte, testFile string) testCase 
 
 	// Get testCaseConfig values
 	parsedTestData.Config = &testConfigValues{}
-	accReq, err := jsonparser.GetBoolean(fileData, "mockConfig", "accountRequired")
+	accReq, err := jsonparser.GetBoolean(fileData, "config", "accountRequired")
 	if err == nil {
 		parsedTestData.Config.AccountReq = accReq
 	}
 
-	aliases, err := jsonparser.GetString(fileData, "mockConfig", "aliases")
+	aliases, err := jsonparser.GetString(fileData, "config", "aliases")
 	if err == nil {
 		parsedTestData.Config.AliasJSON = aliases
 	}
@@ -207,11 +207,11 @@ func jsonParseTestFile(t *testing.T, fileData []byte, testFile string) testCase 
 }
 
 func parseStringArray(fileData []byte, jsonField string) []string {
-	rarr := []string{}
+	results := []string{}
 	jsonparser.ArrayEach(fileData, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		rarr = append(rarr, string(value))
-	}, "mockConfig", jsonField)
-	return rarr
+		results = append(results, string(value))
+	}, "config", jsonField)
+	return results
 }
 
 func parseMaps(tc *testConfigValues) *testConfigValues {
