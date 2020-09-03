@@ -131,7 +131,7 @@ var BidderMap = map[string]BidderName{
 	"beachfront":        BidderBeachfront,
 	"beintoo":           BidderBeintoo,
 	"brightroll":        BidderBrightroll,
-	"colossus":          BIdderColossus,
+	"colossus":          BidderColossus,
 	"consumable":        BidderConsumable,
 	"conversant":        BidderConversant,
 	"cpmstar":           BidderCpmstar,
