@@ -3,11 +3,12 @@ package eventchannel
 import (
 	"bytes"
 	"compress/gzip"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var maxByteSize = int64(15)
@@ -133,4 +134,48 @@ func TestEventChannel_Push(t *testing.T) {
 
 	assert.Equal(t, string(data), "onetwothreefourfivesixseven")
 
+}
+
+func TestEventChannel_OutputFormat(t *testing.T) {
+
+	toGzip := func(payload string) []byte {
+		var buf bytes.Buffer
+		zw := gzip.NewWriter(&buf)
+
+		if _, err := zw.Write([]byte(payload)); err != nil {
+			assert.Fail(t, err.Error())
+		}
+
+		if err := zw.Close(); err != nil {
+			assert.Fail(t, err.Error())
+		}
+		return buf.Bytes()
+	}
+
+	data := make([]byte, 0)
+	send := func(payload []byte) error {
+		data = append(data, payload...)
+		return nil
+	}
+
+	eventChannel := NewEventChannel(send, 15000, 10, 2*time.Minute)
+
+	eventChannel.Push([]byte("one"))
+	time.Sleep(1 * time.Millisecond)
+
+	eventChannel.flush()
+
+	eventChannel.Push([]byte("two"))
+	time.Sleep(1 * time.Millisecond)
+
+	eventChannel.Push([]byte("three"))
+	time.Sleep(1 * time.Millisecond)
+
+	eventChannel.Close()
+
+	time.Sleep(1 * time.Millisecond)
+
+	expected := append(toGzip("one"), toGzip("twothree")...)
+
+	assert.Equal(t, expected, data)
 }

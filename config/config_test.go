@@ -2,7 +2,9 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"net"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -135,6 +137,9 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
+	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
+	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
+	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 }
 
 var fullConfig = []byte(`
@@ -221,6 +226,7 @@ adapters:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
+auto_gen_source_tid: false
 certificates_file: /etc/ssl/cert.pem
 request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
@@ -285,6 +291,12 @@ adapters:
     usersync_url: http//test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
   adkerneladn:
      usersync_url: http:\\tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+`)
+
+var oldStoredRequestsConfig = []byte(`
+stored_requests:
+  filesystem: true
+  directorypath: "/somepath"
 `)
 
 func cmpStrings(t *testing.T, key string, a string, b string) {
@@ -397,6 +409,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
+	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, false)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
@@ -440,15 +453,55 @@ func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
 		StoredRequests: StoredRequests{
-			Files: true,
+			Files: FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{
 				Type: "none",
 			},
 		},
+		StoredVideo: StoredRequests{
+			Files: FileFetcherConfig{Enabled: true},
+			InMemoryCache: InMemoryCache{
+				Type: "none",
+			},
+		},
+		CategoryMapping: StoredRequests{
+			Files: FileFetcherConfig{Enabled: true},
+		},
+		Accounts: StoredRequests{
+			Files:         FileFetcherConfig{Enabled: true},
+			InMemoryCache: InMemoryCache{Type: "none"},
+		},
 	}
 
+	resolvedStoredRequestsConfig(&cfg)
 	err := cfg.validate()
 	assert.Nil(t, err, "OpenRTB filesystem config should work. %v", err)
+}
+
+func TestMigrateConfig(t *testing.T) {
+	v := viper.New()
+	SetupViper(v, "")
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(oldStoredRequestsConfig))
+	migrateConfig(v)
+	cfg, err := New(v)
+	assert.NoError(t, err, "Setting up config should work but it doesn't")
+	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
+	cmpStrings(t, "stored_requests.filesystem.path", "/somepath", cfg.StoredRequests.Files.Path)
+}
+
+func TestMigrateConfigFromEnv(t *testing.T) {
+	if oldval, ok := os.LookupEnv("PBS_STORED_REQUESTS_FILESYSTEM"); ok {
+		defer os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", oldval)
+	} else {
+		defer os.Unsetenv("PBS_STORED_REQUESTS_FILESYSTEM")
+	}
+	os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", "true")
+	v := viper.New()
+	SetupViper(v, "")
+	cfg, err := New(v)
+	assert.NoError(t, err, "Setting up config should work but it doesn't")
+	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 }
 
 func TestInvalidAdapterEndpointConfig(t *testing.T) {
@@ -590,6 +643,18 @@ func TestValidateDebug(t *testing.T) {
 
 	err := cfg.validate()
 	assert.NotNil(t, err, "cfg.debug.timeout_notification.sampling_rate should not be allowed to be greater than 1.0, but it was allowed")
+}
+
+func TestValidateAccountsConfigRestrictions(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.Accounts.Files.Enabled = true
+	cfg.Accounts.HTTP.Endpoint = "http://localhost"
+	cfg.Accounts.Postgres.ConnectionInfo.Database = "accounts"
+
+	errs := cfg.validate()
+	assert.Len(t, errs, 2)
+	assert.Contains(t, errs, errors.New("accounts.http: retrieving accounts via http not available, use accounts.files"))
+	assert.Contains(t, errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
 }
 
 func newDefaultConfig(t *testing.T) *Configuration {
