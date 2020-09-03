@@ -107,9 +107,6 @@ type videoBidExtension struct {
 var one int8 = 1
 var zero int8 = 0
 
-/*
-This is a comment that I'm adding to get travis to run again. I'll remove it shortly.
-*/
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var reqs = make([]*adapters.RequestData, 0)
 	beachfrontRequests, errs := preprocess(request)
