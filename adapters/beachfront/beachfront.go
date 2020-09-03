@@ -28,9 +28,6 @@ const beachfrontAdapterVersion = "1.0.0"
 
 const minBidFloor = 0.01
 
-const DefaultVideoWidth = 300
-const DefaultVideoHeight = 250
-
 type BeachfrontAdapter struct {
 	bannerEndpoint string
 	extraInfo      ExtraInfo
@@ -199,6 +196,10 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 		}
 
 		if request.Imp[i].Video != nil {
+			if request.Site != nil &&
+				request.Site.Page != "" {
+				_, videoImps[i].Secure = isSecure(request.Site.Page)
+			}
 			videoImps = append(videoImps, request.Imp[i])
 			videoImps[len(videoImps)-1].Banner = nil
 		}
@@ -228,13 +229,6 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 				requestStub := *request
 				requestStub.Imp = nil
 
-				if requestStub.Site != nil &&
-					requestStub.Site.Page != "" {
-					_, videoImps[i].Secure = isSecure(requestStub.Site.Page)
-				} else {
-					videoImps[i].Secure = &zero
-				}
-
 				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoRequest{
 					AppId:             ext.AppId,
 					VideoResponseType: ext.VideoResponseType,
@@ -254,13 +248,6 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 				if !exists {
 					requestStub := *request
 					requestStub.Imp = make([]openrtb.Imp, 0)
-
-					if requestStub.Site != nil &&
-						requestStub.Site.Page != "" {
-						_, videoImps[i].Secure = isSecure(requestStub.Site.Page)
-					} else {
-						videoImps[i].Secure = &zero
-					}
 
 					admRequests[ext.AppId] = videoRequest{
 						AppId:             ext.AppId,
