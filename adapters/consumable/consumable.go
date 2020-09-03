@@ -69,6 +69,8 @@ type decision struct {
 	CreativeID    string     `json:"creativeId,omitempty"`
 	Contents      []contents `json:"contents"`
 	ImpressionUrl *string    `json:"impressionUrl,omitempty"`
+	Width         uint64     `json:"width,omitempty"`  // Consumable extension, not defined by Adzerk
+	Height        uint64     `json:"height,omitempty"` // Consumable extension, not defined by Adzerk
 }
 
 type contents struct {
@@ -241,23 +243,13 @@ func (a *ConsumableAdapter) MakeBids(
 	for impID, decision := range serverResponse.Decisions {
 
 		if decision.Pricing != nil && decision.Pricing.ClearPrice != nil {
-
-			imp := getImp(impID, internalRequest.Imp)
-			if imp == nil {
-				errors = append(errors, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf(
-						"ignoring bid id=%s, request doesn't contain any impression with id=%s", internalRequest.ID, impID),
-				})
-				continue
-			}
-
 			bid := openrtb.Bid{}
 			bid.ID = internalRequest.ID
 			bid.ImpID = impID
 			bid.Price = *decision.Pricing.ClearPrice
 			bid.AdM = retrieveAd(decision)
-			bid.W = imp.Banner.Format[0].W // TODO: Review to check if this is correct behaviour
-			bid.H = imp.Banner.Format[0].H
+			bid.W = decision.Width
+			bid.H = decision.Height
 			bid.CrID = strconv.FormatInt(decision.AdID, 10)
 			bid.Exp = 30 // TODO: Check this is intention of TTL
 
@@ -277,15 +269,6 @@ func (a *ConsumableAdapter) MakeBids(
 		}
 	}
 	return bidderResponse, errors
-}
-
-func getImp(impId string, imps []openrtb.Imp) *openrtb.Imp {
-	for _, imp := range imps {
-		if imp.ID == impId {
-			return &imp
-		}
-	}
-	return nil
 }
 
 func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb_ext.ExtImpConsumable, []error) {

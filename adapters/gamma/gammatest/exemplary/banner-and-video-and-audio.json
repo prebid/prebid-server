@@ -80,7 +80,7 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
+          "id": "test-imp-video-id",
           "cur": "USD",
           "seatbid": [
             {
@@ -89,7 +89,10 @@
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                 "impid": "test-imp-video-id",
                 "price": 0.500000,
-                "adm": "some-test-ad",
+                "adm": "",
+                "adomain": ["sample.com"],
+                "vastXml": "some-test-ad",
+                "vastUrl": "some-test-url",
                 "crid": "29484110",
                 "w": 640,
                 "h": 480
@@ -122,13 +125,15 @@
         "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
         "impid": "test-imp-video-id",
         "price": 0.5,
-        "adm": "some-test-ad",
+        "adm": "",
+        "vastXml": "some-test-ad",
+        "vastUrl": "some-test-url",
         "adid": "29484110",
         "adomain": ["sample.com"],
         "cid": "958",
         "crid": "29484110",
-        "w": 1024,
-        "h": 576
+        "w": 640,
+        "h": 480
       },
       "type": "video"
     }

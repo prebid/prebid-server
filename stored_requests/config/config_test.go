@@ -19,8 +19,8 @@ import (
 )
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher := newFetcher(&config.StoredRequestsSlim{}, nil, nil)
-	ampFetcher := newFetcher(&config.StoredRequestsSlim{}, nil, nil)
+	fetcher := newFetcher(&config.StoredRequests{}, nil, nil)
+	ampFetcher := newFetcher(&config.StoredRequests{}, nil, nil)
 	if fetcher == nil || ampFetcher == nil {
 		t.Errorf("The fetchers should be non-nil, even with an empty config.")
 	}
@@ -33,13 +33,13 @@ func TestNewEmptyFetcher(t *testing.T) {
 }
 
 func TestNewHTTPFetcher(t *testing.T) {
-	fetcher := newFetcher(&config.StoredRequestsSlim{
-		HTTP: config.HTTPFetcherConfigSlim{
+	fetcher := newFetcher(&config.StoredRequests{
+		HTTP: config.HTTPFetcherConfig{
 			Endpoint: "stored-requests.prebid.com",
 		},
 	}, nil, nil)
-	ampFetcher := newFetcher(&config.StoredRequestsSlim{
-		HTTP: config.HTTPFetcherConfigSlim{
+	ampFetcher := newFetcher(&config.StoredRequests{
+		HTTP: config.HTTPFetcherConfig{
 			Endpoint: "stored-requests.prebid.com?type=amp",
 		},
 	}, nil, nil)
@@ -60,13 +60,13 @@ func TestNewHTTPFetcher(t *testing.T) {
 }
 
 func TestNewHTTPFetcherNoAmp(t *testing.T) {
-	fetcher := newFetcher(&config.StoredRequestsSlim{
-		HTTP: config.HTTPFetcherConfigSlim{
+	fetcher := newFetcher(&config.StoredRequests{
+		HTTP: config.HTTPFetcherConfig{
 			Endpoint: "stored-requests.prebid.com",
 		},
 	}, nil, nil)
-	ampFetcher := newFetcher(&config.StoredRequestsSlim{
-		HTTP: config.HTTPFetcherConfigSlim{
+	ampFetcher := newFetcher(&config.StoredRequests{
+		HTTP: config.HTTPFetcherConfig{
 			Endpoint: "",
 		},
 	}, nil, nil)
@@ -82,78 +82,14 @@ func TestNewHTTPFetcherNoAmp(t *testing.T) {
 	}
 }
 
-func TestResolveConfig(t *testing.T) {
-	cfg := &config.Configuration{
-		StoredRequests: config.StoredRequests{
-			Files: true,
-			Path:  "/test-path",
-			Postgres: config.PostgresConfig{
-				ConnectionInfo: config.PostgresConnection{
-					Database: "db",
-					Host:     "pghost",
-					Port:     5,
-					Username: "user",
-					Password: "pass",
-				},
-				FetcherQueries: config.PostgresFetcherQueries{
-					AmpQueryTemplate: "amp-fetcher-query",
-				},
-				CacheInitialization: config.PostgresCacheInitializer{
-					AmpQuery: "amp-cache-init-query",
-				},
-				PollUpdates: config.PostgresUpdatePolling{
-					AmpQuery: "amp-poll-query",
-				},
-			},
-			HTTP: config.HTTPFetcherConfig{
-				AmpEndpoint: "amp-http-fetcher-endpoint",
-			},
-			InMemoryCache: config.InMemoryCache{
-				Type:             "none",
-				TTL:              50,
-				RequestCacheSize: 1,
-				ImpCacheSize:     2,
-			},
-			CacheEventsAPI: true,
-			HTTPEvents: config.HTTPEventsConfig{
-				AmpEndpoint: "amp-http-events-endpoint",
-			},
-		},
-	}
-
-	cfg.StoredRequests.Postgres.FetcherQueries.QueryTemplate = "auc-fetcher-query"
-	cfg.StoredRequests.Postgres.CacheInitialization.Query = "auc-cache-init-query"
-	cfg.StoredRequests.Postgres.PollUpdates.Query = "auc-poll-query"
-	cfg.StoredRequests.HTTP.Endpoint = "auc-http-fetcher-endpoint"
-	cfg.StoredRequests.HTTPEvents.Endpoint = "auc-http-events-endpoint"
-
-	auc, amp := resolvedStoredRequestsConfig(cfg)
-
-	// Auction slim should have the non-amp values in it
-	assertStringsEqual(t, auc.Postgres.FetcherQueries.QueryTemplate, cfg.StoredRequests.Postgres.FetcherQueries.QueryTemplate)
-	assertStringsEqual(t, auc.Postgres.CacheInitialization.Query, cfg.StoredRequests.Postgres.CacheInitialization.Query)
-	assertStringsEqual(t, auc.Postgres.PollUpdates.Query, cfg.StoredRequests.Postgres.PollUpdates.Query)
-	assertStringsEqual(t, auc.HTTP.Endpoint, cfg.StoredRequests.HTTP.Endpoint)
-	assertStringsEqual(t, auc.HTTPEvents.Endpoint, cfg.StoredRequests.HTTPEvents.Endpoint)
-	assertStringsEqual(t, auc.CacheEvents.Endpoint, "/storedrequests/openrtb2")
-
-	// Amp slim should have the amp values in it
-	assertStringsEqual(t, amp.Postgres.FetcherQueries.QueryTemplate, cfg.StoredRequests.Postgres.FetcherQueries.AmpQueryTemplate)
-	assertStringsEqual(t, amp.Postgres.CacheInitialization.Query, cfg.StoredRequests.Postgres.CacheInitialization.AmpQuery)
-	assertStringsEqual(t, amp.Postgres.PollUpdates.Query, cfg.StoredRequests.Postgres.PollUpdates.AmpQuery)
-	assertStringsEqual(t, amp.HTTP.Endpoint, cfg.StoredRequests.HTTP.AmpEndpoint)
-	assertStringsEqual(t, amp.HTTPEvents.Endpoint, cfg.StoredRequests.HTTPEvents.AmpEndpoint)
-	assertStringsEqual(t, amp.CacheEvents.Endpoint, "/storedrequests/amp")
-}
-
 func TestNewHTTPEvents(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	server1 := httptest.NewServer(http.HandlerFunc(handler))
 
-	cfg := &config.StoredRequestsSlim{
-		HTTPEvents: config.HTTPEventsConfigSlim{
+	cfg := &config.StoredRequests{
+		HTTPEvents: config.HTTPEventsConfig{
 			Endpoint:    server1.URL,
 			RefreshRate: 100,
 			Timeout:     1000,
@@ -165,7 +101,7 @@ func TestNewHTTPEvents(t *testing.T) {
 }
 
 func TestNewEmptyCache(t *testing.T) {
-	cache := newCache(&config.StoredRequestsSlim{InMemoryCache: config.InMemoryCache{Type: "none"}})
+	cache := newCache(&config.StoredRequests{InMemoryCache: config.InMemoryCache{Type: "none"}})
 	cache.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")}, nil)
 	reqs, _ := cache.Get(context.Background(), []string{"foo"}, nil)
 	if len(reqs) != 0 {
@@ -174,7 +110,7 @@ func TestNewEmptyCache(t *testing.T) {
 }
 
 func TestNewInMemoryCache(t *testing.T) {
-	cache := newCache(&config.StoredRequestsSlim{
+	cache := newCache(&config.StoredRequests{
 		InMemoryCache: config.InMemoryCache{
 			TTL:              60,
 			RequestCacheSize: 100,
@@ -189,26 +125,26 @@ func TestNewInMemoryCache(t *testing.T) {
 }
 
 func TestNewPostgresEventProducers(t *testing.T) {
-	cfg := &config.StoredRequestsSlim{
-		Postgres: config.PostgresConfigSlim{
-			CacheInitialization: config.PostgresCacheInitializerSlim{
+	cfg := &config.StoredRequests{
+		Postgres: config.PostgresConfig{
+			CacheInitialization: config.PostgresCacheInitializer{
 				Timeout: 50,
 				Query:   "SELECT id, requestData, type FROM stored_data",
 			},
-			PollUpdates: config.PostgresUpdatePollingSlim{
+			PollUpdates: config.PostgresUpdatePolling{
 				RefreshRate: 20,
 				Timeout:     50,
 				Query:       "SELECT id, requestData, type FROM stored_data WHERE last_updated > $1",
 			},
 		},
 	}
-	ampCfg := &config.StoredRequestsSlim{
-		Postgres: config.PostgresConfigSlim{
-			CacheInitialization: config.PostgresCacheInitializerSlim{
+	ampCfg := &config.StoredRequests{
+		Postgres: config.PostgresConfig{
+			CacheInitialization: config.PostgresCacheInitializer{
 				Timeout: 50,
 				Query:   "SELECT id, requestData, type FROM stored_amp_data",
 			},
-			PollUpdates: config.PostgresUpdatePollingSlim{
+			PollUpdates: config.PostgresUpdatePolling{
 				RefreshRate: 20,
 				Timeout:     50,
 				Query:       "SELECT id, requestData, type FROM stored_amp_data WHERE last_updated > $1",

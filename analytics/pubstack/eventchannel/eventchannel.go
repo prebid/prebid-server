@@ -93,10 +93,13 @@ func (c *EventChannel) flush() {
 		return
 	}
 
+	// reset buffers and writers
+	defer c.reset()
+
 	// finish writing gzip header
-	err := c.gz.Flush()
+	err := c.gz.Close()
 	if err != nil {
-		glog.Warning("[pubstack] fail to flush gzipped buffer")
+		glog.Warning("[pubstack] fail to close gzipped buffer")
 		return
 	}
 
@@ -107,9 +110,6 @@ func (c *EventChannel) flush() {
 		glog.Warning("[pubstack] fail to copy the buffer")
 		return
 	}
-
-	// reset buffers and writers
-	c.reset()
 
 	// send events (async)
 	go c.send(payload)

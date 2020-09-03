@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"runtime/debug"
 	"sort"
 	"strconv"
@@ -36,7 +37,7 @@ const DebugContextKey = ContextKey("debugInfo")
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error)
+	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error)
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -53,8 +54,8 @@ type exchange struct {
 	gDPR                gdpr.Permissions
 	currencyConverter   *currencies.RateConverter
 	UsersyncIfAmbiguous bool
-	defaultTTLs         config.DefaultTTLs
 	privacyConfig       config.Privacy
+	eeaCountries        map[string]struct{}
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -75,6 +76,11 @@ type bidResponseWrapper struct {
 func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) Exchange {
 	e := new(exchange)
 
+	e.eeaCountries = make(map[string]struct{}, len(cfg.GDPR.EEACountries))
+	var s struct{}
+	for _, c := range cfg.GDPR.EEACountries {
+		e.eeaCountries[c] = s
+	}
 	e.adapterMap = newAdapterMap(client, cfg, infos, metricsEngine)
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
@@ -82,7 +88,6 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e.gDPR = gDPR
 	e.currencyConverter = currencyConverter
 	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
-	e.defaultTTLs = cfg.CacheURL.DefaultTTLs
 	e.privacyConfig = config.Privacy{
 		CCPA: cfg.CCPA,
 		GDPR: cfg.GDPR,
@@ -91,7 +96,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	return e
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {
 
 	requestExt, err := extractBidRequestExt(bidRequest)
 	if err != nil {
@@ -101,7 +106,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	shouldCacheBids, shouldCacheVAST := getExtCacheInfo(requestExt)
 	targData := getExtTargetData(requestExt, shouldCacheBids, shouldCacheVAST)
 	if targData != nil {
-		targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
+		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
 
 	debugInfo := getDebugInfo(bidRequest, requestExt)
@@ -121,9 +126,27 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		e.me.RecordImps(impLabels)
 	}
 
+	// Make our best guess if GDPR applies
+	usersyncIfAmbiguous := e.UsersyncIfAmbiguous
+	var geo *openrtb.Geo = nil
+	if bidRequest.User != nil && bidRequest.User.Geo != nil {
+		geo = bidRequest.User.Geo
+	} else if bidRequest.Device != nil && bidRequest.Device.Geo != nil {
+		geo = bidRequest.Device.Geo
+	}
+	if geo != nil {
+		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
+		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
+		if _, found := e.eeaCountries[strings.ToUpper(geo.Country)]; found {
+			usersyncIfAmbiguous = false
+		} else if len(geo.Country) == 3 {
+			// The country field is formatted properly as a three character country code
+			usersyncIfAmbiguous = true
+		}
+	}
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, bidRequest, requestExt, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous, e.privacyConfig)
+	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, bidRequest, requestExt, usersyncs, blabels, labels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -178,7 +201,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				}
 			}
 
-			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory, debugLog)
+			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &account.CacheTTL, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}
@@ -636,7 +659,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 						// An older bid from a different seatBid we've already finished with
 						oldSeatBid := (seatBids)[dupe.bidderName]
 						if len(oldSeatBid.bids) == 1 {
-							seatBidsToRemove = append(seatBidsToRemove, bidderName)
+							seatBidsToRemove = append(seatBidsToRemove, dupe.bidderName)
 							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						} else {
 							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
@@ -790,24 +813,50 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName, a
 
 // If bid got cached inside `(a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string)`,
 // a UUID should be found inside `a.cacheIds` or `a.vastCacheIds`. This function returns the UUID along with the internal cache URL
-func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auc *auction) (openrtb_ext.ExtBidPrebidCacheBids, bool) {
-	var cacheInfo openrtb_ext.ExtBidPrebidCacheBids
-	var cacheUUID string
-	var found bool = false
+func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auction *auction) (cacheInfo openrtb_ext.ExtBidPrebidCacheBids, found bool) {
+	uuid, found := findCacheID(bid, auction)
 
-	if auc != nil {
-		var extCacheHost, extCachePath string
-		if cacheUUID, found = auc.cacheIds[bid.bid]; found {
-			cacheInfo.CacheId = cacheUUID
-			extCacheHost, extCachePath = e.cache.GetExtCacheData()
-			cacheInfo.Url = extCacheHost + extCachePath + "?uuid=" + cacheUUID
-		} else if cacheUUID, found = auc.vastCacheIds[bid.bid]; found {
-			cacheInfo.CacheId = cacheUUID
-			extCacheHost, extCachePath = e.cache.GetExtCacheData()
-			cacheInfo.Url = extCacheHost + extCachePath + "?uuid=" + cacheUUID
+	if found {
+		cacheInfo.CacheId = uuid
+		cacheInfo.Url = buildCacheURL(e.cache, uuid)
+	}
+
+	return
+}
+
+func findCacheID(bid *pbsOrtbBid, auction *auction) (string, bool) {
+	if bid != nil && bid.bid != nil && auction != nil {
+		if id, found := auction.cacheIds[bid.bid]; found {
+			return id, true
+		}
+
+		if id, found := auction.vastCacheIds[bid.bid]; found {
+			return id, true
 		}
 	}
-	return cacheInfo, found
+
+	return "", false
+}
+
+func buildCacheURL(cache prebid_cache_client.Client, uuid string) string {
+	scheme, host, path := cache.GetExtCacheData()
+
+	if host == "" || path == "" {
+		return ""
+	}
+
+	query := url.Values{"uuid": []string{uuid}}
+	cacheURL := url.URL{
+		Scheme:   scheme,
+		Host:     host,
+		Path:     path,
+		RawQuery: query.Encode(),
+	}
+	cacheURL.Query()
+
+	// URLs without a scheme will begin with //, in which case we
+	// want to trim it off to keep compatbile with current behavior.
+	return strings.TrimPrefix(cacheURL.String(), "//")
 }
 
 func listBiddersWithRequests(cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest) []openrtb_ext.BidderName {
