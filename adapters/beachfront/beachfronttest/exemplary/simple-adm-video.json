@@ -9,6 +9,7 @@
     "imp":[
       {
         "id":"video1",
+        "secure": 0,
         "ext":{
           "bidder":{
             "videoResponseType" : "adm",
@@ -59,6 +60,13 @@
                 ]
               },
               "id": "video1",
+              "ext":{
+                "bidder":{
+                  "videoResponseType" : "adm",
+                  "bidfloor":0.01,
+                  "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
+                }
+              },
               "secure": 0
             }
           ],

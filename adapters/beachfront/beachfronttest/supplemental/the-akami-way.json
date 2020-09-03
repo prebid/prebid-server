@@ -1,152 +1,282 @@
 {
-  "mockBidRequest":
-  {
-    "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
-    "tmax":1000,
-    "source":{
-      "tid":"61b87329-8790-47b7-90dd-c53ae7ce1723"
-    },
-    "imp":[
+  "mockBidRequest": {
+    "id": "bid_id",
+    "imp": [
       {
-        "id":"video1",
-        "ext":{
-          "bidder":{
-            "videoResponseType" : "adm",
-            "bidfloor":0.01,
-            "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
-          }
-        },
-        "video":{
-          "mimes":[
+        "id": "1_0",
+        "video": {
+          "mimes": [
             "video/mp4"
           ],
-          "context":"instream",
-          "w":300,
-          "h":250
+          "bidfloor": 0.1,
+          "minduration": 30,
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "videoResponseType": "adm",
+            "bidfloor": 0.1,
+            "appId": "0c0c62c7-8fe6-4023-90a2-d6148f331823"
+          }
+        }
+      },
+      {
+        "id": "1_1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 5,
+          "maxduration": 60,
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "videoResponseType": "adm",
+            "bidfloor": 0.1,
+            "appId": "0c0c62c7-8fe6-4023-90a2-d6148f331823"
+          }
         }
       }
     ],
-    "site":{
-      "publisher":{
-        "id":"publisher1"
+    "site": {
+      "page": "http://adedge-demo.westus.cloudapp.azure.com/lfv-demo.html",
+      "publisher": {
+        "id": "akamai-test"
       },
-      "page": "http://example.com/whatever/something.html"
-    },
-    "user": {
-      "id": "some-user",
-      "buyeruid": "some-buyer"
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900
+      },
+      "ext": {
+        "amp": 0
+      }
     },
     "device": {
-      "devicetype": 2,
-      "ip": "127.0.0.1",
-      "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16"
+      "ua": "curl/7.54.0",
+      "ip": "190.2.10.110"
+    },
+    "user": {
+      "buyeruid": "unique_id_an",
+      "yob": 1991,
+      "gender": "F",
+      "keywords": "Hotels, Travelling"
+    },
+    "at": 1,
+    "tmax": 5000,
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "pricegranularity": {
+            "precision": 2,
+            "ranges": [
+              {
+                "min": 0,
+                "max": 20,
+                "increment": 0.1
+              }
+            ]
+          },
+          "includewinners": false,
+          "includebidderkeys": true,
+          "includebrandcategory": {
+            "primaryadserver": 0,
+            "publisher": ""
+          },
+          "durationrangesec": null
+        }
+      }
     }
   },
 
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=0c0c62c7-8fe6-4023-90a2-d6148f331823",
         "body": {
-          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "id": "bid_id",
           "imp": [
             {
+              "id": "1_0",
+              "secure": 0,
               "video": {
-                "w": 300,
-                "h": 250,
                 "mimes": [
                   "video/mp4"
-                ]
+                ],
+                "minduration": 30,
+                "maxduration": 30,
+                "protocols": [ 2, 3, 5, 6 ],
+                "w": 640,
+                "h": 480
               },
-              "id": "video1",
-              "secure": 0
+              "ext": {
+                "bidder": {
+                  "videoResponseType": "adm",
+                  "bidfloor": 0.1,
+                  "appId": "0c0c62c7-8fe6-4023-90a2-d6148f331823"
+                }
+              }
+            },
+            {
+              "id": "1_1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 5,
+                "maxduration": 60,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "videoResponseType": "adm",
+                  "bidfloor": 0.1,
+                  "appId": "0c0c62c7-8fe6-4023-90a2-d6148f331823"
+                }
+              }
             }
           ],
           "site": {
-            "publisher":{
-              "id":"publisher1"
+            "domain": "adedge-demo.westus.cloudapp.azure.com",
+            "page": "http://adedge-demo.westus.cloudapp.azure.com/lfv-demo.html",
+            "publisher": {
+              "id": "akamai-test"
             },
-            "page": "http://example.com/whatever/something.html",
-            "domain": "example.com"
+            "content": {
+              "episode": 6,
+              "title": "episodeName",
+              "series": "TvName",
+              "season": "season3",
+              "len": 900
+            },
+            "ext": {
+              "amp": 0
+            }
           },
           "device": {
-            "devicetype": 2,
-            "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "ip": "192.168.255.255"
+            "ua": "curl/7.54.0",
+            "ip": "190.2.10.110",
+            "devicetype": 2
           },
-          "source": {
-           "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
+          "user": {
+            "buyeruid": "unique_id_an",
+            "yob": 1991,
+            "gender": "F",
+            "keywords": "Hotels, Travelling"
           },
-          "tmax": 1000,
-
+          "at": 1,
+          "tmax": 5000,
           "cur": [
             "USD"
           ],
-          "user": {
-            "id": "some-user",
-            "buyeruid": "some-buyer"
-          }
-        }
-        },
-      "mockResponse": {
-        "status" : 200,
-        "body": {
-          "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
-          "seatBid":[
-            {
-              "bid": [
-                {
-                  "id": "video1AdmVideo",
-                  "impid": "video1",
-                  "price": 20,
-                  "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><AdSystem version=\"2.0\">IO</AdSystem><AdTitle>Neptune</AdTitle><Impression></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" width=\"640\" height=\"480\" scalable=\"1\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[http://player-cdn.beachfrontmedia.com/players/neptune/3/17/5/neptune-player.js]]></MediaFile></MediaFiles><AdParameters><![CDATA[{\"dsp\":\"5d8393417cbc8e5aa4fe2202,0.01\",\"inventory_id\":\"bid:95d219a2-6025-44ba-bff8-1dca987beaae:11bc5dd5-7421-4dd8-c926-40fa653bec76:${AUCTION_PRICE}:20.0\",\"request_endpoint\":\"//useast.bfmio.com/getmu\",\"inventory_type\":\"pre\"}]]></AdParameters></Linear></Creative></Creatives></InLine></Ad></VAST>",
-                  "adid": "1088",
-                  "adomain": [
-                    "beachfront.io"
-                  ],
-                  "cid": "277",
-                  "crid": "532",
-                  "w": 300,
-                  "h": 250,
-                  "ext": {
-                    "prebid": {
-                      "type": "video"
-                    }
-                  }
-                }
-              ],
-              "seat": "beachfront"
-            }
-          ]
-        }
-      }
-    }
-  ],
-
-  "expectedBids": [
-    {
-
-      "bid":[
-        {
-          "id": "video1AdmVideo",
-          "impid": "video1",
-          "price": 20,
-          "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><AdSystem version=\"2.0\">IO</AdSystem><AdTitle>Neptune</AdTitle><Impression></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" width=\"640\" height=\"480\" scalable=\"1\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[http://player-cdn.beachfrontmedia.com/players/neptune/3/17/5/neptune-player.js]]></MediaFile></MediaFiles><AdParameters><![CDATA[{\"dsp\":\"5d8393417cbc8e5aa4fe2202,0.01\",\"inventory_id\":\"bid:95d219a2-6025-44ba-bff8-1dca987beaae:11bc5dd5-7421-4dd8-c926-40fa653bec76:${AUCTION_PRICE}:20.0\",\"request_endpoint\":\"//useast.bfmio.com/getmu\",\"inventory_type\":\"pre\"}]]></AdParameters></Linear></Creative></Creatives></InLine></Ad></VAST>",
-          "adid": "1088",
-          "adomain": [
-            "beachfront.io"
-          ],
-          "cid": "277",
-          "crid": "532",
-          "w": 300,
-          "h": 250,
           "ext": {
             "prebid": {
-              "type": "video"
+              "targeting": {
+                "pricegranularity": {
+                  "precision": 2,
+                  "ranges": [
+                    {
+                      "min": 0,
+                      "max": 20,
+                      "increment": 0.1
+                    }
+                  ]
+                },
+                "includewinners": false,
+                "includebidderkeys": true,
+                "includebrandcategory": {
+                  "primaryadserver": 0,
+                  "publisher": ""
+                },
+                "durationrangesec": null
+              }
             }
           }
         }
-      ]
+      },
+      "mockResponse": {
+        "id":"5f4fb426254b2e4e086488ef",
+        "status" : 200,
+        "seatbid":[
+          {
+            "bid":[
+              {
+                "id":"5f4fb426254b2e4e086488f20",
+                "impid":"1_1",
+                "price":0.01,
+                "adm":"<?xml version=\"1.0\" ?><VAST version=\"2.0\"><Ad id=\"24865\"><InLine><AdSystem version=\"2.0\">Beachfront Marketplace Ad</AdSystem><AdTitle>PSA :15 (2020census.gov)#17</AdTitle>s><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"360\" width=\"427\" height=\"240\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5985/ses-support-for-neighborhoods-15-eng-cut_iphone.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"360\" width=\"640\" height=\"360\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5985/ses-support-for-neighborhoods-15-eng-cut_360_mp4.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"1500\" width=\"1280\" height=\"720\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5985/ses-support-for-neighborhoods-15-eng-cut_720_mp4.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"2500\" width=\"1920\" height=\"1080\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5985/ses-support-for-neighborhoods-15-eng-cut_1080_mp4.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"512\" width=\"853\" height=\"480\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5985/ses-support-for-neighborhoods-15-eng-cut_480_mp4.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/webm\" bitrate=\"256\" width=\"240\" height=\"320\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5985/ses-support-for-neighborhoods-15-eng-cut.webm]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                "adid":"24865",
+                "adomain":[
+                  "2020census.gov"
+                ],
+                "cid":"6458",
+                "crid":"5985",
+                "cat":[
+                  "IAB11"
+                ],
+                "attr":[
+
+                ],
+                "w":0,
+                "h":0,
+                "ext":{
+                  "duration":15
+                }
+              },
+              {
+                "id":"5f4fb426254b2e4e086488f21",
+                "impid":"1_0",
+                "price":0.01,
+                "adm":"<?xml version=\"1.0\" ?><VAST version=\"2.0\"><Ad id=\"24873\"><InLine><AdSystem version=\"2.0\">Beachfront Marketplace Ad</AdSystem><AdTitle>PSA :30 (2020census.gov)#16</AdTitle><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"360\" width=\"427\" height=\"240\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5984/ses-make-your-family-count-30-eng-cut_iphone.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"360\" width=\"640\" height=\"360\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5984/ses-make-your-family-count-30-eng-cut_360_mp4.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"1500\" width=\"1280\" height=\"720\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5984/ses-make-your-family-count-30-eng-cut_720_mp4.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"2500\" width=\"1920\" height=\"1080\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5984/ses-make-your-family-count-30-eng-cut_1080_mp4.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"512\" width=\"853\" height=\"480\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5984/ses-make-your-family-count-30-eng-cut_480_mp4.mp4]]></MediaFile><MediaFile delivery=\"progressive\" type=\"video/webm\" bitrate=\"256\" width=\"240\" height=\"320\"><![CDATA[https://io-cdn.bfmio.com/1/creative/5984/ses-make-your-family-count-30-eng-cut.webm]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                "adid":"24873",
+                "adomain":[
+                  "2020census.gov"
+                ],
+                "cid":"6458",
+                "crid":"5984",
+                "cat":[
+                  "IAB11"
+                ],
+                "attr":[
+
+                ],
+                "w":0,
+                "h":0,
+                "ext":{
+                  "duration":30
+                }
+              }
+            ],
+            "seat":"bfb-io-s1"
+          }
+        ],
+        "cur":"USD"
+      }
     }
   ]
 }

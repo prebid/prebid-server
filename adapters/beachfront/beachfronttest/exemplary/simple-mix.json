@@ -113,6 +113,17 @@
           "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
           "imp": [
             {
+              "ext": {
+                "bidder": {
+                  "appIds": {
+                    "banner": "487cf244-5e95-43cb-e7b9-bb540873ca7e",
+                    "video": "11bc5dd5-7421-4dd8-c926-40fa653bec76"
+                  },
+                  "bidfloor": 0.41,
+                  "videoResponseType": "adm"
+                }
+              },
+
               "video": {
                 "w": 300,
                 "h": 250,
@@ -121,9 +132,8 @@
                 ]
 
               },
-              "bidfloor": 0.41,
-              "secure": 0,
-              "id": "mix1"
+              "id": "mix1",
+              "secure" : 0
             }
           ],
           "site": {

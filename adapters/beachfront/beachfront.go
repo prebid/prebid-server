@@ -60,22 +60,22 @@ type videoRequest struct {
 //              Banner
 // ---------------------------------------------------
 type bannerRequest struct {
-	Slots          []slot `json:"slots"`
-	Domain         string `json:"domain"`
-	Page           string `json:"page"`
-	Referrer       string `json:"referrer"`
-	Search         string `json:"search"`
-	Secure         int8   `json:"secure"`
-	DeviceOs       string `json:"deviceOs"`
-	DeviceModel    string `json:"deviceModel"`
-	IsMobile       int8   `json:"isMobile"`
-	UA             string `json:"ua"`
-	Dnt            int8   `json:"dnt"`
-	User           openrtb.User     `json:"user"`
-	AdapterName    string           `json:"adapterName"`
-	AdapterVersion string           `json:"adapterVersion"`
-	IP             string           `json:"ip"`
-	RequestID      string           `json:"requestId"`
+	Slots          []slot       `json:"slots"`
+	Domain         string       `json:"domain"`
+	Page           string       `json:"page"`
+	Referrer       string       `json:"referrer"`
+	Search         string       `json:"search"`
+	Secure         int8         `json:"secure"`
+	DeviceOs       string       `json:"deviceOs"`
+	DeviceModel    string       `json:"deviceModel"`
+	IsMobile       int8         `json:"isMobile"`
+	UA             string       `json:"ua"`
+	Dnt            int8         `json:"dnt"`
+	User           openrtb.User `json:"user"`
+	AdapterName    string       `json:"adapterName"`
+	AdapterVersion string       `json:"adapterVersion"`
+	IP             string       `json:"ip"`
+	RequestID      string       `json:"requestId"`
 }
 
 type slot struct {
@@ -107,10 +107,11 @@ type videoBidExtension struct {
 	Duration int `json:"duration"`
 }
 
+var one int8 = 1
+var zero int8 = 0
+
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var reqs = make([]*adapters.RequestData, 0)
-	var addCookie bool = false
-
 	beachfrontRequests, errs := preprocess(request)
 
 	headers := http.Header{}
@@ -131,8 +132,8 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-
-	// At most, I only ever have one banner request, and it does not need the cookie, so doing it first.
+	// one banner request potentially with multiple imps, and it does
+	// not need the cookie, so doing it first.
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		bytes, err := json.Marshal(beachfrontRequests.Banner)
 
@@ -148,30 +149,26 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
+	if request.User != nil && request.User.BuyerUID != "" {
+		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
+	}
 
+	// n adm requests, some of which may have multiple imps
 	for j := 0; j < len(beachfrontRequests.ADMVideo); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.ADMVideo[j].Request)
 		if err == nil {
-			if err == nil {
-				if err == nil {
-					reqs = append(reqs, &adapters.RequestData{
-						Method:  "POST",
-						Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
-						Body:    bytes,
-						Headers: headers,
-					})
-					addCookie = true
-				} else {
-					errs = append(errs, err)
-				}
-			} else {
-				errs = append(errs, err)
-			}
+			reqs = append(reqs, &adapters.RequestData{
+				Method:  "POST",
+				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
+				Body:    bytes,
+				Headers: headers,
+			})
 		} else {
 			errs = append(errs, err)
 		}
 	}
 
+	// n nurl requests, each of which is one imp
 	for j := 0; j < len(beachfrontRequests.NurlVideo); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
 
@@ -182,14 +179,9 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 				Body:    append([]byte(`{"isPrebid":true,`), bytes[1:]...),
 				Headers: headers,
 			})
-			addCookie = true
 		} else {
 			errs = append(errs, err)
 		}
-	}
-
-	if request.User != nil && request.User.BuyerUID != "" && addCookie {
-		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
 	return reqs, errs
@@ -200,16 +192,15 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 	var bannerImps = make([]openrtb.Imp, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
-		if request.Imp[i].Banner != nil && (
-			(request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
+		if request.Imp[i].Banner != nil && ((request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
 			(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil)) {
 			bannerImps = append(bannerImps, request.Imp[i])
-			bannerImps[len(bannerImps) - 1].Video = nil
+			bannerImps[len(bannerImps)-1].Video = nil
 		}
 
 		if request.Imp[i].Video != nil {
 			videoImps = append(videoImps, request.Imp[i])
-			videoImps[len(videoImps) - 1].Banner = nil
+			videoImps[len(videoImps)-1].Banner = nil
 		}
 	}
 
@@ -224,7 +215,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 	}
 
 	/* We have video imps, so organize them into nurl imps and adm imps. The nurl imps will be
-		sent sequentially and the adm imps in sequential / parallel.
+	sent sequentially and the adm imps in sequential / parallel.
 	*/
 	if len(videoImps) > 0 {
 		admRequests := make(map[string]videoRequest, 0)
@@ -237,38 +228,56 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 				requestStub := *request
 				requestStub.Imp = nil
 
+				if requestStub.Site != nil &&
+					requestStub.Site.Page != "" {
+					_, videoImps[i].Secure = isSecure(requestStub.Site.Page)
+				} else {
+					videoImps[i].Secure = &zero
+				}
+
 				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoRequest{
-						AppId: ext.AppId,
-						VideoResponseType: ext.VideoResponseType,
-						Request: requestStub,
-					})
+					AppId:             ext.AppId,
+					VideoResponseType: ext.VideoResponseType,
+					Request:           requestStub,
+				})
+
 				j := len(beachfrontReqs.NurlVideo) - 1
 				beachfrontReqs.NurlVideo[j].Request.Imp = nil
 				beachfrontReqs.NurlVideo[j].Request.Imp = append(
 					beachfrontReqs.NurlVideo[j].Request.Imp, videoImps[i])
-				beachfrontReqs.NurlVideo[j], _ = prepVideoRequest(beachfrontReqs.NurlVideo[j])
+				beachfrontReqs.NurlVideo[j] = prepVideoRequest(beachfrontReqs.NurlVideo[j])
+
 			}
 
 			if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
 				admRequest, exists := admRequests[ext.AppId]
-				if ! exists {
+				if !exists {
 					requestStub := *request
-					requestStub.Imp = make([]openrtb.Imp,0)
+					requestStub.Imp = make([]openrtb.Imp, 0)
+
+					if requestStub.Site != nil &&
+						requestStub.Site.Page != "" {
+						_, videoImps[i].Secure = isSecure(requestStub.Site.Page)
+					} else {
+						videoImps[i].Secure = &zero
+					}
 
 					admRequests[ext.AppId] = videoRequest{
-						AppId: ext.AppId,
+						AppId:             ext.AppId,
 						VideoResponseType: ext.VideoResponseType,
-						Request: requestStub,
+						Request:           requestStub,
 					}
 
 					admRequest = admRequests[ext.AppId]
-					admRequest, _ = prepVideoRequest(admRequest)
+					admRequest = prepVideoRequest(admRequest)
+
 					admRequest.Request.Imp = append(admRequest.Request.Imp, videoImps[i])
 					beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, admRequest)
 				} else {
-					for k := 0; k < len(beachfrontReqs.ADMVideo);k++ {
+					for k := 0; k < len(beachfrontReqs.ADMVideo); k++ {
 						if beachfrontReqs.ADMVideo[k].AppId == admRequest.AppId {
-							beachfrontReqs.ADMVideo[k], _ = prepVideoRequest(beachfrontReqs.ADMVideo[k])
+							beachfrontReqs.ADMVideo[k] = prepVideoRequest(beachfrontReqs.ADMVideo[k])
+
 							beachfrontReqs.ADMVideo[k].Request.Imp = append(
 								beachfrontReqs.ADMVideo[k].Request.Imp,
 								videoImps[i])
@@ -285,7 +294,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 
 /**
 Returns an authoritative appId (exchange_id) for a specific impression
- */
+*/
 func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (string, error) {
 	var appid string
 	var err error
@@ -350,15 +359,18 @@ func impsToSlots(imps []openrtb.Imp) (bannerRequest, []error) {
 		bfr.Slots = append(bfr.Slots, slot)
 	}
 
-	if imps[0].Secure != nil {
-		bfr.Secure = *imps[0].Secure
-	}
-
 	return bfr, errs
 }
 
 func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, errs []error) {
 	bannerReq, errs = impsToSlots(request.Imp)
+
+	if request.Site != nil && request.Site.Page != "" {
+		bannerReq.Secure, _ = isSecure(request.Site.Page)
+	} else {
+		bannerReq.Secure = 0
+	}
+
 	if request.Device != nil {
 		bannerReq.IP = getIP(request.Device.IP)
 		bannerReq.DeviceModel = request.Device.Model
@@ -393,8 +405,6 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, err
 		bannerReq.IsMobile = 0
 	}
 
-	bannerReq.Secure = isSecure(bannerReq.Page)
-
 	if request.User != nil && request.User.ID != "" {
 		if bannerReq.User.ID == "" {
 			bannerReq.User.ID = request.User.ID
@@ -411,7 +421,6 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, err
 	bannerReq.AdapterName = beachfrontAdapterName
 	bannerReq.AdapterVersion = beachfrontAdapterVersion
 
-
 	return
 }
 
@@ -423,11 +432,11 @@ func fallBackDeviceType(request openrtb.BidRequest) openrtb.DeviceType {
 	return openrtb.DeviceTypeMobileTablet
 }
 
-func prepVideoRequestExt(requestImp  openrtb.Imp, errs []error) (openrtb_ext.ExtImpBeachfront, []error) {
+func prepVideoRequestExt(requestImp openrtb.Imp, errs []error) (openrtb_ext.ExtImpBeachfront, []error) {
 	if requestImp.Video == nil {
 		errs = append(errs, errors.New(
 			fmt.Sprintf("no valid video elements were found in impression id = %s", requestImp.ID),
-			),
+		),
 		)
 	}
 
@@ -451,13 +460,9 @@ func prepVideoRequestExt(requestImp  openrtb.Imp, errs []error) (openrtb_ext.Ext
 	return beachfrontExt, errs
 }
 
-func prepVideoRequest(bfReq videoRequest) (videoRequest, int8) {
-	var secure int8 = 0
-
+func prepVideoRequest(bfReq videoRequest) videoRequest {
 	if bfReq.Request.Site != nil && bfReq.Request.Site.Domain == "" && bfReq.Request.Site.Page != "" {
 		bfReq.Request.Site.Domain = getDomain(bfReq.Request.Site.Page)
-
-		secure = isSecure(bfReq.Request.Site.Page)
 	}
 
 	if bfReq.Request.App != nil && bfReq.Request.App.Domain == "" && bfReq.Request.App.Bundle != "" {
@@ -472,13 +477,13 @@ func prepVideoRequest(bfReq videoRequest) (videoRequest, int8) {
 
 	}
 
-	if bfReq.Request.Device.DeviceType == 0 {
-		// More fine grained deviceType methods will be added in the future
-		bfReq.Request.Device.DeviceType = fallBackDeviceType(bfReq.Request)
-	}
-
 	if bfReq.Request.Device != nil {
 		bfReq.Request.Device.IP = getIP(bfReq.Request.Device.IP)
+
+		if bfReq.Request.Device.DeviceType == 0 {
+			// More fine grained deviceType methods will be added in the future
+			bfReq.Request.Device.DeviceType = fallBackDeviceType(bfReq.Request)
+		}
 	}
 
 	if len(bfReq.Request.Cur) == 0 {
@@ -486,7 +491,7 @@ func prepVideoRequest(bfReq videoRequest) (videoRequest, int8) {
 		bfReq.Request.Cur[0] = "USD"
 	}
 
-	return bfReq, secure
+	return bfReq
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -574,7 +579,11 @@ func postprocess(response *adapters.ResponseData, xtrnal openrtb.BidRequest, uri
 		}
 	}
 
-	return postprocessVideo(openrtbResp.SeatBid[0].Bid, xtrnal, uri)
+	if len(openrtbResp.SeatBid) != 0 {
+		return postprocessVideo(openrtbResp.SeatBid[0].Bid, xtrnal, uri)
+	}
+
+	return nil, errs
 }
 
 func postprocessBanner(beachfrontResp []responseSlot) ([]openrtb.Bid, []error) {
@@ -665,15 +674,17 @@ func getDomain(page string) string {
 
 }
 
-func isSecure(page string) int8 {
+/**
+This is a weird solution, but I wanted to have a single function to handle the secure attribute
+in both the banner and video case, but in banner it's an int8, in video (rtb) it's an *int8.
+*/
+func isSecure(page string) (int8, *int8) {
 	protoURL := strings.Split(page, "://")
-
 	if len(protoURL) > 1 && protoURL[0] == "https" {
-		return 1
+		return 1, &one
 	}
 
-	return 0
-
+	return 0, &zero
 }
 
 func getIP(ip string) string {
