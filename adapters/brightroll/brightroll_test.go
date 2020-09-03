@@ -9,7 +9,6 @@ import (
 
 func TestEmptyConfig(t *testing.T) {
 	output := NewBrightrollBidder("http://test-bid.ybp.yahoo.com/bid/appnexuspbs", "")
-	//extraInfo := &ExtraInfo{}
 	ex := ExtraInfo{
 		Accounts: []Account{},
 	}
@@ -22,7 +21,6 @@ func TestEmptyConfig(t *testing.T) {
 
 func TestNonEmptyConfig(t *testing.T) {
 	output := NewBrightrollBidder("http://test-bid.ybp.yahoo.com/bid/appnexuspbs", "{\"accounts\": [{\"id\": \"test\",\"bidfloor\":0.1}]}")
-
 	ex := ExtraInfo{
 		Accounts: []Account{{ID: "test"}, {BidFloor: 0.1}},
 	}
