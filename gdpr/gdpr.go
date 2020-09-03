@@ -29,9 +29,10 @@ type Permissions interface {
 	AMPException() bool
 }
 
+// Versions of the GDPR TCF technical specification.
 const (
-	tcf1Version uint8 = 1
-	tcf2Version uint8 = 2
+	tcf1SpecVersion uint8 = 1
+	tcf2SpecVersion uint8 = 2
 )
 
 // NewPermissions gets an instance of the Permissions for use elsewhere in the project.
@@ -45,8 +46,8 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 		cfg:       cfg,
 		vendorIDs: vendorIDs,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			tcf1Version: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf1Version),
-			tcf2Version: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf2Version)},
+			tcf1SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf1SpecVersion),
+			tcf2SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf2SpecVersion)},
 	}
 }
 
