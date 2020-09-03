@@ -1,0 +1,11 @@
+maintainer:
+  email: "aigolkin1991@gmail.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
