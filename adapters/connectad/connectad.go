@@ -21,10 +21,6 @@ type connectadImpExt struct {
 	ConnectAd openrtb_ext.ExtImpConnectAd `json:"connectad"`
 }
 
-func (a *ConnectAdAdapter) SkipNoCookies() bool {
-	return false
-}
-
 func NewConnectAdBidder(endpoint string) *ConnectAdAdapter {
 	return &ConnectAdAdapter{
 		endpoint: endpoint,
@@ -35,13 +31,7 @@ func (a *ConnectAdAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 
 	var errs []error
 
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No Imps in Bid Request"),
-		}}
-	}
-
-	if errs := preprocess(request); errs != nil && len(errs) > 0 {
+	if errs := preprocess(request); len(errs) > 0 {
 		return nil, append(errs, &errortypes.BadInput{
 			Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", errs),
 		})
@@ -57,13 +47,19 @@ func (a *ConnectAdAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
-	addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
-	addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
-	if request.Device.DNT != nil {
-		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
-	} else {
-		addHeaderIfNonEmpty(headers, "DNT", "0")
+	if request.Device != nil {
+		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
+		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
+		if request.Device.IP != "" {
+			addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
+		} else if request.Device.IPv6 != "" {
+			addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IPv6)
+		}
+		if request.Device.DNT != nil {
+			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
+		} else {
+			addHeaderIfNonEmpty(headers, "DNT", "0")
+		}
 	}
 
 	return []*adapters.RequestData{{
@@ -143,7 +139,7 @@ func preprocess(request *openrtb.BidRequest) []error {
 }
 
 func addImpInfo(imp *openrtb.Imp, secure *int8, cadExt *openrtb_ext.ExtImpConnectAd) {
-	imp.TagID = strconv.Itoa(cadExt.SiteId)
+	imp.TagID = strconv.Itoa(cadExt.SiteID)
 	imp.Secure = secure
 
 	if cadExt.Bidfloor != 0 {
@@ -175,7 +171,7 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpConnectAd, error) {
 		}
 	}
 
-	if cadExt.SiteId == 0 {
+	if cadExt.SiteID == 0 {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Impression id=%s, has no siteId present", imp.ID),
 		}

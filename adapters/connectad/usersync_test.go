@@ -20,7 +20,7 @@ func TestConnectAdSyncer(t *testing.T) {
 	syncInfo, err := syncer.GetUsersyncInfo(privacy.Policies{
 		GDPR: gdpr.Policy{
 			Signal:  "1",
-			Consent: "BOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA",
+			Consent: "BOPVAAoACwAGgAPAAxAB0ADkA",
 		},
 		CCPA: ccpa.Policy{
 			Value: "1NYN",
@@ -28,7 +28,7 @@ func TestConnectAdSyncer(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, "https://cdn.connectad.io/connectmyusers.php?gdpr=1&consent=BOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA&us_privacy=1NYN&cb=localhost%2Fsetuid%3Fbidder%3Dconnectad%26gdpr%3D1%26gdpr_consent%3DBOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA%26uid%3D%24UID", syncInfo.URL)
+	assert.Equal(t, "https://cdn.connectad.io/connectmyusers.php?gdpr=1&consent=BOPVAAoACwAGgAPAAxAB0ADkA&us_privacy=1NYN&cb=localhost%2Fsetuid%3Fbidder%3Dconnectad%26gdpr%3D1%26gdpr_consent%3DBOPVAAoACwAGgAPAAxAB0ADkA%26uid%3D%24UID", syncInfo.URL)
 	assert.Equal(t, "iframe", syncInfo.Type)
 	assert.EqualValues(t, 138, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
