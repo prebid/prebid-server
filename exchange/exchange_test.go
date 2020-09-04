@@ -1011,6 +1011,18 @@ func TestExchangeJSON(t *testing.T) {
 	}
 }
 
+func TestXXX(t *testing.T) {
+	fileName := "./exchangetest/first-party-data-one-prebid-bidder.json"
+	fileDisplayName := "xxx"
+	specData, err := loadFile(fileName)
+	if err != nil {
+		t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
+	}
+
+	runSpec(t, fileDisplayName, specData)
+
+}
+
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadFile(filename string) (*exchangeSpec, error) {
 	specData, err := ioutil.ReadFile(filename)

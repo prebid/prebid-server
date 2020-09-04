@@ -765,8 +765,8 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	}
 
 	// Also accept bidder exts within imp[...].ext.prebid.bidder
-	// NOTE: This is not part of the official API, we are not expecting clients
-	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
+	// NOTE: This is not part of the official API yet, so we are not expecting clients
+	// to migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
 	// at this time
 	// https://github.com/prebid/prebid-server/pull/846#issuecomment-476352224
 	if rawPrebidExt, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
@@ -785,7 +785,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
 	for bidder, ext := range bidderExts {
-		if bidder != openrtb_ext.PrebidExtKey {
+		if bidder != openrtb_ext.PrebidExtKey && bidder != openrtb_ext.ExtRequestFirstPartyDataContext {
 			coreBidder := bidder
 			if tmp, isAlias := aliases[bidder]; isAlias {
 				coreBidder = tmp
@@ -820,7 +820,6 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	// TODO #713 Fix this here
 	if len(bidderExts) < 1 {
 		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
-		return errL
 	}
 
 	return errL
