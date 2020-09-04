@@ -206,14 +206,15 @@ func prepareSource(req *openrtb.BidRequest, bidder string, sChainsByBidder map[s
 	}
 
 	// set source
-	var source openrtb.Source
+	if req.Source == nil {
+		req.Source = &openrtb.Source{}
+	}
 	schain := openrtb_ext.ExtRequestPrebidSChain{
 		SChain: *selectedSChain,
 	}
 	sourceExt, err := json.Marshal(schain)
 	if err == nil {
-		source.Ext = sourceExt
-		req.Source = &source
+		req.Source.Ext = sourceExt
 	}
 }
 

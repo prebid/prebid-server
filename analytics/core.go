@@ -3,6 +3,7 @@ package analytics
 import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -30,6 +31,7 @@ type AuctionObject struct {
 	Errors   []error
 	Request  *openrtb.BidRequest
 	Response *openrtb.BidResponse
+	Account  *config.Account
 }
 
 //Loggable object of a transaction at /openrtb2/amp endpoint

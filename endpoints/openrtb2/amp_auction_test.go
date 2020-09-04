@@ -47,6 +47,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{goodRequests},
 		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -99,6 +100,7 @@ func TestAMPPageInfo(t *testing.T) {
 		exchange,
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{stored},
+		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		theMetrics,
@@ -204,6 +206,7 @@ func TestGDPRConsent(t *testing.T) {
 			mockExchange,
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
+			empty_fetcher.EmptyFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			metrics,
@@ -358,6 +361,7 @@ func TestCCPAConsent(t *testing.T) {
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
+			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			metrics,
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -417,6 +421,7 @@ func TestNoConsent(t *testing.T) {
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		metrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -462,6 +467,7 @@ func TestInvalidConsent(t *testing.T) {
 		mockExchange,
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{stored},
+		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		metrics,
@@ -547,6 +553,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
+			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			metrics,
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -599,6 +606,7 @@ func TestAMPSiteExt(t *testing.T) {
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -639,6 +647,7 @@ func TestAmpBadRequests(t *testing.T) {
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{badRequests},
 		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -669,6 +678,7 @@ func TestAmpDebug(t *testing.T) {
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{requests},
+		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		theMetrics,
@@ -742,6 +752,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{requests},
+		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		theMetrics,
@@ -895,6 +906,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -952,7 +964,7 @@ var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBi
 	},
 }
 
-func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
 
 	response := &openrtb.BidResponse{
@@ -1041,4 +1053,83 @@ func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool,
 	}
 
 	return json.Marshal(bidRequest)
+}
+
+func TestSetEffectiveAmpPubID(t *testing.T) {
+	testPubID := "test-pub"
+	testURLQueryParams := url.Values{}
+	testURLQueryParams.Add("account", testPubID)
+
+	testCases := []struct {
+		description    string
+		req            *openrtb.BidRequest
+		urlQueryParams url.Values
+		expectedPubID  string
+	}{
+		{
+			description: "No publisher ID provided",
+			req: &openrtb.BidRequest{
+				App: &openrtb.App{
+					Publisher: nil,
+				},
+			},
+			expectedPubID: "",
+		},
+		{
+			description: "Publisher ID present in req.App.Publisher.ID",
+			req: &openrtb.BidRequest{
+				App: &openrtb.App{
+					Publisher: &openrtb.Publisher{
+						ID: testPubID,
+					},
+				},
+			},
+			expectedPubID: testPubID,
+		},
+		{
+			description: "Publisher ID present in req.Site.Publisher.ID",
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: &openrtb.Publisher{
+						ID: testPubID,
+					},
+				},
+			},
+			expectedPubID: testPubID,
+		},
+		{
+			description: "Publisher ID present in account query parameter",
+			req: &openrtb.BidRequest{
+				App: &openrtb.App{
+					Publisher: &openrtb.Publisher{
+						ID: "",
+					},
+				},
+			},
+			urlQueryParams: testURLQueryParams,
+			expectedPubID:  testPubID,
+		},
+		{
+			description: "req.Site.Publisher present but ID set to empty string",
+			req: &openrtb.BidRequest{
+				Site: &openrtb.Site{
+					Publisher: &openrtb.Publisher{
+						ID: "",
+					},
+				},
+			},
+			expectedPubID: "",
+		},
+	}
+
+	for _, test := range testCases {
+		setEffectiveAmpPubID(test.req, test.urlQueryParams)
+		if test.req.Site != nil {
+			assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
+				"should return the expected Publisher ID for test case: %s", test.description)
+		} else {
+			assert.Equal(t, test.expectedPubID, test.req.App.Publisher.ID,
+				"should return the expected Publisher ID for test case: %s", test.description)
+		}
+	}
 }
