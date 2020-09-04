@@ -404,7 +404,7 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		req.Imp[0].TagID = slot
 	}
 
-	policyWriter, policyWriterErr := readConsent(httpRequest.URL)
+	policyWriter, policyWriterErr := readPolicyFromUrl(httpRequest.URL)
 	if policyWriterErr != nil {
 		return []error{policyWriterErr}
 	}
@@ -554,7 +554,7 @@ func setAmpExt(site *openrtb.Site, value string) {
 	}
 }
 
-func readConsent(url *url.URL) (privacy.PolicyWriter, error) {
+func readPolicyFromUrl(url *url.URL) (privacy.PolicyWriter, error) {
 	consent := readConsentFromURL(url)
 
 	if len(consent) == 0 {
