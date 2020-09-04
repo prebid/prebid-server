@@ -785,7 +785,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
 	for bidder, ext := range bidderExts {
-		if bidder != openrtb_ext.PrebidExtKey && bidder != openrtb_ext.ExtRequestFirstPartyDataContext {
+		if isBidderToValidate(bidder) {
 			coreBidder := bidder
 			if tmp, isAlias := aliases[bidder]; isAlias {
 				coreBidder = tmp
@@ -823,6 +823,15 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	}
 
 	return errL
+}
+
+func isBidderToValidate(bidder string) bool {
+	// PrebidExtKey is a special case for the prebid config section and is not considered a bidder.
+
+	// ExtRequestFirstPartyDataContext is a special case for the first party data context section
+	// and is not considered a bidder.
+
+	return bidder != openrtb_ext.PrebidExtKey && bidder != openrtb_ext.ExtRequestFirstPartyDataContext
 }
 
 func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequest, error) {
