@@ -116,18 +116,18 @@ func (a *BetweenAdapter) MakeBids(
 }
 
 func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpBetween][]openrtb.Imp, error) {
-
+	var errors = make([]error, 8)
 	var m = make(map[openrtb_ext.ExtImpBetween][]openrtb.Imp)
 
 	for _, imp := range imps {
 		bidderParams, err := getBidderParams(&imp)
 		if err != nil {
+			errors = append(errors, err)
 			continue
 		}
 
 		v, ok := m[bidderParams]
 		if ok {
-			//unlikely todo: what if we have impressions with different hosts
 			m[bidderParams] = append(v, imp)
 		} else {
 			m[bidderParams] = []openrtb.Imp{imp}
