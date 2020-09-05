@@ -125,10 +125,10 @@ func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpBetween][]openr
 			continue
 		}
 
-		_, ok := m[bidderParams]
+		v, ok := m[bidderParams]
 		if ok {
 			//unlikely todo: what if we have impressions with different hosts
-			//m[bidderParams] = append(v, imp)
+			m[bidderParams] = append(v, imp)
 		} else {
 			m[bidderParams] = []openrtb.Imp{imp}
 		}
