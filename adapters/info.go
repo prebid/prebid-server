@@ -205,7 +205,7 @@ type BidderInfo struct {
 	Maintainer              *MaintainerInfo   `yaml:"maintainer" json:"maintainer"`
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
 	AliasOf                 string            `json:"aliasOf,omitempty"`
-	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" json:"modifyingVastXmlAllowed"`
+	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" json:"-" xml:"-"`
 }
 
 type MaintainerInfo struct {

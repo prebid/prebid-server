@@ -316,8 +316,9 @@ type PubstackBuffer struct {
 }
 
 type VTrack struct {
-	TimeoutMs          int64 `mapstructure:"timeout_ms"`
+	TimeoutMS          int64 `mapstructure:"timeout_ms"`
 	AllowUnknownBidder bool  `mapstructure:"allow_unknown_bidder"`
+	Enabled            bool  `mapstructure:"enabled"`
 }
 
 type HostCookie struct {
@@ -882,6 +883,7 @@ func SetupViper(v *viper.Viper, filename string) {
 
 	v.SetDefault("vtrack.timeout_ms", 2000)
 	v.SetDefault("vtrack.allow_unknown_bidder", true)
+	v.SetDefault("vtrack.enabled", true)
 
 	v.SetDefault("accounts.filesystem.enabled", false)
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")

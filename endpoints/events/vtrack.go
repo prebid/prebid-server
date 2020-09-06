@@ -1,17 +1,16 @@
-package endpoints
+package events
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/stored_requests"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -28,9 +27,9 @@ const (
 
 type vtrackEndpoint struct {
 	Cfg         *config.Configuration
-	DataCache   cache.Cache
+	Accounts    stored_requests.AccountFetcher
 	BidderInfos adapters.BidderInfos
-	PbsCache    prebid_cache_client.Client
+	Cache       prebid_cache_client.Client
 }
 
 type BidCacheRequest struct {
@@ -42,15 +41,15 @@ type BidCacheResponse struct {
 }
 
 type CacheObject struct {
-	Uuid string `json:"uuid"`
+	UUID string `json:"uuid"`
 }
 
-func NewVTrackEndpoint(cfg *config.Configuration, dataCache cache.Cache, pbsCache prebid_cache_client.Client, bidderInfos adapters.BidderInfos) httprouter.Handle {
+func NewVTrackEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, cache prebid_cache_client.Client, bidderInfos adapters.BidderInfos) httprouter.Handle {
 	vte := &vtrackEndpoint{
 		Cfg:         cfg,
-		DataCache:   dataCache,
+		Accounts:    accounts,
 		BidderInfos: bidderInfos,
-		PbsCache:    pbsCache,
+		Cache:       cache,
 	}
 
 	return vte.Handle
@@ -81,34 +80,25 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 
-	// get account config
-	account, err := v.DataCache.Accounts().Get(accountId)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			account = &cache.Account{
-				ID:            accountId,
-				EventsEnabled: false,
-			}
-		} else {
-			if glog.V(2) {
-				glog.Infof("Invalid account id: %v", err)
-			}
+	ctx := context.Background()
 
-			status := http.StatusInternalServerError
-			message := fmt.Sprintf("Invalid request: %s\n", err.Error())
-
-			w.WriteHeader(status)
-			w.Write([]byte(message))
-			return
+	// get account details
+	account, errs := GetAccount(ctx, v.Cfg, v.Accounts, accountId)
+	if len(errs) > 0 {
+		w.WriteHeader(http.StatusInternalServerError)
+		for _, err := range errs {
+			w.Write([]byte(fmt.Sprintf("Internal Error: %s\n", err.Error())))
 		}
+
+		return
 	}
 
 	// insert impression tracking if account allows events and bidder allows VAST modification
-	if account.EventsEnabled && v.PbsCache != nil {
+	if account.EventsEnabled && v.Cache != nil {
 		biddersAllowingVastUpdate := biddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder)
 
 		// cache data
-		r, errs := v.cachePutObjects(req, biddersAllowingVastUpdate, accountId, v.Cfg.VTrack.TimeoutMs)
+		r, errs := v.cachePutObjects(req, biddersAllowingVastUpdate, accountId, v.Cfg.VTrack.TimeoutMS)
 
 		// handle pbs caching errors
 		if len(errs) != 0 {
@@ -128,7 +118,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 
 		for _, uuid := range r {
 			response.Responses = append(response.Responses, CacheObject{
-				Uuid: uuid,
+				UUID: uuid,
 			})
 		}
 
@@ -152,12 +142,12 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 func GetVastUrlTracking(externalUrl string, bidid string, bidder string, accountId string, timestamp int64) string {
 
 	eventReq := &EventRequest{
-		Type:      IMP,
+		Type:      Imp,
 		Bidid:     bidid,
-		AccountId: accountId,
+		AccountID: accountId,
 		Bidder:    bidder,
 		Timestamp: timestamp,
-		Format:    BLANK,
+		Format:    Blank,
 	}
 
 	return EventRequestToUrl(externalUrl, eventReq)
@@ -173,20 +163,19 @@ func (v *vtrackEndpoint) parseVTrackRequest(httpRequest *http.Request) (req *Bid
 	// Pull the request body into a buffer, so we have it for later usage.
 	lr := &io.LimitedReader{
 		R: httpRequest.Body,
-		N: v.Cfg.MaxRequestSize,
+		N: v.Cfg.MaxRequestSize + 1,
 	}
 
+	defer httpRequest.Body.Close()
 	requestJson, err := ioutil.ReadAll(lr)
 	if err != nil {
 		return req, err
 	}
 
-	// If the request size was too large, read through the rest of the request body so that the connection can be reused.
+	// Check if the request size was too large
 	if lr.N <= 0 {
-		if written, err := io.Copy(ioutil.Discard, httpRequest.Body); written > 0 || err != nil {
-			err = fmt.Errorf("request size exceeded max size of %d bytes", v.Cfg.MaxRequestSize)
-			return req, err
-		}
+		err = fmt.Errorf("request size exceeded max size of %d bytes", v.Cfg.MaxRequestSize)
+		return req, err
 	}
 
 	if len(requestJson) == 0 {
@@ -195,11 +184,6 @@ func (v *vtrackEndpoint) parseVTrackRequest(httpRequest *http.Request) (req *Bid
 	}
 
 	if err := json.Unmarshal(requestJson, req); err != nil {
-		return req, err
-	}
-
-	// validate request
-	if len(req.Puts) == 0 {
 		return req, err
 	}
 
@@ -222,7 +206,7 @@ func (v *vtrackEndpoint) parseVTrackRequest(httpRequest *http.Request) (req *Bid
  * Cache BidCacheRequest data
  */
 func (v *vtrackEndpoint) cachePutObjects(req *BidCacheRequest, biddersAllowingVastUpdate []string, accountId string, timeout int64) ([]string, []error) {
-	var nputs []prebid_cache_client.Cacheable
+	var cacheables []prebid_cache_client.Cacheable
 	sort.Strings(biddersAllowingVastUpdate)
 
 	for _, c := range req.Puts {
@@ -238,29 +222,39 @@ func (v *vtrackEndpoint) cachePutObjects(req *BidCacheRequest, biddersAllowingVa
 			nc.Data = modifyVastXml(v.Cfg.ExternalURL, nc.Data, c.BidID, c.Bidder, accountId, c.Timestamp)
 		}
 
-		nputs = append(nputs, *nc)
+		cacheables = append(cacheables, *nc)
 	}
 
 	t := time.Now().Add(time.Duration(timeout) * time.Millisecond)
 	ctx, cancel := context.WithDeadline(context.Background(), t)
 	defer cancel()
 
-	return v.PbsCache.PutJson(ctx, nputs)
+	return v.Cache.PutJson(ctx, cacheables)
 }
 
 /**
  * Returns list of bidders that allow VAST XML modification.
  */
 func biddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *adapters.BidderInfos, allowUnknownBidder bool) []string {
-	var bl []string
+	var bl = make(map[string]struct{})
 
 	for _, bcr := range req.Puts {
-		if isAllowVastForBidder(&bcr, bidderInfos, allowUnknownBidder) {
-			bl = append(bl, bcr.Bidder)
+		if _, ok := bl[bcr.Bidder]; isAllowVastForBidder(&bcr, bidderInfos, allowUnknownBidder) && !ok {
+			bl[bcr.Bidder] = struct{}{}
 		}
 	}
 
-	return dedupe(bl)
+	l := len(bl)
+	if l == 0 {
+		return []string{}
+	}
+
+	keys := make([]string, 0, l)
+	for key := range bl {
+		keys = append(keys, key)
+	}
+
+	return keys
 }
 
 /**
@@ -293,7 +287,7 @@ func modifyVastXml(externalUrl string, data json.RawMessage, bidid string, bidde
 
 	// no impression tag - pass it as it is
 	if ci == -1 {
-		return json.RawMessage(c)
+		return data
 	}
 
 	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountId, timestamp)
@@ -311,20 +305,6 @@ func modifyVastXml(externalUrl string, data json.RawMessage, bidid string, bidde
 /**
  * Util
  */
-
-func dedupe(s []string) []string {
-	seen := make(map[string]struct{}, len(s))
-	j := 0
-	for _, v := range s {
-		if _, ok := seen[v]; ok {
-			continue
-		}
-		seen[v] = struct{}{}
-		s[j] = v
-		j++
-	}
-	return s[:j]
-}
 
 func contains(s []string, e string) bool {
 	i := sort.SearchStrings(s, e)

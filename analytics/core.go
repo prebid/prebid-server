@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
@@ -72,9 +71,9 @@ type CookieSyncObject struct {
 
 // Loggable object of a Notification Event
 type NotificationEvent struct {
-	Type      string         `json:"type"`
-	Bidid     string         `json:"bidid"`
-	Account   *cache.Account `json:"account"`
-	Bidder    string         `json:"bidder"`
-	Timestamp int64          `json:"timestamp"`
+	Type      string          `json:"type"`
+	Bidid     string          `json:"bidid"`
+	Account   *config.Account `json:"account"`
+	Bidder    string          `json:"bidder"`
+	Timestamp int64           `json:"timestamp"`
 }

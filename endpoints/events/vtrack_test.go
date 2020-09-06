@@ -1,14 +1,13 @@
-package endpoints
+package events
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http/httptest"
@@ -35,50 +34,22 @@ func (m *vtrackMockCacheClient) GetExtCacheData() (scheme string, host string, p
 	return
 }
 
-// Mock cache
-type vtrackMockCache struct {
-	accounts *vtrackMockAccountService
-}
-
-func (c *vtrackMockCache) Accounts() cache.AccountsService {
-	return c.accounts
-}
-func (c *vtrackMockCache) Config() cache.ConfigService {
-	return nil
-}
-func (c *vtrackMockCache) Close() error {
-	return nil
-}
-
-type vtrackMockAccountService struct {
-	Fail  bool
-	Error error
-}
-
-func (s *vtrackMockAccountService) Get(id string) (*cache.Account, error) {
-	if s.Fail {
-		return nil, s.Error
-	}
-
-	return &cache.Account{
-		ID:            id,
-		EventsEnabled: true,
-	}, nil
-}
-func (s *vtrackMockAccountService) Set(account *cache.Account) error {
-	return nil
-}
-
 // Test
 
 func TestShouldRespondWithBadRequestWhenAccountParameterIsMissing(t *testing.T) {
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{}
 
-	// mock cache
-	mockCache := &vtrackMockCache{
-		accounts: &vtrackMockAccountService{},
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		EventsEnabled: true,
 	}
+
+	// mock config
+	cfg := &config.Configuration{
+		AccountDefaults: config.Account{},
+	}
+	cfg.MarshalAccountDefaults()
 
 	// prepare
 	reqData := ""
@@ -87,10 +58,10 @@ func TestShouldRespondWithBadRequestWhenAccountParameterIsMissing(t *testing.T) 
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         nil,
+		Cfg:         cfg,
 		BidderInfos: nil,
-		PbsCache:    mockCacheClient,
-		DataCache:   mockCache,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
 	}
 
 	// execute
@@ -107,13 +78,17 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsEmpty(t *testing.T) {
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{}
 
-	// mock cache
-	mockCache := &vtrackMockCache{
-		accounts: &vtrackMockAccountService{},
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		EventsEnabled: true,
 	}
 
 	// config
-	cfg := &config.Configuration{MaxRequestSize: maxSize}
+	cfg := &config.Configuration{
+		MaxRequestSize:  maxSize,
+		AccountDefaults: config.Account{},
+	}
+	cfg.MarshalAccountDefaults()
 
 	// prepare
 	reqData := ""
@@ -125,8 +100,8 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsEmpty(t *testing.T) {
 	e := vtrackEndpoint{
 		Cfg:         cfg,
 		BidderInfos: nil,
-		PbsCache:    mockCacheClient,
-		DataCache:   mockCache,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
 	}
 
 	// execute
@@ -143,13 +118,17 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsInvalid(t *testing.T) {
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{}
 
-	// mock cache
-	mockCache := &vtrackMockCache{
-		accounts: &vtrackMockAccountService{},
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		EventsEnabled: true,
 	}
 
 	// config
-	cfg := &config.Configuration{MaxRequestSize: maxSize}
+	cfg := &config.Configuration{
+		MaxRequestSize:  maxSize,
+		AccountDefaults: config.Account{},
+	}
+	cfg.MarshalAccountDefaults()
 
 	// prepare
 	reqData := "invalid"
@@ -161,8 +140,8 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsInvalid(t *testing.T) {
 	e := vtrackEndpoint{
 		Cfg:         cfg,
 		BidderInfos: nil,
-		PbsCache:    mockCacheClient,
-		DataCache:   mockCache,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
 	}
 
 	// execute
@@ -176,13 +155,17 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{}
 
-	// mock cache
-	mockCache := &vtrackMockCache{
-		accounts: &vtrackMockAccountService{},
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		EventsEnabled: true,
 	}
 
 	// config
-	cfg := &config.Configuration{MaxRequestSize: maxSize}
+	cfg := &config.Configuration{
+		MaxRequestSize:  maxSize,
+		AccountDefaults: config.Account{},
+	}
+	cfg.MarshalAccountDefaults()
 
 	// prepare
 	data := &BidCacheRequest{
@@ -200,8 +183,8 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 	e := vtrackEndpoint{
 		Cfg:         cfg,
 		BidderInfos: nil,
-		PbsCache:    mockCacheClient,
-		DataCache:   mockCache,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
 	}
 
 	// execute
@@ -218,13 +201,17 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{}
 
-	// mock cache
-	mockCache := &vtrackMockCache{
-		accounts: &vtrackMockAccountService{},
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		EventsEnabled: true,
 	}
 
 	// config
-	cfg := &config.Configuration{MaxRequestSize: maxSize}
+	cfg := &config.Configuration{
+		MaxRequestSize:  maxSize,
+		AccountDefaults: config.Account{},
+	}
+	cfg.MarshalAccountDefaults()
 
 	// prepare
 	data := &BidCacheRequest{
@@ -244,8 +231,8 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 	e := vtrackEndpoint{
 		Cfg:         cfg,
 		BidderInfos: nil,
-		PbsCache:    mockCacheClient,
-		DataCache:   mockCache,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
 	}
 
 	// execute
@@ -262,16 +249,19 @@ func TestShouldRespondWithInternalServerErrorWhenFetchingAccountFails(t *testing
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{}
 
-	// mock cache
-	mockCache := &vtrackMockCache{
-		accounts: &vtrackMockAccountService{
-			Fail:  true,
-			Error: fmt.Errorf("failed retrieving account details"),
-		},
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		Fail:          true,
+		Error:         fmt.Errorf("failed retrieving account details"),
+		EventsEnabled: true,
 	}
 
 	// config
-	cfg := &config.Configuration{MaxRequestSize: maxSize}
+	cfg := &config.Configuration{
+		MaxRequestSize:  maxSize,
+		AccountDefaults: config.Account{},
+	}
+	cfg.MarshalAccountDefaults()
 
 	// prepare
 	data := &BidCacheRequest{
@@ -292,8 +282,8 @@ func TestShouldRespondWithInternalServerErrorWhenFetchingAccountFails(t *testing
 	e := vtrackEndpoint{
 		Cfg:         cfg,
 		BidderInfos: nil,
-		PbsCache:    mockCacheClient,
-		DataCache:   mockCache,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
 	}
 
 	// execute
@@ -303,7 +293,7 @@ func TestShouldRespondWithInternalServerErrorWhenFetchingAccountFails(t *testing
 
 	// validate
 	assert.Equal(t, 500, recorder.Result().StatusCode, "Expected 500 when failing to retrieve account details")
-	assert.Equal(t, "Invalid request: failed retrieving account details\n", string(d))
+	assert.Equal(t, "Internal Error: failed retrieving account details\n", string(d))
 }
 
 func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.T) {
@@ -313,17 +303,19 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 		Error: fmt.Errorf("pbs cache client failed"),
 	}
 
-	// mock cache
-	mockCache := &vtrackMockCache{
-		accounts: &vtrackMockAccountService{},
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		EventsEnabled: true,
 	}
 
 	// config
 	cfg := &config.Configuration{
 		MaxRequestSize: maxSize, VTrack: config.VTrack{
-			TimeoutMs: int64(2000), AllowUnknownBidder: true,
+			TimeoutMS: int64(2000), AllowUnknownBidder: true,
 		},
+		AccountDefaults: config.Account{},
 	}
+	cfg.MarshalAccountDefaults()
 
 	// prepare
 	data := &BidCacheRequest{
@@ -344,8 +336,8 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 	e := vtrackEndpoint{
 		Cfg:         cfg,
 		BidderInfos: nil,
-		PbsCache:    mockCacheClient,
-		DataCache:   mockCache,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
 	}
 
 	// execute
@@ -362,20 +354,21 @@ func TestShouldTolerateAccountNotFound(t *testing.T) {
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{}
 
-	// mock cache
-	mockCache := &vtrackMockCache{
-		accounts: &vtrackMockAccountService{
-			Fail:  true,
-			Error: sql.ErrNoRows,
-		},
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		Fail:          true,
+		Error:         stored_requests.NotFoundError{},
+		EventsEnabled: true,
 	}
 
 	// config
 	cfg := &config.Configuration{
 		MaxRequestSize: maxSize, VTrack: config.VTrack{
-			TimeoutMs: int64(2000), AllowUnknownBidder: false,
+			TimeoutMS: int64(2000), AllowUnknownBidder: false,
 		},
+		AccountDefaults: config.Account{},
 	}
+	cfg.MarshalAccountDefaults()
 
 	// prepare
 	data := &BidCacheRequest{
@@ -395,8 +388,8 @@ func TestShouldTolerateAccountNotFound(t *testing.T) {
 	e := vtrackEndpoint{
 		Cfg:         cfg,
 		BidderInfos: nil,
-		PbsCache:    mockCacheClient,
-		DataCache:   mockCache,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
 	}
 
 	// execute
@@ -413,19 +406,20 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 		Uuids: []string{"uuid1"},
 	}
 
-	// mock cache
-	mockCache := &vtrackMockCache{
-		accounts: &vtrackMockAccountService{
-			Fail: false,
-		},
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		Fail:          false,
+		EventsEnabled: true,
 	}
 
 	// config
 	cfg := &config.Configuration{
 		MaxRequestSize: maxSize, VTrack: config.VTrack{
-			TimeoutMs: int64(2000), AllowUnknownBidder: false,
+			TimeoutMS: int64(2000), AllowUnknownBidder: false,
 		},
+		AccountDefaults: config.Account{},
 	}
+	cfg.MarshalAccountDefaults()
 
 	// bidder info
 	bidderInfos := make(adapters.BidderInfos)
@@ -462,8 +456,8 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	e := vtrackEndpoint{
 		Cfg:         cfg,
 		BidderInfos: bidderInfos,
-		PbsCache:    mockCacheClient,
-		DataCache:   mockCache,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
 	}
 
 	// execute
@@ -483,19 +477,20 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 		Uuids: []string{"uuid1", "uuid2"},
 	}
 
-	// mock cache
-	mockCache := &vtrackMockCache{
-		accounts: &vtrackMockAccountService{
-			Fail: false,
-		},
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		Fail:          false,
+		EventsEnabled: true,
 	}
 
 	// config
 	cfg := &config.Configuration{
 		MaxRequestSize: maxSize, VTrack: config.VTrack{
-			TimeoutMs: int64(2000), AllowUnknownBidder: false,
+			TimeoutMS: int64(2000), AllowUnknownBidder: false,
 		},
+		AccountDefaults: config.Account{},
 	}
+	cfg.MarshalAccountDefaults()
 
 	// bidder info
 	bidderInfos := make(adapters.BidderInfos)
@@ -532,8 +527,8 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	e := vtrackEndpoint{
 		Cfg:         cfg,
 		BidderInfos: bidderInfos,
-		PbsCache:    mockCacheClient,
-		DataCache:   mockCache,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
 	}
 
 	// execute
@@ -553,19 +548,20 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 		Uuids: []string{"uuid1", "uuid2"},
 	}
 
-	// mock cache
-	mockCache := &vtrackMockCache{
-		accounts: &vtrackMockAccountService{
-			Fail: false,
-		},
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		Fail:          false,
+		EventsEnabled: true,
 	}
 
 	// config
 	cfg := &config.Configuration{
 		MaxRequestSize: maxSize, VTrack: config.VTrack{
-			TimeoutMs: int64(2000), AllowUnknownBidder: true,
+			TimeoutMS: int64(2000), AllowUnknownBidder: true,
 		},
+		AccountDefaults: config.Account{},
 	}
+	cfg.MarshalAccountDefaults()
 
 	// bidder info
 	bidderInfos := make(adapters.BidderInfos)
@@ -594,8 +590,8 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	e := vtrackEndpoint{
 		Cfg:         cfg,
 		BidderInfos: bidderInfos,
-		PbsCache:    mockCacheClient,
-		DataCache:   mockCache,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
 	}
 
 	// execute
@@ -610,5 +606,5 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 
 func TestVastUrlShouldReturnExpectedUrl(t *testing.T) {
 	url := GetVastUrlTracking("http://external-url", "bidId", "bidder", "accountId", 1000)
-	assert.Equal(t, "http://external-url/event?t=imp&b=bidId&a=accountId&ts=1000&bidder=bidder&f=b", url, "Invalid vast url")
+	assert.Equal(t, "http://external-url/event?t=imp&b=bidId&a=accountId&bidder=bidder&f=b&ts=1000", url, "Invalid vast url")
 }
