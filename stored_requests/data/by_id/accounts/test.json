@@ -1,0 +1,14 @@
+{
+    "id": "test",
+    "name": "test account",
+    "disabled": true,
+    "cache_ttl": {
+        "banner": 600,
+        "video": 3600,
+        "native": 3600,
+        "audio": 3600
+    },
+    "events": {
+        "enabled": true
+    }
+}

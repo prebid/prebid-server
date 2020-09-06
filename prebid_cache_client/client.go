@@ -29,8 +29,8 @@ type Client interface {
 	// logging any relevant errors to the app logs
 	PutJson(ctx context.Context, values []Cacheable) ([]string, []error)
 
-	// Serves the purpose of a getter that returns the host and the cache of the prebid-server URL
-	GetExtCacheData() (string, string)
+	// GetExtCacheData gets the scheme, host, and path of the externally accessible cache url.
+	GetExtCacheData() (scheme string, host string, path string)
 }
 
 type PayloadType string
@@ -49,23 +49,25 @@ type Cacheable struct {
 
 func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
 	return &clientImpl{
-		httpClient:        httpClient,
-		putUrl:            conf.GetBaseURL() + "/cache",
-		externalCacheHost: extCache.Host,
-		externalCachePath: extCache.Path,
-		metrics:           metrics,
+		httpClient:          httpClient,
+		putUrl:              conf.GetBaseURL() + "/cache",
+		externalCacheScheme: extCache.Scheme,
+		externalCacheHost:   extCache.Host,
+		externalCachePath:   extCache.Path,
+		metrics:             metrics,
 	}
 }
 
 type clientImpl struct {
-	httpClient        *http.Client
-	putUrl            string
-	externalCacheHost string
-	externalCachePath string
-	metrics           pbsmetrics.MetricsEngine
+	httpClient          *http.Client
+	putUrl              string
+	externalCacheScheme string
+	externalCacheHost   string
+	externalCachePath   string
+	metrics             pbsmetrics.MetricsEngine
 }
 
-func (c *clientImpl) GetExtCacheData() (string, string) {
+func (c *clientImpl) GetExtCacheData() (string, string, string) {
 	path := c.externalCachePath
 	if path == "/" {
 		// Only the slash for the path, remove it to empty
@@ -75,7 +77,7 @@ func (c *clientImpl) GetExtCacheData() (string, string) {
 		path = "/" + path
 	}
 
-	return c.externalCacheHost, path
+	return c.externalCacheScheme, c.externalCacheHost, path
 }
 
 func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []string, errs []error) {

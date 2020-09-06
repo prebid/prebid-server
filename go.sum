@@ -12,6 +12,7 @@ github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 h1:xJ4a3vCFaGF/jqvzLM
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
 github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
+github.com/buger/jsonparser v0.0.0-20180318095312-2cac668e8456/go.mod h1:bbYlZJ7hK1yFx9hf58LP0zeX7UjIGs20ufpu3evjr+s=
 github.com/buger/jsonparser v0.0.0-20180808090653-f4dd9f5a6b44 h1:y853v6rXx+zefEcjET3JuKAqvhj+FKflQijjeaSv2iA=
 github.com/buger/jsonparser v0.0.0-20180808090653-f4dd9f5a6b44/go.mod h1:bbYlZJ7hK1yFx9hf58LP0zeX7UjIGs20ufpu3evjr+s=
 github.com/cespare/xxhash v1.0.0 h1:naDmySfoNg0nKS62/ujM6e71ZgM2AoVdaqGwMG0w18A=
@@ -77,8 +78,8 @@ github.com/pelletier/go-toml v1.2.0 h1:T5zMGML61Wp+FlcbWjRDT7yAxhJNAiPPLOFECq181
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/prebid/go-gdpr v0.8.2 h1:mN2jKYZZpJkCYFQB/nDTJoPpuGYblOYP2UUzOzRggII=
-github.com/prebid/go-gdpr v0.8.2/go.mod h1:FPY0uxSrl9/Mz237LnPo3ge4aCG0wQ9FWf2b4WhwNn0=
+github.com/prebid/go-gdpr v0.8.3 h1:rjCZNV0AdKygiGHpVhNB42usjEpTN3qidXUPB1yarb0=
+github.com/prebid/go-gdpr v0.8.3/go.mod h1:TGzgqQDGKOVUkbqmY25K4uvcwMywSddXEaY4zUFiVBQ=
 github.com/prebid/prebid-cache v0.0.0-20200218152159-6d6d678c1caf h1:CcE+KN1tCtWKsUFH5IzdQxHIgP609VSIVe5Hywg2phs=
 github.com/prebid/prebid-cache v0.0.0-20200218152159-6d6d678c1caf/go.mod h1:k5xrl5ZpnumN1S2x8w8cMiFYsgRuVyAeFJz+BkSi+98=
 github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed h1:0dloFFFNNDG7c+8qtkYw2FdADrWy9s5cI8wHp6tK3Mg=

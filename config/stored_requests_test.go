@@ -78,40 +78,40 @@ func TestPostgressConnString(t *testing.T) {
 func TestInMemoryCacheValidation(t *testing.T) {
 	assertNoErrs(t, (&InMemoryCache{
 		Type: "unbounded",
-	}).validate(nil))
+	}).validate("Test", nil))
 	assertNoErrs(t, (&InMemoryCache{
 		Type: "none",
-	}).validate(nil))
+	}).validate("Test", nil))
 	assertNoErrs(t, (&InMemoryCache{
 		Type:             "lru",
 		RequestCacheSize: 1000,
 		ImpCacheSize:     1000,
-	}).validate(nil))
+	}).validate("Test", nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type: "unrecognized",
-	}).validate(nil))
+	}).validate("Test", nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:         "unbounded",
 		ImpCacheSize: 1000,
-	}).validate(nil))
+	}).validate("Test", nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:             "unbounded",
 		RequestCacheSize: 1000,
-	}).validate(nil))
+	}).validate("Test", nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type: "unbounded",
 		TTL:  500,
-	}).validate(nil))
+	}).validate("Test", nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:             "lru",
 		RequestCacheSize: 0,
 		ImpCacheSize:     1000,
-	}).validate(nil))
+	}).validate("Test", nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:             "lru",
 		RequestCacheSize: 1000,
 		ImpCacheSize:     0,
-	}).validate(nil))
+	}).validate("Test", nil))
 }
 
 func assertErrsExist(t *testing.T, err configErrors) {
@@ -140,7 +140,7 @@ func assertHasValue(t *testing.T, m map[string]string, key string, val string) {
 }
 
 func buildQuery(template string, numReqs int, numImps int) string {
-	cfg := PostgresFetcherQueriesSlim{}
+	cfg := PostgresFetcherQueries{}
 	cfg.QueryTemplate = template
 
 	return cfg.MakeQuery(numReqs, numImps)
@@ -151,4 +151,68 @@ func assertStringsEqual(t *testing.T, actual string, expected string) {
 		t.Errorf("Queries did not match.\n\"%s\" -- expected\n\"%s\" -- actual", expected, actual)
 
 	}
+}
+
+func TestResolveConfig(t *testing.T) {
+	cfg := &Configuration{
+		StoredRequests: StoredRequests{
+			Files: FileFetcherConfig{
+				Enabled: true,
+				Path:    "/test-path"},
+			Postgres: PostgresConfig{
+				ConnectionInfo: PostgresConnection{
+					Database: "db",
+					Host:     "pghost",
+					Port:     5,
+					Username: "user",
+					Password: "pass",
+				},
+				FetcherQueries: PostgresFetcherQueries{
+					AmpQueryTemplate: "amp-fetcher-query",
+				},
+				CacheInitialization: PostgresCacheInitializer{
+					AmpQuery: "amp-cache-init-query",
+				},
+				PollUpdates: PostgresUpdatePolling{
+					AmpQuery: "amp-poll-query",
+				},
+			},
+			HTTP: HTTPFetcherConfig{
+				AmpEndpoint: "amp-http-fetcher-endpoint",
+			},
+			InMemoryCache: InMemoryCache{
+				Type:             "none",
+				TTL:              50,
+				RequestCacheSize: 1,
+				ImpCacheSize:     2,
+			},
+			CacheEvents: CacheEventsConfig{
+				Enabled: true,
+			},
+			HTTPEvents: HTTPEventsConfig{
+				AmpEndpoint: "amp-http-events-endpoint",
+			},
+		},
+	}
+
+	cfg.StoredRequests.Postgres.FetcherQueries.QueryTemplate = "auc-fetcher-query"
+	cfg.StoredRequests.Postgres.CacheInitialization.Query = "auc-cache-init-query"
+	cfg.StoredRequests.Postgres.PollUpdates.Query = "auc-poll-query"
+	cfg.StoredRequests.HTTP.Endpoint = "auc-http-fetcher-endpoint"
+	cfg.StoredRequests.HTTPEvents.Endpoint = "auc-http-events-endpoint"
+
+	resolvedStoredRequestsConfig(cfg)
+	auc := &cfg.StoredRequests
+	amp := &cfg.StoredRequestsAMP
+
+	// Auction should have the non-amp values in it
+	assertStringsEqual(t, auc.CacheEvents.Endpoint, "/storedrequests/openrtb2")
+
+	// Amp should have the amp values in it
+	assertStringsEqual(t, amp.Postgres.FetcherQueries.QueryTemplate, cfg.StoredRequests.Postgres.FetcherQueries.AmpQueryTemplate)
+	assertStringsEqual(t, amp.Postgres.CacheInitialization.Query, cfg.StoredRequests.Postgres.CacheInitialization.AmpQuery)
+	assertStringsEqual(t, amp.Postgres.PollUpdates.Query, cfg.StoredRequests.Postgres.PollUpdates.AmpQuery)
+	assertStringsEqual(t, amp.HTTP.Endpoint, cfg.StoredRequests.HTTP.AmpEndpoint)
+	assertStringsEqual(t, amp.HTTPEvents.Endpoint, cfg.StoredRequests.HTTPEvents.AmpEndpoint)
+	assertStringsEqual(t, amp.CacheEvents.Endpoint, "/storedrequests/amp")
 }

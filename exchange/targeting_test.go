@@ -50,13 +50,13 @@ func TestTargetingCache(t *testing.T) {
 
 	// Make sure that the cache keys exist on the bids where they're expected to
 	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbCacheKey), true)
-	assertKeyExists(t, bids["winning-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), true)
+	assertKeyExists(t, bids["winning-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, MaxKeyLength), true)
 
 	assertKeyExists(t, bids["contending-bid"], string(openrtb_ext.HbCacheKey), false)
-	assertKeyExists(t, bids["contending-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderRubicon, maxKeyLength), true)
+	assertKeyExists(t, bids["contending-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderRubicon, MaxKeyLength), true)
 
 	assertKeyExists(t, bids["losing-bid"], string(openrtb_ext.HbCacheKey), false)
-	assertKeyExists(t, bids["losing-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
+	assertKeyExists(t, bids["losing-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, MaxKeyLength), false)
 
 	//assert hb_cache_host was included
 	assert.Contains(t, string(bids["winning-bid"].Ext), string(openrtb_ext.HbConstantCacheHostKey))
@@ -88,7 +88,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		cache:               &wellBehavedCache{},
 		cacheTime:           time.Duration(0),
 		gDPR:                gdpr.AlwaysAllow{},
-		currencyConverter:   currencies.NewRateConverterDefault(),
+		currencyConverter:   currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		UsersyncIfAmbiguous: false,
 	}
 
@@ -108,7 +108,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
-	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{}, &categoriesFetcher, nil)
+	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{}, &config.Account{}, &categoriesFetcher, nil)
 
 	if err != nil {
 		t.Fatalf("Unexpected errors running auction: %v", err)

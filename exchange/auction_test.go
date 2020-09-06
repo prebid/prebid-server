@@ -298,22 +298,27 @@ type pbsBid struct {
 	Bidder  openrtb_ext.BidderName `json:"bidder"`
 }
 
-type mockCache struct {
-	items []prebid_cache_client.Cacheable
-}
-
 type cacheComparator struct {
 	freq         int
 	expectedKeys []string
 	actualKeys   []string
 }
 
-func (c *mockCache) GetExtCacheData() (string, string) {
-	return "", ""
+type mockCache struct {
+	scheme string
+	host   string
+	path   string
+	items  []prebid_cache_client.Cacheable
 }
+
+func (c *mockCache) GetExtCacheData() (scheme string, host string, path string) {
+	return c.scheme, c.host, c.path
+}
+
 func (c *mockCache) GetPutUrl() string {
 	return ""
 }
+
 func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
 	c.items = values
 	return []string{"", "", "", "", ""}, nil

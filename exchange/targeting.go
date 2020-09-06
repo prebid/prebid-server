@@ -7,7 +7,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const maxKeyLength = 20
+const MaxKeyLength = 20
 
 // targetData tracks information about the winning Bid in each Imp.
 //
@@ -83,7 +83,7 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 
 func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.TargetingKey, value string, bidderName openrtb_ext.BidderName, overallWinner bool) {
 	if targData.includeBidderKeys {
-		keys[key.BidderKey(bidderName, maxKeyLength)] = value
+		keys[key.BidderKey(bidderName, MaxKeyLength)] = value
 	}
 	if targData.includeWinners && overallWinner {
 		keys[string(key)] = value
