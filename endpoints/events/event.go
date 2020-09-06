@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 // EventType enumerates the values of events Prebid Server can receive for an ad.
@@ -145,7 +146,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	// handle notification event
 	e.Analytics.LogNotificationEventObject(&analytics.NotificationEvent{
 		Type:      string(eventRequest.Type),
-		Timestamp: eventRequest.Timestamp,
+		Timestamp: time.Unix(eventRequest.Timestamp, 0),
 		Bidid:     eventRequest.Bidid,
 		Bidder:    eventRequest.Bidder,
 		Account:   account,

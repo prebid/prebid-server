@@ -5,6 +5,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
+	"time"
 )
 
 /*
@@ -75,5 +76,5 @@ type NotificationEvent struct {
 	Bidid     string          `json:"bidid"`
 	Account   *config.Account `json:"account"`
 	Bidder    string          `json:"bidder"`
-	Timestamp int64           `json:"timestamp"`
+	Timestamp time.Time       `json:"timestamp"`
 }
