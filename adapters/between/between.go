@@ -70,9 +70,6 @@ func (a *BetweenAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	return requests, errs
 }
 
-/*
-   internal original request in OpenRTB, external = result of us having converted it (what comes out of MakeRequests)
-*/
 func (a *BetweenAdapter) MakeBids(
 	internalRequest *openrtb.BidRequest,
 	externalRequest *adapters.RequestData,
@@ -99,20 +96,20 @@ func (a *BetweenAdapter) MakeBids(
 		return nil, []error{err}
 	}
 
-	bidResponse := adapters.NewBidderResponse()
-	bidResponse.Currency = bidResp.Cur
+	adapterResponse := adapters.NewBidderResponse()
+	adapterResponse.Currency = bidResp.Cur
 
 	for _, seatBid := range bidResp.SeatBid {
 		for i := 0; i < len(seatBid.Bid); i++ {
 			bid := seatBid.Bid[i]
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			adapterResponse.Bids = append(adapterResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: getMediaType(bid.ImpID, internalRequest.Imp),
 			})
 		}
 	}
 
-	return bidResponse, nil
+	return adapterResponse, nil
 }
 
 func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpBetween][]openrtb.Imp, error) {
@@ -133,7 +130,7 @@ func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpBetween][]openr
 			m[bidderParams] = []openrtb.Imp{imp}
 		}
 	}
-	return m, nil
+	return m, errors
 }
 
 func getBidderParams(imp *openrtb.Imp) (openrtb_ext.ExtImpBetween, error) {
@@ -163,22 +160,7 @@ func getBidderParams(imp *openrtb.Imp) (openrtb_ext.ExtImpBetween, error) {
 func getMediaType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
 
 	bidType := openrtb_ext.BidTypeBanner
-	// Later:
-	//for _, imp := range imps {
-	//	if imp.ID == impID {
-	//		if imp.Video != nil {
-	//			bidType = openrtb_ext.BidTypeVideo
-	//			break
-	//		} else if imp.Native != nil {
-	//			bidType = openrtb_ext.BidTypeNative
-	//			break
-	//		} else {
-	//			bidType = openrtb_ext.BidTypeBanner
-	//			break
-	//		}
-	//	}
-	//}
-
+	// TODO add video/native, maybe audio banner types when demand appears
 	return bidType
 }
 
