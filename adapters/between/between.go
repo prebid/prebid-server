@@ -27,11 +27,7 @@ func (a *BetweenAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	}
 
 	// Pull the host info from the bidder params.
-	reqImps, err := splitImpressions(request.Imp)
-
-	if err != nil {
-		errs = append(errs, err)
-	}
+	reqImps, errs := splitImpressions(request.Imp)
 
 	if len(reqImps) == 0 {
 		return nil, []error{&errortypes.BadInput{
@@ -112,7 +108,7 @@ func (a *BetweenAdapter) MakeBids(
 	return adapterResponse, nil
 }
 
-func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpBetween][]openrtb.Imp, error) {
+func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpBetween][]openrtb.Imp, []error) {
 	var errors = make([]error, 8)
 	var m = make(map[openrtb_ext.ExtImpBetween][]openrtb.Imp)
 
