@@ -35,7 +35,7 @@
     },
 	"httpCalls": [{
 		"expectedRequest": {
-			"uri": "http://colossusssp.com/?c=o&m=rtb",
+			"uri": "http://example.com/?c=o&m=rtb",
 			"body": {
                 "id": "test-request-id",
                 "imp": [

@@ -7,6 +7,6 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	colossusAdapter := NewColossusBidder("http://colossusssp.com/?c=o&m=rtb")
+	colossusAdapter := NewColossusBidder("http://example.com/?c=o&m=rtb")
 	adapterstest.RunJSONBidderTest(t, "colossustest", colossusAdapter)
 }

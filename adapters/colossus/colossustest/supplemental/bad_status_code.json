@@ -1,0 +1,23 @@
+{
+	"mockBidRequest": {
+        "id": "test-request-id"
+    },
+	"httpCalls": [{
+		"expectedRequest": {
+			"uri": "http://example.com/?c=o&m=rtb",
+			"body": {
+                "id": "test-request-id"
+            }
+		},
+		"mockResponse": {
+			"status": 400,
+			"body": {}
+		}
+    }],
+    "expectedMakeBidsErrors": [
+        {
+          "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+          "comparison": "literal"
+        }
+    ]
+}

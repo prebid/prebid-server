@@ -12,7 +12,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// ColossusAdapter struct
 type ColossusAdapter struct {
 	URI string
 }
