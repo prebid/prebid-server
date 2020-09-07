@@ -109,7 +109,7 @@ func (a *BetweenAdapter) MakeBids(
 }
 
 func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpBetween][]openrtb.Imp, []error) {
-	var errors = make([]error, 8)
+	var errors = make([]error, 0)
 	var m = make(map[openrtb_ext.ExtImpBetween][]openrtb.Imp)
 
 	for _, imp := range imps {
