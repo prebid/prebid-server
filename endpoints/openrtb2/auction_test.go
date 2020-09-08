@@ -279,13 +279,14 @@ func TestRejectAccountRequired(t *testing.T) {
 		},
 		{
 			// Account is required, was provided, not blacklisted and is a valid account
-			dir:           "sample-requests/account-required",
-			file:          "valid-acct.json",
-			payloadGetter: getRequestPayload,
-			messageGetter: nilReturner,
-			expectedCode:  http.StatusOK,
-			aliased:       true,
-			accountReq:    true,
+			dir:                    "sample-requests/account-required",
+			file:                   "valid-acct.json",
+			payloadGetter:          getRequestPayload,
+			messageGetter:          nilReturner,
+			expectedCode:           http.StatusOK,
+			aliased:                true,
+			accountReq:             true,
+			accountDefaultDisabled: true,
 		},
 		{
 			// Account is required, was provided in request and is found in the  blacklisted accounts map
@@ -1996,10 +1997,10 @@ func TestGetAccount(t *testing.T) {
 		{accountID: unknown, required: true, disabled: true, err: &errortypes.AcctRequired{}},
 
 		// pubID given but is not a valid host account (does not exist)
-		{accountID: "not_bad_acct", required: false, disabled: false, err: nil},
-		{accountID: "not_bad_acct", required: true, disabled: false, err: nil},
-		{accountID: "not_bad_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
-		{accountID: "not_bad_acct", required: true, disabled: true, err: &errortypes.AcctRequired{}},
+		{accountID: "doesnt_exist_acct", required: false, disabled: false, err: nil},
+		{accountID: "doesnt_exist_acct", required: true, disabled: false, err: nil},
+		{accountID: "doesnt_exist_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: "doesnt_exist_acct", required: true, disabled: true, err: &errortypes.AcctRequired{}},
 
 		// pubID given and matches a valid host account with Disabled: false
 		{accountID: "valid_acct", required: false, disabled: false, err: nil},
