@@ -11,11 +11,6 @@
                 "h": 250
               }
             ]
-          },
-          "ext": {
-            "bidder": {
-              "networkId": 123456
-            }
           }
         }
       ],
@@ -26,7 +21,7 @@
     },
     "expectedMakeRequestsErrors": [
       {
-        "value": "Impression id=test-banner-imp-id, has no siteId present",
+        "value": "Impression id=test-banner-imp-id has an Error: unexpected end of JSON input",
         "comparison": "literal"
       },
       {

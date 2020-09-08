@@ -33,7 +33,7 @@ func (a *ConnectAdAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 
 	if errs := preprocess(request); len(errs) > 0 {
 		return nil, append(errs, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", errs),
+			Message: fmt.Sprintf("Error in preprocess of Imp"),
 		})
 	}
 
@@ -90,7 +90,7 @@ func (a *ConnectAdAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid))
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
@@ -160,7 +160,7 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpConnectAd, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: err.Error(),
+			Message: fmt.Sprintf("Impression id=%s has an Error: %s", imp.ID, err.Error()),
 		}
 	}
 
@@ -189,10 +189,10 @@ func buildImpBanner(imp *openrtb.Imp) error {
 		}
 	}
 
-	bannerCopy := *imp.Banner
-	banner := &bannerCopy
+	if imp.Banner.W == nil && imp.Banner.H == nil {
+		bannerCopy := *imp.Banner
+		banner := &bannerCopy
 
-	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
 				Message: fmt.Sprintf("At least one size is required"),
