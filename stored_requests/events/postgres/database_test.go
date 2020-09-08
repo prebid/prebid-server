@@ -7,8 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 )
@@ -88,13 +90,17 @@ func TestFetchAllSuccess(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		db, mock, _ := sqlmock.New()
-		mock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
+		db, dbMock, _ := sqlmock.New()
+		dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
+
+		metricsMock := &pbsmetrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
 			Db:               db,
 			CacheInitTimeout: 100 * time.Millisecond,
 			CacheInitQuery:   fakeQuery,
+			MetricsEngine:    metricsMock,
 		})
 		eventProducer.time = &FakeTime{time: tt.giveFakeTime}
 		err := eventProducer.Run()
@@ -167,17 +173,21 @@ func TestFetchAllErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		db, mock, _ := sqlmock.New()
+		db, dbMock, _ := sqlmock.New()
 		if tt.giveMockRows == nil {
-			mock.ExpectQuery(fakeQueryRegex()).WillReturnError(errors.New("Query failed."))
+			dbMock.ExpectQuery(fakeQueryRegex()).WillReturnError(errors.New("Query failed."))
 		} else {
-			mock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
+			dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 		}
+
+		metricsMock := &pbsmetrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
 			Db:               db,
 			CacheInitTimeout: 100 * time.Millisecond,
 			CacheInitQuery:   fakeQuery,
+			MetricsEngine:    metricsMock,
 		})
 		eventProducer.time = &FakeTime{time: tt.giveFakeTime}
 		err := eventProducer.Run()
@@ -274,13 +284,17 @@ func TestFetchDeltaSuccess(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		db, mock, _ := sqlmock.New()
-		mock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
+		db, dbMock, _ := sqlmock.New()
+		dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
+
+		metricsMock := &pbsmetrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
 			Db:                 db,
 			CacheUpdateTimeout: 100 * time.Millisecond,
 			CacheUpdateQuery:   fakeQuery,
+			MetricsEngine:      metricsMock,
 		})
 		eventProducer.lastUpdate = time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC)
 		eventProducer.time = &FakeTime{time: tt.giveFakeTime}
@@ -360,17 +374,21 @@ func TestFetchDeltaErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		db, mock, _ := sqlmock.New()
+		db, dbMock, _ := sqlmock.New()
 		if tt.giveMockRows == nil {
-			mock.ExpectQuery(fakeQueryRegex()).WillReturnError(errors.New("Query failed."))
+			dbMock.ExpectQuery(fakeQueryRegex()).WillReturnError(errors.New("Query failed."))
 		} else {
-			mock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
+			dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 		}
+
+		metricsMock := &pbsmetrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
 			Db:                 db,
 			CacheUpdateTimeout: 100 * time.Millisecond,
 			CacheUpdateQuery:   fakeQuery,
+			MetricsEngine:      metricsMock,
 		})
 		eventProducer.lastUpdate = tt.giveLastUpdate
 		eventProducer.time = &FakeTime{time: tt.giveFakeTime}

@@ -12,10 +12,12 @@ import (
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestNewEmptyFetcher(t *testing.T) {
@@ -95,7 +97,11 @@ func TestNewHTTPEvents(t *testing.T) {
 			Timeout:     1000,
 		},
 	}
-	evProducers := newEventProducers(cfg, server1.Client(), nil, nil)
+
+	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
+
+	evProducers := newEventProducers(cfg, server1.Client(), nil, metricsMock, nil)
 	assertSliceLength(t, evProducers, 1)
 	assertHttpWithURL(t, evProducers[0], server1.URL)
 }
@@ -125,6 +131,9 @@ func TestNewInMemoryCache(t *testing.T) {
 }
 
 func TestNewPostgresEventProducers(t *testing.T) {
+	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
+
 	cfg := &config.StoredRequests{
 		Postgres: config.PostgresConfig{
 			CacheInitialization: config.PostgresCacheInitializer{
@@ -159,10 +168,10 @@ func TestNewPostgresEventProducers(t *testing.T) {
 	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 	mock.ExpectQuery("^" + regexp.QuoteMeta(ampCfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 
-	evProducers := newEventProducers(cfg, client, db, nil)
+	evProducers := newEventProducers(cfg, client, db, metricsMock, nil)
 	assertProducerLength(t, evProducers, 1)
 
-	ampEvProducers := newEventProducers(ampCfg, client, db, nil)
+	ampEvProducers := newEventProducers(ampCfg, client, db, metricsMock, nil)
 	assertProducerLength(t, ampEvProducers, 1)
 
 	assertExpectationsMet(t, mock)

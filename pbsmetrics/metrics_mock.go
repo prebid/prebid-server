@@ -42,6 +42,11 @@ func (me *MetricsEngineMock) RecordRequestTime(labels Labels, length time.Durati
 	me.Called(labels, length)
 }
 
+// RecordStoredDataFetchTime mock
+func (me *MetricsEngineMock) RecordStoredDataFetchTime(labels StoredDataTypeLabels, length time.Duration) {
+	me.Called(labels, length)
+}
+
 // RecordAdapterPanic mock
 func (me *MetricsEngineMock) RecordAdapterPanic(labels AdapterLabels) {
 	me.Called(labels)
