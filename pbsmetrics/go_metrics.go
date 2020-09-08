@@ -27,6 +27,7 @@ type Metrics struct {
 	RequestsQueueTimer             map[RequestType]map[bool]metrics.Timer
 	PrebidCacheRequestTimerSuccess metrics.Timer
 	PrebidCacheRequestTimerError   metrics.Timer
+	StoredDataFetchTimer           map[StoredDataType]map[StoredDataFetchType]metrics.Timer
 	StoredReqCacheMeter            map[CacheResult]metrics.Meter
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
 	DNSLookupTimer                 metrics.Timer
@@ -131,6 +132,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
+		StoredDataFetchTimer:           make(map[StoredDataType]map[StoredDataFetchType]metrics.Timer),
 		StoredReqCacheMeter:            make(map[CacheResult]metrics.Meter),
 		StoredImpCacheMeter:            make(map[CacheResult]metrics.Meter),
 		AmpNoCookieMeter:               blankMeter,
@@ -183,6 +185,13 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		newMetrics.PrivacyTCFRequestVersion[v] = blankMeter
 	}
 
+	for _, dt := range StoredDataTypes() {
+		newMetrics.StoredDataFetchTimer[dt] = make(map[StoredDataFetchType]metrics.Timer)
+		for _, ft := range StoredDataFetchTypes() {
+			newMetrics.StoredDataFetchTimer[dt][ft] = blankTimer
+		}
+	}
+
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
 	//boolean value represents 2 general request statuses: accepted and rejected
 	newMetrics.RequestsQueueTimer["video"] = make(map[bool]metrics.Timer)
@@ -217,6 +226,17 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.DNSLookupTimer = metrics.GetOrRegisterTimer("dns_lookup_time", registry)
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
+
+	newMetrics.StoredDataFetchTimer[RequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_request_fetch_time.all", registry)
+	newMetrics.StoredDataFetchTimer[RequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_request_fetch_time.delta", registry)
+	newMetrics.StoredDataFetchTimer[CategoryDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_category_fetch_time.all", registry)
+	newMetrics.StoredDataFetchTimer[CategoryDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_category_fetch_time.delta", registry)
+	newMetrics.StoredDataFetchTimer[VideoDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_video_fetch_time.all", registry)
+	newMetrics.StoredDataFetchTimer[VideoDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_video_fetch_time.delta", registry)
+	newMetrics.StoredDataFetchTimer[AMPRequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.all", registry)
+	newMetrics.StoredDataFetchTimer[AMPRequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.delta", registry)
+	newMetrics.StoredDataFetchTimer[AccountDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_account_fetch_time.all", registry)
+	newMetrics.StoredDataFetchTimer[AccountDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_account_fetch_time.delta", registry)
 
 	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
 	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
@@ -442,6 +462,11 @@ func (me *Metrics) RecordRequestTime(labels Labels, length time.Duration) {
 	if labels.RequestStatus == RequestStatusOK {
 		me.RequestTimer.Update(length)
 	}
+}
+
+func (me *Metrics) RecordStoredDataFetchTime(labels StoredDataTypeLabels, length time.Duration) {
+	me.StoredDataFetchTimer[labels.DataType][labels.DataFetchType].Update(length)
+	//TODO(bfs): check status and record success time separate from failure time
 }
 
 // RecordAdapterPanic implements a part of the MetricsEngine interface

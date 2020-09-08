@@ -28,6 +28,7 @@ type Metrics struct {
 	requestsWithoutCookie        *prometheus.CounterVec
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
+	storedDataFetchTimer         *prometheus.HistogramVec
 	timeoutNotifications         *prometheus.CounterVec
 	dnsLookupTimer               prometheus.Histogram
 	privacyCCPA                  *prometheus.CounterVec
@@ -102,6 +103,11 @@ const (
 	sourceRequest = "request"
 )
 
+const (
+	dataTypeLabel      = "data_type"
+	dataFetchTypeLabel = "data_fetch_type"
+)
+
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
 func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMetrics) *Metrics {
 	standardTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
@@ -170,6 +176,12 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"stored_request_cache_performance",
 		"Count of stored request cache requests attempts by hits or miss.",
 		[]string{cacheResultLabel})
+
+	metrics.storedDataFetchTimer = newHistogramVec(cfg, metrics.Registry,
+		"data_fetch_time_seconds",
+		"Seconds to fetch stored data labeled by data type and fetch type",
+		[]string{dataTypeLabel, dataFetchTypeLabel},
+		standardTimeBuckets)
 
 	metrics.timeoutNotifications = newCounter(cfg, metrics.Registry,
 		"timeout_notification",
@@ -385,6 +397,13 @@ func (m *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Durati
 			requestTypeLabel: string(labels.RType),
 		}).Observe(length.Seconds())
 	}
+}
+
+func (m *Metrics) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataTypeLabels, length time.Duration) {
+	m.storedDataFetchTimer.With(prometheus.Labels{
+		dataTypeLabel:      string(labels.DataType),
+		dataFetchTypeLabel: string(labels.DataFetchType),
+	}).Observe(length.Seconds())
 }
 
 func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {

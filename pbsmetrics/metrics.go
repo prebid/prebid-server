@@ -51,6 +51,45 @@ type PrivacyLabels struct {
 	LMTEnforced    bool
 }
 
+type StoredDataType string
+
+const (
+	RequestDataType    StoredDataType = "Request"
+	CategoryDataType   StoredDataType = "Category"
+	VideoDataType      StoredDataType = "Video"
+	AMPRequestDataType StoredDataType = "AMP Request"
+	AccountDataType    StoredDataType = "Account"
+)
+
+func StoredDataTypes() []StoredDataType {
+	return []StoredDataType{
+		RequestDataType,
+		CategoryDataType,
+		VideoDataType,
+		AMPRequestDataType,
+		AccountDataType,
+	}
+}
+
+type StoredDataFetchType string
+
+const (
+	FetchAll   StoredDataFetchType = "All"
+	FetchDelta StoredDataFetchType = "Delta"
+)
+
+func StoredDataFetchTypes() []StoredDataFetchType {
+	return []StoredDataFetchType{
+		FetchAll,
+		FetchDelta,
+	}
+}
+
+type StoredDataTypeLabels struct {
+	DataType      StoredDataType
+	DataFetchType StoredDataFetchType
+}
+
 // Label typecasting. Se below the type definitions for possible values
 
 // DemandSource : Demand source enumeration
@@ -314,6 +353,7 @@ type MetricsEngine interface {
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
+	RecordStoredDataFetchTime(labels StoredDataTypeLabels, length time.Duration)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(sucess bool)
