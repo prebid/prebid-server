@@ -22,7 +22,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/mxmCherry/openrtb/native"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
-	"github.com/prebid/prebid-server/accounts"
+	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -157,7 +157,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	// Look up account now that we have resolved the pubID value
-	account, acctIDErrs := accounts.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID)
+	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID)
 	if len(acctIDErrs) > 0 {
 		errL = append(errL, acctIDErrs...)
 		writeError(errL, w, &labels)
