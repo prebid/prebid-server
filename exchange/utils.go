@@ -274,7 +274,7 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
 		impExt := impExts[i]
 
 		var firstPartyDataContext json.RawMessage
-		if context, exists := impExt[openrtb_ext.ExtRequestFirstPartyDataContext]; exists {
+		if context, exists := impExt[openrtb_ext.FirstPartyDataContextExtKey]; exists {
 			firstPartyDataContext = context
 		}
 
@@ -326,7 +326,7 @@ func sanitizedImpCopy(imp *openrtb.Imp,
 	}
 
 	for bidder, ext := range bidderExts {
-		if bidder == openrtb_ext.PrebidExtKey || bidder == openrtb_ext.ExtRequestFirstPartyDataContext {
+		if bidder == openrtb_ext.PrebidExtKey || bidder == openrtb_ext.FirstPartyDataContextExtKey {
 			continue
 		}
 
@@ -340,7 +340,7 @@ func sanitizedImpCopy(imp *openrtb.Imp,
 		}
 
 		if len(firstPartyDataContext) > 0 {
-			newExt[openrtb_ext.ExtRequestFirstPartyDataContext] = firstPartyDataContext
+			newExt[openrtb_ext.FirstPartyDataContextExtKey] = firstPartyDataContext
 		}
 
 		rawExt, err := json.Marshal(newExt)

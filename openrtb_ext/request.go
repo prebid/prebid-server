@@ -5,9 +5,9 @@ import (
 	"errors"
 )
 
-// ExtRequestFirstPartyDataContext defines the field name within bidrequest.ext reserved
+// FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
 // for first party data support.
-const ExtRequestFirstPartyDataContext string = "context"
+const FirstPartyDataContextExtKey string = "context"
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
