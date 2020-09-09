@@ -12,6 +12,9 @@
     "domainId": {
       "type": "integer",
       "description": "Ad domain id"
+    },
+    "debug": {
+      "type": "object"
     }
   },
   "required": ["placementId"]
