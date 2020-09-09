@@ -15,6 +15,7 @@ type mockAccountsFetcher struct {
 	Fail          bool
 	Error         error
 	EventsEnabled bool
+	T             *testing.T
 }
 
 func (e *mockAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
@@ -31,7 +32,10 @@ func (e *mockAccountsFetcher) FetchAccount(ctx context.Context, accountID string
 		acc.EventsEnabled = true
 	}
 
-	s, _ := json.Marshal(acc)
+	s, err := json.Marshal(acc)
+	if err != nil {
+		e.T.Fatal(err)
+	}
 
 	return s, []error{}
 }
@@ -50,6 +54,7 @@ func TestShouldReturnDefaultAccountWithSpecifiedIdWhenAccountNotFound(t *testing
 	af := mockAccountsFetcher{
 		Fail:  true,
 		Error: stored_requests.NotFoundError{},
+		T:     t,
 	}
 
 	acc, errs := GetAccount(ctx, cfg, &af, "test")
@@ -76,6 +81,7 @@ func TestShouldReturnNilAccountWhenFetcherFailsAttemptingToGetAccount(t *testing
 	af := mockAccountsFetcher{
 		Fail:  true,
 		Error: fmt.Errorf("test error"),
+		T:     t,
 	}
 
 	acc, errs := GetAccount(ctx, cfg, &af, "test")
@@ -100,6 +106,7 @@ func TestShouldReturnAccountMergedWithAccountsDefaults(t *testing.T) {
 	af := mockAccountsFetcher{
 		Fail:          false,
 		EventsEnabled: true,
+		T:             t,
 	}
 
 	expectedAccount := config.Account{
@@ -126,6 +133,7 @@ func TestShouldReturnAccountMergedWithEmptyAccountsDefaults(t *testing.T) {
 	af := mockAccountsFetcher{
 		Fail:          false,
 		EventsEnabled: true,
+		T:             t,
 	}
 
 	expectedAccount := config.Account{

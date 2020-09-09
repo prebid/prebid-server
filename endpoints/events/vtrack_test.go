@@ -67,7 +67,10 @@ func TestShouldRespondWithBadRequestWhenAccountParameterIsMissing(t *testing.T) 
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 on request with missing account parameter")
@@ -107,7 +110,10 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsEmpty(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 on request with empty body")
@@ -174,7 +180,10 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 		},
 	}
 
-	reqData, _ := json.Marshal(data)
+	reqData, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
 
@@ -190,7 +199,10 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 on request with elements missing bidid")
@@ -222,7 +234,10 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 		},
 	}
 
-	reqData, _ := json.Marshal(data)
+	reqData, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
 
@@ -238,7 +253,10 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 on request with elements missing bidder")
@@ -273,7 +291,10 @@ func TestShouldRespondWithInternalServerErrorWhenFetchingAccountFails(t *testing
 		},
 	}
 
-	reqData, _ := json.Marshal(data)
+	reqData, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
 
@@ -289,7 +310,10 @@ func TestShouldRespondWithInternalServerErrorWhenFetchingAccountFails(t *testing
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 500, recorder.Result().StatusCode, "Expected 500 when failing to retrieve account details")
@@ -327,7 +351,10 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 		},
 	}
 
-	reqData, _ := json.Marshal(data)
+	reqData, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
 
@@ -343,7 +370,10 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 500, recorder.Result().StatusCode, "Expected 500 when pbs cache client fails")
@@ -380,7 +410,11 @@ func TestShouldTolerateAccountNotFound(t *testing.T) {
 		},
 	}
 
-	reqData, _ := json.Marshal(data)
+	reqData, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
 
 	recorder := httptest.NewRecorder()
@@ -448,7 +482,10 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 		},
 	}
 
-	reqData, _ := json.Marshal(data)
+	reqData, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
 	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
 
 	recorder := httptest.NewRecorder()
@@ -463,7 +500,10 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")
@@ -519,7 +559,11 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 		},
 	}
 
-	reqData, _ := json.Marshal(data)
+	reqData, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
 
 	recorder := httptest.NewRecorder()
@@ -534,7 +578,10 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")
@@ -582,7 +629,11 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 		},
 	}
 
-	reqData, _ := json.Marshal(data)
+	reqData, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
 
 	recorder := httptest.NewRecorder()
@@ -597,7 +648,10 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	// execute
 	e.Handle(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")

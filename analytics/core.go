@@ -70,7 +70,7 @@ type CookieSyncObject struct {
 	BidderStatus []*usersync.CookieSyncBidders
 }
 
-// Loggable object of a Notification Event
+// NotificationEvent is a loggable object
 type NotificationEvent struct {
 	Type      string          `json:"type"`
 	Bidid     string          `json:"bidid"`

@@ -71,7 +71,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	}
 
 	// parse puts request from request body
-	req, err := v.parseVTrackRequest(r)
+	req, err := ParseVTrackRequest(r, v.Cfg.MaxRequestSize+1)
 
 	// check if there was any error while parsing puts request
 	if err != nil {
@@ -95,34 +95,18 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 
 	// insert impression tracking if account allows events and bidder allows VAST modification
 	if account.EventsEnabled && v.Cache != nil {
-		biddersAllowingVastUpdate := biddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder)
+		cachingResponse, errs := v.handleVTrackRequest(req, account)
 
-		// cache data
-		r, errs := v.cachePutObjects(req, biddersAllowingVastUpdate, accountId, v.Cfg.VTrack.TimeoutMS)
-
-		// handle pbs caching errors
-		if len(errs) != 0 {
-			glog.Errorf("Error(s) updating vast: %v", errs)
+		if len(errs) > 0 {
 			w.WriteHeader(http.StatusInternalServerError)
 			for _, err := range errs {
 				w.Write([]byte(fmt.Sprintf("Error(s) updating vast: %s\n", err.Error())))
+
+				return
 			}
-
-			return
 		}
 
-		// build response
-		response := &BidCacheResponse{
-			Responses: []CacheObject{},
-		}
-
-		for _, uuid := range r {
-			response.Responses = append(response.Responses, CacheObject{
-				UUID: uuid,
-			})
-		}
-
-		d, err := json.Marshal(response)
+		d, err := json.Marshal(*cachingResponse)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -156,14 +140,14 @@ func GetVastUrlTracking(externalUrl string, bidid string, bidder string, account
 /**
  * Parses a BidCacheRequest from an HTTP Request
  */
-func (v *vtrackEndpoint) parseVTrackRequest(httpRequest *http.Request) (req *BidCacheRequest, err error) {
+func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *BidCacheRequest, err error) {
 	req = &BidCacheRequest{}
 	err = nil
 
 	// Pull the request body into a buffer, so we have it for later usage.
 	lr := &io.LimitedReader{
 		R: httpRequest.Body,
-		N: v.Cfg.MaxRequestSize + 1,
+		N: maxRequestSize,
 	}
 
 	defer httpRequest.Body.Close()
@@ -174,7 +158,7 @@ func (v *vtrackEndpoint) parseVTrackRequest(httpRequest *http.Request) (req *Bid
 
 	// Check if the request size was too large
 	if lr.N <= 0 {
-		err = fmt.Errorf("request size exceeded max size of %d bytes", v.Cfg.MaxRequestSize)
+		err = fmt.Errorf("request size exceeded max size of %d bytes", maxRequestSize)
 		return req, err
 	}
 
@@ -200,6 +184,35 @@ func (v *vtrackEndpoint) parseVTrackRequest(httpRequest *http.Request) (req *Bid
 	}
 
 	return req, nil
+}
+
+/**
+ * Handle VTrack request
+ */
+func (v *vtrackEndpoint) handleVTrackRequest(req *BidCacheRequest, account *config.Account) (*BidCacheResponse, []error) {
+	biddersAllowingVastUpdate := biddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder)
+
+	// cache data
+	r, errs := v.cachePutObjects(req, biddersAllowingVastUpdate, account.ID, v.Cfg.VTrack.TimeoutMS)
+
+	// handle pbs caching errors
+	if len(errs) != 0 {
+		glog.Errorf("Error(s) updating vast: %v", errs)
+		return nil, errs
+	}
+
+	// build response
+	response := &BidCacheResponse{
+		Responses: []CacheObject{},
+	}
+
+	for _, uuid := range r {
+		response.Responses = append(response.Responses, CacheObject{
+			UUID: uuid,
+		})
+	}
+
+	return response, nil
 }
 
 /**
@@ -244,12 +257,12 @@ func biddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *adapters.Bidde
 		}
 	}
 
-	l := len(bl)
-	if l == 0 {
+	length := len(bl)
+	if length == 0 {
 		return []string{}
 	}
 
-	keys := make([]string, 0, l)
+	keys := make([]string, 0, length)
 	for key := range bl {
 		keys = append(keys, key)
 	}

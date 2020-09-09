@@ -11,7 +11,6 @@ type App struct {
 type Account struct {
 	ID               string `json:"id"`
 	PriceGranularity string `json:"price_granularity"`
-	EventsEnabled    bool   `json:"events_enabled"`
 }
 
 type Configuration struct {
