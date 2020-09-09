@@ -6,6 +6,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/stored_requests"
 	"net/http"
 	"net/url"
@@ -174,43 +175,43 @@ func EventRequestToUrl(externalUrl string, request *EventRequest) string {
  * Parses an EventRequest from an Http request
  */
 func ParseEventRequest(r *http.Request) (*EventRequest, error) {
-	er := &EventRequest{}
+	event := &EventRequest{}
 
 	// validate type
-	if err := validateType(er, r); err != nil {
-		return er, err
+	if err := validateType(event, r); err != nil {
+		return event, err
 	}
 
 	// validate bidid
 	if bidid, err := validateRequiredParameter(r, BidIdParameter); err != nil {
-		return er, err
+		return event, err
 	} else {
-		er.Bidid = bidid
+		event.Bidid = bidid
 	}
 
 	// validate timestamp (optional)
-	if err := validateTimestamp(er, r); err != nil {
-		return er, err
+	if err := validateTimestamp(event, r); err != nil {
+		return event, err
 	}
 
 	// validate format (optional)
-	if err := validateFormat(er, r); err != nil {
-		return er, err
+	if err := validateFormat(event, r); err != nil {
+		return event, err
 	}
 
 	// validate analytics (optional)
-	if err := validateAnalytics(er, r); err != nil {
-		return er, err
+	if err := validateAnalytics(event, r); err != nil {
+		return event, err
 	}
 
 	// Bidder
 	bidder := r.FormValue(BidderParameter)
 
 	if bidder != "" {
-		er.Bidder = bidder
+		event.Bidder = bidder
 	}
 
-	return er, nil
+	return event, nil
 }
 
 func optionalParameters(request *EventRequest) string {
@@ -269,7 +270,7 @@ func validateType(er *EventRequest, httpRequest *http.Request) error {
 		er.Type = Win
 		return nil
 	default:
-		return fmt.Errorf("unknown type: '%s'", t)
+		return &errortypes.BadInput{Message: fmt.Sprintf("unknown type: '%s'", t)}
 	}
 }
 
@@ -288,7 +289,7 @@ func validateFormat(er *EventRequest, httpRequest *http.Request) error {
 			er.Format = Image
 			return nil
 		default:
-			return fmt.Errorf("unknown format: '%s'", f)
+			return &errortypes.BadInput{Message: fmt.Sprintf("unknown format: '%s'", f)}
 		}
 	}
 
@@ -310,7 +311,7 @@ func validateAnalytics(er *EventRequest, httpRequest *http.Request) error {
 			er.Analytics = Disabled
 			return nil
 		default:
-			return fmt.Errorf("unknown analytics: '%s'", a)
+			return &errortypes.BadInput{Message: fmt.Sprintf("unknown analytics: '%s'", a)}
 		}
 	}
 
@@ -327,7 +328,7 @@ func validateTimestamp(er *EventRequest, httpRequest *http.Request) error {
 		ts, err := strconv.ParseInt(t, 10, 64)
 
 		if err != nil {
-			return fmt.Errorf("invalid request: error parsing timestamp '%s'", t)
+			return &errortypes.BadInput{Message: fmt.Sprintf("invalid request: error parsing timestamp '%s'", t)}
 		}
 
 		er.Timestamp = ts
@@ -344,7 +345,7 @@ func validateRequiredParameter(httpRequest *http.Request, parameter string) (str
 	t := httpRequest.FormValue(parameter)
 
 	if t == "" {
-		return "", fmt.Errorf("parameter '%s' is required", parameter)
+		return "", &errortypes.BadInput{Message: fmt.Sprintf("parameter '%s' is required", parameter)}
 	}
 
 	return t, nil

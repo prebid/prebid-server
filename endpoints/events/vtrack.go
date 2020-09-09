@@ -158,12 +158,12 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 
 	// Check if the request size was too large
 	if lr.N <= 0 {
-		err = fmt.Errorf("request size exceeded max size of %d bytes", maxRequestSize)
+		err = &errortypes.BadInput{Message: fmt.Sprintf("request size exceeded max size of %d bytes", maxRequestSize)}
 		return req, err
 	}
 
 	if len(requestJson) == 0 {
-		err = fmt.Errorf("request body is empty")
+		err = &errortypes.BadInput{Message: "request body is empty"}
 		return req, err
 	}
 
