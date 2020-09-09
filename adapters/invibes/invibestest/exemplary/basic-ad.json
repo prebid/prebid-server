@@ -8,6 +8,11 @@
       "id": "id123",
       "buyerUid": "123"
     },
+    "regs": {
+      "ext": {
+        "gdpr": 1
+      }
+    },
     "imp": [
       {
         "id": "test-imp-id",

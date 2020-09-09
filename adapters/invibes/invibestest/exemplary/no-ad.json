@@ -7,6 +7,11 @@
     "user": {
       "buyerUid": "123"
     },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -33,7 +38,7 @@
         "body": {
           "BidParamsJson": "{\"PlacementIds\":[\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\"],\"BidVersion\":\"1\",\"Properties\":{\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\":{\"Formats\":[{\"w\":300,\"h\":150}],\"ImpId\":\"test-imp-id\"}}}",
           "Bvid": "",
-          "Gdpr": true,
+          "Gdpr": false,
           "GdprConsent": "",
           "Height": "",
           "IsAmp": false,

@@ -34,15 +34,18 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"placementId":"123", "host": "bid.videostep.com"}`,
-	`{"placementId":"123", "host": "bid2.videostep.com", "debug":{}}`,
-	`{"placementId":"123", "host": "bid.videostep.com", "debug":{"testIp":"0.0.0.0"}}`,
-	`{"placementId":"123", "host": "bid.videostep.com", "debug":{"testBvid":"1234"}}`,
+	`{"placementId":"123", "domainId": 1}`,
+	`{"placementId":"123", "domainId": 2, "debug":{}}`,
+	`{"placementId":"123", "domainId": 0, "debug":{"testLog":true}}`,
+	`{"placementId":"123", "domainId": 0, "debug":{"testBvid":"1234"}}`,
 }
 
 var invalidParams = []string{
 	``,
+	`{"placementId":123}`,
+	`{"placementId":"123", "debug":"malformed"}`,
 	`{"placementId":"123"}`,
+	`{"placementId":"123", "domainId": "abc"}`,
 	`null`,
 	`true`,
 	`0`,

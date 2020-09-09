@@ -9,11 +9,10 @@
       "minLength": 1,
       "description": "An ID which identifies the site selling the impression"
     },
-    "host": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Ad server host"
+    "domainId": {
+      "type": "integer",
+      "description": "Ad domain id"
     }
   },
-  "required": ["placementId", "host"]
+  "required": ["placementId"]
 }

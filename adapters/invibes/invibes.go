@@ -4,16 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
-	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 )
@@ -21,37 +17,36 @@ import (
 const adapterVersion = "prebid_1.0.0"
 
 type InvibesAdRequest struct {
-	BidParamsJson string
-	Location      string
-	Lid           string
-	IsTestBid     bool
-	Kw            string
-	IsAmp         bool
-	Width         string
-	Height        string
-	GdprConsent   string
-	Gdpr          bool
-	Bvid          string
-	InvibBVLog    bool
-	VideoAdDebug  bool
+	BidParamsJson string `json:"BidParamsJson"`
+	Location      string `json:"Location"`
+	Lid           string `json:"Lid"`
+	IsTestBid     bool   `json:"IsTestBid"`
+	Kw            string `json:"Kw"`
+	IsAMP         bool   `json:"IsAmp"`
+	Width         string `json:"Width"`
+	Height        string `json:"Height"`
+	GDPRConsent   string `json:"GdprConsent"`
+	GDPR          bool   `json:"Gdpr"`
+	Bvid          string `json:"Bvid"`
+	InvibBVLog    bool   `json:"InvibBVLog"`
+	VideoAdDebug  bool   `json:"VideoAdDebug"`
 }
 type InvibesBidParams struct {
-	PlacementIds []string
-	BidVersion   string
-	Properties   map[string]InvibesPlacementProperty
+	PlacementIDs []string                            `json:"PlacementIds"`
+	BidVersion   string                              `json:"BidVersion"`
+	Properties   map[string]InvibesPlacementProperty `json:"Properties"`
 }
 type InvibesPlacementProperty struct {
-	Formats []openrtb.Format
-	ImpId   string
+	Formats []openrtb.Format `json:"Formats"`
+	ImpID   string           `json:"ImpId"`
 }
 type InvibesInternalParams struct {
 	BidParams   InvibesBidParams
-	Host        string
-	IsAmp       bool
-	Gdpr        string
-	GdprConsent string
+	DomainID    int
+	IsAMP       bool
+	GDPR        bool
+	GDPRConsent string
 
-	TestIp   string
 	TestBvid string
 	TestLog  bool
 }
@@ -66,48 +61,21 @@ type BidServerTypedBid struct {
 }
 
 func (a *InvibesInternalParams) IsTestRequest() bool {
-	return a.TestIp != "" || a.TestBvid != ""
+	return a.TestBvid != ""
 }
 
 type InvibesAdapter struct {
-	EndpointTemplate template.Template
+	Endpoint string
 }
 
-func NewInvibesBidder(endpointTemplate string) *InvibesAdapter {
-	urlTemplate, err := template.New("endpointTemplate").Parse(endpointTemplate)
-	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
-	}
-	return &InvibesAdapter{EndpointTemplate: *urlTemplate}
+func NewInvibesBidder(endpoint string) *InvibesAdapter {
+	return &InvibesAdapter{Endpoint: endpoint}
 }
 
 func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "No imps in the bid request",
-		}}
-	}
-
-	consentString := ""
-	if request.User != nil {
-		var extUser openrtb_ext.ExtUser
-		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
-			consentString = extUser.Consent
-		}
-	}
-	gdprApplies := "1"
-	var extRegs openrtb_ext.ExtRegs
-	if request.Regs != nil {
-		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
-			if extRegs.GDPR != nil && (*extRegs.GDPR == 0 || *extRegs.GDPR == 1) {
-				gdprApplies = strconv.Itoa(int(*extRegs.GDPR))
-			}
-		}
-	}
-
 	var httpRequests []*adapters.RequestData
-	var errors []error
+	var tempErrors []error
+	gdprApplies, consentString := readGDPR(request)
 
 	var invibesInternalParams InvibesInternalParams = InvibesInternalParams{
 		BidParams: InvibesBidParams{
@@ -119,76 +87,98 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errors = append(errors, &errortypes.BadInput{
+			tempErrors = append(tempErrors, &errortypes.BadInput{
 				Message: "Error parsing bidderExt object",
 			})
+			continue
 		}
-		if len(errors) == 0 {
-			var invibesExt openrtb_ext.ExtImpInvibes
-			if err := json.Unmarshal(bidderExt.Bidder, &invibesExt); err != nil {
-				errors = append(errors, &errortypes.BadInput{
-					Message: "Error parsing invibesExt parameters",
-				})
-			}
-			if imp.Banner == nil {
-				errors = append(errors, &errortypes.BadInput{
-					Message: "Banner not specified",
-				})
-			}
-			if len(errors) == 0 {
-				currentBanner := *imp.Banner
-				var adFormats []openrtb.Format
-				if currentBanner.Format != nil {
-					adFormats = currentBanner.Format
-				} else if currentBanner.W != nil && currentBanner.H != nil {
-					adFormats = []openrtb.Format{
-						{
-							W: *currentBanner.W,
-							H: *currentBanner.H,
-						},
-					}
-				}
+		var invibesExt openrtb_ext.ExtImpInvibes
+		if err := json.Unmarshal(bidderExt.Bidder, &invibesExt); err != nil {
+			tempErrors = append(tempErrors, &errortypes.BadInput{
+				Message: "Error parsing invibesExt parameters",
+			})
+			continue
+		}
+		if imp.Banner == nil {
+			tempErrors = append(tempErrors, &errortypes.BadInput{
+				Message: "Banner not specified",
+			})
+			continue
+		}
 
-				invibesInternalParams.Host = invibesExt.Host
-				invibesInternalParams.BidParams.PlacementIds = append(invibesInternalParams.BidParams.PlacementIds, strings.TrimSpace(invibesExt.PlacementId))
-				invibesInternalParams.BidParams.Properties[invibesExt.PlacementId] = InvibesPlacementProperty{
-					ImpId:   imp.ID,
-					Formats: adFormats,
-				}
-				if invibesExt.Debug.TestIp != "" {
-					invibesInternalParams.TestIp = invibesExt.Debug.TestIp
-				}
-				if invibesExt.Debug.TestBvid != "" {
-					invibesInternalParams.TestBvid = invibesExt.Debug.TestBvid
-				}
-				invibesInternalParams.TestLog = invibesExt.Debug.TestLog
-			}
+		adFormats := readAdFormats(*imp.Banner)
+
+		invibesInternalParams.DomainID = invibesExt.DomainID
+		invibesInternalParams.BidParams.PlacementIDs = append(invibesInternalParams.BidParams.PlacementIDs, strings.TrimSpace(invibesExt.PlacementID))
+		invibesInternalParams.BidParams.Properties[invibesExt.PlacementID] = InvibesPlacementProperty{
+			ImpID:   imp.ID,
+			Formats: adFormats,
 		}
+		if invibesExt.Debug.TestBvid != "" {
+			invibesInternalParams.TestBvid = invibesExt.Debug.TestBvid
+		}
+		invibesInternalParams.TestLog = invibesExt.Debug.TestLog
 	}
 	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
-		invibesInternalParams.IsAmp = true
+		invibesInternalParams.IsAMP = true
 	}
 
-	if len(invibesInternalParams.BidParams.PlacementIds) == 0 {
-		return nil, errors
+	if len(invibesInternalParams.BidParams.PlacementIDs) == 0 {
+		return nil, tempErrors
 	}
 
-	invibesInternalParams.Gdpr = gdprApplies
-	invibesInternalParams.GdprConsent = consentString
+	var finalErrors []error
+	invibesInternalParams.GDPR = gdprApplies
+	invibesInternalParams.GDPRConsent = consentString
 
 	newHttpRequest, err := a.makeRequest(invibesInternalParams, reqInfo, httpRequests, request)
 	if err != nil {
-		errors = append(errors, err)
+		finalErrors = append(finalErrors, err)
 	} else if newHttpRequest != nil {
 		httpRequests = append(httpRequests, newHttpRequest)
 	}
 
-	return httpRequests, errors
+	return httpRequests, finalErrors
+}
+
+func readGDPR(request *openrtb.BidRequest) (bool, string) {
+	consentString := ""
+	if request.User != nil {
+		var extUser openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+			consentString = extUser.Consent
+		}
+	}
+	gdprApplies := true
+	var extRegs openrtb_ext.ExtRegs
+	if request.Regs != nil {
+		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
+			if extRegs.GDPR != nil {
+				gdprApplies = (*extRegs.GDPR == 1)
+			}
+		}
+	}
+	return gdprApplies, consentString
+}
+
+func readAdFormats(currentBanner openrtb.Banner) []openrtb.Format {
+	var adFormats []openrtb.Format
+	if currentBanner.Format != nil {
+		adFormats = currentBanner.Format
+	} else if currentBanner.W != nil && currentBanner.H != nil {
+		adFormats = []openrtb.Format{
+			{
+				W: *currentBanner.W,
+				H: *currentBanner.H,
+			},
+		}
+	}
+	return adFormats
 }
 
 func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInfo *adapters.ExtraRequestInfo, existingRequests []*adapters.RequestData, request *openrtb.BidRequest) (*adapters.RequestData, error) {
 
-	url, err := a.makeURL(request, invibesParams.Host)
+	url, err := a.makeURL(request, invibesParams.DomainID)
 	if err != nil {
 		return nil, err
 	}
@@ -209,9 +199,7 @@ func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInf
 		headers.Add("User-Agent", request.Device.UA)
 	}
 
-	if invibesParams.TestIp != "" {
-		headers.Add("X-Forwarded-For", invibesParams.TestIp)
-	} else if request.Device != nil {
+	if request.Device != nil {
 		if request.Device.IP != "" {
 			headers.Add("X-Forwarded-For", request.Device.IP)
 		} else if request.Device.IPv6 != "" {
@@ -262,11 +250,11 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 			Location:      request.Site.Page,
 			Lid:           lid,
 			Kw:            request.Site.Keywords,
-			IsAmp:         invibesParams.IsAmp,
+			IsAMP:         invibesParams.IsAMP,
 			Width:         width,
 			Height:        height,
-			GdprConsent:   invibesParams.GdprConsent,
-			Gdpr:          invibesParams.Gdpr != "0",
+			GDPRConsent:   invibesParams.GDPRConsent,
+			GDPR:          invibesParams.GDPR,
 			Bvid:          invibesParams.TestBvid,
 			InvibBVLog:    invibesParams.TestLog,
 			VideoAdDebug:  invibesParams.TestLog,
@@ -276,21 +264,19 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 	return &invRequest, err
 }
 
-func (a *InvibesAdapter) makeURL(request *openrtb.BidRequest, host string) (string, error) {
-	var endpointURL *url.URL
-	endpointParams := macros.EndpointTemplateParams{Host: host}
-	host, err := macros.ResolveMacros(a.EndpointTemplate, endpointParams)
-
-	if err == nil {
-		endpointURL, err = url.Parse(host)
-	}
-	if err != nil {
-		return "", &errortypes.BadInput{
-			Message: "Unable to parse url template: " + err.Error(),
-		}
+func (a *InvibesAdapter) makeURL(request *openrtb.BidRequest, domainID int) (string, error) {
+	endpoint := a.Endpoint
+	if domainID == 1 {
+		endpoint = "https://adweb.videostepstage.com/bid/ServerBidAdContent"
+	} else if domainID == 2 {
+		endpoint = "https://adweb.invibesstage.com/bid/ServerBidAdContent"
+	} else if domainID == 1001 {
+		endpoint = "https://bid.videostep.com/bid/ServerBidAdContent"
+	} else if domainID >= 1002 {
+		endpoint = "https://bid2.videostep.com/bid/ServerBidAdContent"
 	}
 
-	return endpointURL.String(), nil
+	return endpoint, nil
 }
 
 func (a *InvibesAdapter) MakeBids(
