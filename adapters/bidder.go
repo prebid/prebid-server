@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -53,7 +54,7 @@ type TimeoutBidder interface {
 }
 
 type MisconfiguredBidder struct {
-	Name  string
+	Name  openrtb_ext.BidderName
 	Error error
 }
 
@@ -152,3 +153,5 @@ type ExtImpBidder struct {
 func (r *RequestData) SetBasicAuth(username string, password string) {
 	r.Headers.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
 }
+
+type Builder func(openrtb_ext.BidderName, config.Adapter) (Bidder, error)
