@@ -92,7 +92,10 @@ func TestShouldReturnBadRequestWhenTypeIsMissing(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 on request with missing type parameter")
@@ -125,7 +128,10 @@ func TestShouldReturnBadRequestWhenTypeIsInvalid(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 on request with invalid type parameter")
@@ -158,7 +164,10 @@ func TestShouldReturnBadRequestWhenBidIdIsMissing(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 on request with missing bidid parameter")
@@ -191,7 +200,10 @@ func TestShouldReturnBadRequestWhenTimestampIsInvalid(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 on request with invalid timestamp parameter")
@@ -224,7 +236,10 @@ func TestShouldReturnUnauthorizedWhenAccountIsMissing(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 401, recorder.Result().StatusCode, "Expected 401 on request with missing account id parameter")
@@ -257,7 +272,10 @@ func TestShouldReturnBadRequestWhenFormatValueIsInvalid(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 on request with invalid format parameter")
@@ -290,7 +308,10 @@ func TestShouldReturnBadRequestWhenAnalyticsValueIsInvalid(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 on request with invalid analytics parameter")
@@ -325,7 +346,10 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) 
 
 	// execute
 	e(recorder, req, nil)
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 401, recorder.Result().StatusCode, "Expected 401 on account not found")
@@ -361,7 +385,10 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *test
 
 	// execute
 	e(recorder, req, nil)
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 401, recorder.Result().StatusCode, "Expected 401 on account with events disabled")
@@ -468,7 +495,10 @@ func TestShouldRespondWithPixelAndContentTypeWhenRequestFormatIsImage(t *testing
 	// execute
 	e(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 with tracking pixel when format is imp")
@@ -507,7 +537,10 @@ func TestShouldRespondWithNoContentWhenRequestFormatIsNotDefined(t *testing.T) {
 	// execute
 	e(recorder, req, nil)
 
-	d, _ := ioutil.ReadAll(recorder.Result().Body)
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// validate
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 with empty response")
