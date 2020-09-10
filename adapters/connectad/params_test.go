@@ -15,7 +15,7 @@ func TestValidParams(t *testing.T) {
 
 	for _, validParam := range validParams {
 		if err := validator.Validate(openrtb_ext.BidderConnectAd, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected params: %s", validParam)
+			t.Errorf("Schema rejected ConnectAd params: %s", validParam)
 		}
 	}
 }
@@ -35,13 +35,17 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"siteId": 123456, "networkId": 123456, "bidfloor": 0.10}`,
+	`{"siteId": 123456, "networkId": 123456}`,
 }
 
 var invalidParams = []string{
 	`{}`,
 	`null`,
 	`{"siteId": 123456, "networkId": "123456", "bidfloor": 0.10}`,
-	`{"siteId": "123456", "networkId": 123456, "bidfloor": "0.10"}`,
+	`{"siteId": "123456", "networkId": 123456, "bidfloor": 0.10}`,
+	`{"siteId": 123456, "networkId": 123456, "bidfloor": "0.10"}`,
 	`{"siteId": "123456"}`,
+	`{"networkId": 123456}`,
+	`{"siteId": 123456}`,
 	`{"invalid_param": "123"}`,
 }
