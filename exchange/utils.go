@@ -300,7 +300,7 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
 	return splitImps, nil
 }
 
-// sanitizedImpCopy returns a copy of imp with its ext filtered so that only "prebid", "comtext", and bidder params exist.
+// sanitizedImpCopy returns a copy of imp with its ext filtered so that only "prebid", "context", and bidder params exist.
 // It will not mutate the input imp.
 // This function will write the new imps to the output map passed in
 func sanitizedImpCopy(imp *openrtb.Imp,

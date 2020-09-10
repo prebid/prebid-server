@@ -1203,27 +1203,28 @@ func TestValidateImpExt(t *testing.T) {
 		},
 	}
 
-	for _, test := range testCases {
-		deps := &endpointDeps{
-			&nobidExchange{},
-			newParamsValidator(t),
-			&mockStoredReqFetcher{},
-			empty_fetcher.EmptyFetcher{},
-			empty_fetcher.EmptyFetcher{},
-			empty_fetcher.EmptyFetcher{},
-			&config.Configuration{MaxRequestSize: int64(8096)},
-			pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-			map[string]string{"unknownbidder": "The bidder 'unknownbidder' has been disabled."},
-			false,
-			[]byte{},
-			openrtb_ext.BidderMap,
-			nil,
-			nil,
-			hardcodedResponseIPValidator{response: true},
-		}
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: int64(8096)},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{"unknownbidder": "The bidder 'unknownbidder' has been disabled."},
+		false,
+		[]byte{},
+		openrtb_ext.BidderMap,
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
 
+	for _, test := range testCases {
 		imp := &openrtb.Imp{Ext: test.impExt}
+
 		errs := deps.validateImpExt(imp, nil, 0)
 
 		if len(test.expectedImpExt) > 0 {
@@ -1231,7 +1232,6 @@ func TestValidateImpExt(t *testing.T) {
 		} else {
 			assert.Empty(t, imp.Ext)
 		}
-
 		assert.Equal(t, test.expectedErrs, errs)
 	}
 }
