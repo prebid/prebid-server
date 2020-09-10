@@ -141,6 +141,16 @@ func TestGoodRequests(t *testing.T) {
 	supplementary.assert(t)
 }
 
+func TestFirstPartyDataRequests(t *testing.T) {
+	validRequests := &getResponseFromDirectory{
+		dir:           "sample-requests/first-party-data",
+		payloadGetter: getRequestPayload,
+		messageGetter: nilReturner,
+		expectedCode:  http.StatusOK,
+	}
+	validRequests.assert(t)
+}
+
 // TestGoodNativeRequests makes sure we return 200s on well-formed Native requests.
 func TestGoodNativeRequests(t *testing.T) {
 	tests := &getResponseFromDirectory{
@@ -1127,10 +1137,73 @@ func TestDisabledBidder(t *testing.T) {
 	}
 }
 
-func TestValidateImpExtDisabledBidder(t *testing.T) {
-	imp := &openrtb.Imp{
-		Ext: json.RawMessage(`{"appnexus":{"placement_id":555},"unknownbidder":{"foo":"bar"}}`),
+func TestValidateImpExt(t *testing.T) {
+	testCases := []struct {
+		description    string
+		impExt         json.RawMessage
+		expectedImpExt string
+		expectedErrs   []error
+	}{
+		{
+			description:    "Empty",
+			impExt:         nil,
+			expectedImpExt: "",
+			expectedErrs:   []error{errors.New("request.imp[0].ext is required")},
+		},
+		{
+			description:    "Valid Bidder",
+			impExt:         json.RawMessage(`{"appnexus":{"placement_id":555}}`),
+			expectedImpExt: `{"appnexus":{"placement_id":555}}`,
+			expectedErrs:   []error{},
+		},
+		{
+			description:    "Valid Bidder + Disabled Bidder",
+			impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"unknownbidder":{"foo":"bar"}}`),
+			expectedImpExt: `{"appnexus":{"placement_id":555}}`,
+			expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'unknownbidder' has been disabled."}},
+		},
+		{
+			description:    "Valid Bidder + Disabled Bidder + First Party Data Context",
+			impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"unknownbidder":{"foo":"bar"},"context":{"data":{"keywords":"prebid server example"}}}`),
+			expectedImpExt: `{"appnexus":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
+			expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'unknownbidder' has been disabled."}},
+		},
+		{
+			description:    "Valid Bidder + First Party Data Context",
+			impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`),
+			expectedImpExt: `{"appnexus":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
+			expectedErrs:   []error{},
+		},
+		{
+			description:    "Valid Prebid Ext Bidder",
+			impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`),
+			expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`,
+			expectedErrs:   []error{},
+			// request.imp[x].ext.prebid.bidder.{biddername} is only promoted/copied to request.ext.{biddername} if there is at least one disabled bidder.
+		},
+		{
+			description:    "Valid Prebid Ext Bidder + First Party Data Context",
+			impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555}}} ,"context":{"data":{"keywords":"prebid server example"}}}`),
+			expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
+			expectedErrs:   []error{},
+			// request.imp[x].ext.prebid.bidder.{biddername} is only promoted/copied to request.ext.{biddername} if there is at least one disabled bidder.
+		},
+		{
+			description:    "Valid Prebid Ext Bidder + Disabled Bidder",
+			impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"unknownbidder":{"foo":"bar"}}}}`),
+			expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555},"unknownbidder":{"foo":"bar"}}},"appnexus":{"placement_id":555}}`,
+			expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'unknownbidder' has been disabled."}},
+			// request.imp[x].ext.prebid.bidder.{biddername} disabled bidders are not removed. if there is a disabled bidder, the valid ones are promoted/copied to request.ext.{biddername}.
+		},
+		{
+			description:    "Valid Prebid Ext Bidder + Disabled Bidder + First Party Data Context",
+			impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"unknownbidder":{"foo":"bar"}}},"context":{"data":{"keywords":"prebid server example"}}}`),
+			expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555},"unknownbidder":{"foo":"bar"}}},"appnexus":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
+			expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'unknownbidder' has been disabled."}},
+			// request.imp[x].ext.prebid.bidder.{biddername} disabled bidders are not removed. if there is a disabled bidder, the valid ones are promoted/copied to request.ext.{biddername}.
+		},
 	}
+
 	deps := &endpointDeps{
 		&nobidExchange{},
 		newParamsValidator(t),
@@ -1149,9 +1222,19 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 	}
-	errs := deps.validateImpExt(imp, nil, 0)
-	assert.JSONEq(t, `{"appnexus":{"placement_id":555}}`, string(imp.Ext))
-	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'unknownbidder' has been disabled."}}, errs)
+
+	for _, test := range testCases {
+		imp := &openrtb.Imp{Ext: test.impExt}
+
+		errs := deps.validateImpExt(imp, nil, 0)
+
+		if len(test.expectedImpExt) > 0 {
+			assert.JSONEq(t, test.expectedImpExt, string(imp.Ext))
+		} else {
+			assert.Empty(t, imp.Ext)
+		}
+		assert.Equal(t, test.expectedErrs, errs)
+	}
 }
 
 func validRequest(t *testing.T, filename string) string {
