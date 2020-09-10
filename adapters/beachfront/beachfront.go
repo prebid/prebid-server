@@ -201,7 +201,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 			videoImps = append(videoImps, request.Imp[i])
 
 			if request.Site != nil && request.Site.Page != "" {
-				_, videoImps[len(videoImps)-1].Secure = isSecure(request.Site.Page)
+				_, videoImps[len(videoImps)-1].Secure = isPageSecure(request.Site.Page)
 			} else if request.Imp[i].Secure != nil {
 				videoImps[len(videoImps)-1].Secure = request.Imp[i].Secure
 			} else {
@@ -251,7 +251,6 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 			if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
 				admRequest, exists := admRequests[ext.AppId]
 				if !exists {
-					// The appid is not in the map, so add it
 					requestStub := *request
 					requestStub.Imp = make([]openrtb.Imp, 0, len(admRequests))
 
@@ -369,7 +368,7 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, err
 	bannerReq, secure, errs = impsToSlots(request.Imp)
 
 	if request.Site != nil && request.Site.Page != "" {
-		bannerReq.Secure, _ = isSecure(request.Site.Page)
+		bannerReq.Secure, _ = isPageSecure(request.Site.Page)
 	} else {
 		bannerReq.Secure = secure
 	}
@@ -681,7 +680,7 @@ func getDomain(page string) string {
 This is a weird solution, but I wanted to have a single function to handle the secure attribute
 in both the banner and video case, but in banner it's an int8, in video (rtb) it's an *int8.
 */
-func isSecure(page string) (int8, *int8) {
+func isPageSecure(page string) (int8, *int8) {
 	protoURL := strings.Split(page, "://")
 	if len(protoURL) > 1 && protoURL[0] == "https" {
 		return 1, &one
