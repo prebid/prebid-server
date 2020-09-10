@@ -18,6 +18,12 @@ import (
 	"github.com/prebid/prebid-server/adapters/adman"
 	"github.com/prebid/prebid-server/adapters/admixer"
 	"github.com/prebid/prebid-server/adapters/adocean"
+	"github.com/prebid/prebid-server/adapters/adoppler"
+	"github.com/prebid/prebid-server/adapters/adpone"
+	"github.com/prebid/prebid-server/adapters/adprime"
+	"github.com/prebid/prebid-server/adapters/adtarget"
+	"github.com/prebid/prebid-server/adapters/adtelligent"
+	"github.com/prebid/prebid-server/adapters/advangelists"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/ix"
@@ -33,7 +39,6 @@ import (
 func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 	return map[openrtb_ext.BidderName]adapters.Builder{
 		openrtb_ext.Bidder33Across:     ttx.Builder,
-		openrtb_ext.BidderAppnexus:     appnexus.Builder,
 		openrtb_ext.BidderAdform:       adform.Builder,
 		openrtb_ext.BidderAdgeneration: adgeneration.Builder,
 		openrtb_ext.BidderAdhese:       adhese.Builder,
@@ -42,16 +47,17 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdman:        adman.Builder,
 		openrtb_ext.BidderAdmixer:      admixer.Builder,
 		openrtb_ext.BidderAdOcean:      adocean.Builder,
+		openrtb_ext.BidderAdoppler:     adoppler.Builder,
+		openrtb_ext.BidderAdpone:       adpone.Builder,
+		openrtb_ext.BidderAdprime:      adprime.Builder,
+		openrtb_ext.BidderAdtarget:     adtarget.Builder,
+		openrtb_ext.BidderAdtelligent:  adtelligent.Builder,
+		openrtb_ext.BidderAdvangelists: advangelists.Builder,
+		openrtb_ext.BidderAppnexus:     appnexus.Builder,
 	}
 }
 
 // ortbBidders := map[openrtb_ext.BidderName]adapters.Bidder{
-// 	openrtb_ext.BidderAdoppler:     adoppler.NewAdopplerBidder(cfg.Adapters[string(openrtb_ext.BidderAdoppler)].Endpoint),
-// 	openrtb_ext.BidderAdpone:       adpone.NewAdponeBidder(cfg.Adapters[string(openrtb_ext.BidderAdpone)].Endpoint),
-// 	openrtb_ext.BidderAdprime:      adprime.NewAdprimeBidder(cfg.Adapters[string(openrtb_ext.BidderAdprime)].Endpoint),
-// 	openrtb_ext.BidderAdtarget:     adtarget.NewAdtargetBidder(cfg.Adapters[string(openrtb_ext.BidderAdtarget)].Endpoint),
-// 	openrtb_ext.BidderAdtelligent:  adtelligent.NewAdtelligentBidder(cfg.Adapters[string(openrtb_ext.BidderAdtelligent)].Endpoint),
-// 	openrtb_ext.BidderAdvangelists: advangelists.NewAdvangelistsBidder(cfg.Adapters[string(openrtb_ext.BidderAdvangelists)].Endpoint),
 // 	openrtb_ext.BidderAJA:          aja.NewAJABidder(cfg.Adapters[string(openrtb_ext.BidderAJA)].Endpoint),
 // 	openrtb_ext.BidderApplogy:      applogy.NewApplogyBidder(cfg.Adapters[string(openrtb_ext.BidderApplogy)].Endpoint),
 // 	openrtb_ext.BidderAppnexus:     appnexus.NewAppNexusBidder(client, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
