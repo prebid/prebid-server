@@ -36,6 +36,21 @@ func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, i
 	return
 }
 
+func (mf MultiFetcher) FetchAccount(ctx context.Context, accountID string) (account json.RawMessage, errs []error) {
+	for _, f := range mf {
+		if af, ok := f.(AccountFetcher); ok {
+			if account, accErrs := af.FetchAccount(ctx, accountID); len(accErrs) == 0 {
+				return account, nil
+			} else {
+				accErrs = dropMissingIDs(accErrs)
+				errs = append(errs, accErrs...)
+			}
+		}
+	}
+	errs = append(errs, NotFoundError{accountID, "Account"})
+	return nil, errs
+}
+
 func (mf MultiFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	for _, f := range mf {
 		if cf, ok := f.(CategoryFetcher); ok {
