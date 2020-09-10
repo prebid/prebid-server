@@ -3,11 +3,13 @@ package aja
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type AJAAdapter struct {
@@ -125,8 +127,10 @@ func (a *AJAAdapter) MakeBids(bidReq *openrtb.BidRequest, adapterReq *adapters.R
 	return bidderResp, errors
 }
 
-func NewAJABidder(endpoint string) adapters.Bidder {
-	return &AJAAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the AJA adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &AJAAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

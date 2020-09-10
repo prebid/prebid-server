@@ -24,7 +24,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/adtarget"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/advangelists"
+	"github.com/prebid/prebid-server/adapters/aja"
+	"github.com/prebid/prebid-server/adapters/applogy"
 	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
@@ -54,12 +57,14 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdtelligent:  adtelligent.Builder,
 		openrtb_ext.BidderAdvangelists: advangelists.Builder,
 		openrtb_ext.BidderAppnexus:     appnexus.Builder,
+		openrtb_ext.BidderAJA:          aja.Builder,
+		openrtb_ext.BidderApplogy:      applogy.Builder,
+		openrtb_ext.BidderFacebook:     audienceNetwork.Builder,
 	}
 }
 
 // ortbBidders := map[openrtb_ext.BidderName]adapters.Bidder{
-// 	openrtb_ext.BidderAJA:          aja.NewAJABidder(cfg.Adapters[string(openrtb_ext.BidderAJA)].Endpoint),
-// 	openrtb_ext.BidderApplogy:      applogy.NewApplogyBidder(cfg.Adapters[string(openrtb_ext.BidderApplogy)].Endpoint),
+
 // 	openrtb_ext.BidderAppnexus:     appnexus.NewAppNexusBidder(client, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
 // 	openrtb_ext.BidderAvocet:       avocet.NewAvocetAdapter(cfg.Adapters[string(openrtb_ext.BidderAvocet)].Endpoint),
 // 	openrtb_ext.BidderBeachfront:   beachfront.NewBeachfrontBidder(cfg.Adapters[string(openrtb_ext.BidderBeachfront)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderBeachfront)].ExtraAdapterInfo),
@@ -72,9 +77,7 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 // 	openrtb_ext.BidderEmxDigital:   emx_digital.NewEmxDigitalBidder(cfg.Adapters[string(openrtb_ext.BidderEmxDigital)].Endpoint),
 // 	openrtb_ext.BidderEngageBDR:    engagebdr.NewEngageBDRBidder(client, cfg.Adapters[string(openrtb_ext.BidderEngageBDR)].Endpoint),
 // 	openrtb_ext.BidderEPlanning:    eplanning.NewEPlanningBidder(client, cfg.Adapters[string(openrtb_ext.BidderEPlanning)].Endpoint),
-// 	openrtb_ext.BidderFacebook: audienceNetwork.NewFacebookBidder(
-// 		cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID,
-// 		cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].AppSecret),
+
 // 	openrtb_ext.BidderGamma:           gamma.NewGammaBidder(cfg.Adapters[string(openrtb_ext.BidderGamma)].Endpoint),
 // 	openrtb_ext.BidderGamoshi:         gamoshi.NewGamoshiBidder(cfg.Adapters[string(openrtb_ext.BidderGamoshi)].Endpoint),
 // 	openrtb_ext.BidderGrid:            grid.NewGridBidder(cfg.Adapters[string(openrtb_ext.BidderGrid)].Endpoint),
