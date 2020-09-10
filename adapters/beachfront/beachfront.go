@@ -222,6 +222,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 	*/
 	if len(videoImps) > 0 {
 		admRequests := make(map[string]videoRequest, len(videoImps))
+		j := 0
 
 		for i := 0; i < len(videoImps); i++ {
 			var ext openrtb_ext.ExtImpBeachfront
@@ -237,19 +238,18 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 					Request:           requestStub,
 				})
 
-				j := len(beachfrontReqs.NurlVideo) - 1
-				beachfrontReqs.NurlVideo[j].Request.Imp = nil
 				beachfrontReqs.NurlVideo[j].Request.Imp = append(
 					beachfrontReqs.NurlVideo[j].Request.Imp, videoImps[i])
 				beachfrontReqs.NurlVideo[j] = prepVideoRequest(beachfrontReqs.NurlVideo[j])
-
+				j = j + 1
 			}
 
 			if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
 				admRequest, exists := admRequests[ext.AppId]
 				if !exists {
+					// The appid is not in the map, so add it
 					requestStub := *request
-					requestStub.Imp = make([]openrtb.Imp, 0)
+					requestStub.Imp = make([]openrtb.Imp, 0, len(admRequests))
 
 					admRequests[ext.AppId] = videoRequest{
 						AppId:             ext.AppId,
