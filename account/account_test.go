@@ -24,9 +24,8 @@ type mockAccountFetcher struct {
 func (af mockAccountFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
 	if account, ok := mockAccountData[accountID]; ok {
 		return account, nil
-	} else {
-		return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
 	}
+	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
 }
 
 func TestGetAccount(t *testing.T) {

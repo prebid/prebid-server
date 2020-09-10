@@ -27,8 +27,10 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 	}
 	if accountJSON, accErrs := fetcher.FetchAccount(ctx, accountID); len(accErrs) > 0 || accountJSON == nil {
 		// accountID does not reference a valid account
-		if len(accErrs) > 0 {
-			errs = append(errs, errs...)
+		for _, e := range accErrs {
+			if _, ok := e.(stored_requests.NotFoundError); !ok {
+				errs = append(errs, e)
+			}
 		}
 		if cfg.AccountRequired && cfg.AccountDefaults.Disabled {
 			errs = append(errs, &errortypes.AcctRequired{
@@ -63,5 +65,5 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		})
 		return nil, errs
 	}
-	return
+	return account, nil
 }
