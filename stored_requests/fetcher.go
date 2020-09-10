@@ -25,6 +25,11 @@ type Fetcher interface {
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
 }
 
+type AccountFetcher interface {
+	// FetchAccount fetches the host account configuration for a publisher
+	FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error)
+}
+
 type CategoryFetcher interface {
 	// FetchCategories fetches the ad-server/publisher specific category for the given IAB category
 	FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error)
@@ -33,6 +38,7 @@ type CategoryFetcher interface {
 // AllFetcher is an interface that encapsulates both the original Fetcher and the CategoryFetcher
 type AllFetcher interface {
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
+	FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error)
 	FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error)
 }
 
@@ -179,6 +185,10 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	}
 
 	return
+}
+
+func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+	return f.fetcher.FetchAccount(ctx, accountID)
 }
 
 func (f *fetcherWithCache) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
