@@ -140,7 +140,7 @@ func getBidderParams(imp *openrtb.Imp) (openrtb_ext.ExtImpBetween, error) {
 
 	if err := json.Unmarshal(bidderExt.Bidder, &betweenExt); err != nil {
 		return betweenExt, &errortypes.BadInput{
-			Message: fmt.Sprintf("Cannot resolve host: %s", err.Error()),
+			Message: fmt.Sprintf("Bad bidder params in a bidder ext: %s", err.Error()),
 		}
 	}
 
