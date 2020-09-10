@@ -1,5 +1,5 @@
 {
-    "description": "xxx",
+    "description": "The imp.ext.context field is valid for First Party Data and should be exempted from bidder name validation.",
 
     "requestPayload": {
         "id": "some-request-id",
