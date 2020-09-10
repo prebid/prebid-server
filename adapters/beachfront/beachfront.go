@@ -111,7 +111,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	var reqs = make(
 		[]*adapters.RequestData,
 		0,
-		len(beachfrontRequests.ADMVideo) + len(beachfrontRequests.NurlVideo) + 1 )
+		len(beachfrontRequests.ADMVideo)+len(beachfrontRequests.NurlVideo)+1)
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -197,13 +197,17 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 			bannerImps[len(bannerImps)-1].Video = nil
 		}
 
-		videoImps = append(videoImps, request.Imp[i])
-
 		if request.Imp[i].Video != nil {
-			if request.Site != nil &&
-				request.Site.Page != "" {
-				_, videoImps[i].Secure = isSecure(request.Site.Page)
+			videoImps = append(videoImps, request.Imp[i])
+
+			if request.Site != nil && request.Site.Page != "" {
+				_, videoImps[len(videoImps)-1].Secure = isSecure(request.Site.Page)
+			} else if request.Imp[i].Secure != nil {
+				videoImps[len(videoImps)-1].Secure = request.Imp[i].Secure
+			} else {
+				videoImps[len(videoImps)-1].Secure = &zero
 			}
+
 			videoImps[len(videoImps)-1].Banner = nil
 		}
 	}
@@ -305,14 +309,21 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 	return appid, err
 }
 
-func impsToSlots(imps []openrtb.Imp) (bannerRequest, []error) {
+func impsToSlots(imps []openrtb.Imp) (bannerRequest, int8, []error) {
 	var bfr bannerRequest
 	var errs = make([]error, 0, len(imps))
+	var secure int8 = 0
 
 	for i := 0; i < len(imps); i++ {
 		var imp = imps[i]
 		if imp.Banner == nil {
 			continue
+		}
+
+		if imp.Secure != nil {
+			secure = *imp.Secure
+		} else {
+			secure = 0
 		}
 		beachfrontExt, err := getBeachfrontExtension(imp)
 
@@ -350,16 +361,17 @@ func impsToSlots(imps []openrtb.Imp) (bannerRequest, []error) {
 		bfr.Slots = append(bfr.Slots, slot)
 	}
 
-	return bfr, errs
+	return bfr, secure, errs
 }
 
 func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, errs []error) {
-	bannerReq, errs = impsToSlots(request.Imp)
+	var secure int8
+	bannerReq, secure, errs = impsToSlots(request.Imp)
 
 	if request.Site != nil && request.Site.Page != "" {
 		bannerReq.Secure, _ = isSecure(request.Site.Page)
 	} else {
-		bannerReq.Secure = 0
+		bannerReq.Secure = secure
 	}
 
 	if request.Device != nil {
