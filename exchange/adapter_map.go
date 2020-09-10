@@ -9,6 +9,15 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 
 	"github.com/prebid/prebid-server/adapters"
+	ttx "github.com/prebid/prebid-server/adapters/33across"
+	"github.com/prebid/prebid-server/adapters/adform"
+	"github.com/prebid/prebid-server/adapters/adgeneration"
+	"github.com/prebid/prebid-server/adapters/adhese"
+	"github.com/prebid/prebid-server/adapters/adkernel"
+	"github.com/prebid/prebid-server/adapters/adkernelAdn"
+	"github.com/prebid/prebid-server/adapters/adman"
+	"github.com/prebid/prebid-server/adapters/admixer"
+	"github.com/prebid/prebid-server/adapters/adocean"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/ix"
@@ -23,20 +32,20 @@ import (
 
 func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 	return map[openrtb_ext.BidderName]adapters.Builder{
-		openrtb_ext.BidderAppnexus: appnexus.Builder,
+		openrtb_ext.Bidder33Across:     ttx.Builder,
+		openrtb_ext.BidderAppnexus:     appnexus.Builder,
+		openrtb_ext.BidderAdform:       adform.Builder,
+		openrtb_ext.BidderAdgeneration: adgeneration.Builder,
+		openrtb_ext.BidderAdhese:       adhese.Builder,
+		openrtb_ext.BidderAdkernel:     adkernel.Builder,
+		openrtb_ext.BidderAdkernelAdn:  adkernelAdn.Builder,
+		openrtb_ext.BidderAdman:        adman.Builder,
+		openrtb_ext.BidderAdmixer:      admixer.Builder,
+		openrtb_ext.BidderAdOcean:      adocean.Builder,
 	}
 }
 
 // ortbBidders := map[openrtb_ext.BidderName]adapters.Bidder{
-// 	openrtb_ext.Bidder33Across:     ttx.New33AcrossBidder(cfg.Adapters[string(openrtb_ext.Bidder33Across)].Endpoint),
-// 	openrtb_ext.BidderAdform:       adform.NewAdformBidder(client, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
-// 	openrtb_ext.BidderAdgeneration: adgeneration.NewAdgenerationAdapter(cfg.Adapters[string(openrtb_ext.BidderAdgeneration)].Endpoint),
-// 	openrtb_ext.BidderAdhese:       adhese.NewAdheseBidder(cfg.Adapters[string(openrtb_ext.BidderAdhese)].Endpoint),
-// 	openrtb_ext.BidderAdkernel:     adkernel.NewAdkernelAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernel))].Endpoint),
-// 	openrtb_ext.BidderAdkernelAdn:  adkernelAdn.NewAdkernelAdnAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].Endpoint),
-// 	openrtb_ext.BidderAdman:        adman.NewAdmanBidder(cfg.Adapters[string(openrtb_ext.BidderAdman)].Endpoint),
-// 	openrtb_ext.BidderAdmixer:      admixer.NewAdmixerBidder(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdmixer))].Endpoint),
-// 	openrtb_ext.BidderAdOcean:      adocean.NewAdOceanBidder(client, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdOcean))].Endpoint),
 // 	openrtb_ext.BidderAdoppler:     adoppler.NewAdopplerBidder(cfg.Adapters[string(openrtb_ext.BidderAdoppler)].Endpoint),
 // 	openrtb_ext.BidderAdpone:       adpone.NewAdponeBidder(cfg.Adapters[string(openrtb_ext.BidderAdpone)].Endpoint),
 // 	openrtb_ext.BidderAdprime:      adprime.NewAdprimeBidder(cfg.Adapters[string(openrtb_ext.BidderAdprime)].Endpoint),
