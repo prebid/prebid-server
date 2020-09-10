@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
 
@@ -112,12 +113,16 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 // 	openrtb_ext.BidderZeroClickFraud:   zeroclickfraud.NewZeroClickFraudBidder(cfg.Adapters[string(openrtb_ext.BidderZeroClickFraud)].Endpoint),
 // }
 
-func newAdapterMap(client *http.Client, adapterConfig map[openrtb_ext.BidderName]config.Adapter, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+	adapterConfig := cfg.Adapters
+
 	builders := newAdapterBuildersMap()
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 
 	var errs []error
-	for bidderName, cfg := range adapterConfig {
+	for bidder, cfg := range adapterConfig {
+		bidderName := openrtb_ext.BidderName(strings.ToLower(bidder))
+
 		if builder, ok := builders[bidderName]; ok {
 			if adapter, err := builder(bidderName, cfg); err != nil {
 				bidders[bidderName] = &adapters.MisconfiguredBidder{bidderName, err}
@@ -135,13 +140,13 @@ func newAdapterMap(client *http.Client, adapterConfig map[openrtb_ext.BidderName
 
 	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{
 		// TODO #267: Upgrade the Conversant adapter
-		openrtb_ext.BidderConversant: conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[openrtb_ext.BidderConversant].Endpoint),
+		openrtb_ext.BidderConversant: conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderConversant)].Endpoint),
 		// TODO #212: Upgrade the Index adapter
-		openrtb_ext.BidderIx: ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[openrtb_ext.BidderIx].Endpoint),
+		openrtb_ext.BidderIx: ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderIx)].Endpoint),
 		// TODO #213: Upgrade the Lifestreet adapter
-		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[openrtb_ext.BidderLifestreet].Endpoint),
+		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderLifestreet)].Endpoint),
 		// TODO #215: Upgrade the Pulsepoint adapter
-		openrtb_ext.BidderPulsepoint: pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[openrtb_ext.BidderPulsepoint].Endpoint),
+		openrtb_ext.BidderPulsepoint: pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderPulsepoint)].Endpoint),
 	}
 
 	allBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(bidders)+len(legacyBidders))

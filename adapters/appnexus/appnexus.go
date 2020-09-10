@@ -651,11 +651,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-// NewLegacyAppNexusBidder builds a legacy version of the AppNexus adapter.
-func NewLegacyAppNexusBidder(client *http.Client, endpoint, platformID string) *AppNexusAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
+// NewAppNexusLegacyBidder builds a legacy version of the AppNexus adapter.
+func NewAppNexusLegacyBidder(httpConfig *adapters.HTTPAdapterConfig, endpoint, platformID string) *AppNexusAdapter {
 	return &AppNexusAdapter{
-		http:           a,
+		http:           adapters.NewHTTPAdapter(httpConfig),
 		URI:            endpoint,
 		iabCategoryMap: loadCategoryMapFromFileSystem(),
 		hbSource:       resolvePlatformID(platformID),

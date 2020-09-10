@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -145,8 +146,10 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 
 }
 
-func New33AcrossBidder(endpoint string) *TtxAdapter {
-	return &TtxAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the 33Across adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &TtxAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }
