@@ -107,8 +107,11 @@ var one int8 = 1
 var zero int8 = 0
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var reqs = make([]*adapters.RequestData, 0)
 	beachfrontRequests, errs := preprocess(request)
+	var reqs = make(
+		[]*adapters.RequestData,
+		0,
+		len(beachfrontRequests.ADMVideo) + len(beachfrontRequests.NurlVideo) + 1 )
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -184,8 +187,8 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 }
 
 func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []error) {
-	var videoImps = make([]openrtb.Imp, 0)
-	var bannerImps = make([]openrtb.Imp, 0)
+	var videoImps = make([]openrtb.Imp, 0, len(request.Imp))
+	var bannerImps = make([]openrtb.Imp, 0, len(request.Imp))
 
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil && ((request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
@@ -211,7 +214,6 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 	}
 
 	if len(bannerImps) > 0 {
-		// request.Imp = bannerImps		// ... why was I doing this????
 		beachfrontReqs.Banner, errs = getBannerRequest(request)
 	}
 
@@ -219,7 +221,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 	sent sequentially and the adm imps in sequential / parallel.
 	*/
 	if len(videoImps) > 0 {
-		admRequests := make(map[string]videoRequest, 0)
+		admRequests := make(map[string]videoRequest, len(videoImps))
 
 		for i := 0; i < len(videoImps); i++ {
 			var ext openrtb_ext.ExtImpBeachfront
@@ -684,10 +686,6 @@ func getIP(ip string) string {
 		return "192.168.255.255"
 	}
 	return ip
-}
-
-func removeVideoElement(slice []videoRequest, s int) []videoRequest {
-	return append(slice[:s], slice[s+1:]...)
 }
 
 func NewBeachfrontBidder(bannerEndpoint string, extraAdapterInfo string) adapters.Bidder {
