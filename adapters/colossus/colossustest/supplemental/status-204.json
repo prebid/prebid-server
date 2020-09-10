@@ -33,9 +33,9 @@
             "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
         }
     },
-	"httpCalls": [{
-		"expectedRequest": {
-			"uri": "http://example.com/?c=o&m=rtb",
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://example.com/?c=o&m=rtb",
 			"body": {
                 "id": "test-request-id",
                 "imp": [
