@@ -20,6 +20,9 @@ type BidderName string
 // BidderNameGeneral is reserved for non-bidder specific messages when using a map keyed on the bidder name.
 const BidderNameGeneral = BidderName("general")
 
+// BidderNameContext is reserved for first party data.
+const BidderNameContext = BidderName("context")
+
 // These names _must_ coincide with the bidder code in Prebid.js, if an adapter also exists in that project.
 // Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 // The bidder name 'general' is not allowed since it has special meaning in message maps.

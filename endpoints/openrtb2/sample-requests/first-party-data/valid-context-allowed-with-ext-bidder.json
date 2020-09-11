@@ -1,0 +1,32 @@
+{
+    "description": "The imp.ext.context field is valid for First Party Data and should be exempted from bidder name validation.",
+
+    "requestPayload": {
+        "id": "some-request-id",
+        "site": {
+            "page": "test.somepage.com"
+        },
+        "imp": [{
+            "id": "some-imp-id",
+            "banner": {
+                "format": [{
+                    "w": 600,
+                    "h": 500
+                }, {
+                    "w": 300,
+                    "h": 600
+                }]
+            },
+            "ext": {
+                "appnexus": {
+                    "placementId": 12883451
+                },
+                "context": {
+                    "data": {
+                        "keywords": "prebid server example"
+                    }
+                }
+            }
+        }]
+    }
+}
