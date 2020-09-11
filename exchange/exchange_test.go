@@ -461,7 +461,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 	}
 }
 
-func TestGetBidCacheInfoEndToEnd(t *testing.T) { //Test returnCreative here, or similar to this test
+func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	testUUID := "CACHE_UUID_1234"
 	testExternalCacheScheme := "https"
 	testExternalCacheHost := "www.externalprebidcache.net"
@@ -508,7 +508,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) { //Test returnCreative here, or 
 			NURL:           "",
 			BURL:           "",
 			LURL:           "",
-			AdM:            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST ...></VAST>",
+			AdM:            "",
 			AdID:           "",
 			ADomain:        nil,
 			Bundle:         "",
@@ -610,7 +610,6 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) { //Test returnCreative here, or 
 				Seat: string(bidderName),
 				Bid: []openrtb.Bid{
 					{
-						AdM: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST ...></VAST>",
 						Ext: json.RawMessage(`{ "prebid": { "cache": { "bids": { "cacheId": "` + testUUID + `", "url": "` + testExternalCacheScheme + `://` + testExternalCacheHost + `/` + testExternalCachePath + `?uuid=` + testUUID + `" }, "key": "", "url": "" }`),
 					},
 				},
@@ -634,8 +633,6 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) { //Test returnCreative here, or 
 	assert.NoErrorf(t, err, "[TestGetBidCacheInfo] Error found while trying to json parse the url field from actual build response. Message: %v \n", err)
 
 	assert.Equal(t, expCacheURL, cacheURL, "[TestGetBidCacheInfo] cacheId field in ext should equal \"%s\" \n", expCacheURL)
-
-	// compare cache URL
 }
 
 func TestBidReturnsCreative(t *testing.T) {

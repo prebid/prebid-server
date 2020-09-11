@@ -34,9 +34,6 @@ type ContextKey string
 
 const DebugContextKey = ContextKey("debugInfo")
 
-//type bidResponseExtConfig struct {
-//	includeDebugInfo, cacheBids, cacheVAST, returnCreative bool
-//}
 type extCacheInstructions struct {
 	cacheBids, cacheVAST, returnCreative bool
 }
