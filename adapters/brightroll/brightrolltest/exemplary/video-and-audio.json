@@ -12,7 +12,7 @@
         },
         "ext": {
           "bidder": {
-            "publisher": "adthrive"
+            "publisher": "cafemom"
           }
         }
       },
@@ -25,7 +25,7 @@
         },
         "ext": {
           "bidder": {
-            "publisher": "adthrive"
+            "publisher": "cafemom"
           }
         }
       }
@@ -34,23 +34,14 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://test-bid.ybp.yahoo.com/bid/appnexuspbs?publisher=adthrive",
+        "uri": "http://test-bid.ybp.yahoo.com/bid/appnexuspbs?publisher=cafemom",
         "body": {
           "id": "test-request-id",
           "at":1,
-          "bcat": [
-            "IAB8-5",
-            "IAB8-18"
-          ],
           "imp": [
             {
               "id": "test-imp-video-id",
               "video": {
-                "battr": [
-                  1,
-                  2,
-                  3
-                ],
                 "mimes": ["video/mp4"],
                 "protocols": [2, 5],
                 "w": 1024,
@@ -58,7 +49,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisher": "adthrive"
+                  "publisher": "cafemom"
                 }
               }
             },
@@ -71,7 +62,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisher": "adthrive"
+                  "publisher": "cafemom"
                 }
               }
             }
