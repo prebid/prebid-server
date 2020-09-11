@@ -5,6 +5,10 @@ import (
 	"errors"
 )
 
+// FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
+// for first party data support.
+const FirstPartyDataContextExtKey string = "context"
+
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
 	Prebid ExtRequestPrebid `json:"prebid"`
