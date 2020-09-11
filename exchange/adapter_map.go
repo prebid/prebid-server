@@ -56,16 +56,14 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdtarget:     adtarget.Builder,
 		openrtb_ext.BidderAdtelligent:  adtelligent.Builder,
 		openrtb_ext.BidderAdvangelists: advangelists.Builder,
-		openrtb_ext.BidderAppnexus:     appnexus.Builder,
 		openrtb_ext.BidderAJA:          aja.Builder,
 		openrtb_ext.BidderApplogy:      applogy.Builder,
-		openrtb_ext.BidderFacebook:     audienceNetwork.Builder,
+		openrtb_ext.BidderAppnexus:     appnexus.Builder,
+		openrtb_ext.BidderFacebook:     audienceNetwork.Builder, // 19 done
 	}
 }
 
-// ortbBidders := map[openrtb_ext.BidderName]adapters.Bidder{
-
-// 	openrtb_ext.BidderAppnexus:     appnexus.NewAppNexusBidder(client, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
+// 57 left
 // 	openrtb_ext.BidderAvocet:       avocet.NewAvocetAdapter(cfg.Adapters[string(openrtb_ext.BidderAvocet)].Endpoint),
 // 	openrtb_ext.BidderBeachfront:   beachfront.NewBeachfrontBidder(cfg.Adapters[string(openrtb_ext.BidderBeachfront)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderBeachfront)].ExtraAdapterInfo),
 // 	openrtb_ext.BidderBeintoo:      beintoo.NewBeintooBidder(cfg.Adapters[string(openrtb_ext.BidderBeintoo)].Endpoint),
@@ -76,8 +74,7 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 // 	openrtb_ext.BidderDmx:          dmx.NewDmxBidder(cfg.Adapters[string(openrtb_ext.BidderDmx)].Endpoint),
 // 	openrtb_ext.BidderEmxDigital:   emx_digital.NewEmxDigitalBidder(cfg.Adapters[string(openrtb_ext.BidderEmxDigital)].Endpoint),
 // 	openrtb_ext.BidderEngageBDR:    engagebdr.NewEngageBDRBidder(client, cfg.Adapters[string(openrtb_ext.BidderEngageBDR)].Endpoint),
-// 	openrtb_ext.BidderEPlanning:    eplanning.NewEPlanningBidder(client, cfg.Adapters[string(openrtb_ext.BidderEPlanning)].Endpoint),
-
+// 	openrtb_ext.BidderEPlanning:    eplanning.NewEPlanningBidder(client, cfg.Adapters[string(openrtb_ext.BidderEPlanning)].Endpoint)
 // 	openrtb_ext.BidderGamma:           gamma.NewGammaBidder(cfg.Adapters[string(openrtb_ext.BidderGamma)].Endpoint),
 // 	openrtb_ext.BidderGamoshi:         gamoshi.NewGamoshiBidder(cfg.Adapters[string(openrtb_ext.BidderGamoshi)].Endpoint),
 // 	openrtb_ext.BidderGrid:            grid.NewGridBidder(cfg.Adapters[string(openrtb_ext.BidderGrid)].Endpoint),
@@ -140,6 +137,10 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	var errs []error
 	for bidder, cfg := range adapterConfig {
 		bidderName := openrtb_ext.BidderName(strings.ToLower(bidder))
+
+		// get builder, if error report it
+
+		// build, if error report it
 
 		if builder, ok := builders[bidderName]; ok {
 			if adapter, err := builder(bidderName, cfg); err != nil {
