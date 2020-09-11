@@ -34,7 +34,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		}
 		if cfg.AccountRequired && cfg.AccountDefaults.Disabled {
 			errs = append(errs, &errortypes.AcctRequired{
-				Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
+				Message: fmt.Sprintf("Prebid-server could not verify the Account ID. Please reach out to the prebid server host."),
 			})
 			return nil, errs
 		}
