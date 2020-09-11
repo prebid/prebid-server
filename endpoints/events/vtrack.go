@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -125,13 +126,13 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
  */
 func GetVastUrlTracking(externalUrl string, bidid string, bidder string, accountId string, timestamp int64) string {
 
-	eventReq := &EventRequest{
-		Type:      Imp,
+	eventReq := &analytics.EventRequest{
+		Type:      analytics.Imp,
 		Bidid:     bidid,
 		AccountID: accountId,
 		Bidder:    bidder,
 		Timestamp: timestamp,
-		Format:    Blank,
+		Format:    analytics.Blank,
 	}
 
 	return EventRequestToUrl(externalUrl, eventReq)

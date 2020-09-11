@@ -5,7 +5,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
-	"time"
 )
 
 /*
@@ -72,9 +71,6 @@ type CookieSyncObject struct {
 
 // NotificationEvent is a loggable object
 type NotificationEvent struct {
-	Type      string          `json:"type"`
-	Bidid     string          `json:"bidid"`
-	Account   *config.Account `json:"account"`
-	Bidder    string          `json:"bidder"`
-	Timestamp time.Time       `json:"timestamp"`
+	Request *EventRequest
+	Account *config.Account `json:"account"`
 }

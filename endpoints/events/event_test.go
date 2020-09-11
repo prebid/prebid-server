@@ -553,14 +553,14 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 
 	req := httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder", strings.NewReader(""))
 
-	expected := &EventRequest{
-		Type:      Win,
+	expected := &analytics.EventRequest{
+		Type:      analytics.Win,
 		Bidid:     "bidId",
 		Timestamp: 1000,
 		Bidder:    "bidder",
 		AccountID: "",
-		Format:    Blank,
-		Analytics: Enabled,
+		Format:    analytics.Blank,
+		Analytics: analytics.Enabled,
 	}
 
 	// execute

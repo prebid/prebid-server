@@ -11,34 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
-)
-
-// EventType enumerates the values of events Prebid Server can receive for an ad.
-type EventType string
-
-// Possible values of  vents Prebid Server can receive for an ad.
-const (
-	Win EventType = "win"
-	Imp EventType = "imp"
-)
-
-// EventFormat enumerates the values of a Prebid Server event.
-type ResponseFormat string
-
-const (
-	// BlankEventFormat describes an event which returns an HTTP 200 with an empty body.
-	Blank ResponseFormat = "b"
-	// ImageEventFormat describes an event which returns an HTTP 200 with a PNG body.
-	Image ResponseFormat = "i"
-)
-
-// Indicates if the notification event should be handled or not
-type Analytics string
-
-const (
-	Enabled  Analytics = "1"
-	Disabled Analytics = "0"
 )
 
 const (
@@ -63,16 +35,6 @@ var trackingPixelPng = &TrackingPixel{
 		0x00, 0x05, 0x00, 0x01, 0x87, 0xA1, 0x4E, 0xD4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
 		0x42, 0x60, 0x82},
 	ContentType: "image/png",
-}
-
-type EventRequest struct {
-	Type      EventType      `json:"type,omitempty"`
-	Format    ResponseFormat `json:"format,omitempty"`
-	Analytics Analytics      `json:"analytics,omitempty"`
-	Bidid     string         `json:"bidid,omitempty"`
-	AccountID string         `json:"account_id,omitempty"`
-	Bidder    string         `json:"bidder,omitempty"`
-	Timestamp int64          `json:"timestamp,omitempty"`
 }
 
 type TrackingPixel struct {
@@ -120,7 +82,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 	eventRequest.AccountID = accountId
 
-	if eventRequest.Analytics != Enabled {
+	if eventRequest.Analytics != analytics.Enabled {
 		return
 	}
 
@@ -146,17 +108,14 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 
 	// handle notification event
 	e.Analytics.LogNotificationEventObject(&analytics.NotificationEvent{
-		Type:      string(eventRequest.Type),
-		Timestamp: time.Unix(eventRequest.Timestamp, 0),
-		Bidid:     eventRequest.Bidid,
-		Bidder:    eventRequest.Bidder,
-		Account:   account,
+		Request: eventRequest,
+		Account: account,
 	})
 
 	// OK
 	w.WriteHeader(http.StatusOK)
 	// Add tracking pixel if format == image
-	if eventRequest.Format == Image {
+	if eventRequest.Format == analytics.Image {
 		w.Header().Add("Content-Type", e.TrackingPixel.ContentType)
 		w.Write(e.TrackingPixel.Content)
 	}
@@ -165,7 +124,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 /**
  * Converts an EventRequest to an URL
  */
-func EventRequestToUrl(externalUrl string, request *EventRequest) string {
+func EventRequestToUrl(externalUrl string, request *analytics.EventRequest) string {
 	s := fmt.Sprintf(TemplateUrl, externalUrl, request.Type, request.Bidid, request.AccountID)
 
 	return s + optionalParameters(request)
@@ -174,8 +133,8 @@ func EventRequestToUrl(externalUrl string, request *EventRequest) string {
 /**
  * Parses an EventRequest from an Http request
  */
-func ParseEventRequest(r *http.Request) (*EventRequest, error) {
-	event := &EventRequest{}
+func ParseEventRequest(r *http.Request) (*analytics.EventRequest, error) {
+	event := &analytics.EventRequest{}
 
 	// validate type
 	if err := validateType(event, r); err != nil {
@@ -214,7 +173,7 @@ func ParseEventRequest(r *http.Request) (*EventRequest, error) {
 	return event, nil
 }
 
-func optionalParameters(request *EventRequest) string {
+func optionalParameters(request *analytics.EventRequest) string {
 	r := url.Values{}
 
 	// timestamp
@@ -229,18 +188,18 @@ func optionalParameters(request *EventRequest) string {
 
 	// format
 	switch request.Format {
-	case Blank:
-		r.Add(FormatParameter, string(Blank))
-	case Image:
-		r.Add(FormatParameter, string(Image))
+	case analytics.Blank:
+		r.Add(FormatParameter, string(analytics.Blank))
+	case analytics.Image:
+		r.Add(FormatParameter, string(analytics.Image))
 	}
 
 	//analytics
 	switch request.Analytics {
-	case Enabled:
-		r.Add(AnalyticsParameter, string(Enabled))
-	case Disabled:
-		r.Add(AnalyticsParameter, string(Disabled))
+	case analytics.Enabled:
+		r.Add(AnalyticsParameter, string(analytics.Enabled))
+	case analytics.Disabled:
+		r.Add(AnalyticsParameter, string(analytics.Disabled))
 	}
 
 	opt := r.Encode()
@@ -255,7 +214,7 @@ func optionalParameters(request *EventRequest) string {
 /**
  * validate type
  */
-func validateType(er *EventRequest, httpRequest *http.Request) error {
+func validateType(er *analytics.EventRequest, httpRequest *http.Request) error {
 	t, err := validateRequiredParameter(httpRequest, TypeParameter)
 
 	if err != nil {
@@ -263,11 +222,11 @@ func validateType(er *EventRequest, httpRequest *http.Request) error {
 	}
 
 	switch t {
-	case string(Imp):
-		er.Type = Imp
+	case string(analytics.Imp):
+		er.Type = analytics.Imp
 		return nil
-	case string(Win):
-		er.Type = Win
+	case string(analytics.Win):
+		er.Type = analytics.Win
 		return nil
 	default:
 		return &errortypes.BadInput{Message: fmt.Sprintf("unknown type: '%s'", t)}
@@ -277,16 +236,16 @@ func validateType(er *EventRequest, httpRequest *http.Request) error {
 /**
  * validate format
  */
-func validateFormat(er *EventRequest, httpRequest *http.Request) error {
+func validateFormat(er *analytics.EventRequest, httpRequest *http.Request) error {
 	f := httpRequest.FormValue(FormatParameter)
 
 	if f != "" {
 		switch f {
-		case string(Blank):
-			er.Format = Blank
+		case string(analytics.Blank):
+			er.Format = analytics.Blank
 			return nil
-		case string(Image):
-			er.Format = Image
+		case string(analytics.Image):
+			er.Format = analytics.Image
 			return nil
 		default:
 			return &errortypes.BadInput{Message: fmt.Sprintf("unknown format: '%s'", f)}
@@ -299,16 +258,16 @@ func validateFormat(er *EventRequest, httpRequest *http.Request) error {
 /**
  * validate analytics
  */
-func validateAnalytics(er *EventRequest, httpRequest *http.Request) error {
+func validateAnalytics(er *analytics.EventRequest, httpRequest *http.Request) error {
 	a := httpRequest.FormValue(AnalyticsParameter)
 
 	if a != "" {
 		switch a {
-		case string(Enabled):
-			er.Analytics = Enabled
+		case string(analytics.Enabled):
+			er.Analytics = analytics.Enabled
 			return nil
-		case string(Disabled):
-			er.Analytics = Disabled
+		case string(analytics.Disabled):
+			er.Analytics = analytics.Disabled
 			return nil
 		default:
 			return &errortypes.BadInput{Message: fmt.Sprintf("unknown analytics: '%s'", a)}
@@ -321,7 +280,7 @@ func validateAnalytics(er *EventRequest, httpRequest *http.Request) error {
 /**
  * validate timestamp
  */
-func validateTimestamp(er *EventRequest, httpRequest *http.Request) error {
+func validateTimestamp(er *analytics.EventRequest, httpRequest *http.Request) error {
 	t := httpRequest.FormValue(TimestampParameter)
 
 	if t != "" {
