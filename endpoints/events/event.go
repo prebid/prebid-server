@@ -27,7 +27,7 @@ const (
 	AnalyticsParameter = "x"
 )
 
-var trackingPixelPng = &TrackingPixel{
+var trackingPixelPng = &trackingPixel{
 	Content: []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44,
 		0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
 		0x89, 0x00, 0x00, 0x00, 0x04, 0x73, 0x42, 0x49, 0x54, 0x08, 0x08, 0x08, 0x08, 0x7C, 0x08, 0x64, 0x88,
@@ -37,7 +37,7 @@ var trackingPixelPng = &TrackingPixel{
 	ContentType: "image/png",
 }
 
-type TrackingPixel struct {
+type trackingPixel struct {
 	Content     []byte `json:"content,omitempty"`
 	ContentType string `json:"content_type,omitempty"`
 }
@@ -46,7 +46,7 @@ type eventEndpoint struct {
 	Accounts      stored_requests.AccountFetcher
 	Analytics     analytics.PBSAnalyticsModule
 	Cfg           *config.Configuration
-	TrackingPixel *TrackingPixel
+	TrackingPixel *trackingPixel
 }
 
 func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.PBSAnalyticsModule) httprouter.Handle {
