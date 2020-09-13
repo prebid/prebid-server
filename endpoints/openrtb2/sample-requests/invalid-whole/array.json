@@ -1,6 +1,0 @@
-{
-  "description": "Empty bid request returns error",
-  "mockBidRequest": [],
-  "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: json: cannot unmarshal array into Go value of type openrtb.BidRequest\n"
-}

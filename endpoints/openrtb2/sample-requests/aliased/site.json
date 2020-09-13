@@ -1,5 +1,5 @@
 {
-  "description": "Imp extension comes with both valid bidder name and valid bidder alias as defined in the mockAliases list.",
+  "description": "Imp extension comes with both valid bidder name and valid bidder alias as defined in the config.aliases list.",
   "config": {
       "aliases": "{\"ext\":{\"prebid\":{\"aliases\":{\"test1\":\"appnexus\",\"test2\":\"rubicon\"}}}}"
   },

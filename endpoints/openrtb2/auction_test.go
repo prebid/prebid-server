@@ -52,7 +52,7 @@ type testConfigValues struct {
 	AliasJSON             string   `json:"aliases"`
 	BlacklistedAccountArr []string `json:"blacklistedAccts"`
 	BlacklistedAppArr     []string `json:"blacklistedApps"`
-	AdapterList           []string `json:"adapterList"`
+	AdapterList           []string `json:"disabledAdapters"`
 
 	blacklistedAccountMap map[string]bool
 	blacklistedAppMap     map[string]bool
@@ -144,7 +144,7 @@ func runTestCase(t *testing.T, fileData []byte, testFile string) {
 	// Retrieve values from JSON file
 	test := parseTestFile(t, fileData, testFile)
 
-	test.Config = parseMaps(test.Config)
+	test.Config = generateConfigMaps(test.Config)
 
 	// Run test
 	actualCode, actualBidResponse := doRequest(t, test)
@@ -166,55 +166,44 @@ func parseTestFile(t *testing.T, fileData []byte, testFile string) testCase {
 	t.Helper()
 
 	parsedTestData := testCase{}
-	var err error
+	var err, errEm error
 
 	// Get testCase values
 	parsedTestData.BidRequest, _, _, err = jsonparser.Get(fileData, "mockBidRequest")
 	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", testFile, err)
 
+	// Get testCaseConfig values
+	parsedTestData.Config = &testConfigValues{}
+	var jsonTestConfig json.RawMessage
+
+	jsonTestConfig, _, _, err = jsonparser.Get(fileData, "config")
+	if err == nil {
+		err = json.Unmarshal(jsonTestConfig, parsedTestData.Config)
+		assert.NoError(t, err, "Error unmarshaling root.config from file %s. Desc: %v.", testFile, err)
+	}
+
+	// Get the return code we expect PBS to throw back given test's bidRequest and config
 	parsedReturnCode, err := jsonparser.GetInt(fileData, "expectedReturnCode")
 	assert.NoError(t, err, "Error jsonparsing root.code from file %s. Desc: %v.", testFile, err)
 
 	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
 
-	if parsedTestData.ExpectedReturnCode != 200 {
-		// Get expected error, fail if parsing error
-		parsedTestData.ExpectedErrorMessage, err = jsonparser.GetString(fileData, "expectedErrorMessage")
-		assert.NoError(t, err, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
-	} else {
-		// Get expected response, fail if parsing error
-		parsedTestData.ExpectedBidResponse, _, _, err = jsonparser.Get(fileData, "expectedBidResponse")
+	// Get both bid response and error message, if any
+	parsedTestData.ExpectedBidResponse, _, _, err = jsonparser.Get(fileData, "expectedBidResponse")
+	parsedTestData.ExpectedErrorMessage, errEm = jsonparser.GetString(fileData, "expectedErrorMessage")
+
+	if parsedTestData.ExpectedReturnCode == 200 {
+		// If this test expects a 200 code and a valid bidResponse, there shouldn't be a jsonparse error
 		assert.NoError(t, err, "Error jsonparsing root.expectedBidResponse from file %s. Desc: %v.", testFile, err)
+	} else {
+		// Otherwise, make sure we retrueved the expected error message correctly
+		assert.NoError(t, errEm, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
 	}
-
-	// Get testCaseConfig values
-	parsedTestData.Config = &testConfigValues{}
-	accReq, err := jsonparser.GetBoolean(fileData, "config", "accountRequired")
-	if err == nil {
-		parsedTestData.Config.AccountReq = accReq
-	}
-
-	aliases, err := jsonparser.GetString(fileData, "config", "aliases")
-	if err == nil {
-		parsedTestData.Config.AliasJSON = aliases
-	}
-
-	parsedTestData.Config.BlacklistedAccountArr = parseStringArray(fileData, "blacklistedAccts")
-	parsedTestData.Config.BlacklistedAppArr = parseStringArray(fileData, "blacklistedApps")
-	parsedTestData.Config.AdapterList = parseStringArray(fileData, "disabledAdapters")
 
 	return parsedTestData
 }
 
-func parseStringArray(fileData []byte, jsonField string) []string {
-	results := []string{}
-	jsonparser.ArrayEach(fileData, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		results = append(results, string(value))
-	}, "config", jsonField)
-	return results
-}
-
-func parseMaps(tc *testConfigValues) *testConfigValues {
+func generateConfigMaps(tc *testConfigValues) *testConfigValues {
 	if len(tc.BlacklistedAccountArr) > 0 {
 		tc.blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccountArr))
 		for _, account := range tc.BlacklistedAccountArr {

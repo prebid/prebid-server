@@ -1,5 +1,5 @@
 {
-  "description": "Banner does not define witdth nor height",
+  "description": "Banner with empty format array does not define width nor height in w and h fields",
   "mockBidRequest": {
     "id":"req-id",
     "site": {

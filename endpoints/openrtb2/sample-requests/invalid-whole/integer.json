@@ -1,6 +1,0 @@
-{
-  "description": "Bid request is not an object, is an int. Expect error.",
-  "mockBidRequest": 5,
-  "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: json: cannot unmarshal number into Go value of type openrtb.BidRequest\n"
-}

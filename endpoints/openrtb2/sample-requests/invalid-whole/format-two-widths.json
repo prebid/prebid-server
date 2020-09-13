@@ -1,5 +1,5 @@
 {
-  "description": "Banner comes with no width nor wratio value",
+  "description": "Banner specifies both w and wratio values, which is invalid",
   "mockBidRequest": {
     "id":"req-id",
     "imp": [
