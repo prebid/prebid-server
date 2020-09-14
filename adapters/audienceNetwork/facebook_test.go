@@ -42,11 +42,16 @@ type FacebookExt struct {
 }
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderFacebook, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderFacebook, config.Adapter{
 		Endpoint:   "https://an.facebook.com/placementbid.ortb",
 		PlatformID: "test-platform-id",
 		AppSecret:  "test-app-secret",
 	})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	adapterstest.RunJSONBidderTest(t, "audienceNetworktest", bidder)
 }
 
@@ -54,11 +59,15 @@ func TestMakeTimeoutNoticeApp(t *testing.T) {
 	req := adapters.RequestData{
 		Body: []byte(`{"id":"1234","imp":[{"id":"1234"}],"app":{"publisher":{"id":"5678"}}}`),
 	}
-	bidder, _ := Builder(openrtb_ext.BidderFacebook, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderFacebook, config.Adapter{
 		Endpoint:   "https://an.facebook.com/placementbid.ortb",
 		PlatformID: "test-platform-id",
 		AppSecret:  "test-app-secret",
 	})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
 
 	tb, ok := bidder.(adapters.TimeoutBidder)
 	if !ok {
@@ -75,11 +84,15 @@ func TestMakeTimeoutNoticeBadRequest(t *testing.T) {
 	req := adapters.RequestData{
 		Body: []byte(`{"imp":[{{"id":"1234"}}`),
 	}
-	bidder, _ := Builder(openrtb_ext.BidderFacebook, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderFacebook, config.Adapter{
 		Endpoint:   "https://an.facebook.com/placementbid.ortb",
 		PlatformID: "test-platform-id",
 		AppSecret:  "test-app-secret",
 	})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
 
 	tb, ok := bidder.(adapters.TimeoutBidder)
 	if !ok {

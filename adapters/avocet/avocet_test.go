@@ -15,8 +15,13 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAvocet, config.Adapter{
 		Endpoint: "https://bid.staging.avct.cloud/ortb/bid/5e722ee9bd6df11d063a8013"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	adapterstest.RunJSONBidderTest(t, "avocet", bidder)
 }
 

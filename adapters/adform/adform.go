@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -99,14 +100,13 @@ func isPriceTypeValid(priceType string) (string, bool) {
 
 // Builder builds a new instance of the Adform adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	var uriObj *url.URL
-	uriObj, err := url.Parse(config.Endpoint)
+	uri, err := url.Parse(config.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("Incorrect Adform request url %s, check the configuration, please.", config.Endpoint)
+		return nil, errors.New("Unable to parse endpoint")
 	}
 
 	bidder := &AdformAdapter{
-		URL:     uriObj,
+		URL:     uri,
 		version: version,
 	}
 	return bidder, nil

@@ -9,7 +9,12 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.Bidder33Across, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.Bidder33Across, config.Adapter{
 		Endpoint: "http://ssc.33across.com"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	adapterstest.RunJSONBidderTest(t, "33across", bidder)
 }

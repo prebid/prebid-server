@@ -27,15 +27,25 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
 		Endpoint: "http://ib.adnxs.com/openrtb2"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	adapterstest.RunJSONBidderTest(t, "appnexustest", bidder)
 }
 
 func TestVideoSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
 		Endpoint:   "http://ib.adnxs.com/openrtb2",
 		PlatformID: "8"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	adapterstest.RunJSONBidderTest(t, "appnexusplatformtest", bidder)
 }
 

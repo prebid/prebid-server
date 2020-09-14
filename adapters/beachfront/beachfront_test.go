@@ -10,15 +10,20 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
 		Endpoint:         `https://display.bfmio.com/prebid_display`,
 		ExtraAdapterInfo: `{"video_endpoint":"https://reachms.bfmio.com/bid.json?exchange_id"}`,
 	})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	adapterstest.RunJSONBidderTest(t, "beachfronttest", bidder)
 }
 
 func TestExtraInfoDefaultWhenEmpty(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
 		Endpoint:         `https://display.bfmio.com/prebid_display`,
 		ExtraAdapterInfo: ``,
 	})
@@ -27,16 +32,13 @@ func TestExtraInfoDefaultWhenEmpty(t *testing.T) {
 		t.Fatalf("Builder returned expected error %v", buildErr)
 	}
 
-	beachfrontBidder, castOK := bidder.(*BeachfrontAdapter)
-	if !castOK {
-		t.Fatal("Builder did not return a Beachfront Adapter")
-	}
+	bidderBeachfront, _ := bidder.(*BeachfrontAdapter)
 
-	assert.Equal(t, beachfrontBidder.extraInfo.VideoEndpoint, defaultVideoEndpoint)
+	assert.Equal(t, bidderBeachfront.extraInfo.VideoEndpoint, defaultVideoEndpoint)
 }
 
 func TestExtraInfoDefaultWhenNotSpecified(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
 		Endpoint:         `https://display.bfmio.com/prebid_display`,
 		ExtraAdapterInfo: `{"video_endpoint":""}`,
 	})
@@ -45,16 +47,13 @@ func TestExtraInfoDefaultWhenNotSpecified(t *testing.T) {
 		t.Fatalf("Builder returned expected error %v", buildErr)
 	}
 
-	beachfrontBidder, castOK := bidder.(*BeachfrontAdapter)
-	if !castOK {
-		t.Fatal("Builder did not return a Beachfront Adapter")
-	}
+	bidderBeachfront, _ := bidder.(*BeachfrontAdapter)
 
-	assert.Equal(t, beachfrontBidder.extraInfo.VideoEndpoint, defaultVideoEndpoint)
+	assert.Equal(t, bidderBeachfront.extraInfo.VideoEndpoint, defaultVideoEndpoint)
 }
 
 func TestExtraInfoMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
 		Endpoint:         `https://display.bfmio.com/prebid_display`,
 		ExtraAdapterInfo: `malformed`,
 	})

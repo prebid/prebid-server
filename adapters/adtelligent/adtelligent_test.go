@@ -9,8 +9,12 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAdtelligent, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdtelligent, config.Adapter{
 		Endpoint: "http://ghb.adtelligent.com/pbs/ortb"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
 
 	adapterstest.RunJSONBidderTest(t, "adtelligenttest", bidder)
 }

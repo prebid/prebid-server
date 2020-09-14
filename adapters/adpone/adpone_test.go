@@ -12,7 +12,12 @@ const testsDir = "adponetest"
 const testsBidderEndpoint = "http://localhost/prebid_server"
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAdpone, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdpone, config.Adapter{
 		Endpoint: testsBidderEndpoint})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	adapterstest.RunJSONBidderTest(t, testsDir, bidder)
 }

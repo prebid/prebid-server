@@ -9,7 +9,12 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAdprime, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdprime, config.Adapter{
 		Endpoint: "http://delta.adprime.com/?c=o&m=ortb"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	adapterstest.RunJSONBidderTest(t, "adprimetest", bidder)
 }

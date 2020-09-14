@@ -11,7 +11,12 @@ import (
 const testsBidderEndpoint = "https://localhost/bid/4"
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAJA, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAJA, config.Adapter{
 		Endpoint: testsBidderEndpoint})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	adapterstest.RunJSONBidderTest(t, "ajatest", bidder)
 }

@@ -13,14 +13,24 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
 		Endpoint: "https://d.socdm.com/adsv/v1"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	adapterstest.RunJSONBidderTest(t, "adgenerationtest", bidder)
 }
 
 func TestgetRequestUri(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
 		Endpoint: "https://d.socdm.com/adsv/v1"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)
 
 	// Test items
@@ -122,8 +132,13 @@ func TestGetSizes(t *testing.T) {
 }
 
 func TestGetCurrency(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
 		Endpoint: "https://d.socdm.com/adsv/v1"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)
 
 	// Test items
@@ -188,8 +203,13 @@ func TestCreateAd(t *testing.T) {
 }
 
 func TestMakeBids(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
 		Endpoint: "https://d.socdm.com/adsv/v1"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)
 
 	internalRequest := &openrtb.BidRequest{

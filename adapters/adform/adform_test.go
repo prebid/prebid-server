@@ -26,9 +26,21 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAdform, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
 		Endpoint: "http://adx.adform.net/adx"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
+
 	adapterstest.RunJSONBidderTest(t, "adformtest", bidder)
+}
+
+func TestEndpointMalformed(t *testing.T) {
+	_, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
+		Endpoint: ` https://malformed`})
+
+	assert.Error(t, buildErr)
 }
 
 type aTagInfo struct {
@@ -266,8 +278,12 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 // OpenRTB auction tests
 
 func TestOpenRTBRequest(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAdform, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
 		Endpoint: "http://adx.adform.net"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned expected error %v", buildErr)
+	}
 
 	testData := createTestData(true)
 	request := createOpenRtbRequest(&testData)

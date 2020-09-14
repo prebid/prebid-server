@@ -31,6 +31,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/avocet"
 	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/beintoo"
+	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
@@ -65,12 +66,14 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderFacebook:     audienceNetwork.Builder,
 		openrtb_ext.BidderAvocet:       avocet.Builder,
 		openrtb_ext.BidderBeachfront:   beachfront.Builder,
-		openrtb_ext.BidderBeintoo:      beintoo.Builder, // 22 done
+		openrtb_ext.BidderBeintoo:      beintoo.Builder,
+		openrtb_ext.BidderBrightroll:   brightroll.Builder,
+
+		// 23 done
 	}
 }
 
 // 54 left
-// 	openrtb_ext.BidderBrightroll:   brightroll.NewBrightrollBidder(cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderBrightroll)].ExtraAdapterInfo),
 // 	openrtb_ext.BidderConsumable:   consumable.NewConsumableBidder(cfg.Adapters[string(openrtb_ext.BidderConsumable)].Endpoint),
 // 	openrtb_ext.BidderCpmstar:      cpmstar.NewCpmstarBidder(cfg.Adapters[string(openrtb_ext.BidderCpmstar)].Endpoint),
 // 	openrtb_ext.BidderDatablocks:   datablocks.NewDatablocksBidder(cfg.Adapters[string(openrtb_ext.BidderDatablocks)].Endpoint),
