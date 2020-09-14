@@ -144,20 +144,22 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 // }
 
 func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
-	bidders, errs := buildBidders(cfg.Adapters)
+	bidders, errs := buildBidders(cfg.Adapters, infos)
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	biddersLegacy := buildLegacyBidders()
+	biddersLegacy := buildLegacyBidders(cfg.Adapters, infos)
 	for k, v := range biddersLegacy {
 		bidders[k] = v
 	}
 
-	return wrapWithMiddleware(bidders), nil
+	wrapWithMiddleware(bidders)
+
+	return bidders, nil
 }
 
-func buildBidders(adapterConfig map[string]config.Adapter) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
+func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
 	builders := newAdapterBuildersMap()
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 
@@ -190,31 +192,39 @@ func buildBidders(adapterConfig map[string]config.Adapter) (map[openrtb_ext.Bidd
 	return bidders, errs
 }
 
-func buildLegacyBidders() map[openrtb_ext.BidderName]adapters.Bidder {
-	bidders := make(map[openrtb_ext.BidderName]adapters.Adapter)
+func buildLegacyBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
+	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 4)
 
-	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{
-		// TODO #267: Upgrade the Conversant adapter
-		openrtb_ext.BidderConversant: conversant.NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderConversant)].Endpoint),
-		// TODO #212: Upgrade the Index adapter
-		openrtb_ext.BidderIx: ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderIx)].Endpoint),
-		// TODO #213: Upgrade the Lifestreet adapter
-		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderLifestreet)].Endpoint),
-		// TODO #215: Upgrade the Pulsepoint adapter
-		openrtb_ext.BidderPulsepoint: pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderPulsepoint)].Endpoint),
+	// Conversant
+	if infos[string(openrtb_ext.BidderConversant)].Status == adapters.StatusActive {
+		adapter := conversant.NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderConversant)].Endpoint)
+		bidders[openrtb_ext.BidderConversant] = adaptLegacyAdapter(adapter)
 	}
 
-	for name, bidder := range legacyBidders {
-		// Clean out any disabled bidders
-		if infos[string(name)].Status == adapters.StatusActive {
-			allBidders[name] = adaptLegacyAdapter(bidder)
-		}
+	// Index
+	if infos[string(openrtb_ext.BidderIx)].Status == adapters.StatusActive {
+		adapter := ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderIx)].Endpoint)
+		bidders[openrtb_ext.BidderIx] = adaptLegacyAdapter(adapter)
 	}
+
+	// Lifestreet
+	if infos[string(openrtb_ext.BidderLifestreet)].Status == adapters.StatusActive {
+		adapter := lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderLifestreet)].Endpoint)
+		bidders[openrtb_ext.BidderLifestreet] = adaptLegacyAdapter(adapter)
+	}
+
+	// Pulsepoint
+	if infos[string(openrtb_ext.BidderPulsepoint)].Status == adapters.StatusActive {
+		adapter := pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderPulsepoint)].Endpoint)
+		bidders[openrtb_ext.BidderPulsepoint] = adaptLegacyAdapter(adapter)
+	}
+
+	return bidders
 }
 
 func wrapWithMiddleware(bidders map[openrtb_ext.BidderName]adaptedBidder) {
-	for name, bidder := range allBidders {
-		allBidders[name] = ensureValidBids(bidder)
+	for name, bidder := range bidders {
+		bidders[name] = addValidatedBidderMiddleware(bidder)
 	}
 }
 
