@@ -37,7 +37,11 @@
   "httpCalls": [
     {
       "expectedRequest": {
+<<<<<<< HEAD
         "uri": "http://colossusssp.com/?c=o&m=rtb",
+=======
+        "uri": "http://example.com/?c=o&m=rtb",
+>>>>>>> cd364bae287009a18923abfd943aaee06f03cdb2
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -96,11 +100,17 @@
                               }
                           }
                       }
+<<<<<<< HEAD
                   ],
                   "seat": "colossus"
               }
           ],
           "cur": "USD"
+=======
+                  ]
+              }
+          ]
+>>>>>>> cd364bae287009a18923abfd943aaee06f03cdb2
         }
       }
     }

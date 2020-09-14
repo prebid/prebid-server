@@ -33,10 +33,17 @@
             "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
         }
     },
+<<<<<<< HEAD
 	"httpCalls": [{
 		"expectedRequest": {
 			"uri": "http://colossusssp.com/?c=o&m=rtb",
 			"body": {
+=======
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://example.com/?c=o&m=rtb",
+            "body": {
+>>>>>>> cd364bae287009a18923abfd943aaee06f03cdb2
                 "id": "test-request-id",
                 "imp": [
                     {

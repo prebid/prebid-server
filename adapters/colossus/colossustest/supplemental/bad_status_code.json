@@ -16,10 +16,10 @@
                         }
                     ]
                 },
-                "tagid": "17",
+                "tagid": "100000000",
                 "ext": {
                     "bidder": {
-                        "TagID": "17"
+                        "TagID": "100000000"
                     }
                 }
             }
@@ -28,20 +28,11 @@
             "id": "1",
             "bundle": "com.wls.testwlsapplication"
         },
-        "device": {
-            "ip": "123.123.123.123",
-            "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
-        }
+        "device": {}
     },
-<<<<<<< HEAD
 	"httpCalls": [{
 		"expectedRequest": {
-			"uri": "http://colossusssp.com/?c=o&m=rtb",
-=======
-    "httpCalls": [{
-        "expectedRequest": {
-            "uri": "http://example.com/?c=o&m=rtb",
->>>>>>> cd364bae287009a18923abfd943aaee06f03cdb2
+			"uri": "http://example.com/?c=o&m=rtb",
 			"body": {
                 "id": "test-request-id",
                 "imp": [
@@ -59,10 +50,10 @@
                                 }
                             ]
                         },
-                        "tagid": "17",
+                        "tagid": "100000000",
                         "ext": {
                             "bidder": {
-                                "TagID": "17"
+                                "TagID": "100000000"
                             }
                         }
                     }
@@ -71,15 +62,18 @@
                     "id": "1",
                     "bundle": "com.wls.testwlsapplication"
                 },
-                "device": {
-                    "ip": "123.123.123.123",
-                    "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
-                }
+                "device": {}
             }
 		},
 		"mockResponse": {
-			"status": 204,
+			"status": 400,
 			"body": {}
 		}
-	}]
+    }],
+    "expectedMakeBidsErrors": [
+        {
+          "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+          "comparison": "literal"
+        }
+    ]
 }
