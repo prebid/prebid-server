@@ -232,7 +232,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	disabledBidders := map[string]string{
 		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
 	}
-	activeBiddersMap := exchange.DisableBidders(bidderInfos, disabledBidders)
+	activeBiddersMap := exchange.ActiveBidders(bidderInfos, disabledBidders)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 

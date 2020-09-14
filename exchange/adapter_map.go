@@ -37,6 +37,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/cpmstar"
 	"github.com/prebid/prebid-server/adapters/datablocks"
 	"github.com/prebid/prebid-server/adapters/dmx"
+	"github.com/prebid/prebid-server/adapters/emx_digital"
+	"github.com/prebid/prebid-server/adapters/engagebdr"
+	"github.com/prebid/prebid-server/adapters/eplanning"
+	"github.com/prebid/prebid-server/adapters/gamma"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
@@ -76,17 +80,17 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderCpmstar:      cpmstar.Builder,
 		openrtb_ext.BidderDatablocks:   datablocks.Builder,
 		openrtb_ext.BidderDmx:          dmx.Builder,
+		openrtb_ext.BidderEmxDigital:   emx_digital.Builder,
+		openrtb_ext.BidderEngageBDR:    engagebdr.Builder,
+		openrtb_ext.BidderEPlanning:    eplanning.Builder,
+		openrtb_ext.BidderGamma:        gamma.Builder,
 
-		// 27 done
+		// 31 done
 	}
 }
 
-// 49 left
+// 45 left
 
-// 	openrtb_ext.BidderEmxDigital:   emx_digital.NewEmxDigitalBidder(cfg.Adapters[string(openrtb_ext.BidderEmxDigital)].Endpoint),
-// 	openrtb_ext.BidderEngageBDR:    engagebdr.NewEngageBDRBidder(client, cfg.Adapters[string(openrtb_ext.BidderEngageBDR)].Endpoint),
-// 	openrtb_ext.BidderEPlanning:    eplanning.NewEPlanningBidder(client, cfg.Adapters[string(openrtb_ext.BidderEPlanning)].Endpoint)
-// 	openrtb_ext.BidderGamma:           gamma.NewGammaBidder(cfg.Adapters[string(openrtb_ext.BidderGamma)].Endpoint),
 // 	openrtb_ext.BidderGamoshi:         gamoshi.NewGamoshiBidder(cfg.Adapters[string(openrtb_ext.BidderGamoshi)].Endpoint),
 // 	openrtb_ext.BidderGrid:            grid.NewGridBidder(cfg.Adapters[string(openrtb_ext.BidderGrid)].Endpoint),
 // 	openrtb_ext.BidderGumGum:          gumgum.NewGumGumBidder(cfg.Adapters[string(openrtb_ext.BidderGumGum)].Endpoint),
@@ -140,8 +144,20 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 // }
 
 func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
-	adapterConfig := cfg.Adapters
+	bidders, errs := buildBidders(cfg.Adapters)
+	if len(errs) > 0 {
+		return nil, errs
+	}
 
+	biddersLegacy := buildLegacyBidders()
+	for k, v := range biddersLegacy {
+		bidders[k] = v
+	}
+
+	return wrapWithMiddleware(bidders), nil
+}
+
+func buildBidders(adapterConfig map[string]config.Adapter) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
 	builders := newAdapterBuildersMap()
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 
@@ -164,13 +180,22 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		}
 	}
 
-	if len(errs) > 0 {
-		return nil, errs
+	for name, bidder := range bidders {
+		// Clean out any disabled bidders
+		if infos[string(name)].Status == adapters.StatusActive {
+			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client, cfg, me, name)
+		}
 	}
+
+	return bidders, errs
+}
+
+func buildLegacyBidders() map[openrtb_ext.BidderName]adapters.Bidder {
+	bidders := make(map[openrtb_ext.BidderName]adapters.Adapter)
 
 	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{
 		// TODO #267: Upgrade the Conversant adapter
-		openrtb_ext.BidderConversant: conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderConversant)].Endpoint),
+		openrtb_ext.BidderConversant: conversant.NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderConversant)].Endpoint),
 		// TODO #212: Upgrade the Index adapter
 		openrtb_ext.BidderIx: ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderIx)].Endpoint),
 		// TODO #213: Upgrade the Lifestreet adapter
@@ -179,33 +204,22 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderPulsepoint: pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderPulsepoint)].Endpoint),
 	}
 
-	allBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(bidders)+len(legacyBidders))
-
-	// Wrap legacy and openrtb Bidders behind a common interface, so that the Exchange doesn't need to concern
-	// itself with the differences.
 	for name, bidder := range legacyBidders {
 		// Clean out any disabled bidders
 		if infos[string(name)].Status == adapters.StatusActive {
 			allBidders[name] = adaptLegacyAdapter(bidder)
 		}
 	}
-	for name, bidder := range bidders {
-		// Clean out any disabled bidders
-		if infos[string(name)].Status == adapters.StatusActive {
-			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client, cfg, me, name)
-		}
-	}
+}
 
-	// Apply any middleware used for global Bidder logic.
+func wrapWithMiddleware(bidders map[openrtb_ext.BidderName]adaptedBidder) {
 	for name, bidder := range allBidders {
 		allBidders[name] = ensureValidBids(bidder)
 	}
-
-	return allBidders, nil
 }
 
-// DisableBidders get all bidders but disabled ones
-func DisableBidders(biddersInfo adapters.BidderInfos, disabledBidders map[string]string) (bidderMap map[string]openrtb_ext.BidderName) {
+// ActiveBidders get all active bidders
+func ActiveBidders(biddersInfo adapters.BidderInfos, disabledBidders map[string]string) (bidderMap map[string]openrtb_ext.BidderName) {
 	bidderMap = make(map[string]openrtb_ext.BidderName)
 
 	// Set up error messages for disabled bidders
