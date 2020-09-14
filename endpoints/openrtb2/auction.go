@@ -46,9 +46,9 @@ var (
 	dntEnabled  int8   = 1
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, accounts stored_requests.AccountFetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
 
-	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
+	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
@@ -64,6 +64,7 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 		validator,
 		requestsById,
 		empty_fetcher.EmptyFetcher{},
+		accounts,
 		categories,
 		cfg,
 		met,
@@ -82,6 +83,7 @@ type endpointDeps struct {
 	paramsValidator           openrtb_ext.BidderParamValidator
 	storedReqFetcher          stored_requests.Fetcher
 	videoFetcher              stored_requests.Fetcher
+	accounts                  stored_requests.AccountFetcher
 	categories                stored_requests.CategoryFetcher
 	cfg                       *config.Configuration
 	metricsEngine             pbsmetrics.MetricsEngine
@@ -153,15 +155,18 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		labels.PubID = getAccountID(req.Site.Publisher)
 	}
 
-	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
-		errL = append(errL, acctIdErr)
+	// Look up account now that we have resolved the pubID value
+	account, acctIDErrs := deps.getAccount(ctx, labels.PubID)
+	if len(acctIDErrs) > 0 {
+		errL = append(errL, acctIDErrs...)
 		writeError(errL, w, &labels)
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories, nil)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, account, &deps.categories, nil)
 	ao.Request = req
 	ao.Response = response
+	ao.Account = account
 	if err != nil {
 		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
@@ -1305,14 +1310,55 @@ func getAccountID(pub *openrtb.Publisher) string {
 	return pbsmetrics.PublisherUnknown
 }
 
-func validateAccount(cfg *config.Configuration, pubID string) error {
-	var err error = nil
-	if cfg.AccountRequired && pubID == pbsmetrics.PublisherUnknown {
-		// If specified in the configuration, discard requests that don't come with an account ID.
-		err = error(&errortypes.AcctRequired{Message: fmt.Sprintf("Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.")})
-	} else if _, found := cfg.BlacklistedAcctMap[pubID]; found {
-		// Blacklist account now that we have resolved the value
-		err = error(&errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, please reach out to the prebid server host.", pubID)})
+func (deps *endpointDeps) getAccount(ctx context.Context, pubID string) (account *config.Account, errs []error) {
+	// Check BlacklistedAcctMap until we have deprecated it
+	if _, found := deps.cfg.BlacklistedAcctMap[pubID]; found {
+		return nil, []error{&errortypes.BlacklistedAcct{
+			Message: fmt.Sprintf("Prebid-server has disabled Account ID: %s, please reach out to the prebid server host.", pubID),
+		}}
 	}
-	return err
+	if deps.cfg.AccountRequired && pubID == pbsmetrics.PublisherUnknown {
+		return nil, []error{&errortypes.AcctRequired{
+			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
+		}}
+	}
+	if accountJSON, accErrs := deps.accounts.FetchAccount(ctx, pubID); len(accErrs) > 0 || accountJSON == nil {
+		// pubID does not reference a valid account
+		if len(accErrs) > 0 {
+			errs = append(errs, errs...)
+		}
+		if deps.cfg.AccountRequired && deps.cfg.AccountDefaults.Disabled {
+			errs = append(errs, &errortypes.AcctRequired{
+				Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
+			})
+			return nil, errs
+		}
+		// Make a copy of AccountDefaults instead of taking a reference,
+		// to preserve original pubID in case is needed to check NonStandardPublisherMap
+		pubAccount := deps.cfg.AccountDefaults
+		pubAccount.ID = pubID
+		account = &pubAccount
+	} else {
+		// pubID resolved to a valid account, merge with AccountDefaults for a complete config
+		account = &config.Account{}
+		completeJSON, err := jsonpatch.MergePatch(deps.cfg.AccountDefaultsJSON(), accountJSON)
+		if err == nil {
+			err = json.Unmarshal(completeJSON, account)
+		}
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		// Fill in ID if needed, so it can be left out of account definition
+		if len(account.ID) == 0 {
+			account.ID = pubID
+		}
+	}
+	if account.Disabled {
+		errs = append(errs, &errortypes.BlacklistedAcct{
+			Message: fmt.Sprintf("Prebid-server has disabled Account ID: %s, please reach out to the prebid server host.", pubID),
+		})
+		return nil, errs
+	}
+	return
 }

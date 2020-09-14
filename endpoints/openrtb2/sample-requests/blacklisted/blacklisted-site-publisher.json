@@ -86,5 +86,5 @@
     }
   },
   "expectedReturnCode": 503,
-  "expectedErrorMessage": "Invalid request: Prebid-server has blacklisted Account ID: bad_acct, please reach out to the prebid server host.\n"
+  "expectedErrorMessage": "Invalid request: Prebid-server has disabled Account ID: bad_acct, please reach out to the prebid server host.\n"
 }
