@@ -6,5 +6,5 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "inmobitest", NewInmobiAdapter("https://api.w.inmobi.com/showad/openrtb/bidder/prebid"))
+	adapterstest.RunJSONBidderTest(t, "inmobitest", NewInMobiAdapter("https://api.w.inmobi.com/showad/openrtb/bidder/prebid"))
 }

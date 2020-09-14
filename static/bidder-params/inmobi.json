@@ -6,7 +6,7 @@
   "properties": {
     "plc": {
       "type": ["string", "integer"],
-      "description": "An ID corresponding to the placement selling the impression"
+      "description": "An integer corresponding to the placement ID selling the impression"
     }
   },
   "required": ["plc"]
