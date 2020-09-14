@@ -9,12 +9,15 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "avocet", NewAvocetAdapter("https://bid.staging.avct.cloud/ortb/bid/5e722ee9bd6df11d063a8013"))
+	bidder, _ := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+		Endpoint: "https://bid.staging.avct.cloud/ortb/bid/5e722ee9bd6df11d063a8013"})
+	adapterstest.RunJSONBidderTest(t, "avocet", bidder)
 }
 
 func TestAvocetAdapter_MakeRequests(t *testing.T) {
