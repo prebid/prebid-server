@@ -281,7 +281,7 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewConversantAdapter(config *adapters.HTTPAdapterConfig, uri string) *ConversantAdapter {
+func NewConversantLegacyAdapter(config *adapters.HTTPAdapterConfig, uri string) *ConversantAdapter {
 	a := adapters.NewHTTPAdapter(config)
 
 	return &ConversantAdapter{
