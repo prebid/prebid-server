@@ -69,6 +69,8 @@ import (
 	"github.com/prebid/prebid-server/adapters/smaato"
 	"github.com/prebid/prebid-server/adapters/smartadserver"
 	"github.com/prebid/prebid-server/adapters/smartrtb"
+	"github.com/prebid/prebid-server/adapters/somoaudience"
+	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -126,23 +128,19 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderOpenx:           openx.Builder,
 		openrtb_ext.BidderOrbidder:        orbidder.Builder,
 		openrtb_ext.BidderPubmatic:        pubmatic.Builder,
+		openrtb_ext.BidderPubnative:       pubnative.Builder,
+		openrtb_ext.BidderRhythmone:       rhythmone.Builder,
+		openrtb_ext.BidderRTBHouse:        rtbhouse.Builder,
 		openrtb_ext.BidderRubicon:         rubicon.Builder,
 		openrtb_ext.BidderSharethrough:    sharethrough.Builder,
 		openrtb_ext.BidderSmaato:          smaato.Builder,
 		openrtb_ext.BidderSmartadserver:   smartadserver.Builder,
 		openrtb_ext.BidderSmartRTB:        smartrtb.Builder,
-		openrtb_ext.BidderPubnative:       pubnative.Builder,
-		openrtb_ext.BidderRhythmone:       rhythmone.Builder,
-		openrtb_ext.BidderRTBHouse:        rtbhouse.Builder,
-
-		// 56 done
+		openrtb_ext.BidderSomoaudience:    somoaudience.Builder,
+		openrtb_ext.BidderSonobi:          sonobi.Builder,
 	}
 }
 
-// 20 left
-
-// 	openrtb_ext.BidderSomoaudience:     somoaudience.NewSomoaudienceBidder(cfg.Adapters[string(openrtb_ext.BidderSomoaudience)].Endpoint),
-// 	openrtb_ext.BidderSonobi:           sonobi.NewSonobiBidder(client, cfg.Adapters[string(openrtb_ext.BidderSonobi)].Endpoint),
 // 	openrtb_ext.BidderSovrn:            sovrn.NewSovrnBidder(client, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
 // 	openrtb_ext.BidderSynacormedia:     synacormedia.NewSynacorMediaBidder(cfg.Adapters[string(openrtb_ext.BidderSynacormedia)].Endpoint),
 // 	openrtb_ext.BidderTappx:            tappx.NewTappxBidder(client, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderTappx))].Endpoint),
