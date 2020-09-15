@@ -48,9 +48,9 @@ func main() {
 */
 
 func InitPrebidServer(configFile string) {
-	//init contents	
+	//init contents
 	rand.Seed(time.Now().UnixNano())
-	
+
 	//main contents
 	cfg, err := loadConfig(configFile)
 	if err != nil {
@@ -96,7 +96,7 @@ func OrtbAuction(w http.ResponseWriter, r *http.Request) error {
 	return router.OrtbAuctionEndpointWrapper(w, r)
 }
 
-func VideoAuction(w http.ResponseWriter, r *http.Request) error {
+var VideoAuction = func(w http.ResponseWriter, r *http.Request) error {
 	return router.VideoAuctionEndpointWrapper(w, r)
 }
 
