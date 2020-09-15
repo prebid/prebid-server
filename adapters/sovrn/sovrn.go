@@ -14,6 +14,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
@@ -226,6 +227,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 		headers.Add(headerName, headerValue)
 	}
 }
+
 func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -298,16 +300,18 @@ func getTagid(sovrnExt openrtb_ext.ExtImpSovrn) string {
 	}
 }
 
-// NewSovrnAdapter create a new SovrnAdapter instance
-func NewSovrnAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *SovrnAdapter {
-	return NewSovrnBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
-}
-
-func NewSovrnBidder(client *http.Client, endpoint string) *SovrnAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
-
+// NewSovrnLegacyAdapter create a new SovrnAdapter instance
+func NewSovrnLegacyAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *SovrnAdapter {
 	return &SovrnAdapter{
-		http: a,
+		http: adapters.NewHTTPAdapter(config),
 		URI:  endpoint,
 	}
+}
+
+// Builder builds a new instance of the Sovrn adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &SovrnAdapter{
+		URI: config.Endpoint,
+	}
+	return bidder, nil
 }

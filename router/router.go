@@ -158,7 +158,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"lifestreet": lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint),
 		"conversant": conversant.NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
 		"adform":     adform.NewAdformLegacyBidder(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
-		"sovrn":      sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
+		"sovrn":      sovrn.NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
 	}
 }
 

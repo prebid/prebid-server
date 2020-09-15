@@ -71,6 +71,8 @@ import (
 	"github.com/prebid/prebid-server/adapters/smartrtb"
 	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sonobi"
+	"github.com/prebid/prebid-server/adapters/sovrn"
+	"github.com/prebid/prebid-server/adapters/synacormedia"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -138,11 +140,11 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSmartRTB:        smartrtb.Builder,
 		openrtb_ext.BidderSomoaudience:    somoaudience.Builder,
 		openrtb_ext.BidderSonobi:          sonobi.Builder,
+		openrtb_ext.BidderSovrn:           sovrn.Builder,
+		openrtb_ext.BidderSynacormedia:    synacormedia.Builder,
 	}
 }
 
-// 	openrtb_ext.BidderSovrn:            sovrn.NewSovrnBidder(client, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
-// 	openrtb_ext.BidderSynacormedia:     synacormedia.NewSynacorMediaBidder(cfg.Adapters[string(openrtb_ext.BidderSynacormedia)].Endpoint),
 // 	openrtb_ext.BidderTappx:            tappx.NewTappxBidder(client, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderTappx))].Endpoint),
 // 	openrtb_ext.BidderTelaria:          telaria.NewTelariaBidder(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderTelaria))].Endpoint),
 // 	openrtb_ext.BidderTriplelift:       triplelift.NewTripleliftBidder(client, cfg.Adapters[string(openrtb_ext.BidderTriplelift)].Endpoint),
