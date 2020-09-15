@@ -55,6 +55,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/marsmedia"
 	"github.com/prebid/prebid-server/adapters/mgid"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
+	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -106,12 +107,13 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderLogicad:        logicad.Builder,
 		openrtb_ext.BidderMarsmedia:      marsmedia.Builder,
 		openrtb_ext.BidderMgid:           mgid.Builder,
+		openrtb_ext.BidderRubicon:        rubicon.Builder,
 
-		// 42 done
+		// 43 done
 	}
 }
 
-// 34 left
+// 33 left
 
 // 	openrtb_ext.BidderMobileFuse:      mobilefuse.NewMobileFuseBidder(cfg.Adapters[string(openrtb_ext.BidderMobileFuse)].Endpoint),
 // 	openrtb_ext.BidderNanoInteractive: nanointeractive.NewNanoIneractiveBidder(cfg.Adapters[string(openrtb_ext.BidderNanoInteractive)].Endpoint),
@@ -122,12 +124,6 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 // 	openrtb_ext.BidderPubnative:       pubnative.NewPubnativeBidder(cfg.Adapters[string(openrtb_ext.BidderPubnative)].Endpoint),
 // 	openrtb_ext.BidderRhythmone:       rhythmone.NewRhythmoneBidder(cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint),
 // 	openrtb_ext.BidderRTBHouse:        rtbhouse.NewRTBHouseBidder(cfg.Adapters[string(openrtb_ext.BidderRTBHouse)].Endpoint),
-// 	openrtb_ext.BidderRubicon: rubicon.NewRubiconBidder(
-// 		client,
-// 		cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
-// 		cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username,
-// 		cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password,
-// 		cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
 
 // 	openrtb_ext.BidderSharethrough:     sharethrough.NewSharethroughBidder(cfg.Adapters[string(openrtb_ext.BidderSharethrough)].Endpoint),
 // 	openrtb_ext.BidderSmaato:           smaato.NewSmaatoBidder(cfg.Adapters[string(openrtb_ext.BidderSmaato)].Endpoint),

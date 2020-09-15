@@ -361,18 +361,22 @@ type Adapter struct {
 	//   {{.USPrivacy}} -- This will be replaced with the "us_privacy" property sent to /cookie_sync
 	//
 	// For more info on templates, see: https://golang.org/pkg/text/template/
-	UserSyncURL string `mapstructure:"usersync_url"`
-	XAPI        struct {
-		Username string `mapstructure:"username"`
-		Password string `mapstructure:"password"`
-		Tracker  string `mapstructure:"tracker"`
-	} `mapstructure:"xapi"` // needed for Rubicon
+	UserSyncURL      string `mapstructure:"usersync_url"`
 	Disabled         bool   `mapstructure:"disabled"`
 	ExtraAdapterInfo string `mapstructure:"extra_info"`
+
+	// needed for Rubicon
+	XAPI AdapterXAPI `mapstructure:"xapi"`
 
 	// needed for Facebook
 	PlatformID string `mapstructure:"platform_id"`
 	AppSecret  string `mapstructure:"app_secret"`
+}
+
+type AdapterXAPI struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Tracker  string `mapstructure:"tracker"`
 }
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
