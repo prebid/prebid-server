@@ -3,13 +3,15 @@ package gumgum
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // GumGumAdapter implements Bidder interface.
@@ -164,9 +166,10 @@ func validateVideoParams(video *openrtb.Video) (err error) {
 	return nil
 }
 
-// NewGumGumBidder configures bidder endpoint.
-func NewGumGumBidder(endpoint string) *GumGumAdapter {
-	return &GumGumAdapter{
-		URI: endpoint,
+// Builder builds a new instance of the GumGum adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &GumGumAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }
