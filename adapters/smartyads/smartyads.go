@@ -5,26 +5,32 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"text/template"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // Implements Bidder interface.
 type SmartyAdsAdapter struct {
-	endpoint string
+	endpoint template.Template
 }
 
-func NewSmartyAdsBidder(endpoint string) *SmartyAdsAdapter {
-	return &SmartyAdsAdapter{endpoint: endpoint}
+func NewSmartyAdsBidder(endpointTemplate string) *SmartyAdsAdapter {
+	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
+	if err != nil {
+		return nil
+	}
+	return &SmartyAdsAdapter{endpoint: *template}
 }
 
 func (a *SmartyAdsAdapter) CheckHasImps(request *openrtb.BidRequest) error {
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
-			Message: "SmartyAds: Missing Imp object",
+			Message: "Missing Imp object",
 		}
 		return err
 	}
@@ -72,6 +78,16 @@ func (a *SmartyAdsAdapter) MakeRequests(
 		return nil, []error{noImps}
 	}
 
+	smartyadsExt, err := getImpressionExt(&request.Imp[0])
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	url, err := a.buildEndpointURL(smartyadsExt)
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
@@ -80,31 +96,52 @@ func (a *SmartyAdsAdapter) MakeRequests(
 	return []*adapters.RequestData{{
 		Method:  http.MethodPost,
 		Body:    reqJSON,
-		Uri:     a.endpoint,
+		Uri:     url,
 		Headers: *GetHeaders(&request),
 	}}, nil
 }
 
+func getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtSmartyAds, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
+	var smartyadsExt openrtb_ext.ExtSmartyAds
+	if err := json.Unmarshal(bidderExt.Bidder, &smartyadsExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
+	return &smartyadsExt, nil
+}
+
+func (a *SmartyAdsAdapter) buildEndpointURL(params *openrtb_ext.ExtSmartyAds) (string, error) {
+	endpointParams := macros.EndpointTemplateParams{Host: params.Host, SourceId: params.SourceId, AccountID: params.AccountID}
+	return macros.ResolveMacros(a.endpoint, endpointParams)
+}
+
 func (a *SmartyAdsAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusNoContent {
-		return &errortypes.BadInput{Message: " Invalid Bid Request received by the server"}
+		return &errortypes.BadInput{Message: "No bid response"}
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf(" Unexpected status code: [ %d ] ", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: [ %d ] ", response.StatusCode),
 		}
 	}
 
 	if response.StatusCode == http.StatusServiceUnavailable {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf(" Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
+			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
 		}
 	}
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf(" Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
+			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
 		}
 	}
 

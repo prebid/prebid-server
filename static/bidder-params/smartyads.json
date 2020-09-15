@@ -3,6 +3,19 @@
   "title": "SmartyAds Adapter Params",
   "description": "A schema which validates params accepted by the SmartyAds adapter",
   "type": "object",
-  "properties": {},
-  "required": []
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Network host to send request"
+    },
+    "sourceid": {
+      "type": "string",
+      "description": "Partner id"
+    },
+    "accountid": {
+      "type": "string",
+      "description": "Partner id"
+    }
+  },
+  "required": ["host", "sourceid", "accountid"]
 }
