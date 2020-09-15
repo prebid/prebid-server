@@ -56,6 +56,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/mgid"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
+	"github.com/prebid/prebid-server/adapters/sharethrough"
+	"github.com/prebid/prebid-server/adapters/smaato"
+	"github.com/prebid/prebid-server/adapters/smartadserver"
+	"github.com/prebid/prebid-server/adapters/smartrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -108,12 +112,16 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMarsmedia:      marsmedia.Builder,
 		openrtb_ext.BidderMgid:           mgid.Builder,
 		openrtb_ext.BidderRubicon:        rubicon.Builder,
+		openrtb_ext.BidderSharethrough:   sharethrough.Builder,
+		openrtb_ext.BidderSmaato:         smaato.Builder,
+		openrtb_ext.BidderSmartadserver:  smartadserver.Builder,
+		openrtb_ext.BidderSmartRTB:       smartrtb.Builder,
 
-		// 43 done
+		// 47 done
 	}
 }
 
-// 33 left
+// 29 left
 
 // 	openrtb_ext.BidderMobileFuse:      mobilefuse.NewMobileFuseBidder(cfg.Adapters[string(openrtb_ext.BidderMobileFuse)].Endpoint),
 // 	openrtb_ext.BidderNanoInteractive: nanointeractive.NewNanoIneractiveBidder(cfg.Adapters[string(openrtb_ext.BidderNanoInteractive)].Endpoint),
@@ -125,10 +133,6 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 // 	openrtb_ext.BidderRhythmone:       rhythmone.NewRhythmoneBidder(cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint),
 // 	openrtb_ext.BidderRTBHouse:        rtbhouse.NewRTBHouseBidder(cfg.Adapters[string(openrtb_ext.BidderRTBHouse)].Endpoint),
 
-// 	openrtb_ext.BidderSharethrough:     sharethrough.NewSharethroughBidder(cfg.Adapters[string(openrtb_ext.BidderSharethrough)].Endpoint),
-// 	openrtb_ext.BidderSmaato:           smaato.NewSmaatoBidder(cfg.Adapters[string(openrtb_ext.BidderSmaato)].Endpoint),
-// 	openrtb_ext.BidderSmartadserver:    smartadserver.NewSmartadserverBidder(cfg.Adapters[string(openrtb_ext.BidderSmartadserver)].Endpoint),
-// 	openrtb_ext.BidderSmartRTB:         smartrtb.NewSmartRTBBidder(cfg.Adapters[string(openrtb_ext.BidderSmartRTB)].Endpoint),
 // 	openrtb_ext.BidderSomoaudience:     somoaudience.NewSomoaudienceBidder(cfg.Adapters[string(openrtb_ext.BidderSomoaudience)].Endpoint),
 // 	openrtb_ext.BidderSonobi:           sonobi.NewSonobiBidder(client, cfg.Adapters[string(openrtb_ext.BidderSonobi)].Endpoint),
 // 	openrtb_ext.BidderSovrn:            sovrn.NewSovrnBidder(client, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
