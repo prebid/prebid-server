@@ -60,7 +60,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/orbidder"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
+	"github.com/prebid/prebid-server/adapters/pubnative"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
+	"github.com/prebid/prebid-server/adapters/rhythmone"
+	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
 	"github.com/prebid/prebid-server/adapters/smaato"
@@ -128,16 +131,15 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSmaato:          smaato.Builder,
 		openrtb_ext.BidderSmartadserver:   smartadserver.Builder,
 		openrtb_ext.BidderSmartRTB:        smartrtb.Builder,
+		openrtb_ext.BidderPubnative:       pubnative.Builder,
+		openrtb_ext.BidderRhythmone:       rhythmone.Builder,
+		openrtb_ext.BidderRTBHouse:        rtbhouse.Builder,
 
-		// 53 done
+		// 56 done
 	}
 }
 
-// 23 left
-
-// 	openrtb_ext.BidderPubnative:       pubnative.NewPubnativeBidder(cfg.Adapters[string(openrtb_ext.BidderPubnative)].Endpoint),
-// 	openrtb_ext.BidderRhythmone:       rhythmone.NewRhythmoneBidder(cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint),
-// 	openrtb_ext.BidderRTBHouse:        rtbhouse.NewRTBHouseBidder(cfg.Adapters[string(openrtb_ext.BidderRTBHouse)].Endpoint),
+// 20 left
 
 // 	openrtb_ext.BidderSomoaudience:     somoaudience.NewSomoaudienceBidder(cfg.Adapters[string(openrtb_ext.BidderSomoaudience)].Endpoint),
 // 	openrtb_ext.BidderSonobi:           sonobi.NewSonobiBidder(client, cfg.Adapters[string(openrtb_ext.BidderSonobi)].Endpoint),
@@ -232,7 +234,7 @@ func buildLegacyBidders(adapterConfig map[string]config.Adapter, infos adapters.
 
 	// Pulsepoint
 	if infos[string(openrtb_ext.BidderPulsepoint)].Status == adapters.StatusActive {
-		adapter := pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderPulsepoint)].Endpoint)
+		adapter := pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderPulsepoint)].Endpoint)
 		bidders[openrtb_ext.BidderPulsepoint] = adaptLegacyAdapter(adapter)
 	}
 
