@@ -19,7 +19,6 @@ func TestAny(t *testing.T) {
 			enforcement: Enforcement{
 				CCPA:    false,
 				COPPA:   false,
-				GDPR:    false,
 				GDPRGeo: false,
 				GDPRID:  false,
 				LMT:     false,
@@ -31,7 +30,6 @@ func TestAny(t *testing.T) {
 			enforcement: Enforcement{
 				CCPA:    true,
 				COPPA:   true,
-				GDPR:    true,
 				GDPRGeo: true,
 				GDPRID:  true,
 				LMT:     true,
@@ -43,7 +41,6 @@ func TestAny(t *testing.T) {
 			enforcement: Enforcement{
 				CCPA:    false,
 				COPPA:   true,
-				GDPR:    false,
 				GDPRGeo: false,
 				GDPRID:  false,
 				LMT:     true,
@@ -63,6 +60,8 @@ func TestApply(t *testing.T) {
 		description        string
 		enforcement        Enforcement
 		ampGDPRException   bool
+		expectedDeviceID   ScrubStrategyDeviceID
+		expectedDeviceIPv4 ScrubStrategyIPV4
 		expectedDeviceIPv6 ScrubStrategyIPV6
 		expectedDeviceGeo  ScrubStrategyGeo
 		expectedUser       ScrubStrategyUser
@@ -73,12 +72,12 @@ func TestApply(t *testing.T) {
 			enforcement: Enforcement{
 				CCPA:    true,
 				COPPA:   true,
-				GDPR:    true,
 				GDPRGeo: true,
 				GDPRID:  true,
 				LMT:     true,
 			},
-			ampGDPRException:   false,
+			expectedDeviceID:   ScrubStrategyDeviceIDAll,
+			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
 			expectedDeviceGeo:  ScrubStrategyGeoFull,
 			expectedUser:       ScrubStrategyUserIDAndDemographic,
@@ -89,12 +88,12 @@ func TestApply(t *testing.T) {
 			enforcement: Enforcement{
 				CCPA:    true,
 				COPPA:   false,
-				GDPR:    false,
 				GDPRGeo: false,
 				GDPRID:  false,
 				LMT:     false,
 			},
-			ampGDPRException:   false,
+			expectedDeviceID:   ScrubStrategyDeviceIDAll,
+			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
 			expectedUser:       ScrubStrategyUserID,
@@ -105,124 +104,97 @@ func TestApply(t *testing.T) {
 			enforcement: Enforcement{
 				CCPA:    false,
 				COPPA:   true,
-				GDPR:    false,
 				GDPRGeo: false,
 				GDPRID:  false,
 				LMT:     false,
 			},
-			ampGDPRException:   false,
+			expectedDeviceID:   ScrubStrategyDeviceIDAll,
+			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
 			expectedDeviceGeo:  ScrubStrategyGeoFull,
 			expectedUser:       ScrubStrategyUserIDAndDemographic,
 			expectedUserGeo:    ScrubStrategyGeoFull,
 		},
 		{
-			description: "GDPR Only",
+			description: "GDPR Only - Full",
 			enforcement: Enforcement{
 				CCPA:    false,
 				COPPA:   false,
-				GDPR:    true,
 				GDPRGeo: true,
 				GDPRID:  true,
 				LMT:     false,
 			},
 			ampGDPRException:   false,
+			expectedDeviceID:   ScrubStrategyDeviceIDAll,
+			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
 			expectedUser:       ScrubStrategyUserID,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "GDPR Only, ampGDPRException",
+			description: "GDPR Only - Full - AMP Exception",
 			enforcement: Enforcement{
 				CCPA:    false,
 				COPPA:   false,
-				GDPR:    true,
 				GDPRGeo: true,
 				GDPRID:  true,
 				LMT:     false,
 			},
 			ampGDPRException:   true,
+			expectedDeviceID:   ScrubStrategyDeviceIDAll,
+			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
 			expectedUser:       ScrubStrategyUserNone,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "CCPA Only, ampGDPRException",
-			enforcement: Enforcement{
-				CCPA:    true,
-				COPPA:   false,
-				GDPR:    false,
-				GDPRGeo: false,
-				GDPRID:  false,
-				LMT:     false,
-			},
-			ampGDPRException:   true,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
-			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
-			expectedUser:       ScrubStrategyUserID,
-			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
-		},
-		{
-			description: "COPPA and GDPR, ampGDPRException",
-			enforcement: Enforcement{
-				CCPA:    false,
-				COPPA:   true,
-				GDPR:    true,
-				GDPRGeo: true,
-				GDPRID:  true,
-				LMT:     false,
-			},
-			ampGDPRException:   true,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
-			expectedDeviceGeo:  ScrubStrategyGeoFull,
-			expectedUser:       ScrubStrategyUserIDAndDemographic,
-			expectedUserGeo:    ScrubStrategyGeoFull,
-		},
-		{
-			description: "GDPR Only, no Geo",
+			description: "GDPR Only - ID Only",
 			enforcement: Enforcement{
 				CCPA:    false,
 				COPPA:   false,
-				GDPR:    true,
 				GDPRGeo: false,
 				GDPRID:  true,
 				LMT:     false,
 			},
 			ampGDPRException:   false,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
+			expectedDeviceID:   ScrubStrategyDeviceIDAll,
+			expectedDeviceIPv4: ScrubStrategyIPV4None,
+			expectedDeviceIPv6: ScrubStrategyIPV6None,
 			expectedDeviceGeo:  ScrubStrategyGeoNone,
 			expectedUser:       ScrubStrategyUserID,
 			expectedUserGeo:    ScrubStrategyGeoNone,
 		},
 		{
-			description: "GDPR Only, Geo only",
+			description: "GDPR Only - ID Only - AMP Exception",
 			enforcement: Enforcement{
 				CCPA:    false,
 				COPPA:   false,
-				GDPR:    false,
-				GDPRGeo: true,
-				GDPRID:  false,
+				GDPRGeo: false,
+				GDPRID:  true,
 				LMT:     false,
 			},
-			ampGDPRException:   false,
+			ampGDPRException:   true,
+			expectedDeviceID:   ScrubStrategyDeviceIDAll,
+			expectedDeviceIPv4: ScrubStrategyIPV4None,
 			expectedDeviceIPv6: ScrubStrategyIPV6None,
-			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
+			expectedDeviceGeo:  ScrubStrategyGeoNone,
 			expectedUser:       ScrubStrategyUserNone,
-			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
+			expectedUserGeo:    ScrubStrategyGeoNone,
 		},
 		{
-			description: "GDPR Only, ID exception",
+			description: "GDPR Only - Geo Only",
 			enforcement: Enforcement{
 				CCPA:    false,
 				COPPA:   false,
-				GDPR:    true,
 				GDPRGeo: true,
 				GDPRID:  false,
 				LMT:     false,
 			},
 			ampGDPRException:   false,
+			expectedDeviceID:   ScrubStrategyDeviceIDNone,
+			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
 			expectedUser:       ScrubStrategyUserNone,
@@ -233,32 +205,50 @@ func TestApply(t *testing.T) {
 			enforcement: Enforcement{
 				CCPA:    false,
 				COPPA:   false,
-				GDPR:    false,
 				GDPRGeo: false,
 				GDPRID:  false,
 				LMT:     true,
 			},
-			ampGDPRException:   false,
+			expectedDeviceID:   ScrubStrategyDeviceIDAll,
+			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
 			expectedUser:       ScrubStrategyUserID,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "LMT Only, ampGDPRException",
+			description: "Interactions: COPPA Only + AMP Exception",
 			enforcement: Enforcement{
 				CCPA:    false,
-				COPPA:   false,
-				GDPR:    false,
+				COPPA:   true,
 				GDPRGeo: false,
 				GDPRID:  false,
-				LMT:     true,
+				LMT:     false,
 			},
 			ampGDPRException:   true,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
-			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
-			expectedUser:       ScrubStrategyUserID,
-			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
+			expectedDeviceID:   ScrubStrategyDeviceIDAll,
+			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
+			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
+			expectedDeviceGeo:  ScrubStrategyGeoFull,
+			expectedUser:       ScrubStrategyUserIDAndDemographic,
+			expectedUserGeo:    ScrubStrategyGeoFull,
+		},
+		{
+			description: "Interactions: COPPA + GDPR Full + AMP Exception",
+			enforcement: Enforcement{
+				CCPA:    false,
+				COPPA:   true,
+				GDPRGeo: true,
+				GDPRID:  true,
+				LMT:     false,
+			},
+			ampGDPRException:   true,
+			expectedDeviceID:   ScrubStrategyDeviceIDAll,
+			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
+			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
+			expectedDeviceGeo:  ScrubStrategyGeoFull,
+			expectedUser:       ScrubStrategyUserIDAndDemographic,
+			expectedUserGeo:    ScrubStrategyGeoFull,
 		},
 	}
 
@@ -271,7 +261,7 @@ func TestApply(t *testing.T) {
 		replacedUser := &openrtb.User{}
 
 		m := &mockScrubber{}
-		m.On("ScrubDevice", req.Device, test.expectedDeviceIPv6, test.expectedDeviceGeo).Return(replacedDevice).Once()
+		m.On("ScrubDevice", req.Device, test.expectedDeviceID, test.expectedDeviceIPv4, test.expectedDeviceIPv6, test.expectedDeviceGeo).Return(replacedDevice).Once()
 		m.On("ScrubUser", req.User, test.expectedUser, test.expectedUserGeo).Return(replacedUser).Once()
 
 		test.enforcement.apply(req, test.ampGDPRException, m)
@@ -290,7 +280,6 @@ func TestApplyNoneApplicable(t *testing.T) {
 	enforcement := Enforcement{
 		CCPA:    false,
 		COPPA:   false,
-		GDPR:    false,
 		GDPRGeo: false,
 		GDPRID:  false,
 		LMT:     false,
@@ -315,8 +304,8 @@ type mockScrubber struct {
 	mock.Mock
 }
 
-func (m *mockScrubber) ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
-	args := m.Called(device, ipv6, geo)
+func (m *mockScrubber) ScrubDevice(device *openrtb.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
+	args := m.Called(device, id, ipv4, ipv6, geo)
 	return args.Get(0).(*openrtb.Device)
 }
 
