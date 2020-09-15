@@ -8,6 +8,8 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/stored_requests"
+
+	accountService "github.com/prebid/prebid-server/account"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -89,13 +91,11 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	ctx := context.Background()
 
 	// get account details
-	account, errs := GetAccount(ctx, e.Cfg, e.Accounts, eventRequest.AccountID)
+	account, errs := accountService.GetAccount(ctx, e.Cfg, e.Accounts, eventRequest.AccountID)
 	if len(errs) > 0 {
-		w.WriteHeader(http.StatusInternalServerError)
-		for _, err := range errs {
-			w.Write([]byte(fmt.Sprintf("Internal Error: %s\n", err.Error())))
-		}
-
+		status, message := HandleAccountServiceErrors(errs)
+		w.WriteHeader(status)
+		w.Write([]byte(message))
 		return
 	}
 
@@ -121,18 +121,14 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 }
 
-/**
- * Converts an EventRequest to an URL
- */
+// Converts an EventRequest to an URL
 func EventRequestToUrl(externalUrl string, request *analytics.EventRequest) string {
 	s := fmt.Sprintf(TemplateUrl, externalUrl, request.Type, request.Bidid, request.AccountID)
 
 	return s + optionalParameters(request)
 }
 
-/**
- * Parses an EventRequest from an Http request
- */
+// Parses an EventRequest from an Http request
 func ParseEventRequest(r *http.Request) (*analytics.EventRequest, error) {
 	event := &analytics.EventRequest{}
 
@@ -173,6 +169,24 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, error) {
 	return event, nil
 }
 
+// Handle fetching account errors
+func HandleAccountServiceErrors(errs []error) (status int, message string) {
+	for _, er := range errs {
+		errCode := errortypes.ReadCode(er)
+
+		switch errCode {
+		case errortypes.BlacklistedAppErrorCode, errortypes.BlacklistedAcctErrorCode:
+			return http.StatusServiceUnavailable, er.Error()
+		case errortypes.AcctRequiredErrorCode:
+			return http.StatusBadRequest, er.Error()
+		default:
+			return http.StatusInternalServerError, er.Error()
+		}
+	}
+
+	return http.StatusInternalServerError, ""
+}
+
 func optionalParameters(request *analytics.EventRequest) string {
 	r := url.Values{}
 
@@ -211,9 +225,7 @@ func optionalParameters(request *analytics.EventRequest) string {
 	return opt
 }
 
-/**
- * validate type
- */
+// validate type
 func validateType(er *analytics.EventRequest, httpRequest *http.Request) error {
 	t, err := validateRequiredParameter(httpRequest, TypeParameter)
 
@@ -233,9 +245,7 @@ func validateType(er *analytics.EventRequest, httpRequest *http.Request) error {
 	}
 }
 
-/**
- * validate format
- */
+// validate format
 func validateFormat(er *analytics.EventRequest, httpRequest *http.Request) error {
 	f := httpRequest.FormValue(FormatParameter)
 
@@ -255,9 +265,7 @@ func validateFormat(er *analytics.EventRequest, httpRequest *http.Request) error
 	return nil
 }
 
-/**
- * validate analytics
- */
+// validate analytics
 func validateAnalytics(er *analytics.EventRequest, httpRequest *http.Request) error {
 	a := httpRequest.FormValue(AnalyticsParameter)
 
@@ -277,9 +285,7 @@ func validateAnalytics(er *analytics.EventRequest, httpRequest *http.Request) er
 	return nil
 }
 
-/**
- * validate timestamp
- */
+// validate timestamp
 func validateTimestamp(er *analytics.EventRequest, httpRequest *http.Request) error {
 	t := httpRequest.FormValue(TimestampParameter)
 
@@ -297,9 +303,7 @@ func validateTimestamp(er *analytics.EventRequest, httpRequest *http.Request) er
 	return nil
 }
 
-/**
- * validate required parameter
- */
+// validate required parameter
 func validateRequiredParameter(httpRequest *http.Request, parameter string) (string, error) {
 	t := httpRequest.FormValue(parameter)
 
@@ -308,16 +312,4 @@ func validateRequiredParameter(httpRequest *http.Request, parameter string) (str
 	}
 
 	return t, nil
-}
-
-/**
- * Check if []error contains a NotFoundError
- */
-func accountNotFound(errs []error) bool {
-	for _, el := range errs {
-		if _, ok := el.(stored_requests.NotFoundError); ok {
-			return true
-		}
-	}
-	return false
 }

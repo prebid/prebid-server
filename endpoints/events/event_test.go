@@ -1,7 +1,9 @@
 package events
 
 import (
+	"context"
 	"encoding/base64"
+	"encoding/json"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -13,7 +15,6 @@ import (
 )
 
 // Mock Analytics Module
-
 type eventsMockAnalyticsModule struct {
 	Fail    bool
 	Error   error
@@ -62,6 +63,29 @@ func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.Not
 	e.Invoked = true
 
 	return
+}
+
+// Mock Account fetcher
+var mockAccountData = map[string]json.RawMessage{
+	"events_enabled":  json.RawMessage(`{"events_enabled":true}`),
+	"events_disabled": json.RawMessage(`{"events_enabled":false}`),
+}
+
+type mockAccountsFetcher struct {
+	Fail  bool
+	Error error
+}
+
+func (maf mockAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+	if account, ok := mockAccountData[accountID]; ok {
+		return account, nil
+	}
+
+	if maf.Fail {
+		return nil, []error{maf.Error}
+	}
+
+	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
 }
 
 // Tests
@@ -360,8 +384,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *test
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
-		Fail:          false,
-		EventsEnabled: false,
+		Fail: false,
 	}
 
 	// mock PBS Analytics Module
@@ -378,7 +401,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *test
 	// prepare
 	reqData := ""
 
-	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=testacc", strings.NewReader(reqData))
+	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_disabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
 	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
@@ -392,15 +415,14 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *test
 
 	// validate
 	assert.Equal(t, 401, recorder.Result().StatusCode, "Expected 401 on account with events disabled")
-	assert.Equal(t, "Account 'testacc' doesn't support events", string(d))
+	assert.Equal(t, "Account 'events_disabled' doesn't support events", string(d))
 }
 
 func TestShouldPassEventToAnalyticsReporterWhenAccountEventEnabled(t *testing.T) {
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
-		Fail:          false,
-		EventsEnabled: true,
+		Fail: false,
 	}
 
 	// mock PBS Analytics Module
@@ -417,7 +439,7 @@ func TestShouldPassEventToAnalyticsReporterWhenAccountEventEnabled(t *testing.T)
 	// prepare
 	reqData := ""
 
-	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=testacc", strings.NewReader(reqData))
+	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
 	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
@@ -434,8 +456,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAnalyticsValueIsZero(t *testin
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
-		Fail:          false,
-		EventsEnabled: true,
+		Fail: false,
 	}
 
 	// mock PBS Analytics Module
@@ -452,7 +473,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAnalyticsValueIsZero(t *testin
 	// prepare
 	reqData := ""
 
-	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=0&a=testacc", strings.NewReader(reqData))
+	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=0&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
 	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
@@ -469,8 +490,7 @@ func TestShouldRespondWithPixelAndContentTypeWhenRequestFormatIsImage(t *testing
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
-		Fail:          false,
-		EventsEnabled: true,
+		Fail: false,
 	}
 
 	// mock PBS Analytics Module
@@ -487,7 +507,7 @@ func TestShouldRespondWithPixelAndContentTypeWhenRequestFormatIsImage(t *testing
 	// prepare
 	reqData := ""
 
-	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=i&x=1&a=testacc", strings.NewReader(reqData))
+	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=i&x=1&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
 	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
@@ -511,8 +531,7 @@ func TestShouldRespondWithNoContentWhenRequestFormatIsNotDefined(t *testing.T) {
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
-		Fail:          false,
-		EventsEnabled: true,
+		Fail: false,
 	}
 
 	// mock PBS Analytics Module
@@ -529,7 +548,7 @@ func TestShouldRespondWithNoContentWhenRequestFormatIsNotDefined(t *testing.T) {
 	// prepare
 	reqData := ""
 
-	req := httptest.NewRequest("GET", "/event?t=imp&b=test&ts=1234&x=1&a=testacc", strings.NewReader(reqData))
+	req := httptest.NewRequest("GET", "/event?t=imp&b=test&ts=1234&x=1&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
 	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)

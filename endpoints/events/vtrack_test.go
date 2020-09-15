@@ -41,9 +41,7 @@ func TestShouldRespondWithBadRequestWhenAccountParameterIsMissing(t *testing.T) 
 	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock AccountsFetcher
-	mockAccountsFetcher := &mockAccountsFetcher{
-		EventsEnabled: true,
-	}
+	mockAccountsFetcher := &mockAccountsFetcher{}
 
 	// mock config
 	cfg := &config.Configuration{
@@ -82,9 +80,7 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsEmpty(t *testing.T) {
 	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock AccountsFetcher
-	mockAccountsFetcher := &mockAccountsFetcher{
-		EventsEnabled: true,
-	}
+	mockAccountsFetcher := &mockAccountsFetcher{}
 
 	// config
 	cfg := &config.Configuration{
@@ -96,7 +92,7 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsEmpty(t *testing.T) {
 	// prepare
 	reqData := ""
 
-	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(reqData))
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(reqData))
 
 	recorder := httptest.NewRecorder()
 
@@ -125,9 +121,7 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsInvalid(t *testing.T) {
 	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock AccountsFetcher
-	mockAccountsFetcher := &mockAccountsFetcher{
-		EventsEnabled: true,
-	}
+	mockAccountsFetcher := &mockAccountsFetcher{}
 
 	// config
 	cfg := &config.Configuration{
@@ -139,7 +133,7 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsInvalid(t *testing.T) {
 	// prepare
 	reqData := "invalid"
 
-	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(reqData))
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(reqData))
 
 	recorder := httptest.NewRecorder()
 
@@ -162,9 +156,7 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock AccountsFetcher
-	mockAccountsFetcher := &mockAccountsFetcher{
-		EventsEnabled: true,
-	}
+	mockAccountsFetcher := &mockAccountsFetcher{}
 
 	// config
 	cfg := &config.Configuration{
@@ -185,7 +177,7 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(string(reqData)))
 
 	recorder := httptest.NewRecorder()
 
@@ -214,9 +206,7 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 	mockCacheClient := &vtrackMockCacheClient{}
 
 	// mock AccountsFetcher
-	mockAccountsFetcher := &mockAccountsFetcher{
-		EventsEnabled: true,
-	}
+	mockAccountsFetcher := &mockAccountsFetcher{}
 
 	// config
 	cfg := &config.Configuration{
@@ -239,7 +229,7 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(string(reqData)))
 
 	recorder := httptest.NewRecorder()
 
@@ -263,63 +253,6 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 	assert.Equal(t, "Invalid request: 'bidder' is required field and can't be empty\n", string(d))
 }
 
-func TestShouldRespondWithInternalServerErrorWhenFetchingAccountFails(t *testing.T) {
-	// mock pbs cache client
-	mockCacheClient := &vtrackMockCacheClient{}
-
-	// mock AccountsFetcher
-	mockAccountsFetcher := &mockAccountsFetcher{
-		Fail:          true,
-		Error:         fmt.Errorf("failed retrieving account details"),
-		EventsEnabled: true,
-	}
-
-	// config
-	cfg := &config.Configuration{
-		MaxRequestSize:  maxSize,
-		AccountDefaults: config.Account{},
-	}
-	cfg.MarshalAccountDefaults()
-
-	// prepare
-	data := &BidCacheRequest{
-		Puts: []prebid_cache_client.Cacheable{
-			{
-				BidID:  "test",
-				Bidder: "test",
-			},
-		},
-	}
-
-	reqData, err := json.Marshal(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
-
-	recorder := httptest.NewRecorder()
-
-	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
-	}
-
-	// execute
-	e.Handle(recorder, req, nil)
-
-	d, err := ioutil.ReadAll(recorder.Result().Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// validate
-	assert.Equal(t, 500, recorder.Result().StatusCode, "Expected 500 when failing to retrieve account details")
-	assert.Equal(t, "Internal Error: failed retrieving account details\n", string(d))
-}
-
 func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.T) {
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{
@@ -328,9 +261,7 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 	}
 
 	// mock AccountsFetcher
-	mockAccountsFetcher := &mockAccountsFetcher{
-		EventsEnabled: true,
-	}
+	mockAccountsFetcher := &mockAccountsFetcher{}
 
 	// config
 	cfg := &config.Configuration{
@@ -356,7 +287,7 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(string(reqData)))
 
 	recorder := httptest.NewRecorder()
 
@@ -386,9 +317,8 @@ func TestShouldTolerateAccountNotFound(t *testing.T) {
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
-		Fail:          true,
-		Error:         stored_requests.NotFoundError{},
-		EventsEnabled: true,
+		Fail:  true,
+		Error: stored_requests.NotFoundError{},
 	}
 
 	// config
@@ -442,8 +372,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
-		Fail:          false,
-		EventsEnabled: true,
+		Fail: false,
 	}
 
 	// config
@@ -486,7 +415,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	if err != nil {
 		t.Fatal(err)
 	}
-	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(string(reqData)))
 
 	recorder := httptest.NewRecorder()
 
@@ -519,8 +448,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
-		Fail:          false,
-		EventsEnabled: true,
+		Fail: false,
 	}
 
 	// config
@@ -564,7 +492,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(string(reqData)))
 
 	recorder := httptest.NewRecorder()
 
@@ -597,8 +525,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
-		Fail:          false,
-		EventsEnabled: true,
+		Fail: false,
 	}
 
 	// config
@@ -634,7 +561,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(string(reqData)))
 
 	recorder := httptest.NewRecorder()
 
