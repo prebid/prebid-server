@@ -4,17 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+	"text/template"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 const adapterVersion = "prebid_1.0.0"
+const invibesBidVersion = "4"
 
 type InvibesAdRequest struct {
 	BidParamsJson string `json:"BidParamsJson"`
@@ -65,11 +70,16 @@ func (a *InvibesInternalParams) IsTestRequest() bool {
 }
 
 type InvibesAdapter struct {
-	Endpoint string
+	EndpointTemplate template.Template
 }
 
-func NewInvibesBidder(endpoint string) *InvibesAdapter {
-	return &InvibesAdapter{Endpoint: endpoint}
+func NewInvibesBidder(endpointTemplate string) *InvibesAdapter {
+	urlTemplate, err := template.New("endpointTemplate").Parse(endpointTemplate)
+	if err != nil {
+		glog.Fatal("Unable to parse endpoint url template")
+		return nil
+	}
+	return &InvibesAdapter{EndpointTemplate: *urlTemplate}
 }
 
 func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -80,7 +90,7 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	var invibesInternalParams InvibesInternalParams = InvibesInternalParams{
 		BidParams: InvibesBidParams{
 			Properties: make(map[string]InvibesPlacementProperty),
-			BidVersion: "1",
+			BidVersion: invibesBidVersion,
 		},
 	}
 
@@ -265,18 +275,31 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 }
 
 func (a *InvibesAdapter) makeURL(request *openrtb.BidRequest, domainID int) (string, error) {
-	endpoint := a.Endpoint
+	host := "bid.videostep.com"
 	if domainID == 1 {
-		endpoint = "https://adweb.videostepstage.com/bid/ServerBidAdContent"
+		host = "adweb.videostepstage.com"
 	} else if domainID == 2 {
-		endpoint = "https://adweb.invibesstage.com/bid/ServerBidAdContent"
+		host = "adweb.invibesstage.com"
 	} else if domainID == 1001 {
-		endpoint = "https://bid.videostep.com/bid/ServerBidAdContent"
+		host = "bid.videostep.com"
 	} else if domainID >= 1002 {
-		endpoint = "https://bid2.videostep.com/bid/ServerBidAdContent"
+		host = "bid2.videostep.com"
 	}
 
-	return endpoint, nil
+	var endpointURL *url.URL
+	endpointParams := macros.EndpointTemplateParams{Host: host}
+	host, err := macros.ResolveMacros(a.EndpointTemplate, endpointParams)
+
+	if err == nil {
+		endpointURL, err = url.Parse(host)
+	}
+	if err != nil {
+		return "", &errortypes.BadInput{
+			Message: "Unable to parse url template: " + err.Error(),
+		}
+	}
+
+	return endpointURL.String(), nil
 }
 
 func (a *InvibesAdapter) MakeBids(
