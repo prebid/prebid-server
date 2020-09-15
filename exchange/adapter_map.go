@@ -57,6 +57,9 @@ import (
 	"github.com/prebid/prebid-server/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/adapters/nanointeractive"
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
+	"github.com/prebid/prebid-server/adapters/openx"
+	"github.com/prebid/prebid-server/adapters/orbidder"
+	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
@@ -90,6 +93,7 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAJA:             aja.Builder,
 		openrtb_ext.BidderApplogy:         applogy.Builder,
 		openrtb_ext.BidderAppnexus:        appnexus.Builder,
+		openrtb_ext.BidderAudienceNetwork: audienceNetwork.Builder,
 		openrtb_ext.BidderAvocet:          avocet.Builder,
 		openrtb_ext.BidderBeachfront:      beachfront.Builder,
 		openrtb_ext.BidderBeintoo:         beintoo.Builder,
@@ -101,7 +105,6 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEmxDigital:      emx_digital.Builder,
 		openrtb_ext.BidderEngageBDR:       engagebdr.Builder,
 		openrtb_ext.BidderEPlanning:       eplanning.Builder,
-		openrtb_ext.BidderAudienceNetwork: audienceNetwork.Builder,
 		openrtb_ext.BidderGamma:           gamma.Builder,
 		openrtb_ext.BidderGamoshi:         gamoshi.Builder,
 		openrtb_ext.BidderGrid:            grid.Builder,
@@ -117,21 +120,21 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMobileFuse:      mobilefuse.Builder,
 		openrtb_ext.BidderNanoInteractive: nanointeractive.Builder,
 		openrtb_ext.BidderNinthDecimal:    ninthdecimal.Builder,
+		openrtb_ext.BidderOpenx:           openx.Builder,
+		openrtb_ext.BidderOrbidder:        orbidder.Builder,
+		openrtb_ext.BidderPubmatic:        pubmatic.Builder,
 		openrtb_ext.BidderRubicon:         rubicon.Builder,
 		openrtb_ext.BidderSharethrough:    sharethrough.Builder,
 		openrtb_ext.BidderSmaato:          smaato.Builder,
 		openrtb_ext.BidderSmartadserver:   smartadserver.Builder,
 		openrtb_ext.BidderSmartRTB:        smartrtb.Builder,
 
-		// 50 done
+		// 53 done
 	}
 }
 
-// 26 left
+// 23 left
 
-// 	openrtb_ext.BidderOrbidder:        orbidder.NewOrbidderBidder(cfg.Adapters[string(openrtb_ext.BidderOrbidder)].Endpoint),
-// 	openrtb_ext.BidderOpenx:           openx.NewOpenxBidder(cfg.Adapters[string(openrtb_ext.BidderOpenx)].Endpoint),
-// 	openrtb_ext.BidderPubmatic:        pubmatic.NewPubmaticBidder(client, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
 // 	openrtb_ext.BidderPubnative:       pubnative.NewPubnativeBidder(cfg.Adapters[string(openrtb_ext.BidderPubnative)].Endpoint),
 // 	openrtb_ext.BidderRhythmone:       rhythmone.NewRhythmoneBidder(cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint),
 // 	openrtb_ext.BidderRTBHouse:        rtbhouse.NewRTBHouseBidder(cfg.Adapters[string(openrtb_ext.BidderRTBHouse)].Endpoint),
