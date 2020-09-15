@@ -736,7 +736,7 @@ func TestRaceIntegration(t *testing.T) {
 			Endpoint: server.URL,
 		}
 	}
-	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))] = config.Adapter{
+	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))] = config.Adapter{
 		Endpoint:   server.URL,
 		PlatformID: "abc",
 	}

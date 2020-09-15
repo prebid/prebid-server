@@ -42,7 +42,7 @@ type FacebookExt struct {
 }
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderFacebook, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
 		Endpoint:   "https://an.facebook.com/placementbid.ortb",
 		PlatformID: "test-platform-id",
 		AppSecret:  "test-app-secret",
@@ -59,7 +59,7 @@ func TestMakeTimeoutNoticeApp(t *testing.T) {
 	req := adapters.RequestData{
 		Body: []byte(`{"id":"1234","imp":[{"id":"1234"}],"app":{"publisher":{"id":"5678"}}}`),
 	}
-	bidder, buildErr := Builder(openrtb_ext.BidderFacebook, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
 		Endpoint:   "https://an.facebook.com/placementbid.ortb",
 		PlatformID: "test-platform-id",
 		AppSecret:  "test-app-secret",
@@ -84,7 +84,7 @@ func TestMakeTimeoutNoticeBadRequest(t *testing.T) {
 	req := adapters.RequestData{
 		Body: []byte(`{"imp":[{{"id":"1234"}}`),
 	}
-	bidder, buildErr := Builder(openrtb_ext.BidderFacebook, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
 		Endpoint:   "https://an.facebook.com/placementbid.ortb",
 		PlatformID: "test-platform-id",
 		AppSecret:  "test-app-secret",
@@ -106,7 +106,7 @@ func TestMakeTimeoutNoticeBadRequest(t *testing.T) {
 }
 
 func TestNewFacebookBidderMissingPlatformID(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderFacebook, config.Adapter{
+	bidder, err := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
 		Endpoint:  "https://an.facebook.com/placementbid.ortb",
 		AppSecret: "test-app-secret",
 	})
@@ -116,7 +116,7 @@ func TestNewFacebookBidderMissingPlatformID(t *testing.T) {
 }
 
 func TestNewFacebookBidderMissingAppSecret(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderFacebook, config.Adapter{
+	bidder, err := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
 		Endpoint:   "https://an.facebook.com/placementbid.ortb",
 		PlatformID: "test-platform-id",
 	})
