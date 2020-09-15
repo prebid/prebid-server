@@ -1,0 +1,8 @@
+maintainer:
+  email: "prebid-support@inmobi.com"
+
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
