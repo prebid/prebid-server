@@ -44,7 +44,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/gamoshi"
 	"github.com/prebid/prebid-server/adapters/grid"
 	"github.com/prebid/prebid-server/adapters/gumgum"
+	"github.com/prebid/prebid-server/adapters/improvedigital"
 	"github.com/prebid/prebid-server/adapters/ix"
+	"github.com/prebid/prebid-server/adapters/kidoz"
+	"github.com/prebid/prebid-server/adapters/kubient"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/config"
@@ -56,50 +59,50 @@ import (
 
 func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 	return map[openrtb_ext.BidderName]adapters.Builder{
-		openrtb_ext.Bidder33Across:     ttx.Builder,
-		openrtb_ext.BidderAdform:       adform.Builder,
-		openrtb_ext.BidderAdgeneration: adgeneration.Builder,
-		openrtb_ext.BidderAdhese:       adhese.Builder,
-		openrtb_ext.BidderAdkernel:     adkernel.Builder,
-		openrtb_ext.BidderAdkernelAdn:  adkernelAdn.Builder,
-		openrtb_ext.BidderAdman:        adman.Builder,
-		openrtb_ext.BidderAdmixer:      admixer.Builder,
-		openrtb_ext.BidderAdOcean:      adocean.Builder,
-		openrtb_ext.BidderAdoppler:     adoppler.Builder,
-		openrtb_ext.BidderAdpone:       adpone.Builder,
-		openrtb_ext.BidderAdprime:      adprime.Builder,
-		openrtb_ext.BidderAdtarget:     adtarget.Builder,
-		openrtb_ext.BidderAdtelligent:  adtelligent.Builder,
-		openrtb_ext.BidderAdvangelists: advangelists.Builder,
-		openrtb_ext.BidderAJA:          aja.Builder,
-		openrtb_ext.BidderApplogy:      applogy.Builder,
-		openrtb_ext.BidderAppnexus:     appnexus.Builder,
-		openrtb_ext.BidderFacebook:     audienceNetwork.Builder,
-		openrtb_ext.BidderAvocet:       avocet.Builder,
-		openrtb_ext.BidderBeachfront:   beachfront.Builder,
-		openrtb_ext.BidderBeintoo:      beintoo.Builder,
-		openrtb_ext.BidderBrightroll:   brightroll.Builder,
-		openrtb_ext.BidderConsumable:   consumable.Builder,
-		openrtb_ext.BidderCpmstar:      cpmstar.Builder,
-		openrtb_ext.BidderDatablocks:   datablocks.Builder,
-		openrtb_ext.BidderDmx:          dmx.Builder,
-		openrtb_ext.BidderEmxDigital:   emx_digital.Builder,
-		openrtb_ext.BidderEngageBDR:    engagebdr.Builder,
-		openrtb_ext.BidderEPlanning:    eplanning.Builder,
-		openrtb_ext.BidderGamma:        gamma.Builder,
-		openrtb_ext.BidderGamoshi:      gamoshi.Builder,
-		openrtb_ext.BidderGrid:         grid.Builder,
-		openrtb_ext.BidderGumGum:       gumgum.Builder,
+		openrtb_ext.Bidder33Across:       ttx.Builder,
+		openrtb_ext.BidderAdform:         adform.Builder,
+		openrtb_ext.BidderAdgeneration:   adgeneration.Builder,
+		openrtb_ext.BidderAdhese:         adhese.Builder,
+		openrtb_ext.BidderAdkernel:       adkernel.Builder,
+		openrtb_ext.BidderAdkernelAdn:    adkernelAdn.Builder,
+		openrtb_ext.BidderAdman:          adman.Builder,
+		openrtb_ext.BidderAdmixer:        admixer.Builder,
+		openrtb_ext.BidderAdOcean:        adocean.Builder,
+		openrtb_ext.BidderAdoppler:       adoppler.Builder,
+		openrtb_ext.BidderAdpone:         adpone.Builder,
+		openrtb_ext.BidderAdprime:        adprime.Builder,
+		openrtb_ext.BidderAdtarget:       adtarget.Builder,
+		openrtb_ext.BidderAdtelligent:    adtelligent.Builder,
+		openrtb_ext.BidderAdvangelists:   advangelists.Builder,
+		openrtb_ext.BidderAJA:            aja.Builder,
+		openrtb_ext.BidderApplogy:        applogy.Builder,
+		openrtb_ext.BidderAppnexus:       appnexus.Builder,
+		openrtb_ext.BidderFacebook:       audienceNetwork.Builder,
+		openrtb_ext.BidderAvocet:         avocet.Builder,
+		openrtb_ext.BidderBeachfront:     beachfront.Builder,
+		openrtb_ext.BidderBeintoo:        beintoo.Builder,
+		openrtb_ext.BidderBrightroll:     brightroll.Builder,
+		openrtb_ext.BidderConsumable:     consumable.Builder,
+		openrtb_ext.BidderCpmstar:        cpmstar.Builder,
+		openrtb_ext.BidderDatablocks:     datablocks.Builder,
+		openrtb_ext.BidderDmx:            dmx.Builder,
+		openrtb_ext.BidderEmxDigital:     emx_digital.Builder,
+		openrtb_ext.BidderEngageBDR:      engagebdr.Builder,
+		openrtb_ext.BidderEPlanning:      eplanning.Builder,
+		openrtb_ext.BidderGamma:          gamma.Builder,
+		openrtb_ext.BidderGamoshi:        gamoshi.Builder,
+		openrtb_ext.BidderGrid:           grid.Builder,
+		openrtb_ext.BidderGumGum:         gumgum.Builder,
+		openrtb_ext.BidderImprovedigital: improvedigital.Builder,
+		openrtb_ext.BidderKidoz:          kidoz.Builder,
+		openrtb_ext.BidderKubient:        kubient.Builder,
 
-		// 34 done
+		// 37 done
 	}
 }
 
-// 42 left
+// 39 left
 
-// 	openrtb_ext.BidderImprovedigital:  improvedigital.NewImprovedigitalBidder(cfg.Adapters[string(openrtb_ext.BidderImprovedigital)].Endpoint),
-// 	openrtb_ext.BidderKidoz:           kidoz.NewKidozBidder(cfg.Adapters[string(openrtb_ext.BidderKidoz)].Endpoint),
-// 	openrtb_ext.BidderKubient:         kubient.NewKubientBidder(cfg.Adapters[string(openrtb_ext.BidderKubient)].Endpoint),
 // 	openrtb_ext.BidderLockerDome:      lockerdome.NewLockerDomeBidder(cfg.Adapters[string(openrtb_ext.BidderLockerDome)].Endpoint),
 // 	openrtb_ext.BidderLunaMedia:       lunamedia.NewLunaMediaBidder(cfg.Adapters[string(openrtb_ext.BidderLunaMedia)].Endpoint),
 // 	openrtb_ext.BidderLogicad:         logicad.NewLogicadBidder(cfg.Adapters[string(openrtb_ext.BidderLogicad)].Endpoint),
@@ -206,7 +209,7 @@ func buildLegacyBidders(adapterConfig map[string]config.Adapter, infos adapters.
 
 	// Index
 	if infos[string(openrtb_ext.BidderIx)].Status == adapters.StatusActive {
-		adapter := ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderIx)].Endpoint)
+		adapter := ix.NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderIx)].Endpoint)
 		bidders[openrtb_ext.BidderIx] = adaptLegacyAdapter(adapter)
 	}
 
