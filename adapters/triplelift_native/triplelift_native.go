@@ -3,12 +3,13 @@ package triplelift_native
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
+	"net/http"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type TripleliftNativeAdapter struct {
@@ -29,7 +30,7 @@ type TripleliftNativeExtInfo struct {
 	PublisherWhitelist []string `json:"publisher_whitelist"`
 
 	// Map is used for optimized memory access and should be constructed after deserialization.
-	PublisherWhitelistMap map[string]bool
+	PublisherWhitelistMap map[string]struct{}
 }
 
 func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
@@ -174,27 +175,41 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 	return bidResponse, errs
 }
 
-func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo string) adapters.Bidder {
-	var extInfo TripleliftNativeExtInfo
-
-	if len(extraInfo) == 0 {
-		extraInfo = "{\"publisher_whitelist\":[]}"
-	}
-	if err := json.Unmarshal([]byte(extraInfo), &extInfo); err != nil {
-		glog.Errorf("Invalid TripleLife Native extra adapter info: " + err.Error())
-		return &adapters.MisconfiguredBidder{
-			Name:  "TripleliftNativeAdapter",
-			Error: fmt.Errorf("TripleliftNativeAdapter could not unmarshal config json"),
-		}
+// Builder builds a new instance of the TripleliftNative adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
+	if err != nil {
+		return nil, err
 	}
 
 	// Populate map for faster memory access
-	extInfo.PublisherWhitelistMap = make(map[string]bool)
-	for _, v := range extInfo.PublisherWhitelist {
-		extInfo.PublisherWhitelistMap[v] = true
+	extraInfo.PublisherWhitelistMap = make(map[string]struct{}, len(extraInfo.PublisherWhitelist))
+	for _, v := range extraInfo.PublisherWhitelist {
+		extraInfo.PublisherWhitelistMap[v] = struct{}{}
 	}
 
-	return &TripleliftNativeAdapter{
-		extInfo:  extInfo,
-		endpoint: endpoint}
+	bidder := &TripleliftNativeAdapter{
+		endpoint: config.Endpoint,
+		extInfo:  extraInfo,
+	}
+	return bidder, nil
+}
+
+func getExtraInfo(v string) (TripleliftNativeExtInfo, error) {
+	if len(v) == 0 {
+		return getDefaultExtraInfo(), nil
+	}
+
+	var extraInfo TripleliftNativeExtInfo
+	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
+	}
+
+	return extraInfo, nil
+}
+
+func getDefaultExtraInfo() TripleliftNativeExtInfo {
+	return TripleliftNativeExtInfo{
+		PublisherWhitelist: []string{},
+	}
 }

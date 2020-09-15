@@ -249,7 +249,7 @@ func getExtraInfo(v string) (ExtraInfo, error) {
 
 	var extraInfo ExtraInfo
 	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
-		return extraInfo, fmt.Errorf("Invalid extra info: %v", err)
+		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
 	}
 
 	return extraInfo, nil
