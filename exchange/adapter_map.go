@@ -49,6 +49,9 @@ import (
 	"github.com/prebid/prebid-server/adapters/kidoz"
 	"github.com/prebid/prebid-server/adapters/kubient"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
+	"github.com/prebid/prebid-server/adapters/lockerdome"
+	"github.com/prebid/prebid-server/adapters/logicad"
+	"github.com/prebid/prebid-server/adapters/lunamedia"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -96,16 +99,16 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderImprovedigital: improvedigital.Builder,
 		openrtb_ext.BidderKidoz:          kidoz.Builder,
 		openrtb_ext.BidderKubient:        kubient.Builder,
+		openrtb_ext.BidderLockerDome:     lockerdome.Builder,
+		openrtb_ext.BidderLunaMedia:      lunamedia.Builder,
+		openrtb_ext.BidderLogicad:        logicad.Builder,
 
-		// 37 done
+		// 40 done
 	}
 }
 
-// 39 left
+// 36 left
 
-// 	openrtb_ext.BidderLockerDome:      lockerdome.NewLockerDomeBidder(cfg.Adapters[string(openrtb_ext.BidderLockerDome)].Endpoint),
-// 	openrtb_ext.BidderLunaMedia:       lunamedia.NewLunaMediaBidder(cfg.Adapters[string(openrtb_ext.BidderLunaMedia)].Endpoint),
-// 	openrtb_ext.BidderLogicad:         logicad.NewLogicadBidder(cfg.Adapters[string(openrtb_ext.BidderLogicad)].Endpoint),
 // 	openrtb_ext.BidderMarsmedia:       marsmedia.NewMarsmediaBidder(cfg.Adapters[string(openrtb_ext.BidderMarsmedia)].Endpoint),
 // 	openrtb_ext.BidderMgid:            mgid.NewMgidBidder(cfg.Adapters[string(openrtb_ext.BidderMgid)].Endpoint),
 // 	openrtb_ext.BidderMobileFuse:      mobilefuse.NewMobileFuseBidder(cfg.Adapters[string(openrtb_ext.BidderMobileFuse)].Endpoint),
@@ -215,7 +218,7 @@ func buildLegacyBidders(adapterConfig map[string]config.Adapter, infos adapters.
 
 	// Lifestreet
 	if infos[string(openrtb_ext.BidderLifestreet)].Status == adapters.StatusActive {
-		adapter := lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderLifestreet)].Endpoint)
+		adapter := lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderLifestreet)].Endpoint)
 		bidders[openrtb_ext.BidderLifestreet] = adaptLegacyAdapter(adapter)
 	}
 
