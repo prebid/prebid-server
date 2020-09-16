@@ -85,9 +85,12 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	// get account details
 	account, errs := accountService.GetAccount(ctx, v.Cfg, v.Accounts, accountId)
 	if len(errs) > 0 {
-		status, message := HandleAccountServiceErrors(errs)
+		status, messages := HandleAccountServiceErrors(errs)
 		w.WriteHeader(status)
-		w.Write([]byte(message))
+
+		for _, message := range messages {
+			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", message)))
+		}
 		return
 	}
 

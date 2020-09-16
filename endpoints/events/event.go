@@ -93,9 +93,12 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	// get account details
 	account, errs := accountService.GetAccount(ctx, e.Cfg, e.Accounts, eventRequest.AccountID)
 	if len(errs) > 0 {
-		status, message := HandleAccountServiceErrors(errs)
+		status, messages := HandleAccountServiceErrors(errs)
 		w.WriteHeader(status)
-		w.Write([]byte(message))
+
+		for _, message := range messages {
+			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", message)))
+		}
 		return
 	}
 
@@ -170,21 +173,24 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, error) {
 }
 
 // Handle fetching account errors
-func HandleAccountServiceErrors(errs []error) (status int, message string) {
+func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
+	messages = []string{}
+	status = http.StatusInternalServerError
+
 	for _, er := range errs {
 		errCode := errortypes.ReadCode(er)
 
 		switch errCode {
 		case errortypes.BlacklistedAppErrorCode, errortypes.BlacklistedAcctErrorCode:
-			return http.StatusServiceUnavailable, er.Error()
+			errCode = http.StatusServiceUnavailable
 		case errortypes.AcctRequiredErrorCode:
-			return http.StatusBadRequest, er.Error()
-		default:
-			return http.StatusInternalServerError, er.Error()
+			errCode = http.StatusBadRequest
 		}
+
+		messages = append(messages, er.Error())
 	}
 
-	return http.StatusInternalServerError, ""
+	return status, messages
 }
 
 func optionalParameters(request *analytics.EventRequest) string {
