@@ -30,7 +30,7 @@ func NewSmartyAdsBidder(endpointTemplate string) *SmartyAdsAdapter {
 func (a *SmartyAdsAdapter) CheckHasImps(request *openrtb.BidRequest) error {
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
-			Message: "Missing Imp object",
+			Message: "Missing Imp Object",
 		}
 		return err
 	}
@@ -78,9 +78,21 @@ func (a *SmartyAdsAdapter) MakeRequests(
 		return nil, []error{noImps}
 	}
 
-	smartyadsExt, err := getImpressionExt(&request.Imp[0])
-	if err != nil {
-		return nil, []error{err}
+	var errors []error
+	var smartyadsExt *openrtb_ext.ExtSmartyAds
+	var err error
+
+	for i, imp := range request.Imp {
+		smartyadsExt, err = a.getImpressionExt(&imp)
+		if err != nil {
+			errors = append(errors, err)
+			break
+		}
+		request.Imp[i].Ext = nil
+	}
+
+	if len(errors) > 0 {
+		return nil, errors
 	}
 
 	url, err := a.buildEndpointURL(smartyadsExt)
@@ -101,17 +113,17 @@ func (a *SmartyAdsAdapter) MakeRequests(
 	}}, nil
 }
 
-func getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtSmartyAds, error) {
+func (a *SmartyAdsAdapter) getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtSmartyAds, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: err.Error(),
+			Message: "ext.bidder not provided",
 		}
 	}
 	var smartyadsExt openrtb_ext.ExtSmartyAds
 	if err := json.Unmarshal(bidderExt.Bidder, &smartyadsExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: err.Error(),
+			Message: "ext.bidder not provided",
 		}
 	}
 	return &smartyadsExt, nil
@@ -129,7 +141,7 @@ func (a *SmartyAdsAdapter) CheckResponseStatusCodes(response *adapters.ResponseD
 
 	if response.StatusCode == http.StatusBadRequest {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: [ %d ] ", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: [ %d ]", response.StatusCode),
 		}
 	}
 
