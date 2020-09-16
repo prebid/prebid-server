@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -83,12 +82,17 @@ import (
 	"github.com/prebid/prebid-server/adapters/verizonmedia"
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
+	"github.com/prebid/prebid-server/adapters/yeahmobi"
+	"github.com/prebid/prebid-server/adapters/yieldlab"
+	"github.com/prebid/prebid-server/adapters/yieldmo"
+	"github.com/prebid/prebid-server/adapters/yieldone"
+	"github.com/prebid/prebid-server/adapters/zeroclickfraud"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// The newAdapterMap function is segregated to its own file to make it a simple and clean location for each Adapter
-// to register itself. No wading through Exchange code to find it.
+// This file is kept separate to provide a simple and clean location for each Adapter to register
+// its Builder func.
 
 func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 	return map[openrtb_ext.BidderName]adapters.Builder{
@@ -162,20 +166,23 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderVerizonMedia:     verizonmedia.Builder,
 		openrtb_ext.BidderVisx:             visx.Builder,
 		openrtb_ext.BidderVrtcal:           vrtcal.Builder,
+		openrtb_ext.BidderYeahmobi:         yeahmobi.Builder,
+		openrtb_ext.BidderYieldlab:         yieldlab.Builder,
+		openrtb_ext.BidderYieldmo:          yieldmo.Builder,
+		openrtb_ext.BidderYieldone:         yieldone.Builder,
+		openrtb_ext.BidderZeroClickFraud:   zeroclickfraud.Builder,
 	}
 }
-
-// 	openrtb_ext.BidderYieldlab:         yieldlab.NewYieldlabBidder(cfg.Adapters[string(openrtb_ext.BidderYieldlab)].Endpoint),
-// 	openrtb_ext.BidderYeahmobi:         yeahmobi.NewYeahmobiBidder(cfg.Adapters[string(openrtb_ext.BidderYeahmobi)].Endpoint),
-// 	openrtb_ext.BidderYieldmo:          yieldmo.NewYieldmoBidder(cfg.Adapters[string(openrtb_ext.BidderYieldmo)].Endpoint),
-// 	openrtb_ext.BidderYieldone:         yieldone.NewYieldoneBidder(cfg.Adapters[string(openrtb_ext.BidderYieldone)].Endpoint),
-// 	openrtb_ext.BidderZeroClickFraud:   zeroclickfraud.NewZeroClickFraudBidder(cfg.Adapters[string(openrtb_ext.BidderZeroClickFraud)].Endpoint),
-// }
 
 func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
 	bidders, errs := buildBidders(cfg.Adapters, infos)
 	if len(errs) > 0 {
 		return nil, errs
+	}
+
+	for k, _ := range bidders {
+		bidders[k] = 		bidderInstanceWrapped := adaptBidder(adapters.EnforceBidderInfo(bidderInstance, info), client, cfg, me, name)
+
 	}
 
 	biddersLegacy := buildLegacyBidders(cfg.Adapters, infos)
@@ -190,46 +197,37 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 
 func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
 	builders := newAdapterBuildersMap()
-	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 
+	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 	var errs []error
+
 	for bidder, cfg := range adapterConfig {
 		bidderName := openrtb_ext.BidderName(strings.ToLower(bidder))
 
-		// Only Build Active Bidders
-		if infos[bidderName].Status != adapters.StatusActive {
+		info, infoFound := infos[bidder]
+		if !infoFound {
+			errs = append(errs, fmt.Errorf("%v: bidder info not found", bidder))
 			continue
 		}
 
-		// Ensure Builder Exists
+		if info.Status != adapters.StatusActive {
+			// Bidder is disabled. Continue without building it.
+			continue
+		}
+
 		builder, builderFound := builders[bidderName]
 		if !builderFound {
-			errs = append(errs, fmt.Errorf("invalid bidder"))
+			errs = append(errs, fmt.Errorf("%v: builder not registered", bidder))
 			continue
 		}
 
-		// Ensure No Builder Errors
-
-		// get builder, if error report it
-
-		// build, if error report it
-
-		if builder, ok := builders[bidderName]; ok {
-			if adapter, err := builder(bidderName, cfg); err != nil {
-				bidders[bidderName] = &adapters.MisconfiguredBidder{bidderName, err}
-			} else {
-				bidders[bidderName] = adapter
-			}
-		} else {
-			errs = append(errs, errors.New("it failed"))
+		bidderInstance, builderErr := builder(bidderName, cfg)
+		if builderErr != nil {
+			errs = append(errs, fmt.Errorf("%v: %v", bidder, builderErr))
+			continue
 		}
-	}
 
-	for name, bidder := range bidders {
-		// Clean out any disabled bidders
-		if infos[string(name)].Status == adapters.StatusActive {
-			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client, cfg, me, name)
-		}
+		bidders[bidderName] = bidderInstance
 	}
 
 	return bidders, errs
@@ -271,6 +269,7 @@ func wrapWithMiddleware(bidders map[openrtb_ext.BidderName]adaptedBidder) {
 	}
 }
 
+// can get rid of this. maybe needs to just bee a query on bidder infos to check to active status
 // ActiveBidders get all active bidders
 func ActiveBidders(biddersInfo adapters.BidderInfos, disabledBidders map[string]string) (bidderMap map[string]openrtb_ext.BidderName) {
 	bidderMap = make(map[string]openrtb_ext.BidderName)

@@ -229,9 +229,6 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	p, _ := filepath.Abs(infoDirectory)
 	bidderInfos := adapters.ParseBidderInfos(cfg.Adapters, p, openrtb_ext.BidderList())
 
-	disabledBidders := map[string]string{
-		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
-	}
 	activeBiddersMap := exchange.ActiveBidders(bidderInfos, disabledBidders)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
