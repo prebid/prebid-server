@@ -226,7 +226,6 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 	*/
 	if len(videoImps) > 0 {
 		admRequests := make(map[string]videoRequest, len(videoImps))
-		j := 0
 
 		for i := 0; i < len(videoImps); i++ {
 			var ext openrtb_ext.ExtImpBeachfront
@@ -234,18 +233,17 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 
 			if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
 				requestStub := *request
-				requestStub.Imp = nil
+				requestStub.Imp = make([]openrtb.Imp, 1)
+				requestStub.Imp = append(requestStub.Imp, videoImps[i])
 
-				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoRequest{
+				nurlRequest := videoRequest{
 					AppId:             ext.AppId,
 					VideoResponseType: ext.VideoResponseType,
 					Request:           requestStub,
-				})
+				}
 
-				beachfrontReqs.NurlVideo[j].Request.Imp = append(
-					beachfrontReqs.NurlVideo[j].Request.Imp, videoImps[i])
-				beachfrontReqs.NurlVideo[j] = prepVideoRequest(beachfrontReqs.NurlVideo[j])
-				j = j + 1
+				prepVideoRequest(&nurlRequest)
+				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, nurlRequest)
 			}
 
 			if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
@@ -253,23 +251,20 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 				if !exists {
 					requestStub := *request
 					requestStub.Imp = make([]openrtb.Imp, 0, len(admRequests))
+					requestStub.Imp = append(admRequest.Request.Imp, videoImps[i])
 
-					admRequests[ext.AppId] = videoRequest{
+					admRequest := videoRequest{
 						AppId:             ext.AppId,
 						VideoResponseType: ext.VideoResponseType,
 						Request:           requestStub,
 					}
+					prepVideoRequest(&admRequest)
+					admRequests[ext.AppId] = admRequest
 
-					admRequest = admRequests[ext.AppId]
-					admRequest = prepVideoRequest(admRequest)
-
-					admRequest.Request.Imp = append(admRequest.Request.Imp, videoImps[i])
 					beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, admRequest)
 				} else {
 					for k := 0; k < len(beachfrontReqs.ADMVideo); k++ {
 						if beachfrontReqs.ADMVideo[k].AppId == admRequest.AppId {
-							beachfrontReqs.ADMVideo[k] = prepVideoRequest(beachfrontReqs.ADMVideo[k])
-
 							beachfrontReqs.ADMVideo[k].Request.Imp = append(
 								beachfrontReqs.ADMVideo[k].Request.Imp,
 								videoImps[i])
@@ -447,6 +442,8 @@ func prepVideoRequestExt(requestImp openrtb.Imp, errs []error) (openrtb_ext.ExtI
 	if err != nil {
 		// Failed to extract the beachfrontExt, so this request is junk.
 		errs = append(errs, err)
+		return beachfrontExt, errs
+
 	}
 
 	beachfrontExt.AppId, err = getAppId(beachfrontExt, openrtb_ext.BidTypeVideo)
@@ -462,7 +459,7 @@ func prepVideoRequestExt(requestImp openrtb.Imp, errs []error) (openrtb_ext.ExtI
 	return beachfrontExt, errs
 }
 
-func prepVideoRequest(bfReq videoRequest) videoRequest {
+func prepVideoRequest(bfReq *videoRequest) {
 	if bfReq.Request.Site != nil && bfReq.Request.Site.Domain == "" && bfReq.Request.Site.Page != "" {
 		bfReq.Request.Site.Domain = getDomain(bfReq.Request.Site.Page)
 	}
@@ -492,8 +489,6 @@ func prepVideoRequest(bfReq videoRequest) videoRequest {
 		bfReq.Request.Cur = make([]string, 1)
 		bfReq.Request.Cur[0] = "USD"
 	}
-
-	return bfReq
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
