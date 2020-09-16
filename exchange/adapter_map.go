@@ -146,7 +146,7 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRubicon:          rubicon.Builder,
 		openrtb_ext.BidderSharethrough:     sharethrough.Builder,
 		openrtb_ext.BidderSmaato:           smaato.Builder,
-		openrtb_ext.BidderSmartadserver:    smartadserver.Builder,
+		openrtb_ext.BidderSmartAdserver:    smartadserver.Builder,
 		openrtb_ext.BidderSmartRTB:         smartrtb.Builder,
 		openrtb_ext.BidderSomoaudience:     somoaudience.Builder,
 		openrtb_ext.BidderSonobi:           sonobi.Builder,
@@ -166,7 +166,6 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 }
 
 // 	openrtb_ext.BidderYieldlab:         yieldlab.NewYieldlabBidder(cfg.Adapters[string(openrtb_ext.BidderYieldlab)].Endpoint),
-
 // 	openrtb_ext.BidderYeahmobi:         yeahmobi.NewYeahmobiBidder(cfg.Adapters[string(openrtb_ext.BidderYeahmobi)].Endpoint),
 // 	openrtb_ext.BidderYieldmo:          yieldmo.NewYieldmoBidder(cfg.Adapters[string(openrtb_ext.BidderYieldmo)].Endpoint),
 // 	openrtb_ext.BidderYieldone:         yieldone.NewYieldoneBidder(cfg.Adapters[string(openrtb_ext.BidderYieldone)].Endpoint),
@@ -196,6 +195,20 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 	var errs []error
 	for bidder, cfg := range adapterConfig {
 		bidderName := openrtb_ext.BidderName(strings.ToLower(bidder))
+
+		// Only Build Active Bidders
+		if infos[bidderName].Status != adapters.StatusActive {
+			continue
+		}
+
+		// Ensure Builder Exists
+		builder, builderFound := builders[bidderName]
+		if !builderFound {
+			errs = append(errs, fmt.Errorf("invalid bidder"))
+			continue
+		}
+
+		// Ensure No Builder Errors
 
 		// get builder, if error report it
 

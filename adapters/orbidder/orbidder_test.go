@@ -23,7 +23,7 @@ func TestUnmarshalOrbidderExtImp(t *testing.T) {
 }
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderOrbidder, config.Adapter{
 		Endpoint: "https://orbidder-test"})
 
 	if buildErr != nil {

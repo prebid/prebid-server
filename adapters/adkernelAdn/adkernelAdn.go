@@ -2,7 +2,6 @@ package adkernelAdn
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -279,11 +278,11 @@ func newBadServerResponseError(message string) error {
 	}
 }
 
-// Builder builds a new instance of the Adkernel Adn adapter for the given bidder with the given config.
+// Builder builds a new instance of the AdkernelAdn adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		return nil, errors.New("Unable to parse endpoint url template")
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
 	bidder := &adkernelAdnAdapter{

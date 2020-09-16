@@ -112,7 +112,7 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequ
 
 }
 
-// Builder builds a new instance of the Vsix adapter for the given bidder with the given config.
+// Builder builds a new instance of the Visx adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &VisxAdapter{
 		endpoint: config.Endpoint,

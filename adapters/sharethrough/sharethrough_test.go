@@ -69,7 +69,7 @@ func TestNewSharethroughBidder(t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 
-		bidder, buildErr := Builder(openrtb_ext.BidderSmaato, test.input)
+		bidder, buildErr := Builder(openrtb_ext.BidderSharethrough, test.input)
 
 		assert.NoError(buildErr)
 		assert.Equal(bidder, &test.output)

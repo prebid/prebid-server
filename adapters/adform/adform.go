@@ -102,7 +102,7 @@ func isPriceTypeValid(priceType string) (string, bool) {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	uri, err := url.Parse(config.Endpoint)
 	if err != nil {
-		return nil, errors.New("Unable to parse endpoint")
+		return nil, errors.New("unable to parse endpoint")
 	}
 
 	bidder := &AdformAdapter{

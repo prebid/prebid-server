@@ -9,7 +9,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdman, config.Adapter{
 		Endpoint: "http://pub.admanmedia.com/?c=o&m=ortb"})
 
 	if buildErr != nil {

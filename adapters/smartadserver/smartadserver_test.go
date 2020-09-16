@@ -9,7 +9,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderSmartadserver, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderSmartAdserver, config.Adapter{
 		Endpoint: "https://ssb.smartadserver.com"})
 
 	if buildErr != nil {

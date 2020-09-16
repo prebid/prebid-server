@@ -239,7 +239,7 @@ func (a *EmxDigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 }
 
-// Builder builds a new instance of the Emx Digital adapter for the given bidder with the given config.
+// Builder builds a new instance of the EmxDigital adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &EmxDigitalAdapter{
 		endpoint: config.Endpoint,

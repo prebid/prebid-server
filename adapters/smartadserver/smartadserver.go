@@ -19,7 +19,7 @@ type SmartAdserverAdapter struct {
 	host string
 }
 
-// Builder builds a new instance of the Smart Adserver adapter for the given bidder with the given config.
+// Builder builds a new instance of the SmartAdserver adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &SmartAdserverAdapter{
 		host: config.Endpoint,

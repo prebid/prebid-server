@@ -58,7 +58,7 @@ func TestFetchParams(t *testing.T) {
 
 }
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{})
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned expected error %v", buildErr)
@@ -72,7 +72,7 @@ func TestMakeRequestsOtherPlacement(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
@@ -117,7 +117,7 @@ func TestMakeRequestsInvalid(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
@@ -161,7 +161,7 @@ func TestMakeRequestNoSite(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
@@ -209,7 +209,7 @@ func TestMakeRequestsApp(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
@@ -259,7 +259,7 @@ func TestMakeRequestsNoUser(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
@@ -301,7 +301,7 @@ func TestMakeRequests(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
@@ -371,7 +371,7 @@ func TestMakeBidVideo(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
@@ -418,7 +418,7 @@ func TestMakeBidsNoContent(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
@@ -556,7 +556,7 @@ func TestUserExtEmptyObject(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
@@ -595,7 +595,7 @@ func TestUserEidsOnly(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
@@ -649,7 +649,7 @@ func TestUserDigitrustOnly(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
@@ -693,7 +693,7 @@ func TestUsersEids(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {

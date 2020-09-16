@@ -21,7 +21,7 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderAdkernelAdn, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderAdvangelists, config.Adapter{
 		Endpoint: "{{Malformed}}"})
 
 	assert.Error(t, buildErr)

@@ -23,7 +23,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderPubmatic, config.Adapter{
 		Endpoint: "https://hbopenbid.pubmatic.com/translator?source=prebid-server"})
 
 	if buildErr != nil {

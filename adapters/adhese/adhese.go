@@ -2,7 +2,6 @@ package adhese
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -265,7 +264,7 @@ func ContainsAny(raw string, keys []string) bool {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		return nil, errors.New("Unable to parse endpoint url template")
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
 	bidder := AdheseAdapter{
