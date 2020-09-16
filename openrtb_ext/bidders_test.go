@@ -61,3 +61,8 @@ func TestBidderListDoesNotDefineGeneral(t *testing.T) {
 	bidders := BidderList()
 	assert.NotContains(t, bidders, BidderNameGeneral)
 }
+
+func TestBidderListDoesNotDefineContext(t *testing.T) {
+	bidders := BidderList()
+	assert.NotContains(t, bidders, BidderNameContext)
+}

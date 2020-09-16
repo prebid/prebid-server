@@ -20,6 +20,9 @@ type BidderName string
 // BidderNameGeneral is reserved for non-bidder specific messages when using a map keyed on the bidder name.
 const BidderNameGeneral = BidderName("general")
 
+// BidderNameContext is reserved for first party data.
+const BidderNameContext = BidderName("context")
+
 // These names _must_ coincide with the bidder code in Prebid.js, if an adapter also exists in that project.
 // Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 // The bidder name 'general' is not allowed since it has special meaning in message maps.
@@ -46,6 +49,7 @@ const (
 	BidderBeachfront       BidderName = "beachfront"
 	BidderBeintoo          BidderName = "beintoo"
 	BidderBrightroll       BidderName = "brightroll"
+	BidderColossus         BidderName = "colossus"
 	BidderConsumable       BidderName = "consumable"
 	BidderConversant       BidderName = "conversant"
 	BidderCpmstar          BidderName = "cpmstar"
@@ -60,6 +64,7 @@ const (
 	BidderGrid             BidderName = "grid"
 	BidderGumGum           BidderName = "gumgum"
 	BidderImprovedigital   BidderName = "improvedigital"
+	BidderInMobi           BidderName = "inmobi"
 	BidderIx               BidderName = "ix"
 	BidderInvibes          BidderName = "invibes"
 	BidderKidoz            BidderName = "kidoz"
@@ -131,6 +136,7 @@ var BidderMap = map[string]BidderName{
 	"beachfront":        BidderBeachfront,
 	"beintoo":           BidderBeintoo,
 	"brightroll":        BidderBrightroll,
+	"colossus":          BidderColossus,
 	"consumable":        BidderConsumable,
 	"conversant":        BidderConversant,
 	"cpmstar":           BidderCpmstar,
@@ -145,6 +151,7 @@ var BidderMap = map[string]BidderName{
 	"grid":              BidderGrid,
 	"gumgum":            BidderGumGum,
 	"improvedigital":    BidderImprovedigital,
+	"inmobi":            BidderInMobi,
 	"ix":                BidderIx,
 	"invibes":           BidderInvibes,
 	"kidoz":             BidderKidoz,

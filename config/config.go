@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -40,6 +41,7 @@ type Configuration struct {
 	StoredRequests    StoredRequests  `mapstructure:"stored_requests"`
 	StoredRequestsAMP StoredRequests  `mapstructure:"stored_amp_req"`
 	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
+	Accounts          StoredRequests  `mapstructure:"accounts"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo StoredRequests `mapstructure:"stored_video_req"`
 
@@ -65,6 +67,11 @@ type Configuration struct {
 	BlacklistedAcctMap map[string]bool
 	// Is publisher/account ID required to be submitted in the OpenRTB2 request
 	AccountRequired bool `mapstructure:"account_required"`
+	// AccountDefaults defines default settings for valid accounts that are partially defined
+	// and provides a way to set global settings that can be overridden at account level.
+	AccountDefaults Account `mapstructure:"account_defaults"`
+	// accountDefaultsJSON is the internal serialized form of AccountDefaults used for json merge
+	accountDefaultsJSON json.RawMessage
 	// Local private file containing SSL certificates
 	PemCertsFile string `mapstructure:"certificates_file"`
 	// Custom headers to handle request timeouts from queueing infrastructure
@@ -73,6 +80,8 @@ type Configuration struct {
 	Debug Debug `mapstructure:"debug"`
 	// RequestValidation specifies the request validation options.
 	RequestValidation RequestValidation `mapstructure:"request_validation"`
+	// When true, PBS will assign a randomly generated UUID to req.Source.TID if it is empty
+	AutoGenSourceTID bool `mapstructure:"auto_gen_source_tid"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -104,10 +113,11 @@ func (c configErrors) Error() string {
 func (cfg *Configuration) validate() configErrors {
 	var errs configErrors
 	errs = cfg.AuctionTimeouts.validate(errs)
-	errs = cfg.StoredRequests.validate("stored_req", errs)
-	errs = cfg.StoredRequestsAMP.validate("stored_amp_req", errs)
-	errs = cfg.CategoryMapping.validate("categories", errs)
-	errs = cfg.StoredVideo.validate("stored_video_req", errs)
+	errs = cfg.StoredRequests.validate(errs)
+	errs = cfg.StoredRequestsAMP.validate(errs)
+	errs = cfg.Accounts.validate(errs)
+	errs = cfg.CategoryMapping.validate(errs)
+	errs = cfg.StoredVideo.validate(errs)
 	errs = cfg.Metrics.validate(errs)
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
@@ -117,6 +127,9 @@ func (cfg *Configuration) validate() configErrors {
 	errs = validateAdapters(cfg.Adapters, errs)
 	errs = cfg.Debug.validate(errs)
 	errs = cfg.ExtCacheURL.validate(errs)
+	if cfg.AccountDefaults.Disabled {
+		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
+	}
 	return errs
 }
 
@@ -587,6 +600,12 @@ func New(v *viper.Viper) (*Configuration, error) {
 		return nil, err
 	}
 
+	// Update account defaults and generate base json for patch
+	c.AccountDefaults.CacheTTL = c.CacheURL.DefaultTTLs // comment this out to set explicitly in config
+	if err := c.MarshalAccountDefaults(); err != nil {
+		return nil, err
+	}
+
 	// To look for a request's publisher_id in the NonStandardPublishers list in
 	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
 	c.GDPR.NonStandardPublisherMap = make(map[string]int)
@@ -618,6 +637,20 @@ func New(v *viper.Viper) (*Configuration, error) {
 	}
 
 	return &c, nil
+}
+
+// MarshalAccountDefaults compiles AccountDefaults into the JSON format used for merge patch
+func (cfg *Configuration) MarshalAccountDefaults() error {
+	var err error
+	if cfg.accountDefaultsJSON, err = json.Marshal(cfg.AccountDefaults); err != nil {
+		glog.Warningf("converting %+v to json: %v", cfg.AccountDefaults, err)
+	}
+	return err
+}
+
+// AccountDefaultsJSON returns the precompiled JSON form of account_defaults
+func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
+	return cfg.accountDefaultsJSON
 }
 
 //Allows for protocol relative URL if scheme is empty
@@ -660,6 +693,7 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderBeachfront, "https://sync.bfmio.com/sync_s2s?gdpr={{.GDPR}}&us_privacy={{.USPrivacy}}&url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dbeachfront%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5Bio_cid%5D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderBeintoo, "https://ib.beintoo.com/um?ssp=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dbeintoo%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderBrightroll, "https://pr-bh.ybp.yahoo.com/sync/appnexusprebidserver/?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dbrightroll%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderColossus, "https://sync.colossusssp.com/pbs.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dcolossus%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BUID%5D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderConsumable, "https://e.serverbid.com/udb/9969/match?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dconsumable%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderConversant, "https://prebid-match.dotomi.com/match/bounce/current?version=1&networkId=72582&rurl="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dconversant%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderCpmstar, "https://server.cpmstar.com/usersync.aspx?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dcpmstar%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
@@ -842,6 +876,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_video_req.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_video_req.http_events.timeout_ms", 0)
 
+	v.SetDefault("accounts.filesystem.enabled", false)
+	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
+	v.SetDefault("accounts.in_memory_cache.type", "none")
+
 	for _, bidder := range openrtb_ext.BidderMap {
 		setBidderDefaults(v, strings.ToLower(string(bidder)))
 	}
@@ -875,6 +913,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.beachfront.extra_info", "{\"video_endpoint\":\"https://reachms.bfmio.com/bid.json?exchange_id\"}")
 	v.SetDefault("adapters.beintoo.endpoint", "https://ib.beintoo.com/um")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
+	v.SetDefault("adapters.colossus.endpoint", "http://colossusssp.com/?c=o&m=rtb")
 	v.SetDefault("adapters.consumable.endpoint", "https://e.serverbid.com/api/v2")
 	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/cvx/server/hb/ortb/25")
 	v.SetDefault("adapters.cpmstar.endpoint", "https://server.cpmstar.com/openrtbbidrq.aspx")
@@ -888,6 +927,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.grid.endpoint", "http://grid.bidswitch.net/sp_bid?sp=prebid")
 	v.SetDefault("adapters.gumgum.endpoint", "https://g2.gumgum.com/providers/prbds2s/bid")
 	v.SetDefault("adapters.improvedigital.endpoint", "http://ad.360yield.com/pbs")
+	v.SetDefault("adapters.inmobi.endpoint", "https://api.w.inmobi.com/showad/openrtb/bidder/prebid")
 	v.SetDefault("adapters.ix.endpoint", "http://appnexus-us-east.lb.indexww.com/transbidder?p=184932")
 	v.SetDefault("adapters.invibes.endpoint", "https://{{.Host}}/bid/ServerBidAdContent")
 	v.SetDefault("adapters.kidoz.endpoint", "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server")
@@ -976,7 +1016,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("blacklisted_apps", []string{""})
 	v.SetDefault("blacklisted_accts", []string{""})
 	v.SetDefault("account_required", false)
+	v.SetDefault("account_defaults.disabled", false)
 	v.SetDefault("certificates_file", "")
+	v.SetDefault("auto_gen_source_tid", true)
 
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")

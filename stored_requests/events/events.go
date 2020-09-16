@@ -61,12 +61,14 @@ func (e *EventListener) Listen(cache stored_requests.Cache, events EventProducer
 	for {
 		select {
 		case save := <-events.Saves():
-			cache.Save(context.Background(), save.Requests, save.Imps)
+			cache.Requests.Save(context.Background(), save.Requests)
+			cache.Imps.Save(context.Background(), save.Imps)
 			if e.onSave != nil {
 				e.onSave()
 			}
 		case invalidation := <-events.Invalidations():
-			cache.Invalidate(context.Background(), invalidation.Requests, invalidation.Imps)
+			cache.Requests.Invalidate(context.Background(), invalidation.Requests)
+			cache.Imps.Invalidate(context.Background(), invalidation.Imps)
 			if e.onInvalidate != nil {
 				e.onInvalidate()
 			}

@@ -106,7 +106,7 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine pbsmetrics.M
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *httprouter.Router) (db *sql.DB, shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, categoriesFetcher stored_requests.CategoryFetcher, videoFetcher stored_requests.Fetcher) {
+func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *httprouter.Router) (db *sql.DB, shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, accountsFetcher stored_requests.AccountFetcher, categoriesFetcher stored_requests.CategoryFetcher, videoFetcher stored_requests.Fetcher) {
 	// TODO: Switch this to be set in config defaults
 	//if cfg.CategoryMapping.CacheEvents.Enabled && cfg.CategoryMapping.CacheEvents.Endpoint == "" {
 	//	cfg.CategoryMapping.CacheEvents.Endpoint = "/storedrequest/categorymapping"
@@ -118,6 +118,7 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.Metri
 	fetcher2, shutdown2 := CreateStoredRequests(&cfg.StoredRequestsAMP, metricsEngine, client, router, &dbc)
 	fetcher3, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, metricsEngine, client, router, &dbc)
 	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, &dbc)
+	fetcher5, shutdown5 := CreateStoredRequests(&cfg.Accounts, metricsEngine, client, router, &dbc)
 
 	db = dbc.db
 
@@ -125,12 +126,14 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.Metri
 	ampFetcher = fetcher2.(stored_requests.Fetcher)
 	categoriesFetcher = fetcher3.(stored_requests.CategoryFetcher)
 	videoFetcher = fetcher4.(stored_requests.Fetcher)
+	accountsFetcher = fetcher5.(stored_requests.AccountFetcher)
 
 	shutdown = func() {
 		shutdown1()
 		shutdown2()
 		shutdown3()
 		shutdown4()
+		shutdown5()
 	}
 
 	return
@@ -175,10 +178,13 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fe
 func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 	if cfg.InMemoryCache.Type == "none" {
 		glog.Infof("No Stored %s cache configured. The %s Fetcher backend will be used for all data requests", cfg.DataType(), cfg.DataType())
-		return &nil_cache.NilCache{}
+		return stored_requests.Cache{&nil_cache.NilCache{}, &nil_cache.NilCache{}}
 	}
 
-	return memory.NewCache(&cfg.InMemoryCache)
+	return stored_requests.Cache{
+		Requests: memory.NewCache(cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.TTL, "Requests"),
+		Imps:     memory.NewCache(cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL, "Imps"),
+	}
 }
 
 func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, router *httprouter.Router) (eventProducers []events.EventProducer) {
