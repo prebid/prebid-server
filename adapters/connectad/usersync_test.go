@@ -23,7 +23,7 @@ func TestConnectAdSyncer(t *testing.T) {
 			Consent: "fakeconsent",
 		},
 		CCPA: ccpa.Policy{
-			Value: "fake",
+			Consent: "fake",
 		},
 	})
 
