@@ -197,17 +197,18 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 		}
 
 		if request.Imp[i].Video != nil {
-			videoImps = append(videoImps, request.Imp[i])
+			imp := request.Imp[i]
 
 			if request.Site != nil && request.Site.Page != "" {
-				_, videoImps[len(videoImps)-1].Secure = isPageSecure(request.Site.Page)
+				_, imp.Secure = isPageSecure(request.Site.Page)
 			} else if request.Imp[i].Secure != nil {
-				videoImps[len(videoImps)-1].Secure = request.Imp[i].Secure
+				imp.Secure = request.Imp[i].Secure
 			} else {
-				videoImps[len(videoImps)-1].Secure = &zero
+				imp.Secure = &zero
 			}
 
-			videoImps[len(videoImps)-1].Banner = nil
+			imp.Banner = nil
+			videoImps = append(videoImps, imp)
 		}
 	}
 
