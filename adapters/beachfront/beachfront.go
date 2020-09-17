@@ -212,7 +212,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 		}
 	}
 
-	if len(videoImps) == 0 && ! gotBanner{
+	if len(videoImps) == 0 && !gotBanner {
 		errs = append(errs, errors.New("no valid impressions were found in the request"))
 		return
 	}
@@ -221,60 +221,12 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 		beachfrontReqs.Banner, errs = getBannerRequest(request)
 	}
 
-	/* We have video imps, so organize them into nurl imps and adm imps. The nurl imps will be
-	sent sequentially and the adm imps in sequential / parallel.
-	*/
 	if len(videoImps) > 0 {
-		admRequests := make(map[string]videoRequest, len(videoImps))
+		requestStub := *request
+		requestStub.Imp = nil
 
-		for i := 0; i < len(videoImps); i++ {
-			var ext openrtb_ext.ExtImpBeachfront
-			ext, errs = prepVideoRequestExt(videoImps[i], errs)
-
-			if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
-				requestStub := *request
-				requestStub.Imp = []openrtb.Imp{videoImps[i]}
-
-				nurlRequest := videoRequest{
-					AppId:             ext.AppId,
-					VideoResponseType: ext.VideoResponseType,
-					Request:           requestStub,
-				}
-
-				prepVideoRequest(&nurlRequest)
-				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, nurlRequest)
-			}
-
-			if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
-				admRequest, exists := admRequests[ext.AppId]
-				if !exists {
-					requestStub := *request
-					requestStub.Imp = make([]openrtb.Imp, 0, len(admRequests))
-					requestStub.Imp = append(admRequest.Request.Imp, videoImps[i])
-
-					admRequest := videoRequest{
-						AppId:             ext.AppId,
-						VideoResponseType: ext.VideoResponseType,
-						Request:           requestStub,
-					}
-					prepVideoRequest(&admRequest)
-					admRequests[ext.AppId] = admRequest
-
-					beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, admRequest)
-				} else {
-					for k := 0; k < len(beachfrontReqs.ADMVideo); k++ {
-						if beachfrontReqs.ADMVideo[k].AppId == admRequest.AppId {
-							beachfrontReqs.ADMVideo[k].Request.Imp = append(
-								beachfrontReqs.ADMVideo[k].Request.Imp,
-								videoImps[i])
-							break
-						}
-					}
-				}
-			}
-		}
+		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo, errs = getVideoRequests(requestStub, videoImps)
 	}
-
 	return
 }
 
@@ -416,6 +368,59 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, err
 	bannerReq.RequestID = request.ID
 	bannerReq.AdapterName = beachfrontAdapterName
 	bannerReq.AdapterVersion = beachfrontAdapterVersion
+
+	return
+}
+
+func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp) (nurlReq []videoRequest, admReq []videoRequest, errs []error) {
+
+	admMap := make(map[string]videoRequest, len(imps))
+
+	for i := 0; i < len(imps); i++ {
+		var ext openrtb_ext.ExtImpBeachfront
+		ext, errs = prepVideoRequestExt(imps[i], errs)
+
+		if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
+			requestStub.Imp = []openrtb.Imp{imps[i]}
+
+			r := videoRequest{
+				AppId:             ext.AppId,
+				VideoResponseType: ext.VideoResponseType,
+				Request:           requestStub,
+			}
+
+			prepVideoRequest(& r)
+			nurlReq = append(nurlReq, r)
+		}
+
+		if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
+			admRequest, exists := admMap[ext.AppId]
+			if !exists {
+				requestStub.Imp = make([]openrtb.Imp, 0, len(admMap))
+				requestStub.Imp = append(admRequest.Request.Imp, imps[i])
+
+				admRequest := videoRequest{
+					AppId:             ext.AppId,
+					VideoResponseType: ext.VideoResponseType,
+					Request:           requestStub,
+				}
+				prepVideoRequest(&admRequest)
+				admMap[ext.AppId] = admRequest
+
+				admReq = append(admReq, admRequest)
+			} else {
+				admMap[ext.AppId].Request.Imp = append(admMap[ext.AppId].Request.Imp, imps[i])
+				for k := 0; k < len(beachfrontReqs.ADMVideo); k++ {
+					if beachfrontReqs.ADMVideo[k].AppId == admRequest.AppId {
+						beachfrontReqs.ADMVideo[k].Request.Imp = append(
+							beachfrontReqs.ADMVideo[k].Request.Imp,
+							videoImps[i])
+						break
+					}
+				}
+			}
+		}
+	}
 
 	return
 }
@@ -669,10 +674,6 @@ func getDomain(page string) string {
 
 }
 
-/**
-This is a weird solution, but I wanted to have a single function to handle the secure attribute
-in both the banner and video case, but in banner it's an int8, in video (rtb) it's an *int8.
-*/
 func isPageSecure(page string) (int8, *int8) {
 	protoURL := strings.Split(page, "://")
 	if len(protoURL) > 1 && protoURL[0] == "https" {
