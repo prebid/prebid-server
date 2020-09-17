@@ -8,7 +8,7 @@ import (
 )
 
 var validParams = []string{
-	`{ "key": 2 }`,
+	`{ "key": "2" }`,
 }
 
 func TestValidParams(t *testing.T) {
