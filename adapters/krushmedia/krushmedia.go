@@ -129,7 +129,7 @@ func (a *KrushmediaAdapter) getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.Ext
 }
 
 func (a *KrushmediaAdapter) buildEndpointURL(params *openrtb_ext.ExtKrushmedia) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{Key: params.Key}
+	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
