@@ -19,6 +19,8 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 )
 
+const unknownBidder string = ""
+
 func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
@@ -65,31 +67,32 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	requestsByBidder, errs = splitBidRequest(orig, requestExt, impsByBidder, aliases, usersyncs, blables, labels)
 
+	if len(requestsByBidder) == 0 {
+		return
+	}
+
 	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
 	consent := extractConsent(orig)
 	ampGDPRException := (labels.RType == pbsmetrics.ReqTypeAMP) && gDPR.AMPException()
 
-	var ccpaPolicy ccpa.Policy
-	if privacyConfig.CCPA.Enforce {
-		ccpaPolicy, _ = ccpa.ReadPolicy(orig)
+	ccpaEnforcer, err := extractCCPA(orig, privacyConfig, aliases)
+	if err != nil {
+		errs = append(errs, err)
+		return
 	}
 
-	var lmtPolicy lmt.Policy
-	if privacyConfig.LMT.Enforce {
-		lmtPolicy = lmt.ReadPolicy(orig)
-	}
+	lmtEnforcer := extractLMT(orig, privacyConfig)
 
 	// request level privacy policies
 	privacyEnforcement := privacy.Enforcement{
-		CCPA:  ccpaPolicy.ShouldEnforce(),
 		COPPA: orig.Regs != nil && orig.Regs.COPPA == 1,
-		LMT:   lmtPolicy.ShouldEnforce(),
+		LMT:   lmtEnforcer.ShouldEnforce(unknownBidder),
 	}
 
-	privacyLabels.CCPAProvided = ccpaPolicy.Value != ""
-	privacyLabels.CCPAEnforced = privacyEnforcement.CCPA
+	privacyLabels.CCPAProvided = ccpaEnforcer.CanEnforce()
+	privacyLabels.CCPAEnforced = ccpaEnforcer.ShouldEnforce(unknownBidder)
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
-	privacyLabels.LMTEnforced = privacyEnforcement.LMT
+	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
 	if gdpr == 1 {
 		privacyLabels.GDPREnforced = true
@@ -102,7 +105,10 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	// bidder level privacy policies
 	for bidder, bidReq := range requestsByBidder {
+		// CCPA
+		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidder.String())
 
+		// GDPR
 		if gdpr == 1 {
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
@@ -119,6 +125,32 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	return
+}
+
+func extractCCPA(orig *openrtb.BidRequest, privacyConfig config.Privacy, aliases map[string]string) (privacy.PolicyEnforcer, error) {
+	ccpaPolicy, err := ccpa.ReadFromRequest(orig)
+	if err != nil {
+		return privacy.NilPolicyEnforcer{}, err
+	}
+
+	validBidders := GetValidBidders(aliases)
+	ccpaParsedPolicy, err := ccpaPolicy.Parse(validBidders)
+	if err != nil {
+		return privacy.NilPolicyEnforcer{}, err
+	}
+
+	ccpaEnforcer := privacy.EnabledPolicyEnforcer{
+		Enabled:        privacyConfig.CCPA.Enforce,
+		PolicyEnforcer: ccpaParsedPolicy,
+	}
+	return ccpaEnforcer, nil
+}
+
+func extractLMT(orig *openrtb.BidRequest, privacyConfig config.Privacy) privacy.PolicyEnforcer {
+	return privacy.EnabledPolicyEnforcer{
+		Enabled:        privacyConfig.LMT.Enforce,
+		PolicyEnforcer: lmt.ReadFromRequest(orig),
+	}
 }
 
 func splitBidRequest(req *openrtb.BidRequest,
@@ -427,6 +459,20 @@ func parseAliases(orig *openrtb.BidRequest) (map[string]string, []error) {
 		return nil, []error{err}
 	}
 	return aliases, nil
+}
+
+func GetValidBidders(aliases map[string]string) map[string]struct{} {
+	validBidders := make(map[string]struct{})
+
+	for _, v := range openrtb_ext.BidderMap {
+		validBidders[v.String()] = struct{}{}
+	}
+
+	for k := range aliases {
+		validBidders[k] = struct{}{}
+	}
+
+	return validBidders
 }
 
 // Quick little randomizer for a list of strings. Stuffing it in utils to keep other files clean

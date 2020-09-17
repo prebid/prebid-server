@@ -24,6 +24,11 @@ type ExtRequestPrebid struct {
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
+
+	// NoSale specifies bidders with whom the publisher has a legal relationship where the
+	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
+	// The array may contain a single sstar ('*') entry to represent all bidders.
+	NoSale []string `json:"nosale,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains
