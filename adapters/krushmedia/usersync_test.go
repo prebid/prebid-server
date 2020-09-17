@@ -22,7 +22,7 @@ func TestKrushmediaSyncer(t *testing.T) {
 			Consent: "allGdpr",
 		},
 		CCPA: ccpa.Policy{
-			Value: "1-YY",
+			Consent: "1-YY",
 		},
 	})
 
