@@ -700,7 +700,7 @@ func (deps *ctvEndpointDeps) getBidResponseExt(resp *openrtb.BidResponse) (data 
 		if nil != imp.Bid && len(imp.Bid.Bids) > 0 {
 			for _, bid := range imp.Bid.Bids {
 				//update adm
-				bid.AdM = constant.VASTDefaultTag
+				//bid.AdM = constant.VASTDefaultTag
 
 				//add duration value
 				raw, err := jsonparser.Set(bid.Ext, []byte(strconv.Itoa(int(bid.Duration))), "prebid", "video", "duration")
