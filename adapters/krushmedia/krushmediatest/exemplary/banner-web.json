@@ -20,7 +20,6 @@
     "imp": [
       {
         "id": "some-impression-id",
-        
         "banner": {
           "w":320,
           "h":50
