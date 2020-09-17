@@ -23,7 +23,7 @@ func TestAvocetSyncer(t *testing.T) {
 			Consent: "ConsentString",
 		},
 		CCPA: ccpa.Policy{
-			Value: "PrivacyString",
+			Consent: "PrivacyString",
 		},
 	})
 
