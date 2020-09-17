@@ -23,7 +23,7 @@ func TestColossusSyncer(t *testing.T) {
 			Consent: "A",
 		},
 		CCPA: ccpa.Policy{
-			Value: "1-YY",
+			Consent: "1-YY", // I've change here Value to Consent to prevent test from failing
 		},
 	})
 
