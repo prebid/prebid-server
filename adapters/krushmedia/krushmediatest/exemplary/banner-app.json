@@ -82,8 +82,7 @@
                 "banner": {
                     "w":320,
                     "h":50
-                },
-                "tagid": "ogTAGID"
+                }
               }
             ],
             "app": {

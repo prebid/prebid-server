@@ -18,11 +18,11 @@ func TestKrushmediaSyncer(t *testing.T) {
 	syncer := NewKrushmediaSyncer(syncURLTemplate)
 	syncInfo, err := syncer.GetUsersyncInfo(privacy.Policies{
 		GDPR: gdpr.Policy{
-			Signal:  "0",
-			Consent: "allGdpr",
+			Signal:  "A",
+			Consent: "B",
 		},
 		CCPA: ccpa.Policy{
-			Consent: "1-YY",
+			Consent: "C",
 		},
 	})
 
