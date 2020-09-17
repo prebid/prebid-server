@@ -32,7 +32,7 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
-	`{ "key": "2" }`,
+	`{ "key": 2 }`,
 	`{ "anyparam": "anyvalue" }`,
 }
 
