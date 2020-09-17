@@ -188,13 +188,12 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []error) {
 	var videoImps = make([]openrtb.Imp, 0, len(request.Imp))
-	var bannerImps = make([]openrtb.Imp, 0, len(request.Imp))
+	var gotBanner bool
 
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil && ((request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
 			(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil)) {
-			bannerImps = append(bannerImps, request.Imp[i])
-			bannerImps[len(bannerImps)-1].Video = nil
+			gotBanner = true
 		}
 
 		if request.Imp[i].Video != nil {
@@ -212,12 +211,12 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 		}
 	}
 
-	if len(bannerImps)+len(videoImps) == 0 {
+	if len(videoImps) == 0 && ! gotBanner{
 		errs = append(errs, errors.New("no valid impressions were found in the request"))
 		return
 	}
 
-	if len(bannerImps) > 0 {
+	if gotBanner {
 		beachfrontReqs.Banner, errs = getBannerRequest(request)
 	}
 
@@ -233,8 +232,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 
 			if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
 				requestStub := *request
-				requestStub.Imp = make([]openrtb.Imp, 1)
-				requestStub.Imp = append(requestStub.Imp, videoImps[i])
+				requestStub.Imp = []openrtb.Imp{videoImps[i]}
 
 				nurlRequest := videoRequest{
 					AppId:             ext.AppId,
@@ -380,7 +378,7 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, err
 		}
 	}
 
-	var t = fallBackDeviceType(*request)
+	var t = fallBackDeviceType(request)
 
 	if t == openrtb.DeviceTypeMobileTablet {
 		bannerReq.Page = request.App.Bundle
@@ -421,7 +419,7 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, err
 	return
 }
 
-func fallBackDeviceType(request openrtb.BidRequest) openrtb.DeviceType {
+func fallBackDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
 	if request.Site != nil {
 		return openrtb.DeviceTypePersonalComputer
 	}
@@ -480,8 +478,7 @@ func prepVideoRequest(bfReq *videoRequest) {
 		bfReq.Request.Device.IP = getIP(bfReq.Request.Device.IP)
 
 		if bfReq.Request.Device.DeviceType == 0 {
-			// More fine grained deviceType methods will be added in the future
-			bfReq.Request.Device.DeviceType = fallBackDeviceType(bfReq.Request)
+			bfReq.Request.Device.DeviceType = fallBackDeviceType(&bfReq.Request)
 		}
 	}
 
