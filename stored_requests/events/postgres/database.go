@@ -13,8 +13,12 @@ import (
 	"github.com/prebid/prebid-server/util/timeutil"
 )
 
+func bytesNull() []byte {
+	return []byte{'n', 'u', 'l', 'l'}
+}
+
 type PostgresEventProducerConfig struct {
-	Db                 *sql.DB
+	DB                 *sql.DB
 	RequestType        config.DataType
 	CacheInitQuery     string
 	CacheInitTimeout   time.Duration
@@ -31,7 +35,7 @@ type PostgresEventProducer struct {
 }
 
 func NewPostgresEventProducer(cfg PostgresEventProducerConfig) (eventProducer *PostgresEventProducer) {
-	if cfg.Db == nil {
+	if cfg.DB == nil {
 		glog.Fatalf("The Postgres Stored %s Loader needs a database connection to work.", cfg.RequestType)
 	}
 
@@ -67,7 +71,7 @@ func (e *PostgresEventProducer) fetchAll() error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	rows, err := e.cfg.Db.QueryContext(ctx, e.cfg.CacheInitQuery)
+	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheInitQuery)
 
 	if err != nil {
 		glog.Warningf("Failed to fetch all Stored %s data from the DB: %v", e.cfg.RequestType, err)
@@ -96,7 +100,7 @@ func (e *PostgresEventProducer) fetchDelta() error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	rows, err := e.cfg.Db.QueryContext(ctx, e.cfg.CacheUpdateQuery, e.lastUpdate)
+	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheUpdateQuery, e.lastUpdate)
 
 	if err != nil {
 		glog.Warningf("Failed to fetch updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
@@ -130,20 +134,20 @@ func (e *PostgresEventProducer) sendEvents(rows *sql.Rows) (err error) {
 		var data []byte
 		var dataType string
 
-		// Beware #338... we really don't want to save corrupt data
+		// discard corrupted data so it is not saved in the cache
 		if err := rows.Scan(&id, &data, &dataType); err != nil {
 			return err
 		}
 
 		switch dataType {
 		case "request":
-			if len(data) == 0 || bytes.Equal(data, []byte("null")) {
+			if len(data) == 0 || bytes.Equal(data, bytesNull()) {
 				requestInvalidations = append(requestInvalidations, id)
 			} else {
 				storedRequestData[id] = data
 			}
 		case "imp":
-			if len(data) == 0 || bytes.Equal(data, []byte("null")) {
+			if len(data) == 0 || bytes.Equal(data, bytesNull()) {
 				impInvalidations = append(impInvalidations, id)
 			} else {
 				storedImpData[id] = data
@@ -153,7 +157,7 @@ func (e *PostgresEventProducer) sendEvents(rows *sql.Rows) (err error) {
 		}
 	}
 
-	// Beware #338... we really don't want to save corrupt data
+	// discard corrupted data so it is not saved in the cache
 	if rows.Err() != nil {
 		return rows.Err()
 	}
@@ -165,7 +169,6 @@ func (e *PostgresEventProducer) sendEvents(rows *sql.Rows) (err error) {
 		}
 	}
 
-	//TODO: do we really need to check that this isn't a fetch all here?
 	if (len(requestInvalidations) > 0 || len(impInvalidations) > 0) && !e.lastUpdate.IsZero() {
 		e.invalidations <- events.Invalidation{
 			Requests: requestInvalidations,

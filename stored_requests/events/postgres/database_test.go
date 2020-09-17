@@ -92,7 +92,7 @@ func TestFetchAllSuccess(t *testing.T) {
 		mock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
-			Db:               db,
+			DB:               db,
 			CacheInitTimeout: 100 * time.Millisecond,
 			CacheInitQuery:   fakeQuery,
 		})
@@ -175,7 +175,7 @@ func TestFetchAllErrors(t *testing.T) {
 		}
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
-			Db:               db,
+			DB:               db,
 			CacheInitTimeout: 100 * time.Millisecond,
 			CacheInitQuery:   fakeQuery,
 		})
@@ -243,17 +243,32 @@ func TestFetchDeltaSuccess(t *testing.T) {
 			wantSavedImps:  map[string]json.RawMessage{"imp-1": json.RawMessage(`true`)},
 		},
 		{
-			description:         "saved reqs = 0, saved imps = 0, invalidated reqs > 0, invalidated imps = 0",
+			description:         "saved reqs = 0, saved imps = 0, invalidated reqs > 0, invalidated imps = 0, empty data",
 			giveFakeTime:        time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:        sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("req-1", "", "request"),
 			wantLastUpdate:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			wantInvalidatedReqs: []string{"req-1"},
-			wantInvalidatedImps: nil, //TODO: do we want this to be nil here?
+			wantInvalidatedImps: nil,
 		},
 		{
-			description:         "saved reqs = 0, saved imps = 0, invalidated reqs = 0, invalidated imps > 0",
+			description:         "saved reqs = 0, saved imps = 0, invalidated reqs > 0, invalidated imps = 0, null data",
+			giveFakeTime:        time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			giveMockRows:        sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("req-1", "null", "request"),
+			wantLastUpdate:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			wantInvalidatedReqs: []string{"req-1"},
+			wantInvalidatedImps: nil,
+		},
+		{
+			description:         "saved reqs = 0, saved imps = 0, invalidated reqs = 0, invalidated imps > 0, empty data",
 			giveFakeTime:        time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:        sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("imp-1", "", "imp"),
+			wantLastUpdate:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			wantInvalidatedImps: []string{"imp-1"},
+		},
+		{
+			description:         "saved reqs = 0, saved imps = 0, invalidated reqs = 0, invalidated imps > 0, null data",
+			giveFakeTime:        time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			giveMockRows:        sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("imp-1", "null", "imp"),
 			wantLastUpdate:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			wantInvalidatedImps: []string{"imp-1"},
 		},
@@ -278,7 +293,7 @@ func TestFetchDeltaSuccess(t *testing.T) {
 		mock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
-			Db:                 db,
+			DB:                 db,
 			CacheUpdateTimeout: 100 * time.Millisecond,
 			CacheUpdateQuery:   fakeQuery,
 		})
@@ -368,7 +383,7 @@ func TestFetchDeltaErrors(t *testing.T) {
 		}
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
-			Db:                 db,
+			DB:                 db,
 			CacheUpdateTimeout: 100 * time.Millisecond,
 			CacheUpdateQuery:   fakeQuery,
 		})

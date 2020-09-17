@@ -194,7 +194,7 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.
 	}
 	if cfg.Postgres.CacheInitialization.Query != "" {
 		pgEventCfg := postgresEvents.PostgresEventProducerConfig{
-			Db:                 db,
+			DB:                 db,
 			RequestType:        cfg.DataType(),
 			CacheInitQuery:     cfg.Postgres.CacheInitialization.Query,
 			CacheInitTimeout:   time.Duration(cfg.Postgres.CacheInitialization.Timeout) * time.Millisecond,
