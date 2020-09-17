@@ -367,7 +367,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 				},
 				{
 					"Bids returnCreative is true, expect valid AdM",
-					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":false},"vastXml":{"returnCreative":true}}}}`),
+					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":true},"vastXml":{"returnCreative":false}}}}`),
 					sampleAd,
 				},
 				{
