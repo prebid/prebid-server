@@ -122,6 +122,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderBrightroll:   brightroll.NewBrightrollBidder(cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderBrightroll)].ExtraAdapterInfo),
 		openrtb_ext.BidderColossus:     colossus.NewColossusBidder(cfg.Adapters[string(openrtb_ext.BidderColossus)].Endpoint),
 		openrtb_ext.BidderConsumable:   consumable.NewConsumableBidder(cfg.Adapters[string(openrtb_ext.BidderConsumable)].Endpoint),
+		openrtb_ext.BidderConversant:   conversant.NewConversantBidder(cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
 		openrtb_ext.BidderCpmstar:      cpmstar.NewCpmstarBidder(cfg.Adapters[string(openrtb_ext.BidderCpmstar)].Endpoint),
 		openrtb_ext.BidderDatablocks:   datablocks.NewDatablocksBidder(cfg.Adapters[string(openrtb_ext.BidderDatablocks)].Endpoint),
 		openrtb_ext.BidderDmx:          dmx.NewDmxBidder(cfg.Adapters[string(openrtb_ext.BidderDmx)].Endpoint),
@@ -186,8 +187,6 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	}
 
 	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{
-		// TODO #267: Upgrade the Conversant adapter
-		openrtb_ext.BidderConversant: conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
 		// TODO #212: Upgrade the Index adapter
 		openrtb_ext.BidderIx: ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
 		// TODO #213: Upgrade the Lifestreet adapter
