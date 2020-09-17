@@ -115,14 +115,12 @@ func (a *KrushmediaAdapter) MakeRequests(
 func (a *KrushmediaAdapter) getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtKrushmedia, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		fmt.Println(118, err)
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
 	}
 	var krushmediaExt openrtb_ext.ExtKrushmedia
 	if err := json.Unmarshal(bidderExt.Bidder, &krushmediaExt); err != nil {
-		fmt.Println(125, err)
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
