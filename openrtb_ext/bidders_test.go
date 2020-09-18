@@ -66,3 +66,51 @@ func TestBidderListDoesNotDefineContext(t *testing.T) {
 	bidders := BidderList()
 	assert.NotContains(t, bidders, BidderNameContext)
 }
+
+// TestBidderUniquenessGatekeeping acts as a gatekeeper of bidder name uniqueness. If this test fails
+// when you're building a new adapter, please consider choosing a different bidder name to maintain the
+// current uniqueness threshold, or else start a discussion in the PR.
+func TestBidderUniquenessGatekeeping(t *testing.T) {
+	// Get List Of Bidders
+	// - Exclude duplicates of adapters for the same bidder since it's likely the publisher will choose
+	//   one of them and not use both.
+	var bidders []string
+	for _, bidder := range BidderMap {
+		if bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn {
+			bidders = append(bidders, string(bidder))
+		}
+	}
+
+	// Measure Minimum Characters Needed For Uniqueness
+	prefixLength := 20 + 1
+	for uniqueForPrefixLength(bidders, prefixLength-1) {
+		prefixLength--
+	}
+
+	currentUniquenessThreshold := 7
+	assert.Equal(t, currentUniquenessThreshold, prefixLength+1)
+}
+
+func uniqueForPrefixLength(b []string, prefixLength int) bool {
+	m := make(map[string]struct{})
+
+	if prefixLength <= 0 {
+		return false
+	}
+
+	for i, n := range b {
+		ns := string(n)
+
+		if len(ns) > prefixLength {
+			ns = ns[0:prefixLength]
+		}
+
+		m[ns] = struct{}{}
+
+		if len(m) != i+1 {
+			return false
+		}
+	}
+
+	return true
+}
