@@ -81,14 +81,18 @@ func TestBidderUniquenessGatekeeping(t *testing.T) {
 		}
 	}
 
-	// Measure Minimum Characters Needed For Uniqueness
-	prefixLength := 20 + 1
-	for uniqueForPrefixLength(bidders, prefixLength-1) {
-		prefixLength--
-	}
+	currentUniquenessThreshold := 6
+	assert.Equal(t, currentUniquenessThreshold, maxUniqueForPrefixLength(bidders))
+}
 
-	currentUniquenessThreshold := 7
-	assert.Equal(t, currentUniquenessThreshold, prefixLength+1)
+func maxUniqueForPrefixLength(b []string) int {
+	targetingKeyMaxLength := 20
+	for prefixLength := 1; prefixLength <= targetingKeyMaxLength; prefixLength++ {
+		if uniqueForPrefixLength(b, prefixLength) {
+			return prefixLength
+		}
+	}
+	return 0
 }
 
 func uniqueForPrefixLength(b []string, prefixLength int) bool {
