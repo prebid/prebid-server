@@ -226,13 +226,8 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 		requestStub := *request
 		requestStub.Imp = nil
 
-		beachfrontReqs.NurlVideo, admMap, errs = getVideoRequests(requestStub, videoImps)
+		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo, errs = getVideoRequests(requestStub, videoImps)
 
-		if len(admMap) > 0 {
-			for k := range admMap {
-				beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, admMap[k])
-			}
-		}
 	}
 	return
 }
@@ -379,9 +374,9 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, err
 	return
 }
 
-func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp) (nurlReqs []videoRequest, admMap map[string]videoRequest, errs []error) {
+func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp) (nurlReqs []videoRequest, admReqs []videoRequest, errs []error) {
 	var ext openrtb_ext.ExtImpBeachfront
-	admMap = make(map[string]videoRequest)
+	var admMap = make(map[string]videoRequest)
 
 	for i := 0; i < len(imps); i++ {
 		ext, errs = prepVideoRequestExt(imps[i], errs)
@@ -422,6 +417,12 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp) (nurlR
 					Request:           tmpRequest,
 				}
 			}
+		}
+	}
+
+	if len(admMap) > 0 {
+		for k := range admMap {
+			admReqs = append(admReqs, admMap[k])
 		}
 	}
 
