@@ -188,6 +188,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []error) {
 	var videoImps = make([]openrtb.Imp, 0, len(request.Imp))
+	var admMap = make(map[string]videoRequest)
 	var gotBanner bool
 
 	for i := 0; i < len(request.Imp); i++ {
@@ -225,7 +226,13 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 		requestStub := *request
 		requestStub.Imp = nil
 
-		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo, errs = getVideoRequests(requestStub, videoImps)
+		beachfrontReqs.NurlVideo, admMap, errs = getVideoRequests(requestStub, videoImps)
+
+		if len(admMap) > 0 {
+			for k := range admMap {
+				beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, admMap[k])
+			}
+		}
 	}
 	return
 }
@@ -372,12 +379,11 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, err
 	return
 }
 
-func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp) (nurlReq []videoRequest, admReq []videoRequest, errs []error) {
-
-	admMap := make(map[string]videoRequest, len(imps))
+func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp) (nurlReqs []videoRequest, admMap map[string]videoRequest, errs []error) {
+	var ext openrtb_ext.ExtImpBeachfront
+	admMap = make(map[string]videoRequest)
 
 	for i := 0; i < len(imps); i++ {
-		var ext openrtb_ext.ExtImpBeachfront
 		ext, errs = prepVideoRequestExt(imps[i], errs)
 
 		if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
@@ -389,15 +395,15 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp) (nurlR
 				Request:           requestStub,
 			}
 
-			prepVideoRequest(& r)
-			nurlReq = append(nurlReq, r)
+			prepVideoRequest(&r)
+			nurlReqs = append(nurlReqs, r)
 		}
 
 		if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
-			admRequest, exists := admMap[ext.AppId]
+			_, exists := admMap[ext.AppId]
 			if !exists {
-				requestStub.Imp = make([]openrtb.Imp, 0, len(admMap))
-				requestStub.Imp = append(admRequest.Request.Imp, imps[i])
+				requestStub.Imp = make([]openrtb.Imp, 0, len(imps))
+				requestStub.Imp = append(requestStub.Imp, imps[i])
 
 				admRequest := videoRequest{
 					AppId:             ext.AppId,
@@ -406,17 +412,14 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp) (nurlR
 				}
 				prepVideoRequest(&admRequest)
 				admMap[ext.AppId] = admRequest
-
-				admReq = append(admReq, admRequest)
 			} else {
-				admMap[ext.AppId].Request.Imp = append(admMap[ext.AppId].Request.Imp, imps[i])
-				for k := 0; k < len(beachfrontReqs.ADMVideo); k++ {
-					if beachfrontReqs.ADMVideo[k].AppId == admRequest.AppId {
-						beachfrontReqs.ADMVideo[k].Request.Imp = append(
-							beachfrontReqs.ADMVideo[k].Request.Imp,
-							videoImps[i])
-						break
-					}
+				tmpRequest := admMap[ext.AppId].Request
+				tmpRequest.Imp = append(tmpRequest.Imp, imps[i])
+
+				admMap[ext.AppId] = videoRequest{
+					AppId:             ext.AppId,
+					VideoResponseType: ext.VideoResponseType,
+					Request:           tmpRequest,
 				}
 			}
 		}
