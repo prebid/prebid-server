@@ -188,7 +188,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []error) {
 	var videoImps = make([]openrtb.Imp, 0, len(request.Imp))
-	var admMap = make(map[string]videoRequest)
 	var gotBanner bool
 
 	for i := 0; i < len(request.Imp); i++ {
@@ -227,7 +226,6 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 		requestStub.Imp = nil
 
 		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo, errs = getVideoRequests(requestStub, videoImps)
-
 	}
 	return
 }
