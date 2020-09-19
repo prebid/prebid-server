@@ -532,7 +532,6 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
 	for i := 0; i < len(bids); i++ {
 
-		// If we unmarshal without an error, this is an AdM video
 		if err := json.Unmarshal(bids[i].Ext, &dur); err == nil {
 			var impVideo openrtb_ext.ExtBidPrebidVideo
 			impVideo.Duration = dur.Duration
