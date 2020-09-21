@@ -7,11 +7,6 @@
     "user": {
       "buyerUid": "123"
     },
-    "regs": {
-      "ext": {
-        "gdpr": 0
-      }
-    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -25,7 +20,10 @@
         },
         "ext": {
           "bidder": {
-            "placementId": "2eb6bd58-865c-47ce-af7f-a918108c3fd2"
+            "placementId": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+            "debug": {
+              "testLog": true
+            }
           }
         }
       }
@@ -38,7 +36,7 @@
         "body": {
           "BidParamsJson": "{\"PlacementIds\":[\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\"],\"BidVersion\":\"4\",\"Properties\":{\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\":{\"Formats\":[{\"w\":300,\"h\":150}],\"ImpId\":\"test-imp-id\"}}}",
           "Bvid": "",
-          "Gdpr": false,
+          "Gdpr": true,
           "GdprConsent": "",
           "Height": "",
           "IsAmp": false,
@@ -46,18 +44,23 @@
           "Lid": "123",
           "Location": "https://publisher.com/url",
           "IsTestBid": false,
-          "InvibBVLog": false,
-          "VideoAdDebug": false,
+          "InvibBVLog": true,
+          "VideoAdDebug": true,
           "Width": ""
         }
       },
       "mockResponse": {
-        "status": 200,
         "body": {
-          "currency": "EUR",
-          "typedBids": []
-        }
+          "error": "Server err"
+        },
+        "status": 200
       }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Server error: Server err.",
+      "comparison": "literal"
     }
   ]
 }

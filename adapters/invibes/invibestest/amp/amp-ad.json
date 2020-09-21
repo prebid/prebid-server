@@ -53,19 +53,21 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "VideoAdContentResult": {
-            "Ads": [
-              {
-                "VideoExposedID": "eb6bd58-865c-47ce-af7f-a918108c3fd2",
-                "BidModel": {
-                  "Currency": "EUR",
-                  "Width": 300,
-                  "Height": 150
-                },
-                "BidPrice": 1
-              }
-            ]
-          }
+          "currency": "EUR",
+          "typedBids": [
+            {
+              "bid": {
+                "id": "1234",
+                "impid": "test-imp-id",
+                "price": 0.5,
+                "adm": "<div>abc</div>",
+                "crid": "29681110",
+                "w": 300,
+                "h": 250
+              },
+              "dealPriority": 0
+            }
+          ]
         }
       }
     }

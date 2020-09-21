@@ -52,7 +52,23 @@
       },
       "mockResponse": {
         "status": 200,
-        "body": {}
+        "body": {
+          "currency": "EUR",
+          "typedBids": [
+            {
+              "bid": {
+                "id": "1234",
+                "impid": "test-imp-id",
+                "price": 0.5,
+                "adm": "<div>abc</div>",
+                "crid": "29681110",
+                "w": 300,
+                "h": 250
+              },
+              "dealPriority": 0
+            }
+          ]
+        }
       }
     }
   ]
