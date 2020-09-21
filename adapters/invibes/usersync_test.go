@@ -5,7 +5,6 @@ import (
 	"text/template"
 
 	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,13 +21,10 @@ func TestInvibesSyncer(t *testing.T) {
 			Signal:  "1",
 			Consent: "abc",
 		},
-		CCPA: ccpa.Policy{
-			Value: "X",
-		},
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, "http://localhost:56479/home/getLid?gdpr=1&gdpr_consent=abc&us_privacy=X&redirectUri=test.com%2Fsetuid%3Fbidder%3Dinvibes%26gdpr%3D1%26gdpr_consent%3Dabc%26uid%3D%24UID", syncInfo.URL)
+	assert.Equal(t, "http://localhost:56479/home/getLid?gdpr=1&gdpr_consent=abc&us_privacy=&redirectUri=test.com%2Fsetuid%3Fbidder%3Dinvibes%26gdpr%3D1%26gdpr_consent%3Dabc%26uid%3D%24UID", syncInfo.URL)
 	assert.Equal(t, "iframe", syncInfo.Type)
 	assert.EqualValues(t, 436, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
