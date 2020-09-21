@@ -186,15 +186,30 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	return reqs, errs
 }
 
+func testForValidBannerSize(request *openrtb.BidRequest, index int) bool {
+
+	if request.Imp[index].Banner != nil && (
+
+		(request.Imp[index].Banner.Format != nil &&
+			len(request.Imp[index].Banner.Format) != 0 &&
+			request.Imp[index].Banner.Format[0].H != 0 &&
+			request.Imp[index].Banner.Format[0].W != 0) ||
+
+		(request.Imp[index].Banner.H != nil &&
+			request.Imp[index].Banner.W != nil)) {
+
+		return true
+	}
+
+	return false
+}
+
 func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []error) {
 	var videoImps = make([]openrtb.Imp, 0, len(request.Imp))
 	var gotBanner bool
 
 	for i := 0; i < len(request.Imp); i++ {
-		if request.Imp[i].Banner != nil && ((request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
-			(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil)) {
-			gotBanner = true
-		}
+		gotBanner = testForValidBannerSize(request, i)
 
 		if request.Imp[i].Video != nil {
 			imp := request.Imp[i]
