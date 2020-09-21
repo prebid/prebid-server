@@ -108,7 +108,7 @@ func TestShouldReturnBadRequestWhenTypeIsMissing(t *testing.T) {
 	// prepare
 	reqData := ""
 
-	req := httptest.NewRequest("GET", "/event", strings.NewReader(reqData))
+	req := httptest.NewRequest("GET", "/event?b=test", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
 	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
@@ -144,7 +144,7 @@ func TestShouldReturnBadRequestWhenTypeIsInvalid(t *testing.T) {
 	// prepare
 	reqData := ""
 
-	req := httptest.NewRequest("GET", "/event?t=test", strings.NewReader(reqData))
+	req := httptest.NewRequest("GET", "/event?t=test&b=t", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
 	e := NewEventEndpoint(cfg, mockAccounts, mockAnalyticsModule)
@@ -583,9 +583,9 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 	}
 
 	// execute
-	er, err := ParseEventRequest(req)
+	er, errs := ParseEventRequest(req)
 
 	// validate
-	assert.Equal(t, nil, err)
+	assert.Equal(t, 0, len(errs))
 	assert.EqualValues(t, expected, er)
 }

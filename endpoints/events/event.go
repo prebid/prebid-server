@@ -64,12 +64,15 @@ func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.Accoun
 
 func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// parse event request from http req
-	eventRequest, err := ParseEventRequest(r)
+	eventRequest, errs := ParseEventRequest(r)
 
 	// handle possible parsing errors
-	if err != nil {
+	if len(errs) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("invalid request: %s\n", err.Error())))
+
+		for _, err := range errs {
+			w.Write([]byte(fmt.Sprintf("invalid request: %s\n", err.Error())))
+		}
 
 		return
 	}
@@ -132,34 +135,34 @@ func EventRequestToUrl(externalUrl string, request *analytics.EventRequest) stri
 }
 
 // Parses an EventRequest from an Http request
-func ParseEventRequest(r *http.Request) (*analytics.EventRequest, error) {
+func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 	event := &analytics.EventRequest{}
-
+	var errs []error
 	// validate type
 	if err := validateType(event, r); err != nil {
-		return event, err
+		errs = append(errs, err)
 	}
 
 	// validate bidid
 	if bidid, err := validateRequiredParameter(r, BidIdParameter); err != nil {
-		return event, err
+		errs = append(errs, err)
 	} else {
 		event.Bidid = bidid
 	}
 
 	// validate timestamp (optional)
 	if err := validateTimestamp(event, r); err != nil {
-		return event, err
+		errs = append(errs, err)
 	}
 
 	// validate format (optional)
 	if err := validateFormat(event, r); err != nil {
-		return event, err
+		errs = append(errs, err)
 	}
 
 	// validate analytics (optional)
 	if err := validateAnalytics(event, r); err != nil {
-		return event, err
+		errs = append(errs, err)
 	}
 
 	// Bidder
@@ -169,7 +172,7 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, error) {
 		event.Bidder = bidder
 	}
 
-	return event, nil
+	return event, errs
 }
 
 // Handle fetching account errors
