@@ -165,9 +165,27 @@ func (a *KrushmediaAdapter) MakeBids(
 	bidderResponse *adapters.BidderResponse,
 	errs []error,
 ) {
-	httpStatusError := a.CheckResponseStatusCodes(bidderRawResponse)
-	if httpStatusError != nil {
-		return nil, []error{httpStatusError}
+	if bidderRawResponse.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if bidderRawResponse.StatusCode == http.StatusBadRequest {
+		return nil, []error{
+			&errortypes.BadInput{
+				Message: fmt.Sprintf("Unexpected status code: [ %d ]", bidderRawResponse.StatusCode),
+			}
+		}
+	}
+
+	if bidderRawResponse.StatusCode == http.StatusServiceUnavailable {
+		return nil, nil
+	}
+
+	if bidderRawResponse.StatusCode != http.StatusOK {
+		return return nil, []error{
+			&errortypes.BadInput{
+				Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", bidderRawResponse.StatusCode),
+			}
 	}
 
 	responseBody := bidderRawResponse.Body
