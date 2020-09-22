@@ -153,50 +153,49 @@
           "adm": "<div style=\"width:300px; height:250px;\"><img src=\"http://via.placeholder.com/300x250\" ></div>"
         }
       }
-    },
-    {
+    }, {
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=0c0c62c7-8fe6-4023-90a2-d6148f331823",
         "body": {
           "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
           "imp":[{
-              "id":"Mixed1",
-              "secure": 0,
-              "video":{
-                "mimes":[
-                  "video/mp4"
-                ],
-                "w":300,
-                "h":250
-              },
-              "ext":{
-                "bidder":{
-                  "videoResponseType":"adm",
-                  "bidfloor":0.01,
-                  "appIds": {
-                    "banner": "3b16770b-17af-4d22-daff-9606bdf2c9c3",
-                    "video": "0c0c62c7-8fe6-4023-90a2-d6148f331823"
-                  }
+            "id":"Mixed1",
+            "secure": 0,
+            "video":{
+              "mimes":[
+                "video/mp4"
+              ],
+              "w":300,
+              "h":250
+            },
+            "ext":{
+              "bidder":{
+                "videoResponseType":"adm",
+                "bidfloor":0.01,
+                "appIds": {
+                  "banner": "3b16770b-17af-4d22-daff-9606bdf2c9c3",
+                  "video": "0c0c62c7-8fe6-4023-90a2-d6148f331823"
                 }
               }
-            }, {
-              "ext": {
-                "bidder": {
-                    "appId": "0c0c62c7-8fe6-4023-90a2-d6148f331823",
-                    "bidfloor": 0.01,
-                    "videoResponseType": "both"
-                  }
-                },
-              "id": "video2",
-              "secure": 0,
-              "video": {
-                "h": 250,
-                "mimes": [
-                    "video/mp4"
-                  ],
-                "w": 300
-              }
             }
+          }, {
+            "ext": {
+              "bidder": {
+                "appId": "0c0c62c7-8fe6-4023-90a2-d6148f331823",
+                "bidfloor": 0.01,
+                "videoResponseType": "both"
+              }
+            },
+            "id": "video2",
+            "secure": 0,
+            "video": {
+              "h": 250,
+              "mimes": [
+                "video/mp4"
+              ],
+              "w": 300
+            }
+          }
 
           ],
           "site":{
@@ -281,6 +280,7 @@
         }
       }
     }, {
+
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
         "body": {
@@ -363,6 +363,7 @@
         }
       }
     }, {
+
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=0c0c62c7-8fe6-4023-90a2-d6148f331823&prebidserver",
         "body": {

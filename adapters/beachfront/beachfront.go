@@ -294,14 +294,14 @@ func impsToSlots(imps []openrtb.Imp, errs *[]error) (bannerRequest, int8) {
 		beachfrontExt, err := getBeachfrontExtension(imp)
 
 		if err != nil {
-			*errs = append(*errs, err)
+			*errs = append(*errs, errors.New(fmt.Sprintf("%s (on banner imp id: %s)", err, imp.ID)))
 			continue
 		}
 
 		appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeBanner)
 
 		if err != nil {
-			*errs = append(*errs, err)
+			*errs = append(*errs, errors.New(fmt.Sprintf("%s (on banner imp id: %s)", err, imp.ID)))
 			continue
 		}
 
@@ -331,11 +331,6 @@ func impsToSlots(imps []openrtb.Imp, errs *[]error) (bannerRequest, int8) {
 func getBannerRequest(request *openrtb.BidRequest, errs *[]error) (bannerReq bannerRequest) {
 	var secure int8
 	bannerReq, secure = impsToSlots(request.Imp, errs)
-
-	// At this point, len(errs) may be > 0, but the bannerReq may still be valid. There may
-	// have been banner imps that had an invalid ext or appId and got tossed, and the
-	// error appended to errs. If all imps failed to get converted to slots, bannerReq.Slots
-	// will be empty here.
 
 	if len(bannerReq.Slots) == 0 {
 		*errs = append(*errs, errors.New("unable to construct a valid banner request. see additional errors"))
@@ -410,9 +405,7 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs *
 		ext, err = prepVideoRequestExt(imps[i])
 
 		if err != nil {
-			*errs = append(*errs, err)
-			*errs = append(*errs, errors.New(fmt.Sprintf("an error was encountered while attempting "+
-				"to process the extension on video imp id:%s", imps[i].ID)))
+			*errs = append(*errs, errors.New(fmt.Sprintf("%s (on video imp id: %s)", err, imps[i].ID)))
 			continue
 		}
 

@@ -172,8 +172,7 @@
           "adm": "<div style=\"width:300px; height:250px;\"><img src=\"http://via.placeholder.com/300x250\" ></div>"
         }
       }
-    },
-    {
+    }, {
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=0c0c62c7-8fe6-4023-90a2-d6148f331823",
         "body": {
@@ -512,17 +511,12 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "test error",
+      "value": "test error (on banner imp id: built2spill)",
       "comparison": "literal"
 
     },
     {
-      "value": "test error",
-      "comparison": "literal"
-
-    },
-    {
-      "value": "an error was encountered while attempting to process the extension on video imp id:Mixed1",
+      "value": "test error (on video imp id: Mixed1)",
       "comparison": "literal"
 
     }

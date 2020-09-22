@@ -6,6 +6,7 @@
     },
     "imp": [
       {
+        "id" : "bannerError",
         "bidfloor": 0.02,
         "banner": {
           "format": [
@@ -28,7 +29,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "test error",
+      "value": "test error (on banner imp id: bannerError)",
       "comparison": "literal"
 
     },
