@@ -69,10 +69,5 @@
     }
   }],
   "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "No bid response",
-      "comparison": "literal"
-    }
-  ]
+  "expectedMakeBidsErrors": []
 }

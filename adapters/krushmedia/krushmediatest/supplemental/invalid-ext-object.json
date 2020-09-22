@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "ext.bidder not provided",
+      "value": "Bidder extension not provided or can't be unmarshalled",
       "comparison": "literal"
     }
   ],
