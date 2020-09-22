@@ -180,7 +180,7 @@ func (a *KrushmediaAdapter) MakeBids(
 	}
 
 	if bidderRawResponse.StatusCode != http.StatusOK {
-		return return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", bidderRawResponse.StatusCode),
 		}}
 	}
