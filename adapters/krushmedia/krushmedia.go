@@ -133,30 +133,6 @@ func (a *KrushmediaAdapter) buildEndpointURL(params *openrtb_ext.ExtKrushmedia) 
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func (a *KrushmediaAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
-	if response.StatusCode == http.StatusNoContent {
-		return nil
-	}
-
-	if response.StatusCode == http.StatusBadRequest {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: [ %d ]", response.StatusCode),
-		}
-	}
-
-	if response.StatusCode == http.StatusServiceUnavailable {
-		return nil
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
-		}
-	}
-
-	return nil
-}
-
 func (a *KrushmediaAdapter) MakeBids(
 	openRTBRequest *openrtb.BidRequest,
 	requestToBidder *adapters.RequestData,
