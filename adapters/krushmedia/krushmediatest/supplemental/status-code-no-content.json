@@ -34,7 +34,7 @@
 
   "httpCalls": [{
     "expectedRequest": {
-      "uri": "http://example.com/?c=rtb&m=req&key={{.AccountID}}",
+      "uri": "http://example.com/?c=rtb&m=req&key=2",
       "body": {
         "id": "some-request-id",
         "imp": [
