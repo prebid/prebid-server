@@ -135,7 +135,7 @@ func (a *KrushmediaAdapter) buildEndpointURL(params *openrtb_ext.ExtKrushmedia) 
 
 func (a *KrushmediaAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusNoContent {
-		return nil, nil
+		return nil
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
@@ -145,7 +145,7 @@ func (a *KrushmediaAdapter) CheckResponseStatusCodes(response *adapters.Response
 	}
 
 	if response.StatusCode == http.StatusServiceUnavailable {
-		return nil, nil
+		return nil
 	}
 
 	if response.StatusCode != http.StatusOK {
