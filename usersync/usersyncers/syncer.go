@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/adform"
+	"github.com/prebid/prebid-server/adapters/adgeneration"
 	"github.com/prebid/prebid-server/adapters/adkernel"
 	"github.com/prebid/prebid-server/adapters/adkernelAdn"
 	"github.com/prebid/prebid-server/adapters/adman"
@@ -87,6 +88,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 
 	insertIntoMap(cfg, syncers, openrtb_ext.Bidder33Across, ttx.New33AcrossSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdform, adform.NewAdformSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdgeneration, adgeneration.NewAdgenerationSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdkernel, adkernel.NewAdkernelSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdkernelAdn, adkernelAdn.NewAdkernelAdnSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdman, adman.NewAdmanSyncer)
