@@ -103,11 +103,9 @@ type videoBidExtension struct {
 	Duration int `json:"duration"`
 }
 
-var one int8 = 1
-var zero int8 = 0
-
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	beachfrontRequests, errs := preprocess(request)
+	var errs []error
+	beachfrontRequests := preprocess(request, &errs)
 	var reqs = make(
 		[]*adapters.RequestData,
 		0,
@@ -186,14 +184,12 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	return reqs, errs
 }
 
-func testForValidBannerSize(request *openrtb.BidRequest, index int) bool {
+func testForValidBanner(request *openrtb.BidRequest, index int) bool {
+	if request.Imp[index].Banner != nil && ((request.Imp[index].Banner.Format != nil &&
 
-	if request.Imp[index].Banner != nil && (
-
-		(request.Imp[index].Banner.Format != nil &&
-			len(request.Imp[index].Banner.Format) != 0 &&
-			request.Imp[index].Banner.Format[0].H != 0 &&
-			request.Imp[index].Banner.Format[0].W != 0) ||
+		len(request.Imp[index].Banner.Format) != 0 &&
+		request.Imp[index].Banner.Format[0].H != 0 &&
+		request.Imp[index].Banner.Format[0].W != 0) ||
 
 		(request.Imp[index].Banner.H != nil &&
 			request.Imp[index].Banner.W != nil)) {
@@ -204,22 +200,29 @@ func testForValidBannerSize(request *openrtb.BidRequest, index int) bool {
 	return false
 }
 
-func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []error) {
+func preprocess(request *openrtb.BidRequest, errs *[]error) (beachfrontReqs requests) {
 	var videoImps = make([]openrtb.Imp, 0, len(request.Imp))
 	var gotBanner bool
 
 	for i := 0; i < len(request.Imp); i++ {
-		gotBanner = testForValidBannerSize(request, i)
+		if !gotBanner {
+			gotBanner = testForValidBanner(request, i)
+		}
 
 		if request.Imp[i].Video != nil {
 			imp := request.Imp[i]
+			var secure int8 = 0
 
 			if request.Site != nil && request.Site.Page != "" {
-				_, imp.Secure = isPageSecure(request.Site.Page)
-			} else if request.Imp[i].Secure != nil {
-				imp.Secure = request.Imp[i].Secure
+				secure = isPageSecure(request.Site.Page)
+				imp.Secure = &secure
 			} else {
-				imp.Secure = &zero
+				// &secure = 0 at this point
+				if imp.Secure != nil && imp.Secure != &secure {
+					imp.Secure = request.Imp[i].Secure
+				} else {
+					imp.Secure = &secure
+				}
 			}
 
 			imp.Banner = nil
@@ -228,19 +231,19 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs requests, errs []er
 	}
 
 	if len(videoImps) == 0 && !gotBanner {
-		errs = append(errs, errors.New("no valid impressions were found in the request"))
+		*errs = append(*errs, errors.New("no valid impressions were found in the request"))
 		return
 	}
 
 	if gotBanner {
-		beachfrontReqs.Banner, errs = getBannerRequest(request)
+		beachfrontReqs.Banner = getBannerRequest(request, errs)
 	}
 
 	if len(videoImps) > 0 {
 		requestStub := *request
 		requestStub.Imp = nil
 
-		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo, errs = getVideoRequests(requestStub, videoImps)
+		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo = getVideoRequests(requestStub, videoImps, errs)
 	}
 	return
 }
@@ -266,12 +269,15 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 		err = errors.New("unable to determine the appId(s) from the supplied extension")
 	}
 
+	if appid == "throwTestError" {
+		err = errors.New("test error")
+	}
+
 	return appid, err
 }
 
-func impsToSlots(imps []openrtb.Imp) (bannerRequest, int8, []error) {
+func impsToSlots(imps []openrtb.Imp, errs *[]error) (bannerRequest, int8) {
 	var bfr bannerRequest
-	var errs = make([]error, 0, len(imps))
 	var secure int8 = 0
 
 	for i := 0; i < len(imps); i++ {
@@ -288,15 +294,14 @@ func impsToSlots(imps []openrtb.Imp) (bannerRequest, int8, []error) {
 		beachfrontExt, err := getBeachfrontExtension(imp)
 
 		if err != nil {
-			errs = append(errs, err)
+			*errs = append(*errs, err)
 			continue
 		}
 
 		appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeBanner)
 
 		if err != nil {
-			// Failed to get an appid, so this request is junk.
-			errs = append(errs, err)
+			*errs = append(*errs, err)
 			continue
 		}
 
@@ -311,7 +316,6 @@ func impsToSlots(imps []openrtb.Imp) (bannerRequest, int8, []error) {
 		}
 
 		for j := 0; j < len(imp.Banner.Format); j++ {
-
 			slot.Sizes = append(slot.Sizes, size{
 				H: imp.Banner.Format[j].H,
 				W: imp.Banner.Format[j].W,
@@ -321,15 +325,25 @@ func impsToSlots(imps []openrtb.Imp) (bannerRequest, int8, []error) {
 		bfr.Slots = append(bfr.Slots, slot)
 	}
 
-	return bfr, secure, errs
+	return bfr, secure
 }
 
-func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, errs []error) {
+func getBannerRequest(request *openrtb.BidRequest, errs *[]error) (bannerReq bannerRequest) {
 	var secure int8
-	bannerReq, secure, errs = impsToSlots(request.Imp)
+	bannerReq, secure = impsToSlots(request.Imp, errs)
+
+	// At this point, len(errs) may be > 0, but the bannerReq may still be valid. There may
+	// have been banner imps that had an invalid ext or appId and got tossed, and the
+	// error appended to errs. If all imps failed to get converted to slots, bannerReq.Slots
+	// will be empty here.
+
+	if len(bannerReq.Slots) == 0 {
+		*errs = append(*errs, errors.New("unable to construct a valid banner request. see additional errors"))
+		return
+	}
 
 	if request.Site != nil && request.Site.Page != "" {
-		bannerReq.Secure, _ = isPageSecure(request.Site.Page)
+		bannerReq.Secure = isPageSecure(request.Site.Page)
 	} else {
 		bannerReq.Secure = secure
 	}
@@ -387,12 +401,20 @@ func getBannerRequest(request *openrtb.BidRequest) (bannerReq bannerRequest, err
 	return
 }
 
-func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp) (nurlReqs []videoRequest, admReqs []videoRequest, errs []error) {
+func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs *[]error) (nurlReqs []videoRequest, admReqs []videoRequest) {
 	var ext openrtb_ext.ExtImpBeachfront
-	var admMap = make(map[string]videoRequest)
+	var admMap = map[string]*videoRequest{}
 
 	for i := 0; i < len(imps); i++ {
-		ext, errs = prepVideoRequestExt(imps[i], errs)
+		var err error
+		ext, err = prepVideoRequestExt(imps[i])
+
+		if err != nil {
+			*errs = append(*errs, err)
+			*errs = append(*errs, errors.New(fmt.Sprintf("an error was encountered while attempting "+
+				"to process the extension on video imp id:%s", imps[i].ID)))
+			continue
+		}
 
 		if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
 			requestStub.Imp = []openrtb.Imp{imps[i]}
@@ -408,34 +430,26 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp) (nurlR
 		}
 
 		if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
-			_, exists := admMap[ext.AppId]
-			if !exists {
-				requestStub.Imp = make([]openrtb.Imp, 0, len(imps))
-				requestStub.Imp = append(requestStub.Imp, imps[i])
+			mappedElement, exists := admMap[ext.AppId]
+			if exists {
+				admMap[ext.AppId].Request.Imp = append(mappedElement.Request.Imp, imps[i])
+			} else {
+				requestStub.Imp = []openrtb.Imp{imps[i]}
 
-				admRequest := videoRequest{
+				r := videoRequest{
 					AppId:             ext.AppId,
 					VideoResponseType: ext.VideoResponseType,
 					Request:           requestStub,
 				}
-				prepVideoRequest(&admRequest)
-				admMap[ext.AppId] = admRequest
-			} else {
-				tmpRequest := admMap[ext.AppId].Request
-				tmpRequest.Imp = append(tmpRequest.Imp, imps[i])
-
-				admMap[ext.AppId] = videoRequest{
-					AppId:             ext.AppId,
-					VideoResponseType: ext.VideoResponseType,
-					Request:           tmpRequest,
-				}
+				prepVideoRequest(&r)
+				admMap[ext.AppId] = &r
 			}
 		}
 	}
 
 	if len(admMap) > 0 {
 		for k := range admMap {
-			admReqs = append(admReqs, admMap[k])
+			admReqs = append(admReqs, *admMap[k])
 		}
 	}
 
@@ -450,34 +464,24 @@ func fallBackDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
 	return openrtb.DeviceTypeMobileTablet
 }
 
-func prepVideoRequestExt(requestImp openrtb.Imp, errs []error) (openrtb_ext.ExtImpBeachfront, []error) {
-	if requestImp.Video == nil {
-		errs = append(errs, errors.New(
-			fmt.Sprintf("no valid video elements were found in impression id = %s", requestImp.ID),
-		),
-		)
-	}
-
+func prepVideoRequestExt(requestImp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, error) {
 	beachfrontExt, err := getBeachfrontExtension(requestImp)
 
 	if err != nil {
-		// Failed to extract the beachfrontExt, so this request is junk.
-		errs = append(errs, err)
-		return beachfrontExt, errs
-
+		return beachfrontExt, err
 	}
 
 	beachfrontExt.AppId, err = getAppId(beachfrontExt, openrtb_ext.BidTypeVideo)
 
 	if err != nil {
-		errs = append(errs, err)
+		return beachfrontExt, err
 	}
 
 	if beachfrontExt.VideoResponseType != "adm" && beachfrontExt.VideoResponseType != "both" {
 		beachfrontExt.VideoResponseType = "nurl"
 	}
 
-	return beachfrontExt, errs
+	return beachfrontExt, err
 }
 
 func prepVideoRequest(bfReq *videoRequest) {
@@ -506,8 +510,7 @@ func prepVideoRequest(bfReq *videoRequest) {
 	}
 
 	if len(bfReq.Request.Cur) == 0 {
-		bfReq.Request.Cur = make([]string, 1)
-		bfReq.Request.Cur[0] = "USD"
+		bfReq.Request.Cur = []string{"USD"}
 	}
 }
 
@@ -690,13 +693,13 @@ func getDomain(page string) string {
 
 }
 
-func isPageSecure(page string) (int8, *int8) {
+func isPageSecure(page string) int8 {
 	protoURL := strings.Split(page, "://")
 	if len(protoURL) > 1 && protoURL[0] == "https" {
-		return 1, &one
+		return 1
 	}
 
-	return 0, &zero
+	return 0
 }
 
 func getIP(ip string) string {

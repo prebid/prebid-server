@@ -1,0 +1,41 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "site": {
+      "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
+    },
+    "imp": [
+      {
+        "bidfloor": 0.02,
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 0.02,
+            "appId": "throwTestError"
+          }
+        }
+      }
+    ]
+  },
+
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "test error",
+      "comparison": "literal"
+
+    },
+    {
+      "value": "unable to construct a valid banner request. see additional errors",
+      "comparison": "literal"
+    }
+
+  ]
+}
