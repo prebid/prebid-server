@@ -58,7 +58,7 @@
             "0"
           ]
         },
-        "uri": "http://example.com/?c=rtb&m=req&key=2",
+        "uri": "http://example.com/?c=rtb&m=req&key={{.AccountID}}",
         "body": {
           "id": "some-request-id",
           "device": {
