@@ -26,7 +26,7 @@ func NewKrushmediaBidder(endpointTemplate string) *KrushmediaAdapter {
 	return &KrushmediaAdapter{endpoint: *template}
 }
 
-func (a *KrushmediaAdapter) CheckHasImps(request *openrtb.BidRequest) error {
+func checkHasImps(request *openrtb.BidRequest) error {
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
 			Message: "Missing Imp Object",
@@ -36,7 +36,7 @@ func (a *KrushmediaAdapter) CheckHasImps(request *openrtb.BidRequest) error {
 	return nil
 }
 
-func GetHeaders(request *openrtb.BidRequest) *http.Header {
+func getHeaders(request *openrtb.BidRequest) *http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -73,8 +73,8 @@ func (a *KrushmediaAdapter) MakeRequests(
 
 	request := *openRTBRequest
 
-	if noImps := a.CheckHasImps(&request); noImps != nil {
-		return nil, []error{noImps}
+	if err := checkHasImps(&request); err != nil {
+		return nil, []error{err}
 	}
 
 	var errors []error
@@ -108,7 +108,7 @@ func (a *KrushmediaAdapter) MakeRequests(
 		Method:  http.MethodPost,
 		Body:    reqJSON,
 		Uri:     url,
-		Headers: *GetHeaders(&request),
+		Headers: *getHeaders(&request),
 	}}, nil
 }
 
@@ -116,13 +116,13 @@ func (a *KrushmediaAdapter) getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.Ext
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: "Bidder extension not provided or can't be unmarshalled",
 		}
 	}
 	var krushmediaExt openrtb_ext.ExtKrushmedia
 	if err := json.Unmarshal(bidderExt.Bidder, &krushmediaExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: "Error while unmarshaling bidder extension",
 		}
 	}
 	return &krushmediaExt, nil
@@ -135,7 +135,7 @@ func (a *KrushmediaAdapter) buildEndpointURL(params *openrtb_ext.ExtKrushmedia) 
 
 func (a *KrushmediaAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusNoContent {
-		return &errortypes.BadInput{Message: "No bid response"}
+		return nil, nil
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
@@ -145,12 +145,10 @@ func (a *KrushmediaAdapter) CheckResponseStatusCodes(response *adapters.Response
 	}
 
 	if response.StatusCode == http.StatusServiceUnavailable {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
-		}
+		return nil, nil
 	}
 
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+	if response.StatusCode != http.StatusOK {
 		return &errortypes.BadInput{
 			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
 		}

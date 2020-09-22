@@ -33,9 +33,7 @@
           },
           "ext": {
             "bidder": {
-              "host": "example.com",
-              "sourceid": "partner",
-              "accountid": "hash"
+              "key": "2"
             }
           }
         }

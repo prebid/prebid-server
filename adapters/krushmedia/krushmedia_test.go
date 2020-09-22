@@ -7,5 +7,5 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "krushmediatest", NewKrushmediaBidder("http://example.com/?c=rtb&m=req&key=2"))
+	adapterstest.RunJSONBidderTest(t, "krushmediatest", NewKrushmediaBidder("http://example.com/?c=rtb&m=req&key={{.AccountID}}"))
 }
