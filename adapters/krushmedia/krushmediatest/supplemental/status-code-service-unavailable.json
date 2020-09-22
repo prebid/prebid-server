@@ -69,10 +69,5 @@
     }
   }],
   "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "Something went wrong, please contact your Account Manager. Status Code: [ 503 ] ",
-      "comparison": "literal"
-    }
-  ]
+  "expectedMakeBidsErrors": []
 }
