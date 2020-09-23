@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/stored_requests"
+	"time"
 
 	accountService "github.com/prebid/prebid-server/account"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 )
 
 const (
+	DefaultTimeoutMS = 1000
+
 	// Required
 	TemplateUrl        = "%v/event?t=%v&b=%v&a=%v"
 	TypeParameter      = "t"
@@ -78,7 +81,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 
 	// validate account id
-	accountId, err := validateRequiredParameter(r, AccountIdParameter)
+	accountId, err := checkRequiredParameter(r, AccountIdParameter)
 
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -91,7 +94,8 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(DefaultTimeoutMS)*time.Millisecond)
+	defer cancel()
 
 	// get account details
 	account, errs := accountService.GetAccount(ctx, e.Cfg, e.Accounts, eventRequest.AccountID)
@@ -127,55 +131,51 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 }
 
-// Converts an EventRequest to an URL
+// EventRequestToUrl converts an analytics.EventRequest to an URL
 func EventRequestToUrl(externalUrl string, request *analytics.EventRequest) string {
-	s := fmt.Sprintf(TemplateUrl, externalUrl, request.Type, request.Bidid, request.AccountID)
+	s := fmt.Sprintf(TemplateUrl, externalUrl, request.Type, request.BidID, request.AccountID)
 
 	return s + optionalParameters(request)
 }
 
-// Parses an EventRequest from an Http request
+// ParseEventRequest parses an analytics.EventRequest from an Http request
 func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 	event := &analytics.EventRequest{}
 	var errs []error
 	// validate type
-	if err := validateType(event, r); err != nil {
+	if err := readType(event, r); err != nil {
 		errs = append(errs, err)
 	}
 
 	// validate bidid
-	if bidid, err := validateRequiredParameter(r, BidIdParameter); err != nil {
+	if bidid, err := checkRequiredParameter(r, BidIdParameter); err != nil {
 		errs = append(errs, err)
 	} else {
-		event.Bidid = bidid
+		event.BidID = bidid
 	}
 
 	// validate timestamp (optional)
-	if err := validateTimestamp(event, r); err != nil {
+	if err := readTimestamp(event, r); err != nil {
 		errs = append(errs, err)
 	}
 
 	// validate format (optional)
-	if err := validateFormat(event, r); err != nil {
+	if err := readFormat(event, r); err != nil {
 		errs = append(errs, err)
 	}
 
 	// validate analytics (optional)
-	if err := validateAnalytics(event, r); err != nil {
+	if err := readAnalytics(event, r); err != nil {
 		errs = append(errs, err)
 	}
 
 	// Bidder
-	bidder := r.FormValue(BidderParameter)
-
-	if bidder != "" {
-		event.Bidder = bidder
-	}
+	event.Bidder = r.URL.Query().Get(BidderParameter)
 
 	return event, errs
 }
 
-// Handle fetching account errors
+// HandleAccountServiceErrors handles account.GetAccount errors
 func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 	messages = []string{}
 	status = http.StatusInternalServerError
@@ -185,9 +185,7 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 
 		switch errCode {
 		case errortypes.BlacklistedAppErrorCode, errortypes.BlacklistedAcctErrorCode:
-			errCode = http.StatusServiceUnavailable
-		case errortypes.AcctRequiredErrorCode:
-			errCode = http.StatusBadRequest
+			status = http.StatusServiceUnavailable
 		}
 
 		messages = append(messages, er.Error())
@@ -234,9 +232,9 @@ func optionalParameters(request *analytics.EventRequest) string {
 	return opt
 }
 
-// validate type
-func validateType(er *analytics.EventRequest, httpRequest *http.Request) error {
-	t, err := validateRequiredParameter(httpRequest, TypeParameter)
+// readType validates analytics.EventRequest type
+func readType(er *analytics.EventRequest, httpRequest *http.Request) error {
+	t, err := checkRequiredParameter(httpRequest, TypeParameter)
 
 	if err != nil {
 		return err
@@ -254,9 +252,9 @@ func validateType(er *analytics.EventRequest, httpRequest *http.Request) error {
 	}
 }
 
-// validate format
-func validateFormat(er *analytics.EventRequest, httpRequest *http.Request) error {
-	f := httpRequest.FormValue(FormatParameter)
+// readFormat validates analytics.EventRequest format attribute
+func readFormat(er *analytics.EventRequest, httpRequest *http.Request) error {
+	f := httpRequest.URL.Query().Get(FormatParameter)
 
 	if f != "" {
 		switch f {
@@ -274,9 +272,9 @@ func validateFormat(er *analytics.EventRequest, httpRequest *http.Request) error
 	return nil
 }
 
-// validate analytics
-func validateAnalytics(er *analytics.EventRequest, httpRequest *http.Request) error {
-	a := httpRequest.FormValue(AnalyticsParameter)
+// readAnalytics validates analytics.EventRequest analytics attribute
+func readAnalytics(er *analytics.EventRequest, httpRequest *http.Request) error {
+	a := httpRequest.URL.Query().Get(AnalyticsParameter)
 
 	if a != "" {
 		switch a {
@@ -294,9 +292,9 @@ func validateAnalytics(er *analytics.EventRequest, httpRequest *http.Request) er
 	return nil
 }
 
-// validate timestamp
-func validateTimestamp(er *analytics.EventRequest, httpRequest *http.Request) error {
-	t := httpRequest.FormValue(TimestampParameter)
+// readTimestamp validates analytics.EventRequest timestamp attribute
+func readTimestamp(er *analytics.EventRequest, httpRequest *http.Request) error {
+	t := httpRequest.URL.Query().Get(TimestampParameter)
 
 	if t != "" {
 		ts, err := strconv.ParseInt(t, 10, 64)
@@ -312,9 +310,9 @@ func validateTimestamp(er *analytics.EventRequest, httpRequest *http.Request) er
 	return nil
 }
 
-// validate required parameter
-func validateRequiredParameter(httpRequest *http.Request, parameter string) (string, error) {
-	t := httpRequest.FormValue(parameter)
+// checkRequiredParameter checks if http.Request contains all required parameters
+func checkRequiredParameter(httpRequest *http.Request, parameter string) (string, error) {
+	t := httpRequest.URL.Query().Get(parameter)
 
 	if t == "" {
 		return "", &errortypes.BadInput{Message: fmt.Sprintf("parameter '%s' is required", parameter)}

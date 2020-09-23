@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -347,7 +349,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
 		Fail:  true,
-		Error: stored_requests.NotFoundError{},
+		Error: stored_requests.NotFoundError{ID: "testacc"},
 	}
 
 	// mock PBS Analytics Module
@@ -378,6 +380,78 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) 
 	// validate
 	assert.Equal(t, 401, recorder.Result().StatusCode, "Expected 401 on account not found")
 	assert.Equal(t, "Account 'testacc' doesn't support events", string(d))
+}
+
+func TestHandleAccountServiceErrors(t *testing.T) {
+
+	tests := map[string]struct {
+		fetcher *mockAccountsFetcher
+		cfg     *config.Configuration
+		want    struct {
+			code     int
+			response string
+		}
+	}{
+		"internalServerError": {
+			fetcher: &mockAccountsFetcher{
+				Fail:  true,
+				Error: errors.New("some error"),
+			},
+			cfg: &config.Configuration{
+				AccountDefaults: config.Account{Disabled: true},
+				AccountRequired: true,
+			},
+			want: struct {
+				code     int
+				response string
+			}{
+				code:     500,
+				response: "Invalid request: some error\nInvalid request: Prebid-server could not verify the Account ID. Please reach out to the prebid server host.\n",
+			},
+		},
+		"serviceUnavailable": {
+			fetcher: &mockAccountsFetcher{
+				Fail: false,
+			},
+			cfg: &config.Configuration{
+				BlacklistedAcctMap: map[string]bool{"testacc": true},
+			},
+			want: struct {
+				code     int
+				response string
+			}{
+				code:     503,
+				response: "Invalid request: Prebid-server has disabled Account ID: testacc, please reach out to the prebid server host.\n",
+			},
+		},
+	}
+
+	// mock PBS Analytics Module
+	mockAnalyticsModule := &eventsMockAnalyticsModule{
+		Fail: false,
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			reqData := ""
+
+			req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=testacc", strings.NewReader(reqData))
+			recorder := httptest.NewRecorder()
+
+			e := NewEventEndpoint(test.cfg, test.fetcher, mockAnalyticsModule)
+
+			// execute
+			e(recorder, req, nil)
+			d, err := ioutil.ReadAll(recorder.Result().Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// validate
+			assert.Equal(t, test.want.code, recorder.Result().StatusCode, fmt.Sprintf("Expected %d", test.want.code))
+			assert.Equal(t, test.want.response, string(d))
+		})
+	}
 }
 
 func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *testing.T) {
@@ -574,7 +648,7 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 
 	expected := &analytics.EventRequest{
 		Type:      analytics.Win,
-		Bidid:     "bidId",
+		BidID:     "bidId",
 		Timestamp: 1000,
 		Bidder:    "bidder",
 		AccountID: "",

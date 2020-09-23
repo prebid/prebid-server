@@ -1,6 +1,7 @@
 package events
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -273,21 +274,12 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 	cfg.MarshalAccountDefaults()
 
 	// prepare
-	data := &BidCacheRequest{
-		Puts: []prebid_cache_client.Cacheable{
-			{
-				BidID:  "test",
-				Bidder: "test",
-			},
-		},
-	}
-
-	reqData, err := json.Marshal(data)
+	data, err := getValidVTrackRequestBody(false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(string(reqData)))
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(data))
 
 	recorder := httptest.NewRecorder()
 
@@ -331,21 +323,12 @@ func TestShouldTolerateAccountNotFound(t *testing.T) {
 	cfg.MarshalAccountDefaults()
 
 	// prepare
-	data := &BidCacheRequest{
-		Puts: []prebid_cache_client.Cacheable{
-			{
-				BidID:  "test",
-				Bidder: "test",
-			},
-		},
-	}
-
-	reqData, err := json.Marshal(data)
+	data, err := getValidVTrackRequestBody(false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(string(reqData)))
+	req := httptest.NewRequest("POST", "/vtrack?a=1235", strings.NewReader(data))
 
 	recorder := httptest.NewRecorder()
 
@@ -396,26 +379,12 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	}
 
 	// prepare
-	data := &BidCacheRequest{
-		Puts: []prebid_cache_client.Cacheable{
-			{
-				BidID:  "bidId1",
-				Bidder: "bidder",
-				Data:   []byte("{\"key\":\"val\"}"),
-			},
-			{
-				BidID:  "bidId2",
-				Bidder: "updatable_bidder",
-				Data:   []byte("{\"key\":\"val\"}"),
-			},
-		},
-	}
-
-	reqData, err := json.Marshal(data)
+	data, err := getValidVTrackRequestBody(false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(string(reqData)))
+
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(data))
 
 	recorder := httptest.NewRecorder()
 
@@ -472,27 +441,12 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	}
 
 	// prepare
-	data := &BidCacheRequest{
-		Puts: []prebid_cache_client.Cacheable{
-			{
-				BidID:  "bidId1",
-				Bidder: "bidder",
-				Data:   []byte("{\"key\":\"val\"}"),
-			},
-			{
-				BidID:  "bidId2",
-				Bidder: "updatable_bidder",
-				Data:   []byte("{\"key\":\"val\"}"),
-			},
-		},
-	}
-
-	reqData, err := json.Marshal(data)
+	data, err := getValidVTrackRequestBody(true)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(string(reqData)))
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(data))
 
 	recorder := httptest.NewRecorder()
 
@@ -541,27 +495,12 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	bidderInfos := make(adapters.BidderInfos)
 
 	// prepare
-	data := &BidCacheRequest{
-		Puts: []prebid_cache_client.Cacheable{
-			{
-				BidID:  "bidId1",
-				Bidder: "bidder",
-				Data:   []byte("{\"key\":\"val\"}"),
-			},
-			{
-				BidID:  "bidId2",
-				Bidder: "updatable_bidder",
-				Data:   []byte("{\"key\":\"val\"}"),
-			},
-		},
-	}
-
-	reqData, err := json.Marshal(data)
+	data, err := getValidVTrackRequestBody(false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(string(reqData)))
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(data))
 
 	recorder := httptest.NewRecorder()
 
@@ -588,4 +527,55 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 func TestVastUrlShouldReturnExpectedUrl(t *testing.T) {
 	url := GetVastUrlTracking("http://external-url", "bidId", "bidder", "accountId", 1000)
 	assert.Equal(t, "http://external-url/event?t=imp&b=bidId&a=accountId&bidder=bidder&f=b&ts=1000", url, "Invalid vast url")
+}
+
+func getValidVTrackRequestBody(withImpression bool) (string, error) {
+	d, e := getVTrackRequestData(withImpression)
+
+	if e != nil {
+		return "", e
+	}
+
+	req := &BidCacheRequest{
+		Puts: []prebid_cache_client.Cacheable{
+			{
+				Type:       prebid_cache_client.TypeXML,
+				BidID:      "bidId1",
+				Bidder:     "bidder",
+				Data:       d,
+				TTLSeconds: 3600,
+				Timestamp:  1000,
+			},
+			{
+				Type:       prebid_cache_client.TypeXML,
+				BidID:      "bidId2",
+				Bidder:     "updatable_bidder",
+				Data:       d,
+				TTLSeconds: 3600,
+				Timestamp:  1000,
+			},
+		},
+	}
+
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+
+	e = enc.Encode(req)
+
+	return buf.String(), e
+}
+
+func getVTrackRequestData(wi bool) (data []byte, e error) {
+	d := &bytes.Buffer{}
+	enc := json.NewEncoder(d)
+	enc.SetEscapeHTML(false)
+
+	if wi {
+		e = enc.Encode("<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Impression>content</Impression><Creatives></Creatives></Wrapper></Ad></VAST>")
+		return
+	}
+
+	e = enc.Encode("<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Impression></Impression><Creatives></Creatives></Wrapper></Ad></VAST>")
+	return
 }

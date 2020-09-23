@@ -80,7 +80,8 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(v.Cfg.VTrack.TimeoutMS)*time.Millisecond))
+	defer cancel()
 
 	// get account details
 	account, errs := accountService.GetAccount(ctx, v.Cfg, v.Accounts, accountId)
@@ -95,8 +96,8 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	}
 
 	// insert impression tracking if account allows events and bidder allows VAST modification
-	if account.EventsEnabled && v.Cache != nil {
-		cachingResponse, errs := v.handleVTrackRequest(req, account)
+	if v.Cache != nil {
+		cachingResponse, errs := v.handleVTrackRequest(ctx, req, account)
 
 		if len(errs) > 0 {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -118,15 +119,20 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 
 		w.WriteHeader(http.StatusOK)
 		w.Write(d)
+
+		return
 	}
+
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte("PBS Cache client is not configured"))
 }
 
-// Create vast url tracking
+// GetVastUrlTracking creates a vast url tracking
 func GetVastUrlTracking(externalUrl string, bidid string, bidder string, accountId string, timestamp int64) string {
 
 	eventReq := &analytics.EventRequest{
 		Type:      analytics.Imp,
-		Bidid:     bidid,
+		BidID:     bidid,
 		AccountID: accountId,
 		Bidder:    bidder,
 		Timestamp: timestamp,
@@ -136,7 +142,7 @@ func GetVastUrlTracking(externalUrl string, bidid string, bidder string, account
 	return EventRequestToUrl(externalUrl, eventReq)
 }
 
-// Parses a BidCacheRequest from an HTTP Request
+// ParseVTrackRequest parses a BidCacheRequest from an HTTP Request
 func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *BidCacheRequest, err error) {
 	req = &BidCacheRequest{}
 	err = nil
@@ -183,12 +189,16 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 	return req, nil
 }
 
-// Handle VTrack request
-func (v *vtrackEndpoint) handleVTrackRequest(req *BidCacheRequest, account *config.Account) (*BidCacheResponse, []error) {
-	biddersAllowingVastUpdate := biddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder)
+// handleVTrackRequest handles a VTrack request
+func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheRequest, account *config.Account) (*BidCacheResponse, []error) {
+	var biddersAllowingVastUpdate []string
+
+	if account.EventsEnabled {
+		biddersAllowingVastUpdate = getBiddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder)
+	}
 
 	// cache data
-	r, errs := v.cachePutObjects(req, biddersAllowingVastUpdate, account.ID, v.Cfg.VTrack.TimeoutMS)
+	r, errs := v.cachePutObjects(ctx, req, biddersAllowingVastUpdate, account.ID)
 
 	// handle pbs caching errors
 	if len(errs) != 0 {
@@ -210,10 +220,13 @@ func (v *vtrackEndpoint) handleVTrackRequest(req *BidCacheRequest, account *conf
 	return response, nil
 }
 
-// Cache BidCacheRequest data
-func (v *vtrackEndpoint) cachePutObjects(req *BidCacheRequest, biddersAllowingVastUpdate []string, accountId string, timeout int64) ([]string, []error) {
+// cachePutObjects caches BidCacheRequest data
+func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheRequest, biddersAllowingVastUpdate []string, accountId string) ([]string, []error) {
 	var cacheables []prebid_cache_client.Cacheable
-	sort.Strings(biddersAllowingVastUpdate)
+
+	if len(biddersAllowingVastUpdate) > 0 {
+		sort.Strings(biddersAllowingVastUpdate)
+	}
 
 	for _, c := range req.Puts {
 
@@ -231,15 +244,11 @@ func (v *vtrackEndpoint) cachePutObjects(req *BidCacheRequest, biddersAllowingVa
 		cacheables = append(cacheables, *nc)
 	}
 
-	t := time.Now().Add(time.Duration(timeout) * time.Millisecond)
-	ctx, cancel := context.WithDeadline(context.Background(), t)
-	defer cancel()
-
 	return v.Cache.PutJson(ctx, cacheables)
 }
 
-// Returns list of bidders that allow VAST XML modification.
-func biddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *adapters.BidderInfos, allowUnknownBidder bool) []string {
+// getBiddersAllowingVastUpdate returns a list of bidders that allow VAST XML modification
+func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *adapters.BidderInfos, allowUnknownBidder bool) []string {
 	var bl = make(map[string]struct{})
 
 	for _, bcr := range req.Puts {
@@ -261,7 +270,7 @@ func biddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *adapters.Bidde
 	return keys
 }
 
-// Checks if Bidder is active and allowed to modify vast xml data
+// isAllowVastForBidder checks if a bidder is active and allowed to modify vast xml data
 func isAllowVastForBidder(r *prebid_cache_client.Cacheable, bidderInfos *adapters.BidderInfos, allowUnknownBidder bool) bool {
 	//if bidder is active and isModifyingVastXmlAllowed is true
 	// check if bidder is configured
@@ -273,12 +282,12 @@ func isAllowVastForBidder(r *prebid_cache_client.Cacheable, bidderInfos *adapter
 	return allowUnknownBidder
 }
 
-// Extracts account id from a HTTP Request
+// getAccountId extracts an account id from an HTTP Request
 func getAccountId(httpRequest *http.Request) string {
-	return httpRequest.FormValue(AccountParameter)
+	return httpRequest.URL.Query().Get(AccountParameter)
 }
 
-// Modify BidCacheRequest element Vast XML data
+// modifyVastXml modifies BidCacheRequest element Vast XML data
 func modifyVastXml(externalUrl string, data json.RawMessage, bidid string, bidder string, accountId string, timestamp int64) json.RawMessage {
 	c := string(data)
 	ci := strings.Index(c, ImpressionCloseTag)
@@ -290,7 +299,6 @@ func modifyVastXml(externalUrl string, data json.RawMessage, bidid string, bidde
 
 	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountId, timestamp)
 	impressionUrl := "<![CDATA[" + vastUrlTracking + "]]>"
-
 	oi := strings.Index(c, ImpressionOpenTag)
 
 	if ci-oi == len(ImpressionOpenTag) {
@@ -301,6 +309,10 @@ func modifyVastXml(externalUrl string, data json.RawMessage, bidid string, bidde
 }
 
 func contains(s []string, e string) bool {
+	if len(s) == 0 {
+		return false
+	}
+
 	i := sort.SearchStrings(s, e)
 	return i < len(s) && s[i] == e
 }
