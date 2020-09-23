@@ -1,0 +1,33 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-banner-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          }
+        }
+      ],
+      "site": {
+        "domain": "connectad.io",
+        "page": "http://connectad.io/"
+      }
+    },
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "Impression id=test-banner-imp-id has an Error: unexpected end of JSON input",
+        "comparison": "literal"
+      },
+      {
+        "value": "Error in preprocess of Imp",
+        "comparison": "literal"
+      }
+    ]
+  }
+  

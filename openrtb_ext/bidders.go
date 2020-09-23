@@ -50,6 +50,7 @@ const (
 	BidderBeintoo          BidderName = "beintoo"
 	BidderBrightroll       BidderName = "brightroll"
 	BidderColossus         BidderName = "colossus"
+	BidderConnectAd        BidderName = "connectad"
 	BidderConsumable       BidderName = "consumable"
 	BidderConversant       BidderName = "conversant"
 	BidderCpmstar          BidderName = "cpmstar"
@@ -136,6 +137,7 @@ var BidderMap = map[string]BidderName{
 	"beintoo":           BidderBeintoo,
 	"brightroll":        BidderBrightroll,
 	"colossus":          BidderColossus,
+	"connectad":         BidderConnectAd,
 	"consumable":        BidderConsumable,
 	"conversant":        BidderConversant,
 	"cpmstar":           BidderCpmstar,
