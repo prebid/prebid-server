@@ -1,0 +1,9 @@
+maintainer:
+  email: "support@connectad.io"
+capabilities:
+  app:
+    mediaTypes:
+    - banner
+  site:
+    mediaTypes:
+    - banner
