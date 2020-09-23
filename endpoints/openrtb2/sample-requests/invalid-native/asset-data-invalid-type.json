@@ -1,5 +1,5 @@
 {
-  "description": "Native request with an invalid data value in its imp.native.request field",
+  "description": "Native request with an invalid value in its imp.native.request.data.type field",
   "mockBidRequest": {
     "id": "req-id",
     "site": {

@@ -1,5 +1,5 @@
 {
-  "description": "Native request with an empty asserts array in its imp.native.request field",
+  "description": "Native request with an empty assets array in its imp.native.request field",
   "mockBidRequest": {
     "id": "req-id",
     "site": {

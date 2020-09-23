@@ -5,7 +5,6 @@
   },
   "mockBidRequest": {
     "id": "some-request-id",
-    "test": 1,
     "site": {
       "page": "test.somepage.com"
     },

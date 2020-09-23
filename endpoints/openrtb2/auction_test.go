@@ -48,11 +48,11 @@ type testCase struct {
 }
 
 type testConfigValues struct {
-	AccountReq            bool     `json:"accountRequired"`
-	AliasJSON             string   `json:"aliases"`
-	BlacklistedAccountArr []string `json:"blacklistedAccts"`
-	BlacklistedAppArr     []string `json:"blacklistedApps"`
-	AdapterList           []string `json:"disabledAdapters"`
+	AccountRequired     bool     `json:"accountRequired"`
+	AliasJSON           string   `json:"aliases"`
+	BlacklistedAccounts []string `json:"blacklistedAccts"`
+	BlacklistedApps     []string `json:"blacklistedApps"`
+	AdapterList         []string `json:"disabledAdapters"`
 
 	blacklistedAccountMap map[string]bool
 	blacklistedAppMap     map[string]bool
@@ -110,10 +110,10 @@ func TestJsonSampleRequests(t *testing.T) {
 		},
 	}
 	for _, test := range testSuites {
-		testCasefiles, err := getTestFiles(test.directory)
+		testCaseFiles, err := getTestFiles(test.directory)
 		assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", test.description, test.directory)
 
-		for _, file := range testCasefiles {
+		for _, file := range testCaseFiles {
 			data, err := ioutil.ReadFile(file)
 			assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file)
 
@@ -204,15 +204,15 @@ func parseTestFile(t *testing.T, fileData []byte, testFile string) testCase {
 }
 
 func generateConfigMaps(tc *testConfigValues) *testConfigValues {
-	if len(tc.BlacklistedAccountArr) > 0 {
-		tc.blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccountArr))
-		for _, account := range tc.BlacklistedAccountArr {
+	if len(tc.BlacklistedAccounts) > 0 {
+		tc.blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccounts))
+		for _, account := range tc.BlacklistedAccounts {
 			tc.blacklistedAccountMap[account] = true
 		}
 	}
-	if len(tc.BlacklistedAppArr) > 0 {
-		tc.blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedAppArr))
-		for _, app := range tc.BlacklistedAppArr {
+	if len(tc.BlacklistedApps) > 0 {
+		tc.blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedApps))
+		for _, app := range tc.BlacklistedApps {
 			tc.blacklistedAppMap[app] = true
 		}
 	}
@@ -337,11 +337,11 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{
 			MaxRequestSize:     maxSize,
-			BlacklistedApps:    test.Config.BlacklistedAppArr,
+			BlacklistedApps:    test.Config.BlacklistedApps,
 			BlacklistedAppMap:  test.Config.blacklistedAppMap,
-			BlacklistedAccts:   test.Config.BlacklistedAccountArr,
+			BlacklistedAccts:   test.Config.BlacklistedAccounts,
 			BlacklistedAcctMap: test.Config.blacklistedAccountMap,
-			AccountRequired:    test.Config.AccountReq,
+			AccountRequired:    test.Config.AccountRequired,
 		},
 		metrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),

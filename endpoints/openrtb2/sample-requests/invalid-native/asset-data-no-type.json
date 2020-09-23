@@ -1,5 +1,5 @@
 {
-  "description": "Native request with an empty data value in its imp.native.request field",
+  "description": "Native request with missing imp.native.request.data.type field value",
   "mockBidRequest": {
     "id": "req-id",
     "site": {
