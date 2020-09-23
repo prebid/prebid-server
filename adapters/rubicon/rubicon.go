@@ -300,40 +300,6 @@ type mappedRubiconUidsParam struct {
 	liverampIdl string
 }
 
-// hack for aqid in response
-type rubiconBidResponse struct {
-	SeatBid []rubiconSeatBid `json:"seatbid,omitempty"`
-}
-type rubiconSeatBid struct {
-	Bid []rubiconBid `json:"bid"`
-}
-type rubiconBid struct {
-	AqID string `json:"aqid,omitempty"`
-}
-
-func (rbr rubiconBidResponse) AqID() string {
-	if len(rbr.SeatBid) == 0 {
-		return ""
-	}
-
-	if len(rbr.SeatBid[0].Bid) == 0 {
-		return ""
-	}
-
-	return rbr.SeatBid[0].Bid[0].AqID
-}
-
-type rubiconBidExt struct {
-	RP rubiconBidExtRP `json:"rp,omitempty"`
-}
-
-type rubiconBidExtRP struct {
-	AdVid  int    `json:"advid,omitempty"`
-	Mime   string `json:"mime,omitempty"`
-	SizeID int    `json:"size_id,omitempty"`
-	AqID   string `json:"aqid,omitempty"`
-}
-
 //MAS algorithm
 func findPrimary(alt []int) (int, []int) {
 	min, pos, primary := 0, 0, 0
@@ -1118,20 +1084,4 @@ func mapImpIdToCpmOverride(imps []openrtb.Imp) map[string]float64 {
 		impIdToCmpOverride[imp.ID] = rubiconExt.Debug.CpmOverride
 	}
 	return impIdToCmpOverride
-}
-
-func injectAqID(bid *openrtb.Bid, aqid string) {
-	var bidExt rubiconBidExt
-	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
-		return
-	}
-
-	bidExt.RP.AqID = aqid
-	rawBidExt, err := json.Marshal(bidExt)
-	if err != nil {
-		return
-	}
-
-	bid.Ext = rawBidExt
-	return
 }

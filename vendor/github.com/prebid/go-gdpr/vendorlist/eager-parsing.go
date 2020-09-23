@@ -87,6 +87,11 @@ func (l parsedVendor) Purpose(purposeID consentconstants.Purpose) (hasPurpose bo
 	return
 }
 
+func (l parsedVendor) PurposeStrict(purposeID consentconstants.Purpose) (hasPurpose bool) {
+	_, hasPurpose = l.purposeIDs[purposeID]
+	return
+}
+
 // LegitimateInterest retursn true if this vendor claims a "Legitimate Interest" to
 // use data for the given purpose.
 //
@@ -94,6 +99,16 @@ func (l parsedVendor) Purpose(purposeID consentconstants.Purpose) (hasPurpose bo
 func (l parsedVendor) LegitimateInterest(purposeID consentconstants.Purpose) (hasLegitimateInterest bool) {
 	_, hasLegitimateInterest = l.legitimateInterestIDs[purposeID]
 	return
+}
+
+func (l parsedVendor) LegitimateInterestStrict(purposeID consentconstants.Purpose) (hasLegitimateInterest bool) {
+	_, hasLegitimateInterest = l.legitimateInterestIDs[purposeID]
+	return
+}
+
+// V1 vedndor list does not support special purposes.
+func (l parsedVendor) SpecialPurpose(purposeID consentconstants.Purpose) bool {
+	return false
 }
 
 type vendorListContract struct {

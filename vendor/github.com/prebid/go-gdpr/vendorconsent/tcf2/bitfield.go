@@ -4,51 +4,42 @@ import (
 	"fmt"
 )
 
-func parseBitField(data consentMetadata) (*consentBitField, error) {
-	vendorBitsRequired := data.MaxVendorID()
+func parseBitField(metadata ConsentMetadata, vendorBitsRequired uint16, startbit uint) (*consentBitField, uint, error) {
+	data := metadata.data
 
-	// BitFields start at bit 230. This means the last three bits of byte 28 are part of the bitfield.
-	// In this case "others" will never be used, and we don't risk an index-out-of-bounds by using it.
-	if vendorBitsRequired <= 3 {
-		return &consentBitField{
-			consentMetadata: data,
-			firstTwo:        data[28],
-			others:          nil,
-		}, nil
-	}
-
-	otherBytesRequired := (vendorBitsRequired - 3) / 8
-	if (vendorBitsRequired-3)%8 > 0 {
-		otherBytesRequired = otherBytesRequired + 1
-	}
-	dataLengthRequired := 28 + otherBytesRequired
-	if uint(len(data)) < uint(dataLengthRequired) {
-		return nil, fmt.Errorf("a BitField for %d vendors requires a consent string of %d bytes. This consent string had %d", vendorBitsRequired, dataLengthRequired, len(data))
+	bytesRequired := (uint(vendorBitsRequired) + startbit) / 8
+	if uint(len(data)) < bytesRequired {
+		return nil, 0, fmt.Errorf("a BitField for %d vendors requires a consent string of %d bytes. This consent string had %d", vendorBitsRequired, bytesRequired, len(data))
 	}
 
 	return &consentBitField{
-		consentMetadata: data,
-		firstTwo:        data[28],
-		others:          data[29:],
-	}, nil
+		data:        data,
+		startbit:    startbit,
+		maxVendorID: vendorBitsRequired,
+	}, startbit + uint(vendorBitsRequired), nil
 }
 
 // A BitField has len(MaxVendorID()) entries, with one bit for every vendor in the range.
 type consentBitField struct {
-	consentMetadata
-	firstTwo byte
-	others   []byte
+	data        []byte
+	startbit    uint
+	maxVendorID uint16
+}
+
+func (f *consentBitField) MaxVendorID() uint16 {
+	if f == nil {
+		return 0
+	}
+
+	return f.maxVendorID
 }
 
 func (f *consentBitField) VendorConsent(id uint16) bool {
-	if id < 1 || id > f.MaxVendorID() {
+	if id < 1 || id > f.maxVendorID {
 		return false
 	}
 	// Careful here... vendor IDs start at index 1...
-	if id <= 3 {
-		return byteToBool(f.firstTwo & (0x04 >> id))
-	}
-	return isSet(f.others, uint(id-3))
+	return isSet(f.data, f.startbit+uint(id)-1)
 }
 
 // byteToBool returns false if val is 0, and true otherwise

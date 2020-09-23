@@ -811,9 +811,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("deploy_pid_mode", os.FileMode(0664)) // -rw-rw-r--
 	v.SetDefault("deploy_pid_path", "./pids")
 	v.SetDefault("external_cache.scheme", "")
-	v.SetDefault("deploy_pid_enabled", false)
-	v.SetDefault("deploy_pid_mode", os.FileMode(0664)) // -rw-rw-r--
-	v.SetDefault("deploy_pid_path", "./pids")
 	v.SetDefault("external_cache.host", "")
 	v.SetDefault("external_cache.path", "")
 	v.SetDefault("recaptcha_secret", "")
@@ -921,10 +918,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	// Disabling adapters by default that require some specific config params.
 	// If you're using one of these, make sure you check out the documentation (https://github.com/prebid/prebid-server/tree/master/docs/bidders)
 	// for them and specify all the parameters they need for them to work correctly.
-	v.SetDefault("adapters.audiencenetwork.disabled", true)
-	v.SetDefault("adapters.rubicon.disabled", true)
-	v.SetDefault("adapters.liftoff.disabled", true)
-
 	v.SetDefault("adapters.33across.endpoint", "http://ssc.33across.com/api/v1/hb")
 	v.SetDefault("adapters.33across.partner_id", "")
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
@@ -971,6 +964,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.kidoz.endpoint", "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server")
 	v.SetDefault("adapters.kubient.endpoint", "https://kssp.kbntx.ch/prebid")
 	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
+	v.SetDefault("adapters.liftoff.disabled", true)
 	v.SetDefault("adapters.liftoff.endpoint", "http://liftoff.com/givemeads")
 	v.SetDefault("adapters.lockerdome.endpoint", "https://lockerdome.com/ladbid/prebidserver/openrtb2")
 	v.SetDefault("adapters.logicad.endpoint", "https://pbs.ladsp.com/adrequest/prebidserver")

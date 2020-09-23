@@ -55,15 +55,7 @@
 //
 // Catch-all parameters match anything until the path end, including the
 // directory index (the '/' before the catch-all). Since they match anything
-<<<<<<< HEAD
-<<<<<<< HEAD
 // until the end, catch-all parameters must always be the final path element.
-=======
-// until the end, catch-all paramerters must always be the final path element.
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
-// until the end, catch-all parameters must always be the final path element.
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 //  Path: /files/*filepath
 //
 //  Requests:
@@ -85,19 +77,9 @@
 package httprouter
 
 import (
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"context"
 	"net/http"
 	"strings"
-=======
-	"net/http"
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
-	"context"
-	"net/http"
-	"strings"
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 )
 
 // Handle is a function that can be registered to a route to handle HTTP
@@ -127,10 +109,6 @@ func (ps Params) ByName(name string) string {
 	return ""
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 type paramsKey struct{}
 
 // ParamsKey is the request context key under which URL params are stored.
@@ -143,11 +121,6 @@ func ParamsFromContext(ctx context.Context) Params {
 	return p
 }
 
-<<<<<<< HEAD
-=======
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 // Router is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Router struct {
@@ -179,10 +152,6 @@ type Router struct {
 	// handler.
 	HandleMethodNotAllowed bool
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 	// If enabled, the router automatically replies to OPTIONS requests.
 	// Custom OPTIONS handlers take priority over automatic replies.
 	HandleOPTIONS bool
@@ -197,7 +166,6 @@ type Router struct {
 	globalAllowed string
 
 	// Configurable http.Handler which is called when no matching route is
-<<<<<<< HEAD
 	// found. If it is not set, http.NotFound is used.
 	NotFound http.Handler
 
@@ -207,24 +175,6 @@ type Router struct {
 	// The "Allow" header with allowed request methods is set before the handler
 	// is called.
 	MethodNotAllowed http.Handler
-=======
-	// Configurable http.HandlerFunc which is called when no matching route is
-=======
->>>>>>> [PROG-1244] Newrelic Integration (simple)
-	// found. If it is not set, http.NotFound is used.
-	NotFound http.Handler
-
-	// Configurable http.Handler which is called when a request
-	// cannot be routed and HandleMethodNotAllowed is true.
-	// If it is not set, http.Error with http.StatusMethodNotAllowed is used.
-<<<<<<< HEAD
-	MethodNotAllowed http.HandlerFunc
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
-	// The "Allow" header with allowed request methods is set before the handler
-	// is called.
-	MethodNotAllowed http.Handler
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 
 	// Function to handle panics recovered from http handlers.
 	// It should be used to generate a error page and return the http error code
@@ -244,8 +194,6 @@ func New() *Router {
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      true,
 		HandleMethodNotAllowed: true,
-<<<<<<< HEAD
-<<<<<<< HEAD
 		HandleOPTIONS:          true,
 	}
 }
@@ -283,51 +231,6 @@ func (r *Router) PATCH(path string, handle Handle) {
 // DELETE is a shortcut for router.Handle(http.MethodDelete, path, handle)
 func (r *Router) DELETE(path string, handle Handle) {
 	r.Handle(http.MethodDelete, path, handle)
-=======
-=======
-		HandleOPTIONS:          true,
->>>>>>> [PROG-1244] Newrelic Integration (simple)
-	}
-}
-
-// GET is a shortcut for router.Handle(http.MethodGet, path, handle)
-func (r *Router) GET(path string, handle Handle) {
-	r.Handle(http.MethodGet, path, handle)
-}
-
-// HEAD is a shortcut for router.Handle(http.MethodHead, path, handle)
-func (r *Router) HEAD(path string, handle Handle) {
-	r.Handle(http.MethodHead, path, handle)
-}
-
-// OPTIONS is a shortcut for router.Handle(http.MethodOptions, path, handle)
-func (r *Router) OPTIONS(path string, handle Handle) {
-	r.Handle(http.MethodOptions, path, handle)
-}
-
-// POST is a shortcut for router.Handle(http.MethodPost, path, handle)
-func (r *Router) POST(path string, handle Handle) {
-	r.Handle(http.MethodPost, path, handle)
-}
-
-// PUT is a shortcut for router.Handle(http.MethodPut, path, handle)
-func (r *Router) PUT(path string, handle Handle) {
-	r.Handle(http.MethodPut, path, handle)
-}
-
-// PATCH is a shortcut for router.Handle(http.MethodPatch, path, handle)
-func (r *Router) PATCH(path string, handle Handle) {
-	r.Handle(http.MethodPatch, path, handle)
-}
-
-// DELETE is a shortcut for router.Handle(http.MethodDelete, path, handle)
-func (r *Router) DELETE(path string, handle Handle) {
-<<<<<<< HEAD
-	r.Handle("DELETE", path, handle)
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
-	r.Handle(http.MethodDelete, path, handle)
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 }
 
 // Handle registers a new request handle with the given path and method.
@@ -339,15 +242,7 @@ func (r *Router) DELETE(path string, handle Handle) {
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
 func (r *Router) Handle(method, path string, handle Handle) {
-<<<<<<< HEAD
-<<<<<<< HEAD
 	if len(path) < 1 || path[0] != '/' {
-=======
-	if path[0] != '/' {
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
-	if len(path) < 1 || path[0] != '/' {
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 		panic("path must begin with '/' in path '" + path + "'")
 	}
 
@@ -359,16 +254,8 @@ func (r *Router) Handle(method, path string, handle Handle) {
 	if root == nil {
 		root = new(node)
 		r.trees[method] = root
-<<<<<<< HEAD
-<<<<<<< HEAD
 
 		r.globalAllowed = r.allowed("*", "")
-=======
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
-
-		r.globalAllowed = r.allowed("*", "")
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 	}
 
 	root.addRoute(path, handle)
@@ -376,8 +263,6 @@ func (r *Router) Handle(method, path string, handle Handle) {
 
 // Handler is an adapter which allows the usage of an http.Handler as a
 // request handle.
-<<<<<<< HEAD
-<<<<<<< HEAD
 // The Params are available in the request context under ParamsKey.
 func (r *Router) Handler(method, path string, handler http.Handler) {
 	r.Handle(method, path,
@@ -387,22 +272,6 @@ func (r *Router) Handler(method, path string, handler http.Handler) {
 				ctx = context.WithValue(ctx, ParamsKey, p)
 				req = req.WithContext(ctx)
 			}
-=======
-func (r *Router) Handler(method, path string, handler http.Handler) {
-	r.Handle(method, path,
-		func(w http.ResponseWriter, req *http.Request, _ Params) {
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
-// The Params are available in the request context under ParamsKey.
-func (r *Router) Handler(method, path string, handler http.Handler) {
-	r.Handle(method, path,
-		func(w http.ResponseWriter, req *http.Request, p Params) {
-			if len(p) > 0 {
-				ctx := req.Context()
-				ctx = context.WithValue(ctx, ParamsKey, p)
-				req = req.WithContext(ctx)
-			}
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 			handler.ServeHTTP(w, req)
 		},
 	)
@@ -455,10 +324,6 @@ func (r *Router) Lookup(method, path string) (Handle, Params, bool) {
 	return nil, nil, false
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 func (r *Router) allowed(path, reqMethod string) (allow string) {
 	allowed := make([]string, 0, 9)
 
@@ -509,19 +374,12 @@ func (r *Router) allowed(path, reqMethod string) (allow string) {
 	return
 }
 
-<<<<<<< HEAD
-=======
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 // ServeHTTP makes the router implement the http.Handler interface.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if r.PanicHandler != nil {
 		defer r.recv(w, req)
 	}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 	path := req.URL.Path
 
 	if root := r.trees[req.Method]; root != nil {
@@ -531,25 +389,6 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		} else if req.Method != http.MethodConnect && path != "/" {
 			code := 301 // Permanent redirect, request with GET method
 			if req.Method != http.MethodGet {
-=======
-	if root := r.trees[req.Method]; root != nil {
-		path := req.URL.Path
-=======
-	path := req.URL.Path
->>>>>>> [PROG-1244] Newrelic Integration (simple)
-
-	if root := r.trees[req.Method]; root != nil {
-		if handle, ps, tsr := root.getValue(path); handle != nil {
-			handle(w, req, ps)
-			return
-		} else if req.Method != http.MethodConnect && path != "/" {
-			code := 301 // Permanent redirect, request with GET method
-<<<<<<< HEAD
-			if req.Method != "GET" {
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
-			if req.Method != http.MethodGet {
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 				// Temporary redirect, request with same method
 				// As of Go 1.3, Go does not support status code 308.
 				code = 307
@@ -580,17 +419,12 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 	if req.Method == http.MethodOptions && r.HandleOPTIONS {
 		// Handle OPTIONS requests
 		if allow := r.allowed(path, http.MethodOptions); allow != "" {
 			w.Header().Set("Allow", allow)
 			if r.GlobalOPTIONS != nil {
 				r.GlobalOPTIONS.ServeHTTP(w, req)
-<<<<<<< HEAD
 			}
 			return
 		}
@@ -606,48 +440,12 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				)
 			}
 			return
-=======
-	// Handle 405
-	if r.HandleMethodNotAllowed {
-		for method := range r.trees {
-			// Skip the requested method - we already tried this one
-			if method == req.Method {
-				continue
-=======
->>>>>>> [PROG-1244] Newrelic Integration (simple)
-			}
-			return
-		}
-	} else if r.HandleMethodNotAllowed { // Handle 405
-		if allow := r.allowed(path, req.Method); allow != "" {
-			w.Header().Set("Allow", allow)
-			if r.MethodNotAllowed != nil {
-				r.MethodNotAllowed.ServeHTTP(w, req)
-			} else {
-				http.Error(w,
-					http.StatusText(http.StatusMethodNotAllowed),
-					http.StatusMethodNotAllowed,
-				)
-			}
-<<<<<<< HEAD
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
-			return
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 		}
 	}
 
 	// Handle 404
 	if r.NotFound != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
 		r.NotFound.ServeHTTP(w, req)
-=======
-		r.NotFound(w, req)
->>>>>>> OPER-5108 Setup Local development with k8s
-=======
-		r.NotFound.ServeHTTP(w, req)
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 	} else {
 		http.NotFound(w, req)
 	}

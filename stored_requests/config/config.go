@@ -41,11 +41,7 @@ type dbConnection struct {
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-<<<<<<< HEAD
 func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *nrhttprouter.Router, dbc *dbConnection) (fetcher stored_requests.AllFetcher, shutdown func()) {
-=======
-func CreateStoredRequests(cfg *config.StoredRequestsSlim, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *nrhttprouter.Router, dbc *dbConnection) (fetcher stored_requests.AllFetcher, shutdown func()) {
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 	// Create database connection if given options for one
 	if cfg.Postgres.ConnectionInfo.Database != "" {
 		conn := cfg.Postgres.ConnectionInfo.ConnString()
@@ -111,12 +107,6 @@ func CreateStoredRequests(cfg *config.StoredRequestsSlim, metricsEngine pbsmetri
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
 func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *nrhttprouter.Router) (db *sql.DB, shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, accountsFetcher stored_requests.AccountFetcher, categoriesFetcher stored_requests.CategoryFetcher, videoFetcher stored_requests.Fetcher) {
-<<<<<<< HEAD
-=======
-	// Build individual slim options from combined config struct
-	slimAuction, slimAmp := resolvedStoredRequestsConfig(cfg)
-
->>>>>>> [PROG-1244] Newrelic Integration (simple)
 	// TODO: Switch this to be set in config defaults
 	//if cfg.CategoryMapping.CacheEvents.Enabled && cfg.CategoryMapping.CacheEvents.Endpoint == "" {
 	//	cfg.CategoryMapping.CacheEvents.Endpoint = "/storedrequest/categorymapping"

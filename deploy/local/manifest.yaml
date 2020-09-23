@@ -86,14 +86,11 @@ data:
   PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_WEST:   "http://exapi-us-west.rubiconproject.com/a/api/exchange.json"
   PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_EU:        "http://exapi-eu.rubiconproject.com/a/api/exchange.json"
   PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_APAC:      "http://exapi-apac.rubiconproject.com/a/api/exchange.json"
-<<<<<<< HEAD
   # for mock_service test
   #PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_EAST:   "http://localhost:4646/a/api/exchange.json"
   #PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_WEST:   "http://localhost:4646/a/api/exchange.json"
   #PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_EU:   "http://localhost:4646/a/api/exchange.json"
   #PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_APAC:   "http://localhost:4646/a/api/exchange.json"
-=======
->>>>>>> [PROG-1289] Liftoff adapter
 
   # liftoff values
   PBS_ADAPTERS_LIFTOFF_DISABLED: "false"
@@ -102,13 +99,10 @@ data:
   PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_US_EAST: "http://liftoff-us-east.com/givemeads"
   PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_EU: "http://liftoff-eu.com/givemeads"
   PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_APAC: "http://liftoff-apac.com/givemeads"
-<<<<<<< HEAD
   # for mock_service test
   #PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/givemeads"
   #PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_EU: "http://localhost:4646/givemeads"
   #PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_APAC: "http://localhost:4646/givemeads"
-=======
->>>>>>> [PROG-1289] Liftoff adapter
 ---
 ########################################################################################################################
 ## WORKLOAD-RELATED MANIFESTS

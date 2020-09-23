@@ -18,6 +18,8 @@ github.com/chasex/glog
 github.com/coocood/freecache
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/docker/go-units v0.4.0
+github.com/docker/go-units
 # github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5
 github.com/erikstmartin/go-testdb
 # github.com/evanphx/json-patch v0.0.0-20180720181644-f195058310bd
@@ -49,10 +51,6 @@ github.com/influxdata/influxdb/pkg/escape
 github.com/julienschmidt/httprouter
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/julienschmidt/httprouter v1.1.0
-github.com/julienschmidt/httprouter
-# github.com/konsorten/go-windows-terminal-sequences v1.0.3
-github.com/konsorten/go-windows-terminal-sequences
 # github.com/lib/pq v1.0.0
 github.com/lib/pq
 github.com/lib/pq/oid
@@ -80,22 +78,15 @@ github.com/newrelic/go-agent/v3/internal/utilization
 github.com/newrelic/go-agent/v3/newrelic
 # github.com/newrelic/go-agent/v3/integrations/nrhttprouter v1.0.0
 github.com/newrelic/go-agent/v3/integrations/nrhttprouter
-<<<<<<< HEAD
-<<<<<<< HEAD
 # github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.0
 github.com/newrelic/go-agent/v3/integrations/nrlogrus
-=======
->>>>>>> [PROG-1244] Newrelic Integration (simple)
-=======
-# github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.0
-github.com/newrelic/go-agent/v3/integrations/nrlogrus
->>>>>>> logrus logger and cleanups
 # github.com/pelletier/go-toml v1.2.0
 github.com/pelletier/go-toml
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/prebid/go-gdpr v0.7.0
+# github.com/prebid/go-gdpr v0.8.3
 github.com/prebid/go-gdpr/api
+github.com/prebid/go-gdpr/bitutils
 github.com/prebid/go-gdpr/consentconstants
 github.com/prebid/go-gdpr/consentconstants/tcf2
 github.com/prebid/go-gdpr/vendorconsent
@@ -119,7 +110,7 @@ github.com/prometheus/procfs/nfs
 github.com/prometheus/procfs/xfs
 # github.com/rcrowley/go-metrics v0.0.0-20180503174638-e2704e165165
 github.com/rcrowley/go-metrics
-# github.com/rs/cors v1.5.0
+# github.com/rs/cors v1.7.0
 github.com/rs/cors
 # github.com/sergi/go-diff v1.0.0
 github.com/sergi/go-diff/diffmatchpatch
@@ -138,7 +129,7 @@ github.com/spf13/pflag
 github.com/spf13/viper
 # github.com/stretchr/objx v0.1.1
 github.com/stretchr/objx
-# github.com/stretchr/testify v1.3.0
+# github.com/stretchr/testify v1.5.1
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
 # github.com/vrischmann/go-metrics-influxdb v0.0.0-20160917065939-43af8332c303
@@ -167,5 +158,5 @@ golang.org/x/text/internal/tag
 golang.org/x/text/language
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
-# gopkg.in/yaml.v2 v2.2.1
+# gopkg.in/yaml.v2 v2.2.2
 gopkg.in/yaml.v2
