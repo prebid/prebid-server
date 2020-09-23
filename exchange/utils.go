@@ -502,15 +502,37 @@ func extractBidRequestExt(bidRequest *openrtb.BidRequest) (*openrtb_ext.ExtReque
 	return requestExt, nil
 }
 
-func getExtCacheInfo(requestExt *openrtb_ext.ExtRequest) (shouldCacheBids bool, shouldCacheVAST bool) {
+func getExtCacheInstructions(requestExt *openrtb_ext.ExtRequest) extCacheInstructions {
+	//returnCreative defaults to true
+	cacheInstructions := extCacheInstructions{returnCreative: true}
+	foundBidsRC := false
+	foundVastRC := false
+
 	if requestExt != nil && requestExt.Prebid.Cache != nil {
-		shouldCacheBids = requestExt.Prebid.Cache.Bids != nil
-		shouldCacheVAST = requestExt.Prebid.Cache.VastXML != nil
+		if requestExt.Prebid.Cache.Bids != nil {
+			cacheInstructions.cacheBids = true
+			if requestExt.Prebid.Cache.Bids.ReturnCreative != nil {
+				cacheInstructions.returnCreative = *requestExt.Prebid.Cache.Bids.ReturnCreative
+				foundBidsRC = true
+			}
+		}
+		if requestExt.Prebid.Cache.VastXML != nil {
+			cacheInstructions.cacheVAST = true
+			if requestExt.Prebid.Cache.VastXML.ReturnCreative != nil {
+				cacheInstructions.returnCreative = *requestExt.Prebid.Cache.VastXML.ReturnCreative
+				foundVastRC = true
+			}
+		}
 	}
-	return
+
+	if foundBidsRC && foundVastRC {
+		cacheInstructions.returnCreative = *requestExt.Prebid.Cache.Bids.ReturnCreative || *requestExt.Prebid.Cache.VastXML.ReturnCreative
+	}
+
+	return cacheInstructions
 }
 
-func getExtTargetData(requestExt *openrtb_ext.ExtRequest, shouldCacheBids bool, shouldCacheVAST bool) *targetData {
+func getExtTargetData(requestExt *openrtb_ext.ExtRequest, cacheInstructions *extCacheInstructions) *targetData {
 	var targData *targetData
 
 	if requestExt != nil && requestExt.Prebid.Targeting != nil {
@@ -518,8 +540,8 @@ func getExtTargetData(requestExt *openrtb_ext.ExtRequest, shouldCacheBids bool, 
 			priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
 			includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
 			includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
-			includeCacheBids:  shouldCacheBids,
-			includeCacheVast:  shouldCacheVAST,
+			includeCacheBids:  cacheInstructions.cacheBids,
+			includeCacheVast:  cacheInstructions.cacheVAST,
 			includeFormat:     requestExt.Prebid.Targeting.IncludeFormat,
 		}
 	}

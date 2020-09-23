@@ -84,10 +84,14 @@ func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 }
 
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids
-type ExtRequestPrebidCacheBids struct{}
+type ExtRequestPrebidCacheBids struct {
+	ReturnCreative *bool `json:"returnCreative"`
+}
 
 // ExtRequestPrebidCacheVAST defines the contract for bidrequest.ext.prebid.cache.vastxml
-type ExtRequestPrebidCacheVAST struct{}
+type ExtRequestPrebidCacheVAST struct {
+	ReturnCreative *bool `json:"returnCreative"`
+}
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
