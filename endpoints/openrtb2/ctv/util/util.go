@@ -12,6 +12,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/types"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/golang/glog"
+	"github.com/PubMatic-OpenWrap/openrtb"
 )
 
 func GetDurationWiseBidsBucket(bids []*types.Bid) types.BidsBuckets {
@@ -40,14 +41,14 @@ func sortBids(bids []*types.Bid) {
 }
 
 // GetDealTierSatisfied ...
-func GetDealTierSatisfied(bid types.Bid) (bool, error) {
+func GetDealTierSatisfied(bid *openrtb.Bid) bool {
 	ext := openrtb_ext.ExtBid{}
 	err := json.Unmarshal(bid.Ext, &ext)
 	if nil != err {
 		//TODO warn can not determine deal tier is satisfied
-		return false, err
+		return false
 	}
-	return ext.Prebid.DealTierSatisfied, nil
+	return ext.Prebid.DealTierSatisfied
 }
 
 func DecodeImpressionID(id string) (string, int) {

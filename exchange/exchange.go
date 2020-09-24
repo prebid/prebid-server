@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+
+	// "math/rand"
 	"net/http"
 	"runtime/debug"
 	"sort"
@@ -290,6 +292,7 @@ func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo, bidCategory m
 
 			newCatDur := strings.Join(oldCatDurSplit, "")
 			bidCategory[bid.bid.ID] = newCatDur
+			bid.dealTierSatisfied = true
 		}
 	}
 }
@@ -741,9 +744,11 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName, a
 		bidExt := &openrtb_ext.ExtBid{
 			Bidder: thisBid.bid.Ext,
 			Prebid: &openrtb_ext.ExtBidPrebid{
-				Targeting: thisBid.bidTargets,
-				Type:      thisBid.bidType,
-				Video:     thisBid.bidVideo,
+				Targeting:         thisBid.bidTargets,
+				Type:              thisBid.bidType,
+				Video:             thisBid.bidVideo,
+				DealPriority:      thisBid.dealPriority,
+				DealTierSatisfied: thisBid.dealTierSatisfied,
 			},
 		}
 		if cacheInfo, found := e.getBidCacheInfo(thisBid, auc); found {
