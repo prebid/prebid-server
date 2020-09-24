@@ -35,6 +35,7 @@ var invalidParams = []string{
 	`{"adCode": "string", "seatCode": 5, "originalPublisherid": "string"}`,
 	`{ "host": "ep1", "sourceid": "partner" }`,
 	`{ "host": "ep1, "accountid": "hash" }`,
+	`{ "sourceid": "partner", "sourceid": "partner" }`,
 }
 
 func TestInvalidParams(t *testing.T) {
