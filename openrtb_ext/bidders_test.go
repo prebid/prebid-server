@@ -72,20 +72,24 @@ func TestBidderListDoesNotDefineContext(t *testing.T) {
 // current uniqueness threshold, or else start a discussion in the PR.
 func TestBidderUniquenessGatekeeping(t *testing.T) {
 	// Get List Of Bidders
-	// - Exclude duplicates of adapters for the same bidder since it's likely the publisher will choose
-	//   one of them and not use both.
+	// - Exclude duplicates of adapters for the same bidder, as it's unlikely the publisher will use both.
 	var bidders []string
 	for _, bidder := range BidderMap {
-		if bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn {
+		if bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn && bidder != BidderSmartadserver {
 			bidders = append(bidders, string(bidder))
 		}
 	}
 
-	currentUniquenessThreshold := 6
-	assert.Equal(t, currentUniquenessThreshold, maxUniqueForPrefixLength(bidders))
+	currentThreshold := 6
+	measuredThreshold := minUniquePrefixLength(bidders)
+
+	assert.NotZero(t, measuredThreshold, "BidderMap contains duoplicate bidder name values.")
+	assert.LessOrEqual(t, measuredThreshold, currentThreshold)
 }
 
-func maxUniqueForPrefixLength(b []string) int {
+// minUniquePrefixLength measures the minimun amount of characters needed to ensure uniqueness
+// of the strings, or returns 0 if there are duplicates.
+func minUniquePrefixLength(b []string) int {
 	targetingKeyMaxLength := 20
 	for prefixLength := 1; prefixLength <= targetingKeyMaxLength; prefixLength++ {
 		if uniqueForPrefixLength(b, prefixLength) {
