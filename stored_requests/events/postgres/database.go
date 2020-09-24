@@ -75,7 +75,6 @@ func (e *PostgresEventProducer) fetchAll() error {
 
 	if err != nil {
 		glog.Warningf("Failed to fetch all Stored %s data from the DB: %v", e.cfg.RequestType, err)
-		// e.saves <- events.Save{} //TODO: do we need to do this?
 		return err
 	}
 	defer func() {
@@ -85,7 +84,6 @@ func (e *PostgresEventProducer) fetchAll() error {
 	}()
 	if err := e.sendEvents(rows); err != nil {
 		glog.Warningf("Failed to load all Stored %s data from the DB: %v", e.cfg.RequestType, err)
-		// e.saves <- events.Save{} //TODO: do we need to do this?
 		return err
 	} else {
 		e.lastUpdate = thisTimeInUTC
