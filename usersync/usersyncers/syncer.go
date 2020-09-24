@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/beintoo"
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/colossus"
+	"github.com/prebid/prebid-server/adapters/connectad"
 	"github.com/prebid/prebid-server/adapters/consumable"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/cpmstar"
@@ -37,6 +38,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/grid"
 	"github.com/prebid/prebid-server/adapters/gumgum"
 	"github.com/prebid/prebid-server/adapters/improvedigital"
+	"github.com/prebid/prebid-server/adapters/invibes"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/krushmedia"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
@@ -102,6 +104,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderBeintoo, beintoo.NewBeintooSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderBrightroll, brightroll.NewBrightrollSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderColossus, colossus.NewColossusSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderConnectAd, connectad.NewConnectAdSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderConsumable, consumable.NewConsumableSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderConversant, conversant.NewConversantSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderCpmstar, cpmstar.NewCpmstarSyncer)
@@ -116,6 +119,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderGrid, grid.NewGridSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderGumGum, gumgum.NewGumGumSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderImprovedigital, improvedigital.NewImprovedigitalSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderInvibes, invibes.NewInvibesSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderIx, ix.NewIxSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderKrushmedia, krushmedia.NewKrushmediaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLifestreet, lifestreet.NewLifestreetSyncer)
