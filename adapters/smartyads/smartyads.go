@@ -57,6 +57,16 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 	return &headers
 }
 
+func (a *SmartyAdsAdapter) CheckHasImps(request *openrtb.BidRequest) error {
+	if len(request.Imp) == 0 {
+		err := &errortypes.BadInput{
+			Message: "Missing Imp Object",
+		}
+		return err
+	}
+	return nil
+}
+
 func (a *SmartyAdsAdapter) MakeRequests(
 	openRTBRequest *openrtb.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
@@ -66,7 +76,9 @@ func (a *SmartyAdsAdapter) MakeRequests(
 ) {
 
 	request := *openRTBRequest
-
+	if noImps := a.CheckHasImps(&request); noImps != nil {
+		return nil, []error{noImps}
+	}
 	var errors []error
 	var smartyadsExt *openrtb_ext.ExtSmartyAds
 	var err error
