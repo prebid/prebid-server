@@ -156,7 +156,7 @@ func (a *KrushmediaAdapter) MakeBids(
 	}
 
 	if bidderRawResponse.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", bidderRawResponse.StatusCode),
 		}}
 	}
