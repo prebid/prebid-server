@@ -1923,10 +1923,10 @@ func TestCategoryMappingBidderName(t *testing.T) {
 	}
 
 	seatBid1 := pbsOrtbSeatBid{innerBids1, "USD", nil, nil}
-	bidderName1 := openrtb_ext.BidderName("appnexus1")
+	bidderName1 := openrtb_ext.BidderName("bidder1")
 
 	seatBid2 := pbsOrtbSeatBid{innerBids2, "USD", nil, nil}
-	bidderName2 := openrtb_ext.BidderName("appnexus2")
+	bidderName2 := openrtb_ext.BidderName("bidder2")
 
 	adapterBids[bidderName1] = &seatBid1
 	adapterBids[bidderName2] = &seatBid2
@@ -1935,8 +1935,8 @@ func TestCategoryMappingBidderName(t *testing.T) {
 
 	assert.NoError(t, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be 0 bid rejection messages")
-	assert.Equal(t, "10.00_VideoGames_30s_appnexus1", bidCategory["bid_id1"], "Category mapping doesn't match")
-	assert.Equal(t, "10.00_HomeDecor_30s_appnexus2", bidCategory["bid_id2"], "Category mapping doesn't match")
+	assert.Equal(t, "10.00_VideoGames_30s_bidder1", bidCategory["bid_id1"], "Category mapping doesn't match")
+	assert.Equal(t, "10.00_HomeDecor_30s_bidder2", bidCategory["bid_id2"], "Category mapping doesn't match")
 	assert.Len(t, adapterBids[bidderName1].bids, 1, "Bidders number doesn't match")
 	assert.Len(t, adapterBids[bidderName2].bids, 1, "Bidders number doesn't match")
 	assert.Len(t, bidCategory, 2, "Bidders category mapping doesn't match")
@@ -1977,10 +1977,10 @@ func TestCategoryMappingBidderNameNoCategories(t *testing.T) {
 	}
 
 	seatBid1 := pbsOrtbSeatBid{innerBids1, "USD", nil, nil}
-	bidderName1 := openrtb_ext.BidderName("appnexus1")
+	bidderName1 := openrtb_ext.BidderName("bidder1")
 
 	seatBid2 := pbsOrtbSeatBid{innerBids2, "USD", nil, nil}
-	bidderName2 := openrtb_ext.BidderName("appnexus2")
+	bidderName2 := openrtb_ext.BidderName("bidder2")
 
 	adapterBids[bidderName1] = &seatBid1
 	adapterBids[bidderName2] = &seatBid2
@@ -1989,8 +1989,8 @@ func TestCategoryMappingBidderNameNoCategories(t *testing.T) {
 
 	assert.NoError(t, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be 0 bid rejection messages")
-	assert.Equal(t, "10.00_30s_appnexus1", bidCategory["bid_id1"], "Category mapping doesn't match")
-	assert.Equal(t, "12.00_30s_appnexus2", bidCategory["bid_id2"], "Category mapping doesn't match")
+	assert.Equal(t, "10.00_30s_bidder1", bidCategory["bid_id1"], "Category mapping doesn't match")
+	assert.Equal(t, "12.00_30s_bidder2", bidCategory["bid_id2"], "Category mapping doesn't match")
 	assert.Len(t, adapterBids[bidderName1].bids, 1, "Bidders number doesn't match")
 	assert.Len(t, adapterBids[bidderName2].bids, 1, "Bidders number doesn't match")
 	assert.Len(t, bidCategory, 2, "Bidders category mapping doesn't match")
