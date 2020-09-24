@@ -42,6 +42,7 @@ type Configuration struct {
 	StoredRequestsAMP StoredRequests  `mapstructure:"stored_amp_req"`
 	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
 	VTrack            VTrack          `mapstructure:"vtrack"`
+	Event             Event           `mapstructure:"event"`
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo StoredRequests `mapstructure:"stored_video_req"`
@@ -319,6 +320,10 @@ type VTrack struct {
 	TimeoutMS          int64 `mapstructure:"timeout_ms"`
 	AllowUnknownBidder bool  `mapstructure:"allow_unknown_bidder"`
 	Enabled            bool  `mapstructure:"enabled"`
+}
+
+type Event struct {
+	TimeoutMS int64 `mapstructure:"timeout_ms"`
 }
 
 type HostCookie struct {
@@ -885,6 +890,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("vtrack.timeout_ms", 2000)
 	v.SetDefault("vtrack.allow_unknown_bidder", true)
 	v.SetDefault("vtrack.enabled", true)
+
+	v.SetDefault("event.timeout_ms", 1000)
 
 	v.SetDefault("accounts.filesystem.enabled", false)
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")

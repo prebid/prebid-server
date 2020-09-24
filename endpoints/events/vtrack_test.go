@@ -566,16 +566,16 @@ func getValidVTrackRequestBody(withImpression bool) (string, error) {
 	return buf.String(), e
 }
 
-func getVTrackRequestData(wi bool) (data []byte, e error) {
-	d := &bytes.Buffer{}
-	enc := json.NewEncoder(d)
+func getVTrackRequestData(wi bool) (db []byte, e error) {
+	data := &bytes.Buffer{}
+	enc := json.NewEncoder(data)
 	enc.SetEscapeHTML(false)
 
 	if wi {
 		e = enc.Encode("<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Impression>content</Impression><Creatives></Creatives></Wrapper></Ad></VAST>")
-		return
+		return data.Bytes(), e
 	}
 
 	e = enc.Encode("<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Impression></Impression><Creatives></Creatives></Wrapper></Ad></VAST>")
-	return
+	return data.Bytes(), e
 }

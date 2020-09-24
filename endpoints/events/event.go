@@ -4,21 +4,18 @@ import (
 	"context"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/stored_requests"
-	"time"
-
-	accountService "github.com/prebid/prebid-server/account"
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 const (
-	DefaultTimeoutMS = 1000
-
 	// Required
 	TemplateUrl        = "%v/event?t=%v&b=%v&a=%v"
 	TypeParameter      = "t"
@@ -91,11 +88,16 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	eventRequest.AccountID = accountId
 
 	if eventRequest.Analytics != analytics.Enabled {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(DefaultTimeoutMS)*time.Millisecond)
-	defer cancel()
+	ctx := context.Background()
+	if e.Cfg.Event.TimeoutMS > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(e.Cfg.Event.TimeoutMS)*time.Millisecond)
+		defer cancel()
+	}
 
 	// get account details
 	account, errs := accountService.GetAccount(ctx, e.Cfg, e.Accounts, eventRequest.AccountID)
@@ -122,13 +124,16 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		Account: account,
 	})
 
-	// OK
-	w.WriteHeader(http.StatusOK)
 	// Add tracking pixel if format == image
 	if eventRequest.Format == analytics.Image {
+		w.WriteHeader(http.StatusOK)
 		w.Header().Add("Content-Type", e.TrackingPixel.ContentType)
 		w.Write(e.TrackingPixel.Content)
+
+		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // EventRequestToUrl converts an analytics.EventRequest to an URL

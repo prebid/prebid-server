@@ -522,7 +522,7 @@ func TestShouldPassEventToAnalyticsReporterWhenAccountEventEnabled(t *testing.T)
 	e(recorder, req, nil)
 
 	// validate
-	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account has events enabled")
+	assert.Equal(t, 204, recorder.Result().StatusCode, "Expected 204 when account has events enabled")
 	assert.Equal(t, true, mockAnalyticsModule.Invoked)
 }
 
@@ -556,7 +556,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAnalyticsValueIsZero(t *testin
 	e(recorder, req, nil)
 
 	// validate
-	assert.Equal(t, 200, recorder.Result().StatusCode)
+	assert.Equal(t, 204, recorder.Result().StatusCode)
 	assert.Equal(t, true, mockAnalyticsModule.Invoked != true)
 }
 
@@ -636,7 +636,7 @@ func TestShouldRespondWithNoContentWhenRequestFormatIsNotDefined(t *testing.T) {
 	}
 
 	// validate
-	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 with empty response")
+	assert.Equal(t, 204, recorder.Result().StatusCode, "Expected 200 with empty response")
 	assert.Equal(t, true, mockAnalyticsModule.Invoked)
 	assert.Equal(t, "", recorder.Header().Get("Content-Type"))
 	assert.Equal(t, 0, len(d))
