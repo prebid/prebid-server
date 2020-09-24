@@ -27,7 +27,18 @@
   "expectedBidResponse": {
     "id":"some-request-id",
     "bidid":"test bid id",
-    "nbr":0
+    "nbr":0,
+     "seatbid": [
+       {
+         "bid": [
+           {
+             "id": "test1-bid",
+             "impid": "",
+             "price": 0
+           }
+         ]
+       }
+     ]
   },
   "expectedReturnCode": 200
 }

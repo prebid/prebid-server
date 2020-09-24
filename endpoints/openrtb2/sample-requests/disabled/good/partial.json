@@ -60,11 +60,17 @@
       "id":"some-request-id",
       "bidid":"test bid id",
       "nbr":0,
-      "ext": {
-        "bidderList": [
-          "openx"
-        ]
-      }
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "openx-bid",
+              "impid": "",
+              "price": 0
+            }
+          ]
+        }
+      ]
   },
   "expectedReturnCode": 200
 }
