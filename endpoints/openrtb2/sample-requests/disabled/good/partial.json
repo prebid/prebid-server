@@ -1,7 +1,8 @@
 {
   "description": "Request comes with some imps directed toward disabled adapters, but there's one non-disabled adapter and we expect a successful response",
   "config": {
-    "disabledAdapters": ["appnexus", "rubicon"]
+    "disabledAdapters": ["appnexus", "rubicon"],
+    "listBiddersInResponse": true
   },
   "mockBidRequest": {
     "id": "some-request-id",
@@ -58,7 +59,12 @@
   "expectedBidResponse": {
       "id":"some-request-id",
       "bidid":"test bid id",
-      "nbr":0
+      "nbr":0,
+      "ext": {
+        "bidderList": [
+          "openx"
+        ]
+      }
   },
   "expectedReturnCode": 200
 }
