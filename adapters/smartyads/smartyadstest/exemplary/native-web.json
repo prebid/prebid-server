@@ -3,7 +3,7 @@
     "id": "some-request-id",
     "device": {
       "ua": "test-user-agent",
-      "ip": "123.123.123.123",
+      "ipv6": "2607:fb90:f27:4512:d800:cb23:a603:e245",
       "language": "en",
       "dnt": 0
     },
@@ -27,7 +27,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "smartyadstest.com",
+            "host": "ep1",
             "sourceid": "partner",
             "accountid": "hash"
           }
@@ -52,7 +52,7 @@
             "test-user-agent"
           ],
           "X-Forwarded-For": [
-            "123.123.123.123"
+            "2607:fb90:f27:4512:d800:cb23:a603:e245"
           ],
           "Accept-Language": [
             "en"
@@ -61,12 +61,12 @@
             "0"
           ]
         },
-        "uri": "http://smartyadstest.com/bid?rtb_seat_id=partner&secret_key=hash",
+        "uri": "http://ep1.example.com/bid?rtb_seat_id=partner&secret_key=hash",
         "body": {
           "id": "some-request-id",
           "device": {
             "ua": "test-user-agent",
-            "ip": "123.123.123.123",
+            "ipv6": "2607:fb90:f27:4512:d800:cb23:a603:e245",
             "language": "en",
             "dnt": 0
           },

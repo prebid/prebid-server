@@ -14,7 +14,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// Implements Bidder interface.
 type SmartyAdsAdapter struct {
 	endpoint template.Template
 }
@@ -27,16 +26,6 @@ func NewSmartyAdsBidder(endpointTemplate string) *SmartyAdsAdapter {
 	return &SmartyAdsAdapter{endpoint: *template}
 }
 
-func (a *SmartyAdsAdapter) CheckHasImps(request *openrtb.BidRequest) error {
-	if len(request.Imp) == 0 {
-		err := &errortypes.BadInput{
-			Message: "Missing Imp Object",
-		}
-		return err
-	}
-	return nil
-}
-
 func GetHeaders(request *openrtb.BidRequest) *http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -46,6 +35,10 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 	if request.Device != nil {
 		if len(request.Device.UA) > 0 {
 			headers.Add("User-Agent", request.Device.UA)
+		}
+
+		if len(request.Device.IPv6) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
 		}
 
 		if len(request.Device.IP) > 0 {
@@ -73,10 +66,6 @@ func (a *SmartyAdsAdapter) MakeRequests(
 ) {
 
 	request := *openRTBRequest
-
-	if noImps := a.CheckHasImps(&request); noImps != nil {
-		return nil, []error{noImps}
-	}
 
 	var errors []error
 	var smartyadsExt *openrtb_ext.ExtSmartyAds
@@ -130,7 +119,7 @@ func (a *SmartyAdsAdapter) getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtS
 }
 
 func (a *SmartyAdsAdapter) buildEndpointURL(params *openrtb_ext.ExtSmartyAds) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{Host: params.Host, SourceId: params.SourceId, AccountID: params.AccountID}
+	endpointParams := macros.EndpointTemplateParams{Host: params.Host, SourceId: params.SourceID, AccountID: params.AccountID}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 

@@ -38,7 +38,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "smartyadstest.com",
+            "host": "ep1",
             "sourceid": "partner",
             "accountid": "hash"
           }
@@ -72,7 +72,7 @@
             "0"
           ]
         },
-        "uri": "http://smartyadstest.com/bid?rtb_seat_id=partner&secret_key=hash",
+        "uri": "http://ep1.example.com/bid?rtb_seat_id=partner&secret_key=hash",
         "body": {
           "id": "some-request-id",
           "device": {
