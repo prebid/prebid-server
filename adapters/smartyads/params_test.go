@@ -8,7 +8,7 @@ import (
 )
 
 var validParams = []string{
-	`{ "host": "smartyadstest.com", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "ep1", "sourceid": "partner", "accountid": "hash" }`,
 }
 
 func TestValidParams(t *testing.T) {
@@ -33,8 +33,8 @@ var invalidParams = []string{
 	`[]`,
 	`{}`,
 	`{"adCode": "string", "seatCode": 5, "originalPublisherid": "string"}`,
-	`{ "host": "smartyadstest.com", "sourceid": "partner" }`,
-	`{ "host": "smartyadstest.com", "accountid": "hash" }`,
+	`{ "host": "ep1", "sourceid": "partner" }`,
+	`{ "host": "ep1, "accountid": "hash" }`,
 }
 
 func TestInvalidParams(t *testing.T) {
