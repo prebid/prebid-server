@@ -105,6 +105,10 @@ type videoBidExtension struct {
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	beachfrontRequests, errs := preprocess(request)
+
+	if len(errs) > 0 && errortypes.ContainsFatalError(errs) {
+		return nil, errs
+	}
 	var reqs = make(
 		[]*adapters.RequestData,
 		0,
