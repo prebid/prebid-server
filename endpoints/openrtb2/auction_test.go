@@ -65,12 +65,10 @@ func TestJsonSampleRequests(t *testing.T) {
 		description string
 		directory   string
 	}{
-		/*
-			{
-				"Assert 200s on all bidRequests from exemplary folder",
-				"sample-requests/valid-whole/exemplary",
-			},
-		*/
+		{
+			"Assert 200s on all bidRequests from exemplary folder",
+			"sample-requests/valid-whole/exemplary",
+		},
 		{
 			"Asserts we return 200s on well-formed Native requests.",
 			"sample-requests/valid-native",
@@ -83,10 +81,12 @@ func TestJsonSampleRequests(t *testing.T) {
 			"Asserts we return 400s on requests with Native requests that don't pass validation",
 			"sample-requests/invalid-native",
 		},
-		{
-			"Makes sure we handle (default) aliased bidders properly",
-			"sample-requests/aliased",
-		},
+		/*
+			{
+				"Makes sure we handle (default) aliased bidders properly",
+				"sample-requests/aliased",
+			},
+		*/
 		{
 			"Asserts we return 503s on requests with blacklisted accounts and apps.",
 			"sample-requests/blacklisted",
@@ -156,11 +156,11 @@ func runTestCase(t *testing.T, fileData []byte, testFile string) {
 	assert.Equal(t, test.ExpectedReturnCode, actualCode, "Test failed. Filename: %s \n", testFile)
 
 	// Either assert bid response or expected error
-	if test.ExpectedReturnCode != 200 {
-		// Assert expected error
+	if len(test.ExpectedErrorMessage) > 0 {
 		assert.True(t, strings.HasPrefix(actualBidResponse, test.ExpectedErrorMessage), "Actual: %s \nExpected: %s. Filename: %s \n", actualBidResponse, test.ExpectedErrorMessage, testFile)
-	} else {
-		// Assert expected response
+	}
+
+	if len(test.ExpectedBidResponse) > 0 {
 		diffJson(t, testFile, []byte(actualBidResponse), test.ExpectedBidResponse)
 	}
 }
@@ -189,19 +189,20 @@ func parseTestFile(t *testing.T, fileData []byte, testFile string) testCase {
 	parsedReturnCode, err := jsonparser.GetInt(fileData, "expectedReturnCode")
 	assert.NoError(t, err, "Error jsonparsing root.code from file %s. Desc: %v.", testFile, err)
 
-	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
-
 	// Get both bid response and error message, if any
 	parsedTestData.ExpectedBidResponse, _, _, err = jsonparser.Get(fileData, "expectedBidResponse")
 	parsedTestData.ExpectedErrorMessage, errEm = jsonparser.GetString(fileData, "expectedErrorMessage")
 
-	if parsedTestData.ExpectedReturnCode == 200 {
+	// Assert no error in parsing one or the other
+	if parsedReturnCode >= 200 && parsedReturnCode < 300 {
 		// If this test expects a 200 code and a valid bidResponse, there shouldn't be a jsonparse error
 		assert.NoError(t, err, "Error jsonparsing root.expectedBidResponse from file %s. Desc: %v.", testFile, err)
 	} else {
 		// Otherwise, make sure we retrueved the expected error message correctly
 		assert.NoError(t, errEm, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
 	}
+
+	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
 
 	return parsedTestData
 }
@@ -1589,6 +1590,7 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 			for bidderNameOrAlias := range bidderExts {
 				bidResponse.SeatBid[0].Bid = append(bidResponse.SeatBid[0].Bid, openrtb.Bid{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)})
 			}
+			bidResponse.SeatBid[0].Seat = "seat-id"
 		}
 	}
 

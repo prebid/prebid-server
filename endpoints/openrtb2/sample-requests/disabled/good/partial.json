@@ -68,7 +68,8 @@
               "impid": "",
               "price": 0
             }
-          ]
+          ],
+          "seat": "seat-id"
         }
       ]
   },

@@ -82,6 +82,28 @@
   },
   "expectedBidResponse": {
       "id":"some-request-id",
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "",
+              "price": 0
+            },
+            {
+              "id": "districtm-bid",
+              "impid": "",
+              "price": 0
+            },
+            {
+              "id": "rubicon-bid",
+              "impid": "",
+              "price": 0
+            }
+          ],
+          "seat": "seat-id"
+        }
+      ],
       "bidid":"test bid id",
       "nbr":0
   },

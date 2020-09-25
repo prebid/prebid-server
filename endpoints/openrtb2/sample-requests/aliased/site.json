@@ -53,27 +53,31 @@
     }
   },
   "expectedBidResponse": {
-	"id": "some-request-id",
-	"bidid": "test bid id",
-	"nbr": 0,
-	"seatbid": [{
-		"bid": [{
-				"id": "appnexus-bid",
-				"impid": "",
-				"price": 0
-			},
-           {
-             "id": "alias1-bid",
-             "impid": "",
-             "price": 0
-           },
-			{
-				"id": "alias2-bid",
-				"impid": "",
-				"price": 0
-			}
-		]
-	}]
-},
+    "id": "some-request-id",
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "alias1-bid",
+            "impid": "",
+            "price": 0
+          },
+          {
+            "id": "alias2-bid",
+            "impid": "",
+            "price": 0
+          },
+          {
+            "id": "appnexus-bid",
+            "impid": "",
+            "price": 0
+          }
+        ],
+        "seat": "seat-id"
+      }
+    ],
+    "bidid": "test bid id",
+    "nbr": 0
+  },
   "expectedReturnCode": 200
 }
