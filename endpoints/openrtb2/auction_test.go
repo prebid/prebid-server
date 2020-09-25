@@ -1339,6 +1339,54 @@ func TestCCPAInvalid(t *testing.T) {
 	assert.Empty(t, req.Regs.Ext, "Invalid Consent Removed From Request")
 }
 
+func TestNoSaleInvalid(t *testing.T) {
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BidderMap,
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	ui := uint64(1)
+	req := openrtb.BidRequest{
+		ID: "someID",
+		Imp: []openrtb.Imp{
+			{
+				ID: "imp-ID",
+				Banner: &openrtb.Banner{
+					W: &ui,
+					H: &ui,
+				},
+				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
+			},
+		},
+		Site: &openrtb.Site{
+			ID: "myID",
+		},
+		Regs: &openrtb.Regs{
+			Ext: json.RawMessage(`{"us_privacy":"1NYN"}`),
+		},
+		Ext: json.RawMessage(`{"prebid":{"nosale":["*", "appnexus"]}}`),
+	}
+
+	errL := deps.validateRequest(&req)
+
+	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
+	assert.ElementsMatch(t, errL, []error{expectedError})
+}
+
 func TestValidateSourceTID(t *testing.T) {
 	cfg := &config.Configuration{
 		AutoGenSourceTID: true,

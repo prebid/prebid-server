@@ -1,0 +1,6 @@
+maintainer:
+  email: "system_operations@invibes.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner

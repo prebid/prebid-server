@@ -8,7 +8,6 @@ import (
 type Enforcement struct {
 	CCPA    bool
 	COPPA   bool
-	GDPR    bool
 	GDPRGeo bool
 	GDPRID  bool
 	LMT     bool
@@ -16,7 +15,7 @@ type Enforcement struct {
 
 // Any returns true if at least one privacy policy requires enforcement.
 func (e Enforcement) Any() bool {
-	return e.CCPA || e.COPPA || e.GDPR || e.GDPRGeo || e.GDPRID || e.LMT
+	return e.CCPA || e.COPPA || e.GDPRGeo || e.GDPRID || e.LMT
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
@@ -26,9 +25,25 @@ func (e Enforcement) Apply(bidRequest *openrtb.BidRequest, ampGDPRException bool
 
 func (e Enforcement) apply(bidRequest *openrtb.BidRequest, ampGDPRException bool, scrubber Scrubber) {
 	if bidRequest != nil && e.Any() {
-		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
+		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getDeviceIDScrubStrategy(), e.getIPv4ScrubStrategy(), e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
 		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(ampGDPRException), e.getGeoScrubStrategy())
 	}
+}
+
+func (e Enforcement) getDeviceIDScrubStrategy() ScrubStrategyDeviceID {
+	if e.COPPA || e.GDPRID || e.CCPA || e.LMT {
+		return ScrubStrategyDeviceIDAll
+	}
+
+	return ScrubStrategyDeviceIDNone
+}
+
+func (e Enforcement) getIPv4ScrubStrategy() ScrubStrategyIPV4 {
+	if e.COPPA || e.GDPRGeo || e.CCPA || e.LMT {
+		return ScrubStrategyIPV4Lowest8
+	}
+
+	return ScrubStrategyIPV4None
 }
 
 func (e Enforcement) getIPv6ScrubStrategy() ScrubStrategyIPV6 {
@@ -36,7 +51,7 @@ func (e Enforcement) getIPv6ScrubStrategy() ScrubStrategyIPV6 {
 		return ScrubStrategyIPV6Lowest32
 	}
 
-	if e.GDPR || e.CCPA || e.LMT {
+	if e.GDPRGeo || e.CCPA || e.LMT {
 		return ScrubStrategyIPV6Lowest16
 	}
 
@@ -60,12 +75,11 @@ func (e Enforcement) getUserScrubStrategy(ampGDPRException bool) ScrubStrategyUs
 		return ScrubStrategyUserIDAndDemographic
 	}
 
-	if e.GDPR && ampGDPRException {
-		return ScrubStrategyUserNone
+	if e.CCPA || e.LMT {
+		return ScrubStrategyUserID
 	}
 
-	// If no user scrubbing is needed, then return none, else scrub ID (COPPA checked above)
-	if e.CCPA || e.GDPRID || e.LMT {
+	if e.GDPRID && !ampGDPRException {
 		return ScrubStrategyUserID
 	}
 

@@ -23,7 +23,7 @@ func TestConsumableSyncer(t *testing.T) {
 			Consent: "B",
 		},
 		CCPA: ccpa.Policy{
-			Value: "C",
+			Consent: "C",
 		},
 	})
 
