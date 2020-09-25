@@ -20,8 +20,6 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/stored_requests"
 	metrics "github.com/rcrowley/go-metrics"
-	"github.com/yudai/gojsondiff"
-	"github.com/yudai/gojsondiff/formatter"
 
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -81,12 +79,10 @@ func TestJsonSampleRequests(t *testing.T) {
 			"Asserts we return 400s on requests with Native requests that don't pass validation",
 			"sample-requests/invalid-native",
 		},
-		/*
-			{
-				"Makes sure we handle (default) aliased bidders properly",
-				"sample-requests/aliased",
-			},
-		*/
+		{
+			"Makes sure we handle (default) aliased bidders properly",
+			"sample-requests/aliased",
+		},
 		{
 			"Asserts we return 503s on requests with blacklisted accounts and apps.",
 			"sample-requests/blacklisted",
@@ -161,7 +157,7 @@ func runTestCase(t *testing.T, fileData []byte, testFile string) {
 	}
 
 	if len(test.ExpectedBidResponse) > 0 {
-		diffJson(t, testFile, []byte(actualBidResponse), test.ExpectedBidResponse)
+		assertBidResponseEqual(t, testFile, []byte(actualBidResponse), test.ExpectedBidResponse)
 	}
 }
 
@@ -198,7 +194,7 @@ func parseTestFile(t *testing.T, fileData []byte, testFile string) testCase {
 		// If this test expects a 200 code and a valid bidResponse, there shouldn't be a jsonparse error
 		assert.NoError(t, err, "Error jsonparsing root.expectedBidResponse from file %s. Desc: %v.", testFile, err)
 	} else {
-		// Otherwise, make sure we retrueved the expected error message correctly
+		// Otherwise, make sure we retrieved the expected error message correctly
 		assert.NoError(t, errEm, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
 	}
 
@@ -229,28 +225,54 @@ func generateConfigMaps(tc *testConfigValues) *testConfigValues {
 	return tc
 }
 
-// diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
-// byte array is not actually JSON.
-func diffJson(t *testing.T, description string, actual []byte, expected []byte) {
-	t.Helper()
-	diff, err := gojsondiff.New().Compare(actual, expected)
-	if err != nil {
-		t.Fatalf("%s json diff failed. %v", description, err)
+// This function does not expects errors when unmarshaling both the actual and the expected bid response
+// Once unmarshalled, bidResponse objects can't simply be compared with an `assert.Equalf()` call
+// because tests fail if the elements inside the `bidResponse.SeatBid` and `bidResponse.SeatBod.Bid`
+// arrays, if any, are not listed in the exact same order in the actual version and in the expected version.
+func assertBidResponseEqual(t *testing.T, testFile string, actualJson []byte, expectedJson []byte) {
+	var actualBidResponse openrtb.BidResponse
+	var expectedBidResponse openrtb.BidResponse
+
+	if err := json.Unmarshal(actualJson, &actualBidResponse); err != nil {
+		t.Fatalf("Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n", testFile, err)
 	}
 
-	if diff.Modified() {
-		var left interface{}
-		if err := json.Unmarshal(actual, &left); err != nil {
-			t.Fatalf("%s json did not match, but unmarshalling failed. %v", description, err)
+	if err := json.Unmarshal(expectedJson, &expectedBidResponse); err != nil {
+		t.Fatalf("Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err)
+	}
+
+	assert.Equalf(t, actualBidResponse.ID, expectedBidResponse.ID, "BidResponse.ID doesn't match expected. Test: %s\n", testFile)
+	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
+
+	//Given that bidResponses have the same lenght, compare them
+	for i := 0; i < len(expectedBidResponse.SeatBid); i++ {
+		//Map SeatBid array elements to get an accurate comparison
+		var actualSeatBidsMap map[string]openrtb.SeatBid = make(map[string]openrtb.SeatBid, 0)
+		for _, seat := range actualBidResponse.SeatBid {
+			actualSeatBidsMap[seat.Seat] = seat
 		}
-		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
-			ShowArrayIndex: true,
-		})
-		output, err := printer.Format(diff)
-		if err != nil {
-			t.Errorf("%s did not match, but diff formatting failed. %v", description, err)
-		} else {
-			t.Errorf("%s json did not match expected.\n\n%s", description, output)
+
+		var expectedSeatBidsMap map[string]openrtb.SeatBid = make(map[string]openrtb.SeatBid, 0)
+		for _, seat := range expectedBidResponse.SeatBid {
+			expectedSeatBidsMap[seat.Seat] = seat
+		}
+
+		for k, expectedSeatBid := range expectedSeatBidsMap {
+			assert.Len(t, actualSeatBidsMap[k].Bid, len(expectedSeatBid.Bid), "BidResponse.SeatBid[].Bid array doesn't match expected. Test: %s\n", testFile)
+
+			//Map bids to get actualBidResponse.SeatBid[i].Bid elements sorted so order doesn't matter when comparing
+			var actualBidsMap map[string]openrtb.Bid = make(map[string]openrtb.Bid, 0)
+			for _, bid := range actualSeatBidsMap[k].Bid {
+				actualBidsMap[bid.ID] = bid
+			}
+
+			var expectedBidsMap map[string]openrtb.Bid = make(map[string]openrtb.Bid, 0)
+			for _, bid := range expectedSeatBid.Bid {
+				expectedBidsMap[bid.ID] = bid
+			}
+
+			//Compare maps order in which bids were listed in the BidResponse.SeatBid[%d].Bid is irrelevant
+			assert.Equalf(t, actualBidsMap, expectedBidsMap, "BidResponse.SeatBid[].Bid doesn't match expected. Test: %s\n", testFile)
 		}
 	}
 }
