@@ -191,7 +191,8 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 
 	for i := 0; i < len(request.Imp); i++ {
 		if !gotBanner {
-			gotBanner = testForValidBanner(request, i)
+			gotBanner = request.Imp[i].Banner != nil
+			// I was testing for a valid size for the Banner element, but that is already done in auction.go
 		}
 
 		if request.Imp[i].Video != nil {
@@ -233,22 +234,6 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 	}
 
 	return beachfrontReqs, errs
-}
-
-func testForValidBanner(request *openrtb.BidRequest, index int) bool {
-	if request.Imp[index].Banner != nil && ((request.Imp[index].Banner.Format != nil &&
-
-		len(request.Imp[index].Banner.Format) != 0 &&
-		request.Imp[index].Banner.Format[0].H != 0 &&
-		request.Imp[index].Banner.Format[0].W != 0) ||
-
-		(request.Imp[index].Banner.H != nil &&
-			request.Imp[index].Banner.W != nil)) {
-
-		return true
-	}
-
-	return false
 }
 
 func getBannerRequest(request *openrtb.BidRequest, errs *[]error) (bannerReq bannerRequest) {
