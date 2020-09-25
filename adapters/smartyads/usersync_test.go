@@ -22,7 +22,7 @@ func TestSmartyAdsSyncer(t *testing.T) {
 			Consent: "ANDFJDS",
 		},
 		CCPA: ccpa.Policy{
-			Value: "1-YY",
+			Consent: "1-YY",
 		},
 	})
 
