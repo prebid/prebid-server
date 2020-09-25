@@ -3,15 +3,16 @@ package consumable
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/privacy/ccpa"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
 )
 
 type ConsumableAdapter struct {
@@ -136,9 +137,9 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	gdpr := bidGdpr{}
 
-	ccpaPolicy, err := ccpa.ReadPolicy(request)
+	ccpaPolicy, err := ccpa.ReadFromRequest(request)
 	if err == nil {
-		body.CCPA = ccpaPolicy.Value
+		body.CCPA = ccpaPolicy.Consent
 	}
 
 	// TODO: Replace with gdpr.ReadPolicy when it is available

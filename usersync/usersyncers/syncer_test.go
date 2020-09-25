@@ -31,6 +31,8 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderBeachfront):       syncConfig,
 			string(openrtb_ext.BidderBeintoo):          syncConfig,
 			string(openrtb_ext.BidderBrightroll):       syncConfig,
+			string(openrtb_ext.BidderColossus):         syncConfig,
+			string(openrtb_ext.BidderConnectAd):        syncConfig,
 			string(openrtb_ext.BidderConsumable):       syncConfig,
 			string(openrtb_ext.BidderConversant):       syncConfig,
 			string(openrtb_ext.BidderCpmstar):          syncConfig,
@@ -45,6 +47,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderGrid):             syncConfig,
 			string(openrtb_ext.BidderGumGum):           syncConfig,
 			string(openrtb_ext.BidderImprovedigital):   syncConfig,
+			string(openrtb_ext.BidderInvibes):          syncConfig,
 			string(openrtb_ext.BidderIx):               syncConfig,
 			string(openrtb_ext.BidderLifestreet):       syncConfig,
 			string(openrtb_ext.BidderLockerDome):       syncConfig,
@@ -88,6 +91,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderAdhese:       true,
 		openrtb_ext.BidderAdoppler:     true,
 		openrtb_ext.BidderApplogy:      true,
+		openrtb_ext.BidderInMobi:       true,
 		openrtb_ext.BidderKidoz:        true,
 		openrtb_ext.BidderKubient:      true,
 		openrtb_ext.BidderMobileFuse:   true,
@@ -97,6 +101,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderTappx:        true,
 		openrtb_ext.BidderYeahmobi:     true,
 		openrtb_ext.BidderAdprime:      true,
+		openrtb_ext.BidderBetween:      true,
 	}
 
 	for bidder, config := range cfg.Adapters {

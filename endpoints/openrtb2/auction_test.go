@@ -1278,6 +1278,54 @@ func TestCCPAInvalid(t *testing.T) {
 	assert.Empty(t, req.Regs.Ext, "Invalid Consent Removed From Request")
 }
 
+func TestNoSaleInvalid(t *testing.T) {
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BidderMap,
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	ui := uint64(1)
+	req := openrtb.BidRequest{
+		ID: "someID",
+		Imp: []openrtb.Imp{
+			{
+				ID: "imp-ID",
+				Banner: &openrtb.Banner{
+					W: &ui,
+					H: &ui,
+				},
+				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
+			},
+		},
+		Site: &openrtb.Site{
+			ID: "myID",
+		},
+		Regs: &openrtb.Regs{
+			Ext: json.RawMessage(`{"us_privacy":"1NYN"}`),
+		},
+		Ext: json.RawMessage(`{"prebid":{"nosale":["*", "appnexus"]}}`),
+	}
+
+	errL := deps.validateRequest(&req)
+
+	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
+	assert.ElementsMatch(t, errL, []error{expectedError})
+}
+
 func TestValidateSourceTID(t *testing.T) {
 	cfg := &config.Configuration{
 		AutoGenSourceTID: true,
@@ -1947,8 +1995,7 @@ func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []s
 }
 
 var mockAccountData = map[string]json.RawMessage{
-	"valid_acct":    json.RawMessage(`{"disabled":false}`),
-	"disabled_acct": json.RawMessage(`{"disabled":true}`),
+	"valid_acct": json.RawMessage(`{"disabled":false}`),
 }
 
 type mockAccountFetcher struct {
@@ -2006,71 +2053,4 @@ type hardcodedResponseIPValidator struct {
 
 func (v hardcodedResponseIPValidator) IsValid(net.IP, iputil.IPVersion) bool {
 	return v.response
-}
-
-func TestGetAccount(t *testing.T) {
-	unknown := pbsmetrics.PublisherUnknown
-	testCases := []struct {
-		accountID string
-		// account_required
-		required bool
-		// account_defaults.disabled
-		disabled bool
-		// expected error, or nil if account should be found
-		err error
-	}{
-		// Blacklisted account is always rejected even in permissive setup
-		{accountID: "bad_acct", required: false, disabled: false, err: &errortypes.BlacklistedAcct{}},
-
-		// empty pubID
-		{accountID: unknown, required: false, disabled: false, err: nil},
-		{accountID: unknown, required: true, disabled: false, err: &errortypes.AcctRequired{}},
-		{accountID: unknown, required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
-		{accountID: unknown, required: true, disabled: true, err: &errortypes.AcctRequired{}},
-
-		// pubID given but is not a valid host account (does not exist)
-		{accountID: "doesnt_exist_acct", required: false, disabled: false, err: nil},
-		{accountID: "doesnt_exist_acct", required: true, disabled: false, err: nil},
-		{accountID: "doesnt_exist_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
-		{accountID: "doesnt_exist_acct", required: true, disabled: true, err: &errortypes.AcctRequired{}},
-
-		// pubID given and matches a valid host account with Disabled: false
-		{accountID: "valid_acct", required: false, disabled: false, err: nil},
-		{accountID: "valid_acct", required: true, disabled: false, err: nil},
-		{accountID: "valid_acct", required: false, disabled: true, err: nil},
-		{accountID: "valid_acct", required: true, disabled: true, err: nil},
-
-		// pubID given and matches a host account explicitly disabled (Disabled: true on account json)
-		{accountID: "disabled_acct", required: false, disabled: false, err: &errortypes.BlacklistedAcct{}},
-		{accountID: "disabled_acct", required: true, disabled: false, err: &errortypes.BlacklistedAcct{}},
-		{accountID: "disabled_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
-		{accountID: "disabled_acct", required: true, disabled: true, err: &errortypes.BlacklistedAcct{}},
-	}
-
-	for _, test := range testCases {
-		description := fmt.Sprintf(`ID=%s/required=%t/disabled=%t`, test.accountID, test.required, test.disabled)
-		t.Run(description, func(t *testing.T) {
-			deps := &endpointDeps{
-				cfg: &config.Configuration{
-					BlacklistedAcctMap: map[string]bool{"bad_acct": true},
-					AccountRequired:    test.required,
-					AccountDefaults:    config.Account{Disabled: test.disabled},
-				},
-				accounts: &mockAccountFetcher{},
-			}
-			assert.NoError(t, deps.cfg.MarshalAccountDefaults())
-
-			account, errors := deps.getAccount(context.Background(), test.accountID)
-
-			if test.err == nil {
-				assert.Empty(t, errors)
-				assert.Equal(t, test.accountID, account.ID, "account.ID must match requested ID")
-				assert.Equal(t, false, account.Disabled, "returned account must not be disabled")
-			} else {
-				assert.NotEmpty(t, errors, "expected errors but got success")
-				assert.Nil(t, account, "return account must be nil on error")
-				assert.IsType(t, test.err, errors[0], "error is of unexpected type")
-			}
-		})
-	}
 }
