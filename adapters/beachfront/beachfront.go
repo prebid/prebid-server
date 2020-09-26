@@ -198,34 +198,73 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 			wantsBanner = request.Imp[i].Banner != nil
 			// I was testing for a valid size for the Banner element, but that is already done.
 			// If the size is not valid, I will never get here as the entire request will get
-			// tossed in auction.go.
+			// tossed in auction.go around L441 (as of this writing).
 		}
 
 		if request.Imp[i].Video != nil {
-			imp := request.Imp[i]
-			var secure int8 = 0
-
-			if request.Site != nil && request.Site.Page != "" {
-				secure = isPageSecure(request.Site.Page)
-				imp.Secure = &secure
-			} else {
-				// &secure = 0 at this point
-				if imp.Secure != nil && imp.Secure != &secure {
-					imp.Secure = request.Imp[i].Secure
+			// If the page is not set for a web request, or the IFA is not set for
+			// an app request, the beachfront backend will not return a response and
+			// there is no reason to continue with this impression.
+			if request.Site != nil {
+				if request.Site.Page != "" {
+					var secure int8 = 0
+					// This will overwrite the secure value if it is included, but if
+					// a web request is not https, it's not secure.
+					secure = isPageSecure(request.Site.Page)
+					request.Imp[i].Secure = &secure
 				} else {
-					imp.Secure = &secure
+					errs = append(errs,
+						errors.New(
+							fmt.Sprintf("video impresion %s did not include a page value "+
+								"which is required for a web request",
+								request.Imp[i].ID)))
+					continue
+				}
+
+			// Since request.Site is nil, request.App must be not nil or this whole request would be invalid
+			// and would have already been discarded, but we could have gotten this far with Bundle == ""
+			// as it is not required by RTB, but it is required by beachfront. Ditto for Device.IFA.
+			} else {
+				var skip bool
+				if request.App.Bundle != "" {
+					errs = append(errs,
+						errors.New(
+							fmt.Sprintf("video impression %s did not include an " +
+								"App.Bundle value which is required for an app request.",
+								request.Imp[i].ID)))
+					skip = true
+				}
+
+				if request.Device.IFA == "" {
+					errs = append(errs,
+						errors.New(
+							fmt.Sprintf("video impression %s did not include a " +
+								"Device.IFA value which is required for an app request.",
+								request.Imp[i].ID)))
+					skip = true
+				}
+
+				if skip {
+					continue
+				}
+
+				// This must be a valid App request. Make sure Imp[i].Secure is set.
+				if request.Imp[i].Secure == nil {
+					var secure int8 = 0
+					request.Imp[i].Secure = &secure
 				}
 			}
 
-			imp.Banner = nil
-			videoImps = append(videoImps, imp)
+			request.Imp[i].Banner = nil
+			videoImps = append(videoImps, request.Imp[i])
 		}
 	}
 
 	if len(videoImps) == 0 && !wantsBanner {
-		return beachfrontReqs, []error{&errortypes.BadInput{
+		errs = append(errs, &errortypes.BadInput{
 			Message: "no valid impressions were found in the request",
-		}}
+		})
+		return beachfrontReqs, errs
 	}
 
 	if wantsBanner {
@@ -248,7 +287,7 @@ func getBannerRequest(request *openrtb.BidRequest, errs *[]error) (bannerReq ban
 
 	// This is the only place that errors are potentially getting added
 	if len(bannerReq.Slots) == 0 {
-		*errs = append(*errs, errors.New("unable to construct a valid banner request. see additional errors"))
+		*errs = append(*errs, errors.New("unable to construct a valid banner request"))
 		return
 	}
 
