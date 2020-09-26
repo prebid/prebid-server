@@ -191,12 +191,14 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 	var videoImps = make([]openrtb.Imp, 0, len(request.Imp))
 	var errs = make([]error, 0, len(request.Imp))
 	var beachfrontReqs requests
-	var gotBanner bool
+	var wantsBanner bool
 
 	for i := 0; i < len(request.Imp); i++ {
-		if !gotBanner {
-			gotBanner = request.Imp[i].Banner != nil
-			// I was testing for a valid size for the Banner element, but that is already done in auction.go
+		if !wantsBanner {
+			wantsBanner = request.Imp[i].Banner != nil
+			// I was testing for a valid size for the Banner element, but that is already done.
+			// If the size is not valid, I will never get here as the entire request will get
+			// tossed in auction.go.
 		}
 
 		if request.Imp[i].Video != nil {
@@ -220,13 +222,13 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 		}
 	}
 
-	if len(videoImps) == 0 && !gotBanner {
+	if len(videoImps) == 0 && !wantsBanner {
 		return beachfrontReqs, []error{&errortypes.BadInput{
 			Message: "no valid impressions were found in the request",
 		}}
 	}
 
-	if gotBanner {
+	if wantsBanner {
 		beachfrontReqs.Banner = getBannerRequest(request, &errs)
 	}
 
@@ -246,8 +248,6 @@ func getBannerRequest(request *openrtb.BidRequest, errs *[]error) (bannerReq ban
 
 	// This is the only place that errors are potentially getting added
 	if len(bannerReq.Slots) == 0 {
-		// Fatal
-
 		*errs = append(*errs, errors.New("unable to construct a valid banner request. see additional errors"))
 		return
 	}
@@ -681,10 +681,6 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 
 	if appid == "" {
 		err = errors.New("unable to determine the appId(s) from the supplied extension")
-	}
-
-	if appid == "throwTestError" {
-		err = errors.New("test error")
 	}
 
 	return appid, err
