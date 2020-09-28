@@ -186,7 +186,6 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	}
 
 	response, err = deps.holdAuction(request, usersyncs)
-
 	ao.Request = request
 	ao.Response = response
 	if err != nil || nil == response {
@@ -546,6 +545,12 @@ func (deps *ctvEndpointDeps) getBids(resp *openrtb.BidResponse) {
 				}
 				vseat.Bid = append(vseat.Bid, *bid)
 			} else {
+				//reading extension, ingorning parsing error
+				ext := openrtb_ext.ExtBid{}
+				if nil != bid.Ext {
+					json.Unmarshal(bid.Ext, &ext)
+				}
+
 				//Adding adpod bids
 				impBids, ok := result[originalImpID]
 				if !ok {
@@ -560,9 +565,10 @@ func (deps *ctvEndpointDeps) getBids(resp *openrtb.BidResponse) {
 				bid.ID = util.GetUniqueBidID(bid.ID, len(impBids.Bids)+1)
 
 				impBids.Bids = append(impBids.Bids, &types.Bid{
-					Bid:              bid,
-					FilterReasonCode: constant.CTVRCDidNotGetChance,
-					Duration:         int(deps.impData[index].Config[sequenceNumber-1].MaxDuration),
+					Bid:               bid,
+					FilterReasonCode:  constant.CTVRCDidNotGetChance,
+					Duration:          int(deps.impData[index].Config[sequenceNumber-1].MaxDuration),
+					DealTierSatisfied: util.GetDealTierSatisfied(&ext),
 				})
 			}
 		}

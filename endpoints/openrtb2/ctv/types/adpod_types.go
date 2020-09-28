@@ -9,8 +9,9 @@ import (
 //Bid openrtb bid object with extra parameters
 type Bid struct {
 	*openrtb.Bid
-	Duration         int
-	FilterReasonCode constant.FilterReasonCode
+	Duration          int
+	FilterReasonCode  constant.FilterReasonCode
+	DealTierSatisfied bool
 }
 
 //ExtCTVBidResponse object for ctv bid resposne object

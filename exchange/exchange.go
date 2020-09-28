@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+
+	// "math/rand"
 	"net/http"
 	"runtime/debug"
 	"sort"
@@ -290,6 +292,7 @@ func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo, bidCategory m
 
 			newCatDur := strings.Join(oldCatDurSplit, "")
 			bidCategory[bid.bid.ID] = newCatDur
+			bid.dealTierSatisfied = true
 		}
 	}
 }
@@ -597,31 +600,34 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
 			}
 
-			if dupe, ok := dedupe[categoryDuration]; ok {
-				// 50% chance for either bid with duplicate categoryDuration values to be kept
-				if rand.Intn(100) < 50 {
-					if dupe.bidderName == bidderName {
-						// An older bid from the current bidder
-						bidsToRemove = append(bidsToRemove, dupe.bidIndex)
-						rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
-					} else {
-						// An older bid from a different seatBid we've already finished with
-						oldSeatBid := (seatBids)[dupe.bidderName]
-						if len(oldSeatBid.bids) == 1 {
-							seatBidsToRemove = append(seatBidsToRemove, bidderName)
+			if false == brandCatExt.SkipDedup {
+				if dupe, ok := dedupe[categoryDuration]; ok {
+					// 50% chance for either bid with duplicate categoryDuration values to be kept
+					if rand.Intn(100) < 50 {
+						if dupe.bidderName == bidderName {
+							// An older bid from the current bidder
+							bidsToRemove = append(bidsToRemove, dupe.bidIndex)
 							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						} else {
-							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
+							// An older bid from a different seatBid we've already finished with
+							oldSeatBid := (seatBids)[dupe.bidderName]
+							if len(oldSeatBid.bids) == 1 {
+								seatBidsToRemove = append(seatBidsToRemove, bidderName)
+								rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
+							} else {
+								oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
+							}
 						}
+						delete(res, dupe.bidID)
+					} else {
+						// Remove this bid
+						bidsToRemove = append(bidsToRemove, bidInd)
+						rejections = updateRejections(rejections, bidID, "Bid was deduplicated")
+						continue
 					}
-					delete(res, dupe.bidID)
-				} else {
-					// Remove this bid
-					bidsToRemove = append(bidsToRemove, bidInd)
-					rejections = updateRejections(rejections, bidID, "Bid was deduplicated")
-					continue
 				}
 			}
+
 			res[bidID] = categoryDuration
 			dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID}
 		}
@@ -741,9 +747,11 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName, a
 		bidExt := &openrtb_ext.ExtBid{
 			Bidder: thisBid.bid.Ext,
 			Prebid: &openrtb_ext.ExtBidPrebid{
-				Targeting: thisBid.bidTargets,
-				Type:      thisBid.bidType,
-				Video:     thisBid.bidVideo,
+				Targeting:         thisBid.bidTargets,
+				Type:              thisBid.bidType,
+				Video:             thisBid.bidVideo,
+				DealPriority:      thisBid.dealPriority,
+				DealTierSatisfied: thisBid.dealTierSatisfied,
 			},
 		}
 		if cacheInfo, found := e.getBidCacheInfo(thisBid, auc); found {
