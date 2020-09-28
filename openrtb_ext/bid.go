@@ -42,9 +42,9 @@ type BidType string
 
 const (
 	BidTypeBanner BidType = "banner"
-	BidTypeVideo          = "video"
-	BidTypeAudio          = "audio"
-	BidTypeNative         = "native"
+	BidTypeVideo  BidType = "video"
+	BidTypeAudio  BidType = "audio"
+	BidTypeNative BidType = "native"
 )
 
 func BidTypes() []BidType {
@@ -87,7 +87,7 @@ const (
 	HbpbConstantKey TargetingKey = "hb_pb"
 
 	// HbEnvKey exists to support the Prebid Universal Creative. If it exists, the only legal value is mobile-app.
-	// It will exist only if the incoming bidRequest defiend request.app instead of request.site.
+	// It will exist only if the incoming bidRequest defined request.app instead of request.site.
 	HbEnvKey TargetingKey = "hb_env"
 
 	// HbCacheHost and HbCachePath exist to supply cache host and path as targeting parameters
@@ -98,6 +98,9 @@ const (
 	HbBidderConstantKey TargetingKey = "hb_bidder"
 	HbSizeConstantKey   TargetingKey = "hb_size"
 	HbDealIDConstantKey TargetingKey = "hb_deal"
+
+	// HbFormatKey is the format of the bid. For example, "video", "banner"
+	HbFormatKey TargetingKey = "hb_format"
 
 	// HbCacheKey and HbVastCacheKey store UUIDs which can be used to fetch things from prebid cache.
 	// Callers should *never* assume that either of these exist, since the call to the cache may always fail.

@@ -3,5 +3,11 @@
   "title": "Kubient Adapter Params",
   "description": "A schema which validates params accepted by the Kubient adapter",
   "type": "object",
-  "properties": {  }
+  "properties": {
+    "zoneid": {
+      "type": "string",
+      "description": "Zone ID identifies Kubient placement ID.",
+      "minLength": 1
+    }
+  }
 }

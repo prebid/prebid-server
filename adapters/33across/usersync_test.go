@@ -23,7 +23,7 @@ func Test33AcrossSyncer(t *testing.T) {
 			Consent: "B",
 		},
 		CCPA: ccpa.Policy{
-			Value: "C",
+			Consent: "C",
 		},
 	})
 

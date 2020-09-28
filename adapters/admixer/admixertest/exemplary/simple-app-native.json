@@ -1,0 +1,90 @@
+
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "ver": "1.1",
+          "request": "{\"ver\":\"1.0\",\"layout\":1,\"adunit\":1,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":60,\"hmin\":60,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":3,\"required\":0,\"data\":{\"type\":2,\"len\":75}},{\"id\":4,\"required\":0,\"data\":{\"type\":6,\"len\":1000}},{\"id\":5,\"required\":0,\"data\":{\"type\":7,\"len\":1000}},{\"id\":6,\"required\":0,\"data\":{\"type\":11,\"len\":1000}}]}"
+        },
+        "ext": {
+          "bidder": {
+            "zone": "b1fbebfc-7155-4922-bb86-615e7f3d6eef"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://inv-nets.admixer.net/pbs.aspx",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "native": {
+                "ver": "1.1",
+                "request": "{\"ver\":\"1.0\",\"layout\":1,\"adunit\":1,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":60,\"hmin\":60,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":3,\"required\":0,\"data\":{\"type\":2,\"len\":75}},{\"id\":4,\"required\":0,\"data\":{\"type\":6,\"len\":1000}},{\"id\":5,\"required\":0,\"data\":{\"type\":7,\"len\":1000}},{\"id\":6,\"required\":0,\"data\":{\"type\":11,\"len\":1000}}]}"
+              },
+              "tagid": "b1fbebfc-7155-4922-bb86-615e7f3d6eef"
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "admixer",
+              "bid": [{
+                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                "impid": "test-imp-id",
+                "price": 0.500000,
+                "adm": "some-test-ad",
+                "crid": "test-crid"
+              }]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "test-crid"
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

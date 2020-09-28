@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"os"
 	"testing"
@@ -22,7 +23,7 @@ func TestSampleModule(t *testing.T) {
 		Response: &openrtb.BidResponse{},
 	})
 	if count != 1 {
-		t.Errorf("PBSAnalyticsModule failed at LogAuctionObejct")
+		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
 	am.LogSetUIDObject(&analytics.SetUIDObject{
@@ -33,12 +34,12 @@ func TestSampleModule(t *testing.T) {
 		Success: true,
 	})
 	if count != 2 {
-		t.Errorf("PBSAnalyticsModule failed at LogSetUIDObejct")
+		t.Errorf("PBSAnalyticsModule failed at LogSetUIDObject")
 	}
 
 	am.LogCookieSyncObject(&analytics.CookieSyncObject{})
 	if count != 3 {
-		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObejct")
+		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObject")
 	}
 
 	am.LogAmpObject(&analytics.AmpObject{})
@@ -73,6 +74,13 @@ func initAnalytics(count *int) analytics.PBSAnalyticsModule {
 }
 
 func TestNewPBSAnalytics(t *testing.T) {
+	pbsAnalytics := NewPBSAnalytics(&config.Analytics{})
+	instance := pbsAnalytics.(enabledAnalytics)
+
+	assert.Equal(t, len(instance), 0)
+}
+
+func TestNewPBSAnalytics_FileLogger(t *testing.T) {
 	if _, err := os.Stat(TEST_DIR); os.IsNotExist(err) {
 		if err = os.MkdirAll(TEST_DIR, 0755); err != nil {
 			t.Fatalf("Could not create test directory for FileLogger")
@@ -88,4 +96,37 @@ func TestNewPBSAnalytics(t *testing.T) {
 	default:
 		t.Fatalf("Failed to initialize analytics module")
 	}
+
+	pbsAnalytics := NewPBSAnalytics(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
+	instance := pbsAnalytics.(enabledAnalytics)
+
+	assert.Equal(t, len(instance), 1)
+}
+
+func TestNewPBSAnalytics_Pubstack(t *testing.T) {
+
+	pbsAnalyticsWithoutError := NewPBSAnalytics(&config.Analytics{
+		Pubstack: config.Pubstack{
+			Enabled:   true,
+			ScopeId:   "scopeId",
+			IntakeUrl: "https://pubstack.io/intake",
+			Buffers: config.PubstackBuffer{
+				BufferSize: "100KB",
+				EventCount: 0,
+				Timeout:    "30s",
+			},
+			ConfRefresh: "2h",
+		},
+	})
+	instanceWithoutError := pbsAnalyticsWithoutError.(enabledAnalytics)
+
+	assert.Equal(t, len(instanceWithoutError), 1)
+
+	pbsAnalyticsWithError := NewPBSAnalytics(&config.Analytics{
+		Pubstack: config.Pubstack{
+			Enabled: true,
+		},
+	})
+	instanceWithError := pbsAnalyticsWithError.(enabledAnalytics)
+	assert.Equal(t, len(instanceWithError), 0)
 }

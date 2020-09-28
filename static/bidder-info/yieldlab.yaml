@@ -1,0 +1,11 @@
+maintainer:
+  email: "solutions@yieldlab.de"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video

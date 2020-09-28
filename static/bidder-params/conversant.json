@@ -24,10 +24,6 @@
       "type": "integer",
       "description": "Ad position on screen."
    	},
-   	"mobile": {
-   	  "type": "integer",
-   	  "description": "Indicate if the site is mobile optimized."
-   	},
    	"mimes": {
    	  "type": "array",
    	  "description": "Array of content MIME types.  For videos only.",

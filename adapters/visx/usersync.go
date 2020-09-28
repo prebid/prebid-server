@@ -8,5 +8,5 @@ import (
 )
 
 func NewVisxSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("visx", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("visx", 154, temp, adapters.SyncTypeRedirect)
 }

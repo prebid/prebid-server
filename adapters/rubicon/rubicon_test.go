@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -972,9 +973,9 @@ func TestOpenRTBRequest(t *testing.T) {
 		}
 
 		assert.Equal(t, request.ID, rpRequest.ID, "Bad Request ID. Expected %s, Got %s", request.ID, rpRequest.ID)
-		assert.Equal(t, len(request.Imp), len(rpRequest.Imp), "Wrong len(request.Imp). Expected %d, Got %d", len(request.Imp), len(rpRequest.Imp))
+		assert.Equal(t, 1, len(rpRequest.Imp), "Wrong len(request.Imp). Expected %d, Got %d", len(request.Imp), len(rpRequest.Imp))
 		assert.Nil(t, rpRequest.Cur, "Wrong request.Cur. Expected nil, Got %s", rpRequest.Cur)
-		assert.Nil(t, request.Ext, "Wrong request.ext. Expected nil, Got %v", request.Ext)
+		assert.Nil(t, rpRequest.Ext, "Wrong request.ext. Expected nil, Got %v", rpRequest.Ext)
 
 		if rpRequest.Imp[0].ID == "test-imp-banner-id" {
 			var rpExt rubiconBannerExt
@@ -1133,6 +1134,48 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 		"Unexpected dfp_ad_unit_code: %s", rubiconExtInventory["dfp_ad_unit_code"])
 }
 
+func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	badvOverflowed := make([]string, 100)
+	for i := range badvOverflowed {
+		badvOverflowed[i] = strconv.Itoa(i)
+	}
+
+	request := &openrtb.BidRequest{
+		ID:   "test-request-id",
+		BAdv: badvOverflowed,
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{
+					SIZE_ID[15],
+				},
+			},
+			Ext: json.RawMessage(`{
+				"bidder": {
+					"zoneId": 8394,
+					"siteId": 283282,
+					"accountId": 7891,
+					"inventory": {"key1" : "val1"},
+					"visitor": {"key2" : "val2"}
+				}
+			}`),
+		}},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Fatalf("Unexpected error while decoding request: %s", err)
+	}
+
+	badvRequest := rubiconReq.BAdv
+	assert.Equal(t, badvOverflowed[:50], badvRequest, "Unexpected dfp_ad_unit_code: %s")
+}
+
 func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
@@ -1176,6 +1219,15 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 				"ext": {
 					"segments": ["999","888"]
 				}
+			},
+			{
+				"source": "liveramp.com",
+				"uids": [{
+					"id": "LIVERAMPID"
+				}],
+				"ext": {
+					"segments": ["111","222"]
+				}
 			}
 			]}`),
 		},
@@ -1196,7 +1248,7 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 	}
 
 	assert.NotNil(t, userExt.Eids)
-	assert.Equal(t, 3, len(userExt.Eids), "Eids values are not as expected!")
+	assert.Equal(t, 4, len(userExt.Eids), "Eids values are not as expected!")
 
 	assert.NotNil(t, userExt.TpID)
 	assert.Equal(t, 2, len(userExt.TpID), "TpID values are not as expected!")
@@ -1206,6 +1258,9 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 
 	// liveintent.com
 	assert.Equal(t, "liveintent.com", userExt.TpID[1].Source, "TpID source value is not as expected!")
+
+	// liveramp.com
+	assert.Equal(t, "LIVERAMPID", userExt.LiverampIdl, "Liveramp_idl value is not as expected!")
 
 	userExtRPTarget := make(map[string]interface{})
 	if err := json.Unmarshal(userExt.RP.Target, &userExtRPTarget); err != nil {
@@ -1380,6 +1435,103 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 
 	theBid := bidResponse.Bids[0].Bid
 	assert.Equal(t, "1234567890", theBid.ID, "Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)
+}
+
+func TestOpenRTBResponseOverridePriceFromBidRequest(t *testing.T) {
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 320,
+					H: 50,
+				}},
+			},
+			Ext: json.RawMessage(`{"bidder": {
+				"accountId": 2763,
+				"siteId": 68780,
+				"zoneId": 327642
+			}}`),
+		}},
+		Ext: json.RawMessage(`{"prebid": {
+			"bidders": {
+				"rubicon": {
+					"debug": {
+						"cpmoverride": 10
+			}}}}}`),
+	}
+
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     "test-uri",
+		Body:    requestJson,
+		Headers: nil,
+	}
+
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"test-request-id","seatbid":[{"bid":[{"id":"1234567890","impid":"test-imp-id","price": 2,"crid":"4122982","adm":"some ad","h": 50,"w": 320,"ext":{"bidder":{"rp":{"targeting": {"key": "rpfl_2763", "values":["43_tier0100"]},"mime": "text/html","size_id": 43}}}}]}]}`),
+	}
+
+	bidder := new(RubiconAdapter)
+	bidResponse, errs := bidder.MakeBids(request, reqData, httpResp)
+
+	assert.Empty(t, errs, "Expected 0 errors. Got %d", len(errs))
+
+	assert.Equal(t, float64(10), bidResponse.Bids[0].Bid.Price,
+		"Expected Price 10. Got: %s", bidResponse.Bids[0].Bid.Price)
+}
+
+func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 320,
+					H: 50,
+				}},
+			},
+			Ext: json.RawMessage(`{"bidder": {
+				"accountId": 2763,
+				"siteId": 68780,
+				"zoneId": 327642,
+				"debug": {
+					"cpmoverride" : 20 
+				}
+			}}`),
+		}},
+		Ext: json.RawMessage(`{"prebid": {
+			"bidders": {
+				"rubicon": {
+					"debug": {
+						"cpmoverride": 10
+			}}}}}`),
+	}
+
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     "test-uri",
+		Body:    requestJson,
+		Headers: nil,
+	}
+
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"test-request-id","seatbid":[{"bid":[{"id":"1234567890","impid":"test-imp-id","price": 2,"crid":"4122982","adm":"some ad","h": 50,"w": 320,"ext":{"bidder":{"rp":{"targeting": {"key": "rpfl_2763", "values":["43_tier0100"]},"mime": "text/html","size_id": 43}}}}]}]}`),
+	}
+
+	bidder := new(RubiconAdapter)
+	bidResponse, errs := bidder.MakeBids(request, reqData, httpResp)
+
+	assert.Empty(t, errs, "Expected 0 errors. Got %d", len(errs))
+
+	assert.Equal(t, float64(20), bidResponse.Bids[0].Bid.Price,
+		"Expected Price 20. Got: %s", bidResponse.Bids[0].Bid.Price)
 }
 
 func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
