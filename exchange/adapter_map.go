@@ -189,8 +189,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	}
 
 	// Wrap For Exchange
-	// - The exchange.go code uses its own adapter interface to abstract away the differences between
-	//   the OpenRTB vs Legacy PBS request models.
+	// - The exchange.go code uses its own interface to abstract the differences between the OpenRTB vs Legacy PBS request models.
 	biddersForExchange := wrapForExchange(bidders, client, cfg, me)
 
 	// Add In Legacy Bidders

@@ -238,16 +238,19 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 
 	exchanges = newExchangeMap(cfg)
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
-	theExchange := exchange.NewExchange(generalHttpClient, cacheClient, cfg, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor)
+
+	theExchange, errs := exchange.NewExchange(generalHttpClient, cacheClient, cfg, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor)
+	if errs != nil {
+		// glog
+		// return
+	}
 
 	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, accounts, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap)
-
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
 	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, accounts, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap)
-
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}

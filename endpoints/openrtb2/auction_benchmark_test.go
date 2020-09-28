@@ -70,16 +70,18 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		return
 	}
 
+	exchange, _ := exchange.NewExchange(
+		server.Client(),
+		nil,
+		&config.Configuration{},
+		theMetrics,
+		infos,
+		gdpr.AlwaysAllow{},
+		currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+	)
+
 	endpoint, _ := NewEndpoint(
-		exchange.NewExchange(
-			server.Client(),
-			nil,
-			&config.Configuration{},
-			theMetrics,
-			infos,
-			gdpr.AlwaysAllow{},
-			currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
-		),
+		exchange,
 		paramValidator,
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},

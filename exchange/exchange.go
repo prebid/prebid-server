@@ -77,7 +77,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) (Exchange, []error) {
 	e := new(exchange)
 
 	e.eeaCountries = make(map[string]struct{}, len(cfg.GDPR.EEACountries))
@@ -85,7 +85,13 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	for _, c := range cfg.GDPR.EEACountries {
 		e.eeaCountries[c] = s
 	}
-	e.adapterMap = newAdapterMap(client, cfg, infos, metricsEngine)
+
+	var adapterMapErrs []error
+	e.adapterMap, adapterMapErrs = newAdapterMap(client, cfg, infos, metricsEngine)
+	if adapterMapErrs != nil {
+		return nil, adapterMapErrs
+	}
+
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
 	e.me = metricsEngine
@@ -97,7 +103,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 		GDPR: cfg.GDPR,
 		LMT:  cfg.LMT,
 	}
-	return e
+	return e, nil
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {
