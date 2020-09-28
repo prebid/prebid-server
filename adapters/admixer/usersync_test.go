@@ -1,12 +1,13 @@
 package admixer
 
 import (
+	"testing"
+	"text/template"
+
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"text/template"
 )
 
 func TestAdmixerSyncer(t *testing.T) {
@@ -22,7 +23,7 @@ func TestAdmixerSyncer(t *testing.T) {
 			Consent: "B",
 		},
 		CCPA: ccpa.Policy{
-			Value: "C",
+			Consent: "C",
 		},
 	})
 

@@ -1,0 +1,170 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-banner-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "siteId": 123456,
+              "networkId": 123456
+            }
+          }
+        },
+        {
+            "id": "test-banner-imp-id2",
+            "banner": {
+              "format": [
+                {
+                  "w": 300,
+                  "h": 600
+                }
+              ]
+            },
+            "ext": {
+              "bidder": {
+                "siteId": 123456,
+                "networkId": 123456
+              }
+            }
+          }
+      ],
+      "site": {
+        "domain": "connectad.io",
+        "page": "https://connectad.io/"
+      },
+      "device": {
+        "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
+        "ip": "111.111.111.111",
+        "dnt": 1
+      }
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://bidder.connectad.io/API?src=pbs",
+          "headers": {
+            "Accept": [
+              "application/json"
+            ],
+            "Content-Type": [
+              "application/json;charset=utf-8"
+            ],
+            "X-Forwarded-For": [
+              "111.111.111.111"
+            ],
+            "Dnt": [
+              "1"
+            ],
+            "User-Agent": [
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+            ]
+          },
+          "body": {
+            "id": "test-request-id",
+            "imp": [
+              {
+                "id": "test-banner-imp-id",
+                "banner": {
+                  "w": 300,
+                  "h": 250
+                },
+                "tagid": "123456",
+                "secure": 1
+              },
+              {
+                "id": "test-banner-imp-id2",
+                "banner": {
+                  "w": 300,
+                  "h": 600
+                },
+                "tagid": "123456",
+                "secure": 1
+              }
+            ],
+            "site": {
+              "domain": "connectad.io",
+              "page": "https://connectad.io/"
+            },
+            "device": {
+              "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
+              "ip": "111.111.111.111",
+              "dnt": 1
+            }
+          }
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "test-request-id",
+            "seatbid": [
+              {
+                "seat": "connectad",
+                "bid": [
+                  {
+                    "id": "ea50b7476f8014fc84fb052c7cac39bb8da4101d",
+                    "impid": "test-banner-imp-id",
+                    "price": 20,
+                    "adm": "test-adm",
+                    "crid": "6645x",
+                    "h": 250,
+                    "w": 300
+                  },
+                  {
+                    "id": "ea50b7476f8014fc84fb052c7cac39bb8da4101e",
+                    "impid": "test-banner-imp-id2",
+                    "price": 20,
+                    "adm": "test-adm",
+                    "crid": "6646x",
+                    "h": 600,
+                    "w": 300
+                  }
+                ]
+              }
+            ],
+            "cur": "USD"
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "ea50b7476f8014fc84fb052c7cac39bb8da4101d",
+              "impid": "test-banner-imp-id",
+              "price": 20,
+              "adm": "test-adm",
+              "crid": "6645x",
+              "w": 300,
+              "h": 250
+            },
+            "type": "banner"
+          },
+          {
+            "bid": {
+              "id": "ea50b7476f8014fc84fb052c7cac39bb8da4101e",
+              "impid": "test-banner-imp-id2",
+              "price": 20,
+              "adm": "test-adm",
+              "crid": "6646x",
+              "w": 300,
+              "h": 600
+            },
+            "type": "banner"
+          }
+        ]
+      }
+    ]
+  }
+  
