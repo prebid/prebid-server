@@ -24,7 +24,7 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/privacy"
-	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
+	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -190,7 +190,7 @@ func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLab
 	}
 }
 
-func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprPrivacyPolicy gdprPolicy.Policy) bool {
+func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprPrivacyPolicy gdprPrivacy.Policy) bool {
 	switch gdprPrivacyPolicy.Signal {
 	case "0":
 		return true
@@ -511,7 +511,7 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 	if uid == "" {
 		bidder.NoCookie = true
 		privacyPolicies := privacy.Policies{
-			GDPR: gdprPolicy.Policy{
+			GDPR: gdprPrivacy.Policy{
 				Signal:  req.ParseGDPR(),
 				Consent: req.ParseConsent(),
 			},

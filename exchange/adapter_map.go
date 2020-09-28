@@ -30,7 +30,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/avocet"
 	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/beintoo"
+	"github.com/prebid/prebid-server/adapters/between"
 	"github.com/prebid/prebid-server/adapters/brightroll"
+	"github.com/prebid/prebid-server/adapters/colossus"
+	"github.com/prebid/prebid-server/adapters/connectad"
 	"github.com/prebid/prebid-server/adapters/consumable"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/cpmstar"
@@ -44,6 +47,8 @@ import (
 	"github.com/prebid/prebid-server/adapters/grid"
 	"github.com/prebid/prebid-server/adapters/gumgum"
 	"github.com/prebid/prebid-server/adapters/improvedigital"
+	"github.com/prebid/prebid-server/adapters/inmobi"
+	"github.com/prebid/prebid-server/adapters/invibes"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/kidoz"
 	"github.com/prebid/prebid-server/adapters/kubient"
@@ -121,6 +126,7 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBrightroll:       brightroll.Builder,
 		openrtb_ext.BidderConsumable:       consumable.Builder,
 		openrtb_ext.BidderCpmstar:          cpmstar.Builder,
+		openrtb_ext.BidderConversant: conversant.Builder,
 		openrtb_ext.BidderDatablocks:       datablocks.Builder,
 		openrtb_ext.BidderDmx:              dmx.Builder,
 		openrtb_ext.BidderEmxDigital:       emx_digital.Builder,
@@ -171,6 +177,11 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldmo:          yieldmo.Builder,
 		openrtb_ext.BidderYieldone:         yieldone.Builder,
 		openrtb_ext.BidderZeroClickFraud:   zeroclickfraud.Builder,
+		//between
+		//colossus
+		//connectted
+		//inmobi
+		//invibes
 	}
 }
 
@@ -235,12 +246,6 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 
 func buildLegacyBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
 	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 4)
-
-	// Conversant
-	if infos[string(openrtb_ext.BidderConversant)].Status == adapters.StatusActive {
-		adapter := conversant.NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderConversant)].Endpoint)
-		bidders[openrtb_ext.BidderConversant] = adaptLegacyAdapter(adapter)
-	}
 
 	// Index
 	if infos[string(openrtb_ext.BidderIx)].Status == adapters.StatusActive {

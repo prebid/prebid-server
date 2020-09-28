@@ -5,6 +5,10 @@ import (
 	"errors"
 )
 
+// FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
+// for first party data support.
+const FirstPartyDataContextExtKey string = "context"
+
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
 	Prebid ExtRequestPrebid `json:"prebid"`
@@ -20,6 +24,11 @@ type ExtRequestPrebid struct {
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
+
+	// NoSale specifies bidders with whom the publisher has a legal relationship where the
+	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
+	// The array may contain a single sstar ('*') entry to represent all bidders.
+	NoSale []string `json:"nosale,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains
@@ -75,10 +84,14 @@ func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 }
 
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids
-type ExtRequestPrebidCacheBids struct{}
+type ExtRequestPrebidCacheBids struct {
+	ReturnCreative *bool `json:"returnCreative"`
+}
 
 // ExtRequestPrebidCacheVAST defines the contract for bidrequest.ext.prebid.cache.vastxml
-type ExtRequestPrebidCacheVAST struct{}
+type ExtRequestPrebidCacheVAST struct {
+	ReturnCreative *bool `json:"returnCreative"`
+}
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {

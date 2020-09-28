@@ -387,11 +387,12 @@ func TestShouldUsersync(t *testing.T) {
 			},
 			metricsEngine: nil,
 		}
-		privacyPolicy := gdprPolicy.Policy{
+		gdprPrivacyPolicy := gdprPolicy.Policy{
 			Signal:  gdprApplies,
 			Consent: consent,
 		}
-		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, privacyPolicy)
+
+		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprPrivacyPolicy)
 		if allowSyncs != expectAllow {
 			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
 		}

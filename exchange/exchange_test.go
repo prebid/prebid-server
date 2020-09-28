@@ -129,7 +129,7 @@ func TestCharacterEscape(t *testing.T) {
 	var errList []error
 
 	/* 	4) Build bid response 									*/
-	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, errList)
+	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, errList)
 
 	/* 	5) Assert we have no errors and one '&' character as we are supposed to 	*/
 	if err != nil {
@@ -274,6 +274,193 @@ func TestDebugBehaviour(t *testing.T) {
 	}
 }
 
+func TestReturnCreativeEndToEnd(t *testing.T) {
+	sampleAd := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST ...></VAST>"
+
+	// Define test cases
+	type aTest struct {
+		desc   string
+		inExt  json.RawMessage
+		outAdM string
+	}
+	testGroups := []struct {
+		groupDesc   string
+		testCases   []aTest
+		expectError bool
+	}{
+		{
+			groupDesc: "Invalid or malformed bidRequest Ext, expect error in these scenarios",
+			testCases: []aTest{
+				{
+					desc:  "Malformed ext in bidRequest",
+					inExt: json.RawMessage(`malformed`),
+				},
+				{
+					desc:  "empty cache field",
+					inExt: json.RawMessage(`{"prebid":{"cache":{}}}`),
+				},
+			},
+			expectError: true,
+		},
+		{
+			groupDesc: "Valid bidRequest Ext but no returnCreative value specified, default to returning creative",
+			testCases: []aTest{
+				{
+					"Nil ext in bidRequest",
+					nil,
+					sampleAd,
+				},
+				{
+					"empty ext",
+					json.RawMessage(``),
+					sampleAd,
+				},
+				{
+					"bids doesn't come with returnCreative value",
+					json.RawMessage(`{"prebid":{"cache":{"bids":{}}}}`),
+					sampleAd,
+				},
+				{
+					"vast doesn't come with returnCreative value",
+					json.RawMessage(`{"prebid":{"cache":{"vastXml":{}}}}`),
+					sampleAd,
+				},
+			},
+		},
+		{
+			groupDesc: "Bids field comes with returnCreative value",
+			testCases: []aTest{
+				{
+					"Bids returnCreative set to true, return ad markup in response",
+					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":true}}}}`),
+					sampleAd,
+				},
+				{
+					"Bids returnCreative set to false, don't return ad markup in response",
+					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":false}}}}`),
+					"",
+				},
+			},
+		},
+		{
+			groupDesc: "Vast field comes with returnCreative value",
+			testCases: []aTest{
+				{
+					"Vast returnCreative set to true, return ad markup in response",
+					json.RawMessage(`{"prebid":{"cache":{"vastXml":{"returnCreative":true}}}}`),
+					sampleAd,
+				},
+				{
+					"Vast returnCreative set to false, don't return ad markup in response",
+					json.RawMessage(`{"prebid":{"cache":{"vastXml":{"returnCreative":false}}}}`),
+					"",
+				},
+			},
+		},
+		{
+			groupDesc: "Both Bids and Vast come with their own returnCreative value",
+			testCases: []aTest{
+				{
+					"Both false, expect empty AdM",
+					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":false},"vastXml":{"returnCreative":false}}}}`),
+					"",
+				},
+				{
+					"Bids returnCreative is true, expect valid AdM",
+					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":true},"vastXml":{"returnCreative":false}}}}`),
+					sampleAd,
+				},
+				{
+					"Vast returnCreative is true, expect valid AdM",
+					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":false},"vastXml":{"returnCreative":true}}}}`),
+					sampleAd,
+				},
+				{
+					"Both field's returnCreative set to true, expect valid AdM",
+					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":true},"vastXml":{"returnCreative":true}}}}`),
+					sampleAd,
+				},
+			},
+		},
+	}
+
+	// Init an exchange to run an auction from
+	noBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
+	server := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer server.Close()
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb.Bid{AdM: sampleAd},
+				},
+			},
+		},
+	}
+
+	e := new(exchange)
+	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
+		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus),
+	}
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.DummyMetricsEngine{}
+	e.gDPR = gdpr.AlwaysAllow{}
+	e.currencyConverter = currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+	// Define mock incoming bid requeset
+	mockBidRequest := &openrtb.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb.Imp{{
+			ID:     "some-impression-id",
+			Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+		}},
+		Site: &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+	}
+
+	// Run tests
+	for _, testGroup := range testGroups {
+		for _, test := range testGroup.testCases {
+			mockBidRequest.Ext = test.inExt
+
+			// Run test
+			outBidResponse, err := e.HoldAuction(context.Background(), mockBidRequest, &emptyUsersync{}, pbsmetrics.Labels{}, &config.Account{}, &categoriesFetcher, nil)
+
+			// Assert return error, if any
+			if testGroup.expectError {
+				assert.Errorf(t, err, "HoldAuction expected to throw error for: %s - %s. \n", testGroup.groupDesc, test.desc)
+				continue
+			} else {
+				assert.NoErrorf(t, err, "%s: %s. HoldAuction error: %v \n", testGroup.groupDesc, test.desc, err)
+			}
+
+			// Assert returned bid
+			if !assert.NotNil(t, outBidResponse, "%s: %s. outBidResponse is nil \n", testGroup.groupDesc, test.desc) {
+				return
+			}
+			if !assert.NotEmpty(t, outBidResponse.SeatBid, "%s: %s. outBidResponse.SeatBid is empty \n", testGroup.groupDesc, test.desc) {
+				return
+			}
+			if !assert.NotEmpty(t, outBidResponse.SeatBid[0].Bid, "%s: %s. outBidResponse.SeatBid[0].Bid is empty \n", testGroup.groupDesc, test.desc) {
+				return
+			}
+			assert.Equal(t, test.outAdM, outBidResponse.SeatBid[0].Bid[0].AdM, "Ad markup string doesn't match in: %s - %s \n", testGroup.groupDesc, test.desc)
+		}
+	}
+}
+
 func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	testUUID := "CACHE_UUID_1234"
 	testExternalCacheScheme := "https"
@@ -412,7 +599,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	var errList []error
 
 	/* 	4) Build bid response 									*/
-	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, errList)
+	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, errList)
 
 	/* 	5) Assert we have no errors and the bid response we expected*/
 	assert.NoError(t, err, "[TestGetBidCacheInfo] buildBidResponse() threw an error")
@@ -438,7 +625,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 
 	assert.Equal(t, expCacheUUID, cacheUUID, "[TestGetBidCacheInfo] cacheId field in ext should equal \"%s\" \n", expCacheUUID)
 
-	// compare cache UUID
+	// compare cache URL
 	expCacheURL, err := jsonparser.GetString(expectedBidResponse.SeatBid[0].Bid[0].Ext, "prebid", "cache", "bids", "url")
 	assert.NoErrorf(t, err, "[TestGetBidCacheInfo] Error found while trying to json parse the url field from expected build response. Message: %v \n", err)
 
@@ -446,6 +633,69 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	assert.NoErrorf(t, err, "[TestGetBidCacheInfo] Error found while trying to json parse the url field from actual build response. Message: %v \n", err)
 
 	assert.Equal(t, expCacheURL, cacheURL, "[TestGetBidCacheInfo] cacheId field in ext should equal \"%s\" \n", expCacheURL)
+}
+
+func TestBidReturnsCreative(t *testing.T) {
+	sampleAd := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST ...></VAST>"
+	sampleOpenrtbBid := &openrtb.Bid{ID: "some-bid-id", AdM: sampleAd}
+
+	// Define test cases
+	testCases := []struct {
+		description            string
+		inReturnCreative       bool
+		expectedCreativeMarkup string
+	}{
+		{
+			"returnCreative set to true, expect a full creative markup string in returned bid",
+			true,
+			sampleAd,
+		},
+		{
+			"returnCreative set to false, expect empty creative markup string in returned bid",
+			false,
+			"",
+		},
+	}
+
+	// Test set up
+	sampleBids := []*pbsOrtbBid{
+		{
+			bid:        sampleOpenrtbBid,
+			bidType:    openrtb_ext.BidTypeBanner,
+			bidTargets: map[string]string{},
+		},
+	}
+	sampleAuction := &auction{cacheIds: map[*openrtb.Bid]string{sampleOpenrtbBid: "CACHE_UUID_1234"}}
+
+	noBidHandler := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
+	server := httptest.NewServer(http.HandlerFunc(noBidHandler))
+	defer server.Close()
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: &adapters.BidderResponse{},
+	}
+	e := new(exchange)
+	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
+		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus),
+	}
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.DummyMetricsEngine{}
+	e.gDPR = gdpr.AlwaysAllow{}
+	e.currencyConverter = currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+	//Run tests
+	for _, test := range testCases {
+		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, test.inReturnCreative)
+
+		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
+		assert.Equal(t, test.expectedCreativeMarkup, resultingBids[0].AdM, "%s. Ad markup string doesn't match expected \n", test.description)
+	}
 }
 
 func TestGetBidCacheInfo(t *testing.T) {
@@ -707,7 +957,7 @@ func TestBidResponseCurrency(t *testing.T) {
 
 	// Run tests
 	for i := range testCases {
-		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, nil, errList)
+		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, nil, true, errList)
 		assert.NoError(t, err, fmt.Sprintf("[TEST_FAILED] e.buildBidResponse resturns error in test: %s Error message: %s \n", testCases[i].description, err))
 		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}

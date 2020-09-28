@@ -22,6 +22,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/mxmCherry/openrtb/native"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -156,7 +157,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	// Look up account now that we have resolved the pubID value
-	account, acctIDErrs := deps.getAccount(ctx, labels.PubID)
+	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID)
 	if len(acctIDErrs) > 0 {
 		errL = append(errL, acctIDErrs...)
 		writeError(errL, w, &labels)
@@ -317,39 +318,36 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
-		errL = append(errL, errors.New("request.site or request.app must be defined, but not both."))
-		return errL
+		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
 	if err := deps.validateSite(req.Site); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
 	if err := deps.validateApp(req.App); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
 	if err := validateUser(req.User, aliases); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
 	if err := validateRegs(req.Regs); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
-	if policy, err := ccpa.ReadPolicy(req); err != nil {
-		errL = append(errL, errL...)
-		return errL
-	} else if err := policy.Validate(); err != nil {
-		errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
-
-		policy.Value = ""
-		if err := policy.Write(req); err != nil {
-			errL = append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
+	if ccpaPolicy, err := ccpa.ReadFromRequest(req); err != nil {
+		return append(errL, err)
+	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
+		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
+			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
+			consentWriter := ccpa.ConsentWriter{""}
+			if err := consentWriter.Write(req); err != nil {
+				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
+			}
+		} else {
+			return append(errL, err)
 		}
 	}
 
@@ -765,8 +763,8 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	}
 
 	// Also accept bidder exts within imp[...].ext.prebid.bidder
-	// NOTE: This is not part of the official API, we are not expecting clients
-	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
+	// NOTE: This is not part of the official API yet, so we are not expecting clients
+	// to migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
 	// at this time
 	// https://github.com/prebid/prebid-server/pull/846#issuecomment-476352224
 	if rawPrebidExt, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
@@ -785,7 +783,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
 	for bidder, ext := range bidderExts {
-		if bidder != openrtb_ext.PrebidExtKey {
+		if isBidderToValidate(bidder) {
 			coreBidder := bidder
 			if tmp, isAlias := aliases[bidder]; isAlias {
 				coreBidder = tmp
@@ -820,10 +818,18 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	// TODO #713 Fix this here
 	if len(bidderExts) < 1 {
 		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
-		return errL
 	}
 
 	return errL
+}
+
+func isBidderToValidate(bidder string) bool {
+	// PrebidExtKey is a special case for the prebid config section and is not considered a bidder.
+
+	// FirstPartyDataContextExtKey is a special case for the first party data context section
+	// and is not considered a bidder.
+
+	return bidder != openrtb_ext.PrebidExtKey && bidder != openrtb_ext.FirstPartyDataContextExtKey
 }
 
 func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequest, error) {
@@ -1308,57 +1314,4 @@ func getAccountID(pub *openrtb.Publisher) string {
 		}
 	}
 	return pbsmetrics.PublisherUnknown
-}
-
-func (deps *endpointDeps) getAccount(ctx context.Context, pubID string) (account *config.Account, errs []error) {
-	// Check BlacklistedAcctMap until we have deprecated it
-	if _, found := deps.cfg.BlacklistedAcctMap[pubID]; found {
-		return nil, []error{&errortypes.BlacklistedAcct{
-			Message: fmt.Sprintf("Prebid-server has disabled Account ID: %s, please reach out to the prebid server host.", pubID),
-		}}
-	}
-	if deps.cfg.AccountRequired && pubID == pbsmetrics.PublisherUnknown {
-		return nil, []error{&errortypes.AcctRequired{
-			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
-		}}
-	}
-	if accountJSON, accErrs := deps.accounts.FetchAccount(ctx, pubID); len(accErrs) > 0 || accountJSON == nil {
-		// pubID does not reference a valid account
-		if len(accErrs) > 0 {
-			errs = append(errs, errs...)
-		}
-		if deps.cfg.AccountRequired && deps.cfg.AccountDefaults.Disabled {
-			errs = append(errs, &errortypes.AcctRequired{
-				Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
-			})
-			return nil, errs
-		}
-		// Make a copy of AccountDefaults instead of taking a reference,
-		// to preserve original pubID in case is needed to check NonStandardPublisherMap
-		pubAccount := deps.cfg.AccountDefaults
-		pubAccount.ID = pubID
-		account = &pubAccount
-	} else {
-		// pubID resolved to a valid account, merge with AccountDefaults for a complete config
-		account = &config.Account{}
-		completeJSON, err := jsonpatch.MergePatch(deps.cfg.AccountDefaultsJSON(), accountJSON)
-		if err == nil {
-			err = json.Unmarshal(completeJSON, account)
-		}
-		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
-		}
-		// Fill in ID if needed, so it can be left out of account definition
-		if len(account.ID) == 0 {
-			account.ID = pubID
-		}
-	}
-	if account.Disabled {
-		errs = append(errs, &errortypes.BlacklistedAcct{
-			Message: fmt.Sprintf("Prebid-server has disabled Account ID: %s, please reach out to the prebid server host.", pubID),
-		})
-		return nil, errs
-	}
-	return
 }

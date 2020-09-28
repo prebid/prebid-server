@@ -19,6 +19,8 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 )
 
+const unknownBidder string = ""
+
 func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
@@ -65,31 +67,32 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	requestsByBidder, errs = splitBidRequest(orig, requestExt, impsByBidder, aliases, usersyncs, blables, labels)
 
+	if len(requestsByBidder) == 0 {
+		return
+	}
+
 	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
 	consent := extractConsent(orig)
 	ampGDPRException := (labels.RType == pbsmetrics.ReqTypeAMP) && gDPR.AMPException()
 
-	var ccpaPolicy ccpa.Policy
-	if privacyConfig.CCPA.Enforce {
-		ccpaPolicy, _ = ccpa.ReadPolicy(orig)
+	ccpaEnforcer, err := extractCCPA(orig, privacyConfig, aliases)
+	if err != nil {
+		errs = append(errs, err)
+		return
 	}
 
-	var lmtPolicy lmt.Policy
-	if privacyConfig.LMT.Enforce {
-		lmtPolicy = lmt.ReadPolicy(orig)
-	}
+	lmtEnforcer := extractLMT(orig, privacyConfig)
 
 	// request level privacy policies
 	privacyEnforcement := privacy.Enforcement{
-		CCPA:  ccpaPolicy.ShouldEnforce(),
 		COPPA: orig.Regs != nil && orig.Regs.COPPA == 1,
-		LMT:   lmtPolicy.ShouldEnforce(),
+		LMT:   lmtEnforcer.ShouldEnforce(unknownBidder),
 	}
 
-	privacyLabels.CCPAProvided = ccpaPolicy.Value != ""
-	privacyLabels.CCPAEnforced = privacyEnforcement.CCPA
+	privacyLabels.CCPAProvided = ccpaEnforcer.CanEnforce()
+	privacyLabels.CCPAEnforced = ccpaEnforcer.ShouldEnforce(unknownBidder)
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
-	privacyLabels.LMTEnforced = privacyEnforcement.LMT
+	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
 	if gdpr == 1 {
 		privacyLabels.GDPREnforced = true
@@ -102,17 +105,18 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	// bidder level privacy policies
 	for bidder, bidReq := range requestsByBidder {
+		// CCPA
+		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidder.String())
 
+		// GDPR
 		if gdpr == 1 {
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
 			var publisherID = labels.PubID
-			ok, geo, id, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent)
-			privacyEnforcement.GDPR = !ok && err == nil
+			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent)
 			privacyEnforcement.GDPRGeo = !geo && err == nil
 			privacyEnforcement.GDPRID = !id && err == nil
 		} else {
-			privacyEnforcement.GDPR = false
 			privacyEnforcement.GDPRGeo = false
 			privacyEnforcement.GDPRID = false
 		}
@@ -121,6 +125,32 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	return
+}
+
+func extractCCPA(orig *openrtb.BidRequest, privacyConfig config.Privacy, aliases map[string]string) (privacy.PolicyEnforcer, error) {
+	ccpaPolicy, err := ccpa.ReadFromRequest(orig)
+	if err != nil {
+		return privacy.NilPolicyEnforcer{}, err
+	}
+
+	validBidders := GetValidBidders(aliases)
+	ccpaParsedPolicy, err := ccpaPolicy.Parse(validBidders)
+	if err != nil {
+		return privacy.NilPolicyEnforcer{}, err
+	}
+
+	ccpaEnforcer := privacy.EnabledPolicyEnforcer{
+		Enabled:        privacyConfig.CCPA.Enforce,
+		PolicyEnforcer: ccpaParsedPolicy,
+	}
+	return ccpaEnforcer, nil
+}
+
+func extractLMT(orig *openrtb.BidRequest, privacyConfig config.Privacy) privacy.PolicyEnforcer {
+	return privacy.EnabledPolicyEnforcer{
+		Enabled:        privacyConfig.LMT.Enforce,
+		PolicyEnforcer: lmt.ReadFromRequest(orig),
+	}
 }
 
 func splitBidRequest(req *openrtb.BidRequest,
@@ -273,13 +303,18 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
 		imp := imps[i]
 		impExt := impExts[i]
 
+		var firstPartyDataContext json.RawMessage
+		if context, exists := impExt[openrtb_ext.FirstPartyDataContextExtKey]; exists {
+			firstPartyDataContext = context
+		}
+
 		rawPrebidExt, ok := impExt[openrtb_ext.PrebidExtKey]
 
 		if ok {
 			var prebidExt openrtb_ext.ExtImpPrebid
 
 			if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil && prebidExt.Bidder != nil {
-				if errs := sanitizedImpCopy(&imp, prebidExt.Bidder, rawPrebidExt, &splitImps); errs != nil {
+				if errs := sanitizedImpCopy(&imp, prebidExt.Bidder, rawPrebidExt, firstPartyDataContext, &splitImps); errs != nil {
 					errList = append(errList, errs...)
 				}
 
@@ -287,7 +322,7 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
 			}
 		}
 
-		if errs := sanitizedImpCopy(&imp, impExt, rawPrebidExt, &splitImps); errs != nil {
+		if errs := sanitizedImpCopy(&imp, impExt, rawPrebidExt, firstPartyDataContext, &splitImps); errs != nil {
 			errList = append(errList, errs...)
 		}
 	}
@@ -295,40 +330,47 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
 	return splitImps, nil
 }
 
-// sanitizedImpCopy returns a copy of imp with its ext filtered so that only "prebid" and bidder params exist.
+// sanitizedImpCopy returns a copy of imp with its ext filtered so that only "prebid", "context", and bidder params exist.
 // It will not mutate the input imp.
 // This function will write the new imps to the output map passed in
 func sanitizedImpCopy(imp *openrtb.Imp,
 	bidderExts map[string]json.RawMessage,
 	rawPrebidExt json.RawMessage,
+	firstPartyDataContext json.RawMessage,
 	out *map[string][]openrtb.Imp) []error {
 
 	var prebidExt map[string]json.RawMessage
 	var errs []error
 
-	// We don't want to include other demand partners' bidder params
-	// in the sanitized imp
 	if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil {
-		delete(prebidExt, "bidder")
+		// Remove the entire bidder field. We will already have the content we need in bidderExts. We
+		// don't want to include other demand partners' bidder params in the sanitized imp.
+		if _, hasBidderField := prebidExt["bidder"]; hasBidderField {
+			delete(prebidExt, "bidder")
 
-		var err error
-		if rawPrebidExt, err = json.Marshal(prebidExt); err != nil {
-			errs = append(errs, err)
+			var err error
+			if rawPrebidExt, err = json.Marshal(prebidExt); err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
 
 	for bidder, ext := range bidderExts {
-		if bidder == openrtb_ext.PrebidExtKey {
+		if bidder == openrtb_ext.PrebidExtKey || bidder == openrtb_ext.FirstPartyDataContextExtKey {
 			continue
 		}
 
 		impCopy := *imp
-		newExt := make(map[string]json.RawMessage, 2)
+		newExt := make(map[string]json.RawMessage, 3)
 
 		newExt["bidder"] = ext
 
 		if rawPrebidExt != nil {
 			newExt[openrtb_ext.PrebidExtKey] = rawPrebidExt
+		}
+
+		if len(firstPartyDataContext) > 0 {
+			newExt[openrtb_ext.FirstPartyDataContextExtKey] = firstPartyDataContext
 		}
 
 		rawExt, err := json.Marshal(newExt)
@@ -392,7 +434,7 @@ func resolveBidder(bidder string, aliases map[string]string) openrtb_ext.BidderN
 }
 
 // parseImpExts does a partial-unmarshal of the imp[].Ext field.
-// The keys in the returned map are expected to be "prebid", core BidderNames, or Aliases for this request.
+// The keys in the returned map are expected to be "prebid", "context", core BidderNames, or Aliases for this request.
 func parseImpExts(imps []openrtb.Imp) ([]map[string]json.RawMessage, error) {
 	exts := make([]map[string]json.RawMessage, len(imps))
 	// Loop over every impression in the request
@@ -417,6 +459,20 @@ func parseAliases(orig *openrtb.BidRequest) (map[string]string, []error) {
 		return nil, []error{err}
 	}
 	return aliases, nil
+}
+
+func GetValidBidders(aliases map[string]string) map[string]struct{} {
+	validBidders := make(map[string]struct{})
+
+	for _, v := range openrtb_ext.BidderMap {
+		validBidders[v.String()] = struct{}{}
+	}
+
+	for k := range aliases {
+		validBidders[k] = struct{}{}
+	}
+
+	return validBidders
 }
 
 // Quick little randomizer for a list of strings. Stuffing it in utils to keep other files clean
@@ -446,15 +502,37 @@ func extractBidRequestExt(bidRequest *openrtb.BidRequest) (*openrtb_ext.ExtReque
 	return requestExt, nil
 }
 
-func getExtCacheInfo(requestExt *openrtb_ext.ExtRequest) (shouldCacheBids bool, shouldCacheVAST bool) {
+func getExtCacheInstructions(requestExt *openrtb_ext.ExtRequest) extCacheInstructions {
+	//returnCreative defaults to true
+	cacheInstructions := extCacheInstructions{returnCreative: true}
+	foundBidsRC := false
+	foundVastRC := false
+
 	if requestExt != nil && requestExt.Prebid.Cache != nil {
-		shouldCacheBids = requestExt.Prebid.Cache.Bids != nil
-		shouldCacheVAST = requestExt.Prebid.Cache.VastXML != nil
+		if requestExt.Prebid.Cache.Bids != nil {
+			cacheInstructions.cacheBids = true
+			if requestExt.Prebid.Cache.Bids.ReturnCreative != nil {
+				cacheInstructions.returnCreative = *requestExt.Prebid.Cache.Bids.ReturnCreative
+				foundBidsRC = true
+			}
+		}
+		if requestExt.Prebid.Cache.VastXML != nil {
+			cacheInstructions.cacheVAST = true
+			if requestExt.Prebid.Cache.VastXML.ReturnCreative != nil {
+				cacheInstructions.returnCreative = *requestExt.Prebid.Cache.VastXML.ReturnCreative
+				foundVastRC = true
+			}
+		}
 	}
-	return
+
+	if foundBidsRC && foundVastRC {
+		cacheInstructions.returnCreative = *requestExt.Prebid.Cache.Bids.ReturnCreative || *requestExt.Prebid.Cache.VastXML.ReturnCreative
+	}
+
+	return cacheInstructions
 }
 
-func getExtTargetData(requestExt *openrtb_ext.ExtRequest, shouldCacheBids bool, shouldCacheVAST bool) *targetData {
+func getExtTargetData(requestExt *openrtb_ext.ExtRequest, cacheInstructions *extCacheInstructions) *targetData {
 	var targData *targetData
 
 	if requestExt != nil && requestExt.Prebid.Targeting != nil {
@@ -462,8 +540,8 @@ func getExtTargetData(requestExt *openrtb_ext.ExtRequest, shouldCacheBids bool, 
 			priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
 			includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
 			includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
-			includeCacheBids:  shouldCacheBids,
-			includeCacheVast:  shouldCacheVAST,
+			includeCacheBids:  cacheInstructions.cacheBids,
+			includeCacheVast:  cacheInstructions.cacheVAST,
 			includeFormat:     requestExt.Prebid.Targeting.IncludeFormat,
 		}
 	}

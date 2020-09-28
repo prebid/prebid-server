@@ -34,6 +34,10 @@ type ContextKey string
 
 const DebugContextKey = ContextKey("debugInfo")
 
+type extCacheInstructions struct {
+	cacheBids, cacheVAST, returnCreative bool
+}
+
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
@@ -103,8 +107,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		return nil, err
 	}
 
-	shouldCacheBids, shouldCacheVAST := getExtCacheInfo(requestExt)
-	targData := getExtTargetData(requestExt, shouldCacheBids, shouldCacheVAST)
+	cacheInstructions := getExtCacheInstructions(requestExt)
+	targData := getExtTargetData(requestExt, &cacheInstructions)
 	if targData != nil {
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
@@ -155,7 +159,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
-	auctionCtx, cancel := e.makeAuctionContext(ctx, shouldCacheBids)
+	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids)
 	defer cancel()
 
 	// Get currency rates conversions for the auction
@@ -234,7 +238,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// Build the response
-	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, adapterExtra, auc, bidResponseExt, errs)
+	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, errs)
 }
 
 type DealTierInfo struct {
@@ -479,7 +483,7 @@ func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderError {
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, errList []error) (*openrtb.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, returnCreative bool, errList []error) (*openrtb.BidResponse, error) {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -494,7 +498,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	for _, a := range liveAdapters {
 		//while processing every single bib, do we need to handle categories here?
 		if adapterBids[a] != nil && len(adapterBids[a].bids) > 0 {
-			sb := e.makeSeatBid(adapterBids[a], a, adapterExtra, auc)
+			sb := e.makeSeatBid(adapterBids[a], a, adapterExtra, auc, returnCreative)
 			seatBids = append(seatBids, *sb)
 			bidResponse.Cur = adapterBids[a].currency
 		}
@@ -751,7 +755,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 
 // Return an openrtb seatBid for a bidder
 // BuildBidResponse is responsible for ensuring nil bid seatbids are not included
-func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction) *openrtb.SeatBid {
+func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, returnCreative bool) *openrtb.SeatBid {
 	seatBid := new(openrtb.SeatBid)
 	seatBid.Seat = adapter.String()
 	// Prebid cannot support roadblocking
@@ -774,7 +778,7 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	}
 
 	var errList []error
-	seatBid.Bid, errList = e.makeBid(adapterBid.bids, adapter, auc)
+	seatBid.Bid, errList = e.makeBid(adapterBid.bids, auc, returnCreative)
 	if len(errList) > 0 {
 		adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, errsToBidderErrors(errList)...)
 	}
@@ -783,7 +787,7 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 }
 
 // Create the Bid array inside of SeatBid
-func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName, auc *auction) ([]openrtb.Bid, []error) {
+func (e *exchange) makeBid(Bids []*pbsOrtbBid, auc *auction, returnCreative bool) ([]openrtb.Bid, []error) {
 	bids := make([]openrtb.Bid, 0, len(Bids))
 	errList := make([]error, 0, 1)
 	for _, thisBid := range Bids {
@@ -806,6 +810,9 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName, a
 		} else {
 			bids = append(bids, *thisBid.bid)
 			bids[len(bids)-1].Ext = ext
+			if !returnCreative {
+				bids[len(bids)-1].AdM = ""
+			}
 		}
 	}
 	return bids, errList

@@ -16,6 +16,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
+	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -23,6 +24,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -158,7 +161,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	labels.PubID = getAccountID(req.Site.Publisher)
 	// Look up account now that we have resolved the pubID value
-	account, acctIDErrs := deps.getAccount(ctx, labels.PubID)
+	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID)
 	if len(acctIDErrs) > 0 {
 		errL = append(errL, acctIDErrs...)
 		httpStatus := http.StatusBadRequest
@@ -402,17 +405,12 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		req.Imp[0].TagID = slot
 	}
 
-	consent := readConsent(httpRequest.URL)
-	if consent != "" {
-		if policies, ok := privacy.ReadPoliciesFromConsent(consent); ok {
-			if err := policies.Write(req); err != nil {
-				return []error{err}
-			}
-		} else {
-			return []error{&errortypes.InvalidPrivacyConsent{
-				Message: fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF.", consent),
-			}}
-		}
+	policyWriter, policyWriterErr := readPolicyFromUrl(httpRequest.URL)
+	if policyWriterErr != nil {
+		return []error{policyWriterErr}
+	}
+	if err := policyWriter.Write(req); err != nil {
+		return []error{err}
 	}
 
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
@@ -557,7 +555,27 @@ func setAmpExt(site *openrtb.Site, value string) {
 	}
 }
 
-func readConsent(url *url.URL) string {
+func readPolicyFromUrl(url *url.URL) (privacy.PolicyWriter, error) {
+	consent := readConsentFromURL(url)
+
+	if len(consent) == 0 {
+		return privacy.NilPolicyWriter{}, nil
+	}
+
+	if gdpr.ValidateConsent(consent) {
+		return gdpr.ConsentWriter{consent}, nil
+	}
+
+	if ccpa.ValidateConsent(consent) {
+		return ccpa.ConsentWriter{consent}, nil
+	}
+
+	return privacy.NilPolicyWriter{}, &errortypes.InvalidPrivacyConsent{
+		Message: fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF.", consent),
+	}
+}
+
+func readConsentFromURL(url *url.URL) string {
 	if v := url.Query().Get("consent_string"); v != "" {
 		return v
 	}
