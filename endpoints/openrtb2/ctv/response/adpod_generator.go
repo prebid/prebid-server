@@ -32,6 +32,7 @@ type highestCombination struct {
 	domainScore   map[string]int
 	filteredBids  map[string]*filteredBid
 	timeTaken     time.Duration
+	nDealBids     int
 }
 
 //AdPodGenerator AdPodGenerator
@@ -146,7 +147,7 @@ func (o *AdPodGenerator) getMaxAdPodBid(results []*highestCombination) *types.Ad
 			}
 		}
 
-		if len(result.bidIDs) > 0 && (nil == maxResult || maxResult.price < result.price) {
+		if len(result.bidIDs) > 0 && (nil == maxResult || maxResult.nDealBids < result.nDealBids || maxResult.price < result.price) {
 			maxResult = result
 		}
 	}
@@ -228,7 +229,7 @@ func findUniqueCombinations(data [][]*types.Bid, combination []int, maxCategoryS
 
 		ehc, inext, jnext, rc = evaluate(data[:], indices[:], totalBids, maxCategoryScore, maxDomainScore)
 		if nil != ehc {
-			if nil == hc || hc.price < ehc.price {
+			if nil == hc || hc.nDealBids < ehc.nDealBids || hc.price < ehc.price {
 				hc = ehc
 			} else {
 				// if you see current combination price lower than the highest one then break the loop
@@ -305,6 +306,7 @@ func evaluate(bids [][]*types.Bid, indices [][]int, totalBids int, maxCategorySc
 		price:         0,
 		categoryScore: make(map[string]int),
 		domainScore:   make(map[string]int),
+		nDealBids:     0,
 	}
 	pos := 0
 
@@ -315,6 +317,11 @@ func evaluate(bids [][]*types.Bid, indices [][]int, totalBids int, maxCategorySc
 			hbc.bids[pos] = bid
 			hbc.bidIDs[pos] = bid.ID
 			pos++
+
+			//nDealBids
+			if bid.DealTierSatisfied {
+				hbc.nDealBids++
+			}
 
 			//Price
 			hbc.price = hbc.price + bid.Price
