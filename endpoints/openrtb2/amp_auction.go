@@ -144,6 +144,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	ao.Request = req
+
 	ctx := context.Background()
 	var cancel context.CancelFunc
 	if req.TMax > 0 {
