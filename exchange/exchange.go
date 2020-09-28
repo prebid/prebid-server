@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net/http"
 	"net/url"
 	"runtime/debug"
 	"sort"
@@ -77,8 +76,21 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) (Exchange, []error) {
-	e := new(exchange)
+func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) Exchange {
+	e := &exchange{
+		adapterMap:          adapters,
+		cache:               cache,
+		cacheTime:           time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
+		currencyConverter:   currencyConverter,
+		gDPR:                gDPR,
+		me:                  metricsEngine,
+		UsersyncIfAmbiguous: cfg.GDPR.UsersyncIfAmbiguous,
+		privacyConfig: config.Privacy{
+			CCPA: cfg.CCPA,
+			GDPR: cfg.GDPR,
+			LMT:  cfg.LMT,
+		},
+	}
 
 	e.eeaCountries = make(map[string]struct{}, len(cfg.GDPR.EEACountries))
 	var s struct{}
@@ -86,24 +98,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 		e.eeaCountries[c] = s
 	}
 
-	var adapterMapErrs []error
-	e.adapterMap, adapterMapErrs = newAdapterMap(client, cfg, infos, metricsEngine)
-	if adapterMapErrs != nil {
-		return nil, adapterMapErrs
-	}
-
-	e.cache = cache
-	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
-	e.me = metricsEngine
-	e.gDPR = gDPR
-	e.currencyConverter = currencyConverter
-	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
-	e.privacyConfig = config.Privacy{
-		CCPA: cfg.CCPA,
-		GDPR: cfg.GDPR,
-		LMT:  cfg.LMT,
-	}
-	return e, nil
+	return e
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {

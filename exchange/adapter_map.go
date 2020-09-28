@@ -180,28 +180,35 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 	}
 }
 
-func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
-	// Create Bidder Instances
-	// - The bidders will be wrapped with InfoAwareBidder to enforce allowed auction types.
+func NewAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+	exchangeBidders, errs := buildExchangeBidders(cfg, infos, client, me)
+	if len(errs) > 0 {
+		return nil, errs
+	}
+
+	exchangeBiddersLegacy := buildExchangeBiddersLegacy(cfg.Adapters, infos)
+	for bidderName, bidder := range exchangeBiddersLegacy {
+		exchangeBidders[bidderName] = bidder
+	}
+
+	wrapWithMiddleware(exchangeBidders)
+
+	return exchangeBidders, nil
+}
+
+func buildExchangeBidders(cfg *config.Configuration, infos adapters.BidderInfos, client *http.Client, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
 	bidders, errs := buildBidders(cfg.Adapters, infos)
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	// Wrap For Exchange
-	// - The exchange.go code uses its own interface to abstract the differences between the OpenRTB vs Legacy PBS request models.
-	biddersForExchange := wrapForExchange(bidders, client, cfg, me)
-
-	// Add In Legacy Bidders
-	// - Include bidders which only implement the Legacy PBS model. This will be removed "soon".
-	biddersLegacy := buildLegacyBiddersForExchange(cfg.Adapters, infos)
-	for bidderName, bidder := range biddersLegacy {
-		biddersForExchange[bidderName] = bidder
+	exchangeBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(bidders))
+	for bidderName, bidder := range bidders {
+		exchangeBidders[bidderName] = adaptBidder(bidder, client, cfg, me, bidderName)
 	}
 
-	wrapWithMiddleware(biddersForExchange)
+	return exchangeBidders, nil
 
-	return biddersForExchange, nil
 }
 
 func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
@@ -220,7 +227,7 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 		}
 
 		if info.Status != adapters.StatusActive {
-			// Bidder is disabled. Continue without building it.
+			// Bidder is disabled. Ingore it.
 			continue
 		}
 
@@ -244,15 +251,7 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 	return bidders, errs
 }
 
-func wrapForExchange(bidders map[openrtb_ext.BidderName]adapters.Bidder, client *http.Client, cfg *config.Configuration, me pbsmetrics.MetricsEngine) map[openrtb_ext.BidderName]adaptedBidder {
-	wrapped := make(map[openrtb_ext.BidderName]adaptedBidder, len(bidders))
-	for bidderName, bidder := range bidders {
-		wrapped[bidderName] = adaptBidder(bidder, client, cfg, me, bidderName)
-	}
-	return wrapped
-}
-
-func buildLegacyBiddersForExchange(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
+func buildExchangeBiddersLegacy(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
 	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 4)
 
 	// Index
@@ -282,18 +281,29 @@ func wrapWithMiddleware(bidders map[openrtb_ext.BidderName]adaptedBidder) {
 	}
 }
 
-// ActiveBidders returns all active bidders and adds entries to the disabledBidders map.
-func ActiveBidders(biddersInfo adapters.BidderInfos, disabledBidders map[string]string) (bidderMap map[string]openrtb_ext.BidderName) {
-	bidderMap = make(map[string]openrtb_ext.BidderName)
+// GetActiveBidders returns a hash set of all active bidder names.
+func GetActiveBidders(infos adapters.BidderInfos) map[string]struct{} {
+	activeBidders := make(map[string]struct{})
 
-	// Set up error messages for disabled bidders
-	for name, infos := range biddersInfo {
-		if infos.Status == adapters.StatusDisabled {
-			disabledBidders[name] = fmt.Sprintf("Bidder \"%s\" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.", name)
-		} else {
-			bidderMap[name] = openrtb_ext.BidderName(name)
+	for bidderName, bidderInfo := range infos {
+		if bidderInfo.Status != adapters.StatusDisabled {
+			activeBidders[bidderName] = struct{}{}
 		}
 	}
 
-	return bidderMap
+	return activeBidders
+}
+
+// GetDisabledBiddersErrorMessages returns a map of error messages for disabled bidders.
+func GetDisabledBiddersErrorMessages(infos adapters.BidderInfos) map[string]string {
+	disabledBidders := make(map[string]string)
+
+	for bidderName, bidderInfo := range infos {
+		if bidderInfo.Status == adapters.StatusDisabled {
+			msg := fmt.Sprintf(`Bidder "%s" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, bidderName)
+			disabledBidders[bidderName] = msg
+		}
+	}
+
+	return disabledBidders
 }
