@@ -212,7 +212,7 @@ type GDPR struct {
 	UsersyncIfAmbiguous     bool         `mapstructure:"usersync_if_ambiguous"`
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
-	NonStandardPublisherMap map[string]int
+	NonStandardPublisherMap map[string]struct{}
 	TCF1                    TCF1 `mapstructure:"tcf1"`
 	TCF2                    TCF2 `mapstructure:"tcf2"`
 	AMPException            bool `mapstructure:"amp_exception"`
@@ -220,7 +220,8 @@ type GDPR struct {
 	// If the gdpr flag is unset in a request, but geo.country is set, we will assume GDPR applies if and only
 	// if the country matches one on this list. If both the GDPR flag and country are not set, we default
 	// to UsersyncIfAmbiguous
-	EEACountries []string `mapstructure:"eea_countries"`
+	EEACountries    []string `mapstructure:"eea_countries"`
+	EEACountriesMap map[string]struct{}
 }
 
 func (cfg *GDPR) validate(errs configErrors) configErrors {
@@ -608,9 +609,15 @@ func New(v *viper.Viper) (*Configuration, error) {
 
 	// To look for a request's publisher_id in the NonStandardPublishers list in
 	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
-	c.GDPR.NonStandardPublisherMap = make(map[string]int)
+	var s struct{}
+	c.GDPR.NonStandardPublisherMap = make(map[string]struct{})
 	for i := 0; i < len(c.GDPR.NonStandardPublishers); i++ {
-		c.GDPR.NonStandardPublisherMap[c.GDPR.NonStandardPublishers[i]] = 1
+		c.GDPR.NonStandardPublisherMap[c.GDPR.NonStandardPublishers[i]] = s
+	}
+
+	c.GDPR.EEACountriesMap = make(map[string]struct{})
+	for i := 0; i < len(c.GDPR.EEACountriesMap); i++ {
+		c.GDPR.NonStandardPublisherMap[c.GDPR.EEACountries[i]] = s
 	}
 
 	// To look for a request's app_id in O(1) time, we fill this hash table located in the
