@@ -283,7 +283,7 @@ func (a *InvibesAdapter) makeURL(request *openrtb.BidRequest, domainID int) (str
 	} else if domainID == 1001 {
 		host = "bid.videostep.com"
 	} else if domainID >= 1002 {
-		host = "bid2.videostep.com"
+		host = "bid" + strconv.Itoa(domainID-1000) + ".videostep.com"
 	}
 
 	var endpointURL *url.URL
