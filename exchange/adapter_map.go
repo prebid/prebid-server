@@ -30,10 +30,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/avocet"
 	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/beintoo"
-	"github.com/prebid/prebid-server/adapters/between"
 	"github.com/prebid/prebid-server/adapters/brightroll"
-	"github.com/prebid/prebid-server/adapters/colossus"
-	"github.com/prebid/prebid-server/adapters/connectad"
 	"github.com/prebid/prebid-server/adapters/consumable"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/cpmstar"
@@ -47,8 +44,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/grid"
 	"github.com/prebid/prebid-server/adapters/gumgum"
 	"github.com/prebid/prebid-server/adapters/improvedigital"
-	"github.com/prebid/prebid-server/adapters/inmobi"
-	"github.com/prebid/prebid-server/adapters/invibes"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/kidoz"
 	"github.com/prebid/prebid-server/adapters/kubient"
@@ -126,7 +121,7 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBrightroll:       brightroll.Builder,
 		openrtb_ext.BidderConsumable:       consumable.Builder,
 		openrtb_ext.BidderCpmstar:          cpmstar.Builder,
-		openrtb_ext.BidderConversant: conversant.Builder,
+		openrtb_ext.BidderConversant:       conversant.Builder,
 		openrtb_ext.BidderDatablocks:       datablocks.Builder,
 		openrtb_ext.BidderDmx:              dmx.Builder,
 		openrtb_ext.BidderEmxDigital:       emx_digital.Builder,
@@ -186,27 +181,31 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 }
 
 func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+	// Create Bidder Instances
+	// - The bidders will be wrapped with InfoAwareBidder to enforce allowed auction types.
 	bidders, errs := buildBidders(cfg.Adapters, infos)
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	for k, _ := range bidders {
-		bidders[k] = 		bidderInstanceWrapped := adaptBidder(adapters.EnforceBidderInfo(bidderInstance, info), client, cfg, me, name)
+	// Wrap For Exchange
+	// - The exchange.go code uses its own adapter interface to abstract away the differences between
+	//   the OpenRTB vs Legacy PBS request models.
+	biddersForExchange := wrapForExchange(bidders, client, cfg, me)
 
+	// Add In Legacy Bidders
+	// - Include bidders which only implement the Legacy PBS model. This will be removed "soon".
+	biddersLegacy := buildLegacyBiddersForExchange(cfg.Adapters, infos)
+	for bidderName, bidder := range biddersLegacy {
+		biddersForExchange[bidderName] = bidder
 	}
 
-	biddersLegacy := buildLegacyBidders(cfg.Adapters, infos)
-	for k, v := range biddersLegacy {
-		bidders[k] = v
-	}
+	wrapWithMiddleware(biddersForExchange)
 
-	wrapWithMiddleware(bidders)
-
-	return bidders, nil
+	return biddersForExchange, nil
 }
 
-func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
 	builders := newAdapterBuildersMap()
 
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
@@ -238,13 +237,23 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 			continue
 		}
 
-		bidders[bidderName] = bidderInstance
+		bidderWithInfoEnforcement := adapters.EnforceBidderInfo(bidderInstance, info)
+
+		bidders[bidderName] = bidderWithInfoEnforcement
 	}
 
 	return bidders, errs
 }
 
-func buildLegacyBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
+func wrapForExchange(bidders map[openrtb_ext.BidderName]adapters.Bidder, client *http.Client, cfg *config.Configuration, me pbsmetrics.MetricsEngine) map[openrtb_ext.BidderName]adaptedBidder {
+	wrapped := make(map[openrtb_ext.BidderName]adaptedBidder, len(bidders))
+	for bidderName, bidder := range bidders {
+		wrapped[bidderName] = adaptBidder(bidder, client, cfg, me, bidderName)
+	}
+	return wrapped
+}
+
+func buildLegacyBiddersForExchange(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
 	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 4)
 
 	// Index
@@ -274,8 +283,7 @@ func wrapWithMiddleware(bidders map[openrtb_ext.BidderName]adaptedBidder) {
 	}
 }
 
-// can get rid of this. maybe needs to just bee a query on bidder infos to check to active status
-// ActiveBidders get all active bidders
+// ActiveBidders returns all active bidders and adds entries to the disabledBidders map.
 func ActiveBidders(biddersInfo adapters.BidderInfos, disabledBidders map[string]string) (bidderMap map[string]openrtb_ext.BidderName) {
 	bidderMap = make(map[string]openrtb_ext.BidderName)
 
