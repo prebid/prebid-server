@@ -268,27 +268,27 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 	}
 
 	if wantsBanner {
-		beachfrontReqs.Banner = getBannerRequest(request, &errs)
+		beachfrontReqs.Banner, errs = getBannerRequest(request, errs)
 	}
 
 	if len(videoImps) > 0 {
 		requestStub := *request
 		requestStub.Imp = nil
 
-		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo = getVideoRequests(requestStub, videoImps, &errs)
+		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo, errs = getVideoRequests(requestStub, videoImps, errs)
 	}
 
 	return beachfrontReqs, errs
 }
 
-func getBannerRequest(request *openrtb.BidRequest, errs *[]error) (bannerReq bannerRequest) {
+func getBannerRequest(request *openrtb.BidRequest, errs []error) (bannerRequest, []error) {
 	var secure int8
-	bannerReq, secure = impsToSlots(request.Imp, errs)
+	var bannerReq bannerRequest
+	bannerReq, secure, errs = impsToSlots(request.Imp, errs)
 
-	// This is the only place that errors are potentially getting added
 	if len(bannerReq.Slots) == 0 {
-		*errs = append(*errs, errors.New("unable to construct a valid banner request"))
-		return
+		errs = append(errs, errors.New("unable to construct a valid banner request"))
+		return bannerReq, errs
 	}
 
 	if request.Site != nil && request.Site.Page != "" {
@@ -347,10 +347,10 @@ func getBannerRequest(request *openrtb.BidRequest, errs *[]error) (bannerReq ban
 	bannerReq.AdapterName = beachfrontAdapterName
 	bannerReq.AdapterVersion = beachfrontAdapterVersion
 
-	return
+	return bannerReq, errs
 }
 
-func impsToSlots(imps []openrtb.Imp, errs *[]error) (bannerRequest, int8) {
+func impsToSlots(imps []openrtb.Imp, errs []error) (bannerRequest, int8, []error) {
 	var bfr bannerRequest
 	var secure int8 = 0
 
@@ -368,14 +368,14 @@ func impsToSlots(imps []openrtb.Imp, errs *[]error) (bannerRequest, int8) {
 		beachfrontExt, err := getBeachfrontExtension(imp)
 
 		if err != nil {
-			*errs = append(*errs, errors.New(fmt.Sprintf("%s (on banner imp id: %s)", err, imp.ID)))
+			errs = append(errs, errors.New(fmt.Sprintf("%s (on banner imp id: %s)", err, imp.ID)))
 			continue
 		}
 
 		appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeBanner)
 
 		if err != nil {
-			*errs = append(*errs, errors.New(fmt.Sprintf("%s (on banner imp id: %s)", err, imp.ID)))
+			errs = append(errs, errors.New(fmt.Sprintf("%s (on banner imp id: %s)", err, imp.ID)))
 			continue
 		}
 
@@ -399,19 +399,21 @@ func impsToSlots(imps []openrtb.Imp, errs *[]error) (bannerRequest, int8) {
 		bfr.Slots = append(bfr.Slots, slot)
 	}
 
-	return bfr, secure
+	return bfr, secure, errs
 }
 
-func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs *[]error) (nurlReqs []videoRequest, admReqs []videoRequest) {
+func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs []error) ([]videoRequest, []videoRequest, []error) {
 	var ext openrtb_ext.ExtImpBeachfront
 	var admMap = map[string]*videoRequest{}
+	var nurlReqs []videoRequest
+	var admReqs []videoRequest
 
 	for i := 0; i < len(imps); i++ {
 		var err error
 		ext, err = prepVideoRequestExt(imps[i])
 
 		if err != nil {
-			*errs = append(*errs, errors.New(fmt.Sprintf("%s (on video imp id: %s)", err, imps[i].ID)))
+			errs = append(errs, errors.New(fmt.Sprintf("%s (on video imp id: %s)", err, imps[i].ID)))
 			continue
 		}
 
@@ -452,7 +454,7 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs *
 		}
 	}
 
-	return
+	return nurlReqs, admReqs, errs
 }
 
 func fallBackDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
