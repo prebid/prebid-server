@@ -109,6 +109,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	if len(errs) > 0 && errortypes.ContainsFatalError(errs) {
 		return nil, errs
 	}
+
 	var reqs = make(
 		[]*adapters.RequestData,
 		0,
@@ -196,20 +197,17 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 	for i := 0; i < len(request.Imp); i++ {
 		if !wantsBanner {
 			wantsBanner = request.Imp[i].Banner != nil
-			// I was testing for a valid size for the Banner element, but that is already done.
-			// If the size is not valid, I will never get here as the entire request will get
-			// tossed in auction.go around L441 (as of this writing).
+			// In a previous version, I was testing for a valid size for the Banner element, but
+			// that is already done. If the size is not valid, I will never get here as the entire
+			// request will get tossed in auction.go (around L441 as of this writing).
 		}
 
 		if request.Imp[i].Video != nil {
-			// If the page is not set for a web request, or the IFA is not set for
-			// an app request, the beachfront backend will not return a response and
-			// there is no reason to continue with this impression.
 			if request.Site != nil {
 				if request.Site.Page != "" {
 					var secure int8 = 0
 					// This will overwrite the secure value if it is included, but if
-					// a web request is not https, it's not secure.
+					// a web request is not https, it's not secure, and vice versa so this seems authoritative.
 					secure = isPageSecure(request.Site.Page)
 					request.Imp[i].Secure = &secure
 				} else {
@@ -221,25 +219,26 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 					continue
 				}
 
-			// Since request.Site is nil, request.App must be not nil or this whole request would be invalid
-			// and would have already been discarded, but we could have gotten this far with Bundle == ""
-			// as it is not required by RTB, but it is required by beachfront. Ditto for Device.IFA.
+				// Since request.Site is nil, request.App must be not nil or this whole request would be invalid
+				// and would have already been discarded, but we could have gotten this far with Bundle == ""
+				// as it is not required by RTB, but it is required by beachfront. Ditto for Device.IFA.
 			} else {
+
 				var skip bool
-				if request.App.Bundle != "" {
+				if request.App.Bundle == "" {
 					errs = append(errs,
 						errors.New(
-							fmt.Sprintf("video impression %s did not include an " +
-								"App.Bundle value which is required for an app request.",
+							fmt.Sprintf("video impression %s did not include an "+
+								"App.Bundle value which is required for an app request",
 								request.Imp[i].ID)))
 					skip = true
 				}
 
-				if request.Device.IFA == "" {
+				if request.Device == nil || request.Device.IFA == "" {
 					errs = append(errs,
 						errors.New(
-							fmt.Sprintf("video impression %s did not include a " +
-								"Device.IFA value which is required for an app request.",
+							fmt.Sprintf("video impression %s did not include a "+
+								"Device.IFA value which is required for an app request",
 								request.Imp[i].ID)))
 					skip = true
 				}
@@ -255,8 +254,9 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 				}
 			}
 
-			request.Imp[i].Banner = nil
-			videoImps = append(videoImps, request.Imp[i])
+			videoImp := request.Imp[i]
+			videoImp.Banner = nil
+			videoImps = append(videoImps, videoImp)
 		}
 	}
 

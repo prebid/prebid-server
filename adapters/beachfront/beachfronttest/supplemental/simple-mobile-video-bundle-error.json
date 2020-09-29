@@ -1,0 +1,41 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "app": {
+      "id": "some-mobile-app"
+    },
+    "imp": [
+      {
+        "id":"video1",
+        "ext":{
+          "bidder":{
+            "bidfloor":0.01,
+            "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76",
+            "videoResponseType" : "nurl"
+          }
+        },
+        "video":{
+          "mimes":[
+            "video/mp4"
+          ],
+          "w":300,
+          "h":250
+        }
+      }
+    ],
+    "device":{
+      "devicetype": 1,
+      "ifa":"bb956625-df13-4568-b60b-eb5cbf76e986"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "video impression video1 did not include an App.Bundle value which is required for an app request",
+      "comparison": "literal"
+    }, {
+      "value": "no valid impressions were found in the request",
+      "comparison": "literal"
+    }
+  ]
+
+}
