@@ -16,7 +16,13 @@ import (
 	"testing"
 )
 
-const maxSize = 1024 * 256
+const (
+	maxSize = 1024 * 256
+
+	vastXmlWithImpressionWithContent    = "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Impression>content</Impression><Creatives></Creatives></Wrapper></Ad></VAST>"
+	vastXmlWithImpressionWithoutContent = "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Impression></Impression><Creatives></Creatives></Wrapper></Ad></VAST>"
+	vastXmlWithoutImpression            = "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Creatives></Creatives></Wrapper></Ad></VAST>"
+)
 
 // Mock pbs cache client
 type vtrackMockCacheClient struct {
@@ -274,7 +280,7 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 	cfg.MarshalAccountDefaults()
 
 	// prepare
-	data, err := getValidVTrackRequestBody(false)
+	data, err := getValidVTrackRequestBody(false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,7 +329,7 @@ func TestShouldTolerateAccountNotFound(t *testing.T) {
 	cfg.MarshalAccountDefaults()
 
 	// prepare
-	data, err := getValidVTrackRequestBody(false)
+	data, err := getValidVTrackRequestBody(true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -379,7 +385,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	}
 
 	// prepare
-	data, err := getValidVTrackRequestBody(false)
+	data, err := getValidVTrackRequestBody(false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -441,7 +447,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	}
 
 	// prepare
-	data, err := getValidVTrackRequestBody(true)
+	data, err := getValidVTrackRequestBody(true, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -495,7 +501,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	bidderInfos := make(adapters.BidderInfos)
 
 	// prepare
-	data, err := getValidVTrackRequestBody(false)
+	data, err := getValidVTrackRequestBody(true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -529,8 +535,8 @@ func TestVastUrlShouldReturnExpectedUrl(t *testing.T) {
 	assert.Equal(t, "http://external-url/event?t=imp&b=bidId&a=accountId&bidder=bidder&f=b&ts=1000", url, "Invalid vast url")
 }
 
-func getValidVTrackRequestBody(withImpression bool) (string, error) {
-	d, e := getVTrackRequestData(withImpression)
+func getValidVTrackRequestBody(withImpression bool, withContent bool) (string, error) {
+	d, e := getVTrackRequestData(withImpression, withContent)
 
 	if e != nil {
 		return "", e
@@ -566,16 +572,19 @@ func getValidVTrackRequestBody(withImpression bool) (string, error) {
 	return buf.String(), e
 }
 
-func getVTrackRequestData(wi bool) (db []byte, e error) {
+func getVTrackRequestData(wi bool, wic bool) (db []byte, e error) {
 	data := &bytes.Buffer{}
 	enc := json.NewEncoder(data)
 	enc.SetEscapeHTML(false)
 
-	if wi {
-		e = enc.Encode("<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Impression>content</Impression><Creatives></Creatives></Wrapper></Ad></VAST>")
+	if wi && wic {
+		e = enc.Encode(vastXmlWithImpressionWithContent)
 		return data.Bytes(), e
+	} else if wi {
+		e = enc.Encode(vastXmlWithImpressionWithoutContent)
+	} else {
+		enc.Encode(vastXmlWithoutImpression)
 	}
 
-	e = enc.Encode("<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Impression></Impression><Creatives></Creatives></Wrapper></Ad></VAST>")
 	return data.Bytes(), e
 }

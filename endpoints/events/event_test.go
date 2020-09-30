@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Mock Analytics Module
@@ -74,11 +75,21 @@ var mockAccountData = map[string]json.RawMessage{
 }
 
 type mockAccountsFetcher struct {
-	Fail  bool
-	Error error
+	Fail       bool
+	Error      error
+	DurationMS int
 }
 
 func (maf mockAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+	if maf.DurationMS > 0 {
+		select {
+		case <-time.After(time.Duration(maf.DurationMS) * time.Millisecond):
+			break
+		case <-ctx.Done():
+			return nil, []error{ctx.Err()}
+		}
+	}
+
 	if account, ok := mockAccountData[accountID]; ok {
 		return account, nil
 	}
@@ -424,6 +435,26 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 				response: "Invalid request: Prebid-server has disabled Account ID: testacc, please reach out to the prebid server host.\n",
 			},
 		},
+		"timeout": {
+			fetcher: &mockAccountsFetcher{
+				Fail:       false,
+				DurationMS: 50,
+			},
+			cfg: &config.Configuration{
+				AccountDefaults: config.Account{Disabled: true},
+				AccountRequired: true,
+				Event: config.Event{
+					TimeoutMS: 10,
+				},
+			},
+			want: struct {
+				code     int
+				response string
+			}{
+				code:     504,
+				response: "Invalid request: context deadline exceeded\nInvalid request: Prebid-server could not verify the Account ID. Please reach out to the prebid server host.\n",
+			},
+		},
 	}
 
 	// mock PBS Analytics Module
@@ -433,6 +464,8 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			test.cfg.MarshalAccountDefaults()
+
 			reqData := ""
 
 			req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=testacc", strings.NewReader(reqData))
@@ -662,4 +695,45 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 	// validate
 	assert.Equal(t, 0, len(errs))
 	assert.EqualValues(t, expected, er)
+}
+
+func TestEventRequestToUrl(t *testing.T) {
+	externalUrl := "http://localhost:8000"
+	tests := map[string]struct {
+		er   *analytics.EventRequest
+		want string
+	}{
+		"one": {
+			er: &analytics.EventRequest{
+				Type:      analytics.Imp,
+				BidID:     "bidid",
+				AccountID: "accountId",
+				Bidder:    "bidder",
+				Timestamp: 1234567,
+				Format:    analytics.Blank,
+				Analytics: analytics.Enabled,
+			},
+			want: "http://localhost:8000/event?t=imp&b=bidid&a=accountId&bidder=bidder&f=b&ts=1234567&x=1",
+		},
+		"two": {
+			er: &analytics.EventRequest{
+				Type:      analytics.Win,
+				BidID:     "bidid",
+				AccountID: "accountId",
+				Bidder:    "bidder",
+				Timestamp: 1234567,
+				Format:    analytics.Image,
+				Analytics: analytics.Disabled,
+			},
+			want: "http://localhost:8000/event?t=win&b=bidid&a=accountId&bidder=bidder&f=i&ts=1234567&x=0",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			expected := EventRequestToUrl(externalUrl, test.er)
+			// validate
+			assert.Equal(t, test.want, expected)
+		})
+	}
 }

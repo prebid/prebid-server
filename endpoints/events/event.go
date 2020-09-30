@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
@@ -185,15 +186,28 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 	messages = []string{}
 	status = http.StatusInternalServerError
 
+	//grab error messages
 	for _, er := range errs {
-		errCode := errortypes.ReadCode(er)
+		messages = append(messages, er.Error())
+	}
 
+	//set appropriate error code
+	for _, er := range errs {
+		if errors.Is(er, context.DeadlineExceeded) {
+			er = &errortypes.Timeout{
+				Message: er.Error(),
+			}
+		}
+
+		errCode := errortypes.ReadCode(er)
 		switch errCode {
 		case errortypes.BlacklistedAppErrorCode, errortypes.BlacklistedAcctErrorCode:
 			status = http.StatusServiceUnavailable
+			break
+		case errortypes.TimeoutErrorCode:
+			status = http.StatusGatewayTimeout
+			break
 		}
-
-		messages = append(messages, er.Error())
 	}
 
 	return status, messages

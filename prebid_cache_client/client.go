@@ -200,9 +200,8 @@ func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffe
 	}
 
 	if value.Timestamp > 0 {
-		buffer.WriteString(`,"timestamp":"`)
-		buffer.WriteString(strconv.FormatInt(value.TTLSeconds, 10))
-		buffer.WriteString(`"`)
+		buffer.WriteString(`,"timestamp":`)
+		buffer.WriteString(strconv.FormatInt(value.Timestamp, 10))
 	}
 
 	buffer.WriteByte('}')
