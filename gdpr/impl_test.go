@@ -212,7 +212,7 @@ func TestAllowPersonalInfo(t *testing.T) {
 	assertBoolsEqual(t, true, allowPI)
 
 	// Assert that an item that otherwise would not be allowed PI access, gets approved because it is found in the GDPR.NonStandardPublishers array
-	perms.cfg.NonStandardPublisherMap = map[string]int{"appNexusAppID": 1}
+	perms.cfg.NonStandardPublisherMap = map[string]struct{}{"appNexusAppID": {}}
 	allowPI, _, _, err = perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "appNexusAppID", "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, true, allowPI)
@@ -343,7 +343,7 @@ func TestAllowPersonalInfoWhitelistTCF2(t *testing.T) {
 		},
 	}
 	// Assert that an item that otherwise would not be allowed PI access, gets approved because it is found in the GDPR.NonStandardPublishers array
-	perms.cfg.NonStandardPublisherMap = map[string]int{"appNexusAppID": 1}
+	perms.cfg.NonStandardPublisherMap = map[string]struct{}{"appNexusAppID": {}}
 	allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "appNexusAppID", "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
 	assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed")
 	assert.EqualValuesf(t, true, allowPI, "AllowPI failure")
