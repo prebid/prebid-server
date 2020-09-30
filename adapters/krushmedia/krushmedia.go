@@ -73,6 +73,10 @@ func (a *KrushmediaAdapter) MakeRequests(
 			errors = append(errors, err)
 		}
 		request.Imp[0].Ext = nil
+	} else {
+		errors = append(errors, &errortypes.BadInput{
+			Message: "Missing Imp Object",
+		})
 	}
 
 	if len(errors) > 0 {
