@@ -26,16 +26,6 @@ func NewKrushmediaBidder(endpointTemplate string) *KrushmediaAdapter {
 	return &KrushmediaAdapter{endpoint: *template}
 }
 
-func checkHasImps(request *openrtb.BidRequest) error {
-	if len(request.Imp) == 0 {
-		err := &errortypes.BadInput{
-			Message: "Missing Imp Object",
-		}
-		return err
-	}
-	return nil
-}
-
 func getHeaders(request *openrtb.BidRequest) *http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -73,22 +63,15 @@ func (a *KrushmediaAdapter) MakeRequests(
 
 	request := *openRTBRequest
 
-	if err := checkHasImps(&request); err != nil {
-		return nil, []error{err}
-	}
-
 	var errors []error
 	var krushmediaExt *openrtb_ext.ExtKrushmedia
 	var err error
 
-	for i, imp := range request.Imp {
-		krushmediaExt, err = a.getImpressionExt(&imp)
-		if err != nil {
-			errors = append(errors, err)
-			break
-		}
-		request.Imp[i].Ext = nil
+	krushmediaExt, err = a.getImpressionExt(&(request.Imp[0]))
+	if err != nil {
+		errors = append(errors, err)
 	}
+	request.Imp[0].Ext = nil
 
 	if len(errors) > 0 {
 		return nil, errors

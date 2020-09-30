@@ -69,8 +69,8 @@ const (
 	BidderInMobi           BidderName = "inmobi"
 	BidderInvibes          BidderName = "invibes"
 	BidderIx               BidderName = "ix"
-	BidderKrushmedia       BidderName = "krushmedia"
 	BidderKidoz            BidderName = "kidoz"
+	BidderKrushmedia       BidderName = "krushmedia"
 	BidderKubient          BidderName = "kubient"
 	BidderLifestreet       BidderName = "lifestreet"
 	BidderLockerDome       BidderName = "lockerdome"
@@ -159,8 +159,8 @@ var BidderMap = map[string]BidderName{
 	"inmobi":            BidderInMobi,
 	"invibes":           BidderInvibes,
 	"ix":                BidderIx,
-	"krushmedia":        BidderKrushmedia,
 	"kidoz":             BidderKidoz,
+	"krushmedia":        BidderKrushmedia,
 	"kubient":           BidderKubient,
 	"lifestreet":        BidderLifestreet,
 	"lockerdome":        BidderLockerDome,
