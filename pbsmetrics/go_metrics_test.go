@@ -345,6 +345,59 @@ func TestRecordPrebidCacheRequestTimeWithNotSuccess(t *testing.T) {
 	assert.Equal(t, m.PrebidCacheRequestTimerError.Count(), int64(1))
 }
 
+func TestRecordStoredDataFetchTime(t *testing.T) {
+	tests := []struct {
+		giveDataType     StoredDataType
+		giveFetchType    StoredDataFetchType
+		giveFetchStatus  StoredDataFetchStatus
+		wantSuccessCount int64
+		wantErrorCount   int64
+	}{
+		{
+			giveDataType:     RequestDataType,
+			giveFetchType:    FetchAll,
+			giveFetchStatus:  FetchSuccess,
+			wantSuccessCount: int64(1),
+			wantErrorCount:   int64(0),
+		},
+		{
+			giveDataType:     AMPRequestDataType,
+			giveFetchType:    FetchAll,
+			giveFetchStatus:  FetchSuccess,
+			wantSuccessCount: int64(1),
+			wantErrorCount:   int64(0),
+		},
+		{
+			giveDataType:     RequestDataType,
+			giveFetchType:    FetchDelta,
+			giveFetchStatus:  FetchSuccess,
+			wantSuccessCount: int64(1),
+			wantErrorCount:   int64(0),
+		},
+		{
+			giveDataType:     RequestDataType,
+			giveFetchType:    FetchAll,
+			giveFetchStatus:  FetchError,
+			wantSuccessCount: int64(0),
+			wantErrorCount:   int64(1),
+		},
+	}
+
+	for _, tt := range tests {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+
+		m.RecordStoredDataFetchTime(StoredDataTypeLabels{
+			DataType:        tt.giveDataType,
+			DataFetchType:   tt.giveFetchType,
+			DataFetchStatus: tt.giveFetchStatus,
+		}, 500)
+
+		assert.Equal(t, tt.wantSuccessCount, m.StoredDataFetchTimerSuccess[tt.giveDataType][tt.giveFetchType].Count())
+		assert.Equal(t, tt.wantErrorCount, m.StoredDataFetchTimerError[tt.giveDataType][tt.giveFetchType].Count())
+	}
+}
+
 func TestRecordRequestPrivacy(t *testing.T) {
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
