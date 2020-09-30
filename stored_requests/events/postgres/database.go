@@ -74,12 +74,14 @@ func (e *PostgresEventProducer) fetchAll() error {
 	startTime := e.time.Now().UTC()
 	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheInitQuery)
 	elapsedTime := time.Since(startTime)
-	e.recordFetchTime(elapsedTime, pbsmetrics.FetchAll)
 
 	if err != nil {
 		glog.Warningf("Failed to fetch all Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		e.recordFetchTime(elapsedTime, pbsmetrics.FetchAll, pbsmetrics.FetchError)
 		return err
 	}
+	e.recordFetchTime(elapsedTime, pbsmetrics.FetchAll, pbsmetrics.FetchSuccess)
+
 	defer func() {
 		if err := rows.Close(); err != nil {
 			glog.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
@@ -102,12 +104,14 @@ func (e *PostgresEventProducer) fetchDelta() error {
 	startTime := e.time.Now().UTC()
 	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheUpdateQuery, e.lastUpdate)
 	elapsedTime := time.Since(startTime)
-	e.recordFetchTime(elapsedTime, pbsmetrics.FetchDelta) // record fetch and load time or just fetch time? prob just fetch time since experienced db timeouts
 
 	if err != nil {
 		glog.Warningf("Failed to fetch updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		e.recordFetchTime(elapsedTime, pbsmetrics.FetchDelta, pbsmetrics.FetchError)
 		return err
 	}
+	e.recordFetchTime(elapsedTime, pbsmetrics.FetchDelta, pbsmetrics.FetchSuccess)
+
 	defer func() {
 		if err := rows.Close(); err != nil {
 			glog.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
@@ -122,11 +126,12 @@ func (e *PostgresEventProducer) fetchDelta() error {
 	return nil
 }
 
-func (e *PostgresEventProducer) recordFetchTime(elapsedTime time.Duration, fetchType pbsmetrics.StoredDataFetchType) {
+func (e *PostgresEventProducer) recordFetchTime(elapsedTime time.Duration, fetchType pbsmetrics.StoredDataFetchType, statusType pbsmetrics.StoredDataFetchStatus) {
 	e.cfg.MetricsEngine.RecordStoredDataFetchTime(
 		pbsmetrics.StoredDataTypeLabels{
-			DataType:      e.metricsStoredDataType(),
-			DataFetchType: fetchType,
+			DataType:        e.metricsStoredDataType(),
+			DataFetchType:   fetchType,
+			DataFetchStatus: statusType,
 		}, elapsedTime)
 }
 

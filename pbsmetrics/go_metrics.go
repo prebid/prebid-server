@@ -27,7 +27,8 @@ type Metrics struct {
 	RequestsQueueTimer             map[RequestType]map[bool]metrics.Timer
 	PrebidCacheRequestTimerSuccess metrics.Timer
 	PrebidCacheRequestTimerError   metrics.Timer
-	StoredDataFetchTimer           map[StoredDataType]map[StoredDataFetchType]metrics.Timer
+	StoredDataFetchTimerSuccess    map[StoredDataType]map[StoredDataFetchType]metrics.Timer
+	StoredDataFetchTimerError      map[StoredDataType]map[StoredDataFetchType]metrics.Timer
 	StoredReqCacheMeter            map[CacheResult]metrics.Meter
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
 	DNSLookupTimer                 metrics.Timer
@@ -132,7 +133,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
-		StoredDataFetchTimer:           make(map[StoredDataType]map[StoredDataFetchType]metrics.Timer),
+		StoredDataFetchTimerSuccess:    make(map[StoredDataType]map[StoredDataFetchType]metrics.Timer),
+		StoredDataFetchTimerError:      make(map[StoredDataType]map[StoredDataFetchType]metrics.Timer),
 		StoredReqCacheMeter:            make(map[CacheResult]metrics.Meter),
 		StoredImpCacheMeter:            make(map[CacheResult]metrics.Meter),
 		AmpNoCookieMeter:               blankMeter,
@@ -186,9 +188,11 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	}
 
 	for _, dt := range StoredDataTypes() {
-		newMetrics.StoredDataFetchTimer[dt] = make(map[StoredDataFetchType]metrics.Timer)
+		newMetrics.StoredDataFetchTimerSuccess[dt] = make(map[StoredDataFetchType]metrics.Timer)
+		newMetrics.StoredDataFetchTimerError[dt] = make(map[StoredDataFetchType]metrics.Timer)
 		for _, ft := range StoredDataFetchTypes() {
-			newMetrics.StoredDataFetchTimer[dt][ft] = blankTimer
+			newMetrics.StoredDataFetchTimerSuccess[dt][ft] = blankTimer
+			newMetrics.StoredDataFetchTimerError[dt][ft] = blankTimer
 		}
 	}
 
@@ -227,16 +231,26 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 
-	newMetrics.StoredDataFetchTimer[RequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_request_fetch_time.all", registry)
-	newMetrics.StoredDataFetchTimer[RequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_request_fetch_time.delta", registry)
-	newMetrics.StoredDataFetchTimer[CategoryDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_category_fetch_time.all", registry)
-	newMetrics.StoredDataFetchTimer[CategoryDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_category_fetch_time.delta", registry)
-	newMetrics.StoredDataFetchTimer[VideoDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_video_fetch_time.all", registry)
-	newMetrics.StoredDataFetchTimer[VideoDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_video_fetch_time.delta", registry)
-	newMetrics.StoredDataFetchTimer[AMPRequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.all", registry)
-	newMetrics.StoredDataFetchTimer[AMPRequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.delta", registry)
-	newMetrics.StoredDataFetchTimer[AccountDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_account_fetch_time.all", registry)
-	newMetrics.StoredDataFetchTimer[AccountDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_account_fetch_time.delta", registry)
+	newMetrics.StoredDataFetchTimerSuccess[RequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_request_fetch_time.all.ok", registry)
+	newMetrics.StoredDataFetchTimerError[RequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_request_fetch_time.all.err", registry)
+	newMetrics.StoredDataFetchTimerSuccess[RequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_request_fetch_time.delta.ok", registry)
+	newMetrics.StoredDataFetchTimerError[RequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_request_fetch_time.delta.err", registry)
+	newMetrics.StoredDataFetchTimerSuccess[CategoryDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_category_fetch_time.all.ok", registry)
+	newMetrics.StoredDataFetchTimerError[CategoryDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_category_fetch_time.all.err", registry)
+	newMetrics.StoredDataFetchTimerSuccess[CategoryDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_category_fetch_time.delta.ok", registry)
+	newMetrics.StoredDataFetchTimerError[CategoryDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_category_fetch_time.delta.err", registry)
+	newMetrics.StoredDataFetchTimerSuccess[VideoDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_video_fetch_time.all.ok", registry)
+	newMetrics.StoredDataFetchTimerError[VideoDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_video_fetch_time.all.err", registry)
+	newMetrics.StoredDataFetchTimerSuccess[VideoDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_video_fetch_time.delta.ok", registry)
+	newMetrics.StoredDataFetchTimerError[VideoDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_video_fetch_time.delta.err", registry)
+	newMetrics.StoredDataFetchTimerSuccess[AMPRequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.all.ok", registry)
+	newMetrics.StoredDataFetchTimerError[AMPRequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.all.err", registry)
+	newMetrics.StoredDataFetchTimerSuccess[AMPRequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.delta.ok", registry)
+	newMetrics.StoredDataFetchTimerError[AMPRequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.delta.err", registry)
+	newMetrics.StoredDataFetchTimerSuccess[AccountDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_account_fetch_time.all.ok", registry)
+	newMetrics.StoredDataFetchTimerError[AccountDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_account_fetch_time.all.err", registry)
+	newMetrics.StoredDataFetchTimerSuccess[AccountDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_account_fetch_time.delta.ok", registry)
+	newMetrics.StoredDataFetchTimerError[AccountDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_account_fetch_time.delta.err", registry)
 
 	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
 	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
@@ -465,8 +479,11 @@ func (me *Metrics) RecordRequestTime(labels Labels, length time.Duration) {
 }
 
 func (me *Metrics) RecordStoredDataFetchTime(labels StoredDataTypeLabels, length time.Duration) {
-	me.StoredDataFetchTimer[labels.DataType][labels.DataFetchType].Update(length)
-	//TODO(bfs): check status and record success time separate from failure time
+	if labels.DataFetchStatus == FetchSuccess {
+		me.StoredDataFetchTimerSuccess[labels.DataType][labels.DataFetchType].Update(length)
+	} else {
+		me.StoredDataFetchTimerError[labels.DataType][labels.DataFetchType].Update(length)
+	}
 }
 
 // RecordAdapterPanic implements a part of the MetricsEngine interface

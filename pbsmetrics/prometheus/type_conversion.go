@@ -95,6 +95,15 @@ func storedDataFetchTypesAsString() []string {
 	return valuesAsString
 }
 
+func storedDataFetchStatusesAsString() []string {
+	values := pbsmetrics.StoredDataFetchStatuses()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
+
 func tcfVersionsAsString() []string {
 	values := pbsmetrics.TCFVersions()
 	valuesAsString := make([]string, len(values))

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	"github.com/stretchr/testify/assert"
@@ -94,10 +95,15 @@ func TestFetchAllSuccess(t *testing.T) {
 		dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 
 		metricsMock := &pbsmetrics.MetricsEngineMock{}
-		metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
+		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataTypeLabels{
+			DataType:        pbsmetrics.RequestDataType,
+			DataFetchType:   pbsmetrics.FetchAll,
+			DataFetchStatus: pbsmetrics.FetchSuccess,
+		}, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
 			DB:               db,
+			RequestType:      config.RequestDataType,
 			CacheInitTimeout: 100 * time.Millisecond,
 			CacheInitQuery:   fakeQuery,
 			MetricsEngine:    metricsMock,
@@ -304,6 +310,11 @@ func TestFetchDeltaSuccess(t *testing.T) {
 
 		metricsMock := &pbsmetrics.MetricsEngineMock{}
 		metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
+		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataTypeLabels{
+			DataType:        pbsmetrics.RequestDataType,
+			DataFetchType:   pbsmetrics.FetchDelta,
+			DataFetchStatus: pbsmetrics.FetchSuccess,
+		}, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
 			DB:                 db,

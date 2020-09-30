@@ -7,19 +7,20 @@ import (
 
 func preloadLabelValues(m *Metrics) {
 	var (
-		actionValues              = actionsAsString()
-		adapterErrorValues        = adapterErrorsAsString()
-		adapterValues             = adaptersAsString()
-		bidTypeValues             = []string{markupDeliveryAdm, markupDeliveryNurl}
-		boolValues                = boolValuesAsString()
-		cacheResultValues         = cacheResultsAsString()
-		connectionErrorValues     = []string{connectionAcceptError, connectionCloseError}
-		cookieValues              = cookieTypesAsString()
-		requestStatusValues       = requestStatusesAsString()
-		requestTypeValues         = requestTypesAsString()
-		storedDataTypeValues      = storedDataTypesAsString()
-		storedDataFetchTypeValues = storedDataFetchTypesAsString()
-		sourceValues              = []string{sourceRequest}
+		actionValues                = actionsAsString()
+		adapterErrorValues          = adapterErrorsAsString()
+		adapterValues               = adaptersAsString()
+		bidTypeValues               = []string{markupDeliveryAdm, markupDeliveryNurl}
+		boolValues                  = boolValuesAsString()
+		cacheResultValues           = cacheResultsAsString()
+		connectionErrorValues       = []string{connectionAcceptError, connectionCloseError}
+		cookieValues                = cookieTypesAsString()
+		requestStatusValues         = requestStatusesAsString()
+		requestTypeValues           = requestTypesAsString()
+		storedDataTypeValues        = storedDataTypesAsString()
+		storedDataFetchTypeValues   = storedDataFetchTypesAsString()
+		storedDataFetchStatusValues = storedDataFetchStatusesAsString()
+		sourceValues                = []string{sourceRequest}
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
@@ -47,8 +48,9 @@ func preloadLabelValues(m *Metrics) {
 	})
 
 	preloadLabelValuesForHistogram(m.storedDataFetchTimer, map[string][]string{
-		dataTypeLabel:      storedDataTypeValues,
-		dataFetchTypeLabel: storedDataFetchTypeValues,
+		dataTypeLabel:        storedDataTypeValues,
+		dataFetchTypeLabel:   storedDataFetchTypeValues,
+		dataFetchStatusLabel: storedDataFetchStatusValues,
 	})
 
 	preloadLabelValuesForCounter(m.requestsWithoutCookie, map[string][]string{

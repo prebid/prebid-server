@@ -104,8 +104,9 @@ const (
 )
 
 const (
-	dataTypeLabel      = "data_type"
-	dataFetchTypeLabel = "data_fetch_type"
+	dataTypeLabel        = "data_type"
+	dataFetchTypeLabel   = "data_fetch_type"
+	dataFetchStatusLabel = "data_fetch_status"
 )
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
@@ -179,8 +180,8 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 
 	metrics.storedDataFetchTimer = newHistogramVec(cfg, metrics.Registry,
 		"data_fetch_time_seconds",
-		"Seconds to fetch stored data labeled by data type and fetch type",
-		[]string{dataTypeLabel, dataFetchTypeLabel},
+		"Seconds to fetch stored data labeled by data type, fetch type and fetch status",
+		[]string{dataTypeLabel, dataFetchTypeLabel, dataFetchStatusLabel},
 		standardTimeBuckets)
 
 	metrics.timeoutNotifications = newCounter(cfg, metrics.Registry,
@@ -401,8 +402,9 @@ func (m *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Durati
 
 func (m *Metrics) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataTypeLabels, length time.Duration) {
 	m.storedDataFetchTimer.With(prometheus.Labels{
-		dataTypeLabel:      string(labels.DataType),
-		dataFetchTypeLabel: string(labels.DataFetchType),
+		dataTypeLabel:        string(labels.DataType),
+		dataFetchTypeLabel:   string(labels.DataFetchType),
+		dataFetchStatusLabel: string(labels.DataFetchStatus),
 	}).Observe(length.Seconds())
 }
 
