@@ -67,11 +67,13 @@ func (a *KrushmediaAdapter) MakeRequests(
 	var krushmediaExt *openrtb_ext.ExtKrushmedia
 	var err error
 
-	krushmediaExt, err = a.getImpressionExt(&(request.Imp[0]))
-	if err != nil {
-		errors = append(errors, err)
+	if request.Imp.length > 0 {
+		krushmediaExt, err = a.getImpressionExt(&(request.Imp[0]))
+		if err != nil {
+			errors = append(errors, err)
+		}
+		request.Imp[0].Ext = nil
 	}
-	request.Imp[0].Ext = nil
 
 	if len(errors) > 0 {
 		return nil, errors
