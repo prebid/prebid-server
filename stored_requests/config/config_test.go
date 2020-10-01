@@ -20,15 +20,11 @@ import (
 
 func TestNewEmptyFetcher(t *testing.T) {
 	fetcher := newFetcher(&config.StoredRequests{}, nil, nil)
-	ampFetcher := newFetcher(&config.StoredRequests{}, nil, nil)
-	if fetcher == nil || ampFetcher == nil {
-		t.Errorf("The fetchers should be non-nil, even with an empty config.")
+	if fetcher == nil {
+		t.Errorf("The fetcher should be non-nil, even with an empty config.")
 	}
 	if _, ok := fetcher.(empty_fetcher.EmptyFetcher); !ok {
 		t.Errorf("If the config is empty, and EmptyFetcher should be returned")
-	}
-	if _, ok := ampFetcher.(empty_fetcher.EmptyFetcher); !ok {
-		t.Errorf("If the config is empty, and EmptyFetcher should be returned for AMP")
 	}
 }
 
@@ -38,47 +34,12 @@ func TestNewHTTPFetcher(t *testing.T) {
 			Endpoint: "stored-requests.prebid.com",
 		},
 	}, nil, nil)
-	ampFetcher := newFetcher(&config.StoredRequests{
-		HTTP: config.HTTPFetcherConfig{
-			Endpoint: "stored-requests.prebid.com?type=amp",
-		},
-	}, nil, nil)
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
 		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
 			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)
 		}
 	} else {
-		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", ampFetcher)
-	}
-	if httpFetcher, ok := ampFetcher.(*http_fetcher.HttpFetcher); ok {
-		if httpFetcher.Endpoint != "stored-requests.prebid.com?type=amp&" {
-			t.Errorf("The AMP HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?type=amp&", httpFetcher.Endpoint)
-		}
-	} else {
-		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", ampFetcher)
-	}
-}
-
-func TestNewHTTPFetcherNoAmp(t *testing.T) {
-	fetcher := newFetcher(&config.StoredRequests{
-		HTTP: config.HTTPFetcherConfig{
-			Endpoint: "stored-requests.prebid.com",
-		},
-	}, nil, nil)
-	ampFetcher := newFetcher(&config.StoredRequests{
-		HTTP: config.HTTPFetcherConfig{
-			Endpoint: "",
-		},
-	}, nil, nil)
-	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
-		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
-			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)
-		}
-	} else {
-		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", ampFetcher)
-	}
-	if httpAmpFetcher, ok := ampFetcher.(*http_fetcher.HttpFetcher); ok && httpAmpFetcher == nil {
-		t.Errorf("An HTTP Fetching config should not return an Amp HTTP fetcher in this case. Got %v (%v)", ampFetcher, httpAmpFetcher)
+		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", fetcher)
 	}
 }
 
@@ -138,32 +99,15 @@ func TestNewPostgresEventProducers(t *testing.T) {
 			},
 		},
 	}
-	ampCfg := &config.StoredRequests{
-		Postgres: config.PostgresConfig{
-			CacheInitialization: config.PostgresCacheInitializer{
-				Timeout: 50,
-				Query:   "SELECT id, requestData, type FROM stored_amp_data",
-			},
-			PollUpdates: config.PostgresUpdatePolling{
-				RefreshRate: 20,
-				Timeout:     50,
-				Query:       "SELECT id, requestData, type FROM stored_amp_data WHERE last_updated > $1",
-			},
-		},
-	}
 	client := &http.Client{}
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
 	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
-	mock.ExpectQuery("^" + regexp.QuoteMeta(ampCfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 
 	evProducers := newEventProducers(cfg, client, db, nil)
 	assertProducerLength(t, evProducers, 1)
-
-	ampEvProducers := newEventProducers(ampCfg, client, db, nil)
-	assertProducerLength(t, ampEvProducers, 1)
 
 	assertExpectationsMet(t, mock)
 }
