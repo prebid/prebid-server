@@ -955,9 +955,13 @@ func TestBidResponseCurrency(t *testing.T) {
 		},
 	}
 
+	bidResponseExt := &openrtb_ext.ExtBidResponse{
+		ResponseTimeMillis:   map[openrtb_ext.BidderName]int{openrtb_ext.BidderName("appnexus"): 5},
+		RequestTimeoutMillis: 500,
+	}
 	// Run tests
 	for i := range testCases {
-		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, nil, true, errList)
+		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, errList)
 		assert.NoError(t, err, fmt.Sprintf("[TEST_FAILED] e.buildBidResponse resturns error in test: %s Error message: %s \n", testCases[i].description, err))
 		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}
