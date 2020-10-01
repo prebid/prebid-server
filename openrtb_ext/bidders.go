@@ -50,6 +50,7 @@ const (
 	BidderCpmstar          BidderName = "cpmstar"
 	BidderDatablocks       BidderName = "datablocks"
 	BidderDmx              BidderName = "dmx"
+	BidderDeepintent       BidderName = "deepintent"
 	BidderEmxDigital       BidderName = "emx_digital"
 	BidderEngageBDR        BidderName = "engagebdr"
 	BidderEPlanning        BidderName = "eplanning"
@@ -130,6 +131,7 @@ var BidderMap = map[string]BidderName{
 	"conversant":        BidderConversant,
 	"cpmstar":           BidderCpmstar,
 	"datablocks":        BidderDatablocks,
+	"deepintent":        BidderDeepintent,
 	"dmx":               BidderDmx,
 	"emx_digital":       BidderEmxDigital,
 	"engagebdr":         BidderEngageBDR,
