@@ -1,4 +1,4 @@
-package s2s_pulsepoint
+package playwire_ortb
 
 import (
 	"encoding/json"
@@ -164,8 +164,8 @@ func validateVideoParams(video *openrtb.Video) (err error) {
 	return nil
 }
 
-// NewGumGumBidder configures bidder endpoint.
-func NewGumGumBidder(endpoint string) *GumGumAdapter {
+// NewOrtbBidder configures bidder endpoint.
+func NewOrtbBidder(endpoint string) *GumGumAdapter {
 	return &GumGumAdapter{
 		URI: endpoint,
 	}

@@ -1,4 +1,4 @@
-package s2s_pulsepoint
+package playwire_ortb
 
 import (
 	"encoding/json"
