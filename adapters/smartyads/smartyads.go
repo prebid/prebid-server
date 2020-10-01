@@ -168,6 +168,12 @@ func (a *SmartyAdsAdapter) MakeBids(
 		}}
 	}
 
+	if len(bidResp.SeatBid) == 0 {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "Empty SeatBid array",
+		}}
+	}
+
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 	sb := bidResp.SeatBid[0]
 

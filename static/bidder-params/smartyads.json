@@ -14,7 +14,7 @@
     },
     "accountid": {
       "type": "string",
-      "description": "Partner id"
+      "description": "Account id"
     }
   },
   "required": ["host", "sourceid", "accountid"]
