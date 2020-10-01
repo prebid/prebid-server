@@ -9,14 +9,34 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
 )
+
+func typedConfig(dataType config.DataType, sr *config.StoredRequests) *config.StoredRequests {
+	sr.SetDataType(dataType)
+	return sr
+}
+
+func isEmptyCacheType(cache stored_requests.CacheJSON) bool {
+	cache.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")})
+	objs := cache.Get(context.Background(), []string{"foo"})
+	return len(objs) == 0
+}
+
+func isMemoryCacheType(cache stored_requests.CacheJSON) bool {
+	cache.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")})
+	objs := cache.Get(context.Background(), []string{"foo"})
+	return len(objs) == 1
+}
 
 func TestNewEmptyFetcher(t *testing.T) {
 	fetcher := newFetcher(&config.StoredRequests{}, nil, nil)
@@ -63,11 +83,9 @@ func TestNewHTTPEvents(t *testing.T) {
 
 func TestNewEmptyCache(t *testing.T) {
 	cache := newCache(&config.StoredRequests{InMemoryCache: config.InMemoryCache{Type: "none"}})
-	cache.Requests.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")})
-	reqs := cache.Requests.Get(context.Background(), []string{"foo"})
-	if len(reqs) != 0 {
-		t.Errorf("The newCache method should return an empty cache if the config asks for it.")
-	}
+	assert.True(t, isEmptyCacheType(cache.Requests), "The newCache method should return an empty Request cache")
+	assert.True(t, isEmptyCacheType(cache.Imps), "The newCache method should return an empty Imp cache")
+	assert.True(t, isEmptyCacheType(cache.Accounts), "The newCache method should return an empty Account cache")
 }
 
 func TestNewInMemoryCache(t *testing.T) {
@@ -78,11 +96,21 @@ func TestNewInMemoryCache(t *testing.T) {
 			ImpCacheSize:     100,
 		},
 	})
-	cache.Requests.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")})
-	reqs := cache.Requests.Get(context.Background(), []string{"foo"})
-	if len(reqs) != 1 {
-		t.Errorf("The newCache method should return an in-memory cache if the config asks for it.")
-	}
+	assert.True(t, isMemoryCacheType(cache.Requests), "The newCache method should return an in-memory Request cache for StoredRequests config")
+	assert.True(t, isMemoryCacheType(cache.Imps), "The newCache method should return an in-memory Imp cache for StoredRequests config")
+	assert.True(t, isEmptyCacheType(cache.Accounts), "The newCache method should return an empty Account cache for StoredRequests config")
+}
+
+func TestNewInMemoryAccountCache(t *testing.T) {
+	cache := newCache(typedConfig(config.AccountDataType, &config.StoredRequests{
+		InMemoryCache: config.InMemoryCache{
+			TTL:  60,
+			Size: 100,
+		},
+	}))
+	assert.True(t, isMemoryCacheType(cache.Accounts), "The newCache method should return an in-memory Account cache for Accounts config")
+	assert.True(t, isEmptyCacheType(cache.Requests), "The newCache method should return an empty Request cache for Accounts config")
+	assert.True(t, isEmptyCacheType(cache.Imps), "The newCache method should return an empty Imp cache for Accounts config")
 }
 
 func TestNewPostgresEventProducers(t *testing.T) {
