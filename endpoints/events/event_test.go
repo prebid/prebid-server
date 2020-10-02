@@ -4,13 +4,12 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -393,100 +392,6 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) 
 	assert.Equal(t, "Account 'testacc' doesn't support events", string(d))
 }
 
-func TestHandleAccountServiceErrors(t *testing.T) {
-
-	tests := map[string]struct {
-		fetcher *mockAccountsFetcher
-		cfg     *config.Configuration
-		want    struct {
-			code     int
-			response string
-		}
-	}{
-		"internalServerError": {
-			fetcher: &mockAccountsFetcher{
-				Fail:  true,
-				Error: errors.New("some error"),
-			},
-			cfg: &config.Configuration{
-				AccountDefaults: config.Account{Disabled: true},
-				AccountRequired: true,
-			},
-			want: struct {
-				code     int
-				response string
-			}{
-				code:     500,
-				response: "Invalid request: some error\nInvalid request: Prebid-server could not verify the Account ID. Please reach out to the prebid server host.\n",
-			},
-		},
-		"serviceUnavailable": {
-			fetcher: &mockAccountsFetcher{
-				Fail: false,
-			},
-			cfg: &config.Configuration{
-				BlacklistedAcctMap: map[string]bool{"testacc": true},
-			},
-			want: struct {
-				code     int
-				response string
-			}{
-				code:     503,
-				response: "Invalid request: Prebid-server has disabled Account ID: testacc, please reach out to the prebid server host.\n",
-			},
-		},
-		"timeout": {
-			fetcher: &mockAccountsFetcher{
-				Fail:       false,
-				DurationMS: 50,
-			},
-			cfg: &config.Configuration{
-				AccountDefaults: config.Account{Disabled: true},
-				AccountRequired: true,
-				Event: config.Event{
-					TimeoutMS: 10,
-				},
-			},
-			want: struct {
-				code     int
-				response string
-			}{
-				code:     504,
-				response: "Invalid request: context deadline exceeded\nInvalid request: Prebid-server could not verify the Account ID. Please reach out to the prebid server host.\n",
-			},
-		},
-	}
-
-	// mock PBS Analytics Module
-	mockAnalyticsModule := &eventsMockAnalyticsModule{
-		Fail: false,
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			test.cfg.MarshalAccountDefaults()
-
-			reqData := ""
-
-			req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=testacc", strings.NewReader(reqData))
-			recorder := httptest.NewRecorder()
-
-			e := NewEventEndpoint(test.cfg, test.fetcher, mockAnalyticsModule)
-
-			// execute
-			e(recorder, req, nil)
-			d, err := ioutil.ReadAll(recorder.Result().Body)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// validate
-			assert.Equal(t, test.want.code, recorder.Result().StatusCode, fmt.Sprintf("Expected %d", test.want.code))
-			assert.Equal(t, test.want.response, string(d))
-		})
-	}
-}
-
 func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *testing.T) {
 
 	// mock AccountsFetcher
@@ -677,24 +582,43 @@ func TestShouldRespondWithNoContentWhenRequestFormatIsNotDefined(t *testing.T) {
 
 func TestShouldParseEventCorrectly(t *testing.T) {
 
-	req := httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder", strings.NewReader(""))
-
-	expected := &analytics.EventRequest{
-		Type:      analytics.Win,
-		BidID:     "bidId",
-		Timestamp: 1000,
-		Bidder:    "bidder",
-		AccountID: "",
-		Format:    analytics.Blank,
-		Analytics: analytics.Enabled,
+	tests := map[string]struct {
+		req      *http.Request
+		expected *analytics.EventRequest
+	}{
+		"one": {
+			req: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder", strings.NewReader("")),
+			expected: &analytics.EventRequest{
+				Type:      analytics.Win,
+				BidID:     "bidId",
+				Timestamp: 1000,
+				Bidder:    "bidder",
+				AccountID: "",
+				Format:    analytics.Blank,
+				Analytics: analytics.Enabled,
+			},
+		},
+		"two": {
+			req: httptest.NewRequest("GET", "/event?t=win&b=bidId&ts=0&a=accountId", strings.NewReader("")),
+			expected: &analytics.EventRequest{
+				Type:      analytics.Win,
+				BidID:     "bidId",
+				Timestamp: 0,
+			},
+		},
 	}
 
-	// execute
-	er, errs := ParseEventRequest(req)
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
 
-	// validate
-	assert.Equal(t, 0, len(errs))
-	assert.EqualValues(t, expected, er)
+			// execute
+			er, errs := ParseEventRequest(test.req)
+
+			// validate
+			assert.Equal(t, 0, len(errs))
+			assert.EqualValues(t, test.expected, er)
+		})
+	}
 }
 
 func TestEventRequestToUrl(t *testing.T) {

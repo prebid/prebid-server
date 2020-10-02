@@ -42,7 +42,6 @@ func (m *vtrackMockCacheClient) GetExtCacheData() (scheme string, host string, p
 }
 
 // Test
-
 func TestShouldRespondWithBadRequestWhenAccountParameterIsMissing(t *testing.T) {
 	// mock pbs cache client
 	mockCacheClient := &vtrackMockCacheClient{}
@@ -528,6 +527,105 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	// validate
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")
 	assert.Equal(t, "{\"responses\":[{\"uuid\":\"uuid1\"},{\"uuid\":\"uuid2\"}]}", string(d), "Expected 200 when account is found, request has unknown bidders but allowUnknownBidders is enabled")
+}
+
+func TestShouldReturnBadRequestWhenRequestExceedsMaxRequestSize(t *testing.T) {
+	// mock pbs cache client
+	mockCacheClient := &vtrackMockCacheClient{
+		Fail:  false,
+		Uuids: []string{"uuid1", "uuid2"},
+	}
+
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		Fail: false,
+	}
+
+	// config
+	cfg := &config.Configuration{
+		MaxRequestSize: 1,
+		VTrack: config.VTrack{
+			TimeoutMS: int64(2000), AllowUnknownBidder: true,
+		},
+		AccountDefaults: config.Account{},
+	}
+	cfg.MarshalAccountDefaults()
+
+	// bidder info
+	bidderInfos := make(adapters.BidderInfos)
+
+	// prepare
+	data, err := getValidVTrackRequestBody(true, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(data))
+
+	recorder := httptest.NewRecorder()
+
+	e := vtrackEndpoint{
+		Cfg:         cfg,
+		BidderInfos: bidderInfos,
+		Cache:       mockCacheClient,
+		Accounts:    mockAccountsFetcher,
+	}
+
+	// execute
+	e.Handle(recorder, req, nil)
+
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// validate
+	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 when request exceeds max request size")
+	assert.Equal(t, "Invalid request: request size exceeded max size of 1 bytes\n", string(d))
+}
+
+func TestShouldRespondWithInternalErrorPbsCacheIsNotConfigured(t *testing.T) {
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		Fail: false,
+	}
+
+	// config
+	cfg := &config.Configuration{
+		MaxRequestSize: maxSize, VTrack: config.VTrack{
+			TimeoutMS: int64(2000), AllowUnknownBidder: false,
+		},
+		AccountDefaults: config.Account{},
+	}
+	cfg.MarshalAccountDefaults()
+
+	// prepare
+	data, err := getValidVTrackRequestBody(true, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(data))
+	recorder := httptest.NewRecorder()
+
+	e := vtrackEndpoint{
+		Cfg:         cfg,
+		BidderInfos: nil,
+		Cache:       nil,
+		Accounts:    mockAccountsFetcher,
+	}
+
+	// execute
+	e.Handle(recorder, req, nil)
+
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// validate
+	assert.Equal(t, 500, recorder.Result().StatusCode, "Expected 500 when pbs cache is not configured")
+	assert.Equal(t, "PBS Cache client is not configured", string(d))
 }
 
 func TestVastUrlShouldReturnExpectedUrl(t *testing.T) {
