@@ -99,7 +99,7 @@ func TestGetSizes(t *testing.T) {
 
 	request = &openrtb.Imp{Banner: multiFormatBanner}
 	size = getSizes(request)
-	if size != "300×250,320×50" {
+	if size != "300x250,320x50" {
 		t.Errorf("%v does not match size.", multiFormatBanner)
 	}
 	request = &openrtb.Imp{Banner: noFormatBanner}
