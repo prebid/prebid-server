@@ -134,94 +134,94 @@ var BidderMap = map[string]BidderName{
 
 // BidderList returns the values of the BidderMap
 func BidderList() []BidderName {
-    bidders := make([]BidderName, 0, len(BidderMap))
-    for _, value := range BidderMap {
-	  bidders = append(bidders, value)
-    }
-    return bidders
+	bidders := make([]BidderName, 0, len(BidderMap))
+	for _, value := range BidderMap {
+		bidders = append(bidders, value)
+	}
+	return bidders
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {
-    return []byte(name), nil
+	return []byte(name), nil
 }
 
 func (name *BidderName) String() string {
-    if name == nil {
-	  return ""
-    }
+	if name == nil {
+		return ""
+	}
 
-    return string(*name)
+	return string(*name)
 }
 
 // The BidderParamValidator is used to enforce bidrequest.imp[i].ext.{anyBidder} values.
 //
 // This is treated differently from the other types because we rely on JSON-schemas to validate bidder params.
 type BidderParamValidator interface {
-    Validate(name BidderName, ext json.RawMessage) error
-    // Schema returns the JSON schema used to perform validation.
-    Schema(name BidderName) string
+	Validate(name BidderName, ext json.RawMessage) error
+	// Schema returns the JSON schema used to perform validation.
+	Schema(name BidderName) string
 }
 
 // NewBidderParamsValidator makes a BidderParamValidator, assuming all the necessary files exist in the filesystem.
 // This will error if, for example, a Bidder gets added but no JSON schema is written for them.
 func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, error) {
-    fileInfos, err := ioutil.ReadDir(schemaDirectory)
-    if err != nil {
-	  return nil, fmt.Errorf("Failed to read JSON schemas from directory %s. %v", schemaDirectory, err)
-    }
+	fileInfos, err := ioutil.ReadDir(schemaDirectory)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read JSON schemas from directory %s. %v", schemaDirectory, err)
+	}
 
-    schemaContents := make(map[BidderName]string, 50)
-    schemas := make(map[BidderName]*gojsonschema.Schema, 50)
-    for _, fileInfo := range fileInfos {
-	  bidderName := strings.TrimSuffix(fileInfo.Name(), ".json")
-	  if _, isValid := BidderMap[bidderName]; !isValid {
-		return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
-	  }
-	  toOpen, err := filepath.Abs(filepath.Join(schemaDirectory, fileInfo.Name()))
-	  if err != nil {
-		return nil, fmt.Errorf("Failed to get an absolute representation of the path: %s, %v", toOpen, err)
-	  }
-	  schemaLoader := gojsonschema.NewReferenceLoader("file:///" + filepath.ToSlash(toOpen))
-	  loadedSchema, err := gojsonschema.NewSchema(schemaLoader)
-	  if err != nil {
-		return nil, fmt.Errorf("Failed to load json schema at %s: %v", toOpen, err)
-	  }
+	schemaContents := make(map[BidderName]string, 50)
+	schemas := make(map[BidderName]*gojsonschema.Schema, 50)
+	for _, fileInfo := range fileInfos {
+		bidderName := strings.TrimSuffix(fileInfo.Name(), ".json")
+		if _, isValid := BidderMap[bidderName]; !isValid {
+			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
+		}
+		toOpen, err := filepath.Abs(filepath.Join(schemaDirectory, fileInfo.Name()))
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get an absolute representation of the path: %s, %v", toOpen, err)
+		}
+		schemaLoader := gojsonschema.NewReferenceLoader("file:///" + filepath.ToSlash(toOpen))
+		loadedSchema, err := gojsonschema.NewSchema(schemaLoader)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to load json schema at %s: %v", toOpen, err)
+		}
 
-	  fileBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
-	  if err != nil {
-		return nil, fmt.Errorf("Failed to read file %s/%s: %v", schemaDirectory, fileInfo.Name(), err)
-	  }
+		fileBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read file %s/%s: %v", schemaDirectory, fileInfo.Name(), err)
+		}
 
-	  schemas[BidderName(bidderName)] = loadedSchema
-	  schemaContents[BidderName(bidderName)] = string(fileBytes)
-    }
+		schemas[BidderName(bidderName)] = loadedSchema
+		schemaContents[BidderName(bidderName)] = string(fileBytes)
+	}
 
-    return &bidderParamValidator{
-	  schemaContents: schemaContents,
-	  parsedSchemas:  schemas,
-    }, nil
+	return &bidderParamValidator{
+		schemaContents: schemaContents,
+		parsedSchemas:  schemas,
+	}, nil
 }
 
 type bidderParamValidator struct {
-    schemaContents map[BidderName]string
-    parsedSchemas  map[BidderName]*gojsonschema.Schema
+	schemaContents map[BidderName]string
+	parsedSchemas  map[BidderName]*gojsonschema.Schema
 }
 
 func (validator *bidderParamValidator) Validate(name BidderName, ext json.RawMessage) error {
-    result, err := validator.parsedSchemas[name].Validate(gojsonschema.NewBytesLoader(ext))
-    if err != nil {
-	  return err
-    }
-    if !result.Valid() {
-	  errBuilder := bytes.NewBuffer(make([]byte, 0, 300))
-	  for _, err := range result.Errors() {
-		errBuilder.WriteString(err.String())
-	  }
-	  return errors.New(errBuilder.String())
-    }
-    return nil
+	result, err := validator.parsedSchemas[name].Validate(gojsonschema.NewBytesLoader(ext))
+	if err != nil {
+		return err
+	}
+	if !result.Valid() {
+		errBuilder := bytes.NewBuffer(make([]byte, 0, 300))
+		for _, err := range result.Errors() {
+			errBuilder.WriteString(err.String())
+		}
+		return errors.New(errBuilder.String())
+	}
+	return nil
 }
 
 func (validator *bidderParamValidator) Schema(name BidderName) string {
-    return validator.schemaContents[name]
+	return validator.schemaContents[name]
 }
