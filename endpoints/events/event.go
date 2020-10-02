@@ -186,12 +186,6 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 	messages = []string{}
 	status = http.StatusInternalServerError
 
-	//grab error messages
-	for _, er := range errs {
-		messages = append(messages, er.Error())
-	}
-
-	//set appropriate error code
 	for _, er := range errs {
 		if errors.Is(er, context.DeadlineExceeded) {
 			er = &errortypes.Timeout{
@@ -199,14 +193,16 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 			}
 		}
 
+		messages = append(messages, er.Error())
+
 		errCode := errortypes.ReadCode(er)
-		switch errCode {
-		case errortypes.BlacklistedAppErrorCode, errortypes.BlacklistedAcctErrorCode:
+
+		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
 			status = http.StatusServiceUnavailable
-			break
-		case errortypes.TimeoutErrorCode:
+		}
+
+		if errCode == errortypes.TimeoutErrorCode && status == http.StatusInternalServerError {
 			status = http.StatusGatewayTimeout
-			break
 		}
 	}
 
