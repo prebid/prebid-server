@@ -17,7 +17,6 @@ func preloadLabelValues(m *Metrics) {
 		cookieValues                = cookieTypesAsString()
 		requestStatusValues         = requestStatusesAsString()
 		requestTypeValues           = requestTypesAsString()
-		storedDataTypeValues        = storedDataTypesAsString()
 		storedDataFetchTypeValues   = storedDataFetchTypesAsString()
 		storedDataFetchStatusValues = storedDataFetchStatusesAsString()
 		sourceValues                = []string{sourceRequest}
@@ -47,8 +46,27 @@ func preloadLabelValues(m *Metrics) {
 		requestTypeLabel: requestTypeValues,
 	})
 
-	preloadLabelValuesForHistogram(m.storedDataFetchTimer, map[string][]string{
-		dataTypeLabel:        storedDataTypeValues,
+	preloadLabelValuesForHistogram(m.storedAccountFetchTimer, map[string][]string{
+		dataFetchTypeLabel:   storedDataFetchTypeValues,
+		dataFetchStatusLabel: storedDataFetchStatusValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedAMPFetchTimer, map[string][]string{
+		dataFetchTypeLabel:   storedDataFetchTypeValues,
+		dataFetchStatusLabel: storedDataFetchStatusValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedCategoryFetchTimer, map[string][]string{
+		dataFetchTypeLabel:   storedDataFetchTypeValues,
+		dataFetchStatusLabel: storedDataFetchStatusValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedRequestFetchTimer, map[string][]string{
+		dataFetchTypeLabel:   storedDataFetchTypeValues,
+		dataFetchStatusLabel: storedDataFetchStatusValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedVideoFetchTimer, map[string][]string{
 		dataFetchTypeLabel:   storedDataFetchTypeValues,
 		dataFetchStatusLabel: storedDataFetchStatusValues,
 	})

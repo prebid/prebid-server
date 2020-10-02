@@ -54,20 +54,20 @@ type PrivacyLabels struct {
 type StoredDataType string
 
 const (
-	RequestDataType    StoredDataType = "Request"
-	CategoryDataType   StoredDataType = "Category"
-	VideoDataType      StoredDataType = "Video"
-	AMPRequestDataType StoredDataType = "AMP Request"
-	AccountDataType    StoredDataType = "Account"
+	AccountDataType  StoredDataType = "Account"
+	AMPDataType      StoredDataType = "AMP"
+	CategoryDataType StoredDataType = "Category"
+	RequestDataType  StoredDataType = "Request"
+	VideoDataType    StoredDataType = "Video"
 )
 
 func StoredDataTypes() []StoredDataType {
 	return []StoredDataType{
-		RequestDataType,
-		CategoryDataType,
-		VideoDataType,
-		AMPRequestDataType,
 		AccountDataType,
+		AMPDataType,
+		CategoryDataType,
+		RequestDataType,
+		VideoDataType,
 	}
 }
 
@@ -88,8 +88,8 @@ func StoredDataFetchTypes() []StoredDataFetchType {
 type StoredDataFetchStatus string
 
 const (
-	FetchSuccess StoredDataFetchStatus = "Success"
 	FetchError   StoredDataFetchStatus = "Error"
+	FetchSuccess StoredDataFetchStatus = "Success"
 )
 
 func StoredDataFetchStatuses() []StoredDataFetchStatus {

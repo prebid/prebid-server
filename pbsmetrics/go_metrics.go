@@ -2,6 +2,7 @@ package pbsmetrics
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -231,26 +232,15 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 
-	newMetrics.StoredDataFetchTimerSuccess[RequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_request_fetch_time.all.ok", registry)
-	newMetrics.StoredDataFetchTimerError[RequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_request_fetch_time.all.err", registry)
-	newMetrics.StoredDataFetchTimerSuccess[RequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_request_fetch_time.delta.ok", registry)
-	newMetrics.StoredDataFetchTimerError[RequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_request_fetch_time.delta.err", registry)
-	newMetrics.StoredDataFetchTimerSuccess[CategoryDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_category_fetch_time.all.ok", registry)
-	newMetrics.StoredDataFetchTimerError[CategoryDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_category_fetch_time.all.err", registry)
-	newMetrics.StoredDataFetchTimerSuccess[CategoryDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_category_fetch_time.delta.ok", registry)
-	newMetrics.StoredDataFetchTimerError[CategoryDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_category_fetch_time.delta.err", registry)
-	newMetrics.StoredDataFetchTimerSuccess[VideoDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_video_fetch_time.all.ok", registry)
-	newMetrics.StoredDataFetchTimerError[VideoDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_video_fetch_time.all.err", registry)
-	newMetrics.StoredDataFetchTimerSuccess[VideoDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_video_fetch_time.delta.ok", registry)
-	newMetrics.StoredDataFetchTimerError[VideoDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_video_fetch_time.delta.err", registry)
-	newMetrics.StoredDataFetchTimerSuccess[AMPRequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.all.ok", registry)
-	newMetrics.StoredDataFetchTimerError[AMPRequestDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.all.err", registry)
-	newMetrics.StoredDataFetchTimerSuccess[AMPRequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.delta.ok", registry)
-	newMetrics.StoredDataFetchTimerError[AMPRequestDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_amp_request_fetch_time.delta.err", registry)
-	newMetrics.StoredDataFetchTimerSuccess[AccountDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_account_fetch_time.all.ok", registry)
-	newMetrics.StoredDataFetchTimerError[AccountDataType][FetchAll] = metrics.GetOrRegisterTimer("stored_account_fetch_time.all.err", registry)
-	newMetrics.StoredDataFetchTimerSuccess[AccountDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_account_fetch_time.delta.ok", registry)
-	newMetrics.StoredDataFetchTimerError[AccountDataType][FetchDelta] = metrics.GetOrRegisterTimer("stored_account_fetch_time.delta.err", registry)
+	for _, dt := range StoredDataTypes() {
+		for _, ft := range StoredDataFetchTypes() {
+			successTimerName := fmt.Sprintf("stored_%s_fetch_time.%s.ok", strings.ToLower(string(dt)), strings.ToLower(string(ft)))
+			newMetrics.StoredDataFetchTimerSuccess[dt][ft] = metrics.GetOrRegisterTimer(successTimerName, registry)
+
+			errorTimerName := fmt.Sprintf("stored_%s_fetch_time.%s.err", strings.ToLower(string(dt)), strings.ToLower(string(ft)))
+			newMetrics.StoredDataFetchTimerError[dt][ft] = metrics.GetOrRegisterTimer(errorTimerName, registry)
+		}
+	}
 
 	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
 	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)

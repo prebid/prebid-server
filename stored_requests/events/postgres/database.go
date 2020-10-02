@@ -140,7 +140,7 @@ func (e *PostgresEventProducer) metricsStoredDataType() pbsmetrics.StoredDataTyp
 		config.RequestDataType:    pbsmetrics.RequestDataType,
 		config.CategoryDataType:   pbsmetrics.CategoryDataType,
 		config.VideoDataType:      pbsmetrics.VideoDataType,
-		config.AMPRequestDataType: pbsmetrics.AMPRequestDataType,
+		config.AMPRequestDataType: pbsmetrics.AMPDataType,
 		config.AccountDataType:    pbsmetrics.AccountDataType,
 	}[e.cfg.RequestType]
 }

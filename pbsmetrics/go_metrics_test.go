@@ -347,6 +347,7 @@ func TestRecordPrebidCacheRequestTimeWithNotSuccess(t *testing.T) {
 
 func TestRecordStoredDataFetchTime(t *testing.T) {
 	tests := []struct {
+		description      string
 		giveDataType     StoredDataType
 		giveFetchType    StoredDataFetchType
 		giveFetchStatus  StoredDataFetchStatus
@@ -354,6 +355,31 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 		wantErrorCount   int64
 	}{
 		{
+			description:      "Update stored_account_fetch_time.all.ok timer",
+			giveDataType:     AccountDataType,
+			giveFetchType:    FetchAll,
+			giveFetchStatus:  FetchSuccess,
+			wantSuccessCount: int64(1),
+			wantErrorCount:   int64(0),
+		},
+		{
+			description:      "Update stored_amp_fetch_time.all.ok timer",
+			giveDataType:     AMPDataType,
+			giveFetchType:    FetchAll,
+			giveFetchStatus:  FetchSuccess,
+			wantSuccessCount: int64(1),
+			wantErrorCount:   int64(0),
+		},
+		{
+			description:      "Update stored_category_fetch_time.all.ok timer",
+			giveDataType:     CategoryDataType,
+			giveFetchType:    FetchAll,
+			giveFetchStatus:  FetchSuccess,
+			wantSuccessCount: int64(1),
+			wantErrorCount:   int64(0),
+		},
+		{
+			description:      "Update stored_request_fetch_time.all.ok timer",
 			giveDataType:     RequestDataType,
 			giveFetchType:    FetchAll,
 			giveFetchStatus:  FetchSuccess,
@@ -361,13 +387,23 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			wantErrorCount:   int64(0),
 		},
 		{
-			giveDataType:     AMPRequestDataType,
+			description:      "Update stored_video_fetch_time.all.ok timer",
+			giveDataType:     VideoDataType,
 			giveFetchType:    FetchAll,
 			giveFetchStatus:  FetchSuccess,
 			wantSuccessCount: int64(1),
 			wantErrorCount:   int64(0),
 		},
 		{
+			description:      "Update stored_request_fetch_time.all.err timer",
+			giveDataType:     RequestDataType,
+			giveFetchType:    FetchAll,
+			giveFetchStatus:  FetchError,
+			wantSuccessCount: int64(0),
+			wantErrorCount:   int64(1),
+		},
+		{
+			description:      "Update stored_request_fetch_time.delta.ok timer",
 			giveDataType:     RequestDataType,
 			giveFetchType:    FetchDelta,
 			giveFetchStatus:  FetchSuccess,
@@ -375,8 +411,9 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			wantErrorCount:   int64(0),
 		},
 		{
+			description:      "Update stored_request_fetch_time.delta.err timer",
 			giveDataType:     RequestDataType,
-			giveFetchType:    FetchAll,
+			giveFetchType:    FetchDelta,
 			giveFetchStatus:  FetchError,
 			wantSuccessCount: int64(0),
 			wantErrorCount:   int64(1),
@@ -393,8 +430,11 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			DataFetchStatus: tt.giveFetchStatus,
 		}, 500)
 
-		assert.Equal(t, tt.wantSuccessCount, m.StoredDataFetchTimerSuccess[tt.giveDataType][tt.giveFetchType].Count())
-		assert.Equal(t, tt.wantErrorCount, m.StoredDataFetchTimerError[tt.giveDataType][tt.giveFetchType].Count())
+		actualSuccessCount := m.StoredDataFetchTimerSuccess[tt.giveDataType][tt.giveFetchType].Count()
+		assert.Equal(t, tt.wantSuccessCount, actualSuccessCount, tt.description)
+
+		actualErrorCount := m.StoredDataFetchTimerError[tt.giveDataType][tt.giveFetchType].Count()
+		assert.Equal(t, tt.wantErrorCount, actualErrorCount, tt.description)
 	}
 }
 

@@ -407,6 +407,115 @@ func TestRequestTimeMetric(t *testing.T) {
 	}
 }
 
+func TestRecordStoredDataFetchTime(t *testing.T) {
+	tests := []struct {
+		description     string
+		giveDataType    pbsmetrics.StoredDataType
+		giveFetchType   pbsmetrics.StoredDataFetchType
+		giveFetchStatus pbsmetrics.StoredDataFetchStatus
+		wantCount       uint64
+		wantSum         float64
+	}{
+		{
+			description:     "Update stored account histogram with all and success labels",
+			giveDataType:    pbsmetrics.AccountDataType,
+			giveFetchType:   pbsmetrics.FetchAll,
+			giveFetchStatus: pbsmetrics.FetchSuccess,
+			wantCount:       1,
+			wantSum:         0.5,
+		},
+		{
+			description:     "Update stored AMP histogram with all and success labels",
+			giveDataType:    pbsmetrics.AMPDataType,
+			giveFetchType:   pbsmetrics.FetchAll,
+			giveFetchStatus: pbsmetrics.FetchSuccess,
+			wantCount:       1,
+			wantSum:         0.5,
+		},
+		{
+			description:     "Update stored category histogram with all and success labels",
+			giveDataType:    pbsmetrics.CategoryDataType,
+			giveFetchType:   pbsmetrics.FetchAll,
+			giveFetchStatus: pbsmetrics.FetchSuccess,
+			wantCount:       1,
+			wantSum:         0.5,
+		},
+		{
+			description:     "Update stored request histogram with all and success labels",
+			giveDataType:    pbsmetrics.RequestDataType,
+			giveFetchType:   pbsmetrics.FetchAll,
+			giveFetchStatus: pbsmetrics.FetchSuccess,
+			wantCount:       1,
+			wantSum:         0.5,
+		},
+		{
+			description:     "Update stored video histogram with all and success labels",
+			giveDataType:    pbsmetrics.VideoDataType,
+			giveFetchType:   pbsmetrics.FetchAll,
+			giveFetchStatus: pbsmetrics.FetchSuccess,
+			wantCount:       1,
+			wantSum:         0.5,
+		},
+		{
+			description:     "Update stored request histogram with all and error labels",
+			giveDataType:    pbsmetrics.RequestDataType,
+			giveFetchType:   pbsmetrics.FetchAll,
+			giveFetchStatus: pbsmetrics.FetchError,
+			wantCount:       1,
+			wantSum:         0.5,
+		},
+		{
+			description:     "Update stored request histogram with delta and success labels",
+			giveDataType:    pbsmetrics.RequestDataType,
+			giveFetchType:   pbsmetrics.FetchDelta,
+			giveFetchStatus: pbsmetrics.FetchSuccess,
+			wantCount:       1,
+			wantSum:         0.5,
+		},
+		{
+			description:     "Update stored request histogram with delta and error labels",
+			giveDataType:    pbsmetrics.RequestDataType,
+			giveFetchType:   pbsmetrics.FetchDelta,
+			giveFetchStatus: pbsmetrics.FetchError,
+			wantCount:       1,
+			wantSum:         0.5,
+		},
+	}
+
+	for _, tt := range tests {
+		m := createMetricsForTesting()
+
+		fetchTime := time.Duration(0.5 * float64(time.Second))
+		m.RecordStoredDataFetchTime(pbsmetrics.StoredDataTypeLabels{
+			DataType:        tt.giveDataType,
+			DataFetchType:   tt.giveFetchType,
+			DataFetchStatus: tt.giveFetchStatus,
+		}, fetchTime)
+
+		var metricsTimer *prometheus.HistogramVec
+		switch tt.giveDataType {
+		case pbsmetrics.AccountDataType:
+			metricsTimer = m.storedAccountFetchTimer
+		case pbsmetrics.AMPDataType:
+			metricsTimer = m.storedAMPFetchTimer
+		case pbsmetrics.CategoryDataType:
+			metricsTimer = m.storedCategoryFetchTimer
+		case pbsmetrics.RequestDataType:
+			metricsTimer = m.storedRequestFetchTimer
+		case pbsmetrics.VideoDataType:
+			metricsTimer = m.storedVideoFetchTimer
+		}
+
+		result := getHistogramFromHistogramVecByTwoKeys(
+			metricsTimer,
+			dataFetchTypeLabel,
+			string(tt.giveFetchType),
+			dataFetchStatusLabel,
+			string(tt.giveFetchStatus))
+		assertHistogram(t, tt.description, result, tt.wantCount, tt.wantSum)
+	}
+}
+
 func TestAdapterBidReceivedMetric(t *testing.T) {
 	adapterName := "anyName"
 	performTest := func(m *Metrics, hasAdm bool) {
@@ -1240,6 +1349,8 @@ func getHistogramFromHistogramVecByTwoKeys(histogram *prometheus.HistogramVec, l
 				valInd := ind
 				if ind == 1 {
 					valInd = 0
+				} else {
+					valInd = 1
 				}
 				if m.Label[valInd].GetName() == label2Key && m.Label[valInd].GetValue() == label2Value {
 					result = *m.GetHistogram()
