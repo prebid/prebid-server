@@ -40,6 +40,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/improvedigital"
 	"github.com/prebid/prebid-server/adapters/invibes"
 	"github.com/prebid/prebid-server/adapters/ix"
+	"github.com/prebid/prebid-server/adapters/krushmedia"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/lockerdome"
 	"github.com/prebid/prebid-server/adapters/logicad"
@@ -57,6 +58,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/sharethrough"
 	"github.com/prebid/prebid-server/adapters/smartadserver"
 	"github.com/prebid/prebid-server/adapters/smartrtb"
+	"github.com/prebid/prebid-server/adapters/smartyads"
 	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/adapters/sovrn"
@@ -120,6 +122,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderImprovedigital, improvedigital.NewImprovedigitalSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderInvibes, invibes.NewInvibesSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderIx, ix.NewIxSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderKrushmedia, krushmedia.NewKrushmediaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLifestreet, lifestreet.NewLifestreetSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLockerDome, lockerdome.NewLockerDomeSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLogicad, logicad.NewLogicadSyncer)
@@ -140,6 +143,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSovrn, sovrn.NewSovrnSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartadserver, smartadserver.NewSmartadserverSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartRTB, smartrtb.NewSmartRTBSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartyAds, smartyads.NewSmartyAdsSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSynacormedia, synacormedia.NewSynacorMediaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTelaria, telaria.NewTelariaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTriplelift, triplelift.NewTripleliftSyncer)
