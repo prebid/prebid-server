@@ -15,19 +15,21 @@ type Policy struct {
 	SignalProvided bool
 }
 
-// ReadPolicy extracts the LMT (Limit Ad Tracking) policy from an OpenRTB bid request.
-func ReadPolicy(req *openrtb.BidRequest) Policy {
-	policy := Policy{}
-
+// ReadFromRequest extracts the LMT (Limit Ad Tracking) policy from an OpenRTB bid request.
+func ReadFromRequest(req *openrtb.BidRequest) (policy Policy) {
 	if req != nil && req.Device != nil && req.Device.Lmt != nil {
 		policy.Signal = int(*req.Device.Lmt)
 		policy.SignalProvided = true
 	}
+	return
+}
 
-	return policy
+// CanEnforce returns true the LMT (Limit Ad Tracking) signal is provided by the publisher.
+func (p Policy) CanEnforce() bool {
+	return p.SignalProvided
 }
 
 // ShouldEnforce returns true when the LMT (Limit Ad Tracking) policy is in effect.
-func (p Policy) ShouldEnforce() bool {
+func (p Policy) ShouldEnforce(bidder string) bool {
 	return p.SignalProvided && p.Signal == trackingRestricted
 }

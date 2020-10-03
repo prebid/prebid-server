@@ -2,7 +2,7 @@
   "mockBidRequest": {
     "id": "test-request-id",
     "app":{
-    	"id":"test-app-id",	
+    	"id":"test-app-id",
     	"name":"test-app-name",
     	"bundle":"test-app-bundle"
     },
