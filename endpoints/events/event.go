@@ -184,7 +184,7 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 // HandleAccountServiceErrors handles account.GetAccount errors
 func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 	messages = []string{}
-	status = http.StatusInternalServerError
+	status = http.StatusBadRequest
 
 	for _, er := range errs {
 		if errors.Is(er, context.DeadlineExceeded) {
@@ -201,7 +201,7 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 			status = http.StatusServiceUnavailable
 		}
 
-		if errCode == errortypes.TimeoutErrorCode && status == http.StatusInternalServerError {
+		if errCode == errortypes.TimeoutErrorCode && status == http.StatusBadRequest {
 			status = http.StatusGatewayTimeout
 		}
 	}
@@ -304,6 +304,7 @@ func readAnalytics(er *analytics.EventRequest, httpRequest *http.Request) error 
 		}
 	}
 
+	er.Analytics = analytics.Enabled
 	return nil
 }
 

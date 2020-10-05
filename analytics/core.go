@@ -71,6 +71,6 @@ type CookieSyncObject struct {
 
 // NotificationEvent is a loggable object
 type NotificationEvent struct {
-	Request *EventRequest
+	Request *EventRequest   `json:"request"`
 	Account *config.Account `json:"account"`
 }

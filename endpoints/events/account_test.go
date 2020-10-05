@@ -24,7 +24,7 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 			response string
 		}
 	}{
-		"internalServerError": {
+		"badRequest": {
 			fetcher: &mockAccountsFetcher{
 				Fail:  true,
 				Error: errors.New("some error"),
@@ -41,7 +41,7 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 				code     int
 				response string
 			}{
-				code:     500,
+				code:     400,
 				response: "Invalid request: some error\nInvalid request: Prebid-server could not verify the Account ID. Please reach out to the prebid server host.\n",
 			},
 		},

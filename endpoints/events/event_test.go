@@ -604,6 +604,7 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 				Type:      analytics.Win,
 				BidID:     "bidId",
 				Timestamp: 0,
+				Analytics: analytics.Enabled,
 			},
 		},
 	}
