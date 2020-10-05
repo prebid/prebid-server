@@ -114,9 +114,9 @@ func TestJsonSampleRequests(t *testing.T) {
 
 		for _, file := range testCaseFiles {
 			data, err := ioutil.ReadFile(file)
-			assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file)
-
-			runTestCase(t, data, file)
+			if !assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file) {
+				runTestCase(t, data, file)
+			}
 		}
 	}
 }
@@ -146,18 +146,29 @@ func runTestCase(t *testing.T, fileData []byte, testFile string) {
 	test.Config = generateConfigMaps(test.Config)
 
 	// Run test
-	actualCode, actualBidResponse := doRequest(t, test)
+	actualCode, actualJsonBidResponse := doRequest(t, test)
 
 	// Assertions
 	assert.Equal(t, test.ExpectedReturnCode, actualCode, "Test failed. Filename: %s \n", testFile)
 
 	// Either assert bid response or expected error
 	if len(test.ExpectedErrorMessage) > 0 {
-		assert.True(t, strings.HasPrefix(actualBidResponse, test.ExpectedErrorMessage), "Actual: %s \nExpected: %s. Filename: %s \n", actualBidResponse, test.ExpectedErrorMessage, testFile)
+		assert.True(t, strings.HasPrefix(actualJsonBidResponse, test.ExpectedErrorMessage), "Actual: %s \nExpected: %s. Filename: %s \n", actualJsonBidResponse, test.ExpectedErrorMessage, testFile)
 	}
 
 	if len(test.ExpectedBidResponse) > 0 {
-		assertBidResponseEqual(t, testFile, []byte(actualBidResponse), test.ExpectedBidResponse)
+		var expectedBidResponse openrtb.BidResponse
+		var actualBidResponse openrtb.BidResponse
+
+		if err := json.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse); err != nil {
+			t.Fatalf("Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err)
+		}
+
+		if err := json.Unmarshal([]byte(actualJsonBidResponse), &actualBidResponse); err != nil {
+			t.Fatalf("Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n", testFile, err)
+		}
+
+		assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
 	}
 }
 
@@ -225,28 +236,22 @@ func generateConfigMaps(tc *testConfigValues) *testConfigValues {
 	return tc
 }
 
-// This function does not expects errors when unmarshaling both the actual and the expected bid response
 // Once unmarshalled, bidResponse objects can't simply be compared with an `assert.Equalf()` call
-// because tests fail if the elements inside the `bidResponse.SeatBid` and `bidResponse.SeatBod.Bid`
+// because tests fail if the elements inside the `bidResponse.SeatBid` and `bidResponse.SeatBid.Bid`
 // arrays, if any, are not listed in the exact same order in the actual version and in the expected version.
-func assertBidResponseEqual(t *testing.T, testFile string, actualJson []byte, expectedJson []byte) {
-	var actualBidResponse openrtb.BidResponse
-	var expectedBidResponse openrtb.BidResponse
+func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse openrtb.BidResponse, actualBidResponse openrtb.BidResponse) {
 
-	if err := json.Unmarshal(actualJson, &actualBidResponse); err != nil {
-		t.Fatalf("Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n", testFile, err)
-	}
-
-	if err := json.Unmarshal(expectedJson, &expectedBidResponse); err != nil {
-		t.Fatalf("Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err)
-	}
-
+	//Assert non-array BidResponse fields
 	assert.Equalf(t, actualBidResponse.ID, expectedBidResponse.ID, "BidResponse.ID doesn't match expected. Test: %s\n", testFile)
+	assert.Equalf(t, actualBidResponse.BidID, expectedBidResponse.BidID, "BidResponse.BidID doesn't match expected. Test: %s\n", testFile)
+	assert.Equalf(t, actualBidResponse.NBR, expectedBidResponse.NBR, "BidResponse.NBR doesn't match expected. Test: %s\n", testFile)
+
+	//Assert []SeatBid and their Bid elements independently of their order
 	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
 
 	//Given that bidResponses have the same lenght, compare them
 	for i := 0; i < len(expectedBidResponse.SeatBid); i++ {
-		//Map SeatBid array elements to get an accurate comparison
+		//Map SeatBid array elements to get an accurate comparison of their []Bid slice elements
 		var actualSeatBidsMap map[string]openrtb.SeatBid = make(map[string]openrtb.SeatBid, 0)
 		for _, seat := range actualBidResponse.SeatBid {
 			actualSeatBidsMap[seat.Seat] = seat
@@ -258,6 +263,10 @@ func assertBidResponseEqual(t *testing.T, testFile string, actualJson []byte, ex
 		}
 
 		for k, expectedSeatBid := range expectedSeatBidsMap {
+			//Assert non-array SeatBid fields
+			assert.Equalf(t, expectedSeatBid.Seat, actualSeatBidsMap[k].Seat, "actualSeatBidsMap[%s].Seat doesn't match expected. Test: %s\n", k, testFile)
+			assert.Equalf(t, expectedSeatBid.Group, actualSeatBidsMap[k].Group, "actualSeatBidsMap[%s].Group doesn't match expected. Test: %s\n", k, testFile)
+			assert.Equalf(t, expectedSeatBid.Ext, actualSeatBidsMap[k].Ext, "actualSeatBidsMap[%s].Ext doesn't match expected. Test: %s\n", k, testFile)
 			assert.Len(t, actualSeatBidsMap[k].Bid, len(expectedSeatBid.Bid), "BidResponse.SeatBid[].Bid array doesn't match expected. Test: %s\n", testFile)
 
 			//Map bids to get actualBidResponse.SeatBid[i].Bid elements sorted so order doesn't matter when comparing
@@ -271,9 +280,91 @@ func assertBidResponseEqual(t *testing.T, testFile string, actualJson []byte, ex
 				expectedBidsMap[bid.ID] = bid
 			}
 
-			//Compare maps order in which bids were listed in the BidResponse.SeatBid[%d].Bid is irrelevant
+			// Asserting maps with default assertify function
 			assert.Equalf(t, actualBidsMap, expectedBidsMap, "BidResponse.SeatBid[].Bid doesn't match expected. Test: %s\n", testFile)
 		}
+	}
+}
+
+func TestBidRequestAssert(t *testing.T) {
+	appnexusB1 := openrtb.Bid{ID: "appnexus-bid-1", Price: 5.00}
+	appnexusB2 := openrtb.Bid{ID: "appnexus-bid-2", Price: 7.00}
+	rubiconB1 := openrtb.Bid{ID: "rubicon-bid-1", Price: 1.50}
+	rubiconB2 := openrtb.Bid{ID: "rubicon-bid-2", Price: 4.00}
+
+	sampleSeatBids := []openrtb.SeatBid{
+		{
+			Seat: "seat1",
+			Bid:  []openrtb.Bid{appnexusB1, rubiconB1},
+		},
+		{
+			Seat: "seat2",
+			Bid:  []openrtb.Bid{appnexusB2, rubiconB2},
+		},
+	}
+
+	testSuites := []struct {
+		description         string
+		expectedBidResponse openrtb.BidResponse
+		actualBidResponse   openrtb.BidResponse
+	}{
+		{
+			"identical seatBids, exact same seatBid and Bid arrays order",
+			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
+			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
+		},
+		{
+			"identical seatBids but seatbid array elements come in different order",
+			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
+			openrtb.BidResponse{ID: "anId", BidID: "bidId",
+				SeatBid: []openrtb.SeatBid{
+					{
+						Seat: "seat2",
+						Bid:  []openrtb.Bid{appnexusB2, rubiconB2},
+					},
+					{
+						Seat: "seat1",
+						Bid:  []openrtb.Bid{appnexusB1, rubiconB1},
+					},
+				},
+			},
+		},
+		{
+			"seatBids seem to be identical except for the different order of Bid array elements in seat1",
+			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
+			openrtb.BidResponse{ID: "anId", BidID: "bidId",
+				SeatBid: []openrtb.SeatBid{
+					{
+						Seat: "seat1",
+						Bid:  []openrtb.Bid{rubiconB1, appnexusB1},
+					},
+					{
+						Seat: "seat2",
+						Bid:  []openrtb.Bid{appnexusB2, rubiconB2},
+					},
+				},
+			},
+		},
+		{
+			"Both seatBid elements and bid elements come in different order",
+			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
+			openrtb.BidResponse{ID: "anId", BidID: "bidId",
+				SeatBid: []openrtb.SeatBid{
+					{
+						Seat: "seat2",
+						Bid:  []openrtb.Bid{appnexusB2, rubiconB2},
+					},
+					{
+						Seat: "seat1",
+						Bid:  []openrtb.Bid{rubiconB1, appnexusB1},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range testSuites {
+		assertBidResponseEqual(t, test.description, test.expectedBidResponse, test.actualBidResponse)
 	}
 }
 
