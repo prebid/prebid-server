@@ -42,7 +42,7 @@ const (
 
 type Cacheable struct {
 	Type       PayloadType     `json:"type,omitempty"`
-	Data       json.RawMessage `json:"data,omitempty"`
+	Data       json.RawMessage `json:"value,omitempty"`
 	TTLSeconds int64           `json:"ttlseconds,omitempty"`
 	Key        string          `json:"key,omitempty"`
 
