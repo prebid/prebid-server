@@ -53,6 +53,12 @@ type pubmaticParams struct {
 	Keywords    map[string]string `json:"keywords,omitempty"`
 }
 
+type pubmaticWrapperExt struct {
+	ProfileID    int    `json:"profile,omitempty"`
+	VersionID    int    `json:"version,omitempty"`
+	WrapperImpID string `json:"wiid,omitempty"`
+}
+
 type pubmaticBidExtVideo struct {
 	Duration *int `json:"duration,omitempty"`
 }
@@ -392,8 +398,9 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	errs := make([]error, 0, len(request.Imp))
 
 	var err error
-	wrapExt := ""
+	wrapperExt := new(pubmaticWrapperExt)
 	pubID := ""
+	wrapperExtSet := false
 
 	cookies, err := getCookiesFromRequest(request)
 	if err != nil {
@@ -401,7 +408,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	}
 
 	for i := 0; i < len(request.Imp); i++ {
-		err = parseImpressionObject(&request.Imp[i], &wrapExt, &pubID)
+		err = parseImpressionObject(&request.Imp[i], wrapperExt, &pubID, &wrapperExtSet)
 		// If the parsing is failed, remove imp and add the error.
 		if err != nil {
 			errs = append(errs, err)
@@ -410,8 +417,14 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 		}
 	}
 
-	if wrapExt != "" {
-		rawExt := fmt.Sprintf("{\"wrapper\": %s}", wrapExt)
+	//if wrapper ext is set, then add it in request.ext
+	if wrapperExtSet {
+		//get wrapper impression ID from bidder params
+		if wbytes, err := getBidderParam(request, "wiid"); err == nil && len(wbytes) != 0 {
+			wrapperExt.WrapperImpID, _ = strconv.Unquote(string(wbytes))
+		}
+		jsonData, _ := json.Marshal(wrapperExt)
+		rawExt := fmt.Sprintf("{\"wrapper\": %s}", string(jsonData))
 		request.Ext = json.RawMessage(rawExt)
 	}
 
@@ -572,7 +585,7 @@ func assignBannerSize(banner *openrtb.Banner) error {
 }
 
 // parseImpressionObject parse the imp to get it ready to send to pubmatic
-func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) error {
+func parseImpressionObject(imp *openrtb.Imp, wrapExt *pubmaticWrapperExt, pubID *string, wrapperExtSet *bool) error {
 	// PubMatic supports banner and video impressions.
 	if imp.Banner == nil && imp.Video == nil {
 		return fmt.Errorf("Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=%s", imp.ID)
@@ -597,13 +610,12 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 	}
 
 	// Parse Wrapper Extension only once per request
-	if *wrapExt == "" && len(pubmaticExt.WrapExt) != 0 {
-		var wrapExtMap map[string]int
-		err := json.Unmarshal([]byte(pubmaticExt.WrapExt), &wrapExtMap)
+	if !*wrapperExtSet && len(pubmaticExt.WrapExt) != 0 {
+		err := json.Unmarshal([]byte(pubmaticExt.WrapExt), &wrapExt)
 		if err != nil {
 			return fmt.Errorf("Error in Wrapper Parameters = %v  for ImpID = %v WrapperExt = %v", err.Error(), imp.ID, string(pubmaticExt.WrapExt))
 		}
-		*wrapExt = string(pubmaticExt.WrapExt)
+		*wrapperExtSet = true
 	}
 
 	if err := validateAdSlot(strings.TrimSpace(pubmaticExt.AdSlot), imp); err != nil {
