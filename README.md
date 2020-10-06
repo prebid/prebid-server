@@ -48,10 +48,14 @@ Load the landing page in your browser at `http://localhost:8000/`.
 For the full API reference, see [the endpoint documentation](https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html)
 
 
+## Run On Docker
+
+Docker images for Prebid Server are available from [DockerHub](https://hub.docker.com/r/prebid/prebid-server/). We build and publish official images for every release. The base image is [ubuntu:18.04](https://hub.docker.com/_/ubuntu).
+
 ## Contributing
 
-Want to [add an adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html)? Found a bug? Great!
+Want to [add an adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html)? Found a bug? We welcome you to join our developer community.
 
-Report bugs, request features, and suggest improvements [on Github](https://github.com/prebid/prebid-server/issues).
+Report bugs, propose features, or suggest improvements [on the GitHub issues page](https://github.com/prebid/prebid-server/issues). Develop a new adapter following [our guide](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html) and open a pull request.
 
-Or better yet, [open a pull request](https://github.com/prebid/prebid-server/compare) with the changes you'd like to see.
+Interested in implementing a defined feature? You're welcome to pick up an intent-to-implement story from the [issue list](https://github.com/prebid/prebid-server/issues?q=is%3Aissue+is%3Aopen+label%3A%22Intent+to+implement%22) and begin work. Please mention in the issue that you're working on it to avoid duplicated effort.
