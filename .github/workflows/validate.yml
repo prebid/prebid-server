@@ -6,7 +6,7 @@ on:
   release:
     types:
       - created
-name: Validate
+name: validate
 jobs:
   Go:
     strategy:
@@ -21,7 +21,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: Validate
+    - name: validate
       run: |
         ./validate.sh --nofmt --cov --race 10
       env:
