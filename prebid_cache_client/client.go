@@ -41,14 +41,14 @@ const (
 )
 
 type Cacheable struct {
-	Type       PayloadType
-	Data       json.RawMessage
-	TTLSeconds int64
-	Key        string
+	Type       PayloadType     `json:"type,omitempty"`
+	Data       json.RawMessage `json:"data,omitempty"`
+	TTLSeconds int64           `json:"ttlseconds,omitempty"`
+	Key        string          `json:"key,omitempty"`
 
-	BidID     string `json:"bidid"`     // this is "/vtrack" specific
-	Bidder    string `json:"bidder"`    // this is "/vtrack" specific
-	Timestamp int64  `json:"timestamp"` // this is "/vtrack" specific
+	BidID     string `json:"bidid,omitempty"`     // this is "/vtrack" specific
+	Bidder    string `json:"bidder,omitempty"`    // this is "/vtrack" specific
+	Timestamp int64  `json:"timestamp,omitempty"` // this is "/vtrack" specific
 }
 
 func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {

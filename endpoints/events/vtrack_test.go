@@ -349,6 +349,7 @@ func TestShouldTolerateAccountNotFound(t *testing.T) {
 
 	// validate
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")
+	assert.Equal(t, "application/json", recorder.Header().Get("Content-Type"))
 }
 
 func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowed(t *testing.T) {
@@ -411,6 +412,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	// validate
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")
 	assert.Equal(t, "{\"responses\":[{\"uuid\":\"uuid1\"}]}", string(d), "Expected 200 when account is found and request is valid")
+	assert.Equal(t, "application/json", recorder.Header().Get("Content-Type"))
 }
 
 func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t *testing.T) {
@@ -473,6 +475,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	// validate
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")
 	assert.Equal(t, "{\"responses\":[{\"uuid\":\"uuid1\"},{\"uuid\":\"uuid2\"}]}", string(d), "Expected 200 when account is found and request is valid")
+	assert.Equal(t, "application/json", recorder.Header().Get("Content-Type"))
 }
 
 func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidderIsAllowed(t *testing.T) {
@@ -527,6 +530,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	// validate
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")
 	assert.Equal(t, "{\"responses\":[{\"uuid\":\"uuid1\"},{\"uuid\":\"uuid2\"}]}", string(d), "Expected 200 when account is found, request has unknown bidders but allowUnknownBidders is enabled")
+	assert.Equal(t, "application/json", recorder.Header().Get("Content-Type"))
 }
 
 func TestShouldReturnBadRequestWhenRequestExceedsMaxRequestSize(t *testing.T) {
