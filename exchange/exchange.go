@@ -95,11 +95,8 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {
-	var auc *auction = nil
-	var bidResponseExt *openrtb_ext.ExtBidResponse = nil
-	var cacheErrs []error = nil
-	var err error
 
+	var err error
 	requestExt, err := extractBidRequestExt(bidRequest)
 	if err != nil {
 		return nil, err
@@ -118,7 +115,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExt)
 
-	e.recordImpMetrics(bidRequest)
+	recordImpMetrics(bidRequest, e.me)
 
 	// Make our best guess if GDPR applies
 	usersyncIfAmbiguous := e.parseUsersyncIfAmbiguous(bidRequest)
@@ -142,6 +139,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 
+	var auc *auction
+	var cacheErrs []error
 	if anyBidsReturned {
 
 		var bidCategory map[string]string
@@ -176,7 +175,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		}
 	}
 
-	bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errs)
+	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errs)
 	if debugLog != nil && debugLog.Enabled {
 		if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 			debugLog.Data.Response = string(bidRespExtBytes)
@@ -193,7 +192,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		}
 	}
 
-	// Ensure caching errors are added if the bid response ext has already been created
+	// Ensure caching errors are added in case auc.doCache was called and errors were returned
 	if len(cacheErrs) > 0 {
 		bidderCacheErrs := errsToBidderErrors(cacheErrs)
 		bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = append(bidResponseExt.Errors[openrtb_ext.PrebidExtKey], bidderCacheErrs...)
@@ -226,7 +225,7 @@ func (e *exchange) parseUsersyncIfAmbiguous(bidRequest *openrtb.BidRequest) bool
 	return usersyncIfAmbiguous
 }
 
-func (e *exchange) recordImpMetrics(bidRequest *openrtb.BidRequest) {
+func recordImpMetrics(bidRequest *openrtb.BidRequest, metricsEngine pbsmetrics.MetricsEngine) {
 
 	for _, impInRequest := range bidRequest.Imp {
 		var impLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
@@ -235,7 +234,7 @@ func (e *exchange) recordImpMetrics(bidRequest *openrtb.BidRequest) {
 			AudioImps:  impInRequest.Audio != nil,
 			NativeImps: impInRequest.Native != nil,
 		}
-		e.me.RecordImps(impLabels)
+		metricsEngine.RecordImps(impLabels)
 	}
 
 }
