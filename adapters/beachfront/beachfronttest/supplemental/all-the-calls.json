@@ -70,21 +70,16 @@
           "h":250
         }
       },      {
-        "id":"video4",
+        "id":"banner1",
         "ext":{
           "bidder":{
-            "videoResponseType":"nurl",
             "bidfloor":0.01,
-            "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
+            "appId" : "3b16770b-17af-4d22-daff-9606bdf2c9c3"
           }
         },
-        "video":{
-          "mimes":[
-            "video/mp4"
-          ],
-          "context":"instream",
-          "w":300,
-          "h":250
+        "banner":{
+            "w":1280,
+            "h":1024
         }
       }
     ],
@@ -118,6 +113,16 @@
                 {
                   "w":300,
                   "h":250
+                }
+              ]
+            }, {
+              "slot":"banner1",
+              "id":"3b16770b-17af-4d22-daff-9606bdf2c9c3",
+              "bidfloor":0,
+              "sizes":[
+                {
+                  "w":1280,
+                  "h":1024
                 }
               ]
             }
@@ -423,78 +428,6 @@
                   "id": "video2",
                   "price": 7.2000003,
                   "nurl": "https://useast.bfmio.com/getmu?aid=bid:734f3668-f37b-4a9a-93a5-48b71b126c39:0c0c62c7-8fe6-4023-90a2-d6148f331823:7.2000003:9.0&v=1&dsp=5f4faa490bec5e1d4b4b87b1,0.01&i_type=pre",
-                  "adomain": [],
-                  "cat": [],
-                  "attr": [],
-                  "w": 0,
-                  "h": 0,
-                  "ext": {}
-                }
-              ],
-              "group": 0,
-              "ext": {}
-            }
-          ]
-        }
-      }
-    }, {
-      "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
-        "body": {
-          "isPrebid":true,
-          "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
-          "imp":[
-            {
-              "id":"video4",
-              "secure": 0,
-              "video":{
-                "mimes":["video/mp4"],
-                "w":300,
-                "h":250
-              },
-              "ext":{
-                "bidder": {
-                  "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76",
-                  "bidfloor": 0.01,
-                  "videoResponseType": "nurl"
-                }
-              }
-            }
-          ],
-          "site":{
-            "domain":"example.com",
-            "page":"http://example.com/whatever/something.html",
-            "publisher":{"id":"publisher1"}
-          },
-          "device":{
-            "ua":"Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "ip":"192.168.255.255",
-            "devicetype":2
-          },
-          "user":{
-            "id":"some-user",
-            "buyeruid":"some-buyer"
-          },
-          "tmax":1000,
-          "cur":[
-            "USD"
-          ],
-          "source":{
-            "tid":"61b87329-8790-47b7-90dd-c53ae7ce1723"
-          }
-        }
-      },
-      "mockResponse": {
-        "status" : 200,
-        "body": {
-          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
-          "seatBid": [
-            {
-              "bid": [
-                {
-                  "id": "video4",
-                  "price": 20.0,
-                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:86928e29-d32b-4fc2-a2bf-798ad3b75fde:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5f4f8e1124b4a20dd4145a01,0.01&i_type=pre",
                   "adomain": [],
                   "cat": [],
                   "attr": [],

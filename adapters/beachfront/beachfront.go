@@ -396,6 +396,13 @@ func impsToSlots(imps []openrtb.Imp, errs []error) (bannerRequest, int8, []error
 			})
 		}
 
+		if len(slot.Sizes) == 0 {
+			slot.Sizes = append(slot.Sizes, size{
+				*imp.Banner.W,
+				*imp.Banner.H,
+			})
+		}
+
 		bfr.Slots = append(bfr.Slots, slot)
 	}
 
