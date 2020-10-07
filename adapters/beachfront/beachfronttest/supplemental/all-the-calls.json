@@ -458,6 +458,88 @@
           ]
         }
       }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
+        "body": {
+          "isPrebid": true,
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "imp": [
+            {
+              "id": "video4",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "secure": 0,
+              "ext": {
+                "bidder": {
+                  "videoResponseType": "nurl",
+                  "bidfloor": 0.01,
+                  "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever/something.html",
+            "publisher": {
+              "id": "publisher1"
+            }
+          },
+          "device": {
+            "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
+            "ip": "192.168.255.255",
+            "devicetype": 2
+          },
+          "user": {
+            "id": "some-user",
+            "buyeruid": "some-buyer"
+          },
+          "tmax": 1000,
+          "cur": [
+            "USD"
+          ],
+          "source": {
+            "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "seatBid": [
+            {
+              "bid": [
+                {
+                  "id": "video4",
+                  "price": 20.0,
+                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:de5b4976-0d2a-4032-874c-35e2b3e3ab95:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5f7da002b6b0ca361fc692b0,0.01&i_type=pre",
+                  "adomain": [
+                  ],
+                  "cat": [
+                  ],
+                  "attr": [
+                  ],
+                  "w": 0,
+                  "h": 0,
+                  "ext": {
+                  }
+                }
+              ],
+              "group": 0,
+              "ext": {
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }
