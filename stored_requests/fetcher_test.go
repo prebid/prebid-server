@@ -179,6 +179,7 @@ func TestAccountCacheHit(t *testing.T) {
 			"known": json.RawMessage(`true`),
 		})
 
+	metricsEngine.On("RecordAccountCacheResult", pbsmetrics.CacheHit, 1)
 	account, errs := aFetcherWithCache.FetchAccount(ctx, "known")
 
 	accCache.AssertExpectations(t)
@@ -200,6 +201,7 @@ func TestAccountCacheMiss(t *testing.T) {
 	accCache.On("Get", ctx, uncachedAccounts).Return(map[string]json.RawMessage{})
 	accCache.On("Save", ctx, uncachedAccountsData)
 	fetcher.On("FetchAccount", ctx, "uncached").Return(uncachedAccountsData["uncached"], []error{})
+	metricsEngine.On("RecordAccountCacheResult", pbsmetrics.CacheMiss, 1)
 
 	account, errs := aFetcherWithCache.FetchAccount(ctx, "uncached")
 

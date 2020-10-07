@@ -31,6 +31,7 @@ type Metrics struct {
 	StoredDataErrorMeter           map[StoredDataType]map[StoredDataError]metrics.Meter
 	StoredReqCacheMeter            map[CacheResult]metrics.Meter
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
+	AccountCacheMeter              map[CacheResult]metrics.Meter
 	DNSLookupTimer                 metrics.Timer
 
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
@@ -137,6 +138,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		StoredDataErrorMeter:           make(map[StoredDataType]map[StoredDataError]metrics.Meter),
 		StoredReqCacheMeter:            make(map[CacheResult]metrics.Meter),
 		StoredImpCacheMeter:            make(map[CacheResult]metrics.Meter),
+		AccountCacheMeter:              make(map[CacheResult]metrics.Meter),
 		AmpNoCookieMeter:               blankMeter,
 		CookieSyncMeter:                blankMeter,
 		CookieSyncGen:                  make(map[openrtb_ext.BidderName]metrics.Meter),
@@ -181,6 +183,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	for _, c := range CacheResults() {
 		newMetrics.StoredReqCacheMeter[c] = blankMeter
 		newMetrics.StoredImpCacheMeter[c] = blankMeter
+		newMetrics.AccountCacheMeter[c] = blankMeter
 	}
 
 	for _, v := range TCFVersions() {
@@ -264,6 +267,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	for _, cacheRes := range CacheResults() {
 		newMetrics.StoredReqCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_request_cache_%s", string(cacheRes)), registry)
 		newMetrics.StoredImpCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_imp_cache_%s", string(cacheRes)), registry)
+		newMetrics.AccountCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("account_cache_%s", string(cacheRes)), registry)
 	}
 
 	newMetrics.RequestsQueueTimer["video"][true] = metrics.GetOrRegisterTimer("queued_requests.video.accepted", registry)
@@ -645,6 +649,12 @@ func (me *Metrics) RecordStoredReqCacheResult(cacheResult CacheResult, inc int) 
 // cache hits and misses when looking up stored impressions.
 func (me *Metrics) RecordStoredImpCacheResult(cacheResult CacheResult, inc int) {
 	me.StoredImpCacheMeter[cacheResult].Mark(int64(inc))
+}
+
+// RecordAccountCacheResult implements a part of the MetricsEngine interface. Records the
+// cache hits and misses when looking up accounts.
+func (me *Metrics) RecordAccountCacheResult(cacheResult CacheResult, inc int) {
+	me.AccountCacheMeter[cacheResult].Mark(int64(inc))
 }
 
 // RecordPrebidCacheRequestTime implements a part of the MetricsEngine interface. Records the

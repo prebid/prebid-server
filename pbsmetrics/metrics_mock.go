@@ -112,6 +112,11 @@ func (me *MetricsEngineMock) RecordStoredImpCacheResult(cacheResult CacheResult,
 	me.Called(cacheResult, inc)
 }
 
+// RecordAccountCacheResult mock
+func (me *MetricsEngineMock) RecordAccountCacheResult(cacheResult CacheResult, inc int) {
+	me.Called(cacheResult, inc)
+}
+
 // RecordPrebidCacheRequestTime mock
 func (me *MetricsEngineMock) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
 	me.Called(success, length)

@@ -195,7 +195,10 @@ func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (
 	accountData := f.cache.Accounts.Get(ctx, []string{accountID})
 	// TODO: add metrics
 	if account, ok := accountData[accountID]; ok {
+		f.metricsEngine.RecordAccountCacheResult(pbsmetrics.CacheHit, 1)
 		return account, errs
+	} else {
+		f.metricsEngine.RecordAccountCacheResult(pbsmetrics.CacheMiss, 1)
 	}
 	account, errs = f.fetcher.FetchAccount(ctx, accountID)
 	if len(errs) == 0 {

@@ -1013,8 +1013,8 @@ func TestStoredReqCacheResultMetric(t *testing.T) {
 func TestStoredImpCacheResultMetric(t *testing.T) {
 	m := createMetricsForTesting()
 
-	hitCount := 42
-	missCount := 108
+	hitCount := 41
+	missCount := 107
 	m.RecordStoredImpCacheResult(pbsmetrics.CacheHit, hitCount)
 	m.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, missCount)
 
@@ -1024,6 +1024,26 @@ func TestStoredImpCacheResultMetric(t *testing.T) {
 			cacheResultLabel: string(pbsmetrics.CacheHit),
 		})
 	assertCounterVecValue(t, "", "storedImpressionsCacheResult:miss", m.storedImpressionsCacheResult,
+		float64(missCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheMiss),
+		})
+}
+
+func TestAccountCacheResultMetric(t *testing.T) {
+	m := createMetricsForTesting()
+
+	hitCount := 37
+	missCount := 92
+	m.RecordAccountCacheResult(pbsmetrics.CacheHit, hitCount)
+	m.RecordAccountCacheResult(pbsmetrics.CacheMiss, missCount)
+
+	assertCounterVecValue(t, "", "accountCacheResult:hit", m.accountCacheResult,
+		float64(hitCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheHit),
+		})
+	assertCounterVecValue(t, "", "accountCacheResult:miss", m.accountCacheResult,
 		float64(missCount),
 		prometheus.Labels{
 			cacheResultLabel: string(pbsmetrics.CacheMiss),

@@ -98,6 +98,10 @@ func preloadLabelValues(m *Metrics) {
 		cacheResultLabel: cacheResultValues,
 	})
 
+	preloadLabelValuesForCounter(m.accountCacheResult, map[string][]string{
+		cacheResultLabel: cacheResultValues,
+	})
+
 	preloadLabelValuesForCounter(m.adapterBids, map[string][]string{
 		adapterLabel:        adapterValues,
 		markupDeliveryLabel: bidTypeValues,
