@@ -17,6 +17,8 @@
                 ]
             },
             "tagid": "16",
+            "displaymanager": "di_prebid",
+            "displaymanagerver": "2.0.0",
             "ext": {
                 "bidder": {
                     "TagID": "16"
@@ -56,6 +58,8 @@
                       ]
                   },
                   "tagid": "16",
+                  "displaymanager": "di_prebid",
+                  "displaymanagerver": "2.0.0",
                   "ext": {
                       "bidder": {
                           "TagID": "16"
