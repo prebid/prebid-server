@@ -210,6 +210,7 @@ func (adg *AdgenerationAdapter) MakeBids(internalRequest *openrtb.BidRequest, ex
 				Bid:     &bid,
 				BidType: bitType,
 			})
+			bidResponse.Currency = adg.getCurrency(internalRequest)
 			return bidResponse, nil
 		}
 	}
@@ -254,7 +255,7 @@ func removeWrapper(ad string) string {
 func NewAdgenerationAdapter(endpoint string) *AdgenerationAdapter {
 	return &AdgenerationAdapter{
 		endpoint,
-		"1.0.0",
+		"1.0.1",
 		"JPY",
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/caches/memory"
 )
 
@@ -16,12 +16,10 @@ func TestListen(t *testing.T) {
 		saves:         make(chan Save),
 		invalidations: make(chan Invalidation),
 	}
-
-	cache := memory.NewCache(&config.InMemoryCache{
-		RequestCacheSize: 256 * 1024,
-		ImpCacheSize:     256 * 1024,
-		TTL:              -1,
-	})
+	cache := stored_requests.Cache{
+		Requests: memory.NewCache(256*1024, -1, "Requests"),
+		Imps:     memory.NewCache(256*1024, -1, "Imps"),
+	}
 
 	// create channels to synchronize
 	saveOccurred := make(chan struct{})
@@ -42,7 +40,8 @@ func TestListen(t *testing.T) {
 		Requests: data,
 		Imps:     data,
 	}
-	cache.Save(context.Background(), save.Requests, save.Imps)
+	cache.Requests.Save(context.Background(), save.Requests)
+	cache.Requests.Save(context.Background(), save.Imps)
 
 	config = fmt.Sprintf(`{"id": "%s", "updated": true}`, id)
 	data = map[string]json.RawMessage{id: json.RawMessage(config)}
@@ -54,7 +53,8 @@ func TestListen(t *testing.T) {
 	ep.saves <- save
 	<-saveOccurred
 
-	requestData, impData := cache.Get(context.Background(), idSlice, idSlice)
+	requestData := cache.Requests.Get(context.Background(), idSlice)
+	impData := cache.Imps.Get(context.Background(), idSlice)
 	if !reflect.DeepEqual(requestData, data) || !reflect.DeepEqual(impData, data) {
 		t.Error("Update failed")
 	}
@@ -67,7 +67,8 @@ func TestListen(t *testing.T) {
 	ep.invalidations <- invalidation
 	<-invalidateOccurred
 
-	requestData, impData = cache.Get(context.Background(), idSlice, idSlice)
+	requestData = cache.Requests.Get(context.Background(), idSlice)
+	impData = cache.Imps.Get(context.Background(), idSlice)
 	if len(requestData) > 0 || len(impData) > 0 {
 		t.Error("Invalidate failed")
 	}

@@ -61,3 +61,64 @@ func TestBidderListDoesNotDefineGeneral(t *testing.T) {
 	bidders := BidderList()
 	assert.NotContains(t, bidders, BidderNameGeneral)
 }
+
+func TestBidderListDoesNotDefineContext(t *testing.T) {
+	bidders := BidderList()
+	assert.NotContains(t, bidders, BidderNameContext)
+}
+
+// TestBidderUniquenessGatekeeping acts as a gatekeeper of bidder name uniqueness. If this test fails
+// when you're building a new adapter, please consider choosing a different bidder name to maintain the
+// current uniqueness threshold, or else start a discussion in the PR.
+func TestBidderUniquenessGatekeeping(t *testing.T) {
+	// Get List Of Bidders
+	// - Exclude duplicates of adapters for the same bidder, as it's unlikely a publisher will use both.
+	var bidders []string
+	for _, bidder := range BidderMap {
+		if bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn && bidder != BidderSmartadserver {
+			bidders = append(bidders, string(bidder))
+		}
+	}
+
+	currentThreshold := 6
+	measuredThreshold := minUniquePrefixLength(bidders)
+
+	assert.NotZero(t, measuredThreshold, "BidderMap contains duplicate bidder name values.")
+	assert.LessOrEqual(t, measuredThreshold, currentThreshold)
+}
+
+// minUniquePrefixLength measures the minimun amount of characters needed to uniquely identify
+// one of the strings, or returns 0 if there are duplicates.
+func minUniquePrefixLength(b []string) int {
+	targetingKeyMaxLength := 20
+	for prefixLength := 1; prefixLength <= targetingKeyMaxLength; prefixLength++ {
+		if uniqueForPrefixLength(b, prefixLength) {
+			return prefixLength
+		}
+	}
+	return 0
+}
+
+func uniqueForPrefixLength(b []string, prefixLength int) bool {
+	m := make(map[string]struct{})
+
+	if prefixLength <= 0 {
+		return false
+	}
+
+	for i, n := range b {
+		ns := string(n)
+
+		if len(ns) > prefixLength {
+			ns = ns[0:prefixLength]
+		}
+
+		m[ns] = struct{}{}
+
+		if len(m) != i+1 {
+			return false
+		}
+	}
+
+	return true
+}

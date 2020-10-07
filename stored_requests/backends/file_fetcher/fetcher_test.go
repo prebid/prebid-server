@@ -24,6 +24,20 @@ func TestFileFetcher(t *testing.T) {
 	validateImp(t, storedImps)
 }
 
+func TestAccountFetcher(t *testing.T) {
+	fetcher, err := NewFileFetcher("./test")
+	assert.NoError(t, err, "Failed to create test fetcher")
+
+	account, errs := fetcher.FetchAccount(context.Background(), "valid")
+	assertErrorCount(t, 0, errs)
+	assert.JSONEq(t, `{"disabled":false, "id":"valid"}`, string(account))
+
+	account, errs = fetcher.FetchAccount(context.Background(), "nonexistent")
+	assertErrorCount(t, 1, errs)
+	assert.Error(t, errs[0])
+	assert.Equal(t, stored_requests.NotFoundError{"nonexistent", "Account"}, errs[0])
+}
+
 func TestInvalidDirectory(t *testing.T) {
 	_, err := NewFileFetcher("./nonexistant-directory")
 	if err == nil {
