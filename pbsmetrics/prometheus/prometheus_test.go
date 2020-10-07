@@ -409,76 +409,67 @@ func TestRequestTimeMetric(t *testing.T) {
 
 func TestRecordStoredDataFetchTime(t *testing.T) {
 	tests := []struct {
-		description     string
-		giveDataType    pbsmetrics.StoredDataType
-		giveFetchType   pbsmetrics.StoredDataFetchType
-		giveFetchStatus pbsmetrics.StoredDataFetchStatus
-		wantCount       uint64
-		wantSum         float64
+		description   string
+		giveDataType  pbsmetrics.StoredDataType
+		giveFetchType pbsmetrics.StoredDataFetchType
+		wantCount     uint64
+		wantSum       float64
 	}{
 		{
-			description:     "Update stored account histogram with all and success labels",
-			giveDataType:    pbsmetrics.AccountDataType,
-			giveFetchType:   pbsmetrics.FetchAll,
-			giveFetchStatus: pbsmetrics.FetchSuccess,
-			wantCount:       1,
-			wantSum:         0.5,
+			description:   "Update stored account histogram with all and success labels",
+			giveDataType:  pbsmetrics.AccountDataType,
+			giveFetchType: pbsmetrics.FetchAll,
+			wantCount:     1,
+			wantSum:       0.5,
 		},
 		{
-			description:     "Update stored AMP histogram with all and success labels",
-			giveDataType:    pbsmetrics.AMPDataType,
-			giveFetchType:   pbsmetrics.FetchAll,
-			giveFetchStatus: pbsmetrics.FetchSuccess,
-			wantCount:       1,
-			wantSum:         0.5,
+			description:   "Update stored AMP histogram with all and success labels",
+			giveDataType:  pbsmetrics.AMPDataType,
+			giveFetchType: pbsmetrics.FetchAll,
+			wantCount:     1,
+			wantSum:       0.5,
 		},
 		{
-			description:     "Update stored category histogram with all and success labels",
-			giveDataType:    pbsmetrics.CategoryDataType,
-			giveFetchType:   pbsmetrics.FetchAll,
-			giveFetchStatus: pbsmetrics.FetchSuccess,
-			wantCount:       1,
-			wantSum:         0.5,
+			description:   "Update stored category histogram with all and success labels",
+			giveDataType:  pbsmetrics.CategoryDataType,
+			giveFetchType: pbsmetrics.FetchAll,
+			wantCount:     1,
+			wantSum:       0.5,
 		},
 		{
-			description:     "Update stored request histogram with all and success labels",
-			giveDataType:    pbsmetrics.RequestDataType,
-			giveFetchType:   pbsmetrics.FetchAll,
-			giveFetchStatus: pbsmetrics.FetchSuccess,
-			wantCount:       1,
-			wantSum:         0.5,
+			description:   "Update stored request histogram with all and success labels",
+			giveDataType:  pbsmetrics.RequestDataType,
+			giveFetchType: pbsmetrics.FetchAll,
+			wantCount:     1,
+			wantSum:       0.5,
 		},
 		{
-			description:     "Update stored video histogram with all and success labels",
-			giveDataType:    pbsmetrics.VideoDataType,
-			giveFetchType:   pbsmetrics.FetchAll,
-			giveFetchStatus: pbsmetrics.FetchSuccess,
-			wantCount:       1,
-			wantSum:         0.5,
+			description:   "Update stored video histogram with all and success labels",
+			giveDataType:  pbsmetrics.VideoDataType,
+			giveFetchType: pbsmetrics.FetchAll,
+			wantCount:     1,
+			wantSum:       0.5,
 		},
 		{
-			description:     "Update stored request histogram with all and error labels",
-			giveDataType:    pbsmetrics.RequestDataType,
-			giveFetchType:   pbsmetrics.FetchAll,
-			giveFetchStatus: pbsmetrics.FetchError,
-			wantCount:       1,
-			wantSum:         0.5,
+			description:   "Update stored request histogram with all and error labels",
+			giveDataType:  pbsmetrics.RequestDataType,
+			giveFetchType: pbsmetrics.FetchAll,
+			wantCount:     1,
+			wantSum:       0.5,
 		},
 		{
-			description:     "Update stored request histogram with delta and success labels",
-			giveDataType:    pbsmetrics.RequestDataType,
-			giveFetchType:   pbsmetrics.FetchDelta,
-			giveFetchStatus: pbsmetrics.FetchSuccess,
-			wantCount:       1,
-			wantSum:         0.5,
+			description:   "Update stored request histogram with delta and success labels",
+			giveDataType:  pbsmetrics.RequestDataType,
+			giveFetchType: pbsmetrics.FetchDelta,
+			wantCount:     1,
+			wantSum:       0.5,
 		},
 		{
-			description:     "Update stored request histogram with delta and error labels",
-			giveDataType:    pbsmetrics.RequestDataType,
-			giveFetchType:   pbsmetrics.FetchDelta,
-			giveFetchStatus: pbsmetrics.FetchError,
-			wantCount:       1,
-			wantSum:         0.5,
+			description:   "Update stored request histogram with delta and error labels",
+			giveDataType:  pbsmetrics.RequestDataType,
+			giveFetchType: pbsmetrics.FetchDelta,
+			wantCount:     1,
+			wantSum:       0.5,
 		},
 	}
 
@@ -487,9 +478,8 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 
 		fetchTime := time.Duration(0.5 * float64(time.Second))
 		m.RecordStoredDataFetchTime(pbsmetrics.StoredDataTypeLabels{
-			DataType:        tt.giveDataType,
-			DataFetchType:   tt.giveFetchType,
-			DataFetchStatus: tt.giveFetchStatus,
+			DataType:      tt.giveDataType,
+			DataFetchType: tt.giveFetchType,
 		}, fetchTime)
 
 		var metricsTimer *prometheus.HistogramVec
@@ -506,12 +496,10 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			metricsTimer = m.storedVideoFetchTimer
 		}
 
-		result := getHistogramFromHistogramVecByTwoKeys(
+		result := getHistogramFromHistogramVec(
 			metricsTimer,
 			dataFetchTypeLabel,
-			string(tt.giveFetchType),
-			dataFetchStatusLabel,
-			string(tt.giveFetchStatus))
+			string(tt.giveFetchType))
 		assertHistogram(t, tt.description, result, tt.wantCount, tt.wantSum)
 	}
 }

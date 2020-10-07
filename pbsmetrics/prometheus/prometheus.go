@@ -108,8 +108,7 @@ const (
 )
 
 const (
-	dataFetchTypeLabel   = "data_fetch_type"
-	dataFetchStatusLabel = "data_fetch_status"
+	dataFetchTypeLabel = "data_fetch_type"
 )
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
@@ -183,32 +182,32 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 
 	metrics.storedAccountFetchTimer = newHistogramVec(cfg, metrics.Registry,
 		"stored_account_fetch_time_seconds",
-		"Seconds to fetch stored accounts labeled by fetch type and fetch status",
-		[]string{dataFetchTypeLabel, dataFetchStatusLabel},
+		"Seconds to fetch stored accounts labeled by fetch type",
+		[]string{dataFetchTypeLabel},
 		standardTimeBuckets)
 
 	metrics.storedAMPFetchTimer = newHistogramVec(cfg, metrics.Registry,
 		"stored_AMP_fetch_time_seconds",
-		"Seconds to fetch stored AMP requests labeled by fetch type and fetch status",
-		[]string{dataFetchTypeLabel, dataFetchStatusLabel},
+		"Seconds to fetch stored AMP requests labeled by fetch type",
+		[]string{dataFetchTypeLabel},
 		standardTimeBuckets)
 
 	metrics.storedCategoryFetchTimer = newHistogramVec(cfg, metrics.Registry,
 		"stored_category_fetch_time_seconds",
-		"Seconds to fetch stored categories labeled by fetch type and fetch status",
-		[]string{dataFetchTypeLabel, dataFetchStatusLabel},
+		"Seconds to fetch stored categories labeled by fetch type",
+		[]string{dataFetchTypeLabel},
 		standardTimeBuckets)
 
 	metrics.storedRequestFetchTimer = newHistogramVec(cfg, metrics.Registry,
 		"stored_request_fetch_time_seconds",
-		"Seconds to fetch stored requests labeled by fetch type and fetch status",
-		[]string{dataFetchTypeLabel, dataFetchStatusLabel},
+		"Seconds to fetch stored requests labeled by fetch type",
+		[]string{dataFetchTypeLabel},
 		standardTimeBuckets)
 
 	metrics.storedVideoFetchTimer = newHistogramVec(cfg, metrics.Registry,
 		"stored_video_fetch_time_seconds",
-		"Seconds to fetch stored video labeled by fetch type and fetch status",
-		[]string{dataFetchTypeLabel, dataFetchStatusLabel},
+		"Seconds to fetch stored video labeled by fetch type",
+		[]string{dataFetchTypeLabel},
 		standardTimeBuckets)
 
 	metrics.timeoutNotifications = newCounter(cfg, metrics.Registry,
@@ -431,28 +430,23 @@ func (m *Metrics) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataTypeLabe
 	switch labels.DataType {
 	case pbsmetrics.AccountDataType:
 		m.storedAccountFetchTimer.With(prometheus.Labels{
-			dataFetchTypeLabel:   string(labels.DataFetchType),
-			dataFetchStatusLabel: string(labels.DataFetchStatus),
+			dataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
 	case pbsmetrics.AMPDataType:
 		m.storedAMPFetchTimer.With(prometheus.Labels{
-			dataFetchTypeLabel:   string(labels.DataFetchType),
-			dataFetchStatusLabel: string(labels.DataFetchStatus),
+			dataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
 	case pbsmetrics.CategoryDataType:
 		m.storedCategoryFetchTimer.With(prometheus.Labels{
-			dataFetchTypeLabel:   string(labels.DataFetchType),
-			dataFetchStatusLabel: string(labels.DataFetchStatus),
+			dataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
 	case pbsmetrics.RequestDataType:
 		m.storedRequestFetchTimer.With(prometheus.Labels{
-			dataFetchTypeLabel:   string(labels.DataFetchType),
-			dataFetchStatusLabel: string(labels.DataFetchStatus),
+			dataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
 	case pbsmetrics.VideoDataType:
 		m.storedVideoFetchTimer.With(prometheus.Labels{
-			dataFetchTypeLabel:   string(labels.DataFetchType),
-			dataFetchStatusLabel: string(labels.DataFetchStatus),
+			dataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
 	}
 }

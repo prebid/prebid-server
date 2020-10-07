@@ -96,9 +96,8 @@ func TestFetchAllSuccess(t *testing.T) {
 
 		metricsMock := &pbsmetrics.MetricsEngineMock{}
 		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataTypeLabels{
-			DataType:        pbsmetrics.RequestDataType,
-			DataFetchType:   pbsmetrics.FetchAll,
-			DataFetchStatus: pbsmetrics.FetchSuccess,
+			DataType:      pbsmetrics.RequestDataType,
+			DataFetchType: pbsmetrics.FetchAll,
 		}, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
@@ -139,7 +138,6 @@ func TestFetchAllErrors(t *testing.T) {
 		description         string
 		giveFakeTime        time.Time
 		giveMockRows        *sqlmock.Rows
-		wantFetchStatus     pbsmetrics.StoredDataFetchStatus
 		wantReturnedError   bool
 		wantLastUpdate      time.Time
 		wantSavedReqs       map[string]json.RawMessage
@@ -151,7 +149,6 @@ func TestFetchAllErrors(t *testing.T) {
 			description:       "fetch all query error",
 			giveFakeTime:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:      nil,
-			wantFetchStatus:   pbsmetrics.FetchError,
 			wantReturnedError: true,
 			wantLastUpdate:    time.Time{},
 		},
@@ -161,7 +158,6 @@ func TestFetchAllErrors(t *testing.T) {
 			giveMockRows: sqlmock.NewRows([]string{"id", "data", "dataType"}).
 				AddRow("stored-req-id", "true", "request").
 				RowError(0, errors.New("Some row error.")),
-			wantFetchStatus:   pbsmetrics.FetchSuccess,
 			wantReturnedError: true,
 			wantLastUpdate:    time.Time{},
 		},
@@ -174,7 +170,6 @@ func TestFetchAllErrors(t *testing.T) {
 				AddRow("req-2", "", "request").
 				AddRow("imp-2", "", "imp").
 				CloseError(errors.New("Some close error.")),
-			wantFetchStatus:   pbsmetrics.FetchSuccess,
 			wantReturnedError: false,
 			wantLastUpdate:    time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			wantSavedReqs:     map[string]json.RawMessage{"req-1": json.RawMessage(`true`)},
@@ -192,9 +187,8 @@ func TestFetchAllErrors(t *testing.T) {
 
 		metricsMock := &pbsmetrics.MetricsEngineMock{}
 		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataTypeLabels{
-			DataType:        pbsmetrics.RequestDataType,
-			DataFetchType:   pbsmetrics.FetchAll,
-			DataFetchStatus: tt.wantFetchStatus,
+			DataType:      pbsmetrics.RequestDataType,
+			DataFetchType: pbsmetrics.FetchAll,
 		}, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
@@ -320,9 +314,8 @@ func TestFetchDeltaSuccess(t *testing.T) {
 		metricsMock := &pbsmetrics.MetricsEngineMock{}
 		metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
 		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataTypeLabels{
-			DataType:        pbsmetrics.RequestDataType,
-			DataFetchType:   pbsmetrics.FetchDelta,
-			DataFetchStatus: pbsmetrics.FetchSuccess,
+			DataType:      pbsmetrics.RequestDataType,
+			DataFetchType: pbsmetrics.FetchDelta,
 		}, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
@@ -364,7 +357,6 @@ func TestFetchDeltaErrors(t *testing.T) {
 		giveFakeTime        time.Time
 		giveLastUpdate      time.Time
 		giveMockRows        *sqlmock.Rows
-		wantFetchStatus     pbsmetrics.StoredDataFetchStatus
 		wantReturnedError   bool
 		wantLastUpdate      time.Time
 		wantSavedReqs       map[string]json.RawMessage
@@ -377,7 +369,6 @@ func TestFetchDeltaErrors(t *testing.T) {
 			giveFakeTime:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 			giveMockRows:      nil,
-			wantFetchStatus:   pbsmetrics.FetchError,
 			wantReturnedError: true,
 			wantLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 		},
@@ -388,7 +379,6 @@ func TestFetchDeltaErrors(t *testing.T) {
 			giveMockRows: sqlmock.NewRows([]string{"id", "data", "dataType"}).
 				AddRow("stored-req-id", "true", "request").
 				RowError(0, errors.New("Some row error.")),
-			wantFetchStatus:   pbsmetrics.FetchSuccess,
 			wantReturnedError: true,
 			wantLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 		},
@@ -402,7 +392,6 @@ func TestFetchDeltaErrors(t *testing.T) {
 				AddRow("req-2", "", "request").
 				AddRow("imp-2", "", "imp").
 				CloseError(errors.New("Some close error.")),
-			wantFetchStatus:     pbsmetrics.FetchSuccess,
 			wantReturnedError:   false,
 			wantLastUpdate:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			wantSavedReqs:       map[string]json.RawMessage{"req-1": json.RawMessage(`true`)},
@@ -422,9 +411,8 @@ func TestFetchDeltaErrors(t *testing.T) {
 
 		metricsMock := &pbsmetrics.MetricsEngineMock{}
 		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataTypeLabels{
-			DataType:        pbsmetrics.RequestDataType,
-			DataFetchType:   pbsmetrics.FetchDelta,
-			DataFetchStatus: tt.wantFetchStatus,
+			DataType:      pbsmetrics.RequestDataType,
+			DataFetchType: pbsmetrics.FetchDelta,
 		}, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{

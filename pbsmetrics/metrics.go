@@ -85,24 +85,9 @@ func StoredDataFetchTypes() []StoredDataFetchType {
 	}
 }
 
-type StoredDataFetchStatus string
-
-const (
-	FetchError   StoredDataFetchStatus = "Error"
-	FetchSuccess StoredDataFetchStatus = "Success"
-)
-
-func StoredDataFetchStatuses() []StoredDataFetchStatus {
-	return []StoredDataFetchStatus{
-		FetchSuccess,
-		FetchError,
-	}
-}
-
 type StoredDataTypeLabels struct {
-	DataType        StoredDataType
-	DataFetchType   StoredDataFetchType
-	DataFetchStatus StoredDataFetchStatus
+	DataType      StoredDataType
+	DataFetchType StoredDataFetchType
 }
 
 // Label typecasting. Se below the type definitions for possible values

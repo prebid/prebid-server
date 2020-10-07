@@ -28,8 +28,7 @@ type Metrics struct {
 	RequestsQueueTimer             map[RequestType]map[bool]metrics.Timer
 	PrebidCacheRequestTimerSuccess metrics.Timer
 	PrebidCacheRequestTimerError   metrics.Timer
-	StoredDataFetchTimerSuccess    map[StoredDataType]map[StoredDataFetchType]metrics.Timer
-	StoredDataFetchTimerError      map[StoredDataType]map[StoredDataFetchType]metrics.Timer
+	StoredDataFetchTimer           map[StoredDataType]map[StoredDataFetchType]metrics.Timer
 	StoredReqCacheMeter            map[CacheResult]metrics.Meter
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
 	DNSLookupTimer                 metrics.Timer
@@ -134,8 +133,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
-		StoredDataFetchTimerSuccess:    make(map[StoredDataType]map[StoredDataFetchType]metrics.Timer),
-		StoredDataFetchTimerError:      make(map[StoredDataType]map[StoredDataFetchType]metrics.Timer),
+		StoredDataFetchTimer:           make(map[StoredDataType]map[StoredDataFetchType]metrics.Timer),
 		StoredReqCacheMeter:            make(map[CacheResult]metrics.Meter),
 		StoredImpCacheMeter:            make(map[CacheResult]metrics.Meter),
 		AmpNoCookieMeter:               blankMeter,
@@ -189,11 +187,9 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	}
 
 	for _, dt := range StoredDataTypes() {
-		newMetrics.StoredDataFetchTimerSuccess[dt] = make(map[StoredDataFetchType]metrics.Timer)
-		newMetrics.StoredDataFetchTimerError[dt] = make(map[StoredDataFetchType]metrics.Timer)
+		newMetrics.StoredDataFetchTimer[dt] = make(map[StoredDataFetchType]metrics.Timer)
 		for _, ft := range StoredDataFetchTypes() {
-			newMetrics.StoredDataFetchTimerSuccess[dt][ft] = blankTimer
-			newMetrics.StoredDataFetchTimerError[dt][ft] = blankTimer
+			newMetrics.StoredDataFetchTimer[dt][ft] = blankTimer
 		}
 	}
 
@@ -234,11 +230,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 
 	for _, dt := range StoredDataTypes() {
 		for _, ft := range StoredDataFetchTypes() {
-			successTimerName := fmt.Sprintf("stored_%s_fetch_time.%s.ok", strings.ToLower(string(dt)), strings.ToLower(string(ft)))
-			newMetrics.StoredDataFetchTimerSuccess[dt][ft] = metrics.GetOrRegisterTimer(successTimerName, registry)
-
-			errorTimerName := fmt.Sprintf("stored_%s_fetch_time.%s.err", strings.ToLower(string(dt)), strings.ToLower(string(ft)))
-			newMetrics.StoredDataFetchTimerError[dt][ft] = metrics.GetOrRegisterTimer(errorTimerName, registry)
+			timerName := fmt.Sprintf("stored_%s_fetch_time.%s", strings.ToLower(string(dt)), strings.ToLower(string(ft)))
+			newMetrics.StoredDataFetchTimer[dt][ft] = metrics.GetOrRegisterTimer(timerName, registry)
 		}
 	}
 
@@ -469,11 +462,7 @@ func (me *Metrics) RecordRequestTime(labels Labels, length time.Duration) {
 }
 
 func (me *Metrics) RecordStoredDataFetchTime(labels StoredDataTypeLabels, length time.Duration) {
-	if labels.DataFetchStatus == FetchSuccess {
-		me.StoredDataFetchTimerSuccess[labels.DataType][labels.DataFetchType].Update(length)
-	} else {
-		me.StoredDataFetchTimerError[labels.DataType][labels.DataFetchType].Update(length)
-	}
+	me.StoredDataFetchTimer[labels.DataType][labels.DataFetchType].Update(length)
 }
 
 // RecordAdapterPanic implements a part of the MetricsEngine interface

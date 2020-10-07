@@ -77,10 +77,10 @@ func (e *PostgresEventProducer) fetchAll() error {
 
 	if err != nil {
 		glog.Warningf("Failed to fetch all Stored %s data from the DB: %v", e.cfg.RequestType, err)
-		e.recordFetchTime(elapsedTime, pbsmetrics.FetchAll, pbsmetrics.FetchError)
+		e.recordFetchTime(elapsedTime, pbsmetrics.FetchAll)
 		return err
 	}
-	e.recordFetchTime(elapsedTime, pbsmetrics.FetchAll, pbsmetrics.FetchSuccess)
+	e.recordFetchTime(elapsedTime, pbsmetrics.FetchAll)
 
 	defer func() {
 		if err := rows.Close(); err != nil {
@@ -107,10 +107,10 @@ func (e *PostgresEventProducer) fetchDelta() error {
 
 	if err != nil {
 		glog.Warningf("Failed to fetch updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
-		e.recordFetchTime(elapsedTime, pbsmetrics.FetchDelta, pbsmetrics.FetchError)
+		e.recordFetchTime(elapsedTime, pbsmetrics.FetchDelta)
 		return err
 	}
-	e.recordFetchTime(elapsedTime, pbsmetrics.FetchDelta, pbsmetrics.FetchSuccess)
+	e.recordFetchTime(elapsedTime, pbsmetrics.FetchDelta)
 
 	defer func() {
 		if err := rows.Close(); err != nil {
@@ -126,12 +126,11 @@ func (e *PostgresEventProducer) fetchDelta() error {
 	return nil
 }
 
-func (e *PostgresEventProducer) recordFetchTime(elapsedTime time.Duration, fetchType pbsmetrics.StoredDataFetchType, statusType pbsmetrics.StoredDataFetchStatus) {
+func (e *PostgresEventProducer) recordFetchTime(elapsedTime time.Duration, fetchType pbsmetrics.StoredDataFetchType) {
 	e.cfg.MetricsEngine.RecordStoredDataFetchTime(
 		pbsmetrics.StoredDataTypeLabels{
-			DataType:        e.metricsStoredDataType(),
-			DataFetchType:   fetchType,
-			DataFetchStatus: statusType,
+			DataType:      e.metricsStoredDataType(),
+			DataFetchType: fetchType,
 		}, elapsedTime)
 }
 
