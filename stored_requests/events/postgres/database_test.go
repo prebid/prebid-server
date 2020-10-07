@@ -95,7 +95,7 @@ func TestFetchAllSuccess(t *testing.T) {
 		dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 
 		metricsMock := &pbsmetrics.MetricsEngineMock{}
-		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataTypeLabels{
+		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataLabels{
 			DataType:      pbsmetrics.RequestDataType,
 			DataFetchType: pbsmetrics.FetchAll,
 		}, mock.Anything).Return()
@@ -186,10 +186,14 @@ func TestFetchAllErrors(t *testing.T) {
 		}
 
 		metricsMock := &pbsmetrics.MetricsEngineMock{}
-		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataTypeLabels{
+		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataLabels{
 			DataType:      pbsmetrics.RequestDataType,
 			DataFetchType: pbsmetrics.FetchAll,
 		}, mock.Anything).Return()
+		metricsMock.Mock.On("RecordStoredDataError", pbsmetrics.StoredDataLabels{
+			DataType: pbsmetrics.RequestDataType,
+			Error:    pbsmetrics.StoredDataTimeout,
+		}).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
 			DB:               db,
@@ -313,7 +317,7 @@ func TestFetchDeltaSuccess(t *testing.T) {
 
 		metricsMock := &pbsmetrics.MetricsEngineMock{}
 		metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
-		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataTypeLabels{
+		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataLabels{
 			DataType:      pbsmetrics.RequestDataType,
 			DataFetchType: pbsmetrics.FetchDelta,
 		}, mock.Anything).Return()
@@ -410,10 +414,14 @@ func TestFetchDeltaErrors(t *testing.T) {
 		}
 
 		metricsMock := &pbsmetrics.MetricsEngineMock{}
-		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataTypeLabels{
+		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataLabels{
 			DataType:      pbsmetrics.RequestDataType,
 			DataFetchType: pbsmetrics.FetchDelta,
 		}, mock.Anything).Return()
+		metricsMock.Mock.On("RecordStoredDataError", pbsmetrics.StoredDataLabels{
+			DataType: pbsmetrics.RequestDataType,
+			Error:    pbsmetrics.StoredDataTimeout,
+		}).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
 			DB:                 db,

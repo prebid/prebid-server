@@ -54,11 +54,11 @@ type PrivacyLabels struct {
 type StoredDataType string
 
 const (
-	AccountDataType  StoredDataType = "Account"
-	AMPDataType      StoredDataType = "AMP"
-	CategoryDataType StoredDataType = "Category"
-	RequestDataType  StoredDataType = "Request"
-	VideoDataType    StoredDataType = "Video"
+	AccountDataType  StoredDataType = "account"
+	AMPDataType      StoredDataType = "amp"
+	CategoryDataType StoredDataType = "category"
+	RequestDataType  StoredDataType = "request"
+	VideoDataType    StoredDataType = "video"
 )
 
 func StoredDataTypes() []StoredDataType {
@@ -74,8 +74,8 @@ func StoredDataTypes() []StoredDataType {
 type StoredDataFetchType string
 
 const (
-	FetchAll   StoredDataFetchType = "All"
-	FetchDelta StoredDataFetchType = "Delta"
+	FetchAll   StoredDataFetchType = "all"
+	FetchDelta StoredDataFetchType = "delta"
 )
 
 func StoredDataFetchTypes() []StoredDataFetchType {
@@ -85,9 +85,22 @@ func StoredDataFetchTypes() []StoredDataFetchType {
 	}
 }
 
-type StoredDataTypeLabels struct {
+type StoredDataLabels struct {
 	DataType      StoredDataType
 	DataFetchType StoredDataFetchType
+	Error         StoredDataError
+}
+
+type StoredDataError string
+
+const (
+	StoredDataTimeout StoredDataError = "timeout"
+)
+
+func StoredDataErrors() []StoredDataError {
+	return []StoredDataError{
+		StoredDataTimeout,
+	}
 }
 
 // Label typecasting. Se below the type definitions for possible values
@@ -353,7 +366,8 @@ type MetricsEngine interface {
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
-	RecordStoredDataFetchTime(labels StoredDataTypeLabels, length time.Duration)
+	RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration)
+	RecordStoredDataError(labels StoredDataLabels)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(sucess bool)

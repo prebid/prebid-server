@@ -18,6 +18,7 @@ func preloadLabelValues(m *Metrics) {
 		requestStatusValues       = requestStatusesAsString()
 		requestTypeValues         = requestTypesAsString()
 		storedDataFetchTypeValues = storedDataFetchTypesAsString()
+		storedDataErrorValues     = storedDataErrorsAsString()
 		sourceValues              = []string{sourceRequest}
 	)
 
@@ -46,23 +47,43 @@ func preloadLabelValues(m *Metrics) {
 	})
 
 	preloadLabelValuesForHistogram(m.storedAccountFetchTimer, map[string][]string{
-		dataFetchTypeLabel: storedDataFetchTypeValues,
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
 	})
 
 	preloadLabelValuesForHistogram(m.storedAMPFetchTimer, map[string][]string{
-		dataFetchTypeLabel: storedDataFetchTypeValues,
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
 	})
 
 	preloadLabelValuesForHistogram(m.storedCategoryFetchTimer, map[string][]string{
-		dataFetchTypeLabel: storedDataFetchTypeValues,
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
 	})
 
 	preloadLabelValuesForHistogram(m.storedRequestFetchTimer, map[string][]string{
-		dataFetchTypeLabel: storedDataFetchTypeValues,
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
 	})
 
 	preloadLabelValuesForHistogram(m.storedVideoFetchTimer, map[string][]string{
-		dataFetchTypeLabel: storedDataFetchTypeValues,
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedAccountErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedAMPErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedCategoryErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedRequestErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedVideoErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
 	})
 
 	preloadLabelValuesForCounter(m.requestsWithoutCookie, map[string][]string{

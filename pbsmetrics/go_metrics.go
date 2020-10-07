@@ -2,7 +2,6 @@ package pbsmetrics
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -29,6 +28,7 @@ type Metrics struct {
 	PrebidCacheRequestTimerSuccess metrics.Timer
 	PrebidCacheRequestTimerError   metrics.Timer
 	StoredDataFetchTimer           map[StoredDataType]map[StoredDataFetchType]metrics.Timer
+	StoredDataErrorMeter           map[StoredDataType]map[StoredDataError]metrics.Meter
 	StoredReqCacheMeter            map[CacheResult]metrics.Meter
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
 	DNSLookupTimer                 metrics.Timer
@@ -134,6 +134,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
 		StoredDataFetchTimer:           make(map[StoredDataType]map[StoredDataFetchType]metrics.Timer),
+		StoredDataErrorMeter:           make(map[StoredDataType]map[StoredDataError]metrics.Meter),
 		StoredReqCacheMeter:            make(map[CacheResult]metrics.Meter),
 		StoredImpCacheMeter:            make(map[CacheResult]metrics.Meter),
 		AmpNoCookieMeter:               blankMeter,
@@ -188,8 +189,12 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 
 	for _, dt := range StoredDataTypes() {
 		newMetrics.StoredDataFetchTimer[dt] = make(map[StoredDataFetchType]metrics.Timer)
+		newMetrics.StoredDataErrorMeter[dt] = make(map[StoredDataError]metrics.Meter)
 		for _, ft := range StoredDataFetchTypes() {
 			newMetrics.StoredDataFetchTimer[dt][ft] = blankTimer
+		}
+		for _, e := range StoredDataErrors() {
+			newMetrics.StoredDataErrorMeter[dt][e] = blankMeter
 		}
 	}
 
@@ -230,8 +235,12 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 
 	for _, dt := range StoredDataTypes() {
 		for _, ft := range StoredDataFetchTypes() {
-			timerName := fmt.Sprintf("stored_%s_fetch_time.%s", strings.ToLower(string(dt)), strings.ToLower(string(ft)))
+			timerName := fmt.Sprintf("stored_%s_fetch_time.%s", string(dt), string(ft))
 			newMetrics.StoredDataFetchTimer[dt][ft] = metrics.GetOrRegisterTimer(timerName, registry)
+		}
+		for _, e := range StoredDataErrors() {
+			meterName := fmt.Sprintf("stored_%s_error.%s", string(dt), string(e))
+			newMetrics.StoredDataErrorMeter[dt][e] = metrics.GetOrRegisterMeter(meterName, registry)
 		}
 	}
 
@@ -461,8 +470,14 @@ func (me *Metrics) RecordRequestTime(labels Labels, length time.Duration) {
 	}
 }
 
-func (me *Metrics) RecordStoredDataFetchTime(labels StoredDataTypeLabels, length time.Duration) {
+// RecordStoredDataFetchTime implements a part of the MetricsEngine interface
+func (me *Metrics) RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration) {
 	me.StoredDataFetchTimer[labels.DataType][labels.DataFetchType].Update(length)
+}
+
+// RecordStoredDataError implements a part of the MetricsEngine interface
+func (me *Metrics) RecordStoredDataError(labels StoredDataLabels) {
+	me.StoredDataErrorMeter[labels.DataType][labels.Error].Mark(1)
 }
 
 // RecordAdapterPanic implements a part of the MetricsEngine interface

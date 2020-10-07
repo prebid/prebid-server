@@ -105,9 +105,16 @@ func (me *MultiMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length
 }
 
 // RecordStoredDataFetchTime across all engines
-func (me *MultiMetricsEngine) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataTypeLabels, length time.Duration) { //TODO: pbsmetrics.StoredDataLabels?
+func (me *MultiMetricsEngine) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataLabels, length time.Duration) {
 	for _, thisME := range *me {
 		thisME.RecordStoredDataFetchTime(labels, length)
+	}
+}
+
+// RecordStoredDataError across all engines
+func (me *MultiMetricsEngine) RecordStoredDataError(labels pbsmetrics.StoredDataLabels) {
+	for _, thisME := range *me {
+		thisME.RecordStoredDataError(labels)
 	}
 }
 
@@ -252,7 +259,11 @@ func (me *DummyMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length
 }
 
 // RecordStoredDataFetchTime as a noop
-func (me *DummyMetricsEngine) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataTypeLabels, length time.Duration) {
+func (me *DummyMetricsEngine) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataLabels, length time.Duration) {
+}
+
+// RecordStoredDataError as a noop
+func (me *DummyMetricsEngine) RecordStoredDataError(labels pbsmetrics.StoredDataLabels) {
 }
 
 // RecordAdapterPanic as a noop

@@ -122,6 +122,7 @@ func TestNewInMemoryAccountCache(t *testing.T) {
 func TestNewPostgresEventProducers(t *testing.T) {
 	metricsMock := &pbsmetrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
+	metricsMock.Mock.On("RecordStoredDataError", mock.Anything).Return()
 
 	cfg := &config.StoredRequests{
 		Postgres: config.PostgresConfig{

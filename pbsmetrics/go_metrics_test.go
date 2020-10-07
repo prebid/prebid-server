@@ -417,13 +417,64 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 	for _, tt := range tests {
 		registry := metrics.NewRegistry()
 		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
-
-		m.RecordStoredDataFetchTime(StoredDataTypeLabels{
+		m.RecordStoredDataFetchTime(StoredDataLabels{
 			DataType:      tt.giveDataType,
 			DataFetchType: tt.giveFetchType,
 		}, 500)
 
 		actualCount := m.StoredDataFetchTimer[tt.giveDataType][tt.giveFetchType].Count()
+		assert.Equal(t, tt.wantCount, actualCount, tt.description)
+	}
+}
+
+func TestRecordStoredDataError(t *testing.T) {
+	tests := []struct {
+		description   string
+		giveDataType  StoredDataType
+		giveErrorType StoredDataError
+		wantCount     int64
+	}{
+		{
+			description:   "Increment stored_account_error.timeout meter",
+			giveDataType:  AccountDataType,
+			giveErrorType: StoredDataTimeout,
+			wantCount:     1,
+		},
+		{
+			description:   "Increment stored_amp_error.timeout meter",
+			giveDataType:  AMPDataType,
+			giveErrorType: StoredDataTimeout,
+			wantCount:     1,
+		},
+		{
+			description:   "Increment stored_category_error.timeout meter",
+			giveDataType:  CategoryDataType,
+			giveErrorType: StoredDataTimeout,
+			wantCount:     1,
+		},
+		{
+			description:   "Increment stored_request_error.timeout meter",
+			giveDataType:  RequestDataType,
+			giveErrorType: StoredDataTimeout,
+			wantCount:     1,
+		},
+		{
+			description:   "Increment stored_video_error.timeout meter",
+			giveDataType:  VideoDataType,
+			giveErrorType: StoredDataTimeout,
+			wantCount:     1,
+		},
+	}
+
+	for _, tt := range tests {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+		m.RecordStoredDataError(StoredDataLabels{
+			DataType: tt.giveDataType,
+			Error:    tt.giveErrorType,
+		})
+
+		actualCount := m.StoredDataErrorMeter[tt.giveDataType][tt.giveErrorType].Count()
 		assert.Equal(t, tt.wantCount, actualCount, tt.description)
 	}
 }

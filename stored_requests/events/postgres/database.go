@@ -77,6 +77,7 @@ func (e *PostgresEventProducer) fetchAll() error {
 
 	if err != nil {
 		glog.Warningf("Failed to fetch all Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		e.recordError(pbsmetrics.StoredDataTimeout)
 		e.recordFetchTime(elapsedTime, pbsmetrics.FetchAll)
 		return err
 	}
@@ -90,9 +91,9 @@ func (e *PostgresEventProducer) fetchAll() error {
 	if err := e.sendEvents(rows); err != nil {
 		glog.Warningf("Failed to load all Stored %s data from the DB: %v", e.cfg.RequestType, err)
 		return err
-	} else {
-		e.lastUpdate = startTime
 	}
+
+	e.lastUpdate = startTime
 	return nil
 }
 
@@ -107,6 +108,7 @@ func (e *PostgresEventProducer) fetchDelta() error {
 
 	if err != nil {
 		glog.Warningf("Failed to fetch updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		e.recordError(pbsmetrics.StoredDataTimeout)
 		e.recordFetchTime(elapsedTime, pbsmetrics.FetchDelta)
 		return err
 	}
@@ -120,18 +122,26 @@ func (e *PostgresEventProducer) fetchDelta() error {
 	if err := e.sendEvents(rows); err != nil {
 		glog.Warningf("Failed to load updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
 		return err
-	} else {
-		e.lastUpdate = startTime
 	}
+
+	e.lastUpdate = startTime
 	return nil
 }
 
 func (e *PostgresEventProducer) recordFetchTime(elapsedTime time.Duration, fetchType pbsmetrics.StoredDataFetchType) {
 	e.cfg.MetricsEngine.RecordStoredDataFetchTime(
-		pbsmetrics.StoredDataTypeLabels{
+		pbsmetrics.StoredDataLabels{
 			DataType:      e.metricsStoredDataType(),
 			DataFetchType: fetchType,
 		}, elapsedTime)
+}
+
+func (e *PostgresEventProducer) recordError(errorType pbsmetrics.StoredDataError) {
+	e.cfg.MetricsEngine.RecordStoredDataError(
+		pbsmetrics.StoredDataLabels{
+			DataType: e.metricsStoredDataType(),
+			Error:    errorType,
+		})
 }
 
 func (e *PostgresEventProducer) metricsStoredDataType() pbsmetrics.StoredDataType {

@@ -29,10 +29,15 @@ type Metrics struct {
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
 	storedAccountFetchTimer      *prometheus.HistogramVec
+	storedAccountErrors          *prometheus.CounterVec
 	storedAMPFetchTimer          *prometheus.HistogramVec
+	storedAMPErrors              *prometheus.CounterVec
 	storedCategoryFetchTimer     *prometheus.HistogramVec
+	storedCategoryErrors         *prometheus.CounterVec
 	storedRequestFetchTimer      *prometheus.HistogramVec
+	storedRequestErrors          *prometheus.CounterVec
 	storedVideoFetchTimer        *prometheus.HistogramVec
+	storedVideoErrors            *prometheus.CounterVec
 	timeoutNotifications         *prometheus.CounterVec
 	dnsLookupTimer               prometheus.Histogram
 	privacyCCPA                  *prometheus.CounterVec
@@ -108,7 +113,8 @@ const (
 )
 
 const (
-	dataFetchTypeLabel = "data_fetch_type"
+	storedDataFetchTypeLabel = "stored_data_fetch_type"
+	storedDataErrorLabel     = "stored_data_error"
 )
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
@@ -183,32 +189,57 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.storedAccountFetchTimer = newHistogramVec(cfg, metrics.Registry,
 		"stored_account_fetch_time_seconds",
 		"Seconds to fetch stored accounts labeled by fetch type",
-		[]string{dataFetchTypeLabel},
+		[]string{storedDataFetchTypeLabel},
 		standardTimeBuckets)
 
+	metrics.storedAccountErrors = newCounter(cfg, metrics.Registry,
+		"stored_account_errors",
+		"Count of stored account errors by error type",
+		[]string{storedDataErrorLabel})
+
 	metrics.storedAMPFetchTimer = newHistogramVec(cfg, metrics.Registry,
-		"stored_AMP_fetch_time_seconds",
+		"stored_amp_fetch_time_seconds",
 		"Seconds to fetch stored AMP requests labeled by fetch type",
-		[]string{dataFetchTypeLabel},
+		[]string{storedDataFetchTypeLabel},
 		standardTimeBuckets)
+
+	metrics.storedAMPErrors = newCounter(cfg, metrics.Registry,
+		"stored_amp_errors",
+		"Count of stored AMP errors by error type",
+		[]string{storedDataErrorLabel})
 
 	metrics.storedCategoryFetchTimer = newHistogramVec(cfg, metrics.Registry,
 		"stored_category_fetch_time_seconds",
 		"Seconds to fetch stored categories labeled by fetch type",
-		[]string{dataFetchTypeLabel},
+		[]string{storedDataFetchTypeLabel},
 		standardTimeBuckets)
+
+	metrics.storedCategoryErrors = newCounter(cfg, metrics.Registry,
+		"stored_category_errors",
+		"Count of stored category errors by error type",
+		[]string{storedDataErrorLabel})
 
 	metrics.storedRequestFetchTimer = newHistogramVec(cfg, metrics.Registry,
 		"stored_request_fetch_time_seconds",
 		"Seconds to fetch stored requests labeled by fetch type",
-		[]string{dataFetchTypeLabel},
+		[]string{storedDataFetchTypeLabel},
 		standardTimeBuckets)
+
+	metrics.storedRequestErrors = newCounter(cfg, metrics.Registry,
+		"stored_request_errors",
+		"Count of stored request errors by error type",
+		[]string{storedDataErrorLabel})
 
 	metrics.storedVideoFetchTimer = newHistogramVec(cfg, metrics.Registry,
 		"stored_video_fetch_time_seconds",
 		"Seconds to fetch stored video labeled by fetch type",
-		[]string{dataFetchTypeLabel},
+		[]string{storedDataFetchTypeLabel},
 		standardTimeBuckets)
+
+	metrics.storedVideoErrors = newCounter(cfg, metrics.Registry,
+		"stored_video_errors",
+		"Count of stored video errors by error type",
+		[]string{storedDataErrorLabel})
 
 	metrics.timeoutNotifications = newCounter(cfg, metrics.Registry,
 		"timeout_notification",
@@ -426,28 +457,53 @@ func (m *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Durati
 	}
 }
 
-func (m *Metrics) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataTypeLabels, length time.Duration) {
+func (m *Metrics) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataLabels, length time.Duration) {
 	switch labels.DataType {
 	case pbsmetrics.AccountDataType:
 		m.storedAccountFetchTimer.With(prometheus.Labels{
-			dataFetchTypeLabel: string(labels.DataFetchType),
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
 	case pbsmetrics.AMPDataType:
 		m.storedAMPFetchTimer.With(prometheus.Labels{
-			dataFetchTypeLabel: string(labels.DataFetchType),
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
 	case pbsmetrics.CategoryDataType:
 		m.storedCategoryFetchTimer.With(prometheus.Labels{
-			dataFetchTypeLabel: string(labels.DataFetchType),
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
 	case pbsmetrics.RequestDataType:
 		m.storedRequestFetchTimer.With(prometheus.Labels{
-			dataFetchTypeLabel: string(labels.DataFetchType),
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
 	case pbsmetrics.VideoDataType:
 		m.storedVideoFetchTimer.With(prometheus.Labels{
-			dataFetchTypeLabel: string(labels.DataFetchType),
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
+	}
+}
+
+func (m *Metrics) RecordStoredDataError(labels pbsmetrics.StoredDataLabels) {
+	switch labels.DataType {
+	case pbsmetrics.AccountDataType:
+		m.storedAccountErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	case pbsmetrics.AMPDataType:
+		m.storedAMPErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	case pbsmetrics.CategoryDataType:
+		m.storedCategoryErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	case pbsmetrics.RequestDataType:
+		m.storedRequestErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	case pbsmetrics.VideoDataType:
+		m.storedVideoErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
 	}
 }
 
