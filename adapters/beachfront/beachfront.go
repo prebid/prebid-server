@@ -247,7 +247,7 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 					continue
 				}
 
-				// This must be a valid App request. Make sure Imp[i].Secure is set.
+				// This is a valid App request. Make sure Imp[i].Secure is set.
 				if request.Imp[i].Secure == nil {
 					var secure int8 = 0
 					request.Imp[i].Secure = &secure

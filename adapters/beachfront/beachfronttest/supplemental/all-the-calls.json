@@ -384,7 +384,6 @@
         }
       }
     }, {
-
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=0c0c62c7-8fe6-4023-90a2-d6148f331823&prebidserver",
         "body": {
@@ -458,8 +457,7 @@
           ]
         }
       }
-    },
-    {
+    }, {
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
         "body": {
@@ -510,36 +508,33 @@
           }
         }
       },
-      "mockResponse": {
-        "status": 200,
-        "body": {
-          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
-          "seatBid": [
-            {
-              "bid": [
-                {
-                  "id": "video4",
-                  "price": 20.0,
-                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:de5b4976-0d2a-4032-874c-35e2b3e3ab95:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5f7da002b6b0ca361fc692b0,0.01&i_type=pre",
-                  "adomain": [
-                  ],
-                  "cat": [
-                  ],
-                  "attr": [
-                  ],
-                  "w": 0,
-                  "h": 0,
-                  "ext": {
+        "mockResponse": {
+            "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+            "seatBid": [
+              {
+                "bid": [
+                  {
+                    "id": "video4",
+                    "price": 20.0,
+                    "nurl": "https://useast.bfmio.com/getBids?aid=bid:de5b4976-0d2a-4032-874c-35e2b3e3ab95:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5f7da002b6b0ca361fc692b0,0.01&i_type=pre",
+                    "adomain": [
+                    ],
+                    "cat": [
+                    ],
+                    "attr": [
+                    ],
+                    "w": 0,
+                    "h": 0,
+                    "ext": {
+                    }
                   }
+                ],
+                "group": 0,
+                "ext": {
                 }
-              ],
-              "group": 0,
-              "ext": {
               }
-            }
-          ]
+            ]
         }
       }
-    }
-  ]
+    ]
 }
