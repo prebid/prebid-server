@@ -200,14 +200,8 @@ func parseTestFile(t *testing.T, fileData []byte, testFile string) testCase {
 	parsedTestData.ExpectedBidResponse, _, _, err = jsonparser.Get(fileData, "expectedBidResponse")
 	parsedTestData.ExpectedErrorMessage, errEm = jsonparser.GetString(fileData, "expectedErrorMessage")
 
-	// Assert no error in parsing one or the other
-	if parsedReturnCode >= 200 && parsedReturnCode < 300 {
-		// If this test expects a 200 code and a valid bidResponse, there shouldn't be a jsonparse error
-		assert.NoError(t, err, "Error jsonparsing root.expectedBidResponse from file %s. Desc: %v.", testFile, err)
-	} else {
-		// Otherwise, make sure we retrieved the expected error message correctly
-		assert.NoError(t, errEm, "Error jsonparsing root.expectedErrorMessage from file %s. Desc: %v.", testFile, err)
-	}
+	assert.Falsef(t, (err == nil && errEm == nil), "Test case file can't have both a valid expectedBidResponse and a valid expectedErrorMessage, fields are mutually exclusive")
+	assert.Falsef(t, (err != nil && errEm != nil), "Test case file should come with either a valid expectedBidResponse or a valid expectedErrorMessage, not both.")
 
 	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
 
