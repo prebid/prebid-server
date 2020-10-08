@@ -182,7 +182,7 @@ func TestPubstackModuleSuccess(t *testing.T) {
 		updatedConfig.Endpoint = server.URL
 
 		// instantiate module with 25ms config refresh rate
-		module, err := NewPubstackModule(client, "scope", server.URL, "25ms", 100, "1B", "10ms")
+		module, err := NewPubstackModule(client, "scope", server.URL, "15ms", 100, "1B", "10ms")
 		assert.Nil(t, err, tt.description)
 
 		// allow time for the module to load the original config
@@ -192,15 +192,8 @@ func TestPubstackModuleSuccess(t *testing.T) {
 		// attempt to log but no event channel was created because the feature is disabled in the original config
 		tt.logObject(pubstack)
 
-		eventCount := 0
-
-		select {
-		case eventCount = <-intakeChannel:
-			assert.Fail(t, "an unexpected event was received", tt.description)
-		case <-time.After(10 * time.Millisecond):
-		}
-
-		assert.Equal(t, 0, eventCount, tt.description)
+		// verify no event was received over a 10ms period
+		assertChanNone(t, intakeChannel, tt.description)
 
 		// allow time for the server to start serving the updated config
 		time.Sleep(10 * time.Millisecond)
@@ -208,12 +201,25 @@ func TestPubstackModuleSuccess(t *testing.T) {
 		// attempt to log; the event channel should have been created because the feature is enabled in updated config
 		tt.logObject(pubstack)
 
-		select {
-		case eventCount = <-intakeChannel:
-		case <-time.After(10 * time.Millisecond):
-			assert.Fail(t, "an event was expected but was never received", tt.description)
-		}
+		// verify an event was received within 10ms
+		assertChanOne(t, intakeChannel, tt.description)
+	}
+}
 
-		assert.Equal(t, 1, eventCount, tt.description)
+func assertChanNone(t *testing.T, c <-chan int, msgAndArgs ...interface{}) bool {
+	select {
+	case <-c:
+		return assert.Fail(t, "Should NOT receive an event, but did", msgAndArgs...)
+	case <-time.After(10 * time.Millisecond):
+		return true
+	}
+}
+
+func assertChanOne(t *testing.T, c <-chan int, msgAndArgs ...interface{}) bool {
+	select {
+	case <-c:
+		return true
+	case <-time.After(10 * time.Millisecond):
+		return assert.Fail(t, "Should receive an event, but did NOT", msgAndArgs...)
 	}
 }
