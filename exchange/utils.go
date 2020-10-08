@@ -462,11 +462,7 @@ func parseAliases(orig *openrtb.BidRequest) (map[string]string, []error) {
 }
 
 func GetValidBidders(aliases map[string]string) map[string]struct{} {
-	validBidders := make(map[string]struct{})
-
-	for _, v := range openrtb_ext.BidderMap {
-		validBidders[v.String()] = struct{}{}
-	}
+	validBidders := openrtb_ext.BuildBidderNameHashSet()
 
 	for k := range aliases {
 		validBidders[k] = struct{}{}

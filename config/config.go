@@ -885,7 +885,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("accounts.in_memory_cache.type", "none")
 
-	for _, bidder := range openrtb_ext.BidderMap {
+	for _, bidder := range openrtb_ext.BidderNames() {
 		setBidderDefaults(v, strings.ToLower(string(bidder)))
 	}
 

@@ -22,7 +22,6 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1160,8 +1159,8 @@ func TestFormatTargetingKeyLongKey(t *testing.T) {
 }
 
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	mockModule := &mockAnalyticsModule{}
+	metrics := newTestMetrics()
 	deps := &endpointDeps{
 		ex,
 		newParamsValidator(t),
@@ -1170,18 +1169,18 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *p
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		metrics,
 		mockModule,
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	return deps, theMetrics, mockModule
+	return deps, metrics, mockModule
 }
 
 type mockAnalyticsModule struct {
@@ -1204,7 +1203,6 @@ func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) { retu
 func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) { return }
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	deps := &endpointDeps{
 		ex,
 		newParamsValidator(t),
@@ -1213,12 +1211,12 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
@@ -1228,7 +1226,6 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 }
 
 func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	edep := &endpointDeps{
 		ex,
 		newParamsValidator(t),
@@ -1237,12 +1234,12 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},

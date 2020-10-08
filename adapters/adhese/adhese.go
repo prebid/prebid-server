@@ -267,8 +267,8 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := AdheseAdapter{
+	bidder := &AdheseAdapter{
 		endpointTemplate: *template,
 	}
-	return &bidder, nil
+	return bidder, nil
 }

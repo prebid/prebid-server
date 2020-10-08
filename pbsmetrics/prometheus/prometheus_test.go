@@ -50,7 +50,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	}
 
 	// Calculate Per-Adapter Cardinality
-	adapterCount := len(openrtb_ext.BidderList())
+	adapterCount := len(openrtb_ext.BidderNames())
 	perAdapterCardinalityCount := adapterCardinalityCount / adapterCount
 
 	// Verify General Cardinality

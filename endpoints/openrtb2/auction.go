@@ -47,7 +47,19 @@ var (
 	dntEnabled  int8   = 1
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, accounts stored_requests.AccountFetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]struct{}) (httprouter.Handle, error) {
+func NewEndpoint(
+	ex exchange.Exchange,
+	validator openrtb_ext.BidderParamValidator,
+	requestsById stored_requests.Fetcher,
+	accounts stored_requests.AccountFetcher,
+	categories stored_requests.CategoryFetcher,
+	cfg *config.Configuration,
+	met pbsmetrics.MetricsEngine,
+	pbsAnalytics analytics.PBSAnalyticsModule,
+	disabledBidders map[string]string,
+	defReqJSON []byte,
+	bidderMap map[string]openrtb_ext.BidderName,
+) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
@@ -92,7 +104,7 @@ type endpointDeps struct {
 	disabledBidders           map[string]string
 	defaultRequest            bool
 	defReqJSON                []byte
-	bidderMap                 map[string]struct{}
+	bidderMap                 map[string]openrtb_ext.BidderName
 	cache                     prebid_cache_client.Client
 	debugLogRegexp            *regexp.Regexp
 	privateNetworkIPValidator iputil.IPValidator
@@ -308,7 +320,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 			return []error{err}
 		}
 
-		if err := validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
+		if err := deps.validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
 			return []error{err}
 		}
 
@@ -329,7 +341,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		return append(errL, err)
 	}
 
-	if err := validateUser(req.User, aliases); err != nil {
+	if err := deps.validateUser(req.User, aliases); err != nil {
 		return append(errL, err)
 	}
 
@@ -342,7 +354,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
 		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
 			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
-			consentWriter := ccpa.ConsentWriter{""}
+			consentWriter := ccpa.ConsentWriter{Consent: ""}
 			if err := consentWriter.Write(req); err != nil {
 				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
 			}
@@ -384,12 +396,12 @@ func validateAndFillSourceTID(req *openrtb.BidRequest) error {
 	return nil
 }
 
-func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
+func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
 	for bidderToAdjust, adjustmentFactor := range adjustmentFactors {
 		if adjustmentFactor <= 0 {
 			return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s must be a positive number. Got %f", bidderToAdjust, adjustmentFactor)
 		}
-		if _, isBidder := openrtb_ext.BidderMap[bidderToAdjust]; !isBidder {
+		if _, isBidder := deps.bidderMap[bidderToAdjust]; !isBidder {
 			if _, isAlias := aliases[bidderToAdjust]; !isAlias {
 				return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust)
 			}
@@ -894,7 +906,7 @@ func (deps *endpointDeps) validateApp(app *openrtb.App) error {
 	return nil
 }
 
-func validateUser(user *openrtb.User, aliases map[string]string) error {
+func (deps *endpointDeps) validateUser(user *openrtb.User, aliases map[string]string) error {
 	// DigiTrust support
 	if user != nil && user.Ext != nil {
 		// Creating ExtUser object to check if DigiTrust is valid
@@ -910,7 +922,7 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 					return errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)
 				}
 				for bidderName := range userExt.Prebid.BuyerUIDs {
-					if _, ok := openrtb_ext.BidderMap[bidderName]; !ok {
+					if _, ok := deps.bidderMap[bidderName]; !ok {
 						if _, ok := aliases[bidderName]; !ok {
 							return fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases.", bidderName)
 						}

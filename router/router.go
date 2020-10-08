@@ -71,10 +71,12 @@ func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		glog.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
 	}
 
+	bidderMap := openrtb_ext.BuildBidderNameLookup()
+
 	data := make(map[string]json.RawMessage, len(files))
 	for _, file := range files {
 		bidder := strings.TrimSuffix(file.Name(), ".json")
-		bidderName, isValid := openrtb_ext.BidderMap[bidder]
+		bidderName, isValid := bidderMap[bidder]
 		if !isValid {
 			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
@@ -153,7 +155,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"ix":         ix.NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
 		"pubmatic":   pubmatic.NewPubmaticLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
 		"pulsepoint": pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
-		"rubicon": rubicon.NewRubiconLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
+		"rubicon": rubicon.NewRubiconLegacyBidder(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
 		"lifestreet": lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint),
 		"conversant": conversant.NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
@@ -206,7 +208,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	}
 
 	// Hack because of how legacy handles districtm
-	legacyBidderList := openrtb_ext.BidderList()
+	legacyBidderList := openrtb_ext.BidderNames()
 	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
 
 	// Metrics engine
@@ -227,7 +229,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	}
 
 	p, _ := filepath.Abs(infoDirectory)
-	bidderInfos := adapters.ParseBidderInfos(cfg.Adapters, p, openrtb_ext.BidderList())
+	bidderInfos := adapters.ParseBidderInfos(cfg.Adapters, p, openrtb_ext.BidderNames())
 
 	activeBidders := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
@@ -240,7 +242,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	exchanges = newExchangeMap(cfg)
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
 
-	adapters, adaptersErr := exchange.NewAdapterMap(generalHttpClient, cfg, bidderInfos, r.MetricsEngine)
+	adapters, adaptersErr := exchange.BuildAdapters(generalHttpClient, cfg, bidderInfos, r.MetricsEngine)
 	if adaptersErr != nil {
 		// todo - make this nicer. spend more thought here.
 		glog.Fatalf("Failed to create adapters. %v", adaptersErr)

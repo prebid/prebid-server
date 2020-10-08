@@ -248,13 +248,8 @@ func (req *cookieSyncRequest) filterForGDPR(permissions gdpr.Permissions) {
 }
 
 func (req *cookieSyncRequest) filterForCCPA() {
-	validBidders := make(map[string]struct{})
-	for _, v := range openrtb_ext.BidderMap {
-		validBidders[v.String()] = struct{}{}
-	}
-
 	ccpaPolicy := &ccpa.Policy{Consent: req.USPrivacy}
-	ccpaParsedPolicy, err := ccpaPolicy.Parse(validBidders)
+	ccpaParsedPolicy, err := ccpaPolicy.Parse(openrtb_ext.BidderMap) // can pass in isvalidbidder directly?
 
 	if err == nil {
 		for i := 0; i < len(req.Bidders); i++ {

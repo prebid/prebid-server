@@ -9,14 +9,12 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currencies"
-	metrics "github.com/rcrowley/go-metrics"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 )
 
@@ -64,18 +62,21 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 
 	var infos adapters.BidderInfos
 	infos["appnexus"] = adapters.BidderInfo{Capabilities: &adapters.CapabilitiesInfo{Site: &adapters.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}}}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
 		return
 	}
 
-	exchange, _ := exchange.NewExchange(
-		server.Client(),
+	adapters, adaptersErr := exchange.BuildAdapters(server.Client(), &config.Configuration{}, infos, newTestMetrics())
+	if adaptersErr != nil {
+		b.Fatal("unable to build adapters")
+	}
+
+	exchange := exchange.NewExchange(
+		adapters,
 		nil,
 		&config.Configuration{},
-		theMetrics,
-		infos,
+		newTestMetrics(),
 		gdpr.AlwaysAllow{},
 		currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 	)
@@ -87,7 +88,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},

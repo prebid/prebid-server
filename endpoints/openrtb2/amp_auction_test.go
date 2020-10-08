@@ -41,7 +41,6 @@ func TestGoodAmpRequests(t *testing.T) {
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
 		newParamsValidator(t),
@@ -49,11 +48,11 @@ func TestGoodAmpRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 	)
 
 	for requestID := range goodRequests {
@@ -93,7 +92,6 @@ func TestAMPPageInfo(t *testing.T) {
 	stored := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 
 	endpoint, _ := NewAmpEndpoint(
@@ -103,11 +101,11 @@ func TestAMPPageInfo(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -201,7 +199,6 @@ func TestGDPRConsent(t *testing.T) {
 
 		// Build Exchange Endpoint
 		mockExchange := &mockAmpExchange{}
-		metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 		endpoint, _ := NewAmpEndpoint(
 			mockExchange,
 			newParamsValidator(t),
@@ -209,11 +206,11 @@ func TestGDPRConsent(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
-			metrics,
+			newTestMetrics(),
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
-			openrtb_ext.BidderMap,
+			openrtb_ext.BuildBidderNameLookup(),
 		)
 
 		// Invoke Endpoint
@@ -355,7 +352,6 @@ func TestCCPAConsent(t *testing.T) {
 
 		// Build Exchange Endpoint
 		mockExchange := &mockAmpExchange{}
-		metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 		endpoint, _ := NewAmpEndpoint(
 			mockExchange,
 			newParamsValidator(t),
@@ -363,11 +359,11 @@ func TestCCPAConsent(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
-			metrics,
+			newTestMetrics(),
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
-			openrtb_ext.BidderMap,
+			openrtb_ext.BuildBidderNameLookup(),
 		)
 
 		// Invoke Endpoint
@@ -415,7 +411,6 @@ func TestNoConsent(t *testing.T) {
 
 	// Build Exchange Endpoint
 	mockExchange := &mockAmpExchange{}
-	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	endpoint, _ := NewAmpEndpoint(
 		mockExchange,
 		newParamsValidator(t),
@@ -423,11 +418,11 @@ func TestNoConsent(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		metrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 	)
 
 	// Invoke Endpoint
@@ -462,7 +457,6 @@ func TestInvalidConsent(t *testing.T) {
 
 	// Build Exchange Endpoint
 	mockExchange := &mockAmpExchange{}
-	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	endpoint, _ := NewAmpEndpoint(
 		mockExchange,
 		newParamsValidator(t),
@@ -470,11 +464,11 @@ func TestInvalidConsent(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		metrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 	)
 
 	// Invoke Endpoint
@@ -547,7 +541,6 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 
 		// Build Exchange Endpoint
 		mockExchange := &mockAmpExchange{}
-		metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 		endpoint, _ := NewAmpEndpoint(
 			mockExchange,
 			newParamsValidator(t),
@@ -555,11 +548,11 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			empty_fetcher.EmptyFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
-			metrics,
+			newTestMetrics(),
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
-			openrtb_ext.BidderMap,
+			openrtb_ext.BuildBidderNameLookup(),
 		)
 
 		// Invoke Endpoint
@@ -599,7 +592,6 @@ func TestAMPSiteExt(t *testing.T) {
 	stored := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 	endpoint, _ := NewAmpEndpoint(
 		exchange,
@@ -608,11 +600,11 @@ func TestAMPSiteExt(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		nil,
 		nil,
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -638,10 +630,6 @@ func TestAmpBadRequests(t *testing.T) {
 		badRequests[strconv.Itoa(100+index)] = readFile(t, "sample-requests/invalid-whole/"+file.Name())
 	}
 
-	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
-	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
 		newParamsValidator(t),
@@ -649,11 +637,11 @@ func TestAmpBadRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -673,7 +661,6 @@ func TestAmpDebug(t *testing.T) {
 		"2": json.RawMessage(validRequest(t, "site.json")),
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
 		newParamsValidator(t),
@@ -681,11 +668,11 @@ func TestAmpDebug(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 	)
 
 	for requestID := range requests {
@@ -746,7 +733,6 @@ func TestQueryParamOverrides(t *testing.T) {
 	requests := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
@@ -755,11 +741,11 @@ func TestQueryParamOverrides(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 	)
 
 	requestID := "1"
@@ -900,7 +886,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 	requests := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
 		newParamsValidator(t),
@@ -908,11 +894,11 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderNameLookup(),
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s&account=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize, s.account)
@@ -1132,4 +1118,8 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 				"should return the expected Publisher ID for test case: %s", test.description)
 		}
 	}
+}
+
+func newTestMetrics() *pbsmetrics.Metrics {
+	return pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderNames(), config.DisabledMetrics{})
 }

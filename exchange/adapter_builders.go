@@ -1,12 +1,6 @@
 package exchange
 
 import (
-	"fmt"
-	"net/http"
-	"strings"
-
-	"github.com/prebid/prebid-server/pbsmetrics"
-
 	"github.com/prebid/prebid-server/adapters"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/adform"
@@ -30,7 +24,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/avocet"
 	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/beintoo"
+	"github.com/prebid/prebid-server/adapters/between"
 	"github.com/prebid/prebid-server/adapters/brightroll"
+	"github.com/prebid/prebid-server/adapters/colossus"
+	"github.com/prebid/prebid-server/adapters/connectad"
 	"github.com/prebid/prebid-server/adapters/consumable"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/cpmstar"
@@ -44,10 +41,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/grid"
 	"github.com/prebid/prebid-server/adapters/gumgum"
 	"github.com/prebid/prebid-server/adapters/improvedigital"
-	"github.com/prebid/prebid-server/adapters/ix"
+	"github.com/prebid/prebid-server/adapters/inmobi"
+	"github.com/prebid/prebid-server/adapters/invibes"
 	"github.com/prebid/prebid-server/adapters/kidoz"
 	"github.com/prebid/prebid-server/adapters/kubient"
-	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/lockerdome"
 	"github.com/prebid/prebid-server/adapters/logicad"
 	"github.com/prebid/prebid-server/adapters/lunamedia"
@@ -60,7 +57,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/orbidder"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pubnative"
-	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rhythmone"
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
@@ -87,14 +83,13 @@ import (
 	"github.com/prebid/prebid-server/adapters/yieldmo"
 	"github.com/prebid/prebid-server/adapters/yieldone"
 	"github.com/prebid/prebid-server/adapters/zeroclickfraud"
-	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// This file is kept separate to provide a simple and clean location for each Adapter to register
-// its Builder func.
+// Adapter registration is kept in this separate file for ease of use and to aid
+// in resolving merge conflicts.
 
-func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
+func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 	return map[openrtb_ext.BidderName]adapters.Builder{
 		openrtb_ext.Bidder33Across:         ttx.Builder,
 		openrtb_ext.BidderAdform:           adform.Builder,
@@ -118,10 +113,13 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAvocet:           avocet.Builder,
 		openrtb_ext.BidderBeachfront:       beachfront.Builder,
 		openrtb_ext.BidderBeintoo:          beintoo.Builder,
+		openrtb_ext.BidderBetween:          between.Builder,
 		openrtb_ext.BidderBrightroll:       brightroll.Builder,
+		openrtb_ext.BidderColossus:         colossus.Builder,
+		openrtb_ext.BidderConnectAd:        connectad.Builder,
 		openrtb_ext.BidderConsumable:       consumable.Builder,
-		openrtb_ext.BidderCpmstar:          cpmstar.Builder,
 		openrtb_ext.BidderConversant:       conversant.Builder,
+		openrtb_ext.BidderCpmstar:          cpmstar.Builder,
 		openrtb_ext.BidderDatablocks:       datablocks.Builder,
 		openrtb_ext.BidderDmx:              dmx.Builder,
 		openrtb_ext.BidderEmxDigital:       emx_digital.Builder,
@@ -132,6 +130,8 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderGrid:             grid.Builder,
 		openrtb_ext.BidderGumGum:           gumgum.Builder,
 		openrtb_ext.BidderImprovedigital:   improvedigital.Builder,
+		openrtb_ext.BidderInMobi:           inmobi.Builder,
+		openrtb_ext.BidderInvibes:          invibes.Builder,
 		openrtb_ext.BidderKidoz:            kidoz.Builder,
 		openrtb_ext.BidderKubient:          kubient.Builder,
 		openrtb_ext.BidderLockerDome:       lockerdome.Builder,
@@ -172,138 +172,5 @@ func newAdapterBuildersMap() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldmo:          yieldmo.Builder,
 		openrtb_ext.BidderYieldone:         yieldone.Builder,
 		openrtb_ext.BidderZeroClickFraud:   zeroclickfraud.Builder,
-		//between
-		//colossus
-		//connectted
-		//inmobi
-		//invibes
 	}
-}
-
-func NewAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
-	exchangeBidders, errs := buildExchangeBidders(cfg, infos, client, me)
-	if len(errs) > 0 {
-		return nil, errs
-	}
-
-	exchangeBiddersLegacy := buildExchangeBiddersLegacy(cfg.Adapters, infos)
-	for bidderName, bidder := range exchangeBiddersLegacy {
-		exchangeBidders[bidderName] = bidder
-	}
-
-	wrapWithMiddleware(exchangeBidders)
-
-	return exchangeBidders, nil
-}
-
-func buildExchangeBidders(cfg *config.Configuration, infos adapters.BidderInfos, client *http.Client, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
-	bidders, errs := buildBidders(cfg.Adapters, infos)
-	if len(errs) > 0 {
-		return nil, errs
-	}
-
-	exchangeBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(bidders))
-	for bidderName, bidder := range bidders {
-		exchangeBidders[bidderName] = adaptBidder(bidder, client, cfg, me, bidderName)
-	}
-
-	return exchangeBidders, nil
-
-}
-
-func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
-	builders := newAdapterBuildersMap()
-
-	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
-	var errs []error
-
-	for bidder, cfg := range adapterConfig {
-		bidderName := openrtb_ext.BidderName(strings.ToLower(bidder))
-
-		info, infoFound := infos[bidder]
-		if !infoFound {
-			errs = append(errs, fmt.Errorf("%v: bidder info not found", bidder))
-			continue
-		}
-
-		if info.Status != adapters.StatusActive {
-			// Bidder is disabled. Ingore it.
-			continue
-		}
-
-		builder, builderFound := builders[bidderName]
-		if !builderFound {
-			errs = append(errs, fmt.Errorf("%v: builder not registered", bidder))
-			continue
-		}
-
-		bidderInstance, builderErr := builder(bidderName, cfg)
-		if builderErr != nil {
-			errs = append(errs, fmt.Errorf("%v: %v", bidder, builderErr))
-			continue
-		}
-
-		bidderWithInfoEnforcement := adapters.EnforceBidderInfo(bidderInstance, info)
-
-		bidders[bidderName] = bidderWithInfoEnforcement
-	}
-
-	return bidders, errs
-}
-
-func buildExchangeBiddersLegacy(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
-	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 4)
-
-	// Index
-	if infos[string(openrtb_ext.BidderIx)].Status == adapters.StatusActive {
-		adapter := ix.NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderIx)].Endpoint)
-		bidders[openrtb_ext.BidderIx] = adaptLegacyAdapter(adapter)
-	}
-
-	// Lifestreet
-	if infos[string(openrtb_ext.BidderLifestreet)].Status == adapters.StatusActive {
-		adapter := lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderLifestreet)].Endpoint)
-		bidders[openrtb_ext.BidderLifestreet] = adaptLegacyAdapter(adapter)
-	}
-
-	// Pulsepoint
-	if infos[string(openrtb_ext.BidderPulsepoint)].Status == adapters.StatusActive {
-		adapter := pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderPulsepoint)].Endpoint)
-		bidders[openrtb_ext.BidderPulsepoint] = adaptLegacyAdapter(adapter)
-	}
-
-	return bidders
-}
-
-func wrapWithMiddleware(bidders map[openrtb_ext.BidderName]adaptedBidder) {
-	for name, bidder := range bidders {
-		bidders[name] = addValidatedBidderMiddleware(bidder)
-	}
-}
-
-// GetActiveBidders returns a hash set of all active bidder names.
-func GetActiveBidders(infos adapters.BidderInfos) map[string]struct{} {
-	activeBidders := make(map[string]struct{})
-
-	for bidderName, bidderInfo := range infos {
-		if bidderInfo.Status != adapters.StatusDisabled {
-			activeBidders[bidderName] = struct{}{}
-		}
-	}
-
-	return activeBidders
-}
-
-// GetDisabledBiddersErrorMessages returns a map of error messages for disabled bidders.
-func GetDisabledBiddersErrorMessages(infos adapters.BidderInfos) map[string]string {
-	disabledBidders := make(map[string]string)
-
-	for bidderName, bidderInfo := range infos {
-		if bidderInfo.Status == adapters.StatusDisabled {
-			msg := fmt.Sprintf(`Bidder "%s" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, bidderName)
-			disabledBidders[bidderName] = msg
-		}
-	}
-
-	return disabledBidders
 }
