@@ -226,7 +226,6 @@ func (e *exchange) parseUsersyncIfAmbiguous(bidRequest *openrtb.BidRequest) bool
 }
 
 func recordImpMetrics(bidRequest *openrtb.BidRequest, metricsEngine pbsmetrics.MetricsEngine) {
-
 	for _, impInRequest := range bidRequest.Imp {
 		var impLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
 			BannerImps: impInRequest.Banner != nil,
@@ -236,7 +235,6 @@ func recordImpMetrics(bidRequest *openrtb.BidRequest, metricsEngine pbsmetrics.M
 		}
 		metricsEngine.RecordImps(impLabels)
 	}
-
 }
 
 type DealTierInfo struct {
