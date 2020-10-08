@@ -1,0 +1,67 @@
+{
+  "mockBidRequest": {
+    "app": {
+      "bundle": "com.example.app"
+    },
+    "id": "req-id",
+    "device": {
+      "ifa": "9d8fe0a9-c0dd-4482-b16b-5709b00c608d",
+      "ip": "1.1.1.1",
+      "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+    },
+    "imp": [
+      {
+        "ext": {
+          "bidder": {
+            "plc": "1596825400965"
+          }
+        },
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "id": "imp-id"
+      }
+    ]
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://api.w.inmobi.com/showad/openrtb/bidder/prebid",
+      "body": {
+        "app": {
+          "bundle": "com.example.app"
+        },
+        "id": "req-id",
+        "device": {
+          "ifa": "9d8fe0a9-c0dd-4482-b16b-5709b00c608d",
+          "ip": "1.1.1.1",
+          "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+        },
+        "imp": [
+          {
+            "ext": {
+              "bidder": {
+                "plc": "1596825400965"
+              }
+            },
+            "banner": {
+              "w": 320,
+              "h": 50
+            },
+            "id": "imp-id"
+          }
+        ]
+      }
+    },
+    "mockResponse": {
+      "status": 400,
+      "body": {}
+    }
+  }],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected http status code: 400",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+maintainer:
+  email: "buying@betweenx.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+  app:
+    mediaTypes:
+      - banner
