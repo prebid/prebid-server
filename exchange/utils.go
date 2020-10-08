@@ -543,6 +543,7 @@ func getExtTargetData(requestExt *openrtb_ext.ExtRequest, cacheInstructions *ext
 			includeCacheBids:  cacheInstructions.cacheBids,
 			includeCacheVast:  cacheInstructions.cacheVAST,
 			includeFormat:     requestExt.Prebid.Targeting.IncludeFormat,
+			preferDeals:       requestExt.Prebid.Targeting.PreferDeals,
 		}
 	}
 	return targData
