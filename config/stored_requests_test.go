@@ -138,10 +138,6 @@ func TestInMemoryCacheValidationSingleCache(t *testing.T) {
 	}).validate(AccountDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type: "unbounded",
-		Size: 1000,
-	}).validate(AccountDataType, nil))
-	assertErrsExist(t, (&InMemoryCache{
-		Type: "unbounded",
 		TTL:  500,
 	}).validate(AccountDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
@@ -151,6 +147,10 @@ func TestInMemoryCacheValidationSingleCache(t *testing.T) {
 	assertErrsExist(t, (&InMemoryCache{
 		Type:             "lru",
 		RequestCacheSize: 1000,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:         "lru",
+		ImpCacheSize: 1000,
 	}).validate(AccountDataType, nil))
 }
 

@@ -445,8 +445,8 @@ func (cfg *InMemoryCache) validate(dataType DataType, errs configErrors) configE
 			if cfg.ImpCacheSize <= 0 {
 				errs = append(errs, fmt.Errorf("%s: in_memory_cache.imp_cache_size_bytes must be >= 0 when in_memory_cache.type=lru. Got %d", section, cfg.ImpCacheSize))
 			}
-			if cfg.Size > 0 { // should this be a warning instead ? "field is ignored"
-				errs = append(errs, fmt.Errorf("%s: in_memory_cache.size_bytes does not apply to this section", section))
+			if cfg.Size > 0 {
+				glog.Warningf("%s: in_memory_cache.size_bytes does not apply in this section and will be ignored", section)
 			}
 		}
 	default:
