@@ -36,17 +36,17 @@
     }],
     "expectedCacheables": [
         {
-            "Type": "json",
-            "TTLSeconds": 660,
-            "Data": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64}"
+            "type": "json",
+            "ttlseconds": 660,
+            "value": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64}"
         }, {
-            "Type": "json",
-            "TTLSeconds": 3660,
-            "Data": "{\"id\": \"bidTwo\", \"impid\": \"twoImp\", \"price\": 5.64}"
+            "type": "json",
+            "ttlseconds": 3660,
+            "value": "{\"id\": \"bidTwo\", \"impid\": \"twoImp\", \"price\": 5.64}"
         }, {
-            "Type": "xml",
-            "TTLSeconds": 3600,
-            "Data": "\u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\n\u003cLog\u003e\u003cRequest\u003etest request string\u003c/Request\u003e\u003cHeaders\u003etest headers string\u003c/Headers\u003e\u003cResponse\u003etest response string\u003c/Response\u003e\u003c/Log\u003e"
+            "type": "xml",
+            "ttlseconds": 3600,
+            "value": "\u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\n\u003cLog\u003e\u003cRequest\u003etest request string\u003c/Request\u003e\u003cHeaders\u003etest headers string\u003c/Headers\u003e\u003cResponse\u003etest response string\u003c/Response\u003e\u003c/Log\u003e"
         }
     ],
     "defaultTTLs": {

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/endpoints/events"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -276,6 +277,16 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
 	r.ServeFiles("/static/*filepath", http.Dir("static"))
+
+	// vtrack endpoint
+	if cfg.VTrack.Enabled {
+		vtrackEndpoint := events.NewVTrackEndpoint(cfg, accounts, cacheClient, bidderInfos)
+		r.POST("/vtrack", vtrackEndpoint)
+	}
+
+	// event endpoint
+	eventEndpoint := events.NewEventEndpoint(cfg, accounts, pbsAnalytics)
+	r.GET("/event", eventEndpoint)
 
 	userSyncDeps := &pbs.UserSyncDeps{
 		HostCookieConfig: &(cfg.HostCookie),

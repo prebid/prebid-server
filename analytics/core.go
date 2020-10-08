@@ -21,6 +21,7 @@ type PBSAnalyticsModule interface {
 	LogCookieSyncObject(*CookieSyncObject)
 	LogSetUIDObject(*SetUIDObject)
 	LogAmpObject(*AmpObject)
+	LogNotificationEventObject(*NotificationEvent)
 }
 
 //Loggable object of a transaction at /openrtb2/auction endpoint
@@ -66,4 +67,10 @@ type CookieSyncObject struct {
 	Status       int
 	Errors       []error
 	BidderStatus []*usersync.CookieSyncBidders
+}
+
+// NotificationEvent is a loggable object
+type NotificationEvent struct {
+	Request *EventRequest   `json:"request"`
+	Account *config.Account `json:"account"`
 }
