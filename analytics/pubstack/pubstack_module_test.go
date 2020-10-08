@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func loadJsonFromFile() (*analytics.AuctionObject, error) {
+func loadJSONFromFile() (*analytics.AuctionObject, error) {
 	req, err := os.Open("mocks/mock_openrtb_request.json")
 	if err != nil {
 		return nil, err
@@ -57,73 +57,74 @@ func loadJsonFromFile() (*analytics.AuctionObject, error) {
 
 func TestPubstackModuleErrors(t *testing.T) {
 	tests := []struct {
-		giveRefreshDelay string
-		giveMaxByteSize  string
-		giveMaxTime      string
+		description  string
+		refreshDelay string
+		maxByteSize  string
+		maxTime      string
 	}{
 		{
-			giveRefreshDelay: "1z",
-			giveMaxByteSize:  "90MB",
-			giveMaxTime:      "15m",
+			description:  "refresh delay is in an invalid format",
+			refreshDelay: "1invalid",
+			maxByteSize:  "90MB",
+			maxTime:      "15m",
 		},
 		{
-			giveRefreshDelay: "1h",
-			giveMaxByteSize:  "90z",
-			giveMaxTime:      "15m",
+			description:  "max byte size is in an invalid format",
+			refreshDelay: "1h",
+			maxByteSize:  "90invalid",
+			maxTime:      "15m",
 		},
 		{
-			giveRefreshDelay: "1z",
-			giveMaxByteSize:  "90MB",
-			giveMaxTime:      "15z",
+			description:  "max time is in an invalid format",
+			refreshDelay: "1h",
+			maxByteSize:  "90MB",
+			maxTime:      "15invalid",
 		},
 	}
 
 	for _, tt := range tests {
-		server := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-			defer req.Body.Close()
-			data, _ := json.Marshal(&Configuration{})
-			res.Write(data)
-		}))
-		client := server.Client()
-
-		defer server.Close()
-
-		_, err := NewPubstackModule(client, "scope", "http://example.com", tt.giveRefreshDelay, 100, tt.giveMaxByteSize, tt.giveMaxTime)
-		assert.NotNil(t, err) // should raise an error since  we can't parse args // configRefreshDelay
+		_, err := NewPubstackModule(&http.Client{}, "scope", "http://example.com", tt.refreshDelay, 100, tt.maxByteSize, tt.maxTime)
+		assert.NotNil(t, err, tt.description)
 	}
 }
 
 func TestPubstackModuleSuccess(t *testing.T) {
 	tests := []struct {
-		feature   string
-		logObject func(analytics.PBSAnalyticsModule)
+		description string
+		feature     string
+		logObject   func(analytics.PBSAnalyticsModule)
 	}{
 		{
-			feature: auction,
+			description: "auction events are only published when logging an auction object with auction feature on",
+			feature:     auction,
 			logObject: func(module analytics.PBSAnalyticsModule) {
 				module.LogAuctionObject(&analytics.AuctionObject{Status: http.StatusOK})
 			},
 		},
 		{
-			feature: amp,
+			description: "AMP events are only published when logging an AMP object with AMP feature on",
+			feature:     amp,
 			logObject: func(module analytics.PBSAnalyticsModule) {
 				module.LogAmpObject(&analytics.AmpObject{Status: http.StatusOK})
 			},
 		},
 		{
-			feature: video,
+			description: "video events are only published when logging a video object with video feature on",
+			feature:     video,
 			logObject: func(module analytics.PBSAnalyticsModule) {
 				module.LogVideoObject(&analytics.VideoObject{Status: http.StatusOK})
 			},
 		},
 		{
-			feature: cookieSync,
+			description: "cookie events are only published when logging a cookie object with cookie feature on",
+			feature:     cookieSync,
 			logObject: func(module analytics.PBSAnalyticsModule) {
 				module.LogCookieSyncObject(&analytics.CookieSyncObject{Status: http.StatusOK})
 			},
 		},
 		{
-			feature: setUID,
+			description: "setUID events are only published when logging a setUID object with setUID feature on",
+			feature:     setUID,
 			logObject: func(module analytics.PBSAnalyticsModule) {
 				module.LogSetUIDObject(&analytics.SetUIDObject{Status: http.StatusOK})
 			},
@@ -155,19 +156,23 @@ func TestPubstackModuleSuccess(t *testing.T) {
 			defer req.Body.Close()
 
 			if rootCount > 1 {
-				data, _ := json.Marshal(updatedConfig)
-				res.Write(data)
+				if data, err := json.Marshal(updatedConfig); err != nil {
+					res.WriteHeader(http.StatusBadRequest)
+				} else {
+					res.Write(data)
+				}
 			} else {
-				data, _ := json.Marshal(origConfig)
-				res.Write(data)
+				if data, err := json.Marshal(origConfig); err != nil {
+					res.WriteHeader(http.StatusBadRequest)
+				} else {
+					res.Write(data)
+				}
 			}
 		})
 
-		intakeCount := 0
 		intakeChannel := make(chan int) // using a channel rather than examining the count directly to avoid race
 		mux.HandleFunc("/intake/"+tt.feature+"/", func(res http.ResponseWriter, req *http.Request) {
-			intakeCount++
-			intakeChannel <- intakeCount
+			intakeChannel <- 1
 		})
 		server := httptest.NewServer(mux)
 		client := server.Client()
@@ -178,7 +183,7 @@ func TestPubstackModuleSuccess(t *testing.T) {
 
 		// instantiate module with 25ms config refresh rate
 		module, err := NewPubstackModule(client, "scope", server.URL, "25ms", 100, "1B", "10ms")
-		assert.Nil(t, err)
+		assert.Nil(t, err, tt.description)
 
 		// allow time for the module to load the original config
 		time.Sleep(10 * time.Millisecond)
@@ -191,10 +196,11 @@ func TestPubstackModuleSuccess(t *testing.T) {
 
 		select {
 		case eventCount = <-intakeChannel:
+			assert.Fail(t, "an unexpected event was received", tt.description)
 		case <-time.After(10 * time.Millisecond):
 		}
 
-		assert.Equal(t, 0, eventCount)
+		assert.Equal(t, 0, eventCount, tt.description)
 
 		// allow time for the server to start serving the updated config
 		time.Sleep(10 * time.Millisecond)
@@ -205,8 +211,9 @@ func TestPubstackModuleSuccess(t *testing.T) {
 		select {
 		case eventCount = <-intakeChannel:
 		case <-time.After(10 * time.Millisecond):
+			assert.Fail(t, "an event was expected but was never received", tt.description)
 		}
 
-		assert.Equal(t, 1, eventCount)
+		assert.Equal(t, 1, eventCount, tt.description)
 	}
 }
