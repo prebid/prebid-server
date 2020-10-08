@@ -1157,6 +1157,9 @@ func (logger mockLogger) LogCookieSyncObject(cookieObject *analytics.CookieSyncO
 func (logger mockLogger) LogSetUIDObject(uuidObj *analytics.SetUIDObject) {
 	return
 }
+func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.NotificationEvent) {
+	return
+}
 func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject) {
 	*logger.ampObject = *ao
 }
