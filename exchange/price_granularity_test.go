@@ -1,8 +1,8 @@
 package exchange
 
 import (
-	"fmt"
 	"math"
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -34,108 +34,102 @@ func TestGetPriceBucketString(t *testing.T) {
 	// Define test cases
 	type aTest struct {
 		granularityId       string
-		inGranularity       openrtb_ext.PriceGranularity
+		granularity         openrtb_ext.PriceGranularity
 		expectedPriceBucket string
-		expectedError       error
 	}
 	testGroups := []struct {
 		groupDesc string
-		inCpm     float64
+		cpm       float64
 		testCases []aTest
 	}{
 		{
-			"cpm below the max in every price bucket",
-			1.87,
-			[]aTest{
-				{"low", low, "1.50", nil},
-				{"medium", medium, "1.80", nil},
-				{"high", high, "1.87", nil},
-				{"auto", auto, "1.85", nil},
-				{"dense", dense, "1.87", nil},
-				{"custom1", custom1, "1.86", nil},
+			groupDesc: "cpm below the max in every price bucket",
+			cpm:       1.87,
+			testCases: []aTest{
+				{"low", low, "1.50"},
+				{"medium", medium, "1.80"},
+				{"high", high, "1.87"},
+				{"auto", auto, "1.85"},
+				{"dense", dense, "1.87"},
+				{"custom1", custom1, "1.86"},
 			},
 		},
 		{
-			"cpm above the max in low price bucket",
-			5.72,
-			[]aTest{
-				{"low", low, "5.00", nil},
-				{"medium", medium, "5.70", nil},
-				{"high", high, "5.72", nil},
-				{"auto", auto, "5.70", nil},
-				{"dense", dense, "5.70", nil},
-				{"custom1", custom1, "5.70", nil},
+			groupDesc: "cpm above the max in low price bucket",
+			cpm:       5.72,
+			testCases: []aTest{
+				{"low", low, "5.00"},
+				{"medium", medium, "5.70"},
+				{"high", high, "5.72"},
+				{"auto", auto, "5.70"},
+				{"dense", dense, "5.70"},
+				{"custom1", custom1, "5.70"},
 			},
 		},
 		{
-			"Precision value corner cases",
-			1.876,
-			[]aTest{
+			groupDesc: "Precision value corner cases",
+			cpm:       1.876,
+			testCases: []aTest{
 				{
 					"Negative precision defaults to number of digits already in CPM float",
 					openrtb_ext.PriceGranularity{Precision: -1, Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
 					"1.85",
-					nil,
 				},
 				{
 					"Precision value equals zero, we expect to round up to the nearest integer",
 					openrtb_ext.PriceGranularity{Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
 					"2",
-					nil,
 				},
 				{
-					"Very large precision value: expect error and an empty string in return",
-					openrtb_ext.PriceGranularity{Precision: int(^uint(0) >> 1), Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
-					"",
-					fmt.Errorf("Limit the number of precision figures to 4. Parsed value: %d", int(^uint(0)>>1)),
+					"Largest precision value PBS supports (2^15 = 32768)",
+					openrtb_ext.PriceGranularity{Precision: int(math.Pow(2, 15)), Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
+					"1.85000000000000008881784",
 				},
 			},
 		},
 		{
-			"Increment value corner cases",
-			1.876,
-			[]aTest{
+			groupDesc: "Increment value corner cases",
+			cpm:       1.876,
+			testCases: []aTest{
 				{
 					"Negative increment, return empty string",
 					openrtb_ext.PriceGranularity{Precision: 2, Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: -0.05}}},
 					"",
-					nil,
 				},
 				{
 					"Zero increment, return empty string",
 					openrtb_ext.PriceGranularity{Precision: 2, Ranges: []openrtb_ext.GranularityRange{{Max: 5}}},
 					"",
-					nil,
 				},
 				{
 					"Increment value is greater than CPM itself, return zero float value",
 					openrtb_ext.PriceGranularity{Precision: 2, Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 1.877}}},
 					"0.00",
-					nil,
 				},
 			},
 		},
 		{
-			"Negative Cpm, return empty string since it does not belong into any range",
-			-1.876,
-			[]aTest{{"low", low, "", nil}},
+			groupDesc: "Negative Cpm, return empty string since it does not belong into any range",
+			cpm:       -1.876,
+			testCases: []aTest{{"low", low, ""}},
 		},
 		{
-			"Zero value Cpm, return the same, only in string format",
-			0,
-			[]aTest{{"low", low, "0.00", nil}},
+			groupDesc: "Zero value Cpm, return the same, only in string format",
+			cpm:       0,
+			testCases: []aTest{{"low", low, "0.00"}},
 		},
 		{
-			"Large Cpm, return bucket Max",
-			math.MaxFloat64,
-			[]aTest{{"low", low, "5.00", nil}},
+			groupDesc: "Large Cpm, return bucket Max",
+			cpm:       math.MaxFloat64,
+			testCases: []aTest{{"low", low, "5.00"}},
 		},
 	}
+
 	for _, testGroup := range testGroups {
 		for _, test := range testGroup.testCases {
-			priceBucket, err := GetCpmStringValue(testGroup.inCpm, test.inGranularity)
-			assert.Equalf(t, test.expectedPriceBucket, priceBucket, "Group: %s Granularity: %s :: Expected %s, got %s from %f", testGroup.groupDesc, test.granularityId, test.expectedPriceBucket, priceBucket, testGroup.inCpm)
-			assert.Equalf(t, test.expectedError, err, "Error value doesn't match")
+			priceBucket := GetPriceBucket(testGroup.cpm, test.granularity)
+
+			assert.True(t, strings.HasPrefix(priceBucket, test.expectedPriceBucket), "Group: %s Granularity: %s :: Expected %s, got %s from %f", testGroup.groupDesc, test.granularityId, test.expectedPriceBucket, priceBucket, testGroup.cpm)
 		}
 	}
 }

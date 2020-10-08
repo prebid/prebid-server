@@ -8,6 +8,7 @@ import (
 // FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
 // for first party data support.
 const FirstPartyDataContextExtKey string = "context"
+const MaxDecimalFigures int = 32768 // math.Pow(2, 15)
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
@@ -177,6 +178,8 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 	}
 	if pgraw.Precision < 0 {
 		return errors.New("Price granularity error: precision must be non-negative")
+	} else if pgraw.Precision > MaxDecimalFigures {
+		pgraw.Precision = MaxDecimalFigures
 	}
 	if len(pgraw.Ranges) > 0 {
 		var prevMax float64 = 0
