@@ -1203,6 +1203,8 @@ func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) { retu
 
 func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) { return }
 
+func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { return }
+
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	deps := &endpointDeps{
