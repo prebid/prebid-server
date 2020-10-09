@@ -435,33 +435,63 @@ func TestRecordStoredDataError(t *testing.T) {
 		wantCount     int64
 	}{
 		{
-			description:   "Increment stored_account_error.timeout meter",
+			description:   "Increment stored_account_error.network meter",
 			giveDataType:  AccountDataType,
-			giveErrorType: StoredDataTimeout,
+			giveErrorType: StoredDataErrorNetwork,
 			wantCount:     1,
 		},
 		{
-			description:   "Increment stored_amp_error.timeout meter",
+			description:   "Increment stored_amp_error.network meter",
 			giveDataType:  AMPDataType,
-			giveErrorType: StoredDataTimeout,
+			giveErrorType: StoredDataErrorNetwork,
 			wantCount:     1,
 		},
 		{
-			description:   "Increment stored_category_error.timeout meter",
+			description:   "Increment stored_category_error.network meter",
 			giveDataType:  CategoryDataType,
-			giveErrorType: StoredDataTimeout,
+			giveErrorType: StoredDataErrorNetwork,
 			wantCount:     1,
 		},
 		{
-			description:   "Increment stored_request_error.timeout meter",
+			description:   "Increment stored_request_error.network meter",
 			giveDataType:  RequestDataType,
-			giveErrorType: StoredDataTimeout,
+			giveErrorType: StoredDataErrorNetwork,
 			wantCount:     1,
 		},
 		{
-			description:   "Increment stored_video_error.timeout meter",
+			description:   "Increment stored_video_error.network meter",
 			giveDataType:  VideoDataType,
-			giveErrorType: StoredDataTimeout,
+			giveErrorType: StoredDataErrorNetwork,
+			wantCount:     1,
+		},
+		{
+			description:   "Increment stored_account_error.undefined meter",
+			giveDataType:  AccountDataType,
+			giveErrorType: StoredDataErrorUndefined,
+			wantCount:     1,
+		},
+		{
+			description:   "Increment stored_amp_error.undefined meter",
+			giveDataType:  AMPDataType,
+			giveErrorType: StoredDataErrorUndefined,
+			wantCount:     1,
+		},
+		{
+			description:   "Increment stored_category_error.undefined meter",
+			giveDataType:  CategoryDataType,
+			giveErrorType: StoredDataErrorUndefined,
+			wantCount:     1,
+		},
+		{
+			description:   "Increment stored_request_error.undefined meter",
+			giveDataType:  RequestDataType,
+			giveErrorType: StoredDataErrorUndefined,
+			wantCount:     1,
+		},
+		{
+			description:   "Increment stored_video_error.undefined meter",
+			giveDataType:  VideoDataType,
+			giveErrorType: StoredDataErrorUndefined,
 			wantCount:     1,
 		},
 	}

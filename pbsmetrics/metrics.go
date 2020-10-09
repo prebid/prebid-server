@@ -94,12 +94,14 @@ type StoredDataLabels struct {
 type StoredDataError string
 
 const (
-	StoredDataTimeout StoredDataError = "timeout"
+	StoredDataErrorNetwork   StoredDataError = "network"
+	StoredDataErrorUndefined StoredDataError = "undefined"
 )
 
 func StoredDataErrors() []StoredDataError {
 	return []StoredDataError{
-		StoredDataTimeout,
+		StoredDataErrorNetwork,
+		StoredDataErrorUndefined,
 	}
 }
 

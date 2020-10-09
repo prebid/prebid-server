@@ -77,7 +77,7 @@ func (e *PostgresEventProducer) fetchAll() error {
 
 	if err != nil {
 		glog.Warningf("Failed to fetch all Stored %s data from the DB: %v", e.cfg.RequestType, err)
-		e.recordError(pbsmetrics.StoredDataTimeout)
+		e.recordError(pbsmetrics.StoredDataErrorNetwork)
 		e.recordFetchTime(elapsedTime, pbsmetrics.FetchAll)
 		return err
 	}
@@ -86,10 +86,12 @@ func (e *PostgresEventProducer) fetchAll() error {
 	defer func() {
 		if err := rows.Close(); err != nil {
 			glog.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
+			e.recordError(pbsmetrics.StoredDataErrorUndefined)
 		}
 	}()
 	if err := e.sendEvents(rows); err != nil {
 		glog.Warningf("Failed to load all Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		e.recordError(pbsmetrics.StoredDataErrorUndefined)
 		return err
 	}
 
@@ -108,7 +110,7 @@ func (e *PostgresEventProducer) fetchDelta() error {
 
 	if err != nil {
 		glog.Warningf("Failed to fetch updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
-		e.recordError(pbsmetrics.StoredDataTimeout)
+		e.recordError(pbsmetrics.StoredDataErrorNetwork)
 		e.recordFetchTime(elapsedTime, pbsmetrics.FetchDelta)
 		return err
 	}
@@ -117,10 +119,12 @@ func (e *PostgresEventProducer) fetchDelta() error {
 	defer func() {
 		if err := rows.Close(); err != nil {
 			glog.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
+			e.recordError(pbsmetrics.StoredDataErrorUndefined)
 		}
 	}()
 	if err := e.sendEvents(rows); err != nil {
 		glog.Warningf("Failed to load updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		e.recordError(pbsmetrics.StoredDataErrorUndefined)
 		return err
 	}
 
