@@ -41,7 +41,7 @@ const (
 	BidderAdtarget         BidderName = "adtarget"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
-	BidderAdyoulike    	   BidderName = "adyoulike"
+	BidderAdyoulike        BidderName = "adyoulike"
 	BidderAJA              BidderName = "aja"
 	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
