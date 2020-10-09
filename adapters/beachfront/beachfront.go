@@ -428,10 +428,10 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs [
 			nurlReqs = append(nurlReqs, prepVideoRequest(
 
 				videoRequest{
-				AppId:             ext.AppId,
-				VideoResponseType: ext.VideoResponseType,
-				Request:           requestStub,
-			} ))
+					AppId:             ext.AppId,
+					VideoResponseType: ext.VideoResponseType,
+					Request:           requestStub,
+				}))
 		}
 
 		if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
