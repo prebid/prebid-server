@@ -446,8 +446,9 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs [
 					VideoResponseType: ext.VideoResponseType,
 					Request:           requestStub,
 				}
-				admMap[ext.AppId] = &r
+
 				r = prepVideoRequest(r)
+				admMap[ext.AppId] = &r
 			}
 		}
 	}
