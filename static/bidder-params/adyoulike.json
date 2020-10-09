@@ -7,6 +7,26 @@
     "placementId": {
       "type": "string",
       "description": "Placement Id"
+    },
+    "Campaign": {
+      "type": "string",
+      "description": "Id of a forced campaign"
+    },
+    "Track": {
+      "type": "string",
+      "description": "Id of a forced Track"
+    },
+    "Creative": {
+      "type": "string",
+      "description": "Id of a forced creative"
+    },
+    "Source": {
+      "type": "string",
+      "description": "context of the campaign"
+    },
+    "Debug": {
+      "type": "string",
+      "description": "Abitrary id used for debug purpose"
     }
   },
   "required": ["placementId"]
