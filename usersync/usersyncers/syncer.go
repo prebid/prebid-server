@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adtarget"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/advangelists"
+	"github.com/prebid/prebid-server/adapters/adyoulike"	
 	"github.com/prebid/prebid-server/adapters/aja"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
@@ -98,6 +99,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdtarget, adtarget.NewAdtargetSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdtelligent, adtelligent.NewAdtelligentSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdvangelists, advangelists.NewAdvangelistsSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdyoulike, adyoulike.NewAdYouLikeSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAJA, aja.NewAJASyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAppnexus, appnexus.NewAppnexusSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAvocet, avocet.NewAvocetSyncer)
