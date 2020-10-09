@@ -7,6 +7,6 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-func NewadyoulikeSyncer(urlTemplate *template.Template) usersync.Usersyncer {
+func NewAdyoulikeSyncer(urlTemplate *template.Template) usersync.Usersyncer {
 	return adapters.NewSyncer("adyoulike", 0, urlTemplate, adapters.SyncTypeRedirect)
 }
