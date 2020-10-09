@@ -199,7 +199,7 @@ var dummyConfig = `
 									"bidder": "appnexus",
 									"bid_id": "22222224",
 									"params": {
-											"placementId": "10433394"
+											"placementId": "1"
 									}
 							}
 					]

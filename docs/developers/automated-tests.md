@@ -9,7 +9,7 @@ To reproduce these tests locally, use:
 
 ## Writing Tests
 
-Tests for `some-file.go` should be placed in the file `some-file_test.go` in the same paackage.
+Tests for `some-file.go` should be placed in the file `some-file_test.go` in the same package.
 For more info on how to write tests in Go, see [the Go docs](https://golang.org/pkg/testing/).
 
 ## Adapter Tests

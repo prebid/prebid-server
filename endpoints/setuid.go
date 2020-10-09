@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -25,8 +26,14 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
-func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metrics pbsmetrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metrics pbsmetrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.TTL) * 24 * time.Hour
+
+	validFamilyNameMap := make(map[string]struct{})
+	for _, s := range syncers {
+		validFamilyNameMap[s.FamilyName()] = struct{}{}
+	}
+
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		so := analytics.SetUIDObject{
 			Status: http.StatusOK,
@@ -38,50 +45,51 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 		pc := usersync.ParsePBSCookieFromRequest(r, &cfg)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
-			metrics.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionOptOut})
+			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
+				Action: pbsmetrics.RequestActionOptOut,
+			})
 			so.Status = http.StatusUnauthorized
 			return
 		}
 
 		query := r.URL.Query()
-		bidder := query.Get("bidder")
+
+		familyName, err := getFamilyName(query, validFamilyNameMap)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
+				Action: pbsmetrics.RequestActionErr,
+			})
+			so.Status = http.StatusBadRequest
+			return
+		}
+		so.Bidder = familyName
+
 		if shouldReturn, status, body := preventSyncsGDPR(query.Get("gdpr"), query.Get("gdpr_consent"), perms); shouldReturn {
 			w.WriteHeader(status)
 			w.Write([]byte(body))
 			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
 				Action: pbsmetrics.RequestActionGDPR,
-				Bidder: openrtb_ext.BidderName(bidder),
+				Bidder: openrtb_ext.BidderName(familyName),
 			})
 			so.Status = status
 			return
 		}
 
-		if err := validateBidder(bidder); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
-				Action: pbsmetrics.RequestActionErr,
-				Bidder: openrtb_ext.BidderName(bidder),
-			})
-			so.Status = http.StatusBadRequest
-			return
-		}
-		so.Bidder = bidder
-
 		uid := query.Get("uid")
 		so.UID = uid
 
-		var err error
 		if uid == "" {
-			pc.Unsync(bidder)
+			pc.Unsync(familyName)
 		} else {
-			err = pc.TrySync(bidder, uid)
+			err = pc.TrySync(familyName, uid)
 		}
 
 		if err == nil {
 			labels := pbsmetrics.UserLabels{
 				Action: pbsmetrics.RequestActionSet,
-				Bidder: openrtb_ext.BidderName(bidder),
+				Bidder: openrtb_ext.BidderName(familyName),
 			}
 			metrics.RecordUserIDSet(labels)
 			so.Success = true
@@ -92,16 +100,19 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 	})
 }
 
-func validateBidder(bidderName string) error {
-	if bidderName == "" {
-		return errors.New(`"bidder" query param is required`)
+func getFamilyName(query url.Values, validFamilyNameMap map[string]struct{}) (string, error) {
+	// The family name is bound to the 'bidder' query param. In most cases, these values are the same.
+	familyName := query.Get("bidder")
+
+	if familyName == "" {
+		return "", errors.New(`"bidder" query param is required`)
 	}
 
-	// Fixes #1054
-	if _, ok := openrtb_ext.BidderMap[bidderName]; !ok {
-		return errors.New("The bidder name provided is not supported by Prebid Server")
+	if _, ok := validFamilyNameMap[familyName]; !ok {
+		return "", errors.New("The bidder name provided is not supported by Prebid Server")
 	}
-	return nil
+
+	return familyName, nil
 }
 
 // siteCookieCheck scans the input User Agent string to check if browser is Chrome and browser version is greater than the minimum version for adding the SameSite cookie attribute

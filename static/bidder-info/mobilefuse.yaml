@@ -1,0 +1,7 @@
+maintainer:
+  email: prebid@mobilefuse.com
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video

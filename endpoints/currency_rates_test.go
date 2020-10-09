@@ -14,20 +14,21 @@ import (
 func TestCurrencyRatesEndpoint(t *testing.T) {
 	// Setup:
 	var testCases = []struct {
-		input        rateConverter
-		expectedBody string
-		expectedCode int
-		description  string
+		inputConverter        rateConverter
+		inputFetchingInterval time.Duration
+		expectedBody          string
+		expectedCode          int
+		description           string
 	}{
 		{
 			nil,
+			time.Duration(0),
 			`{"active": false}`,
 			http.StatusOK,
 			"case 1 - rate converter is nil",
 		},
 		{
 			newRateConverterMock(
-				5*time.Minute,
 				"https://sync.test.com",
 				time.Date(2019, 3, 2, 12, 54, 56, 651387237, time.UTC),
 				newConversionMock(&map[string]map[string]float64{
@@ -36,6 +37,7 @@ func TestCurrencyRatesEndpoint(t *testing.T) {
 					},
 				}),
 			),
+			5 * time.Minute,
 			`{
 				"active": true,
 				"source": "https://sync.test.com",
@@ -52,11 +54,11 @@ func TestCurrencyRatesEndpoint(t *testing.T) {
 		},
 		{
 			newRateConverterMock(
-				time.Duration(0),
 				"",
 				time.Time{},
 				nil,
 			),
+			time.Duration(0),
 			`{
 				"active": true,
 				"source": "",
@@ -70,12 +72,14 @@ func TestCurrencyRatesEndpoint(t *testing.T) {
 			newRateConverterMockWithInfo(
 				newUnmarshableConverterInfoMock(),
 			),
+			time.Duration(0),
 			"",
 			http.StatusInternalServerError,
 			"case 4 - invalid rates input for marshaling",
 		},
 		{
 			newRateConverterMockWithNilInfo(),
+			time.Duration(0),
 			`{
 				"active": true
 			 }`,
@@ -86,7 +90,7 @@ func TestCurrencyRatesEndpoint(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		handler := NewCurrencyRatesEndpoint(tc.input)
+		handler := NewCurrencyRatesEndpoint(tc.inputConverter, tc.inputFetchingInterval)
 		w := httptest.NewRecorder()
 
 		// Execute:
@@ -117,19 +121,14 @@ func newConversionMock(rates *map[string]map[string]float64) *conversionMock {
 }
 
 type converterInfoMock struct {
-	source           string
-	fetchingInterval time.Duration
-	lastUpdated      time.Time
-	rates            *map[string]map[string]float64
-	additionalInfo   interface{}
+	source         string
+	lastUpdated    time.Time
+	rates          *map[string]map[string]float64
+	additionalInfo interface{}
 }
 
 func (m converterInfoMock) Source() string {
 	return m.source
-}
-
-func (m converterInfoMock) FetchingInterval() time.Duration {
-	return m.fetchingInterval
 }
 
 func (m converterInfoMock) LastUpdated() time.Time {
@@ -150,10 +149,6 @@ func (m unmarshableConverterInfoMock) Source() string {
 	return ""
 }
 
-func (m unmarshableConverterInfoMock) FetchingInterval() time.Duration {
-	return time.Duration(0)
-}
-
 func (m unmarshableConverterInfoMock) LastUpdated() time.Time {
 	return time.Time{}
 }
@@ -172,7 +167,6 @@ func newUnmarshableConverterInfoMock() unmarshableConverterInfoMock {
 }
 
 type rateConverterMock struct {
-	fetchingInterval    time.Duration
 	syncSourceURL       string
 	rates               *conversionMock
 	lastUpdated         time.Time
@@ -197,23 +191,20 @@ func (m rateConverterMock) GetInfo() currencies.ConverterInfo {
 		rates = m.rates.GetRates()
 	}
 	return converterInfoMock{
-		source:           m.syncSourceURL,
-		fetchingInterval: m.fetchingInterval,
-		lastUpdated:      m.lastUpdated,
-		rates:            rates,
+		source:      m.syncSourceURL,
+		lastUpdated: m.lastUpdated,
+		rates:       rates,
 	}
 }
 
 func newRateConverterMock(
-	fetchingInterval time.Duration,
 	syncSourceURL string,
 	lastUpdated time.Time,
 	rates *conversionMock) rateConverterMock {
 	return rateConverterMock{
-		fetchingInterval: fetchingInterval,
-		syncSourceURL:    syncSourceURL,
-		rates:            rates,
-		lastUpdated:      lastUpdated,
+		syncSourceURL: syncSourceURL,
+		rates:         rates,
+		lastUpdated:   lastUpdated,
 	}
 }
 

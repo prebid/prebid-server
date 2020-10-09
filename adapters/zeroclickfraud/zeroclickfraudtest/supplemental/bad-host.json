@@ -1,0 +1,33 @@
+{
+  "mockBidRequest": {
+    "id": "bad-host-test",
+    "imp": [
+      {
+        "id": "bad-host-test-imp",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": 
+        {
+          "bidder":
+          {
+              "host": "",
+              "sourceId": 123
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid/Missing Host",
+      "comparison": "literal"
+    } 
+  ]
+}

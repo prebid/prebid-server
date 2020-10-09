@@ -1,0 +1,16 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "Pubnative Adapter Params",
+	"description": "A schema which validates params accepted by the Pubnative adapter",
+	"type": "object",
+	"properties": {
+		"zone_id": {
+			"type": "integer",
+			"description": "The ad zone identifier"
+		}, "app_auth_token": {
+			"type": "string",
+			"description": "The app's authentication token"
+		}
+	},
+	"required": ["zone_id", "app_auth_token"]
+}

@@ -100,6 +100,15 @@ func NewPBSCookie() *PBSCookie {
 	}
 }
 
+// NewPBSCookie returns an empty PBSCookie with optOut enabled
+func NewPBSCookieWithOptOut() *PBSCookie {
+	return &PBSCookie{
+		uids:     make(map[string]uidWithExpiry),
+		optOut:   true,
+		birthday: timestamp(),
+	}
+}
+
 // AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
 func (cookie *PBSCookie) AllowSyncs() bool {
 	return cookie != nil && !cookie.optOut

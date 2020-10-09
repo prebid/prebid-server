@@ -18,7 +18,8 @@
     },
     "regs": {
       "ext": {
-        "gdpr": 1
+        "gdpr": 1,
+        "us_privacy": "1NYN"
       }
     },
     "imp": [
@@ -38,7 +39,7 @@
         },
         "ext": {
           "appnexus": {
-            "placementId": 10433394
+            "placementId": 12883451
           },
           "districtm": {
             "placementId": 105

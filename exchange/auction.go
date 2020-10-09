@@ -3,9 +3,12 @@ package exchange
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
+	"time"
 
 	uuid "github.com/gofrs/uuid"
 	"github.com/golang/glog"
@@ -14,6 +17,82 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
+
+type DebugLog struct {
+	Enabled     bool
+	CacheType   prebid_cache_client.PayloadType
+	Data        DebugData
+	TTL         int64
+	CacheKey    string
+	CacheString string
+	Regexp      *regexp.Regexp
+}
+
+type DebugData struct {
+	Request  string
+	Headers  string
+	Response string
+}
+
+func (d *DebugLog) BuildCacheString() {
+	if d.Regexp != nil {
+		d.Data.Request = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Request, ""))
+		d.Data.Headers = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Headers, ""))
+		d.Data.Response = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Response, ""))
+	}
+
+	d.Data.Request = fmt.Sprintf("<Request>%s</Request>", d.Data.Request)
+	d.Data.Headers = fmt.Sprintf("<Headers>%s</Headers>", d.Data.Headers)
+	d.Data.Response = fmt.Sprintf("<Response>%s</Response>", d.Data.Response)
+
+	d.CacheString = fmt.Sprintf("%s<Log>%s%s%s</Log>", xml.Header, d.Data.Request, d.Data.Headers, d.Data.Response)
+}
+
+func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, timeout int, errors []error) error {
+	if len(d.Data.Response) == 0 && len(errors) == 0 {
+		d.Data.Response = "No response or errors created"
+	}
+
+	if len(errors) > 0 {
+		errStrings := []string{}
+		for _, err := range errors {
+			errStrings = append(errStrings, err.Error())
+		}
+		d.Data.Response = fmt.Sprintf("%s\nErrors:\n%s", d.Data.Response, strings.Join(errStrings, "\n"))
+	}
+
+	d.BuildCacheString()
+
+	if len(d.CacheKey) == 0 {
+		rawUUID, err := uuid.NewV4()
+		if err != nil {
+			return err
+		}
+		d.CacheKey = rawUUID.String()
+	}
+
+	data, err := json.Marshal(d.CacheString)
+	if err != nil {
+		return err
+	}
+
+	toCache := []prebid_cache_client.Cacheable{
+		{
+			Type:       d.CacheType,
+			Data:       data,
+			TTLSeconds: d.TTL,
+			Key:        "log_" + d.CacheKey,
+		},
+	}
+
+	if cache != nil {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(timeout)*time.Millisecond))
+		defer cancel()
+		cache.PutJson(ctx, toCache)
+	}
+
+	return nil
+}
 
 func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int) *auction {
 	winningBids := make(map[string]*pbsOrtbBid, numImps)
@@ -60,7 +139,7 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string) []error {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string, debugLog *DebugLog) []error {
 	var bids, vast, includeBidderKeys, includeWinners bool = targData.includeCacheBids, targData.includeCacheVast, targData.includeBidderKeys, targData.includeWinners
 	if !((bids || vast) && (includeBidderKeys || includeWinners)) {
 		return nil
@@ -98,7 +177,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 			var customCacheKey string
 			var catDur string
 			useCustomCacheKey := false
-			if competitiveExclusion && isOverallWinner {
+			if competitiveExclusion && isOverallWinner || includeBidderKeys {
 				// set custom cache key for winning bid when competitive exclusion applies
 				catDur = bidCategory[topBidPerBidder.bid.ID]
 				if len(catDur) > 0 {
@@ -144,6 +223,19 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 					errs = append(errs, err)
 				}
 			}
+		}
+	}
+
+	if len(toCache) > 0 && debugLog != nil && debugLog.Enabled {
+		debugLog.CacheKey = hbCacheID
+		debugLog.BuildCacheString()
+		if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
+			toCache = append(toCache, prebid_cache_client.Cacheable{
+				Type:       debugLog.CacheType,
+				Data:       jsonBytes,
+				TTLSeconds: debugLog.TTL,
+				Key:        "log_" + debugLog.CacheKey,
+			})
 		}
 	}
 
