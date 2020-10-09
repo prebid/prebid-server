@@ -410,14 +410,12 @@ func impsToSlots(imps []openrtb.Imp, errs []error) (bannerRequest, int8, []error
 }
 
 func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs []error) ([]videoRequest, []videoRequest, []error) {
-	var ext openrtb_ext.ExtImpBeachfront
 	var admMap = map[string]*videoRequest{}
 	var nurlReqs []videoRequest
 	var admReqs []videoRequest
 
 	for i := 0; i < len(imps); i++ {
-		var err error
-		ext, err = prepVideoRequestExt(imps[i])
+		ext, err := prepVideoRequestExt(imps[i])
 
 		if err != nil {
 			errs = append(errs, errors.New(fmt.Sprintf("%s (on video imp id: %s)", err, imps[i].ID)))
@@ -427,14 +425,13 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs [
 		if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
 			requestStub.Imp = []openrtb.Imp{imps[i]}
 
-			r := videoRequest{
+			nurlReqs = append(nurlReqs, prepVideoRequest(
+
+				videoRequest{
 				AppId:             ext.AppId,
 				VideoResponseType: ext.VideoResponseType,
 				Request:           requestStub,
-			}
-
-			prepVideoRequest(&r)
-			nurlReqs = append(nurlReqs, r)
+			} ))
 		}
 
 		if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
@@ -449,8 +446,8 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs [
 					VideoResponseType: ext.VideoResponseType,
 					Request:           requestStub,
 				}
-				prepVideoRequest(&r)
 				admMap[ext.AppId] = &r
+				r = prepVideoRequest(r)
 			}
 		}
 	}
@@ -492,7 +489,7 @@ func prepVideoRequestExt(requestImp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, 
 	return beachfrontExt, err
 }
 
-func prepVideoRequest(bfReq *videoRequest) {
+func prepVideoRequest(bfReq videoRequest) videoRequest {
 	if bfReq.Request.Site != nil && bfReq.Request.Site.Domain == "" && bfReq.Request.Site.Page != "" {
 		bfReq.Request.Site.Domain = getDomain(bfReq.Request.Site.Page)
 	}
@@ -520,6 +517,8 @@ func prepVideoRequest(bfReq *videoRequest) {
 	if len(bfReq.Request.Cur) == 0 {
 		bfReq.Request.Cur = []string{"USD"}
 	}
+
+	return bfReq
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
