@@ -130,7 +130,7 @@ func TestBuildExchangeBidders(t *testing.T) {
 		cfg := &config.Configuration{Adapters: test.adapterConfig}
 		bidders, errs := buildExchangeBidders(cfg, test.bidderInfos, client, metricEngine)
 		assert.Equal(t, test.expectedBidders, bidders, test.description+":bidders")
-		assert.Equal(t, test.expectedErrors, errs, test.description+":errors")
+		assert.ElementsMatch(t, test.expectedErrors, errs, test.description+":errors")
 	}
 }
 
@@ -260,7 +260,7 @@ func TestBuildBidders(t *testing.T) {
 		}
 
 		assert.Equal(t, test.expectedBidders, bidders, test.description+":bidders")
-		assert.Equal(t, test.expectedErrors, errs, test.description+":errors")
+		assert.ElementsMatch(t, test.expectedErrors, errs, test.description+":errors")
 	}
 }
 
