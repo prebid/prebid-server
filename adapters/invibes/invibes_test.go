@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderInvibes, config.Adapter{
-		Endpoint: "https://adweb.videostepstage.com/bid/VideoAdContent"})
+		Endpoint: "https://{{.Host}}/bid/ServerBidAdContent"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned expected error %v", buildErr)
@@ -21,7 +21,7 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderAdhese, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderInvibes, config.Adapter{
 		Endpoint: "{{Malformed}}"})
 
 	assert.Error(t, buildErr)

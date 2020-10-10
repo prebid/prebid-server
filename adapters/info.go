@@ -201,10 +201,11 @@ const (
 )
 
 type BidderInfo struct {
-	Status       BidderStatus      `yaml:"status" json:"status"`
-	Maintainer   *MaintainerInfo   `yaml:"maintainer" json:"maintainer"`
-	Capabilities *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
-	AliasOf      string            `json:"aliasOf,omitempty"`
+	Status                  BidderStatus      `yaml:"status" json:"status"`
+	Maintainer              *MaintainerInfo   `yaml:"maintainer" json:"maintainer"`
+	Capabilities            *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
+	AliasOf                 string            `json:"aliasOf,omitempty"`
+	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" json:"-" xml:"-"`
 }
 
 type MaintainerInfo struct {

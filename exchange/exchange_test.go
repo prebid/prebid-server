@@ -1326,6 +1326,12 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		t.Fatalf("%s: Failed to parse aliases", filename)
 	}
 
+	var s struct{}
+	eeac := make(map[string]struct{})
+	for _, c := range []string{"FIN", "FRA", "GUF"} {
+		eeac[c] = s
+	}
+
 	privacyConfig := config.Privacy{
 		CCPA: config.CCPA{
 			Enforce: spec.EnforceCCPA,
@@ -1335,6 +1341,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		},
 		GDPR: config.GDPR{
 			UsersyncIfAmbiguous: !spec.AssumeGDPRApplies,
+			EEACountriesMap:     eeac,
 		},
 	}
 
@@ -1453,12 +1460,6 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		}
 	}
 
-	var s struct{}
-	eeac := make(map[string]struct{})
-	for _, c := range []string{"FIN", "FRA", "GUF"} {
-		eeac[c] = s
-	}
-
 	return &exchange{
 		adapterMap:          adapters,
 		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderNames()),
@@ -1468,7 +1469,6 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		currencyConverter:   currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		UsersyncIfAmbiguous: privacyConfig.GDPR.UsersyncIfAmbiguous,
 		privacyConfig:       privacyConfig,
-		eeaCountries:        eeac,
 	}
 }
 

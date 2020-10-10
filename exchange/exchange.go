@@ -58,7 +58,6 @@ type exchange struct {
 	currencyConverter   *currencies.RateConverter
 	UsersyncIfAmbiguous bool
 	privacyConfig       config.Privacy
-	eeaCountries        map[string]struct{}
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -77,7 +76,7 @@ type bidResponseWrapper struct {
 }
 
 func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) Exchange {
-	e := &exchange{
+	return &exchange{
 		adapterMap:          adapters,
 		cache:               cache,
 		cacheTime:           time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
@@ -91,14 +90,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 			LMT:  cfg.LMT,
 		},
 	}
-
-	e.eeaCountries = make(map[string]struct{}, len(cfg.GDPR.EEACountries))
-	var s struct{}
-	for _, c := range cfg.GDPR.EEACountries {
-		e.eeaCountries[c] = s
-	}
-
-	return e
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {
@@ -142,7 +133,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	if geo != nil {
 		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
 		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
-		if _, found := e.eeaCountries[strings.ToUpper(geo.Country)]; found {
+		if _, found := e.privacyConfig.GDPR.EEACountriesMap[strings.ToUpper(geo.Country)]; found {
 			usersyncIfAmbiguous = false
 		} else if len(geo.Country) == 3 {
 			// The country field is formatted properly as a three character country code
