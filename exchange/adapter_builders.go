@@ -44,6 +44,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/inmobi"
 	"github.com/prebid/prebid-server/adapters/invibes"
 	"github.com/prebid/prebid-server/adapters/kidoz"
+	"github.com/prebid/prebid-server/adapters/krushmedia"
 	"github.com/prebid/prebid-server/adapters/kubient"
 	"github.com/prebid/prebid-server/adapters/lockerdome"
 	"github.com/prebid/prebid-server/adapters/logicad"
@@ -64,6 +65,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/smaato"
 	"github.com/prebid/prebid-server/adapters/smartadserver"
 	"github.com/prebid/prebid-server/adapters/smartrtb"
+	"github.com/prebid/prebid-server/adapters/smartyads"
 	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/adapters/sovrn"
@@ -133,6 +135,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderInMobi:           inmobi.Builder,
 		openrtb_ext.BidderInvibes:          invibes.Builder,
 		openrtb_ext.BidderKidoz:            kidoz.Builder,
+		openrtb_ext.BidderKrushmedia:       krushmedia.Builder,
 		openrtb_ext.BidderKubient:          kubient.Builder,
 		openrtb_ext.BidderLockerDome:       lockerdome.Builder,
 		openrtb_ext.BidderLogicad:          logicad.Builder,
@@ -153,6 +156,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSmaato:           smaato.Builder,
 		openrtb_ext.BidderSmartAdserver:    smartadserver.Builder,
 		openrtb_ext.BidderSmartRTB:         smartrtb.Builder,
+		openrtb_ext.BidderSmartyAds:        smartyads.Builder,
 		openrtb_ext.BidderSomoaudience:     somoaudience.Builder,
 		openrtb_ext.BidderSonobi:           sonobi.Builder,
 		openrtb_ext.BidderSovrn:            sovrn.Builder,
