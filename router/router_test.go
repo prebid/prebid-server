@@ -38,7 +38,8 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, nil)
+	alias := map[string]string{"aliastest": "appnexus"}
+	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, alias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
@@ -57,6 +58,8 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 			ensureHasKey(t, data, adapterFile.Name())
 		}
 	}
+
+	ensureHasKey(t, data, "aliastest")
 }
 
 func TestExchangeMap(t *testing.T) {

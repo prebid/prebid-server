@@ -6,12 +6,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/endpoints/events"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/prebid/prebid-server/endpoints/events"
+	"github.com/prebid/prebid-server/errortypes"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
 
@@ -243,10 +245,10 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	exchanges = newExchangeMap(cfg)
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
 
-	adapters, adaptersErr := exchange.BuildAdapters(generalHttpClient, cfg, bidderInfos, r.MetricsEngine)
-	if adaptersErr != nil {
-		// todo - make this nicer. spend more thought here.
-		glog.Fatalf("Failed to create adapters. %v", adaptersErr)
+	adapters, adaptersErrs := exchange.BuildAdapters(generalHttpClient, cfg, bidderInfos, r.MetricsEngine)
+	if len(adaptersErrs) > 0 {
+		errs := errortypes.NewAggregateErrors("Failed to initialize adapters", adaptersErrs)
+		glog.Fatalf("%v", errs)
 	}
 
 	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, r.MetricsEngine, gdprPerms, rateConvertor)

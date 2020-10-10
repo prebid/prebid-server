@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
@@ -95,25 +95,8 @@ type HTTPClient struct {
 	IdleConnTimeout     int `mapstructure:"idle_connection_timeout_seconds"`
 }
 
-type configErrors []error
-
-func (c configErrors) Error() string {
-	if len(c) == 0 {
-		return ""
-	}
-	buf := bytes.Buffer{}
-	buf.WriteString("validation errors are:\n\n")
-	for _, err := range c {
-		buf.WriteString("  ")
-		buf.WriteString(err.Error())
-		buf.WriteString("\n")
-	}
-	buf.WriteString("\n")
-	return buf.String()
-}
-
-func (cfg *Configuration) validate() configErrors {
-	var errs configErrors
+func (cfg *Configuration) validate() []error {
+	var errs []error
 	errs = cfg.AuctionTimeouts.validate(errs)
 	errs = cfg.StoredRequests.validate(errs)
 	errs = cfg.StoredRequestsAMP.validate(errs)
@@ -142,14 +125,14 @@ type AuctionTimeouts struct {
 	Max uint64 `mapstructure:"max"`
 }
 
-func (cfg *AuctionTimeouts) validate(errs configErrors) configErrors {
+func (cfg *AuctionTimeouts) validate(errs []error) []error {
 	if cfg.Max < cfg.Default {
 		errs = append(errs, fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default))
 	}
 	return errs
 }
 
-func (data *ExternalCache) validate(errs configErrors) configErrors {
+func (data *ExternalCache) validate(errs []error) []error {
 	if data.Host == "" && data.Path == "" {
 		// Both host and path can be blank. No further validation needed
 		return errs
@@ -226,7 +209,7 @@ type GDPR struct {
 	EEACountriesMap map[string]struct{}
 }
 
-func (cfg *GDPR) validate(errs configErrors) configErrors {
+func (cfg *GDPR) validate(errs []error) []error {
 	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
 		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
 	}
@@ -291,7 +274,7 @@ type CurrencyConverter struct {
 	StaleRatesSeconds    int    `mapstructure:"stale_rates_seconds"`
 }
 
-func (cfg *CurrencyConverter) validate(errs configErrors) configErrors {
+func (cfg *CurrencyConverter) validate(errs []error) []error {
 	if cfg.FetchIntervalSeconds < 0 {
 		errs = append(errs, fmt.Errorf("currency_converter.fetch_interval_seconds must be in the range [0, %d]. Got %d", 0xffff, cfg.FetchIntervalSeconds))
 	}
@@ -394,7 +377,7 @@ type AdapterXAPI struct {
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
 // associated with it
-func validateAdapterEndpoint(endpoint string, adapterName string, errs configErrors) configErrors {
+func validateAdapterEndpoint(endpoint string, adapterName string, errs []error) []error {
 	if endpoint == "" {
 		return append(errs, fmt.Errorf("There's no default endpoint available for %s. Calls to this bidder/exchange will fail. "+
 			"Please set adapters.%s.endpoint in your app config", adapterName, adapterName))
@@ -425,7 +408,7 @@ func validateAdapterEndpoint(endpoint string, adapterName string, errs configErr
 }
 
 // validateAdapterUserSyncURL validates an adapter's user sync URL if it is set
-func validateAdapterUserSyncURL(userSyncURL string, adapterName string, errs configErrors) configErrors {
+func validateAdapterUserSyncURL(userSyncURL string, adapterName string, errs []error) []error {
 	if userSyncURL != "" {
 		// Create user_sync URL template
 		userSyncTemplate, err := template.New("userSyncTemplate").Parse(userSyncURL)
@@ -458,7 +441,7 @@ func validateAdapterUserSyncURL(userSyncURL string, adapterName string, errs con
 }
 
 // validateAdapters validates adapter's endpoint and user sync URL
-func validateAdapters(adapterMap map[string]Adapter, errs configErrors) configErrors {
+func validateAdapters(adapterMap map[string]Adapter, errs []error) []error {
 	for adapterName, adapter := range adapterMap {
 		if !adapter.Disabled {
 			// Verify that every adapter has a valid endpoint associated with it
@@ -487,7 +470,7 @@ type DisabledMetrics struct {
 	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
 }
 
-func (cfg *Metrics) validate(errs configErrors) configErrors {
+func (cfg *Metrics) validate(errs []error) []error {
 	return cfg.Prometheus.validate(errs)
 }
 
@@ -506,7 +489,7 @@ type PrometheusMetrics struct {
 	TimeoutMillisRaw int    `mapstructure:"timeout_ms"`
 }
 
-func (cfg *PrometheusMetrics) validate(errs configErrors) configErrors {
+func (cfg *PrometheusMetrics) validate(errs []error) []error {
 	if cfg.Port > 0 && cfg.TimeoutMillisRaw <= 0 {
 		errs = append(errs, fmt.Errorf("metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got timeout=%d and port=%d", cfg.TimeoutMillisRaw, cfg.Port))
 	}
@@ -580,7 +563,7 @@ type Debug struct {
 	TimeoutNotification TimeoutNotification `mapstructure:"timeout_notification"`
 }
 
-func (cfg *Debug) validate(errs configErrors) configErrors {
+func (cfg *Debug) validate(errs []error) []error {
 	return cfg.TimeoutNotification.validate(errs)
 }
 
@@ -593,7 +576,7 @@ type TimeoutNotification struct {
 	FailOnly bool `mapstructure:"fail_only"`
 }
 
-func (cfg *TimeoutNotification) validate(errs configErrors) configErrors {
+func (cfg *TimeoutNotification) validate(errs []error) []error {
 	if cfg.SamplingRate < 0.0 || cfg.SamplingRate > 1.0 {
 		errs = append(errs, fmt.Errorf("debug.timeout_notification.sampling_rate must be positive and not greater than 1.0. Got %f", cfg.SamplingRate))
 	}
@@ -656,7 +639,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(); len(errs) > 0 {
-		return &c, errs
+		return &c, errortypes.NewAggregateErrors("validation errors", errs)
 	}
 
 	return &c, nil

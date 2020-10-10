@@ -125,7 +125,7 @@ func resolvedStoredRequestsConfig(cfg *Configuration) {
 	return
 }
 
-func (cfg *StoredRequests) validate(errs configErrors) configErrors {
+func (cfg *StoredRequests) validate(errs []error) []error {
 	if cfg.DataType() == AccountDataType && cfg.HTTP.Endpoint != "" {
 		errs = append(errs, fmt.Errorf("%s.http: retrieving accounts via http not available, use accounts.files", cfg.Section()))
 	}
@@ -169,7 +169,7 @@ type PostgresConfig struct {
 	PollUpdates         PostgresUpdatePolling    `mapstructure:"poll_for_updates"`
 }
 
-func (cfg *PostgresConfig) validate(section string, errs configErrors) configErrors {
+func (cfg *PostgresConfig) validate(section string, errs []error) []error {
 	if cfg.ConnectionInfo.Database == "" {
 		return errs
 	}
@@ -269,7 +269,7 @@ type PostgresCacheInitializer struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *PostgresCacheInitializer) validate(section string, errs configErrors) configErrors {
+func (cfg *PostgresCacheInitializer) validate(section string, errs []error) []error {
 	if cfg.Query == "" {
 		return errs
 	}
@@ -305,7 +305,7 @@ type PostgresUpdatePolling struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *PostgresUpdatePolling) validate(section string, errs configErrors) configErrors {
+func (cfg *PostgresUpdatePolling) validate(section string, errs []error) []error {
 	if cfg.Query == "" {
 		return errs
 	}
@@ -390,7 +390,7 @@ type InMemoryCache struct {
 	ImpCacheSize int `mapstructure:"imp_cache_size_bytes"`
 }
 
-func (cfg *InMemoryCache) validate(section string, errs configErrors) configErrors {
+func (cfg *InMemoryCache) validate(section string, errs []error) []error {
 	switch cfg.Type {
 	case "none":
 		// No errors for no config options

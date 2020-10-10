@@ -27,13 +27,18 @@ func (e AggregateErrors) Error() string {
 
 	b := bytes.Buffer{}
 	b.WriteString(e.Message)
-	b.WriteString(" (")
-	b.WriteString(strconv.Itoa(len(e.Errors)))
-	b.WriteString(" errors):\n")
+
+	if len(e.Errors) == 1 {
+		b.WriteString(" (1 error):\n")
+	} else {
+		b.WriteString(" (")
+		b.WriteString(strconv.Itoa(len(e.Errors)))
+		b.WriteString(" errors):\n")
+	}
 
 	for i, err := range e.Errors {
 		b.WriteString("  ")
-		b.WriteString(strconv.Itoa(i))
+		b.WriteString(strconv.Itoa(i + 1))
 		b.WriteString(": ")
 		b.WriteString(err.Error())
 		b.WriteString("\n")

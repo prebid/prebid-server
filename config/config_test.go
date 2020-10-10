@@ -109,8 +109,7 @@ func TestExternalCacheURLValidate(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		var errs configErrors
-		errs = test.data.validate(errs)
+		errs := test.data.validate([]error{})
 
 		assert.Equal(t, test.expErrors, len(errs), "Test case threw unexpected number of errors. Desc: %s errMsg = %v \n", test.desc, errs)
 	}
@@ -666,7 +665,7 @@ func newDefaultConfig(t *testing.T) *Configuration {
 	return cfg
 }
 
-func assertOneError(t *testing.T, errs configErrors, message string) {
+func assertOneError(t *testing.T, errs []error, message string) {
 	if !assert.Len(t, errs, 1) {
 		return
 	}
