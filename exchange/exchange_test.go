@@ -2636,8 +2636,8 @@ func blankAdapterConfig(bidderList []openrtb_ext.BidderName) map[string]config.A
 		adapters[strings.ToLower(string(b))] = config.Adapter{}
 	}
 
-	// Do not assume Facebook is enabled. Its builder returns an error if not configured.
-	adapters["audiencenetwork"] = config.Adapter{Disabled: true}
+	// Audience Network requires additional config to be built.
+	adapters["audiencenetwork"] = config.Adapter{PlatformID: "anyID", AppSecret: "anySecret"}
 
 	return adapters
 }

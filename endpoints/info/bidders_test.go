@@ -56,7 +56,7 @@ func testGetBidders(t *testing.T, aliases map[string]string) {
 	assert.NoError(t, err, "Failed to unmarshal /info/bidders response: %v", err)
 
 	for _, bidderName := range bidderSlice {
-		if _, ok := bidderMap[bidderName]; ok {
+		if _, ok := bidderMap[bidderName]; !ok {
 			assert.Contains(t, aliases, bidderName, "Response from /info/bidders contained unexpected BidderName: %s", bidderName)
 		}
 	}

@@ -267,11 +267,13 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 		return nil, fmt.Errorf("Failed to read JSON schemas from directory %s. %v", schemaDirectory, err)
 	}
 
+	bidderMap := BuildBidderNameLookup()
+
 	schemaContents := make(map[BidderName]string, 50)
 	schemas := make(map[BidderName]*gojsonschema.Schema, 50)
 	for _, fileInfo := range fileInfos {
 		bidderName := strings.TrimSuffix(fileInfo.Name(), ".json")
-		if _, ok := bidderNameLookup[bidderName]; !ok {
+		if _, ok := bidderMap[bidderName]; !ok {
 			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
 		}
 		toOpen, err := filepath.Abs(filepath.Join(schemaDirectory, fileInfo.Name()))
