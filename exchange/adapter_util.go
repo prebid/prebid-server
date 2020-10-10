@@ -31,7 +31,7 @@ func BuildAdapters(client *http.Client, cfg *config.Configuration, infos adapter
 }
 
 func buildExchangeBidders(cfg *config.Configuration, infos adapters.BidderInfos, client *http.Client, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
-	bidders, errs := buildBidders(cfg.Adapters, infos)
+	bidders, errs := buildBidders(cfg.Adapters, infos, newAdapterBuilders())
 	if len(errs) > 0 {
 		return nil, errs
 	}
@@ -45,9 +45,7 @@ func buildExchangeBidders(cfg *config.Configuration, infos adapters.BidderInfos,
 
 }
 
-func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
-	builders := newAdapterBuilders()
-
+func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 	var errs []error
 
@@ -92,7 +90,7 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 }
 
 func buildExchangeBiddersLegacy(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
-	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 4)
+	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 3)
 
 	// Index
 	if infos[string(openrtb_ext.BidderIx)].Status == adapters.StatusActive {
@@ -121,7 +119,7 @@ func wrapWithMiddleware(bidders map[openrtb_ext.BidderName]adaptedBidder) {
 	}
 }
 
-// GetActiveBidders returns a 1:1 map of all active bidder names.
+// GetActiveBidders returns a map of all active bidder names.
 func GetActiveBidders(infos adapters.BidderInfos) map[string]openrtb_ext.BidderName {
 	activeBidders := make(map[string]openrtb_ext.BidderName)
 
