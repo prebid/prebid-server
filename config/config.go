@@ -863,6 +863,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_requests.postgres.poll_for_updates.amp_query", "")
 	v.SetDefault("stored_requests.http.endpoint", "")
 	v.SetDefault("stored_requests.http.amp_endpoint", "")
+	v.SetDefault("stored_requests.http.fetcher_timeout", 50)
 	v.SetDefault("stored_requests.in_memory_cache.type", "none")
 	v.SetDefault("stored_requests.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("stored_requests.in_memory_cache.request_cache_size_bytes", 0)

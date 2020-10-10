@@ -39,8 +39,6 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-const storedRequestTimeoutMillis = 50
-
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
 	dntDisabled int8   = 0
@@ -226,7 +224,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		}
 	}
 
-	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	timeout := parseTimeout(requestJson, time.Duration((*deps.cfg).StoredRequests.HTTP.FetcherTimeout)*time.Millisecond)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

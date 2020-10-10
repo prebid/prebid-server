@@ -419,7 +419,7 @@ func createImpressionTemplate(imp openrtb.Imp, video *openrtb.Video) openrtb.Imp
 }
 
 func (deps *endpointDeps) loadStoredImp(storedImpId string) (openrtb.Imp, []error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration((*deps.cfg).StoredRequests.HTTP.FetcherTimeout)*time.Millisecond)
 	defer cancel()
 
 	impr := openrtb.Imp{}
