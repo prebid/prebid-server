@@ -496,13 +496,11 @@ func prepVideoRequest(bfReq videoRequest) videoRequest {
 	}
 
 	if bfReq.Request.App != nil && bfReq.Request.App.Domain == "" && bfReq.Request.App.Bundle != "" {
-		if bfReq.Request.App.Bundle != "" {
-			var chunks = strings.Split(strings.Trim(bfReq.Request.App.Bundle, "_"), ".")
+		var chunks = strings.Split(strings.Trim(bfReq.Request.App.Bundle, "_"), ".")
 
-			if len(chunks) > 1 {
-				bfReq.Request.App.Domain =
-					fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
-			}
+		if len(chunks) > 1 {
+			bfReq.Request.App.Domain =
+				fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
 		}
 
 	}
