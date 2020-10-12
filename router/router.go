@@ -23,6 +23,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/liftoff"
+	"github.com/prebid/prebid-server/adapters/moloco"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
@@ -157,10 +158,16 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"ix":        ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
 		"liftoff": liftoff.NewLiftoffAdapter(
 			adapters.DefaultHTTPAdapterConfig,
-			cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
-			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointUSEast,
-			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointEU,
-			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointAPAC),
+			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].Endpoint,
+			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointUSEast,
+			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointEU,
+			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointAPAC),
+		"moloco": moloco.NewMolocoAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters[string(openrtb_ext.BidderMoloco)].Endpoint,
+			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointUSEast,
+			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointEU,
+			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointAPAC),
 		"pubmatic":   pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
 		"pulsepoint": pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
 		"rubicon": rubicon.NewRubiconAdapter(

@@ -172,6 +172,15 @@ type rubiconVideoExtRP struct {
 	SizeID int `json:"size_id,omitempty"`
 }
 
+type rubiconVideoCompanionAdExt struct {
+	RP rubiconVideoCompanionAdExtRP `json:"rp"`
+}
+
+type rubiconVideoCompanionAdExtRP struct {
+	SizeID     int   `json:"size_id,omitempty"`
+	AltSizeIDs []int `json:"alt_size_ids,omitempty"`
+}
+
 type rubiconTargetingExt struct {
 	RP rubiconTargetingExtRP `json:"rp"`
 }
@@ -791,6 +800,23 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			videoCopy := *thisImp.Video
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
+
+			for i, companionAd := range videoCopy.CompanionAd {
+				companionAdExt := rubiconVideoCompanionAdExt{
+					RP: rubiconVideoCompanionAdExtRP{
+						SizeID:     rubiconExt.Video.CompanionAd.SizeID,
+						AltSizeIDs: rubiconExt.Video.CompanionAd.AltSizeIDs,
+					},
+				}
+
+				companionAd.Ext, err = json.Marshal(&companionAdExt)
+				if err != nil {
+					continue
+				}
+
+				videoCopy.CompanionAd[i] = companionAd
+			}
+
 			thisImp.Video = &videoCopy
 			thisImp.Banner = nil
 		} else {
