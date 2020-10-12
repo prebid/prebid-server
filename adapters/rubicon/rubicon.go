@@ -275,6 +275,7 @@ var rubiSizeMap = map[rubiSize]int{
 	{w: 320, h: 500}:   278,
 	{w: 320, h: 400}:   282,
 	{w: 640, h: 380}:   288,
+	{w: 500, h: 1000}:  548,
 }
 
 // defines the contract for bidrequest.user.ext.eids[i].ext
