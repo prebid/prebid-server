@@ -159,7 +159,7 @@ func buildImpVideo(imp *openrtb.Imp) error {
 
 // not supporting VAST protocol 7 (VAST 4.0);
 func cleanProtocol(protocols []openrtb.Protocol) []openrtb.Protocol {
-	newitems := make([]openrtb.Protocol{}, 0, len(protocols))
+	newitems := make([]openrtb.Protocol, 0, len(protocols))
 
 	for _, i := range protocols {
 		if i != openrtb.ProtocolVAST40 {
