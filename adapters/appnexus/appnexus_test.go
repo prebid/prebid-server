@@ -548,7 +548,7 @@ func TestAppNexusLegacyBasicResponse(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewAppNexusLegacyBidder(&conf, server.URL, "")
+	an := NewAppNexusLegacyAdapter(&conf, server.URL, "")
 
 	pbin := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 2),

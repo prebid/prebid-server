@@ -628,7 +628,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func NewRubiconLegacyBidder(httpConfig *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
+func NewRubiconLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
 	a := adapters.NewHTTPAdapter(httpConfig)
 
 	uri = appendTrackerToUrl(uri, tracker)

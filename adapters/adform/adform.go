@@ -398,7 +398,7 @@ func parseAdformBids(response []byte) ([]*adformBid, error) {
 
 // BIDDER Interface
 
-func NewAdformLegacyBidder(httpConfig *adapters.HTTPAdapterConfig, endpointURL string) *AdformAdapter {
+func NewAdformLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, endpointURL string) *AdformAdapter {
 	var uriObj *url.URL
 	uriObj, err := url.Parse(endpointURL)
 	if err != nil {

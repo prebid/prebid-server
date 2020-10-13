@@ -312,7 +312,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 
 func TestRubiconUserSyncInfo(t *testing.T) {
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewRubiconLegacyBidder(&conf, "uri", "xuser", "xpass", "pbs-test-tracker")
+	an := NewRubiconLegacyAdapter(&conf, "uri", "xuser", "xpass", "pbs-test-tracker")
 
 	assert.Equal(t, "rubicon", an.Name(), "Name '%s' != 'rubicon'", an.Name())
 
@@ -809,7 +809,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an = NewRubiconLegacyBidder(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker")
+	an = NewRubiconLegacyAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker")
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{

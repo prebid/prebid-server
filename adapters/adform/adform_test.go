@@ -186,7 +186,7 @@ func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, contex
 
 	// prepare adapter
 	conf := *adapters.DefaultHTTPAdapterConfig
-	adapter := NewAdformLegacyBidder(&conf, server.URL)
+	adapter := NewAdformLegacyAdapter(&conf, server.URL)
 
 	prebidRequest := preparePrebidRequest(server.URL, t)
 	ctx := context.TODO()
@@ -474,7 +474,7 @@ func TestOpenRTBSurpriseResponse(t *testing.T) {
 // Properties tests
 
 func TestAdformProperties(t *testing.T) {
-	adapter := NewAdformLegacyBidder(adapters.DefaultHTTPAdapterConfig, "adx.adform.net/adx")
+	adapter := NewAdformLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "adx.adform.net/adx")
 
 	if adapter.SkipNoCookies() != false {
 		t.Fatalf("should have been false")
