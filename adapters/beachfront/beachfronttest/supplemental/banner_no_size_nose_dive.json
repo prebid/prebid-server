@@ -1,0 +1,33 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "site": {
+      "page": "http://example.com/apage.html"
+    },
+    "imp": [
+      {
+        "id": "nosize_nosedive",
+        "bidfloor": 0.02,
+        "banner": {
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 0.02,
+            "appId": "3b16770b-17af-4d22-daff-9606bdf2c9c3"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements",
+      "comparison": "literal"
+    },
+    {
+      "value": "unable to construct a valid banner request",
+      "comparison": "literal"
+    }
+  ]
+}

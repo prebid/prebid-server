@@ -199,7 +199,7 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 			wantsBanner = request.Imp[i].Banner != nil
 			// In a previous version, I was testing for a valid size for the Banner element, but
 			// that is already done. If the size is not valid, I will never get here as the entire
-			// request will get tossed in auction.go (around L441 as of this writing).
+			// request will get tossed in endpoints/openrtb2/auction.go (around L441 as of this writing).
 		}
 
 		if request.Imp[i].Video != nil {
@@ -271,14 +271,100 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 		beachfrontReqs.Banner, errs = getBannerRequest(request, errs)
 	}
 
+	deepCopyOfRequest := deepCopyRequest(request)
 	if len(videoImps) > 0 {
-		requestStub := *request
-		requestStub.Imp = nil
-
-		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo, errs = getVideoRequests(requestStub, videoImps, errs)
+		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo, errs = getVideoRequests(
+			deepCopyOfRequest,
+			videoImps,
+			errs)
 	}
 
 	return beachfrontReqs, errs
+}
+
+func deepCopyRequest(request *openrtb.BidRequest) openrtb.BidRequest {
+	var content openrtb.Content
+	var publisher openrtb.Publisher
+
+	requestCopy := *request
+	requestCopy.Imp = nil
+
+	if request.Site != nil {
+		site := *request.Site
+		if request.Site.Content != nil {
+			content = *request.Site.Content
+			site.Content = &content
+		}
+		if request.Site.Publisher != nil {
+			publisher = *request.Site.Publisher
+			site.Publisher = &publisher
+		}
+
+		requestCopy.Site = &site
+	}
+
+	if request.App != nil {
+		app := *request.App
+
+		if request.App.Content != nil {
+			content = *request.App.Content
+			app.Content = &content
+		}
+		if request.App.Publisher != nil {
+			publisher = *request.App.Publisher
+			app.Publisher = &publisher
+		}
+		requestCopy.App = &app
+	}
+
+	if request.Device != nil {
+		device := *request.Device
+
+		if request.Device.ConnectionType != nil {
+			ctype := *request.Device.ConnectionType
+			device.ConnectionType = &ctype
+		}
+
+		if request.Device.Geo != nil {
+			deviceGeo := *request.Device.Geo
+			device.Geo = &deviceGeo
+		}
+
+		if request.Device.DNT != nil {
+			dnt := *request.Device.DNT
+			device.DNT = &dnt
+		}
+
+		if request.Device.Lmt != nil {
+			lmt := *request.Device.Lmt
+			device.Lmt = &lmt
+		}
+
+		requestCopy.Device = &device
+	}
+
+	if request.User != nil {
+		user := *request.User
+
+		if request.User.Geo != nil {
+			userGeo := *request.User.Geo
+			user.Geo = &userGeo
+		}
+
+		requestCopy.User = &user
+	}
+
+	if request.Source != nil {
+		source := *request.Source
+		requestCopy.Source = &source
+	}
+
+	if request.Regs != nil {
+		regs := *request.Regs
+		requestCopy.Regs = &regs
+	}
+
+	return requestCopy
 }
 
 func getBannerRequest(request *openrtb.BidRequest, errs []error) (bannerRequest, []error) {
@@ -332,9 +418,7 @@ func getBannerRequest(request *openrtb.BidRequest, errs []error) (bannerRequest,
 	}
 
 	if request.User != nil && request.User.ID != "" {
-		if bannerReq.User.ID == "" {
-			bannerReq.User.ID = request.User.ID
-		}
+		bannerReq.User.ID = request.User.ID
 	}
 
 	if request.User != nil && request.User.BuyerUID != "" {
@@ -397,10 +481,23 @@ func impsToSlots(imps []openrtb.Imp, errs []error) (bannerRequest, int8, []error
 		}
 
 		if len(slot.Sizes) == 0 {
-			slot.Sizes = append(slot.Sizes, size{
-				W: *imp.Banner.W,
-				H: *imp.Banner.H,
-			})
+			// *imp.Banner.W == nil is not valid. I have to dereference to make this comparison. Also, this does
+			// get caught in /endpoints/openrtb2/auction.go L441 when I send in the request from test case
+			// "banner-no-size-nose-dive", but it gets through on that test case.
+
+			impDeref := &imp
+
+			if impDeref.Banner.W == nil || impDeref.Banner.H == nil {
+				errs = append(errs,
+					fmt.Errorf("request.imp[%d].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements", i))
+				continue
+			} else {
+				slot.Sizes = append(slot.Sizes, size{
+					W: *imp.Banner.W,
+					H: *imp.Banner.H,
+				})
+			}
+
 		}
 
 		bfr.Slots = append(bfr.Slots, slot)
