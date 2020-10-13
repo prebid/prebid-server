@@ -110,7 +110,6 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpEmxDigital, error) {
 }
 
 func buildImpBanner(imp *openrtb.Imp) error {
-	imp.Ext = nil
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
@@ -138,7 +137,6 @@ func buildImpBanner(imp *openrtb.Imp) error {
 }
 
 func buildImpVideo(imp *openrtb.Imp) error {
-	imp.Ext = nil
 
 	if len(imp.Video.MIMEs) == 0 {
 		return &errortypes.BadInput{
@@ -161,7 +159,7 @@ func buildImpVideo(imp *openrtb.Imp) error {
 
 // not supporting VAST protocol 7 (VAST 4.0);
 func cleanProtocol(protocols []openrtb.Protocol) []openrtb.Protocol {
-	newitems := []openrtb.Protocol{}
+	newitems := make([]openrtb.Protocol{}, 0, len(protocols))
 
 	for _, i := range protocols {
 		if i != openrtb.ProtocolVAST40 {
