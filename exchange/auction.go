@@ -125,17 +125,17 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int
 	}
 }
 
-// Calculate if the new bid (nbid) will win against the current winning bid (wbid) given preferDeals.
-func isNewWinningBid(nbid, wbid *openrtb.Bid, preferDeals bool) bool {
+// isNewWinningBid calculates if the new bid (nbid) will win against the current winning bid (wbid) given preferDeals.
+func isNewWinningBid(bid, wbid *openrtb.Bid, preferDeals bool) bool {
 	if preferDeals {
-		if len(wbid.DealID) > 0 && len(nbid.DealID) == 0 {
+		if len(wbid.DealID) > 0 && len(bid.DealID) == 0 {
 			return false
 		}
-		if len(wbid.DealID) == 0 && len(nbid.DealID) > 0 {
+		if len(wbid.DealID) == 0 && len(bid.DealID) > 0 {
 			return true
 		}
 	}
-	return nbid.Price > wbid.Price
+	return bid.Price > wbid.Price
 }
 
 func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity) {

@@ -280,14 +280,6 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	}
 }
 
-type testNewAuctionSpec struct {
-	description     string
-	seatBids        map[openrtb_ext.BidderName]*pbsOrtbSeatBid
-	numImps         int
-	preferDeals     bool
-	expectedAuction auction
-}
-
 func TestNewAuction(t *testing.T) {
 	bid1p077 := pbsOrtbBid{
 		bid: &openrtb.Bid{
@@ -333,7 +325,13 @@ func TestNewAuction(t *testing.T) {
 			Price: 1.44,
 		},
 	}
-	tests := []testNewAuctionSpec{
+	tests := []struct {
+		description     string
+		seatBids        map[openrtb_ext.BidderName]*pbsOrtbSeatBid
+		numImps         int
+		preferDeals     bool
+		expectedAuction auction
+	}{
 		{
 			description: "Basic auction test",
 			seatBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
