@@ -80,7 +80,6 @@ func TestNewHTTPEvents(t *testing.T) {
 	}
 
 	metricsMock := &pbsmetrics.MetricsEngineMock{}
-	metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
 
 	evProducers := newEventProducers(cfg, server1.Client(), nil, metricsMock, nil)
 	assertSliceLength(t, evProducers, 1)
@@ -148,6 +147,7 @@ func TestNewPostgresEventProducers(t *testing.T) {
 	assertProducerLength(t, evProducers, 1)
 
 	assertExpectationsMet(t, mock)
+	metricsMock.AssertExpectations(t)
 }
 
 func TestNewEventsAPI(t *testing.T) {

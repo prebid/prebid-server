@@ -350,66 +350,77 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 		description   string
 		giveDataType  StoredDataType
 		giveFetchType StoredDataFetchType
+		giveDuration  int64
 		wantCount     int64
 	}{
 		{
 			description:   "Update stored_account_fetch_time.all timer",
 			giveDataType:  AccountDataType,
 			giveFetchType: FetchAll,
+			giveDuration:  int64(500),
 			wantCount:     int64(1),
 		},
 		{
 			description:   "Update stored_amp_fetch_time.all timer",
 			giveDataType:  AMPDataType,
 			giveFetchType: FetchAll,
+			giveDuration:  int64(500),
 			wantCount:     int64(1),
 		},
 		{
 			description:   "Update stored_category_fetch_time.all timer",
 			giveDataType:  CategoryDataType,
 			giveFetchType: FetchAll,
+			giveDuration:  int64(500),
 			wantCount:     int64(1),
 		},
 		{
 			description:   "Update stored_request_fetch_time.all timer",
 			giveDataType:  RequestDataType,
 			giveFetchType: FetchAll,
+			giveDuration:  int64(500),
 			wantCount:     int64(1),
 		},
 		{
 			description:   "Update stored_video_fetch_time.all timer",
 			giveDataType:  VideoDataType,
 			giveFetchType: FetchAll,
+			giveDuration:  int64(500),
 			wantCount:     int64(1),
 		},
 		{
 			description:   "Update stored_account_fetch_time.delta timer",
 			giveDataType:  AccountDataType,
 			giveFetchType: FetchDelta,
+			giveDuration:  int64(500),
 			wantCount:     int64(1),
 		},
 		{
 			description:   "Update stored_amp_fetch_time.delta timer",
 			giveDataType:  AMPDataType,
 			giveFetchType: FetchDelta,
+			giveDuration:  int64(500),
 			wantCount:     int64(1),
 		},
 		{
 			description:   "Update stored_category_fetch_time.delta timer",
 			giveDataType:  CategoryDataType,
 			giveFetchType: FetchDelta,
+			giveDuration:  int64(500),
 			wantCount:     int64(1),
 		},
 		{
 			description:   "Update stored_request_fetch_time.delta timer",
 			giveDataType:  RequestDataType,
 			giveFetchType: FetchDelta,
+			giveDuration:  int64(500),
 			wantCount:     int64(1),
 		},
 		{
 			description:   "Update stored_video_fetch_time.delta timer",
 			giveDataType:  VideoDataType,
 			giveFetchType: FetchDelta,
+			giveDuration:  int64(500),
 			wantCount:     int64(1),
 		},
 	}
@@ -420,10 +431,13 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 		m.RecordStoredDataFetchTime(StoredDataLabels{
 			DataType:      tt.giveDataType,
 			DataFetchType: tt.giveFetchType,
-		}, 500)
+		}, time.Duration(tt.giveDuration))
 
 		actualCount := m.StoredDataFetchTimer[tt.giveDataType][tt.giveFetchType].Count()
 		assert.Equal(t, tt.wantCount, actualCount, tt.description)
+
+		actualDuration := m.StoredDataFetchTimer[tt.giveDataType][tt.giveFetchType].Sum()
+		assert.Equal(t, tt.giveDuration, actualDuration, tt.description)
 	}
 }
 

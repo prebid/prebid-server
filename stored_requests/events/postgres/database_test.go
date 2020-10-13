@@ -130,54 +130,44 @@ func TestFetchAllSuccess(t *testing.T) {
 		assert.Equal(t, tt.wantSavedImps, saves.Imps, tt.description)
 		assert.Equal(t, tt.wantInvalidatedReqs, invalidations.Requests, tt.description)
 		assert.Equal(t, tt.wantInvalidatedImps, invalidations.Imps, tt.description)
+
+		metricsMock.AssertExpectations(t)
 	}
 }
 
 func TestFetchAllErrors(t *testing.T) {
 	tests := []struct {
-		description         string
-		giveFakeTime        time.Time
-		giveMockRows        *sqlmock.Rows
-		wantReturnedError   bool
-		wantRecordedError   pbsmetrics.StoredDataError
-		wantLastUpdate      time.Time
-		wantSavedReqs       map[string]json.RawMessage
-		wantSavedImps       map[string]json.RawMessage
-		wantInvalidatedReqs []string
-		wantInvalidatedImps []string
+		description       string
+		giveFakeTime      time.Time
+		giveTimeoutMS     int
+		giveMockRows      *sqlmock.Rows
+		wantRecordedError pbsmetrics.StoredDataError
+		wantLastUpdate    time.Time
 	}{
 		{
-			description:       "fetch all query error",
+			description:       "fetch all timeout",
 			giveFakeTime:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:      nil,
-			wantReturnedError: true,
 			wantRecordedError: pbsmetrics.StoredDataErrorNetwork,
 			wantLastUpdate:    time.Time{},
 		},
 		{
-			description:  "fetch all row error",
-			giveFakeTime: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
-			giveMockRows: sqlmock.NewRows([]string{"id", "data", "dataType"}).
-				AddRow("stored-req-id", "true", "request").
-				RowError(0, errors.New("Some row error.")),
-			wantReturnedError: true,
+			description:       "fetch all query error",
+			giveFakeTime:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			giveTimeoutMS:     100,
+			giveMockRows:      nil,
 			wantRecordedError: pbsmetrics.StoredDataErrorUndefined,
 			wantLastUpdate:    time.Time{},
 		},
 		{
-			description:  "fetch all close error",
-			giveFakeTime: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			description:   "fetch all row error",
+			giveFakeTime:  time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			giveTimeoutMS: 100,
 			giveMockRows: sqlmock.NewRows([]string{"id", "data", "dataType"}).
-				AddRow("req-1", "true", "request").
-				AddRow("imp-1", "true", "imp").
-				AddRow("req-2", "", "request").
-				AddRow("imp-2", "", "imp").
-				CloseError(errors.New("Some close error.")),
-			wantReturnedError: false,
+				AddRow("stored-req-id", "true", "request").
+				RowError(0, errors.New("Some row error.")),
 			wantRecordedError: pbsmetrics.StoredDataErrorUndefined,
-			wantLastUpdate:    time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
-			wantSavedReqs:     map[string]json.RawMessage{"req-1": json.RawMessage(`true`)},
-			wantSavedImps:     map[string]json.RawMessage{"imp-1": json.RawMessage(`true`)},
+			wantLastUpdate:    time.Time{},
 		},
 	}
 
@@ -202,18 +192,14 @@ func TestFetchAllErrors(t *testing.T) {
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
 			DB:               db,
 			RequestType:      config.RequestDataType,
-			CacheInitTimeout: 100 * time.Millisecond,
+			CacheInitTimeout: time.Duration(tt.giveTimeoutMS) * time.Millisecond,
 			CacheInitQuery:   fakeQuery,
 			MetricsEngine:    metricsMock,
 		})
 		eventProducer.time = &FakeTime{time: tt.giveFakeTime}
 		err := eventProducer.Run()
 
-		if tt.wantReturnedError {
-			assert.NotNil(t, err, tt.description)
-		} else {
-			assert.Nil(t, err, tt.description)
-		}
+		assert.NotNil(t, err, tt.description)
 		assert.Equal(t, tt.wantLastUpdate, eventProducer.lastUpdate, tt.description)
 
 		var saves events.Save
@@ -229,10 +215,12 @@ func TestFetchAllErrors(t *testing.T) {
 		case <-time.After(10 * time.Millisecond):
 		}
 
-		assert.Equal(t, tt.wantSavedReqs, saves.Requests, tt.description)
-		assert.Equal(t, tt.wantSavedImps, saves.Imps, tt.description)
-		assert.Equal(t, tt.wantInvalidatedReqs, invalidations.Requests, tt.description)
-		assert.Equal(t, tt.wantInvalidatedImps, invalidations.Imps, tt.description)
+		assert.Nil(t, saves.Requests, tt.description)
+		assert.Nil(t, saves.Imps, tt.description)
+		assert.Nil(t, invalidations.Requests, tt.description)
+		assert.Nil(t, invalidations.Requests, tt.description)
+
+		metricsMock.AssertExpectations(t)
 	}
 }
 
@@ -320,7 +308,6 @@ func TestFetchDeltaSuccess(t *testing.T) {
 		dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 
 		metricsMock := &pbsmetrics.MetricsEngineMock{}
-		metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
 		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataLabels{
 			DataType:      pbsmetrics.RequestDataType,
 			DataFetchType: pbsmetrics.FetchDelta,
@@ -328,6 +315,7 @@ func TestFetchDeltaSuccess(t *testing.T) {
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
 			DB:                 db,
+			RequestType:        config.RequestDataType,
 			CacheUpdateTimeout: 100 * time.Millisecond,
 			CacheUpdateQuery:   fakeQuery,
 			MetricsEngine:      metricsMock,
@@ -356,60 +344,48 @@ func TestFetchDeltaSuccess(t *testing.T) {
 		assert.Equal(t, tt.wantSavedImps, saves.Imps, tt.description)
 		assert.Equal(t, tt.wantInvalidatedReqs, invalidations.Requests, tt.description)
 		assert.Equal(t, tt.wantInvalidatedImps, invalidations.Imps, tt.description)
+
+		metricsMock.AssertExpectations(t)
 	}
 }
 
 func TestFetchDeltaErrors(t *testing.T) {
 	tests := []struct {
-		description         string
-		giveFakeTime        time.Time
-		giveLastUpdate      time.Time
-		giveMockRows        *sqlmock.Rows
-		wantReturnedError   bool
-		wantRecordedError   pbsmetrics.StoredDataError
-		wantLastUpdate      time.Time
-		wantSavedReqs       map[string]json.RawMessage
-		wantSavedImps       map[string]json.RawMessage
-		wantInvalidatedReqs []string
-		wantInvalidatedImps []string
+		description       string
+		giveFakeTime      time.Time
+		giveTimeoutMS     int
+		giveLastUpdate    time.Time
+		giveMockRows      *sqlmock.Rows
+		wantRecordedError pbsmetrics.StoredDataError
+		wantLastUpdate    time.Time
 	}{
 		{
-			description:       "fetch delta query error",
+			description:       "fetch all timeout",
 			giveFakeTime:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 			giveMockRows:      nil,
-			wantReturnedError: true,
 			wantRecordedError: pbsmetrics.StoredDataErrorNetwork,
+			wantLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
+		},
+		{
+			description:       "fetch delta query error",
+			giveFakeTime:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			giveTimeoutMS:     100,
+			giveLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
+			giveMockRows:      nil,
+			wantRecordedError: pbsmetrics.StoredDataErrorUndefined,
 			wantLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 		},
 		{
 			description:    "fetch all row error",
 			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			giveTimeoutMS:  100,
 			giveLastUpdate: time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 			giveMockRows: sqlmock.NewRows([]string{"id", "data", "dataType"}).
 				AddRow("stored-req-id", "true", "request").
 				RowError(0, errors.New("Some row error.")),
-			wantReturnedError: true,
 			wantRecordedError: pbsmetrics.StoredDataErrorUndefined,
 			wantLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
-		},
-		{
-			description:    "fetch all close error",
-			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
-			giveLastUpdate: time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
-			giveMockRows: sqlmock.NewRows([]string{"id", "data", "dataType"}).
-				AddRow("req-1", "true", "request").
-				AddRow("imp-1", "true", "imp").
-				AddRow("req-2", "", "request").
-				AddRow("imp-2", "", "imp").
-				CloseError(errors.New("Some close error.")),
-			wantReturnedError:   false,
-			wantRecordedError:   pbsmetrics.StoredDataErrorUndefined,
-			wantLastUpdate:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
-			wantSavedReqs:       map[string]json.RawMessage{"req-1": json.RawMessage(`true`)},
-			wantSavedImps:       map[string]json.RawMessage{"imp-1": json.RawMessage(`true`)},
-			wantInvalidatedReqs: []string{"req-2"},
-			wantInvalidatedImps: []string{"imp-2"},
 		},
 	}
 
@@ -434,7 +410,7 @@ func TestFetchDeltaErrors(t *testing.T) {
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
 			DB:                 db,
 			RequestType:        config.RequestDataType,
-			CacheUpdateTimeout: 100 * time.Millisecond,
+			CacheUpdateTimeout: time.Duration(tt.giveTimeoutMS) * time.Millisecond,
 			CacheUpdateQuery:   fakeQuery,
 			MetricsEngine:      metricsMock,
 		})
@@ -442,11 +418,7 @@ func TestFetchDeltaErrors(t *testing.T) {
 		eventProducer.time = &FakeTime{time: tt.giveFakeTime}
 		err := eventProducer.Run()
 
-		if tt.wantReturnedError {
-			assert.NotNil(t, err, tt.description)
-		} else {
-			assert.Nil(t, err, tt.description)
-		}
+		assert.NotNil(t, err, tt.description)
 		assert.Equal(t, tt.wantLastUpdate, eventProducer.lastUpdate, tt.description)
 
 		var saves events.Save
@@ -462,9 +434,11 @@ func TestFetchDeltaErrors(t *testing.T) {
 		case <-time.After(10 * time.Millisecond):
 		}
 
-		assert.Equal(t, tt.wantSavedReqs, saves.Requests, tt.description)
-		assert.Equal(t, tt.wantSavedImps, saves.Imps, tt.description)
-		assert.Equal(t, tt.wantInvalidatedReqs, invalidations.Requests, tt.description)
-		assert.Equal(t, tt.wantInvalidatedImps, invalidations.Imps, tt.description)
+		assert.Nil(t, saves.Requests, tt.description)
+		assert.Nil(t, saves.Imps, tt.description)
+		assert.Nil(t, invalidations.Requests, tt.description)
+		assert.Nil(t, invalidations.Requests, tt.description)
+
+		metricsMock.AssertExpectations(t)
 	}
 }
