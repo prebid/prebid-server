@@ -9,6 +9,7 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
+	"github.com/prebid/prebid-server/adapters/acuityads"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/adgeneration"
 	"github.com/prebid/prebid-server/adapters/adhese"
@@ -104,6 +105,7 @@ import (
 func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) map[openrtb_ext.BidderName]adaptedBidder {
 	ortbBidders := map[openrtb_ext.BidderName]adapters.Bidder{
 		openrtb_ext.Bidder33Across:     ttx.New33AcrossBidder(cfg.Adapters[string(openrtb_ext.Bidder33Across)].Endpoint),
+		openrtb_ext.BidderAcuityAds:    acuityads.NewAcuityAdsBidder(cfg.Adapters[string(openrtb_ext.BidderAcuityAds)].Endpoint),
 		openrtb_ext.BidderAdform:       adform.NewAdformBidder(client, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
 		openrtb_ext.BidderAdgeneration: adgeneration.NewAdgenerationAdapter(cfg.Adapters[string(openrtb_ext.BidderAdgeneration)].Endpoint),
 		openrtb_ext.BidderAdhese:       adhese.NewAdheseBidder(cfg.Adapters[string(openrtb_ext.BidderAdhese)].Endpoint),

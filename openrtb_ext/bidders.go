@@ -28,6 +28,7 @@ const BidderNameContext = BidderName("context")
 // The bidder name 'general' is not allowed since it has special meaning in message maps.
 const (
 	Bidder33Across         BidderName = "33across"
+	BidderAcuityAds        BidderName = "acuityads"
 	BidderAdform           BidderName = "adform"
 	BidderAdgeneration     BidderName = "adgeneration"
 	BidderAdhese           BidderName = "adhese"
@@ -119,6 +120,7 @@ const (
 // The bidder name 'general' is not allowed since it has special meaning in message maps.
 var BidderMap = map[string]BidderName{
 	"33across":          Bidder33Across,
+	"acuityads":         BidderAcuityAds,
 	"adform":            BidderAdform,
 	"adgeneration":      BidderAdgeneration,
 	"adhese":            BidderAdhese,
