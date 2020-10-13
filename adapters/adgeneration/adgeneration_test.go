@@ -41,6 +41,7 @@ func TestgetRequestUri(t *testing.T) {
 			{ID: "extImpBidder-failed-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"_bidder": { "id": "58278" }}`)},
 			{ID: "extImpAdgeneration-failed-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "_id": "58278" }}`)},
 		},
+		Source: &openrtb.Source{TID: "SourceTID"},
 		Device: &openrtb.Device{UA: "testUA", IP: "testIP"},
 		Site:   &openrtb.Site{Page: "https://supership.com"},
 		User:   &openrtb.User{BuyerUID: "buyerID"},
@@ -50,6 +51,7 @@ func TestgetRequestUri(t *testing.T) {
 		Imp: []openrtb.Imp{
 			{ID: "bidRequest-success-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "id": "58278" }}`)},
 		},
+		Source: &openrtb.Source{TID: "SourceTID"},
 		Device: &openrtb.Device{UA: "testUA", IP: "testIP"},
 		Site:   &openrtb.Site{Page: "https://supership.com"},
 		User:   &openrtb.User{BuyerUID: "buyerID"},
@@ -67,14 +69,6 @@ func TestgetRequestUri(t *testing.T) {
 	}
 	numRequests = len(successRequest.Imp)
 	for index := 0; index < numRequests; index++ {
-		// RequestUri Test.
-		httpRequests, err := bidderAdgeneration.getRequestUri(successRequest, index)
-		if err != nil {
-			t.Errorf("getRequestUri: %v did throw an error: %v", successRequest.Imp[index], err)
-		}
-		if httpRequests == "adapterver="+bidderAdgeneration.version+"&currency=JPY&hb=true&id=58278&posall=SSPLOC&sdkname=prebidserver&sdktype=0&size=300%C3%97250&t=json3&tp=http%3A%2F%2Fexample.com%2Ftest.html" {
-			t.Errorf("getRequestUri: %v did return Request: %s", successRequest.Imp[index], httpRequests)
-		}
 		// getRawQuery Test.
 		adgExt, err := unmarshalExtImpAdgeneration(&successRequest.Imp[index])
 		if err != nil {
@@ -82,26 +76,32 @@ func TestgetRequestUri(t *testing.T) {
 		}
 		rawQuery := bidderAdgeneration.getRawQuery(adgExt.Id, successRequest, &successRequest.Imp[index])
 		expectQueries := map[string]string{
-			"posall":     "SSPLOC",
-			"id":         adgExt.Id,
-			"sdktype":    "0",
-			"hb":         "true",
-			"currency":   bidderAdgeneration.getCurrency(successRequest),
-			"sdkname":    "prebidserver",
-			"adapterver": bidderAdgeneration.version,
-			"size":       getSizes(&successRequest.Imp[index]),
-			"tp":         successRequest.Site.Name,
+			"posall":        "SSPLOC",
+			"id":            adgExt.Id,
+			"sdktype":       "0",
+			"hb":            "true",
+			"currency":      bidderAdgeneration.getCurrency(successRequest),
+			"sdkname":       "prebidserver",
+			"adapterver":    bidderAdgeneration.version,
+			"sizes":         getSizes(&successRequest.Imp[index]),
+			"tp":            successRequest.Site.Page,
+			"transactionid": successRequest.Source.TID,
 		}
 		for key, expectedValue := range expectQueries {
 			actualValue := rawQuery.Get(key)
-			if actualValue == "" {
-				if !(key == "size" || key == "tp") {
-					t.Errorf("getRawQuery: key %s is required value.", key)
-				}
-			}
 			if actualValue != expectedValue {
 				t.Errorf("getRawQuery: %s value does not match expected %s, actual %s", key, expectedValue, actualValue)
 			}
+		}
+
+		// RequestUri Test.
+		actualUri, err := bidderAdgeneration.getRequestUri(successRequest, index)
+		if err != nil {
+			t.Errorf("getRequestUri: %v did throw an error: %v", successRequest.Imp[index], err)
+		}
+		expectedUri := "https://d.socdm.com/adsv/v1?adapterver=" + bidderAdgeneration.version + "&currency=JPY&hb=true&id=58278&posall=SSPLOC&sdkname=prebidserver&sdktype=0&sizes=300x250&t=json3&tp=https%3A%2F%2Fsupership.com&transactionid=SourceTID"
+		if actualUri != expectedUri {
+			t.Errorf("getRequestUri: does not match expected %s, actual %s", expectedUri, actualUri)
 		}
 	}
 }
@@ -116,7 +116,7 @@ func TestGetSizes(t *testing.T) {
 
 	request = &openrtb.Imp{Banner: multiFormatBanner}
 	size = getSizes(request)
-	if size != "300×250,320×50" {
+	if size != "300x250,320x50" {
 		t.Errorf("%v does not match size.", multiFormatBanner)
 	}
 	request = &openrtb.Imp{Banner: noFormatBanner}
