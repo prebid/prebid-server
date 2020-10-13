@@ -114,7 +114,7 @@ func TestJsonSampleRequests(t *testing.T) {
 
 		for _, file := range testCaseFiles {
 			data, err := ioutil.ReadFile(file)
-			if !assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file) {
+			if assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file) {
 				runTestCase(t, data, file)
 			}
 		}
