@@ -1135,51 +1135,6 @@ func TestContentType(t *testing.T) {
 	}
 }
 
-// TestDisabledBidder makes sure we pass when encountering a disabled bidder in the configuration.
-func TestDisabledBidder(t *testing.T) {
-	filename := "sample-requests/invalid-whole/unknown-bidder.json"
-	fileData, err := ioutil.ReadFile(filename)
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-	testBidRequest, _, _, err := jsonparser.Get(fileData, "mockBidRequest")
-	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", filename, err)
-
-	deps := &endpointDeps{
-		&nobidExchange{},
-		newParamsValidator(t),
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{
-			MaxRequestSize: int64(len(testBidRequest)),
-		},
-		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{"unknownbidder": "The bidder 'unknownbidder' has been disabled."},
-		false,
-		[]byte{},
-		openrtb_ext.BidderMap,
-		nil,
-		nil,
-		hardcodedResponseIPValidator{response: true},
-	}
-
-	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(string(testBidRequest)))
-	recorder := httptest.NewRecorder()
-
-	deps.Auction(recorder, req, nil)
-
-	if recorder.Code != http.StatusOK {
-		t.Errorf("Endpoint should return a 200 if the unknown bidder was disabled.")
-	}
-
-	if bytesRead, err := req.Body.Read(make([]byte, 1)); bytesRead != 0 || err != io.EOF {
-		t.Errorf("The request body should have been read to completion.")
-	}
-}
-
 func TestValidateImpExt(t *testing.T) {
 	testCases := []struct {
 		description    string
