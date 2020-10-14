@@ -22,18 +22,29 @@ const (
 )
 
 // Section returns the config section this type is defined in
-func (sr *StoredRequests) Section() string {
+func (dataType DataType) Section() string {
 	return map[DataType]string{
 		RequestDataType:    "stored_requests",
 		CategoryDataType:   "categories",
 		VideoDataType:      "stored_video_req",
 		AMPRequestDataType: "stored_amp_req",
 		AccountDataType:    "accounts",
-	}[sr.dataType]
+	}[dataType]
 }
 
+// Section returns the config section
+func (sr *StoredRequests) Section() string {
+	return sr.dataType.Section()
+}
+
+// DataType returns the DataType associated with this config
 func (sr *StoredRequests) DataType() DataType {
 	return sr.dataType
+}
+
+// SetDataType sets the DataType on this config. Needed for tests.
+func (sr *StoredRequests) SetDataType(dataType DataType) {
+	sr.dataType = dataType
 }
 
 // StoredRequests struct defines options for stored requests for each data type
@@ -132,7 +143,7 @@ func (cfg *StoredRequests) validate(errs configErrors) configErrors {
 	if cfg.DataType() == AccountDataType && cfg.Postgres.ConnectionInfo.Database != "" {
 		errs = append(errs, fmt.Errorf("%s.postgres: retrieving accounts via postgres not available, use accounts.files", cfg.Section()))
 	} else {
-		errs = cfg.Postgres.validate(cfg.Section(), errs)
+		errs = cfg.Postgres.validate(cfg.DataType(), errs)
 	}
 
 	// Categories do not use cache so none of the following checks apply
@@ -156,7 +167,7 @@ func (cfg *StoredRequests) validate(errs configErrors) configErrors {
 			errs = append(errs, fmt.Errorf("%s: postgres.initialize_caches.query must be empty if in_memory_cache=none", cfg.Section()))
 		}
 	}
-	errs = cfg.InMemoryCache.validate(cfg.Section(), errs)
+	errs = cfg.InMemoryCache.validate(cfg.DataType(), errs)
 	return errs
 }
 
@@ -169,12 +180,12 @@ type PostgresConfig struct {
 	PollUpdates         PostgresUpdatePolling    `mapstructure:"poll_for_updates"`
 }
 
-func (cfg *PostgresConfig) validate(section string, errs configErrors) configErrors {
+func (cfg *PostgresConfig) validate(dataType DataType, errs configErrors) configErrors {
 	if cfg.ConnectionInfo.Database == "" {
 		return errs
 	}
 
-	return cfg.PollUpdates.validate(section, errs)
+	return cfg.PollUpdates.validate(dataType, errs)
 }
 
 // PostgresConnection has options which put types to the Postgres Connection string. See:
@@ -269,7 +280,8 @@ type PostgresCacheInitializer struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *PostgresCacheInitializer) validate(section string, errs configErrors) configErrors {
+func (cfg *PostgresCacheInitializer) validate(dataType DataType, errs configErrors) configErrors {
+	section := dataType.Section()
 	if cfg.Query == "" {
 		return errs
 	}
@@ -305,7 +317,8 @@ type PostgresUpdatePolling struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *PostgresUpdatePolling) validate(section string, errs configErrors) configErrors {
+func (cfg *PostgresUpdatePolling) validate(dataType DataType, errs configErrors) configErrors {
+	section := dataType.Section()
 	if cfg.Query == "" {
 		return errs
 	}
@@ -384,32 +397,57 @@ type InMemoryCache struct {
 	// TTL is the maximum number of seconds that an unused value will stay in the cache.
 	// TTL <= 0 can be used for "no ttl". Elements will still be evicted based on the Size.
 	TTL int `mapstructure:"ttl_seconds"`
+	// Size is the max total cache size allowed for single caches
+	Size int `mapstructure:"size_bytes"`
 	// RequestCacheSize is the max number of bytes allowed in the cache for Stored Requests. Values <= 0 will have no limit
 	RequestCacheSize int `mapstructure:"request_cache_size_bytes"`
 	// ImpCacheSize is the max number of bytes allowed in the cache for Stored Imps. Values <= 0 will have no limit
 	ImpCacheSize int `mapstructure:"imp_cache_size_bytes"`
 }
 
-func (cfg *InMemoryCache) validate(section string, errs configErrors) configErrors {
+func (cfg *InMemoryCache) validate(dataType DataType, errs configErrors) configErrors {
+	section := dataType.Section()
 	switch cfg.Type {
 	case "none":
 		// No errors for no config options
 	case "unbounded":
 		if cfg.TTL != 0 {
-			errs = append(errs, fmt.Errorf("%s: in_memory_cache must be 0 for unbounded caches. Got %d", section, cfg.TTL))
+			errs = append(errs, fmt.Errorf("%s: in_memory_cache.ttl_seconds is not supported for unbounded caches. Got %d", section, cfg.TTL))
 		}
-		if cfg.RequestCacheSize != 0 {
-			errs = append(errs, fmt.Errorf("%s: in_memory_cache.request_cache_size_bytes must be 0 for unbounded caches. Got %d", section, cfg.RequestCacheSize))
-		}
-		if cfg.ImpCacheSize != 0 {
-			errs = append(errs, fmt.Errorf("%s: in_memory_cache.imp_cache_size_bytes must be 0 for unbounded caches. Got %d", section, cfg.ImpCacheSize))
+		if dataType == AccountDataType {
+			// single cache
+			if cfg.Size != 0 {
+				errs = append(errs, fmt.Errorf("%s: in_memory_cache.size_bytes is not supported for unbounded caches. Got %d", section, cfg.Size))
+			}
+		} else {
+			// dual (request and imp) caches
+			if cfg.RequestCacheSize != 0 {
+				errs = append(errs, fmt.Errorf("%s: in_memory_cache.request_cache_size_bytes is not supported for unbounded caches. Got %d", section, cfg.RequestCacheSize))
+			}
+			if cfg.ImpCacheSize != 0 {
+				errs = append(errs, fmt.Errorf("%s: in_memory_cache.imp_cache_size_bytes is not supported for unbounded caches. Got %d", section, cfg.ImpCacheSize))
+			}
 		}
 	case "lru":
-		if cfg.RequestCacheSize <= 0 {
-			errs = append(errs, fmt.Errorf("%s: in_memory_cache.request_cache_size_bytes must be >= 0 when in_memory_cache.type=lru. Got %d", section, cfg.RequestCacheSize))
-		}
-		if cfg.ImpCacheSize <= 0 {
-			errs = append(errs, fmt.Errorf("%s: in_memory_cache.imp_cache_size_bytes must be >= 0 when in_memory_cache.type=lru. Got %d", section, cfg.ImpCacheSize))
+		if dataType == AccountDataType {
+			// single cache
+			if cfg.Size <= 0 {
+				errs = append(errs, fmt.Errorf("%s: in_memory_cache.size_bytes must be >= 0 when in_memory_cache.type=lru. Got %d", section, cfg.Size))
+			}
+			if cfg.RequestCacheSize > 0 || cfg.ImpCacheSize > 0 {
+				glog.Warningf("%s: in_memory_cache.request_cache_size_bytes and imp_cache_size_bytes do not apply to this section and will be ignored", section)
+			}
+		} else {
+			// dual (request and imp) caches
+			if cfg.RequestCacheSize <= 0 {
+				errs = append(errs, fmt.Errorf("%s: in_memory_cache.request_cache_size_bytes must be >= 0 when in_memory_cache.type=lru. Got %d", section, cfg.RequestCacheSize))
+			}
+			if cfg.ImpCacheSize <= 0 {
+				errs = append(errs, fmt.Errorf("%s: in_memory_cache.imp_cache_size_bytes must be >= 0 when in_memory_cache.type=lru. Got %d", section, cfg.ImpCacheSize))
+			}
+			if cfg.Size > 0 {
+				glog.Warningf("%s: in_memory_cache.size_bytes does not apply in this section and will be ignored", section)
+			}
 		}
 	default:
 		errs = append(errs, fmt.Errorf("%s: in_memory_cache.type %s is invalid", section, cfg.Type))
