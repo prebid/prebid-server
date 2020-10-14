@@ -409,81 +409,59 @@ func TestRequestTimeMetric(t *testing.T) {
 
 func TestRecordStoredDataFetchTime(t *testing.T) {
 	tests := []struct {
-		description   string
-		giveDataType  pbsmetrics.StoredDataType
-		giveFetchType pbsmetrics.StoredDataFetchType
-		wantCount     uint64
-		wantSum       float64
+		description string
+		dataType    pbsmetrics.StoredDataType
+		fetchType   pbsmetrics.StoredDataFetchType
 	}{
 		{
-			description:   "Update stored account histogram with all label",
-			giveDataType:  pbsmetrics.AccountDataType,
-			giveFetchType: pbsmetrics.FetchAll,
-			wantCount:     1,
-			wantSum:       0.5,
+			description: "Update stored account histogram with all label",
+			dataType:    pbsmetrics.AccountDataType,
+			fetchType:   pbsmetrics.FetchAll,
 		},
 		{
-			description:   "Update stored AMP histogram with all label",
-			giveDataType:  pbsmetrics.AMPDataType,
-			giveFetchType: pbsmetrics.FetchAll,
-			wantCount:     1,
-			wantSum:       0.5,
+			description: "Update stored AMP histogram with all label",
+			dataType:    pbsmetrics.AMPDataType,
+			fetchType:   pbsmetrics.FetchAll,
 		},
 		{
-			description:   "Update stored category histogram with all label",
-			giveDataType:  pbsmetrics.CategoryDataType,
-			giveFetchType: pbsmetrics.FetchAll,
-			wantCount:     1,
-			wantSum:       0.5,
+			description: "Update stored category histogram with all label",
+			dataType:    pbsmetrics.CategoryDataType,
+			fetchType:   pbsmetrics.FetchAll,
 		},
 		{
-			description:   "Update stored request histogram with all label",
-			giveDataType:  pbsmetrics.RequestDataType,
-			giveFetchType: pbsmetrics.FetchAll,
-			wantCount:     1,
-			wantSum:       0.5,
+			description: "Update stored request histogram with all label",
+			dataType:    pbsmetrics.RequestDataType,
+			fetchType:   pbsmetrics.FetchAll,
 		},
 		{
-			description:   "Update stored video histogram with all label",
-			giveDataType:  pbsmetrics.VideoDataType,
-			giveFetchType: pbsmetrics.FetchAll,
-			wantCount:     1,
-			wantSum:       0.5,
+			description: "Update stored video histogram with all label",
+			dataType:    pbsmetrics.VideoDataType,
+			fetchType:   pbsmetrics.FetchAll,
 		},
 		{
-			description:   "Update stored account histogram with delta label",
-			giveDataType:  pbsmetrics.AccountDataType,
-			giveFetchType: pbsmetrics.FetchDelta,
-			wantCount:     1,
-			wantSum:       0.5,
+			description: "Update stored account histogram with delta label",
+			dataType:    pbsmetrics.AccountDataType,
+			fetchType:   pbsmetrics.FetchDelta,
 		},
 		{
-			description:   "Update stored AMP histogram with delta label",
-			giveDataType:  pbsmetrics.AMPDataType,
-			giveFetchType: pbsmetrics.FetchDelta,
-			wantCount:     1,
-			wantSum:       0.5,
+			description: "Update stored AMP histogram with delta label",
+			dataType:    pbsmetrics.AMPDataType,
+			fetchType:   pbsmetrics.FetchDelta,
 		},
 		{
-			description:   "Update stored category histogram with delta label",
-			giveDataType:  pbsmetrics.CategoryDataType,
-			giveFetchType: pbsmetrics.FetchDelta,
-			wantCount:     1,
-			wantSum:       0.5,
+			description: "Update stored category histogram with delta label",
+			dataType:    pbsmetrics.CategoryDataType,
+			fetchType:   pbsmetrics.FetchDelta,
 		},
 		{
-			description:   "Update stored request histogram with delta label",
-			giveDataType:  pbsmetrics.RequestDataType,
-			giveFetchType: pbsmetrics.FetchDelta,
-			wantCount:     1,
-			wantSum:       0.5,
+			description: "Update stored request histogram with delta label",
+			dataType:    pbsmetrics.RequestDataType,
+			fetchType:   pbsmetrics.FetchDelta,
 		},
 		{
-			description:   "Update stored video histogram with delta label",
-			giveDataType:  pbsmetrics.VideoDataType,
-			giveFetchType: pbsmetrics.FetchDelta,
-			wantCount:     1,
-			wantSum:       0.5,
+			description: "Update stored video histogram with delta label",
+			dataType:    pbsmetrics.VideoDataType,
+			fetchType:   pbsmetrics.FetchDelta,
 		},
 	}
 
@@ -492,12 +470,12 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 
 		fetchTime := time.Duration(0.5 * float64(time.Second))
 		m.RecordStoredDataFetchTime(pbsmetrics.StoredDataLabels{
-			DataType:      tt.giveDataType,
-			DataFetchType: tt.giveFetchType,
+			DataType:      tt.dataType,
+			DataFetchType: tt.fetchType,
 		}, fetchTime)
 
 		var metricsTimer *prometheus.HistogramVec
-		switch tt.giveDataType {
+		switch tt.dataType {
 		case pbsmetrics.AccountDataType:
 			metricsTimer = m.storedAccountFetchTimer
 		case pbsmetrics.AMPDataType:
@@ -513,100 +491,89 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 		result := getHistogramFromHistogramVec(
 			metricsTimer,
 			storedDataFetchTypeLabel,
-			string(tt.giveFetchType))
-		assertHistogram(t, tt.description, result, tt.wantCount, tt.wantSum)
+			string(tt.fetchType))
+		assertHistogram(t, tt.description, result, 1, 0.5)
 	}
 }
 
 func TestRecordStoredDataError(t *testing.T) {
 	tests := []struct {
-		description   string
-		giveDataType  pbsmetrics.StoredDataType
-		giveErrorType pbsmetrics.StoredDataError
-		metricName    string
-		wantCount     float64
+		description string
+		dataType    pbsmetrics.StoredDataType
+		errorType   pbsmetrics.StoredDataError
+		metricName  string
 	}{
 		{
-			description:   "Update stored_account_errors counter with network label",
-			giveDataType:  pbsmetrics.AccountDataType,
-			giveErrorType: pbsmetrics.StoredDataErrorNetwork,
-			metricName:    "stored_account_errors",
-			wantCount:     1,
+			description: "Update stored_account_errors counter with network label",
+			dataType:    pbsmetrics.AccountDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_account_errors",
 		},
 		{
-			description:   "Update stored_amp_errors counter with network label",
-			giveDataType:  pbsmetrics.AMPDataType,
-			giveErrorType: pbsmetrics.StoredDataErrorNetwork,
-			metricName:    "stored_amp_errors",
-			wantCount:     1,
+			description: "Update stored_amp_errors counter with network label",
+			dataType:    pbsmetrics.AMPDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_amp_errors",
 		},
 		{
-			description:   "Update stored_category_errors counter with network label",
-			giveDataType:  pbsmetrics.CategoryDataType,
-			giveErrorType: pbsmetrics.StoredDataErrorNetwork,
-			metricName:    "stored_category_errors",
-			wantCount:     1,
+			description: "Update stored_category_errors counter with network label",
+			dataType:    pbsmetrics.CategoryDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_category_errors",
 		},
 		{
-			description:   "Update stored_request_errors counter with network label",
-			giveDataType:  pbsmetrics.RequestDataType,
-			giveErrorType: pbsmetrics.StoredDataErrorNetwork,
-			metricName:    "stored_request_errors",
-			wantCount:     1,
+			description: "Update stored_request_errors counter with network label",
+			dataType:    pbsmetrics.RequestDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_request_errors",
 		},
 		{
-			description:   "Update stored_video_errors counter with network label",
-			giveDataType:  pbsmetrics.VideoDataType,
-			giveErrorType: pbsmetrics.StoredDataErrorNetwork,
-			metricName:    "stored_video_errors",
-			wantCount:     1,
+			description: "Update stored_video_errors counter with network label",
+			dataType:    pbsmetrics.VideoDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_video_errors",
 		},
 		{
-			description:   "Update stored_account_errors counter with undefined label",
-			giveDataType:  pbsmetrics.AccountDataType,
-			giveErrorType: pbsmetrics.StoredDataErrorUndefined,
-			metricName:    "stored_account_errors",
-			wantCount:     1,
+			description: "Update stored_account_errors counter with undefined label",
+			dataType:    pbsmetrics.AccountDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_account_errors",
 		},
 		{
-			description:   "Update stored_amp_errors counter with undefined label",
-			giveDataType:  pbsmetrics.AMPDataType,
-			giveErrorType: pbsmetrics.StoredDataErrorUndefined,
-			metricName:    "stored_amp_errors",
-			wantCount:     1,
+			description: "Update stored_amp_errors counter with undefined label",
+			dataType:    pbsmetrics.AMPDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_amp_errors",
 		},
 		{
-			description:   "Update stored_category_errors counter with undefined label",
-			giveDataType:  pbsmetrics.CategoryDataType,
-			giveErrorType: pbsmetrics.StoredDataErrorUndefined,
-			metricName:    "stored_category_errors",
-			wantCount:     1,
+			description: "Update stored_category_errors counter with undefined label",
+			dataType:    pbsmetrics.CategoryDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_category_errors",
 		},
 		{
-			description:   "Update stored_request_errors counter with undefined label",
-			giveDataType:  pbsmetrics.RequestDataType,
-			giveErrorType: pbsmetrics.StoredDataErrorUndefined,
-			metricName:    "stored_request_errors",
-			wantCount:     1,
+			description: "Update stored_request_errors counter with undefined label",
+			dataType:    pbsmetrics.RequestDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_request_errors",
 		},
 		{
-			description:   "Update stored_video_errors counter with undefined label",
-			giveDataType:  pbsmetrics.VideoDataType,
-			giveErrorType: pbsmetrics.StoredDataErrorUndefined,
-			metricName:    "stored_video_errors",
-			wantCount:     1,
+			description: "Update stored_video_errors counter with undefined label",
+			dataType:    pbsmetrics.VideoDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_video_errors",
 		},
 	}
 
 	for _, tt := range tests {
 		m := createMetricsForTesting()
 		m.RecordStoredDataError(pbsmetrics.StoredDataLabels{
-			DataType: tt.giveDataType,
-			Error:    tt.giveErrorType,
+			DataType: tt.dataType,
+			Error:    tt.errorType,
 		})
 
 		var metricsCounter *prometheus.CounterVec
-		switch tt.giveDataType {
+		switch tt.dataType {
 		case pbsmetrics.AccountDataType:
 			metricsCounter = m.storedAccountErrors
 		case pbsmetrics.AMPDataType:
@@ -620,9 +587,9 @@ func TestRecordStoredDataError(t *testing.T) {
 		}
 
 		assertCounterVecValue(t, tt.description, tt.metricName, metricsCounter,
-			tt.wantCount,
+			1,
 			prometheus.Labels{
-				storedDataErrorLabel: string(tt.giveErrorType),
+				storedDataErrorLabel: string(tt.errorType),
 			})
 	}
 }
