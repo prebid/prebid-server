@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"text/template"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -37,8 +38,13 @@ type AdopplerAdapter struct {
 
 func NewAdopplerBidder(endpoint string) *AdopplerAdapter {
 	e := endpoint + "/processHeaderBid/{{.AdUnit}}"
+	t, err := template.New("endpoint").Parse(e)
+	if err != nil {
+		glog.Fatalf("Unable to parse endpoint url template: %s", err)
+		return nil
+	}
 
-	return &AdopplerAdapter{template.Must(template.New("endpoint").Parse(e))}
+	return &AdopplerAdapter{t}
 }
 
 func (ads *AdopplerAdapter) MakeRequests(
@@ -73,7 +79,9 @@ func (ads *AdopplerAdapter) MakeRequests(
 
 		uri, err := ads.bidUri(ext)
 		if err != nil {
-			errs = append(errs, &errortypes.BadInput{err.Error()})
+			e := fmt.Sprintf("Unable to build bid URI: %s",
+				err.Error())
+			errs = append(errs, &errortypes.BadInput{e})
 			continue
 		}
 		data := &adapters.RequestData{
@@ -187,7 +195,7 @@ func (ads *AdopplerAdapter) bidUri(ext *openrtb_ext.ExtImpAdoppler) (string, err
 	if ext.Client == "" {
 		params.AccountID = DefaultClient
 	} else {
-		params.AccountID = ext.Client
+		params.AccountID = url.PathEscape(ext.Client)
 	}
 
 	return macros.ResolveMacros(*ads.endpoint, params)

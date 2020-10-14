@@ -1,15 +1,52 @@
-{"mockBidRequest": {"id": "req1",
-                    "imp":[{"id": "imp1",
-                            "banner": {"w": 100,
-                                       "h": 200},
-                            "ext": {"bidder": {"adunit": "unit1",
-                                               "client": "client1"}}}]},
- "httpCalls": [{"expectedRequest": {"uri": "http://client1.trustedmarketplace.com/processHeaderBid/unit1",
-                                    "body": {"id": "req1-unit1",
-                                        "imp": [{"id": "imp1",
-                                                 "banner": {"w": 100, "h": 200},
-                                                 "ext": {"bidder": {"adunit": "unit1",
-                                                                    "client": "client1"}}}]}},
-                "mockResponse": {"status": 204,
-                                 "body": ""}}],
- "expectedBidResponses": []}
+{
+  "mockBidRequest":{
+    "id":"req1",
+    "imp":[
+      {
+        "id":"imp1",
+        "banner":{
+          "w":100,
+          "h":200
+        },
+        "ext":{
+          "bidder":{
+            "adunit":"unit1",
+            "client":"client1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls":[
+    {
+      "expectedRequest":{
+        "uri":"http://client1.trustedmarketplace.com/processHeaderBid/unit1",
+        "body":{
+          "id":"req1-unit1",
+          "imp":[
+            {
+              "id":"imp1",
+              "banner":{
+                "w":100,
+                "h":200
+              },
+              "ext":{
+                "bidder":{
+                  "adunit":"unit1",
+                  "client":"client1"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse":{
+        "status":204,
+        "body":""
+      }
+    }
+  ],
+  "expectedBidResponses":[
+
+  ]
+}
