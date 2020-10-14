@@ -178,8 +178,9 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 	}
 	if pgraw.Precision < 0 {
 		return errors.New("Price granularity error: precision must be non-negative")
-	} else if pgraw.Precision > MaxDecimalFigures {
-		pgraw.Precision = MaxDecimalFigures
+	}
+	if pgraw.Precision > MaxDecimalFigures {
+		return errors.New("Price granularity error: precision of more than 15 significant figures is not supported")
 	}
 	if len(pgraw.Ranges) > 0 {
 		var prevMax float64 = 0
@@ -192,9 +193,6 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 			}
 			// Enforce that we don't read "min" from the request
 			pgraw.Ranges[i].Min = prevMax
-			if pgraw.Ranges[i].Min < prevMax {
-				return errors.New("Price granularity error: overlapping granularity ranges")
-			}
 			prevMax = gr.Max
 		}
 		*pg = PriceGranularity(pgraw)
