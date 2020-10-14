@@ -347,81 +347,59 @@ func TestRecordPrebidCacheRequestTimeWithNotSuccess(t *testing.T) {
 
 func TestRecordStoredDataFetchTime(t *testing.T) {
 	tests := []struct {
-		description   string
-		giveDataType  StoredDataType
-		giveFetchType StoredDataFetchType
-		giveDuration  int64
-		wantCount     int64
+		description string
+		dataType    StoredDataType
+		fetchType   StoredDataFetchType
 	}{
 		{
-			description:   "Update stored_account_fetch_time.all timer",
-			giveDataType:  AccountDataType,
-			giveFetchType: FetchAll,
-			giveDuration:  int64(500),
-			wantCount:     int64(1),
+			description: "Update stored_account_fetch_time.all timer",
+			dataType:    AccountDataType,
+			fetchType:   FetchAll,
 		},
 		{
-			description:   "Update stored_amp_fetch_time.all timer",
-			giveDataType:  AMPDataType,
-			giveFetchType: FetchAll,
-			giveDuration:  int64(500),
-			wantCount:     int64(1),
+			description: "Update stored_amp_fetch_time.all timer",
+			dataType:    AMPDataType,
+			fetchType:   FetchAll,
 		},
 		{
-			description:   "Update stored_category_fetch_time.all timer",
-			giveDataType:  CategoryDataType,
-			giveFetchType: FetchAll,
-			giveDuration:  int64(500),
-			wantCount:     int64(1),
+			description: "Update stored_category_fetch_time.all timer",
+			dataType:    CategoryDataType,
+			fetchType:   FetchAll,
 		},
 		{
-			description:   "Update stored_request_fetch_time.all timer",
-			giveDataType:  RequestDataType,
-			giveFetchType: FetchAll,
-			giveDuration:  int64(500),
-			wantCount:     int64(1),
+			description: "Update stored_request_fetch_time.all timer",
+			dataType:    RequestDataType,
+			fetchType:   FetchAll,
 		},
 		{
-			description:   "Update stored_video_fetch_time.all timer",
-			giveDataType:  VideoDataType,
-			giveFetchType: FetchAll,
-			giveDuration:  int64(500),
-			wantCount:     int64(1),
+			description: "Update stored_video_fetch_time.all timer",
+			dataType:    VideoDataType,
+			fetchType:   FetchAll,
 		},
 		{
-			description:   "Update stored_account_fetch_time.delta timer",
-			giveDataType:  AccountDataType,
-			giveFetchType: FetchDelta,
-			giveDuration:  int64(500),
-			wantCount:     int64(1),
+			description: "Update stored_account_fetch_time.delta timer",
+			dataType:    AccountDataType,
+			fetchType:   FetchDelta,
 		},
 		{
-			description:   "Update stored_amp_fetch_time.delta timer",
-			giveDataType:  AMPDataType,
-			giveFetchType: FetchDelta,
-			giveDuration:  int64(500),
-			wantCount:     int64(1),
+			description: "Update stored_amp_fetch_time.delta timer",
+			dataType:    AMPDataType,
+			fetchType:   FetchDelta,
 		},
 		{
-			description:   "Update stored_category_fetch_time.delta timer",
-			giveDataType:  CategoryDataType,
-			giveFetchType: FetchDelta,
-			giveDuration:  int64(500),
-			wantCount:     int64(1),
+			description: "Update stored_category_fetch_time.delta timer",
+			dataType:    CategoryDataType,
+			fetchType:   FetchDelta,
 		},
 		{
-			description:   "Update stored_request_fetch_time.delta timer",
-			giveDataType:  RequestDataType,
-			giveFetchType: FetchDelta,
-			giveDuration:  int64(500),
-			wantCount:     int64(1),
+			description: "Update stored_request_fetch_time.delta timer",
+			dataType:    RequestDataType,
+			fetchType:   FetchDelta,
 		},
 		{
-			description:   "Update stored_video_fetch_time.delta timer",
-			giveDataType:  VideoDataType,
-			giveFetchType: FetchDelta,
-			giveDuration:  int64(500),
-			wantCount:     int64(1),
+			description: "Update stored_video_fetch_time.delta timer",
+			dataType:    VideoDataType,
+			fetchType:   FetchDelta,
 		},
 	}
 
@@ -429,84 +407,73 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 		registry := metrics.NewRegistry()
 		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
 		m.RecordStoredDataFetchTime(StoredDataLabels{
-			DataType:      tt.giveDataType,
-			DataFetchType: tt.giveFetchType,
-		}, time.Duration(tt.giveDuration))
+			DataType:      tt.dataType,
+			DataFetchType: tt.fetchType,
+		}, time.Duration(500))
 
-		actualCount := m.StoredDataFetchTimer[tt.giveDataType][tt.giveFetchType].Count()
-		assert.Equal(t, tt.wantCount, actualCount, tt.description)
+		actualCount := m.StoredDataFetchTimer[tt.dataType][tt.fetchType].Count()
+		assert.Equal(t, int64(1), actualCount, tt.description)
 
-		actualDuration := m.StoredDataFetchTimer[tt.giveDataType][tt.giveFetchType].Sum()
-		assert.Equal(t, tt.giveDuration, actualDuration, tt.description)
+		actualDuration := m.StoredDataFetchTimer[tt.dataType][tt.fetchType].Sum()
+		assert.Equal(t, int64(500), actualDuration, tt.description)
 	}
 }
 
 func TestRecordStoredDataError(t *testing.T) {
 	tests := []struct {
-		description   string
-		giveDataType  StoredDataType
-		giveErrorType StoredDataError
-		wantCount     int64
+		description string
+		dataType    StoredDataType
+		errorType   StoredDataError
 	}{
 		{
-			description:   "Increment stored_account_error.network meter",
-			giveDataType:  AccountDataType,
-			giveErrorType: StoredDataErrorNetwork,
-			wantCount:     1,
+			description: "Increment stored_account_error.network meter",
+			dataType:    AccountDataType,
+			errorType:   StoredDataErrorNetwork,
 		},
 		{
-			description:   "Increment stored_amp_error.network meter",
-			giveDataType:  AMPDataType,
-			giveErrorType: StoredDataErrorNetwork,
-			wantCount:     1,
+			description: "Increment stored_amp_error.network meter",
+			dataType:    AMPDataType,
+			errorType:   StoredDataErrorNetwork,
 		},
 		{
-			description:   "Increment stored_category_error.network meter",
-			giveDataType:  CategoryDataType,
-			giveErrorType: StoredDataErrorNetwork,
-			wantCount:     1,
+			description: "Increment stored_category_error.network meter",
+			dataType:    CategoryDataType,
+			errorType:   StoredDataErrorNetwork,
 		},
 		{
-			description:   "Increment stored_request_error.network meter",
-			giveDataType:  RequestDataType,
-			giveErrorType: StoredDataErrorNetwork,
-			wantCount:     1,
+			description: "Increment stored_request_error.network meter",
+			dataType:    RequestDataType,
+			errorType:   StoredDataErrorNetwork,
 		},
 		{
-			description:   "Increment stored_video_error.network meter",
-			giveDataType:  VideoDataType,
-			giveErrorType: StoredDataErrorNetwork,
-			wantCount:     1,
+			description: "Increment stored_video_error.network meter",
+			dataType:    VideoDataType,
+			errorType:   StoredDataErrorNetwork,
 		},
 		{
-			description:   "Increment stored_account_error.undefined meter",
-			giveDataType:  AccountDataType,
-			giveErrorType: StoredDataErrorUndefined,
-			wantCount:     1,
+			description: "Increment stored_account_error.undefined meter",
+			dataType:    AccountDataType,
+			errorType:   StoredDataErrorUndefined,
 		},
 		{
-			description:   "Increment stored_amp_error.undefined meter",
-			giveDataType:  AMPDataType,
-			giveErrorType: StoredDataErrorUndefined,
-			wantCount:     1,
+			description: "Increment stored_amp_error.undefined meter",
+			dataType:    AMPDataType,
+			errorType:   StoredDataErrorUndefined,
 		},
 		{
-			description:   "Increment stored_category_error.undefined meter",
-			giveDataType:  CategoryDataType,
-			giveErrorType: StoredDataErrorUndefined,
-			wantCount:     1,
+			description: "Increment stored_category_error.undefined meter",
+			dataType:    CategoryDataType,
+			errorType:   StoredDataErrorUndefined,
 		},
 		{
-			description:   "Increment stored_request_error.undefined meter",
-			giveDataType:  RequestDataType,
-			giveErrorType: StoredDataErrorUndefined,
-			wantCount:     1,
+			description: "Increment stored_request_error.undefined meter",
+			dataType:    RequestDataType,
+			errorType:   StoredDataErrorUndefined,
 		},
 		{
-			description:   "Increment stored_video_error.undefined meter",
-			giveDataType:  VideoDataType,
-			giveErrorType: StoredDataErrorUndefined,
-			wantCount:     1,
+			description: "Increment stored_video_error.undefined meter",
+			dataType:    VideoDataType,
+			errorType:   StoredDataErrorUndefined,
 		},
 	}
 
@@ -514,12 +481,12 @@ func TestRecordStoredDataError(t *testing.T) {
 		registry := metrics.NewRegistry()
 		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
 		m.RecordStoredDataError(StoredDataLabels{
-			DataType: tt.giveDataType,
-			Error:    tt.giveErrorType,
+			DataType: tt.dataType,
+			Error:    tt.errorType,
 		})
 
-		actualCount := m.StoredDataErrorMeter[tt.giveDataType][tt.giveErrorType].Count()
-		assert.Equal(t, tt.wantCount, actualCount, tt.description)
+		actualCount := m.StoredDataErrorMeter[tt.dataType][tt.errorType].Count()
+		assert.Equal(t, int64(1), actualCount, tt.description)
 	}
 }
 
