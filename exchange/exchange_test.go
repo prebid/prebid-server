@@ -40,7 +40,7 @@ func TestNewExchange(t *testing.T) {
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
 	defer server.Close()
 
-	knownAdapters := openrtb_ext.BidderNames()
+	knownAdapters := openrtb_ext.CoreBidderNames()
 
 	cfg := &config.Configuration{
 		CacheURL: config.Cache{
@@ -96,7 +96,7 @@ func TestCharacterEscape(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderNames())
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -503,7 +503,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderNames())
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -848,7 +848,7 @@ func TestBidResponseCurrency(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderNames())
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -1003,7 +1003,7 @@ func TestRaceIntegration(t *testing.T) {
 	cfg := &config.Configuration{
 		Adapters: make(map[string]config.Adapter),
 	}
-	for _, bidder := range openrtb_ext.BidderNames() {
+	for _, bidder := range openrtb_ext.CoreBidderNames() {
 		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
 			Endpoint: server.URL,
 		}
@@ -1023,7 +1023,7 @@ func TestRaceIntegration(t *testing.T) {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderNames())
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -1111,10 +1111,10 @@ func TestPanicRecovery(t *testing.T) {
 		CacheURL: config.Cache{
 			ExpectedTimeMillis: 20,
 		},
-		Adapters: blankAdapterConfig(openrtb_ext.BidderNames()),
+		Adapters: blankAdapterConfig(openrtb_ext.CoreBidderNames()),
 	}
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderNames())
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
 	adapters, adaptersErr := BuildAdapters(&http.Client{}, cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -1182,14 +1182,14 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 	cfg := &config.Configuration{
 		Adapters: make(map[string]config.Adapter),
 	}
-	for _, bidder := range openrtb_ext.BidderNames() {
+	for _, bidder := range openrtb_ext.CoreBidderNames() {
 		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
 			Endpoint: server.URL,
 		}
 	}
 	cfg.Adapters["audiencenetwork"] = config.Adapter{Disabled: true}
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderNames())
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -1432,7 +1432,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb.BidResponse
 
 func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy) Exchange {
 	adapters := make(map[openrtb_ext.BidderName]adaptedBidder)
-	for _, bidderName := range openrtb_ext.BidderNames() {
+	for _, bidderName := range openrtb_ext.CoreBidderNames() {
 		if spec, ok := expectations[string(bidderName)]; ok {
 			adapters[bidderName] = &validatingBidder{
 				t:             t,
@@ -1462,7 +1462,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 
 	return &exchange{
 		adapterMap:          adapters,
-		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderNames()),
+		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames()),
 		cache:               &wellBehavedCache{},
 		cacheTime:           0,
 		gDPR:                gdpr.AlwaysFail{},

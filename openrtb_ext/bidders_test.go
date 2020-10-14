@@ -22,9 +22,9 @@ func TestMain(m *testing.M) {
 var validator BidderParamValidator
 
 // TestBidderParamSchemas makes sure that the validator.Schema() function
-// returns valid JSON for all known BidderNames.
+// returns valid JSON for all known CoreBidderNames.
 func TestBidderParamSchemas(t *testing.T) {
-	for _, bidderName := range BidderNames() {
+	for _, bidderName := range CoreBidderNames() {
 		schema := validator.Schema(bidderName)
 		if schema == "" {
 			t.Errorf("No schema exists for bidder %s. Does static/bidder-params/%s.json exist?", bidderName, bidderName)
@@ -51,11 +51,11 @@ func TestInvalidParams(t *testing.T) {
 }
 
 func TestBidderListDoesNotDefineGeneral(t *testing.T) {
-	assert.NotContains(t, BidderNames(), BidderNameGeneral)
+	assert.NotContains(t, CoreBidderNames(), BidderNameGeneral)
 }
 
 func TestBidderListDoesNotDefineContext(t *testing.T) {
-	assert.NotContains(t, BidderNames(), BidderNameContext)
+	assert.NotContains(t, CoreBidderNames(), BidderNameContext)
 }
 
 // TestBidderUniquenessGatekeeping acts as a gatekeeper of bidder name uniqueness. If this test fails
@@ -65,7 +65,7 @@ func TestBidderUniquenessGatekeeping(t *testing.T) {
 	// Get List Of Bidders
 	// - Exclude duplicates of adapters for the same bidder, as it's unlikely a publisher will use both.
 	var bidders []string
-	for _, bidder := range BidderNames() {
+	for _, bidder := range CoreBidderNames() {
 		if bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn {
 			bidders = append(bidders, string(bidder))
 		}

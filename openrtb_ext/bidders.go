@@ -128,8 +128,8 @@ const (
 	BidderZeroClickFraud   BidderName = "zeroclickfraud"
 )
 
-// BidderNames returns all core bidders.
-func BidderNames() []BidderName {
+// CoreBidderNames returns a slice of all core bidders.
+func CoreBidderNames() []BidderName {
 	return []BidderName{
 		Bidder33Across,
 		BidderAdform,
@@ -220,11 +220,11 @@ func BidderNames() []BidderName {
 	}
 }
 
-// BuildBidderNameLookup builds a map of string to BidderName, to remain compatbile with the
+// BuildBidderMap builds a map of string to BidderName, to remain compatbile with the
 // prebioud BidderMap variable.
-func BuildBidderNameLookup() map[string]BidderName {
+func BuildBidderMap() map[string]BidderName {
 	lookup := make(map[string]BidderName)
-	for _, name := range BidderNames() {
+	for _, name := range CoreBidderNames() {
 		lookup[string(name)] = name
 	}
 	return lookup
@@ -232,7 +232,7 @@ func BuildBidderNameLookup() map[string]BidderName {
 
 func BuildBidderNameHashSet() map[string]struct{} {
 	hashSet := make(map[string]struct{})
-	for _, name := range BidderNames() {
+	for _, name := range CoreBidderNames() {
 		hashSet[string(name)] = struct{}{}
 	}
 	return hashSet
@@ -241,7 +241,7 @@ func BuildBidderNameHashSet() map[string]struct{} {
 // bidderNameLookup is a map of the lower case version of the bidder name to the precise BidderName value.
 var bidderNameLookup = func() map[string]BidderName {
 	lookup := make(map[string]BidderName)
-	for _, name := range BidderNames() {
+	for _, name := range CoreBidderNames() {
 		bidderNameLower := strings.ToLower(string(name))
 		lookup[bidderNameLower] = name
 	}
@@ -271,7 +271,7 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 		return nil, fmt.Errorf("Failed to read JSON schemas from directory %s. %v", schemaDirectory, err)
 	}
 
-	bidderMap := BuildBidderNameLookup()
+	bidderMap := BuildBidderMap()
 
 	schemaContents := make(map[BidderName]string, 50)
 	schemas := make(map[BidderName]*gojsonschema.Schema, 50)

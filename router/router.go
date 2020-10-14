@@ -74,7 +74,7 @@ func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		glog.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
 	}
 
-	bidderMap := openrtb_ext.BuildBidderNameLookup()
+	bidderMap := openrtb_ext.BuildBidderMap()
 
 	data := make(map[string]json.RawMessage, len(files))
 	for _, file := range files {
@@ -211,7 +211,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	}
 
 	// Hack because of how legacy handles districtm
-	legacyBidderList := openrtb_ext.BidderNames()
+	legacyBidderList := openrtb_ext.CoreBidderNames()
 	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
 
 	// Metrics engine
@@ -232,7 +232,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	}
 
 	p, _ := filepath.Abs(infoDirectory)
-	bidderInfos := adapters.ParseBidderInfos(cfg.Adapters, p, openrtb_ext.BidderNames())
+	bidderInfos := adapters.ParseBidderInfos(cfg.Adapters, p, openrtb_ext.CoreBidderNames())
 
 	activeBidders := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)

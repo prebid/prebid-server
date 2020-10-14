@@ -434,7 +434,7 @@ func resolveBidder(bidder string, aliases map[string]string) openrtb_ext.BidderN
 }
 
 // parseImpExts does a partial-unmarshal of the imp[].Ext field.
-// The keys in the returned map are expected to be "prebid", "context", core BidderNames, or Aliases for this request.
+// The keys in the returned map are expected to be "prebid", "context", CoreBidderNames, or Aliases for this request.
 func parseImpExts(imps []openrtb.Imp) ([]map[string]json.RawMessage, error) {
 	exts := make([]map[string]json.RawMessage, len(imps))
 	// Loop over every impression in the request

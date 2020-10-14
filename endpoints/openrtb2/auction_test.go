@@ -113,7 +113,7 @@ func TestExplicitUserId(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup())
+		openrtb_ext.BuildBidderMap())
 
 	endpoint(httptest.NewRecorder(), request, nil)
 
@@ -382,7 +382,7 @@ func (gr *getResponseFromDirectory) doRequest(t *testing.T, requestData []byte) 
 		aliasJSON = []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
 	}
 
-	bidderInfos := getBidderInfos(gr.adaptersConfig, openrtb_ext.BidderNames())
+	bidderInfos := getBidderInfos(gr.adaptersConfig, openrtb_ext.CoreBidderNames())
 
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
@@ -439,7 +439,7 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 	aliasJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus" "test2": "rubicon", "test3": "openx"}}}}`)
 	adaptersConfigs := make(map[string]config.Adapter)
 
-	bidderInfos := getBidderInfos(adaptersConfigs, openrtb_ext.BidderNames())
+	bidderInfos := getBidderInfos(adaptersConfigs, openrtb_ext.CoreBidderNames())
 
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
@@ -530,7 +530,7 @@ func TestNilExchange(t *testing.T) {
 		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup())
+		openrtb_ext.BuildBidderMap())
 
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
@@ -552,7 +552,7 @@ func TestNilValidator(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup())
+		openrtb_ext.BuildBidderMap())
 
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
@@ -574,7 +574,7 @@ func TestExchangeError(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup())
+		openrtb_ext.BuildBidderMap())
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -697,7 +697,7 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
-			openrtb_ext.BuildBidderNameLookup())
+			openrtb_ext.BuildBidderMap())
 
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, test.reqJSONFile)))
 		httpReq.Header.Set("X-Forwarded-For", test.xForwardedForHeader)
@@ -892,7 +892,7 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
-			openrtb_ext.BuildBidderNameLookup())
+			openrtb_ext.BuildBidderMap())
 
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, test.reqJSONFile)))
 		httpReq.Header.Set("DNT", test.dntHeader)
@@ -971,7 +971,7 @@ func TestStoredRequests(t *testing.T) {
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
@@ -1011,7 +1011,7 @@ func TestOversizedRequest(t *testing.T) {
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
@@ -1047,7 +1047,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
@@ -1080,7 +1080,7 @@ func TestNoEncoding(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 	)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -1156,7 +1156,7 @@ func TestContentType(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 	)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -1190,7 +1190,7 @@ func TestDisabledBidder(t *testing.T) {
 		map[string]string{"unknownbidder": "The bidder 'unknownbidder' has been disabled."},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
@@ -1290,7 +1290,7 @@ func TestValidateImpExt(t *testing.T) {
 		map[string]string{"unknownbidder": "The bidder 'unknownbidder' has been disabled."},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
@@ -1332,7 +1332,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
@@ -1377,7 +1377,7 @@ func TestCCPAInvalid(t *testing.T) {
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
@@ -1426,7 +1426,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
@@ -1478,7 +1478,7 @@ func TestValidateSourceTID(t *testing.T) {
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
@@ -1523,7 +1523,7 @@ func TestSChainInvalid(t *testing.T) {
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},

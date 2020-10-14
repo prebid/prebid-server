@@ -53,7 +53,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 	)
 
 	for requestID := range goodRequests {
@@ -106,7 +106,7 @@ func TestAMPPageInfo(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -211,7 +211,7 @@ func TestGDPRConsent(t *testing.T) {
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
-			openrtb_ext.BuildBidderNameLookup(),
+			openrtb_ext.BuildBidderMap(),
 		)
 
 		// Invoke Endpoint
@@ -364,7 +364,7 @@ func TestCCPAConsent(t *testing.T) {
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
-			openrtb_ext.BuildBidderNameLookup(),
+			openrtb_ext.BuildBidderMap(),
 		)
 
 		// Invoke Endpoint
@@ -423,7 +423,7 @@ func TestNoConsent(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 	)
 
 	// Invoke Endpoint
@@ -469,7 +469,7 @@ func TestInvalidConsent(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 	)
 
 	// Invoke Endpoint
@@ -553,7 +553,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
-			openrtb_ext.BuildBidderNameLookup(),
+			openrtb_ext.BuildBidderMap(),
 		)
 
 		// Invoke Endpoint
@@ -605,7 +605,7 @@ func TestAMPSiteExt(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		nil,
 		nil,
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -642,7 +642,7 @@ func TestAmpBadRequests(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -673,7 +673,7 @@ func TestAmpDebug(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 	)
 
 	for requestID := range requests {
@@ -746,7 +746,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 	)
 
 	requestID := "1"
@@ -899,7 +899,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderNameLookup(),
+		openrtb_ext.BuildBidderMap(),
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s&account=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize, s.account)
@@ -1267,7 +1267,7 @@ func TestBuildAmpObject(t *testing.T) {
 			logger,
 			map[string]string{},
 			[]byte{},
-			openrtb_ext.BuildBidderNameLookup(),
+			openrtb_ext.BuildBidderMap(),
 		)
 
 		// Run test
@@ -1284,5 +1284,5 @@ func TestBuildAmpObject(t *testing.T) {
 }
 
 func newTestMetrics() *pbsmetrics.Metrics {
-	return pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderNames(), config.DisabledMetrics{})
+	return pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.CoreBidderNames(), config.DisabledMetrics{})
 }

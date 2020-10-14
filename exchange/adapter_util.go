@@ -15,13 +15,15 @@ import (
 )
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
-	exchangeBidders, errs := buildExchangeBidders(cfg, infos, client, me)
+	exchangeBidders := buildExchangeBiddersLegacy(cfg.Adapters, infos)
+
+	exchangeBiddersModern, errs := buildExchangeBidders(cfg, infos, client, me)
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	exchangeBiddersLegacy := buildExchangeBiddersLegacy(cfg.Adapters, infos)
-	for bidderName, bidder := range exchangeBiddersLegacy {
+	// Merge legacy and modern bidders, giving priority to the modern bidders.
+	for bidderName, bidder := range exchangeBiddersModern {
 		exchangeBidders[bidderName] = bidder
 	}
 

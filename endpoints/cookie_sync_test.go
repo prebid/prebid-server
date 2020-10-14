@@ -196,7 +196,7 @@ func doConfigurablePost(body string, existingSyncs map[string]string, gdprHostCo
 }
 
 func testableEndpoint(perms gdpr.Permissions, cfgGDPR config.GDPR, cfgCCPA config.CCPA) httprouter.Handle {
-	return NewCookieSyncEndpoint(syncersForTest(), &config.Configuration{GDPR: cfgGDPR, CCPA: cfgCCPA}, perms, &metricsConf.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}), openrtb_ext.BuildBidderNameLookup())
+	return NewCookieSyncEndpoint(syncersForTest(), &config.Configuration{GDPR: cfgGDPR, CCPA: cfgCCPA}, perms, &metricsConf.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}), openrtb_ext.BuildBidderMap())
 }
 
 func syncersForTest() map[openrtb_ext.BidderName]usersync.Usersyncer {

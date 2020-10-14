@@ -87,11 +87,11 @@ func TestGetSpecificBidders(t *testing.T) {
 		if tc.status == adapters.StatusDisabled {
 			bidderDisabled = true
 		}
-		cfg := blankAdapterConfigWithStatus(openrtb_ext.BidderNames(), bidderDisabled)
-		bidderInfos := adapters.ParseBidderInfos(cfg, "../../static/bidder-info", openrtb_ext.BidderNames())
+		cfg := blankAdapterConfigWithStatus(openrtb_ext.CoreBidderNames(), bidderDisabled)
+		bidderInfos := adapters.ParseBidderInfos(cfg, "../../static/bidder-info", openrtb_ext.CoreBidderNames())
 		endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
 
-		for _, bidderName := range openrtb_ext.BidderNames() {
+		for _, bidderName := range openrtb_ext.CoreBidderNames() {
 			req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+string(bidderName), strings.NewReader(""))
 			if err != nil {
 				t.Errorf("Failed to create a GET /info/bidders request: %v", err)
@@ -130,7 +130,7 @@ func TestGetBidderAccuracyAliases(t *testing.T) {
 
 // TestGetBidderAccuracyAlias validates the output for an alias of a known file.
 func testGetBidderAccuracy(t *testing.T, alias string) {
-	cfg := blankAdapterConfig(openrtb_ext.BidderNames())
+	cfg := blankAdapterConfig(openrtb_ext.CoreBidderNames())
 	bidderInfos := adapters.ParseBidderInfos(cfg, "../../adapters/adapterstest/bidder-info", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
 
 	aliases := map[string]string{}
@@ -189,8 +189,8 @@ func TestGetUnknownBidder(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, r.Code, "GET /info/bidders/* should return a 404 on unknown bidders. Got %d", r.Code)
 }
 func TestGetAllBidders(t *testing.T) {
-	cfg := blankAdapterConfig(openrtb_ext.BidderNames())
-	bidderInfos := adapters.ParseBidderInfos(cfg, "../../static/bidder-info", openrtb_ext.BidderNames())
+	cfg := blankAdapterConfig(openrtb_ext.CoreBidderNames())
+	bidderInfos := adapters.ParseBidderInfos(cfg, "../../static/bidder-info", openrtb_ext.CoreBidderNames())
 	endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/all", strings.NewReader(""))
 	if err != nil {
@@ -223,12 +223,12 @@ func TestInfoFiles(t *testing.T) {
 	}
 
 	// Make sure that files exist for each BidderName
-	for _, bidderName := range openrtb_ext.BidderNames() {
+	for _, bidderName := range openrtb_ext.CoreBidderNames() {
 		_, err := os.Stat(fmt.Sprintf("../../static/bidder-info/%s.yaml", string(bidderName)))
 		assert.False(t, os.IsNotExist(err), "static/bidder-info/%s.yaml not found. Did you forget to create it?", bidderName)
 	}
 
-	expectedFileInfosLength := len(openrtb_ext.BidderNames())
+	expectedFileInfosLength := len(openrtb_ext.CoreBidderNames())
 	assert.Len(t, fileInfos, expectedFileInfosLength, "static/bidder-info contains %d files, but the BidderMap has %d entries. These two should be in sync.", len(fileInfos), expectedFileInfosLength)
 
 	// Make sure that all the files have valid content
