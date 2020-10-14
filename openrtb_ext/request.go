@@ -8,7 +8,7 @@ import (
 // FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
 // for first party data support.
 const FirstPartyDataContextExtKey string = "context"
-const MaxDecimalFigures int = 32768 // math.Pow(2, 15)
+const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
