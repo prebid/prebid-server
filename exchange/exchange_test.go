@@ -1888,6 +1888,114 @@ func TestNoCategoryDedupe(t *testing.T) {
 
 }
 
+func TestCategoryMappingBidderName(t *testing.T) {
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	requestExt := newExtRequest()
+	requestExt.Prebid.Targeting.AppendBidderNames = true
+
+	targData := &targetData{
+		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		includeWinners:   true,
+	}
+
+	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30}
+
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
+
+	cats1 := []string{"IAB1-1"}
+	cats2 := []string{"IAB1-2"}
+	bid1 := openrtb.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 10.0000, Cat: cats2, W: 1, H: 1}
+
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+
+	innerBids1 := []*pbsOrtbBid{
+		&bid1_1,
+	}
+	innerBids2 := []*pbsOrtbBid{
+		&bid1_2,
+	}
+
+	seatBid1 := pbsOrtbSeatBid{innerBids1, "USD", nil, nil}
+	bidderName1 := openrtb_ext.BidderName("bidder1")
+
+	seatBid2 := pbsOrtbSeatBid{innerBids2, "USD", nil, nil}
+	bidderName2 := openrtb_ext.BidderName("bidder2")
+
+	adapterBids[bidderName1] = &seatBid1
+	adapterBids[bidderName2] = &seatBid2
+
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
+
+	assert.NoError(t, err, "Category mapping error should be empty")
+	assert.Empty(t, rejections, "There should be 0 bid rejection messages")
+	assert.Equal(t, "10.00_VideoGames_30s_bidder1", bidCategory["bid_id1"], "Category mapping doesn't match")
+	assert.Equal(t, "10.00_HomeDecor_30s_bidder2", bidCategory["bid_id2"], "Category mapping doesn't match")
+	assert.Len(t, adapterBids[bidderName1].bids, 1, "Bidders number doesn't match")
+	assert.Len(t, adapterBids[bidderName2].bids, 1, "Bidders number doesn't match")
+	assert.Len(t, bidCategory, 2, "Bidders category mapping doesn't match")
+}
+
+func TestCategoryMappingBidderNameNoCategories(t *testing.T) {
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	requestExt := newExtRequestNoBrandCat()
+	requestExt.Prebid.Targeting.AppendBidderNames = true
+
+	targData := &targetData{
+		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		includeWinners:   true,
+	}
+
+	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30}
+
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
+
+	cats1 := []string{"IAB1-1"}
+	cats2 := []string{"IAB1-2"}
+	bid1 := openrtb.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 12.0000, Cat: cats2, W: 1, H: 1}
+
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+
+	innerBids1 := []*pbsOrtbBid{
+		&bid1_1,
+	}
+	innerBids2 := []*pbsOrtbBid{
+		&bid1_2,
+	}
+
+	seatBid1 := pbsOrtbSeatBid{innerBids1, "USD", nil, nil}
+	bidderName1 := openrtb_ext.BidderName("bidder1")
+
+	seatBid2 := pbsOrtbSeatBid{innerBids2, "USD", nil, nil}
+	bidderName2 := openrtb_ext.BidderName("bidder2")
+
+	adapterBids[bidderName1] = &seatBid1
+	adapterBids[bidderName2] = &seatBid2
+
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
+
+	assert.NoError(t, err, "Category mapping error should be empty")
+	assert.Empty(t, rejections, "There should be 0 bid rejection messages")
+	assert.Equal(t, "10.00_30s_bidder1", bidCategory["bid_id1"], "Category mapping doesn't match")
+	assert.Equal(t, "12.00_30s_bidder2", bidCategory["bid_id2"], "Category mapping doesn't match")
+	assert.Len(t, adapterBids[bidderName1].bids, 1, "Bidders number doesn't match")
+	assert.Len(t, adapterBids[bidderName2].bids, 1, "Bidders number doesn't match")
+	assert.Len(t, bidCategory, 2, "Bidders category mapping doesn't match")
+}
+
 func TestBidRejectionErrors(t *testing.T) {
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
