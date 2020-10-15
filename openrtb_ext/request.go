@@ -8,6 +8,7 @@ import (
 // FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
 // for first party data support.
 const FirstPartyDataContextExtKey string = "context"
+const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
@@ -179,6 +180,9 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 	if pgraw.Precision < 0 {
 		return errors.New("Price granularity error: precision must be non-negative")
 	}
+	if pgraw.Precision > MaxDecimalFigures {
+		return errors.New("Price granularity error: precision of more than 15 significant figures is not supported")
+	}
 	if len(pgraw.Ranges) > 0 {
 		var prevMax float64 = 0
 		for i, gr := range pgraw.Ranges {
@@ -190,9 +194,6 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 			}
 			// Enforce that we don't read "min" from the request
 			pgraw.Ranges[i].Min = prevMax
-			if pgraw.Ranges[i].Min < prevMax {
-				return errors.New("Price granularity error: overlapping granularity ranges")
-			}
 			prevMax = gr.Max
 		}
 		*pg = PriceGranularity(pgraw)

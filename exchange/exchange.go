@@ -603,7 +603,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 
 			// TODO: consider should we remove bids with zero duration here?
 
-			pb, _ = GetCpmStringValue(bid.bid.Price, targData.priceGranularity)
+			pb = GetPriceBucket(bid.bid.Price, targData.priceGranularity)
 
 			newDur := duration
 			if len(requestExt.Prebid.Targeting.DurationRangeSec) > 0 {
