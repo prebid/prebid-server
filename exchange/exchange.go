@@ -535,6 +535,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
 	var includeBrandCategory = brandCatExt != nil //if not present - category will no be appended
+	appendBidderNames := requestExt.Prebid.Targeting.AppendBidderNames
 
 	var primaryAdServer string
 	var publisher string
@@ -628,6 +629,10 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 			} else {
 				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
 				dupeKey = categoryDuration
+			}
+
+			if appendBidderNames {
+				categoryDuration = fmt.Sprintf("%s_%s", categoryDuration, bidderName.String())
 			}
 
 			if dupe, ok := dedupe[dupeKey]; ok {

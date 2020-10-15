@@ -101,6 +101,7 @@ type ExtRequestTargeting struct {
 	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory"`
 	IncludeFormat        bool                     `json:"includeformat"`
 	DurationRangeSec     []int                    `json:"durationrangesec"`
+	AppendBidderNames    bool                     `json:"appendbiddernames,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
