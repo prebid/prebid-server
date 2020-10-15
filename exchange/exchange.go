@@ -176,6 +176,13 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errs)
+
+	// Ensure caching errors are added in case auc.doCache was called and errors were returned
+	if len(cacheErrs) > 0 {
+		bidderCacheErrs := errsToBidderErrors(cacheErrs)
+		bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = append(bidResponseExt.Errors[openrtb_ext.PrebidExtKey], bidderCacheErrs...)
+	}
+
 	if debugLog != nil && debugLog.Enabled {
 		if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 			debugLog.Data.Response = string(bidRespExtBytes)
@@ -190,12 +197,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				errs = append(errs, err)
 			}
 		}
-	}
-
-	// Ensure caching errors are added in case auc.doCache was called and errors were returned
-	if len(cacheErrs) > 0 {
-		bidderCacheErrs := errsToBidderErrors(cacheErrs)
-		bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = append(bidResponseExt.Errors[openrtb_ext.PrebidExtKey], bidderCacheErrs...)
 	}
 
 	// Build the response
