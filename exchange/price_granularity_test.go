@@ -2,7 +2,6 @@ package exchange
 
 import (
 	"math"
-	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -129,7 +128,6 @@ func TestGetPriceBucketString(t *testing.T) {
 		for _, test := range testGroup.testCases {
 			priceBucket := GetPriceBucket(testGroup.cpm, test.granularity)
 
-			assert.True(t, strings.HasPrefix(priceBucket, test.expectedPriceBucket), "Group: %s Granularity: %s :: Expected %s, got %s from %f", testGroup.groupDesc, test.granularityId, test.expectedPriceBucket, priceBucket, testGroup.cpm)
 			assert.Equal(t, test.expectedPriceBucket, priceBucket, "Group: %s Granularity: %s :: Expected %s, got %s from %f", testGroup.groupDesc, test.granularityId, test.expectedPriceBucket, priceBucket, testGroup.cpm)
 		}
 	}
