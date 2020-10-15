@@ -9,26 +9,42 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
 )
 
+func typedConfig(dataType config.DataType, sr *config.StoredRequests) *config.StoredRequests {
+	sr.SetDataType(dataType)
+	return sr
+}
+
+func isEmptyCacheType(cache stored_requests.CacheJSON) bool {
+	cache.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")})
+	objs := cache.Get(context.Background(), []string{"foo"})
+	return len(objs) == 0
+}
+
+func isMemoryCacheType(cache stored_requests.CacheJSON) bool {
+	cache.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")})
+	objs := cache.Get(context.Background(), []string{"foo"})
+	return len(objs) == 1
+}
+
 func TestNewEmptyFetcher(t *testing.T) {
 	fetcher := newFetcher(&config.StoredRequests{}, nil, nil)
-	ampFetcher := newFetcher(&config.StoredRequests{}, nil, nil)
-	if fetcher == nil || ampFetcher == nil {
-		t.Errorf("The fetchers should be non-nil, even with an empty config.")
+	if fetcher == nil {
+		t.Errorf("The fetcher should be non-nil, even with an empty config.")
 	}
 	if _, ok := fetcher.(empty_fetcher.EmptyFetcher); !ok {
 		t.Errorf("If the config is empty, and EmptyFetcher should be returned")
-	}
-	if _, ok := ampFetcher.(empty_fetcher.EmptyFetcher); !ok {
-		t.Errorf("If the config is empty, and EmptyFetcher should be returned for AMP")
 	}
 }
 
@@ -38,47 +54,12 @@ func TestNewHTTPFetcher(t *testing.T) {
 			Endpoint: "stored-requests.prebid.com",
 		},
 	}, nil, nil)
-	ampFetcher := newFetcher(&config.StoredRequests{
-		HTTP: config.HTTPFetcherConfig{
-			Endpoint: "stored-requests.prebid.com?type=amp",
-		},
-	}, nil, nil)
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
 		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
 			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)
 		}
 	} else {
-		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", ampFetcher)
-	}
-	if httpFetcher, ok := ampFetcher.(*http_fetcher.HttpFetcher); ok {
-		if httpFetcher.Endpoint != "stored-requests.prebid.com?type=amp&" {
-			t.Errorf("The AMP HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?type=amp&", httpFetcher.Endpoint)
-		}
-	} else {
-		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", ampFetcher)
-	}
-}
-
-func TestNewHTTPFetcherNoAmp(t *testing.T) {
-	fetcher := newFetcher(&config.StoredRequests{
-		HTTP: config.HTTPFetcherConfig{
-			Endpoint: "stored-requests.prebid.com",
-		},
-	}, nil, nil)
-	ampFetcher := newFetcher(&config.StoredRequests{
-		HTTP: config.HTTPFetcherConfig{
-			Endpoint: "",
-		},
-	}, nil, nil)
-	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
-		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
-			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)
-		}
-	} else {
-		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", ampFetcher)
-	}
-	if httpAmpFetcher, ok := ampFetcher.(*http_fetcher.HttpFetcher); ok && httpAmpFetcher == nil {
-		t.Errorf("An HTTP Fetching config should not return an Amp HTTP fetcher in this case. Got %v (%v)", ampFetcher, httpAmpFetcher)
+		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", fetcher)
 	}
 }
 
@@ -102,11 +83,9 @@ func TestNewHTTPEvents(t *testing.T) {
 
 func TestNewEmptyCache(t *testing.T) {
 	cache := newCache(&config.StoredRequests{InMemoryCache: config.InMemoryCache{Type: "none"}})
-	cache.Requests.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")})
-	reqs := cache.Requests.Get(context.Background(), []string{"foo"})
-	if len(reqs) != 0 {
-		t.Errorf("The newCache method should return an empty cache if the config asks for it.")
-	}
+	assert.True(t, isEmptyCacheType(cache.Requests), "The newCache method should return an empty Request cache")
+	assert.True(t, isEmptyCacheType(cache.Imps), "The newCache method should return an empty Imp cache")
+	assert.True(t, isEmptyCacheType(cache.Accounts), "The newCache method should return an empty Account cache")
 }
 
 func TestNewInMemoryCache(t *testing.T) {
@@ -117,11 +96,21 @@ func TestNewInMemoryCache(t *testing.T) {
 			ImpCacheSize:     100,
 		},
 	})
-	cache.Requests.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")})
-	reqs := cache.Requests.Get(context.Background(), []string{"foo"})
-	if len(reqs) != 1 {
-		t.Errorf("The newCache method should return an in-memory cache if the config asks for it.")
-	}
+	assert.True(t, isMemoryCacheType(cache.Requests), "The newCache method should return an in-memory Request cache for StoredRequests config")
+	assert.True(t, isMemoryCacheType(cache.Imps), "The newCache method should return an in-memory Imp cache for StoredRequests config")
+	assert.True(t, isEmptyCacheType(cache.Accounts), "The newCache method should return an empty Account cache for StoredRequests config")
+}
+
+func TestNewInMemoryAccountCache(t *testing.T) {
+	cache := newCache(typedConfig(config.AccountDataType, &config.StoredRequests{
+		InMemoryCache: config.InMemoryCache{
+			TTL:  60,
+			Size: 100,
+		},
+	}))
+	assert.True(t, isMemoryCacheType(cache.Accounts), "The newCache method should return an in-memory Account cache for Accounts config")
+	assert.True(t, isEmptyCacheType(cache.Requests), "The newCache method should return an empty Request cache for Accounts config")
+	assert.True(t, isEmptyCacheType(cache.Imps), "The newCache method should return an empty Imp cache for Accounts config")
 }
 
 func TestNewPostgresEventProducers(t *testing.T) {
@@ -138,32 +127,15 @@ func TestNewPostgresEventProducers(t *testing.T) {
 			},
 		},
 	}
-	ampCfg := &config.StoredRequests{
-		Postgres: config.PostgresConfig{
-			CacheInitialization: config.PostgresCacheInitializer{
-				Timeout: 50,
-				Query:   "SELECT id, requestData, type FROM stored_amp_data",
-			},
-			PollUpdates: config.PostgresUpdatePolling{
-				RefreshRate: 20,
-				Timeout:     50,
-				Query:       "SELECT id, requestData, type FROM stored_amp_data WHERE last_updated > $1",
-			},
-		},
-	}
 	client := &http.Client{}
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
 	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
-	mock.ExpectQuery("^" + regexp.QuoteMeta(ampCfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 
 	evProducers := newEventProducers(cfg, client, db, nil)
 	assertProducerLength(t, evProducers, 1)
-
-	ampEvProducers := newEventProducers(ampCfg, client, db, nil)
-	assertProducerLength(t, ampEvProducers, 1)
 
 	assertExpectationsMet(t, mock)
 }
