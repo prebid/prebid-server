@@ -81,9 +81,9 @@ func TestGetPriceBucketString(t *testing.T) {
 					"2",
 				},
 				{
-					"Largest precision value PBS supports (2^15 = 32768)",
-					openrtb_ext.PriceGranularity{Precision: int(math.Pow(2, 15)), Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
-					"1.85000000000000008881784",
+					"Largest precision value PBS supports 15",
+					openrtb_ext.PriceGranularity{Precision: 15, Ranges: []openrtb_ext.GranularityRange{{Max: 5, Increment: 0.05}}},
+					"1.850000000000000",
 				},
 			},
 		},
@@ -130,6 +130,7 @@ func TestGetPriceBucketString(t *testing.T) {
 			priceBucket := GetPriceBucket(testGroup.cpm, test.granularity)
 
 			assert.True(t, strings.HasPrefix(priceBucket, test.expectedPriceBucket), "Group: %s Granularity: %s :: Expected %s, got %s from %f", testGroup.groupDesc, test.granularityId, test.expectedPriceBucket, priceBucket, testGroup.cpm)
+			assert.Equal(t, test.expectedPriceBucket, priceBucket, "Group: %s Granularity: %s :: Expected %s, got %s from %f", testGroup.groupDesc, test.granularityId, test.expectedPriceBucket, priceBucket, testGroup.cpm)
 		}
 	}
 }
