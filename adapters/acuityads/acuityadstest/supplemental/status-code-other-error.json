@@ -26,7 +26,6 @@
         "ext": {
           "bidder": {
             "host": "ep1",
-            "sourceid": "partner",
             "accountid": "hash"
           }
         }
@@ -73,7 +72,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Something went wrong, please contact your Account Manager. Status Code: [ 306 ] ",
+      "value": "Unexpected status code: [ 306 ]. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]

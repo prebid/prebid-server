@@ -6,11 +6,13 @@
   "properties": {
     "host": {
       "type": "string",
-      "description": "Network host to send request"
+      "description": "Network host to send request",
+      "minLength": 1
     },
     "accountid": {
       "type": "string",
-      "description": "Account id"
+      "description": "Account id",
+      "minLength": 1
     }
   },
   "required": ["host", "accountid"]

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"text/template"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -20,12 +21,13 @@ type AcuityAdsAdapter struct {
 func NewAcuityAdsBidder(endpointTemplate string) *AcuityAdsAdapter {
 	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
+		glog.Fatal("Unable to parse endpoint url template")
 		return nil
 	}
 	return &AcuityAdsAdapter{endpoint: *template}
 }
 
-func GetHeaders(request *openrtb.BidRequest) *http.Header {
+func getHeaders(request *openrtb.BidRequest) http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -45,7 +47,7 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 		}
 	}
 
-	return &headers
+	return headers
 }
 
 func (a *AcuityAdsAdapter) MakeRequests(
@@ -57,20 +59,10 @@ func (a *AcuityAdsAdapter) MakeRequests(
 ) {
 
 	var errors []error
-	var acuityAdsExt *openrtb_ext.ExtAcuityAds
-	var err error
 
-	for i, imp := range openRTBRequest.Imp {
-		acuityAdsExt, err = a.getImpressionExt(&imp)
-		if err != nil {
-			errors = append(errors, err)
-			break
-		}
-		openRTBRequest.Imp[i].Ext = nil
-	}
-
-	if len(errors) > 0 {
-		return nil, errors
+	acuityAdsExt, err := a.getImpressionExt(&openRTBRequest.Imp[0])
+	if err != nil {
+		return nil, append(errors, err)
 	}
 
 	url, err := a.buildEndpointURL(acuityAdsExt)
@@ -87,7 +79,7 @@ func (a *AcuityAdsAdapter) MakeRequests(
 		Method:  http.MethodPost,
 		Body:    reqJSON,
 		Uri:     url,
-		Headers: *GetHeaders(openRTBRequest),
+		Headers: getHeaders(openRTBRequest),
 	}}, nil
 }
 
@@ -104,6 +96,7 @@ func (a *AcuityAdsAdapter) getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtA
 			Message: "ext.bidder not provided",
 		}
 	}
+	imp.Ext = nil
 	return &acuityAdsExt, nil
 }
 
@@ -112,7 +105,7 @@ func (a *AcuityAdsAdapter) buildEndpointURL(params *openrtb_ext.ExtAcuityAds) (s
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func (a *AcuityAdsAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
+func (a *AcuityAdsAdapter) checkResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusNoContent {
 		return &errortypes.BadInput{Message: "No bid response"}
 	}
@@ -129,9 +122,9 @@ func (a *AcuityAdsAdapter) CheckResponseStatusCodes(response *adapters.ResponseD
 		}
 	}
 
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+	if response.StatusCode != http.StatusOK {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: [ %d ]. Run with request.debug = 1 for more info", response.StatusCode),
 		}
 	}
 
@@ -146,7 +139,7 @@ func (a *AcuityAdsAdapter) MakeBids(
 	bidderResponse *adapters.BidderResponse,
 	errs []error,
 ) {
-	httpStatusError := a.CheckResponseStatusCodes(bidderRawResponse)
+	httpStatusError := a.checkResponseStatusCodes(bidderRawResponse)
 	if httpStatusError != nil {
 		return nil, []error{httpStatusError}
 	}

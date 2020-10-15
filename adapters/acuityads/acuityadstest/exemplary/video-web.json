@@ -33,7 +33,6 @@
         "ext": {
           "bidder": {
             "host": "ep1",
-            "sourceid": "partner",
             "accountid": "hash"
           }
         }
