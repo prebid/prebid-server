@@ -178,16 +178,24 @@ func TestPostgresConfigValidation(t *testing.T) {
 			connectionStr: "some-connection-string",
 		},
 		{
-			description:    "Valid cache init query with zero timeout",
-			connectionStr:  "some-connection-string",
-			cacheInitQuery: "SELECT * FROM table;",
-			wantErrorCount: 1,
-		},
-		{
 			description:      "Valid cache init query with non-zero timeout",
 			connectionStr:    "some-connection-string",
 			cacheInitQuery:   "SELECT * FROM table;",
 			cacheInitTimeout: 1,
+		},
+		{
+			description:      "Valid cache init query with zero timeout",
+			connectionStr:    "some-connection-string",
+			cacheInitQuery:   "SELECT * FROM table;",
+			cacheInitTimeout: 0,
+			wantErrorCount:   1,
+		},
+		{
+			description:      "Invalid cache init query contains wildcard",
+			connectionStr:    "some-connection-string",
+			cacheInitQuery:   "SELECT * FROM table WHERE $1",
+			cacheInitTimeout: 1,
+			wantErrorCount:   1,
 		},
 		{
 			description:            "Valid cache update query with non-zero timeout and refresh rate",
