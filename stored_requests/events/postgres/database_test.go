@@ -360,7 +360,7 @@ func TestFetchDeltaErrors(t *testing.T) {
 		wantLastUpdate    time.Time
 	}{
 		{
-			description:       "fetch all timeout",
+			description:       "fetch delta timeout",
 			giveFakeTime:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 			giveMockRows:      nil,
@@ -377,7 +377,7 @@ func TestFetchDeltaErrors(t *testing.T) {
 			wantLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 		},
 		{
-			description:    "fetch all row error",
+			description:    "fetch delta row error",
 			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveTimeoutMS:  100,
 			giveLastUpdate: time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
