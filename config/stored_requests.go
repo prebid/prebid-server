@@ -137,9 +137,6 @@ func resolvedStoredRequestsConfig(cfg *Configuration) {
 }
 
 func (cfg *StoredRequests) validate(errs configErrors) configErrors {
-	if cfg.DataType() == AccountDataType && cfg.HTTP.Endpoint != "" {
-		errs = append(errs, fmt.Errorf("%s.http: retrieving accounts via http not available, use accounts.files", cfg.Section()))
-	}
 	if cfg.DataType() == AccountDataType && cfg.Postgres.ConnectionInfo.Database != "" {
 		errs = append(errs, fmt.Errorf("%s.postgres: retrieving accounts via postgres not available, use accounts.files", cfg.Section()))
 	} else {

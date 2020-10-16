@@ -9,6 +9,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSingleReq(t *testing.T) {
@@ -61,14 +63,39 @@ func TestReqsAndImps(t *testing.T) {
 	assertErrLength(t, errs, 0)
 }
 
-func TestMissingValues(t *testing.T) {
-	fetcher, close := newEmptyFetcher(t, []string{"req-1", "req-2"}, []string{"imp-1"})
+func TestFetchAccounts(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
 	defer close()
 
-	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, []string{"imp-1"})
-	assertMapKeys(t, reqData)
-	assertMapKeys(t, impData)
-	assertErrLength(t, errs, 3)
+	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"acc-1", "acc-2"})
+	assertMapKeys(t, accData, "acc-1", "acc-2")
+	assertErrLength(t, errs, 0)
+}
+
+func TestFetchAccountsNoData(t *testing.T) {
+	fetcher, close := newFetcherBrokenBackend()
+	defer close()
+	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"req-1"})
+	assertMapKeys(t, accData)
+	assertErrLength(t, errs, 1)
+}
+
+func TestFetchAccount(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"})
+	defer close()
+
+	account, errs := fetcher.FetchAccount(context.Background(), "acc-1")
+	assert.Empty(t, errs, "Unexpected error fetching existing account")
+	assert.JSONEq(t, `"acc-1"`, string(account))
+}
+
+func TestFetchAccountNoData(t *testing.T) {
+	fetcher, close := newFetcherBrokenBackend()
+	defer close()
+
+	unknownAccount, errs := fetcher.FetchAccount(context.Background(), "unknown-acc")
+	assert.NotEmpty(t, errs, "Retrieving unknown account should have returned an error")
+	assert.Nil(t, unknownAccount)
 }
 
 func TestErrResponse(t *testing.T) {
@@ -139,11 +166,11 @@ func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) 
 func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, jsonifier func(string) json.RawMessage) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
-		assertMatches(t, query.Get("request-ids"), expectReqIDs)
-		assertMatches(t, query.Get("imp-ids"), expectImpIDs)
-
 		gotReqIDs := richSplit(query.Get("request-ids"))
 		gotImpIDs := richSplit(query.Get("imp-ids"))
+
+		assertMatches(t, gotReqIDs, expectReqIDs)
+		assertMatches(t, gotImpIDs, expectImpIDs)
 
 		reqIDResponse := make(map[string]json.RawMessage, len(gotReqIDs))
 		impIDResponse := make(map[string]json.RawMessage, len(gotImpIDs))
@@ -174,10 +201,43 @@ func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, json
 	}
 }
 
-func assertMatches(t *testing.T, query string, expected []string) {
+func newTestAccountFetcher(t *testing.T, expectAccIDs []string) (fetcher *HttpFetcher, closer func()) {
+	handler := newAccountHandler(t, expectAccIDs, jsonifyID)
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	return NewFetcher(server.Client(), server.URL), server.Close
+}
+
+func newAccountHandler(t *testing.T, expectAccIDs []string, jsonifier func(string) json.RawMessage) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		gotAccIDs := richSplit(query.Get("account-ids"))
+
+		assertMatches(t, gotAccIDs, expectAccIDs)
+
+		accIDResponse := make(map[string]json.RawMessage, len(gotAccIDs))
+
+		for _, accID := range gotAccIDs {
+			if accID != "" {
+				accIDResponse[accID] = jsonifier(accID)
+			}
+		}
+
+		respObj := accountsResponseContract{
+			Accounts: accIDResponse,
+		}
+
+		if respBytes, err := json.Marshal(respObj); err != nil {
+			t.Errorf("failed to marshal responseContract in test:  %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.Write(respBytes)
+		}
+	}
+}
+
+func assertMatches(t *testing.T, queryVals []string, expected []string) {
 	t.Helper()
 
-	queryVals := richSplit(query)
 	if len(queryVals) == 1 && queryVals[0] == "" {
 		if len(expected) != 0 {
 			t.Errorf("Expected no query vals, but got %v", queryVals)
