@@ -75,43 +75,83 @@ func TestPostgressConnString(t *testing.T) {
 	assertHasValue(t, params, "sslmode", "disable")
 }
 
-func TestInMemoryCacheValidation(t *testing.T) {
+func TestInMemoryCacheValidationStoredRequests(t *testing.T) {
 	assertNoErrs(t, (&InMemoryCache{
 		Type: "unbounded",
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertNoErrs(t, (&InMemoryCache{
 		Type: "none",
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertNoErrs(t, (&InMemoryCache{
 		Type:             "lru",
 		RequestCacheSize: 1000,
 		ImpCacheSize:     1000,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type: "unrecognized",
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:         "unbounded",
 		ImpCacheSize: 1000,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:             "unbounded",
 		RequestCacheSize: 1000,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type: "unbounded",
 		TTL:  500,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:             "lru",
 		RequestCacheSize: 0,
 		ImpCacheSize:     1000,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:             "lru",
 		RequestCacheSize: 1000,
 		ImpCacheSize:     0,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "lru",
+		Size: 1000,
+	}).validate(RequestDataType, nil))
+}
+
+func TestInMemoryCacheValidationSingleCache(t *testing.T) {
+	assertNoErrs(t, (&InMemoryCache{
+		Type: "unbounded",
+	}).validate(AccountDataType, nil))
+	assertNoErrs(t, (&InMemoryCache{
+		Type: "none",
+	}).validate(AccountDataType, nil))
+	assertNoErrs(t, (&InMemoryCache{
+		Type: "lru",
+		Size: 1000,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "unrecognized",
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "unbounded",
+		Size: 1000,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "unbounded",
+		TTL:  500,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "lru",
+		Size: 0,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:             "lru",
+		RequestCacheSize: 1000,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:         "lru",
+		ImpCacheSize: 1000,
+	}).validate(AccountDataType, nil))
 }
 
 func assertErrsExist(t *testing.T, err configErrors) {
