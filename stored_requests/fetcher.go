@@ -65,6 +65,7 @@ func (e NotFoundError) Error() string {
 type Cache struct {
 	Requests CacheJSON
 	Imps     CacheJSON
+	Accounts CacheJSON
 }
 type CacheJSON interface {
 	// Get works much like Fetcher.FetchRequests, with a few exceptions:
@@ -190,8 +191,17 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	return
 }
 
-func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
-	return f.fetcher.FetchAccount(ctx, accountID)
+func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (account json.RawMessage, errs []error) {
+	accountData := f.cache.Accounts.Get(ctx, []string{accountID})
+	// TODO: add metrics
+	if account, ok := accountData[accountID]; ok {
+		return account, errs
+	}
+	account, errs = f.fetcher.FetchAccount(ctx, accountID)
+	if len(errs) == 0 {
+		f.cache.Accounts.Save(ctx, map[string]json.RawMessage{accountID: account})
+	}
+	return account, errs
 }
 
 func (f *fetcherWithCache) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
