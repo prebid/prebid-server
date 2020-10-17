@@ -60,62 +60,62 @@ type testConfigValues struct {
 
 func TestJsonSampleRequests(t *testing.T) {
 	testSuites := []struct {
-		description string
-		directory   string
+		description          string
+		sampleRequestsSubDir string
 	}{
 		{
 			"Assert 200s on all bidRequests from exemplary folder",
-			"sample-requests/valid-whole/exemplary",
+			"valid-whole/exemplary",
 		},
 		{
 			"Asserts we return 200s on well-formed Native requests.",
-			"sample-requests/valid-native",
+			"valid-native",
 		},
 		{
 			"Asserts we return 400s on requests that are not supposed to pass validation",
-			"sample-requests/invalid-whole",
+			"invalid-whole",
 		},
 		{
 			"Asserts we return 400s on requests with Native requests that don't pass validation",
-			"sample-requests/invalid-native",
+			"invalid-native",
 		},
 		{
 			"Makes sure we handle (default) aliased bidders properly",
-			"sample-requests/aliased",
+			"aliased",
 		},
 		{
 			"Asserts we return 503s on requests with blacklisted accounts and apps.",
-			"sample-requests/blacklisted",
+			"blacklisted",
 		},
 		{
 			"Assert that requests that come with no user id nor app id return error if the `AccountRequired` field in the `config.Configuration` structure is set to true",
-			"sample-requests/account-required/no-account",
+			"account-required/no-account",
 		},
 		{
-			"Assert requests that come with a valid user id nor app id when account is not required",
-			"sample-requests/account-required/with-account",
+			"Assert requests that come with a valid user id nor app id when account is required",
+			"account-required/with-account",
 		},
 		{
 			"Tests diagnostic messages for invalid stored requests",
-			"sample-requests/invalid-stored",
+			"invalid-stored",
 		},
 		{
 			"Make sure requests with disabled bidders will fail",
-			"sample-requests/disabled/bad",
+			"disabled/bad",
 		},
 		{
 			"There are both disabled and non-disabled bidders, we expect a 200",
-			"sample-requests/disabled/good",
+			"disabled/good",
 		},
 	}
 	for _, test := range testSuites {
-		testCaseFiles, err := getTestFiles(test.directory)
-		assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", test.description, test.directory)
-
-		for _, file := range testCaseFiles {
-			data, err := ioutil.ReadFile(file)
-			if assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file) {
-				runTestCase(t, data, file)
+		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests/", test.sampleRequestsSubDir))
+		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", test.description, test.sampleRequestsSubDir) {
+			for _, file := range testCaseFiles {
+				data, err := ioutil.ReadFile(file)
+				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file) {
+					runTestCase(t, data, file)
+				}
 			}
 		}
 	}
@@ -143,8 +143,6 @@ func runTestCase(t *testing.T, fileData []byte, testFile string) {
 	// Retrieve values from JSON file
 	test := parseTestFile(t, fileData, testFile)
 
-	test.Config = generateConfigMaps(test.Config)
-
 	// Run test
 	actualCode, actualJsonBidResponse := doRequest(t, test)
 
@@ -159,16 +157,15 @@ func runTestCase(t *testing.T, fileData []byte, testFile string) {
 	if len(test.ExpectedBidResponse) > 0 {
 		var expectedBidResponse openrtb.BidResponse
 		var actualBidResponse openrtb.BidResponse
+		var err error
 
-		if err := json.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse); err != nil {
-			t.Fatalf("Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err)
+		err = json.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse)
+		if assert.NoError(t, err, "Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err) {
+			err = json.Unmarshal([]byte(actualJsonBidResponse), &actualBidResponse)
+			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n", testFile, err) {
+				assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
+			}
 		}
-
-		if err := json.Unmarshal([]byte(actualJsonBidResponse), &actualBidResponse); err != nil {
-			t.Fatalf("Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n", testFile, err)
-		}
-
-		assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
 	}
 }
 
@@ -208,26 +205,62 @@ func parseTestFile(t *testing.T, fileData []byte, testFile string) testCase {
 	return parsedTestData
 }
 
-func generateConfigMaps(tc *testConfigValues) *testConfigValues {
-	if len(tc.BlacklistedAccounts) > 0 {
-		tc.blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccounts))
-		for _, account := range tc.BlacklistedAccounts {
-			tc.blacklistedAccountMap[account] = true
-		}
-	}
+//func generateConfigMaps(tc *testConfigValues) *testConfigValues {
+//	if len(tc.BlacklistedAccounts) > 0 {
+//		tc.blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccounts))
+//		for _, account := range tc.BlacklistedAccounts {
+//			tc.blacklistedAccountMap[account] = true
+//		}
+//	}
+//	if len(tc.BlacklistedApps) > 0 {
+//		tc.blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedApps))
+//		for _, app := range tc.BlacklistedApps {
+//			tc.blacklistedAppMap[app] = true
+//		}
+//	}
+//	if len(tc.AdapterList) > 0 {
+//		tc.adaptersConfig = make(map[string]config.Adapter, len(tc.AdapterList))
+//		for _, adapterName := range tc.AdapterList {
+//			tc.adaptersConfig[adapterName] = config.Adapter{Disabled: true}
+//		}
+//	}
+//	return tc
+//}
+
+func (tc *testConfigValues) getBlacklistedAppMap() map[string]bool {
+	var blacklistedAppMap map[string]bool
+
 	if len(tc.BlacklistedApps) > 0 {
-		tc.blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedApps))
+		blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedApps))
 		for _, app := range tc.BlacklistedApps {
-			tc.blacklistedAppMap[app] = true
+			blacklistedAppMap[app] = true
 		}
 	}
+	return blacklistedAppMap
+}
+
+func (tc *testConfigValues) getBlackListedAccountMap() map[string]bool {
+	var blacklistedAccountMap map[string]bool
+
+	if len(tc.BlacklistedAccounts) > 0 {
+		blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccounts))
+		for _, account := range tc.BlacklistedAccounts {
+			blacklistedAccountMap[account] = true
+		}
+	}
+	return blacklistedAccountMap
+}
+
+func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
+	var adaptersConfig map[string]config.Adapter
+
 	if len(tc.AdapterList) > 0 {
-		tc.adaptersConfig = make(map[string]config.Adapter, len(tc.AdapterList))
+		adaptersConfig = make(map[string]config.Adapter, len(tc.AdapterList))
 		for _, adapterName := range tc.AdapterList {
-			tc.adaptersConfig[adapterName] = config.Adapter{Disabled: true}
+			adaptersConfig[adapterName] = config.Adapter{Disabled: true}
 		}
 	}
-	return tc
+	return adaptersConfig
 }
 
 // Once unmarshalled, bidResponse objects can't simply be compared with an `assert.Equalf()` call
@@ -434,7 +467,7 @@ func TestExplicitUserId(t *testing.T) {
 
 func doRequest(t *testing.T, test testCase) (int, string) {
 	disabledBidders := map[string]string{}
-	bidderMap := exchange.DisableBidders(getBidderInfos(test.Config.adaptersConfig, openrtb_ext.BidderList()), disabledBidders)
+	bidderMap := exchange.DisableBidders(getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.BidderList()), disabledBidders)
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
@@ -447,12 +480,15 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{
-			MaxRequestSize:     maxSize,
-			BlacklistedApps:    test.Config.BlacklistedApps,
-			BlacklistedAppMap:  test.Config.blacklistedAppMap,
-			BlacklistedAccts:   test.Config.BlacklistedAccounts,
-			BlacklistedAcctMap: test.Config.blacklistedAccountMap,
+			MaxRequestSize:  maxSize,
+			BlacklistedApps: test.Config.BlacklistedApps,
+			//BlacklistedAppMap:  test.Config.blacklistedAppMap,
+			BlacklistedAppMap: test.Config.getBlacklistedAppMap(),
+			BlacklistedAccts:  test.Config.BlacklistedAccounts,
+			//BlacklistedAcctMap: test.Config.blacklistedAccountMap,
+			BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
 			AccountRequired:    test.Config.AccountRequired,
+			//AccountRequired: test.Config.getAccountRequiredMap(),
 		},
 		metrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
