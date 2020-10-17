@@ -19,6 +19,7 @@ func TestListen(t *testing.T) {
 	cache := stored_requests.Cache{
 		Requests: memory.NewCache(256*1024, -1, "Requests"),
 		Imps:     memory.NewCache(256*1024, -1, "Imps"),
+		Accounts: memory.NewCache(256*1024, -1, "Account"),
 	}
 
 	// create channels to synchronize
@@ -39,15 +40,18 @@ func TestListen(t *testing.T) {
 	save := Save{
 		Requests: data,
 		Imps:     data,
+		Accounts: data,
 	}
 	cache.Requests.Save(context.Background(), save.Requests)
-	cache.Requests.Save(context.Background(), save.Imps)
+	cache.Imps.Save(context.Background(), save.Imps)
+	cache.Accounts.Save(context.Background(), save.Accounts)
 
 	config = fmt.Sprintf(`{"id": "%s", "updated": true}`, id)
 	data = map[string]json.RawMessage{id: json.RawMessage(config)}
 	save = Save{
 		Requests: data,
 		Imps:     data,
+		Accounts: data,
 	}
 
 	ep.saves <- save
@@ -55,13 +59,15 @@ func TestListen(t *testing.T) {
 
 	requestData := cache.Requests.Get(context.Background(), idSlice)
 	impData := cache.Imps.Get(context.Background(), idSlice)
-	if !reflect.DeepEqual(requestData, data) || !reflect.DeepEqual(impData, data) {
+	accountData := cache.Accounts.Get(context.Background(), idSlice)
+	if !reflect.DeepEqual(requestData, data) || !reflect.DeepEqual(impData, data) || !reflect.DeepEqual(accountData, data) {
 		t.Error("Update failed")
 	}
 
 	invalidation := Invalidation{
 		Requests: idSlice,
 		Imps:     idSlice,
+		Accounts: idSlice,
 	}
 
 	ep.invalidations <- invalidation
@@ -69,7 +75,8 @@ func TestListen(t *testing.T) {
 
 	requestData = cache.Requests.Get(context.Background(), idSlice)
 	impData = cache.Imps.Get(context.Background(), idSlice)
-	if len(requestData) > 0 || len(impData) > 0 {
+	accountData = cache.Accounts.Get(context.Background(), idSlice)
+	if len(requestData) > 0 || len(impData) > 0 || len(accountData) > 0 {
 		t.Error("Invalidate failed")
 	}
 }
