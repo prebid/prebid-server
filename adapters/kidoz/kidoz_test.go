@@ -18,7 +18,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "http://example.com/prebid"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "kidoztest", bidder)
@@ -50,7 +50,7 @@ func TestMakeRequests(t *testing.T) {
 		Endpoint: "http://example.com/prebid"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	t.Run("Handles Request marshal failure", func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMakeBids(t *testing.T) {
 		Endpoint: "http://example.com/prebid"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	t.Run("Handles response marshal failure", func(t *testing.T) {

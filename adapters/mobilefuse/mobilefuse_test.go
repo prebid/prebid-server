@@ -14,7 +14,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "http://mfx-us-east.mobilefuse.com/openrtb?pub_id={{.PublisherID}}"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "mobilefusetest", bidder)

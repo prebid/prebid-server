@@ -13,7 +13,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "http://bidder.connectad.io/API?src=pbs"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "connectadtest", bidder)

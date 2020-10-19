@@ -13,7 +13,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "vrtcaltest", bidder)

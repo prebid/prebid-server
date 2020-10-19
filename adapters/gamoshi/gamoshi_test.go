@@ -13,7 +13,7 @@ func TestJsonSamplesWithConfiguredURI(t *testing.T) {
 		Endpoint: "https://rtb.gamoshi.io"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "gamoshitest", bidder)
@@ -23,7 +23,7 @@ func TestJsonSamplesWithHardcodedURI(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderGamoshi, config.Adapter{})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "gamoshitest", bidder)

@@ -14,7 +14,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "https://{{.Host}}/prebid/bid"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "yeahmobitest", bidder)

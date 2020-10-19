@@ -31,7 +31,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "http://ib.adnxs.com/openrtb2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "appnexustest", bidder)
@@ -43,7 +43,7 @@ func TestVideoSamples(t *testing.T) {
 		PlatformID: "8"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "appnexusplatformtest", bidder)

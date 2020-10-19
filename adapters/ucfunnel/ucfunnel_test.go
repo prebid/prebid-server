@@ -50,7 +50,7 @@ func TestMakeRequests(t *testing.T) {
 		Endpoint: "http://localhost/bid"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	var testCases = []struct {
@@ -122,7 +122,7 @@ func TestMakeBids(t *testing.T) {
 		Endpoint: "http://localhost/bid"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	var testCases = []struct {

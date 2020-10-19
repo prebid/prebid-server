@@ -13,7 +13,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "http://tlx.3lift.net/s2s/auction?sra=1&supplier_id=20"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "triplelifttest", bidder)

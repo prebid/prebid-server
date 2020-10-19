@@ -49,7 +49,7 @@ func TestJsonSamples(t *testing.T) {
 	})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "audienceNetworktest", bidder)
@@ -66,7 +66,7 @@ func TestMakeTimeoutNoticeApp(t *testing.T) {
 	})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	tb, ok := bidder.(adapters.TimeoutBidder)
@@ -91,7 +91,7 @@ func TestMakeTimeoutNoticeBadRequest(t *testing.T) {
 	})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	tb, ok := bidder.(adapters.TimeoutBidder)

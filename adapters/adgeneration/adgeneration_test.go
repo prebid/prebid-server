@@ -17,7 +17,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "https://d.socdm.com/adsv/v1"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "adgenerationtest", bidder)
@@ -28,7 +28,7 @@ func TestgetRequestUri(t *testing.T) {
 		Endpoint: "https://d.socdm.com/adsv/v1"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)
@@ -136,7 +136,7 @@ func TestGetCurrency(t *testing.T) {
 		Endpoint: "https://d.socdm.com/adsv/v1"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)
@@ -207,7 +207,7 @@ func TestMakeBids(t *testing.T) {
 		Endpoint: "https://d.socdm.com/adsv/v1"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)

@@ -14,7 +14,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "http://rtb.ninthdecimal.com/xp/get?pubid={{.PublisherID}}"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "ninthdecimaltest", bidder)

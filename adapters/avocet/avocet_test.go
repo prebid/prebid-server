@@ -19,7 +19,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "https://bid.staging.avct.cloud/ortb/bid/5e722ee9bd6df11d063a8013"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "avocet", bidder)

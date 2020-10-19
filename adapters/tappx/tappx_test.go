@@ -15,7 +15,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "https://{{.Host}}"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "tappxtest", bidder)
@@ -33,7 +33,7 @@ func TestTsValue(t *testing.T) {
 		Endpoint: "https://{{.Host}}"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	bidderTappx := bidder.(*TappxAdapter)

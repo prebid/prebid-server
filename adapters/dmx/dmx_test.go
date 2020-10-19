@@ -61,7 +61,7 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "dmxtest", bidder)
@@ -76,7 +76,7 @@ func TestMakeRequestsOtherPlacement(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{
@@ -121,7 +121,7 @@ func TestMakeRequestsInvalid(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{
@@ -165,7 +165,7 @@ func TestMakeRequestNoSite(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{
@@ -213,7 +213,7 @@ func TestMakeRequestsApp(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{
@@ -263,7 +263,7 @@ func TestMakeRequestsNoUser(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{
@@ -305,7 +305,7 @@ func TestMakeRequests(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{
@@ -375,7 +375,7 @@ func TestMakeBidVideo(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{
@@ -422,7 +422,7 @@ func TestMakeBidsNoContent(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{
@@ -560,7 +560,7 @@ func TestUserExtEmptyObject(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{
@@ -599,7 +599,7 @@ func TestUserEidsOnly(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{
@@ -653,7 +653,7 @@ func TestUserDigitrustOnly(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{
@@ -697,7 +697,7 @@ func TestUsersEids(t *testing.T) {
 		Endpoint: "https://dmx.districtm.io/b/v2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	imp1 := openrtb.Imp{

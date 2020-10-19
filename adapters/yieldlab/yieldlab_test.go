@@ -133,7 +133,7 @@ func TestYieldlabAdapter_makeEndpointURL_invalidEndpoint(t *testing.T) {
 		Endpoint: "test$:/something§"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	bidderYieldlab := bidder.(*YieldlabAdapter)

@@ -15,7 +15,7 @@ func TestVerizonMediaBidderEndpointConfig(t *testing.T) {
 	})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	bidderVerizonMedia := bidder.(*VerizonMediaAdapter)
@@ -27,7 +27,7 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderVerizonMedia, config.Adapter{})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "verizonmediatest", bidder)

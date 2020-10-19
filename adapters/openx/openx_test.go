@@ -17,7 +17,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "http://rtb.openx.net/prebid"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "openxtest", bidder)
@@ -38,7 +38,7 @@ func assertCurrencyInBidResponse(t *testing.T, expectedCurrency string, currency
 		Endpoint: "http://rtb.openx.net/prebid"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	prebidRequest := &openrtb.BidRequest{

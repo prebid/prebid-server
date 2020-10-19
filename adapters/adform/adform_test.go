@@ -30,7 +30,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "http://adx.adform.net/adx"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "adformtest", bidder)
@@ -282,7 +282,7 @@ func TestOpenRTBRequest(t *testing.T) {
 		Endpoint: "http://adx.adform.net"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	testData := createTestData(true)

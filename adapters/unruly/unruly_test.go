@@ -21,7 +21,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "http://targeting.unrulymedia.com/openrtb/2.2"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "unrulytest", bidder)
@@ -32,7 +32,7 @@ func TestReturnsNewUnrulyBidderWithParams(t *testing.T) {
 		Endpoint: "http://mockEndpoint.com"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned expected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
 	bidderUnruly := bidder.(*UnrulyAdapter)
