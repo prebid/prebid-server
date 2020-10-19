@@ -19,8 +19,8 @@ func TestSingleReq(t *testing.T) {
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, nil)
 	assertMapKeys(t, reqData, "req-1")
-	assertMapKeys(t, impData)
-	assertErrLength(t, errs, 0)
+	assert.Empty(t, impData)
+	assert.Empty(t, errs)
 }
 
 func TestSeveralReqs(t *testing.T) {
@@ -29,8 +29,8 @@ func TestSeveralReqs(t *testing.T) {
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, nil)
 	assertMapKeys(t, reqData, "req-1", "req-2")
-	assertMapKeys(t, impData)
-	assertErrLength(t, errs, 0)
+	assert.Empty(t, impData)
+	assert.Empty(t, errs)
 }
 
 func TestSingleImp(t *testing.T) {
@@ -38,9 +38,9 @@ func TestSingleImp(t *testing.T) {
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1"})
-	assertMapKeys(t, reqData)
+	assert.Empty(t, reqData)
 	assertMapKeys(t, impData, "imp-1")
-	assertErrLength(t, errs, 0)
+	assert.Empty(t, errs)
 }
 
 func TestSeveralImps(t *testing.T) {
@@ -48,9 +48,9 @@ func TestSeveralImps(t *testing.T) {
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1", "imp-2"})
-	assertMapKeys(t, reqData)
+	assert.Empty(t, reqData)
 	assertMapKeys(t, impData, "imp-1", "imp-2")
-	assertErrLength(t, errs, 0)
+	assert.Empty(t, errs)
 }
 
 func TestReqsAndImps(t *testing.T) {
@@ -60,7 +60,7 @@ func TestReqsAndImps(t *testing.T) {
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"})
 	assertMapKeys(t, reqData, "req-1")
 	assertMapKeys(t, impData, "imp-1")
-	assertErrLength(t, errs, 0)
+	assert.Empty(t, errs)
 }
 
 func TestMissingValues(t *testing.T) {
@@ -68,9 +68,9 @@ func TestMissingValues(t *testing.T) {
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, []string{"imp-1"})
-	assertMapKeys(t, reqData)
-	assertMapKeys(t, impData)
-	assertErrLength(t, errs, 3)
+	assert.Empty(t, reqData)
+	assert.Empty(t, impData)
+	assert.Len(t, errs, 3)
 }
 
 func TestFetchAccounts(t *testing.T) {
@@ -124,7 +124,7 @@ func TestErrResponse(t *testing.T) {
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"})
 	assertMapKeys(t, reqData)
 	assertMapKeys(t, impData)
-	assertErrLength(t, errs, 1)
+	assert.Len(t, errs, 1)
 }
 
 func assertSameContents(t *testing.T, expected map[string]json.RawMessage, actual map[string]json.RawMessage) {
@@ -336,13 +336,5 @@ func assertMapKeys(t *testing.T, m map[string]json.RawMessage, keys ...string) {
 		if _, ok := m[key]; !ok {
 			t.Errorf("Map missing expected key %s. Data was %v", key, m)
 		}
-	}
-}
-
-func assertErrLength(t *testing.T, errs []error, expected int) {
-	t.Helper()
-
-	if len(errs) != expected {
-		t.Errorf("Expected %d errors. Got: %v", expected, errs)
 	}
 }
