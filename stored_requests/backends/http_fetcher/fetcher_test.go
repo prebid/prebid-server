@@ -91,6 +91,15 @@ func TestFetchAccountsNoData(t *testing.T) {
 	assert.Nil(t, accData)
 }
 
+func TestFetchAccountsBadJSON(t *testing.T) {
+	fetcher, close := newFetcherBadJSON()
+	defer close()
+
+	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"req-1"})
+	assert.Len(t, errs, 1)
+	assert.Nil(t, accData)
+}
+
 func TestFetchAccount(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"})
 	defer close()
@@ -157,6 +166,14 @@ func (w closeWrapper) Close() error {
 func newFetcherBrokenBackend() (fetcher *HttpFetcher, closer func()) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
+	}
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	return NewFetcher(server.Client(), server.URL), server.Close
+}
+
+func newFetcherBadJSON() (fetcher *HttpFetcher, closer func()) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`broken JSON`))
 	}
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	return NewFetcher(server.Client(), server.URL), server.Close
