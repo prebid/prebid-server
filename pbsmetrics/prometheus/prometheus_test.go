@@ -407,6 +407,193 @@ func TestRequestTimeMetric(t *testing.T) {
 	}
 }
 
+func TestRecordStoredDataFetchTime(t *testing.T) {
+	tests := []struct {
+		description string
+		dataType    pbsmetrics.StoredDataType
+		fetchType   pbsmetrics.StoredDataFetchType
+	}{
+		{
+			description: "Update stored account histogram with all label",
+			dataType:    pbsmetrics.AccountDataType,
+			fetchType:   pbsmetrics.FetchAll,
+		},
+		{
+			description: "Update stored AMP histogram with all label",
+			dataType:    pbsmetrics.AMPDataType,
+			fetchType:   pbsmetrics.FetchAll,
+		},
+		{
+			description: "Update stored category histogram with all label",
+			dataType:    pbsmetrics.CategoryDataType,
+			fetchType:   pbsmetrics.FetchAll,
+		},
+		{
+			description: "Update stored request histogram with all label",
+			dataType:    pbsmetrics.RequestDataType,
+			fetchType:   pbsmetrics.FetchAll,
+		},
+		{
+			description: "Update stored video histogram with all label",
+			dataType:    pbsmetrics.VideoDataType,
+			fetchType:   pbsmetrics.FetchAll,
+		},
+		{
+			description: "Update stored account histogram with delta label",
+			dataType:    pbsmetrics.AccountDataType,
+			fetchType:   pbsmetrics.FetchDelta,
+		},
+		{
+			description: "Update stored AMP histogram with delta label",
+			dataType:    pbsmetrics.AMPDataType,
+			fetchType:   pbsmetrics.FetchDelta,
+		},
+		{
+			description: "Update stored category histogram with delta label",
+			dataType:    pbsmetrics.CategoryDataType,
+			fetchType:   pbsmetrics.FetchDelta,
+		},
+		{
+			description: "Update stored request histogram with delta label",
+			dataType:    pbsmetrics.RequestDataType,
+			fetchType:   pbsmetrics.FetchDelta,
+		},
+		{
+			description: "Update stored video histogram with delta label",
+			dataType:    pbsmetrics.VideoDataType,
+			fetchType:   pbsmetrics.FetchDelta,
+		},
+	}
+
+	for _, tt := range tests {
+		m := createMetricsForTesting()
+
+		fetchTime := time.Duration(0.5 * float64(time.Second))
+		m.RecordStoredDataFetchTime(pbsmetrics.StoredDataLabels{
+			DataType:      tt.dataType,
+			DataFetchType: tt.fetchType,
+		}, fetchTime)
+
+		var metricsTimer *prometheus.HistogramVec
+		switch tt.dataType {
+		case pbsmetrics.AccountDataType:
+			metricsTimer = m.storedAccountFetchTimer
+		case pbsmetrics.AMPDataType:
+			metricsTimer = m.storedAMPFetchTimer
+		case pbsmetrics.CategoryDataType:
+			metricsTimer = m.storedCategoryFetchTimer
+		case pbsmetrics.RequestDataType:
+			metricsTimer = m.storedRequestFetchTimer
+		case pbsmetrics.VideoDataType:
+			metricsTimer = m.storedVideoFetchTimer
+		}
+
+		result := getHistogramFromHistogramVec(
+			metricsTimer,
+			storedDataFetchTypeLabel,
+			string(tt.fetchType))
+		assertHistogram(t, tt.description, result, 1, 0.5)
+	}
+}
+
+func TestRecordStoredDataError(t *testing.T) {
+	tests := []struct {
+		description string
+		dataType    pbsmetrics.StoredDataType
+		errorType   pbsmetrics.StoredDataError
+		metricName  string
+	}{
+		{
+			description: "Update stored_account_errors counter with network label",
+			dataType:    pbsmetrics.AccountDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_account_errors",
+		},
+		{
+			description: "Update stored_amp_errors counter with network label",
+			dataType:    pbsmetrics.AMPDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_amp_errors",
+		},
+		{
+			description: "Update stored_category_errors counter with network label",
+			dataType:    pbsmetrics.CategoryDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_category_errors",
+		},
+		{
+			description: "Update stored_request_errors counter with network label",
+			dataType:    pbsmetrics.RequestDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_request_errors",
+		},
+		{
+			description: "Update stored_video_errors counter with network label",
+			dataType:    pbsmetrics.VideoDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_video_errors",
+		},
+		{
+			description: "Update stored_account_errors counter with undefined label",
+			dataType:    pbsmetrics.AccountDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_account_errors",
+		},
+		{
+			description: "Update stored_amp_errors counter with undefined label",
+			dataType:    pbsmetrics.AMPDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_amp_errors",
+		},
+		{
+			description: "Update stored_category_errors counter with undefined label",
+			dataType:    pbsmetrics.CategoryDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_category_errors",
+		},
+		{
+			description: "Update stored_request_errors counter with undefined label",
+			dataType:    pbsmetrics.RequestDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_request_errors",
+		},
+		{
+			description: "Update stored_video_errors counter with undefined label",
+			dataType:    pbsmetrics.VideoDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_video_errors",
+		},
+	}
+
+	for _, tt := range tests {
+		m := createMetricsForTesting()
+		m.RecordStoredDataError(pbsmetrics.StoredDataLabels{
+			DataType: tt.dataType,
+			Error:    tt.errorType,
+		})
+
+		var metricsCounter *prometheus.CounterVec
+		switch tt.dataType {
+		case pbsmetrics.AccountDataType:
+			metricsCounter = m.storedAccountErrors
+		case pbsmetrics.AMPDataType:
+			metricsCounter = m.storedAMPErrors
+		case pbsmetrics.CategoryDataType:
+			metricsCounter = m.storedCategoryErrors
+		case pbsmetrics.RequestDataType:
+			metricsCounter = m.storedRequestErrors
+		case pbsmetrics.VideoDataType:
+			metricsCounter = m.storedVideoErrors
+		}
+
+		assertCounterVecValue(t, tt.description, tt.metricName, metricsCounter,
+			1,
+			prometheus.Labels{
+				storedDataErrorLabel: string(tt.errorType),
+			})
+	}
+}
+
 func TestAdapterBidReceivedMetric(t *testing.T) {
 	adapterName := "anyName"
 	performTest := func(m *Metrics, hasAdm bool) {
@@ -1240,6 +1427,8 @@ func getHistogramFromHistogramVecByTwoKeys(histogram *prometheus.HistogramVec, l
 				valInd := ind
 				if ind == 1 {
 					valInd = 0
+				} else {
+					valInd = 1
 				}
 				if m.Label[valInd].GetName() == label2Key && m.Label[valInd].GetValue() == label2Value {
 					result = *m.GetHistogram()

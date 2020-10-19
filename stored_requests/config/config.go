@@ -65,7 +65,7 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine pbsmetrics.M
 		}
 	}
 
-	eventProducers := newEventProducers(cfg, client, dbc.db, router)
+	eventProducers := newEventProducers(cfg, client, dbc.db, metricsEngine, router)
 	fetcher = newFetcher(cfg, client, dbc.db)
 
 	var shutdown1 func()
@@ -190,7 +190,7 @@ func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 	return cache
 }
 
-func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, router *httprouter.Router) (eventProducers []events.EventProducer) {
+func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, metricsEngine pbsmetrics.MetricsEngine, router *httprouter.Router) (eventProducers []events.EventProducer) {
 	if cfg.CacheEvents.Enabled {
 		eventProducers = append(eventProducers, newEventsAPI(router, cfg.CacheEvents.Endpoint))
 	}
@@ -205,6 +205,7 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.
 			CacheInitTimeout:   time.Duration(cfg.Postgres.CacheInitialization.Timeout) * time.Millisecond,
 			CacheUpdateQuery:   cfg.Postgres.PollUpdates.Query,
 			CacheUpdateTimeout: time.Duration(cfg.Postgres.PollUpdates.Timeout) * time.Millisecond,
+			MetricsEngine:      metricsEngine,
 		}
 		pgEventProducer := postgresEvents.NewPostgresEventProducer(pgEventCfg)
 		fetchInterval := time.Duration(cfg.Postgres.PollUpdates.RefreshRate) * time.Second

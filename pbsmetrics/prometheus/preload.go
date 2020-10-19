@@ -7,17 +7,19 @@ import (
 
 func preloadLabelValues(m *Metrics) {
 	var (
-		actionValues          = actionsAsString()
-		adapterErrorValues    = adapterErrorsAsString()
-		adapterValues         = adaptersAsString()
-		bidTypeValues         = []string{markupDeliveryAdm, markupDeliveryNurl}
-		boolValues            = boolValuesAsString()
-		cacheResultValues     = cacheResultsAsString()
-		connectionErrorValues = []string{connectionAcceptError, connectionCloseError}
-		cookieValues          = cookieTypesAsString()
-		requestStatusValues   = requestStatusesAsString()
-		requestTypeValues     = requestTypesAsString()
-		sourceValues          = []string{sourceRequest}
+		actionValues              = actionsAsString()
+		adapterErrorValues        = adapterErrorsAsString()
+		adapterValues             = adaptersAsString()
+		bidTypeValues             = []string{markupDeliveryAdm, markupDeliveryNurl}
+		boolValues                = boolValuesAsString()
+		cacheResultValues         = cacheResultsAsString()
+		connectionErrorValues     = []string{connectionAcceptError, connectionCloseError}
+		cookieValues              = cookieTypesAsString()
+		requestStatusValues       = requestStatusesAsString()
+		requestTypeValues         = requestTypesAsString()
+		storedDataFetchTypeValues = storedDataFetchTypesAsString()
+		storedDataErrorValues     = storedDataErrorsAsString()
+		sourceValues              = []string{sourceRequest}
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
@@ -42,6 +44,46 @@ func preloadLabelValues(m *Metrics) {
 
 	preloadLabelValuesForHistogram(m.requestsTimer, map[string][]string{
 		requestTypeLabel: requestTypeValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedAccountFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedAMPFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedCategoryFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedRequestFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedVideoFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedAccountErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedAMPErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedCategoryErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedRequestErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedVideoErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
 	})
 
 	preloadLabelValuesForCounter(m.requestsWithoutCookie, map[string][]string{

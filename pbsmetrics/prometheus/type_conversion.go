@@ -77,6 +77,33 @@ func requestTypesAsString() []string {
 	return valuesAsString
 }
 
+func storedDataTypesAsString() []string {
+	values := pbsmetrics.StoredDataTypes()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
+
+func storedDataFetchTypesAsString() []string {
+	values := pbsmetrics.StoredDataFetchTypes()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
+
+func storedDataErrorsAsString() []string {
+	values := pbsmetrics.StoredDataErrors()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
+
 func tcfVersionsAsString() []string {
 	values := pbsmetrics.TCFVersions()
 	valuesAsString := make([]string, len(values))

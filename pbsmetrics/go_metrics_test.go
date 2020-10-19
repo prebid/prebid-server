@@ -345,6 +345,151 @@ func TestRecordPrebidCacheRequestTimeWithNotSuccess(t *testing.T) {
 	assert.Equal(t, m.PrebidCacheRequestTimerError.Count(), int64(1))
 }
 
+func TestRecordStoredDataFetchTime(t *testing.T) {
+	tests := []struct {
+		description string
+		dataType    StoredDataType
+		fetchType   StoredDataFetchType
+	}{
+		{
+			description: "Update stored_account_fetch_time.all timer",
+			dataType:    AccountDataType,
+			fetchType:   FetchAll,
+		},
+		{
+			description: "Update stored_amp_fetch_time.all timer",
+			dataType:    AMPDataType,
+			fetchType:   FetchAll,
+		},
+		{
+			description: "Update stored_category_fetch_time.all timer",
+			dataType:    CategoryDataType,
+			fetchType:   FetchAll,
+		},
+		{
+			description: "Update stored_request_fetch_time.all timer",
+			dataType:    RequestDataType,
+			fetchType:   FetchAll,
+		},
+		{
+			description: "Update stored_video_fetch_time.all timer",
+			dataType:    VideoDataType,
+			fetchType:   FetchAll,
+		},
+		{
+			description: "Update stored_account_fetch_time.delta timer",
+			dataType:    AccountDataType,
+			fetchType:   FetchDelta,
+		},
+		{
+			description: "Update stored_amp_fetch_time.delta timer",
+			dataType:    AMPDataType,
+			fetchType:   FetchDelta,
+		},
+		{
+			description: "Update stored_category_fetch_time.delta timer",
+			dataType:    CategoryDataType,
+			fetchType:   FetchDelta,
+		},
+		{
+			description: "Update stored_request_fetch_time.delta timer",
+			dataType:    RequestDataType,
+			fetchType:   FetchDelta,
+		},
+		{
+			description: "Update stored_video_fetch_time.delta timer",
+			dataType:    VideoDataType,
+			fetchType:   FetchDelta,
+		},
+	}
+
+	for _, tt := range tests {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+		m.RecordStoredDataFetchTime(StoredDataLabels{
+			DataType:      tt.dataType,
+			DataFetchType: tt.fetchType,
+		}, time.Duration(500))
+
+		actualCount := m.StoredDataFetchTimer[tt.dataType][tt.fetchType].Count()
+		assert.Equal(t, int64(1), actualCount, tt.description)
+
+		actualDuration := m.StoredDataFetchTimer[tt.dataType][tt.fetchType].Sum()
+		assert.Equal(t, int64(500), actualDuration, tt.description)
+	}
+}
+
+func TestRecordStoredDataError(t *testing.T) {
+	tests := []struct {
+		description string
+		dataType    StoredDataType
+		errorType   StoredDataError
+	}{
+		{
+			description: "Increment stored_account_error.network meter",
+			dataType:    AccountDataType,
+			errorType:   StoredDataErrorNetwork,
+		},
+		{
+			description: "Increment stored_amp_error.network meter",
+			dataType:    AMPDataType,
+			errorType:   StoredDataErrorNetwork,
+		},
+		{
+			description: "Increment stored_category_error.network meter",
+			dataType:    CategoryDataType,
+			errorType:   StoredDataErrorNetwork,
+		},
+		{
+			description: "Increment stored_request_error.network meter",
+			dataType:    RequestDataType,
+			errorType:   StoredDataErrorNetwork,
+		},
+		{
+			description: "Increment stored_video_error.network meter",
+			dataType:    VideoDataType,
+			errorType:   StoredDataErrorNetwork,
+		},
+		{
+			description: "Increment stored_account_error.undefined meter",
+			dataType:    AccountDataType,
+			errorType:   StoredDataErrorUndefined,
+		},
+		{
+			description: "Increment stored_amp_error.undefined meter",
+			dataType:    AMPDataType,
+			errorType:   StoredDataErrorUndefined,
+		},
+		{
+			description: "Increment stored_category_error.undefined meter",
+			dataType:    CategoryDataType,
+			errorType:   StoredDataErrorUndefined,
+		},
+		{
+			description: "Increment stored_request_error.undefined meter",
+			dataType:    RequestDataType,
+			errorType:   StoredDataErrorUndefined,
+		},
+		{
+			description: "Increment stored_video_error.undefined meter",
+			dataType:    VideoDataType,
+			errorType:   StoredDataErrorUndefined,
+		},
+	}
+
+	for _, tt := range tests {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+		m.RecordStoredDataError(StoredDataLabels{
+			DataType: tt.dataType,
+			Error:    tt.errorType,
+		})
+
+		actualCount := m.StoredDataErrorMeter[tt.dataType][tt.errorType].Count()
+		assert.Equal(t, int64(1), actualCount, tt.description)
+	}
+}
+
 func TestRecordRequestPrivacy(t *testing.T) {
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
