@@ -53,17 +53,17 @@ func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 	// When we build requests, we'll either want to add `?request-ids=...&imp-ids=...` _or_
 	// `&request-ids=...&imp-ids=...`.
 
+	if url, err := url.Parse(endpoint); err != nil {
+		glog.Warningf(`Invalid endpoint "%s": %v`, endpoint, err)
+	} else {
+		glog.Infof("Making http_fetcher for endpoint %v", url)
+	}
+
 	urlPrefix := endpoint
 	if strings.Contains(endpoint, "?") {
 		urlPrefix = urlPrefix + "&"
 	} else {
 		urlPrefix = urlPrefix + "?"
-	}
-
-	if url, err := url.Parse(endpoint); err != nil {
-		glog.Warningf(`Invalid endpoint "%s": %v`, endpoint, err)
-	} else {
-		glog.Infof("Making http_fetcher for endpoint %v", url)
 	}
 
 	return &HttpFetcher{
@@ -108,14 +108,14 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 //   "account1": { ... account json ... }
 // }
 // The JSON contents of account config is returned as-is (NOT validated)
-func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []string) (accountData map[string]json.RawMessage, errs []error) {
+func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []string) (map[string]json.RawMessage, []error) {
 	if len(accountIDs) == 0 {
 		return nil, nil
 	}
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", fetcher.Endpoint+"account-ids=[\""+strings.Join(accountIDs, "\",\"")+"\"]", nil)
 	if err != nil {
 		return nil, []error{
-			fmt.Errorf(`Error fetching accounts "%v" via http: %v`, accountIDs, err),
+			fmt.Errorf(`Error fetching accounts %v via http: build request failed with %v`, accountIDs, err),
 		}
 	}
 	httpResp, err := ctxhttp.Do(ctx, fetcher.client, httpReq)
@@ -128,7 +128,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 	respBytes, err := ioutil.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, []error{
-			fmt.Errorf(`Error fetching accounts %v via http: could not read response`, accountIDs),
+			fmt.Errorf(`Error fetching accounts %v via http: error reading response: %v`, accountIDs, err),
 		}
 	}
 	if httpResp.StatusCode != http.StatusOK {
@@ -139,10 +139,10 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 	var responseData accountsResponseContract
 	if err = json.Unmarshal(respBytes, &responseData); err != nil {
 		return nil, []error{
-			fmt.Errorf(`Error fetching accounts %v via http: malformed response`, accountIDs),
+			fmt.Errorf(`Error fetching accounts %v via http: failed to parse response: %v`, accountIDs, err),
 		}
 	}
-	errs = convertNullsToErrs(responseData.Accounts, "Account", errs)
+	errs := convertNullsToErrs(responseData.Accounts, "Account", nil)
 	return responseData.Accounts, errs
 }
 
@@ -159,7 +159,7 @@ func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountID string) 
 			DataType: "Account",
 		}}
 	}
-	return accountJSON, []error{}
+	return accountJSON, nil
 }
 
 func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {

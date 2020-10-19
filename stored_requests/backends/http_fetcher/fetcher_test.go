@@ -63,21 +63,32 @@ func TestReqsAndImps(t *testing.T) {
 	assertErrLength(t, errs, 0)
 }
 
+func TestMissingValues(t *testing.T) {
+	fetcher, close := newEmptyFetcher(t, []string{"req-1", "req-2"}, []string{"imp-1"})
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, []string{"imp-1"})
+	assertMapKeys(t, reqData)
+	assertMapKeys(t, impData)
+	assertErrLength(t, errs, 3)
+}
+
 func TestFetchAccounts(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
 	defer close()
 
 	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"acc-1", "acc-2"})
+	assert.Empty(t, errs)
 	assertMapKeys(t, accData, "acc-1", "acc-2")
-	assertErrLength(t, errs, 0)
 }
 
 func TestFetchAccountsNoData(t *testing.T) {
 	fetcher, close := newFetcherBrokenBackend()
 	defer close()
+
 	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"req-1"})
-	assertMapKeys(t, accData)
-	assertErrLength(t, errs, 1)
+	assert.Len(t, errs, 1)
+	assert.Nil(t, accData)
 }
 
 func TestFetchAccount(t *testing.T) {
@@ -86,7 +97,7 @@ func TestFetchAccount(t *testing.T) {
 
 	account, errs := fetcher.FetchAccount(context.Background(), "acc-1")
 	assert.Empty(t, errs, "Unexpected error fetching existing account")
-	assert.JSONEq(t, `"acc-1"`, string(account))
+	assert.JSONEq(t, `"acc-1"`, string(account), "Unexpected account data returned")
 }
 
 func TestFetchAccountNoData(t *testing.T) {
