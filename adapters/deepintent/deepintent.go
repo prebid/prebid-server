@@ -20,7 +20,7 @@ type DeepintentAdapter struct {
 }
 
 type deepintentParams struct {
-	TagID string `json:"TagID"`
+	TagID string `json:"tagId"`
 }
 
 // NewDeepintentBidder Initializes the Bidder
@@ -53,7 +53,7 @@ func (d *DeepintentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 			continue
 		}
 
-		reqCopy.Imp[0].TagID = deepintentExt.TagId
+		reqCopy.Imp[0].TagID = deepintentExt.TagID
 		reqCopy.Imp[0].DisplayManager = displayManager
 		reqCopy.Imp[0].DisplayManagerVer = displayManagerVer
 
