@@ -37,8 +37,7 @@ type AdopplerAdapter struct {
 }
 
 func NewAdopplerBidder(endpoint string) *AdopplerAdapter {
-	e := endpoint + "/processHeaderBid/{{.AdUnit}}"
-	t, err := template.New("endpoint").Parse(e)
+	t, err := template.New("endpoint").Parse(endpoint)
 	if err != nil {
 		glog.Fatalf("Unable to parse endpoint url template: %s", err)
 		return nil

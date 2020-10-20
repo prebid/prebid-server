@@ -7,6 +7,6 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder := NewAdopplerBidder("http://{{.AccountID}}.trustedmarketplace.com")
+	bidder := NewAdopplerBidder("http://{{.AccountID}}.trustedmarketplace.com/processHeaderBid/{{.AdUnit}}")
 	adapterstest.RunJSONBidderTest(t, "adopplertest", bidder)
 }
