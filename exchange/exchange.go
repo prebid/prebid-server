@@ -156,9 +156,9 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 		}
 
-		auc = newAuction(adapterBids, len(bidRequest.Imp))
-
 		if targData != nil {
+			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
+			auc = newAuction(adapterBids, len(bidRequest.Imp), targData.preferDeals)
 			auc.setRoundedPrices(targData.priceGranularity)
 
 			if requestExt.Prebid.SupportDeals {
