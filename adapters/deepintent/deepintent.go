@@ -57,7 +57,7 @@ func (d *DeepintentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		reqCopy.Imp[0].DisplayManager = displayManager
 		reqCopy.Imp[0].DisplayManagerVer = displayManagerVer
 
-		adapterReq, errors := d.preprocess(&reqCopy)
+		adapterReq, errors := d.preprocess(reqCopy)
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
@@ -105,7 +105,7 @@ func (d *DeepintentAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	return bidResponse, errs
 }
 
-func (d *DeepintentAdapter) preprocess(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (d *DeepintentAdapter) preprocess(request openrtb.BidRequest) (*adapters.RequestData, []error) {
 
 	var errs []error
 
