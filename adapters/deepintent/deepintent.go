@@ -11,6 +11,9 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+const displayManager string = "di_prebid"
+const displayManagerVer string = "2.0.0"
+
 // DeepintentAdapter struct
 type DeepintentAdapter struct {
 	URI string
@@ -51,8 +54,8 @@ func (d *DeepintentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 
 		reqCopy.Imp[0].TagID = deepintentExt.TagId
-		reqCopy.Imp[0].DisplayManager = "di_prebid"
-		reqCopy.Imp[0].DisplayManagerVer = "2.0.0"
+		reqCopy.Imp[0].DisplayManager = displayManager
+		reqCopy.Imp[0].DisplayManagerVer = displayManagerVer
 
 		adapterReq, errors := d.preprocess(&reqCopy)
 		if adapterReq != nil {
