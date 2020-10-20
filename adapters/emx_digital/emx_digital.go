@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mxmCherry/openrtb"
@@ -277,7 +278,7 @@ func (a *EmxDigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: getBidType(sb.Bid[i].ImpID, internalRequest.Imp),
+				BidType: getBidType(sb.Bid[i].AdM),
 			})
 		}
 	}
@@ -286,17 +287,22 @@ func (a *EmxDigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 }
 
-func getBidType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
-	bidType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Video != nil {
-				bidType = openrtb_ext.BidTypeVideo
-			}
-			break
+func getBidType(bidAdm string) openrtb_ext.BidType {
+	if bidAdm != "" && ContainsAny(bidAdm, []string{"<?xml", "<vast"}) {
+		return openrtb_ext.BidTypeVideo
+	}
+	return openrtb_ext.BidTypeBanner
+}
+
+func ContainsAny(raw string, keys []string) bool {
+	lowerCased := strings.ToLower(raw)
+	for i := 0; i < len(keys); i++ {
+		if strings.Contains(lowerCased, keys[i]) {
+			return true
 		}
 	}
-	return bidType
+	return false
+
 }
 
 func NewEmxDigitalBidder(endpoint string) *EmxDigitalAdapter {
