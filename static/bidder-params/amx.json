@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "AMX RTB Adapter Params",
+  "description": "A schema to validate params accepted by the AMX adapter",
+  "type": "object",
+  "properties": {
+    "publisher_id" : {
+      "type": "string",
+      "description": "Override the site.publisher.id value"
+    }
+  }
+}
