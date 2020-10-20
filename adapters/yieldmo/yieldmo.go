@@ -138,11 +138,11 @@ func NewYieldmoBidder(endpoint string) *YieldmoAdapter {
 }
 
 func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
-	//default to banner unless video exists in impression
+	//default to video unless banner exists in impression
 	for _, imp := range imps {
-		if imp.ID == impId && imp.Video != nil {
-			return openrtb_ext.BidTypeVideo
+		if imp.ID == impId && imp.Banner != nil {
+			return openrtb_ext.BidTypeBanner
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+	return openrtb_ext.BidTypeVideo
 }
