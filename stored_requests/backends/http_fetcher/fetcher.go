@@ -54,7 +54,7 @@ func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 	// `&request-ids=...&imp-ids=...`.
 
 	if url, err := url.Parse(endpoint); err != nil {
-		glog.Warningf(`Invalid endpoint "%s": %v`, endpoint, err)
+		glog.Errorf(`Invalid endpoint "%s": %v`, endpoint, err)
 	} else {
 		glog.Infof("Making http_fetcher for endpoint %v", url)
 	}
