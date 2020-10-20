@@ -16,6 +16,10 @@ type DeepintentAdapter struct {
 	URI string
 }
 
+type deepintentParams struct {
+	TagID string `json:"TagID"`
+}
+
 // NewDeepintentBidder Initializes the Bidder
 func NewDeepintentBidder(endpoint string) *DeepintentAdapter {
 	return &DeepintentAdapter{
@@ -23,30 +27,40 @@ func NewDeepintentBidder(endpoint string) *DeepintentAdapter {
 	}
 }
 
-func (d *DeepintentAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
-
+//MakeRequests which creates request object for Deepintent DSP
+func (d *DeepintentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
+	var deepintentExt openrtb_ext.ExtImpDeepintent
+	var err error
 
-	reqJSON, err := json.Marshal(request)
+	var adapterRequests []*adapters.RequestData
 
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+	reqCopy := *request
+	for _, imp := range request.Imp {
+		reqCopy.Imp = []openrtb.Imp{imp}
+
+		var bidderExt adapters.ExtImpBidder
+		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		if err = json.Unmarshal(bidderExt.Bidder, &deepintentExt); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		reqCopy.Imp[0].TagID = deepintentExt.TagId
+		reqCopy.Imp[0].DisplayManager = "di_prebid"
+		reqCopy.Imp[0].DisplayManagerVer = "2.0.0"
+
+		adapterReq, errors := d.preprocess(&reqCopy)
+		if adapterReq != nil {
+			adapterRequests = append(adapterRequests, adapterReq)
+		}
+		errs = append(errs, errors...)
 	}
-
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	return &adapters.RequestData{
-		Method:  "POST",
-		Uri:     d.URI,
-		Body:    reqJSON,
-		Headers: headers,
-	}, errs
-}
-
-type deepintentParams struct {
-	TagID string `json:"TagID"`
+	return adapterRequests, errs
 }
 
 // MakeBids makes the bids
@@ -88,6 +102,28 @@ func (d *DeepintentAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	return bidResponse, errs
 }
 
+func (d *DeepintentAdapter) preprocess(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+
+	var errs []error
+
+	reqJSON, err := json.Marshal(request)
+
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
+	}
+
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	return &adapters.RequestData{
+		Method:  "POST",
+		Uri:     d.URI,
+		Body:    reqJSON,
+		Headers: headers,
+	}, errs
+}
+
 func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
@@ -103,40 +139,4 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, 
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
 	}
-}
-
-//MakeRequests which creates request object for Deepintent DSP
-func (d *DeepintentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
-	var deepintentExt openrtb_ext.ExtImpDeepintent
-	var err error
-
-	var adapterRequests []*adapters.RequestData
-
-	reqCopy := *request
-	for _, imp := range request.Imp {
-		reqCopy.Imp = []openrtb.Imp{imp}
-
-		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		if err = json.Unmarshal(bidderExt.Bidder, &deepintentExt); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		reqCopy.Imp[0].TagID = deepintentExt.TagId
-		reqCopy.Imp[0].DisplayManager = "di_prebid"
-		reqCopy.Imp[0].DisplayManagerVer = "2.0.0"
-
-		adapterReq, errors := d.makeRequest(&reqCopy)
-		if adapterReq != nil {
-			adapterRequests = append(adapterRequests, adapterReq)
-		}
-		errs = append(errs, errors...)
-	}
-	return adapterRequests, errs
 }
