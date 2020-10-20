@@ -373,39 +373,29 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 		{
 			description: "None",
 			bidderInfos: map[string]adapters.BidderInfo{},
-			expected: map[string]string{
-				"indexExchange": `Bidder "indexExchange" has been deprecated and is no longer available. Please use bidder "ix" and note that the bidder params have changed.`,
-			},
+			expected:    map[string]string{},
 		},
 		{
 			description: "Active",
 			bidderInfos: map[string]adapters.BidderInfo{"appnexus": infoActive},
-			expected: map[string]string{
-				"indexExchange": `Bidder "indexExchange" has been deprecated and is no longer available. Please use bidder "ix" and note that the bidder params have changed.`,
-			},
+			expected:    map[string]string{},
 		},
 		{
 			description: "Disabled",
 			bidderInfos: map[string]adapters.BidderInfo{"appnexus": infoDisabled},
 			expected: map[string]string{
-				"indexExchange": `Bidder "indexExchange" has been deprecated and is no longer available. Please use bidder "ix" and note that the bidder params have changed.`,
-				"appnexus":      `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
+				"appnexus": `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
 			},
 		},
 		{
 			description: "Unknown",
 			bidderInfos: map[string]adapters.BidderInfo{"appnexus": infoUnknown},
-			expected: map[string]string{
-				"indexExchange": `Bidder "indexExchange" has been deprecated and is no longer available. Please use bidder "ix" and note that the bidder params have changed.`,
-			},
+			expected:    map[string]string{},
 		},
 		{
 			description: "Mixed",
 			bidderInfos: map[string]adapters.BidderInfo{"appnexus": infoDisabled, "openx": infoActive, "rubicon": infoUnknown},
-			expected: map[string]string{
-				"indexExchange": `Bidder "indexExchange" has been deprecated and is no longer available. Please use bidder "ix" and note that the bidder params have changed.`,
-				"appnexus":      `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
-			},
+			expected:    map[string]string{"appnexus": `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`},
 		},
 	}
 

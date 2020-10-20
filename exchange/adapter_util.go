@@ -145,8 +145,5 @@ func GetDisabledBiddersErrorMessages(infos adapters.BidderInfos) map[string]stri
 		}
 	}
 
-	// Hardcoded messages for adapter renames:
-	disabledBidders["indexExchange"] = `Bidder "indexExchange" has been deprecated and is no longer available. Please use bidder "ix" and note that the bidder params have changed.`
-
 	return disabledBidders
 }
