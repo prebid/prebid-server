@@ -18,9 +18,9 @@ func TestSingleReq(t *testing.T) {
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, nil)
+	assert.Empty(t, errs, "Unexpected errors fetching known requests")
 	assertMapKeys(t, reqData, "req-1")
-	assert.Empty(t, impData)
-	assert.Empty(t, errs)
+	assert.Empty(t, impData, "Unexpected imps returned fetching just requests")
 }
 
 func TestSeveralReqs(t *testing.T) {
@@ -28,9 +28,9 @@ func TestSeveralReqs(t *testing.T) {
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, nil)
+	assert.Empty(t, errs, "Unexpected errors fetching known requests")
 	assertMapKeys(t, reqData, "req-1", "req-2")
-	assert.Empty(t, impData)
-	assert.Empty(t, errs)
+	assert.Empty(t, impData, "Unexpected imps returned fetching just requests")
 }
 
 func TestSingleImp(t *testing.T) {
@@ -38,9 +38,9 @@ func TestSingleImp(t *testing.T) {
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1"})
-	assert.Empty(t, reqData)
+	assert.Empty(t, errs, "Unexpected errors fetching known imps")
+	assert.Empty(t, reqData, "Unexpected requests returned fetching just imps")
 	assertMapKeys(t, impData, "imp-1")
-	assert.Empty(t, errs)
 }
 
 func TestSeveralImps(t *testing.T) {
@@ -48,9 +48,9 @@ func TestSeveralImps(t *testing.T) {
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1", "imp-2"})
-	assert.Empty(t, reqData)
+	assert.Empty(t, errs, "Unexpected errors fetching known imps")
+	assert.Empty(t, reqData, "Unexpected requests returned fetching just imps")
 	assertMapKeys(t, impData, "imp-1", "imp-2")
-	assert.Empty(t, errs)
 }
 
 func TestReqsAndImps(t *testing.T) {
@@ -58,9 +58,9 @@ func TestReqsAndImps(t *testing.T) {
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"})
+	assert.Empty(t, errs, "Unexpected errors fetching known reqs and imps")
 	assertMapKeys(t, reqData, "req-1")
 	assertMapKeys(t, impData, "imp-1")
-	assert.Empty(t, errs)
 }
 
 func TestMissingValues(t *testing.T) {
@@ -68,9 +68,9 @@ func TestMissingValues(t *testing.T) {
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, []string{"imp-1"})
-	assert.Empty(t, reqData)
-	assert.Empty(t, impData)
-	assert.Len(t, errs, 3)
+	assert.Empty(t, reqData, "Fetching unknown reqs should return no reqs")
+	assert.Empty(t, impData, "Fetching unknown imps should return no imps")
+	assert.Len(t, errs, 3, "Fetching 3 unknown reqs+imps should return 3 errors")
 }
 
 func TestFetchAccounts(t *testing.T) {
@@ -78,7 +78,7 @@ func TestFetchAccounts(t *testing.T) {
 	defer close()
 
 	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"acc-1", "acc-2"})
-	assert.Empty(t, errs)
+	assert.Empty(t, errs, "Unexpected error fetching known accounts")
 	assertMapKeys(t, accData, "acc-1", "acc-2")
 }
 
@@ -87,8 +87,8 @@ func TestFetchAccountsNoData(t *testing.T) {
 	defer close()
 
 	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"req-1"})
-	assert.Len(t, errs, 1)
-	assert.Nil(t, accData)
+	assert.Len(t, errs, 1, "Fetching unknown account should have returned an error")
+	assert.Nil(t, accData, "Fetching unknown account should return nil account map")
 }
 
 func TestFetchAccountsBadJSON(t *testing.T) {
@@ -96,8 +96,8 @@ func TestFetchAccountsBadJSON(t *testing.T) {
 	defer close()
 
 	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"req-1"})
-	assert.Len(t, errs, 1)
-	assert.Nil(t, accData)
+	assert.Len(t, errs, 1, "Fetching account with broken json should have returned an error")
+	assert.Nil(t, accData, "Fetching account with broken json should return nil account map")
 }
 
 func TestFetchAccount(t *testing.T) {
@@ -106,7 +106,7 @@ func TestFetchAccount(t *testing.T) {
 
 	account, errs := fetcher.FetchAccount(context.Background(), "acc-1")
 	assert.Empty(t, errs, "Unexpected error fetching existing account")
-	assert.JSONEq(t, `"acc-1"`, string(account), "Unexpected account data returned")
+	assert.JSONEq(t, `"acc-1"`, string(account), "Unexpected account data fetching existing account")
 }
 
 func TestFetchAccountNoData(t *testing.T) {
@@ -115,7 +115,7 @@ func TestFetchAccountNoData(t *testing.T) {
 
 	unknownAccount, errs := fetcher.FetchAccount(context.Background(), "unknown-acc")
 	assert.NotEmpty(t, errs, "Retrieving unknown account should have returned an error")
-	assert.Nil(t, unknownAccount)
+	assert.Nil(t, unknownAccount, "Retrieving unknown account should return nil json.RawMessage")
 }
 
 func TestErrResponse(t *testing.T) {

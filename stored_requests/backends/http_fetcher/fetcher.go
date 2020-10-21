@@ -54,7 +54,7 @@ func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 	// `&request-ids=...&imp-ids=...`.
 
 	if url, err := url.Parse(endpoint); err != nil {
-		glog.Errorf(`Invalid endpoint "%s": %v`, endpoint, err)
+		glog.Fatalf(`Invalid endpoint "%s": %v`, endpoint, err)
 	} else {
 		glog.Infof("Making http_fetcher for endpoint %v", url)
 	}
@@ -142,7 +142,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 			fmt.Errorf(`Error fetching accounts %v via http: failed to parse response: %v`, accountIDs, err),
 		}
 	}
-	errs := convertNullsToErrs(responseData.Accounts, "Account", nil)
+	errs := convertNullsToErrs(responseData.Accounts, "Account", []error{})
 	return responseData.Accounts, errs
 }
 
