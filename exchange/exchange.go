@@ -626,10 +626,10 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 						continue
 					}
 				}
+				dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID}
 			}
 
 			res[bidID] = categoryDuration
-			dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID}
 		}
 
 		if len(bidsToRemove) > 0 {
