@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/stored_requests/caches/nil_cache"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -17,7 +18,7 @@ func setupFetcherWithCacheDeps() (*mockCache, *mockCache, *mockFetcher, AllFetch
 	impCache := &mockCache{}
 	metricsEngine := &pbsmetrics.MetricsEngineMock{}
 	fetcher := &mockFetcher{}
-	afetcherWithCache := WithCache(fetcher, Cache{reqCache, impCache}, metricsEngine)
+	afetcherWithCache := WithCache(fetcher, Cache{reqCache, impCache, &nil_cache.NilCache{}}, metricsEngine)
 
 	return reqCache, impCache, fetcher, afetcherWithCache, metricsEngine
 }
@@ -156,6 +157,57 @@ func TestCacheSaves(t *testing.T) {
 	assert.Len(t, impData, 1, "FetchRequests should return data only once for duplicate requests")
 	assert.JSONEq(t, `{}`, string(impData["abc"]), "FetchRequests should fetch the right imp data")
 	assert.Len(t, errs, 0, "FetchRequests with duplicate IDs shouldn't return an error")
+}
+
+func setupAccountFetcherWithCacheDeps() (*mockCache, *mockFetcher, AllFetcher, *pbsmetrics.MetricsEngineMock) {
+	accCache := &mockCache{}
+	metricsEngine := &pbsmetrics.MetricsEngineMock{}
+	fetcher := &mockFetcher{}
+	afetcherWithCache := WithCache(fetcher, Cache{&nil_cache.NilCache{}, &nil_cache.NilCache{}, accCache}, metricsEngine)
+
+	return accCache, fetcher, afetcherWithCache, metricsEngine
+}
+
+func TestAccountCacheHit(t *testing.T) {
+	accCache, fetcher, aFetcherWithCache, metricsEngine := setupAccountFetcherWithCacheDeps()
+	cachedAccounts := []string{"known"}
+	ctx := context.Background()
+
+	// Test read from cache
+	accCache.On("Get", ctx, cachedAccounts).Return(
+		map[string]json.RawMessage{
+			"known": json.RawMessage(`true`),
+		})
+
+	account, errs := aFetcherWithCache.FetchAccount(ctx, "known")
+
+	accCache.AssertExpectations(t)
+	fetcher.AssertExpectations(t)
+	metricsEngine.AssertExpectations(t)
+	assert.JSONEq(t, `true`, string(account), "FetchAccount should fetch the right account data")
+	assert.Len(t, errs, 0, "FetchAccount shouldn't return any errors")
+}
+
+func TestAccountCacheMiss(t *testing.T) {
+	accCache, fetcher, aFetcherWithCache, metricsEngine := setupAccountFetcherWithCacheDeps()
+	uncachedAccounts := []string{"uncached"}
+	uncachedAccountsData := map[string]json.RawMessage{
+		"uncached": json.RawMessage(`true`),
+	}
+	ctx := context.Background()
+
+	// Test read from cache
+	accCache.On("Get", ctx, uncachedAccounts).Return(map[string]json.RawMessage{})
+	accCache.On("Save", ctx, uncachedAccountsData)
+	fetcher.On("FetchAccount", ctx, "uncached").Return(uncachedAccountsData["uncached"], []error{})
+
+	account, errs := aFetcherWithCache.FetchAccount(ctx, "uncached")
+
+	accCache.AssertExpectations(t)
+	fetcher.AssertExpectations(t)
+	metricsEngine.AssertExpectations(t)
+	assert.JSONEq(t, `true`, string(account), "FetchAccount should fetch the right account data")
+	assert.Len(t, errs, 0, "FetchAccount shouldn't return any errors")
 }
 
 func TestComposedCache(t *testing.T) {

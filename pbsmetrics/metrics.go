@@ -51,6 +51,60 @@ type PrivacyLabels struct {
 	LMTEnforced    bool
 }
 
+type StoredDataType string
+
+const (
+	AccountDataType  StoredDataType = "account"
+	AMPDataType      StoredDataType = "amp"
+	CategoryDataType StoredDataType = "category"
+	RequestDataType  StoredDataType = "request"
+	VideoDataType    StoredDataType = "video"
+)
+
+func StoredDataTypes() []StoredDataType {
+	return []StoredDataType{
+		AccountDataType,
+		AMPDataType,
+		CategoryDataType,
+		RequestDataType,
+		VideoDataType,
+	}
+}
+
+type StoredDataFetchType string
+
+const (
+	FetchAll   StoredDataFetchType = "all"
+	FetchDelta StoredDataFetchType = "delta"
+)
+
+func StoredDataFetchTypes() []StoredDataFetchType {
+	return []StoredDataFetchType{
+		FetchAll,
+		FetchDelta,
+	}
+}
+
+type StoredDataLabels struct {
+	DataType      StoredDataType
+	DataFetchType StoredDataFetchType
+	Error         StoredDataError
+}
+
+type StoredDataError string
+
+const (
+	StoredDataErrorNetwork   StoredDataError = "network"
+	StoredDataErrorUndefined StoredDataError = "undefined"
+)
+
+func StoredDataErrors() []StoredDataError {
+	return []StoredDataError{
+		StoredDataErrorNetwork,
+		StoredDataErrorUndefined,
+	}
+}
+
 // Label typecasting. Se below the type definitions for possible values
 
 // DemandSource : Demand source enumeration
@@ -314,6 +368,8 @@ type MetricsEngine interface {
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
+	RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration)
+	RecordStoredDataError(labels StoredDataLabels)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(sucess bool)

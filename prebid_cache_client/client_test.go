@@ -174,8 +174,11 @@ func TestEncodeValueToBuffer(t *testing.T) {
 		Type:       TypeJSON,
 		Data:       json.RawMessage(`{}`),
 		TTLSeconds: 300,
+		BidID:      "bid",
+		Bidder:     "bdr",
+		Timestamp:  123456789,
 	}
-	expected := string(`{"type":"json","ttlseconds":300,"value":{}}`)
+	expected := string(`{"type":"json","ttlseconds":300,"value":{},"bidid":"bid","bidder":"bdr","timestamp":123456789}`)
 	_ = encodeValueToBuffer(testCache, false, buf)
 	actual := buf.String()
 	assertStringEqual(t, expected, actual)

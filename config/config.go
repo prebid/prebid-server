@@ -41,6 +41,8 @@ type Configuration struct {
 	StoredRequests    StoredRequests  `mapstructure:"stored_requests"`
 	StoredRequestsAMP StoredRequests  `mapstructure:"stored_amp_req"`
 	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
+	VTrack            VTrack          `mapstructure:"vtrack"`
+	Event             Event           `mapstructure:"event"`
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo StoredRequests `mapstructure:"stored_video_req"`
@@ -212,7 +214,7 @@ type GDPR struct {
 	UsersyncIfAmbiguous     bool         `mapstructure:"usersync_if_ambiguous"`
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
-	NonStandardPublisherMap map[string]int
+	NonStandardPublisherMap map[string]struct{}
 	TCF1                    TCF1 `mapstructure:"tcf1"`
 	TCF2                    TCF2 `mapstructure:"tcf2"`
 	AMPException            bool `mapstructure:"amp_exception"`
@@ -220,7 +222,8 @@ type GDPR struct {
 	// If the gdpr flag is unset in a request, but geo.country is set, we will assume GDPR applies if and only
 	// if the country matches one on this list. If both the GDPR flag and country are not set, we default
 	// to UsersyncIfAmbiguous
-	EEACountries []string `mapstructure:"eea_countries"`
+	EEACountries    []string `mapstructure:"eea_countries"`
+	EEACountriesMap map[string]struct{}
 }
 
 func (cfg *GDPR) validate(errs configErrors) configErrors {
@@ -312,6 +315,16 @@ type PubstackBuffer struct {
 	BufferSize string `mapstructure:"size"`
 	EventCount int    `mapstructure:"count"`
 	Timeout    string `mapstructure:"timeout"`
+}
+
+type VTrack struct {
+	TimeoutMS          int64 `mapstructure:"timeout_ms"`
+	AllowUnknownBidder bool  `mapstructure:"allow_unknown_bidder"`
+	Enabled            bool  `mapstructure:"enabled"`
+}
+
+type Event struct {
+	TimeoutMS int64 `mapstructure:"timeout_ms"`
 }
 
 type HostCookie struct {
@@ -608,9 +621,15 @@ func New(v *viper.Viper) (*Configuration, error) {
 
 	// To look for a request's publisher_id in the NonStandardPublishers list in
 	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
-	c.GDPR.NonStandardPublisherMap = make(map[string]int)
+	var s struct{}
+	c.GDPR.NonStandardPublisherMap = make(map[string]struct{})
 	for i := 0; i < len(c.GDPR.NonStandardPublishers); i++ {
-		c.GDPR.NonStandardPublisherMap[c.GDPR.NonStandardPublishers[i]] = 1
+		c.GDPR.NonStandardPublisherMap[c.GDPR.NonStandardPublishers[i]] = s
+	}
+
+	c.GDPR.EEACountriesMap = make(map[string]struct{})
+	for i := 0; i < len(c.GDPR.EEACountriesMap); i++ {
+		c.GDPR.NonStandardPublisherMap[c.GDPR.EEACountries[i]] = s
 	}
 
 	// To look for a request's app_id in O(1) time, we fill this hash table located in the
@@ -710,6 +729,7 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderGumGum, "https://rtb.gumgum.com/usync/prbds2s?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dgumgum%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderImprovedigital, "https://ad.360yield.com/server_match?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dimprovedigital%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7BPUB_USER_ID%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderIx, "https://ssum.casalemedia.com/usermatchredir?s=184932&cb="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dix%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderKrushmedia, "https://cs.krushmedia.com/4e4abdd5ecc661643458a730b1aa927d.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dkrushmedia%26uid%3D%5BUID%5D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderLifestreet, "https://ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dlifestreet%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%24visitor_cookie%24%24")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderLockerDome, "https://lockerdome.com/usync/prebidserver?pid="+cfg.Adapters["lockerdome"].PlatformID+"&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dlockerdome%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7B%7Buid%7D%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderLogicad, "https://cr-p31.ladsp.jp/cookiesender/31?r=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ru="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dlogicad%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
@@ -725,8 +745,9 @@ func (cfg *Configuration) setDerivedDefaults() {
 	// openrtb_ext.BidderRTBHouse doesn't have a good default.
 	// openrtb_ext.BidderRubicon doesn't have a good default.
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSharethrough, "https://match.sharethrough.com/FGMrCMMc/v1?redirectUri="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsharethrough%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
-	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSmartadserver, "https://ssbsync.smartadserver.com/api/sync?callerId=5&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirectUri="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsmartadserver%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5Bssb_sync_pid%5D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSmartadserver, "https://ssbsync-global.smartadserver.com/api/sync?callerId=5&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirectUri="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsmartadserver%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5Bssb_sync_pid%5D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSmartRTB, "https://market-global.smrtb.com/sync/all?nid=smartrtb&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&rr="+url.QueryEscape(externalURL)+"%252Fsetuid%253Fbidder%253Dsmartrtb%2526gdpr%253D{{.GDPR}}%2526gdpr_consent%253D{{.GDPRConsent}}%2526uid%253D%257BXID%257D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSmartyAds, "https://as.ck-ie.com/prebid.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsmartyads%26uid%3D%5BUID%5D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSomoaudience, "https://publisher-east.mobileadtrading.com/usersync?ru="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsomoaudience%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUID%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSonobi, "https://sync.go.sonobi.com/us.gif?loc="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsonobi%26consent_string%3D{{.GDPR}}%26gdpr%3D{{.GDPRConsent}}%26uid%3D%5BUID%5D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSovrn, "https://ap.lijit.com/pixel?redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsovrn%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
@@ -876,6 +897,12 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_video_req.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_video_req.http_events.timeout_ms", 0)
 
+	v.SetDefault("vtrack.timeout_ms", 2000)
+	v.SetDefault("vtrack.allow_unknown_bidder", true)
+	v.SetDefault("vtrack.enabled", true)
+
+	v.SetDefault("event.timeout_ms", 1000)
+
 	v.SetDefault("accounts.filesystem.enabled", false)
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("accounts.in_memory_cache.type", "none")
@@ -926,11 +953,12 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.eplanning.endpoint", "http://rtb.e-planning.net/pbs/1")
 	v.SetDefault("adapters.gamma.endpoint", "https://hb.gammaplatform.com/adx/request/")
 	v.SetDefault("adapters.gamoshi.endpoint", "https://rtb.gamoshi.io")
-	v.SetDefault("adapters.grid.endpoint", "http://grid.bidswitch.net/sp_bid?sp=prebid")
+	v.SetDefault("adapters.grid.endpoint", "https://grid.bidswitch.net/sp_bid?sp=prebid")
 	v.SetDefault("adapters.gumgum.endpoint", "https://g2.gumgum.com/providers/prbds2s/bid")
 	v.SetDefault("adapters.improvedigital.endpoint", "http://ad.360yield.com/pbs")
 	v.SetDefault("adapters.inmobi.endpoint", "https://api.w.inmobi.com/showad/openrtb/bidder/prebid")
 	v.SetDefault("adapters.ix.endpoint", "http://appnexus-us-east.lb.indexww.com/transbidder?p=184932")
+	v.SetDefault("adapters.krushmedia.endpoint", "http://ads4.krushmedia.com/?c=rtb&m=req&key={{.AccountID}}")
 	v.SetDefault("adapters.invibes.endpoint", "https://{{.Host}}/bid/ServerBidAdContent")
 	v.SetDefault("adapters.kidoz.endpoint", "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server")
 	v.SetDefault("adapters.kubient.endpoint", "https://kssp.kbntx.ch/prebid")
@@ -954,8 +982,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
 	v.SetDefault("adapters.sharethrough.endpoint", "http://btlr.sharethrough.com/FGMrCMMc/v1")
 	v.SetDefault("adapters.smaato.endpoint", "https://prebid.ad.smaato.net/oapi/prebid")
-	v.SetDefault("adapters.smartadserver.endpoint", "https://ssb.smartadserver.com")
+	v.SetDefault("adapters.smartadserver.endpoint", "https://ssb-global.smartadserver.com")
 	v.SetDefault("adapters.smartrtb.endpoint", "http://market-east.smrtb.com/json/publisher/rtb?pubid={{.PublisherID}}")
+	v.SetDefault("adapters.smartyads.endpoint", "http://{{.Host}}.smartyads.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}")
 	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
 	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
@@ -965,7 +994,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.triplelift_native.disabled", true)
 	v.SetDefault("adapters.triplelift_native.extra_info", "{\"publisher_whitelist\":[]}")
 	v.SetDefault("adapters.triplelift.endpoint", "https://tlx.3lift.com/s2s/auction?sra=1&supplier_id=20")
-	v.SetDefault("adapters.ucfunnel.endpoint", "http://apac-hk-adx.aralego.com/prebid")
+	v.SetDefault("adapters.ucfunnel.endpoint", "http://pbs.aralego.com/prebid")
 	v.SetDefault("adapters.unruly.endpoint", "http://targeting.unrulymedia.com/openrtb/2.2")
 	v.SetDefault("adapters.valueimpression.endpoint", "https://rtb.valueimpression.com/endpoint")
 	v.SetDefault("adapters.verizonmedia.disabled", true)
