@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -100,6 +101,37 @@ func TestFetchAccountsBadJSON(t *testing.T) {
 	assert.Nil(t, accData, "Fetching account with broken json should return nil account map")
 }
 
+func TestFetchAccountsNoIDsProvided(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
+	defer close()
+
+	accData, errs := fetcher.FetchAccounts(nil, []string{})
+	assert.Empty(t, errs, "Unexpected error fetching empty account list")
+	assert.Nil(t, accData, "Fetching empty account list should return nil")
+}
+
+// Force build request failure by not providing a context
+func TestFetchAccountsFailedBuildRequest(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
+	defer close()
+
+	accData, errs := fetcher.FetchAccounts(nil, []string{"acc-1"})
+	assert.Len(t, errs, 1, "Fetching accounts without context should result in error ")
+	assert.Nil(t, accData, "Fetching accounts without context should return nil")
+}
+
+// Force http error via request timeout
+func TestFetchAccountsContextTimeout(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
+	defer close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(0))
+	defer cancel()
+	accData, errs := fetcher.FetchAccounts(ctx, []string{"acc-1"})
+	assert.Len(t, errs, 1, "Expected context timeout error")
+	assert.Nil(t, accData, "Unexpected account data returned instead of timeout")
+}
+
 func TestFetchAccount(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"})
 	defer close()
@@ -114,8 +146,17 @@ func TestFetchAccountNoData(t *testing.T) {
 	defer close()
 
 	unknownAccount, errs := fetcher.FetchAccount(context.Background(), "unknown-acc")
-	assert.NotEmpty(t, errs, "Retrieving unknown account should have returned an error")
+	assert.NotEmpty(t, errs, "Retrieving unknown account should return error")
 	assert.Nil(t, unknownAccount, "Retrieving unknown account should return nil json.RawMessage")
+}
+
+func TestFetchAccountNoIDProvided(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, nil)
+	defer close()
+
+	account, errs := fetcher.FetchAccount(context.Background(), "")
+	assert.Len(t, errs, 1, "Fetching account with empty id should error")
+	assert.Nil(t, account, "Fetching account with empty id should return nil")
 }
 
 func TestErrResponse(t *testing.T) {

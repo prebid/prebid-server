@@ -53,11 +53,10 @@ func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 	// When we build requests, we'll either want to add `?request-ids=...&imp-ids=...` _or_
 	// `&request-ids=...&imp-ids=...`.
 
-	if url, err := url.Parse(endpoint); err != nil {
+	if _, err := url.Parse(endpoint); err != nil {
 		glog.Fatalf(`Invalid endpoint "%s": %v`, endpoint, err)
-	} else {
-		glog.Infof("Making http_fetcher for endpoint %v", url)
 	}
+	glog.Infof("Making http_fetcher for endpoint %v", endpoint)
 
 	urlPrefix := endpoint
 	if strings.Contains(endpoint, "?") {
