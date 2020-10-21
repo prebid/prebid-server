@@ -41,6 +41,15 @@ else
   test $GOFMT_LINES -eq 0 || die "gofmt needs to be run, ${GOFMT_LINES} files have issues.  Below is a list of files to review:\n`gofmt -s -l $GOGLOB`"
 fi
 
+# Run semgrep to find common Go issues patterns
+# via https://github.com/dgryski/semgrep-go/
+if ! [ -d semgrep-go  ]; then
+  mkdir -p semgrep-go
+  curl -Lo semgrep-go/master.zip "https://github.com/dgryski/semgrep-go/archive/master.zip" --silent
+  unzip semgrep-go/master.zip -d semgrep-go/
+fi
+semgrep --config semgrep-go/semgrep-go-master .
+
 # Run the actual tests. Make sure there's enough coverage too, if the flags call for it.
 if $COVERAGE; then
   ./scripts/check_coverage.sh

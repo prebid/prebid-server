@@ -22,6 +22,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
     - name: Validate
+      uses: returntocorp/semgrep-action@v1
       run: |
         ./validate.sh --nofmt --cov --race 10
       env:
