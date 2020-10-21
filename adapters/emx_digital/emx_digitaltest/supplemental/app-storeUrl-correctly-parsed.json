@@ -19,9 +19,8 @@
           }
         }
       ],
-      "site": {
-        "domain": "www.publisher.com",
-        "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+      "app": {
+        "storeurl": "http://www.publisher.com/awesome/site?with=some&parameters=here"
       }
     },
 
@@ -49,9 +48,8 @@
                 "tagid": "123456",
                 "secure": 0
             }],
-            "site": {
-                "domain": "www.publisher.com",
-                "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+            "app": {
+                "storeurl": "http://www.publisher.com/awesome/site?with=some&parameters=here"
             }
           }
         },

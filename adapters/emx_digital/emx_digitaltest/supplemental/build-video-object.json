@@ -3,22 +3,20 @@
         "id": "some_test_auction",
         "imp": [{
             "id": "some_test_ad",
-            "banner": {
-             "format": [
-                {
-                  "w": 728,
-                  "h": 90
-                },
-                {
-                    "w": 300,
-                    "h": 600
-                },
-                {
-                    "w": 160,
-                    "h": 600
-                }
-              ]
-            },
+            "video":{
+                "mimes": [
+                  "video/mp4",
+                  "application/javascript"
+                ],
+                "protocols":[
+                   2,
+                   3,
+                   5,
+                   6
+                ],
+                "w":640,
+                "h":480
+             },
             "ext": {
                 "bidder": {
                     "tagid": "1234568",
@@ -33,17 +31,20 @@
             "body": {
                 "id": "some_test_auction",
                 "imp": [{
-                    "banner": {
-                        "format": [{
-                            "w": 300,
-                            "h": 600
-                        }, {
-                            "w": 160,
-                            "h": 600
-                        }],
-                        "w": 728,
-                        "h": 90
-                    },
+                    "video":{
+                        "mimes": [
+                          "video/mp4",
+                          "application/javascript"
+                        ],
+                        "protocols":[
+                           2,
+                           3,
+                           5,
+                           6
+                        ],
+                        "w":640,
+                        "h":480
+                     },
                     "id": "some_test_ad",
                     "secure": 0,
                     "tagid": "1234568",
