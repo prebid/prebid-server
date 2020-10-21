@@ -41,6 +41,16 @@ type RequestLabels struct {
 	RequestStatus RequestStatus
 }
 
+// PrivacyLabels defines metrics describing the result of privacy enforcement.
+type PrivacyLabels struct {
+	CCPAEnforced   bool
+	CCPAProvided   bool
+	COPPAEnforced  bool
+	GDPREnforced   bool
+	GDPRTCFVersion TCFVersionValue
+	LMTEnforced    bool
+}
+
 // Label typecasting. Se below the type definitions for possible values
 
 // DemandSource : Demand source enumeration
@@ -154,11 +164,12 @@ func CookieTypes() []CookieFlag {
 
 // Request/return status
 const (
-	RequestStatusOK          RequestStatus = "ok"
-	RequestStatusBadInput    RequestStatus = "badinput"
-	RequestStatusErr         RequestStatus = "err"
-	RequestStatusNetworkErr  RequestStatus = "networkerr"
-	RequestStatusBlacklisted RequestStatus = "blacklistedacctorapp"
+	RequestStatusOK           RequestStatus = "ok"
+	RequestStatusBadInput     RequestStatus = "badinput"
+	RequestStatusErr          RequestStatus = "err"
+	RequestStatusNetworkErr   RequestStatus = "networkerr"
+	RequestStatusBlacklisted  RequestStatus = "blacklistedacctorapp"
+	RequestStatusQueueTimeout RequestStatus = "queuetimeout"
 )
 
 func RequestStatuses() []RequestStatus {
@@ -168,6 +179,7 @@ func RequestStatuses() []RequestStatus {
 		RequestStatusErr,
 		RequestStatusNetworkErr,
 		RequestStatusBlacklisted,
+		RequestStatusQueueTimeout,
 	}
 }
 
@@ -246,6 +258,35 @@ func RequestActions() []RequestAction {
 	}
 }
 
+// TCFVersionValue : The possible values for TCF versions
+type TCFVersionValue string
+
+const (
+	TCFVersionErr TCFVersionValue = "err"
+	TCFVersionV1  TCFVersionValue = "v1"
+	TCFVersionV2  TCFVersionValue = "v2"
+)
+
+// TCFVersions returns the possible values for the TCF version
+func TCFVersions() []TCFVersionValue {
+	return []TCFVersionValue{
+		TCFVersionErr,
+		TCFVersionV1,
+		TCFVersionV2,
+	}
+}
+
+// TCFVersionToValue takes an integer TCF version and returns the corresponding TCFVersionValue
+func TCFVersionToValue(version int) TCFVersionValue {
+	switch {
+	case version == 1:
+		return TCFVersionV1
+	case version == 2:
+		return TCFVersionV2
+	}
+	return TCFVersionErr
+}
+
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
 // The first three metrics function fire off once per incoming request, so total metrics
 // will equal the total number of incoming requests. The remaining 5 fire off per outgoing
@@ -260,6 +301,8 @@ type MetricsEngine interface {
 	RecordLegacyImps(labels Labels, numImps int)           // RecordImps for the legacy engine
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
+	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration)
+	RecordDNSTime(dnsLookupTime time.Duration)
 	RecordAdapterPanic(labels AdapterLabels)
 	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
 	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
@@ -272,4 +315,7 @@ type MetricsEngine interface {
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
+	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
+	RecordTimeoutNotice(sucess bool)
+	RecordRequestPrivacy(privacy PrivacyLabels)
 }

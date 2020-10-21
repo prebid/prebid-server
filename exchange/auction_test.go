@@ -3,8 +3,10 @@ package exchange
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -38,6 +40,61 @@ func TestMakeVASTNurl(t *testing.T) {
 	}
 	vast := makeVAST(bid)
 	assert.Equal(t, expect, vast)
+}
+
+func TestBuildCacheString(t *testing.T) {
+	testCases := []struct {
+		description      string
+		debugLog         DebugLog
+		expectedDebugLog DebugLog
+	}{
+		{
+			description: "DebugLog strings should have tags and be formatted",
+			debugLog: DebugLog{
+				Data: DebugData{
+					Request:  "test request string",
+					Headers:  "test headers string",
+					Response: "test response string",
+				},
+				Regexp: regexp.MustCompile(`[<>]`),
+			},
+			expectedDebugLog: DebugLog{
+				Data: DebugData{
+					Request:  "<Request>test request string</Request>",
+					Headers:  "<Headers>test headers string</Headers>",
+					Response: "<Response>test response string</Response>",
+				},
+				Regexp: regexp.MustCompile(`[<>]`),
+			},
+		},
+		{
+			description: "DebugLog strings should have no < or > characters",
+			debugLog: DebugLog{
+				Data: DebugData{
+					Request:  "<test>test request string</test>",
+					Headers:  "test <headers string",
+					Response: "test <response> string",
+				},
+				Regexp: regexp.MustCompile(`[<>]`),
+			},
+			expectedDebugLog: DebugLog{
+				Data: DebugData{
+					Request:  "<Request>testtest request string/test</Request>",
+					Headers:  "<Headers>test headers string</Headers>",
+					Response: "<Response>test response string</Response>",
+				},
+				Regexp: regexp.MustCompile(`[<>]`),
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		test.expectedDebugLog.CacheString = fmt.Sprintf("%s<Log>%s%s%s</Log>", xml.Header, test.expectedDebugLog.Data.Request, test.expectedDebugLog.Data.Headers, test.expectedDebugLog.Data.Response)
+
+		test.debugLog.BuildCacheString()
+
+		assert.Equal(t, test.expectedDebugLog, test.debugLog, test.description)
+	}
 }
 
 // TestCacheJSON executes tests for all the *.json files in cachetest.
@@ -241,22 +298,27 @@ type pbsBid struct {
 	Bidder  openrtb_ext.BidderName `json:"bidder"`
 }
 
-type mockCache struct {
-	items []prebid_cache_client.Cacheable
-}
-
 type cacheComparator struct {
 	freq         int
 	expectedKeys []string
 	actualKeys   []string
 }
 
-func (c *mockCache) GetExtCacheData() (string, string) {
-	return "", ""
+type mockCache struct {
+	scheme string
+	host   string
+	path   string
+	items  []prebid_cache_client.Cacheable
 }
+
+func (c *mockCache) GetExtCacheData() (scheme string, host string, path string) {
+	return c.scheme, c.host, c.path
+}
+
 func (c *mockCache) GetPutUrl() string {
 	return ""
 }
+
 func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
 	c.items = values
 	return []string{"", "", "", "", ""}, nil

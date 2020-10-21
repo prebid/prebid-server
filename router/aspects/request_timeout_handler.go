@@ -3,11 +3,13 @@ package aspects
 import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"net/http"
 	"strconv"
+	"time"
 )
 
-func QueuedRequestTimeout(f httprouter.Handle, reqTimeoutHeaders config.RequestTimeoutHeaders) httprouter.Handle {
+func QueuedRequestTimeout(f httprouter.Handle, reqTimeoutHeaders config.RequestTimeoutHeaders, metricsEngine pbsmetrics.MetricsEngine, requestType pbsmetrics.RequestType) httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 
@@ -30,13 +32,17 @@ func QueuedRequestTimeout(f httprouter.Handle, reqTimeoutHeaders config.RequestT
 			return
 		}
 
+		reqTimeDuration := time.Duration(reqTimeFloat * float64(time.Second))
+
 		//Return HTTP 408 if requests stays too long in queue
 		if reqTimeFloat >= reqTimeoutFloat {
 			w.WriteHeader(http.StatusRequestTimeout)
 			w.Write([]byte("Queued request processing time exceeded maximum"))
+			metricsEngine.RecordRequestQueueTime(false, requestType, reqTimeDuration)
 			return
 		}
 
+		metricsEngine.RecordRequestQueueTime(true, requestType, reqTimeDuration)
 		f(w, r, params)
 	}
 

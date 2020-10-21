@@ -1,0 +1,19 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+    ],
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No impressions in request",
+      "comparison": "literal"
+    }
+  ]
+}

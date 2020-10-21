@@ -22,7 +22,8 @@ type openxImpExt struct {
 }
 
 type openxReqExt struct {
-	DelDomain    string `json:"delDomain"`
+	DelDomain    string `json:"delDomain,omitempty"`
+	Platform     string `json:"platform,omitempty"`
 	BidderConfig string `json:"bc"`
 }
 
@@ -125,6 +126,7 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 	}
 
 	reqExt.DelDomain = openxExt.DelDomain
+	reqExt.Platform = openxExt.Platform
 
 	imp.TagID = openxExt.Unit
 	imp.BidFloor = openxExt.CustomFloor
@@ -140,6 +142,16 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 				Message: err.Error(),
 			}
 		}
+	}
+
+	if imp.Video != nil {
+		videoCopy := *imp.Video
+		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
+			videoCopy.Ext = json.RawMessage(`{"rewarded":1}`)
+		} else {
+			videoCopy.Ext = nil
+		}
+		imp.Video = &videoCopy
 	}
 
 	return nil

@@ -37,7 +37,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	}
 	if cfg.Metrics.Prometheus.Port != 0 {
 		// Set up the Prometheus metrics.
-		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus)
+		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus, cfg.Metrics.Disabled)
 		engineList = append(engineList, returnEngine.PrometheusMetrics)
 	}
 
@@ -118,6 +118,21 @@ func (me *MultiMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabe
 	}
 }
 
+// Keeps track of created and reused connections to adapter bidders and the time from the
+// connection request, to the connection creation, or reuse from the pool across all engines
+func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterConnections(bidderName, connWasReused, connWaitTime)
+	}
+}
+
+// Times the DNS resolution process
+func (me *MultiMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordDNSTime(dnsLookupTime)
+	}
+}
+
 // RecordAdapterBidReceived across all engines
 func (me *MultiMetricsEngine) RecordAdapterBidReceived(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	for _, thisME := range *me {
@@ -181,6 +196,27 @@ func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(success bool, length 
 	}
 }
 
+// RecordRequestQueueTime across all engines
+func (me *MultiMetricsEngine) RecordRequestQueueTime(success bool, requestType pbsmetrics.RequestType, length time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordRequestQueueTime(success, requestType, length)
+	}
+}
+
+// RecordTimeoutNotice across all engines
+func (me *MultiMetricsEngine) RecordTimeoutNotice(success bool) {
+	for _, thisME := range *me {
+		thisME.RecordTimeoutNotice(success)
+	}
+}
+
+// RecordRequestPrivacy across all engines
+func (me *MultiMetricsEngine) RecordRequestPrivacy(privacy pbsmetrics.PrivacyLabels) {
+	for _, thisME := range *me {
+		thisME.RecordRequestPrivacy(privacy)
+	}
+}
+
 // DummyMetricsEngine is a Noop metrics engine in case no metrics are configured. (may also be useful for tests)
 type DummyMetricsEngine struct{}
 
@@ -214,6 +250,14 @@ func (me *DummyMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels
 
 // RecordAdapterRequest as a noop
 func (me *DummyMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
+}
+
+// RecordAdapterConnections as a noop
+func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+}
+
+// RecordDNSTime as a noop
+func (me *DummyMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 }
 
 // RecordAdapterBidReceived as a noop
@@ -250,4 +294,16 @@ func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.
 
 // RecordPrebidCacheRequestTime as a noop
 func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
+}
+
+// RecordRequestQueueTime as a noop
+func (me *DummyMetricsEngine) RecordRequestQueueTime(success bool, requestType pbsmetrics.RequestType, length time.Duration) {
+}
+
+// RecordTimeoutNotice as a noop
+func (me *DummyMetricsEngine) RecordTimeoutNotice(success bool) {
+}
+
+// RecordRequestPrivacy as a noop
+func (me *DummyMetricsEngine) RecordRequestPrivacy(privacy pbsmetrics.PrivacyLabels) {
 }

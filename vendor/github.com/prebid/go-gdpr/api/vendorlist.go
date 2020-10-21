@@ -22,10 +22,16 @@ type VendorList interface {
 type Vendor interface {
 	// Purpose returns true if this vendor claims to use data for the given purpose, or false otherwise
 	Purpose(purposeID consentconstants.Purpose) bool
+	// PurposeStrict checks only for the primary purpose, not considering flex purposes.
+	PurposeStrict(purposeID consentconstants.Purpose) bool
 
-	// LegitimateInterest retursn true if this vendor claims a "Legitimate Interest" to
+	// LegitimateInterest returns true if this vendor claims a "Legitimate Interest" to
 	// use data for the given purpose.
 	//
 	// For an explanation of legitimate interest, see https://www.gdpreu.org/the-regulation/key-concepts/legitimate-interest/
 	LegitimateInterest(purposeID consentconstants.Purpose) bool
+	// LegitimateInterestStrict checks only for the primary legitimate, not considering flex purposes.
+	LegitimateInterestStrict(purposeID consentconstants.Purpose) (hasLegitimateInterest bool)
+	// SpecialPurpose returns true if this vendor claims a need for the given special purpose
+	SpecialPurpose(purposeID consentconstants.Purpose) (hasSpecialPurpose bool)
 }

@@ -47,12 +47,27 @@ func (l lazyVendor) Purpose(purposeID consentconstants.Purpose) bool {
 	return idExists(l, int(purposeID), "flexiblePurposes")
 }
 
+// PurposeStrict checks only for the primary purpose, no considering flex purposes.
+func (l lazyVendor) PurposeStrict(purposeID consentconstants.Purpose) bool {
+	return idExists(l, int(purposeID), "purposes")
+}
+
 func (l lazyVendor) LegitimateInterest(purposeID consentconstants.Purpose) bool {
 	exists := idExists(l, int(purposeID), "legIntPurposes")
 	if exists {
 		return true
 	}
 	return idExists(l, int(purposeID), "flexiblePurposes")
+}
+
+// LegitimateInterestStrict checks only for the primary legitimate, no considering flex purposes.
+func (l lazyVendor) LegitimateInterestStrict(purposeID consentconstants.Purpose) (hasLegitimateInterest bool) {
+	return idExists(l, int(purposeID), "legIntPurposes")
+}
+
+// SpecialPurpose returns true if this vendor claims a need for the given special purpose
+func (l lazyVendor) SpecialPurpose(purposeID consentconstants.Purpose) (hasSpecialPurpose bool) {
+	return idExists(l, int(purposeID), "specialPurposes")
 }
 
 // Returns false unless "id" exists in an array located at "data.key".

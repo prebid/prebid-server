@@ -1,6 +1,7 @@
 package prometheusmetrics
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -17,7 +18,7 @@ func createMetricsForTesting() *Metrics {
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "server",
-	})
+	}, config.DisabledMetrics{})
 }
 
 func TestMetricCountGatekeeping(t *testing.T) {
@@ -61,7 +62,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Verify Per-Adapter Cardinality
 	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
 	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
-	assert.True(t, perAdapterCardinalityCount <= 22, "Per-Adapter Cardinality")
+	assert.True(t, perAdapterCardinalityCount <= 27, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
 }
 
 func TestConnectionMetrics(t *testing.T) {
@@ -881,6 +882,331 @@ func TestMetricAccumulationSpotCheck(t *testing.T) {
 		expectedValue)
 }
 
+func TestRecordRequestQueueTimeMetric(t *testing.T) {
+	performTest := func(m *Metrics, requestStatus bool, requestType pbsmetrics.RequestType, timeInSec float64) {
+		m.RecordRequestQueueTime(requestStatus, requestType, time.Duration(timeInSec*float64(time.Second)))
+	}
+
+	testCases := []struct {
+		description   string
+		status        string
+		testCase      func(m *Metrics)
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description: "Success",
+			status:      requestSuccessLabel,
+			testCase: func(m *Metrics) {
+				performTest(m, true, pbsmetrics.ReqTypeVideo, 2)
+			},
+			expectedCount: 1,
+			expectedSum:   2,
+		},
+		{
+			description: "TimeoutError",
+			status:      requestRejectLabel,
+			testCase: func(m *Metrics) {
+				performTest(m, false, pbsmetrics.ReqTypeVideo, 50)
+			},
+			expectedCount: 1,
+			expectedSum:   50,
+		},
+	}
+
+	m := createMetricsForTesting()
+	for _, test := range testCases {
+
+		test.testCase(m)
+
+		result := getHistogramFromHistogramVecByTwoKeys(m.requestsQueueTimer, requestTypeLabel, "video", requestStatusLabel, test.status)
+		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
+	}
+}
+
+func TestTimeoutNotifications(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordTimeoutNotice(true)
+	m.RecordTimeoutNotice(true)
+	m.RecordTimeoutNotice(false)
+
+	assertCounterVecValue(t, "", "timeout_notifications:ok", m.timeoutNotifications,
+		float64(2),
+		prometheus.Labels{
+			successLabel: requestSuccessful,
+		})
+
+	assertCounterVecValue(t, "", "timeout_notifications:fail", m.timeoutNotifications,
+		float64(1),
+		prometheus.Labels{
+			successLabel: requestFailed,
+		})
+
+}
+
+func TestRecordDNSTime(t *testing.T) {
+	type testIn struct {
+		dnsLookupDuration time.Duration
+	}
+	type testOut struct {
+		expDuration float64
+		expCount    uint64
+	}
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "Five second DNS lookup time",
+			in: testIn{
+				dnsLookupDuration: time.Second * 5,
+			},
+			out: testOut{
+				expDuration: 5,
+				expCount:    1,
+			},
+		},
+		{
+			description: "Zero DNS lookup time",
+			in:          testIn{},
+			out: testOut{
+				expDuration: 0,
+				expCount:    1,
+			},
+		},
+	}
+	for i, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordDNSTime(test.in.dnsLookupDuration)
+
+		m := dto.Metric{}
+		pm.dnsLookupTimer.Write(&m)
+		histogram := *m.GetHistogram()
+
+		assert.Equal(t, test.out.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
+		assert.Equal(t, test.out.expDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+	}
+}
+
+func TestRecordAdapterConnections(t *testing.T) {
+
+	type testIn struct {
+		adapterName   openrtb_ext.BidderName
+		connWasReused bool
+		connWait      time.Duration
+	}
+
+	type testOut struct {
+		expectedConnReusedCount  int64
+		expectedConnCreatedCount int64
+		expectedConnWaitCount    uint64
+		expectedConnWaitTime     float64
+	}
+
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "[1] Successful, new connection created, was idle, has connection wait",
+			in: testIn{
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: false,
+				connWait:      time.Second * 5,
+			},
+			out: testOut{
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 1,
+				expectedConnWaitCount:    1,
+				expectedConnWaitTime:     5,
+			},
+		},
+		{
+			description: "[2] Successful, new connection created, not idle, has connection wait",
+			in: testIn{
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: false,
+				connWait:      time.Second * 4,
+			},
+			out: testOut{
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 1,
+				expectedConnWaitCount:    1,
+				expectedConnWaitTime:     4,
+			},
+		},
+		{
+			description: "[3] Successful, was reused, was idle, no connection wait",
+			in: testIn{
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: true,
+			},
+			out: testOut{
+				expectedConnReusedCount:  1,
+				expectedConnCreatedCount: 0,
+				expectedConnWaitCount:    1,
+				expectedConnWaitTime:     0,
+			},
+		},
+		{
+			description: "[4] Successful, was reused, not idle, has connection wait",
+			in: testIn{
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: true,
+				connWait:      time.Second * 5,
+			},
+			out: testOut{
+				expectedConnReusedCount:  1,
+				expectedConnCreatedCount: 0,
+				expectedConnWaitCount:    1,
+				expectedConnWaitTime:     5,
+			},
+		},
+	}
+
+	for i, test := range testCases {
+		m := createMetricsForTesting()
+		assertDesciptions := []string{
+			fmt.Sprintf("[%d] Metric: adapterReusedConnections; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterCreatedConnections; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterWaitConnectionCount; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterWaitConnectionTime; Desc: %s", i+1, test.description),
+		}
+
+		m.RecordAdapterConnections(test.in.adapterName, test.in.connWasReused, test.in.connWait)
+
+		// Assert number of reused connections
+		assertCounterVecValue(t,
+			assertDesciptions[0],
+			"adapter_connection_reused",
+			m.adapterReusedConnections,
+			float64(test.out.expectedConnReusedCount),
+			prometheus.Labels{adapterLabel: string(test.in.adapterName)})
+
+		// Assert number of new created connections
+		assertCounterVecValue(t,
+			assertDesciptions[1],
+			"adapter_connection_created",
+			m.adapterCreatedConnections,
+			float64(test.out.expectedConnCreatedCount),
+			prometheus.Labels{adapterLabel: string(test.in.adapterName)})
+
+		// Assert connection wait time
+		histogram := getHistogramFromHistogramVec(m.adapterConnectionWaitTime, adapterLabel, string(test.in.adapterName))
+		assert.Equal(t, test.out.expectedConnWaitCount, histogram.GetSampleCount(), assertDesciptions[2])
+		assert.Equal(t, test.out.expectedConnWaitTime, histogram.GetSampleSum(), assertDesciptions[3])
+	}
+}
+
+func TestDisableAdapterConnections(t *testing.T) {
+	prometheusMetrics := NewMetrics(config.PrometheusMetrics{
+		Port:      8080,
+		Namespace: "prebid",
+		Subsystem: "server",
+	}, config.DisabledMetrics{AdapterConnectionMetrics: true})
+
+	// Assert counter vector was not initialized
+	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
+	assert.Nil(t, prometheusMetrics.adapterCreatedConnections, "Counter Vector adapterCreatedConnections should be nil")
+	assert.Nil(t, prometheusMetrics.adapterConnectionWaitTime, "Counter Vector adapterConnectionWaitTime should be nil")
+}
+
+func TestRecordRequestPrivacy(t *testing.T) {
+	m := createMetricsForTesting()
+
+	// CCPA
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		CCPAEnforced: true,
+		CCPAProvided: true,
+	})
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		CCPAEnforced: true,
+		CCPAProvided: false,
+	})
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		CCPAEnforced: false,
+		CCPAProvided: true,
+	})
+
+	// COPPA
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		COPPAEnforced: true,
+	})
+
+	// LMT
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		LMTEnforced: true,
+	})
+
+	// GDPR
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: pbsmetrics.TCFVersionErr,
+	})
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: pbsmetrics.TCFVersionV1,
+	})
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: pbsmetrics.TCFVersionV2,
+	})
+	m.RecordRequestPrivacy(pbsmetrics.PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: pbsmetrics.TCFVersionV1,
+	})
+
+	assertCounterVecValue(t, "", "privacy_ccpa", m.privacyCCPA,
+		float64(1),
+		prometheus.Labels{
+			sourceLabel: sourceRequest,
+			optOutLabel: "true",
+		})
+
+	assertCounterVecValue(t, "", "privacy_ccpa", m.privacyCCPA,
+		float64(1),
+		prometheus.Labels{
+			sourceLabel: sourceRequest,
+			optOutLabel: "false",
+		})
+
+	assertCounterVecValue(t, "", "privacy_coppa", m.privacyCOPPA,
+		float64(1),
+		prometheus.Labels{
+			sourceLabel: sourceRequest,
+		})
+
+	assertCounterVecValue(t, "", "privacy_lmt", m.privacyLMT,
+		float64(1),
+		prometheus.Labels{
+			sourceLabel: sourceRequest,
+		})
+
+	assertCounterVecValue(t, "", "privacy_tcf:err", m.privacyTCF,
+		float64(1),
+		prometheus.Labels{
+			sourceLabel:  sourceRequest,
+			versionLabel: "err",
+		})
+
+	assertCounterVecValue(t, "", "privacy_tcf:v1", m.privacyTCF,
+		float64(2),
+		prometheus.Labels{
+			sourceLabel:  sourceRequest,
+			versionLabel: "v1",
+		})
+
+	assertCounterVecValue(t, "", "privacy_tcf:v2", m.privacyTCF,
+		float64(1),
+		prometheus.Labels{
+			sourceLabel:  sourceRequest,
+			versionLabel: "v2",
+		})
+}
+
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {
 	m := dto.Metric{}
 	counter.Write(&m)
@@ -900,6 +1226,24 @@ func getHistogramFromHistogramVec(histogram *prometheus.HistogramVec, labelKey, 
 		for _, label := range m.GetLabel() {
 			if label.GetName() == labelKey && label.GetValue() == labelValue {
 				result = *m.GetHistogram()
+			}
+		}
+	})
+	return result
+}
+
+func getHistogramFromHistogramVecByTwoKeys(histogram *prometheus.HistogramVec, label1Key, label1Value, label2Key, label2Value string) dto.Histogram {
+	var result dto.Histogram
+	processMetrics(histogram, func(m dto.Metric) {
+		for ind, label := range m.GetLabel() {
+			if label.GetName() == label1Key && label.GetValue() == label1Value {
+				valInd := ind
+				if ind == 1 {
+					valInd = 0
+				}
+				if m.Label[valInd].GetName() == label2Key && m.Label[valInd].GetValue() == label2Value {
+					result = *m.GetHistogram()
+				}
 			}
 		}
 	})

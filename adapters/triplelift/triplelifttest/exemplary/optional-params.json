@@ -28,7 +28,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://tlx.3lift.net/s2s/auction?supplier_id=20",
+        "uri": "http://tlx.3lift.net/s2s/auction?sra=1&supplier_id=20",
         "body": {
           "id": "test-request-id",
           "imp": [

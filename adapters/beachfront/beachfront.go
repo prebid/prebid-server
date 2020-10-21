@@ -4,26 +4,27 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 const Seat = "beachfront"
 const BidCapacity = 5
 
-const bannerEndpoint = "https://display.bfmio.com/prebid_display"
-const videoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
+const defaultVideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
 
 const nurlVideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
-const beachfrontAdapterVersion = "0.8.0"
+const beachfrontAdapterVersion = "0.9.0"
 
 const minBidFloor = 0.01
 
@@ -31,6 +32,12 @@ const DefaultVideoWidth = 300
 const DefaultVideoHeight = 250
 
 type BeachfrontAdapter struct {
+	bannerEndpoint string
+	extraInfo      ExtraInfo
+}
+
+type ExtraInfo struct {
+	VideoEndpoint string `json:"video_endpoint,omitempty"`
 }
 
 type beachfrontRequests struct {
@@ -138,7 +145,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		if err == nil {
 			reqs[0] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     bannerEndpoint,
+				Uri:     a.bannerEndpoint,
 				Body:    bytes,
 				Headers: headers,
 			}
@@ -159,7 +166,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		if err == nil {
 			reqs[j+nurlBump] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     videoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
+				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
 				Body:    bytes,
 				Headers: headers,
 			}
@@ -178,7 +185,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 			bytes = append([]byte(`{"isPrebid":true,`), bytes[1:]...)
 			reqs[j+admBump] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     videoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
+				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
 				Body:    bytes,
 				Headers: headers,
 			}
@@ -518,18 +525,27 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &bids[i],
-				BidType:  getBidType(externalRequest),
+				BidType:  a.getBidType(externalRequest),
 				BidVideo: &impVideo,
 			})
 		} else {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bids[i],
-				BidType: getBidType(externalRequest),
+				BidType: a.getBidType(externalRequest),
 			})
 		}
 	}
 
 	return bidResponse, errs
+}
+
+func (a *BeachfrontAdapter) getBidType(externalRequest *adapters.RequestData) openrtb_ext.BidType {
+	t := strings.Split(externalRequest.Uri, "=")[0]
+	if t == a.extraInfo.VideoEndpoint {
+		return openrtb_ext.BidTypeVideo
+	}
+
+	return openrtb_ext.BidTypeBanner
 }
 
 func postprocess(response *adapters.ResponseData, xtrnal openrtb.BidRequest, uri string, id string) ([]openrtb.Bid, []error) {
@@ -629,13 +645,13 @@ func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, erro
 }
 
 func getDomain(page string) string {
-	protoUrl := strings.Split(page, "//")
+	protoURL := strings.Split(page, "//")
 	var domainPage string
 
-	if len(protoUrl) > 1 {
-		domainPage = protoUrl[1]
+	if len(protoURL) > 1 {
+		domainPage = protoURL[1]
 	} else {
-		domainPage = protoUrl[0]
+		domainPage = protoURL[0]
 	}
 
 	return strings.Split(domainPage, "/")[0]
@@ -643,9 +659,9 @@ func getDomain(page string) string {
 }
 
 func isSecure(page string) int8 {
-	protoUrl := strings.Split(page, "://")
+	protoURL := strings.Split(page, "://")
 
-	if len(protoUrl) > 1 && protoUrl[0] == "https" {
+	if len(protoURL) > 1 && protoURL[0] == "https" {
 		return 1
 	}
 
@@ -663,19 +679,25 @@ func getIP(ip string) string {
 	return ip
 }
 
-func getBidType(externalRequest *adapters.RequestData) openrtb_ext.BidType {
-	t := strings.Split(externalRequest.Uri, "=")[0]
-	if t == videoEndpoint {
-		return openrtb_ext.BidTypeVideo
-	}
-
-	return openrtb_ext.BidTypeBanner
-}
-
 func removeVideoElement(slice []beachfrontVideoRequest, s int) []beachfrontVideoRequest {
 	return append(slice[:s], slice[s+1:]...)
 }
 
-func NewBeachfrontBidder() *BeachfrontAdapter {
-	return &BeachfrontAdapter{}
+func NewBeachfrontBidder(bannerEndpoint string, extraAdapterInfo string) adapters.Bidder {
+	var extraInfo ExtraInfo
+
+	if len(extraAdapterInfo) == 0 {
+		extraAdapterInfo = "{\"video_endpoint\":\"" + defaultVideoEndpoint + "\"}"
+	}
+
+	if err := json.Unmarshal([]byte(extraAdapterInfo), &extraInfo); err != nil {
+		glog.Fatal("Invalid Beachfront extra adapter info: " + err.Error())
+		return nil
+	}
+
+	if extraInfo.VideoEndpoint == "" {
+		extraInfo.VideoEndpoint = defaultVideoEndpoint
+	}
+
+	return &BeachfrontAdapter{bannerEndpoint: bannerEndpoint, extraInfo: extraInfo}
 }

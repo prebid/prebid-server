@@ -1,21 +1,23 @@
 package prometheusmetrics
 
 import (
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 func preloadLabelValues(m *Metrics) {
 	var (
 		actionValues          = actionsAsString()
-		adapterValues         = adaptersAsString()
 		adapterErrorValues    = adapterErrorsAsString()
+		adapterValues         = adaptersAsString()
 		bidTypeValues         = []string{markupDeliveryAdm, markupDeliveryNurl}
 		boolValues            = boolValuesAsString()
 		cacheResultValues     = cacheResultsAsString()
-		cookieValues          = cookieTypesAsString()
 		connectionErrorValues = []string{connectionAcceptError, connectionCloseError}
+		cookieValues          = cookieTypesAsString()
 		requestStatusValues   = requestStatusesAsString()
 		requestTypeValues     = requestTypesAsString()
+		sourceValues          = []string{sourceRequest}
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
@@ -83,6 +85,20 @@ func preloadLabelValues(m *Metrics) {
 		hasBidsLabel: boolValues,
 	})
 
+	if !m.metricsDisabled.AdapterConnectionMetrics {
+		preloadLabelValuesForCounter(m.adapterCreatedConnections, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+
+		preloadLabelValuesForCounter(m.adapterReusedConnections, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+
+		preloadLabelValuesForHistogram(m.adapterConnectionWaitTime, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+	}
+
 	preloadLabelValuesForHistogram(m.adapterRequestsTimer, map[string][]string{
 		adapterLabel: adapterValues,
 	})
@@ -90,6 +106,31 @@ func preloadLabelValues(m *Metrics) {
 	preloadLabelValuesForCounter(m.adapterUserSync, map[string][]string{
 		adapterLabel: adapterValues,
 		actionLabel:  actionValues,
+	})
+
+	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
+	//boolean value represents 2 general request statuses: accepted and rejected
+	preloadLabelValuesForHistogram(m.requestsQueueTimer, map[string][]string{
+		requestTypeLabel:   {string(pbsmetrics.ReqTypeVideo)},
+		requestStatusLabel: {requestSuccessLabel, requestRejectLabel},
+	})
+
+	preloadLabelValuesForCounter(m.privacyCCPA, map[string][]string{
+		sourceLabel: sourceValues,
+		optOutLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.privacyCOPPA, map[string][]string{
+		sourceLabel: sourceValues,
+	})
+
+	preloadLabelValuesForCounter(m.privacyLMT, map[string][]string{
+		sourceLabel: sourceValues,
+	})
+
+	preloadLabelValuesForCounter(m.privacyTCF, map[string][]string{
+		sourceLabel:  sourceValues,
+		versionLabel: tcfVersionsAsString(),
 	})
 }
 

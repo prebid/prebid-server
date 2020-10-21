@@ -1,10 +1,11 @@
 package nanointeractive
 
 import (
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	"github.com/prebid/prebid-server/privacy/gdpr"
 	"testing"
 	"text/template"
+
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/stretchr/testify/assert"
@@ -17,16 +18,15 @@ func TestNewNanoInteractiveSyncer(t *testing.T) {
 	)
 
 	userSync := NewNanoInteractiveSyncer(syncURLTemplate)
-	syncInfo, err := userSync.GetUsersyncInfo(
-		privacy.Policies{
-			GDPR: gdpr.Policy{
-				Signal:  "1",
-				Consent: "BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
-			},
-			CCPA: ccpa.Policy{
-				Value: "1NYN",
-			},
-		})
+	syncInfo, err := userSync.GetUsersyncInfo(privacy.Policies{
+		GDPR: gdpr.Policy{
+			Signal:  "1",
+			Consent: "BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+		},
+		CCPA: ccpa.Policy{
+			Consent: "1NYN",
+		},
+	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, "https://ad.audiencemanager.de/hbs/cookie_sync?gdpr=1&consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw&us_privacy=1NYN&redirectUri=http%3A%2F%2Flocalhost%2Fsetuid%3Fbidder%3Dnanointeractive%26gdpr%3D1%26gdpr_consent%3DBONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw%26uid%3D%24UID", syncInfo.URL)

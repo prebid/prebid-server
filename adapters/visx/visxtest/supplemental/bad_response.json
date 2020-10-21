@@ -26,6 +26,7 @@
         "uri": "http://localhost/prebid",
         "body": {
           "id": "test-request-id",
+          "cur": ["USD"],
           "imp": [
             {
               "id": "test-imp-id",
@@ -54,7 +55,7 @@
 
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type openrtb.BidResponse",
+      "value": "json: cannot unmarshal string into Go value of type visx.visxResponse",
       "comparison": "literal"
     }
   ]
