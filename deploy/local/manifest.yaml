@@ -82,27 +82,22 @@ data:
   PBS_ADAPTERS_RUBICON_DISABLED:                "false"
   PBS_ADAPTERS_RUBICON_XAPI_USERNAME:           "username"
   PBS_ADAPTERS_RUBICON_XAPI_PASSWORD:           "password"
-  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_EAST:   "http://exapi-us-east.rubiconproject.com/a/api/exchange.json"
-  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_WEST:   "http://exapi-us-west.rubiconproject.com/a/api/exchange.json"
-  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_EU:        "http://exapi-eu.rubiconproject.com/a/api/exchange.json"
-  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_APAC:      "http://exapi-apac.rubiconproject.com/a/api/exchange.json"
-  # for mock_service test
-  #PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_EAST:   "http://localhost:4646/a/api/exchange.json"
-  #PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_WEST:   "http://localhost:4646/a/api/exchange.json"
-  #PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_EU:   "http://localhost:4646/a/api/exchange.json"
-  #PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_APAC:   "http://localhost:4646/a/api/exchange.json"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_EAST:   "http://localhost:4646/a/api/exchange.json"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_WEST:   "http://localhost:4646/a/api/exchange.json"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_EU:   "http://localhost:4646/a/api/exchange.json"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_APAC:   "http://localhost:4646/a/api/exchange.json"
 
   # liftoff values
   PBS_ADAPTERS_LIFTOFF_DISABLED: "false"
-  PBS_ADAPTERS_LIFTOFF_XAPI_USERNAME: "username"
-  PBS_ADAPTERS_LIFTOFF_XAPI_PASSWORD: "password"
-  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_US_EAST: "http://liftoff-us-east.com/givemeads"
-  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_EU: "http://liftoff-eu.com/givemeads"
-  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_APAC: "http://liftoff-apac.com/givemeads"
-  # for mock_service test
-  #PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/givemeads"
-  #PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_EU: "http://localhost:4646/givemeads"
-  #PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_APAC: "http://localhost:4646/givemeads"
+  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/givemeads"
+  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_EU: "http://localhost:4646/givemeads"
+  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_APAC: "http://localhost:4646/givemeads"
+
+  # moloco values
+  PBS_ADAPTERS_MOLOCO_DISABLED: "false"
+  PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/moloco_givemeads"
+  PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_EU: "http://localhost:4646/moloco_givemeads"
+  PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_APAC: "http://localhost:4646/moloco_givemeads"
 ---
 ########################################################################################################################
 ## WORKLOAD-RELATED MANIFESTS

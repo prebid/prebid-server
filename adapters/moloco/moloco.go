@@ -1,7 +1,6 @@
-package liftoff
+package moloco
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -23,76 +22,51 @@ const (
 	APAC   Region = "apac"
 )
 
-// Orientation ...
-type Orientation string
-
-const (
-	Horizontal Orientation = "h"
-	Vertical   Orientation = "v"
-)
-
 // PlacementType ...
 type PlacementType string
 
 const (
-	Banner       PlacementType = "banner"
 	Interstitial PlacementType = "interstitial"
 	Rewarded     PlacementType = "rewarded"
 )
 
-// LiftoffAdapter ...
-type LiftoffAdapter struct {
+type molocoVideoExt struct {
+	PlacementType PlacementType `json:"placementtype"`
+}
+
+// MolocoAdapter ...
+type MolocoAdapter struct {
 	http             *adapters.HTTPAdapter
 	URI              string
 	SupportedRegions map[Region]string
 }
 
 // Name is used for cookies and such
-func (a *LiftoffAdapter) Name() string {
-	return "liftoff"
+func (adapter *MolocoAdapter) Name() string {
+	return "moloco"
 }
 
 // SkipNoCookies ...
-func (a *LiftoffAdapter) SkipNoCookies() bool {
+func (adapter *MolocoAdapter) SkipNoCookies() bool {
 	return false
 }
 
-type liftoffVideoExt struct {
-	PlacementType string `json:"placementtype"`
-	Orientation   string `json:"orientation"`
-	Skip          int    `json:"skip"`
-	SkipDelay     int    `json:"skipdelay"`
-}
-
-type liftoffImpExt struct {
-	Rewarded int `json:"rewarded"`
-}
-
-type liftoffAppExt struct {
-	AppStoreID string `json:"appstoreid"`
-}
-
-type callOneObject struct {
-	requestJson bytes.Buffer
-	mediaType   pbs.MediaType
-}
-
-// Call is legacy, and added only to support LiftoffAdapter interface
-func (a *LiftoffAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+// Call is legacy, and added only to support MolocoAdapter interface
+func (adapter *MolocoAdapter) Call(_ context.Context, _ *pbs.PBSRequest, _ *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	return pbs.PBSBidSlice{}, nil
 }
 
-// NewLiftoffAdapter ...
-func NewLiftoffAdapter(config *adapters.HTTPAdapterConfig, uri string, useast string, eu string, apac string) *LiftoffAdapter {
-	return NewLiftoffBidder(adapters.NewHTTPAdapter(config).Client, uri, useast, eu, apac)
+// NewMolocoAdapter ...
+func NewMolocoAdapter(config *adapters.HTTPAdapterConfig, uri, useast, eu, apac string) *MolocoAdapter {
+	return NewMolocoBidder(adapters.NewHTTPAdapter(config).Client, uri, useast, eu, apac)
 }
 
-// NewLiftoffBidder ...
-func NewLiftoffBidder(client *http.Client, uri string, useast string, eu string, apac string) *LiftoffAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
+// NewMolocoBidder ...
+func NewMolocoBidder(client *http.Client, uri, useast, eu, apac string) *MolocoAdapter {
+	adapter := &adapters.HTTPAdapter{Client: client}
 
-	return &LiftoffAdapter{
-		http: a,
+	return &MolocoAdapter{
+		http: adapter,
 		URI:  uri,
 		SupportedRegions: map[Region]string{
 			USEast: useast,
@@ -103,34 +77,28 @@ func NewLiftoffBidder(client *http.Client, uri string, useast string, eu string,
 }
 
 // MakeRequests ...
-func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 
 	requestData := make([]*adapters.RequestData, 0, numRequests)
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("User-Agent", "prebid-server/1.0")
 
-	errs := make([]error, 0, len(request.Imp))
-	var err error
+	errs := make([]error, 0, numRequests)
 
-	// Updating app extension
-	if request.App != nil {
-		appExt := liftoffAppExt{
-			AppStoreID: request.App.Bundle,
-		}
-		request.App.Ext, err = json.Marshal(&appExt)
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-
+	// clone the request imp array
 	requestImpCopy := request.Imp
 
+	var err error
+
 	for i := 0; i < numRequests; i++ {
+		// clone current imp
 		thisImp := requestImpCopy[i]
 
+		// extract bidder extension
 		var bidderExt adapters.ExtImpBidder
 		if err = json.Unmarshal(thisImp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
@@ -139,82 +107,65 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			continue
 		}
 
-		var liftoffExt openrtb_ext.ExtImpLiftoff
-		if err = json.Unmarshal(bidderExt.Bidder, &liftoffExt); err != nil {
+		// unmarshal bidder extension to moloco extension
+		var molocoExt openrtb_ext.ExtImpMoloco
+		if err = json.Unmarshal(bidderExt.Bidder, &molocoExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
 
-		placementType := Banner
-		rewarded := 0 // default is interstitial
+		// placement type is either Rewarded or Interstitial, default is Interstitial
+		placementType := Interstitial
 		if thisImp.Video != nil {
-			placementType = Interstitial
-			if liftoffExt.Video.Skip == 0 {
+			if molocoExt.PlacementType == string(Rewarded) {
 				placementType = Rewarded
-				rewarded = 1
 			}
 
-			orientation := Horizontal
-			if liftoffExt.Video.Width < liftoffExt.Video.Height {
-				orientation = Vertical
+			// instantiate moloco video extension struct
+			videoExt := molocoVideoExt{
+				PlacementType: placementType,
 			}
 
+			// clone the current video element
 			videoCopy := *thisImp.Video
-			videoExt := liftoffVideoExt{
-				PlacementType: string(placementType),
-				Orientation:   string(orientation),
-				Skip:          liftoffExt.Video.Skip,
-				SkipDelay:     liftoffExt.Video.SkipDelay,
-			}
+
+			// assign moloco video extension to cloned video element
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 
+			// assign cloned video element to imp object
 			thisImp.Video = &videoCopy
-			thisImp.Banner = nil
-		} else if thisImp.Banner != nil {
-			bannerCopy := *thisImp.Banner
-			bannerExt := liftoffVideoExt{
-				PlacementType: string(placementType),
-			}
-			bannerCopy.Ext, err = json.Marshal(&bannerExt)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			thisImp.Video = nil
-			thisImp.Banner = &bannerCopy
 		}
 
-		impExt := liftoffImpExt{
-			Rewarded: rewarded,
-		}
-		thisImp.Ext, err = json.Marshal(&impExt)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
+		// clean the impression extension
+		thisImp.Ext = nil
 
+		// reinit the values in the request object
 		request.Imp = []openrtb.Imp{thisImp}
 		request.Cur = nil
 		request.Ext = nil
 
+		// json marshal the request
 		reqJSON, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		uri := a.URI
-		if endpoint, ok := a.SupportedRegions[Region(liftoffExt.Region)]; ok {
+		// assign the default uri
+		uri := adapter.URI
+
+		// assign a region based uri if it exists
+		if endpoint, ok := adapter.SupportedRegions[Region(molocoExt.Region)]; ok {
 			uri = endpoint
 		}
 
+		// build request data object
 		reqData := &adapters.RequestData{
 			Method:  "POST",
 			Uri:     uri,
@@ -222,6 +173,7 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			Headers: headers,
 		}
 
+		// append to request data array
 		requestData = append(requestData, reqData)
 	}
 
@@ -229,7 +181,7 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 }
 
 // MakeBids ...
-func (a *LiftoffAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *MolocoAdapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Moloco Adapter Params",
+  "description": "A schema which validates params accepted by the Moloco adapter",
+  "type": "object",
+  "properties": {
+    "placementtype": {
+      "type": "string",
+      "description": "A string defining the placement type from Moloco"
+    },
+    "region": {
+      "type": "string",
+      "description": "A string defining region for choosing the closest Moloco endpoint"
+    }
+  }
+}
