@@ -1,4 +1,3 @@
-
 {
   "mockBidRequest": {
     "id": "some-request-id",
@@ -12,25 +11,23 @@
         "id": "123456789"
       }
     },
-    "imp": [
-      {
-        "id": "some-impression-id",
-        "tagid": "ogTAGID",
-        "video": {
-          "mimes": ["video/mp4"],
-          "w": 640,
-          "h": 480,
-          "minduration": 120,
-          "maxduration": 150
-        },
-        "ext": {
-          "bidder": {
-            "host": "ep1",
-            "accountid": "hash"
-          }
+    "imp": [{
+      "id": "some-impression-id",
+      "tagid": "ogTAGID",
+      "video": {
+        "mimes": ["video/mp4"],
+        "w": 640,
+        "h": 480,
+        "minduration": 120,
+        "maxduration": 150
+      },
+      "ext": {
+        "bidder": {
+          "host": "ep1",
+          "accountid": "hash"
         }
       }
-    ]
+    }]
   },
 
   "httpCalls": [{
@@ -38,21 +35,19 @@
       "uri": "http://ep1.example.com/bid?token=hash",
       "body": {
         "id": "some-request-id",
-        "imp": [
-          {
-            "id": "some-impression-id",
-            "tagid": "ogTAGID",
-            "video": {
-              "mimes": [
-                "video/mp4"
-              ],
-              "minduration": 120,
-              "maxduration": 150,
-              "w": 640,
-              "h": 480
-            }
+        "imp": [{
+          "id": "some-impression-id",
+          "tagid": "ogTAGID",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ],
+            "minduration": 120,
+            "maxduration": 150,
+            "w": 640,
+            "h": 480
           }
-        ],
+        }],
         "site": {
           "page": "test.com",
           "publisher": {
@@ -70,10 +65,5 @@
     }
   }],
   "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "No bid response",
-      "comparison": "literal"
-    }
-  ]
+  "expectedMakeBidsErrors": []
 }

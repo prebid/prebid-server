@@ -107,7 +107,7 @@ func (a *AcuityAdsAdapter) buildEndpointURL(params *openrtb_ext.ExtAcuityAds) (s
 
 func (a *AcuityAdsAdapter) checkResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusNoContent {
-		return &errortypes.BadInput{Message: "No bid response"}
+		return nil
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
@@ -139,6 +139,10 @@ func (a *AcuityAdsAdapter) MakeBids(
 	bidderResponse *adapters.BidderResponse,
 	errs []error,
 ) {
+	if bidderRawResponse.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
 	httpStatusError := a.checkResponseStatusCodes(bidderRawResponse)
 	if httpStatusError != nil {
 		return nil, []error{httpStatusError}
