@@ -182,7 +182,9 @@ func (cfg *PostgresConfig) validate(dataType DataType, errs configErrors) config
 		return errs
 	}
 
-	return cfg.PollUpdates.validate(dataType, errs)
+	errs = cfg.CacheInitialization.validate(dataType, errs)
+	errs = cfg.PollUpdates.validate(dataType, errs)
+	return errs
 }
 
 // PostgresConnection has options which put types to the Postgres Connection string. See:
