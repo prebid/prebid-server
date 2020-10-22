@@ -5,16 +5,26 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"net"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	"github.com/prebid/prebid-server/util/timeutil"
 )
 
 func bytesNull() []byte {
 	return []byte{'n', 'u', 'l', 'l'}
+}
+
+var storedDataTypeMetricMap = map[config.DataType]pbsmetrics.StoredDataType{
+	config.RequestDataType:    pbsmetrics.RequestDataType,
+	config.CategoryDataType:   pbsmetrics.CategoryDataType,
+	config.VideoDataType:      pbsmetrics.VideoDataType,
+	config.AMPRequestDataType: pbsmetrics.AMPDataType,
+	config.AccountDataType:    pbsmetrics.AccountDataType,
 }
 
 type PostgresEventProducerConfig struct {
@@ -24,6 +34,7 @@ type PostgresEventProducerConfig struct {
 	CacheInitTimeout   time.Duration
 	CacheUpdateQuery   string
 	CacheUpdateTimeout time.Duration
+	MetricsEngine      pbsmetrics.MetricsEngine
 }
 
 type PostgresEventProducer struct {
@@ -51,9 +62,9 @@ func NewPostgresEventProducer(cfg PostgresEventProducerConfig) (eventProducer *P
 func (e *PostgresEventProducer) Run() error {
 	if e.lastUpdate.IsZero() {
 		return e.fetchAll()
-	} else {
-		return e.fetchDelta()
 	}
+
+	return e.fetchDelta()
 }
 
 func (e *PostgresEventProducer) Saves() <-chan events.Save {
@@ -64,58 +75,94 @@ func (e *PostgresEventProducer) Invalidations() <-chan events.Invalidation {
 	return e.invalidations
 }
 
-func (e *PostgresEventProducer) fetchAll() error {
-	thisTimeInUTC := e.time.Now().UTC()
-
+func (e *PostgresEventProducer) fetchAll() (fetchErr error) {
 	timeout := e.cfg.CacheInitTimeout * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
+	startTime := e.time.Now().UTC()
 	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheInitQuery)
+	elapsedTime := time.Since(startTime)
+	e.recordFetchTime(elapsedTime, pbsmetrics.FetchAll)
 
 	if err != nil {
 		glog.Warningf("Failed to fetch all Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		if _, ok := err.(net.Error); ok {
+			e.recordError(pbsmetrics.StoredDataErrorNetwork)
+		} else {
+			e.recordError(pbsmetrics.StoredDataErrorUndefined)
+		}
 		return err
 	}
+
 	defer func() {
 		if err := rows.Close(); err != nil {
 			glog.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
+			e.recordError(pbsmetrics.StoredDataErrorUndefined)
+			fetchErr = err
 		}
 	}()
 	if err := e.sendEvents(rows); err != nil {
 		glog.Warningf("Failed to load all Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		e.recordError(pbsmetrics.StoredDataErrorUndefined)
 		return err
-	} else {
-		e.lastUpdate = thisTimeInUTC
 	}
+
+	e.lastUpdate = startTime
 	return nil
 }
 
-func (e *PostgresEventProducer) fetchDelta() error {
-	thisTimeInUTC := e.time.Now().UTC()
-
+func (e *PostgresEventProducer) fetchDelta() (fetchErr error) {
 	timeout := e.cfg.CacheUpdateTimeout * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
+	startTime := e.time.Now().UTC()
 	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheUpdateQuery, e.lastUpdate)
+	elapsedTime := time.Since(startTime)
+	e.recordFetchTime(elapsedTime, pbsmetrics.FetchDelta)
 
 	if err != nil {
 		glog.Warningf("Failed to fetch updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		if _, ok := err.(net.Error); ok {
+			e.recordError(pbsmetrics.StoredDataErrorNetwork)
+		} else {
+			e.recordError(pbsmetrics.StoredDataErrorUndefined)
+		}
 		return err
 	}
+
 	defer func() {
 		if err := rows.Close(); err != nil {
 			glog.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
+			e.recordError(pbsmetrics.StoredDataErrorUndefined)
+			fetchErr = err
 		}
 	}()
 	if err := e.sendEvents(rows); err != nil {
 		glog.Warningf("Failed to load updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		e.recordError(pbsmetrics.StoredDataErrorUndefined)
 		return err
-	} else {
-		e.lastUpdate = thisTimeInUTC
 	}
+
+	e.lastUpdate = startTime
 	return nil
+}
+
+func (e *PostgresEventProducer) recordFetchTime(elapsedTime time.Duration, fetchType pbsmetrics.StoredDataFetchType) {
+	e.cfg.MetricsEngine.RecordStoredDataFetchTime(
+		pbsmetrics.StoredDataLabels{
+			DataType:      storedDataTypeMetricMap[e.cfg.RequestType],
+			DataFetchType: fetchType,
+		}, elapsedTime)
+}
+
+func (e *PostgresEventProducer) recordError(errorType pbsmetrics.StoredDataError) {
+	e.cfg.MetricsEngine.RecordStoredDataError(
+		pbsmetrics.StoredDataLabels{
+			DataType: storedDataTypeMetricMap[e.cfg.RequestType],
+			Error:    errorType,
+		})
 }
 
 // sendEvents reads the rows and sends notifications into the channel for any updates.
