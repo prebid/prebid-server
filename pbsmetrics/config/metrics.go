@@ -189,6 +189,13 @@ func (me *MultiMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.
 	}
 }
 
+// RecordAccountCacheResult across all engines
+func (me *MultiMetricsEngine) RecordAccountCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	for _, thisME := range *me {
+		thisME.RecordAccountCacheResult(cacheResult, inc)
+	}
+}
+
 // RecordAdapterCookieSync across all engines
 func (me *MultiMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
 	for _, thisME := range *me {
@@ -312,6 +319,10 @@ func (me *DummyMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.
 
 // RecordStoredImpCacheResult as a noop
 func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+}
+
+// RecordAccountCacheResult as a noop
+func (me *DummyMetricsEngine) RecordAccountCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
 }
 
 // RecordPrebidCacheRequestTime as a noop
