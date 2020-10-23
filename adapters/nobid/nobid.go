@@ -23,14 +23,8 @@ func NewNoBidBidder(endpoint string) *NoBidAdapter {
 	}
 }
 
-type nobidParams struct {
-	SiteID string `json:"SiteID"`
-}
-
 // MakeRequests Makes the OpenRTB request payload
 func (a *NoBidAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
-	var errors []error
 
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
@@ -40,30 +34,23 @@ func (a *NoBidAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 
 	data, err := json.Marshal(request)
 	if err != nil {
-		return nil, append(errors, err)
+		return nil, []error{err}
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	/********************/
-	/* Dev testing only */
-	/* a.endpoint = "http://localhost:8282/ortb_adreq?tek=pbs" */
-	/********************/
-
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     a.endpoint,
 		Body:    data,
 		Headers: headers,
-	}}, errors
+	}}, []error{}
 }
 
 // MakeBids makes the bids
 func (a *NoBidAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-
-	var errs []error
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -89,6 +76,8 @@ func (a *NoBidAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 
 	count := getBidCount(bidResp)
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(count)
+
+	var errs []error
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
