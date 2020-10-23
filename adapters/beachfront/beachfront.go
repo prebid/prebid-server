@@ -47,9 +47,9 @@ type requests struct {
 // ---------------------------------------------------
 
 type videoRequest struct {
-	AppId             string             `json:"appId"`
-	VideoResponseType string             `json:"videoResponseType"`
-	Request           openrtb.BidRequest `json:"request"`
+	AppId             string              `json:"appId"`
+	VideoResponseType string              `json:"videoResponseType"`
+	Request           *openrtb.BidRequest `json:"request"`
 }
 
 // ---------------------------------------------------
@@ -205,10 +205,9 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 		if request.Imp[i].Video != nil {
 			if request.Site != nil {
 				if request.Site.Page != "" {
-					var secure int8 = 0
 					// This will overwrite the secure value if it is included, but if
 					// a web request is not https, it's not secure, and vice versa so this seems authoritative.
-					secure = isPageSecure(request.Site.Page)
+					secure := isPageSecure(request.Site.Page)
 					request.Imp[i].Secure = &secure
 				} else {
 					errs = append(errs,
@@ -271,10 +270,11 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 		beachfrontReqs.Banner, errs = getBannerRequest(request, errs)
 	}
 
-	deepCopyOfRequest := deepCopyRequest(request)
 	if len(videoImps) > 0 {
+		requestStub := deepCopyRequest(request)
+		requestStub.Imp = nil
 		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo, errs = getVideoRequests(
-			deepCopyOfRequest,
+			requestStub,
 			videoImps,
 			errs)
 	}
@@ -287,80 +287,79 @@ func deepCopyRequest(request *openrtb.BidRequest) openrtb.BidRequest {
 	var publisher openrtb.Publisher
 
 	requestCopy := *request
-	requestCopy.Imp = nil
 
-	if request.Site != nil {
-		site := *request.Site
-		if request.Site.Content != nil {
-			content = *request.Site.Content
+	if requestCopy.Site != nil {
+		site := *requestCopy.Site
+		if site.Content != nil {
+			content = *site.Content
 			site.Content = &content
 		}
-		if request.Site.Publisher != nil {
-			publisher = *request.Site.Publisher
+		if site.Publisher != nil {
+			publisher = *site.Publisher
 			site.Publisher = &publisher
 		}
 
 		requestCopy.Site = &site
 	}
 
-	if request.App != nil {
-		app := *request.App
+	if requestCopy.App != nil {
+		app := *requestCopy.App
 
-		if request.App.Content != nil {
-			content = *request.App.Content
+		if app.Content != nil {
+			content = *app.Content
 			app.Content = &content
 		}
-		if request.App.Publisher != nil {
-			publisher = *request.App.Publisher
+		if app.Publisher != nil {
+			publisher = *app.Publisher
 			app.Publisher = &publisher
 		}
 		requestCopy.App = &app
 	}
 
-	if request.Device != nil {
-		device := *request.Device
+	if requestCopy.Device != nil {
+		device := *requestCopy.Device
 
-		if request.Device.ConnectionType != nil {
-			ctype := *request.Device.ConnectionType
+		if device.ConnectionType != nil {
+			ctype := *device.ConnectionType
 			device.ConnectionType = &ctype
 		}
 
-		if request.Device.Geo != nil {
-			deviceGeo := *request.Device.Geo
+		if device.Geo != nil {
+			deviceGeo := *device.Geo
 			device.Geo = &deviceGeo
 		}
 
-		if request.Device.DNT != nil {
-			dnt := *request.Device.DNT
+		if device.DNT != nil {
+			dnt := *device.DNT
 			device.DNT = &dnt
 		}
 
-		if request.Device.Lmt != nil {
-			lmt := *request.Device.Lmt
+		if device.Lmt != nil {
+			lmt := *device.Lmt
 			device.Lmt = &lmt
 		}
 
 		requestCopy.Device = &device
 	}
 
-	if request.User != nil {
-		user := *request.User
+	if requestCopy.User != nil {
+		user := *requestCopy.User
 
-		if request.User.Geo != nil {
-			userGeo := *request.User.Geo
+		if user.Geo != nil {
+			userGeo := *user.Geo
 			user.Geo = &userGeo
 		}
 
 		requestCopy.User = &user
 	}
 
-	if request.Source != nil {
-		source := *request.Source
+	if requestCopy.Source != nil {
+		source := *requestCopy.Source
 		requestCopy.Source = &source
 	}
 
-	if request.Regs != nil {
-		regs := *request.Regs
+	if requestCopy.Regs != nil {
+		regs := *requestCopy.Regs
 		requestCopy.Regs = &regs
 	}
 
@@ -399,9 +398,7 @@ func getBannerRequest(request *openrtb.BidRequest, errs []error) (bannerRequest,
 
 	if t == openrtb.DeviceTypeMobileTablet {
 		bannerReq.Page = request.App.Bundle
-		if request.App.Domain == "" {
-			bannerReq.Domain = getDomain(request.App.Domain)
-		} else {
+		if request.App.Domain != "" {
 			bannerReq.Domain = request.App.Domain
 		}
 
@@ -481,13 +478,7 @@ func impsToSlots(imps []openrtb.Imp, errs []error) (bannerRequest, int8, []error
 		}
 
 		if len(slot.Sizes) == 0 {
-			// *imp.Banner.W == nil is not valid. I have to dereference to make this comparison. Also, this does
-			// get caught in /endpoints/openrtb2/auction.go L441 when I send in the request from test case
-			// "banner-no-size-nose-dive", but it gets through on that test case.
-
-			impDeref := &imp
-
-			if impDeref.Banner.W == nil || impDeref.Banner.H == nil {
+			if imp.Banner.W == nil || imp.Banner.H == nil {
 				errs = append(errs,
 					fmt.Errorf("request.imp[%d].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements", i))
 				continue
@@ -520,14 +511,15 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs [
 		}
 
 		if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
-			requestStub.Imp = []openrtb.Imp{imps[i]}
+			newRequestStub := deepCopyRequest(&requestStub)
+			newRequestStub.Imp = []openrtb.Imp{imps[i]}
 
 			nurlReqs = append(nurlReqs, prepVideoRequest(
 
 				videoRequest{
 					AppId:             ext.AppId,
 					VideoResponseType: ext.VideoResponseType,
-					Request:           requestStub,
+					Request:           &newRequestStub,
 				}))
 		}
 
@@ -536,12 +528,13 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs [
 			if exists {
 				admMap[ext.AppId].Request.Imp = append(mappedElement.Request.Imp, imps[i])
 			} else {
-				requestStub.Imp = []openrtb.Imp{imps[i]}
+				newRequestStub := deepCopyRequest(&requestStub)
+				newRequestStub.Imp = []openrtb.Imp{imps[i]}
 
 				r := videoRequest{
 					AppId:             ext.AppId,
 					VideoResponseType: ext.VideoResponseType,
-					Request:           requestStub,
+					Request:           &newRequestStub,
 				}
 
 				r = prepVideoRequest(r)
@@ -580,8 +573,8 @@ func prepVideoRequestExt(requestImp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, 
 		return beachfrontExt, err
 	}
 
-	if beachfrontExt.VideoResponseType != "adm" && beachfrontExt.VideoResponseType != "both" {
-		beachfrontExt.VideoResponseType = "nurl"
+	if beachfrontExt.VideoResponseType != "nurl" && beachfrontExt.VideoResponseType != "both" {
+		beachfrontExt.VideoResponseType = "adm"
 	}
 
 	return beachfrontExt, err
@@ -606,7 +599,7 @@ func prepVideoRequest(bfReq videoRequest) videoRequest {
 		bfReq.Request.Device.IP = getIP(bfReq.Request.Device.IP)
 
 		if bfReq.Request.Device.DeviceType == 0 {
-			bfReq.Request.Device.DeviceType = fallBackDeviceType(&bfReq.Request)
+			bfReq.Request.Device.DeviceType = fallBackDeviceType(bfReq.Request)
 		}
 	}
 
