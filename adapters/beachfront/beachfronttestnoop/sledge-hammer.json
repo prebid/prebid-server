@@ -713,6 +713,92 @@
 
                 {
                   "id": "5f4f8790dca51d29347f4ddb0",
+                  "impid": "ComboADMVideoWithBannerImp1",
+                  "price": 0.8,
+                  "adm": "<?xml version=\"1.0\" ?><VAST version=\"2.0\"><Ad id=\"466052105\"><InLine><AdSystem>DCM</AdSystem><AdTitle>In-Stream Video</AdTitle><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"18716\" width=\"1920\" height=\"1080\"><![CDATA[https://cdn.bfmlib.com/2020-04-10/19/5e90c507bfa0b944b470b5ab/fc71388688ba8beb8ccb7cde16e0a284.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adid": "22273",
+                  "adomain": [
+                    "opportunitywisconsin.org"
+                  ],
+                  "cid": "1551",
+                  "crid": "crid2",
+                  "cat": [
+                    "IAB2"
+                  ],
+                  "attr": [],
+                  "w": 0,
+                  "h": 0,
+                  "ext": {
+                    "duration": 30
+                  }
+                },
+                {
+                  "id": "5f4f8790dca51d29347f4ddb0",
+                  "impid": "ComboADMVideoWithBannerImp2",
+                  "price": 0.8,
+                  "adm": "<?xml version=\"1.0\" ?><VAST version=\"2.0\"><Ad id=\"466052105\"><InLine><AdSystem>DCM</AdSystem><AdTitle>In-Stream Video</AdTitle><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"18716\" width=\"1920\" height=\"1080\"><![CDATA[https://cdn.bfmlib.com/2020-04-10/19/5e90c507bfa0b944b470b5ab/fc71388688ba8beb8ccb7cde16e0a284.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adid": "22273",
+                  "adomain": [
+                    "opportunitywisconsin.org"
+                  ],
+                  "cid": "1551",
+                  "crid": "crid2",
+                  "cat": [
+                    "IAB2"
+                  ],
+                  "attr": [],
+                  "w": 0,
+                  "h": 0,
+                  "ext": {
+                    "duration": 30
+                  }
+                },
+                {
+                  "id": "5f4f8790dca51d29347f4ddb0",
+                  "impid": "ComboBOTHVideoWithBannerImp1",
+                  "price": 0.8,
+                  "adm": "<?xml version=\"1.0\" ?><VAST version=\"2.0\"><Ad id=\"466052105\"><InLine><AdSystem>DCM</AdSystem><AdTitle>In-Stream Video</AdTitle><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"18716\" width=\"1920\" height=\"1080\"><![CDATA[https://cdn.bfmlib.com/2020-04-10/19/5e90c507bfa0b944b470b5ab/fc71388688ba8beb8ccb7cde16e0a284.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adid": "22273",
+                  "adomain": [
+                    "opportunitywisconsin.org"
+                  ],
+                  "cid": "1551",
+                  "crid": "crid2",
+                  "cat": [
+                    "IAB2"
+                  ],
+                  "attr": [],
+                  "w": 0,
+                  "h": 0,
+                  "ext": {
+                    "duration": 30
+                  }
+                },
+                {
+                  "id": "5f4f8790dca51d29347f4ddb0",
+                  "impid": "ComboBOTHVideoWithBannerImp2",
+                  "price": 0.8,
+                  "adm": "<?xml version=\"1.0\" ?><VAST version=\"2.0\"><Ad id=\"466052105\"><InLine><AdSystem>DCM</AdSystem><AdTitle>In-Stream Video</AdTitle><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"18716\" width=\"1920\" height=\"1080\"><![CDATA[https://cdn.bfmlib.com/2020-04-10/19/5e90c507bfa0b944b470b5ab/fc71388688ba8beb8ccb7cde16e0a284.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adid": "22273",
+                  "adomain": [
+                    "opportunitywisconsin.org"
+                  ],
+                  "cid": "1551",
+                  "crid": "crid2",
+                  "cat": [
+                    "IAB2"
+                  ],
+                  "attr": [],
+                  "w": 0,
+                  "h": 0,
+                  "ext": {
+                    "duration": 30
+                  }
+                },
+
+
+                {
+                  "id": "5f4f8790dca51d29347f4ddb0",
                   "impid": "ComboBOTHVideoImp1",
                   "price": 0.8,
                   "adm": "<?xml version=\"1.0\" ?><VAST version=\"2.0\"><Ad id=\"466052105\"><InLine><AdSystem>DCM</AdSystem><AdTitle>In-Stream Video</AdTitle><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"18716\" width=\"1920\" height=\"1080\"><![CDATA[https://cdn.bfmlib.com/2020-04-10/19/5e90c507bfa0b944b470b5ab/fc71388688ba8beb8ccb7cde16e0a284.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",

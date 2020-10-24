@@ -1,0 +1,236 @@
+{
+  "mockBidRequest": {
+    "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+    "tmax": 1000,
+    "source": {
+      "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
+    },
+    "imp": [
+
+      {
+        "id":"SeparateADMVideo",
+        "ext":{
+          "bidder":{
+            "bidfloor":0.01,
+            "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
+          }
+        },
+        "video":{
+          "mimes":[
+            "video/mp4"
+          ],
+          "context":"instream",
+          "w":300,
+          "h":250
+        }
+      },
+      {
+        "id":"ComboADMVideoImp1",
+        "ext":{
+          "bidder":{
+            "bidfloor":0.01,
+            "appIds": {
+              "video": "0c0c62c7-8fe6-4023-90a2-d6148f331823"
+            }
+          }
+        },
+        "video":{
+          "mimes":[
+            "video/mp4"
+          ],
+          "context":"instream",
+          "w":300,
+          "h":250
+        }
+      }
+    ],
+    "site": {
+      "publisher": {
+        "id": "publisher1"
+      },
+      "page": "http://example.com/whatever/something.html"
+    },
+    "user": {
+      "id": "some-user",
+      "buyeruid": "some-buyer"
+    },
+    "device": {
+      "devicetype": 2,
+      "ip": "127.0.0.1",
+      "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
+        "body": {
+          "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "imp":[
+            {
+              "id":"SeparateADMVideo",
+              "secure":0,
+              "video":{
+                "mimes":[
+                  "video/mp4"
+                ],
+                "w":300,
+                "h":250
+              },
+              "ext":{
+                "bidder":{
+                  "bidfloor":0.01,
+                  "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
+                }
+              }
+            }
+          ],
+          "site":{
+            "domain":"example.com",
+            "page":"http://example.com/whatever/something.html",
+            "publisher":{
+              "id":"publisher1"
+            }
+          },
+          "device":{
+            "ua":"Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
+            "ip":"192.168.255.255",
+            "devicetype":2
+          },
+          "user":{
+            "id":"some-user",
+            "buyeruid":"some-buyer"
+          },
+          "tmax":1000,
+          "cur":[
+            "USD"
+          ],
+          "source":{
+            "tid":"61b87329-8790-47b7-90dd-c53ae7ce1723"
+          }
+        }
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": {
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "5f4f8790b9f0fc0e98b5db47",
+                  "impid": "SeparateADMVideo",
+                  "price": 20.0,
+                  "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><AdSystem version=\"2.0\">IO</AdSystem><AdTitle>Neptune</AdTitle><Impression></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" width=\"640\" height=\"480\" scalable=\"1\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[http://player-cdn.beachfrontmedia.com/players/neptune/3/20/1/neptune-player.js]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adid": "1088",
+                  "adomain": [
+                    "beachfront.io"
+                  ],
+                  "cid": "277",
+                  "crid": "532",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "duration": 15
+                  }
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "bidid": "5f4f8790b9f0fc0e98b5db47",
+          "cur": "USD"
+        }
+      }
+    },
+
+    {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=0c0c62c7-8fe6-4023-90a2-d6148f331823",
+        "body": {
+          "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "imp":[
+            {
+              "id":"ComboADMVideoImp1",
+              "secure": 0,
+              "video":{
+                "mimes":[
+                  "video/mp4"
+                ],
+                "w":300,
+                "h":250
+              },
+              "ext":{
+                "bidder":{
+                  "bidfloor":0.01,
+                  "appIds": {
+                    "video": "0c0c62c7-8fe6-4023-90a2-d6148f331823"
+                  }
+                }
+              }
+            }
+          ],
+          "site":{
+            "domain":"example.com",
+            "page":"http://example.com/whatever/something.html",
+            "publisher":{
+              "id":"publisher1"
+            }
+          },
+          "device":{
+            "ua":"Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
+            "ip":"192.168.255.255",
+            "devicetype":2
+          },
+          "user":{
+            "id":"some-user",
+            "buyeruid":"some-buyer"
+          },
+          "tmax":1000,
+          "cur":[
+            "USD"
+          ],
+          "source":{
+            "tid":"61b87329-8790-47b7-90dd-c53ae7ce1723"
+          }
+        }
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": {
+          "id": "5f4f8790dca51d29347f4dd8",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "5f4f8790dca51d29347f4ddb0",
+                  "impid": "ComboADMVideoImp1",
+                  "price": 0.8,
+                  "adm": "<?xml version=\"1.0\" ?><VAST version=\"2.0\"><Ad id=\"466052105\"><InLine><AdSystem>DCM</AdSystem><AdTitle>In-Stream Video</AdTitle><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" bitrate=\"18716\" width=\"1920\" height=\"1080\"><![CDATA[https://cdn.bfmlib.com/2020-04-10/19/5e90c507bfa0b944b470b5ab/fc71388688ba8beb8ccb7cde16e0a284.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adid": "22273",
+                  "adomain": [
+                    "opportunitywisconsin.org"
+                  ],
+                  "cid": "1551",
+                  "crid": "crid2",
+                  "cat": [
+                    "IAB2"
+                  ],
+                  "attr": [],
+                  "w": 0,
+                  "h": 0,
+                  "ext": {
+                    "duration": 30
+                  }
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ]
+}
+
