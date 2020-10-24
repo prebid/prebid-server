@@ -53,8 +53,8 @@ func NewPostgresEventProducer(cfg PostgresEventProducerConfig) (eventProducer *P
 	return &PostgresEventProducer{
 		cfg:           cfg,
 		lastUpdate:    time.Time{},
-		saves:         make(chan events.Save, 1),
-		invalidations: make(chan events.Invalidation, 1),
+		saves:         make(chan events.Save, 3),
+		invalidations: make(chan events.Invalidation, 3),
 		time:          &timeutil.RealTime{},
 	}
 }
@@ -207,17 +207,18 @@ func (e *PostgresEventProducer) sendEvents(rows *sql.Rows) (err error) {
 		return rows.Err()
 	}
 
-	if len(storedRequestData) > 0 || len(storedImpData) > 0 {
-		e.saves <- events.Save{
-			Requests: storedRequestData,
-			Imps:     storedImpData,
-		}
+	if len(storedRequestData) > 0 {
+		e.saves <- events.Save{DataType: config.RequestDataType, Data: storedRequestData}
 	}
-
-	if (len(requestInvalidations) > 0 || len(impInvalidations) > 0) && !e.lastUpdate.IsZero() {
-		e.invalidations <- events.Invalidation{
-			Requests: requestInvalidations,
-			Imps:     impInvalidations,
+	if len(storedImpData) > 0 {
+		e.saves <- events.Save{DataType: config.ImpDataType, Data: storedImpData}
+	}
+	if !e.lastUpdate.IsZero() {
+		if len(requestInvalidations) > 0 {
+			e.invalidations <- events.Invalidation{DataType: config.RequestDataType, Data: requestInvalidations}
+		}
+		if len(impInvalidations) > 0 {
+			e.invalidations <- events.Invalidation{DataType: config.ImpDataType, Data: impInvalidations}
 		}
 	}
 

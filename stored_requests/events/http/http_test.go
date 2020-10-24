@@ -1,13 +1,16 @@
 package http
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	httpCore "net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/stored_requests/events"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStartupReqsOnly(t *testing.T) {
@@ -18,13 +21,14 @@ func TestStartupReqsOnly(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theSave := <-ev.Saves()
 
-	assertLen(t, theSave.Requests, 2)
-	assertHasValue(t, theSave.Requests, "request1", `{"value":1}`)
-	assertHasValue(t, theSave.Requests, "request2", `{"value":2}`)
-
-	assertLen(t, theSave.Imps, 0)
+	assertSaveChanReceive(t, ev.Saves(), map[config.DataType]map[string]json.RawMessage{
+		config.RequestDataType: {
+			"request1": json.RawMessage(`{"value":1}`),
+			"request2": json.RawMessage(`{"value":2}`),
+		},
+	})
+	assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
 }
 
 func TestStartupImpsOnly(t *testing.T) {
@@ -35,12 +39,12 @@ func TestStartupImpsOnly(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theSave := <-ev.Saves()
-
-	assertLen(t, theSave.Requests, 0)
-
-	assertLen(t, theSave.Imps, 1)
-	assertHasValue(t, theSave.Imps, "imp1", `{"value":1}`)
+	assertSaveChanReceive(t, ev.Saves(), map[config.DataType]map[string]json.RawMessage{
+		config.ImpDataType: {
+			"imp1": json.RawMessage(`{"value":1}`),
+		},
+	})
+	assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
 }
 
 func TestStartupBothTypes(t *testing.T) {
@@ -51,50 +55,83 @@ func TestStartupBothTypes(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theSave := <-ev.Saves()
 
-	assertLen(t, theSave.Requests, 2)
-	assertHasValue(t, theSave.Requests, "request1", `{"value":1}`)
-	assertHasValue(t, theSave.Requests, "request2", `{"value":2}`)
+	assertSaveChanReceive(t, ev.Saves(), map[config.DataType]map[string]json.RawMessage{
+		config.RequestDataType: {
+			"request1": json.RawMessage(`{"value":1}`),
+			"request2": json.RawMessage(`{"value":2}`),
+		},
+		config.ImpDataType: {
+			"imp1": json.RawMessage(`{"value":1}`),
+		},
+	})
+	assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
+}
 
-	assertLen(t, theSave.Imps, 1)
-	assertHasValue(t, theSave.Imps, "imp1", `{"value":1}`)
+func TestStartupAccounts(t *testing.T) {
+	server := httptest.NewServer(&mockResponseHandler{
+		statusCode: httpCore.StatusOK,
+		response:   `{"accounts":{"acc1":{"value":1}}}`,
+	})
+	defer server.Close()
+
+	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
+	assertSaveChanReceive(t, ev.Saves(), map[config.DataType]map[string]json.RawMessage{
+		config.AccountDataType: {
+			"acc1": json.RawMessage(`{"value":1}`),
+		},
+	})
+	assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
 }
 
 func TestUpdates(t *testing.T) {
 	handler := &mockResponseHandler{
 		statusCode: httpCore.StatusOK,
-		response:   `{"requests":{"request1":{"value":1}, "request2":{"value":2}},"imps":{"imp1":{"value":3},"imp2":{"value":4}}}`,
+		response:   `{"requests":{"request1":{"value":1}, "request2":{"value":2}},"imps":{"imp1":{"value":3},"imp2":{"value":4}},"accounts":{"acc1":{"value":10},"acc2":{"value":11}}}`,
 	}
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
 
-	handler.response = `{"requests":{"request1":{"value":5}, "request2":{"deleted":true}},"imps":{"imp1":{"deleted":true},"imp2":{"value":6}}}`
+	handler.response = `{"requests":{"request1":{"value":5}, "request2":{"deleted":true}},"imps":{"imp1":{"deleted":true},"imp2":{"value":6}},"accounts":{"acc1":{"deleted":true},"acc2":{"value":12}}}`
 	timeChan := make(chan time.Time, 1)
 	timeChan <- time.Now()
 	go ev.refresh(timeChan)
-	firstSave := <-ev.Saves()
-	secondSave := <-ev.Saves()
-	inv := <-ev.Invalidations()
 
-	assertLen(t, firstSave.Requests, 2)
-	assertHasValue(t, firstSave.Requests, "request1", `{"value":1}`)
-	assertHasValue(t, firstSave.Requests, "request2", `{"value":2}`)
-	assertLen(t, firstSave.Imps, 2)
-	assertHasValue(t, firstSave.Imps, "imp1", `{"value":3}`)
-	assertHasValue(t, firstSave.Imps, "imp2", `{"value":4}`)
+	assertSaveChanReceive(t, ev.Saves(), map[config.DataType]map[string]json.RawMessage{
+		config.RequestDataType: {
+			"request1": json.RawMessage(`{"value":1}`),
+			"request2": json.RawMessage(`{"value":2}`),
+		},
+		config.ImpDataType: {
+			"imp1": json.RawMessage(`{"value":3}`),
+			"imp2": json.RawMessage(`{"value":4}`),
+		},
+		config.AccountDataType: {
+			"acc1": json.RawMessage(`{"value":10}`),
+			"acc2": json.RawMessage(`{"value":11}`),
+		},
+	})
+	assertSaveChanReceive(t, ev.Saves(), map[config.DataType]map[string]json.RawMessage{
+		config.RequestDataType: {
+			"request1": json.RawMessage(`{"value":5}`),
+		},
+		config.ImpDataType: {
+			"imp2": json.RawMessage(`{"value":6}`),
+		},
+		config.AccountDataType: {
+			"acc2": json.RawMessage(`{"value":12}`),
+		},
+	})
+	assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
 
-	assertLen(t, secondSave.Requests, 1)
-	assertHasValue(t, secondSave.Requests, "request1", `{"value":5}`)
-	assertLen(t, secondSave.Imps, 1)
-	assertHasValue(t, secondSave.Imps, "imp2", `{"value":6}`)
-
-	assertArrLen(t, inv.Requests, 1)
-	assertArrContains(t, inv.Requests, "request2")
-	assertArrLen(t, inv.Imps, 1)
-	assertArrContains(t, inv.Imps, "imp1")
+	assertInvalidationChanReceive(t, ev.Invalidations(), map[config.DataType][]string{
+		config.RequestDataType: {"request2"},
+		config.ImpDataType:     {"imp1"},
+		config.AccountDataType: {"acc1"},
+	})
+	assert.Empty(t, ev.Invalidations(), "Unexpected additional messages in save channel")
 }
 
 func TestErrorResponse(t *testing.T) {
@@ -106,9 +143,7 @@ func TestErrorResponse(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	if len(ev.Saves()) != 0 {
-		t.Errorf("No saves should be emitted if the HTTP call fails. Got %d", len(ev.Saves()))
-	}
+	assert.Empty(t, ev.Saves(), "No saves should be emitted if the HTTP call fails. Got %d", len(ev.Saves()))
 }
 
 func TestExpiredContext(t *testing.T) {
@@ -124,9 +159,7 @@ func TestExpiredContext(t *testing.T) {
 	}
 
 	ev := NewHTTPEvents(server.Client(), server.URL, ctxProducer, -1)
-	if len(ev.Saves()) != 0 {
-		t.Errorf("No saves should be emitted if the HTTP call is cancelled. Got %d", len(ev.Saves()))
-	}
+	assert.Empty(t, ev.Saves(), "No saves should be emitted if the HTTP call times out. Got %d", len(ev.Saves()))
 }
 
 func TestMalformedResponse(t *testing.T) {
@@ -138,9 +171,7 @@ func TestMalformedResponse(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	if len(ev.Saves()) != 0 {
-		t.Errorf("No updates should be emitted if the HTTP call fails. Got %d", len(ev.Saves()))
-	}
+	assert.Empty(t, ev.Saves(), "No saves should be emitted if the HTTP call fails. Got %d", len(ev.Saves()))
 }
 
 type mockResponseHandler struct {
@@ -153,37 +184,32 @@ func (m *mockResponseHandler) ServeHTTP(rw httpCore.ResponseWriter, r *httpCore.
 	rw.Write([]byte(m.response))
 }
 
-func assertLen(t *testing.T, m map[string]json.RawMessage, length int) {
+func assertSaveChanReceive(t *testing.T, ch <-chan events.Save, expected map[config.DataType]map[string]json.RawMessage) {
 	t.Helper()
-	if len(m) != length {
-		t.Errorf("Expected map with %d elements, but got %v", length, m)
-	}
-}
-
-func assertArrLen(t *testing.T, list []string, length int) {
-	t.Helper()
-	if len(list) != length {
-		t.Errorf("Expected list with %d elements, but got %v", length, list)
-	}
-}
-
-func assertArrContains(t *testing.T, haystack []string, needle string) {
-	t.Helper()
-	for _, elm := range haystack {
-		if elm == needle {
-			return
+	for len(expected) > 0 {
+		select {
+		case event := <-ch:
+			if data, ok := expected[event.DataType]; ok {
+				assert.Equal(t, data, event.Data)
+				delete(expected, event.DataType)
+			}
+		case <-time.After(20 * time.Millisecond):
+			assert.FailNow(t, "Did not receive all expected messages in time", "%v", expected)
 		}
 	}
-	t.Errorf("expected element %s to be in list %v", needle, haystack)
 }
 
-func assertHasValue(t *testing.T, m map[string]json.RawMessage, key string, val string) {
+func assertInvalidationChanReceive(t *testing.T, ch <-chan events.Invalidation, expected map[config.DataType][]string) {
 	t.Helper()
-	if mapVal, ok := m[key]; ok {
-		if !bytes.Equal(mapVal, []byte(val)) {
-			t.Errorf("expected map[%s] to be %s, but got %s", key, val, string(mapVal))
+	for len(expected) > 0 {
+		select {
+		case event := <-ch:
+			if data, ok := expected[event.DataType]; ok {
+				assert.Equal(t, data, event.Data)
+				delete(expected, event.DataType)
+			}
+		case <-time.After(20 * time.Millisecond):
+			assert.FailNow(t, "Did not receive all expected messages in time", "%v", expected)
 		}
-	} else {
-		t.Errorf("map missing expected key: %s", key)
 	}
 }

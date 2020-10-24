@@ -113,23 +113,16 @@ func TestFetchAllSuccess(t *testing.T) {
 		assert.Nil(t, err, tt.description)
 		assert.Equal(t, tt.wantLastUpdate, eventProducer.lastUpdate, tt.description)
 
-		var saves events.Save
-		// Read data from saves channel with timeout to avoid test suite deadlock
-		select {
-		case saves = <-eventProducer.Saves():
-		case <-time.After(20 * time.Millisecond):
-		}
-		var invalidations events.Invalidation
-		// Read data from invalidations channel with timeout to avoid test suite deadlock
-		select {
-		case invalidations = <-eventProducer.Invalidations():
-		case <-time.After(20 * time.Millisecond):
-		}
-
-		assert.Equal(t, tt.wantSavedReqs, saves.Requests, tt.description)
-		assert.Equal(t, tt.wantSavedImps, saves.Imps, tt.description)
-		assert.Equal(t, tt.wantInvalidatedReqs, invalidations.Requests, tt.description)
-		assert.Equal(t, tt.wantInvalidatedImps, invalidations.Imps, tt.description)
+		assertSaveChanReceive(t, eventProducer.Saves(), map[config.DataType]map[string]json.RawMessage{
+			config.RequestDataType: tt.wantSavedReqs,
+			config.ImpDataType:     tt.wantSavedImps,
+		})
+		assertInvalidationChanReceive(t, eventProducer.Invalidations(), map[config.DataType][]string{
+			config.RequestDataType: tt.wantInvalidatedReqs,
+			config.ImpDataType:     tt.wantInvalidatedImps,
+		})
+		assert.Empty(t, eventProducer.Saves(), tt.description)
+		assert.Empty(t, eventProducer.Invalidations(), tt.description)
 
 		metricsMock.AssertExpectations(t)
 	}
@@ -202,23 +195,8 @@ func TestFetchAllErrors(t *testing.T) {
 		assert.NotNil(t, err, tt.description)
 		assert.Equal(t, tt.wantLastUpdate, eventProducer.lastUpdate, tt.description)
 
-		var saves events.Save
-		// Read data from saves channel with timeout to avoid test suite deadlock
-		select {
-		case saves = <-eventProducer.Saves():
-		case <-time.After(10 * time.Millisecond):
-		}
-		var invalidations events.Invalidation
-		// Read data from invalidations channel with timeout to avoid test suite deadlock
-		select {
-		case invalidations = <-eventProducer.Invalidations():
-		case <-time.After(10 * time.Millisecond):
-		}
-
-		assert.Nil(t, saves.Requests, tt.description)
-		assert.Nil(t, saves.Imps, tt.description)
-		assert.Nil(t, invalidations.Requests, tt.description)
-		assert.Nil(t, invalidations.Requests, tt.description)
+		assert.Empty(t, eventProducer.Saves(), tt.description)
+		assert.Empty(t, eventProducer.Invalidations(), tt.description)
 
 		metricsMock.AssertExpectations(t)
 	}
@@ -327,23 +305,16 @@ func TestFetchDeltaSuccess(t *testing.T) {
 		assert.Nil(t, err, tt.description)
 		assert.Equal(t, tt.wantLastUpdate, eventProducer.lastUpdate, tt.description)
 
-		var saves events.Save
-		// Read data from saves channel with timeout to avoid test suite deadlock
-		select {
-		case saves = <-eventProducer.Saves():
-		case <-time.After(20 * time.Millisecond):
-		}
-		var invalidations events.Invalidation
-		// Read data from invalidations channel with timeout to avoid test suite deadlock
-		select {
-		case invalidations = <-eventProducer.Invalidations():
-		case <-time.After(20 * time.Millisecond):
-		}
-
-		assert.Equal(t, tt.wantSavedReqs, saves.Requests, tt.description)
-		assert.Equal(t, tt.wantSavedImps, saves.Imps, tt.description)
-		assert.Equal(t, tt.wantInvalidatedReqs, invalidations.Requests, tt.description)
-		assert.Equal(t, tt.wantInvalidatedImps, invalidations.Imps, tt.description)
+		assertSaveChanReceive(t, eventProducer.Saves(), map[config.DataType]map[string]json.RawMessage{
+			config.RequestDataType: tt.wantSavedReqs,
+			config.ImpDataType:     tt.wantSavedImps,
+		})
+		assertInvalidationChanReceive(t, eventProducer.Invalidations(), map[config.DataType][]string{
+			config.RequestDataType: tt.wantInvalidatedReqs,
+			config.ImpDataType:     tt.wantInvalidatedImps,
+		})
+		assert.Empty(t, eventProducer.Saves(), tt.description)
+		assert.Empty(t, eventProducer.Invalidations(), tt.description)
 
 		metricsMock.AssertExpectations(t)
 	}
@@ -421,24 +392,49 @@ func TestFetchDeltaErrors(t *testing.T) {
 		assert.NotNil(t, err, tt.description)
 		assert.Equal(t, tt.wantLastUpdate, eventProducer.lastUpdate, tt.description)
 
-		var saves events.Save
-		// Read data from saves channel with timeout to avoid test suite deadlock
-		select {
-		case saves = <-eventProducer.Saves():
-		case <-time.After(10 * time.Millisecond):
-		}
-		var invalidations events.Invalidation
-		// Read data from invalidations channel with timeout to avoid test suite deadlock
-		select {
-		case invalidations = <-eventProducer.Invalidations():
-		case <-time.After(10 * time.Millisecond):
-		}
-
-		assert.Nil(t, saves.Requests, tt.description)
-		assert.Nil(t, saves.Imps, tt.description)
-		assert.Nil(t, invalidations.Requests, tt.description)
-		assert.Nil(t, invalidations.Requests, tt.description)
+		assert.Empty(t, eventProducer.Saves(), tt.description)
+		assert.Empty(t, eventProducer.Invalidations(), tt.description)
 
 		metricsMock.AssertExpectations(t)
+	}
+}
+
+func assertSaveChanReceive(t *testing.T, ch <-chan events.Save, expected map[config.DataType]map[string]json.RawMessage) {
+	t.Helper()
+	for len(expected) > 0 {
+		select {
+		case event := <-ch:
+			if data, ok := expected[event.DataType]; ok {
+				assert.Equal(t, data, event.Data)
+				delete(expected, event.DataType)
+			}
+		case <-time.After(20 * time.Millisecond):
+			for _, v := range expected {
+				if len(v) > 0 {
+					assert.FailNow(t, "Did not receive all expected messages in time", "%v", expected)
+				}
+			}
+			return
+		}
+	}
+}
+
+func assertInvalidationChanReceive(t *testing.T, ch <-chan events.Invalidation, expected map[config.DataType][]string) {
+	t.Helper()
+	for len(expected) > 0 {
+		select {
+		case event := <-ch:
+			if data, ok := expected[event.DataType]; ok {
+				assert.Equal(t, data, event.Data)
+				delete(expected, event.DataType)
+			}
+		case <-time.After(20 * time.Millisecond):
+			for _, v := range expected {
+				if len(v) > 0 {
+					assert.FailNow(t, "Did not receive all expected messages in time", "%v", expected)
+				}
+			}
+			return
+		}
 	}
 }

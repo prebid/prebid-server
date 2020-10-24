@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/buger/jsonparser"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests/events"
 
 	"github.com/golang/glog"
@@ -65,8 +66,8 @@ func NewHTTPEvents(client *httpCore.Client, endpoint string, ctxProducer func() 
 		ctxProducer:   ctxProducer,
 		Endpoint:      endpoint,
 		lastUpdate:    time.Now().UTC(),
-		saves:         make(chan events.Save, 1),
-		invalidations: make(chan events.Invalidation, 1),
+		saves:         make(chan events.Save, 3),         // capacity for one of each data type
+		invalidations: make(chan events.Invalidation, 3), // capacity for one of each data type
 	}
 	glog.Infof("Loading HTTP cache from GET %s", endpoint)
 	e.fetchAll()
@@ -88,12 +89,15 @@ func (e *HTTPEvents) fetchAll() {
 	ctx, cancel := e.ctxProducer()
 	defer cancel()
 	resp, err := ctxhttp.Get(ctx, e.client, e.Endpoint)
-	if respObj, ok := e.parse(e.Endpoint, resp, err); ok &&
-		(len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 || len(respObj.Accounts) > 0) {
-		e.saves <- events.Save{
-			Requests: respObj.StoredRequests,
-			Imps:     respObj.StoredImps,
-			Accounts: respObj.Accounts,
+	if respObj, ok := e.parse(e.Endpoint, resp, err); ok {
+		if len(respObj.StoredRequests) > 0 {
+			e.saves <- events.Save{DataType: config.RequestDataType, Data: respObj.StoredRequests}
+		}
+		if len(respObj.StoredImps) > 0 {
+			e.saves <- events.Save{DataType: config.ImpDataType, Data: respObj.StoredImps}
+		}
+		if len(respObj.Accounts) > 0 {
+			e.saves <- events.Save{DataType: config.AccountDataType, Data: respObj.Accounts}
 		}
 	}
 }
@@ -130,21 +134,12 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 			ctx, cancel := e.ctxProducer()
 			resp, err := ctxhttp.Get(ctx, e.client, endpoint)
 			if respObj, ok := e.parse(endpoint, resp, err); ok {
-				invalidations := events.Invalidation{
-					Requests: extractInvalidations(respObj.StoredRequests),
-					Imps:     extractInvalidations(respObj.StoredImps),
-					Accounts: extractInvalidations(respObj.Accounts),
-				}
-				if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 || len(respObj.Accounts) > 0 {
-					e.saves <- events.Save{
-						Requests: respObj.StoredRequests,
-						Imps:     respObj.StoredImps,
-						Accounts: respObj.Accounts,
-					}
-				}
-				if len(invalidations.Requests) > 0 || len(invalidations.Imps) > 0 || len(invalidations.Accounts) > 0 {
-					e.invalidations <- invalidations
-				}
+				sendInvalidations(e.invalidations, config.RequestDataType, respObj.StoredRequests)
+				sendInvalidations(e.invalidations, config.ImpDataType, respObj.StoredImps)
+				sendInvalidations(e.invalidations, config.AccountDataType, respObj.Accounts)
+				sendSaves(e.saves, config.RequestDataType, respObj.StoredRequests)
+				sendSaves(e.saves, config.ImpDataType, respObj.StoredImps)
+				sendSaves(e.saves, config.AccountDataType, respObj.Accounts)
 				e.lastUpdate = thisTimeInUTC
 			}
 			cancel()
@@ -181,7 +176,10 @@ func (e *HTTPEvents) parse(endpoint string, resp *httpCore.Response, err error) 
 	return &respObj, true
 }
 
-func extractInvalidations(changes map[string]json.RawMessage) []string {
+func sendInvalidations(invalidations chan<- events.Invalidation, dataType config.DataType, changes map[string]json.RawMessage) {
+	if len(changes) == 0 {
+		return
+	}
 	deletedIDs := make([]string, 0, len(changes))
 	for id, msg := range changes {
 		if value, _, _, err := jsonparser.Get(msg, "deleted"); err == nil && bytes.Equal(value, []byte("true")) {
@@ -189,7 +187,18 @@ func extractInvalidations(changes map[string]json.RawMessage) []string {
 			deletedIDs = append(deletedIDs, id)
 		}
 	}
-	return deletedIDs
+	if len(deletedIDs) > 0 {
+		invalidations <- events.Invalidation{
+			DataType: dataType,
+			Data:     deletedIDs,
+		}
+	}
+}
+
+func sendSaves(saves chan<- events.Save, dataType config.DataType, changes map[string]json.RawMessage) {
+	if len(changes) > 0 {
+		saves <- events.Save{DataType: dataType, Data: changes}
+	}
 }
 
 func (e *HTTPEvents) Saves() <-chan events.Save {

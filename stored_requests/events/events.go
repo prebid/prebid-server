@@ -1,24 +1,25 @@
 package events
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 
+	"github.com/buger/jsonparser"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
 // Save represents a bulk save
 type Save struct {
-	Requests map[string]json.RawMessage `json:"requests"`
-	Imps     map[string]json.RawMessage `json:"imps"`
-	Accounts map[string]json.RawMessage `json:"accounts"`
+	DataType config.DataType
+	Data     map[string]json.RawMessage `json:"data"`
 }
 
 // Invalidation represents a bulk invalidation
 type Invalidation struct {
-	Requests []string `json:"requests"`
-	Imps     []string `json:"imps"`
-	Accounts []string `json:"accounts"`
+	DataType config.DataType
+	Data     []string `json:"data"`
 }
 
 // EventProducer will produce cache update and invalidation events on its channels
@@ -58,26 +59,55 @@ func (e *EventListener) Stop() {
 	e.stop <- struct{}{}
 }
 
+// getCacheByType looks up the subcache by type - maybe this should be a Cache method
+func getCacheByType(cache stored_requests.Cache, dataType config.DataType) stored_requests.CacheJSON {
+	return map[config.DataType]stored_requests.CacheJSON{
+		config.RequestDataType: cache.Requests,
+		config.ImpDataType:     cache.Imps,
+		config.AccountDataType: cache.Accounts,
+	}[dataType]
+}
+
 // Listen is meant to be run as a goroutine that updates/invalidates the cache when events occur
 func (e *EventListener) Listen(cache stored_requests.Cache, events EventProducer) {
 	for {
 		select {
 		case save := <-events.Saves():
-			cache.Requests.Save(context.Background(), save.Requests)
-			cache.Imps.Save(context.Background(), save.Imps)
-			cache.Accounts.Save(context.Background(), save.Accounts)
+			getCacheByType(cache, save.DataType).Save(context.Background(), save.Data)
 			if e.onSave != nil {
 				e.onSave()
 			}
 		case invalidation := <-events.Invalidations():
-			cache.Requests.Invalidate(context.Background(), invalidation.Requests)
-			cache.Imps.Invalidate(context.Background(), invalidation.Imps)
-			cache.Accounts.Invalidate(context.Background(), invalidation.Accounts)
+			getCacheByType(cache, invalidation.DataType).Invalidate(context.Background(), invalidation.Data)
 			if e.onInvalidate != nil {
 				e.onInvalidate()
 			}
 		case <-e.stop:
 			break
 		}
+	}
+}
+
+// SendInvalidations destructively extracts the ids with {deleted: true} from changes and sends a cache invalidation message
+func SendInvalidations(invalidations chan<- Invalidation, dataType config.DataType, changes map[string]json.RawMessage) {
+	deletedIDs := make([]string, 0, len(changes))
+	for id, msg := range changes {
+		if value, _, _, err := jsonparser.Get(msg, "deleted"); err == nil && bytes.Equal(value, []byte("true")) {
+			delete(changes, id)
+			deletedIDs = append(deletedIDs, id)
+		}
+	}
+	if len(deletedIDs) > 0 {
+		invalidations <- Invalidation{
+			DataType: dataType,
+			Data:     deletedIDs,
+		}
+	}
+}
+
+// SendSaves sends an update (save) message with all the changes
+func SendSaves(saves chan<- Save, dataType config.DataType, changes map[string]json.RawMessage) {
+	if len(changes) > 0 {
+		saves <- Save{DataType: dataType, Data: changes}
 	}
 }

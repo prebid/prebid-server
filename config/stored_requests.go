@@ -15,6 +15,7 @@ type DataType string
 
 const (
 	RequestDataType    DataType = "Request"
+	ImpDataType        DataType = "Imp"
 	CategoryDataType   DataType = "Category"
 	VideoDataType      DataType = "Video"
 	AMPRequestDataType DataType = "AMP Request"
@@ -25,6 +26,7 @@ const (
 func (dataType DataType) Section() string {
 	return map[DataType]string{
 		RequestDataType:    "stored_requests",
+		ImpDataType:        "stored_requests",
 		CategoryDataType:   "categories",
 		VideoDataType:      "stored_video_req",
 		AMPRequestDataType: "stored_amp_req",
