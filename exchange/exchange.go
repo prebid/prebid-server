@@ -172,7 +172,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
 			var err error
 			var rejections []string
-			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
+			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, bidRequest, requestExt, adapterBids, *categoriesFetcher, targData)
 			if err != nil {
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 			}
@@ -284,15 +284,15 @@ func validateAndNormalizeDealTier(impDeal *DealTier) bool {
 
 func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo, bidCategory map[string]string) {
 	if bid.dealPriority >= dealTierInfo.MinDealTier {
-		prefixTier := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
+		bid.dealTierSatisfied = true
 
+		prefixTier := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
 		if oldCatDur, ok := bidCategory[bid.bid.ID]; ok {
 			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
 			oldCatDurSplit[0] = prefixTier
 
 			newCatDur := strings.Join(oldCatDurSplit, "")
 			bidCategory[bid.bid.ID] = newCatDur
-			bid.dealTierSatisfied = true
 		}
 	}
 }
@@ -493,7 +493,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	return bidResponse, err
 }
 
-func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
+func applyCategoryMapping(ctx context.Context, bidRequest *openrtb.BidRequest, requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -503,7 +503,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 	}
 
 	dedupe := make(map[string]bidDedupe)
-
+	impMap := make(map[string]*openrtb.Imp)
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
@@ -514,6 +514,11 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 	var err error
 	var rejections []string
 	var translateCategories = true
+
+	//Maintaining BidRequest Impression Map
+	for i := range bidRequest.Imp {
+		impMap[bidRequest.Imp[i].ID] = &bidRequest.Imp[i]
+	}
 
 	if includeBrandCategory && brandCatExt.WithCategory {
 		if brandCatExt.TranslateCategories != nil {
@@ -589,6 +594,12 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 					if duration <= dur {
 						newDur = dur
 						break
+					}
+				}
+			} else if newDur == 0 {
+				if imp, ok := impMap[bid.bid.ID]; ok {
+					if nil != imp.Video && imp.Video.MaxDuration > 0 {
+						newDur = int(imp.Video.MaxDuration)
 					}
 				}
 			}
