@@ -175,8 +175,8 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}
 
 	// n adm requests, some of which may have multiple imps
-	for appId, adm := range beachfrontReqs.ADMVideo {
-		bytes, err := json.Marshal(adm)
+	for appId := range beachfrontReqs.ADMVideo {
+		bytes, err := json.Marshal(beachfrontReqs.ADMVideo[appId])
 
 		if err == nil {
 			reqs = append(reqs, &adapters.RequestData{
@@ -197,6 +197,7 @@ func sortImps(request *openrtb.BidRequest) (bool, []openrtb.Imp, []error) {
 	var videoImps = make([]openrtb.Imp, 0, len(request.Imp))
 	var errs = make([]error, 0, len(request.Imp))
 	var wantsBanner bool
+	var secure int8
 
 	for i := 0; i < len(request.Imp); i++ {
 		if !wantsBanner {
@@ -207,12 +208,12 @@ func sortImps(request *openrtb.BidRequest) (bool, []openrtb.Imp, []error) {
 		}
 
 		if request.Imp[i].Video != nil {
+
 			if request.Site != nil {
 				if request.Site.Page != "" {
 					// This will overwrite the secure value if it is included, but if
 					// a web request is not https, it's not secure, and vice versa so this seems authoritative.
-					secure := isPageSecure(request.Site.Page)
-					request.Imp[i].Secure = &secure
+					secure = isPageSecure(request.Site.Page)
 				} else {
 					errs = append(errs,
 						errors.New(
@@ -252,12 +253,14 @@ func sortImps(request *openrtb.BidRequest) (bool, []openrtb.Imp, []error) {
 
 				// This is a valid App request. Make sure Imp[i].Secure is set.
 				if request.Imp[i].Secure == nil {
-					var secure int8 = 0
-					request.Imp[i].Secure = &secure
+					secure = 0
+				} else {
+					secure = *request.Imp[i].Secure
 				}
 			}
 
 			videoImp := deepCopyImp(&request.Imp[i])
+			videoImp.Secure = &secure
 			videoImp.Banner = nil
 			videoImps = append(videoImps, videoImp)
 		}
@@ -547,9 +550,9 @@ func impsToSlots(imps []openrtb.Imp, errs []error) (bannerRequest, int8, []error
 func getVideoRequests(request *openrtb.BidRequest, imps []openrtb.Imp, errs []error) ([]openrtb.BidRequest, map[string]*openrtb.BidRequest, []error) {
 	var nurlReqs []openrtb.BidRequest
 
-	// The pointers below will each point to a deep copy of the request argument, cleaned up and stripped of
-	// the original imps, which are replaced with deep copies in the provided imps slice. Everything is fresh
-	// and new.
+	// The pointers below will each point to a deep copy of the request argument, cleaned
+	// up and stripped of the original imps, which are replaced with deep copies in the provided
+	// imps slice. Everything is fresh and new.
 	var admMap = map[string]*openrtb.BidRequest{}
 
 	for i := 0; i < len(imps); i++ {
