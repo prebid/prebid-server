@@ -38,18 +38,8 @@ type ExtraInfo struct {
 
 type requests struct {
 	Banner    bannerRequest
-	NurlVideo []videoRequest
-	ADMVideo  []videoRequest
-}
-
-// ---------------------------------------------------
-//              Video
-// ---------------------------------------------------
-
-type videoRequest struct {
-	AppId             string              `json:"appId"`
-	VideoResponseType string              `json:"videoResponseType"`
-	Request           *openrtb.BidRequest `json:"request"`
+	NurlVideo []openrtb.BidRequest
+	ADMVideo  map[string]*openrtb.BidRequest
 }
 
 // ---------------------------------------------------
@@ -104,7 +94,26 @@ type videoBidExtension struct {
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	beachfrontRequests, errs := preprocess(request)
+	var beachfrontReqs requests
+
+	wantsBanner, videoImps, errs := sortImps(request)
+	if wantsBanner {
+		beachfrontReqs.Banner, errs = getBannerRequest(request, errs)
+	}
+
+	if len(videoImps) > 0 {
+		beachfrontReqs.NurlVideo, errs = getNurlRequests(
+			request,
+			videoImps,
+			errs)
+	}
+
+	if len(videoImps) > 0 {
+		beachfrontReqs.ADMVideo, errs = getAdmRequests(
+			request,
+			videoImps,
+			errs)
+	}
 
 	if len(errs) > 0 && errortypes.ContainsFatalError(errs) {
 		return nil, errs
@@ -113,7 +122,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	var reqs = make(
 		[]*adapters.RequestData,
 		0,
-		len(beachfrontRequests.ADMVideo)+len(beachfrontRequests.NurlVideo)+1)
+		len(beachfrontReqs.ADMVideo)+len(beachfrontReqs.NurlVideo)+1)
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -135,8 +144,8 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	// one banner request potentially with multiple imps, and it does
 	// not need the cookie, so doing it first.
-	if len(beachfrontRequests.Banner.Slots) > 0 {
-		bytes, err := json.Marshal(beachfrontRequests.Banner)
+	if len(beachfrontReqs.Banner.Slots) > 0 {
+		bytes, err := json.Marshal(beachfrontReqs.Banner)
 
 		if err == nil {
 			reqs = append(reqs, &adapters.RequestData{
@@ -154,14 +163,16 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
-	// n adm requests, some of which may have multiple imps
-	for j := 0; j < len(beachfrontRequests.ADMVideo); j++ {
-		bytes, err := json.Marshal(beachfrontRequests.ADMVideo[j].Request)
+	// n nurl requests, each of which is one imp
+	for i := 0; i < len(beachfrontReqs.NurlVideo); i++ {
+		bytes, err := json.Marshal(beachfrontReqs.NurlVideo[i])
+		ext, err := getBeachfrontExtension(beachfrontReqs.NurlVideo[i].Imp[0], openrtb_ext.BidTypeVideo)
+
 		if err == nil {
 			reqs = append(reqs, &adapters.RequestData{
 				Method:  "POST",
-				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
-				Body:    bytes,
+				Uri:     a.extraInfo.VideoEndpoint + "=" + ext.AppId + nurlVideoEndpointSuffix,
+				Body:    append([]byte(`{"isPrebid":true,`), bytes[1:]...),
 				Headers: headers,
 			})
 		} else {
@@ -169,15 +180,16 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-	// n nurl requests, each of which is one imp
-	for j := 0; j < len(beachfrontRequests.NurlVideo); j++ {
-		bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
+	// n adm requests, some of which may have multiple imps
+	for appId, adm := range beachfrontReqs.ADMVideo {
+
+		bytes, err := json.Marshal(adm)
 
 		if err == nil {
 			reqs = append(reqs, &adapters.RequestData{
 				Method:  "POST",
-				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
-				Body:    append([]byte(`{"isPrebid":true,`), bytes[1:]...),
+				Uri:     a.extraInfo.VideoEndpoint + "=" + appId,
+				Body:    bytes,
 				Headers: headers,
 			})
 		} else {
@@ -188,10 +200,9 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	return reqs, errs
 }
 
-func preprocess(request *openrtb.BidRequest) (requests, []error) {
+func sortImps(request *openrtb.BidRequest) (bool, []openrtb.Imp, []error) {
 	var videoImps = make([]openrtb.Imp, 0, len(request.Imp))
 	var errs = make([]error, 0, len(request.Imp))
-	var beachfrontReqs requests
 	var wantsBanner bool
 
 	for i := 0; i < len(request.Imp); i++ {
@@ -263,23 +274,10 @@ func preprocess(request *openrtb.BidRequest) (requests, []error) {
 		errs = append(errs, &errortypes.BadInput{
 			Message: "no valid impressions were found in the request",
 		})
-		return beachfrontReqs, errs
+		return false, videoImps, errs
 	}
 
-	if wantsBanner {
-		beachfrontReqs.Banner, errs = getBannerRequest(request, errs)
-	}
-
-	if len(videoImps) > 0 {
-		requestStub := deepCopyRequest(request)
-		requestStub.Imp = nil
-		beachfrontReqs.NurlVideo, beachfrontReqs.ADMVideo, errs = getVideoRequests(
-			requestStub,
-			videoImps,
-			errs)
-	}
-
-	return beachfrontReqs, errs
+	return wantsBanner, videoImps, errs
 }
 
 func deepCopyRequest(request *openrtb.BidRequest) openrtb.BidRequest {
@@ -366,6 +364,62 @@ func deepCopyRequest(request *openrtb.BidRequest) openrtb.BidRequest {
 	return requestCopy
 }
 
+func deepCopyImp(imp *openrtb.Imp) openrtb.Imp {
+	impCopy := *imp
+
+	if impCopy.Banner != nil {
+		banner := *impCopy.Banner
+		if banner.W != nil {
+			w := *banner.W
+			banner.W = &w
+		}
+
+		if banner.H != nil {
+			h := *banner.H
+			banner.W = &h
+		}
+
+		if banner.Pos != nil {
+			pos := *banner.Pos
+			banner.Pos = &pos
+		}
+
+		impCopy.Banner = &banner
+	}
+
+	if impCopy.Video != nil {
+		video := *impCopy.Video
+
+		if video.StartDelay != nil {
+			sd := *video.StartDelay
+			video.StartDelay = &sd
+		}
+
+		if video.Skip != nil {
+			skip := *video.Skip
+			video.Skip = &skip
+		}
+
+		if video.Pos != nil {
+			pos := *video.Pos
+			video.Pos = &pos
+		}
+		impCopy.Video = &video
+	}
+
+	if impCopy.PMP != nil {
+		pmp := *impCopy.PMP
+		impCopy.PMP = &pmp
+	}
+
+	if impCopy.Secure != nil {
+		secure := *impCopy.Secure
+		impCopy.Secure = &secure
+	}
+
+	return impCopy
+}
+
 func getBannerRequest(request *openrtb.BidRequest, errs []error) (bannerRequest, []error) {
 	var secure int8
 	var bannerReq bannerRequest
@@ -446,7 +500,7 @@ func impsToSlots(imps []openrtb.Imp, errs []error) (bannerRequest, int8, []error
 		} else {
 			secure = 0
 		}
-		beachfrontExt, err := getBeachfrontExtension(imp)
+		beachfrontExt, err := getBeachfrontExtension(imp, openrtb_ext.BidTypeBanner)
 
 		if err != nil {
 			errs = append(errs, errors.New(fmt.Sprintf("%s (on banner imp id: %s)", err, imp.ID)))
@@ -497,13 +551,11 @@ func impsToSlots(imps []openrtb.Imp, errs []error) (bannerRequest, int8, []error
 	return bfr, secure, errs
 }
 
-func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs []error) ([]videoRequest, []videoRequest, []error) {
-	var admMap = map[string]*videoRequest{}
-	var nurlReqs []videoRequest
-	var admReqs []videoRequest
+func getNurlRequests(request *openrtb.BidRequest, imps []openrtb.Imp, errs []error) ([]openrtb.BidRequest, []error) {
+	var nurlReqs []openrtb.BidRequest
 
 	for i := 0; i < len(imps); i++ {
-		ext, err := prepVideoRequestExt(imps[i])
+		ext, err := getBeachfrontExtension(imps[i], openrtb_ext.BidTypeVideo)
 
 		if err != nil {
 			errs = append(errs, errors.New(fmt.Sprintf("%s (on video imp id: %s)", err, imps[i].ID)))
@@ -511,31 +563,35 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs [
 		}
 
 		if ext.VideoResponseType == "nurl" || ext.VideoResponseType == "both" {
-			newRequestStub := deepCopyRequest(&requestStub)
-			newRequestStub.Imp = []openrtb.Imp{imps[i]}
 
-			nurlReqs = append(nurlReqs, prepVideoRequest(
+			r := deepCopyRequest(request)
+			r.Imp = []openrtb.Imp{imps[i]}
 
-				videoRequest{
-					AppId:             ext.AppId,
-					VideoResponseType: ext.VideoResponseType,
-					Request:           &newRequestStub,
-				}))
+			nurlReqs = append(nurlReqs, prepVideoRequest(r))
+		}
+
+	}
+
+	return nurlReqs, errs
+}
+
+func getAdmRequests(request *openrtb.BidRequest, imps []openrtb.Imp, errs []error) (map[string]*openrtb.BidRequest, []error) {
+	var admMap = map[string]*openrtb.BidRequest{}
+	for i := 0; i < len(imps); i++ {
+		ext, err := getBeachfrontExtension(imps[i], openrtb_ext.BidTypeVideo)
+
+		if err != nil {
+			errs = append(errs, errors.New(fmt.Sprintf("%s (on video imp id: %s)", err, imps[i].ID)))
+			continue
 		}
 
 		if ext.VideoResponseType == "adm" || ext.VideoResponseType == "both" {
-			mappedElement, exists := admMap[ext.AppId]
+			_, exists := admMap[ext.AppId]
 			if exists {
-				admMap[ext.AppId].Request.Imp = append(mappedElement.Request.Imp, imps[i])
+				admMap[ext.AppId].Imp = append(admMap[ext.AppId].Imp, deepCopyImp(&imps[i]))
 			} else {
-				newRequestStub := deepCopyRequest(&requestStub)
-				newRequestStub.Imp = []openrtb.Imp{imps[i]}
-
-				r := videoRequest{
-					AppId:             ext.AppId,
-					VideoResponseType: ext.VideoResponseType,
-					Request:           &newRequestStub,
-				}
+				r := deepCopyRequest(request)
+				r.Imp = []openrtb.Imp{deepCopyImp(&imps[i])}
 
 				r = prepVideoRequest(r)
 				admMap[ext.AppId] = &r
@@ -543,13 +599,7 @@ func getVideoRequests(requestStub openrtb.BidRequest, imps []openrtb.Imp, errs [
 		}
 	}
 
-	if len(admMap) > 0 {
-		for k := range admMap {
-			admReqs = append(admReqs, *admMap[k])
-		}
-	}
-
-	return nurlReqs, admReqs, errs
+	return admMap, errs
 }
 
 func fallBackDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
@@ -560,51 +610,31 @@ func fallBackDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
 	return openrtb.DeviceTypeMobileTablet
 }
 
-func prepVideoRequestExt(requestImp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, error) {
-	beachfrontExt, err := getBeachfrontExtension(requestImp)
-
-	if err != nil {
-		return beachfrontExt, err
+func prepVideoRequest(bfReq openrtb.BidRequest) openrtb.BidRequest {
+	if bfReq.Site != nil && bfReq.Site.Domain == "" && bfReq.Site.Page != "" {
+		bfReq.Site.Domain = getDomain(bfReq.Site.Page)
 	}
 
-	beachfrontExt.AppId, err = getAppId(beachfrontExt, openrtb_ext.BidTypeVideo)
-
-	if err != nil {
-		return beachfrontExt, err
-	}
-
-	if beachfrontExt.VideoResponseType != "nurl" && beachfrontExt.VideoResponseType != "both" {
-		beachfrontExt.VideoResponseType = "adm"
-	}
-
-	return beachfrontExt, err
-}
-
-func prepVideoRequest(bfReq videoRequest) videoRequest {
-	if bfReq.Request.Site != nil && bfReq.Request.Site.Domain == "" && bfReq.Request.Site.Page != "" {
-		bfReq.Request.Site.Domain = getDomain(bfReq.Request.Site.Page)
-	}
-
-	if bfReq.Request.App != nil && bfReq.Request.App.Domain == "" && bfReq.Request.App.Bundle != "" {
-		var chunks = strings.Split(strings.Trim(bfReq.Request.App.Bundle, "_"), ".")
+	if bfReq.App != nil && bfReq.App.Domain == "" && bfReq.App.Bundle != "" {
+		var chunks = strings.Split(strings.Trim(bfReq.App.Bundle, "_"), ".")
 
 		if len(chunks) > 1 {
-			bfReq.Request.App.Domain =
+			bfReq.App.Domain =
 				fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
 		}
 
 	}
 
-	if bfReq.Request.Device != nil {
-		bfReq.Request.Device.IP = getIP(bfReq.Request.Device.IP)
+	if bfReq.Device != nil {
+		bfReq.Device.IP = getIP(bfReq.Device.IP)
 
-		if bfReq.Request.Device.DeviceType == 0 {
-			bfReq.Request.Device.DeviceType = fallBackDeviceType(bfReq.Request)
+		if bfReq.Device.DeviceType == 0 {
+			bfReq.Device.DeviceType = fallBackDeviceType(&bfReq)
 		}
 	}
 
-	if len(bfReq.Request.Cur) == 0 {
-		bfReq.Request.Cur = []string{"USD"}
+	if len(bfReq.Cur) == 0 {
+		bfReq.Cur = []string{"USD"}
 	}
 
 	return bfReq
@@ -755,7 +785,7 @@ func extractNurlVideoCrid(nurl string) string {
 	return ""
 }
 
-func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, error) {
+func getBeachfrontExtension(imp openrtb.Imp, bidType openrtb_ext.BidType) (openrtb_ext.ExtImpBeachfront, error) {
 	var err error
 	var bidderExt adapters.ExtImpBidder
 	var beachfrontExt openrtb_ext.ExtImpBeachfront
@@ -770,6 +800,20 @@ func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, erro
 		return beachfrontExt, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBeachfront, err: %s", imp.ID, err),
 		}
+	}
+
+	if err != nil {
+		return beachfrontExt, err
+	}
+
+	beachfrontExt.AppId, err = getAppId(beachfrontExt, bidType)
+
+	if err != nil {
+		return beachfrontExt, err
+	}
+
+	if beachfrontExt.VideoResponseType != "nurl" && beachfrontExt.VideoResponseType != "both" {
+		beachfrontExt.VideoResponseType = "adm"
 	}
 
 	return beachfrontExt, err

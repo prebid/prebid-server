@@ -29,9 +29,7 @@
         "ext":{
           "bidder":{
             "bidfloor":0.01,
-            "appIds": {
-              "video": "0c0c62c7-8fe6-4023-90a2-d6148f331823"
-            }
+            "appId": "0c0c62c7-8fe6-4023-90a2-d6148f331823"
           }
         },
         "video":{
@@ -163,9 +161,7 @@
               "ext":{
                 "bidder":{
                   "bidfloor":0.01,
-                  "appIds": {
-                    "video": "0c0c62c7-8fe6-4023-90a2-d6148f331823"
-                  }
+                  "appId":  "0c0c62c7-8fe6-4023-90a2-d6148f331823"
                 }
               }
             }

@@ -45,84 +45,6 @@
   "httpCalls": [
       {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
-        "body": {
-          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
-          "imp": [
-            {
-              "id": "multivideo",
-              "secure": 1,
-              "video": {
-                "mimes": [
-                  "video/mp4",
-                  "video/webm"
-                ],
-                "w": 600,
-                "h": 450
-              },
-              "ext": {
-                "bidder": {
-                  "bidfloor": 3.01,
-                  "videoResponseType": "both",
-                  "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76"
-                }
-              }
-            }
-          ],
-          "site": {
-            "domain": "example.com",
-            "page": "https://example.com/whatever",
-            "publisher": {
-              "id": "publisher1"
-            }
-          },
-          "device": {
-            "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "ip": "192.168.255.255",
-            "devicetype": 2
-          },
-          "user": {
-            "id": "some-user",
-            "buyeruid": "some-buyer"
-          },
-          "tmax": 1000,
-          "cur": [
-            "USD"
-          ],
-          "source": {
-            "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
-          }
-        }
-      },
-      "mockResponse": {
-        "status": 200,
-        "body": {
-          "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
-          "seatBid":[
-            {
-              "bid":[
-                {
-                  "id":"multivideo",
-                  "price":20.0,
-                  "nurl":"https://useast.bfmio.com/getBids?aid=bid:b489a745-e577-4fcb-815d-0b6a1e052ec7:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5d8231a48d308d0a1f9b4526,0.61&i_type=pre",
-                  "adomain":[],
-                  "cat":[],
-                  "attr":[],
-                  "w":0,
-                  "h":0,
-                  "ext":{}
-                }
-              ],
-              "group":0,
-              "ext":{
-
-              }
-            }
-          ]
-        }
-      }
-    }, {
-      "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
         "body": {
           "isPrebid":true,
@@ -204,6 +126,85 @@
           ],
           "bidid":"5f4fc47146f0520e73da93ae",
           "cur":"USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
+        "body": {
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "imp": [
+            {
+              "id": "multivideo",
+              "secure": 1,
+              "video": {
+                "mimes": [
+                  "video/mp4",
+                  "video/webm"
+                ],
+                "w": 600,
+                "h": 450
+              },
+              "ext": {
+                "bidder": {
+                  "bidfloor": 3.01,
+                  "videoResponseType": "both",
+                  "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "https://example.com/whatever",
+            "publisher": {
+              "id": "publisher1"
+            }
+          },
+          "device": {
+            "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
+            "ip": "192.168.255.255",
+            "devicetype": 2
+          },
+          "user": {
+            "id": "some-user",
+            "buyeruid": "some-buyer"
+          },
+          "tmax": 1000,
+          "cur": [
+            "USD"
+          ],
+          "source": {
+            "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "seatBid":[
+            {
+              "bid":[
+                {
+                  "id":"multivideo",
+                  "price":20.0,
+                  "nurl":"https://useast.bfmio.com/getBids?aid=bid:b489a745-e577-4fcb-815d-0b6a1e052ec7:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5d8231a48d308d0a1f9b4526,0.61&i_type=pre",
+                  "adomain":[],
+                  "cat":[],
+                  "attr":[],
+                  "w":0,
+                  "h":0,
+                  "ext":{}
+                }
+              ],
+              "group":0,
+              "ext":{
+
+              }
+            }
+          ]
         }
       }
     }
