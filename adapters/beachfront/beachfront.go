@@ -176,6 +176,18 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	// n adm requests, some of which may have multiple imps
 	for appId := range beachfrontReqs.ADMVideo {
+
+		ext, _ := parseBeachfrontExtension(beachfrontReqs.ADMVideo[appId].Imp[0], openrtb_ext.BidTypeVideo)
+
+		if ext.AppId != appId {
+			// This should never happen
+			// And it does not, indicating that my appId for the url vs. the appId in the
+			// body of my test is not getting mixed up here, or in the getVideoRequests function where
+			// I am doing a similar test. Therefore, it seems that it must be getting mixed up deeper
+			// in the test system, so I'll be digging into that.
+			errs = append(errs, errors.New("map fubared in the parse"))
+			continue
+		}
 		bytes, err := json.Marshal(beachfrontReqs.ADMVideo[appId])
 
 		if err == nil {
@@ -578,7 +590,17 @@ func getVideoRequests(request *openrtb.BidRequest, imps []openrtb.Imp, errs []er
 				r := deepCopyRequest(request)
 				r.Imp = []openrtb.Imp{imps[i]}
 				r = prepVideoRequest(r)
-				admMap[ext.AppId] = &r
+
+				testExt, _ := parseBeachfrontExtension(r.Imp[0], openrtb_ext.BidTypeVideo)
+				if testExt.AppId == ext.AppId {
+					admMap[ext.AppId] = &r
+				} else {
+					// This should never happen
+					// And it does not, indicating that my appId for the url vs. the appId in the
+					// body of my test is not getting mixed up here.
+					errs = append(errs, errors.New("map fubared in the build"))
+					continue
+				}
 			}
 		}
 
