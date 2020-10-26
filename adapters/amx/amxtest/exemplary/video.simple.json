@@ -202,7 +202,8 @@
             "h": 600,
             "w": 300,
             "ext": {
-              "himp": ["https://example.com/imp-tracker/pixel.gif?param=1&param2=2"]
+              "himp": ["https://example.com/imp-tracker/pixel.gif?param=1&param2=2"],
+              "startdelay": 0
             }
           }]
         }],

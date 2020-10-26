@@ -7,7 +7,7 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-// NewAmxSyncer produces an AMX RTB usersyncer
-func NewAmxSyncer(temp *template.Template) usersync.Usersyncer {
+// NewAMXSyncer produces an AMX RTB usersyncer
+func NewAMXSyncer(temp *template.Template) usersync.Usersyncer {
 	return adapters.NewSyncer("amx", 737, temp, adapters.SyncTypeRedirect)
 }

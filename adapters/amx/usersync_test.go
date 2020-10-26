@@ -8,17 +8,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	testSyncEndpoint = "http://pbs.amxrtb.com/cchain/0"
-)
+func TestAMXSyncer(t *testing.T) {
+	syncURL := "http://pbs.amxrtb.com/cchain/0?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&cb=localhost%2Fsetuid%3Fbidder%3Damx%26uid=%3D"
+	syncURLTemplate := template.Must(template.New("sync-template").Parse(syncURL))
 
-func TestDmxSyncer(t *testing.T) {
-	temp := template.Must(template.New("sync-template").Parse(testSyncEndpoint))
-	syncer := NewAmxSyncer(temp)
+	syncer := NewAMXSyncer(syncURLTemplate)
 	syncInfo, err := syncer.GetUsersyncInfo(privacy.Policies{})
+
 	assert.NoError(t, err)
+	assert.Equal(t, "http://pbs.amxrtb.com/cchain/0?gdpr=&gdpr_consent=&cb=localhost%2Fsetuid%3Fbidder%3Damx%26uid=%3D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.Equal(t, testSyncEndpoint, syncInfo.URL)
-	assert.Equal(t, false, syncInfo.SupportCORS)
 	assert.EqualValues(t, 737, syncer.GDPRVendorID())
+	assert.Equal(t, false, syncInfo.SupportCORS)
 }

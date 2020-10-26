@@ -3,49 +3,44 @@ package amx
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
-	"strings"
 )
 
 const vastImpressionFormat = "<Impression><![CDATA[%s]></Impression>"
 const vastSearchPoint = "</Impression>"
 
-// AmxAdapter is the AMX bid adapter
-type AmxAdapter struct {
+// AMXAdapter is the AMX bid adapter
+type AMXAdapter struct {
 	endpoint string
 }
 
-// NewAmxBidder creates an AmxAdapter
-func NewAmxBidder(endpoint string) *AmxAdapter {
-	return &AmxAdapter{endpoint: endpoint}
+// NewAMXBidder creates an AMXAdapter
+func NewAMXBidder(endpoint string) *AMXAdapter {
+	return &AMXAdapter{endpoint: endpoint}
 }
 
 type amxExt struct {
-	Bidder amxParams `json:"bidder"`
+	Bidder openrtb_ext.ExtImpAMX `json:"bidder"`
 }
 
-type amxParams struct {
-	PublisherID string `json:"tagId,omitempty"`
-}
-
-func getPublisherID(imps []openrtb.Imp) *string {
+func getTagID(imps []openrtb.Imp) (string, bool) {
 	for _, imp := range imps {
 		paramsSource := (*json.RawMessage)(&imp.Ext)
 		var params amxExt
 		if err := json.Unmarshal(*paramsSource, &params); err == nil {
-			if params.Bidder.PublisherID != "" {
-				return &params.Bidder.PublisherID
+			if params.Bidder.TagID != "" {
+				return params.Bidder.TagID, true
 			}
-		} else {
-			fmt.Printf("unable to decode imp.ext.bidder: %v", err)
 		}
 	}
 
-	return nil
+	return "", false
 }
 
 func ensurePublisherWithID(pub *openrtb.Publisher, publisherID string) *openrtb.Publisher {
@@ -57,19 +52,17 @@ func ensurePublisherWithID(pub *openrtb.Publisher, publisherID string) *openrtb.
 }
 
 // MakeRequests creates AMX adapter requests
-func (adapter *AmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
-	publisherID := getPublisherID(request.Imp)
-	if publisherID != nil {
+func (adapter *AMXAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
+	if publisherID, ok := getTagID(request.Imp); ok {
 		if request.App != nil {
-			request.App.Publisher = ensurePublisherWithID(request.App.Publisher, *publisherID)
+			request.App.Publisher = ensurePublisherWithID(request.App.Publisher, publisherID)
 		}
 		if request.Site != nil {
-			request.Site.Publisher = ensurePublisherWithID(request.Site.Publisher, *publisherID)
+			request.Site.Publisher = ensurePublisherWithID(request.Site.Publisher, publisherID)
 		}
 	}
 
 	encoded, err := json.Marshal(request)
-
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -77,6 +70,7 @@ func (adapter *AmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
+
 	reqBidder := &adapters.RequestData{
 		Method:  "POST",
 		Uri:     adapter.endpoint + "?v=pbs1.0",
@@ -87,8 +81,13 @@ func (adapter *AmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	return
 }
 
+type amxBidExt struct {
+	Himp       []string `json:"himp,omitempty"`
+	StartDelay *int     `json:"startdelay,omitempty"`
+}
+
 // MakeBids will parse the bids from the AMX server
-func (adapter *AmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if http.StatusNoContent == response.StatusCode {
@@ -102,7 +101,7 @@ func (adapter *AmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 	}
 
 	if http.StatusOK != response.StatusCode {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected response: %d", response.StatusCode),
 		}}
 	}
@@ -116,16 +115,15 @@ func (adapter *AmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
-			bidType, err := getMediaTypeForImp(bid.ImpID, request.Imp)
-			if err != nil {
-				errs = append(errs, err)
-			} else {
+			var bidExt amxBidExt
+			if err := json.Unmarshal(bid.Ext, &bidExt); err == nil {
+				bidType := getMediaTypeForBid(bidExt)
 				b := &adapters.TypedBid{
 					Bid:     &bid,
 					BidType: bidType,
 				}
 				if b.BidType == openrtb_ext.BidTypeVideo {
-					b.Bid.AdM = interpolateImpressions(b.Bid)
+					b.Bid.AdM = interpolateImpressions(bid, bidExt)
 				}
 				bidResponse.Bids = append(bidResponse.Bids, b)
 			}
@@ -135,36 +133,22 @@ func (adapter *AmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner == nil && imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			}
-			return mediaType, nil
-		}
+func getMediaTypeForBid(bidExt amxBidExt) openrtb_ext.BidType {
+	if bidExt.StartDelay != nil {
+		return openrtb_ext.BidTypeVideo
 	}
 
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("No impression for: %s", impID),
-	}
+	return openrtb_ext.BidTypeBanner
 }
 
 func pixelToImpression(pixel string) string {
 	return fmt.Sprintf(vastImpressionFormat, pixel)
 }
 
-type amxBidResponseExt struct {
-	Himp []string `json:"himp"`
-}
-
-func interpolateImpressions(bid *openrtb.Bid) string {
+func interpolateImpressions(bid openrtb.Bid, ext amxBidExt) string {
 	var buffer strings.Builder
 	buffer.WriteString(pixelToImpression(bid.NURL))
-
-	ext := amxBidResponseExt{}
-	if err := json.Unmarshal(bid.Ext, &ext); err == nil {
+	if len(ext.Himp) > 0 {
 		for _, impPixel := range ext.Himp {
 			buffer.WriteString(pixelToImpression(impPixel))
 		}

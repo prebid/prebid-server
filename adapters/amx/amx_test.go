@@ -22,7 +22,7 @@ const (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "amxtest", new(AmxAdapter))
+	adapterstest.RunJSONBidderTest(t, "amxtest", new(AMXAdapter))
 }
 
 func TestMakeRequestsPublisherIdOverride(t *testing.T) {
@@ -30,7 +30,7 @@ func TestMakeRequestsPublisherIdOverride(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	adapter := NewAmxBidder(amxTestEndpoint)
+	adapter := NewAMXBidder(amxTestEndpoint)
 	imp1 := openrtb.Imp{
 		ID:  "sample_imp_1",
 		Ext: json.RawMessage(defaultImpExt),
@@ -78,7 +78,7 @@ func TestMakeRequestsApp(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	adapter := NewAmxBidder(amxTestEndpoint)
+	adapter := NewAMXBidder(amxTestEndpoint)
 	imp1 := openrtb.Imp{
 		ID:  "sample_imp_1",
 		Ext: json.RawMessage("{\"bidder\":{\"tagId\":\"site_publisher_id\"}}"),
@@ -148,7 +148,7 @@ func TestMakeBidVideo(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	adapter := NewAmxBidder(amxTestEndpoint)
+	adapter := NewAMXBidder(amxTestEndpoint)
 	imp1 := openrtb.Imp{
 		ID:  "video_imp_1",
 		Ext: json.RawMessage(defaultImpExt),
@@ -183,6 +183,46 @@ func TestMakeBidVideo(t *testing.T) {
 	if len(body.Imp) != 1 {
 		t.Errorf("must have 1 bids")
 	}
+
+	resps, errs := adapter.MakeBids(body, &adapters.RequestData{}, &adapters.ResponseData{
+		StatusCode: 200,
+		Body: []byte(`{
+        "id": "WQ5V2DWVTMNXABDD",
+        "seatbid": [{
+          "bid": [{
+            "id": "TEST",
+            "impid": "1",
+            "price": 10.0,
+            "adid": "1",
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http://example.net/hbx/verr?e=]]></Error><Impression><![CDATA[http://example.net/hbx/vimp?lid=test&aid=testapp]]></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https://example.com?event=first_quartile]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://example.com]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"video/mp4\" bitrate=\"800\"><![CDATA[https://example.com/media.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "adomain": ["amxrtb.com"],
+            "iurl": "https://assets.a-mo.net/300x250.v2.png",
+            "cid": "1",
+            "crid": "1",
+            "h": 600,
+            "w": 300,
+            "ext": {
+							"himp": ["https://example.com/imp-tracker/pixel.gif?param=1&param2=2"],
+							"startdelay": 0
+            }
+          }]
+        }],
+        "cur": "USD"
+		}`),
+	})
+
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors in response: %v", errs)
+	}
+
+	if len(resps.Bids) != 1 {
+		t.Errorf("got %d bids, expected 1", len(resps.Bids))
+	}
+
+	// it should be a video bid
+	if resps.Bids[0].BidType != openrtb_ext.BidTypeVideo {
+		t.Errorf("bid should be type video, got %v", resps.Bids[0].BidType)
+	}
 }
 
 func TestUserEidsOnly(t *testing.T) {
@@ -190,7 +230,7 @@ func TestUserEidsOnly(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	adapter := NewAmxBidder(amxTestEndpoint)
+	adapter := NewAMXBidder(amxTestEndpoint)
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage(defaultImpExt),
@@ -294,7 +334,15 @@ func TestVideoImpInsertion(t *testing.T) {
 		t.Errorf("Payload is invalid - %v", err)
 	}
 	bid = openrtb.Bid(bidResp.SeatBid[0].Bid[0])
-	data := interpolateImpressions(&bid)
+
+	// get the EXT from it too..
+	var bidExt amxBidExt
+	err = json.Unmarshal(bid.Ext, &bidExt)
+	if err != nil {
+		t.Errorf("Invalid bid.ext: %v", err)
+	}
+
+	data := interpolateImpressions(bid, bidExt)
 	find := strings.Index(data, "example2.com/nurl")
 	if find == -1 {
 		t.Errorf("String was not found")
