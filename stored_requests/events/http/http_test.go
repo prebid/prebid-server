@@ -13,75 +13,97 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStartupReqsOnly(t *testing.T) {
-	server := httptest.NewServer(&mockResponseHandler{
-		statusCode: httpCore.StatusOK,
-		response:   `{"requests":{"request1":{"value":1}, "request2":{"value":2}}}`,
-	})
-	defer server.Close()
-
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-
-	assertSaveChanReceive(t, ev.Saves(), map[config.DataType]map[string]json.RawMessage{
-		config.RequestDataType: {
-			"request1": json.RawMessage(`{"value":1}`),
-			"request2": json.RawMessage(`{"value":2}`),
+func TestStartup(t *testing.T) {
+	testCases := []struct {
+		description   string
+		statusCode    int
+		response      string
+		saves         map[config.DataType]map[string]json.RawMessage
+		invalidations map[config.DataType][]string
+	}{
+		{
+			description: "Load requests at startup",
+			statusCode:  httpCore.StatusOK,
+			response:    `{"requests":{"request1":{"value":1}, "request2":{"value":2}}}`,
+			saves: map[config.DataType]map[string]json.RawMessage{
+				config.RequestDataType: {
+					"request1": json.RawMessage(`{"value":1}`),
+					"request2": json.RawMessage(`{"value":2}`),
+				},
+			},
 		},
-	})
-	assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
-}
-
-func TestStartupImpsOnly(t *testing.T) {
-	server := httptest.NewServer(&mockResponseHandler{
-		statusCode: httpCore.StatusOK,
-		response:   `{"imps":{"imp1":{"value":1}}}`,
-	})
-	defer server.Close()
-
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	assertSaveChanReceive(t, ev.Saves(), map[config.DataType]map[string]json.RawMessage{
-		config.ImpDataType: {
-			"imp1": json.RawMessage(`{"value":1}`),
+		{
+			description: "Load imps at startup",
+			statusCode:  httpCore.StatusOK,
+			response:    `{"imps":{"imp1":{"value":1}}}`,
+			saves: map[config.DataType]map[string]json.RawMessage{
+				config.ImpDataType: {
+					"imp1": json.RawMessage(`{"value":1}`),
+				},
+			},
 		},
-	})
-	assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
-}
-
-func TestStartupBothTypes(t *testing.T) {
-	server := httptest.NewServer(&mockResponseHandler{
-		statusCode: httpCore.StatusOK,
-		response:   `{"requests":{"request1":{"value":1}, "request2":{"value":2}},"imps":{"imp1":{"value":1}}}`,
-	})
-	defer server.Close()
-
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-
-	assertSaveChanReceive(t, ev.Saves(), map[config.DataType]map[string]json.RawMessage{
-		config.RequestDataType: {
-			"request1": json.RawMessage(`{"value":1}`),
-			"request2": json.RawMessage(`{"value":2}`),
+		{
+			description: "Load requests and imps at startup",
+			statusCode:  httpCore.StatusOK,
+			response:    `{"requests":{"request1":{"value":1}, "request2":{"value":2}},"imps":{"imp1":{"value":1}}}`,
+			saves: map[config.DataType]map[string]json.RawMessage{
+				config.RequestDataType: {
+					"request1": json.RawMessage(`{"value":1}`),
+					"request2": json.RawMessage(`{"value":2}`),
+				},
+				config.ImpDataType: {
+					"imp1": json.RawMessage(`{"value":1}`),
+				},
+			},
 		},
-		config.ImpDataType: {
-			"imp1": json.RawMessage(`{"value":1}`),
+		{
+			description: "Load accounts at startup",
+			statusCode:  httpCore.StatusOK,
+			response:    `{"accounts":{"acc1":{"value":1}}}`,
+			saves: map[config.DataType]map[string]json.RawMessage{
+				config.AccountDataType: {
+					"acc1": json.RawMessage(`{"value":1}`),
+				},
+			},
 		},
-	})
-	assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
-}
-
-func TestStartupAccounts(t *testing.T) {
-	server := httptest.NewServer(&mockResponseHandler{
-		statusCode: httpCore.StatusOK,
-		response:   `{"accounts":{"acc1":{"value":1}}}`,
-	})
-	defer server.Close()
-
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	assertSaveChanReceive(t, ev.Saves(), map[config.DataType]map[string]json.RawMessage{
-		config.AccountDataType: {
-			"acc1": json.RawMessage(`{"value":1}`),
+		{
+			description: "Handling malformed json response",
+			statusCode:  httpCore.StatusOK,
+			response:    "{Malformed json.",
 		},
-	})
-	assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
+		{
+			description: "Handling api error",
+			statusCode:  httpCore.StatusInternalServerError,
+			response:    "Something horrible happened.",
+		},
+		{
+			description: "Handling timeout (no response)",
+		},
+	}
+
+	ctxProducer := func() (context.Context, func()) {
+		return context.WithTimeout(context.Background(), -1)
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			handler := &mockResponseHandler{statusCode: test.statusCode, response: test.response}
+			server := httptest.NewServer(handler)
+			defer server.Close()
+
+			var ev *HTTPEvents
+			if test.statusCode > 0 {
+				ev = NewHTTPEvents(server.Client(), server.URL, nil, -1)
+			} else {
+				ev = NewHTTPEvents(server.Client(), server.URL, ctxProducer, -1)
+			}
+
+			assertSaveChanReceive(t, ev.Saves(), test.saves)
+			assertInvalidationChanReceive(t, ev.Invalidations(), test.invalidations)
+			assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
+			assert.Empty(t, ev.Invalidations(), "Unexpected additional messages in invalidations channel")
+		})
+	}
 }
 
 func TestUpdates(t *testing.T) {
@@ -132,46 +154,6 @@ func TestUpdates(t *testing.T) {
 		config.AccountDataType: {"acc1"},
 	})
 	assert.Empty(t, ev.Invalidations(), "Unexpected additional messages in save channel")
-}
-
-func TestErrorResponse(t *testing.T) {
-	handler := &mockResponseHandler{
-		statusCode: httpCore.StatusInternalServerError,
-		response:   "Something horrible happened.",
-	}
-	server := httptest.NewServer(handler)
-	defer server.Close()
-
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	assert.Empty(t, ev.Saves(), "No saves should be emitted if the HTTP call fails. Got %d", len(ev.Saves()))
-}
-
-func TestExpiredContext(t *testing.T) {
-	handler := &mockResponseHandler{
-		statusCode: httpCore.StatusInternalServerError,
-		response:   "Something horrible happened.",
-	}
-	server := httptest.NewServer(handler)
-	defer server.Close()
-
-	ctxProducer := func() (context.Context, func()) {
-		return context.WithTimeout(context.Background(), -1)
-	}
-
-	ev := NewHTTPEvents(server.Client(), server.URL, ctxProducer, -1)
-	assert.Empty(t, ev.Saves(), "No saves should be emitted if the HTTP call times out. Got %d", len(ev.Saves()))
-}
-
-func TestMalformedResponse(t *testing.T) {
-	handler := &mockResponseHandler{
-		statusCode: httpCore.StatusOK,
-		response:   "This isn't JSON.",
-	}
-	server := httptest.NewServer(handler)
-	defer server.Close()
-
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	assert.Empty(t, ev.Saves(), "No saves should be emitted if the HTTP call fails. Got %d", len(ev.Saves()))
 }
 
 type mockResponseHandler struct {
