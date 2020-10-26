@@ -61,19 +61,29 @@
             "id": "alias1-bid",
             "impid": "",
             "price": 0
-          },
+          }
+        ],
+        "seat": "alias1-bids"
+      },
+      {
+        "bid": [
           {
             "id": "alias2-bid",
             "impid": "",
             "price": 0
-          },
+          }
+        ],
+        "seat": "alias2-bids"
+      },
+      {
+        "bid": [
           {
             "id": "appnexus-bid",
             "impid": "",
             "price": 0
           }
         ],
-        "seat": "seat-id"
+        "seat": "appnexus-bids"
       }
     ],
     "bidid": "test bid id",

@@ -1,5 +1,5 @@
 {
-  "description": "Bid request with empty eventtrackers array inside the native.request field in its only imp element",
+  "description": "Bid request with empty eventtrackers array element inside the native.request field in its only imp element",
   "mockBidRequest": {
     "id": "req-id",
     "site": {

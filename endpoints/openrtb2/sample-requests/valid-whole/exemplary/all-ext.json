@@ -89,19 +89,29 @@
               "id": "appnexus-bid",
               "impid": "",
               "price": 0
-            },
+            }
+          ],
+          "seat": "appnexus-bids"
+        },
+        {
+          "bid": [
             {
               "id": "districtm-bid",
               "impid": "",
               "price": 0
-            },
+            }
+          ],
+          "seat": "districtm-bids"
+        },
+        {
+          "bid": [
             {
               "id": "rubicon-bid",
               "impid": "",
               "price": 0
             }
           ],
-          "seat": "seat-id"
+          "seat": "rubicon-bids"
         }
       ],
       "bidid":"test bid id",

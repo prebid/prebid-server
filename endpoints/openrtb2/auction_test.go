@@ -46,16 +46,11 @@ type testCase struct {
 }
 
 type testConfigValues struct {
-	AccountRequired       bool     `json:"accountRequired"`
-	AliasJSON             string   `json:"aliases"`
-	BlacklistedAccounts   []string `json:"blacklistedAccts"`
-	BlacklistedApps       []string `json:"blacklistedApps"`
-	AdapterList           []string `json:"disabledAdapters"`
-	ListBiddersInResponse bool     `json:"listBiddersInResponse"`
-
-	blacklistedAccountMap map[string]bool
-	blacklistedAppMap     map[string]bool
-	adaptersConfig        map[string]config.Adapter
+	AccountRequired     bool     `json:"accountRequired"`
+	AliasJSON           string   `json:"aliases"`
+	BlacklistedAccounts []string `json:"blacklistedAccts"`
+	BlacklistedApps     []string `json:"blacklistedApps"`
+	AdapterList         []string `json:"disabledAdapters"`
 }
 
 func TestJsonSampleRequests(t *testing.T) {
@@ -205,28 +200,6 @@ func parseTestFile(t *testing.T, fileData []byte, testFile string) testCase {
 	return parsedTestData
 }
 
-//func generateConfigMaps(tc *testConfigValues) *testConfigValues {
-//	if len(tc.BlacklistedAccounts) > 0 {
-//		tc.blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccounts))
-//		for _, account := range tc.BlacklistedAccounts {
-//			tc.blacklistedAccountMap[account] = true
-//		}
-//	}
-//	if len(tc.BlacklistedApps) > 0 {
-//		tc.blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedApps))
-//		for _, app := range tc.BlacklistedApps {
-//			tc.blacklistedAppMap[app] = true
-//		}
-//	}
-//	if len(tc.AdapterList) > 0 {
-//		tc.adaptersConfig = make(map[string]config.Adapter, len(tc.AdapterList))
-//		for _, adapterName := range tc.AdapterList {
-//			tc.adaptersConfig[adapterName] = config.Adapter{Disabled: true}
-//		}
-//	}
-//	return tc
-//}
-
 func (tc *testConfigValues) getBlacklistedAppMap() map[string]bool {
 	var blacklistedAppMap map[string]bool
 
@@ -269,47 +242,33 @@ func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse openrtb.BidResponse, actualBidResponse openrtb.BidResponse) {
 
 	//Assert non-array BidResponse fields
-	assert.Equalf(t, actualBidResponse.ID, expectedBidResponse.ID, "BidResponse.ID doesn't match expected. Test: %s\n", testFile)
-	assert.Equalf(t, actualBidResponse.BidID, expectedBidResponse.BidID, "BidResponse.BidID doesn't match expected. Test: %s\n", testFile)
-	assert.Equalf(t, actualBidResponse.NBR, expectedBidResponse.NBR, "BidResponse.NBR doesn't match expected. Test: %s\n", testFile)
+	assert.Equalf(t, expectedBidResponse.ID, actualBidResponse.ID, "BidResponse.ID doesn't match expected. Test: %s\n", testFile)
+	assert.Equalf(t, expectedBidResponse.BidID, actualBidResponse.BidID, "BidResponse.BidID doesn't match expected. Test: %s\n", testFile)
+	assert.Equalf(t, expectedBidResponse.NBR, actualBidResponse.NBR, "BidResponse.NBR doesn't match expected. Test: %s\n", testFile)
 
 	//Assert []SeatBid and their Bid elements independently of their order
 	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
 
-	//Given that bidResponses have the same lenght, compare them
-	for i := 0; i < len(expectedBidResponse.SeatBid); i++ {
-		//Map SeatBid array elements to get an accurate comparison of their []Bid slice elements
-		var actualSeatBidsMap map[string]openrtb.SeatBid = make(map[string]openrtb.SeatBid, 0)
-		for _, seat := range actualBidResponse.SeatBid {
-			actualSeatBidsMap[seat.Seat] = seat
-		}
+	//Given that bidResponses have the same lenght, compare them in an order-independent way using maps
+	var actualSeatBidsMap map[string]openrtb.SeatBid = make(map[string]openrtb.SeatBid, 0)
+	for _, seatBid := range actualBidResponse.SeatBid {
+		actualSeatBidsMap[seatBid.Seat] = seatBid
+	}
 
-		var expectedSeatBidsMap map[string]openrtb.SeatBid = make(map[string]openrtb.SeatBid, 0)
-		for _, seat := range expectedBidResponse.SeatBid {
-			expectedSeatBidsMap[seat.Seat] = seat
-		}
+	var expectedSeatBidsMap map[string]openrtb.SeatBid = make(map[string]openrtb.SeatBid, 0)
+	for _, seatBid := range expectedBidResponse.SeatBid {
+		expectedSeatBidsMap[seatBid.Seat] = seatBid
+	}
 
-		for k, expectedSeatBid := range expectedSeatBidsMap {
-			//Assert non-array SeatBid fields
-			assert.Equalf(t, expectedSeatBid.Seat, actualSeatBidsMap[k].Seat, "actualSeatBidsMap[%s].Seat doesn't match expected. Test: %s\n", k, testFile)
-			assert.Equalf(t, expectedSeatBid.Group, actualSeatBidsMap[k].Group, "actualSeatBidsMap[%s].Group doesn't match expected. Test: %s\n", k, testFile)
-			assert.Equalf(t, expectedSeatBid.Ext, actualSeatBidsMap[k].Ext, "actualSeatBidsMap[%s].Ext doesn't match expected. Test: %s\n", k, testFile)
-			assert.Len(t, actualSeatBidsMap[k].Bid, len(expectedSeatBid.Bid), "BidResponse.SeatBid[].Bid array doesn't match expected. Test: %s\n", testFile)
+	for k, expectedSeatBid := range expectedSeatBidsMap {
+		//Assert non-array SeatBid fields
+		assert.Equalf(t, expectedSeatBid.Seat, actualSeatBidsMap[k].Seat, "actualSeatBidsMap[%s].Seat doesn't match expected. Test: %s\n", k, testFile)
+		assert.Equalf(t, expectedSeatBid.Group, actualSeatBidsMap[k].Group, "actualSeatBidsMap[%s].Group doesn't match expected. Test: %s\n", k, testFile)
+		assert.Equalf(t, expectedSeatBid.Ext, actualSeatBidsMap[k].Ext, "actualSeatBidsMap[%s].Ext doesn't match expected. Test: %s\n", k, testFile)
+		assert.Len(t, actualSeatBidsMap[k].Bid, len(expectedSeatBid.Bid), "BidResponse.SeatBid[].Bid array doesn't match expected. Test: %s\n", testFile)
 
-			//Map bids to get actualBidResponse.SeatBid[i].Bid elements sorted so order doesn't matter when comparing
-			var actualBidsMap map[string]openrtb.Bid = make(map[string]openrtb.Bid, 0)
-			for _, bid := range actualSeatBidsMap[k].Bid {
-				actualBidsMap[bid.ID] = bid
-			}
-
-			var expectedBidsMap map[string]openrtb.Bid = make(map[string]openrtb.Bid, 0)
-			for _, bid := range expectedSeatBid.Bid {
-				expectedBidsMap[bid.ID] = bid
-			}
-
-			// Asserting maps with default assertify function
-			assert.Equalf(t, actualBidsMap, expectedBidsMap, "BidResponse.SeatBid[].Bid doesn't match expected. Test: %s\n", testFile)
-		}
+		//Assert Bid arrays
+		assert.ElementsMatch(t, expectedSeatBid.Bid, actualSeatBidsMap[k].Bid, "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
 	}
 }
 
@@ -321,12 +280,12 @@ func TestBidRequestAssert(t *testing.T) {
 
 	sampleSeatBids := []openrtb.SeatBid{
 		{
-			Seat: "seat1",
-			Bid:  []openrtb.Bid{appnexusB1, rubiconB1},
+			Seat: "appnexus-bids",
+			Bid:  []openrtb.Bid{appnexusB1, appnexusB2},
 		},
 		{
-			Seat: "seat2",
-			Bid:  []openrtb.Bid{appnexusB2, rubiconB2},
+			Seat: "rubicon-bids",
+			Bid:  []openrtb.Bid{rubiconB1, rubiconB2},
 		},
 	}
 
@@ -336,54 +295,54 @@ func TestBidRequestAssert(t *testing.T) {
 		actualBidResponse   openrtb.BidResponse
 	}{
 		{
-			"identical seatBids, exact same seatBid and Bid arrays order",
+			"identical SeatBids, exact same SeatBid and Bid arrays order",
 			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
 			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
 		},
 		{
-			"identical seatBids but seatbid array elements come in different order",
+			"identical SeatBids but Seatbid array elements come in different order",
 			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
 			openrtb.BidResponse{ID: "anId", BidID: "bidId",
 				SeatBid: []openrtb.SeatBid{
 					{
-						Seat: "seat2",
-						Bid:  []openrtb.Bid{appnexusB2, rubiconB2},
+						Seat: "rubicon-bids",
+						Bid:  []openrtb.Bid{rubiconB1, rubiconB2},
 					},
 					{
-						Seat: "seat1",
-						Bid:  []openrtb.Bid{appnexusB1, rubiconB1},
+						Seat: "appnexus-bids",
+						Bid:  []openrtb.Bid{appnexusB1, appnexusB2},
 					},
 				},
 			},
 		},
 		{
-			"seatBids seem to be identical except for the different order of Bid array elements in seat1",
+			"SeatBids seem to be identical except for the different order of Bid array elements in one of them",
 			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
 			openrtb.BidResponse{ID: "anId", BidID: "bidId",
 				SeatBid: []openrtb.SeatBid{
 					{
-						Seat: "seat1",
-						Bid:  []openrtb.Bid{rubiconB1, appnexusB1},
+						Seat: "appnexus-bids",
+						Bid:  []openrtb.Bid{appnexusB2, appnexusB1},
 					},
 					{
-						Seat: "seat2",
-						Bid:  []openrtb.Bid{appnexusB2, rubiconB2},
+						Seat: "rubicon-bids",
+						Bid:  []openrtb.Bid{rubiconB1, rubiconB2},
 					},
 				},
 			},
 		},
 		{
-			"Both seatBid elements and bid elements come in different order",
+			"Both SeatBid elements and bid elements come in different order",
 			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
 			openrtb.BidResponse{ID: "anId", BidID: "bidId",
 				SeatBid: []openrtb.SeatBid{
 					{
-						Seat: "seat2",
-						Bid:  []openrtb.Bid{appnexusB2, rubiconB2},
+						Seat: "rubicon-bids",
+						Bid:  []openrtb.Bid{rubiconB2, rubiconB1},
 					},
 					{
-						Seat: "seat1",
-						Bid:  []openrtb.Bid{rubiconB1, appnexusB1},
+						Seat: "appnexus-bids",
+						Bid:  []openrtb.Bid{appnexusB2, appnexusB1},
 					},
 				},
 			},
@@ -1723,20 +1682,23 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 		NBR:   openrtb.NoBidReasonCodeUnknownError.Ptr(),
 	}
 	if len(bidRequest.Imp) > 0 {
-		bidsArray := make([]openrtb.Bid, 0, len(bidRequest.Imp))
-		bidResponse.SeatBid = append(bidResponse.SeatBid, openrtb.SeatBid{Bid: bidsArray})
-
+		var SeatBidMap = make(map[string]openrtb.SeatBid, 0)
 		for _, imp := range bidRequest.Imp {
 			var bidderExts map[string]json.RawMessage
-
 			if err := json.Unmarshal(imp.Ext, &bidderExts); err != nil {
 				return nil, err
 			}
 
 			for bidderNameOrAlias := range bidderExts {
-				bidResponse.SeatBid[0].Bid = append(bidResponse.SeatBid[0].Bid, openrtb.Bid{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)})
+				if val, ok := SeatBidMap[bidderNameOrAlias]; ok {
+					val.Bid = append(val.Bid, openrtb.Bid{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)})
+				} else {
+					SeatBidMap[bidderNameOrAlias] = openrtb.SeatBid{Seat: fmt.Sprintf("%s-bids", bidderNameOrAlias), Bid: []openrtb.Bid{{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)}}}
+				}
 			}
-			bidResponse.SeatBid[0].Seat = "seat-id"
+		}
+		for _, seatBid := range SeatBidMap {
+			bidResponse.SeatBid = append(bidResponse.SeatBid, seatBid)
 		}
 	}
 

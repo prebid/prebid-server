@@ -1,8 +1,7 @@
 {
   "description": "Request comes with some imps directed toward disabled adapters, but there's one non-disabled adapter and we expect a successful response",
   "config": {
-    "disabledAdapters": ["appnexus", "rubicon"],
-    "listBiddersInResponse": true
+    "disabledAdapters": ["appnexus", "rubicon"]
   },
   "mockBidRequest": {
     "id": "some-request-id",
@@ -69,7 +68,7 @@
               "price": 0
             }
           ],
-          "seat": "seat-id"
+          "seat": "openx-bids"
         }
       ]
   },

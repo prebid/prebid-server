@@ -21,5 +21,5 @@
     ]
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.imp[0].native.request.assets must be an array containing at least one object"
 }
