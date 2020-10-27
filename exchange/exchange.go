@@ -303,6 +303,7 @@ func validateAndNormalizeDealTier(impDeal *DealTier) bool {
 func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo, bidCategory map[string]string) {
 	if bid.dealPriority >= dealTierInfo.MinDealTier {
 		prefixTier := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
+		bid.dealTierSatisfied = true
 
 		if oldCatDur, ok := bidCategory[bid.bid.ID]; ok {
 			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
@@ -795,9 +796,11 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, auc *auction, returnCreative bool
 		bidExt := &openrtb_ext.ExtBid{
 			Bidder: thisBid.bid.Ext,
 			Prebid: &openrtb_ext.ExtBidPrebid{
-				Targeting: thisBid.bidTargets,
-				Type:      thisBid.bidType,
-				Video:     thisBid.bidVideo,
+				Targeting:         thisBid.bidTargets,
+				Type:              thisBid.bidType,
+				Video:             thisBid.bidVideo,
+				DealPriority:      thisBid.dealPriority,
+				DealTierSatisfied: thisBid.dealTierSatisfied,
 			},
 		}
 		if cacheInfo, found := e.getBidCacheInfo(thisBid, auc); found {

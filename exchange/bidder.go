@@ -58,12 +58,14 @@ type adaptedBidder interface {
 // pbsOrtbBid.bidTargets does not need to be filled out by the Bidder. It will be set later by the exchange.
 // pbsOrtbBid.bidVideo is optional but should be filled out by the Bidder if bidType is video.
 // pbsOrtbBid.dealPriority is optionally provided by adapters and used internally by the exchange to support deal targeted campaigns.
+// pbsOrtbBid.dealTierSatisfied is set to true by exchange.updateHbPbCatDur if deal tier satisfied otherwise it will be set to false
 type pbsOrtbBid struct {
-	bid          *openrtb.Bid
-	bidType      openrtb_ext.BidType
-	bidTargets   map[string]string
-	bidVideo     *openrtb_ext.ExtBidPrebidVideo
-	dealPriority int
+	bid               *openrtb.Bid
+	bidType           openrtb_ext.BidType
+	bidTargets        map[string]string
+	bidVideo          *openrtb_ext.ExtBidPrebidVideo
+	dealPriority      int
+	dealTierSatisfied bool
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
