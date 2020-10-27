@@ -16,7 +16,7 @@ func TestValidParams(t *testing.T) {
 
 	for _, validParam := range validParams {
 		if err := validator.Validate(openrtb_ext.BidderDeepintent, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected adman params: %s", validParam)
+			t.Errorf("Schema rejected deepintent params: %s", validParam)
 		}
 	}
 }
