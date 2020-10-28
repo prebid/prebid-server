@@ -39,3 +39,13 @@ const (
 	CTVRCCategoryExclusion FilterReasonCode = 2
 	CTVRCDomainExclusion   FilterReasonCode = 3
 )
+
+// MonitorKey provides the unique key for moniroting the algorithms
+type MonitorKey string
+
+const (
+	// CombinationGeneratorV1 ...
+	CombinationGeneratorV1 MonitorKey = "comb_gen_v1"
+	// CompetitiveExclusionV1 ...
+	CompetitiveExclusionV1 MonitorKey = "comp_exclusion_v1"
+)

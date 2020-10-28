@@ -29,6 +29,12 @@ const (
 	MinMaxAlgorithm
 )
 
+// MonitorKey provides the unique key for moniroting the impressions algorithm
+var MonitorKey = map[Algorithm]string{
+	MaximizeForDuration: `a1_max`,
+	MinMaxAlgorithm:     `a2_min_max`,
+}
+
 // Value use to compute Ad Slot Durations and Pod Durations for internal computation
 // Right now this value is set to 5, based on passed data observations
 // Observed that typically video impression contains contains minimum and maximum duration in multiples of  5

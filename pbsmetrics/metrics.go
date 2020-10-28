@@ -36,6 +36,15 @@ type ImpLabels struct {
 	NativeImps bool
 }
 
+// PodLabels defines metric labels describing algorithm type
+// and other labels as per scenario
+type PodLabels struct {
+	AlgorithmName    string // AlgorithmName which is used for generating impressions
+	NoOfImpressions  *int   // NoOfImpressions represents number of impressions generated
+	NoOfCombinations *int   // NoOfCombinations represents number of combinations generated
+	NoOfResponseBids *int   // NoOfResponseBids represents number of bids responded (including bids with similar duration)
+}
+
 // RequestLabels defines metric labels describing the result of a network request.
 type RequestLabels struct {
 	RequestStatus RequestStatus
@@ -276,4 +285,26 @@ type MetricsEngine interface {
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(sucess bool)
+	// ad pod specific metrics
+
+	// RecordPodImpGenTime records number of impressions generated and time taken
+	// by underneath algorithm to generate them
+	// labels accept name of the algorithm and no of impressions generated
+	// startTime indicates the time at which algorithm started
+	// This function will take care of computing the elpased time
+	RecordPodImpGenTime(labels PodLabels, startTime time.Time)
+
+	// RecordPodCombGenTime records number of combinations generated and time taken
+	// by underneath algorithm to generate them
+	// labels accept name of the algorithm and no of combinations generated
+	// elapsedTime indicates the time taken by combination generator to compute all requested combinations
+	// This function will take care of computing the elpased time
+	RecordPodCombGenTime(labels PodLabels, elapsedTime time.Duration)
+
+	// RecordPodCompititveExclusionTime records time take by competitive exclusion
+	// to compute the final Ad pod Response.
+	// labels accept name of the algorithm and no of combinations evaluated, total bids
+	// elapsedTime indicates the time taken by competitive exclusion to form final ad pod response using combinations and exclusion algorithm
+	// This function will take care of computing the elpased time
+	RecordPodCompititveExclusionTime(labels PodLabels, elapsedTime time.Duration)
 }

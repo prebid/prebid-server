@@ -411,7 +411,7 @@ func (deps *ctvEndpointDeps) getAllAdPodImpsConfigs() {
 		if nil == imp.Video || nil == deps.impData[index].VideoExt || nil == deps.impData[index].VideoExt.AdPod {
 			continue
 		}
-		deps.impData[index].Config = getAdPodImpsConfigs(&imp, deps.impData[index].VideoExt.AdPod)
+		deps.impData[index].Config = deps.getAdPodImpsConfigs(&imp, deps.impData[index].VideoExt.AdPod)
 		if 0 == len(deps.impData[index].Config) {
 			errorCode := new(int)
 			*errorCode = 101
@@ -421,9 +421,17 @@ func (deps *ctvEndpointDeps) getAllAdPodImpsConfigs() {
 }
 
 //getAdPodImpsConfigs will return number of impressions configurations within adpod
-func getAdPodImpsConfigs(imp *openrtb.Imp, adpod *openrtb_ext.VideoAdPod) []*types.ImpAdPodConfig {
-	impGen := impressions.NewImpressions(imp.Video.MinDuration, imp.Video.MaxDuration, adpod, impressions.MinMaxAlgorithm)
+func (deps *ctvEndpointDeps) getAdPodImpsConfigs(imp *openrtb.Imp, adpod *openrtb_ext.VideoAdPod) []*types.ImpAdPodConfig {
+	selectedAlgorithm := impressions.MinMaxAlgorithm
+	labels := pbsmetrics.PodLabels{AlgorithmName: impressions.MonitorKey[selectedAlgorithm], NoOfImpressions: new(int)}
+
+	// monitor
+	start := time.Now()
+	impGen := impressions.NewImpressions(imp.Video.MinDuration, imp.Video.MaxDuration, adpod, selectedAlgorithm)
 	impRanges := impGen.Get()
+	*labels.NoOfImpressions = len(impRanges)
+	deps.metricsEngine.RecordPodImpGenTime(labels, start)
+
 	config := make([]*types.ImpAdPodConfig, len(impRanges))
 	for i, value := range impRanges {
 		config[i] = &types.ImpAdPodConfig{
@@ -614,7 +622,7 @@ func (deps *ctvEndpointDeps) doAdPodExclusions() types.AdPodBids {
 				deps.impData[index].VideoExt.AdPod)
 
 			//adpod generator
-			adpodGenerator := response.NewAdPodGenerator(deps.request, index, buckets, comb, deps.impData[index].VideoExt.AdPod)
+			adpodGenerator := response.NewAdPodGenerator(deps.request, index, buckets, comb, deps.impData[index].VideoExt.AdPod, deps.metricsEngine)
 
 			adpodBids := adpodGenerator.GetAdPodBids()
 			if adpodBids != nil {
