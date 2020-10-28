@@ -104,7 +104,7 @@ func TestJsonSampleRequests(t *testing.T) {
 		},
 	}
 	for _, test := range testSuites {
-		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests/", test.sampleRequestsSubDir))
+		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", test.sampleRequestsSubDir))
 		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", test.description, test.sampleRequestsSubDir) {
 			for _, file := range testCaseFiles {
 				data, err := ioutil.ReadFile(file)
