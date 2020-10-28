@@ -2,12 +2,12 @@ package amx
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 )
@@ -22,6 +22,7 @@ const (
 )
 
 func TestJsonSamples(t *testing.T) {
+	t.Logf("TESTING JSON SAMPLES!!")
 	adapterstest.RunJSONBidderTest(t, "amxtest", new(AMXAdapter))
 }
 
@@ -54,28 +55,54 @@ func TestMakeRequestsPublisherIdOverride(t *testing.T) {
 	}
 
 	actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	assert.Len(t, actualAdapterRequests, 1)
 
-	if actualAdapterRequests == nil {
-		t.Errorf("request should be nil")
-	}
-
-	if len(err) != 0 {
-		t.Errorf("We should have no error")
-	}
+	assert.Empty(t, err)
 
 	// check that the publisher ID overrides the site.publisher.id if provided
 	var body openrtb.BidRequest
 	if err := json.Unmarshal(actualAdapterRequests[0].Body, &body); err != nil {
 		t.Errorf("failed to read bid request")
 	}
-	if body.Site.Publisher.ID != "publisher_id_example" {
-		t.Errorf("invalid publisher id: %s", body.Site.Publisher.ID)
+
+	assert.Equal(t, "publisher_id_example", body.Site.Publisher.ID)
+	assert.Equal(t, "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.0", actualAdapterRequests[0].Uri)
+}
+
+func TestWillEnsurePublisher(t *testing.T) {
+	adapter := NewAMXBidder(amxTestEndpoint)
+	var width, height uint64 = 300, 250
+
+	imp1 := openrtb.Imp{
+		ID:  "sample_imp_1",
+		Ext: json.RawMessage("{\"bidder\":{\"tagId\":\"site_publisher_id\"}}"),
+		Banner: &openrtb.Banner{
+			W: &width,
+			H: &height,
+			Format: []openrtb.Format{
+				{W: 300, H: 250},
+			},
+		}}
+
+	inputRequest := openrtb.BidRequest{
+		Imp:  []openrtb.Imp{imp1},
+		Site: &openrtb.Site{Publisher: nil},
+		ID:   "1234",
 	}
+
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	var body openrtb.BidRequest
+	if err := json.Unmarshal(actualAdapterRequests[0].Body, &body); err != nil {
+		t.Errorf("failed to read bid request")
+	}
+
+	assert.NotNil(t, body.Site.Publisher)
+
+	assert.Equal(t, "site_publisher_id", body.Site.Publisher.ID)
 }
 
 func TestMakeRequestsApp(t *testing.T) {
 	var w, h int = 300, 250
-
 	var width, height uint64 = uint64(w), uint64(h)
 
 	adapter := NewAMXBidder(amxTestEndpoint)
@@ -97,31 +124,18 @@ func TestMakeRequestsApp(t *testing.T) {
 				ID: "1234567",
 			},
 		},
-		App: &openrtb.App{ID: "cansanuabnua", Publisher: &openrtb.Publisher{ID: "whatever"}},
-		ID:  "1234",
+		ID: "1234",
 	}
 
 	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	assert.Len(t, actualAdapterRequests, 1, "expecting 1 request")
 
-	if len(actualAdapterRequests) != 1 {
-		t.Errorf("openrtb type should be an Array when it's an App")
-	}
 	var body openrtb.BidRequest
 	if err := json.Unmarshal(actualAdapterRequests[0].Body, &body); err != nil {
 		t.Errorf("failed to read bid request")
 	}
 
-	if body.App == nil {
-		t.Errorf("app property should be populated")
-	}
-
-	if body.App.Publisher.ID != "site_publisher_id" {
-		t.Errorf("incorrect publisher ID for app")
-	}
-
-	if body.Site.Publisher.ID != "site_publisher_id" {
-		t.Errorf("incorrect publisher ID for site")
-	}
+	assert.Equal(t, "site_publisher_id", body.Site.Publisher.ID)
 }
 
 func getRequestBody(requests []*adapters.RequestData) *openrtb.BidRequest {
@@ -170,59 +184,45 @@ func TestMakeBidVideo(t *testing.T) {
 	}
 
 	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
-
-	if len(actualAdapterRequests) != 1 {
-		t.Errorf("should have 1 request")
-	}
+	assert.Len(t, actualAdapterRequests, 1, "expecting 1 request")
 
 	body := getRequestBody(actualAdapterRequests)
-	if body == nil {
-		t.Errorf("invalid request: cannot parse")
-	}
+	assert.NotNil(t, body, "body should be valid JSON")
 
-	if len(body.Imp) != 1 {
-		t.Errorf("must have 1 bids")
-	}
+	assert.Len(t, body.Imp, 1, "expecting 1 bid")
 
 	resps, errs := adapter.MakeBids(body, &adapters.RequestData{}, &adapters.ResponseData{
 		StatusCode: 200,
 		Body: []byte(`{
-        "id": "WQ5V2DWVTMNXABDD",
-        "seatbid": [{
-          "bid": [{
-            "id": "TEST",
-            "impid": "1",
-            "price": 10.0,
-            "adid": "1",
-            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http://example.net/hbx/verr?e=]]></Error><Impression><![CDATA[http://example.net/hbx/vimp?lid=test&aid=testapp]]></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https://example.com?event=first_quartile]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://example.com]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"video/mp4\" bitrate=\"800\"><![CDATA[https://example.com/media.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
-            "adomain": ["amxrtb.com"],
-            "iurl": "https://assets.a-mo.net/300x250.v2.png",
-            "cid": "1",
-            "crid": "1",
-            "h": 600,
-            "w": 300,
-            "ext": {
-							"himp": ["https://example.com/imp-tracker/pixel.gif?param=1&param2=2"],
-							"startdelay": 0
-            }
-          }]
-        }],
-        "cur": "USD"
+			"id": "WQ5V2DWVTMNXABDD",
+			"seatbid": [{
+				"bid": [{
+					"id": "TEST",
+					"impid": "1",
+					"price": 10.0,
+					"adid": "1",
+					"adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http://example.net/hbx/verr?e=]]></Error><Impression><![CDATA[http://example.net/hbx/vimp?lid=test&aid=testapp]]></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https://example.com?event=first_quartile]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://example.com]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"video/mp4\" bitrate=\"800\"><![CDATA[https://example.com/media.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+					"adomain": ["amxrtb.com"],
+					"iurl": "https://assets.a-mo.net/300x250.v2.png",
+					"cid": "1",
+					"crid": "1",
+					"h": 600,
+					"w": 300,
+					"ext": {
+						"himp": ["https://example.com/imp-tracker/pixel.gif?param=1&param2=2"],
+						"startdelay": 0
+					}
+				}]
+			}],
+			"cur": "USD"
 		}`),
 	})
 
-	if len(errs) > 0 {
-		t.Errorf("unexpected errors in response: %v", errs)
-	}
-
-	if len(resps.Bids) != 1 {
-		t.Errorf("got %d bids, expected 1", len(resps.Bids))
-	}
+	assert.Empty(t, errs, "unexpected errors in response")
+	assert.Len(t, resps.Bids, 1, "there should only be 1 bid")
 
 	// it should be a video bid
-	if resps.Bids[0].BidType != openrtb_ext.BidTypeVideo {
-		t.Errorf("bid should be type video, got %v", resps.Bids[0].BidType)
-	}
+	assert.Equal(t, openrtb_ext.BidTypeVideo, resps.Bids[0].BidType, "the bid should be video type")
 }
 
 func TestUserEidsOnly(t *testing.T) {
@@ -249,46 +249,37 @@ func TestUserEidsOnly(t *testing.T) {
 				ID: "10007",
 			},
 		},
-		User: &openrtb.User{Ext: json.RawMessage(`{"eids": [{
-						"source": "adserver.org",
-							"uids": [{
-									"id": "111111111111",
-									"ext": {
-											"rtiPartner": "TDID"
-									}
-							}]
-            },{
-                "source": "example.buid",
-                "uids": [{
-                    "id": "123456"
-                }]
-            }]
-            }`)},
+		User: &openrtb.User{Ext: json.RawMessage(
+			`{
+				"eids": [{
+				"source": "adserver.org",
+					"uids": [{
+						"id": "111111111111",
+						"ext": {
+							"rtiPartner": "TDID"
+						}
+					}]
+				},{
+					"source": "example.buid",
+					"uids": [{
+						"id": "123456"
+					}]
+				}]
+			}`)},
 		ID: "1234",
 	}
 
 	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
-	if len(actualAdapterRequests) != 1 {
-		t.Errorf("should have 1 request")
-	}
+	assert.Len(t, actualAdapterRequests, 1, "there should be 1 request")
 
 	body := getRequestBody(actualAdapterRequests)
-	if body == nil {
-		t.Errorf("invalid body - expecting valid body")
-	}
+	assert.NotNil(t, body, "the generated OpenRTB request is not valid JSON")
 
 	userExt := getUserExt(body.User)
-	if userExt == nil {
-		t.Errorf("invalid user.ext - should have eids")
-	}
+	assert.NotNil(t, userExt, "the generated user.ext is invalid")
 
-	if len(userExt.Eids) != 2 {
-		t.Errorf("user.ext.eids should have 2 elements")
-	}
-
-	if userExt.Eids[0].Source != "adserver.org" {
-		t.Errorf("invalid eids -- does not match input")
-	}
+	assert.Len(t, userExt.Eids, 2)
+	assert.Equal(t, "adserver.org", userExt.Eids[0].Source, "the eid source does is incorrect")
 }
 
 func TestVideoImpInsertion(t *testing.T) {
@@ -330,25 +321,15 @@ func TestVideoImpInsertion(t *testing.T) {
 }`)
 
 	err := json.Unmarshal(payload, &bidResp)
-	if err != nil {
-		t.Errorf("Payload is invalid - %v", err)
-	}
+	assert.Nil(t, err)
 	bid = openrtb.Bid(bidResp.SeatBid[0].Bid[0])
 
 	// get the EXT from it too..
 	var bidExt amxBidExt
 	err = json.Unmarshal(bid.Ext, &bidExt)
-	if err != nil {
-		t.Errorf("Invalid bid.ext: %v", err)
-	}
+	assert.Nil(t, err)
 
 	data := interpolateImpressions(bid, bidExt)
-	find := strings.Index(data, "example2.com/nurl")
-	if find == -1 {
-		t.Errorf("String was not found")
-	}
-
-	if strings.Index(data, "example.com/pixel.png") == -1 {
-		t.Errorf("ext.himp not interpolated into vast: %s", data)
-	}
+	assert.Contains(t, data, "example2.com/nurl")
+	assert.Contains(t, data, "example.com/pixel.png")
 }

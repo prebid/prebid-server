@@ -12,16 +12,22 @@
     "id": "TL3JS6F43CKNDQFY",
     "imp": [
       {
-        "banner": {
-          "format": [
-            {
-              "h": 600,
-              "w": 300
-            }
-          ],
-          "h": 600,
+        "video": {
+          "api": [1,2],
+          "boxingallowed": 1,
+          "linearity": 1,
+          "maxduration": 90,
+          "minduration": 6,
+          "mimes": ["video/mp4"],
+          "placement": 1,
+          "playbackmethod": [2],
+          "protocols": [1,2,3,4,5,6,7,8],
+          "skip": 1,
+          "skipafter": 5,
+          "startdelay": 0,
+          "h": 300,
           "pos": 1,
-          "w": 300
+          "w": 640
         },
         "ext": {
           "bidder": {
@@ -86,7 +92,7 @@
   },
   "httpCalls": [{
     "expectedRequest": {
-      "uri": "?v=pbs1.0",
+      "uri": "",
       "body": {
         "device": {
           "dnt": 0,
@@ -100,16 +106,22 @@
         "id": "TL3JS6F43CKNDQFY",
         "imp": [
           {
-            "banner": {
-              "format": [
-                {
-                  "h": 600,
-                  "w": 300
-                }
-              ],
-              "h": 600,
+            "video": {
+              "api": [1,2],
+              "boxingallowed": 1,
+              "linearity": 1,
+              "maxduration": 90,
+              "minduration": 6,
+              "mimes": ["video/mp4"],
+              "placement": 1,
+              "playbackmethod": [2],
+              "protocols": [1,2,3,4,5,6,7,8],
+              "skip": 1,
+              "skipafter": 5,
+              "startdelay": 0,
+              "h": 300,
               "pos": 1,
-              "w": 300
+              "w": 640
             },
             "ext": {
               "bidder": {
@@ -182,17 +194,49 @@
             "impid": "1",
             "price": 10.0,
             "adid": "1",
-            "adm": "<script src=\"https://assets.a-mo.net/tmode.v1.js\"></script>",
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http://example.net/hbx/verr?e=]]></Error><Impression><![CDATA[http://example.net/hbx/vimp?lid=test&aid=testapp]]></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https://example.com?event=first_quartile]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://example.com]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"video/mp4\" bitrate=\"800\"><![CDATA[https://example.com/media.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "nurl": "https://example.com/nurl",
             "adomain": ["amxrtb.com"],
             "iurl": "https://assets.a-mo.net/300x250.v2.png",
             "cid": "1",
             "crid": "1",
             "h": 600,
-            "w": 300
+            "w": 300,
+            "ext": {
+              "himp": ["https://example.com/imp-tracker/pixel.gif?param=1&param2=2"],
+              "startdelay": 0
+            }
           }]
         }],
         "cur": "USD"
       }
     }
-  }]
+  }],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "TEST",
+            "impid": "1",
+            "price": 10.0,
+            "adid": "1",
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http://example.net/hbx/verr?e=]]></Error><Impression><![CDATA[http://example.net/hbx/vimp?lid=test&aid=testapp]]></Impression><Impression><![CDATA[https://example.com/nurl]]></Impression><Impression><![CDATA[https://example.com/imp-tracker/pixel.gif?param=1&param2=2]]></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https://example.com?event=first_quartile]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://example.com]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"video/mp4\" bitrate=\"800\"><![CDATA[https://example.com/media.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "adomain": ["amxrtb.com"],
+            "iurl": "https://assets.a-mo.net/300x250.v2.png",
+            "cid": "1",
+            "crid": "1",
+            "ext": {
+              "himp": ["https://example.com/imp-tracker/pixel.gif?param=1&param2=2"],
+              "startdelay": 0
+            },
+            "h": 600,
+            "w": 300
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
 }

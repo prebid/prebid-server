@@ -63,7 +63,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "?v=pbs1.0",
+        "uri": "",
         "body": {
           "app": {
             "bundle": "639881495",
@@ -147,6 +147,29 @@
           "cur": "USD"
         }
       }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "TEST",
+            "impid": "1",
+            "price": 10.0,
+            "adid": "1",
+            "adm": "<script src=\"https://assets.a-mo.net/tmode.v1.js\"></script>",
+            "adomain": ["amxrtb.com"],
+            "iurl": "https://assets.a-mo.net/300x250.v2.png",
+            "cid": "1",
+            "crid": "1",
+            "h": 300,
+            "w": 250
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }
