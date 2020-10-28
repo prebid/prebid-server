@@ -46,11 +46,6 @@ func TestReadDealTiersFromImp(t *testing.T) {
 			expectedResult: DealTierBidderMap{},
 		},
 		{
-			description:    "imp.ext - normalize prefix",
-			impExt:         json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": " any Prefix "}}}`),
-			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "anyPrefix", MinDealTier: 5}},
-		},
-		{
 			description:   "imp.ext - error",
 			impExt:        json.RawMessage(`{"appnexus": {"dealTier": "wrong type", "placementId": 12345}}`),
 			expectedError: "json: cannot unmarshal string into Go struct field .dealTier of type openrtb_ext.DealTier",
@@ -69,11 +64,6 @@ func TestReadDealTiersFromImp(t *testing.T) {
 			description:    "imp.ext.prebid - no deal tier",
 			impExt:         json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"placementId": 12345}}}}`),
 			expectedResult: DealTierBidderMap{},
-		},
-		{
-			description:    "imp.ext.prebid - normalize prefix",
-			impExt:         json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": " anyPr  efix "}}}}}`),
-			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "anyPrefix", MinDealTier: 5}},
 		},
 		{
 			description:   "imp.ext.prebid - error",

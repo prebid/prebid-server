@@ -2,7 +2,6 @@ package openrtb_ext
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/mxmCherry/openrtb"
 )
@@ -37,7 +36,7 @@ func ReadDealTiersFromImp(imp openrtb.Imp) (DealTierBidderMap, error) {
 	}
 	for bidder, param := range impExt {
 		if param.DealTier != nil {
-			dealTiers[BidderName(bidder)] = normalizeDealTier(param.DealTier)
+			dealTiers[BidderName(bidder)] = *param.DealTier
 		}
 	}
 
@@ -54,15 +53,9 @@ func ReadDealTiersFromImp(imp openrtb.Imp) (DealTierBidderMap, error) {
 	}
 	for bidder, param := range impPrebidExt.Prebid.Bidders {
 		if param.DealTier != nil {
-			dealTiers[BidderName(bidder)] = normalizeDealTier(param.DealTier)
+			dealTiers[BidderName(bidder)] = *param.DealTier
 		}
 	}
 
 	return dealTiers, nil
-}
-
-func normalizeDealTier(dealTier *DealTier) DealTier {
-	x := *dealTier
-	x.Prefix = strings.ReplaceAll(x.Prefix, " ", "")
-	return x
 }
