@@ -54,6 +54,7 @@ const (
 	BidderConsumable       BidderName = "consumable"
 	BidderConversant       BidderName = "conversant"
 	BidderCpmstar          BidderName = "cpmstar"
+	BidderCrossInstall     BidderName = "crossinstall"
 	BidderDatablocks       BidderName = "datablocks"
 	BidderDmx              BidderName = "dmx"
 	BidderEmxDigital       BidderName = "emx_digital"
@@ -143,6 +144,7 @@ var BidderMap = map[string]BidderName{
 	"consumable":        BidderConsumable,
 	"conversant":        BidderConversant,
 	"cpmstar":           BidderCpmstar,
+	"crossinstall":      BidderCrossInstall,
 	"datablocks":        BidderDatablocks,
 	"dmx":               BidderDmx,
 	"emx_digital":       BidderEmxDigital,
