@@ -6,7 +6,7 @@ import (
 
 // ExtImp defines the contract for bidrequest.imp[i].ext
 type ExtImp struct {
-	Prebid     *ExtImpPrebid     `json:"prebid"`
+	Prebid     *ExtImpPrebid     `json:"prebid,omitempty"`
 	Appnexus   *ExtImpAppnexus   `json:"appnexus"`
 	Consumable *ExtImpConsumable `json:"consumable"`
 	Rubicon    *ExtImpRubicon    `json:"rubicon"`
