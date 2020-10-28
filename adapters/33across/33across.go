@@ -24,6 +24,13 @@ type ext struct {
 	Zoneid string `json:"zoneid,omitempty"`
 }
 
+type bidExt struct {
+	Ttx bidTtxExt `json:"ttx,omitempty"`
+}
+type bidTtxExt struct {
+	MediaType string `json:mediaType,omitempty`
+}
+
 // MakeRequests create the object for TTX Reqeust.
 func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
@@ -99,6 +106,19 @@ func preprocess(request *openrtb.BidRequest) error {
 		}
 	}
 
+	// Validate Video if it exists
+	if imp.Video != nil {
+		videoCopy, err := validateVideoParams(imp.Video, impExt.Ttx.Prod)
+
+		if err != nil {
+			return &errortypes.BadInput{
+				Message: err.Error(),
+			}
+		}
+
+		imp.Video = videoCopy
+	}
+
 	imp.Ext = impExtJSON
 	siteCopy := *request.Site
 	siteCopy.ID = ttxExt.SiteId
@@ -135,9 +155,18 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
+			var bidExt bidExt
+			var bidType openrtb_ext.BidType
+
+			if err := json.Unmarshal(sb.Bid[i].Ext, &bidExt); err != nil {
+				bidType = openrtb_ext.BidTypeBanner
+			} else {
+				bidType = getBidType(bidExt)
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: "banner",
+				BidType: bidType,
 			})
 		}
 	}
@@ -145,6 +174,43 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 
 }
 
+func validateVideoParams(video *openrtb.Video, prod string) (*openrtb.Video, error) {
+	videoCopy := video
+	if videoCopy.W == 0 ||
+		videoCopy.H == 0 ||
+		videoCopy.Protocols == nil ||
+		videoCopy.MIMEs == nil ||
+		videoCopy.PlaybackMethod == nil {
+
+		return nil, &errortypes.BadInput{
+			Message: "One or more invalid or missing video field(s) w, h, protocols, mimes, playbackmethod",
+		}
+	}
+
+	if videoCopy.Placement == 0 {
+		videoCopy.Placement = 2
+	}
+
+	if prod == "instream" {
+		videoCopy.Placement = 1
+
+		if videoCopy.StartDelay == nil {
+			videoCopy.StartDelay = openrtb.StartDelay.Ptr(0)
+		}
+	}
+
+	return videoCopy, nil
+}
+
+func getBidType(ext bidExt) openrtb_ext.BidType {
+	if ext.Ttx.MediaType == "video" {
+		return openrtb_ext.BidTypeVideo
+	}
+
+	return openrtb_ext.BidTypeBanner
+}
+
+// New33AcrossBidder configures bidder endpoint
 func New33AcrossBidder(endpoint string) *TtxAdapter {
 	return &TtxAdapter{
 		endpoint: endpoint,
