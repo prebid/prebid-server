@@ -597,7 +597,7 @@ func applyCategoryMapping(ctx context.Context, bidRequest *openrtb.BidRequest, r
 					}
 				}
 			} else if newDur == 0 {
-				if imp, ok := impMap[bid.bid.ID]; ok {
+				if imp, ok := impMap[bid.bid.ImpID]; ok {
 					if nil != imp.Video && imp.Video.MaxDuration > 0 {
 						newDur = int(imp.Video.MaxDuration)
 					}
