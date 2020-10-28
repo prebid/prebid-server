@@ -238,34 +238,19 @@ func recordImpMetrics(bidRequest *openrtb.BidRequest, metricsEngine pbsmetrics.M
 	}
 }
 
-type DealTierInfo struct {
-	Prefix      string `json:"prefix"`
-	MinDealTier int    `json:"minDealTier"`
-}
-
-type DealTier struct {
-	Info *DealTierInfo `json:"dealTier,omitempty"`
-}
-
-type BidderDealTier struct {
-	DealInfo map[string]*DealTier
-}
-
 // applyDealSupport updates targeting keys with deal prefixes if minimum deal tier exceeded
 func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction, bidCategory map[string]string) []error {
 	errs := []error{}
 	impDealMap := getDealTiers(bidRequest)
 
 	for impID, topBidsPerImp := range auc.winningBidsByBidder {
-		impDeal := impDealMap[impID].DealInfo
+		impDeal := impDealMap[impID]
 		for bidder, topBidPerBidder := range topBidsPerImp {
-			bidderString := bidder.String()
-
 			if topBidPerBidder.dealPriority > 0 {
-				if validateAndNormalizeDealTier(impDeal[bidderString]) {
-					updateHbPbCatDur(topBidPerBidder, impDeal[bidderString].Info, bidCategory)
+				if validateDealTier(impDeal[bidder]) {
+					updateHbPbCatDur(topBidPerBidder, impDeal[bidder], bidCategory)
 				} else {
-					errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", bidderString, impID))
+					errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", string(bidder), impID))
 				}
 			}
 		}
@@ -275,34 +260,27 @@ func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction, bidCategory 
 }
 
 // getDealTiers creates map of impression to bidder deal tier configuration
-func getDealTiers(bidRequest *openrtb.BidRequest) map[string]*BidderDealTier {
-	impDealMap := make(map[string]*BidderDealTier)
+func getDealTiers(bidRequest *openrtb.BidRequest) map[string]openrtb_ext.DealTierBidderMap {
+	impDealMap := make(map[string]openrtb_ext.DealTierBidderMap)
 
 	for _, imp := range bidRequest.Imp {
-		var bidderDealTier BidderDealTier
-		err := json.Unmarshal(imp.Ext, &bidderDealTier.DealInfo)
+		dealTierBidderMap, err := openrtb_ext.ReadDealTiersFromImp(imp)
 		if err != nil {
 			continue
 		}
-
-		impDealMap[imp.ID] = &bidderDealTier
+		impDealMap[imp.ID] = dealTierBidderMap
 	}
 
 	return impDealMap
 }
 
-func validateAndNormalizeDealTier(impDeal *DealTier) bool {
-	if impDeal == nil || impDeal.Info == nil {
-		return false
-	}
-	// Remove whitespace from prefix before checking if it can be used
-	impDeal.Info.Prefix = strings.ReplaceAll(impDeal.Info.Prefix, " ", "")
-	return len(impDeal.Info.Prefix) > 0 && impDeal.Info.MinDealTier > 0
+func validateDealTier(dealTier openrtb_ext.DealTier) bool {
+	return len(dealTier.Prefix) > 0 && dealTier.MinDealTier > 0
 }
 
-func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo, bidCategory map[string]string) {
-	if bid.dealPriority >= dealTierInfo.MinDealTier {
-		prefixTier := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
+func updateHbPbCatDur(bid *pbsOrtbBid, dealTier openrtb_ext.DealTier, bidCategory map[string]string) {
+	if bid.dealPriority >= dealTier.MinDealTier {
+		prefixTier := fmt.Sprintf("%s%d_", dealTier.Prefix, bid.dealPriority)
 
 		if oldCatDur, ok := bidCategory[bid.bid.ID]; ok {
 			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
