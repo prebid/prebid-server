@@ -225,9 +225,13 @@ func (adapter *MolocoAdapter) MakeBids(_ *openrtb.BidRequest, externalRequest *a
 	for _, sb := range bidResp.SeatBid {
 		for _, b := range sb.Bid {
 			if b.Price != 0 {
-				// copy response.bidid to openrtb_response.seatbid.bid.bidid
-				if b.ID == "0" {
-					b.ID = bidResp.BidID
+				// copy response.bidid or response.id to openrtb_response.seatbid.bid.bidid
+				if b.ID == "1" {
+					if len(bidResp.BidID) > 0 {
+						b.ID = bidResp.BidID
+					} else if len(bidResp.ID) > 0 {
+						b.ID = bidResp.ID
+					}
 				}
 
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
