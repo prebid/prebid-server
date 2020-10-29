@@ -87,7 +87,7 @@ func TestJsonSampleRequests(t *testing.T) {
 			"account-required/no-account",
 		},
 		{
-			"Assert requests that come with a valid user id nor app id when account is required",
+			"Assert requests that come with a valid user id or app id when account is required",
 			"account-required/with-account",
 		},
 		{
@@ -249,7 +249,7 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 	//Assert []SeatBid and their Bid elements independently of their order
 	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
 
-	//Given that bidResponses have the same lenght, compare them in an order-independent way using maps
+	//Given that bidResponses have the same length, compare them in an order-independent way using maps
 	var actualSeatBidsMap map[string]openrtb.SeatBid = make(map[string]openrtb.SeatBid, 0)
 	for _, seatBid := range actualBidResponse.SeatBid {
 		actualSeatBidsMap[seatBid.Seat] = seatBid
@@ -439,15 +439,12 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{
-			MaxRequestSize:  maxSize,
-			BlacklistedApps: test.Config.BlacklistedApps,
-			//BlacklistedAppMap:  test.Config.blacklistedAppMap,
-			BlacklistedAppMap: test.Config.getBlacklistedAppMap(),
-			BlacklistedAccts:  test.Config.BlacklistedAccounts,
-			//BlacklistedAcctMap: test.Config.blacklistedAccountMap,
+			MaxRequestSize:     maxSize,
+			BlacklistedApps:    test.Config.BlacklistedApps,
+			BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
+			BlacklistedAccts:   test.Config.BlacklistedAccounts,
 			BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
 			AccountRequired:    test.Config.AccountRequired,
-			//AccountRequired: test.Config.getAccountRequiredMap(),
 		},
 		metrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
