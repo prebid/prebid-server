@@ -58,11 +58,12 @@ type adaptedBidder interface {
 // pbsOrtbBid.bidVideo is optional but should be filled out by the Bidder if bidType is video.
 // pbsOrtbBid.dealPriority will become "response.seatbid[i].bid.dealPriority" in the final OpenRTB response.
 type pbsOrtbBid struct {
-	bid          *openrtb.Bid
-	bidType      openrtb_ext.BidType
-	bidTargets   map[string]string
-	bidVideo     *openrtb_ext.ExtBidPrebidVideo
-	dealPriority int
+	bid               *openrtb.Bid
+	bidType           openrtb_ext.BidType
+	bidTargets        map[string]string
+	bidVideo          *openrtb_ext.ExtBidPrebidVideo
+	dealPriority      int
+	dealTierSatisfied bool
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
