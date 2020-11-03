@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.user.ext.eids must contain unique sources\n",
-  "requestPayload": {
+  "description": "Bid request where more than one request.user.ext.eids array elements share the same source field value",
+  "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
       "page": "prebid.org",
@@ -53,5 +53,7 @@
         ]
       }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.user.ext.eids must contain unique sources\n"
 }

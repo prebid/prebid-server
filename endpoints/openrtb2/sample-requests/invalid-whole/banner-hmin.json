@@ -1,17 +1,19 @@
 {
-    "message": "Invalid request: request.imp[0].banner uses unsupported property: \"hmin\". Use the \"format\" array instead.\n",
-    "requestPayload": {
-      "id":"req-id",
-      "imp": [
-        {
-          "id":"imp-id",
-          "banner": {
-            "hmin":50
-          }
+  "description": "Request comes with unsupported property 'hmin'",
+  "mockBidRequest": {
+    "id":"req-id",
+    "imp": [
+      {
+        "id":"imp-id",
+        "banner": {
+          "hmin":50
         }
-      ],
-      "app": {
-        "id": "app_001"
       }
+    ],
+    "app": {
+      "id": "app_001"
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].banner uses unsupported property: \"hmin\". Use the \"format\" array instead.\n"
+}

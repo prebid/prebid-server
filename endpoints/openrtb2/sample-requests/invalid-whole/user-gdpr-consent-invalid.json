@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.regs.ext.gdpr must be either 0 or 1.\n",
-  "requestPayload": {
+  "description": "Invalid GDPR consent string in user field",
+  "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
       "page": "prebid.org",
@@ -34,13 +34,12 @@
         }
       }
     ],
-    "regs": {
-      "ext": {
-        "gdpr": 2
-      }
-    },
     "user": {
-      "ext": {}
+      "ext": {
+        "consent": 2
+      }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.user.ext object is not valid: json: cannot unmarshal number into Go struct field ExtUser.consent of type string"
 }

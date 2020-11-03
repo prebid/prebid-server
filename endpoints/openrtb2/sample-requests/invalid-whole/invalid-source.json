@@ -1,7 +1,16 @@
 {
+  "description": "Request with wrong source value",
+  "mockBidRequest": {
     "id": "some-request-id",
-    "site": {
-      "page": "test.somepage.com"
+    "app": {
+      "ext": {
+        "prebid": {
+          "source": { 
+            "foo": "prebid-mobile"
+          },
+          "version": "1.0"
+        }
+      }
     },
     "imp": [
       {
@@ -24,27 +33,11 @@
         "ext": {
           "appnexus": {
             "placementId": 12883451
-          },
-          "test1": {
-            "placementId": 12883451
-          },
-          "test2": {
-            "accountId": 1001,
-            "siteId": 113932,
-            "zoneId": 535510
-          }          
+          }
         }
       }
-    ],
-    "ext": {
-      "prebid": {
-        "targeting": {
-          "pricegranularity": "low"
-        },
-        "cache": {
-          "bids": {}
-        }
-      }
-    }
-  }
-  
+    ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: json: cannot unmarshal object into Go struct field ExtAppPrebid.prebid.source of type string"
+}  
