@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.site.ext.amp must be either 1, 0, or undefined\n",
-  "requestPayload": {
+  "description": "Request's amp value in site's ext is invalid",
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "test.somepage.com",
@@ -43,5 +43,7 @@
         }
       }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.site.ext.amp must be either 1, 0, or undefined\n"
 }

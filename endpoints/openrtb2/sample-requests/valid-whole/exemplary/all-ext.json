@@ -1,7 +1,6 @@
 {
   "description": "This demonstrates all of the OpenRTB extensions supported by Prebid Server. Very few requests will need all of these at once.",
-
-  "requestPayload": {
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "prebid.org"
@@ -80,5 +79,43 @@
         }
       }
     }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "",
+              "price": 0
+            }
+          ],
+          "seat": "appnexus-bids"
+        },
+        {
+          "bid": [
+            {
+              "id": "districtm-bid",
+              "impid": "",
+              "price": 0
+            }
+          ],
+          "seat": "districtm-bids"
+        },
+        {
+          "bid": [
+            {
+              "id": "rubicon-bid",
+              "impid": "",
+              "price": 0
+            }
+          ],
+          "seat": "rubicon-bids"
+        }
+      ],
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 200
 }
