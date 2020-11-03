@@ -53,7 +53,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	labels pbsmetrics.Labels,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
-	privacyConfig config.Privacy) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
+	privacyConfig config.Privacy,
+	account *config.Account) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
@@ -94,7 +95,12 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
-	if gdpr == 1 {
+	GDPREnabled := accountLevelGDPREnabled(account, labels.RType)
+	if GDPREnabled == nil {
+		GDPREnabled = hostLevelGDPREnabled(privacyConfig)
+	}
+
+	if gdpr == 1 && *GDPREnabled {
 		privacyLabels.GDPREnforced = true
 		parsedConsent, err := vendorconsent.ParseString(consent)
 		if err == nil {
@@ -109,7 +115,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidder.String())
 
 		// GDPR
-		if gdpr == 1 {
+		if gdpr == 1 && *GDPREnabled {
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
 			var publisherID = labels.PubID
@@ -125,6 +131,38 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	return
+}
+
+// GDPRAccountEnabled returns the GDPR setting for the request type in the account config if defined or
+// the general GDPR setting in the account config if defined; otherwise it returns nil
+func accountLevelGDPREnabled(account *config.Account, requestType pbsmetrics.RequestType) *bool {
+	var integrationEnabled *bool
+
+	switch requestType {
+	case pbsmetrics.ReqTypeAMP:
+		integrationEnabled = account.GDPR.IntegrationEnabled.AMP
+	case pbsmetrics.ReqTypeORTB2App:
+		integrationEnabled = account.GDPR.IntegrationEnabled.App
+	case pbsmetrics.ReqTypeVideo:
+		integrationEnabled = account.GDPR.IntegrationEnabled.Video
+	case pbsmetrics.ReqTypeORTB2Web:
+		integrationEnabled = account.GDPR.IntegrationEnabled.Web
+	}
+
+	if integrationEnabled != nil {
+		return integrationEnabled
+	}
+	if account.GDPR.Enabled != nil {
+		return account.GDPR.Enabled
+	}
+
+	return nil
+}
+
+func hostLevelGDPREnabled(privacyConfig config.Privacy) *bool {
+	// return &privacyConfig.GDPR.UsersyncIfAmbiguous
+	hostEnabled := true
+	return &hostEnabled
 }
 
 func extractCCPA(orig *openrtb.BidRequest, privacyConfig config.Privacy, aliases map[string]string) (privacy.PolicyEnforcer, error) {
