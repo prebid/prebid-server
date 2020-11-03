@@ -114,3 +114,110 @@ func TestAccountGDPREnabledForIntegrationType(t *testing.T) {
 		}
 	}
 }
+
+func TestAccountCCPAEnabledForRequestType(t *testing.T) {
+	tests := []struct {
+		description          string
+		giveRequestType      RequestType
+		giveCCPAEnabled      *bool
+		giveAMPCCPAEnabled   *bool
+		giveAppCCPAEnabled   *bool
+		giveVideoCCPAEnabled *bool
+		giveWebCCPAEnabled   *bool
+		wantEnabled          *bool
+	}{
+		{
+			description:        "CCPA AMP integration enabled, general CCPA disabled",
+			giveRequestType:    RequestTypeAMP,
+			giveCCPAEnabled:    &[]bool{false}[0],
+			giveAMPCCPAEnabled: &[]bool{true}[0],
+			wantEnabled:        &[]bool{true}[0],
+		},
+		{
+			description:        "CCPA App integration enabled, general CCPA disabled",
+			giveRequestType:    RequestTypeApp,
+			giveCCPAEnabled:    &[]bool{false}[0],
+			giveAppCCPAEnabled: &[]bool{true}[0],
+			wantEnabled:        &[]bool{true}[0],
+		},
+		{
+			description:          "CCPA Video integration enabled, general CCPA disabled",
+			giveRequestType:      RequestTypeVideo,
+			giveCCPAEnabled:      &[]bool{false}[0],
+			giveVideoCCPAEnabled: &[]bool{true}[0],
+			wantEnabled:          &[]bool{true}[0],
+		},
+		{
+			description:        "CCPA Web integration enabled, general CCPA disabled",
+			giveRequestType:    RequestTypeWeb,
+			giveCCPAEnabled:    &[]bool{false}[0],
+			giveWebCCPAEnabled: &[]bool{true}[0],
+			wantEnabled:        &[]bool{true}[0],
+		},
+		{
+			description:        "Web integration enabled, general CCPA unspecified",
+			giveRequestType:    RequestTypeWeb,
+			giveCCPAEnabled:    nil,
+			giveWebCCPAEnabled: &[]bool{true}[0],
+			wantEnabled:        &[]bool{true}[0],
+		},
+		{
+			description:        "CCPA Web integration disabled, general CCPA enabled",
+			giveRequestType:    RequestTypeWeb,
+			giveCCPAEnabled:    &[]bool{true}[0],
+			giveWebCCPAEnabled: &[]bool{false}[0],
+			wantEnabled:        &[]bool{false}[0],
+		},
+		{
+			description:        "CCPA Web integration disabled, general CCPA unspecified",
+			giveRequestType:    RequestTypeWeb,
+			giveCCPAEnabled:    nil,
+			giveWebCCPAEnabled: &[]bool{false}[0],
+			wantEnabled:        &[]bool{false}[0],
+		},
+		{
+			description:        "CCPA Web integration unspecified, general CCPA disabled",
+			giveRequestType:    RequestTypeWeb,
+			giveCCPAEnabled:    &[]bool{false}[0],
+			giveWebCCPAEnabled: nil,
+			wantEnabled:        &[]bool{false}[0],
+		},
+		{
+			description:        "CCPA Web integration unspecified, general CCPA enabled",
+			giveRequestType:    RequestTypeWeb,
+			giveCCPAEnabled:    &[]bool{true}[0],
+			giveWebCCPAEnabled: nil,
+			wantEnabled:        &[]bool{true}[0],
+		},
+		{
+			description:        "CCPA Web integration unspecified, general CCPA unspecified",
+			giveRequestType:    RequestTypeWeb,
+			giveCCPAEnabled:    nil,
+			giveWebCCPAEnabled: nil,
+			wantEnabled:        nil,
+		},
+	}
+
+	for _, tt := range tests {
+		account := Account{
+			CCPA: AccountCCPA{
+				Enabled: tt.giveCCPAEnabled,
+				IntegrationEnabled: AccountCCPAIntegration{
+					AMP:   tt.giveAMPCCPAEnabled,
+					App:   tt.giveAppCCPAEnabled,
+					Video: tt.giveVideoCCPAEnabled,
+					Web:   tt.giveWebCCPAEnabled,
+				},
+			},
+		}
+
+		enabled := account.CCPA.EnabledForRequestType(tt.giveRequestType)
+
+		if tt.wantEnabled == nil {
+			assert.Nil(t, enabled, tt.description)
+		} else {
+			assert.NotNil(t, enabled, tt.description)
+			assert.Equal(t, *tt.wantEnabled, *enabled, tt.description)
+		}
+	}
+}

@@ -17,7 +17,48 @@ type Account struct {
 	Disabled      bool        `mapstructure:"disabled" json:"disabled"`
 	CacheTTL      DefaultTTLs `mapstructure:"cache_ttl" json:"cache_ttl"`
 	EventsEnabled bool        `mapstructure:"events_enabled" json:"events_enabled"`
+	CCPA          AccountCCPA `mapstructure:"ccpa" json:"ccpa"`
 	GDPR          AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
+}
+
+// AccountCCPA represents account-specific CCPA configuration
+type AccountCCPA struct {
+	Enabled            *bool                  `mapstructure:"enabled" json:"enabled,omitempty"`
+	IntegrationEnabled AccountCCPAIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+}
+
+// EnabledForIntegrationType indicates whether CCPA is turned on at the account level for the specified integration type
+// by using the integration type setting if defined or the general CCPA setting if defined; otherwise it returns nil
+func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType) *bool {
+	var integrationEnabled *bool
+
+	switch integrationType {
+	case IntegrationTypeAMP:
+		integrationEnabled = a.IntegrationEnabled.AMP
+	case IntegrationTypeApp:
+		integrationEnabled = a.IntegrationEnabled.App
+	case IntegrationTypeVideo:
+		integrationEnabled = a.IntegrationEnabled.Video
+	case IntegrationTypeWeb:
+		integrationEnabled = a.IntegrationEnabled.Web
+	}
+
+	if integrationEnabled != nil {
+		return integrationEnabled
+	}
+	if a.Enabled != nil {
+		return a.Enabled
+	}
+
+	return nil
+}
+
+// AccountCCPAIntegration indicates whether CCPA is enabled for each request type
+type AccountCCPAIntegration struct {
+	AMP   *bool `mapstructure:"amp"   json:"amp,omitempty"`
+	App   *bool `mapstructure:"app"   json:"app,omitempty"`
+	Video *bool `mapstructure:"video" json:"video,omitempty"`
+	Web   *bool `mapstructure:"web"   json:"web,omitempty"`
 }
 
 // AccountGDPR represents account-specific GDPR configuration

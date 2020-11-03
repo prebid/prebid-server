@@ -97,68 +97,108 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 		description         string
 		reqExt              json.RawMessage
 		ccpaConsent         string
+		ccpaAccountEnabled  *bool
 		enforceCCPA         bool
 		expectDataScrub     bool
 		expectPrivacyLabels pbsmetrics.PrivacyLabels
 	}{
 		{
-			description:     "Feature Flag Enabled - Opt Out",
-			ccpaConsent:     "1-Y-",
-			enforceCCPA:     true,
-			expectDataScrub: true,
+			description:        "Feature Flags Enabled - Opt Out",
+			ccpaConsent:        "1-Y-",
+			ccpaAccountEnabled: &[]bool{true}[0],
+			enforceCCPA:        true,
+			expectDataScrub:    true,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: true,
 			},
 		},
 		{
-			description:     "Feature Flag Enabled - Opt In",
-			ccpaConsent:     "1-N-",
-			enforceCCPA:     true,
-			expectDataScrub: false,
+			description:        "Feature Flags Enabled - Opt In",
+			ccpaConsent:        "1-N-",
+			ccpaAccountEnabled: &[]bool{true}[0],
+			enforceCCPA:        true,
+			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: false,
 			},
 		},
 		{
-			description:     "Feature Flag Enabled - No Sale Star - Doesn't Scrub",
-			reqExt:          json.RawMessage(`{"prebid":{"nosale":["*"]}}`),
-			ccpaConsent:     "1-Y-",
-			enforceCCPA:     true,
-			expectDataScrub: false,
+			description:        "Feature Flags Enabled - No Sale Star - Doesn't Scrub",
+			reqExt:             json.RawMessage(`{"prebid":{"nosale":["*"]}}`),
+			ccpaConsent:        "1-Y-",
+			ccpaAccountEnabled: &[]bool{true}[0],
+			enforceCCPA:        true,
+			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: false,
 			},
 		},
 		{
-			description:     "Feature Flag Enabled - No Sale Specific Bidder - Doesn't Scrub",
-			reqExt:          json.RawMessage(`{"prebid":{"nosale":["appnexus"]}}`),
-			ccpaConsent:     "1-Y-",
-			enforceCCPA:     true,
-			expectDataScrub: false,
+			description:        "Feature Flags Enabled - No Sale Specific Bidder - Doesn't Scrub",
+			reqExt:             json.RawMessage(`{"prebid":{"nosale":["appnexus"]}}`),
+			ccpaConsent:        "1-Y-",
+			ccpaAccountEnabled: &[]bool{true}[0],
+			enforceCCPA:        true,
+			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: true,
 			},
 		},
 		{
-			description:     "Feature Flag Enabled - No Sale Different Bidder - Scrubs",
-			reqExt:          json.RawMessage(`{"prebid":{"nosale":["rubicon"]}}`),
-			ccpaConsent:     "1-Y-",
-			enforceCCPA:     true,
-			expectDataScrub: true,
+			description:        "Feature Flags Enabled - No Sale Different Bidder - Scrubs",
+			reqExt:             json.RawMessage(`{"prebid":{"nosale":["rubicon"]}}`),
+			ccpaConsent:        "1-Y-",
+			ccpaAccountEnabled: &[]bool{true}[0],
+			enforceCCPA:        true,
+			expectDataScrub:    true,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: true,
 			},
 		},
 		{
-			description:     "Feature Flag Disabled",
-			ccpaConsent:     "1-Y-",
-			enforceCCPA:     false,
-			expectDataScrub: false,
+			description:        "Feature flags Account CCPA enabled, host CCPA disregarded - Opt Out",
+			ccpaConsent:        "1-Y-",
+			ccpaAccountEnabled: &[]bool{true}[0],
+			enforceCCPA:        false,
+			expectDataScrub:    true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: true,
+				CCPAEnforced: true,
+			},
+		},
+		{
+			description:        "Feature flags Account CCPA disabled, host CCPA disregarded",
+			ccpaConsent:        "1-Y-",
+			ccpaAccountEnabled: &[]bool{false}[0],
+			enforceCCPA:        true,
+			expectDataScrub:    false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: true,
+				CCPAEnforced: false,
+			},
+		},
+		{
+			description:        "Feature flags Account CCPA not specified, host CCPA enabled - Opt Out",
+			ccpaConsent:        "1-Y-",
+			ccpaAccountEnabled: nil,
+			enforceCCPA:        true,
+			expectDataScrub:    true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: true,
+				CCPAEnforced: true,
+			},
+		},
+		{
+			description:        "Feature flags Account CCPA not specified, host CCPA disabled",
+			ccpaConsent:        "1-Y-",
+			ccpaAccountEnabled: nil,
+			enforceCCPA:        false,
+			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: false,
@@ -179,7 +219,23 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			},
 		}
 
-		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig, &config.Account{})
+		accountConfig := config.Account{
+			CCPA: config.AccountCCPA{
+				Enabled: test.ccpaAccountEnabled,
+			},
+		}
+
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(
+			context.Background(),
+			req,
+			nil,
+			&emptyUsersync{},
+			map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{},
+			pbsmetrics.Labels{},
+			&permissionsMock{personalInfoAllowed: true},
+			true,
+			privacyConfig,
+			&accountConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
