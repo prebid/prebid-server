@@ -138,7 +138,9 @@ func TestMakeRequestsApp(t *testing.T) {
 	assert.Equal(t, "site_publisher_id", body.Site.Publisher.ID)
 }
 
-func getRequestBody(requests []*adapters.RequestData) *openrtb.BidRequest {
+func getRequestBody(t *testing.T, requests []*adapters.RequestData) *openrtb.BidRequest {
+	assert.GreaterOrEqual(t, 1, len(requests))
+
 	var body openrtb.BidRequest
 	if err := json.Unmarshal(requests[0].Body, &body); err == nil {
 		return &body
@@ -186,10 +188,10 @@ func TestMakeBidVideo(t *testing.T) {
 	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 	assert.Len(t, actualAdapterRequests, 1, "expecting 1 request")
 
-	body := getRequestBody(actualAdapterRequests)
+	body := getRequestBody(t, actualAdapterRequests)
 	assert.NotNil(t, body, "body should be valid JSON")
 
-	assert.Len(t, body.Imp, 1, "expecting 1 bid")
+	assert.Len(t, body.Imp, 1, "expecting 1 Imp")
 
 	resps, errs := adapter.MakeBids(body, &adapters.RequestData{}, &adapters.ResponseData{
 		StatusCode: 200,
@@ -223,63 +225,6 @@ func TestMakeBidVideo(t *testing.T) {
 
 	// it should be a video bid
 	assert.Equal(t, openrtb_ext.BidTypeVideo, resps.Bids[0].BidType, "the bid should be video type")
-}
-
-func TestUserEidsOnly(t *testing.T) {
-	var w, h int = 300, 250
-
-	var width, height uint64 = uint64(w), uint64(h)
-
-	adapter := NewAMXBidder(amxTestEndpoint)
-	imp1 := openrtb.Imp{
-		ID:  "imp1",
-		Ext: json.RawMessage(defaultImpExt),
-		Banner: &openrtb.Banner{
-			W: &width,
-			H: &height,
-			Format: []openrtb.Format{
-				{W: 300, H: 250},
-			},
-		}}
-
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1, imp1, imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
-				ID: "10007",
-			},
-		},
-		User: &openrtb.User{Ext: json.RawMessage(
-			`{
-				"eids": [{
-				"source": "adserver.org",
-					"uids": [{
-						"id": "111111111111",
-						"ext": {
-							"rtiPartner": "TDID"
-						}
-					}]
-				},{
-					"source": "example.buid",
-					"uids": [{
-						"id": "123456"
-					}]
-				}]
-			}`)},
-		ID: "1234",
-	}
-
-	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
-	assert.Len(t, actualAdapterRequests, 1, "there should be 1 request")
-
-	body := getRequestBody(actualAdapterRequests)
-	assert.NotNil(t, body, "the generated OpenRTB request is not valid JSON")
-
-	userExt := getUserExt(body.User)
-	assert.NotNil(t, userExt, "the generated user.ext is invalid")
-
-	assert.Len(t, userExt.Eids, 2)
-	assert.Equal(t, "adserver.org", userExt.Eids[0].Source, "the eid source does is incorrect")
 }
 
 func TestVideoImpInsertion(t *testing.T) {

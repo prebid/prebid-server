@@ -77,6 +77,17 @@
                 "id": "88de601e-3d98-48e7-81d7-00000000"
               }
             ]
+          },
+          {
+            "source": "adserver.org",
+            "uids": [
+              {
+                "id": "1234567",
+                "ext": {
+                  "rtiPartner": "TDID"
+                }
+              }
+            ]
           }
         ],
         "gdpr": 0,
@@ -162,6 +173,17 @@
                   {
                     "atype": 1,
                     "id": "88de601e-3d98-48e7-81d7-00000000"
+                  }
+                ]
+              },
+              {
+                "source": "adserver.org",
+                "uids": [
+                  {
+                    "id": "1234567",
+                    "ext": {
+                      "rtiPartner": "TDID"
+                    }
                   }
                 ]
               }
