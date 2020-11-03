@@ -160,9 +160,7 @@ func accountLevelGDPREnabled(account *config.Account, requestType pbsmetrics.Req
 }
 
 func hostLevelGDPREnabled(privacyConfig config.Privacy) *bool {
-	// return &privacyConfig.GDPR.UsersyncIfAmbiguous
-	hostEnabled := true
-	return &hostEnabled
+	return &privacyConfig.GDPR.Enabled
 }
 
 func extractCCPA(orig *openrtb.BidRequest, privacyConfig config.Privacy, aliases map[string]string) (privacy.PolicyEnforcer, error) {

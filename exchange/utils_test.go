@@ -1053,18 +1053,18 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 				GDPRTCFVersion: pbsmetrics.TCFVersionV1,
 			},
 		},
-		// {
-		// 	description: "Not Enforce - TCF 1; account GDPR not specified, host GDPR disabled",
-		// 	gdprAccountEnabled: nil,
-		// 	gdprHostEnabled:    false,
-		// 	gdpr:               "1",
-		// 	gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
-		// 	gdprScrub:          false,
-		// 	expectPrivacyLabels: pbsmetrics.PrivacyLabels{
-		// 		GDPREnforced:   false,
-		// 		GDPRTCFVersion: "",
-		// 	},
-		// },
+		{
+			description:        "Not Enforce - TCF 1; account GDPR not specified, host GDPR disabled",
+			gdprAccountEnabled: nil,
+			gdprHostEnabled:    false,
+			gdpr:               "1",
+			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:          false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				GDPREnforced:   false,
+				GDPRTCFVersion: "",
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -1076,7 +1076,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 
 		privacyConfig := config.Privacy{
 			GDPR: config.GDPR{
-				UsersyncIfAmbiguous: test.gdprHostEnabled,
+				Enabled: test.gdprHostEnabled,
 				TCF2: config.TCF2{
 					Enabled: true,
 				},
