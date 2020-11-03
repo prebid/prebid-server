@@ -1639,6 +1639,50 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 	}
 }
 
+func TestRecordAdaptorDuplicateBidIDs(t *testing.T) {
+	type bidderCollisions = map[string]int
+	testCases := []struct {
+		scenario         string
+		bidderCollisions *bidderCollisions // represents no of collisions detected for bid.id at bidder level for given request
+		hasCollision     bool
+	}{
+		{scenario: "invalid collision value", bidderCollisions: &map[string]int{"bidder-1": -1}, hasCollision: false},
+		{scenario: "no collision", bidderCollisions: &map[string]int{"bidder-1": 0}, hasCollision: false},
+		{scenario: "one collision", bidderCollisions: &map[string]int{"bidder-1": 1}, hasCollision: false},
+		{scenario: "multiple collisions", bidderCollisions: &map[string]int{"bidder-1": 2}, hasCollision: true}, // when 2 collisions it counter will be 1
+		{scenario: "multiple bidders", bidderCollisions: &map[string]int{"bidder-1": 2, "bidder-2": 4}, hasCollision: true},
+		{scenario: "multiple bidders with bidder-1 no collision", bidderCollisions: &map[string]int{"bidder-1": 1, "bidder-2": 4}, hasCollision: true},
+		{scenario: "no bidders", bidderCollisions: nil, hasCollision: false},
+	}
+	testEngine := metricsConf.NewMetricsEngine(&config.Configuration{}, nil)
+
+	for _, testcase := range testCases {
+		var adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid
+		if nil == testcase.bidderCollisions {
+			break
+		}
+		adapterBids = make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
+		for bidder, collisions := range *testcase.bidderCollisions {
+			bids := make([]*pbsOrtbBid, 0)
+			testBidID := "bid_id_for_bidder_" + bidder
+			// add bids as per collisions value
+			bidCount := 0
+			for ; bidCount < collisions; bidCount++ {
+				bids = append(bids, &pbsOrtbBid{
+					bid: &openrtb.Bid{
+						ID: testBidID,
+					},
+				})
+			}
+			if nil == adapterBids[openrtb_ext.BidderName(bidder)] {
+				adapterBids[openrtb_ext.BidderName(bidder)] = new(pbsOrtbSeatBid)
+			}
+			adapterBids[openrtb_ext.BidderName(bidder)].bids = bids
+		}
+		assert.Equal(t, testcase.hasCollision, recordAdaptorDuplicateBidIDs(testEngine, adapterBids))
+	}
+}
+
 type exchangeSpec struct {
 	IncomingRequest  exchangeRequest        `json:"incomingRequest"`
 	OutgoingRequests map[string]*bidderSpec `json:"outgoingRequests"`

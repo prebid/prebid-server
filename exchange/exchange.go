@@ -315,6 +315,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(cleanRequests))
 	chBids := make(chan *bidResponseWrapper, len(cleanRequests))
 	bidsFound := false
+	bidIDsCollision := false
 
 	for bidderName, req := range cleanRequests {
 		// Here we actually call the adapters and collect the bids.
@@ -383,9 +384,13 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 
 		if !bidsFound && adapterBids[brw.bidder] != nil && len(adapterBids[brw.bidder].bids) > 0 {
 			bidsFound = true
+			bidIDsCollision = recordAdaptorDuplicateBidIDs(e.me, adapterBids)
 		}
 	}
-
+	if bidIDsCollision {
+		// record this request count this request if bid collision is detected
+		e.me.RecordRequestHavingDuplicateBidID()
+	}
 	return adapterBids, adapterExtra, bidsFound
 }
 
@@ -822,4 +827,27 @@ func listBiddersWithRequests(cleanRequests map[openrtb_ext.BidderName]*openrtb.B
 	randomizeList(liveAdapters)
 
 	return liveAdapters
+}
+
+// recordAdaptorDuplicateBidIDs finds the bid.id collisions for each bidder and records them with metrics engine
+// it returns true if collosion(s) is/are detected in any of the bidder's bids
+func recordAdaptorDuplicateBidIDs(metricsEngine pbsmetrics.MetricsEngine, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid) bool {
+	bidIDCollisionFound := false
+	if nil == adapterBids {
+		return false
+	}
+	for bidder, bid := range adapterBids {
+		bidIDColisionMap := make(map[string]int, len(adapterBids[bidder].bids))
+		for _, thisBid := range bid.bids {
+			if collisions, ok := bidIDColisionMap[thisBid.bid.ID]; ok {
+				bidIDCollisionFound = true
+				bidIDColisionMap[thisBid.bid.ID]++
+				glog.Warningf("Bid.id %v :: %v collision(s) [imp.id = %v] for bidder '%v'", thisBid.bid.ID, collisions, thisBid.bid.ImpID, string(bidder))
+				metricsEngine.RecordAdapterDuplicateBidID(string(bidder), 1)
+			} else {
+				bidIDColisionMap[thisBid.bid.ID] = 1
+			}
+		}
+	}
+	return bidIDCollisionFound
 }

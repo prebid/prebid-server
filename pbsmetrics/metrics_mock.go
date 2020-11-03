@@ -107,6 +107,16 @@ func (me *MetricsEngineMock) RecordTimeoutNotice(success bool) {
 	me.Called(success)
 }
 
+// RecordAdapterDuplicateBidID mock
+func (me *MetricsEngineMock) RecordAdapterDuplicateBidID(adaptor string, collisions int) {
+	me.Called(adaptor, collisions)
+}
+
+// RecordRequestHavingDuplicateBidID mock
+func (me *MetricsEngineMock) RecordRequestHavingDuplicateBidID() {
+	me.Called()
+}
+
 // RecordPodImpGenTime mock
 func (me *MetricsEngineMock) RecordPodImpGenTime(labels PodLabels, startTime time.Time) {
 	me.Called(labels, startTime)

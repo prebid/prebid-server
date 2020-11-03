@@ -285,6 +285,14 @@ type MetricsEngine interface {
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(sucess bool)
+	// RecordAdapterDuplicateBidID captures the  bid.ID collisions when adaptor
+	// gives the bid response with multiple bids containing  same bid.ID
+	RecordAdapterDuplicateBidID(adaptor string, collisions int)
+
+	// RecordRequestHavingDuplicateBidID keeps track off how many request got bid.id collision
+	// detected
+	RecordRequestHavingDuplicateBidID()
+
 	// ad pod specific metrics
 
 	// RecordPodImpGenTime records number of impressions generated and time taken
