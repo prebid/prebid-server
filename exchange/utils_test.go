@@ -1116,125 +1116,101 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 
 func TestAccountLevelGDPREnabled(t *testing.T) {
 	tests := []struct {
-		description     string
-		giveAccount     config.Account
-		giveRequestType pbsmetrics.RequestType
-		wantEnabled     *bool
+		description          string
+		giveRequestType      pbsmetrics.RequestType
+		giveGDPREnabled      *bool
+		giveAMPGDPREnabled   *bool
+		giveAppGDPREnabled   *bool
+		giveVideoGDPREnabled *bool
+		giveWebGDPREnabled   *bool
+		wantEnabled          *bool
 	}{
 		{
-			description: "GDPR AMP integration enabled, general GDPR disabled",
-			giveAccount: config.Account{
-				GDPR: config.AccountGDPR{
-					Enabled:            &[]bool{false}[0],
-					IntegrationEnabled: config.AccountGDPRIntegration{AMP: &[]bool{true}[0]},
-				},
-			},
-			giveRequestType: pbsmetrics.ReqTypeAMP,
-			wantEnabled:     &[]bool{true}[0],
+			description:        "GDPR AMP integration enabled, general GDPR disabled",
+			giveRequestType:    pbsmetrics.ReqTypeAMP,
+			giveGDPREnabled:    &[]bool{false}[0],
+			giveAMPGDPREnabled: &[]bool{true}[0],
+			wantEnabled:        &[]bool{true}[0],
 		},
 		{
-			description: "GDPR App integration enabled, general GDPR disabled",
-			giveAccount: config.Account{
-				GDPR: config.AccountGDPR{
-					Enabled:            &[]bool{false}[0],
-					IntegrationEnabled: config.AccountGDPRIntegration{App: &[]bool{true}[0]},
-				},
-			},
-			giveRequestType: pbsmetrics.ReqTypeORTB2App,
-			wantEnabled:     &[]bool{true}[0],
+			description:        "GDPR App integration enabled, general GDPR disabled",
+			giveRequestType:    pbsmetrics.ReqTypeORTB2App,
+			giveGDPREnabled:    &[]bool{false}[0],
+			giveAppGDPREnabled: &[]bool{true}[0],
+			wantEnabled:        &[]bool{true}[0],
 		},
 		{
-			description: "GDPR Video integration enabled, general GDPR disabled",
-			giveAccount: config.Account{
-				GDPR: config.AccountGDPR{
-					Enabled:            &[]bool{false}[0],
-					IntegrationEnabled: config.AccountGDPRIntegration{Video: &[]bool{true}[0]},
-				},
-			},
-			giveRequestType: pbsmetrics.ReqTypeVideo,
-			wantEnabled:     &[]bool{true}[0],
+			description:          "GDPR Video integration enabled, general GDPR disabled",
+			giveRequestType:      pbsmetrics.ReqTypeVideo,
+			giveGDPREnabled:      &[]bool{false}[0],
+			giveVideoGDPREnabled: &[]bool{true}[0],
+			wantEnabled:          &[]bool{true}[0],
 		},
 		{
-			description: "GDPR Web integration enabled, general GDPR disabled",
-			giveAccount: config.Account{
-				GDPR: config.AccountGDPR{
-					Enabled:            &[]bool{false}[0],
-					IntegrationEnabled: config.AccountGDPRIntegration{Web: &[]bool{true}[0]},
-				},
-			},
-			giveRequestType: pbsmetrics.ReqTypeORTB2Web,
-			wantEnabled:     &[]bool{true}[0],
+			description:        "GDPR Web integration enabled, general GDPR disabled",
+			giveRequestType:    pbsmetrics.ReqTypeORTB2Web,
+			giveGDPREnabled:    &[]bool{false}[0],
+			giveWebGDPREnabled: &[]bool{true}[0],
+			wantEnabled:        &[]bool{true}[0],
 		},
 		{
-			description: "Web integration enabled, general GDPR unspecified",
-			giveAccount: config.Account{
-				GDPR: config.AccountGDPR{
-					Enabled:            nil,
-					IntegrationEnabled: config.AccountGDPRIntegration{Web: &[]bool{true}[0]},
-				},
-			},
-			giveRequestType: pbsmetrics.ReqTypeORTB2Web,
-			wantEnabled:     &[]bool{true}[0],
+			description:        "Web integration enabled, general GDPR unspecified",
+			giveRequestType:    pbsmetrics.ReqTypeORTB2Web,
+			giveGDPREnabled:    nil,
+			giveWebGDPREnabled: &[]bool{true}[0],
+			wantEnabled:        &[]bool{true}[0],
 		},
 		{
-			description: "GDPR Web integration disabled, general GDPR enabled",
-			giveAccount: config.Account{
-				GDPR: config.AccountGDPR{
-					Enabled:            &[]bool{true}[0],
-					IntegrationEnabled: config.AccountGDPRIntegration{Web: &[]bool{false}[0]},
-				},
-			},
-			giveRequestType: pbsmetrics.ReqTypeORTB2Web,
-			wantEnabled:     &[]bool{false}[0],
+			description:        "GDPR Web integration disabled, general GDPR enabled",
+			giveRequestType:    pbsmetrics.ReqTypeORTB2Web,
+			giveGDPREnabled:    &[]bool{true}[0],
+			giveWebGDPREnabled: &[]bool{false}[0],
+			wantEnabled:        &[]bool{false}[0],
 		},
 		{
-			description: "GDPR Web integration disabled, general GDPR unspecified",
-			giveAccount: config.Account{
-				GDPR: config.AccountGDPR{
-					Enabled:            nil,
-					IntegrationEnabled: config.AccountGDPRIntegration{Web: &[]bool{false}[0]},
-				},
-			},
-			giveRequestType: pbsmetrics.ReqTypeORTB2Web,
-			wantEnabled:     &[]bool{false}[0],
+			description:        "GDPR Web integration disabled, general GDPR unspecified",
+			giveRequestType:    pbsmetrics.ReqTypeORTB2Web,
+			giveGDPREnabled:    nil,
+			giveWebGDPREnabled: &[]bool{false}[0],
+			wantEnabled:        &[]bool{false}[0],
 		},
 		{
-			description: "GDPR Web integration unspecified, general GDPR disabled",
-			giveAccount: config.Account{
-				GDPR: config.AccountGDPR{
-					Enabled:            &[]bool{false}[0],
-					IntegrationEnabled: config.AccountGDPRIntegration{Web: nil},
-				},
-			},
-			giveRequestType: pbsmetrics.ReqTypeORTB2Web,
-			wantEnabled:     &[]bool{false}[0],
+			description:        "GDPR Web integration unspecified, general GDPR disabled",
+			giveRequestType:    pbsmetrics.ReqTypeORTB2Web,
+			giveGDPREnabled:    &[]bool{false}[0],
+			giveWebGDPREnabled: nil,
+			wantEnabled:        &[]bool{false}[0],
 		},
 		{
-			description: "GDPR Web integration unspecified, general GDPR enabled",
-			giveAccount: config.Account{
-				GDPR: config.AccountGDPR{
-					Enabled:            &[]bool{true}[0],
-					IntegrationEnabled: config.AccountGDPRIntegration{Web: nil},
-				},
-			},
-			giveRequestType: pbsmetrics.ReqTypeORTB2Web,
-			wantEnabled:     &[]bool{true}[0],
+			description:        "GDPR Web integration unspecified, general GDPR enabled",
+			giveRequestType:    pbsmetrics.ReqTypeORTB2Web,
+			giveGDPREnabled:    &[]bool{true}[0],
+			giveWebGDPREnabled: nil,
+			wantEnabled:        &[]bool{true}[0],
 		},
 		{
-			description: "GDPR Web integration unspecified, general GDPR unspecified",
-			giveAccount: config.Account{
-				GDPR: config.AccountGDPR{
-					Enabled:            nil,
-					IntegrationEnabled: config.AccountGDPRIntegration{Web: nil},
-				},
-			},
-			giveRequestType: pbsmetrics.ReqTypeORTB2Web,
-			wantEnabled:     nil,
+			description:        "GDPR Web integration unspecified, general GDPR unspecified",
+			giveRequestType:    pbsmetrics.ReqTypeORTB2Web,
+			giveGDPREnabled:    nil,
+			giveWebGDPREnabled: nil,
+			wantEnabled:        nil,
 		},
 	}
 
 	for _, tt := range tests {
-		enabled := accountLevelGDPREnabled(&tt.giveAccount, tt.giveRequestType)
+		account := config.Account{
+			GDPR: config.AccountGDPR{
+				Enabled: tt.giveGDPREnabled,
+				IntegrationEnabled: config.AccountGDPRIntegration{
+					AMP:   tt.giveAMPGDPREnabled,
+					App:   tt.giveAppGDPREnabled,
+					Video: tt.giveVideoGDPREnabled,
+					Web:   tt.giveWebGDPREnabled,
+				},
+			},
+		}
+
+		enabled := accountLevelGDPREnabled(&account, tt.giveRequestType)
 
 		if tt.wantEnabled == nil {
 			assert.Nil(t, enabled, tt.description)

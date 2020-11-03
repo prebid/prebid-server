@@ -1051,7 +1051,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("blacklisted_accts", []string{""})
 	v.SetDefault("account_required", false)
 	v.SetDefault("account_defaults.disabled", false)
-	// v.SetDefault("account_defaults.gdpr.enabled", false) // Do we need this? Java has it but it might be unnecessary for us.
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
 
