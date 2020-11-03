@@ -82,6 +82,7 @@ const (
 	BidderMobileFuse       BidderName = "mobilefuse"
 	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderNinthDecimal     BidderName = "ninthdecimal"
+	BidderNoBid            BidderName = "nobid"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
 	BidderPubmatic         BidderName = "pubmatic"
@@ -174,6 +175,7 @@ var BidderMap = map[string]BidderName{
 	"mobilefuse":        BidderMobileFuse,
 	"nanointeractive":   BidderNanoInteractive,
 	"ninthdecimal":      BidderNinthDecimal,
+	"nobid":             BidderNoBid,
 	"openx":             BidderOpenx,
 	"orbidder":          BidderOrbidder,
 	"pubmatic":          BidderPubmatic,
