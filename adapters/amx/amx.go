@@ -56,26 +56,36 @@ func getTagID(imps []openrtb.Imp) (string, bool) {
 	return "", false
 }
 
-func ensurePublisherWithID(pub *openrtb.Publisher, publisherID string) *openrtb.Publisher {
+func ensurePublisherWithID(pub *openrtb.Publisher, publisherID string) openrtb.Publisher {
 	if pub == nil {
-		pub = &openrtb.Publisher{}
+		return openrtb.Publisher{ID: publisherID}
 	}
-	pub.ID = publisherID
-	return pub
+
+	pubCopy := *pub
+	pubCopy.ID = publisherID
+	return pubCopy
 }
 
 // MakeRequests creates AMX adapter requests
 func (adapter *AMXAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
+	reqCopy := *request
+
 	if publisherID, ok := getTagID(request.Imp); ok {
-		if request.App != nil {
-			request.App.Publisher = ensurePublisherWithID(request.App.Publisher, publisherID)
+		if reqCopy.App != nil {
+			publisher := ensurePublisherWithID(reqCopy.App.Publisher, publisherID)
+			appCopy := *request.App
+			appCopy.Publisher = &publisher
+			reqCopy.App = &appCopy
 		}
-		if request.Site != nil {
-			request.Site.Publisher = ensurePublisherWithID(request.Site.Publisher, publisherID)
+		if reqCopy.Site != nil {
+			publisher := ensurePublisherWithID(reqCopy.Site.Publisher, publisherID)
+			siteCopy := *request.Site
+			siteCopy.Publisher = &publisher
+			reqCopy.Site = &siteCopy
 		}
 	}
 
-	encoded, err := json.Marshal(request)
+	encoded, err := json.Marshal(reqCopy)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
