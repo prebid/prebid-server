@@ -11,12 +11,14 @@ import (
 type Save struct {
 	Requests map[string]json.RawMessage `json:"requests"`
 	Imps     map[string]json.RawMessage `json:"imps"`
+	Accounts map[string]json.RawMessage `json:"accounts"`
 }
 
 // Invalidation represents a bulk invalidation
 type Invalidation struct {
 	Requests []string `json:"requests"`
 	Imps     []string `json:"imps"`
+	Accounts []string `json:"accounts"`
 }
 
 // EventProducer will produce cache update and invalidation events on its channels
@@ -61,12 +63,16 @@ func (e *EventListener) Listen(cache stored_requests.Cache, events EventProducer
 	for {
 		select {
 		case save := <-events.Saves():
-			cache.Save(context.Background(), save.Requests, save.Imps)
+			cache.Requests.Save(context.Background(), save.Requests)
+			cache.Imps.Save(context.Background(), save.Imps)
+			cache.Accounts.Save(context.Background(), save.Accounts)
 			if e.onSave != nil {
 				e.onSave()
 			}
 		case invalidation := <-events.Invalidations():
-			cache.Invalidate(context.Background(), invalidation.Requests, invalidation.Imps)
+			cache.Requests.Invalidate(context.Background(), invalidation.Requests)
+			cache.Imps.Invalidate(context.Background(), invalidation.Imps)
+			cache.Accounts.Invalidate(context.Background(), invalidation.Accounts)
 			if e.onInvalidate != nil {
 				e.onInvalidate()
 			}

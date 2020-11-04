@@ -387,11 +387,12 @@ func TestShouldUsersync(t *testing.T) {
 			},
 			metricsEngine: nil,
 		}
-		privacyPolicy := gdprPolicy.Policy{
+		gdprPrivacyPolicy := gdprPolicy.Policy{
 			Signal:  gdprApplies,
 			Consent: consent,
 		}
-		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, privacyPolicy)
+
+		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprPrivacyPolicy)
 		if allowSyncs != expectAllow {
 			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
 		}
@@ -408,6 +409,7 @@ type auctionMockPermissions struct {
 	allowHostCookies bool
 	allowPI          bool
 	allowGeo         bool
+	allowID          bool
 }
 
 func (m *auctionMockPermissions) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
@@ -418,8 +420,8 @@ func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder o
 	return m.allowBidderSync, nil
 }
 
-func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, error) {
-	return m.allowPI, m.allowGeo, nil
+func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+	return m.allowPI, m.allowGeo, m.allowID, nil
 }
 
 func (m *auctionMockPermissions) AMPException() bool {

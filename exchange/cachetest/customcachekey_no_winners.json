@@ -26,14 +26,14 @@
     }],
     "expectedCacheables": [
         {
-            "Type": "json",
-            "TTLSeconds": 660,
-            "Data": "{\"id\": \"appbid001\", \"impid\": \"oneImp\", \"price\": 7.64, \"cat\": [\"11_sports_22\"]}"
+            "type": "json",
+            "ttlseconds": 660,
+            "value": "{\"id\": \"appbid001\", \"impid\": \"oneImp\", \"price\": 7.64, \"cat\": [\"11_sports_22\"]}"
         },
         {
-            "Type": "json",
-            "TTLSeconds": 660,
-            "Data": "{\"id\":\"pubbid001\",\"impid\":\"oneImp\",\"price\":5.64,\"cat\":[\"33_news_44\"]}"
+            "type": "json",
+            "ttlseconds": 660,
+            "value": "{\"id\":\"pubbid001\",\"impid\":\"oneImp\",\"price\":5.64,\"cat\":[\"33_news_44\"]}"
         }
     ],
     "defaultTTLs": {

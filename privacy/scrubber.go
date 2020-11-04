@@ -7,6 +7,17 @@ import (
 	"github.com/mxmCherry/openrtb"
 )
 
+// ScrubStrategyIPV4 defines the approach to scrub PII from an IPV4 address.
+type ScrubStrategyIPV4 int
+
+const (
+	// ScrubStrategyIPV4None does not remove any part of an IPV4 address.
+	ScrubStrategyIPV4None ScrubStrategyIPV4 = iota
+
+	// ScrubStrategyIPV4Lowest8 zeroes out the last 8 bits of an IPV4 address.
+	ScrubStrategyIPV4Lowest8
+)
+
 // ScrubStrategyIPV6 defines the approach to scrub PII from an IPV6 address.
 type ScrubStrategyIPV6 int
 
@@ -49,9 +60,20 @@ const (
 	ScrubStrategyUserID
 )
 
+// ScrubStrategyDeviceID defines the approach to remove hardware id and device id data.
+type ScrubStrategyDeviceID int
+
+const (
+	// ScrubStrategyDeviceIDNone does not remove hardware id and device id data.
+	ScrubStrategyDeviceIDNone ScrubStrategyDeviceID = iota
+
+	// ScrubStrategyDeviceIDAll removes all hardware and device id data (ifa, mac hashes device id hashes)
+	ScrubStrategyDeviceIDAll
+)
+
 // Scrubber removes PII from parts of an OpenRTB request.
 type Scrubber interface {
-	ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device
+	ScrubDevice(device *openrtb.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device
 	ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb.User
 }
 
@@ -62,20 +84,28 @@ func NewScrubber() Scrubber {
 	return scrubber{}
 }
 
-func (scrubber) ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
+func (scrubber) ScrubDevice(device *openrtb.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
 	if device == nil {
 		return nil
 	}
 
 	deviceCopy := *device
-	deviceCopy.DIDMD5 = ""
-	deviceCopy.DIDSHA1 = ""
-	deviceCopy.DPIDMD5 = ""
-	deviceCopy.DPIDSHA1 = ""
-	deviceCopy.IFA = ""
-	deviceCopy.MACMD5 = ""
-	deviceCopy.MACSHA1 = ""
-	deviceCopy.IP = scrubIPV4(device.IP)
+
+	switch id {
+	case ScrubStrategyDeviceIDAll:
+		deviceCopy.DIDMD5 = ""
+		deviceCopy.DIDSHA1 = ""
+		deviceCopy.DPIDMD5 = ""
+		deviceCopy.DPIDSHA1 = ""
+		deviceCopy.IFA = ""
+		deviceCopy.MACMD5 = ""
+		deviceCopy.MACSHA1 = ""
+	}
+
+	switch ipv4 {
+	case ScrubStrategyIPV4Lowest8:
+		deviceCopy.IP = scrubIPV4Lowest8(device.IP)
+	}
 
 	switch ipv6 {
 	case ScrubStrategyIPV6Lowest16:
@@ -124,7 +154,7 @@ func (scrubber) ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo Sc
 	return &userCopy
 }
 
-func scrubIPV4(ip string) string {
+func scrubIPV4Lowest8(ip string) string {
 	i := strings.LastIndex(ip, ".")
 	if i == -1 {
 		return ""

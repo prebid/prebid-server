@@ -104,6 +104,20 @@ func (me *MultiMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length
 	}
 }
 
+// RecordStoredDataFetchTime across all engines
+func (me *MultiMetricsEngine) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataLabels, length time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordStoredDataFetchTime(labels, length)
+	}
+}
+
+// RecordStoredDataError across all engines
+func (me *MultiMetricsEngine) RecordStoredDataError(labels pbsmetrics.StoredDataLabels) {
+	for _, thisME := range *me {
+		thisME.RecordStoredDataError(labels)
+	}
+}
+
 // RecordAdapterPanic across all engines
 func (me *MultiMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
 	for _, thisME := range *me {
@@ -172,6 +186,13 @@ func (me *MultiMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.
 func (me *MultiMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
 	for _, thisME := range *me {
 		thisME.RecordStoredImpCacheResult(cacheResult, inc)
+	}
+}
+
+// RecordAccountCacheResult across all engines
+func (me *MultiMetricsEngine) RecordAccountCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	for _, thisME := range *me {
+		thisME.RecordAccountCacheResult(cacheResult, inc)
 	}
 }
 
@@ -244,6 +265,14 @@ func (me *DummyMetricsEngine) RecordLegacyImps(labels pbsmetrics.Labels, numImps
 func (me *DummyMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
 }
 
+// RecordStoredDataFetchTime as a noop
+func (me *DummyMetricsEngine) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataLabels, length time.Duration) {
+}
+
+// RecordStoredDataError as a noop
+func (me *DummyMetricsEngine) RecordStoredDataError(labels pbsmetrics.StoredDataLabels) {
+}
+
 // RecordAdapterPanic as a noop
 func (me *DummyMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
 }
@@ -290,6 +319,10 @@ func (me *DummyMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.
 
 // RecordStoredImpCacheResult as a noop
 func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+}
+
+// RecordAccountCacheResult as a noop
+func (me *DummyMetricsEngine) RecordAccountCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
 }
 
 // RecordPrebidCacheRequestTime as a noop

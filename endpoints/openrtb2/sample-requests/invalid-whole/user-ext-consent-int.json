@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.user.ext object is not valid: json: cannot unmarshal number into Go struct field ExtUser.consent of type string\n",
-  "requestPayload": {
+  "description": "Bid request comes with an integer value for user.ext.consent instead of a JSON object",
+  "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
       "page": "prebid.org",
@@ -22,14 +22,14 @@
         },
         "banner": {
           "format": [
-          {
-            "w": 300,
-            "h": 250
-          },
-          {
-            "w": 300,
-            "h": 300
-          }
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 300
+            }
           ]
         }
       }
@@ -44,5 +44,7 @@
         "consent": 1
       }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.user.ext object is not valid: json: cannot unmarshal number into Go struct field ExtUser.consent of type string\n"
 }

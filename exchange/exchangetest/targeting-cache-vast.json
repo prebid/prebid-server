@@ -67,7 +67,7 @@
                 "cache": {
                   "bids": {
                     "cacheId": "0",
-                    "url": "www.pbcserver.com/pbcache/endpoint?uuid=0"
+                    "url": "https://www.pbcserver.com/pbcache/endpoint?uuid=0"
                   },
                   "key": "",
                   "url": ""

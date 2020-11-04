@@ -93,11 +93,12 @@ type rubiconExtUserTpID struct {
 }
 
 type rubiconUserExt struct {
-	Consent   string                        `json:"consent,omitempty"`
-	DigiTrust *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
-	Eids      []openrtb_ext.ExtUserEid      `json:"eids,omitempty"`
-	TpID      []rubiconExtUserTpID          `json:"tpid,omitempty"`
-	RP        rubiconUserExtRP              `json:"rp"`
+	Consent     string                        `json:"consent,omitempty"`
+	DigiTrust   *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
+	Eids        []openrtb_ext.ExtUserEid      `json:"eids,omitempty"`
+	TpID        []rubiconExtUserTpID          `json:"tpid,omitempty"`
+	RP          rubiconUserExtRP              `json:"rp"`
+	LiverampIdl string                        `json:"liveramp_idl,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -193,12 +194,17 @@ var rubiSizeMap = map[rubiSize]int{
 	{w: 468, h: 60}:    1,
 	{w: 728, h: 90}:    2,
 	{w: 728, h: 91}:    2,
+	{w: 120, h: 90}:    5,
+	{w: 125, h: 125}:   7,
 	{w: 120, h: 600}:   8,
 	{w: 160, h: 600}:   9,
 	{w: 300, h: 600}:   10,
+	{w: 200, h: 200}:   13,
+	{w: 250, h: 250}:   14,
 	{w: 300, h: 250}:   15,
 	{w: 300, h: 251}:   15,
 	{w: 336, h: 280}:   16,
+	{w: 240, h: 400}:   17,
 	{w: 300, h: 100}:   19,
 	{w: 980, h: 120}:   31,
 	{w: 250, h: 360}:   32,
@@ -206,16 +212,23 @@ var rubiSizeMap = map[rubiSize]int{
 	{w: 980, h: 150}:   35,
 	{w: 468, h: 400}:   37,
 	{w: 930, h: 180}:   38,
+	{w: 750, h: 100}:   39,
+	{w: 750, h: 200}:   40,
+	{w: 750, h: 300}:   41,
 	{w: 320, h: 50}:    43,
 	{w: 300, h: 50}:    44,
 	{w: 300, h: 300}:   48,
+	{w: 1024, h: 768}:  53,
 	{w: 300, h: 1050}:  54,
 	{w: 970, h: 90}:    55,
 	{w: 970, h: 250}:   57,
 	{w: 1000, h: 90}:   58,
 	{w: 320, h: 80}:    59,
+	{w: 320, h: 150}:   60,
 	{w: 1000, h: 1000}: 61,
+	{w: 580, h: 500}:   64,
 	{w: 640, h: 480}:   65,
+	{w: 930, h: 600}:   66,
 	{w: 320, h: 480}:   67,
 	{w: 1800, h: 1000}: 68,
 	{w: 320, h: 320}:   72,
@@ -224,17 +237,45 @@ var rubiSizeMap = map[rubiSize]int{
 	{w: 980, h: 300}:   79,
 	{w: 980, h: 400}:   80,
 	{w: 480, h: 300}:   83,
+	{w: 300, h: 120}:   85,
+	{w: 548, h: 150}:   90,
 	{w: 970, h: 310}:   94,
+	{w: 970, h: 100}:   95,
 	{w: 970, h: 210}:   96,
 	{w: 480, h: 320}:   101,
 	{w: 768, h: 1024}:  102,
 	{w: 480, h: 280}:   103,
+	{w: 250, h: 800}:   105,
 	{w: 320, h: 240}:   108,
 	{w: 1000, h: 300}:  113,
 	{w: 320, h: 100}:   117,
 	{w: 800, h: 250}:   125,
 	{w: 200, h: 600}:   126,
+	{w: 980, h: 600}:   144,
+	{w: 980, h: 150}:   145,
+	{w: 1000, h: 250}:  152,
 	{w: 640, h: 320}:   156,
+	{w: 320, h: 250}:   159,
+	{w: 250, h: 600}:   179,
+	{w: 600, h: 300}:   195,
+	{w: 640, h: 360}:   198,
+	{w: 640, h: 200}:   199,
+	{w: 1030, h: 590}:  213,
+	{w: 980, h: 360}:   214,
+	{w: 320, h: 180}:   229,
+	{w: 2000, h: 1400}: 230,
+	{w: 580, h: 400}:   232,
+	{w: 480, h: 820}:   256,
+	{w: 400, h: 600}:   257,
+	{w: 500, h: 200}:   258,
+	{w: 998, h: 200}:   259,
+	{w: 970, h: 1000}:  264,
+	{w: 1920, h: 1080}: 265,
+	{w: 1800, h: 200}:  274,
+	{w: 320, h: 500}:   278,
+	{w: 320, h: 400}:   282,
+	{w: 640, h: 380}:   288,
+	{w: 500, h: 1000}:  548,
 }
 
 // defines the contract for bidrequest.user.ext.eids[i].ext
@@ -245,6 +286,12 @@ type rubiconUserExtEidExt struct {
 // defines the contract for bidrequest.user.ext.eids[i].uids[j].ext
 type rubiconUserExtEidUidExt struct {
 	RtiPartner string `json:"rtiPartner,omitempty"`
+}
+
+type mappedRubiconUidsParam struct {
+	tpIds       []rubiconExtUserTpID
+	segments    []string
+	liverampIdl string
 }
 
 //MAS algorithm
@@ -683,13 +730,18 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 				// set user.ext.tpid
 				if len(userExt.Eids) > 0 {
-					if tpIds, segments, errors := getTpIdsAndSegments(userExt.Eids); len(errors) > 0 {
+					mappedRubiconUidsParam, errors := getTpIdsAndSegments(userExt.Eids)
+					if len(errors) > 0 {
 						errs = append(errs, errors...)
 						continue
-					} else if err := updateUserExtWithTpIdsAndSegments(&userExtRP, tpIds, segments); err != nil {
+					}
+
+					if err := updateUserExtWithTpIdsAndSegments(&userExtRP, mappedRubiconUidsParam); err != nil {
 						errs = append(errs, err)
 						continue
 					}
+
+					userExtRP.LiverampIdl = mappedRubiconUidsParam.liverampIdl
 				}
 			}
 
@@ -793,9 +845,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	return requestData, errs
 }
 
-func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, []string, []error) {
-	tpIds := make([]rubiconExtUserTpID, 0)
-	segments := make([]string, 0)
+func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) (mappedRubiconUidsParam, []error) {
+	rubiconUidsParam := mappedRubiconUidsParam{
+		tpIds:    make([]rubiconExtUserTpID, 0),
+		segments: make([]string, 0),
+	}
 	errs := make([]error, 0)
 
 	for _, eid := range eids {
@@ -815,7 +869,7 @@ func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, [
 					}
 
 					if eidUidExt.RtiPartner == "TDID" {
-						tpIds = append(tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
+						rubiconUidsParam.tpIds = append(rubiconUidsParam.tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
 					}
 				}
 			}
@@ -824,7 +878,7 @@ func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, [
 			if len(uids) > 0 {
 				uidId := uids[0].ID
 				if uidId != "" {
-					tpIds = append(tpIds, rubiconExtUserTpID{Source: "liveintent.com", UID: uidId})
+					rubiconUidsParam.tpIds = append(rubiconUidsParam.tpIds, rubiconExtUserTpID{Source: "liveintent.com", UID: uidId})
 				}
 
 				if eid.Ext != nil {
@@ -835,20 +889,28 @@ func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, [
 						})
 						continue
 					}
-					segments = eidExt.Segments
+					rubiconUidsParam.segments = eidExt.Segments
+				}
+			}
+		case "liveramp.com":
+			uids := eid.Uids
+			if len(uids) > 0 {
+				uidId := uids[0].ID
+				if uidId != "" && rubiconUidsParam.liverampIdl == "" {
+					rubiconUidsParam.liverampIdl = uidId
 				}
 			}
 		}
 	}
 
-	return tpIds, segments, errs
+	return rubiconUidsParam, errs
 }
 
-func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, tpIds []rubiconExtUserTpID, segments []string) error {
-	if len(tpIds) > 0 {
-		userExtRP.TpID = tpIds
+func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, rubiconUidsParam mappedRubiconUidsParam) error {
+	if len(rubiconUidsParam.tpIds) > 0 {
+		userExtRP.TpID = rubiconUidsParam.tpIds
 
-		if segments != nil {
+		if rubiconUidsParam.segments != nil {
 			userExtRPTarget := make(map[string]interface{})
 
 			if userExtRP.RP.Target != nil {
@@ -857,7 +919,7 @@ func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, tpIds []rubico
 				}
 			}
 
-			userExtRPTarget["LIseg"] = segments
+			userExtRPTarget["LIseg"] = rubiconUidsParam.segments
 
 			if target, err := json.Marshal(&userExtRPTarget); err != nil {
 				return &errortypes.BadInput{Message: err.Error()}

@@ -1,28 +1,37 @@
 {
-  "id": "some-request-id",
-  "site": {
-    "page": "test.somepage.com"
-  },
-  "imp": [
-    {
-      "id": "my-imp-id",
-      "video": {
-        "mimes": [
-          "video/mp4"
-        ]
-      },
-      "ext": {
-        "unknown": {
-          "placementId": 12883451
+  "description": "Well formed amp request with aliases that should run properly",
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "unknown": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "unknown": "appnexus"
         }
       }
     }
-  ],
-  "ext": {
-    "prebid": {
-      "aliases": {
-        "unknown": "appnexus"
-      }
-    }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 200
 }

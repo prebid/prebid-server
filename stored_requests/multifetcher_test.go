@@ -125,3 +125,54 @@ func TestOtherError(t *testing.T) {
 	assert.JSONEq(t, `{"req_id": "def"}`, string(reqData["def"]), "MultiFetcher should return the right request data")
 	assert.JSONEq(t, `{"imp_id": "imp-1"}`, string(impData["imp-1"]), "MultiFetcher should return the right imp data")
 }
+
+func TestMultiFetcherAccountFoundInFirstFetcher(t *testing.T) {
+	f1 := &mockFetcher{}
+	f2 := &mockFetcher{}
+	fetcher := &MultiFetcher{f1, f2}
+	ctx := context.Background()
+
+	f1.On("FetchAccount", ctx, "ONE").Once().Return(json.RawMessage(`{"id": "ONE"}`), []error{})
+
+	account, errs := fetcher.FetchAccount(ctx, "ONE")
+
+	f1.AssertExpectations(t)
+	f2.AssertNotCalled(t, "FetchAccount")
+	assert.Empty(t, errs)
+	assert.JSONEq(t, `{"id": "ONE"}`, string(account))
+}
+
+func TestMultiFetcherAccountFoundInSecondFetcher(t *testing.T) {
+	f1 := &mockFetcher{}
+	f2 := &mockFetcher{}
+	fetcher := &MultiFetcher{f1, f2}
+	ctx := context.Background()
+
+	f1.On("FetchAccount", ctx, "TWO").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
+	f2.On("FetchAccount", ctx, "TWO").Once().Return(json.RawMessage(`{"id": "TWO"}`), []error{})
+
+	account, errs := fetcher.FetchAccount(ctx, "TWO")
+
+	f1.AssertExpectations(t)
+	f2.AssertExpectations(t)
+	assert.Empty(t, errs)
+	assert.JSONEq(t, `{"id": "TWO"}`, string(account))
+}
+
+func TestMultiFetcherAccountNotFound(t *testing.T) {
+	f1 := &mockFetcher{}
+	f2 := &mockFetcher{}
+	fetcher := &MultiFetcher{f1, f2}
+	ctx := context.Background()
+
+	f1.On("FetchAccount", ctx, "MISSING").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
+	f2.On("FetchAccount", ctx, "MISSING").Once().Return(json.RawMessage(``), []error{NotFoundError{"TWO", "Account"}})
+
+	account, errs := fetcher.FetchAccount(ctx, "MISSING")
+
+	f1.AssertExpectations(t)
+	f2.AssertExpectations(t)
+	assert.Len(t, errs, 1)
+	assert.Nil(t, account)
+	assert.EqualError(t, errs[0], NotFoundError{"MISSING", "Account"}.Error())
+}

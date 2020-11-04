@@ -15,12 +15,14 @@ import (
 
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
 	"github.com/mxmCherry/openrtb/native"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -45,9 +47,9 @@ var (
 	dntEnabled  int8   = 1
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, accounts stored_requests.AccountFetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
 
-	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
+	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
@@ -63,6 +65,7 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 		validator,
 		requestsById,
 		empty_fetcher.EmptyFetcher{},
+		accounts,
 		categories,
 		cfg,
 		met,
@@ -81,6 +84,7 @@ type endpointDeps struct {
 	paramsValidator           openrtb_ext.BidderParamValidator
 	storedReqFetcher          stored_requests.Fetcher
 	videoFetcher              stored_requests.Fetcher
+	accounts                  stored_requests.AccountFetcher
 	categories                stored_requests.CategoryFetcher
 	cfg                       *config.Configuration
 	metricsEngine             pbsmetrics.MetricsEngine
@@ -141,7 +145,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 		labels.RType = pbsmetrics.ReqTypeORTB2App
-		labels.PubID = effectivePubID(req.App.Publisher)
+		labels.PubID = getAccountID(req.App.Publisher)
 	} else { //req.Site != nil
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -149,18 +153,21 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		labels.PubID = effectivePubID(req.Site.Publisher)
+		labels.PubID = getAccountID(req.Site.Publisher)
 	}
 
-	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
-		errL = append(errL, acctIdErr)
+	// Look up account now that we have resolved the pubID value
+	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID)
+	if len(acctIDErrs) > 0 {
+		errL = append(errL, acctIDErrs...)
 		writeError(errL, w, &labels)
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories, nil)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, account, &deps.categories, nil)
 	ao.Request = req
 	ao.Response = response
+	ao.Account = account
 	if err != nil {
 		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
@@ -283,6 +290,14 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("A prebid request can only process one currency. Taking the first currency in the list, %s, as the active currency", req.Cur[0])})
 	}
 
+	// If automatically filling source TID is enabled then validate that
+	// source.TID exists and If it doesn't, fill it with a randomly generated UUID
+	if deps.cfg.AutoGenSourceTID {
+		if err := validateAndFillSourceTID(req); err != nil {
+			return []error{err}
+		}
+	}
+
 	var aliases map[string]string
 	if bidExt, err := deps.parseBidExt(req.Ext); err != nil {
 		return []error{err}
@@ -303,39 +318,36 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
-		errL = append(errL, errors.New("request.site or request.app must be defined, but not both."))
-		return errL
+		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
 	if err := deps.validateSite(req.Site); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
 	if err := deps.validateApp(req.App); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
 	if err := validateUser(req.User, aliases); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
 	if err := validateRegs(req.Regs); err != nil {
-		errL = append(errL, err)
-		return errL
+		return append(errL, err)
 	}
 
-	if policy, err := ccpa.ReadPolicy(req); err != nil {
-		errL = append(errL, errL...)
-		return errL
-	} else if err := policy.Validate(); err != nil {
-		errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
-
-		policy.Value = ""
-		if err := policy.Write(req); err != nil {
-			errL = append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
+	if ccpaPolicy, err := ccpa.ReadFromRequest(req); err != nil {
+		return append(errL, err)
+	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
+		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
+			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
+			consentWriter := ccpa.ConsentWriter{""}
+			if err := consentWriter.Write(req); err != nil {
+				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
+			}
+		} else {
+			return append(errL, err)
 		}
 	}
 
@@ -356,6 +368,20 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	return errL
+}
+
+func validateAndFillSourceTID(req *openrtb.BidRequest) error {
+	if req.Source == nil {
+		req.Source = &openrtb.Source{}
+	}
+	if req.Source.TID == "" {
+		if rawUUID, err := uuid.NewV4(); err == nil {
+			req.Source.TID = rawUUID.String()
+		} else {
+			return errors.New("req.Source.TID missing in the req and error creating a random UID")
+		}
+	}
+	return nil
 }
 
 func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
@@ -737,8 +763,8 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	}
 
 	// Also accept bidder exts within imp[...].ext.prebid.bidder
-	// NOTE: This is not part of the official API, we are not expecting clients
-	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
+	// NOTE: This is not part of the official API yet, so we are not expecting clients
+	// to migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
 	// at this time
 	// https://github.com/prebid/prebid-server/pull/846#issuecomment-476352224
 	if rawPrebidExt, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
@@ -757,7 +783,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
 	for bidder, ext := range bidderExts {
-		if bidder != openrtb_ext.PrebidExtKey {
+		if isBidderToValidate(bidder) {
 			coreBidder := bidder
 			if tmp, isAlias := aliases[bidder]; isAlias {
 				coreBidder = tmp
@@ -792,10 +818,18 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	// TODO #713 Fix this here
 	if len(bidderExts) < 1 {
 		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
-		return errL
 	}
 
 	return errL
+}
+
+func isBidderToValidate(bidder string) bool {
+	// PrebidExtKey is a special case for the prebid config section and is not considered a bidder.
+
+	// FirstPartyDataContextExtKey is a special case for the first party data context section
+	// and is not considered a bidder.
+
+	return bidder != openrtb_ext.PrebidExtKey && bidder != openrtb_ext.FirstPartyDataContextExtKey
 }
 
 func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequest, error) {
@@ -1265,8 +1299,8 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 	return rc
 }
 
-// Returns the effective publisher ID
-func effectivePubID(pub *openrtb.Publisher) string {
+// Returns the account ID for the request
+func getAccountID(pub *openrtb.Publisher) string {
 	if pub != nil {
 		if pub.Ext != nil {
 			var pubExt openrtb_ext.ExtPublisher
@@ -1280,16 +1314,4 @@ func effectivePubID(pub *openrtb.Publisher) string {
 		}
 	}
 	return pbsmetrics.PublisherUnknown
-}
-
-func validateAccount(cfg *config.Configuration, pubID string) error {
-	var err error = nil
-	if cfg.AccountRequired && pubID == pbsmetrics.PublisherUnknown {
-		// If specified in the configuration, discard requests that don't come with an account ID.
-		err = error(&errortypes.AcctRequired{Message: fmt.Sprintf("Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.")})
-	} else if _, found := cfg.BlacklistedAcctMap[pubID]; found {
-		// Blacklist account now that we have resolved the value
-		err = error(&errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, please reach out to the prebid server host.", pubID)})
-	}
-	return err
 }
