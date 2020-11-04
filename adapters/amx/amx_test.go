@@ -22,7 +22,6 @@ const (
 )
 
 func TestJsonSamples(t *testing.T) {
-	t.Logf("TESTING JSON SAMPLES!!")
 	adapterstest.RunJSONBidderTest(t, "amxtest", new(AMXAdapter))
 }
 
