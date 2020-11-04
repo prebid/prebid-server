@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+
+	// "math/rand"
 	"net/http"
 	"runtime/debug"
 	"sort"
@@ -170,7 +172,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
 			var err error
 			var rejections []string
-			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
+			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, bidRequest, requestExt, adapterBids, *categoriesFetcher, targData)
 			if err != nil {
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 			}
@@ -282,8 +284,9 @@ func validateAndNormalizeDealTier(impDeal *DealTier) bool {
 
 func updateHbPbCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo, bidCategory map[string]string) {
 	if bid.dealPriority >= dealTierInfo.MinDealTier {
-		prefixTier := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
+		bid.dealTierSatisfied = true
 
+		prefixTier := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
 		if oldCatDur, ok := bidCategory[bid.bid.ID]; ok {
 			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
 			oldCatDurSplit[0] = prefixTier
@@ -312,6 +315,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(cleanRequests))
 	chBids := make(chan *bidResponseWrapper, len(cleanRequests))
 	bidsFound := false
+	bidIDsCollision := false
 
 	for bidderName, req := range cleanRequests {
 		// Here we actually call the adapters and collect the bids.
@@ -380,9 +384,13 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 
 		if !bidsFound && adapterBids[brw.bidder] != nil && len(adapterBids[brw.bidder].bids) > 0 {
 			bidsFound = true
+			bidIDsCollision = recordAdaptorDuplicateBidIDs(e.me, adapterBids)
 		}
 	}
-
+	if bidIDsCollision {
+		// record this request count this request if bid collision is detected
+		e.me.RecordRequestHavingDuplicateBidID()
+	}
 	return adapterBids, adapterExtra, bidsFound
 }
 
@@ -490,7 +498,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	return bidResponse, err
 }
 
-func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
+func applyCategoryMapping(ctx context.Context, bidRequest *openrtb.BidRequest, requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -500,7 +508,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 	}
 
 	dedupe := make(map[string]bidDedupe)
-
+	impMap := make(map[string]*openrtb.Imp)
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
@@ -511,6 +519,11 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 	var err error
 	var rejections []string
 	var translateCategories = true
+
+	//Maintaining BidRequest Impression Map
+	for i := range bidRequest.Imp {
+		impMap[bidRequest.Imp[i].ID] = &bidRequest.Imp[i]
+	}
 
 	if includeBrandCategory && brandCatExt.WithCategory {
 		if brandCatExt.TranslateCategories != nil {
@@ -588,6 +601,12 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 						break
 					}
 				}
+			} else if newDur == 0 {
+				if imp, ok := impMap[bid.bid.ImpID]; ok {
+					if nil != imp.Video && imp.Video.MaxDuration > 0 {
+						newDur = int(imp.Video.MaxDuration)
+					}
+				}
 			}
 
 			var categoryDuration string
@@ -597,33 +616,36 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
 			}
 
-			if dupe, ok := dedupe[categoryDuration]; ok {
-				// 50% chance for either bid with duplicate categoryDuration values to be kept
-				if rand.Intn(100) < 50 {
-					if dupe.bidderName == bidderName {
-						// An older bid from the current bidder
-						bidsToRemove = append(bidsToRemove, dupe.bidIndex)
-						rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
-					} else {
-						// An older bid from a different seatBid we've already finished with
-						oldSeatBid := (seatBids)[dupe.bidderName]
-						if len(oldSeatBid.bids) == 1 {
-							seatBidsToRemove = append(seatBidsToRemove, bidderName)
+			if false == brandCatExt.SkipDedup {
+				if dupe, ok := dedupe[categoryDuration]; ok {
+					// 50% chance for either bid with duplicate categoryDuration values to be kept
+					if rand.Intn(100) < 50 {
+						if dupe.bidderName == bidderName {
+							// An older bid from the current bidder
+							bidsToRemove = append(bidsToRemove, dupe.bidIndex)
 							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						} else {
-							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
+							// An older bid from a different seatBid we've already finished with
+							oldSeatBid := (seatBids)[dupe.bidderName]
+							if len(oldSeatBid.bids) == 1 {
+								seatBidsToRemove = append(seatBidsToRemove, bidderName)
+								rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
+							} else {
+								oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
+							}
 						}
+						delete(res, dupe.bidID)
+					} else {
+						// Remove this bid
+						bidsToRemove = append(bidsToRemove, bidInd)
+						rejections = updateRejections(rejections, bidID, "Bid was deduplicated")
+						continue
 					}
-					delete(res, dupe.bidID)
-				} else {
-					// Remove this bid
-					bidsToRemove = append(bidsToRemove, bidInd)
-					rejections = updateRejections(rejections, bidID, "Bid was deduplicated")
-					continue
 				}
+				dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID}
 			}
+
 			res[bidID] = categoryDuration
-			dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID}
 		}
 
 		if len(bidsToRemove) > 0 {
@@ -741,9 +763,11 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName, a
 		bidExt := &openrtb_ext.ExtBid{
 			Bidder: thisBid.bid.Ext,
 			Prebid: &openrtb_ext.ExtBidPrebid{
-				Targeting: thisBid.bidTargets,
-				Type:      thisBid.bidType,
-				Video:     thisBid.bidVideo,
+				Targeting:         thisBid.bidTargets,
+				Type:              thisBid.bidType,
+				Video:             thisBid.bidVideo,
+				DealPriority:      thisBid.dealPriority,
+				DealTierSatisfied: thisBid.dealTierSatisfied,
 			},
 		}
 		if cacheInfo, found := e.getBidCacheInfo(thisBid, auc); found {
@@ -803,4 +827,27 @@ func listBiddersWithRequests(cleanRequests map[openrtb_ext.BidderName]*openrtb.B
 	randomizeList(liveAdapters)
 
 	return liveAdapters
+}
+
+// recordAdaptorDuplicateBidIDs finds the bid.id collisions for each bidder and records them with metrics engine
+// it returns true if collosion(s) is/are detected in any of the bidder's bids
+func recordAdaptorDuplicateBidIDs(metricsEngine pbsmetrics.MetricsEngine, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid) bool {
+	bidIDCollisionFound := false
+	if nil == adapterBids {
+		return false
+	}
+	for bidder, bid := range adapterBids {
+		bidIDColisionMap := make(map[string]int, len(adapterBids[bidder].bids))
+		for _, thisBid := range bid.bids {
+			if collisions, ok := bidIDColisionMap[thisBid.bid.ID]; ok {
+				bidIDCollisionFound = true
+				bidIDColisionMap[thisBid.bid.ID]++
+				glog.Warningf("Bid.id %v :: %v collision(s) [imp.id = %v] for bidder '%v'", thisBid.bid.ID, collisions, thisBid.bid.ImpID, string(bidder))
+				metricsEngine.RecordAdapterDuplicateBidID(string(bidder), 1)
+			} else {
+				bidIDColisionMap[thisBid.bid.ID] = 1
+			}
+		}
+	}
+	return bidIDCollisionFound
 }

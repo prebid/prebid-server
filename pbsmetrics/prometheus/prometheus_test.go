@@ -945,6 +945,48 @@ func TestTimeoutNotifications(t *testing.T) {
 
 }
 
+// TestRecordRequestDuplicateBidID checks RecordRequestDuplicateBidID
+func TestRecordRequestDuplicateBidID(t *testing.T) {
+	m := createMetricsForTesting()
+	m.RecordRequestHavingDuplicateBidID()
+	// verify total no of requests which detected collision
+	assertCounterValue(t, "request cnt having duplicate bid.id", "request cnt having duplicate bid.id", m.requestsDuplicateBidIDCounter, float64(1))
+}
+
+// TestRecordAdapterDuplicateBidID checks RecordAdapterDuplicateBidID
+func TestRecordAdapterDuplicateBidID(t *testing.T) {
+	type collisions struct {
+		simulate int // no of bids to be simulate with same bid.id
+		expect   int // no of collisions expected to be recorded by metrics engine for given bidder
+	}
+	type bidderCollisions = map[string]collisions
+	testCases := []struct {
+		scenario         string
+		bidderCollisions bidderCollisions // represents no of collisions detected for bid.id at bidder level for given request
+		expectCollisions int
+	}{
+		{scenario: "invalid collision value", bidderCollisions: map[string]collisions{"bidder-1": {simulate: -1, expect: 0}}},
+		{scenario: "no collision", bidderCollisions: map[string]collisions{"bidder-1": {simulate: 0, expect: 0}}},
+		{scenario: "one collision", bidderCollisions: map[string]collisions{"bidder-1": {simulate: 1, expect: 1}}},
+		{scenario: "multiple collisions", bidderCollisions: map[string]collisions{"bidder-1": {simulate: 2, expect: 2}}},
+		{scenario: "multiple bidders", bidderCollisions: map[string]collisions{"bidder-1": {simulate: 2, expect: 2}, "bidder-2": {simulate: 4, expect: 4}}},
+		{scenario: "multiple bidders with bidder-1 no collision", bidderCollisions: map[string]collisions{"bidder-1": {simulate: 0, expect: 0},
+			"bidder-2": {simulate: 4, expect: 4}}},
+	}
+
+	for _, testcase := range testCases {
+		m := createMetricsForTesting()
+		for bidder, collisions := range testcase.bidderCollisions {
+			for collision := 1; collision <= collisions.simulate; collision++ {
+				m.RecordAdapterDuplicateBidID(bidder, 1)
+			}
+			assertCounterVecValue(t, testcase.scenario, testcase.scenario, m.adapterDuplicateBidIDCounter, float64(collisions.expect), prometheus.Labels{
+				adapterLabel: bidder,
+			})
+		}
+	}
+}
+
 func TestRecordPodImpGenTime(t *testing.T) {
 	impressions := 4
 	testAlgorithmMetrics(t, impressions, func(m *Metrics) dto.Histogram {

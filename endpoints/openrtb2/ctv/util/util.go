@@ -10,6 +10,7 @@ import (
 
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/constant"
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/types"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/golang/glog"
 )
 
@@ -21,11 +22,26 @@ func GetDurationWiseBidsBucket(bids []*types.Bid) types.BidsBuckets {
 	}
 
 	for k, v := range result {
-		sort.Slice(v[:], func(i, j int) bool { return v[i].Price > v[j].Price })
+		//sort.Slice(v[:], func(i, j int) bool { return v[i].Price > v[j].Price })
+		sortBids(v[:])
 		result[k] = v
 	}
 
 	return result
+}
+
+func sortBids(bids []*types.Bid) {
+	sort.Slice(bids, func(i, j int) bool {
+		if bids[i].DealTierSatisfied == bids[j].DealTierSatisfied {
+			return bids[i].Price > bids[j].Price
+		}
+		return bids[i].DealTierSatisfied
+	})
+}
+
+// GetDealTierSatisfied ...
+func GetDealTierSatisfied(ext *openrtb_ext.ExtBid) bool {
+	return ext != nil && ext.Prebid != nil && ext.Prebid.DealTierSatisfied
 }
 
 func DecodeImpressionID(id string) (string, int) {
