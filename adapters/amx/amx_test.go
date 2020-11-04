@@ -2,6 +2,7 @@ package amx
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -22,82 +23,66 @@ const (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "amxtest", new(AMXAdapter))
+	adapterstest.RunJSONBidderTest(t, "amxtest", NewAMXBidder(amxTestEndpoint))
 }
 
-func TestMakeRequestsPublisherIdOverride(t *testing.T) {
+func TestMakeRequestsPublisherId(t *testing.T) {
 	var w, h int = 300, 250
-
 	var width, height uint64 = uint64(w), uint64(h)
-
 	adapter := NewAMXBidder(amxTestEndpoint)
-	imp1 := openrtb.Imp{
-		ID:  "sample_imp_1",
-		Ext: json.RawMessage(defaultImpExt),
-		Banner: &openrtb.Banner{
-			W: &width,
-			H: &height,
-			Format: []openrtb.Format{
-				{W: 300, H: 250},
-			},
-		}}
 
-	inputRequest := openrtb.BidRequest{
-		User: &openrtb.User{ID: "example_user_id"},
-		Imp:  []openrtb.Imp{imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
-				ID: "1234567",
-			},
-		},
-		ID: "1234",
+	type testCase struct {
+		publisherID         string
+		extTagID            string
+		expectedPublisherID string
+		blankNil            bool
 	}
 
-	actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
-	assert.Len(t, actualAdapterRequests, 1)
-
-	assert.Empty(t, err)
-
-	// check that the publisher ID overrides the site.publisher.id if provided
-	var body openrtb.BidRequest
-	if err := json.Unmarshal(actualAdapterRequests[0].Body, &body); err != nil {
-		t.Errorf("failed to read bid request")
+	tests := []testCase{
+		{publisherID: "publisher.id", extTagID: "ext.tagId", expectedPublisherID: "ext.tagId", blankNil: false},
+		{publisherID: "publisher.id", extTagID: "", expectedPublisherID: "publisher.id", blankNil: false},
+		{publisherID: "", extTagID: "ext.tagId", expectedPublisherID: "ext.tagId", blankNil: false},
+		{publisherID: "", extTagID: "ext.tagId", expectedPublisherID: "ext.tagId", blankNil: true},
+		{publisherID: "publisher.id", extTagID: "", expectedPublisherID: "publisher.id", blankNil: false},
+		{publisherID: "publisher.id", extTagID: "", expectedPublisherID: "publisher.id", blankNil: true},
 	}
 
-	assert.Equal(t, "publisher_id_example", body.Site.Publisher.ID)
-	assert.Equal(t, "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.0", actualAdapterRequests[0].Uri)
-}
+	for _, tc := range tests {
+		imp1 := openrtb.Imp{
+			ID: "sample_imp_1",
+			Banner: &openrtb.Banner{
+				W: &width,
+				H: &height,
+				Format: []openrtb.Format{
+					{W: 300, H: 250},
+				},
+			}}
 
-func TestWillEnsurePublisher(t *testing.T) {
-	adapter := NewAMXBidder(amxTestEndpoint)
-	var width, height uint64 = 300, 250
+		if tc.extTagID != "" || !tc.blankNil {
+			imp1.Ext = json.RawMessage(
+				fmt.Sprintf(`{"bidder":{"tagId":"%s"}}`, tc.extTagID))
+		}
 
-	imp1 := openrtb.Imp{
-		ID:  "sample_imp_1",
-		Ext: json.RawMessage("{\"bidder\":{\"tagId\":\"site_publisher_id\"}}"),
-		Banner: &openrtb.Banner{
-			W: &width,
-			H: &height,
-			Format: []openrtb.Format{
-				{W: 300, H: 250},
-			},
-		}}
+		inputRequest := openrtb.BidRequest{
+			User: &openrtb.User{ID: "example_user_id"},
+			Imp:  []openrtb.Imp{imp1},
+			Site: &openrtb.Site{},
+			ID:   "1234",
+		}
 
-	inputRequest := openrtb.BidRequest{
-		Imp:  []openrtb.Imp{imp1},
-		Site: &openrtb.Site{Publisher: nil},
-		ID:   "1234",
+		if tc.publisherID != "" || !tc.blankNil {
+			inputRequest.Site.Publisher = &openrtb.Publisher{
+				ID: tc.publisherID,
+			}
+		}
+
+		actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+		assert.Len(t, actualAdapterRequests, 1)
+		assert.Empty(t, err)
+		var body openrtb.BidRequest
+		assert.Nil(t, json.Unmarshal(actualAdapterRequests[0].Body, &body))
+		assert.Equal(t, tc.expectedPublisherID, body.Site.Publisher.ID)
 	}
-
-	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
-	var body openrtb.BidRequest
-	if err := json.Unmarshal(actualAdapterRequests[0].Body, &body); err != nil {
-		t.Errorf("failed to read bid request")
-	}
-
-	assert.NotNil(t, body.Site.Publisher)
-
-	assert.Equal(t, "site_publisher_id", body.Site.Publisher.ID)
 }
 
 func TestMakeRequestsApp(t *testing.T) {

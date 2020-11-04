@@ -63,7 +63,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "",
+        "uri": "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.0",
         "body": {
           "app": {
             "bundle": "639881495",
