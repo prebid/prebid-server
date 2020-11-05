@@ -959,6 +959,8 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
+	trueValue, falseValue := true, false
+
 	testCases := []struct {
 		description         string
 		gdprAccountEnabled  *bool
@@ -971,7 +973,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 	}{
 		{
 			description:        "Enforce - TCF Invalid",
-			gdprAccountEnabled: &[]bool{true}[0],
+			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
 			gdprConsent:        "malformed",
@@ -983,7 +985,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		},
 		{
 			description:        "Enforce - TCF 1",
-			gdprAccountEnabled: &[]bool{true}[0],
+			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
 			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
@@ -995,7 +997,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		},
 		{
 			description:        "Enforce - TCF 2",
-			gdprAccountEnabled: &[]bool{true}[0],
+			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
 			gdprConsent:        "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
@@ -1007,7 +1009,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		},
 		{
 			description:        "Not Enforce - TCF 1",
-			gdprAccountEnabled: &[]bool{true}[0],
+			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "0",
 			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
@@ -1019,7 +1021,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		},
 		{
 			description:        "Enforce - TCF 1; account GDPR enabled, host GDPR setting disregarded",
-			gdprAccountEnabled: &[]bool{true}[0],
+			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    false,
 			gdpr:               "1",
 			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
@@ -1031,7 +1033,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		},
 		{
 			description:        "Not Enforce - TCF 1; account GDPR disabled, host GDPR setting disregarded",
-			gdprAccountEnabled: &[]bool{false}[0],
+			gdprAccountEnabled: &falseValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
 			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",

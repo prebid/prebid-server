@@ -1300,7 +1300,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			Enforce: spec.EnforceLMT,
 		},
 		GDPR: config.GDPR{
-			Enabled:             spec.Enabled,
+			Enabled:             spec.GDPREnabled,
 			UsersyncIfAmbiguous: !spec.AssumeGDPRApplies,
 			EEACountriesMap:     eeac,
 		},
@@ -2457,7 +2457,7 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 }
 
 type exchangeSpec struct {
-	Enabled           bool                   `json:"enabled"`
+	GDPREnabled       bool                   `json:"gdpr_enabled"`
 	IncomingRequest   exchangeRequest        `json:"incomingRequest"`
 	OutgoingRequests  map[string]*bidderSpec `json:"outgoingRequests"`
 	Response          exchangeResponse       `json:"response,omitempty"`
