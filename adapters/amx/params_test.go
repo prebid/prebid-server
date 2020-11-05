@@ -9,15 +9,25 @@ import (
 )
 
 var validBidParams = []string{
+	`{"tagId":"sampleTagId", "adUnitId": "sampleAdUnitId"}`,
+	`{"tagId":"sampleTagId", "adUnitId": ""}`,
+	`{"adUnitId": ""}`,
+	`{"adUnitId": "sampleAdUnitId"}`,
 	`{"tagId":"sampleTagId"}`,
 	`{"tagId":""}`,
 	`{}`,
 	`{"otherValue": "ignored"}`,
+	`{"tagId": "sampleTagId", "otherValue": "ignored"}`,
+	`{"otherValue": "ignored", "adUnitId": "sampleAdUnitId"}`,
 }
 
 var invalidBidParams = []string{
 	`{"tagId":1234}`,
 	`{"tagId": true}`,
+	`{"adUnitId": true}`,
+	`{"adUnitId": null}`,
+	`{"adUnitId": null, "tagId": "sampleTagId"}`,
+	`{"adUnitId": 1234, "tagId": "sampleTagId"}`,
 }
 
 func TestValidParams(t *testing.T) {

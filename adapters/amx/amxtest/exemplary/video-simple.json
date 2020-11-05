@@ -31,7 +31,8 @@
         },
         "ext": {
           "bidder": {
-            "tagId": "cHJlYmlkLm9yZw"
+            "tagId": "cHJlYmlkLm9yZw",
+            "adUnitId": "tagid-override"
           }
         },
         "id": "1",
@@ -125,9 +126,11 @@
             },
             "ext": {
               "bidder": {
-                "tagId": "cHJlYmlkLm9yZw"
+                "tagId": "cHJlYmlkLm9yZw",
+                "adUnitId": "tagid-override"
               }
             },
+            "tagid": "tagid-override",
             "id": "1",
             "secure": 1
           }

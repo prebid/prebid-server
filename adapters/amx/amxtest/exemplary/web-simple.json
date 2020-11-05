@@ -28,6 +28,7 @@
             "tagId": "cHJlYmlkLm9yZw"
           }
         },
+        "tagid": "example-tag-id",
         "id": "1",
         "secure": 1
       }
@@ -111,6 +112,7 @@
         "id": "TL3JS6F43CKNDQFY",
         "imp": [
           {
+            "tagid": "example-tag-id",
             "banner": {
               "format": [
                 {

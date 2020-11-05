@@ -23,6 +23,63 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "amxtest", NewAMXBidder(amxTestEndpoint))
 }
 
+func TestMakeRequestsTagID(t *testing.T) {
+	var w, h int = 300, 250
+	var width, height uint64 = uint64(w), uint64(h)
+	adapter := NewAMXBidder(amxTestEndpoint)
+
+	type testCase struct {
+		tagID         string
+		extAdUnitID   string
+		expectedTagID string
+		blankNil      bool
+	}
+
+	tests := []testCase{
+		{tagID: "tag-id", extAdUnitID: "ext.adUnitID", expectedTagID: "ext.adUnitID", blankNil: false},
+		{tagID: "tag-id", extAdUnitID: "", expectedTagID: "tag-id", blankNil: false},
+		{tagID: "tag-id", extAdUnitID: "", expectedTagID: "tag-id", blankNil: true},
+		{tagID: "", extAdUnitID: "", expectedTagID: "", blankNil: true},
+		{tagID: "", extAdUnitID: "", expectedTagID: "", blankNil: false},
+		{tagID: "", extAdUnitID: "ext.adUnitID", expectedTagID: "ext.adUnitID", blankNil: true},
+		{tagID: "", extAdUnitID: "ext.adUnitID", expectedTagID: "ext.adUnitID", blankNil: false},
+	}
+
+	for _, tc := range tests {
+		imp1 := openrtb.Imp{
+			ID: "sample_imp_1",
+			Banner: &openrtb.Banner{
+				W: &width,
+				H: &height,
+				Format: []openrtb.Format{
+					{W: 300, H: 250},
+				},
+			}}
+
+		if tc.extAdUnitID != "" || !tc.blankNil {
+			imp1.Ext = json.RawMessage(
+				fmt.Sprintf(`{"bidder":{"adUnitId":"%s"}}`, tc.extAdUnitID))
+		}
+
+		if tc.tagID != "" || !tc.blankNil {
+			imp1.TagID = tc.tagID
+		}
+
+		inputRequest := openrtb.BidRequest{
+			User: &openrtb.User{},
+			Imp:  []openrtb.Imp{imp1},
+			Site: &openrtb.Site{},
+		}
+
+		actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+		assert.Len(t, actualAdapterRequests, 1)
+		assert.Empty(t, err)
+		var body openrtb.BidRequest
+		assert.Nil(t, json.Unmarshal(actualAdapterRequests[0].Body, &body))
+		assert.Equal(t, tc.expectedTagID, body.Imp[0].TagID)
+	}
+}
+
 func TestMakeRequestsPublisherId(t *testing.T) {
 	var w, h int = 300, 250
 	var width, height uint64 = uint64(w), uint64(h)

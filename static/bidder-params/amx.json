@@ -7,6 +7,10 @@
     "tagId" : {
       "type": "string",
       "description": "Set a tagId (overrides site.publisher.id, or app.publisher.id)"
+    },
+    "adUnitId": {
+      "type": "string",
+      "description": "Override imp.tagid value to provide a custom value in AMX ad unit ID reporting"
     }
   }
 }

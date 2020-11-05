@@ -48,19 +48,6 @@ type amxExt struct {
 	Bidder openrtb_ext.ExtImpAMX `json:"bidder"`
 }
 
-func getTagID(imps []openrtb.Imp) (string, bool) {
-	for _, imp := range imps {
-		var params amxExt
-		if err := json.Unmarshal(imp.Ext, &params); err == nil {
-			if params.Bidder.TagID != "" {
-				return params.Bidder.TagID, true
-			}
-		}
-	}
-
-	return "", false
-}
-
 func ensurePublisherWithID(pub *openrtb.Publisher, publisherID string) openrtb.Publisher {
 	if pub == nil {
 		return openrtb.Publisher{ID: publisherID}
@@ -75,7 +62,23 @@ func ensurePublisherWithID(pub *openrtb.Publisher, publisherID string) openrtb.P
 func (adapter *AMXAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
 	reqCopy := *request
 
-	if publisherID, ok := getTagID(request.Imp); ok {
+	var publisherID string
+	for idx, imp := range reqCopy.Imp {
+		var params amxExt
+		if err := json.Unmarshal(imp.Ext, &params); err == nil {
+			if params.Bidder.TagID != "" {
+				publisherID = params.Bidder.TagID
+			}
+
+			// if it has an adUnitId, set as the tagid
+			if params.Bidder.AdUnitID != "" {
+				imp.TagID = params.Bidder.AdUnitID
+				reqCopy.Imp[idx] = imp
+			}
+		}
+	}
+
+	if publisherID != "" {
 		if reqCopy.App != nil {
 			publisher := ensurePublisherWithID(reqCopy.App.Publisher, publisherID)
 			appCopy := *request.App

@@ -48,7 +48,8 @@
         "secure": 1,
         "ext": {
           "bidder": {
-            "tagId": "cHJlYmlkLm9yZw"
+            "tagId": "cHJlYmlkLm9yZw",
+            "adUnitId": "sample-ad-unit-id"
           }
         }
       }
@@ -110,9 +111,11 @@
               "id": "1",
               "instl": 1,
               "secure": 1,
+              "tagid": "sample-ad-unit-id",
               "ext": {
                 "bidder": {
-                  "tagId": "cHJlYmlkLm9yZw"
+                  "tagId": "cHJlYmlkLm9yZw",
+                  "adUnitId": "sample-ad-unit-id"
                 }
               }
             }
