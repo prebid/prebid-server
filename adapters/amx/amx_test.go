@@ -86,43 +86,6 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 	}
 }
 
-func TestMakeRequestsApp(t *testing.T) {
-	var w, h int = 300, 250
-	var width, height uint64 = uint64(w), uint64(h)
-
-	adapter := NewAMXBidder(amxTestEndpoint)
-	imp1 := openrtb.Imp{
-		ID:  "sample_imp_1",
-		Ext: json.RawMessage("{\"bidder\":{\"tagId\":\"site_publisher_id\"}}"),
-		Banner: &openrtb.Banner{
-			W: &width,
-			H: &height,
-			Format: []openrtb.Format{
-				{W: 300, H: 250},
-			},
-		}}
-
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
-				ID: "1234567",
-			},
-		},
-		ID: "1234",
-	}
-
-	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
-	assert.Len(t, actualAdapterRequests, 1, "expecting 1 request")
-
-	var body openrtb.BidRequest
-	if err := json.Unmarshal(actualAdapterRequests[0].Body, &body); err != nil {
-		t.Errorf("failed to read bid request")
-	}
-
-	assert.Equal(t, "site_publisher_id", body.Site.Publisher.ID)
-}
-
 func getRequestBody(t *testing.T, requests []*adapters.RequestData) *openrtb.BidRequest {
 	assert.GreaterOrEqual(t, 1, len(requests))
 
