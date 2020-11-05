@@ -8,19 +8,15 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 )
 
-var (
-	bidRequest string
-)
-
 const (
-	amxTestEndpoint = "http://pbs-dev.amxrtb.com/auction/openrtb"
-	defaultImpExt   = "{\"bidder\":{\"tagId\":\"publisher_id_example\"}}"
+	amxTestEndpoint  = "http://pbs-dev.amxrtb.com/auction/openrtb"
+	sampleVastADM    = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http://example.net/hbx/verr?e=]]></Error><Impression><![CDATA[http://example.net/hbx/vimp?lid=test&aid=testapp]]></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https://example.com?event=first_quartile]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://example.com]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"video/mp4\" bitrate=\"800\"><![CDATA[https://example.com/media.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>"
+	sampleDisplayADM = "<img src='https://example.com/300x250.png' height='250' width='300'/>"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -85,32 +81,6 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 		assert.Equal(t, tc.expectedPublisherID, body.Site.Publisher.ID)
 	}
 }
-
-func getRequestBody(t *testing.T, requests []*adapters.RequestData) *openrtb.BidRequest {
-	assert.GreaterOrEqual(t, 1, len(requests))
-
-	var body openrtb.BidRequest
-	if err := json.Unmarshal(requests[0].Body, &body); err == nil {
-		return &body
-	}
-	return nil
-}
-
-func getUserExt(user *openrtb.User) *openrtb_ext.ExtUser {
-	if user == nil {
-		return nil
-	}
-	var userExt openrtb_ext.ExtUser
-	if err := json.Unmarshal(user.Ext, &userExt); err == nil {
-		return &userExt
-	}
-	return nil
-}
-
-const (
-	sampleVastADM    = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http://example.net/hbx/verr?e=]]></Error><Impression><![CDATA[http://example.net/hbx/vimp?lid=test&aid=testapp]]></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https://example.com?event=first_quartile]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://example.com]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"video/mp4\" bitrate=\"800\"><![CDATA[https://example.com/media.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>"
-	sampleDisplayADM = "<img src='https://example.com/300x250.png' height='250' width='300'/>"
-)
 
 var vastImpressionRXP = regexp.MustCompile(`<Impression><!\[CDATA\[[^\]]*\]\]></Impression>`)
 
