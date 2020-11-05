@@ -26,6 +26,7 @@ const (
 	buyId                    = "buyid"
 	buyIdTargetingKey        = "hb_buyid_pubmatic"
 	skAdnetworkKey           = "skadn"
+	rewardKey                = "reward"
 )
 
 type PubmaticAdapter struct {
@@ -629,26 +630,43 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *pubmaticWrapperExt, pubID 
 	}
 
 	imp.Ext = nil
-	impExt := ""
+
+	impExtMap := make(map[string]interface{})
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
-		impExt = makeKeywordStr(pubmaticExt.Keywords)
+		populateKeywordsInExt(pubmaticExt.Keywords, impExtMap)
 	}
 
-	if bidderExt.Prebid != nil && bidderExt.Prebid.SKAdnetwork != nil {
-		if impExt == "" {
-			impExt = fmt.Sprintf(`"%s":%s`, skAdnetworkKey, string(bidderExt.Prebid.SKAdnetwork))
-		} else {
-			impExt = fmt.Sprintf(`%s,"%s":%s`, impExt, skAdnetworkKey, string(bidderExt.Prebid.SKAdnetwork))
+	if bidderExt.Prebid != nil {
+		if bidderExt.Prebid.SKAdnetwork != nil {
+			impExtMap[skAdnetworkKey] = bidderExt.Prebid.SKAdnetwork
+		}
+		if bidderExt.Prebid.IsRewardedInventory == 1 {
+			impExtMap[rewardKey] = bidderExt.Prebid.IsRewardedInventory
 		}
 	}
-	if len(impExt) != 0 {
-		imp.Ext = json.RawMessage([]byte(fmt.Sprintf(`{%s}`, impExt)))
+
+	if len(impExtMap) != 0 {
+		impExtBytes, err := json.Marshal(impExtMap)
+		if err == nil {
+			imp.Ext = json.RawMessage(impExtBytes)
+		}
 	}
 	return nil
 
 }
 
-func makeKeywordStr(keywords []*openrtb_ext.ExtImpPubmaticKeyVal) string {
+func populateKeywordsInExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, impExtMap map[string]interface{}) {
+	for _, keyVal := range keywords {
+		if len(keyVal.Values) == 0 {
+			logf("No values present for key = %s", keyVal.Key)
+			continue
+		} else {
+			impExtMap[keyVal.Key] = strings.Join(keyVal.Values[:], ",")
+		}
+	}
+}
+
+/*func makeKeywordStr(keywords []*openrtb_ext.ExtImpPubmaticKeyVal) string {
 	eachKv := make([]string, 0, len(keywords))
 	for _, keyVal := range keywords {
 		if len(keyVal.Values) == 0 {
@@ -661,7 +679,7 @@ func makeKeywordStr(keywords []*openrtb_ext.ExtImpPubmaticKeyVal) string {
 
 	kvStr := strings.Join(eachKv, ",")
 	return kvStr
-}
+}*/
 
 func prepareImpressionExt(keywords map[string]string) string {
 
