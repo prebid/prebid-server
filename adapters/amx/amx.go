@@ -32,7 +32,12 @@ func NewAMXBidder(endpoint string) *AMXAdapter {
 		return nil
 	}
 
-	qs, _ := url.ParseQuery(endpointURL.RawQuery)
+	qs, err := url.ParseQuery(endpointURL.RawQuery)
+	if err != nil {
+		glog.Fatalf("invalid query parameters in the endpoint: %s, error: %v", endpointURL.RawQuery, err)
+		return nil
+	}
+
 	qs.Add("v", adapterVersion)
 	endpointURL.RawQuery = qs.Encode()
 
