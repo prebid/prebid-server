@@ -10,7 +10,8 @@
         },
         "ext":{
           "bidder":{
-            "adunit":"unit1"
+            "adunit":"unit1",
+            "client":"client1"
           }
         }
       }
@@ -19,7 +20,7 @@
   "httpCalls":[
     {
       "expectedRequest":{
-        "uri":"http://app.trustedmarketplace.com/processHeaderBid/unit1",
+        "uri":"http://client1.trustedmarketplace.com/processHeaderBid/unit1",
         "body":{
           "id":"req1-unit1",
           "imp":[
@@ -31,7 +32,8 @@
               },
               "ext":{
                 "bidder":{
-                  "adunit":"unit1"
+                  "adunit":"unit1",
+                  "client":"client1"
                 }
               }
             }
@@ -41,15 +43,15 @@
       "mockResponse":{
         "status":200,
         "body":{
-          "id":"req1-imp1-resp1",
+          "id":"req1-unit1",
           "seatbid":[
             {
               "bid":[
                 {
-                  "id":"req1-imp1-bid1",
-                  "impid":"invalid",
+                  "id":"req1-unit1-bid1",
+                  "impid":"imp1",
                   "price":0.12,
-                  "adm":"<b>a banner</b>"
+                  "adm":"<b>An ad</b>"
                 }
               ]
             }
@@ -60,12 +62,19 @@
     }
   ],
   "expectedBidResponses":[
-
-  ],
-  "expectedMakeBidsErrors":[
     {
-      "value":"unknown impid: invalid",
-      "comparison":"literal"
+      "currency":"USD",
+      "bids":[
+        {
+          "bid":{
+            "id":"req1-unit1-bid1",
+            "impid":"imp1",
+            "price":0.12,
+            "adm":"<b>An ad</b>"
+          },
+          "type":"banner"
+        }
+      ]
     }
   ]
 }

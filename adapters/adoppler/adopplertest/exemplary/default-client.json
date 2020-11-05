@@ -39,18 +39,40 @@
         }
       },
       "mockResponse":{
-        "status":500,
-        "body":""
+        "status":200,
+        "body":{
+          "id":"req1-unit1",
+          "seatbid":[
+            {
+              "bid":[
+                {
+                  "id":"req1-unit1-bid1",
+                  "impid":"imp1",
+                  "price":0.12,
+                  "adm":"<b>An ad</b>"
+                }
+              ]
+            }
+          ],
+          "cur":"USD"
+        }
       }
     }
   ],
   "expectedBidResponses":[
-
-  ],
-  "expectedMakeBidsErrors":[
     {
-      "value":"unexpected status: 500",
-      "comparison":"literal"
+      "currency":"USD",
+      "bids":[
+        {
+          "bid":{
+            "id":"req1-unit1-bid1",
+            "impid":"imp1",
+            "price":0.12,
+            "adm":"<b>An ad</b>"
+          },
+          "type":"banner"
+        }
+      ]
     }
   ]
 }

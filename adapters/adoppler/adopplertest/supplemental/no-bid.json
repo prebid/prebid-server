@@ -39,18 +39,12 @@
         }
       },
       "mockResponse":{
-        "status":500,
+        "status":204,
         "body":""
       }
     }
   ],
   "expectedBidResponses":[
 
-  ],
-  "expectedMakeBidsErrors":[
-    {
-      "value":"unexpected status: 500",
-      "comparison":"literal"
-    }
   ]
 }
