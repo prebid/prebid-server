@@ -24,9 +24,6 @@ type Permissions interface {
 	//
 	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
 	PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error)
-
-	// Exposes the AMP execption flag
-	AMPException() bool
 }
 
 // Versions of the GDPR TCF technical specification.
