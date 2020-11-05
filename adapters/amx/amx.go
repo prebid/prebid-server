@@ -187,9 +187,14 @@ func pixelToImpression(pixel string) string {
 
 func interpolateImpressions(bid openrtb.Bid, ext amxBidExt) string {
 	var buffer strings.Builder
-	buffer.WriteString(pixelToImpression(bid.NURL))
+	if bid.NURL != "" {
+		buffer.WriteString(pixelToImpression(bid.NURL))
+	}
+
 	for _, impPixel := range ext.Himp {
-		buffer.WriteString(pixelToImpression(impPixel))
+		if impPixel != "" {
+			buffer.WriteString(pixelToImpression(impPixel))
+		}
 	}
 
 	results := strings.Replace(bid.AdM, vastSearchPoint, vastSearchPoint+buffer.String(), 1)

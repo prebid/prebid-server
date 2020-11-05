@@ -6,7 +6,7 @@
   "properties": {
     "tagId" : {
       "type": "string",
-      "description": "Set a tagId (overrides site.publisher.id)"
+      "description": "Set a tagId (overrides site.publisher.id, or app.publisher.id)"
     }
   }
 }

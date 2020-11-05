@@ -3,6 +3,7 @@ package amx
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -143,122 +144,47 @@ func getUserExt(user *openrtb.User) *openrtb_ext.ExtUser {
 	return nil
 }
 
-func TestMakeBidVideo(t *testing.T) {
-	var w, h int = 640, 480
+const (
+	sampleVastADM    = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http://example.net/hbx/verr?e=]]></Error><Impression><![CDATA[http://example.net/hbx/vimp?lid=test&aid=testapp]]></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https://example.com?event=first_quartile]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://example.com]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"video/mp4\" bitrate=\"800\"><![CDATA[https://example.com/media.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>"
+	sampleDisplayADM = "<img src='https://example.com/300x250.png' height='250' width='300'/>"
+)
 
-	var width, height uint64 = uint64(w), uint64(h)
+var vastImpressionRXP = regexp.MustCompile(`<Impression><!\[CDATA\[[^\]]*\]\]></Impression>`)
 
-	adapter := NewAMXBidder(amxTestEndpoint)
-	imp1 := openrtb.Imp{
-		ID:  "video_imp_1",
-		Ext: json.RawMessage(defaultImpExt),
-		Video: &openrtb.Video{
-			W:     width,
-			H:     height,
-			MIMEs: []string{"video/mp4"},
-		}}
-
-	inputRequest := openrtb.BidRequest{
-		Imp: []openrtb.Imp{imp1},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{
-				ID: "1234567",
-			},
-		},
-		User: &openrtb.User{ID: "amx_uid", BuyerUID: "amx_buid"},
-		ID:   "1234",
-	}
-
-	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
-	assert.Len(t, actualAdapterRequests, 1, "expecting 1 request")
-
-	body := getRequestBody(t, actualAdapterRequests)
-	assert.NotNil(t, body, "body should be valid JSON")
-
-	assert.Len(t, body.Imp, 1, "expecting 1 Imp")
-
-	resps, errs := adapter.MakeBids(body, &adapters.RequestData{}, &adapters.ResponseData{
-		StatusCode: 200,
-		Body: []byte(`{
-			"id": "WQ5V2DWVTMNXABDD",
-			"seatbid": [{
-				"bid": [{
-					"id": "TEST",
-					"impid": "1",
-					"price": 10.0,
-					"adid": "1",
-					"adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http://example.net/hbx/verr?e=]]></Error><Impression><![CDATA[http://example.net/hbx/vimp?lid=test&aid=testapp]]></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https://example.com?event=first_quartile]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://example.com]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"video/mp4\" bitrate=\"800\"><![CDATA[https://example.com/media.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
-					"adomain": ["amxrtb.com"],
-					"iurl": "https://assets.a-mo.net/300x250.v2.png",
-					"cid": "1",
-					"crid": "1",
-					"h": 600,
-					"w": 300,
-					"ext": {
-						"himp": ["https://example.com/imp-tracker/pixel.gif?param=1&param2=2"],
-						"startdelay": 0
-					}
-				}]
-			}],
-			"cur": "USD"
-		}`),
-	})
-
-	assert.Empty(t, errs, "unexpected errors in response")
-	assert.Len(t, resps.Bids, 1, "there should only be 1 bid")
-
-	// it should be a video bid
-	assert.Equal(t, openrtb_ext.BidTypeVideo, resps.Bids[0].BidType, "the bid should be video type")
+func countImpressionPixels(vast string) int {
+	matches := vastImpressionRXP.FindAllIndex([]byte(vast), -1)
+	return len(matches)
 }
 
 func TestVideoImpInsertion(t *testing.T) {
-	var bidResp openrtb.BidResponse
-	var bid openrtb.Bid
-	payload := []byte(`{
-    "id": "amx_request_id",
-    "seatbid": [
-        {
-            "bid": [
-                {
-                    "id": "video_bid",
-                    "impid": "video_imp_id",
-                    "price": 6.11,
-                    "nurl": "https://example2.com/nurl",
-                    "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http://example.net/hbx/verr?e=]]></Error><Impression><![CDATA[http://example.net/hbx/vimp?lid=test&aid=testapp]]></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https://example.com?event=first_quartile]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://example.com]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"video/mp4\" bitrate=\"800\"><![CDATA[https://example.com/media.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
-                    "crid": "123456789",
-                    "w": 640,
-                    "h": 480,
-                    "ext": {
-                        "himp": ["https://example.com/pixel.png"]
-                    }
-                },
-                {
-                    "id": "display_bid",
-                    "impid": "display_imp_id",
-                    "price": 1.23,
-                    "adm": "<img src='https://example.com/300x250.png' height='250' width='300'/>",
-                    "crid": "123456789",
-                    "w": 300,
-                    "h": 250,
-                    "ext": {
-                        "himp": ["https://example.com/pixel.png"]
-                    }
-                }
-            ]
-        }
-    ]
-}`)
+	markup := interpolateImpressions(openrtb.Bid{
+		AdM:  sampleVastADM,
+		NURL: "https://example2.com/nurl",
+	}, amxBidExt{Himp: []string{"https://example.com/pixel.png"}})
+	assert.Contains(t, markup, "example2.com/nurl")
+	assert.Contains(t, markup, "example.com/pixel.png")
+	assert.Equal(t, 3, countImpressionPixels(markup), "should have 3 Impression pixels")
 
-	err := json.Unmarshal(payload, &bidResp)
-	assert.Nil(t, err)
-	bid = openrtb.Bid(bidResp.SeatBid[0].Bid[0])
+	// make sure that a blank NURL won't result in a blank impression tag
+	markup = interpolateImpressions(openrtb.Bid{
+		AdM:  sampleVastADM,
+		NURL: "",
+	}, amxBidExt{})
+	assert.Equal(t, 1, countImpressionPixels(markup), "should have 1 impression pixels")
 
-	// get the EXT from it too..
-	var bidExt amxBidExt
-	err = json.Unmarshal(bid.Ext, &bidExt)
-	assert.Nil(t, err)
+	// we should also ignore blank ext.Himp pixels
+	markup = interpolateImpressions(openrtb.Bid{
+		AdM:  sampleVastADM,
+		NURL: "https://example-nurl.com/nurl",
+	}, amxBidExt{Himp: []string{"", "", ""}})
+	assert.Equal(t, 2, countImpressionPixels(markup), "should have 2 impression pixels")
+}
 
-	data := interpolateImpressions(bid, bidExt)
-	assert.Contains(t, data, "example2.com/nurl")
-	assert.Contains(t, data, "example.com/pixel.png")
+func TestNoDisplayImpInsertion(t *testing.T) {
+	data := interpolateImpressions(openrtb.Bid{
+		AdM:  sampleDisplayADM,
+		NURL: "https://example2.com/nurl",
+	}, amxBidExt{Himp: []string{"https://example.com/pixel.png"}})
+	assert.NotContains(t, data, "example2.com/nurl")
+	assert.NotContains(t, data, "example.com/pixel.png")
 }
