@@ -86,7 +86,13 @@
                 "w": 640,
                 "h": 480
               },
-              "tagid": "ogTAGID"
+              "tagid": "ogTAGID",
+              "ext": {
+                "bidder": {
+                  "host": "eu",
+                  "zoneid": "0"
+                }
+              }
             }
           ],
           "app": {

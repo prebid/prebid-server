@@ -77,7 +77,13 @@
                 "w":320,
                 "h":50
             },
-            "tagid": "ogTAGID"
+            "tagid": "ogTAGID",
+            "ext": {
+              "bidder": {
+                "host": "eu",
+                "zoneid": "0"
+              }
+            }
           }
         ],
         "app": {
@@ -105,7 +111,7 @@
   }],
   "expectedMakeBidsErrors": [
     {
-      "value": "Bad Server Response",
+      "value": "Error unmarshaling server Response: json: cannot unmarshal string into Go value of type openrtb.BidResponse",
       "comparison": "literal"
     }
   ]

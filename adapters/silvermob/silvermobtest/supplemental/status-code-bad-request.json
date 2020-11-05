@@ -58,7 +58,13 @@
               "w": 640,
               "h": 480
             },
-            "tagid": "ogTAGID"
+            "tagid": "ogTAGID",
+            "ext": {
+              "bidder": {
+                "host": "eu",
+                "zoneid": "0"
+              }
+            }
           }
         ],
         "app":  {
@@ -86,7 +92,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: [ 400 ]",
+      "value": "Bad Request status code: 400. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]

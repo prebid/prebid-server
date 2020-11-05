@@ -3,6 +3,7 @@ package silvermob
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
 	"net/http"
 	"text/template"
 
@@ -20,6 +21,7 @@ type SilverMobAdapter struct {
 func NewSilverMobBidder(endpointTemplate string) *SilverMobAdapter {
 	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
+		glog.Fatal("Unable to parse endpoint url template")
 		return nil
 	}
 	return &SilverMobAdapter{endpoint: *template}
@@ -56,21 +58,13 @@ func (a *SilverMobAdapter) MakeRequests(
 	errs []error,
 ) {
 
-	var errors []error
 	var silvermobExt *openrtb_ext.ExtSilverMob
 	var err error
 
-	for i, imp := range openRTBRequest.Imp {
-		silvermobExt, err = a.getImpressionExt(&imp)
-		if err != nil {
-			errors = append(errors, err)
-			break
-		}
-		openRTBRequest.Imp[i].Ext = nil
-	}
+	silvermobExt, err = a.getImpressionExt(&openRTBRequest.Imp[0])
 
-	if len(errors) > 0 {
-		return nil, errors
+	if err != nil {
+		return nil, []error{err}
 	}
 
 	url, err := a.buildEndpointURL(silvermobExt)
@@ -95,13 +89,13 @@ func (a *SilverMobAdapter) getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtS
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: fmt.Sprintf("error unmarshaling imp.ext: %s", err.Error()),
 		}
 	}
 	var silvermobExt openrtb_ext.ExtSilverMob
 	if err := json.Unmarshal(bidderExt.Bidder, &silvermobExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: fmt.Sprintf("error unmarshaling imp.ext.bidder: %s", err.Error()),
 		}
 	}
 	return &silvermobExt, nil
@@ -112,32 +106,6 @@ func (a *SilverMobAdapter) buildEndpointURL(params *openrtb_ext.ExtSilverMob) (s
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func (a *SilverMobAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
-	if response.StatusCode == http.StatusNoContent {
-		return &errortypes.BadInput{Message: "No bid response"}
-	}
-
-	if response.StatusCode == http.StatusBadRequest {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: [ %d ]", response.StatusCode),
-		}
-	}
-
-	if response.StatusCode == http.StatusServiceUnavailable {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
-		}
-	}
-
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
-		}
-	}
-
-	return nil
-}
-
 func (a *SilverMobAdapter) MakeBids(
 	openRTBRequest *openrtb.BidRequest,
 	requestToBidder *adapters.RequestData,
@@ -146,16 +114,26 @@ func (a *SilverMobAdapter) MakeBids(
 	bidderResponse *adapters.BidderResponse,
 	errs []error,
 ) {
-	httpStatusError := a.CheckResponseStatusCodes(bidderRawResponse)
-	if httpStatusError != nil {
-		return nil, []error{httpStatusError}
+
+	if bidderRawResponse.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if bidderRawResponse.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Bad Request status code: %d. Run with request.debug = 1 for more info", bidderRawResponse.StatusCode),
+		}}
+	}
+
+	if bidderRawResponse.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", bidderRawResponse.StatusCode)}
 	}
 
 	responseBody := bidderRawResponse.Body
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: "Bad Server Response",
+			Message: fmt.Sprintf("Error unmarshaling server Response: %s", err),
 		}}
 	}
 

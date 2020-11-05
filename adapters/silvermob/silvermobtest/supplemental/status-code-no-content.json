@@ -51,6 +51,12 @@
               "maxduration": 150,
               "w": 640,
               "h": 480
+            },
+            "ext": {
+              "bidder": {
+                "host": "eu",
+                "zoneid": "0"
+              }
             }
           }
         ],
@@ -68,14 +74,10 @@
       }
     },
     "mockResponse": {
-      "status": 204
+      "status": 204,
+      "body": {}
     }
   }],
   "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "No bid response",
-      "comparison": "literal"
-    }
-  ]
+  "expectedMakeBidsErrors": []
 }

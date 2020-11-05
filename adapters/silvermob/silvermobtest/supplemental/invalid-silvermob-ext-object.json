@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "ext.bidder not provided",
+      "value":  "error unmarshaling imp.ext: json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
       "comparison": "literal"
     }
   ],
