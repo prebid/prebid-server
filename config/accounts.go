@@ -13,17 +13,17 @@ const (
 
 // Account represents a publisher account configuration
 type Account struct {
-	ID            string      `json:"id"`
-	Disabled      bool        `json:"disabled"`
-	CacheTTL      DefaultTTLs `json:"cache_ttl"`
-	EventsEnabled bool        `json:"events_enabled"`
-	GDPR          AccountGDPR `json:"gdpr"`
+	ID            string      `mapstructure:"id"             json:"id"`
+	Disabled      bool        `mapstructure:"disabled"       json:"disabled"`
+	CacheTTL      DefaultTTLs `mapstructure:"cache_ttl"      json:"cache_ttl"`
+	EventsEnabled bool        `mapstructure:"events_enabled" json:"events_enabled"`
+	GDPR          AccountGDPR `mapstructure:"gdpr"           json:"gdpr"`
 }
 
 // AccountGDPR represents account-specific GDPR configuration
 type AccountGDPR struct {
-	Enabled            *bool                  `json:"enabled,omitempty"`
-	IntegrationEnabled AccountGDPRIntegration `json:"integration_enabled"`
+	Enabled            *bool                  `mapstructure:"enabled"             json:"enabled,omitempty"`
+	IntegrationEnabled AccountGDPRIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
 }
 
 // EnabledForRequestType indicates whether GDPR is turned on at the account level for the specified request type
@@ -54,8 +54,8 @@ func (a *AccountGDPR) EnabledForRequestType(requestType RequestType) *bool {
 
 // AccountGDPRIntegration indicates whether GDPR is enabled for each request type
 type AccountGDPRIntegration struct {
-	AMP   *bool `json:"amp,omitempty"`
-	App   *bool `json:"app,omitempty"`
-	Video *bool `json:"video,omitempty"`
-	Web   *bool `json:"web,omitempty"`
+	AMP   *bool `mapstructure:"amp"   json:"amp,omitempty"`
+	App   *bool `mapstructure:"app"   json:"app,omitempty"`
+	Video *bool `mapstructure:"video" json:"video,omitempty"`
+	Web   *bool `mapstructure:"web"   json:"web,omitempty"`
 }
