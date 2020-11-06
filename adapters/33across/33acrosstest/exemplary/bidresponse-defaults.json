@@ -4,13 +4,19 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [{"w": 728, "h": 90}]
+        "video": {
+          "w": 728, 
+          "h": 90,
+          "protocols": [2],
+          "placement": 1,
+          "startdelay": -2,
+          "playbackmethod": [2],
+          "mimes": ["foo", "bar"]
         },
         "ext": {
           "bidder": {
             "siteId": "fake-site-id",
-            "productId": "inview"
+            "productId": "instream"
           }
         }
       }
@@ -27,12 +33,18 @@
           "imp": [
             {
               "id":"test-imp-id",
-              "banner": {
-                "format": [{"w": 728, "h": 90}]
+              "video": {
+                "w": 728, 
+                "h": 90,
+                "protocols": [2],
+                "placement": 1,
+                "startdelay": -2,
+                "playbackmethod": [2],
+                "mimes": ["foo", "bar"]
               },
               "ext": {
                 "ttx": {
-                  "prod": "inview"
+                  "prod": "instream"
                 }
               }
             }
@@ -53,15 +65,10 @@
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                 "impid": "test-imp-id",
                 "price": 0.500000,
-                "adm": "some-test-ad",
+                "adm": "some-test-vast-ad",
                 "crid": "crid_10",
                 "h": 90,
-                "w": 728,
-                "ext": {
-                  "ttx": {
-                    "mediaType": "banner"
-                  }
-                }
+                "w": 728
               }]
             }
           ],
@@ -80,15 +87,10 @@
             "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
             "impid": "test-imp-id",
             "price": 0.5,
-            "adm": "some-test-ad",
+            "adm": "some-test-vast-ad",
             "crid": "crid_10",
             "w": 728,
-            "h": 90,
-            "ext": {
-              "ttx": {
-                "mediaType": "banner"
-              }
-            }
+            "h": 90
           },
           "type": "banner"
         }

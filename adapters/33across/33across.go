@@ -56,6 +56,14 @@ func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Request
 		errs = append(errs, err)
 	}
 
+	if reqCopy.Imp[0].Banner == nil && reqCopy.Imp[0].Video == nil {
+		errs = append(errs, &errortypes.BadInput{
+			Message: "At least one of [banner, video] formats must be defined in Imp. None found",
+		})
+
+		return nil, errs
+	}
+
 	// Last Step
 	reqJSON, err := json.Marshal(reqCopy)
 	if err != nil {
@@ -106,23 +114,23 @@ func preprocess(request *openrtb.BidRequest) error {
 		}
 	}
 
+	imp.Ext = impExtJSON
+	siteCopy := *request.Site
+	siteCopy.ID = ttxExt.SiteId
+	request.Site = &siteCopy
+
 	// Validate Video if it exists
 	if imp.Video != nil {
 		videoCopy, err := validateVideoParams(imp.Video, impExt.Ttx.Prod)
+
+		imp.Video = videoCopy
 
 		if err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
-
-		imp.Video = videoCopy
 	}
-
-	imp.Ext = impExtJSON
-	siteCopy := *request.Site
-	siteCopy.ID = ttxExt.SiteId
-	request.Site = &siteCopy
 
 	return nil
 }

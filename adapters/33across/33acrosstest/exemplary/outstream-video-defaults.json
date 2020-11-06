@@ -4,13 +4,17 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [{"w": 728, "h": 90}]
+        "video": {
+          "w": 728, 
+          "h": 90,
+          "protocols": [2],
+          "playbackmethod": [2],
+          "mimes": ["foo", "bar"]
         },
         "ext": {
           "bidder": {
             "siteId": "fake-site-id",
-            "productId": "inview"
+            "productId": "siab"
           }
         }
       }
@@ -27,12 +31,17 @@
           "imp": [
             {
               "id":"test-imp-id",
-              "banner": {
-                "format": [{"w": 728, "h": 90}]
+              "video": {
+                "w": 728, 
+                "h": 90,
+                "protocols": [2],
+                "placement": 2,
+                "playbackmethod": [2],
+                "mimes": ["foo", "bar"]
               },
               "ext": {
                 "ttx": {
-                  "prod": "inview"
+                  "prod": "siab"
                 }
               }
             }
@@ -53,13 +62,13 @@
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                 "impid": "test-imp-id",
                 "price": 0.500000,
-                "adm": "some-test-ad",
+                "adm": "some-test-vast-ad",
                 "crid": "crid_10",
                 "h": 90,
                 "w": 728,
                 "ext": {
                   "ttx": {
-                    "mediaType": "banner"
+                    "mediaType": "video"
                   }
                 }
               }]
@@ -80,17 +89,17 @@
             "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
             "impid": "test-imp-id",
             "price": 0.5,
-            "adm": "some-test-ad",
+            "adm": "some-test-vast-ad",
             "crid": "crid_10",
             "w": 728,
             "h": 90,
             "ext": {
               "ttx": {
-                "mediaType": "banner"
+                "mediaType": "video"
               }
             }
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     }
