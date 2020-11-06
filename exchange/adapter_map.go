@@ -150,6 +150,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderImprovedigital:  improvedigital.NewImprovedigitalBidder(cfg.Adapters[string(openrtb_ext.BidderImprovedigital)].Endpoint),
 		openrtb_ext.BidderInMobi:          inmobi.NewInMobiAdapter(cfg.Adapters[string(openrtb_ext.BidderInMobi)].Endpoint),
 		openrtb_ext.BidderInvibes:         invibes.NewInvibesBidder(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderInvibes))].Endpoint),
+		openrtb_ext.BidderIx:              ix.NewIxBidder(client, cfg.Adapters[string(openrtb_ext.BidderIx)].Endpoint),
 		openrtb_ext.BidderKidoz:           kidoz.NewKidozBidder(cfg.Adapters[string(openrtb_ext.BidderKidoz)].Endpoint),
 		openrtb_ext.BidderKrushmedia:      krushmedia.NewKrushmediaBidder(cfg.Adapters[string(openrtb_ext.BidderKrushmedia)].Endpoint),
 		openrtb_ext.BidderKubient:         kubient.NewKubientBidder(cfg.Adapters[string(openrtb_ext.BidderKubient)].Endpoint),
@@ -203,8 +204,6 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	}
 
 	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{
-		// TODO #212: Upgrade the Index adapter
-		openrtb_ext.BidderIx: ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
 		// TODO #213: Upgrade the Lifestreet adapter
 		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint),
 		// TODO #215: Upgrade the Pulsepoint adapter
