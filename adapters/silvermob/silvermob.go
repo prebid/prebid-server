@@ -54,35 +54,50 @@ func (a *SilverMobAdapter) MakeRequests(
 	openRTBRequest *openrtb.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
-	requestsToBidder []*adapters.RequestData,
-	errs []error,
+	[]*adapters.RequestData,
+	[]error,
 ) {
+	requestCopy := *openRTBRequest
+	impCount := len(openRTBRequest.Imp)
+	requestData := make([]*adapters.RequestData, 0, impCount)
+	errs := []error{}
 
-	var silvermobExt *openrtb_ext.ExtSilverMob
 	var err error
 
-	silvermobExt, err = a.getImpressionExt(&openRTBRequest.Imp[0])
+	for _, imp := range openRTBRequest.Imp {
+		var silvermobExt *openrtb_ext.ExtSilverMob
 
-	if err != nil {
-		return nil, []error{err}
+		silvermobExt, err = a.getImpressionExt(&imp)
+
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		url, err := a.buildEndpointURL(silvermobExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		requestCopy.Imp = []openrtb.Imp{imp}
+		reqJSON, err := json.Marshal(requestCopy)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		reqData := &adapters.RequestData{
+			Method:  http.MethodPost,
+			Body:    reqJSON,
+			Uri:     url,
+			Headers: *GetHeaders(&requestCopy),
+		}
+
+		requestData = append(requestData, reqData)
 	}
 
-	url, err := a.buildEndpointURL(silvermobExt)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	reqJSON, err := json.Marshal(openRTBRequest)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	return []*adapters.RequestData{{
-		Method:  http.MethodPost,
-		Body:    reqJSON,
-		Uri:     url,
-		Headers: *GetHeaders(openRTBRequest),
-	}}, nil
+	return requestData, errs
 }
 
 func (a *SilverMobAdapter) getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtSilverMob, error) {
@@ -143,15 +158,18 @@ func (a *SilverMobAdapter) MakeBids(
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-	sb := bidResp.SeatBid[0]
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
-	for _, bid := range sb.Bid {
-		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-			Bid:     &bid,
-			BidType: getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp),
-		})
+	for _, sb := range bidResp.SeatBid {
+		for _, bid := range sb.Bid {
+			glog.Info("Adding bid")
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp),
+			})
+		}
 	}
+
 	return bidResponse, nil
 }
 
