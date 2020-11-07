@@ -162,7 +162,6 @@ func (a *SilverMobAdapter) MakeBids(
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
-			glog.Info("Adding bid")
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp),
