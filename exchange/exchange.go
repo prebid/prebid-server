@@ -104,9 +104,7 @@ type AuctionRequest struct {
 	RequestType pbsmetrics.RequestType
 }
 
-// debugLog might be better to be represented as output
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb.BidResponse, error) {
-
 	var err error
 	requestExt, err := extractBidRequestExt(r.BidRequest)
 	if err != nil {
