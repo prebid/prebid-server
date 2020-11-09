@@ -217,7 +217,6 @@ func buildLabels(r AuctionRequest) pbsmetrics.Labels {
 	labels := pbsmetrics.Labels{
 		RType:         r.RequestType,
 		PubID:         r.Account.ID,
-		Browser:       pbsmetrics.BrowserOther, // Should we just remove this entirely? we don't have an 'unknown' option.
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
 
