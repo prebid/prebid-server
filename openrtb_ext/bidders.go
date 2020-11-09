@@ -43,6 +43,7 @@ const (
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
 	BidderAJA              BidderName = "aja"
+	BidderAMX              BidderName = "amx"
 	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
 	BidderAdoppler         BidderName = "adoppler"
@@ -82,6 +83,7 @@ const (
 	BidderMobileFuse       BidderName = "mobilefuse"
 	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderNinthDecimal     BidderName = "ninthdecimal"
+	BidderNoBid            BidderName = "nobid"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
 	BidderPubmatic         BidderName = "pubmatic"
@@ -135,6 +137,7 @@ var BidderMap = map[string]BidderName{
 	"adtelligent":       BidderAdtelligent,
 	"advangelists":      BidderAdvangelists,
 	"aja":               BidderAJA,
+	"amx":               BidderAMX,
 	"applogy":           BidderApplogy,
 	"appnexus":          BidderAppnexus,
 	"adoppler":          BidderAdoppler,
@@ -174,6 +177,7 @@ var BidderMap = map[string]BidderName{
 	"mobilefuse":        BidderMobileFuse,
 	"nanointeractive":   BidderNanoInteractive,
 	"ninthdecimal":      BidderNinthDecimal,
+	"nobid":             BidderNoBid,
 	"openx":             BidderOpenx,
 	"orbidder":          BidderOrbidder,
 	"pubmatic":          BidderPubmatic,
