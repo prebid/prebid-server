@@ -27,6 +27,7 @@ type ext struct {
 type bidExt struct {
 	Ttx bidTtxExt `json:"ttx,omitempty"`
 }
+
 type bidTtxExt struct {
 	MediaType string `json:mediaType,omitempty`
 }
