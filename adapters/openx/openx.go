@@ -22,7 +22,8 @@ type openxImpExt struct {
 }
 
 type openxReqExt struct {
-	DelDomain    string `json:"delDomain"`
+	DelDomain    string `json:"delDomain,omitempty"`
+	Platform     string `json:"platform,omitempty"`
 	BidderConfig string `json:"bc"`
 }
 
@@ -125,6 +126,7 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 	}
 
 	reqExt.DelDomain = openxExt.DelDomain
+	reqExt.Platform = openxExt.Platform
 
 	imp.TagID = openxExt.Unit
 	imp.BidFloor = openxExt.CustomFloor

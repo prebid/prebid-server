@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.regs.ext is invalid: json: cannot unmarshal string into Go struct field ExtRegs.gdpr of type int8\n",
-  "requestPayload": {
+  "description": "Invalid GDPR value in regs field",
+  "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
       "page": "prebid.org",
@@ -42,5 +42,7 @@
     "user": {
       "ext": {}
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.regs.ext is invalid: json: cannot unmarshal string into Go struct field ExtRegs.gdpr of type int8\n"
 }

@@ -1,6 +1,8 @@
 # Stored Requests
 
-This document gives a technical overview of the Stored Requests feature.
+See https://docs.prebid.org/prebid-server/features/pbs-storedreqs.html
+
+This document gives a technical overview of the Stored Requests feature in PBS-Go.
 
 Docs outlining the motivation and uses will be added sometime in the future.
 

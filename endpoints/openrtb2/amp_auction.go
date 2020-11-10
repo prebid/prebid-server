@@ -16,6 +16,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
+	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -23,6 +24,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -44,6 +47,7 @@ func NewAmpEndpoint(
 	ex exchange.Exchange,
 	validator openrtb_ext.BidderParamValidator,
 	requestsById stored_requests.Fetcher,
+	accounts stored_requests.AccountFetcher,
 	categories stored_requests.CategoryFetcher,
 	cfg *config.Configuration,
 	met pbsmetrics.MetricsEngine,
@@ -53,7 +57,7 @@ func NewAmpEndpoint(
 	bidderMap map[string]openrtb_ext.BidderName,
 ) (httprouter.Handle, error) {
 
-	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
+	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
 
@@ -69,6 +73,7 @@ func NewAmpEndpoint(
 		validator,
 		requestsById,
 		empty_fetcher.EmptyFetcher{},
+		accounts,
 		categories,
 		cfg,
 		met,
@@ -139,6 +144,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	ao.Request = req
+
 	ctx := context.Background()
 	var cancel context.CancelFunc
 	if req.TMax > 0 {
@@ -154,26 +161,31 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	} else {
 		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
-	labels.PubID = effectivePubID(req.Site.Publisher)
-	// Blacklist account now that we have resolved the value
-	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
-		errL = append(errL, acctIdErr)
-		errCode := errortypes.ReadCode(acctIdErr)
-		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+	labels.PubID = getAccountID(req.Site.Publisher)
+	// Look up account now that we have resolved the pubID value
+	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID)
+	if len(acctIDErrs) > 0 {
+		errL = append(errL, acctIDErrs...)
+		httpStatus := http.StatusBadRequest
+		metricsStatus := pbsmetrics.RequestStatusBadInput
+		for _, er := range errL {
+			errCode := errortypes.ReadCode(er)
+			if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
+				httpStatus = http.StatusServiceUnavailable
+				metricsStatus = pbsmetrics.RequestStatusBlacklisted
+				break
+			}
 		}
+		w.WriteHeader(httpStatus)
+		labels.RequestStatus = metricsStatus
 		for _, err := range errortypes.FatalOnly(errL) {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		ao.Errors = append(ao.Errors, acctIdErr)
+		ao.Errors = append(ao.Errors, acctIDErrs...)
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories, nil)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, account, &deps.categories, nil)
 	ao.AuctionResponse = response
 
 	if err != nil {
@@ -388,30 +400,19 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 
 	setAmpExt(req.Site, "1")
 
-	account := httpRequest.FormValue("account")
-	if account != "" {
-		if req.Site.Publisher == nil {
-			req.Site.Publisher = &openrtb.Publisher{}
-		}
-		req.Site.Publisher.ID = account
-	}
+	setEffectiveAmpPubID(req, httpRequest.URL.Query())
 
 	slot := httpRequest.FormValue("slot")
 	if slot != "" {
 		req.Imp[0].TagID = slot
 	}
 
-	consent := readConsent(httpRequest.URL)
-	if consent != "" {
-		if policies, ok := privacy.ReadPoliciesFromConsent(consent); ok {
-			if err := policies.Write(req); err != nil {
-				return []error{err}
-			}
-		} else {
-			return []error{&errortypes.InvalidPrivacyConsent{
-				Message: fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF.", consent),
-			}}
-		}
+	policyWriter, policyWriterErr := readPolicyFromUrl(httpRequest.URL)
+	if policyWriterErr != nil {
+		return []error{policyWriterErr}
+	}
+	if err := policyWriter.Write(req); err != nil {
+		return []error{err}
 	}
 
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
@@ -556,11 +557,55 @@ func setAmpExt(site *openrtb.Site, value string) {
 	}
 }
 
-func readConsent(url *url.URL) string {
+func readPolicyFromUrl(url *url.URL) (privacy.PolicyWriter, error) {
+	consent := readConsentFromURL(url)
+
+	if len(consent) == 0 {
+		return privacy.NilPolicyWriter{}, nil
+	}
+
+	if gdpr.ValidateConsent(consent) {
+		return gdpr.ConsentWriter{consent}, nil
+	}
+
+	if ccpa.ValidateConsent(consent) {
+		return ccpa.ConsentWriter{consent}, nil
+	}
+
+	return privacy.NilPolicyWriter{}, &errortypes.InvalidPrivacyConsent{
+		Message: fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF.", consent),
+	}
+}
+
+func readConsentFromURL(url *url.URL) string {
 	if v := url.Query().Get("consent_string"); v != "" {
 		return v
 	}
 
 	// Fallback to 'gdpr_consent' for compatability until it's no longer used by AMP.
 	return url.Query().Get("gdpr_consent")
+}
+
+// Sets the effective publisher ID for amp request
+func setEffectiveAmpPubID(req *openrtb.BidRequest, urlQueryParams url.Values) {
+	var pub *openrtb.Publisher
+	if req.App != nil {
+		if req.App.Publisher == nil {
+			req.App.Publisher = new(openrtb.Publisher)
+		}
+		pub = req.App.Publisher
+	} else if req.Site != nil {
+		if req.Site.Publisher == nil {
+			req.Site.Publisher = new(openrtb.Publisher)
+		}
+		pub = req.Site.Publisher
+	}
+
+	if pub.ID == "" {
+		// For amp requests, the publisher ID could be sent via the account
+		// query string
+		if acc := urlQueryParams.Get("account"); acc != "" && acc != "ACCOUNT_ID" {
+			pub.ID = acc
+		}
+	}
 }

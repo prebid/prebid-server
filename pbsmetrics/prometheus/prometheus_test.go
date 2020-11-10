@@ -1,6 +1,7 @@
 package prometheusmetrics
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -17,7 +18,7 @@ func createMetricsForTesting() *Metrics {
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "server",
-	})
+	}, config.DisabledMetrics{})
 }
 
 func TestMetricCountGatekeeping(t *testing.T) {
@@ -61,7 +62,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Verify Per-Adapter Cardinality
 	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
 	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
-	assert.True(t, perAdapterCardinalityCount <= 22, "Per-Adapter Cardinality")
+	assert.True(t, perAdapterCardinalityCount <= 27, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
 }
 
 func TestConnectionMetrics(t *testing.T) {
@@ -403,6 +404,193 @@ func TestRequestTimeMetric(t *testing.T) {
 
 		result := getHistogramFromHistogramVec(m.requestsTimer, requestTypeLabel, string(requestType))
 		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
+	}
+}
+
+func TestRecordStoredDataFetchTime(t *testing.T) {
+	tests := []struct {
+		description string
+		dataType    pbsmetrics.StoredDataType
+		fetchType   pbsmetrics.StoredDataFetchType
+	}{
+		{
+			description: "Update stored account histogram with all label",
+			dataType:    pbsmetrics.AccountDataType,
+			fetchType:   pbsmetrics.FetchAll,
+		},
+		{
+			description: "Update stored AMP histogram with all label",
+			dataType:    pbsmetrics.AMPDataType,
+			fetchType:   pbsmetrics.FetchAll,
+		},
+		{
+			description: "Update stored category histogram with all label",
+			dataType:    pbsmetrics.CategoryDataType,
+			fetchType:   pbsmetrics.FetchAll,
+		},
+		{
+			description: "Update stored request histogram with all label",
+			dataType:    pbsmetrics.RequestDataType,
+			fetchType:   pbsmetrics.FetchAll,
+		},
+		{
+			description: "Update stored video histogram with all label",
+			dataType:    pbsmetrics.VideoDataType,
+			fetchType:   pbsmetrics.FetchAll,
+		},
+		{
+			description: "Update stored account histogram with delta label",
+			dataType:    pbsmetrics.AccountDataType,
+			fetchType:   pbsmetrics.FetchDelta,
+		},
+		{
+			description: "Update stored AMP histogram with delta label",
+			dataType:    pbsmetrics.AMPDataType,
+			fetchType:   pbsmetrics.FetchDelta,
+		},
+		{
+			description: "Update stored category histogram with delta label",
+			dataType:    pbsmetrics.CategoryDataType,
+			fetchType:   pbsmetrics.FetchDelta,
+		},
+		{
+			description: "Update stored request histogram with delta label",
+			dataType:    pbsmetrics.RequestDataType,
+			fetchType:   pbsmetrics.FetchDelta,
+		},
+		{
+			description: "Update stored video histogram with delta label",
+			dataType:    pbsmetrics.VideoDataType,
+			fetchType:   pbsmetrics.FetchDelta,
+		},
+	}
+
+	for _, tt := range tests {
+		m := createMetricsForTesting()
+
+		fetchTime := time.Duration(0.5 * float64(time.Second))
+		m.RecordStoredDataFetchTime(pbsmetrics.StoredDataLabels{
+			DataType:      tt.dataType,
+			DataFetchType: tt.fetchType,
+		}, fetchTime)
+
+		var metricsTimer *prometheus.HistogramVec
+		switch tt.dataType {
+		case pbsmetrics.AccountDataType:
+			metricsTimer = m.storedAccountFetchTimer
+		case pbsmetrics.AMPDataType:
+			metricsTimer = m.storedAMPFetchTimer
+		case pbsmetrics.CategoryDataType:
+			metricsTimer = m.storedCategoryFetchTimer
+		case pbsmetrics.RequestDataType:
+			metricsTimer = m.storedRequestFetchTimer
+		case pbsmetrics.VideoDataType:
+			metricsTimer = m.storedVideoFetchTimer
+		}
+
+		result := getHistogramFromHistogramVec(
+			metricsTimer,
+			storedDataFetchTypeLabel,
+			string(tt.fetchType))
+		assertHistogram(t, tt.description, result, 1, 0.5)
+	}
+}
+
+func TestRecordStoredDataError(t *testing.T) {
+	tests := []struct {
+		description string
+		dataType    pbsmetrics.StoredDataType
+		errorType   pbsmetrics.StoredDataError
+		metricName  string
+	}{
+		{
+			description: "Update stored_account_errors counter with network label",
+			dataType:    pbsmetrics.AccountDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_account_errors",
+		},
+		{
+			description: "Update stored_amp_errors counter with network label",
+			dataType:    pbsmetrics.AMPDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_amp_errors",
+		},
+		{
+			description: "Update stored_category_errors counter with network label",
+			dataType:    pbsmetrics.CategoryDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_category_errors",
+		},
+		{
+			description: "Update stored_request_errors counter with network label",
+			dataType:    pbsmetrics.RequestDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_request_errors",
+		},
+		{
+			description: "Update stored_video_errors counter with network label",
+			dataType:    pbsmetrics.VideoDataType,
+			errorType:   pbsmetrics.StoredDataErrorNetwork,
+			metricName:  "stored_video_errors",
+		},
+		{
+			description: "Update stored_account_errors counter with undefined label",
+			dataType:    pbsmetrics.AccountDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_account_errors",
+		},
+		{
+			description: "Update stored_amp_errors counter with undefined label",
+			dataType:    pbsmetrics.AMPDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_amp_errors",
+		},
+		{
+			description: "Update stored_category_errors counter with undefined label",
+			dataType:    pbsmetrics.CategoryDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_category_errors",
+		},
+		{
+			description: "Update stored_request_errors counter with undefined label",
+			dataType:    pbsmetrics.RequestDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_request_errors",
+		},
+		{
+			description: "Update stored_video_errors counter with undefined label",
+			dataType:    pbsmetrics.VideoDataType,
+			errorType:   pbsmetrics.StoredDataErrorUndefined,
+			metricName:  "stored_video_errors",
+		},
+	}
+
+	for _, tt := range tests {
+		m := createMetricsForTesting()
+		m.RecordStoredDataError(pbsmetrics.StoredDataLabels{
+			DataType: tt.dataType,
+			Error:    tt.errorType,
+		})
+
+		var metricsCounter *prometheus.CounterVec
+		switch tt.dataType {
+		case pbsmetrics.AccountDataType:
+			metricsCounter = m.storedAccountErrors
+		case pbsmetrics.AMPDataType:
+			metricsCounter = m.storedAMPErrors
+		case pbsmetrics.CategoryDataType:
+			metricsCounter = m.storedCategoryErrors
+		case pbsmetrics.RequestDataType:
+			metricsCounter = m.storedRequestErrors
+		case pbsmetrics.VideoDataType:
+			metricsCounter = m.storedVideoErrors
+		}
+
+		assertCounterVecValue(t, tt.description, tt.metricName, metricsCounter,
+			1,
+			prometheus.Labels{
+				storedDataErrorLabel: string(tt.errorType),
+			})
 	}
 }
 
@@ -825,8 +1013,8 @@ func TestStoredReqCacheResultMetric(t *testing.T) {
 func TestStoredImpCacheResultMetric(t *testing.T) {
 	m := createMetricsForTesting()
 
-	hitCount := 42
-	missCount := 108
+	hitCount := 41
+	missCount := 107
 	m.RecordStoredImpCacheResult(pbsmetrics.CacheHit, hitCount)
 	m.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, missCount)
 
@@ -836,6 +1024,26 @@ func TestStoredImpCacheResultMetric(t *testing.T) {
 			cacheResultLabel: string(pbsmetrics.CacheHit),
 		})
 	assertCounterVecValue(t, "", "storedImpressionsCacheResult:miss", m.storedImpressionsCacheResult,
+		float64(missCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheMiss),
+		})
+}
+
+func TestAccountCacheResultMetric(t *testing.T) {
+	m := createMetricsForTesting()
+
+	hitCount := 37
+	missCount := 92
+	m.RecordAccountCacheResult(pbsmetrics.CacheHit, hitCount)
+	m.RecordAccountCacheResult(pbsmetrics.CacheMiss, missCount)
+
+	assertCounterVecValue(t, "", "accountCacheResult:hit", m.accountCacheResult,
+		float64(hitCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheHit),
+		})
+	assertCounterVecValue(t, "", "accountCacheResult:miss", m.accountCacheResult,
 		float64(missCount),
 		prometheus.Labels{
 			cacheResultLabel: string(pbsmetrics.CacheMiss),
@@ -942,6 +1150,175 @@ func TestTimeoutNotifications(t *testing.T) {
 			successLabel: requestFailed,
 		})
 
+}
+
+func TestRecordDNSTime(t *testing.T) {
+	type testIn struct {
+		dnsLookupDuration time.Duration
+	}
+	type testOut struct {
+		expDuration float64
+		expCount    uint64
+	}
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "Five second DNS lookup time",
+			in: testIn{
+				dnsLookupDuration: time.Second * 5,
+			},
+			out: testOut{
+				expDuration: 5,
+				expCount:    1,
+			},
+		},
+		{
+			description: "Zero DNS lookup time",
+			in:          testIn{},
+			out: testOut{
+				expDuration: 0,
+				expCount:    1,
+			},
+		},
+	}
+	for i, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordDNSTime(test.in.dnsLookupDuration)
+
+		m := dto.Metric{}
+		pm.dnsLookupTimer.Write(&m)
+		histogram := *m.GetHistogram()
+
+		assert.Equal(t, test.out.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
+		assert.Equal(t, test.out.expDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+	}
+}
+
+func TestRecordAdapterConnections(t *testing.T) {
+
+	type testIn struct {
+		adapterName   openrtb_ext.BidderName
+		connWasReused bool
+		connWait      time.Duration
+	}
+
+	type testOut struct {
+		expectedConnReusedCount  int64
+		expectedConnCreatedCount int64
+		expectedConnWaitCount    uint64
+		expectedConnWaitTime     float64
+	}
+
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "[1] Successful, new connection created, was idle, has connection wait",
+			in: testIn{
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: false,
+				connWait:      time.Second * 5,
+			},
+			out: testOut{
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 1,
+				expectedConnWaitCount:    1,
+				expectedConnWaitTime:     5,
+			},
+		},
+		{
+			description: "[2] Successful, new connection created, not idle, has connection wait",
+			in: testIn{
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: false,
+				connWait:      time.Second * 4,
+			},
+			out: testOut{
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 1,
+				expectedConnWaitCount:    1,
+				expectedConnWaitTime:     4,
+			},
+		},
+		{
+			description: "[3] Successful, was reused, was idle, no connection wait",
+			in: testIn{
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: true,
+			},
+			out: testOut{
+				expectedConnReusedCount:  1,
+				expectedConnCreatedCount: 0,
+				expectedConnWaitCount:    1,
+				expectedConnWaitTime:     0,
+			},
+		},
+		{
+			description: "[4] Successful, was reused, not idle, has connection wait",
+			in: testIn{
+				adapterName:   openrtb_ext.BidderAppnexus,
+				connWasReused: true,
+				connWait:      time.Second * 5,
+			},
+			out: testOut{
+				expectedConnReusedCount:  1,
+				expectedConnCreatedCount: 0,
+				expectedConnWaitCount:    1,
+				expectedConnWaitTime:     5,
+			},
+		},
+	}
+
+	for i, test := range testCases {
+		m := createMetricsForTesting()
+		assertDesciptions := []string{
+			fmt.Sprintf("[%d] Metric: adapterReusedConnections; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterCreatedConnections; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterWaitConnectionCount; Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Metric: adapterWaitConnectionTime; Desc: %s", i+1, test.description),
+		}
+
+		m.RecordAdapterConnections(test.in.adapterName, test.in.connWasReused, test.in.connWait)
+
+		// Assert number of reused connections
+		assertCounterVecValue(t,
+			assertDesciptions[0],
+			"adapter_connection_reused",
+			m.adapterReusedConnections,
+			float64(test.out.expectedConnReusedCount),
+			prometheus.Labels{adapterLabel: string(test.in.adapterName)})
+
+		// Assert number of new created connections
+		assertCounterVecValue(t,
+			assertDesciptions[1],
+			"adapter_connection_created",
+			m.adapterCreatedConnections,
+			float64(test.out.expectedConnCreatedCount),
+			prometheus.Labels{adapterLabel: string(test.in.adapterName)})
+
+		// Assert connection wait time
+		histogram := getHistogramFromHistogramVec(m.adapterConnectionWaitTime, adapterLabel, string(test.in.adapterName))
+		assert.Equal(t, test.out.expectedConnWaitCount, histogram.GetSampleCount(), assertDesciptions[2])
+		assert.Equal(t, test.out.expectedConnWaitTime, histogram.GetSampleSum(), assertDesciptions[3])
+	}
+}
+
+func TestDisableAdapterConnections(t *testing.T) {
+	prometheusMetrics := NewMetrics(config.PrometheusMetrics{
+		Port:      8080,
+		Namespace: "prebid",
+		Subsystem: "server",
+	}, config.DisabledMetrics{AdapterConnectionMetrics: true})
+
+	// Assert counter vector was not initialized
+	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
+	assert.Nil(t, prometheusMetrics.adapterCreatedConnections, "Counter Vector adapterCreatedConnections should be nil")
+	assert.Nil(t, prometheusMetrics.adapterConnectionWaitTime, "Counter Vector adapterConnectionWaitTime should be nil")
 }
 
 func TestRecordRequestPrivacy(t *testing.T) {
@@ -1070,6 +1447,8 @@ func getHistogramFromHistogramVecByTwoKeys(histogram *prometheus.HistogramVec, l
 				valInd := ind
 				if ind == 1 {
 					valInd = 0
+				} else {
+					valInd = 1
 				}
 				if m.Label[valInd].GetName() == label2Key && m.Label[valInd].GetValue() == label2Value {
 					result = *m.GetHistogram()

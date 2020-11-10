@@ -28,24 +28,41 @@ type Metrics struct {
 	requestsWithoutCookie        *prometheus.CounterVec
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
+	accountCacheResult           *prometheus.CounterVec
+	storedAccountFetchTimer      *prometheus.HistogramVec
+	storedAccountErrors          *prometheus.CounterVec
+	storedAMPFetchTimer          *prometheus.HistogramVec
+	storedAMPErrors              *prometheus.CounterVec
+	storedCategoryFetchTimer     *prometheus.HistogramVec
+	storedCategoryErrors         *prometheus.CounterVec
+	storedRequestFetchTimer      *prometheus.HistogramVec
+	storedRequestErrors          *prometheus.CounterVec
+	storedVideoFetchTimer        *prometheus.HistogramVec
+	storedVideoErrors            *prometheus.CounterVec
 	timeoutNotifications         *prometheus.CounterVec
+	dnsLookupTimer               prometheus.Histogram
 	privacyCCPA                  *prometheus.CounterVec
 	privacyCOPPA                 *prometheus.CounterVec
 	privacyLMT                   *prometheus.CounterVec
 	privacyTCF                   *prometheus.CounterVec
 
 	// Adapter Metrics
-	adapterBids          *prometheus.CounterVec
-	adapterCookieSync    *prometheus.CounterVec
-	adapterErrors        *prometheus.CounterVec
-	adapterPanics        *prometheus.CounterVec
-	adapterPrices        *prometheus.HistogramVec
-	adapterRequests      *prometheus.CounterVec
-	adapterRequestsTimer *prometheus.HistogramVec
-	adapterUserSync      *prometheus.CounterVec
+	adapterBids               *prometheus.CounterVec
+	adapterCookieSync         *prometheus.CounterVec
+	adapterErrors             *prometheus.CounterVec
+	adapterPanics             *prometheus.CounterVec
+	adapterPrices             *prometheus.HistogramVec
+	adapterRequests           *prometheus.CounterVec
+	adapterRequestsTimer      *prometheus.HistogramVec
+	adapterUserSync           *prometheus.CounterVec
+	adapterReusedConnections  *prometheus.CounterVec
+	adapterCreatedConnections *prometheus.CounterVec
+	adapterConnectionWaitTime *prometheus.HistogramVec
 
 	// Account Metrics
 	accountRequests *prometheus.CounterVec
+
+	metricsDisabled config.DisabledMetrics
 }
 
 const (
@@ -96,15 +113,21 @@ const (
 	sourceRequest = "request"
 )
 
+const (
+	storedDataFetchTypeLabel = "stored_data_fetch_type"
+	storedDataErrorLabel     = "stored_data_error"
+)
+
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
-func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
-	requestTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
+func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMetrics) *Metrics {
+	standardTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
 	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
 	queuedRequestTimeBuckets := []float64{0, 1, 5, 30, 60, 120, 180, 240, 300}
 
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
+	metrics.metricsDisabled = disabledMetrics
 
 	metrics.connectionsClosed = newCounterWithoutLabels(cfg, metrics.Registry,
 		"connections_closed",
@@ -132,7 +155,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"impressions_requests_legacy",
 		"Count of requested impressions to Prebid Server using the legacy endpoint.")
 
-	metrics.prebidCacheWriteTimer = newHistogram(cfg, metrics.Registry,
+	metrics.prebidCacheWriteTimer = newHistogramVec(cfg, metrics.Registry,
 		"prebidcache_write_time_seconds",
 		"Seconds to write to Prebid Cache labeled by success or failure. Failure timing is limited by Prebid Server enforced timeouts.",
 		[]string{successLabel},
@@ -143,11 +166,11 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of total requests to Prebid Server labeled by type and status.",
 		[]string{requestTypeLabel, requestStatusLabel})
 
-	metrics.requestsTimer = newHistogram(cfg, metrics.Registry,
+	metrics.requestsTimer = newHistogramVec(cfg, metrics.Registry,
 		"request_time_seconds",
 		"Seconds to resolve successful Prebid Server requests labeled by type.",
 		[]string{requestTypeLabel},
-		requestTimeBuckets)
+		standardTimeBuckets)
 
 	metrics.requestsWithoutCookie = newCounter(cfg, metrics.Registry,
 		"requests_without_cookie",
@@ -164,10 +187,75 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of stored request cache requests attempts by hits or miss.",
 		[]string{cacheResultLabel})
 
+	metrics.accountCacheResult = newCounter(cfg, metrics.Registry,
+		"account_cache_performance",
+		"Count of account cache lookups by hits or miss.",
+		[]string{cacheResultLabel})
+
+	metrics.storedAccountFetchTimer = newHistogramVec(cfg, metrics.Registry,
+		"stored_account_fetch_time_seconds",
+		"Seconds to fetch stored accounts labeled by fetch type",
+		[]string{storedDataFetchTypeLabel},
+		standardTimeBuckets)
+
+	metrics.storedAccountErrors = newCounter(cfg, metrics.Registry,
+		"stored_account_errors",
+		"Count of stored account errors by error type",
+		[]string{storedDataErrorLabel})
+
+	metrics.storedAMPFetchTimer = newHistogramVec(cfg, metrics.Registry,
+		"stored_amp_fetch_time_seconds",
+		"Seconds to fetch stored AMP requests labeled by fetch type",
+		[]string{storedDataFetchTypeLabel},
+		standardTimeBuckets)
+
+	metrics.storedAMPErrors = newCounter(cfg, metrics.Registry,
+		"stored_amp_errors",
+		"Count of stored AMP errors by error type",
+		[]string{storedDataErrorLabel})
+
+	metrics.storedCategoryFetchTimer = newHistogramVec(cfg, metrics.Registry,
+		"stored_category_fetch_time_seconds",
+		"Seconds to fetch stored categories labeled by fetch type",
+		[]string{storedDataFetchTypeLabel},
+		standardTimeBuckets)
+
+	metrics.storedCategoryErrors = newCounter(cfg, metrics.Registry,
+		"stored_category_errors",
+		"Count of stored category errors by error type",
+		[]string{storedDataErrorLabel})
+
+	metrics.storedRequestFetchTimer = newHistogramVec(cfg, metrics.Registry,
+		"stored_request_fetch_time_seconds",
+		"Seconds to fetch stored requests labeled by fetch type",
+		[]string{storedDataFetchTypeLabel},
+		standardTimeBuckets)
+
+	metrics.storedRequestErrors = newCounter(cfg, metrics.Registry,
+		"stored_request_errors",
+		"Count of stored request errors by error type",
+		[]string{storedDataErrorLabel})
+
+	metrics.storedVideoFetchTimer = newHistogramVec(cfg, metrics.Registry,
+		"stored_video_fetch_time_seconds",
+		"Seconds to fetch stored video labeled by fetch type",
+		[]string{storedDataFetchTypeLabel},
+		standardTimeBuckets)
+
+	metrics.storedVideoErrors = newCounter(cfg, metrics.Registry,
+		"stored_video_errors",
+		"Count of stored video errors by error type",
+		[]string{storedDataErrorLabel})
+
 	metrics.timeoutNotifications = newCounter(cfg, metrics.Registry,
 		"timeout_notification",
 		"Count of timeout notifications triggered, and if they were successfully sent.",
 		[]string{successLabel})
+
+	metrics.dnsLookupTimer = newHistogram(cfg, metrics.Registry,
+		"dns_lookup_time",
+		"Seconds to resolve DNS",
+		standardTimeBuckets)
 
 	metrics.privacyCCPA = newCounter(cfg, metrics.Registry,
 		"privacy_ccpa",
@@ -209,7 +297,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of panics labeled by adapter.",
 		[]string{adapterLabel})
 
-	metrics.adapterPrices = newHistogram(cfg, metrics.Registry,
+	metrics.adapterPrices = newHistogramVec(cfg, metrics.Registry,
 		"adapter_prices",
 		"Monetary value of the bids labeled by adapter.",
 		[]string{adapterLabel},
@@ -220,11 +308,29 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of requests labeled by adapter, if has a cookie, and if it resulted in bids.",
 		[]string{adapterLabel, cookieLabel, hasBidsLabel})
 
-	metrics.adapterRequestsTimer = newHistogram(cfg, metrics.Registry,
+	if !metrics.metricsDisabled.AdapterConnectionMetrics {
+		metrics.adapterCreatedConnections = newCounter(cfg, metrics.Registry,
+			"adapter_connection_created",
+			"Count that keeps track of new connections when contacting adapter bidder endpoints.",
+			[]string{adapterLabel})
+
+		metrics.adapterReusedConnections = newCounter(cfg, metrics.Registry,
+			"adapter_connection_reused",
+			"Count that keeps track of reused connections when contacting adapter bidder endpoints.",
+			[]string{adapterLabel})
+
+		metrics.adapterConnectionWaitTime = newHistogramVec(cfg, metrics.Registry,
+			"adapter_connection_wait",
+			"Seconds from when the connection was requested until it is either created or reused",
+			[]string{adapterLabel},
+			standardTimeBuckets)
+	}
+
+	metrics.adapterRequestsTimer = newHistogramVec(cfg, metrics.Registry,
 		"adapter_request_time_seconds",
 		"Seconds to resolve each successful request labeled by adapter.",
 		[]string{adapterLabel},
-		requestTimeBuckets)
+		standardTimeBuckets)
 
 	metrics.adapterUserSync = newCounter(cfg, metrics.Registry,
 		"adapter_user_sync",
@@ -236,7 +342,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		"Count of total requests to Prebid Server labeled by account.",
 		[]string{accountLabel})
 
-	metrics.requestsQueueTimer = newHistogram(cfg, metrics.Registry,
+	metrics.requestsQueueTimer = newHistogramVec(cfg, metrics.Registry,
 		"request_queue_time",
 		"Seconds request was waiting in queue",
 		[]string{requestTypeLabel, requestStatusLabel},
@@ -271,7 +377,7 @@ func newCounterWithoutLabels(cfg config.PrometheusMetrics, registry *prometheus.
 	return counter
 }
 
-func newHistogram(cfg config.PrometheusMetrics, registry *prometheus.Registry, name, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
+func newHistogramVec(cfg config.PrometheusMetrics, registry *prometheus.Registry, name, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
 	opts := prometheus.HistogramOpts{
 		Namespace: cfg.Namespace,
 		Subsystem: cfg.Subsystem,
@@ -280,6 +386,19 @@ func newHistogram(cfg config.PrometheusMetrics, registry *prometheus.Registry, n
 		Buckets:   buckets,
 	}
 	histogram := prometheus.NewHistogramVec(opts, labels)
+	registry.MustRegister(histogram)
+	return histogram
+}
+
+func newHistogram(cfg config.PrometheusMetrics, registry *prometheus.Registry, name, help string, buckets []float64) prometheus.Histogram {
+	opts := prometheus.HistogramOpts{
+		Namespace: cfg.Namespace,
+		Subsystem: cfg.Subsystem,
+		Name:      name,
+		Help:      help,
+		Buckets:   buckets,
+	}
+	histogram := prometheus.NewHistogram(opts)
 	registry.MustRegister(histogram)
 	return histogram
 }
@@ -344,6 +463,56 @@ func (m *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Durati
 	}
 }
 
+func (m *Metrics) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataLabels, length time.Duration) {
+	switch labels.DataType {
+	case pbsmetrics.AccountDataType:
+		m.storedAccountFetchTimer.With(prometheus.Labels{
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
+		}).Observe(length.Seconds())
+	case pbsmetrics.AMPDataType:
+		m.storedAMPFetchTimer.With(prometheus.Labels{
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
+		}).Observe(length.Seconds())
+	case pbsmetrics.CategoryDataType:
+		m.storedCategoryFetchTimer.With(prometheus.Labels{
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
+		}).Observe(length.Seconds())
+	case pbsmetrics.RequestDataType:
+		m.storedRequestFetchTimer.With(prometheus.Labels{
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
+		}).Observe(length.Seconds())
+	case pbsmetrics.VideoDataType:
+		m.storedVideoFetchTimer.With(prometheus.Labels{
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
+		}).Observe(length.Seconds())
+	}
+}
+
+func (m *Metrics) RecordStoredDataError(labels pbsmetrics.StoredDataLabels) {
+	switch labels.DataType {
+	case pbsmetrics.AccountDataType:
+		m.storedAccountErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	case pbsmetrics.AMPDataType:
+		m.storedAMPErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	case pbsmetrics.CategoryDataType:
+		m.storedCategoryErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	case pbsmetrics.RequestDataType:
+		m.storedRequestErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	case pbsmetrics.VideoDataType:
+		m.storedVideoErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	}
+}
+
 func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	m.adapterRequests.With(prometheus.Labels{
 		adapterLabel: string(labels.Adapter),
@@ -357,6 +526,32 @@ func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 			adapterErrorLabel: string(err),
 		}).Inc()
 	}
+}
+
+// Keeps track of created and reused connections to adapter bidders and the time from the
+// connection request, to the connection creation, or reuse from the pool across all engines
+func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+	if m.metricsDisabled.AdapterConnectionMetrics {
+		return
+	}
+
+	if connWasReused {
+		m.adapterReusedConnections.With(prometheus.Labels{
+			adapterLabel: string(adapterName),
+		}).Inc()
+	} else {
+		m.adapterCreatedConnections.With(prometheus.Labels{
+			adapterLabel: string(adapterName),
+		}).Inc()
+	}
+
+	m.adapterConnectionWaitTime.With(prometheus.Labels{
+		adapterLabel: string(adapterName),
+	}).Observe(connWaitTime.Seconds())
+}
+
+func (m *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
+	m.dnsLookupTimer.Observe(dnsLookupTime.Seconds())
 }
 
 func (m *Metrics) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
@@ -420,6 +615,12 @@ func (m *Metrics) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult,
 
 func (m *Metrics) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
 	m.storedImpressionsCacheResult.With(prometheus.Labels{
+		cacheResultLabel: string(cacheResult),
+	}).Add(float64(inc))
+}
+
+func (m *Metrics) RecordAccountCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	m.accountCacheResult.With(prometheus.Labels{
 		cacheResultLabel: string(cacheResult),
 	}).Add(float64(inc))
 }

@@ -5,6 +5,11 @@ import (
 	"errors"
 )
 
+// FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
+// for first party data support.
+const FirstPartyDataContextExtKey string = "context"
+const MaxDecimalFigures int = 15
+
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
 	Prebid ExtRequestPrebid `json:"prebid"`
@@ -19,6 +24,12 @@ type ExtRequestPrebid struct {
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
+	Debug                bool                      `json:"debug,omitempty"`
+
+	// NoSale specifies bidders with whom the publisher has a legal relationship where the
+	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
+	// The array may contain a single sstar ('*') entry to represent all bidders.
+	NoSale []string `json:"nosale,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains
@@ -66,7 +77,7 @@ func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 	}
 
 	if proxy.Bids == nil && proxy.VastXML == nil {
-		return errors.New(`request.ext.prebid.cache requires one of the "bids" or "vastml" properties`)
+		return errors.New(`request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)
 	}
 
 	*ert = ExtRequestPrebidCache(proxy)
@@ -74,10 +85,14 @@ func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 }
 
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids
-type ExtRequestPrebidCacheBids struct{}
+type ExtRequestPrebidCacheBids struct {
+	ReturnCreative *bool `json:"returnCreative"`
+}
 
 // ExtRequestPrebidCacheVAST defines the contract for bidrequest.ext.prebid.cache.vastxml
-type ExtRequestPrebidCacheVAST struct{}
+type ExtRequestPrebidCacheVAST struct {
+	ReturnCreative *bool `json:"returnCreative"`
+}
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
@@ -85,7 +100,10 @@ type ExtRequestTargeting struct {
 	IncludeWinners       bool                     `json:"includewinners"`
 	IncludeBidderKeys    bool                     `json:"includebidderkeys"`
 	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory"`
+	IncludeFormat        bool                     `json:"includeformat"`
 	DurationRangeSec     []int                    `json:"durationrangesec"`
+	PreferDeals          bool                     `json:"preferdeals"`
+	AppendBidderNames    bool                     `json:"appendbiddernames,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
@@ -163,6 +181,9 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 	if pgraw.Precision < 0 {
 		return errors.New("Price granularity error: precision must be non-negative")
 	}
+	if pgraw.Precision > MaxDecimalFigures {
+		return errors.New("Price granularity error: precision of more than 15 significant figures is not supported")
+	}
 	if len(pgraw.Ranges) > 0 {
 		var prevMax float64 = 0
 		for i, gr := range pgraw.Ranges {
@@ -174,9 +195,6 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 			}
 			// Enforce that we don't read "min" from the request
 			pgraw.Ranges[i].Min = prevMax
-			if pgraw.Ranges[i].Min < prevMax {
-				return errors.New("Price granularity error: overlapping granularity ranges")
-			}
 			prevMax = gr.Max
 		}
 		*pg = PriceGranularity(pgraw)

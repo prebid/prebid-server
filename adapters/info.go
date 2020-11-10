@@ -37,6 +37,7 @@ type InfoAwareBidder struct {
 
 func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
 	var allowedMediaTypes parsedSupports
+
 	if request.Site != nil {
 		if !i.info.site.enabled {
 			return nil, []error{BadInput("this bidder does not support site requests")}
@@ -56,7 +57,14 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *Ext
 	// To avoid allocating new arrays and copying in the normal case, we'll make one pass to
 	// see if any imps need to be removed, and another to do the removing if necessary.
 	numToFilter, errs := i.pruneImps(request.Imp, allowedMediaTypes)
+
+	// If all imps in bid request come with unsupported media types, exit
+	if numToFilter == len(request.Imp) {
+		return nil, append(errs, BadInput("Bid request didn't contain media types supported by the bidder"))
+	}
+
 	if numToFilter != 0 {
+		// Filter out imps with unsupported media types
 		filteredImps, newErrs := i.filterImps(request.Imp, numToFilter)
 		request.Imp = filteredImps
 		errs = append(errs, newErrs...)
@@ -193,10 +201,11 @@ const (
 )
 
 type BidderInfo struct {
-	Status       BidderStatus      `yaml:"status" json:"status"`
-	Maintainer   *MaintainerInfo   `yaml:"maintainer" json:"maintainer"`
-	Capabilities *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
-	AliasOf      string            `json:"aliasOf,omitempty"`
+	Status                  BidderStatus      `yaml:"status" json:"status"`
+	Maintainer              *MaintainerInfo   `yaml:"maintainer" json:"maintainer"`
+	Capabilities            *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
+	AliasOf                 string            `json:"aliasOf,omitempty"`
+	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" json:"-" xml:"-"`
 }
 
 type MaintainerInfo struct {

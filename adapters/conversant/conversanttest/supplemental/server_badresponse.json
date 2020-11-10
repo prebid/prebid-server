@@ -1,0 +1,57 @@
+{
+  "mockBidRequest": {
+    "id": "testauction",
+    "imp": [
+      {
+        "id": "1",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "site_id": "108060"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "www.mypage.com"
+    }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "",
+      "body": {
+        "id": "testauction",
+        "site": {
+          "id": "108060",
+          "domain": "www.mypage.com"
+        },
+        "imp": [
+          {
+            "id": "1",
+            "displaymanager": "prebid-s2s",
+            "displaymanagerver": "2.0.0",
+            "banner": {
+              "format": [{"w": 300, "h": 250}]
+            },
+            "ext": {
+              "bidder": {
+                "site_id": "108060"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+      }
+    }
+  }],
+  "expectedMakeBidsErrors": [{
+    "value": "Empty bid request",
+    "comparison": "literal"
+  }]
+}

@@ -7,17 +7,19 @@ import (
 
 func preloadLabelValues(m *Metrics) {
 	var (
-		actionValues          = actionsAsString()
-		adapterErrorValues    = adapterErrorsAsString()
-		adapterValues         = adaptersAsString()
-		bidTypeValues         = []string{markupDeliveryAdm, markupDeliveryNurl}
-		boolValues            = boolValuesAsString()
-		cacheResultValues     = cacheResultsAsString()
-		connectionErrorValues = []string{connectionAcceptError, connectionCloseError}
-		cookieValues          = cookieTypesAsString()
-		requestStatusValues   = requestStatusesAsString()
-		requestTypeValues     = requestTypesAsString()
-		sourceValues          = []string{sourceRequest}
+		actionValues              = actionsAsString()
+		adapterErrorValues        = adapterErrorsAsString()
+		adapterValues             = adaptersAsString()
+		bidTypeValues             = []string{markupDeliveryAdm, markupDeliveryNurl}
+		boolValues                = boolValuesAsString()
+		cacheResultValues         = cacheResultsAsString()
+		connectionErrorValues     = []string{connectionAcceptError, connectionCloseError}
+		cookieValues              = cookieTypesAsString()
+		requestStatusValues       = requestStatusesAsString()
+		requestTypeValues         = requestTypesAsString()
+		storedDataFetchTypeValues = storedDataFetchTypesAsString()
+		storedDataErrorValues     = storedDataErrorsAsString()
+		sourceValues              = []string{sourceRequest}
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
@@ -44,6 +46,46 @@ func preloadLabelValues(m *Metrics) {
 		requestTypeLabel: requestTypeValues,
 	})
 
+	preloadLabelValuesForHistogram(m.storedAccountFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedAMPFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedCategoryFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedRequestFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
+	preloadLabelValuesForHistogram(m.storedVideoFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedAccountErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedAMPErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedCategoryErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedRequestErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedVideoErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
 	preloadLabelValuesForCounter(m.requestsWithoutCookie, map[string][]string{
 		requestTypeLabel: requestTypeValues,
 	})
@@ -53,6 +95,10 @@ func preloadLabelValues(m *Metrics) {
 	})
 
 	preloadLabelValuesForCounter(m.storedRequestCacheResult, map[string][]string{
+		cacheResultLabel: cacheResultValues,
+	})
+
+	preloadLabelValuesForCounter(m.accountCacheResult, map[string][]string{
 		cacheResultLabel: cacheResultValues,
 	})
 
@@ -84,6 +130,20 @@ func preloadLabelValues(m *Metrics) {
 		cookieLabel:  cookieValues,
 		hasBidsLabel: boolValues,
 	})
+
+	if !m.metricsDisabled.AdapterConnectionMetrics {
+		preloadLabelValuesForCounter(m.adapterCreatedConnections, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+
+		preloadLabelValuesForCounter(m.adapterReusedConnections, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+
+		preloadLabelValuesForHistogram(m.adapterConnectionWaitTime, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+	}
 
 	preloadLabelValuesForHistogram(m.adapterRequestsTimer, map[string][]string{
 		adapterLabel: adapterValues,

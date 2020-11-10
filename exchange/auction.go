@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	uuid "github.com/gofrs/uuid"
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -47,7 +47,53 @@ func (d *DebugLog) BuildCacheString() {
 	d.CacheString = fmt.Sprintf("%s<Log>%s%s%s</Log>", xml.Header, d.Data.Request, d.Data.Headers, d.Data.Response)
 }
 
-func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int) *auction {
+func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, timeout int, errors []error) error {
+	if len(d.Data.Response) == 0 && len(errors) == 0 {
+		d.Data.Response = "No response or errors created"
+	}
+
+	if len(errors) > 0 {
+		errStrings := []string{}
+		for _, err := range errors {
+			errStrings = append(errStrings, err.Error())
+		}
+		d.Data.Response = fmt.Sprintf("%s\nErrors:\n%s", d.Data.Response, strings.Join(errStrings, "\n"))
+	}
+
+	d.BuildCacheString()
+
+	if len(d.CacheKey) == 0 {
+		rawUUID, err := uuid.NewV4()
+		if err != nil {
+			return err
+		}
+		d.CacheKey = rawUUID.String()
+	}
+
+	data, err := json.Marshal(d.CacheString)
+	if err != nil {
+		return err
+	}
+
+	toCache := []prebid_cache_client.Cacheable{
+		{
+			Type:       d.CacheType,
+			Data:       data,
+			TTLSeconds: d.TTL,
+			Key:        "log_" + d.CacheKey,
+		},
+	}
+
+	if cache != nil {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(timeout)*time.Millisecond))
+		defer cancel()
+		cache.PutJson(ctx, toCache)
+	}
+
+	return nil
+}
+
+func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int, preferDeals bool) *auction {
 	winningBids := make(map[string]*pbsOrtbBid, numImps)
 	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid, numImps)
 
@@ -56,7 +102,7 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int
 			for _, bid := range seatBid.bids {
 				cpm := bid.bid.Price
 				wbid, ok := winningBids[bid.bid.ImpID]
-				if !ok || cpm > wbid.bid.Price {
+				if !ok || isNewWinningBid(bid.bid, wbid.bid, preferDeals) {
 					winningBids[bid.bid.ImpID] = bid
 				}
 				if bidMap, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
@@ -78,15 +124,24 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int
 	}
 }
 
+// isNewWinningBid calculates if the new bid (nbid) will win against the current winning bid (wbid) given preferDeals.
+func isNewWinningBid(bid, wbid *openrtb.Bid, preferDeals bool) bool {
+	if preferDeals {
+		if len(wbid.DealID) > 0 && len(bid.DealID) == 0 {
+			return false
+		}
+		if len(wbid.DealID) == 0 && len(bid.DealID) > 0 {
+			return true
+		}
+	}
+	return bid.Price > wbid.Price
+}
+
 func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity) {
 	roundedPrices := make(map[*pbsOrtbBid]string, 5*len(a.winningBids))
 	for _, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
-			roundedPrice, err := GetCpmStringValue(topBidPerBidder.bid.Price, priceGranularity)
-			if err != nil {
-				glog.Errorf(`Error rounding price according to granularity. This shouldn't happen unless /openrtb2 input validation is buggy. Granularity was "%v".`, priceGranularity)
-			}
-			roundedPrices[topBidPerBidder] = roundedPrice
+			roundedPrices[topBidPerBidder] = GetPriceBucket(topBidPerBidder.bid.Price, priceGranularity)
 		}
 	}
 	a.roundedPrices = roundedPrices
@@ -130,7 +185,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 			var customCacheKey string
 			var catDur string
 			useCustomCacheKey := false
-			if competitiveExclusion && isOverallWinner {
+			if competitiveExclusion && isOverallWinner || includeBidderKeys {
 				// set custom cache key for winning bid when competitive exclusion applies
 				catDur = bidCategory[topBidPerBidder.bid.ID]
 				if len(catDur) > 0 {
@@ -179,9 +234,9 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 
-	if debugLog != nil && debugLog.Enabled {
-		debugLog.BuildCacheString()
+	if len(toCache) > 0 && debugLog != nil && debugLog.Enabled {
 		debugLog.CacheKey = hbCacheID
+		debugLog.BuildCacheString()
 		if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
 			toCache = append(toCache, prebid_cache_client.Cacheable{
 				Type:       debugLog.CacheType,

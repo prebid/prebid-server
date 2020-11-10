@@ -112,10 +112,14 @@
                   "h": 250,
                   "w": 300,
                   "dealid":"test deal",
+                  "cat" : ["IAB-1", "IAB-2"], 
                   "ext": {
                     "dspid": 6,
                     "deal_channel": 1,
-                    "BidType": 1
+                    "BidType": 1,
+                    "video" : {
+                      "duration" : 5  
+                    }
                   }
                 }]
               }
@@ -139,6 +143,9 @@
               "adid": "29681110",
               "adm": "some-test-ad",
               "adomain": ["pubmatic.com"],
+              "cat": [
+                "IAB-1"
+              ],
               "crid": "29681110",
               "w": 300,
               "h": 250,
@@ -146,10 +153,16 @@
               "ext": {
                 "dspid": 6,
                 "deal_channel": 1,
-                "BidType": 1
+                "BidType": 1,
+                "video" : {
+                  "duration" : 5  
+                }
               }
             },
-            "type": "video"
+            "type": "video",
+            "video" :{
+              "duration" : 5
+            }
           }
         ]
       }
