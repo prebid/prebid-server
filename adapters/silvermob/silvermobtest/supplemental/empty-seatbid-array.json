@@ -130,10 +130,6 @@
       }
     }
   ],
-    "mockResponse": {
-      "status": 200,
-      "body": "invalid response"
-    },
   "expectedMakeBidsErrors": [
     {
       "value": "Empty SeatBid array",
