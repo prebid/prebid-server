@@ -37,6 +37,7 @@ const (
 	BidderDatablocks       BidderName = "datablocks"
 	BidderEmxDigital       BidderName = "emx_digital"
 	BidderEngageBDR        BidderName = "engagebdr"
+	BidderEngageBDROrtb    BidderName = "engagebdr_ortb"
 	BidderEPlanning        BidderName = "eplanning"
 	BidderFacebook         BidderName = "audienceNetwork"
 	BidderGamma            BidderName = "gamma"
@@ -94,6 +95,7 @@ var BidderMap = map[string]BidderName{
 	"datablocks":        BidderDatablocks,
 	"emx_digital":       BidderEmxDigital,
 	"engagebdr":         BidderEngageBDR,
+	"engagebdr_ortb"     BidderEngageBDROrtb
 	"eplanning":         BidderEPlanning,
 	"audienceNetwork":   BidderFacebook,
 	"gamma":             BidderGamma,
