@@ -6,12 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccountGDPREnabledForRequestType(t *testing.T) {
+func TestAccountGDPREnabledForIntegrationType(t *testing.T) {
 	trueValue, falseValue := true, false
 
 	tests := []struct {
 		description          string
-		giveRequestType      RequestType
+		giveIntegrationType  IntegrationType
 		giveGDPREnabled      *bool
 		giveAMPGDPREnabled   *bool
 		giveAppGDPREnabled   *bool
@@ -20,74 +20,74 @@ func TestAccountGDPREnabledForRequestType(t *testing.T) {
 		wantEnabled          *bool
 	}{
 		{
-			description:        "GDPR AMP integration enabled, general GDPR disabled",
-			giveRequestType:    RequestTypeAMP,
-			giveGDPREnabled:    &falseValue,
-			giveAMPGDPREnabled: &trueValue,
-			wantEnabled:        &trueValue,
+			description:         "GDPR AMP integration enabled, general GDPR disabled",
+			giveIntegrationType: IntegrationTypeAMP,
+			giveGDPREnabled:     &falseValue,
+			giveAMPGDPREnabled:  &trueValue,
+			wantEnabled:         &trueValue,
 		},
 		{
-			description:        "GDPR App integration enabled, general GDPR disabled",
-			giveRequestType:    RequestTypeApp,
-			giveGDPREnabled:    &falseValue,
-			giveAppGDPREnabled: &trueValue,
-			wantEnabled:        &trueValue,
+			description:         "GDPR App integration enabled, general GDPR disabled",
+			giveIntegrationType: IntegrationTypeApp,
+			giveGDPREnabled:     &falseValue,
+			giveAppGDPREnabled:  &trueValue,
+			wantEnabled:         &trueValue,
 		},
 		{
 			description:          "GDPR Video integration enabled, general GDPR disabled",
-			giveRequestType:      RequestTypeVideo,
+			giveIntegrationType:  IntegrationTypeVideo,
 			giveGDPREnabled:      &falseValue,
 			giveVideoGDPREnabled: &trueValue,
 			wantEnabled:          &trueValue,
 		},
 		{
-			description:        "GDPR Web integration enabled, general GDPR disabled",
-			giveRequestType:    RequestTypeWeb,
-			giveGDPREnabled:    &falseValue,
-			giveWebGDPREnabled: &trueValue,
-			wantEnabled:        &trueValue,
+			description:         "GDPR Web integration enabled, general GDPR disabled",
+			giveIntegrationType: IntegrationTypeWeb,
+			giveGDPREnabled:     &falseValue,
+			giveWebGDPREnabled:  &trueValue,
+			wantEnabled:         &trueValue,
 		},
 		{
-			description:        "Web integration enabled, general GDPR unspecified",
-			giveRequestType:    RequestTypeWeb,
-			giveGDPREnabled:    nil,
-			giveWebGDPREnabled: &trueValue,
-			wantEnabled:        &trueValue,
+			description:         "Web integration enabled, general GDPR unspecified",
+			giveIntegrationType: IntegrationTypeWeb,
+			giveGDPREnabled:     nil,
+			giveWebGDPREnabled:  &trueValue,
+			wantEnabled:         &trueValue,
 		},
 		{
-			description:        "GDPR Web integration disabled, general GDPR enabled",
-			giveRequestType:    RequestTypeWeb,
-			giveGDPREnabled:    &trueValue,
-			giveWebGDPREnabled: &falseValue,
-			wantEnabled:        &falseValue,
+			description:         "GDPR Web integration disabled, general GDPR enabled",
+			giveIntegrationType: IntegrationTypeWeb,
+			giveGDPREnabled:     &trueValue,
+			giveWebGDPREnabled:  &falseValue,
+			wantEnabled:         &falseValue,
 		},
 		{
-			description:        "GDPR Web integration disabled, general GDPR unspecified",
-			giveRequestType:    RequestTypeWeb,
-			giveGDPREnabled:    nil,
-			giveWebGDPREnabled: &falseValue,
-			wantEnabled:        &falseValue,
+			description:         "GDPR Web integration disabled, general GDPR unspecified",
+			giveIntegrationType: IntegrationTypeWeb,
+			giveGDPREnabled:     nil,
+			giveWebGDPREnabled:  &falseValue,
+			wantEnabled:         &falseValue,
 		},
 		{
-			description:        "GDPR Web integration unspecified, general GDPR disabled",
-			giveRequestType:    RequestTypeWeb,
-			giveGDPREnabled:    &falseValue,
-			giveWebGDPREnabled: nil,
-			wantEnabled:        &falseValue,
+			description:         "GDPR Web integration unspecified, general GDPR disabled",
+			giveIntegrationType: IntegrationTypeWeb,
+			giveGDPREnabled:     &falseValue,
+			giveWebGDPREnabled:  nil,
+			wantEnabled:         &falseValue,
 		},
 		{
-			description:        "GDPR Web integration unspecified, general GDPR enabled",
-			giveRequestType:    RequestTypeWeb,
-			giveGDPREnabled:    &trueValue,
-			giveWebGDPREnabled: nil,
-			wantEnabled:        &trueValue,
+			description:         "GDPR Web integration unspecified, general GDPR enabled",
+			giveIntegrationType: IntegrationTypeWeb,
+			giveGDPREnabled:     &trueValue,
+			giveWebGDPREnabled:  nil,
+			wantEnabled:         &trueValue,
 		},
 		{
-			description:        "GDPR Web integration unspecified, general GDPR unspecified",
-			giveRequestType:    RequestTypeWeb,
-			giveGDPREnabled:    nil,
-			giveWebGDPREnabled: nil,
-			wantEnabled:        nil,
+			description:         "GDPR Web integration unspecified, general GDPR unspecified",
+			giveIntegrationType: IntegrationTypeWeb,
+			giveGDPREnabled:     nil,
+			giveWebGDPREnabled:  nil,
+			wantEnabled:         nil,
 		},
 	}
 
@@ -104,7 +104,7 @@ func TestAccountGDPREnabledForRequestType(t *testing.T) {
 			},
 		}
 
-		enabled := account.GDPR.EnabledForRequestType(tt.giveRequestType)
+		enabled := account.GDPR.EnabledForIntegrationType(tt.giveIntegrationType)
 
 		if tt.wantEnabled == nil {
 			assert.Nil(t, enabled, tt.description)

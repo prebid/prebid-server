@@ -19,11 +19,11 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 )
 
-var requestTypeMap = map[pbsmetrics.RequestType]config.RequestType{
-	pbsmetrics.ReqTypeAMP:      config.RequestTypeAMP,
-	pbsmetrics.ReqTypeORTB2App: config.RequestTypeApp,
-	pbsmetrics.ReqTypeVideo:    config.RequestTypeVideo,
-	pbsmetrics.ReqTypeORTB2Web: config.RequestTypeWeb,
+var integrationTypeMap = map[pbsmetrics.RequestType]config.IntegrationType{
+	pbsmetrics.ReqTypeAMP:      config.IntegrationTypeAMP,
+	pbsmetrics.ReqTypeORTB2App: config.IntegrationTypeApp,
+	pbsmetrics.ReqTypeVideo:    config.IntegrationTypeVideo,
+	pbsmetrics.ReqTypeORTB2Web: config.IntegrationTypeWeb,
 }
 
 const unknownBidder string = ""
@@ -102,7 +102,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
-	gdprEnabled := gdprEnabled(account, privacyConfig, requestTypeMap[labels.RType])
+	gdprEnabled := gdprEnabled(account, privacyConfig, integrationTypeMap[labels.RType])
 
 	if gdpr == 1 && gdprEnabled {
 		privacyLabels.GDPREnforced = true
@@ -137,8 +137,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	return
 }
 
-func gdprEnabled(account *config.Account, privacyConfig config.Privacy, requestType config.RequestType) bool {
-	if accountEnabled := account.GDPR.EnabledForRequestType(requestType); accountEnabled != nil {
+func gdprEnabled(account *config.Account, privacyConfig config.Privacy, integrationType config.IntegrationType) bool {
+	if accountEnabled := account.GDPR.EnabledForIntegrationType(integrationType); accountEnabled != nil {
 		return *accountEnabled
 	}
 	return privacyConfig.GDPR.Enabled

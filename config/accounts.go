@@ -1,44 +1,44 @@
 package config
 
-// RequestType : Request type enumeration
-type RequestType string
+// IntegrationType : Integration type enumeration
+type IntegrationType string
 
-// The request types
+// The integration types
 const (
-	RequestTypeAMP   RequestType = "AMP"
-	RequestTypeApp   RequestType = "app"
-	RequestTypeVideo RequestType = "video"
-	RequestTypeWeb   RequestType = "web"
+	IntegrationTypeAMP   IntegrationType = "amp"
+	IntegrationTypeApp   IntegrationType = "app"
+	IntegrationTypeVideo IntegrationType = "video"
+	IntegrationTypeWeb   IntegrationType = "web"
 )
 
 // Account represents a publisher account configuration
 type Account struct {
-	ID            string      `mapstructure:"id"             json:"id"`
-	Disabled      bool        `mapstructure:"disabled"       json:"disabled"`
-	CacheTTL      DefaultTTLs `mapstructure:"cache_ttl"      json:"cache_ttl"`
+	ID            string      `mapstructure:"id" json:"id"`
+	Disabled      bool        `mapstructure:"disabled" json:"disabled"`
+	CacheTTL      DefaultTTLs `mapstructure:"cache_ttl" json:"cache_ttl"`
 	EventsEnabled bool        `mapstructure:"events_enabled" json:"events_enabled"`
-	GDPR          AccountGDPR `mapstructure:"gdpr"           json:"gdpr"`
+	GDPR          AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
 }
 
 // AccountGDPR represents account-specific GDPR configuration
 type AccountGDPR struct {
-	Enabled            *bool                  `mapstructure:"enabled"             json:"enabled,omitempty"`
+	Enabled            *bool                  `mapstructure:"enabled" json:"enabled,omitempty"`
 	IntegrationEnabled AccountGDPRIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
 }
 
-// EnabledForRequestType indicates whether GDPR is turned on at the account level for the specified request type
-// by using the request type setting if defined or the general GDPR setting if defined; otherwise it returns nil
-func (a *AccountGDPR) EnabledForRequestType(requestType RequestType) *bool {
+// EnabledForIntegrationType indicates whether GDPR is turned on at the account level for the specified integration type
+// by using the integration type setting if defined or the general GDPR setting if defined; otherwise it returns nil
+func (a *AccountGDPR) EnabledForIntegrationType(integrationType IntegrationType) *bool {
 	var integrationEnabled *bool
 
-	switch requestType {
-	case RequestTypeAMP:
+	switch integrationType {
+	case IntegrationTypeAMP:
 		integrationEnabled = a.IntegrationEnabled.AMP
-	case RequestTypeApp:
+	case IntegrationTypeApp:
 		integrationEnabled = a.IntegrationEnabled.App
-	case RequestTypeVideo:
+	case IntegrationTypeVideo:
 		integrationEnabled = a.IntegrationEnabled.Video
-	case RequestTypeWeb:
+	case IntegrationTypeWeb:
 		integrationEnabled = a.IntegrationEnabled.Web
 	}
 
@@ -52,10 +52,10 @@ func (a *AccountGDPR) EnabledForRequestType(requestType RequestType) *bool {
 	return nil
 }
 
-// AccountGDPRIntegration indicates whether GDPR is enabled for each request type
+// AccountGDPRIntegration indicates whether GDPR is enabled for each integration type
 type AccountGDPRIntegration struct {
-	AMP   *bool `mapstructure:"amp"   json:"amp,omitempty"`
-	App   *bool `mapstructure:"app"   json:"app,omitempty"`
+	AMP   *bool `mapstructure:"amp" json:"amp,omitempty"`
+	App   *bool `mapstructure:"app" json:"app,omitempty"`
 	Video *bool `mapstructure:"video" json:"video,omitempty"`
-	Web   *bool `mapstructure:"web"   json:"web,omitempty"`
+	Web   *bool `mapstructure:"web" json:"web,omitempty"`
 }
