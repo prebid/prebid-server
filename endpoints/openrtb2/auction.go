@@ -782,6 +782,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 
 	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
+	otherExtElements := 0
 	for bidder, ext := range bidderExts {
 		if isBidderToValidate(bidder) {
 			coreBidder := bidder
@@ -800,6 +801,8 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 					return []error{fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)}
 				}
 			}
+		} else {
+			otherExtElements++
 		}
 	}
 
@@ -815,8 +818,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 		imp.Ext = extJSON
 	}
 
-	// TODO #713 Fix this here
-	if len(bidderExts) < 1 {
+	if len(bidderExts)-otherExtElements == 0 {
 		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
 	}
 
