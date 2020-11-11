@@ -168,6 +168,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		Body:    oJson,
 		Headers: headers,
 	}
+
 	reqsBidder = append(reqsBidder, reqBidder)
 	return
 }
@@ -221,21 +222,40 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 }
 
 func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner *openrtb.Banner, video *openrtb.Video, intVal int8) []openrtb.Imp {
+
 	if params.Bidder.TagId != "" {
 		ins = openrtb.Imp{
-			ID:     inst.ID,
-			TagID:  params.Bidder.TagId,
-			Ext:    inst.Ext,
-			Secure: &intVal,
+			ID:                inst.ID,
+			TagID:             params.Bidder.TagId,
+			Ext:               inst.Ext,
+			Secure:            &intVal,
+			BidFloor:          inst.BidFloor,
+			Metric:            inst.Metric,
+			PMP:               inst.PMP,
+			DisplayManager:    inst.DisplayManager,
+			Instl:             inst.Instl,
+			DisplayManagerVer: inst.DisplayManagerVer,
+			ClickBrowser:      inst.ClickBrowser,
+			IframeBuster:      inst.IframeBuster,
+			Exp:               inst.Exp,
 		}
 	}
 
 	if params.Bidder.DmxId != "" {
 		ins = openrtb.Imp{
-			ID:     inst.ID,
-			TagID:  params.Bidder.DmxId,
-			Ext:    inst.Ext,
-			Secure: &intVal,
+			ID:                inst.ID,
+			TagID:             params.Bidder.DmxId,
+			Ext:               inst.Ext,
+			Secure:            &intVal,
+			BidFloor:          inst.BidFloor,
+			Metric:            inst.Metric,
+			PMP:               inst.PMP,
+			DisplayManager:    inst.DisplayManager,
+			Instl:             inst.Instl,
+			DisplayManagerVer: inst.DisplayManagerVer,
+			ClickBrowser:      inst.ClickBrowser,
+			IframeBuster:      inst.IframeBuster,
+			Exp:               inst.Exp,
 		}
 	}
 	if banner != nil {
