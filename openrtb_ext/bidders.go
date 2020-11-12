@@ -95,7 +95,7 @@ var BidderMap = map[string]BidderName{
 	"datablocks":        BidderDatablocks,
 	"emx_digital":       BidderEmxDigital,
 	"engagebdr":         BidderEngageBDR,
-	"engagebdr_ortb"     BidderEngageBDROrtb
+	"engagebdr_ortb":    BidderEngageBDROrtb,
 	"eplanning":         BidderEPlanning,
 	"audienceNetwork":   BidderFacebook,
 	"gamma":             BidderGamma,
