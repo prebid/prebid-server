@@ -222,54 +222,29 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 }
 
 func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner *openrtb.Banner, video *openrtb.Video, intVal int8) []openrtb.Imp {
-
+	var tempimp openrtb.Imp
+	tempimp = inst
 	if params.Bidder.TagId != "" {
-		ins = openrtb.Imp{
-			ID:                inst.ID,
-			TagID:             params.Bidder.TagId,
-			Ext:               inst.Ext,
-			Secure:            &intVal,
-			BidFloor:          inst.BidFloor,
-			Metric:            inst.Metric,
-			PMP:               inst.PMP,
-			DisplayManager:    inst.DisplayManager,
-			Instl:             inst.Instl,
-			DisplayManagerVer: inst.DisplayManagerVer,
-			ClickBrowser:      inst.ClickBrowser,
-			IframeBuster:      inst.IframeBuster,
-			Exp:               inst.Exp,
-		}
+		tempimp.TagID = params.Bidder.TagId
+		tempimp.Secure = &intVal
 	}
 
 	if params.Bidder.DmxId != "" {
-		ins = openrtb.Imp{
-			ID:                inst.ID,
-			TagID:             params.Bidder.DmxId,
-			Ext:               inst.Ext,
-			Secure:            &intVal,
-			BidFloor:          inst.BidFloor,
-			Metric:            inst.Metric,
-			PMP:               inst.PMP,
-			DisplayManager:    inst.DisplayManager,
-			Instl:             inst.Instl,
-			DisplayManagerVer: inst.DisplayManagerVer,
-			ClickBrowser:      inst.ClickBrowser,
-			IframeBuster:      inst.IframeBuster,
-			Exp:               inst.Exp,
-		}
+		tempimp.TagID = params.Bidder.DmxId
+		tempimp.Secure = &intVal
 	}
 	if banner != nil {
-		ins.Banner = banner
+		tempimp.Banner = banner
 	}
 
 	if video != nil {
-		ins.Video = video
+		tempimp.Video = video
 	}
 
-	if ins.TagID == "" {
+	if tempimp.TagID == "" {
 		return imps
 	}
-	imps = append(imps, ins)
+	imps = append(imps, tempimp)
 	return imps
 }
 
