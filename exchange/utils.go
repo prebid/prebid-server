@@ -19,6 +19,13 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 )
 
+var integrationTypeMap = map[pbsmetrics.RequestType]config.IntegrationType{
+	pbsmetrics.ReqTypeAMP:      config.IntegrationTypeAMP,
+	pbsmetrics.ReqTypeORTB2App: config.IntegrationTypeApp,
+	pbsmetrics.ReqTypeVideo:    config.IntegrationTypeVideo,
+	pbsmetrics.ReqTypeORTB2Web: config.IntegrationTypeWeb,
+}
+
 const unknownBidder string = ""
 
 func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
@@ -53,7 +60,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	labels pbsmetrics.Labels,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
-	privacyConfig config.Privacy) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
+	privacyConfig config.Privacy,
+	account *config.Account) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
@@ -94,7 +102,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
-	if gdpr == 1 {
+	gdprEnabled := gdprEnabled(account, privacyConfig, integrationTypeMap[labels.RType])
+
+	if gdpr == 1 && gdprEnabled {
 		privacyLabels.GDPREnforced = true
 		parsedConsent, err := vendorconsent.ParseString(consent)
 		if err == nil {
@@ -109,7 +119,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidder.String())
 
 		// GDPR
-		if gdpr == 1 {
+		if gdpr == 1 && gdprEnabled {
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
 			var publisherID = labels.PubID
@@ -125,6 +135,13 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	return
+}
+
+func gdprEnabled(account *config.Account, privacyConfig config.Privacy, integrationType config.IntegrationType) bool {
+	if accountEnabled := account.GDPR.EnabledForIntegrationType(integrationType); accountEnabled != nil {
+		return *accountEnabled
+	}
+	return privacyConfig.GDPR.Enabled
 }
 
 func extractCCPA(orig *openrtb.BidRequest, privacyConfig config.Privacy, aliases map[string]string) (privacy.PolicyEnforcer, error) {
