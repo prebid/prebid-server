@@ -1,9 +1,9 @@
 package config
 
-// IntegrationType enumerates the types of request integrations
+// IntegrationType enumerates the values of integrations Prebid Server can configure for an account
 type IntegrationType string
 
-// The integration types
+// Possible values of integration types Prebid Server can configure for an account 
 const (
 	IntegrationTypeAMP   IntegrationType = "amp"
 	IntegrationTypeApp   IntegrationType = "app"
