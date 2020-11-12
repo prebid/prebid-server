@@ -1,6 +1,6 @@
 package config
 
-// IntegrationType : Integration type enumeration
+// IntegrationType enumerates the types of request integrations
 type IntegrationType string
 
 // The integration types
