@@ -133,10 +133,21 @@ func TestAdformBasicResponse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Should not have gotten adapter error: %v", err)
 	}
-	if len(bids) != 2 {
-		t.Fatalf("Received %d bids instead of 2", len(bids))
+	if len(bids) != 3 {
+		t.Fatalf("Received %d bids instead of 3", len(bids))
 	}
-	for _, bid := range bids {
+	expectedTypes := []openrtb_ext.BidType{
+		openrtb_ext.BidTypeBanner,
+		openrtb_ext.BidTypeBanner,
+		openrtb_ext.BidTypeVideo,
+	}
+
+	for i, bid := range bids {
+
+		if bid.CreativeMediaType != string(expectedTypes[i]) {
+			t.Errorf("Expected a %s bid. Got: %s", expectedTypes[i], bid.CreativeMediaType)
+		}
+
 		matched := false
 		for _, tag := range adformTestData.tags {
 			if bid.AdUnitCode == tag.code {

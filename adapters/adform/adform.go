@@ -242,7 +242,8 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 	bids := make(pbs.PBSBidSlice, 0)
 
 	for i, bid := range adformBids {
-		if bid.Banner == "" || bid.ResponseType != "banner" {
+		adm, bidType := getAdAndType(bid)
+		if adm == "" {
 			continue
 		}
 		pbsBid := pbs.PBSBid{
@@ -250,12 +251,12 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 			AdUnitCode:        r.adUnits[i].adUnitCode,
 			BidderCode:        r.bidderCode,
 			Price:             bid.Price,
-			Adm:               bid.Banner,
+			Adm:               adm,
 			Width:             bid.Width,
 			Height:            bid.Height,
 			DealId:            bid.DealId,
 			Creative_id:       bid.CreativeId,
-			CreativeMediaType: string(openrtb_ext.BidTypeBanner),
+			CreativeMediaType: string(bidType),
 		}
 
 		bids = append(bids, &pbsBid)
