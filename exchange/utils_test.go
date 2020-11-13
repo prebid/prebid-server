@@ -100,7 +100,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 		reqExt              json.RawMessage
 		ccpaConsent         string
 		ccpaAccountEnabled  *bool
-		enforceCCPA         bool
+		ccpaHostEnabled     bool
 		expectDataScrub     bool
 		expectPrivacyLabels pbsmetrics.PrivacyLabels
 	}{
@@ -108,7 +108,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			description:        "Feature Flags Enabled - Opt Out",
 			ccpaConsent:        "1-Y-",
 			ccpaAccountEnabled: &trueValue,
-			enforceCCPA:        true,
+			ccpaHostEnabled:    true,
 			expectDataScrub:    true,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
@@ -119,7 +119,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			description:        "Feature Flags Enabled - Opt In",
 			ccpaConsent:        "1-N-",
 			ccpaAccountEnabled: &trueValue,
-			enforceCCPA:        true,
+			ccpaHostEnabled:    true,
 			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
@@ -131,7 +131,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			reqExt:             json.RawMessage(`{"prebid":{"nosale":["*"]}}`),
 			ccpaConsent:        "1-Y-",
 			ccpaAccountEnabled: &trueValue,
-			enforceCCPA:        true,
+			ccpaHostEnabled:    true,
 			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
@@ -143,7 +143,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			reqExt:             json.RawMessage(`{"prebid":{"nosale":["appnexus"]}}`),
 			ccpaConsent:        "1-Y-",
 			ccpaAccountEnabled: &trueValue,
-			enforceCCPA:        true,
+			ccpaHostEnabled:    true,
 			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
@@ -155,7 +155,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			reqExt:             json.RawMessage(`{"prebid":{"nosale":["rubicon"]}}`),
 			ccpaConsent:        "1-Y-",
 			ccpaAccountEnabled: &trueValue,
-			enforceCCPA:        true,
+			ccpaHostEnabled:    true,
 			expectDataScrub:    true,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
@@ -166,7 +166,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			description:        "Feature flags Account CCPA enabled, host CCPA disregarded - Opt Out",
 			ccpaConsent:        "1-Y-",
 			ccpaAccountEnabled: &trueValue,
-			enforceCCPA:        false,
+			ccpaHostEnabled:    false,
 			expectDataScrub:    true,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
@@ -177,7 +177,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			description:        "Feature flags Account CCPA disabled, host CCPA disregarded",
 			ccpaConsent:        "1-Y-",
 			ccpaAccountEnabled: &falseValue,
-			enforceCCPA:        true,
+			ccpaHostEnabled:    true,
 			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
@@ -188,7 +188,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			description:        "Feature flags Account CCPA not specified, host CCPA enabled - Opt Out",
 			ccpaConsent:        "1-Y-",
 			ccpaAccountEnabled: nil,
-			enforceCCPA:        true,
+			ccpaHostEnabled:    true,
 			expectDataScrub:    true,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
@@ -199,7 +199,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			description:        "Feature flags Account CCPA not specified, host CCPA disabled",
 			ccpaConsent:        "1-Y-",
 			ccpaAccountEnabled: nil,
-			enforceCCPA:        false,
+			ccpaHostEnabled:    false,
 			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
@@ -217,7 +217,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 
 		privacyConfig := config.Privacy{
 			CCPA: config.CCPA{
-				Enforce: test.enforceCCPA,
+				Enforce: test.ccpaHostEnabled,
 			},
 		}
 
@@ -1026,7 +1026,6 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		gdpr                string
 		gdprConsent         string
 		gdprScrub           bool
-		enforceGDPR         bool
 		expectPrivacyLabels pbsmetrics.PrivacyLabels
 	}{
 		{

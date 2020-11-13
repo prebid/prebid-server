@@ -23,8 +23,8 @@ type Account struct {
 
 // AccountCCPA represents account-specific CCPA configuration
 type AccountCCPA struct {
-	Enabled            *bool                  `json:"enabled,omitempty"`
-	IntegrationEnabled AccountCCPAIntegration `json:"integration_enabled"`
+	Enabled            *bool                  `mapstructure:"enabled" json:"enabled,omitempty"`
+	IntegrationEnabled AccountCCPAIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
 }
 
 // EnabledForIntegrationType indicates whether CCPA is turned on at the account level for the specified integration type
@@ -55,10 +55,10 @@ func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType)
 
 // AccountCCPAIntegration indicates whether CCPA is enabled for each request type
 type AccountCCPAIntegration struct {
-	AMP   *bool `json:"amp,omitempty"`
-	App   *bool `json:"app,omitempty"`
-	Video *bool `json:"video,omitempty"`
-	Web   *bool `json:"web,omitempty"`
+	AMP   *bool `mapstructure:"amp" json:"amp,omitempty"`
+	App   *bool `mapstructure:"app" json:"app,omitempty"`
+	Video *bool `mapstructure:"video" json:"video,omitempty"`
+	Web   *bool `mapstructure:"web" json:"web,omitempty"`
 }
 
 // AccountGDPR represents account-specific GDPR configuration

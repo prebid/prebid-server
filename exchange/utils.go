@@ -83,7 +83,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	consent := extractConsent(orig)
 	ampGDPRException := (labels.RType == pbsmetrics.ReqTypeAMP) && gDPR.AMPException()
 
-	ccpaEnforcer, err := extractCCPA(orig, privacyConfig, account, aliases, requestTypeMap[labels.RType])
+	ccpaEnforcer, err := extractCCPA(orig, privacyConfig, account, aliases, integrationTypeMap[labels.RType])
 	if err != nil {
 		errs = append(errs, err)
 		return
@@ -144,14 +144,14 @@ func gdprEnabled(account *config.Account, privacyConfig config.Privacy, integrat
 	return privacyConfig.GDPR.Enabled
 }
 
-func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestType config.RequestType) bool {
-	if accountEnabled := account.CCPA.EnabledForRequestType(requestType); accountEnabled != nil {
+func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestType config.IntegrationType) bool {
+	if accountEnabled := account.CCPA.EnabledForIntegrationType(requestType); accountEnabled != nil {
 		return *accountEnabled
 	}
 	return privacyConfig.CCPA.Enforce
 }
 
-func extractCCPA(orig *openrtb.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.RequestType) (privacy.PolicyEnforcer, error) {
+func extractCCPA(orig *openrtb.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.IntegrationType) (privacy.PolicyEnforcer, error) {
 	ccpaPolicy, err := ccpa.ReadFromRequest(orig)
 	if err != nil {
 		return privacy.NilPolicyEnforcer{}, err
