@@ -93,18 +93,17 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	ao := analytics.AmpObject{
 		Status: http.StatusOK,
 		Errors: make([]error, 0),
+		// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
+		// to wait for bids. However, tmax may be defined in the Stored Request data.
+		//
+		// If so, then the trip to the backend might use a significant amount of this time.
+		// We can respect timeouts more accurately if we note the *real* start time, and use it
+		// to compute the auction timeout.
+		Timestamp: time.Now(),
 	}
-
-	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
-	// to wait for bids. However, tmax may be defined in the Stored Request data.
-	//
-	// If so, then the trip to the backend might use a significant amount of this time.
-	// We can respect timeouts more accurately if we note the *real* start time, and use it
-	// to compute the auction timeout.
 
 	// Set this as an AMP request in Metrics.
 
-	start := time.Now()
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandWeb,
 		RType:         pbsmetrics.ReqTypeAMP,
@@ -115,7 +114,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(ao.Timestamp))
 		deps.analytics.LogAmpObject(&ao)
 	}()
 
@@ -149,9 +148,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	ctx := context.Background()
 	var cancel context.CancelFunc
 	if req.TMax > 0 {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
+		ctx, cancel = context.WithDeadline(ctx, ao.Timestamp.Add(time.Duration(req.TMax)*time.Millisecond))
 	} else {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultAmpRequestTimeoutMillis)*time.Millisecond))
+		ctx, cancel = context.WithDeadline(ctx, ao.Timestamp.Add(time.Duration(defaultAmpRequestTimeoutMillis)*time.Millisecond))
 	}
 	defer cancel()
 
@@ -185,7 +184,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, account, &deps.categories, nil)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, account, &deps.categories, ao.Timestamp, nil)
 	ao.AuctionResponse = response
 
 	if err != nil {
