@@ -1,6 +1,6 @@
 {
-    "assume_gdpr_applies": false,
-    "gdpr_enabled": true,
+    "assume_gdpr_applies": true,
+    "gdpr_enabled": false,
     "incomingRequest": {
         "ortbRequest": {
             "id": "some-request-id",
@@ -46,6 +46,7 @@
                         }
                     }],
                     "user": {
+                        "buyeruid": "some-buyer-id",
                         "geo": {
                             "country": "FRA"
                         }
