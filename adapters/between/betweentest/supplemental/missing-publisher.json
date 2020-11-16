@@ -15,7 +15,7 @@
         "ext": {
           "bidder": {
             "sourceId": 123,
-            "publisher_id": "0"
+            "host": "test.com"
           }
         }
       }
@@ -31,7 +31,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Failed to build endpoint URL: required BetweenSSP parameter \"host\" is missing",
+      "value": "Failed to build endpoint URL: required BetweenSSP parameter \"publisher_id\" is missing",
       "comparison": "literal"
     }
   ]
