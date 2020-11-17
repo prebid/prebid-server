@@ -1,0 +1,24 @@
+name: Validate Merge
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  validate-merge:
+    runs-on: ubuntu-18.04
+    
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.14.2
+
+    - name: Checkout Merged Branch
+      uses: actions/checkout@v2
+
+    - name: Validate
+      run: |
+        ./validate.sh --nofmt
+      env:
+        GO111MODULE: "on"
