@@ -1,7 +1,0 @@
-maintainer:
-  email: "pubtech@na.com"
-capabilities:
-  site:
-    mediaTypes:
-    - banner
-    - video
