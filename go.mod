@@ -5,6 +5,8 @@ go 1.12
 // Magic comment that determines which Go version Heroku uses.
 // +heroku goVersion go1.12
 
+replace github.com/prebid-server/adapters/playwire_ortb => ./adapters/playwire_ortb/
+
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/DATA-DOG/go-sqlmock v1.3.0
@@ -35,6 +37,7 @@ require (
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
+	github.com/prebid-server/adapters/playwire_ortb v0.0.0-00010101000000-000000000000
 	github.com/prebid/go-gdpr v0.6.0
 	github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed
 	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
