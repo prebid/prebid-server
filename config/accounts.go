@@ -23,8 +23,8 @@ type Account struct {
 
 // AccountCCPA represents account-specific CCPA configuration
 type AccountCCPA struct {
-	Enabled            *bool                  `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountCCPAIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
+	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
 }
 
 // EnabledForIntegrationType indicates whether CCPA is turned on at the account level for the specified integration type
@@ -53,18 +53,10 @@ func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType)
 	return nil
 }
 
-// AccountCCPAIntegration indicates whether CCPA is enabled for each request type
-type AccountCCPAIntegration struct {
-	AMP   *bool `mapstructure:"amp" json:"amp,omitempty"`
-	App   *bool `mapstructure:"app" json:"app,omitempty"`
-	Video *bool `mapstructure:"video" json:"video,omitempty"`
-	Web   *bool `mapstructure:"web" json:"web,omitempty"`
-}
-
 // AccountGDPR represents account-specific GDPR configuration
 type AccountGDPR struct {
-	Enabled            *bool                  `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountGDPRIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
+	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
 }
 
 // EnabledForIntegrationType indicates whether GDPR is turned on at the account level for the specified integration type
@@ -93,8 +85,8 @@ func (a *AccountGDPR) EnabledForIntegrationType(integrationType IntegrationType)
 	return nil
 }
 
-// AccountGDPRIntegration indicates whether GDPR is enabled for each integration type
-type AccountGDPRIntegration struct {
+// AccountIntegration indicates whether a particular privacy policy (GDPR, CCPA) is enabled for each integration type
+type AccountIntegration struct {
 	AMP   *bool `mapstructure:"amp" json:"amp,omitempty"`
 	App   *bool `mapstructure:"app" json:"app,omitempty"`
 	Video *bool `mapstructure:"video" json:"video,omitempty"`

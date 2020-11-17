@@ -95,7 +95,7 @@ func TestAccountGDPREnabledForIntegrationType(t *testing.T) {
 		account := Account{
 			GDPR: AccountGDPR{
 				Enabled: tt.giveGDPREnabled,
-				IntegrationEnabled: AccountGDPRIntegration{
+				IntegrationEnabled: AccountIntegration{
 					AMP:   tt.giveAMPGDPREnabled,
 					App:   tt.giveAppGDPREnabled,
 					Video: tt.giveVideoGDPREnabled,
@@ -204,7 +204,7 @@ func TestAccountCCPAEnabledForIntegrationType(t *testing.T) {
 		account := Account{
 			CCPA: AccountCCPA{
 				Enabled: tt.giveCCPAEnabled,
-				IntegrationEnabled: AccountCCPAIntegration{
+				IntegrationEnabled: AccountIntegration{
 					AMP:   tt.giveAMPCCPAEnabled,
 					App:   tt.giveAppCCPAEnabled,
 					Video: tt.giveVideoCCPAEnabled,
