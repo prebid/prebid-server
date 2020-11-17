@@ -184,10 +184,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	auctionRequest := exchange.AuctionRequest{
-		BidRequest:  req,
-		Account:     *account,
-		UserSyncs:   usersyncs,
-		RequestType: labels.RType,
+		BidRequest:   req,
+		Account:      *account,
+		UserSyncs:    usersyncs,
+		RequestType:  labels.RType,
+		LegacyLabels: labels,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

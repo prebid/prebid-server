@@ -102,6 +102,10 @@ type AuctionRequest struct {
 	Account     config.Account
 	UserSyncs   IdFetcher
 	RequestType pbsmetrics.RequestType
+
+	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
+	// in HoldAuction until we get to factoring it away. Do not use for anything new.
+	LegacyLabels pbsmetrics.Labels
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb.BidResponse, error) {
@@ -130,9 +134,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	usersyncIfAmbiguous := e.parseUsersyncIfAmbiguous(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	labels := buildLabels(r)
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, r.BidRequest, requestExt, r.UserSyncs, blabels, labels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig, &r.Account)
+	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, r.BidRequest, requestExt, r.UserSyncs, blabels, r.LegacyLabels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig, &r.Account)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -211,31 +214,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, errs)
-}
-
-func buildLabels(r AuctionRequest) pbsmetrics.Labels {
-	labels := pbsmetrics.Labels{
-		RType:         r.RequestType,
-		PubID:         r.Account.ID,
-		Browser:       pbsmetrics.BrowserOther, // Should we just remove this entirely? we don't have an 'unknown' option.
-		RequestStatus: pbsmetrics.RequestStatusOK,
-	}
-
-	if r.BidRequest.App != nil {
-		labels.Source = pbsmetrics.DemandApp
-	} else if r.BidRequest.Site != nil {
-		labels.Source = pbsmetrics.DemandWeb
-	} else {
-		labels.Source = pbsmetrics.DemandUnknown
-	}
-
-	if r.UserSyncs.LiveSyncCount() == 0 {
-		labels.CookieFlag = pbsmetrics.CookieFlagNo
-	} else {
-		labels.CookieFlag = pbsmetrics.CookieFlagYes
-	}
-
-	return labels
 }
 
 func (e *exchange) parseUsersyncIfAmbiguous(bidRequest *openrtb.BidRequest) bool {

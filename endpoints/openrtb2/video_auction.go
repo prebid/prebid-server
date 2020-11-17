@@ -262,10 +262,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	auctionRequest := exchange.AuctionRequest{
-		BidRequest:  bidReq,
-		Account:     *account,
-		UserSyncs:   usersyncs,
-		RequestType: labels.RType,
+		BidRequest:   bidReq,
+		Account:      *account,
+		UserSyncs:    usersyncs,
+		RequestType:  labels.RType,
+		LegacyLabels: labels,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
