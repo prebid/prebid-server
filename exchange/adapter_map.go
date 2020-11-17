@@ -61,7 +61,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"https://github.com/intergi/prebid-server/tree/develop/adapters/playwire_ortb"
+	"prebid-server/adapters/playwire_ortb"
 )
 
 // The newAdapterMap function is segregated to its own file to make it a simple and clean location for each Adapter
