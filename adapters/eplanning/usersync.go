@@ -8,5 +8,5 @@ import (
 )
 
 func NewEPlanningSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("eplanning", 0, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("eplanning", 90, temp, adapters.SyncTypeIframe)
 }

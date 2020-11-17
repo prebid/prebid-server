@@ -1,7 +1,6 @@
 {
   "description": "This uses Appnexus to fetch the prebid sample ad, as seen on prebid.org.",
-
-  "requestPayload": {
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "prebid.org"
@@ -29,5 +28,23 @@
       }
     ],
     "tmax": 500
-  }
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "",
+            "price": 0
+          }
+        ],
+        "seat": "appnexus-bids"
+      }
+    ],
+    "bidid": "test bid id",
+    "nbr": 0
+  },
+  "expectedReturnCode": 200
 }
