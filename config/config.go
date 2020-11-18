@@ -391,6 +391,8 @@ type Adapter struct {
 		EndpointUSWest string `mapstructure:"endpoint_us_west"`
 		EndpointEU     string `mapstructure:"endpoint_eu"`
 		EndpointAPAC   string `mapstructure:"endpoint_apac"`
+		EndpointJP     string `mapstructure:"endpoint_jp"`
+		EndpointSG     string `mapstructure:"endpoint_sg"`
 	} `mapstructure:"xapi"` // needed for Rubicon
 	Disabled         bool   `mapstructure:"disabled"`
 	ExtraAdapterInfo string `mapstructure:"extra_info"`
@@ -996,6 +998,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.synacormedia.endpoint", "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}")
 	v.SetDefault("adapters.tappx.endpoint", "https://{{.Host}}")
+	v.SetDefault("adapters.taurusx.disabled", true)
+	v.SetDefault("adapters.taurusx.endpoint", "https://tapjoy.rtb.rtblab.net/tapjoy/bid")
 	v.SetDefault("adapters.telaria.endpoint", "https://ads.tremorhub.com/ad/rtb/prebid")
 	v.SetDefault("adapters.triplelift_native.disabled", true)
 	v.SetDefault("adapters.triplelift_native.extra_info", "{\"publisher_whitelist\":[]}")
@@ -1116,6 +1120,8 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_us_west", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_eu", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_apac", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_jp", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_sg", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
 	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".extra_info", "")

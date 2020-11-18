@@ -79,30 +79,36 @@ data:
   PBS_MONITORING_NEWRELIC_LOG_LEVEL: "error" # // values: https://github.com/sirupsen/logrus/blob/39a5ad12948d094ddd5d5a6a4a4281f453d77562/logrus.go#L25
 
   # crossinstall values
-  PBS_ADAPTERS_CROSSINSTALL_DISABLED: "false"
+  PBS_ADAPTERS_CROSSINSTALL_DISABLED:              "false"
   PBS_ADAPTERS_CROSSINSTALL_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/crossinstall_givemeads"
   PBS_ADAPTERS_CROSSINSTALL_XAPI_ENDPOINT_US_WEST: "http://localhost:4646/crossinstall_givemeads"
 
   # liftoff values
-  PBS_ADAPTERS_LIFTOFF_DISABLED: "false"
+  PBS_ADAPTERS_LIFTOFF_DISABLED:              "false"
   PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/givemeads"
-  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_EU: "http://localhost:4646/givemeads"
-  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_APAC: "http://localhost:4646/givemeads"
+  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_EU:      "http://localhost:4646/givemeads"
+  PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_APAC:    "http://localhost:4646/givemeads"
 
   # moloco values
-  PBS_ADAPTERS_MOLOCO_DISABLED: "false"
+  PBS_ADAPTERS_MOLOCO_DISABLED:              "false"
   PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/moloco_givemeads"
-  PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_EU: "http://localhost:4646/moloco_givemeads"
-  PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_APAC: "http://localhost:4646/moloco_givemeads"
+  PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_EU:      "http://localhost:4646/moloco_givemeads"
+  PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_APAC:    "http://localhost:4646/moloco_givemeads"
 
   # rubicon values
-  PBS_ADAPTERS_RUBICON_DISABLED:                "false"
-  PBS_ADAPTERS_RUBICON_XAPI_USERNAME:           "username"
-  PBS_ADAPTERS_RUBICON_XAPI_PASSWORD:           "password"
-  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_EAST:   "http://localhost:4646/a/api/exchange.json"
-  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_WEST:   "http://localhost:4646/a/api/exchange.json"
-  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_EU:   "http://localhost:4646/a/api/exchange.json"
-  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_APAC:   "http://localhost:4646/a/api/exchange.json"
+  PBS_ADAPTERS_RUBICON_DISABLED:              "false"
+  PBS_ADAPTERS_RUBICON_XAPI_USERNAME:         "username"
+  PBS_ADAPTERS_RUBICON_XAPI_PASSWORD:         "password"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/a/api/exchange.json"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_WEST: "http://localhost:4646/a/api/exchange.json"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_EU:      "http://localhost:4646/a/api/exchange.json"
+  PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_APAC:    "http://localhost:4646/a/api/exchange.json"
+
+  # taurusx values
+  PBS_ADAPTERS_TAURUSX_DISABLED:              "false"
+  PBS_ADAPTERS_TAURUSX_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/taurusx_givemeads"
+  PBS_ADAPTERS_TAURUSX_XAPI_ENDPOINT_JP:      "http://localhost:4646/taurusx_givemeads"
+  PBS_ADAPTERS_TAURUSX_XAPI_ENDPOINT_SG:      "http://localhost:4646/taurusx_givemeads"
 ---
 ########################################################################################################################
 ## WORKLOAD-RELATED MANIFESTS
