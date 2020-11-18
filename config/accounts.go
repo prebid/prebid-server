@@ -33,11 +33,7 @@ func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType)
 	if integrationEnabled := a.IntegrationEnabled.GetByIntegrationType(integrationType); integrationEnabled != nil {
 		return integrationEnabled
 	}
-	if a.Enabled != nil {
-		return a.Enabled
-	}
-
-	return nil
+	return a.Enabled
 }
 
 // AccountGDPR represents account-specific GDPR configuration
@@ -53,11 +49,7 @@ func (a *AccountGDPR) EnabledForIntegrationType(integrationType IntegrationType)
 	if integrationEnabled := a.IntegrationEnabled.GetByIntegrationType(integrationType); integrationEnabled != nil {
 		return integrationEnabled
 	}
-	if a.Enabled != nil {
-		return a.Enabled
-	}
-
-	return nil
+	return a.Enabled
 }
 
 // AccountIntegration indicates whether a particular privacy policy (GDPR, CCPA) is enabled for each integration type
