@@ -1161,14 +1161,12 @@ func TestValidateImpExt(t *testing.T) {
 					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555}}`),
 					expectedImpExt: `{"unknownbidder":{"placement_id":555}}`,
 					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-					// request.imp[x].ext.{biddername} gets promoted/copied to request.ext.{biddername} even if unknown. We expect a fatal error though.
 				},
 				{
 					description:    "Unknown Prebid Ext Bidder only",
-					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555}}`),
-					expectedImpExt: `{"unknownbidder":{"placement_id":555}}`,
+					impExt:         json.RawMessage(`{"prebid":{"bidder":{"unknownbidder":{"placement_id":555}}}}`),
+					expectedImpExt: `{"prebid":{"bidder":{"unknownbidder":{"placement_id":555}}}}`,
 					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-					// request.imp[x].ext.prebid.bidder.{biddername} gets promoted/copied to request.ext.{biddername} even if unknown. We expect a fatal error though.
 				},
 				{
 					description:    "Unknown Prebid Ext Bidder + First Party Data Context",
@@ -1187,14 +1185,12 @@ func TestValidateImpExt(t *testing.T) {
 					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555},"disabledbidder":{"foo":"bar"}}`),
 					expectedImpExt: `{"unknownbidder":{"placement_id":555},"disabledbidder":{"foo":"bar"}}`,
 					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-					// request.imp[x].ext.{biddername} gets promoted/copied to request.ext.{biddername} even if it is disabled
 				},
 				{
 					description:    "Unknown Bidder + Disabled Prebid Ext Bidder",
 					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555},"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`),
 					expectedImpExt: `{"unknownbidder":{"placement_id":555},"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`,
 					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-					// request.imp[x].ext.prebid.bidder.{biddername} gets promoted/copied to request.ext.{biddername} even if it is disabled
 				},
 			},
 		},
