@@ -43,6 +43,7 @@ const (
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
 	BidderAJA              BidderName = "aja"
+	BidderAMX              BidderName = "amx"
 	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
 	BidderAdoppler         BidderName = "adoppler"
@@ -92,6 +93,7 @@ const (
 	BidderRTBHouse         BidderName = "rtbhouse"
 	BidderRubicon          BidderName = "rubicon"
 	BidderSharethrough     BidderName = "sharethrough"
+	BidderSilverMob        BidderName = "silvermob"
 	BidderSmaato           BidderName = "smaato"
 	BidderSmartadserver    BidderName = "smartadserver"
 	BidderSmartRTB         BidderName = "smartrtb"
@@ -136,6 +138,7 @@ var BidderMap = map[string]BidderName{
 	"adtelligent":       BidderAdtelligent,
 	"advangelists":      BidderAdvangelists,
 	"aja":               BidderAJA,
+	"amx":               BidderAMX,
 	"applogy":           BidderApplogy,
 	"appnexus":          BidderAppnexus,
 	"adoppler":          BidderAdoppler,
@@ -185,6 +188,7 @@ var BidderMap = map[string]BidderName{
 	"rtbhouse":          BidderRTBHouse,
 	"rubicon":           BidderRubicon,
 	"sharethrough":      BidderSharethrough,
+	"silvermob":         BidderSilverMob,
 	"smaato":            BidderSmaato,
 	"smartadserver":     BidderSmartadserver,
 	"smartrtb":          BidderSmartRTB,

@@ -79,6 +79,7 @@ type adformBid struct {
 	Height       uint64  `json:"height,omitempty"`
 	DealId       string  `json:"deal_id,omitempty"`
 	CreativeId   string  `json:"win_crid,omitempty"`
+	VastContent  string  `json:"vast_content,omitempty"`
 }
 
 const priceTypeGross = "gross"
@@ -241,7 +242,8 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 	bids := make(pbs.PBSBidSlice, 0)
 
 	for i, bid := range adformBids {
-		if bid.Banner == "" || bid.ResponseType != "banner" {
+		adm, bidType := getAdAndType(bid)
+		if adm == "" {
 			continue
 		}
 		pbsBid := pbs.PBSBid{
@@ -249,12 +251,12 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 			AdUnitCode:        r.adUnits[i].adUnitCode,
 			BidderCode:        r.bidderCode,
 			Price:             bid.Price,
-			Adm:               bid.Banner,
+			Adm:               adm,
 			Width:             bid.Width,
 			Height:            bid.Height,
 			DealId:            bid.DealId,
 			Creative_id:       bid.CreativeId,
-			CreativeMediaType: string(openrtb_ext.BidTypeBanner),
+			CreativeMediaType: string(bidType),
 		}
 
 		bids = append(bids, &pbsBid)
@@ -632,25 +634,36 @@ func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapt
 	}
 
 	for i, bid := range adformBids {
-		if bid.Banner == "" || bid.ResponseType != "banner" {
+		adm, bidType := getAdAndType(bid)
+		if adm == "" {
 			continue
 		}
+
 		openRtbBid := openrtb.Bid{
 			ID:     r.Imp[i].ID,
 			ImpID:  r.Imp[i].ID,
 			Price:  bid.Price,
-			AdM:    bid.Banner,
+			AdM:    adm,
 			W:      bid.Width,
 			H:      bid.Height,
 			DealID: bid.DealId,
 			CrID:   bid.CreativeId,
 		}
 
-		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: openrtb_ext.BidTypeBanner})
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: bidType})
 		currency = bid.Currency
 	}
 
 	bidResponse.Currency = currency
 
 	return bidResponse
+}
+
+func getAdAndType(bid *adformBid) (string, openrtb_ext.BidType) {
+	if bid.ResponseType == "banner" {
+		return bid.Banner, openrtb_ext.BidTypeBanner
+	} else if bid.ResponseType == "vast_content" {
+		return bid.VastContent, openrtb_ext.BidTypeVideo
+	}
+	return "", ""
 }

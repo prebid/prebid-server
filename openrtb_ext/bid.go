@@ -12,11 +12,15 @@ type ExtBid struct {
 }
 
 // ExtBidPrebid defines the contract for bidresponse.seatbid.bid[i].ext.prebid
+// DealPriority represents priority of deal bid. If its non deal bid then value will be 0
+// DealTierSatisfied true represents corresponding bid has satisfied the deal tier
 type ExtBidPrebid struct {
-	Cache     *ExtBidPrebidCache `json:"cache,omitempty"`
-	Targeting map[string]string  `json:"targeting,omitempty"`
-	Type      BidType            `json:"type"`
-	Video     *ExtBidPrebidVideo `json:"video,omitempty"`
+	Cache             *ExtBidPrebidCache `json:"cache,omitempty"`
+	Targeting         map[string]string  `json:"targeting,omitempty"`
+	Type              BidType            `json:"type"`
+	Video             *ExtBidPrebidVideo `json:"video,omitempty"`
+	DealPriority      int                `json:"dealpriority,omitempty"`
+	DealTierSatisfied bool               `json:"dealtiersatisfied,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
