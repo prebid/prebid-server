@@ -41,13 +41,14 @@ type extCacheInstructions struct {
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error)
+	HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb.BidResponse, error)
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
 type IdFetcher interface {
 	// GetId returns the ID for the bidder. The boolean will be true if the ID exists, and false otherwise.
 	GetId(bidder openrtb_ext.BidderName) (string, bool)
+	LiveSyncCount() int
 }
 
 type exchange struct {
@@ -59,6 +60,7 @@ type exchange struct {
 	currencyConverter   *currencies.RateConverter
 	UsersyncIfAmbiguous bool
 	privacyConfig       config.Privacy
+	categoriesFetcher   stored_requests.CategoryFetcher
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -76,7 +78,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg, infos, metricsEngine)
@@ -91,13 +93,24 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 		GDPR: cfg.GDPR,
 		LMT:  cfg.LMT,
 	}
+	e.categoriesFetcher = categoriesFetcher
 	return e
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *DebugLog) (*openrtb.BidResponse, error) {
+type AuctionRequest struct {
+	BidRequest  *openrtb.BidRequest
+	Account     config.Account
+	UserSyncs   IdFetcher
+	RequestType pbsmetrics.RequestType
 
+	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
+	// in HoldAuction until we get to factoring it away. Do not use for anything new.
+	LegacyLabels pbsmetrics.Labels
+}
+
+func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb.BidResponse, error) {
 	var err error
-	requestExt, err := extractBidRequestExt(bidRequest)
+	requestExt, err := extractBidRequestExt(r.BidRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -108,21 +121,21 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
 
-	debugInfo := getDebugInfo(bidRequest, requestExt)
+	debugInfo := getDebugInfo(r.BidRequest, requestExt)
 	if debugInfo {
 		ctx = e.makeDebugContext(ctx, debugInfo)
 	}
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExt)
 
-	recordImpMetrics(bidRequest, e.me)
+	recordImpMetrics(r.BidRequest, e.me)
 
 	// Make our best guess if GDPR applies
-	usersyncIfAmbiguous := e.parseUsersyncIfAmbiguous(bidRequest)
+	usersyncIfAmbiguous := e.parseUsersyncIfAmbiguous(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, bidRequest, requestExt, usersyncs, blabels, labels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig, account)
+	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, r.BidRequest, requestExt, r.UserSyncs, blabels, r.LegacyLabels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig, &r.Account)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -147,7 +160,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
 			var rejections []string
-			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
+			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, requestExt, adapterBids, e.categoriesFetcher, targData)
 			if err != nil {
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 			}
@@ -158,24 +171,24 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		if targData != nil {
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
-			auc = newAuction(adapterBids, len(bidRequest.Imp), targData.preferDeals)
+			auc = newAuction(adapterBids, len(r.BidRequest.Imp), targData.preferDeals)
 			auc.setRoundedPrices(targData.priceGranularity)
 
 			if requestExt.Prebid.SupportDeals {
-				dealErrs := applyDealSupport(bidRequest, auc, bidCategory)
+				dealErrs := applyDealSupport(r.BidRequest, auc, bidCategory)
 				errs = append(errs, dealErrs...)
 			}
 
-			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &account.CacheTTL, bidCategory, debugLog)
+			cacheErrs := auc.doCache(ctx, e.cache, targData, r.BidRequest, 60, &r.Account.CacheTTL, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}
-			targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
+			targData.setTargeting(auc, r.BidRequest.App != nil, bidCategory)
 
 		}
 	}
 
-	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, debugInfo, errs)
+	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, r.BidRequest, debugInfo, errs)
 
 	// Ensure caching errors are added in case auc.doCache was called and errors were returned
 	if len(cacheErrs) > 0 {
@@ -200,7 +213,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// Build the response
-	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, errs)
+	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, errs)
 }
 
 func (e *exchange) parseUsersyncIfAmbiguous(bidRequest *openrtb.BidRequest) bool {
