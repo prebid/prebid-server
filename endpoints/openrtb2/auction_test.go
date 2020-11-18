@@ -1257,7 +1257,6 @@ func TestValidateImpExt(t *testing.T) {
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`),
 					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`,
 					expectedErrs:   []error{},
-					// request.imp[x].ext.prebid.bidder.{biddername} is only promoted/copied to request.ext.{biddername} if there is at least one disabled bidder.
 				},
 				{
 					description:    "Valid Bidder + First Party Data Context",
@@ -1270,14 +1269,12 @@ func TestValidateImpExt(t *testing.T) {
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555}}} ,"context":{"data":{"keywords":"prebid server example"}}}`),
 					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs:   []error{},
-					// request.imp[x].ext.prebid.bidder.{biddername} is only promoted/copied to request.ext.{biddername} if there is at least one disabled bidder.
 				},
 				{
 					description:    "Valid Bidder + Unknown Bidder",
 					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"unknownbidder":{"placement_id":555}}`),
 					expectedImpExt: `{"appnexus":{"placement_id":555},"unknownbidder":{"placement_id":555}}`,
 					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-					// request.imp[x].ext.{biddername} gets promoted/copied to request.ext.{biddername} even if unknown. We expect a fatal error though.
 				},
 				{
 					description:    "Valid Bidder + Disabled Bidder",
@@ -1302,21 +1299,18 @@ func TestValidateImpExt(t *testing.T) {
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"}}}}`),
 					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555},"disabledbidder":{"foo":"bar"}}},"appnexus":{"placement_id":555}}`,
 					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
-					// request.imp[x].ext.prebid.bidder.{biddername} disabled bidders are not removed. If there is a disabled bidder, it gets promoted/copied to request.ext.prebid.bidder.{biddername}.
 				},
 				{
 					description:    "Valid Prebid Ext Bidder + Disabled Ext Bidder + First Party Data Context",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"}}},"context":{"data":{"keywords":"prebid server example"}}}`),
 					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555},"disabledbidder":{"foo":"bar"}}},"appnexus":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
-					// request.imp[x].ext.prebid.bidder.{biddername} disabled bidders are not removed. If there is a disabled bidder, the valid ones are promoted/copied to request.ext.prebid.bidder.{biddername}.
 				},
 				{
 					description:    "Valid Prebid Ext Bidder + Disabled Ext Bidder + Unknown Ext + First Party Data Context",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`),
 					expectedImpExt: `{"context":{"data":{"keywords":"prebid server example"}},"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555}}}}`,
 					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-					// request.imp[x].ext.prebid.bidder.{biddername} disabled/unknown bidders are not removed, if there are any, they gets promoted/copied to request.ext.prebid.bidder.{biddername}.
 				},
 			},
 		},
