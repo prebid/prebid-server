@@ -222,14 +222,14 @@ func TestAllowPersonalInfo(t *testing.T) {
 			allowPI:     false,
 		},
 		{
-			description: "PI allowed according to host settings - default vendor with empty consent",
+			description: "PI allowed according to host setting UserSyncIfAmbiguous - default vendor with empty consent",
 			bidderName:  openrtb_ext.BidderRubicon,
 			gdpr:        YesGDPR,
 			consent:     "",
 			allowPI:     true,
 		},
 		{
-			description: "PI allowed according to host settings - known vendor with ambiguous GDPR and empty consent",
+			description: "PI allowed according to host setting UserSyncIfAmbiguous - known vendor with ambiguous GDPR and empty consent",
 			bidderName:  openrtb_ext.BidderPubmatic,
 			gdpr:        AmbiguousGDPR,
 			consent:     "",
