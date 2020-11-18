@@ -118,11 +118,13 @@ func cleanOpenRTBRequests(ctx context.Context,
 		if gdprEnforced {
 			var publisherID = req.LegacyLabels.PubID
 			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, bidderRequest.BidderCoreName, publisherID, gdprSignal, consent)
-			privacyEnforcement.GDPRGeo = !geo && err == nil
-			privacyEnforcement.GDPRID = !id && err == nil
-		} else {
-			privacyEnforcement.GDPRGeo = false
-			privacyEnforcement.GDPRID = false
+			if err == nil {
+				privacyEnforcement.GDPRGeo = !geo
+				privacyEnforcement.GDPRID = !id
+			} else {
+				privacyEnforcement.GDPRGeo = true
+				privacyEnforcement.GDPRID = true
+			}
 		}
 
 		privacyEnforcement.Apply(bidderRequest.BidRequest)
