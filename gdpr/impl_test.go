@@ -177,6 +177,73 @@ func TestMalformedConsent(t *testing.T) {
 }
 
 func TestAllowPersonalInfo(t *testing.T) {
+	tests := []struct {
+		description string
+		bidderName  openrtb_ext.BidderName
+		publisherID string
+		gdpr        GDPRState
+		consent     string
+		allowPI     bool
+	}{
+		{
+			description: "Allow PI - Non standard publisher",
+			bidderName:  openrtb_ext.BidderAppnexus,
+			publisherID: "appNexusAppID",
+			gdpr:        YesGDPR,
+			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
+			allowPI:     true,
+		},
+		{
+			description: "Don't allow PI - No GDPR",
+			bidderName:  openrtb_ext.BidderPubmatic,
+			gdpr:        NoGDPR,
+			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
+			allowPI:     false,
+		},
+		{
+			description: "Don't allow PI - known vendor without TCF1 purposes",
+			bidderName:  openrtb_ext.BidderAppnexus,
+			gdpr:        YesGDPR,
+			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
+			allowPI:     false,
+		},
+		{
+			description: "Allow PI - Known vendor with TCF1 purposes",
+			bidderName:  openrtb_ext.BidderPubmatic,
+			gdpr:        YesGDPR,
+			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
+			allowPI:     true,
+		},
+		{
+			description: "Don't allow PI - default vendor with non-empty consent",
+			bidderName:  openrtb_ext.BidderRubicon,
+			gdpr:        YesGDPR,
+			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
+			allowPI:     false,
+		},
+		{
+			description: "PI allowed according to host settings - default vendor with empty consent",
+			bidderName:  openrtb_ext.BidderRubicon,
+			gdpr:        YesGDPR,
+			consent:     "",
+			allowPI:     true,
+		},
+		{
+			description: "PI allowed according to host settings - known vendor with ambiguous GDPR and empty consent",
+			bidderName:  openrtb_ext.BidderPubmatic,
+			gdpr:        AmbiguousGDPR,
+			consent:     "",
+			allowPI:     true,
+		},
+		{
+			description: "Don't allow PI - known vendor with Yes GDPR and empty consent",
+			bidderName:  openrtb_ext.BidderPubmatic,
+			gdpr:        YesGDPR,
+			consent:     "",
+			allowPI:     false,
+		},
+	}
+
 	vendorListData := tcf1MarshalVendorList(tcf1VendorList{
 		VendorListVersion: 1,
 		Vendors: []tcf1Vendor{
@@ -186,7 +253,9 @@ func TestAllowPersonalInfo(t *testing.T) {
 	})
 	perms := permissionsImpl{
 		cfg: config.GDPR{
-			HostVendorID: 2,
+			HostVendorID:            2,
+			UsersyncIfAmbiguous:     true,
+			NonStandardPublisherMap: map[string]struct{}{"appNexusAppID": {}},
 		},
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus: 2,
@@ -202,20 +271,12 @@ func TestAllowPersonalInfo(t *testing.T) {
 		},
 	}
 
-	// PI needs both purposes to succeed
-	allowPI, _, _, err := perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "", YesGDPR, "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
-	assertNilErr(t, err)
-	assertBoolsEqual(t, false, allowPI)
+	for _, tt := range tests {
+		allowPI, _, _, err := perms.PersonalInfoAllowed(context.Background(), tt.bidderName, tt.publisherID, tt.gdpr, tt.consent)
 
-	allowPI, _, _, err = perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderPubmatic, "", YesGDPR, "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
-	assertNilErr(t, err)
-	assertBoolsEqual(t, true, allowPI)
-
-	// Assert that an item that otherwise would not be allowed PI access, gets approved because it is found in the GDPR.NonStandardPublishers array
-	perms.cfg.NonStandardPublisherMap = map[string]struct{}{"appNexusAppID": {}}
-	allowPI, _, _, err = perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "appNexusAppID", YesGDPR, "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
-	assertNilErr(t, err)
-	assertBoolsEqual(t, true, allowPI)
+		assert.Nil(t, err, tt.description)
+		assert.Equal(t, tt.allowPI, allowPI, tt.description)
+	}
 }
 
 func buildTCF2VendorList34() tcf2VendorList {
