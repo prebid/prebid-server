@@ -12,12 +12,21 @@ import (
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	// "github.com/prebid/prebid-server/exchange"
 )
 
 // This file implements GDPR permissions for the app.
 // For more info, see https://github.com/prebid/prebid-server/issues/501
 //
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
+
+type GDPRState int
+
+const (
+	AmbiguousGDPR GDPRState = -1
+	NoGDPR        GDPRState = 0
+	YesGDPR       GDPRState = 1
+)
 
 type permissionsImpl struct {
 	cfg             config.GDPR
@@ -42,21 +51,26 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
-	_, ok := p.cfg.NonStandardPublisherMap[PublisherID]
-	if ok {
+func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr GDPRState, consent string) (allowPI bool, allowGeo bool, allowID bool, err error) {
+	if _, ok := p.cfg.NonStandardPublisherMap[PublisherID]; ok {
 		return true, true, true, nil
 	}
 
-	id, ok := p.vendorIDs[bidder]
-	if ok {
-		return p.allowPI(ctx, id, consent)
+	if gdpr == NoGDPR {
+		return false, false, false, nil
 	}
 
+	if id, ok := p.vendorIDs[bidder]; ok {
+		return p.allowPI(ctx, id, gdpr, consent)
+	}
+
+	return p.defaultVendorPermissions(consent)
+}
+
+func (p *permissionsImpl) defaultVendorPermissions(consent string) (allowPI bool, allowGeo bool, allowID bool, err error) {
 	if consent == "" {
 		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
 	}
-
 	return false, false, false, nil
 }
 
@@ -98,10 +112,12 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 	return false, nil
 }
 
-func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent string) (bool, bool, bool, error) {
-	// If we're not given a consent string, respect the preferences in the app config.
-	if consent == "" {
+func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, gdpr GDPRState, consent string) (bool, bool, bool, error) {
+	if consent == "" && gdpr == AmbiguousGDPR {
 		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
+	}
+	if consent == "" && gdpr == YesGDPR {
+		return false, false, false, nil
 	}
 
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
@@ -221,7 +237,7 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 	return true, nil
 }
 
-func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr GDPRState, consent string) (bool, bool, bool, error) {
 	return true, true, true, nil
 }
 
@@ -240,7 +256,7 @@ func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 	return false, nil
 }
 
-func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr GDPRState, consent string) (bool, bool, bool, error) {
 	return false, false, false, nil
 }
 

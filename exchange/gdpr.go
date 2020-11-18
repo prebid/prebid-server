@@ -4,23 +4,20 @@ import (
 	"encoding/json"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/gdpr"
 )
 
 // ExtractGDPR will pull the gdpr flag from an openrtb request
-func extractGDPR(bidRequest *openrtb.BidRequest, usersyncIfAmbiguous bool) (gdpr int) {
+func extractGDPR(bidRequest *openrtb.BidRequest) (subjectToGDPR gdpr.GDPRState) {
 	var re regsExt
 	var err error
 	if bidRequest.Regs != nil {
 		err = json.Unmarshal(bidRequest.Regs.Ext, &re)
 	}
 	if re.GDPR == nil || err != nil {
-		if usersyncIfAmbiguous {
-			gdpr = 0
-		} else {
-			gdpr = 1
-		}
+		subjectToGDPR = gdpr.AmbiguousGDPR
 	} else {
-		gdpr = *re.GDPR
+		subjectToGDPR = gdpr.GDPRState(*re.GDPR)
 	}
 	return
 }

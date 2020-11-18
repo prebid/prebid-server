@@ -79,8 +79,10 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
+	//TODO(bfs): if an error is encountered while extracing GDPR or Consent, should user syncing be considered ambiguous or don't sync?
+	subjectToGDPR := extractGDPR(orig)
 	consent := extractConsent(orig)
+	gdprEnforced := subjectToGDPR == gdpr.YesGDPR || (subjectToGDPR == gdpr.AmbiguousGDPR && !usersyncIfAmbiguous)
 	ampGDPRException := (labels.RType == pbsmetrics.ReqTypeAMP) && gDPR.AMPException()
 
 	ccpaEnforcer, err := extractCCPA(orig, privacyConfig, account, aliases, integrationTypeMap[labels.RType])
@@ -104,7 +106,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	gdprEnabled := gdprEnabled(account, privacyConfig, integrationTypeMap[labels.RType])
 
-	if gdpr == 1 && gdprEnabled {
+	if gdprEnforced && gdprEnabled {
 		privacyLabels.GDPREnforced = true
 		parsedConsent, err := vendorconsent.ParseString(consent)
 		if err == nil {
@@ -119,11 +121,11 @@ func cleanOpenRTBRequests(ctx context.Context,
 		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidder.String())
 
 		// GDPR
-		if gdpr == 1 && gdprEnabled {
+		if gdprEnforced && gdprEnabled {
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
 			var publisherID = labels.PubID
-			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent)
+			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, subjectToGDPR, consent)
 			privacyEnforcement.GDPRGeo = !geo && err == nil
 			privacyEnforcement.GDPRID = !id && err == nil
 		} else {
