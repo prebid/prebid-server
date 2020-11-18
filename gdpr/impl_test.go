@@ -194,11 +194,11 @@ func TestAllowPersonalInfo(t *testing.T) {
 			allowPI:     true,
 		},
 		{
-			description: "Don't allow PI - No GDPR",
+			description: "Allow PI - No GDPR",
 			bidderName:  openrtb_ext.BidderPubmatic,
 			gdpr:        NoGDPR,
 			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
-			allowPI:     false,
+			allowPI:     true,
 		},
 		{
 			description: "Don't allow PI - known vendor without TCF1 purposes",

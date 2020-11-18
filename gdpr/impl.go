@@ -57,7 +57,7 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 	}
 
 	if gdpr == NoGDPR {
-		return false, false, false, nil
+		return true, true, true, nil
 	}
 
 	if id, ok := p.vendorIDs[bidder]; ok {
