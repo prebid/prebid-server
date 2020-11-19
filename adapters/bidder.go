@@ -53,19 +53,6 @@ type TimeoutBidder interface {
 	MakeTimeoutNotification(req *RequestData) (*RequestData, []error)
 }
 
-type MisconfiguredBidder struct {
-	Name  openrtb_ext.BidderName
-	Error error
-}
-
-func (this *MisconfiguredBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
-	return nil, []error{this.Error}
-}
-
-func (this *MisconfiguredBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
-	return nil, []error{this.Error}
-}
-
 func BadInput(msg string) *errortypes.BadInput {
 	return &errortypes.BadInput{
 		Message: msg,
