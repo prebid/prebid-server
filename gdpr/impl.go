@@ -64,11 +64,11 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 		return p.allowPI(ctx, id, gdpr, consent)
 	}
 
-	return p.defaultVendorPermissions(consent)
+	return p.defaultVendorPermissions(gdpr, consent)
 }
 
-func (p *permissionsImpl) defaultVendorPermissions(consent string) (allowPI bool, allowGeo bool, allowID bool, err error) {
-	if consent == "" {
+func (p *permissionsImpl) defaultVendorPermissions(gdpr GDPRState, consent string) (allowPI bool, allowGeo bool, allowID bool, err error) {
+	if consent == "" && gdpr == AmbiguousGDPR {
 		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
 	}
 	return false, false, false, nil
