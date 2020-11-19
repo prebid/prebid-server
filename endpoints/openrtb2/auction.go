@@ -97,17 +97,18 @@ type endpointDeps struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
+	// to wait for bids. However, tmax may be defined in the Stored Request data.
+	//
+	// If so, then the trip to the backend might use a significant amount of this time.
+	// We can respect timeouts more accurately if we note the *real* start time, and use it
+	// to compute the auction timeout.
+	start := time.Now()
 
 	ao := analytics.AuctionObject{
-		Status: http.StatusOK,
-		Errors: make([]error, 0),
-		// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
-		// to wait for bids. However, tmax may be defined in the Stored Request data.
-		//
-		// If so, then the trip to the backend might use a significant amount of this time.
-		// We can respect timeouts more accurately if we note the *real* start time, and use it
-		// to compute the auction timeout.
-		StartTime: time.Now(),
+		Status:    http.StatusOK,
+		Errors:    make([]error, 0),
+		StartTime: start,
 	}
 
 	labels := pbsmetrics.Labels{
@@ -120,7 +121,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(ao.StartTime))
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
@@ -135,7 +136,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, ao.StartTime.Add(timeout))
+		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 		defer cancel()
 	}
 
@@ -167,7 +168,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Account:      *account,
 		UserSyncs:    usersyncs,
 		RequestType:  labels.RType,
-		StartTime:    ao.StartTime,
+		StartTime:    start,
 		LegacyLabels: labels,
 	}
 
