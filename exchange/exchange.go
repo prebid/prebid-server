@@ -102,7 +102,7 @@ type AuctionRequest struct {
 	Account     config.Account
 	UserSyncs   IdFetcher
 	RequestType pbsmetrics.RequestType
-	Timestamp   *time.Time
+	StartTime   time.Time
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -728,10 +728,10 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 			ResolvedRequest: req,
 		}
 	}
-	if r.Timestamp != nil {
+	if !r.StartTime.IsZero() {
 		// auctiontimestamp is the only response.ext.prebid attribute we may emit
 		bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{
-			AuctionTimestamp: r.Timestamp.UnixNano() / 1e+6,
+			AuctionTimestamp: r.StartTime.UnixNano() / 1e+6,
 		}
 	}
 

@@ -167,7 +167,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Account:      *account,
 		UserSyncs:    usersyncs,
 		RequestType:  labels.RType,
-		Timestamp:    &ao.Timestamp,
+		StartTime:    ao.Timestamp,
 		LegacyLabels: labels,
 	}
 

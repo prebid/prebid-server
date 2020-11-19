@@ -187,7 +187,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Account:      *account,
 		UserSyncs:    usersyncs,
 		RequestType:  labels.RType,
-		Timestamp:    &ao.Timestamp,
+		StartTime:    ao.Timestamp,
 		LegacyLabels: labels,
 	}
 

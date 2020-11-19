@@ -266,7 +266,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		Account:      *account,
 		UserSyncs:    usersyncs,
 		RequestType:  labels.RType,
-		Timestamp:    &vo.Timestamp,
+		StartTime:    vo.Timestamp,
 		LegacyLabels: labels,
 	}
 
