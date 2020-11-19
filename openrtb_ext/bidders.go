@@ -28,6 +28,7 @@ const BidderNameContext = BidderName("context")
 // The bidder name 'general' is not allowed since it has special meaning in message maps.
 const (
 	Bidder33Across         BidderName = "33across"
+	BidderAcuityAds        BidderName = "acuityads"
 	BidderAdform           BidderName = "adform"
 	BidderAdgeneration     BidderName = "adgeneration"
 	BidderAdhese           BidderName = "adhese"
@@ -42,6 +43,7 @@ const (
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
 	BidderAJA              BidderName = "aja"
+	BidderAMX              BidderName = "amx"
 	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
 	BidderAdoppler         BidderName = "adoppler"
@@ -82,6 +84,7 @@ const (
 	BidderMobileFuse       BidderName = "mobilefuse"
 	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderNinthDecimal     BidderName = "ninthdecimal"
+	BidderNoBid            BidderName = "nobid"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
 	BidderPubmatic         BidderName = "pubmatic"
@@ -91,6 +94,7 @@ const (
 	BidderRTBHouse         BidderName = "rtbhouse"
 	BidderRubicon          BidderName = "rubicon"
 	BidderSharethrough     BidderName = "sharethrough"
+	BidderSilverMob        BidderName = "silvermob"
 	BidderSmaato           BidderName = "smaato"
 	BidderSmartadserver    BidderName = "smartadserver"
 	BidderSmartRTB         BidderName = "smartrtb"
@@ -120,6 +124,7 @@ const (
 // The bidder name 'general' is not allowed since it has special meaning in message maps.
 var BidderMap = map[string]BidderName{
 	"33across":          Bidder33Across,
+	"acuityads":         BidderAcuityAds,
 	"adform":            BidderAdform,
 	"adgeneration":      BidderAdgeneration,
 	"adhese":            BidderAdhese,
@@ -134,6 +139,7 @@ var BidderMap = map[string]BidderName{
 	"adtelligent":       BidderAdtelligent,
 	"advangelists":      BidderAdvangelists,
 	"aja":               BidderAJA,
+	"amx":               BidderAMX,
 	"applogy":           BidderApplogy,
 	"appnexus":          BidderAppnexus,
 	"adoppler":          BidderAdoppler,
@@ -174,6 +180,7 @@ var BidderMap = map[string]BidderName{
 	"mobilefuse":        BidderMobileFuse,
 	"nanointeractive":   BidderNanoInteractive,
 	"ninthdecimal":      BidderNinthDecimal,
+	"nobid":             BidderNoBid,
 	"openx":             BidderOpenx,
 	"orbidder":          BidderOrbidder,
 	"pubmatic":          BidderPubmatic,
@@ -183,6 +190,7 @@ var BidderMap = map[string]BidderName{
 	"rtbhouse":          BidderRTBHouse,
 	"rubicon":           BidderRubicon,
 	"sharethrough":      BidderSharethrough,
+	"silvermob":         BidderSilverMob,
 	"smaato":            BidderSmaato,
 	"smartadserver":     BidderSmartadserver,
 	"smartrtb":          BidderSmartRTB,

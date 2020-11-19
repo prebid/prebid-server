@@ -15,6 +15,7 @@ func TestNewSyncerMap(t *testing.T) {
 	cfg := &config.Configuration{
 		Adapters: map[string]config.Adapter{
 			string(openrtb_ext.Bidder33Across):         syncConfig,
+			string(openrtb_ext.BidderAcuityAds):        syncConfig,
 			string(openrtb_ext.BidderAdform):           syncConfig,
 			string(openrtb_ext.BidderAdkernel):         syncConfig,
 			string(openrtb_ext.BidderAdkernelAdn):      syncConfig,
@@ -26,6 +27,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderAdtelligent):      syncConfig,
 			string(openrtb_ext.BidderAdvangelists):     syncConfig,
 			string(openrtb_ext.BidderAJA):              syncConfig,
+			string(openrtb_ext.BidderAMX):              syncConfig,
 			string(openrtb_ext.BidderAppnexus):         syncConfig,
 			string(openrtb_ext.BidderAvocet):           syncConfig,
 			string(openrtb_ext.BidderBeachfront):       syncConfig,
@@ -59,6 +61,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderMgid):             syncConfig,
 			string(openrtb_ext.BidderNanoInteractive):  syncConfig,
 			string(openrtb_ext.BidderNinthDecimal):     syncConfig,
+			string(openrtb_ext.BidderNoBid):            syncConfig,
 			string(openrtb_ext.BidderOpenx):            syncConfig,
 			string(openrtb_ext.BidderPubmatic):         syncConfig,
 			string(openrtb_ext.BidderPulsepoint):       syncConfig,
@@ -100,6 +103,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderMobileFuse:   true,
 		openrtb_ext.BidderOrbidder:     true,
 		openrtb_ext.BidderPubnative:    true,
+		openrtb_ext.BidderSilverMob:    true,
 		openrtb_ext.BidderSmaato:       true,
 		openrtb_ext.BidderTappx:        true,
 		openrtb_ext.BidderYeahmobi:     true,

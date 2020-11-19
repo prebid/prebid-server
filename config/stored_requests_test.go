@@ -1,9 +1,12 @@
 package config
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const sampleQueryTemplate = "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in %IMP_ID_LIST%"
@@ -75,43 +78,185 @@ func TestPostgressConnString(t *testing.T) {
 	assertHasValue(t, params, "sslmode", "disable")
 }
 
-func TestInMemoryCacheValidation(t *testing.T) {
+func TestInMemoryCacheValidationStoredRequests(t *testing.T) {
 	assertNoErrs(t, (&InMemoryCache{
 		Type: "unbounded",
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertNoErrs(t, (&InMemoryCache{
 		Type: "none",
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertNoErrs(t, (&InMemoryCache{
 		Type:             "lru",
 		RequestCacheSize: 1000,
 		ImpCacheSize:     1000,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type: "unrecognized",
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:         "unbounded",
 		ImpCacheSize: 1000,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:             "unbounded",
 		RequestCacheSize: 1000,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type: "unbounded",
 		TTL:  500,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:             "lru",
 		RequestCacheSize: 0,
 		ImpCacheSize:     1000,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:             "lru",
 		RequestCacheSize: 1000,
 		ImpCacheSize:     0,
-	}).validate("Test", nil))
+	}).validate(RequestDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "lru",
+		Size: 1000,
+	}).validate(RequestDataType, nil))
+}
+
+func TestInMemoryCacheValidationSingleCache(t *testing.T) {
+	assertNoErrs(t, (&InMemoryCache{
+		Type: "unbounded",
+	}).validate(AccountDataType, nil))
+	assertNoErrs(t, (&InMemoryCache{
+		Type: "none",
+	}).validate(AccountDataType, nil))
+	assertNoErrs(t, (&InMemoryCache{
+		Type: "lru",
+		Size: 1000,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "unrecognized",
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "unbounded",
+		Size: 1000,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "unbounded",
+		TTL:  500,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "lru",
+		Size: 0,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:             "lru",
+		RequestCacheSize: 1000,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:         "lru",
+		ImpCacheSize: 1000,
+	}).validate(AccountDataType, nil))
+}
+
+func TestPostgresConfigValidation(t *testing.T) {
+	tests := []struct {
+		description            string
+		connectionStr          string
+		cacheInitQuery         string
+		cacheInitTimeout       int
+		cacheUpdateQuery       string
+		cacheUpdateRefreshRate int
+		cacheUpdateTimeout     int
+		existingErrors         []error
+		wantErrorCount         int
+	}{
+		{
+			description:   "No connection string",
+			connectionStr: "",
+		},
+		{
+			description:   "Connection string but no queries",
+			connectionStr: "some-connection-string",
+		},
+		{
+			description:      "Valid cache init query with non-zero timeout",
+			connectionStr:    "some-connection-string",
+			cacheInitQuery:   "SELECT * FROM table;",
+			cacheInitTimeout: 1,
+		},
+		{
+			description:      "Valid cache init query with zero timeout",
+			connectionStr:    "some-connection-string",
+			cacheInitQuery:   "SELECT * FROM table;",
+			cacheInitTimeout: 0,
+			wantErrorCount:   1,
+		},
+		{
+			description:      "Invalid cache init query contains wildcard",
+			connectionStr:    "some-connection-string",
+			cacheInitQuery:   "SELECT * FROM table WHERE $1",
+			cacheInitTimeout: 1,
+			wantErrorCount:   1,
+		},
+		{
+			description:            "Valid cache update query with non-zero timeout and refresh rate",
+			connectionStr:          "some-connection-string",
+			cacheUpdateQuery:       "SELECT * FROM table WHERE $1",
+			cacheUpdateRefreshRate: 1,
+			cacheUpdateTimeout:     1,
+		},
+		{
+			description:            "Valid cache update query with zero timeout and non-zero refresh rate",
+			connectionStr:          "some-connection-string",
+			cacheUpdateQuery:       "SELECT * FROM table WHERE $1",
+			cacheUpdateRefreshRate: 1,
+			cacheUpdateTimeout:     0,
+			wantErrorCount:         1,
+		},
+		{
+			description:            "Valid cache update query with non-zero timeout and zero refresh rate",
+			connectionStr:          "some-connection-string",
+			cacheUpdateQuery:       "SELECT * FROM table WHERE $1",
+			cacheUpdateRefreshRate: 0,
+			cacheUpdateTimeout:     1,
+			wantErrorCount:         1,
+		},
+		{
+			description:            "Invalid cache update query missing wildcard",
+			connectionStr:          "some-connection-string",
+			cacheUpdateQuery:       "SELECT * FROM table",
+			cacheUpdateRefreshRate: 1,
+			cacheUpdateTimeout:     1,
+			wantErrorCount:         1,
+		},
+		{
+			description:      "Multiple errors: valid queries missing timeouts and refresh rates plus existing error",
+			connectionStr:    "some-connection-string",
+			cacheInitQuery:   "SELECT * FROM table;",
+			cacheUpdateQuery: "SELECT * FROM table WHERE $1",
+			existingErrors:   []error{errors.New("existing error before calling validate")},
+			wantErrorCount:   4,
+		},
+	}
+
+	for _, tt := range tests {
+		pgConfig := &PostgresConfig{
+			ConnectionInfo: PostgresConnection{
+				Database: tt.connectionStr,
+			},
+			CacheInitialization: PostgresCacheInitializer{
+				Query:   tt.cacheInitQuery,
+				Timeout: tt.cacheInitTimeout,
+			},
+			PollUpdates: PostgresUpdatePolling{
+				Query:       tt.cacheUpdateQuery,
+				RefreshRate: tt.cacheUpdateRefreshRate,
+				Timeout:     tt.cacheUpdateTimeout,
+			},
+		}
+
+		errs := pgConfig.validate(RequestDataType, tt.existingErrors)
+		assert.Equal(t, tt.wantErrorCount, len(errs), tt.description)
+	}
 }
 
 func assertErrsExist(t *testing.T, err configErrors) {

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	uuid "github.com/gofrs/uuid"
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -94,7 +93,7 @@ func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, timeout in
 	return nil
 }
 
-func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int) *auction {
+func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int, preferDeals bool) *auction {
 	winningBids := make(map[string]*pbsOrtbBid, numImps)
 	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid, numImps)
 
@@ -103,7 +102,7 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int
 			for _, bid := range seatBid.bids {
 				cpm := bid.bid.Price
 				wbid, ok := winningBids[bid.bid.ImpID]
-				if !ok || cpm > wbid.bid.Price {
+				if !ok || isNewWinningBid(bid.bid, wbid.bid, preferDeals) {
 					winningBids[bid.bid.ImpID] = bid
 				}
 				if bidMap, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
@@ -125,15 +124,24 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int
 	}
 }
 
+// isNewWinningBid calculates if the new bid (nbid) will win against the current winning bid (wbid) given preferDeals.
+func isNewWinningBid(bid, wbid *openrtb.Bid, preferDeals bool) bool {
+	if preferDeals {
+		if len(wbid.DealID) > 0 && len(bid.DealID) == 0 {
+			return false
+		}
+		if len(wbid.DealID) == 0 && len(bid.DealID) > 0 {
+			return true
+		}
+	}
+	return bid.Price > wbid.Price
+}
+
 func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity) {
 	roundedPrices := make(map[*pbsOrtbBid]string, 5*len(a.winningBids))
 	for _, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
-			roundedPrice, err := GetCpmStringValue(topBidPerBidder.bid.Price, priceGranularity)
-			if err != nil {
-				glog.Errorf(`Error rounding price according to granularity. This shouldn't happen unless /openrtb2 input validation is buggy. Granularity was "%v".`, priceGranularity)
-			}
-			roundedPrices[topBidPerBidder] = roundedPrice
+			roundedPrices[topBidPerBidder] = GetPriceBucket(topBidPerBidder.bid.Price, priceGranularity)
 		}
 	}
 	a.roundedPrices = roundedPrices

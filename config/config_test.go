@@ -652,8 +652,7 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 	cfg.Accounts.Postgres.ConnectionInfo.Database = "accounts"
 
 	errs := cfg.validate()
-	assert.Len(t, errs, 2)
-	assert.Contains(t, errs, errors.New("accounts.http: retrieving accounts via http not available, use accounts.files"))
+	assert.Len(t, errs, 1)
 	assert.Contains(t, errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
 }
 

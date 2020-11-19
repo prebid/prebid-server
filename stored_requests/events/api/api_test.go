@@ -16,8 +16,9 @@ import (
 
 func TestGoodRequests(t *testing.T) {
 	cache := stored_requests.Cache{
-		Requests: memory.NewCache(256*1024, -1, "Requests"),
-		Imps:     memory.NewCache(256*1024, -1, "Imps"),
+		Requests: memory.NewCache(256*1024, -1, "Request"),
+		Imps:     memory.NewCache(256*1024, -1, "Imp"),
+		Accounts: memory.NewCache(256*1024, -1, "Account"),
 	}
 	id := "1"
 	config := fmt.Sprintf(`{"id": "%s"}`, id)
