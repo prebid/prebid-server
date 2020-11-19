@@ -433,8 +433,7 @@ func TestExplicitUserId(t *testing.T) {
 }
 
 func doRequest(t *testing.T, test testCase) (int, string) {
-	adaptersConfigs := make(map[string]config.Adapter)
-	bidderInfos := getBidderInfos(adaptersConfigs, openrtb_ext.CoreBidderNames())
+	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
@@ -455,8 +454,7 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
-		bidderMap,
-	)
+		bidderMap)
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
 	recorder := httptest.NewRecorder()
