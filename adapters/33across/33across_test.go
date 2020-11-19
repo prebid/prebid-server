@@ -16,5 +16,5 @@ func TestJsonSamples(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "33across", bidder)
+	adapterstest.RunJSONBidderTest(t, "33acrosstest", bidder)
 }
