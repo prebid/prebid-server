@@ -97,7 +97,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	vo := analytics.VideoObject{
 		Status:    http.StatusOK,
 		Errors:    make([]error, 0),
-		Timestamp: time.Now(),
+		StartTime: time.Now(),
 	}
 
 	labels := pbsmetrics.Labels{
@@ -129,7 +129,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 			}
 		}
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(vo.Timestamp))
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(vo.StartTime))
 		deps.analytics.LogVideoObject(&vo)
 	}()
 
@@ -236,7 +236,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReq.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, vo.Timestamp.Add(timeout))
+		ctx, cancel = context.WithDeadline(ctx, vo.StartTime.Add(timeout))
 		defer cancel()
 	}
 
@@ -266,7 +266,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		Account:      *account,
 		UserSyncs:    usersyncs,
 		RequestType:  labels.RType,
-		StartTime:    vo.Timestamp,
+		StartTime:    vo.StartTime,
 		LegacyLabels: labels,
 	}
 

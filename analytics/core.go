@@ -33,7 +33,7 @@ type AuctionObject struct {
 	Request   *openrtb.BidRequest
 	Response  *openrtb.BidResponse
 	Account   *config.Account
-	Timestamp time.Time
+	StartTime time.Time
 }
 
 //Loggable object of a transaction at /openrtb2/amp endpoint
@@ -44,7 +44,7 @@ type AmpObject struct {
 	AuctionResponse    *openrtb.BidResponse
 	AmpTargetingValues map[string]string
 	Origin             string
-	Timestamp          time.Time
+	StartTime          time.Time
 }
 
 //Loggable object of a transaction at /openrtb2/video endpoint
@@ -55,7 +55,7 @@ type VideoObject struct {
 	Response      *openrtb.BidResponse
 	VideoRequest  *openrtb_ext.BidRequestVideo
 	VideoResponse *openrtb_ext.BidResponseVideo
-	Timestamp     time.Time
+	StartTime     time.Time
 }
 
 //Loggable object of a transaction at /setuid

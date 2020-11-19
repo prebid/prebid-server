@@ -97,7 +97,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		// If so, then the trip to the backend might use a significant amount of this time.
 		// We can respect timeouts more accurately if we note the *real* start time, and use it
 		// to compute the auction timeout.
-		Timestamp: time.Now(),
+		StartTime: time.Now(),
 	}
 
 	// Set this as an AMP request in Metrics.
@@ -112,7 +112,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(ao.Timestamp))
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(ao.StartTime))
 		deps.analytics.LogAmpObject(&ao)
 	}()
 
@@ -146,9 +146,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	ctx := context.Background()
 	var cancel context.CancelFunc
 	if req.TMax > 0 {
-		ctx, cancel = context.WithDeadline(ctx, ao.Timestamp.Add(time.Duration(req.TMax)*time.Millisecond))
+		ctx, cancel = context.WithDeadline(ctx, ao.StartTime.Add(time.Duration(req.TMax)*time.Millisecond))
 	} else {
-		ctx, cancel = context.WithDeadline(ctx, ao.Timestamp.Add(time.Duration(defaultAmpRequestTimeoutMillis)*time.Millisecond))
+		ctx, cancel = context.WithDeadline(ctx, ao.StartTime.Add(time.Duration(defaultAmpRequestTimeoutMillis)*time.Millisecond))
 	}
 	defer cancel()
 
@@ -187,7 +187,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Account:      *account,
 		UserSyncs:    usersyncs,
 		RequestType:  labels.RType,
-		StartTime:    ao.Timestamp,
+		StartTime:    ao.StartTime,
 		LegacyLabels: labels,
 	}
 

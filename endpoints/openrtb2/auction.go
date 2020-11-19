@@ -107,7 +107,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		// If so, then the trip to the backend might use a significant amount of this time.
 		// We can respect timeouts more accurately if we note the *real* start time, and use it
 		// to compute the auction timeout.
-		Timestamp: time.Now(),
+		StartTime: time.Now(),
 	}
 
 	labels := pbsmetrics.Labels{
@@ -120,7 +120,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(ao.Timestamp))
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(ao.StartTime))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
@@ -135,7 +135,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, ao.Timestamp.Add(timeout))
+		ctx, cancel = context.WithDeadline(ctx, ao.StartTime.Add(timeout))
 		defer cancel()
 	}
 
@@ -167,7 +167,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Account:      *account,
 		UserSyncs:    usersyncs,
 		RequestType:  labels.RType,
-		StartTime:    ao.Timestamp,
+		StartTime:    ao.StartTime,
 		LegacyLabels: labels,
 	}
 
