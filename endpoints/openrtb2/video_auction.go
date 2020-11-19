@@ -42,7 +42,6 @@ func NewVideoEndpoint(
 	requestsById stored_requests.Fetcher,
 	videoFetcher stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
-	categories stored_requests.CategoryFetcher,
 	cfg *config.Configuration,
 	met pbsmetrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
@@ -71,7 +70,6 @@ func NewVideoEndpoint(
 		requestsById,
 		videoFetcher,
 		accounts,
-		categories,
 		cfg,
 		met,
 		pbsAnalytics,
@@ -275,8 +273,16 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		handleError(&labels, w, acctIDErrs, &vo, &debugLog)
 		return
 	}
-	//execute auction logic
-	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, account, &deps.categories, &debugLog)
+
+	auctionRequest := exchange.AuctionRequest{
+		BidRequest:   bidReq,
+		Account:      *account,
+		UserSyncs:    usersyncs,
+		RequestType:  labels.RType,
+		LegacyLabels: labels,
+	}
+
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
 	vo.Request = bidReq
 	vo.Response = response
 	if err != nil {

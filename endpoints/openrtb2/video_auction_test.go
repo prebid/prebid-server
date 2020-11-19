@@ -20,7 +20,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/stretchr/testify/assert"
 )
@@ -1209,7 +1208,6 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *p
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		metrics,
 		mockModule,
@@ -1253,7 +1251,6 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -1276,7 +1273,6 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -1298,7 +1294,6 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
@@ -1342,12 +1337,12 @@ type mockExchangeVideo struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
-	m.lastRequest = bidRequest
+func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+	m.lastRequest = r.BidRequest
 	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
 	}
-	ext := []byte(`{"prebid":{"targeting":{"hb_bidder_appnexus":"appnexus","hb_pb_appnexus":"20.00","hb_pb_cat_dur_appnex":"20.00_395_30s","hb_size":"1x1", "hb_uuid_appnexus":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"},"type":"video"},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
+	ext := []byte(`{"prebid":{"targeting":{"hb_bidder_appnexus":"appnexus","hb_pb_appnexus":"20.00","hb_pb_cat_dur_appnex":"20.00_395_30s","hb_size":"1x1", "hb_uuid_appnexus":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"},"type":"video","dealpriority":0,"dealtiersatisfied":false},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
 	return &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{
 			Seat: "appnexus",
@@ -1378,8 +1373,8 @@ type mockExchangeAppendBidderNames struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
-	m.lastRequest = bidRequest
+func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+	m.lastRequest = r.BidRequest
 	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
 	}
@@ -1414,8 +1409,8 @@ type mockExchangeVideoNoBids struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
-	m.lastRequest = bidRequest
+func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+	m.lastRequest = r.BidRequest
 	return &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{}},
 	}, nil

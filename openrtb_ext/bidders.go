@@ -41,6 +41,7 @@ func (name *BidderName) String() string {
 // Please keep this list alphabetized to minimize merge conflicts.
 const (
 	Bidder33Across         BidderName = "33across"
+	BidderAcuityAds        BidderName = "acuityads"
 	BidderAdform           BidderName = "adform"
 	BidderAdgeneration     BidderName = "adgeneration"
 	BidderAdhese           BidderName = "adhese"
@@ -56,6 +57,7 @@ const (
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
 	BidderAJA              BidderName = "aja"
+	BidderAMX              BidderName = "amx"
 	BidderApplogy          BidderName = "applogy"
 	BidderAppnexus         BidderName = "appnexus"
 	BidderAudienceNetwork  BidderName = "audienceNetwork"
@@ -94,6 +96,7 @@ const (
 	BidderMobileFuse       BidderName = "mobilefuse"
 	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderNinthDecimal     BidderName = "ninthdecimal"
+	BidderNoBid            BidderName = "nobid"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
 	BidderPubmatic         BidderName = "pubmatic"
@@ -103,6 +106,7 @@ const (
 	BidderRTBHouse         BidderName = "rtbhouse"
 	BidderRubicon          BidderName = "rubicon"
 	BidderSharethrough     BidderName = "sharethrough"
+	BidderSilverMob        BidderName = "silvermob"
 	BidderSmaato           BidderName = "smaato"
 	BidderSmartAdserver    BidderName = "smartadserver"
 	BidderSmartRTB         BidderName = "smartrtb"
@@ -132,6 +136,7 @@ const (
 func CoreBidderNames() []BidderName {
 	return []BidderName{
 		Bidder33Across,
+		BidderAcuityAds,
 		BidderAdform,
 		BidderAdgeneration,
 		BidderAdhese,
@@ -147,6 +152,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdtelligent,
 		BidderAdvangelists,
 		BidderAJA,
+		BidderAMX,
 		BidderApplogy,
 		BidderAppnexus,
 		BidderAudienceNetwork,
@@ -185,6 +191,7 @@ func CoreBidderNames() []BidderName {
 		BidderMobileFuse,
 		BidderNanoInteractive,
 		BidderNinthDecimal,
+		BidderNoBid,
 		BidderOpenx,
 		BidderOrbidder,
 		BidderPubmatic,
@@ -194,6 +201,7 @@ func CoreBidderNames() []BidderName {
 		BidderRTBHouse,
 		BidderRubicon,
 		BidderSharethrough,
+		BidderSilverMob,
 		BidderSmaato,
 		BidderSmartAdserver,
 		BidderSmartRTB,

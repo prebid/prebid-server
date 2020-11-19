@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 
 	"github.com/mxmCherry/openrtb"
@@ -46,7 +45,6 @@ func TestGoodAmpRequests(t *testing.T) {
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{goodRequests},
-		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
@@ -99,7 +97,6 @@ func TestAMPPageInfo(t *testing.T) {
 		exchange,
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{stored},
-		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
@@ -204,7 +201,6 @@ func TestGDPRConsent(t *testing.T) {
 			mockExchange,
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
-			empty_fetcher.EmptyFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			newTestMetrics(),
@@ -358,7 +354,6 @@ func TestCCPAConsent(t *testing.T) {
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
-			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			newTestMetrics(),
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -417,7 +412,6 @@ func TestNoConsent(t *testing.T) {
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -462,7 +456,6 @@ func TestInvalidConsent(t *testing.T) {
 		mockExchange,
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{stored},
-		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
@@ -547,7 +540,6 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
-			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			newTestMetrics(),
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -599,7 +591,6 @@ func TestAMPSiteExt(t *testing.T) {
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -636,7 +627,6 @@ func TestAmpBadRequests(t *testing.T) {
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{badRequests},
 		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -666,7 +656,6 @@ func TestAmpDebug(t *testing.T) {
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{requests},
-		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
@@ -739,7 +728,6 @@ func TestQueryParamOverrides(t *testing.T) {
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{requests},
-		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
@@ -893,7 +881,6 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -951,8 +938,8 @@ var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBi
 	},
 }
 
-func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, account *config.Account, categoriesFetcher *stored_requests.CategoryFetcher, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
-	m.lastRequest = bidRequest
+func (m *mockAmpExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+	m.lastRequest = r.BidRequest
 
 	response := &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{
@@ -964,8 +951,8 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 		Ext: json.RawMessage(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
 	}
 
-	if bidRequest.Test == 1 {
-		resolvedRequest, err := json.Marshal(bidRequest)
+	if r.BidRequest.Test == 1 {
+		resolvedRequest, err := json.Marshal(r.BidRequest)
 		if err != nil {
 			resolvedRequest = json.RawMessage("{}")
 		}
@@ -1218,7 +1205,7 @@ func TestBuildAmpObject(t *testing.T) {
 					},
 					AT:   1,
 					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null}}}`),
+					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`),
 				},
 				AuctionResponse: &openrtb.BidResponse{
 					SeatBid: []openrtb.SeatBid{{
@@ -1260,7 +1247,6 @@ func TestBuildAmpObject(t *testing.T) {
 			&mockAmpExchange{},
 			newParamsValidator(t),
 			mockAmpFetcher,
-			empty_fetcher.EmptyFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			newTestMetrics(),

@@ -137,9 +137,6 @@ func resolvedStoredRequestsConfig(cfg *Configuration) {
 }
 
 func (cfg *StoredRequests) validate(errs []error) []error {
-	if cfg.DataType() == AccountDataType && cfg.HTTP.Endpoint != "" {
-		errs = append(errs, fmt.Errorf("%s.http: retrieving accounts via http not available, use accounts.files", cfg.Section()))
-	}
 	if cfg.DataType() == AccountDataType && cfg.Postgres.ConnectionInfo.Database != "" {
 		errs = append(errs, fmt.Errorf("%s.postgres: retrieving accounts via postgres not available, use accounts.files", cfg.Section()))
 	} else {
@@ -185,7 +182,9 @@ func (cfg *PostgresConfig) validate(dataType DataType, errs []error) []error {
 		return errs
 	}
 
-	return cfg.PollUpdates.validate(dataType, errs)
+	errs = cfg.CacheInitialization.validate(dataType, errs)
+	errs = cfg.PollUpdates.validate(dataType, errs)
+	return errs
 }
 
 // PostgresConnection has options which put types to the Postgres Connection string. See:

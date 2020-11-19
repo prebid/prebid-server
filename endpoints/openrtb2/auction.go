@@ -52,7 +52,6 @@ func NewEndpoint(
 	validator openrtb_ext.BidderParamValidator,
 	requestsById stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
-	categories stored_requests.CategoryFetcher,
 	cfg *config.Configuration,
 	met pbsmetrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
@@ -60,7 +59,6 @@ func NewEndpoint(
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
 ) (httprouter.Handle, error) {
-
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
@@ -78,7 +76,6 @@ func NewEndpoint(
 		requestsById,
 		empty_fetcher.EmptyFetcher{},
 		accounts,
-		categories,
 		cfg,
 		met,
 		pbsAnalytics,
@@ -97,7 +94,6 @@ type endpointDeps struct {
 	storedReqFetcher          stored_requests.Fetcher
 	videoFetcher              stored_requests.Fetcher
 	accounts                  stored_requests.AccountFetcher
-	categories                stored_requests.CategoryFetcher
 	cfg                       *config.Configuration
 	metricsEngine             pbsmetrics.MetricsEngine
 	analytics                 analytics.PBSAnalyticsModule
@@ -176,7 +172,15 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, account, &deps.categories, nil)
+	auctionRequest := exchange.AuctionRequest{
+		BidRequest:   req,
+		Account:      *account,
+		UserSyncs:    usersyncs,
+		RequestType:  labels.RType,
+		LegacyLabels: labels,
+	}
+
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req
 	ao.Response = response
 	ao.Account = account

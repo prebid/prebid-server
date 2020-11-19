@@ -3,6 +3,7 @@ package exchange
 import (
 	"github.com/prebid/prebid-server/adapters"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
+	"github.com/prebid/prebid-server/adapters/acuityads"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/adgeneration"
 	"github.com/prebid/prebid-server/adapters/adhese"
@@ -18,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/advangelists"
 	"github.com/prebid/prebid-server/adapters/aja"
+	"github.com/prebid/prebid-server/adapters/amx"
 	"github.com/prebid/prebid-server/adapters/applogy"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
@@ -54,6 +56,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/adapters/nanointeractive"
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
+	"github.com/prebid/prebid-server/adapters/nobid"
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/orbidder"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
@@ -62,6 +65,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
+	"github.com/prebid/prebid-server/adapters/silvermob"
 	"github.com/prebid/prebid-server/adapters/smaato"
 	"github.com/prebid/prebid-server/adapters/smartadserver"
 	"github.com/prebid/prebid-server/adapters/smartrtb"
@@ -94,6 +98,7 @@ import (
 func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 	return map[openrtb_ext.BidderName]adapters.Builder{
 		openrtb_ext.Bidder33Across:         ttx.Builder,
+		openrtb_ext.BidderAcuityAds:        acuityads.Builder,
 		openrtb_ext.BidderAdform:           adform.Builder,
 		openrtb_ext.BidderAdgeneration:     adgeneration.Builder,
 		openrtb_ext.BidderAdhese:           adhese.Builder,
@@ -109,6 +114,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdtelligent:      adtelligent.Builder,
 		openrtb_ext.BidderAdvangelists:     advangelists.Builder,
 		openrtb_ext.BidderAJA:              aja.Builder,
+		openrtb_ext.BidderAMX:              amx.Builder,
 		openrtb_ext.BidderApplogy:          applogy.Builder,
 		openrtb_ext.BidderAppnexus:         appnexus.Builder,
 		openrtb_ext.BidderAudienceNetwork:  audienceNetwork.Builder,
@@ -145,6 +151,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMobileFuse:       mobilefuse.Builder,
 		openrtb_ext.BidderNanoInteractive:  nanointeractive.Builder,
 		openrtb_ext.BidderNinthDecimal:     ninthdecimal.Builder,
+		openrtb_ext.BidderNoBid:            nobid.Builder,
 		openrtb_ext.BidderOpenx:            openx.Builder,
 		openrtb_ext.BidderOrbidder:         orbidder.Builder,
 		openrtb_ext.BidderPubmatic:         pubmatic.Builder,
@@ -153,6 +160,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRTBHouse:         rtbhouse.Builder,
 		openrtb_ext.BidderRubicon:          rubicon.Builder,
 		openrtb_ext.BidderSharethrough:     sharethrough.Builder,
+		openrtb_ext.BidderSilverMob:        silvermob.Builder,
 		openrtb_ext.BidderSmaato:           smaato.Builder,
 		openrtb_ext.BidderSmartAdserver:    smartadserver.Builder,
 		openrtb_ext.BidderSmartRTB:         smartrtb.Builder,

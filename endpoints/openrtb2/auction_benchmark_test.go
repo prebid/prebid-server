@@ -79,12 +79,12 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		newTestMetrics(),
 		gdpr.AlwaysAllow{},
 		currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		empty_fetcher.EmptyFetcher{},
 	)
 
 	endpoint, _ := NewEndpoint(
 		exchange,
 		paramValidator,
-		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},

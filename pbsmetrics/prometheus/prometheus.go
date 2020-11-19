@@ -28,6 +28,7 @@ type Metrics struct {
 	requestsWithoutCookie        *prometheus.CounterVec
 	storedImpressionsCacheResult *prometheus.CounterVec
 	storedRequestCacheResult     *prometheus.CounterVec
+	accountCacheResult           *prometheus.CounterVec
 	storedAccountFetchTimer      *prometheus.HistogramVec
 	storedAccountErrors          *prometheus.CounterVec
 	storedAMPFetchTimer          *prometheus.HistogramVec
@@ -184,6 +185,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.storedRequestCacheResult = newCounter(cfg, metrics.Registry,
 		"stored_request_cache_performance",
 		"Count of stored request cache requests attempts by hits or miss.",
+		[]string{cacheResultLabel})
+
+	metrics.accountCacheResult = newCounter(cfg, metrics.Registry,
+		"account_cache_performance",
+		"Count of account cache lookups by hits or miss.",
 		[]string{cacheResultLabel})
 
 	metrics.storedAccountFetchTimer = newHistogramVec(cfg, metrics.Registry,
@@ -609,6 +615,12 @@ func (m *Metrics) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult,
 
 func (m *Metrics) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
 	m.storedImpressionsCacheResult.With(prometheus.Labels{
+		cacheResultLabel: string(cacheResult),
+	}).Add(float64(inc))
+}
+
+func (m *Metrics) RecordAccountCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	m.accountCacheResult.With(prometheus.Labels{
 		cacheResultLabel: string(cacheResult),
 	}).Add(float64(inc))
 }

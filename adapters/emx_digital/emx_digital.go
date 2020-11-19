@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mxmCherry/openrtb"
@@ -111,7 +112,6 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpEmxDigital, error) {
 }
 
 func buildImpBanner(imp *openrtb.Imp) error {
-	imp.Ext = nil
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
@@ -136,6 +136,40 @@ func buildImpBanner(imp *openrtb.Imp) error {
 	}
 
 	return nil
+}
+
+func buildImpVideo(imp *openrtb.Imp) error {
+
+	if len(imp.Video.MIMEs) == 0 {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("Video: missing required field mimes"),
+		}
+	}
+
+	if imp.Video.H == 0 && imp.Video.W == 0 {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("Video: Need at least one size to build request"),
+		}
+	}
+
+	if imp.Video.Protocols != nil {
+		imp.Video.Protocols = cleanProtocol(imp.Video.Protocols)
+	}
+
+	return nil
+}
+
+// not supporting VAST protocol 7 (VAST 4.0);
+func cleanProtocol(protocols []openrtb.Protocol) []openrtb.Protocol {
+	newitems := make([]openrtb.Protocol, 0, len(protocols))
+
+	for _, i := range protocols {
+		if i != openrtb.ProtocolVAST40 {
+			newitems = append(newitems, i)
+		}
+	}
+
+	return newitems
 }
 
 // Add EMX required properties to Imp object
@@ -171,12 +205,20 @@ func preprocess(request *openrtb.BidRequest) []error {
 	errors := make([]error, 0, impsCount)
 	resImps := make([]openrtb.Imp, 0, impsCount)
 	secure := int8(0)
-
+	domain := ""
 	if request.Site != nil && request.Site.Page != "" {
-		pageURL, err := url.Parse(request.Site.Page)
-		if err == nil && pageURL.Scheme == "https" {
-			secure = int8(1)
+		domain = request.Site.Page
+	} else if request.App != nil {
+		if request.App.Domain != "" {
+			domain = request.App.Domain
+		} else if request.App.StoreURL != "" {
+			domain = request.App.StoreURL
 		}
+	}
+
+	pageURL, err := url.Parse(domain)
+	if err == nil && pageURL.Scheme == "https" {
+		secure = int8(1)
 	}
 
 	for _, imp := range request.Imp {
@@ -188,10 +230,17 @@ func preprocess(request *openrtb.BidRequest) []error {
 
 		addImpProps(&imp, &secure, emxExt)
 
-		if err := buildImpBanner(&imp); err != nil {
+		if imp.Video != nil {
+			if err := buildImpVideo(&imp); err != nil {
+				errors = append(errors, err)
+				continue
+			}
+		} else if err := buildImpBanner(&imp); err != nil {
 			errors = append(errors, err)
 			continue
+
 		}
+
 		resImps = append(resImps, imp)
 	}
 
@@ -230,12 +279,30 @@ func (a *EmxDigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: "banner",
+				BidType: getBidType(sb.Bid[i].AdM),
 			})
 		}
 	}
 
 	return bidResponse, nil
+
+}
+
+func getBidType(bidAdm string) openrtb_ext.BidType {
+	if bidAdm != "" && ContainsAny(bidAdm, []string{"<?xml", "<vast"}) {
+		return openrtb_ext.BidTypeVideo
+	}
+	return openrtb_ext.BidTypeBanner
+}
+
+func ContainsAny(raw string, keys []string) bool {
+	lowerCased := strings.ToLower(raw)
+	for i := 0; i < len(keys); i++ {
+		if strings.Contains(lowerCased, keys[i]) {
+			return true
+		}
+	}
+	return false
 
 }
 
