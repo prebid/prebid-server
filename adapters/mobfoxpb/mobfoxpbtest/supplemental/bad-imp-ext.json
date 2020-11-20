@@ -2,41 +2,41 @@
   "mockBidRequest": {
     "id": "test-request-id",
     "imp": [
-        {
-            "id": "test-imp-id",
-            "banner": {
-                "format": [
-                    {
-                        "w": 300,
-                        "h": 250
-                    },
-                    {
-                        "w": 300,
-                        "h": 600
-                    }
-                ]
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
             },
-            "tagid": "6",
-            "ext": {
-                "mobfoxpb": {
-                    "TagID": "6"
-                }
+            {
+              "w": 300,
+              "h": 600
             }
+          ]
+        },
+        "tagid": "6",
+        "ext": {
+          "mobfoxpb": {
+            "TagID": "6"
+          }
         }
+      }
     ],
     "app": {
-        "id": "1",
-        "bundle": "com.wls.testwlsapplication"
+      "id": "1",
+      "bundle": "com.wls.testwlsapplication"
     },
     "device": {
-        "ip": "123.123.123.123",
-        "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+      "ip": "123.123.123.123",
+      "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
     }
-},
-"expectedMakeRequestsErrors": [
-  {
-    "value": "Key path not found",
-    "comparison": "literal"
-  }
-]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Key path not found",
+      "comparison": "literal"
+    }
+  ]
 }
