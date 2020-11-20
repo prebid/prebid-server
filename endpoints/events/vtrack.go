@@ -4,6 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
@@ -13,12 +20,6 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"sort"
-	"strings"
-	"time"
 )
 
 const (
@@ -230,7 +231,7 @@ func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheReque
 		}
 
 		if _, ok := biddersAllowingVastUpdate[c.Bidder]; ok && nc.Data != nil {
-			nc.Data = modifyVastXml(v.Cfg.ExternalURL, nc.Data, c.BidID, c.Bidder, accountId, c.Timestamp)
+			nc.Data = ModifyVastXml(v.Cfg.ExternalURL, nc.Data, c.BidID, c.Bidder, accountId, c.Timestamp)
 		}
 
 		cacheables = append(cacheables, *nc)
@@ -270,7 +271,7 @@ func getAccountId(httpRequest *http.Request) string {
 }
 
 // modifyVastXml modifies BidCacheRequest element Vast XML data
-func modifyVastXml(externalUrl string, data json.RawMessage, bidid string, bidder string, accountId string, timestamp int64) json.RawMessage {
+func ModifyVastXml(externalUrl string, data json.RawMessage, bidid string, bidder string, accountId string, timestamp int64) json.RawMessage {
 	c := string(data)
 	ci := strings.Index(c, ImpressionCloseTag)
 

@@ -23,6 +23,7 @@ type ExtRequestPrebid struct {
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
+	Events               json.RawMessage           `json:"events,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
 
