@@ -1,0 +1,236 @@
+{
+  "id": "ae76d68b-edb7-4506-a43f-0cbc730bce41",
+  "imp": [
+    {
+      "id": "1",
+      "banner": {
+        "api": [
+          "3",
+          "5"
+        ],
+        "mimes": [
+          "video/mp4"
+        ],
+        "maxduration": 35,
+        "protocols": [
+          2,
+          3,
+          5,
+          6
+        ],
+        "w": 360,
+        "h": 592,
+        "skip": 1,
+        "skipafter": 5,
+        "maxbitrate": 2000,
+        "playbackmethod": [
+          1,
+          3
+        ],
+        "companionad": [
+          {
+            "w": 360,
+            "h": 592,
+            "id": "1"
+          }
+        ],
+        "companiontype": [
+          1
+        ]
+      },
+      "video": {
+        "mimes": [
+          "video/mp4"
+        ],
+        "maxduration": 35,
+        "protocols": [
+          2,
+          3,
+          5,
+          6
+        ],
+        "w": 360,
+        "h": 592,
+        "skip": 1,
+        "skipafter": 5,
+        "maxbitrate": 2000,
+        "playbackmethod": [
+          1,
+          3
+        ],
+        "companionad": [
+          {
+            "w": 360,
+            "h": 592,
+            "id": "1"
+          }
+        ],
+        "companiontype": [
+          1
+        ]
+      },
+      "instl": 1,
+      "bidfloor": 3.756305,
+      "secure": 1,
+      "ext": {
+        "liftoff": {
+          "region": "us_east",
+          "video": {
+            "height": 888,
+            "skip": 1,
+            "skipdelay": 5,
+            "width": 540
+          }
+        },
+        "moloco": {
+          "placementtype": "interstitial",
+          "region": "us_east"
+        },
+        "prebid": {
+          "is_rewarded_inventory": 0
+        },
+        "rubicon": {
+          "accountId": 12286,
+          "inventory": {
+            "SDKVersion": [
+              "12.4.2"
+            ],
+            "app_keywords": [],
+            "moat_certified": [
+              "true"
+            ]
+          },
+          "region": "us_west",
+          "siteId": 52028,
+          "video": {
+            "companion_ad": {
+              "alt_size_ids": [
+                101,
+                67,
+                53
+              ],
+              "size_id": 15
+            },
+            "size_id": 202,
+            "skip": 1,
+            "skipdelay": 5
+          },
+          "viewabilityvendors": [
+            "moat.com"
+          ],
+          "visitor": {
+            "age": [
+              "age_14"
+            ],
+            "category": [
+              "category_20",
+              "category_22",
+              "category_28",
+              "category_13",
+              "category_21",
+              "category_19",
+              "category_4",
+              "category_39",
+              "category_11",
+              "category_17"
+            ],
+            "education": [
+              "education_5"
+            ],
+            "ethnicity": [
+              "ethnicity_2"
+            ],
+            "gender": [
+              "gender_0"
+            ],
+            "income": [
+              "income_3"
+            ]
+          },
+          "zoneId": 774336
+        }
+      }
+    }
+  ],
+  "app": {
+    "id": "f0f6acf5b8c2b59aa79e89ab6b8424aa948684b0d73a09e9fff107b54172ff1c17f6bbe7e674881786da872cac5c6581",
+    "name": "What The Fight",
+    "bundle": "com.appadvisory.wtfight",
+    "publisher": {
+      "id": "f24161250837771ad0a0765bebec9029cd68757bdbcd15ccbc10a183c601d4b7ed5d3f3662f7f456783b0a75241f35ba"
+    }
+  },
+  "device": {
+    "ua": "Mozilla/5.0 (Linux; Android 8.1.0; es; SM-J260M Build/KOT49H) AppleWebKit/537.36 (KHTML, like Gecko) Version/1.5 Chrome/42.0.2311.111 Safari/537.36",
+    "geo": {
+      "type": 2,
+      "ipservice": 3,
+      "country": "gtm",
+      "region": "GU",
+      "city": "Guatemala City"
+    },
+    "lmt": 0,
+    "ip": "190.148.52.68",
+    "devicetype": 4,
+    "make": "Samsung",
+    "model": "android",
+    "os": "android",
+    "osv": "8.1.0",
+    "hwv": "Galaxy J2 Core",
+    "js": 1,
+    "language": "es",
+    "connectiontype": 2,
+    "ifa": "1bcf09e6-d2f0-4d25-aca3-7e8fdece89bc"
+  },
+  "user": {},
+  "tmax": 1000,
+  "bcat": [
+    "IAB9-7",
+    "IAB8-18",
+    "IAB8-5",
+    "IAB14-1",
+    "IAB11",
+    "IAB11",
+    "IAB9-9",
+    "IAB7-39",
+    "IAB23",
+    "IAB25",
+    "IAB26"
+  ],
+  "badv": [
+    "supertreat.net",
+    "voodoo.io",
+    "playkot.com",
+    "ilyon.net",
+    "tactilegames.com",
+    "peakgames.com",
+    "kabam.com",
+    "murka.com",
+    "ubisoft.com",
+    "crazylabs.com",
+    "rollicgames.com",
+    "mz.com",
+    "crystalborne.com",
+    "machinezone.com",
+    "epicwar-online.com",
+    "epicaction-online.com",
+    "voodoo.io",
+    "ashleymadison.com"
+  ],
+  "bapp": [
+    "com.apptout.stairmaster",
+    "com.daia.dropit",
+    "com.mikhailp.perfectsnipe",
+    "com.fungames.sniper3d",
+    "com.playgendary.tom"
+  ],
+  "source": {
+    "fd": 1,
+    "pchain": "29e595b1aeb5904d:1011b04a93164a6db3a0158461c82433"
+  },
+  "regs": {
+    "ext": {
+      "gdpr": 0
+    }
+  }
+}

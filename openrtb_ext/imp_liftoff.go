@@ -5,6 +5,7 @@ type ExtImpLiftoff struct {
 	Video          liftoffVideoParams `json:"video"`
 	Region         string             `json:"region"`
 	SKADNSupported bool               `json:"skadn_supported"`
+	MRAIDSupported bool               `json:"mraid_supported"`
 }
 
 // liftoffVideoParams defines the contract for bidrequest.imp[i].ext.liftoff.video

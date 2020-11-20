@@ -3,4 +3,5 @@ maintainer:
 capabilities:
   app:
     mediaTypes:
+      - banner
       - video

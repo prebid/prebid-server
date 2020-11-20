@@ -11,6 +11,10 @@
     "region": {
       "type": "string",
       "description": "A string defining region for choosing the closest TaurusX endpoint"
+    },
+    "mraid_supported": {
+      "type": "boolean",
+      "description": "A bool config to determine if MRAID is supported by TaurusX"
     }
   }
 }

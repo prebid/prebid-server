@@ -35,15 +35,6 @@ var liftoffSKADNetIDs = map[string]bool{
 	"7ug5zh24hu.skadnetwork": true,
 }
 
-// PlacementType ...
-type PlacementType string
-
-const (
-	Banner       PlacementType = "banner"
-	Interstitial PlacementType = "interstitial"
-	Rewarded     PlacementType = "rewarded"
-)
-
 // LiftoffAdapter ...
 type LiftoffAdapter struct {
 	http             *adapters.HTTPAdapter
@@ -66,6 +57,10 @@ type liftoffVideoExt struct {
 	Orientation   string `json:"orientation"`
 	Skip          int    `json:"skip"`
 	SkipDelay     int    `json:"skipdelay"`
+}
+
+type liftoffBannerExt struct {
+	PlacementType string `json:"placementtype"`
 }
 
 type liftoffImpExt struct {
@@ -152,15 +147,15 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			continue
 		}
 
-		placementType := Banner
-		rewarded := 0 // default is interstitial
-		if thisImp.Video != nil {
-			placementType = Interstitial
-			if liftoffExt.Video.Skip == 0 {
-				placementType = Rewarded
-				rewarded = 1
-			}
+		// default is interstitial
+		placementType := adapters.Interstitial
+		rewarded := 0
+		if liftoffExt.Video.Skip == 0 {
+			placementType = adapters.Rewarded
+			rewarded = 1
+		}
 
+		if thisImp.Video != nil {
 			orientation := Horizontal
 			if liftoffExt.Video.Width < liftoffExt.Video.Height {
 				orientation = Vertical
@@ -180,20 +175,24 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			}
 
 			thisImp.Video = &videoCopy
-			thisImp.Banner = nil
-		} else if thisImp.Banner != nil {
-			bannerCopy := *thisImp.Banner
-			bannerExt := liftoffVideoExt{
-				PlacementType: string(placementType),
-			}
-			bannerCopy.Ext, err = json.Marshal(&bannerExt)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
+		}
 
-			thisImp.Video = nil
-			thisImp.Banner = &bannerCopy
+		if thisImp.Banner != nil {
+			if liftoffExt.MRAIDSupported {
+				bannerCopy := *thisImp.Banner
+				bannerExt := liftoffBannerExt{
+					PlacementType: string(placementType),
+				}
+				bannerCopy.Ext, err = json.Marshal(&bannerExt)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				thisImp.Banner = &bannerCopy
+			} else {
+				thisImp.Banner = nil
+			}
 		}
 
 		skadn := openrtb_ext.SKADN{}

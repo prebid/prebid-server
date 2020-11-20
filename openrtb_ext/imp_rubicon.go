@@ -16,6 +16,7 @@ type ExtImpRubicon struct {
 	Region             string             `json:"region"`
 	ViewabilityVendors []string           `json:"viewabilityvendors"`
 	SKADNSupported     bool               `json:"skadn_supported"` // enable skadn ext parameters
+	MRAIDSupported     bool               `json:"mraid_supported"`
 }
 
 // rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.video
