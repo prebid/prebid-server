@@ -9,7 +9,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAdtelligent, config.Adapter{})
+	bidder, buildErr := Builder(openrtb_ext.BidderConversant, config.Adapter{})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
