@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// MobfoxpbAdapter adapter structure
 type MobfoxpbAdapter struct {
 	URI string
 }
