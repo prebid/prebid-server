@@ -89,8 +89,13 @@ func (a *VerizonMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo 
 		reqCopy := *request
 		reqCopy.Imp = []openrtb.Imp{imp}
 
-		siteCopy := *request.Site
-		reqCopy.Site = &siteCopy
+		if request.Site != nil {
+			siteCopy := *request.Site
+			reqCopy.Site = &siteCopy
+		} else if request.App != nil {
+			appCopy := *request.App
+			reqCopy.App = &appCopy
+		}
 
 		if err := changeRequestForBidService(&reqCopy, &verizonMediaExt); err != nil {
 			errors = append(errors, err)
@@ -175,9 +180,13 @@ func getImpInfo(impId string, imps []openrtb.Imp) (bool, openrtb_ext.BidType) {
 }
 
 func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_ext.ExtImpVerizonMedia) error {
-	/* Always override the tag ID and site ID of the request */
+	/* Always override the tag ID and (site ID or app ID) of the request */
 	request.Imp[0].TagID = extension.Pos
-	request.Site.ID = extension.Dcn
+	if request.Site != nil {
+		request.Site.ID = extension.Dcn
+	} else if request.App != nil {
+		request.App.ID = extension.Dcn
+	}
 
 	if request.Imp[0].Banner == nil {
 		return nil
