@@ -47,6 +47,14 @@ func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext
 	return bidderToSChains, nil
 }
 
+// BidderRequest needs a good comment
+type BidderRequest struct {
+	Request  *openrtb.BidRequest
+	Name     string
+	CoreName string
+	Labels   pbsmetrics.AdapterLabels
+}
+
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
 //
 //   1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
@@ -61,7 +69,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
 	privacyConfig config.Privacy,
-	account *config.Account) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
+	account *config.Account) (requestsByBidder []BidderRequest, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
@@ -182,10 +190,10 @@ func splitBidRequest(req *openrtb.BidRequest,
 	impsByBidder map[string][]openrtb.Imp,
 	aliases map[string]string,
 	usersyncs IdFetcher,
-	blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
-	labels pbsmetrics.Labels) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
+	labels pbsmetrics.Labels) ([]BidderRequest, []error) {
 
-	requestsByBidder := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(impsByBidder))
+	bidderRequests := make([]BidderRequest, 0, len(impsByBidder))
+
 	explicitBuyerUIDs, err := extractBuyerUIDs(req.User)
 	if err != nil {
 		return nil, []error{err}
@@ -204,30 +212,35 @@ func splitBidRequest(req *openrtb.BidRequest,
 	}
 
 	for bidder, imps := range impsByBidder {
-		reqCopy := *req
 		coreBidder := resolveBidder(bidder, aliases)
-		newLabel := pbsmetrics.AdapterLabels{
-			Source:      labels.Source,
-			RType:       labels.RType,
-			Adapter:     coreBidder,
-			PubID:       labels.PubID,
-			CookieFlag:  labels.CookieFlag,
-			AdapterBids: pbsmetrics.AdapterBidPresent,
-		}
-		blabels[coreBidder] = &newLabel
-		if hadSync := prepareUser(&reqCopy, bidder, coreBidder, explicitBuyerUIDs, usersyncs); !hadSync && req.App == nil {
-			blabels[coreBidder].CookieFlag = pbsmetrics.CookieFlagNo
-		} else {
-			blabels[coreBidder].CookieFlag = pbsmetrics.CookieFlagYes
-		}
+
+		reqCopy := *req
 		reqCopy.Imp = imps
-
-		prepareSource(&reqCopy, bidder, sChainsByBidder)
 		reqCopy.Ext = reqExt
+		prepareSource(&reqCopy, bidder, sChainsByBidder)
 
-		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
+		bidderRequest := BidderRequest{
+			Name:     bidder,
+			CoreName: coreBidder,
+			Request:  &reqCopy,
+			Labels: pbsmetrics.AdapterLabels{
+				Source:      labels.Source,
+				RType:       labels.RType,
+				Adapter:     coreBidder,
+				PubID:       labels.PubID,
+				CookieFlag:  labels.CookieFlag,
+				AdapterBids: pbsmetrics.AdapterBidPresent,
+			},
+		}
+		if hadSync := prepareUser(&reqCopy, bidder, coreBidder, explicitBuyerUIDs, usersyncs); !hadSync && req.App == nil {
+			bidderRequest.Labels.CookieFlag = pbsmetrics.CookieFlagNo
+		} else {
+			bidderRequest.Labels.CookieFlag = pbsmetrics.CookieFlagYes
+		}
+
+		bidderRequests = append(bidderRequests, bidderRequest)
 	}
-	return requestsByBidder, nil
+	return bidderRequests, nil
 }
 
 func getExtJson(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {

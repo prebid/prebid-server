@@ -329,6 +329,13 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	chBids := make(chan *bidResponseWrapper, len(cleanRequests))
 	bidsFound := false
 
+	// NOTES ON BID LABEL USAGE:
+	// 	RecordAdapterRequest:  		.Adapter, .PubID, .AdapterBids, .AdapterErrors, .CookieFlag
+	// 	                       		.RType
+	// 	RecordAdapterTime:     		.Adapter, .PubID
+	// 	RecordAdapterPrice: 			.Adapter, .PubID,
+	// 	RecordAdapterBidReceived:	.Adapter, .PubID,
+
 	for bidderName, req := range cleanRequests {
 		// Here we actually call the adapters and collect the bids.
 		coreBidder := resolveBidder(string(bidderName), aliases)
