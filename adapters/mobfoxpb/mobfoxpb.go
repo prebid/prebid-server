@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -20,13 +18,8 @@ type MobfoxpbAdapter struct {
 
 // NewMobfoxpbBidder Initializes the Bidder
 func NewMobfoxpbBidder(endpoint string) *MobfoxpbAdapter {
-	endpointURL, err := url.ParseRequestURI(endpoint)
-	if err != nil {
-		glog.Fatalf("invalid endpoint provided for Mobfox: %s, error: %v", endpoint, err)
-		return nil
-	}
 	return &MobfoxpbAdapter{
-		URI: endpointURL.String(),
+		URI: endpoint,
 	}
 }
 
