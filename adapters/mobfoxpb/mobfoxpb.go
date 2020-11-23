@@ -28,9 +28,6 @@ func NewMobfoxpbBidder(endpoint string) *MobfoxpbAdapter {
 	return &MobfoxpbAdapter{
 		URI: endpointURL.String(),
 	}
-	return &MobfoxpbAdapter{
-		URI: endpoint,
-	}
 }
 
 // MakeRequests create bid request for mobfoxpb demand
