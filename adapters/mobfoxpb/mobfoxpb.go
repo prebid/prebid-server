@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,6 +20,14 @@ type MobfoxpbAdapter struct {
 
 // NewMobfoxpbBidder Initializes the Bidder
 func NewMobfoxpbBidder(endpoint string) *MobfoxpbAdapter {
+	endpointURL, err := url.ParseRequestURI(endpoint)
+	if err != nil {
+		glog.Fatalf("invalid endpoint provided for Mobfox: %s, error: %v", endpoint, err)
+		return nil
+	}
+	return &MobfoxpbAdapter{
+		URI: endpointURL.String(),
+	}
 	return &MobfoxpbAdapter{
 		URI: endpoint,
 	}
@@ -43,24 +53,22 @@ func (a *MobfoxpbAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 		reqCopy.Imp[0].TagID = tagID
 
-		adapterReq, errors := a.makeRequest(&reqCopy)
+		adapterReq, err := a.makeRequest(&reqCopy)
+		if err != nil {
+			errs = append(errs, err)
+		}
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
-		errs = append(errs, errors...)
 	}
 	return adapterRequests, errs
 }
 
-func (a *MobfoxpbAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
-
-	var errs []error
-
+func (a *MobfoxpbAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, error) {
 	reqJSON, err := json.Marshal(request)
 
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, err
 	}
 
 	headers := http.Header{}
@@ -71,7 +79,7 @@ func (a *MobfoxpbAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Re
 		Uri:     a.URI,
 		Body:    reqJSON,
 		Headers: headers,
-	}, errs
+	}, nil
 }
 
 // MakeBids makes the bids
@@ -80,12 +88,6 @@ func (a *MobfoxpbAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
-	}
-
-	if response.StatusCode == http.StatusNotFound {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
@@ -103,13 +105,13 @@ func (a *MobfoxpbAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
 	for _, sb := range bidResp.SeatBid {
-		for i := range sb.Bid {
-			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+		for _, bid := range sb.Bid {
+			bidType, err := getMediaTypeForImp(bid.ImpID, internalRequest.Imp)
 			if err != nil {
 				errs = append(errs, err)
 			} else {
 				b := &adapters.TypedBid{
-					Bid:     &sb.Bid[i],
+					Bid:     &bid,
 					BidType: bidType,
 				}
 				bidResponse.Bids = append(bidResponse.Bids, b)
@@ -131,7 +133,7 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, 
 	}
 
 	// This shouldnt happen. Lets handle it just incase by returning an error.
-	return "", &errortypes.BadInput{
+	return "", &errortypes.BadServerResponse{
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
 	}
 }

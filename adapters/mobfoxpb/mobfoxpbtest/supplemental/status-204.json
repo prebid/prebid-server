@@ -72,6 +72,7 @@
           }
         }
       },
+      "expectedBidResponses": [],
       "mockResponse": {
         "status": 204,
         "body": {}
