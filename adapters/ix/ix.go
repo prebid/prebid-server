@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -15,11 +14,9 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 )
 
-var maxRequests = 20 // it's not a const for the unit test convenience
-
 type IxAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	URI         string
+	maxRequests int
 }
 
 // Name is used for cookies and such
@@ -36,23 +33,18 @@ func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.P
 }
 
 func (a *IxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	logAsJSON("bid-request: %s", request)
-
 	nImp := len(request.Imp)
-	if nImp == 0 {
-		return nil, nil
-	}
-	if nImp > maxRequests {
-		request.Imp = request.Imp[:maxRequests]
-		nImp = maxRequests
+	if nImp > a.maxRequests {
+		request.Imp = request.Imp[:a.maxRequests]
+		nImp = a.maxRequests
 	}
 
 	// Multi-size banner imps are split into single-size requests.
 	// The first size imp requests are added to the first slice.
 	// Additional size requests are added to the second slice and are merged with the first at the end.
 	// Preallocate the max possible size to avoid reallocating arrays.
-	requests := make([]*adapters.RequestData, 0, maxRequests)
-	multiSizeRequests := make([]*adapters.RequestData, 0, maxRequests-nImp)
+	requests := make([]*adapters.RequestData, 0, a.maxRequests)
+	multiSizeRequests := make([]*adapters.RequestData, 0, a.maxRequests-nImp)
 	errs := make([]error, 0, 1)
 
 	headers := http.Header{
@@ -63,7 +55,10 @@ func (a *IxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.
 	for iImp := range imps {
 		request.Imp = imps[iImp : iImp+1]
 		if request.Site != nil {
-			setSitePublisherId(request, iImp)
+			if err := setSitePublisherId(request, iImp); err != nil {
+				errs = append(errs, err)
+				continue
+			}
 		}
 
 		if request.Imp[0].Banner != nil {
@@ -94,7 +89,7 @@ func (a *IxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.
 	return append(requests, multiSizeRequests...), errs
 }
 
-func setSitePublisherId(request *openrtb.BidRequest, iImp int) {
+func setSitePublisherId(request *openrtb.BidRequest, iImp int) error {
 	if iImp == 0 {
 		// first impression - create a site and pub copy
 		site := *request.Site
@@ -107,14 +102,18 @@ func setSitePublisherId(request *openrtb.BidRequest, iImp int) {
 		request.Site = &site
 	}
 
-	// 'adapters/bidder.go': Bidder implementations may safely assume that this
-	// JSON has been validated by their static/bidder-params/{bidder}.json file.
 	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+		return err
+	}
+
 	var ixExt openrtb_ext.ExtImpIx
-	json.Unmarshal(request.Imp[0].Ext, &bidderExt)
-	json.Unmarshal(bidderExt.Bidder, &ixExt)
+	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
+		return err
+	}
 
 	request.Site.Publisher.ID = ixExt.SiteId
+	return nil
 }
 
 func getBannerFormats(banner *openrtb.Banner) []openrtb.Format {
@@ -135,9 +134,6 @@ func createRequestData(a *IxAdapter, request *openrtb.BidRequest, headers *http.
 }
 
 func (a *IxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if glog.V(3) {
-		glog.Infof("bid-response: status-code: %d, body: %s", response.StatusCode, response.Body)
-	}
 	switch {
 	case response.StatusCode == http.StatusNoContent:
 		return nil, nil
@@ -162,10 +158,10 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReques
 	// as a bid response bid type. They are linked by the impression id.
 	impMediaType := map[string]openrtb_ext.BidType{}
 	for _, imp := range internalRequest.Imp {
-		if imp.Video != nil {
-			impMediaType[imp.ID] = openrtb_ext.BidTypeVideo
-		} else {
+		if imp.Banner != nil {
 			impMediaType[imp.ID] = openrtb_ext.BidTypeBanner
+		} else if imp.Video != nil {
+			impMediaType[imp.ID] = openrtb_ext.BidTypeVideo
 		}
 	}
 
@@ -190,18 +186,11 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReques
 	return bidderResponse, errs
 }
 
-func logAsJSON(format string, arg interface{}) {
-	if glog.V(3) {
-		if s, err := json.Marshal(arg); err == nil {
-			glog.Infof(format, s)
-		}
-	}
-}
-
 // Builder builds a new instance of the Ix adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &IxAdapter{
-		URI: config.Endpoint,
+		URI:         config.Endpoint,
+		maxRequests: 20,
 	}
 	return bidder, nil
 }

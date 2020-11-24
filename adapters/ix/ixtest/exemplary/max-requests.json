@@ -68,7 +68,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ib.adnxs.com/openrtb2",
+                "uri": "http://host/endpoint",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
@@ -128,7 +128,7 @@
         },
         {
             "expectedRequest": {
-                "uri": "http://ib.adnxs.com/openrtb2",
+                "uri": "http://host/endpoint",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
