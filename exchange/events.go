@@ -40,7 +40,7 @@ func getExtEventsData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Ti
 
 // isModifyingVASTXMLAllowed returns true if this bidder config allows modifying VAST XML for event tracking
 func (ev *eventsData) isModifyingVASTXMLAllowed(bidderName string) bool {
-	return ev.bidderInfos[bidderName].ModifyingVastXmlAllowed
+	return ev.bidderInfos[bidderName].ModifyingVastXmlAllowed && ev.enabledForAccount
 }
 
 // modifyVAST injects event Impression url if needed, otherwise returns original VAST string
