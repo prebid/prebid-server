@@ -34,22 +34,21 @@ func (a *MobfoxpbAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 	reqCopy := *request
 	for _, imp := range request.Imp {
-		reqCopy.Imp = []openrtb.Imp{imp}
-
-		tagID, err = jsonparser.GetString(reqCopy.Imp[0].Ext, "bidder", "TagID")
+		tagID, err = jsonparser.GetString(imp.Ext, "bidder", "TagID")
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		reqCopy.Imp[0].TagID = tagID
-
+		imp.TagID = tagID
+		reqCopy.Imp = []openrtb.Imp{imp}
 		adapterReq, err := a.makeRequest(&reqCopy)
 		if err != nil {
 			errs = append(errs, err)
 		}
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
+			break
 		}
 	}
 	return adapterRequests, errs
