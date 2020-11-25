@@ -1398,6 +1398,9 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		},
 		UserSyncs: mockIdFetcher(spec.IncomingRequest.Usersyncs),
 	}
+	if spec.StartTime > 0 {
+		auctionRequest.StartTime = time.Unix(0, spec.StartTime*1e+6)
+	}
 
 	bid, err := ex.HoldAuction(context.Background(), auctionRequest, debugLog)
 	responseTimes := extractResponseTimes(t, filename, bid)
@@ -2541,6 +2544,7 @@ type exchangeSpec struct {
 	AssumeGDPRApplies bool                   `json:"assume_gdpr_applies"`
 	DebugLog          *DebugLog              `json:"debuglog,omitempty"`
 	EventsEnabled     bool                   `json:"events_enabled,omitempty"`
+	StartTime         int64                  `json:"start_time_ms,omitempty"`
 }
 
 type exchangeRequest struct {

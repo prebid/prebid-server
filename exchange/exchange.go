@@ -119,7 +119,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	}
 
 	cacheInstructions := getExtCacheInstructions(requestExt)
-	evData := getExtEventsData(&requestExt.Prebid, time.Now(), &r.Account, e.bidderInfo, e.externalURL)
+	evData := getExtEventsData(&requestExt.Prebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL)
 	targData := getExtTargetData(requestExt, &cacheInstructions)
 	if targData != nil {
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()

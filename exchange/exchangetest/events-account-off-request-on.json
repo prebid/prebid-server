@@ -1,5 +1,6 @@
 {
   "events_enabled": false,
+  "start_time_ms": 1234567890,
   "incomingRequest": {
     "ortbRequest": {
       "id": "some-request-id",
@@ -127,8 +128,8 @@
                 "prebid": {
                   "type": "video",
                   "events": {
-                    "imp": "http://localhost/event?t=imp&b=contending-bid&a=testaccount&bidder=audienceNetwork&ts=1605928405805",
-                    "win": "http://localhost/event?t=win&b=contending-bid&a=testaccount&bidder=audienceNetwork&ts=1605928405805"
+                    "imp": "http://localhost/event?t=imp&b=contending-bid&a=testaccount&bidder=audienceNetwork&ts=1234567890",
+                    "win": "http://localhost/event?t=win&b=contending-bid&a=testaccount&bidder=audienceNetwork&ts=1234567890"
                   }
                 }
               }
@@ -149,8 +150,8 @@
                 "prebid": {
                   "type": "video",
                   "events": {
-                    "imp": "http://localhost/event?t=imp&b=winning-bid&a=testaccount&bidder=appnexus&ts=1605928405805",
-                    "win": "http://localhost/event?t=win&b=winning-bid&a=testaccount&bidder=appnexus&ts=1605928405805"
+                    "imp": "http://localhost/event?t=imp&b=winning-bid&a=testaccount&bidder=appnexus&ts=1234567890",
+                    "win": "http://localhost/event?t=win&b=winning-bid&a=testaccount&bidder=appnexus&ts=1234567890"
                   }
                 }
               }
@@ -166,8 +167,8 @@
                 "prebid": {
                   "type": "video",
                   "events": {
-                    "imp": "http://localhost/event?t=imp&b=losing-bid&a=testaccount&bidder=appnexus&ts=1605928405805",
-                    "win": "http://localhost/event?t=win&b=losing-bid&a=testaccount&bidder=appnexus&ts=1605928405805"
+                    "imp": "http://localhost/event?t=imp&b=losing-bid&a=testaccount&bidder=appnexus&ts=1234567890",
+                    "win": "http://localhost/event?t=win&b=losing-bid&a=testaccount&bidder=appnexus&ts=1234567890"
                   }
                 }
               }
@@ -183,8 +184,8 @@
                 "prebid": {
                   "type": "video",
                   "events": {
-                    "imp": "http://localhost/event?t=imp&b=other-bid&a=testaccount&bidder=appnexus&ts=1605928405805",
-                    "win": "http://localhost/event?t=win&b=other-bid&a=testaccount&bidder=appnexus&ts=1605928405805"
+                    "imp": "http://localhost/event?t=imp&b=other-bid&a=testaccount&bidder=appnexus&ts=1234567890",
+                    "win": "http://localhost/event?t=win&b=other-bid&a=testaccount&bidder=appnexus&ts=1234567890"
                   }
                 }
               }
@@ -192,6 +193,9 @@
           ]
         }
       ]
+    },
+    "prebid": {
+      "auctiontimestamp": 1234567890
     }
   }
 }
