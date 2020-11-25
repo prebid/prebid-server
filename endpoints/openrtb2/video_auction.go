@@ -93,13 +93,14 @@ func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamVal
 11. Build proper response format.
 */
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	start := time.Now()
 
 	vo := analytics.VideoObject{
-		Status: http.StatusOK,
-		Errors: make([]error, 0),
+		Status:    http.StatusOK,
+		Errors:    make([]error, 0),
+		StartTime: start,
 	}
 
-	start := time.Now()
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeVideo,
@@ -266,6 +267,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		Account:      *account,
 		UserSyncs:    usersyncs,
 		RequestType:  labels.RType,
+		StartTime:    start,
 		LegacyLabels: labels,
 	}
 

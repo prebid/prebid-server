@@ -252,6 +252,7 @@ func TestDebugBehaviour(t *testing.T) {
 			BidRequest: bidRequest,
 			Account:    config.Account{},
 			UserSyncs:  &emptyUsersync{},
+			StartTime:  time.Now(),
 		}
 
 		// Run test
@@ -264,6 +265,10 @@ func TestDebugBehaviour(t *testing.T) {
 		actualExt := &openrtb_ext.ExtBidResponse{}
 		err = json.Unmarshal(outBidResponse.Ext, actualExt)
 		assert.NoErrorf(t, err, "%s. \"ext\" JSON field could not be unmarshaled. err: \"%v\" \n outBidResponse.Ext: \"%s\" \n", test.desc, err, outBidResponse.Ext)
+
+		assert.NotEmpty(t, actualExt.Prebid, "%s. ext.prebid should not be empty")
+		assert.NotEmpty(t, actualExt.Prebid.AuctionTimestamp, "%s. ext.prebid.auctiontimestamp should not be empty when AuctionRequest.StartTime is set")
+		assert.Equal(t, auctionRequest.StartTime.UnixNano()/1e+6, actualExt.Prebid.AuctionTimestamp, "%s. ext.prebid.auctiontimestamp has incorrect value")
 
 		if test.out.debugInfoIncluded {
 			assert.NotNilf(t, actualExt, "%s. ext.debug field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", test.desc, actualExt.Debug)
