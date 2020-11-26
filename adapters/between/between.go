@@ -19,9 +19,9 @@ type BetweenAdapter struct {
 	EndpointTemplate template.Template
 }
 
-const (
-	defaultBidfloor = 0.00001 // BetweenSSP requires bidfloor > 0. If BidFloor of openrtb_ext.ExtImpBetween is zero, set it to defaultBidFloor value, see addImpProps
-)
+// BetweenSSP requires bidfloor > 0.
+// If BidFloor of openrtb_ext.ExtImpBetween is zero, set it to defaultBidFloor value, see addImpProps
+const defaultBidfloor = 0.00001
 
 func (a *BetweenAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
@@ -73,7 +73,7 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpBetween, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "ignoring BidRequest: no valid Imps",
+			Message: fmt.Sprintf("ignoring imp id=%s, invalid BidderExt", imp.ID),
 		}
 	}
 
@@ -131,14 +131,10 @@ func buildImpBanner(imp *openrtb.Imp) error {
 // Add Between required properties to Imp object
 func addImpProps(imp *openrtb.Imp, secure *int8, betweenExt *openrtb_ext.ExtImpBetween) {
 	imp.Secure = secure
-	bidFloor, err := strconv.ParseFloat(betweenExt.BidFloor, 64)
-	if err != nil {
-		bidFloor = 0
-	}
-	if bidFloor > 0 {
-		imp.BidFloor = bidFloor
-	} else {
+	if bidFloor, err := strconv.ParseFloat(betweenExt.BidFloor, 64); err != nil || bidFloor <= 0 {
 		imp.BidFloor = defaultBidfloor
+	} else {
+		imp.BidFloor = bidFloor
 	}
 }
 
@@ -168,14 +164,14 @@ func preprocess(request *openrtb.BidRequest) (*openrtb_ext.ExtImpBetween, []erro
 		betweenExt, err = unpackImpExt(&imp)
 		if err != nil {
 			errors = append(errors, err)
-			return nil, errors
+			continue
 		}
 
 		addImpProps(&imp, &secure, betweenExt)
 
 		if err := buildImpBanner(&imp); err != nil {
 			errors = append(errors, err)
-			return nil, errors
+			continue
 		}
 		resImps = append(resImps, imp)
 	}

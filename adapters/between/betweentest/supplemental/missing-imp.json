@@ -17,7 +17,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "ignoring BidRequest: no valid Imps",
+      "value": "ignoring imp id=missing-extbid-test, invalid BidderExt",
       "comparison": "literal"
     }
   ]
