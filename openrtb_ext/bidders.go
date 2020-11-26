@@ -52,6 +52,7 @@ const (
 	BidderAdOcean          BidderName = "adocean"
 	BidderAdoppler         BidderName = "adoppler"
 	BidderAdpone           BidderName = "adpone"
+	BidderAdot             BidderName = "adot"
 	BidderAdprime          BidderName = "adprime"
 	BidderAdtarget         BidderName = "adtarget"
 	BidderAdtelligent      BidderName = "adtelligent"
@@ -147,6 +148,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdOcean,
 		BidderAdoppler,
 		BidderAdpone,
+		BidderAdot,
 		BidderAdprime,
 		BidderAdtarget,
 		BidderAdtelligent,

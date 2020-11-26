@@ -1,0 +1,100 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-parallax-id",
+    "imp": [
+      {
+        "id": "test-imp-parallax-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ],
+          "w": 300,
+          "h": 600
+        },
+        "ext": {
+          "adot": {
+            "parallax": true
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dsp.adotmob.com/headerbidding/bidrequest",
+        "body": {
+          "id": "test-request-parallax-id",
+          "imp": [
+            {
+              "id": "test-imp-parallax-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ],
+                "w": 300,
+                "h": 600
+              },
+              "ext": {
+                "adot": {
+                  "parallax": true
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "adot",
+              "bid": [{
+                "id": "7706636740145184841",
+                "impid": "test-imp-banner-id",
+                "price": 0.5,
+                "adm": "some-test-ad",
+                "adomain": ["adomain.com"],
+                "cid": "5dcd2cbaf623b70018a42512",
+                "crid": "5e173e4556f69e0010e7cd9f",
+                "w": 320,
+                "h": 480
+              }]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBids": [
+    {
+      "bid": {
+        "id": "test-request-parallax-id",
+        "impid": "test-imp-parallax-id",
+        "price": 0.5,
+        "adm": "some-test-ad",
+        "adid": "29681110",
+        "adomain": ["adomain.com"],
+        "cid": "5dcd2cbaf623b70018a42512",
+        "crid": "5e173e4556f69e0010e7cd9f",
+        "w": 300,
+        "h": 600
+      },
+      "type": "banner"
+    }
+  ]
+
+}
+
+
