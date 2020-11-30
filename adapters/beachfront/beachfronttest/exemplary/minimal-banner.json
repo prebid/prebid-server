@@ -24,7 +24,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -57,38 +56,40 @@
           "ua": "",
           "adapterName": "BF_PREBID_S2S",
           "adapterVersion": "0.9.0",
-          "user": {
-          }
+          "user": {}
         }
       },
       "mockResponse": {
         "status": 200,
         "body": [
           {
-            "crid":"crid_1",
-            "price":2.942808,
-            "w":300,
-            "h":250,
-            "slot":"div-gpt-ad-1460505748561-0",
-            "adm":"<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
+            "crid": "crid_1",
+            "price": 2.942808,
+            "w": 300,
+            "h": 250,
+            "slot": "div-gpt-ad-1460505748561-0",
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
           }
         ]
       }
     }
   ],
-
-  "expectedBids": [
+  "expectedBidResponses": [
     {
-      "bid": {
-        "id": "12345678",
-        "impid": "test-slot",
-        "price": 2,
-        "adm": "\u003cdiv id=\"12345678\" style=\"width:300;height:250;background-color:black;color:white;\"\u003e300x250\u003c\\div\u003e",
-        "crid": "crid_1",
-        "w": 300,
-        "h": 250
-      },
-      "type": "banner"
+      "bids": [
+        {
+          "bid": {
+            "id": "div-gpt-ad-1460505748561-0Banner",
+            "impid": "div-gpt-ad-1460505748561-0",
+            "price": 2.942808,
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>",
+            "crid": "crid_1",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }

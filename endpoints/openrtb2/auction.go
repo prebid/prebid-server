@@ -96,12 +96,6 @@ type endpointDeps struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
-	ao := analytics.AuctionObject{
-		Status: http.StatusOK,
-		Errors: make([]error, 0),
-	}
-
 	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
 	// to wait for bids. However, tmax may be defined in the Stored Request data.
 	//
@@ -109,6 +103,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
+
+	ao := analytics.AuctionObject{
+		Status:    http.StatusOK,
+		Errors:    make([]error, 0),
+		StartTime: start,
+	}
+
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeORTB2Web,
@@ -161,10 +162,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	auctionRequest := exchange.AuctionRequest{
-		BidRequest:  req,
-		Account:     *account,
-		UserSyncs:   usersyncs,
-		RequestType: labels.RType,
+		BidRequest:   req,
+		Account:      *account,
+		UserSyncs:    usersyncs,
+		RequestType:  labels.RType,
+		StartTime:    start,
+		LegacyLabels: labels,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -785,6 +788,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 
 	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
+	otherExtElements := 0
 	for bidder, ext := range bidderExts {
 		if isBidderToValidate(bidder) {
 			coreBidder := bidder
@@ -803,6 +807,8 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 					return []error{fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)}
 				}
 			}
+		} else {
+			otherExtElements++
 		}
 	}
 
@@ -818,8 +824,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 		imp.Ext = extJSON
 	}
 
-	// TODO #713 Fix this here
-	if len(bidderExts) < 1 {
+	if len(bidderExts)-otherExtElements == 0 {
 		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
 	}
 

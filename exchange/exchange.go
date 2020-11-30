@@ -102,6 +102,11 @@ type AuctionRequest struct {
 	Account     config.Account
 	UserSyncs   IdFetcher
 	RequestType pbsmetrics.RequestType
+	StartTime   time.Time
+
+	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
+	// in HoldAuction until we get to factoring it away. Do not use for anything new.
+	LegacyLabels pbsmetrics.Labels
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb.BidResponse, error) {
@@ -130,9 +135,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	usersyncIfAmbiguous := e.parseUsersyncIfAmbiguous(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	labels := buildLabels(r)
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, r.BidRequest, requestExt, r.UserSyncs, blabels, labels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig)
+	cleanRequests, aliases, privacyLabels, errs := cleanOpenRTBRequests(ctx, r.BidRequest, requestExt, r.UserSyncs, blabels, r.LegacyLabels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig, &r.Account)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -185,7 +189,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 	}
 
-	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, r.BidRequest, debugInfo, errs)
+	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
 
 	// Ensure caching errors are added in case auc.doCache was called and errors were returned
 	if len(cacheErrs) > 0 {
@@ -211,30 +215,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, errs)
-}
-
-func buildLabels(r AuctionRequest) pbsmetrics.Labels {
-	labels := pbsmetrics.Labels{
-		RType:         r.RequestType,
-		PubID:         r.Account.ID,
-		RequestStatus: pbsmetrics.RequestStatusOK,
-	}
-
-	if r.BidRequest.App != nil {
-		labels.Source = pbsmetrics.DemandApp
-	} else if r.BidRequest.Site != nil {
-		labels.Source = pbsmetrics.DemandWeb
-	} else {
-		labels.Source = pbsmetrics.DemandUnknown
-	}
-
-	if r.UserSyncs.LiveSyncCount() == 0 {
-		labels.CookieFlag = pbsmetrics.CookieFlagNo
-	} else {
-		labels.CookieFlag = pbsmetrics.CookieFlagYes
-	}
-
-	return labels
 }
 
 func (e *exchange) parseUsersyncIfAmbiguous(bidRequest *openrtb.BidRequest) bool {
@@ -735,7 +715,8 @@ func getPrimaryAdServer(adServerId int) (string, error) {
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, req *openrtb.BidRequest, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse {
+func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, r AuctionRequest, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse {
+	req := r.BidRequest
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
 		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError, len(adapterBids)),
 		ResponseTimeMillis:   make(map[openrtb_ext.BidderName]int, len(adapterBids)),
@@ -745,6 +726,12 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
 			HttpCalls:       make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
 			ResolvedRequest: req,
+		}
+	}
+	if !r.StartTime.IsZero() {
+		// auctiontimestamp is the only response.ext.prebid attribute we may emit
+		bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{
+			AuctionTimestamp: r.StartTime.UnixNano() / 1e+6,
 		}
 	}
 
