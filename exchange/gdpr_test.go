@@ -13,7 +13,7 @@ func TestExtractGDPR(t *testing.T) {
 	tests := []struct {
 		description string
 		giveRegs    *openrtb.Regs
-		wantGDPR    gdpr.GDPRState
+		wantGDPR    gdpr.Signal
 	}{
 		{
 			description: "Regs Ext GDPR = 0",

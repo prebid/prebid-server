@@ -181,7 +181,7 @@ func TestAllowPersonalInfo(t *testing.T) {
 		description string
 		bidderName  openrtb_ext.BidderName
 		publisherID string
-		gdpr        GDPRState
+		gdpr        Signal
 		consent     string
 		allowPI     bool
 	}{
@@ -194,25 +194,25 @@ func TestAllowPersonalInfo(t *testing.T) {
 			allowPI:     true,
 		},
 		{
-			description: "Allow PI - No GDPR",
+			description: "Allow PI - known vendor with No GDPR",
 			bidderName:  openrtb_ext.BidderPubmatic,
 			gdpr:        NoGDPR,
 			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
 			allowPI:     true,
 		},
 		{
-			description: "Don't allow PI - known vendor without TCF1 purposes",
-			bidderName:  openrtb_ext.BidderAppnexus,
-			gdpr:        YesGDPR,
-			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
-			allowPI:     false,
-		},
-		{
-			description: "Allow PI - known vendor with TCF1 purposes",
+			description: "Allow PI - known vendor with Yes GDPR",
 			bidderName:  openrtb_ext.BidderPubmatic,
 			gdpr:        YesGDPR,
 			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
 			allowPI:     true,
+		},
+		{
+			description: "Don't allow PI - known vendor with Yes GDPR but vendor is without TCF1 purposes",
+			bidderName:  openrtb_ext.BidderAppnexus,
+			gdpr:        YesGDPR,
+			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
+			allowPI:     false,
 		},
 		{
 			description: "PI allowed according to host setting UserSyncIfAmbiguous - known vendor with ambiguous GDPR and empty consent",

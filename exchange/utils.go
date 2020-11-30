@@ -80,9 +80,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	//TODO(bfs): if an error is encountered while extracing GDPR or Consent, should user syncing be considered ambiguous or don't sync?
-	subjectToGDPR := extractGDPR(orig)
+	gdprSignal := extractGDPR(orig)
 	consent := extractConsent(orig)
-	gdprEnforced := subjectToGDPR == gdpr.YesGDPR || (subjectToGDPR == gdpr.AmbiguousGDPR && !usersyncIfAmbiguous)
+	gdprEnforced := gdprSignal == gdpr.YesGDPR || (gdprSignal == gdpr.AmbiguousGDPR && !usersyncIfAmbiguous)
 	ampGDPRException := (labels.RType == pbsmetrics.ReqTypeAMP) && gDPR.AMPException()
 
 	ccpaEnforcer, err := extractCCPA(orig, privacyConfig, account, aliases, integrationTypeMap[labels.RType])
@@ -125,7 +125,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
 			var publisherID = labels.PubID
-			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, subjectToGDPR, consent)
+			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, gdprSignal, consent)
 			privacyEnforcement.GDPRGeo = !geo && err == nil
 			privacyEnforcement.GDPRID = !id && err == nil
 		} else {

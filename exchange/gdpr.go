@@ -8,18 +8,17 @@ import (
 )
 
 // ExtractGDPR will pull the gdpr flag from an openrtb request
-func extractGDPR(bidRequest *openrtb.BidRequest) (subjectToGDPR gdpr.GDPRState) {
+func extractGDPR(bidRequest *openrtb.BidRequest) gdpr.Signal {
 	var re regsExt
 	var err error
 	if bidRequest.Regs != nil {
 		err = json.Unmarshal(bidRequest.Regs.Ext, &re)
 	}
 	if re.GDPR == nil || err != nil {
-		subjectToGDPR = gdpr.AmbiguousGDPR
+		return gdpr.AmbiguousGDPR
 	} else {
-		subjectToGDPR = gdpr.GDPRState(*re.GDPR)
+		return gdpr.Signal(*re.GDPR)
 	}
-	return
 }
 
 // ExtractConsent will pull the consent string from an openrtb request
