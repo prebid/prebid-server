@@ -106,13 +106,13 @@ type AuctionRequest struct {
 	LegacyLabels pbsmetrics.Labels
 }
 
-// AuctionRequestBidder holds the bidder specific request and all other
+// BidderRequest holds the bidder specific request and all other
 // information needed by to process that request.
-type AuctionRequestBidder struct {
-	Request  *openrtb.BidRequest
-	Name     openrtb_ext.BidderName
-	CoreName openrtb_ext.BidderName
-	Labels   pbsmetrics.AdapterLabels
+type BidderRequest struct {
+	BidRequest     *openrtb.BidRequest
+	BidderName     openrtb_ext.BidderName
+	BidderCoreName openrtb_ext.BidderName
+	BidderLabels   pbsmetrics.AdapterLabels
 }
 	}
 }
@@ -144,12 +144,12 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	reqBidders, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, blabels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, blabels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
 	// List of bidders we have requests for.
-	liveAdapters := listBiddersWithRequests(reqBidders)
+	liveAdapters := listBiddersWithRequests(bidderRequests)
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
@@ -159,7 +159,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.currencyConverter.Rates()
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, reqBidders, bidAdjustmentFactors, blabels, conversions)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, blabels, conversions)
 
 	var auc *auction
 	var cacheErrs []error
@@ -332,36 +332,36 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auc
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *exchange) getAllBids(ctx context.Context, reqBidders []AuctionRequestBidder, bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, conversions currencies.Conversions) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
+func (e *exchange) getAllBids(ctx context.Context, bidderRequests []BidderRequest, bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, conversions currencies.Conversions) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
-	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(reqBidders))
-	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(reqBidders))
-	chBids := make(chan *bidResponseWrapper, len(reqBidders))
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(bidderRequests))
+	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(bidderRequests))
+	chBids := make(chan *bidResponseWrapper, len(bidderRequests))
 	bidsFound := false
 
-	for _, bidder := range reqBidders {
+	for _, bidder := range bidderRequests {
 		// Here we actually call the adapters and collect the bids.
-		bidderRunner := e.recoverSafely(reqBidders, func(bidder AuctionRequestBidder, conversions currencies.Conversions) {
+		bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currencies.Conversions) {
 			// Passing in aName so a doesn't change out from under the go routine
-			if bidder.Labels.Adapter == "" {
-				glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", bidder.Name, bidder.CoreName)
-				bidder.Labels.Adapter = bidder.CoreName
+			if bidder.BidderLabels.Adapter == "" {
+				glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", bidder.BidderName, bidder.BidderCoreName)
+				bidder.BidderLabels.Adapter = bidder.BidderCoreName
 			}
 			brw := new(bidResponseWrapper)
-			brw.bidder = bidder.Name
+			brw.bidder = bidder.BidderName
 			// Defer basic metrics to insure we capture them after all the values have been set
 			defer func() {
-				e.me.RecordAdapterRequest(bidder.Labels)
+				e.me.RecordAdapterRequest(bidder.BidderLabels)
 			}()
 			start := time.Now()
 
 			adjustmentFactor := 1.0
-			if givenAdjustment, ok := bidAdjustments[string(bidder.Name)]; ok {
+			if givenAdjustment, ok := bidAdjustments[string(bidder.BidderName)]; ok {
 				adjustmentFactor = givenAdjustment
 			}
 			var reqInfo adapters.ExtraRequestInfo
-			reqInfo.PbsEntryPoint = bidder.Labels.RType
-			bids, err := e.adapterMap[bidder.CoreName].requestBid(ctx, bidder.Request, bidder.Name, adjustmentFactor, conversions, &reqInfo)
+			reqInfo.PbsEntryPoint = bidder.BidderLabels.RType
+			bids, err := e.adapterMap[bidder.BidderCoreName].requestBid(ctx, bidder.BidRequest, bidder.BidderName, adjustmentFactor, conversions, &reqInfo)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -374,18 +374,18 @@ func (e *exchange) getAllBids(ctx context.Context, reqBidders []AuctionRequestBi
 			}
 
 			// Timing statistics
-			e.me.RecordAdapterTime(bidder.Labels, time.Since(start))
+			e.me.RecordAdapterTime(bidder.BidderLabels, time.Since(start))
 			serr := errsToBidderErrors(err)
-			bidder.Labels.AdapterBids = bidsToMetric(brw.adapterBids)
-			bidder.Labels.AdapterErrors = errorsToMetric(err)
+			bidder.BidderLabels.AdapterBids = bidsToMetric(brw.adapterBids)
+			bidder.BidderLabels.AdapterErrors = errorsToMetric(err)
 			// Append any bid validation errors to the error list
 			ae.Errors = serr
 			brw.adapterExtra = ae
 			if bids != nil {
 				for _, bid := range bids.bids {
 					var cpm = float64(bid.bid.Price * 1000)
-					e.me.RecordAdapterPrice(bidder.Labels, cpm)
-					e.me.RecordAdapterBidReceived(bidder.Labels, bid.bidType, bid.bid.AdM != "")
+					e.me.RecordAdapterPrice(bidder.BidderLabels, cpm)
+					e.me.RecordAdapterBidReceived(bidder.BidderLabels, bid.bidType, bid.bid.AdM != "")
 				}
 			}
 			chBids <- brw
@@ -393,7 +393,7 @@ func (e *exchange) getAllBids(ctx context.Context, reqBidders []AuctionRequestBi
 		go bidderRunner(bidder, conversions)
 	}
 	// Wait for the bidders to do their thing
-	for i := 0; i < len(reqBidders); i++ {
+	for i := 0; i < len(bidderRequests); i++ {
 		brw := <-chBids
 
 		//if bidder returned no bids back - remove bidder from further processing
@@ -411,15 +411,17 @@ func (e *exchange) getAllBids(ctx context.Context, reqBidders []AuctionRequestBi
 	return adapterBids, adapterExtra, bidsFound
 }
 
-func (e *exchange) recoverSafely(reqBidders []AuctionRequestBidder, inner func(AuctionRequestBidder, currencies.Conversions), chBids chan *bidResponseWrapper) func(AuctionRequestBidder, currencies.Conversions) {
-	return func(bidder AuctionRequestBidder, conversions currencies.Conversions) {
+func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
+	inner func(BidderRequest, currencies.Conversions),
+	chBids chan *bidResponseWrapper) func(BidderRequest, currencies.Conversions) {
+	return func(bidderRequest BidderRequest, conversions currencies.Conversions) {
 		defer func() {
 			if r := recover(); r != nil {
 
 				allBidders := ""
 				sb := strings.Builder{}
-				for _, bidder := range reqBidders {
-					sb.WriteString(bidder.Name.String())
+				for _, bidder := range bidderRequests {
+					sb.WriteString(bidder.BidderName.String())
 					sb.WriteString(",")
 				}
 				if sb.Len() > 0 {
@@ -428,15 +430,15 @@ func (e *exchange) recoverSafely(reqBidders []AuctionRequestBidder, inner func(A
 
 				glog.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. "+
 					"Account id: %s, All Bidders: %s, Stack trace is: %v",
-					bidder.CoreName, r, bidder.Labels.PubID, allBidders, string(debug.Stack()))
-				e.me.RecordAdapterPanic(bidder.Labels)
+					bidderRequest.BidderCoreName, r, bidderRequest.BidderLabels.PubID, allBidders, string(debug.Stack()))
+				e.me.RecordAdapterPanic(bidderRequest.BidderLabels)
 				// Let the master request know that there is no data here
 				brw := new(bidResponseWrapper)
 				brw.adapterExtra = new(seatResponseExtra)
 				chBids <- brw
 			}
 		}()
-		inner(bidder, conversions)
+		inner(bidderRequest, conversions)
 	}
 }
 
@@ -876,11 +878,11 @@ func buildCacheURL(cache prebid_cache_client.Client, uuid string) string {
 	return strings.TrimPrefix(cacheURL.String(), "//")
 }
 
-func listBiddersWithRequests(bidders []AuctionRequestBidder) []openrtb_ext.BidderName {
+func listBiddersWithRequests(bidders []BidderRequest) []openrtb_ext.BidderName {
 	liveAdapters := make([]openrtb_ext.BidderName, len(bidders))
 	i := 0
 	for _, bidder := range bidders {
-		liveAdapters[i] = bidder.Name
+		liveAdapters[i] = bidder.BidderName
 		i++
 	}
 	// Randomize the list of adapters to make the auction more fair

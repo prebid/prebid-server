@@ -51,14 +51,14 @@ func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext
 //
 //   1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
 //   2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
-//   3. BidRequest.User.BuyerUID will be set to that AuctionRequestBidder's ID.
+//   3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
 func cleanOpenRTBRequests(ctx context.Context,
 	req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
-	privacyConfig config.Privacy) (reqBidders []AuctionRequestBidder, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
+	privacyConfig config.Privacy) (bidderRequests []BidderRequest, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, errs := splitImps(req.BidRequest.Imp)
 	if len(errs) > 0 {
@@ -70,9 +70,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	reqBidders, errs = getAuctionRequestBidders(req, requestExt, impsByBidder, aliases)
+	bidderRequests, errs = getAuctionBidderRequests(req, requestExt, impsByBidder, aliases)
 
-	if len(reqBidders) == 0 {
+	if len(bidderRequests) == 0 {
 		return
 	}
 
@@ -111,14 +111,14 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	// bidder level privacy policies
-	for _, bidder := range reqBidders {
+	for _, bidder := range bidderRequests {
 		// CCPA
-		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidder.Name.String())
+		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidder.BidderName.String())
 
 		// GDPR
 		if gdpr == 1 && gdprEnabled {
 			var publisherID = req.LegacyLabels.PubID
-			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, bidder.CoreName, publisherID, consent)
+			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, bidder.BidderCoreName, publisherID, consent)
 			privacyEnforcement.GDPRGeo = !geo && err == nil
 			privacyEnforcement.GDPRID = !id && err == nil
 		} else {
@@ -126,7 +126,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			privacyEnforcement.GDPRID = false
 		}
 
-		privacyEnforcement.Apply(bidder.Request, ampGDPRException)
+		privacyEnforcement.Apply(bidder.BidRequest, ampGDPRException)
 	}
 
 	return
@@ -172,12 +172,12 @@ func extractLMT(orig *openrtb.BidRequest, privacyConfig config.Privacy) privacy.
 	}
 }
 
-func getAuctionRequestBidders(req AuctionRequest,
+func getAuctionBidderRequests(req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	impsByBidder map[string][]openrtb.Imp,
-	aliases map[string]string) ([]AuctionRequestBidder, []error) {
+	aliases map[string]string) ([]BidderRequest, []error) {
 
-	reqBidders := make([]AuctionRequestBidder, 0, len(impsByBidder))
+	bidderRequests := make([]BidderRequest, 0, len(impsByBidder))
 
 	explicitBuyerUIDs, err := extractBuyerUIDs(req.BidRequest.User)
 	if err != nil {
@@ -204,11 +204,11 @@ func getAuctionRequestBidders(req AuctionRequest,
 		reqCopy.Ext = reqExt
 		prepareSource(&reqCopy, bidder, sChainsByBidder)
 
-		bidder := AuctionRequestBidder{
-			Name:     openrtb_ext.BidderName(bidder),
-			CoreName: coreBidder,
-			Request:  &reqCopy,
-			Labels: pbsmetrics.AdapterLabels{
+		bidder := BidderRequest{
+			BidderName:     openrtb_ext.BidderName(bidder),
+			BidderCoreName: coreBidder,
+			BidRequest:     &reqCopy,
+			BidderLabels: pbsmetrics.AdapterLabels{
 				Source:      req.LegacyLabels.Source,
 				RType:       req.LegacyLabels.RType,
 				Adapter:     coreBidder,
@@ -217,15 +217,15 @@ func getAuctionRequestBidders(req AuctionRequest,
 				AdapterBids: pbsmetrics.AdapterBidPresent,
 			},
 		}
-		if hadSync := prepareUser(&reqCopy, bidder.Name.String(), coreBidder, explicitBuyerUIDs, req.UserSyncs); !hadSync && req.BidRequest.App == nil {
-			bidder.Labels.CookieFlag = pbsmetrics.CookieFlagNo
+		if hadSync := prepareUser(&reqCopy, bidder.BidderName.String(), coreBidder, explicitBuyerUIDs, req.UserSyncs); !hadSync && req.BidRequest.App == nil {
+			bidder.BidderLabels.CookieFlag = pbsmetrics.CookieFlagNo
 		} else {
-			bidder.Labels.CookieFlag = pbsmetrics.CookieFlagYes
+			bidder.BidderLabels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
 
-		reqBidders = append(reqBidders, bidder)
+		bidderRequests = append(bidderRequests, bidder)
 	}
-	return reqBidders, nil
+	return bidderRequests, nil
 }
 
 func getExtJson(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
