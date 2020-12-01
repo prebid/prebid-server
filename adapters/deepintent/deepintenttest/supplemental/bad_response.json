@@ -53,7 +53,9 @@
                                     "w": 300,
                                     "h": 600
                                 }
-                            ]
+                            ],
+                            "h":250,
+                            "w":300
                         },
                         "tagid": "17",
                         "displaymanager": "di_prebid",

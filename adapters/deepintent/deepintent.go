@@ -108,6 +108,18 @@ func (d *DeepintentAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 func (d *DeepintentAdapter) preprocess(request openrtb.BidRequest) (*adapters.RequestData, []error) {
 
 	var errs []error
+	impsCount := len(request.Imp)
+	resImps := make([]openrtb.Imp, 0, impsCount)
+
+	for _, imp := range request.Imp {
+
+		if err := buildImpBanner(&imp); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		resImps = append(resImps, imp)
+	}
+	request.Imp = resImps
 
 	reqJSON, err := json.Marshal(request)
 
@@ -125,6 +137,32 @@ func (d *DeepintentAdapter) preprocess(request openrtb.BidRequest) (*adapters.Re
 		Body:    reqJSON,
 		Headers: headers,
 	}, errs
+}
+
+func buildImpBanner(imp *openrtb.Imp) error {
+
+	if imp.Banner == nil {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("We need a Banner Object in the request"),
+		}
+	}
+
+	if imp.Banner.W == nil && imp.Banner.H == nil {
+		bannerCopy := *imp.Banner
+		banner := &bannerCopy
+
+		if len(banner.Format) == 0 {
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("At least one size is required"),
+			}
+		}
+		format := banner.Format[0]
+		banner.W = &format.W
+		banner.H = &format.H
+		imp.Banner = banner
+	}
+
+	return nil
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
