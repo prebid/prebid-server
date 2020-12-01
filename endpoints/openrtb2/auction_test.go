@@ -1910,7 +1910,6 @@ type mockBidExchange struct {
 
 // mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext
 // into the bidResponse.Ext to assert the bidder adapters that were not filtered out in the validation process
-// It is also a helper function that asserts the expected AuctionRequest if needed
 func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
 	bidResponse := &openrtb.BidResponse{
 		ID:    r.BidRequest.ID,
