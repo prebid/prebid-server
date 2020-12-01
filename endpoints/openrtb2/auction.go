@@ -125,7 +125,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
-	req, errL := deps.parseRequest(r)
+	req, extInfo, errL := deps.parseRequest(r)
 
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
@@ -170,6 +170,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		RequestType:  labels.RType,
 		StartTime:    start,
 		LegacyLabels: labels,
+		ExtInfo:      extInfo,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -212,7 +213,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, extInfo exchange.AuctionExtInfo, errs []error) {
 	req = &openrtb.BidRequest{}
 	errs = nil
 
@@ -256,7 +257,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
-	errL := deps.validateRequest(req)
+	extInfo, errL := deps.validateRequest(req)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -279,18 +280,19 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
+func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) (exchange.AuctionExtInfo, []error) {
 	errL := []error{}
+	extInfo := exchange.AuctionExtInfo{}
 	if req.ID == "" {
-		return []error{errors.New("request missing required field: \"id\"")}
+		return extInfo, []error{errors.New("request missing required field: \"id\"")}
 	}
 
 	if req.TMax < 0 {
-		return []error{fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)}
+		return extInfo, []error{fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)}
 	}
 
 	if len(req.Imp) < 1 {
-		return []error{errors.New("request.imp must contain at least one element.")}
+		return extInfo, []error{errors.New("request.imp must contain at least one element.")}
 	}
 
 	if len(req.Cur) > 1 {
@@ -302,60 +304,61 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	// source.TID exists and If it doesn't, fill it with a randomly generated UUID
 	if deps.cfg.AutoGenSourceTID {
 		if err := validateAndFillSourceTID(req); err != nil {
-			return []error{err}
+			return extInfo, []error{err}
 		}
 	}
 
 	var aliases map[string]string
 	if bidExt, err := deps.parseBidExt(req.Ext); err != nil {
-		return []error{err}
+		return extInfo, []error{err}
 	} else if bidExt != nil {
 		aliases = bidExt.Prebid.Aliases
 
 		if err := deps.validateAliases(aliases); err != nil {
-			return []error{err}
+			return extInfo, []error{err}
 		}
 
 		if err := validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
-			return []error{err}
+			return extInfo, []error{err}
 		}
 
 		if err := validateSChains(bidExt); err != nil {
-			return []error{err}
+			return extInfo, []error{err}
 		}
+		extInfo.BidExt = bidExt
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
-		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
+		return extInfo, append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
 	if err := deps.validateSite(req.Site); err != nil {
-		return append(errL, err)
+		return extInfo, append(errL, err)
 	}
 
 	if err := deps.validateApp(req.App); err != nil {
-		return append(errL, err)
+		return extInfo, append(errL, err)
 	}
 
-	if err := validateUser(req.User, aliases); err != nil {
-		return append(errL, err)
+	if err := validateUser(req.User, aliases, extInfo); err != nil {
+		return extInfo, append(errL, err)
 	}
 
-	if err := validateRegs(req.Regs); err != nil {
-		return append(errL, err)
+	if err := validateRegs(req.Regs, extInfo); err != nil {
+		return extInfo, append(errL, err)
 	}
 
 	if ccpaPolicy, err := ccpa.ReadFromRequest(req); err != nil {
-		return append(errL, err)
+		return extInfo, append(errL, err)
 	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
 		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
 			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
 			consentWriter := ccpa.ConsentWriter{""}
 			if err := consentWriter.Write(req); err != nil {
-				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
+				return extInfo, append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
 			}
 		} else {
-			return append(errL, err)
+			return extInfo, append(errL, err)
 		}
 	}
 
@@ -366,16 +369,16 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
 		}
 		impIDs[imp.ID] = index
-		errs := deps.validateImp(imp, aliases, index)
+		errs := deps.validateImp(imp, aliases, index, extInfo)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
 		if errortypes.ContainsFatalError(errs) {
-			return errL
+			return extInfo, errL
 		}
 	}
 
-	return errL
+	return extInfo, errL
 }
 
 func validateAndFillSourceTID(req *openrtb.BidRequest) error {
@@ -411,7 +414,7 @@ func validateSChains(req *openrtb_ext.ExtRequest) error {
 	return err
 }
 
-func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]string, index int) []error {
+func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]string, index int, extInfo exchange.AuctionExtInfo) []error {
 	if imp.ID == "" {
 		return []error{fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)}
 	}
@@ -436,7 +439,7 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		return []error{fmt.Errorf("request.imp[%d].audio.mimes must contain at least one supported MIME type", index)}
 	}
 
-	if err := fillAndValidateNative(imp.Native, index); err != nil {
+	if err := fillAndValidateNative(imp.Native, index, imp.ID, extInfo); err != nil {
 		return []error{err}
 	}
 
@@ -444,7 +447,7 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		return []error{err}
 	}
 
-	errL := deps.validateImpExt(imp, aliases, index)
+	errL := deps.validateImpExt(imp, aliases, index, extInfo)
 	if len(errL) != 0 {
 		return errL
 	}
@@ -486,7 +489,7 @@ func validateBanner(banner *openrtb.Banner, impIndex int) error {
 }
 
 // fillAndValidateNative validates the request, and assigns the Asset IDs as recommended by the Native v1.2 spec.
-func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
+func fillAndValidateNative(n *openrtb.Native, impIndex int, impID string, extInfo exchange.AuctionExtInfo) error {
 	if n == nil {
 		return nil
 	}
@@ -517,6 +520,12 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 		return err
 	}
 	n.Request = string(serialized)
+
+	if extInfo.NativePayloads == nil {
+		extInfo.NativePayloads = make(map[string]*nativeRequests.Request)
+	}
+	extInfo.NativePayloads[impID] = &nativePayload
+
 	return nil
 }
 
@@ -759,7 +768,7 @@ func validatePmp(pmp *openrtb.PMP, impIndex int) error {
 	return nil
 }
 
-func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]string, impIndex int) []error {
+func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]string, impIndex int, extInfo exchange.AuctionExtInfo) []error {
 	errL := []error{}
 	if len(imp.Ext) == 0 {
 		return []error{fmt.Errorf("request.imp[%d].ext is required", impIndex)}
@@ -829,6 +838,8 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	if len(bidderExts)-otherExtElements == 0 {
 		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
 	}
+
+	extInfo.ImpExts = append(extInfo.ImpExts, bidderExts)
 
 	return errL
 }
@@ -904,7 +915,7 @@ func (deps *endpointDeps) validateApp(app *openrtb.App) error {
 	return nil
 }
 
-func validateUser(user *openrtb.User, aliases map[string]string) error {
+func validateUser(user *openrtb.User, aliases map[string]string, extInfo exchange.AuctionExtInfo) error {
 	// DigiTrust support
 	if user != nil && user.Ext != nil {
 		// Creating ExtUser object to check if DigiTrust is valid
@@ -957,6 +968,7 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 					}
 				}
 			}
+			extInfo.UserExt = &userExt
 		} else {
 			// Return error.
 			return fmt.Errorf("request.user.ext object is not valid: %v", err)
@@ -966,7 +978,7 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 	return nil
 }
 
-func validateRegs(regs *openrtb.Regs) error {
+func validateRegs(regs *openrtb.Regs, extInfo exchange.AuctionExtInfo) error {
 	if regs != nil && len(regs.Ext) > 0 {
 		var regsExt openrtb_ext.ExtRegs
 		if err := json.Unmarshal(regs.Ext, &regsExt); err != nil {
@@ -975,6 +987,7 @@ func validateRegs(regs *openrtb.Regs) error {
 		if regsExt.GDPR != nil && (*regsExt.GDPR < 0 || *regsExt.GDPR > 1) {
 			return errors.New("request.regs.ext.gdpr must be either 0 or 1.")
 		}
+		extInfo.GDPR = regsExt.GDPR
 	}
 	return nil
 }

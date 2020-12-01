@@ -48,7 +48,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo, nativePayloads map[string]*nativeRequests.Request) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -116,7 +116,7 @@ type bidderAdapterConfig struct {
 	DisableConnMetrics bool
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo, nativePayloads map[string]*nativeRequests.Request) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -185,7 +185,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 				if request.App != nil {
 					for i := 0; i < len(bidResponse.Bids); i++ {
 						if bidResponse.Bids[i].BidType == openrtb_ext.BidTypeNative {
-							nativeMarkup, moreErrs := addNativeTypes(bidResponse.Bids[i].Bid, request)
+							nativeMarkup, moreErrs := addNativeTypes(bidResponse.Bids[i].Bid, request, nativePayloads)
 							errs = append(errs, moreErrs...)
 
 							if nativeMarkup != nil {
@@ -226,7 +226,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	return seatBid, errs
 }
 
-func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest) (*nativeResponse.Response, []error) {
+func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest, nativePayloads map[string]*nativeRequests.Request) (*nativeResponse.Response, []error) {
 	var errs []error
 	var nativeMarkup *nativeResponse.Response
 	if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
@@ -234,19 +234,13 @@ func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest) (*nativeRespo
 		return nil, errs
 	}
 
-	nativeImp, err := getNativeImpByImpID(bid.ImpID, request)
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
-
-	var nativePayload nativeRequests.Request
-	if err := json.Unmarshal(json.RawMessage((*nativeImp).Request), &nativePayload); err != nil {
-		errs = append(errs, err)
+	nativePayload, found := nativePayloads[bid.ImpID]
+	if !found {
+		return nil, append(errs, errors.New("Could not find native imp"))
 	}
 
 	for _, asset := range nativeMarkup.Assets {
-		if err := setAssetTypes(asset, nativePayload); err != nil {
+		if err := setAssetTypes(asset, *nativePayload); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -283,15 +277,6 @@ func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Requ
 		}
 	}
 	return nil
-}
-
-func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Native, error) {
-	for _, impInRequest := range request.Imp {
-		if impInRequest.ID == impID && impInRequest.Native != nil {
-			return impInRequest.Native, nil
-		}
-	}
-	return nil, errors.New("Could not find native imp")
 }
 
 func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset, error) {

@@ -29,6 +29,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
+	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	"github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
@@ -242,17 +243,20 @@ func TestDebugBehaviour(t *testing.T) {
 	for _, test := range testCases {
 		bidRequest.Test = test.in.test
 
-		if test.in.debug {
-			bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
-		} else {
-			bidRequest.Ext = nil
-		}
-
 		auctionRequest := AuctionRequest{
 			BidRequest: bidRequest,
 			Account:    config.Account{},
 			UserSyncs:  &emptyUsersync{},
 			StartTime:  time.Now(),
+		}
+
+		if test.in.debug {
+			bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
+			auctionRequest.ExtInfo.BidExt = &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{Debug: true},
+			}
+		} else {
+			bidRequest.Ext = nil
 		}
 
 		// Run test
@@ -448,22 +452,24 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 		for _, test := range testGroup.testCases {
 			mockBidRequest.Ext = test.inExt
 
+			bidExt, err := extractBidRequestExt(mockBidRequest)
+			if testGroup.expectError {
+				assert.Errorf(t, err, "extractBidRequestExt expected to throw error for: %s - %s. \n", testGroup.groupDesc, test.desc)
+				continue
+			} else {
+				assert.NoErrorf(t, err, "%s: %s. extractBidRequestExt error: %v \n", testGroup.groupDesc, test.desc, err)
+			}
+
 			auctionRequest := AuctionRequest{
 				BidRequest: mockBidRequest,
 				Account:    config.Account{},
 				UserSyncs:  &emptyUsersync{},
+				ExtInfo:    AuctionExtInfo{BidExt: bidExt},
 			}
 
 			// Run test
 			outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, nil)
-
-			// Assert return error, if any
-			if testGroup.expectError {
-				assert.Errorf(t, err, "HoldAuction expected to throw error for: %s - %s. \n", testGroup.groupDesc, test.desc)
-				continue
-			} else {
-				assert.NoErrorf(t, err, "%s: %s. HoldAuction error: %v \n", testGroup.groupDesc, test.desc, err)
-			}
+			assert.NoErrorf(t, err, "%s: %s. HoldAuction error: %v \n", testGroup.groupDesc, test.desc, err)
 
 			// Assert returned bid
 			if !assert.NotNil(t, outBidResponse, "%s: %s. outBidResponse is nil \n", testGroup.groupDesc, test.desc) {
@@ -1034,6 +1040,16 @@ func TestRaceIntegration(t *testing.T) {
 		BidRequest: newRaceCheckingRequest(t),
 		Account:    config.Account{},
 		UserSyncs:  &emptyUsersync{},
+		ExtInfo: AuctionExtInfo{
+			UserExt: &openrtb_ext.ExtUser{
+				Consent: "BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+				DigiTrust: &openrtb_ext.ExtUserDigiTrust{
+					ID:   "digi-id",
+					KeyV: 1,
+					Pref: 1,
+				},
+			},
+		},
 	}
 
 	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics, adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencyConverter, categoriesFetcher)
@@ -1228,6 +1244,16 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		BidRequest: request,
 		Account:    config.Account{},
 		UserSyncs:  &emptyUsersync{},
+		ExtInfo: AuctionExtInfo{
+			UserExt: &openrtb_ext.ExtUser{
+				Consent: "BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+				DigiTrust: &openrtb_ext.ExtUserDigiTrust{
+					ID:   "digi-id",
+					KeyV: 1,
+					Pref: 1,
+				},
+			},
+		},
 	}
 
 	_, err := e.HoldAuction(context.Background(), auctionRequest, nil)
@@ -1351,10 +1377,23 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		debugLog.Regexp = regexp.MustCompile(`[<>]`)
 	}
 
+	bidExt, err := extractBidRequestExt(&spec.IncomingRequest.OrtbRequest)
+	assert.NoErrorf(t, err, "runSpec: %s. extractBidRequestExt error: %v \n", filename, err)
+
+	var userExt openrtb_ext.ExtUser
+	if spec.IncomingRequest.OrtbRequest.User != nil && len(spec.IncomingRequest.OrtbRequest.User.Ext) > 0 {
+		err := json.Unmarshal(spec.IncomingRequest.OrtbRequest.User.Ext, &userExt)
+		assert.NoErrorf(t, err, "runSpec: %s. could not unmarshal openrtb_ext.ExtUser: %v \n", filename, err)
+	}
+
 	auctionRequest := AuctionRequest{
 		BidRequest: &spec.IncomingRequest.OrtbRequest,
 		Account:    config.Account{},
 		UserSyncs:  mockIdFetcher(spec.IncomingRequest.Usersyncs),
+		ExtInfo: AuctionExtInfo{
+			BidExt:  bidExt,
+			UserExt: &userExt,
+		},
 	}
 
 	bid, err := ex.HoldAuction(context.Background(), auctionRequest, debugLog)
@@ -2558,7 +2597,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo, nativePayloads map[string]*nativeRequests.Request) (seatBid *pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(name)]; ok {
 		if expectedRequest != nil {
 			if expectedRequest.BidAdjustment != bidAdjustment {
@@ -2737,7 +2776,7 @@ func (e *mockUsersync) LiveSyncCount() int {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (posb *pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo, nativePayloads map[string]*nativeRequests.Request) (posb *pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 

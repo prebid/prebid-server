@@ -109,10 +109,14 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		req.Site = &openrtb.Site{}
 	}
 
+	bidExt, err := extractBidRequestExt(req)
+	assert.NoErrorf(t, err, "runTargetingAuction error: %v \n", err)
+
 	auctionRequest := AuctionRequest{
 		BidRequest: req,
 		Account:    config.Account{},
 		UserSyncs:  &emptyUsersync{},
+		ExtInfo:    AuctionExtInfo{BidExt: bidExt},
 	}
 
 	bidResp, err := ex.HoldAuction(context.Background(), auctionRequest, nil)

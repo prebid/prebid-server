@@ -142,8 +142,11 @@ func runTestCase(t *testing.T, fileData []byte, testFile string) {
 	// Retrieve values from JSON file
 	test := parseTestFile(t, fileData, testFile)
 
+	// Define Exchange
+	ex := &mockBidExchange{t: t}
+
 	// Run test
-	actualCode, actualJsonBidResponse := doRequest(t, test)
+	actualCode, actualJsonBidResponse := doRequest(t, test, ex)
 
 	// Assertions
 	assert.Equal(t, test.ExpectedReturnCode, actualCode, "Test failed. Filename: %s \n", testFile)
@@ -358,6 +361,26 @@ func TestBidRequestAssert(t *testing.T) {
 	}
 }
 
+func TestAssertAuctionRequest(t *testing.T) {
+	testSuites := []struct {
+		description       string
+		inTestFile        string
+		outAuctionRequest exchange.AuctionRequest
+	}{
+		{
+			"Assert 200s on all bidRequests from exemplary folder",
+			"sample-requests/valid-whole/exemplary/all-ext.json",
+			exchange.AuctionRequest{},
+		},
+	}
+	for _, test := range testSuites {
+		data, err := ioutil.ReadFile(test.inTestFile)
+		if assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, test.inTestFile) {
+			runTestCase(t, data, test.inTestFile)
+		}
+	}
+}
+
 // TestExplicitUserId makes sure that the cookie's ID doesn't override an explicit value sent in the request.
 func TestExplicitUserId(t *testing.T) {
 	cookieName := "userid"
@@ -428,7 +451,7 @@ func TestExplicitUserId(t *testing.T) {
 	}
 }
 
-func doRequest(t *testing.T, test testCase) (int, string) {
+func doRequest(t *testing.T, test testCase, ex exchange.Exchange) (int, string) {
 	disabledBidders := map[string]string{}
 	bidderMap := exchange.DisableBidders(getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.BidderList()), disabledBidders)
 
@@ -437,7 +460,7 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 	metrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 
 	endpoint, _ := NewEndpoint(
-		&mockBidExchange{},
+		ex,
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1333,12 +1356,13 @@ func TestValidateImpExt(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 	}
+	extInfo := exchange.AuctionExtInfo{}
 
 	for _, group := range testGroups {
 		for _, test := range group.testCases {
 			imp := &openrtb.Imp{Ext: test.impExt}
 
-			errs := deps.validateImpExt(imp, nil, 0)
+			errs := deps.validateImpExt(imp, nil, 0, extInfo)
 
 			if len(test.expectedImpExt) > 0 {
 				assert.JSONEq(t, test.expectedImpExt, string(imp.Ext), "imp.ext JSON does not match expected. Test: %s. %s\n", group.description, test.description)
@@ -1399,7 +1423,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		Cur: []string{"USD", "EUR"},
 	}
 
-	errL := deps.validateRequest(&req)
+	_, errL := deps.validateRequest(&req)
 
 	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
 	assert.ElementsMatch(t, errL, []error{&expectedError})
@@ -1445,7 +1469,7 @@ func TestCCPAInvalid(t *testing.T) {
 		},
 	}
 
-	errL := deps.validateRequest(&req)
+	_, errL := deps.validateRequest(&req)
 
 	expectedWarning := errortypes.InvalidPrivacyConsent{Message: "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)"}
 	assert.ElementsMatch(t, errL, []error{&expectedWarning})
@@ -1494,7 +1518,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"nosale":["*", "appnexus"]}}`),
 	}
 
-	errL := deps.validateRequest(&req)
+	_, errL := deps.validateRequest(&req)
 
 	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -1589,7 +1613,7 @@ func TestSChainInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	errL := deps.validateRequest(&req)
+	_, errL := deps.validateRequest(&req)
 
 	expectedError := fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -1786,11 +1810,16 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReque
 
 type mockBidExchange struct {
 	gotRequest *openrtb.BidRequest
+	t          *testing.T
 }
 
 // mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext
 // into the bidResponse.Ext to assert the bidder adapters that were not filtered out in the validation process
+// It is also a helper function that asserts the expected AuctionRequest if needed
 func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+	e.t.Helper()
+	assert.Equalf(e.t, true, true, "HoldAuction runs and fails")
+
 	bidResponse := &openrtb.BidResponse{
 		ID:    r.BidRequest.ID,
 		BidID: "test bid id",

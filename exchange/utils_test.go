@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -82,7 +83,22 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqByBidders, _, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig, &config.Account{})
+		r := AuctionRequest{
+			BidRequest:   test.req,
+			Account:      config.Account{},
+			UserSyncs:    &emptyUsersync{},
+			LegacyLabels: pbsmetrics.Labels{},
+			ExtInfo:      AuctionExtInfo{BidExt: nil},
+		}
+
+		var userExt openrtb_ext.ExtUser
+		if test.req.User != nil && len(test.req.User.Ext) > 0 {
+			err := json.Unmarshal(test.req.User.Ext, &userExt)
+			assert.NoErrorf(t, err, "Could not unmarshal openrtb_ext.ExtUser: %v \n", err)
+		}
+		r.ExtInfo.UserExt = &userExt
+
+		reqByBidders, _, _, err := cleanOpenRTBRequests(context.Background(), r, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -227,17 +243,28 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			},
 		}
 
+		r := AuctionRequest{
+			BidRequest:   req,
+			ExtInfo:      AuctionExtInfo{BidExt: nil},
+			UserSyncs:    &emptyUsersync{},
+			LegacyLabels: pbsmetrics.Labels{},
+			Account:      accountConfig,
+		}
+
+		var userExt openrtb_ext.ExtUser
+		if req.User != nil && len(req.User.Ext) > 0 {
+			err := json.Unmarshal(req.User.Ext, &userExt)
+			assert.NoErrorf(t, err, "Could not unmarshal openrtb_ext.ExtUser: %v \n", err)
+		}
+		r.ExtInfo.UserExt = &userExt
+
 		results, _, privacyLabels, errs := cleanOpenRTBRequests(
 			context.Background(),
-			req,
-			nil,
-			&emptyUsersync{},
+			r,
 			map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{},
-			pbsmetrics.Labels{},
 			&permissionsMock{personalInfoAllowed: true},
 			true,
-			privacyConfig,
-			&accountConfig)
+			privacyConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -287,7 +314,22 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 				Enforce: true,
 			},
 		}
-		_, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &reqExtStruct, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig, &config.Account{})
+		r := AuctionRequest{
+			BidRequest:   req,
+			ExtInfo:      AuctionExtInfo{BidExt: &reqExtStruct},
+			UserSyncs:    &emptyUsersync{},
+			LegacyLabels: pbsmetrics.Labels{},
+			Account:      config.Account{},
+		}
+
+		var userExt openrtb_ext.ExtUser
+		if req.User != nil && len(req.User.Ext) > 0 {
+			err := json.Unmarshal(req.User.Ext, &userExt)
+			assert.NoErrorf(t, err, "Could not unmarshal openrtb_ext.ExtUser: %v \n", err)
+		}
+		r.ExtInfo.UserExt = &userExt
+
+		_, _, _, errs := cleanOpenRTBRequests(context.Background(), r, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
@@ -322,7 +364,22 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 		req := newBidRequest(t)
 		req.Regs = &openrtb.Regs{COPPA: test.coppa}
 
-		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, config.Privacy{}, &config.Account{})
+		r := AuctionRequest{
+			BidRequest:   req,
+			ExtInfo:      AuctionExtInfo{BidExt: nil},
+			UserSyncs:    &emptyUsersync{},
+			LegacyLabels: pbsmetrics.Labels{},
+			Account:      config.Account{},
+		}
+
+		var userExt openrtb_ext.ExtUser
+		if req.User != nil && len(req.User.Ext) > 0 {
+			err := json.Unmarshal(req.User.Ext, &userExt)
+			assert.NoErrorf(t, err, "Could not unmarshal openrtb_ext.ExtUser: %v \n", err)
+		}
+		r.ExtInfo.UserExt = &userExt
+
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), r, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, &permissionsMock{personalInfoAllowed: true}, true, config.Privacy{})
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -424,7 +481,24 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 			extRequest = unmarshaledExt
 		}
 
-		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, extRequest, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, config.Privacy{}, &config.Account{})
+		var userExt openrtb_ext.ExtUser
+		if req.User != nil && len(req.User.Ext) > 0 {
+			err := json.Unmarshal(req.User.Ext, &userExt)
+			assert.NoErrorf(t, err, "Could not unmarshal openrtb_ext.ExtUser: %v \n", err)
+		}
+
+		r := AuctionRequest{
+			BidRequest:   req,
+			Account:      config.Account{},
+			UserSyncs:    &emptyUsersync{},
+			LegacyLabels: pbsmetrics.Labels{},
+			ExtInfo: AuctionExtInfo{
+				BidExt:  extRequest,
+				UserExt: &userExt,
+			},
+		}
+
+		results, _, _, errs := cleanOpenRTBRequests(context.Background(), r, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, &permissionsMock{}, true, config.Privacy{})
 		result := results["appnexus"]
 
 		if test.hasError == true {
@@ -1001,7 +1075,24 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 			},
 		}
 
-		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig, &config.Account{})
+		var userExt openrtb_ext.ExtUser
+		if req.User != nil && len(req.User.Ext) > 0 {
+			err := json.Unmarshal(req.User.Ext, &userExt)
+			assert.NoErrorf(t, err, "Could not unmarshal openrtb_ext.ExtUser: %v \n", err)
+		}
+
+		r := AuctionRequest{
+			BidRequest: req,
+			ExtInfo: AuctionExtInfo{
+				BidExt:  nil,
+				UserExt: &userExt,
+			},
+			UserSyncs:    &emptyUsersync{},
+			LegacyLabels: pbsmetrics.Labels{},
+			Account:      config.Account{},
+		}
+
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), r, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -1148,17 +1239,35 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			},
 		}
 
+		var userExt openrtb_ext.ExtUser
+		if req.User != nil && len(req.User.Ext) > 0 {
+			err := json.Unmarshal(req.User.Ext, &userExt)
+			assert.NoErrorf(t, err, "Could not unmarshal openrtb_ext.ExtUser: %v \n", err)
+		}
+
+		i, err := strconv.ParseInt(test.gdpr, 10, 8)
+		assert.NoErrorf(t, err, "Test %s defines an out of bopunds GDPR value. %v \n", test.description, err)
+		gdprInt8 := int8(i)
+
+		r := AuctionRequest{
+			BidRequest: req,
+			ExtInfo: AuctionExtInfo{
+				BidExt:  nil,
+				UserExt: &userExt,
+				GDPR:    &gdprInt8,
+			},
+			UserSyncs:    &emptyUsersync{},
+			LegacyLabels: pbsmetrics.Labels{},
+			Account:      accountConfig,
+		}
+
 		results, _, privacyLabels, errs := cleanOpenRTBRequests(
 			context.Background(),
-			req,
-			nil,
-			&emptyUsersync{},
+			r,
 			map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{},
-			pbsmetrics.Labels{},
 			&permissionsMock{personalInfoAllowed: !test.gdprScrub},
 			true,
-			privacyConfig,
-			&accountConfig)
+			privacyConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -1374,4 +1483,20 @@ func TestBidderToPrebidChainsZeroLengthSChains(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(output), 0)
+}
+
+func extractBidRequestExt(bidRequest *openrtb.BidRequest) (*openrtb_ext.ExtRequest, error) {
+	requestExt := &openrtb_ext.ExtRequest{}
+
+	if bidRequest == nil {
+		return requestExt, fmt.Errorf("Error bidRequest should not be nil")
+	}
+
+	if len(bidRequest.Ext) > 0 {
+		err := json.Unmarshal(bidRequest.Ext, &requestExt)
+		if err != nil {
+			return requestExt, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
+		}
+	}
+	return requestExt, nil
 }
