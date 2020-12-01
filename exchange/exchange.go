@@ -332,7 +332,10 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auc
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *exchange) getAllBids(ctx context.Context, bidderRequests []BidderRequest, bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, conversions currencies.Conversions) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
+func (e *exchange) getAllBids(ctx context.Context, bidderRequests []BidderRequest,
+	bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
+	conversions currencies.Conversions) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
+	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(bidderRequests))
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(bidderRequests))
@@ -343,25 +346,25 @@ func (e *exchange) getAllBids(ctx context.Context, bidderRequests []BidderReques
 		// Here we actually call the adapters and collect the bids.
 		bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currencies.Conversions) {
 			// Passing in aName so a doesn't change out from under the go routine
-			if bidder.BidderLabels.Adapter == "" {
-				glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", bidder.BidderName, bidder.BidderCoreName)
-				bidder.BidderLabels.Adapter = bidder.BidderCoreName
+			if bidderRequest.BidderLabels.Adapter == "" {
+				glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", bidderRequest.BidderName, bidderRequest.BidderCoreName)
+				bidderRequest.BidderLabels.Adapter = bidderRequest.BidderCoreName
 			}
 			brw := new(bidResponseWrapper)
-			brw.bidder = bidder.BidderName
+			brw.bidder = bidderRequest.BidderName
 			// Defer basic metrics to insure we capture them after all the values have been set
 			defer func() {
-				e.me.RecordAdapterRequest(bidder.BidderLabels)
+				e.me.RecordAdapterRequest(bidderRequest.BidderLabels)
 			}()
 			start := time.Now()
 
 			adjustmentFactor := 1.0
-			if givenAdjustment, ok := bidAdjustments[string(bidder.BidderName)]; ok {
+			if givenAdjustment, ok := bidAdjustments[string(bidderRequest.BidderName)]; ok {
 				adjustmentFactor = givenAdjustment
 			}
 			var reqInfo adapters.ExtraRequestInfo
-			reqInfo.PbsEntryPoint = bidder.BidderLabels.RType
-			bids, err := e.adapterMap[bidder.BidderCoreName].requestBid(ctx, bidder.BidRequest, bidder.BidderName, adjustmentFactor, conversions, &reqInfo)
+			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -374,18 +377,18 @@ func (e *exchange) getAllBids(ctx context.Context, bidderRequests []BidderReques
 			}
 
 			// Timing statistics
-			e.me.RecordAdapterTime(bidder.BidderLabels, time.Since(start))
+			e.me.RecordAdapterTime(bidderRequest.BidderLabels, time.Since(start))
 			serr := errsToBidderErrors(err)
-			bidder.BidderLabels.AdapterBids = bidsToMetric(brw.adapterBids)
-			bidder.BidderLabels.AdapterErrors = errorsToMetric(err)
+			bidderRequest.BidderLabels.AdapterBids = bidsToMetric(brw.adapterBids)
+			bidderRequest.BidderLabels.AdapterErrors = errorsToMetric(err)
 			// Append any bid validation errors to the error list
 			ae.Errors = serr
 			brw.adapterExtra = ae
 			if bids != nil {
 				for _, bid := range bids.bids {
 					var cpm = float64(bid.bid.Price * 1000)
-					e.me.RecordAdapterPrice(bidder.BidderLabels, cpm)
-					e.me.RecordAdapterBidReceived(bidder.BidderLabels, bid.bidType, bid.bid.AdM != "")
+					e.me.RecordAdapterPrice(bidderRequest.BidderLabels, cpm)
+					e.me.RecordAdapterBidReceived(bidderRequest.BidderLabels, bid.bidType, bid.bid.AdM != "")
 				}
 			}
 			chBids <- brw
