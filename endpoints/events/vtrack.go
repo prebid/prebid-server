@@ -231,7 +231,7 @@ func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheReque
 		}
 
 		if _, ok := biddersAllowingVastUpdate[c.Bidder]; ok && nc.Data != nil {
-			nc.Data = ModifyVastXml(v.Cfg.ExternalURL, nc.Data, c.BidID, c.Bidder, accountId, c.Timestamp)
+			nc.Data = ModifyVastXmlJSON(v.Cfg.ExternalURL, nc.Data, c.BidID, c.Bidder, accountId, c.Timestamp)
 		}
 
 		cacheables = append(cacheables, *nc)
@@ -270,14 +270,13 @@ func getAccountId(httpRequest *http.Request) string {
 	return httpRequest.URL.Query().Get(AccountParameter)
 }
 
-// modifyVastXml modifies BidCacheRequest element Vast XML data
-func ModifyVastXml(externalUrl string, data json.RawMessage, bidid string, bidder string, accountId string, timestamp int64) json.RawMessage {
-	c := string(data)
+// modifyVastXmlString rewrites and returns the string vastXML or an empty string if it was left unmodified
+func ModifyVastXmlString(externalUrl string, c string, bidid string, bidder string, accountId string, timestamp int64) string {
 	ci := strings.Index(c, ImpressionCloseTag)
 
 	// no impression tag - pass it as it is
 	if ci == -1 {
-		return data
+		return ""
 	}
 
 	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountId, timestamp)
@@ -285,10 +284,20 @@ func ModifyVastXml(externalUrl string, data json.RawMessage, bidid string, bidde
 	oi := strings.Index(c, ImpressionOpenTag)
 
 	if ci-oi == len(ImpressionOpenTag) {
-		return json.RawMessage(strings.Replace(c, ImpressionOpenTag, ImpressionOpenTag+impressionUrl, 1))
+		return strings.Replace(c, ImpressionOpenTag, ImpressionOpenTag+impressionUrl, 1)
 	}
 
-	return json.RawMessage(strings.Replace(c, ImpressionCloseTag, ImpressionCloseTag+ImpressionOpenTag+impressionUrl+ImpressionCloseTag, 1))
+	return strings.Replace(c, ImpressionCloseTag, ImpressionCloseTag+ImpressionOpenTag+impressionUrl+ImpressionCloseTag, 1)
+}
+
+// modifyVastXml modifies BidCacheRequest element Vast XML data
+func ModifyVastXmlJSON(externalUrl string, data json.RawMessage, bidid string, bidder string, accountId string, timestamp int64) json.RawMessage {
+	c := string(data) // FIXME: should decode json, or escapes like "\u003e" will not be recognized as "<"
+	c = ModifyVastXmlString(externalUrl, c, bidid, bidder, accountId, timestamp)
+	if len(c) == 0 {
+		return data
+	}
+	return json.RawMessage(c)
 }
 
 func contains(s []string, e string) bool {

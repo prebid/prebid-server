@@ -46,7 +46,7 @@ func (ev *eventsData) isModifyingVASTXMLAllowed(bidderName string) bool {
 // modifyVAST injects event Impression url if needed, otherwise returns original VAST string
 func (ev *eventsData) modifyVAST(bid *openrtb.Bid, bidderName openrtb_ext.BidderName, vastXML string) string {
 	if ev.isModifyingVASTXMLAllowed(bidderName.String()) {
-		vastXML = string(events.ModifyVastXml(ev.externalURL, json.RawMessage(vastXML), bid.ID, bidderName.String(), ev.accountID, ev.auctionTimestampMs))
+		vastXML = events.ModifyVastXmlString(ev.externalURL, vastXML, bid.ID, bidderName.String(), ev.accountID, ev.auctionTimestampMs)
 	}
 	return vastXML
 }
