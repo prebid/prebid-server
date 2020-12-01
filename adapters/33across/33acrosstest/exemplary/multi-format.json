@@ -47,14 +47,13 @@
               },
               "ext": {
                 "ttx": {
-                  "prod": "inview"
+                  "prod": "inview",
+                  "zoneid": "fake-site-id"
                 }
               }
             }
           ],
-          "site": {
-            "id": "fake-site-id"
-          }
+          "site": {}
         }
       },
       "mockResponse": {

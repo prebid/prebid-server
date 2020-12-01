@@ -42,14 +42,13 @@
               },
               "ext": {
                 "ttx": {
-                  "prod": "instream"
+                  "prod": "instream",
+                  "zoneid": "fake-site-id"
                 }
               }
             }
           ],
-          "site": {
-            "id": "fake-site-id"
-          }
+          "site": {}
         }
       },
       "mockResponse": {

@@ -39,9 +39,7 @@
               }
             }
           ],
-          "site": {
-            "id": "fake-site-id"
-          }
+          "site": {}
         }
       },
       "mockResponse": {

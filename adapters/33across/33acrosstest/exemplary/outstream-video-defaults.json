@@ -41,14 +41,13 @@
               },
               "ext": {
                 "ttx": {
-                  "prod": "siab"
+                  "prod": "siab",
+                  "zoneid": "fake-site-id"
                 }
               }
             }
           ],
-          "site": {
-            "id": "fake-site-id"
-          }
+          "site": {}
         }
       },
       "mockResponse": {

@@ -32,14 +32,13 @@
               },
               "ext": {
                 "ttx": {
-                  "prod": "inview"
+                  "prod": "inview",
+                  "zoneid": "fake-invalid-site-id"
                 }
               }
             }
           ],
-          "site": {
-            "id": "fake-invalid-site-id"
-          }
+          "site": {}
         }
       },
       "mockResponse": {
