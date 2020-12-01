@@ -1,0 +1,11 @@
+maintainer:
+  email: "prebid@amxrtb.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video

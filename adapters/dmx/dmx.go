@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
-	"net/url"
-	"strings"
 )
 
 type DmxAdapter struct {
@@ -167,6 +168,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		Body:    oJson,
 		Headers: headers,
 	}
+
 	reqsBidder = append(reqsBidder, reqBidder)
 	return
 }
@@ -220,35 +222,29 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 }
 
 func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner *openrtb.Banner, video *openrtb.Video, intVal int8) []openrtb.Imp {
+	var tempimp openrtb.Imp
+	tempimp = inst
 	if params.Bidder.TagId != "" {
-		ins = openrtb.Imp{
-			ID:     inst.ID,
-			TagID:  params.Bidder.TagId,
-			Ext:    inst.Ext,
-			Secure: &intVal,
-		}
+		tempimp.TagID = params.Bidder.TagId
+		tempimp.Secure = &intVal
 	}
 
 	if params.Bidder.DmxId != "" {
-		ins = openrtb.Imp{
-			ID:     inst.ID,
-			TagID:  params.Bidder.DmxId,
-			Ext:    inst.Ext,
-			Secure: &intVal,
-		}
+		tempimp.TagID = params.Bidder.DmxId
+		tempimp.Secure = &intVal
 	}
 	if banner != nil {
-		ins.Banner = banner
+		tempimp.Banner = banner
 	}
 
 	if video != nil {
-		ins.Video = video
+		tempimp.Video = video
 	}
 
-	if ins.TagID == "" {
+	if tempimp.TagID == "" {
 		return imps
 	}
-	imps = append(imps, ins)
+	imps = append(imps, tempimp)
 	return imps
 }
 

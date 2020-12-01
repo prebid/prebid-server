@@ -47,7 +47,7 @@ var (
 	dntEnabled  int8   = 1
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, accounts stored_requests.AccountFetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, accounts stored_requests.AccountFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
@@ -66,7 +66,6 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 		requestsById,
 		empty_fetcher.EmptyFetcher{},
 		accounts,
-		categories,
 		cfg,
 		met,
 		pbsAnalytics,
@@ -85,7 +84,6 @@ type endpointDeps struct {
 	storedReqFetcher          stored_requests.Fetcher
 	videoFetcher              stored_requests.Fetcher
 	accounts                  stored_requests.AccountFetcher
-	categories                stored_requests.CategoryFetcher
 	cfg                       *config.Configuration
 	metricsEngine             pbsmetrics.MetricsEngine
 	analytics                 analytics.PBSAnalyticsModule
@@ -99,12 +97,6 @@ type endpointDeps struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
-	ao := analytics.AuctionObject{
-		Status: http.StatusOK,
-		Errors: make([]error, 0),
-	}
-
 	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
 	// to wait for bids. However, tmax may be defined in the Stored Request data.
 	//
@@ -112,6 +104,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
+
+	ao := analytics.AuctionObject{
+		Status:    http.StatusOK,
+		Errors:    make([]error, 0),
+		StartTime: start,
+	}
+
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeORTB2Web,
@@ -164,7 +163,16 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, account, &deps.categories, nil)
+	auctionRequest := exchange.AuctionRequest{
+		BidRequest:   req,
+		Account:      *account,
+		UserSyncs:    usersyncs,
+		RequestType:  labels.RType,
+		StartTime:    start,
+		LegacyLabels: labels,
+	}
+
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req
 	ao.Response = response
 	ao.Account = account
@@ -782,6 +790,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 
 	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
+	otherExtElements := 0
 	for bidder, ext := range bidderExts {
 		if isBidderToValidate(bidder) {
 			coreBidder := bidder
@@ -800,6 +809,8 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 					return []error{fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)}
 				}
 			}
+		} else {
+			otherExtElements++
 		}
 	}
 
@@ -815,8 +826,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 		imp.Ext = extJSON
 	}
 
-	// TODO #713 Fix this here
-	if len(bidderExts) < 1 {
+	if len(bidderExts)-otherExtElements == 0 {
 		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
 	}
 

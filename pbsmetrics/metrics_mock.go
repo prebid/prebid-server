@@ -42,6 +42,16 @@ func (me *MetricsEngineMock) RecordRequestTime(labels Labels, length time.Durati
 	me.Called(labels, length)
 }
 
+// RecordStoredDataFetchTime mock
+func (me *MetricsEngineMock) RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration) {
+	me.Called(labels, length)
+}
+
+// RecordStoredDataError mock
+func (me *MetricsEngineMock) RecordStoredDataError(labels StoredDataLabels) {
+	me.Called(labels)
+}
+
 // RecordAdapterPanic mock
 func (me *MetricsEngineMock) RecordAdapterPanic(labels AdapterLabels) {
 	me.Called(labels)
@@ -99,6 +109,11 @@ func (me *MetricsEngineMock) RecordStoredReqCacheResult(cacheResult CacheResult,
 
 // RecordStoredImpCacheResult mock
 func (me *MetricsEngineMock) RecordStoredImpCacheResult(cacheResult CacheResult, inc int) {
+	me.Called(cacheResult, inc)
+}
+
+// RecordAccountCacheResult mock
+func (me *MetricsEngineMock) RecordAccountCacheResult(cacheResult CacheResult, inc int) {
 	me.Called(cacheResult, inc)
 }
 

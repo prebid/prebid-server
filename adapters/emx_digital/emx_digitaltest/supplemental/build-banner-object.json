@@ -48,7 +48,13 @@
                     "secure": 0,
                     "tagid": "1234568",
                     "bidfloor": 1.25,
-                    "bidfloorcur": "USD"
+                    "bidfloorcur": "USD",
+                    "ext": {
+                        "bidder": {
+                            "tagid": "1234568",
+                            "bidfloor": "1.25"
+                        }
+                    }
                 }]
             }
         },
