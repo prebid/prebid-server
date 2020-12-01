@@ -10,6 +10,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -18,8 +19,12 @@ type DmxAdapter struct {
 	endpoint string
 }
 
-func NewDmxBidder(endpoint string) *DmxAdapter {
-	return &DmxAdapter{endpoint: endpoint}
+// Builder builds a new instance of the DistrictM DMX adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &DmxAdapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }
 
 type dmxExt struct {

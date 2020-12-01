@@ -2,10 +2,12 @@ package orbidder
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestUnmarshalOrbidderExtImp(t *testing.T) {
@@ -21,5 +23,12 @@ func TestUnmarshalOrbidderExtImp(t *testing.T) {
 }
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "orbiddertest", NewOrbidderBidder("https://orbidder-test"))
+	bidder, buildErr := Builder(openrtb_ext.BidderOrbidder, config.Adapter{
+		Endpoint: "https://orbidder-test"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "orbiddertest", bidder)
 }

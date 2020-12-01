@@ -12,6 +12,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -258,10 +259,12 @@ func removeWrapper(ad string) string {
 	return str
 }
 
-func NewAdgenerationAdapter(endpoint string) *AdgenerationAdapter {
-	return &AdgenerationAdapter{
-		endpoint,
+// Builder builds a new instance of the Adgeneration adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &AdgenerationAdapter{
+		config.Endpoint,
 		"1.0.2",
 		"JPY",
 	}
+	return bidder, nil
 }

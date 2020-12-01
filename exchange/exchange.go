@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net/http"
 	"net/url"
 	"runtime/debug"
 	"sort"
@@ -78,23 +77,22 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
-	e := new(exchange)
-
-	e.adapterMap = newAdapterMap(client, cfg, infos, metricsEngine)
-	e.cache = cache
-	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
-	e.me = metricsEngine
-	e.gDPR = gDPR
-	e.currencyConverter = currencyConverter
-	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
-	e.privacyConfig = config.Privacy{
-		CCPA: cfg.CCPA,
-		GDPR: cfg.GDPR,
-		LMT:  cfg.LMT,
+func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+	return &exchange{
+		adapterMap:          adapters,
+		cache:               cache,
+		cacheTime:           time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
+		categoriesFetcher:   categoriesFetcher,
+		currencyConverter:   currencyConverter,
+		gDPR:                gDPR,
+		me:                  metricsEngine,
+		UsersyncIfAmbiguous: cfg.GDPR.UsersyncIfAmbiguous,
+		privacyConfig: config.Privacy{
+			CCPA: cfg.CCPA,
+			GDPR: cfg.GDPR,
+			LMT:  cfg.LMT,
+		},
 	}
-	e.categoriesFetcher = categoriesFetcher
-	return e
 }
 
 type AuctionRequest struct {

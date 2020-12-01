@@ -24,7 +24,19 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, cfg *config.Configuration, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
+func NewCookieSyncEndpoint(
+	syncers map[openrtb_ext.BidderName]usersync.Usersyncer,
+	cfg *config.Configuration,
+	syncPermissions gdpr.Permissions,
+	metrics pbsmetrics.MetricsEngine,
+	pbsAnalytics analytics.PBSAnalyticsModule,
+	bidderMap map[string]openrtb_ext.BidderName) httprouter.Handle {
+
+	bidderLookup := make(map[string]struct{})
+	for k := range bidderMap {
+		bidderLookup[k] = struct{}{}
+	}
+
 	deps := &cookieSyncDeps{
 		syncers:         syncers,
 		hostCookie:      &cfg.HostCookie,
@@ -33,6 +45,7 @@ func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersynce
 		metrics:         metrics,
 		pbsAnalytics:    pbsAnalytics,
 		enforceCCPA:     cfg.CCPA.Enforce,
+		bidderLookup:    bidderLookup,
 	}
 	return deps.Endpoint
 }
@@ -45,6 +58,7 @@ type cookieSyncDeps struct {
 	metrics         pbsmetrics.MetricsEngine
 	pbsAnalytics    analytics.PBSAnalyticsModule
 	enforceCCPA     bool
+	bidderLookup    map[string]struct{}
 }
 
 func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -126,7 +140,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	parsedReq.filterForGDPR(deps.syncPermissions)
 
 	if deps.enforceCCPA {
-		parsedReq.filterForCCPA()
+		parsedReq.filterForCCPA(deps.bidderLookup)
 	}
 
 	// surviving bidders are not privacy blocked
@@ -247,14 +261,9 @@ func (req *cookieSyncRequest) filterForGDPR(permissions gdpr.Permissions) {
 	}
 }
 
-func (req *cookieSyncRequest) filterForCCPA() {
-	validBidders := make(map[string]struct{})
-	for _, v := range openrtb_ext.BidderMap {
-		validBidders[v.String()] = struct{}{}
-	}
-
+func (req *cookieSyncRequest) filterForCCPA(bidderMap map[string]struct{}) {
 	ccpaPolicy := &ccpa.Policy{Consent: req.USPrivacy}
-	ccpaParsedPolicy, err := ccpaPolicy.Parse(validBidders)
+	ccpaParsedPolicy, err := ccpaPolicy.Parse(bidderMap)
 
 	if err == nil {
 		for i := 0; i < len(req.Bidders); i++ {

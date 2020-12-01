@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -615,12 +616,20 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 	return
 }
 
-func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
-	return NewRubiconBidder(adapters.NewHTTPAdapter(config).Client, uri, xuser, xpass, tracker)
+// Builder builds a new instance of the Rubicon adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	uri := appendTrackerToUrl(config.Endpoint, config.XAPI.Tracker)
+
+	bidder := &RubiconAdapter{
+		URI:          uri,
+		XAPIUsername: config.XAPI.Username,
+		XAPIPassword: config.XAPI.Password,
+	}
+	return bidder, nil
 }
 
-func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
+func NewRubiconLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
+	a := adapters.NewHTTPAdapter(httpConfig)
 
 	uri = appendTrackerToUrl(uri, tracker)
 
