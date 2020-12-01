@@ -19,6 +19,13 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 )
 
+var integrationTypeMap = map[pbsmetrics.RequestType]config.IntegrationType{
+	pbsmetrics.ReqTypeAMP:      config.IntegrationTypeAMP,
+	pbsmetrics.ReqTypeORTB2App: config.IntegrationTypeApp,
+	pbsmetrics.ReqTypeVideo:    config.IntegrationTypeVideo,
+	pbsmetrics.ReqTypeORTB2Web: config.IntegrationTypeWeb,
+}
+
 const unknownBidder string = ""
 
 func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
@@ -53,7 +60,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	labels pbsmetrics.Labels,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
-	privacyConfig config.Privacy) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
+	privacyConfig config.Privacy,
+	account *config.Account) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
@@ -75,7 +83,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	consent := extractConsent(orig)
 	ampGDPRException := (labels.RType == pbsmetrics.ReqTypeAMP) && gDPR.AMPException()
 
-	ccpaEnforcer, err := extractCCPA(orig, privacyConfig, aliases)
+	ccpaEnforcer, err := extractCCPA(orig, privacyConfig, account, aliases, integrationTypeMap[labels.RType])
 	if err != nil {
 		errs = append(errs, err)
 		return
@@ -94,7 +102,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
-	if gdpr == 1 {
+	gdprEnabled := gdprEnabled(account, privacyConfig, integrationTypeMap[labels.RType])
+
+	if gdpr == 1 && gdprEnabled {
 		privacyLabels.GDPREnforced = true
 		parsedConsent, err := vendorconsent.ParseString(consent)
 		if err == nil {
@@ -109,7 +119,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidder.String())
 
 		// GDPR
-		if gdpr == 1 {
+		if gdpr == 1 && gdprEnabled {
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
 			var publisherID = labels.PubID
@@ -127,7 +137,21 @@ func cleanOpenRTBRequests(ctx context.Context,
 	return
 }
 
-func extractCCPA(orig *openrtb.BidRequest, privacyConfig config.Privacy, aliases map[string]string) (privacy.PolicyEnforcer, error) {
+func gdprEnabled(account *config.Account, privacyConfig config.Privacy, integrationType config.IntegrationType) bool {
+	if accountEnabled := account.GDPR.EnabledForIntegrationType(integrationType); accountEnabled != nil {
+		return *accountEnabled
+	}
+	return privacyConfig.GDPR.Enabled
+}
+
+func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestType config.IntegrationType) bool {
+	if accountEnabled := account.CCPA.EnabledForIntegrationType(requestType); accountEnabled != nil {
+		return *accountEnabled
+	}
+	return privacyConfig.CCPA.Enforce
+}
+
+func extractCCPA(orig *openrtb.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.IntegrationType) (privacy.PolicyEnforcer, error) {
 	ccpaPolicy, err := ccpa.ReadFromRequest(orig)
 	if err != nil {
 		return privacy.NilPolicyEnforcer{}, err
@@ -140,7 +164,7 @@ func extractCCPA(orig *openrtb.BidRequest, privacyConfig config.Privacy, aliases
 	}
 
 	ccpaEnforcer := privacy.EnabledPolicyEnforcer{
-		Enabled:        privacyConfig.CCPA.Enforce,
+		Enabled:        ccpaEnabled(account, privacyConfig, requestType),
 		PolicyEnforcer: ccpaParsedPolicy,
 	}
 	return ccpaEnforcer, nil
@@ -434,7 +458,7 @@ func resolveBidder(bidder string, aliases map[string]string) openrtb_ext.BidderN
 }
 
 // parseImpExts does a partial-unmarshal of the imp[].Ext field.
-// The keys in the returned map are expected to be "prebid", "context", core BidderNames, or Aliases for this request.
+// The keys in the returned map are expected to be "prebid", "context", CoreBidderNames, or Aliases for this request.
 func parseImpExts(imps []openrtb.Imp) ([]map[string]json.RawMessage, error) {
 	exts := make([]map[string]json.RawMessage, len(imps))
 	// Loop over every impression in the request
@@ -462,11 +486,7 @@ func parseAliases(orig *openrtb.BidRequest) (map[string]string, []error) {
 }
 
 func GetValidBidders(aliases map[string]string) map[string]struct{} {
-	validBidders := make(map[string]struct{})
-
-	for _, v := range openrtb_ext.BidderMap {
-		validBidders[v.String()] = struct{}{}
-	}
+	validBidders := openrtb_ext.BuildBidderNameHashSet()
 
 	for k := range aliases {
 		validBidders[k] = struct{}{}

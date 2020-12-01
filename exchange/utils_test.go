@@ -82,7 +82,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqByBidders, _, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+		reqByBidders, _, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig, &config.Account{})
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -93,72 +93,114 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
+	trueValue, falseValue := true, false
+
 	testCases := []struct {
 		description         string
 		reqExt              json.RawMessage
 		ccpaConsent         string
-		enforceCCPA         bool
+		ccpaHostEnabled     bool
+		ccpaAccountEnabled  *bool
 		expectDataScrub     bool
 		expectPrivacyLabels pbsmetrics.PrivacyLabels
 	}{
 		{
-			description:     "Feature Flag Enabled - Opt Out",
-			ccpaConsent:     "1-Y-",
-			enforceCCPA:     true,
-			expectDataScrub: true,
+			description:        "Feature Flags Enabled - Opt Out",
+			ccpaConsent:        "1-Y-",
+			ccpaHostEnabled:    true,
+			ccpaAccountEnabled: &trueValue,
+			expectDataScrub:    true,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: true,
 			},
 		},
 		{
-			description:     "Feature Flag Enabled - Opt In",
-			ccpaConsent:     "1-N-",
-			enforceCCPA:     true,
-			expectDataScrub: false,
+			description:        "Feature Flags Enabled - Opt In",
+			ccpaConsent:        "1-N-",
+			ccpaHostEnabled:    true,
+			ccpaAccountEnabled: &trueValue,
+			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: false,
 			},
 		},
 		{
-			description:     "Feature Flag Enabled - No Sale Star - Doesn't Scrub",
-			reqExt:          json.RawMessage(`{"prebid":{"nosale":["*"]}}`),
-			ccpaConsent:     "1-Y-",
-			enforceCCPA:     true,
-			expectDataScrub: false,
+			description:        "Feature Flags Enabled - No Sale Star - Doesn't Scrub",
+			reqExt:             json.RawMessage(`{"prebid":{"nosale":["*"]}}`),
+			ccpaConsent:        "1-Y-",
+			ccpaHostEnabled:    true,
+			ccpaAccountEnabled: &trueValue,
+			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: false,
 			},
 		},
 		{
-			description:     "Feature Flag Enabled - No Sale Specific Bidder - Doesn't Scrub",
-			reqExt:          json.RawMessage(`{"prebid":{"nosale":["appnexus"]}}`),
-			ccpaConsent:     "1-Y-",
-			enforceCCPA:     true,
-			expectDataScrub: false,
+			description:        "Feature Flags Enabled - No Sale Specific Bidder - Doesn't Scrub",
+			reqExt:             json.RawMessage(`{"prebid":{"nosale":["appnexus"]}}`),
+			ccpaConsent:        "1-Y-",
+			ccpaHostEnabled:    true,
+			ccpaAccountEnabled: &trueValue,
+			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: true,
 			},
 		},
 		{
-			description:     "Feature Flag Enabled - No Sale Different Bidder - Scrubs",
-			reqExt:          json.RawMessage(`{"prebid":{"nosale":["rubicon"]}}`),
-			ccpaConsent:     "1-Y-",
-			enforceCCPA:     true,
-			expectDataScrub: true,
+			description:        "Feature Flags Enabled - No Sale Different Bidder - Scrubs",
+			reqExt:             json.RawMessage(`{"prebid":{"nosale":["rubicon"]}}`),
+			ccpaConsent:        "1-Y-",
+			ccpaHostEnabled:    true,
+			ccpaAccountEnabled: &trueValue,
+			expectDataScrub:    true,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: true,
 			},
 		},
 		{
-			description:     "Feature Flag Disabled",
-			ccpaConsent:     "1-Y-",
-			enforceCCPA:     false,
-			expectDataScrub: false,
+			description:        "Feature flags Account CCPA enabled, host CCPA disregarded - Opt Out",
+			ccpaConsent:        "1-Y-",
+			ccpaHostEnabled:    false,
+			ccpaAccountEnabled: &trueValue,
+			expectDataScrub:    true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: true,
+				CCPAEnforced: true,
+			},
+		},
+		{
+			description:        "Feature flags Account CCPA disabled, host CCPA disregarded",
+			ccpaConsent:        "1-Y-",
+			ccpaHostEnabled:    true,
+			ccpaAccountEnabled: &falseValue,
+			expectDataScrub:    false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: true,
+				CCPAEnforced: false,
+			},
+		},
+		{
+			description:        "Feature flags Account CCPA not specified, host CCPA enabled - Opt Out",
+			ccpaConsent:        "1-Y-",
+			ccpaHostEnabled:    true,
+			ccpaAccountEnabled: nil,
+			expectDataScrub:    true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				CCPAProvided: true,
+				CCPAEnforced: true,
+			},
+		},
+		{
+			description:        "Feature flags Account CCPA not specified, host CCPA disabled",
+			ccpaConsent:        "1-Y-",
+			ccpaHostEnabled:    false,
+			ccpaAccountEnabled: nil,
+			expectDataScrub:    false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				CCPAProvided: true,
 				CCPAEnforced: false,
@@ -175,11 +217,27 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 
 		privacyConfig := config.Privacy{
 			CCPA: config.CCPA{
-				Enforce: test.enforceCCPA,
+				Enforce: test.ccpaHostEnabled,
 			},
 		}
 
-		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+		accountConfig := config.Account{
+			CCPA: config.AccountCCPA{
+				Enabled: test.ccpaAccountEnabled,
+			},
+		}
+
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(
+			context.Background(),
+			req,
+			nil,
+			&emptyUsersync{},
+			map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{},
+			pbsmetrics.Labels{},
+			&permissionsMock{personalInfoAllowed: true},
+			true,
+			privacyConfig,
+			&accountConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -229,7 +287,7 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 				Enforce: true,
 			},
 		}
-		_, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &reqExtStruct, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+		_, _, _, errs := cleanOpenRTBRequests(context.Background(), req, &reqExtStruct, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig, &config.Account{})
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
@@ -264,7 +322,7 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 		req := newBidRequest(t)
 		req.Regs = &openrtb.Regs{COPPA: test.coppa}
 
-		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, config.Privacy{})
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, config.Privacy{}, &config.Account{})
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -366,7 +424,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 			extRequest = unmarshaledExt
 		}
 
-		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, extRequest, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, config.Privacy{})
+		results, _, _, errs := cleanOpenRTBRequests(context.Background(), req, extRequest, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, config.Privacy{}, &config.Account{})
 		result := results["appnexus"]
 
 		if test.hasError == true {
@@ -943,7 +1001,7 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 			},
 		}
 
-		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig, &config.Account{})
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)
@@ -959,49 +1017,108 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
+	trueValue, falseValue := true, false
+
 	testCases := []struct {
 		description         string
+		gdprAccountEnabled  *bool
+		gdprHostEnabled     bool
 		gdpr                string
 		gdprConsent         string
 		gdprScrub           bool
-		enforceGDPR         bool
 		expectPrivacyLabels pbsmetrics.PrivacyLabels
 	}{
 		{
-			description: "Enforce - TCF Invalid",
-			gdpr:        "1",
-			gdprConsent: "malformed",
-			gdprScrub:   false,
+			description:        "Enforce - TCF Invalid",
+			gdprAccountEnabled: &trueValue,
+			gdprHostEnabled:    true,
+			gdpr:               "1",
+			gdprConsent:        "malformed",
+			gdprScrub:          false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				GDPREnforced:   true,
 				GDPRTCFVersion: "",
 			},
 		},
 		{
-			description: "Enforce - TCF 1",
-			gdpr:        "1",
-			gdprConsent: "BONV8oqONXwgmADACHENAO7pqzAAppY",
-			gdprScrub:   true,
+			description:        "Enforce - TCF 1",
+			gdprAccountEnabled: &trueValue,
+			gdprHostEnabled:    true,
+			gdpr:               "1",
+			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:          true,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				GDPREnforced:   true,
 				GDPRTCFVersion: pbsmetrics.TCFVersionV1,
 			},
 		},
 		{
-			description: "Enforce - TCF 2",
-			gdpr:        "1",
-			gdprConsent: "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
-			gdprScrub:   true,
+			description:        "Enforce - TCF 2",
+			gdprAccountEnabled: &trueValue,
+			gdprHostEnabled:    true,
+			gdpr:               "1",
+			gdprConsent:        "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			gdprScrub:          true,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				GDPREnforced:   true,
 				GDPRTCFVersion: pbsmetrics.TCFVersionV2,
 			},
 		},
 		{
-			description: "Not Enforce - TCF 1",
-			gdpr:        "0",
-			gdprConsent: "BONV8oqONXwgmADACHENAO7pqzAAppY",
-			gdprScrub:   false,
+			description:        "Not Enforce - TCF 1",
+			gdprAccountEnabled: &trueValue,
+			gdprHostEnabled:    true,
+			gdpr:               "0",
+			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:          false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				GDPREnforced:   false,
+				GDPRTCFVersion: "",
+			},
+		},
+		{
+			description:        "Enforce - TCF 1; account GDPR enabled, host GDPR setting disregarded",
+			gdprAccountEnabled: &trueValue,
+			gdprHostEnabled:    false,
+			gdpr:               "1",
+			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:          true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				GDPREnforced:   true,
+				GDPRTCFVersion: pbsmetrics.TCFVersionV1,
+			},
+		},
+		{
+			description:        "Not Enforce - TCF 1; account GDPR disabled, host GDPR setting disregarded",
+			gdprAccountEnabled: &falseValue,
+			gdprHostEnabled:    true,
+			gdpr:               "1",
+			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:          false,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				GDPREnforced:   false,
+				GDPRTCFVersion: "",
+			},
+		},
+		{
+			description:        "Enforce - TCF 1; account GDPR not specified, host GDPR enabled",
+			gdprAccountEnabled: nil,
+			gdprHostEnabled:    true,
+			gdpr:               "1",
+			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:          true,
+			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+				GDPREnforced:   true,
+				GDPRTCFVersion: pbsmetrics.TCFVersionV1,
+			},
+		},
+		{
+			description:        "Not Enforce - TCF 1; account GDPR not specified, host GDPR disabled",
+			gdprAccountEnabled: nil,
+			gdprHostEnabled:    false,
+			gdpr:               "1",
+			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:          false,
 			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
 				GDPREnforced:   false,
 				GDPRTCFVersion: "",
@@ -1018,13 +1135,30 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 
 		privacyConfig := config.Privacy{
 			GDPR: config.GDPR{
+				Enabled: test.gdprHostEnabled,
 				TCF2: config.TCF2{
 					Enabled: true,
 				},
 			},
 		}
 
-		results, _, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), req, nil, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{personalInfoAllowed: !test.gdprScrub}, true, privacyConfig)
+		accountConfig := config.Account{
+			GDPR: config.AccountGDPR{
+				Enabled: test.gdprAccountEnabled,
+			},
+		}
+
+		results, _, privacyLabels, errs := cleanOpenRTBRequests(
+			context.Background(),
+			req,
+			nil,
+			&emptyUsersync{},
+			map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{},
+			pbsmetrics.Labels{},
+			&permissionsMock{personalInfoAllowed: !test.gdprScrub},
+			true,
+			privacyConfig,
+			&accountConfig)
 		result := results["appnexus"]
 
 		assert.Nil(t, errs)

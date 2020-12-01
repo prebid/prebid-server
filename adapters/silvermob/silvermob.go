@@ -3,12 +3,12 @@ package silvermob
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
 	"net/http"
 	"text/template"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -18,13 +18,17 @@ type SilverMobAdapter struct {
 	endpoint template.Template
 }
 
-func NewSilverMobBidder(endpointTemplate string) *SilverMobAdapter {
-	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
+// Builder builds a new instance of the SilverMob adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &SilverMobAdapter{endpoint: *template}
+
+	bidder := &SilverMobAdapter{
+		endpoint: *template,
+	}
+	return bidder, nil
 }
 
 func GetHeaders(request *openrtb.BidRequest) *http.Header {

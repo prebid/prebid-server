@@ -260,7 +260,7 @@ func (a *IxAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (ixBidRes
 	return result, nil
 }
 
-func NewIxAdapter(config *adapters.HTTPAdapterConfig, uri string) *IxAdapter {
+func NewIxLegacyAdapter(config *adapters.HTTPAdapterConfig, uri string) *IxAdapter {
 	a := adapters.NewHTTPAdapter(config)
 	return &IxAdapter{
 		http: a,

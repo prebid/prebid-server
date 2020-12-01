@@ -120,7 +120,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 			blabels := pbsmetrics.AdapterLabels{
 				Source:      labels.Source,
 				RType:       labels.RType,
-				Adapter:     getAdapterValue(bidder),
+				Adapter:     openrtb_ext.BidderName(bidder.BidderCode),
 				PubID:       labels.PubID,
 				Browser:     labels.Browser,
 				CookieFlag:  labels.CookieFlag,
@@ -394,15 +394,6 @@ func setLabelSource(labels *pbsmetrics.Labels, req *pbs.PBSRequest, status *stri
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-	}
-}
-
-func getAdapterValue(bidder *pbs.PBSBidder) openrtb_ext.BidderName {
-	adapterLabelName, ok := openrtb_ext.BidderMap[bidder.BidderCode]
-	if ok && adapterLabelName != "" {
-		return adapterLabelName
-	} else {
-		return openrtb_ext.BidderName(bidder.BidderCode)
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -148,8 +149,10 @@ func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb.BidRequest, ext
 	return bidResponse, nil
 }
 
-func NewLogicadBidder(endpoint string) adapters.Bidder {
-	return &LogicadAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Logicad adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &LogicadAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

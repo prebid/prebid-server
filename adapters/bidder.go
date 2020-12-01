@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -50,19 +51,6 @@ type TimeoutBidder interface {
 	// Do note that if MakeRequests returns multiple requests, and more than one of these times out, MakeTimeoutNotice will be called
 	// once for each timed out request.
 	MakeTimeoutNotification(req *RequestData) (*RequestData, []error)
-}
-
-type MisconfiguredBidder struct {
-	Name  string
-	Error error
-}
-
-func (this *MisconfiguredBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
-	return nil, []error{this.Error}
-}
-
-func (this *MisconfiguredBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
-	return nil, []error{this.Error}
 }
 
 func BadInput(msg string) *errortypes.BadInput {
@@ -152,3 +140,5 @@ type ExtImpBidder struct {
 func (r *RequestData) SetBasicAuth(username string, password string) {
 	r.Headers.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
 }
+
+type Builder func(openrtb_ext.BidderName, config.Adapter) (Bidder, error)

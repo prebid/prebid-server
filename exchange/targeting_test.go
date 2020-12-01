@@ -13,7 +13,6 @@ import (
 
 	"github.com/prebid/prebid-server/gdpr"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
 
@@ -82,6 +81,11 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	server := httptest.NewServer(http.HandlerFunc(mockServer))
 	defer server.Close()
 
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
 	ex := &exchange{
 		adapterMap:          buildAdapterMap(mockBids, server.URL, server.Client()),
 		me:                  &metricsConf.DummyMetricsEngine{},
@@ -90,6 +94,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		gDPR:                gdpr.AlwaysAllow{},
 		currencyConverter:   currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		UsersyncIfAmbiguous: false,
+		categoriesFetcher:   categoriesFetcher,
 	}
 
 	imps := buildImps(t, mockBids)
@@ -104,11 +109,13 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		req.Site = &openrtb.Site{}
 	}
 
-	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
-	if error != nil {
-		t.Errorf("Failed to create a category Fetcher: %v", error)
+	auctionRequest := AuctionRequest{
+		BidRequest: req,
+		Account:    config.Account{},
+		UserSyncs:  &emptyUsersync{},
 	}
-	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{}, &config.Account{}, &categoriesFetcher, nil)
+
+	bidResp, err := ex.HoldAuction(context.Background(), auctionRequest, nil)
 
 	if err != nil {
 		t.Fatalf("Unexpected errors running auction: %v", err)
@@ -236,12 +243,6 @@ func (m *mockTargetingBidder) MakeBids(internalRequest *openrtb.BidRequest, exte
 		}
 	}
 	return bidResponse, nil
-}
-
-type mockFetcher struct{}
-
-func (f *mockFetcher) GetId(bidder openrtb_ext.BidderName) (string, bool) {
-	return "", false
 }
 
 func mockServer(w http.ResponseWriter, req *http.Request) {
