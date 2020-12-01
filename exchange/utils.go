@@ -51,14 +51,14 @@ func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext
 //
 //   1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
 //   2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
-//   3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
+//   3. BidRequest.User.BuyerUID will be set to that AuctionRequestBidder's ID.
 func cleanOpenRTBRequests(ctx context.Context,
 	req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
-	privacyConfig config.Privacy) (reqBidders []Bidder, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
+	privacyConfig config.Privacy) (reqBidders []AuctionRequestBidder, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, errs := splitImps(req.BidRequest.Imp)
 	if len(errs) > 0 {
@@ -70,7 +70,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	reqBidders, errs = getAuctionReqBidders(req, requestExt, impsByBidder, aliases)
+	reqBidders, errs = getAuctionRequestBidders(req, requestExt, impsByBidder, aliases)
 
 	if len(reqBidders) == 0 {
 		return
@@ -172,12 +172,12 @@ func extractLMT(orig *openrtb.BidRequest, privacyConfig config.Privacy) privacy.
 	}
 }
 
-func getAuctionReqBidders(req AuctionRequest,
+func getAuctionRequestBidders(req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	impsByBidder map[string][]openrtb.Imp,
-	aliases map[string]string) ([]Bidder, []error) {
+	aliases map[string]string) ([]AuctionRequestBidder, []error) {
 
-	reqBidders := make([]Bidder, 0, len(impsByBidder))
+	reqBidders := make([]AuctionRequestBidder, 0, len(impsByBidder))
 
 	explicitBuyerUIDs, err := extractBuyerUIDs(req.BidRequest.User)
 	if err != nil {
@@ -204,7 +204,7 @@ func getAuctionReqBidders(req AuctionRequest,
 		reqCopy.Ext = reqExt
 		prepareSource(&reqCopy, bidder, sChainsByBidder)
 
-		bidder := Bidder{
+		bidder := AuctionRequestBidder{
 			Name:     openrtb_ext.BidderName(bidder),
 			CoreName: coreBidder,
 			Request:  &reqCopy,
