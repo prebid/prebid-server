@@ -24,6 +24,8 @@ import (
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/native"
+	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -107,13 +109,16 @@ func TestJsonSampleRequests(t *testing.T) {
 			"first-party-data",
 		},
 	}
+
+	ex := &mockBidExchange{}
+
 	for _, test := range testSuites {
 		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", test.sampleRequestsSubDir))
 		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", test.description, test.sampleRequestsSubDir) {
 			for _, file := range testCaseFiles {
 				data, err := ioutil.ReadFile(file)
 				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file) {
-					runTestCase(t, data, file)
+					runTestCase(t, data, file, ex)
 				}
 			}
 		}
@@ -136,14 +141,11 @@ func getTestFiles(dir string) ([]string, error) {
 	return filesToAssert, nil
 }
 
-func runTestCase(t *testing.T, fileData []byte, testFile string) {
+func runTestCase(t *testing.T, fileData []byte, testFile string, ex exchange.Exchange) {
 	t.Helper()
 
 	// Retrieve values from JSON file
 	test := parseTestFile(t, fileData, testFile)
-
-	// Define Exchange
-	ex := &mockBidExchange{t: t}
 
 	// Run test
 	actualCode, actualJsonBidResponse := doRequest(t, test, ex)
@@ -361,22 +363,99 @@ func TestBidRequestAssert(t *testing.T) {
 	}
 }
 
-func TestAssertAuctionRequest(t *testing.T) {
-	testSuites := []struct {
+func TestAuctionRequest(t *testing.T) {
+	falseVal := false
+
+	testCases := []struct {
 		description       string
 		inTestFile        string
 		outAuctionRequest exchange.AuctionRequest
 	}{
 		{
-			"Assert 200s on all bidRequests from exemplary folder",
-			"sample-requests/valid-whole/exemplary/all-ext.json",
-			exchange.AuctionRequest{},
+			"Test case comes with all extensions to assert most AuctionRequest fields",
+			"sample-requests/valid-auction-request/auction-ext-info.json",
+			exchange.AuctionRequest{
+				BidRequest: &openrtb.BidRequest{
+					ID:   "some-request-id",
+					User: &openrtb.User{Ext: json.RawMessage(`{"consent": "gdpr-consent-string"}`)},
+					Regs: &openrtb.Regs{Ext: json.RawMessage(`{"gdpr": 1, "us_privacy": "1NYN"}`)},
+					Imp: []openrtb.Imp{
+						{
+							ID: "imp1",
+							Banner: &openrtb.Banner{
+								Format: []openrtb.Format{
+									{
+										W: 300,
+										H: 250,
+									},
+								},
+							},
+							Ext: json.RawMessage(`{"appnexus": {"placementId": 12883451},"rubicon": {"accountId": 1001,"siteId": 113932,"zoneId": 535510}}`),
+						},
+						{
+							ID: "imp2",
+							Native: &openrtb.Native{
+								Request: "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":1}]}",
+							},
+							Ext: json.RawMessage(`{"districtm": {"placementId": 105}}`),
+						},
+					},
+					TMax: 500,
+					Ext:  json.RawMessage(`{"prebid":{"debug":true,"cache":{"vastxml":{"returnCreative":false}}}}`),
+				},
+				ExtInfo: exchange.AuctionExtInfo{
+					GDPR: openrtb.Int8Ptr(1),
+					UserExt: &openrtb_ext.ExtUser{
+						Consent: "gdpr-consent-string",
+					},
+					NativePayloads: map[string]*nativeRequests.Request{
+						"imp2": {
+							Context:   native.ContextType(1),
+							PlcmtType: native.PlacementType(1),
+							Assets: []nativeRequests.Asset{
+								{ID: 1},
+							},
+						},
+					},
+					BidExt: &openrtb_ext.ExtRequest{
+						Prebid: openrtb_ext.ExtRequestPrebid{
+							Debug: true,
+							Cache: &openrtb_ext.ExtRequestPrebidCache{
+								VastXML: &openrtb_ext.ExtRequestPrebidCacheVAST{
+									ReturnCreative: &falseVal,
+								},
+							},
+						},
+					},
+					ImpExts: []map[string]json.RawMessage{
+						{
+							"appnexus": json.RawMessage(`{"placementId": 12883451}`),
+							"rubicon":  json.RawMessage(`{"accountId": 1001,"siteId": 113932,"zoneId": 535510}`),
+						},
+						{
+							"districtm": json.RawMessage(`{"placementId": 105}`),
+						},
+					},
+				},
+			},
 		},
 	}
-	for _, test := range testSuites {
-		data, err := ioutil.ReadFile(test.inTestFile)
-		if assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, test.inTestFile) {
-			runTestCase(t, data, test.inTestFile)
+
+	for _, tc := range testCases {
+		fileData, err := ioutil.ReadFile(tc.inTestFile)
+		if assert.NoError(t, err, "Test case %s. Error reading file %s \n", tc.description, tc.inTestFile) {
+			// Define exchange with prefered HoldAuction implementation
+			ex := &assertAuctionRequestExchange{
+				t:        t,
+				r:        tc.outAuctionRequest,
+				testfile: tc.inTestFile,
+			}
+
+			// Retrieve values from JSON file
+			test := parseTestFile(t, fileData, tc.inTestFile)
+
+			// Run test with chosen exchange
+			doRequest(t, test, ex)
 		}
 	}
 }
@@ -1808,18 +1887,31 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReque
 	}, nil
 }
 
+// assertAuctionRequestExchange implements HoldAuction as a testify helper function to assert the expected AuctionRequest object
+type assertAuctionRequestExchange struct {
+	t        *testing.T
+	r        exchange.AuctionRequest
+	testfile string
+}
+
+func (e *assertAuctionRequestExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+	e.t.Helper()
+
+	// Assert
+	assert.ElementsMatch(e.t, e.r.BidRequest, r.BidRequest, "exchange.AuctionRequest object mismatch. File: %s \n", e.testfile)
+	assert.ElementsMatch(e.t, e.r.ExtInfo, r.ExtInfo, "exchange.AuctionRequest object mismatch. File: %s \n", e.testfile)
+
+	return &openrtb.BidResponse{}, nil
+}
+
 type mockBidExchange struct {
 	gotRequest *openrtb.BidRequest
-	t          *testing.T
 }
 
 // mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext
 // into the bidResponse.Ext to assert the bidder adapters that were not filtered out in the validation process
 // It is also a helper function that asserts the expected AuctionRequest if needed
 func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
-	e.t.Helper()
-	assert.Equalf(e.t, true, true, "HoldAuction runs and fails")
-
 	bidResponse := &openrtb.BidResponse{
 		ID:    r.BidRequest.ID,
 		BidID: "test bid id",
