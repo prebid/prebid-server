@@ -38,7 +38,7 @@ func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters
 	var adapterRequests []*adapters.RequestData
 
 	// Break up multi-imp request into multiple external requests since we don't
-	// support SRA
+	// support SRA in our exchange server
 	for i := 0; i < len(request.Imp); i++ {
 		adapterReq, err := a.makeRequest(request, request.Imp[i])
 		if adapterReq != nil {
@@ -57,7 +57,7 @@ func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters
 func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp) (*adapters.RequestData, error) {
 	var imps []openrtb.Imp
 
-	reqCopy := request
+	reqCopy := *request
 	impCopy, err := makeImps(imp)
 
 	if err != nil {
