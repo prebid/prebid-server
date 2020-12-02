@@ -189,6 +189,7 @@ func CoreBidderNames() []BidderName {
 		BidderLunaMedia,
 		BidderMarsmedia,
 		BidderMgid,
+		BidderMobfoxpb,
 		BidderMobileFuse,
 		BidderNanoInteractive,
 		BidderNinthDecimal,
