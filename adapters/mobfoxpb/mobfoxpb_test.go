@@ -9,7 +9,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+	bidder, _ := Builder(openrtb_ext.BidderMobfoxpb, config.Adapter{
 		Endpoint: "http://example.com/?c=o&m=ortb"})
 	adapterstest.RunJSONBidderTest(t, "mobfoxpbtest", bidder)
 }
