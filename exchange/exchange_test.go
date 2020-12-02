@@ -30,7 +30,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
-	"github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
@@ -42,20 +41,26 @@ func TestNewExchange(t *testing.T) {
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
 	defer server.Close()
 
-	knownAdapters := openrtb_ext.BidderList()
+	knownAdapters := openrtb_ext.CoreBidderNames()
 
 	cfg := &config.Configuration{
 		CacheURL: config.Cache{
 			ExpectedTimeMillis: 20,
 		},
-		Adapters: blankAdapterConfig(openrtb_ext.BidderList()),
+		Adapters: blankAdapterConfig(knownAdapters),
 		GDPR: config.GDPR{
 			EEACountries: []string{"FIN", "FRA", "GUF"},
 		},
 	}
 
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", knownAdapters)
+	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
+	if adaptersErr != nil {
+		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+	}
+
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), knownAdapters, config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
 			t.Errorf("NewExchange produced an Exchange without bidder %s", bidderName)
@@ -92,8 +97,14 @@ func TestCharacterEscape(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
+	if adaptersErr != nil {
+		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+	}
+
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
 	//liveAdapters []openrtb_ext.BidderName,
@@ -126,7 +137,6 @@ func TestCharacterEscape(t *testing.T) {
 		Errors:             []openrtb_ext.ExtBidderError{{Code: 999, Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\""}},
 	}
 
-	//errList []error
 	var errList []error
 
 	/* 	4) Build bid response 									*/
@@ -510,17 +520,22 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 			Path:   testExternalCachePath,
 		},
 	}
+
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	testEngine := metricsConf.NewMetricsEngine(cfg, adapterList)
-
 	/* 	2) Init new exchange with said configuration			*/
 	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
+	if adaptersErr != nil {
+		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+	}
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(server.Client(), pbc.NewClient(&http.Client{}, &cfg.CacheURL, &cfg.ExtCacheURL, testEngine), cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
-
+	pbc := pbc.NewClient(&http.Client{}, &cfg.CacheURL, &cfg.ExtCacheURL, testEngine)
+	e := NewExchange(adapters, pbc, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
 	liveAdapters := []openrtb_ext.BidderName{bidderName}
 
@@ -862,8 +877,14 @@ func TestBidResponseCurrency(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
+	if adaptersErr != nil {
+		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+	}
+
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -1013,15 +1034,16 @@ func TestRaceIntegration(t *testing.T) {
 	defer server.Close()
 
 	cfg := &config.Configuration{
-		Adapters: make(map[string]config.Adapter, len(openrtb_ext.BidderMap)),
+		Adapters: make(map[string]config.Adapter),
 	}
-	for _, bidder := range openrtb_ext.BidderList() {
+	for _, bidder := range openrtb_ext.CoreBidderNames() {
 		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
 			Endpoint: server.URL,
 		}
 	}
-	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))] = config.Adapter{
+	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))] = config.Adapter{
 		Endpoint:   server.URL,
+		AppSecret:  "any",
 		PlatformID: "abc",
 	}
 	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderBeachfront))] = config.Adapter{
@@ -1029,11 +1051,12 @@ func TestRaceIntegration(t *testing.T) {
 		ExtraAdapterInfo: "{\"video_endpoint\":\"" + server.URL + "\"}",
 	}
 
-	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
-	if error != nil {
-		t.Errorf("Failed to create a category Fetcher: %v", error)
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
+	if adaptersErr != nil {
+		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	auctionRequest := AuctionRequest{
@@ -1052,7 +1075,7 @@ func TestRaceIntegration(t *testing.T) {
 		},
 	}
 
-	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics, adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencyConverter, categoriesFetcher)
+	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, &nilCategoryFetcher{}).(*exchange)
 	_, err := ex.HoldAuction(context.Background(), auctionRequest, nil)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
@@ -1132,12 +1155,18 @@ func TestPanicRecovery(t *testing.T) {
 		CacheURL: config.Cache{
 			ExpectedTimeMillis: 20,
 		},
-		Adapters: blankAdapterConfig(openrtb_ext.BidderList()),
+		Adapters: blankAdapterConfig(openrtb_ext.CoreBidderNames()),
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	adapters, adaptersErr := BuildAdapters(&http.Client{}, cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
+	if adaptersErr != nil {
+		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+	}
+
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(&http.Client{}, nil, cfg, theMetrics, adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+
 	chBids := make(chan *bidResponseWrapper, 1)
 	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 		panic("panic!")
@@ -1168,7 +1197,7 @@ func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	if err != nil {
 		t.Fatalf("Failed to open adapters directory: %v", err)
 	}
-	bidderExts := make(map[string]json.RawMessage, len(openrtb_ext.BidderMap))
+	bidderExts := make(map[string]json.RawMessage)
 	for _, adapterFolder := range adapterFolders {
 		if adapterFolder.IsDir() && adapterFolder.Name() != "adapterstest" {
 			bidderName := adapterFolder.Name()
@@ -1195,19 +1224,29 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 	defer server.Close()
 
 	cfg := &config.Configuration{
-		Adapters: make(map[string]config.Adapter, len(openrtb_ext.BidderMap)),
+		Adapters: make(map[string]config.Adapter),
 	}
-	for _, bidder := range openrtb_ext.BidderList() {
+	for _, bidder := range openrtb_ext.CoreBidderNames() {
 		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
 			Endpoint: server.URL,
 		}
 	}
+	cfg.Adapters["audiencenetwork"] = config.Adapter{Disabled: true}
+
+	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
+	if adaptersErr != nil {
+		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+	}
+
+	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(server.Client(), &mockCache{}, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencyConverter, categoriesFetcher).(*exchange)
+
+	e := NewExchange(adapters, &mockCache{}, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, categoriesFetcher).(*exchange)
 
 	e.adapterMap[openrtb_ext.BidderBeachfront] = panicingAdapter{}
 	e.adapterMap[openrtb_ext.BidderAppnexus] = panicingAdapter{}
@@ -1472,7 +1511,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb.BidResponse
 
 func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy) Exchange {
 	adapters := make(map[openrtb_ext.BidderName]adaptedBidder)
-	for _, bidderName := range openrtb_ext.BidderMap {
+	for _, bidderName := range openrtb_ext.CoreBidderNames() {
 		if spec, ok := expectations[string(bidderName)]; ok {
 			adapters[bidderName] = &validatingBidder{
 				t:             t,
@@ -1507,7 +1546,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 
 	return &exchange{
 		adapterMap:          adapters,
-		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
+		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames()),
 		cache:               &wellBehavedCache{},
 		cacheTime:           0,
 		gDPR:                gdpr.AlwaysFail{},
@@ -2778,6 +2817,18 @@ type panicingAdapter struct{}
 
 func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo, nativePayloads map[string]*nativeRequests.Request) (posb *pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
+}
+
+func blankAdapterConfig(bidderList []openrtb_ext.BidderName) map[string]config.Adapter {
+	adapters := make(map[string]config.Adapter)
+	for _, b := range bidderList {
+		adapters[strings.ToLower(string(b))] = config.Adapter{}
+	}
+
+	// Audience Network requires additional config to be built.
+	adapters["audiencenetwork"] = config.Adapter{PlatformID: "anyID", AppSecret: "anySecret"}
+
+	return adapters
 }
 
 type nilCategoryFetcher struct{}

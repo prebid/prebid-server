@@ -13,7 +13,7 @@ import (
 )
 
 func TestAllValidBids(t *testing.T) {
-	var bidder adaptedBidder = ensureValidBids(&mockAdaptedBidder{
+	var bidder adaptedBidder = addValidatedBidderMiddleware(&mockAdaptedBidder{
 		bidResponse: &pbsOrtbSeatBid{
 			bids: []*pbsOrtbBid{
 				{
@@ -49,7 +49,7 @@ func TestAllValidBids(t *testing.T) {
 }
 
 func TestAllBadBids(t *testing.T) {
-	bidder := ensureValidBids(&mockAdaptedBidder{
+	bidder := addValidatedBidderMiddleware(&mockAdaptedBidder{
 		bidResponse: &pbsOrtbSeatBid{
 			bids: []*pbsOrtbBid{
 				{
@@ -90,7 +90,7 @@ func TestAllBadBids(t *testing.T) {
 }
 
 func TestMixedBids(t *testing.T) {
-	bidder := ensureValidBids(&mockAdaptedBidder{
+	bidder := addValidatedBidderMiddleware(&mockAdaptedBidder{
 		bidResponse: &pbsOrtbSeatBid{
 			bids: []*pbsOrtbBid{
 				{
@@ -227,7 +227,7 @@ func TestCurrencyBids(t *testing.T) {
 				},
 			},
 		}
-		bidder := ensureValidBids(&mockAdaptedBidder{
+		bidder := addValidatedBidderMiddleware(&mockAdaptedBidder{
 			bidResponse: &pbsOrtbSeatBid{
 				currency: tc.brpCur,
 				bids:     bids,

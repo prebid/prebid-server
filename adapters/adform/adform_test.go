@@ -26,7 +26,21 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "adformtest", NewAdformBidder(nil, "http://adx.adform.net/adx"))
+	bidder, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
+		Endpoint: "http://adx.adform.net/adx"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "adformtest", bidder)
+}
+
+func TestEndpointMalformed(t *testing.T) {
+	_, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
+		Endpoint: ` https://malformed`})
+
+	assert.Error(t, buildErr)
 }
 
 type aTagInfo struct {
@@ -193,7 +207,7 @@ func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, contex
 
 	// prepare adapter
 	conf := *adapters.DefaultHTTPAdapterConfig
-	adapter := NewAdformAdapter(&conf, server.URL)
+	adapter := NewAdformLegacyAdapter(&conf, server.URL)
 
 	prebidRequest := preparePrebidRequest(server.URL, t)
 	ctx := context.TODO()
@@ -285,7 +299,12 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 // OpenRTB auction tests
 
 func TestOpenRTBRequest(t *testing.T) {
-	bidder := NewAdformBidder(nil, "http://adx.adform.net")
+	bidder, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
+		Endpoint: "http://adx.adform.net"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
 
 	testData := createTestData(true)
 	request := createOpenRtbRequest(&testData)
@@ -483,7 +502,7 @@ func TestOpenRTBSurpriseResponse(t *testing.T) {
 // Properties tests
 
 func TestAdformProperties(t *testing.T) {
-	adapter := NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, "adx.adform.net/adx")
+	adapter := NewAdformLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "adx.adform.net/adx")
 
 	if adapter.SkipNoCookies() != false {
 		t.Fatalf("should have been false")

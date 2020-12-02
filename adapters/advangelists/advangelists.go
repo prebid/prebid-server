@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -239,12 +239,15 @@ func getMediaTypeForImpID(impID string, imps []openrtb.Imp) openrtb_ext.BidType 
 	return openrtb_ext.BidTypeBanner
 }
 
-// NewAdvangelistsAdapter to be called in prebid-server core to create advangelists adapter instance
-func NewAdvangelistsBidder(endpointTemplate string) adapters.Bidder {
-	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
+// Builder builds a new instance of the Advangelists adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &AdvangelistsAdapter{EndpointTemplate: *template}
+
+	bidder := &AdvangelistsAdapter{
+		EndpointTemplate: *template,
+	}
+	return bidder, nil
 }
