@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net/http"
 	"net/url"
 	"runtime/debug"
 	"sort"
@@ -78,23 +77,22 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
-	e := new(exchange)
-
-	e.adapterMap = newAdapterMap(client, cfg, infos, metricsEngine)
-	e.cache = cache
-	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
-	e.me = metricsEngine
-	e.gDPR = gDPR
-	e.currencyConverter = currencyConverter
-	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
-	e.privacyConfig = config.Privacy{
-		CCPA: cfg.CCPA,
-		GDPR: cfg.GDPR,
-		LMT:  cfg.LMT,
+func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+	return &exchange{
+		adapterMap:          adapters,
+		cache:               cache,
+		cacheTime:           time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
+		categoriesFetcher:   categoriesFetcher,
+		currencyConverter:   currencyConverter,
+		gDPR:                gDPR,
+		me:                  metricsEngine,
+		UsersyncIfAmbiguous: cfg.GDPR.UsersyncIfAmbiguous,
+		privacyConfig: config.Privacy{
+			CCPA: cfg.CCPA,
+			GDPR: cfg.GDPR,
+			LMT:  cfg.LMT,
+		},
 	}
-	e.categoriesFetcher = categoriesFetcher
-	return e
 }
 
 type AuctionRequest struct {
@@ -102,6 +100,7 @@ type AuctionRequest struct {
 	Account     config.Account
 	UserSyncs   IdFetcher
 	RequestType pbsmetrics.RequestType
+	StartTime   time.Time
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -188,7 +187,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 	}
 
-	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, r.BidRequest, debugInfo, errs)
+	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
 
 	// Ensure caching errors are added in case auc.doCache was called and errors were returned
 	if len(cacheErrs) > 0 {
@@ -714,7 +713,8 @@ func getPrimaryAdServer(adServerId int) (string, error) {
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, req *openrtb.BidRequest, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse {
+func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, r AuctionRequest, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse {
+	req := r.BidRequest
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
 		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError, len(adapterBids)),
 		ResponseTimeMillis:   make(map[openrtb_ext.BidderName]int, len(adapterBids)),
@@ -724,6 +724,12 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
 			HttpCalls:       make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
 			ResolvedRequest: req,
+		}
+	}
+	if !r.StartTime.IsZero() {
+		// auctiontimestamp is the only response.ext.prebid attribute we may emit
+		bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{
+			AuctionTimestamp: r.StartTime.UnixNano() / 1e+6,
 		}
 	}
 

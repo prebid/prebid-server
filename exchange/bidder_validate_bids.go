@@ -13,12 +13,12 @@ import (
 	"golang.org/x/text/currency"
 )
 
-// ensureValidBids returns a bidder that removes invalid bids from the argument bidder's response.
+// addValidatedBidderMiddleware returns a bidder that removes invalid bids from the argument bidder's response.
 // These will be converted into errors instead.
 //
 // The goal here is to make sure that the response contains Bids which are valid given the initial Request,
 // so that Publishers can trust the Bids they get from Prebid Server.
-func ensureValidBids(bidder adaptedBidder) adaptedBidder {
+func addValidatedBidderMiddleware(bidder adaptedBidder) adaptedBidder {
 	return &validatedBidder{
 		bidder: bidder,
 	}

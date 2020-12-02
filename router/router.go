@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/endpoints/events"
+	"github.com/prebid/prebid-server/errortypes"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
 
@@ -73,10 +74,12 @@ func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		glog.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
 	}
 
+	bidderMap := openrtb_ext.BuildBidderMap()
+
 	data := make(map[string]json.RawMessage, len(files))
 	for _, file := range files {
 		bidder := strings.TrimSuffix(file.Name(), ".json")
-		bidderName, isValid := openrtb_ext.BidderMap[bidder]
+		bidderName, isValid := bidderMap[bidder]
 		if !isValid {
 			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
@@ -150,17 +153,17 @@ func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
 	return map[string]adapters.Adapter{
-		"appnexus":   appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
-		"districtm":  appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
-		"ix":         ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
-		"pubmatic":   pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
-		"pulsepoint": pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
-		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
+		"appnexus":   appnexus.NewAppNexusLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
+		"districtm":  appnexus.NewAppNexusLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
+		"ix":         ix.NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
+		"pubmatic":   pubmatic.NewPubmaticLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
+		"pulsepoint": pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
+		"rubicon": rubicon.NewRubiconLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
-		"lifestreet": lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint),
-		"conversant": conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
-		"adform":     adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
-		"sovrn":      sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
+		"lifestreet": lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint),
+		"conversant": conversant.NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
+		"adform":     adform.NewAdformLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
+		"sovrn":      sovrn.NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
 	}
 }
 
@@ -208,7 +211,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	}
 
 	// Hack because of how legacy handles districtm
-	legacyBidderList := openrtb_ext.BidderList()
+	legacyBidderList := openrtb_ext.CoreBidderNames()
 	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
 
 	// Metrics engine
@@ -229,12 +232,10 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	}
 
 	p, _ := filepath.Abs(infoDirectory)
-	bidderInfos := adapters.ParseBidderInfos(cfg.Adapters, p, openrtb_ext.BidderList())
+	bidderInfos := adapters.ParseBidderInfos(cfg.Adapters, p, openrtb_ext.CoreBidderNames())
 
-	disabledBidders := map[string]string{
-		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
-	}
-	activeBiddersMap := exchange.DisableBidders(bidderInfos, disabledBidders)
+	activeBidders := exchange.GetActiveBidders(bidderInfos)
+	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 
@@ -243,21 +244,27 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 
 	exchanges = newExchangeMap(cfg)
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
-	theExchange := exchange.NewExchange(generalHttpClient, cacheClient, cfg, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor, categoriesFetcher)
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap)
+	adapters, adaptersErrs := exchange.BuildAdapters(generalHttpClient, cfg, bidderInfos, r.MetricsEngine)
+	if len(adaptersErrs) > 0 {
+		errs := errortypes.NewAggregateErrors("Failed to initialize adapters", adaptersErrs)
+		glog.Fatalf("%v", errs)
+	}
 
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, r.MetricsEngine, gdprPerms, rateConvertor, categoriesFetcher)
+
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders)
 
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	videoEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap, cacheClient)
+	videoEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, cacheClient)
 	if err != nil {
 		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
 	}
@@ -274,7 +281,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(defaultAliases))
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos, defaultAliases))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
-	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics))
+	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics, activeBidders))
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
 	r.ServeFiles("/static/*filepath", http.Dir("static"))
