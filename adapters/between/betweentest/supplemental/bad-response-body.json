@@ -15,7 +15,7 @@
         "ext": {
           "bidder": {
             "host": "127.0.0.1",
-            "publisher_id": "0"
+            "publisher_id": "1"
           }
         }
       }
@@ -32,7 +32,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://127.0.0.1/",
+        "uri": "http://127.0.0.1/1",
         "body": {
           "id": "some-request-id",
           "imp": [
@@ -47,7 +47,7 @@
               "ext": {
                 "bidder": {
                   "host": "127.0.0.1",
-                  "publisher_id": "0"
+                  "publisher_id": "1"
                 }
               }
             }

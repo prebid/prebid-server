@@ -17,7 +17,7 @@
         "ext": {
           "bidder": {
             "host": "127.0.0.2",
-            "publisher_id": "0"
+            "publisher_id": "1"
           }
         }
       },
@@ -36,7 +36,7 @@
         "ext": {
           "bidder": {
             "host": "127.0.0.2",
-            "publisher_id": "0"
+            "publisher_id": "1"
           }
         }
       }
@@ -49,7 +49,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://127.0.0.2/",
+        "uri": "http://127.0.0.2/1",
         "body": {
           "id": "some-request-id1",
           "imp": [
@@ -68,7 +68,7 @@
               "ext": {
                 "bidder": {
                   "host": "127.0.0.2",
-                  "publisher_id": "0"
+                  "publisher_id": "1"
                 }
               },
               "bidfloor": 1e-05,
@@ -89,7 +89,7 @@
               "ext": {
                 "bidder": {
                   "host": "127.0.0.2",
-                  "publisher_id": "0"
+                  "publisher_id": "1"
                 }
               },
               "bidfloor": 1e-05,

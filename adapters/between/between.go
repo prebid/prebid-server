@@ -3,15 +3,16 @@ package between
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/macros"
 	"net/http"
 	"net/url"
 	"strconv"
 	"text/template"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -108,10 +109,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 			Message: fmt.Sprintf("Request needs to include a Banner object"),
 		}
 	}
-
-	bannerCopy := *imp.Banner
-	banner := &bannerCopy
-
+	banner := *imp.Banner
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
@@ -122,7 +120,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 		banner.Format = banner.Format[1:]
 		banner.W = &format.W
 		banner.H = &format.H
-		imp.Banner = banner
+		imp.Banner = &banner
 	}
 
 	return nil
@@ -203,7 +201,7 @@ func (a *BetweenAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: "banner",
+				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
 	}
@@ -214,6 +212,7 @@ func (a *BetweenAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 func NewBetweenBidder(endpoint string) *BetweenAdapter {
 	t, err := template.New("endpointTemplate").Parse(endpoint)
 	if err != nil {
+		glog.Fatal("Unable to parse endpoint url template")
 		return nil
 	}
 
