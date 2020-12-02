@@ -80,7 +80,6 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpBetween, error) {
 
 	var betweenExt openrtb_ext.ExtImpBetween
 	if err := json.Unmarshal(bidderExt.Bidder, &betweenExt); err != nil {
-		fmt.Println(err)
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, invalid ImpExt", imp.ID),
 		}
