@@ -218,6 +218,7 @@ type GDPR struct {
 	NonStandardPublisherMap map[string]struct{}
 	TCF1                    TCF1 `mapstructure:"tcf1"`
 	TCF2                    TCF2 `mapstructure:"tcf2"`
+	AMPException            bool `mapstructure:"amp_exception"` // Deprecated: Use account-level GDPR AMP settings
 	// EEACountries (EEA = European Economic Area) are a list of countries where we should assume GDPR applies.
 	// If the gdpr flag is unset in a request, but geo.country is set, we will assume GDPR applies if and only
 	// if the country matches one on this list. If both the GDPR flag and country are not set, we default
@@ -229,6 +230,10 @@ type GDPR struct {
 func (cfg *GDPR) validate(errs configErrors) configErrors {
 	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
 		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
+	}
+
+	if cfg.AMPException == true {
+		glog.Warning("GDPR AMP Exception is enabled but it is no longer supported. If you need to disable GDPR for AMP, you can do so on a per-account basis or disable it for all request types at the host level.")
 	}
 	return errs
 }
@@ -1044,6 +1049,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.special_purpose1.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatement.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatement.access_allowed", true)
+	v.SetDefault("gdpr.amp_exception", false)
 	v.SetDefault("gdpr.eea_countries", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
 		"LIE", "LTU", "LUX", "MLT", "MTQ", "MYT", "NLD", "NOR", "POL", "PRT", "REU", "ROU", "BLM", "MAF", "SPM",
