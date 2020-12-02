@@ -46,12 +46,16 @@ func (d *DeepintentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 		var bidderExt adapters.ExtImpBidder
 		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("Impression id=%s has an Error: %s", imp.ID, err.Error()),
+			})
 			continue
 		}
 
 		if err = json.Unmarshal(bidderExt.Bidder, &deepintentExt); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("Impression id=%s, has invalid Ext", imp.ID),
+			})
 			continue
 		}
 
@@ -79,7 +83,7 @@ func (d *DeepintentAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		return nil, nil
 	}
 
-	if response.StatusCode == http.StatusNotFound {
+	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
@@ -180,6 +184,6 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, 
 
 	// This shouldnt happen. Lets handle it just incase by returning an error.
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find impression %s ", impID),
 	}
 }
