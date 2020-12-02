@@ -196,15 +196,15 @@ func doConfigurablePost(body string, existingSyncs map[string]string, gdprHostCo
 }
 
 func testableEndpoint(perms gdpr.Permissions, cfgGDPR config.GDPR, cfgCCPA config.CCPA) httprouter.Handle {
-	return NewCookieSyncEndpoint(syncersForTest(), &config.Configuration{GDPR: cfgGDPR, CCPA: cfgCCPA}, perms, &metricsConf.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+	return NewCookieSyncEndpoint(syncersForTest(), &config.Configuration{GDPR: cfgGDPR, CCPA: cfgCCPA}, perms, &metricsConf.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}), openrtb_ext.BuildBidderMap())
 }
 
 func syncersForTest() map[openrtb_ext.BidderName]usersync.Usersyncer {
 	return map[openrtb_ext.BidderName]usersync.Usersyncer{
-		openrtb_ext.BidderAppnexus:   appnexus.NewAppnexusSyncer(template.Must(template.New("sync").Parse("someurl.com"))),
-		openrtb_ext.BidderFacebook:   audienceNetwork.NewFacebookSyncer(template.Must(template.New("sync").Parse("https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID"))),
-		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(template.Must(template.New("sync").Parse("anotherurl.com"))),
-		openrtb_ext.BidderPubmatic:   pubmatic.NewPubmaticSyncer(template.Must(template.New("sync").Parse("thaturl.com"))),
+		openrtb_ext.BidderAppnexus:        appnexus.NewAppnexusSyncer(template.Must(template.New("sync").Parse("someurl.com"))),
+		openrtb_ext.BidderAudienceNetwork: audienceNetwork.NewFacebookSyncer(template.Must(template.New("sync").Parse("https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID"))),
+		openrtb_ext.BidderLifestreet:      lifestreet.NewLifestreetSyncer(template.Must(template.New("sync").Parse("anotherurl.com"))),
+		openrtb_ext.BidderPubmatic:        pubmatic.NewPubmaticSyncer(template.Must(template.New("sync").Parse("thaturl.com"))),
 	}
 }
 

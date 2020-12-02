@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -141,7 +142,10 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	return bidResponse, errs
 }
 
-func NewTripleliftBidder(client *http.Client, endpoint string) *TripleliftAdapter {
-	return &TripleliftAdapter{
-		endpoint: endpoint}
+// Builder builds a new instance of the Triplelift adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &TripleliftAdapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }

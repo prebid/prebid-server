@@ -8,21 +8,13 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type VerizonMediaAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
-}
-
-func (a *VerizonMediaAdapter) Name() string {
-	return "verizonmedia"
-}
-
-func (a *VerizonMediaAdapter) SkipNoCookies() bool {
-	return false
+	URI string
 }
 
 func (a *VerizonMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -214,19 +206,10 @@ func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_
 	return nil
 }
 
-func NewVerizonMediaAdapter(config *adapters.HTTPAdapterConfig, uri string) *VerizonMediaAdapter {
-	a := adapters.NewHTTPAdapter(config)
-
-	return &VerizonMediaAdapter{
-		http: a,
-		URI:  uri,
+// Builder builds a new instance of the VerizonMedia adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &VerizonMediaAdapter{
+		URI: config.Endpoint,
 	}
-}
-
-func NewVerizonMediaBidder(client *http.Client, endpoint string) *VerizonMediaAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
-	return &VerizonMediaAdapter{
-		http: a,
-		URI:  endpoint,
-	}
+	return bidder, nil
 }

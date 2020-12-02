@@ -7,10 +7,10 @@
     "host": {
       "type": "string",
       "description": "Network Host to request from",
-      "enum": ["lbs-eu1", "lbs-ru1", "lbs-us-east1", "lbs-asia1"]
+      "enum": ["lbs-eu1.ads", "lbs-ru1.ads", "lbs-us-east1.ads", "lbs-asia1.ads"]
     },
     "publisher_id": {
-      "type": "integer",
+      "type": "string",
       "description": "Publisher ID from Between Exchange control panel"
     },
     "bid_floor": {

@@ -311,7 +311,8 @@ func TestRubiconBasicResponse(t *testing.T) {
 }
 
 func TestRubiconUserSyncInfo(t *testing.T) {
-	an := NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := NewRubiconLegacyAdapter(&conf, "uri", "xuser", "xpass", "pbs-test-tracker")
 
 	assert.Equal(t, "rubicon", an.Name(), "Name '%s' != 'rubicon'", an.Name())
 
@@ -808,7 +809,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an = NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker")
+	an = NewRubiconLegacyAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker")
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
@@ -1556,5 +1557,17 @@ func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
 }
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker"))
+	bidder, buildErr := Builder(openrtb_ext.BidderRubicon, config.Adapter{
+		Endpoint: "uri",
+		XAPI: config.AdapterXAPI{
+			Username: "xuser",
+			Password: "xpass",
+			Tracker:  "pbs-test-tracker",
+		}})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "rubicontest", bidder)
 }

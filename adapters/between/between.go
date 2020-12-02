@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -80,6 +80,7 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpBetween, error) {
 
 	var betweenExt openrtb_ext.ExtImpBetween
 	if err := json.Unmarshal(bidderExt.Bidder, &betweenExt); err != nil {
+		fmt.Println(err)
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, invalid ImpExt", imp.ID),
 		}
@@ -129,10 +130,13 @@ func buildImpBanner(imp *openrtb.Imp) error {
 // Add Between required properties to Imp object
 func addImpProps(imp *openrtb.Imp, secure *int8, betweenExt *openrtb_ext.ExtImpBetween) {
 	imp.Secure = secure
-	if bidFloor, err := strconv.ParseFloat(betweenExt.BidFloor, 64); err != nil || bidFloor <= 0 {
+	if betweenExt.BidFloor <= 0 {
 		imp.BidFloor = defaultBidfloor
 	} else {
-		imp.BidFloor = bidFloor
+		imp.BidFloor = betweenExt.BidFloor
+	}
+	if betweenExt.BidFloorCur != "" {
+		imp.BidFloorCur = betweenExt.BidFloorCur
 	}
 }
 
@@ -209,12 +213,15 @@ func (a *BetweenAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	return bidResponse, nil
 }
 
-func NewBetweenBidder(endpoint string) *BetweenAdapter {
-	t, err := template.New("endpointTemplate").Parse(endpoint)
+// Builder builds a new instance of the Between adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	return &BetweenAdapter{EndpointTemplate: *t}
+	bidder := BetweenAdapter{
+		EndpointTemplate: *template,
+	}
+	return &bidder, nil
 }

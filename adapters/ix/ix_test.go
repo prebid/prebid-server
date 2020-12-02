@@ -80,7 +80,7 @@ func dummyIXServer(w http.ResponseWriter, r *http.Request) {
 
 func TestIxInvalidCall(t *testing.T) {
 
-	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
+	an := NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, url)
 	an.URI = "blah"
 
 	ctx := context.TODO()
@@ -94,7 +94,7 @@ func TestIxInvalidCall(t *testing.T) {
 
 func TestIxInvalidCallReqAppNil(t *testing.T) {
 
-	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
+	an := NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, url)
 	an.URI = "blah"
 
 	ctx := context.TODO()
@@ -112,7 +112,7 @@ func TestIxInvalidCallReqAppNil(t *testing.T) {
 
 func TestIxInvalidCallMissingSiteID(t *testing.T) {
 
-	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
+	an := NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, url)
 	an.URI = "blah"
 
 	ctx := context.TODO()
@@ -142,7 +142,7 @@ func TestIxTimeout(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
@@ -208,7 +208,7 @@ func TestIxTimeoutMultipleSlots(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	pbReq := pbs.PBSRequest{}
 
 	adUnit1 := getAdUnit()
@@ -253,7 +253,7 @@ func TestIxInvalidJsonResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -279,7 +279,7 @@ func TestIxInvalidStatusCode(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -305,7 +305,7 @@ func TestIxBadRequest(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -331,7 +331,7 @@ func TestIxNoContent(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -355,7 +355,7 @@ func TestIxInvalidCallMissingSize(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnit := getAdUnit()
@@ -379,7 +379,7 @@ func TestIxInvalidCallEmptyBidIDResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnit := getAdUnit()
@@ -440,7 +440,7 @@ func TestIxMismatchUnitCode(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -462,7 +462,7 @@ func TestIxInvalidParam(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnit := getAdUnit()
@@ -486,7 +486,7 @@ func TestIxSingleSlotSingleValidSize(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -513,7 +513,7 @@ func TestIxTwoSlotValidSize(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnit1 := getAdUnit()
@@ -562,7 +562,7 @@ func TestIxTwoSlotMultiSizeOnlyValidIXSizeResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnit := getAdUnit()
@@ -617,7 +617,7 @@ func TestIxRequestLimit(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	an := NewIxLegacyAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnits := []pbs.PBSAdUnit{}

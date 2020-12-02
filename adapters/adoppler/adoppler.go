@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -36,14 +36,17 @@ type AdopplerAdapter struct {
 	endpoint *template.Template
 }
 
-func NewAdopplerBidder(endpoint string) *AdopplerAdapter {
-	t, err := template.New("endpoint").Parse(endpoint)
+// Builder builds a new instance of the Adoppler adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatalf("Unable to parse endpoint url template: %s", err)
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	return &AdopplerAdapter{t}
+	bidder := &AdopplerAdapter{
+		endpoint: template,
+	}
+	return bidder, nil
 }
 
 func (ads *AdopplerAdapter) MakeRequests(
