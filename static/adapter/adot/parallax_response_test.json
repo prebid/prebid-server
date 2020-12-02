@@ -1,0 +1,37 @@
+{
+  "id": "id0",
+  "seatbid": [
+    {
+      "bid": [
+        {
+          "id": "impIdBanner",
+          "impid": "impIdBanner",
+          "price": 1.16346,
+          "nurl": "nurl",
+          "adm": "adm",
+          "adid": "adid",
+          "adomain": [
+            "adomain.fr"
+          ],
+          "iurl": "iurl",
+          "cid": "cid",
+          "crid": "crid",
+          "w": 300,
+          "h": 600,
+          "ext": {
+            "prebid": {},
+            "bidder": {
+              "adot": {}
+            }
+          }
+        }
+      ],
+      "seat": "adot"
+    }
+  ],
+  "ext": {
+    "responsetimemillis": {
+      "adot": 8
+    }
+  }
+}
