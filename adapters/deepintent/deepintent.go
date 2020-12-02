@@ -60,10 +60,13 @@ func (d *DeepintentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		reqCopy.Imp[0].DisplayManagerVer = displayManagerVer
 
 		adapterReq, errors := d.preprocess(reqCopy)
+		if errors != nil {
+			errs = append(errs, errors...)
+		}
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
-		errs = append(errs, errors...)
+
 	}
 	return adapterRequests, errs
 }
