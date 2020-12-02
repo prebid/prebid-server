@@ -16,12 +16,25 @@ type TtxAdapter struct {
 }
 
 type Ext struct {
-	Ttx ext `json:"ttx"`
+	Ttx impTtxExt `json:"ttx"`
 }
 
-type ext struct {
+type impTtxExt struct {
 	Prod   string `json:"prod"`
 	Zoneid string `json:"zoneid,omitempty"`
+}
+
+type reqExt struct {
+	Ttx *reqTtxExt `json:"ttx,omitempty"`
+}
+
+type reqTtxExt struct {
+	Caller []TtxCaller `json:"caller,omitempty"`
+}
+
+type TtxCaller struct {
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
 }
 
 type bidExt struct {
@@ -65,6 +78,31 @@ func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp) (
 	}
 
 	reqCopy.Imp = append(imps, impCopy)
+
+	// Add info about caller
+	caller := TtxCaller{"Prebid-Server", "n/a"}
+
+	var reqExt reqExt
+	if len(reqCopy.Ext) > 0 {
+		if err := json.Unmarshal(reqCopy.Ext, &reqExt); err != nil {
+			return nil, err
+		}
+	}
+
+	if reqExt.Ttx == nil {
+		reqExt.Ttx = &reqTtxExt{}
+	}
+
+	if reqExt.Ttx.Caller == nil {
+		reqExt.Ttx.Caller = make([]TtxCaller, 0)
+	}
+
+	reqExt.Ttx.Caller = append(reqExt.Ttx.Caller, caller)
+
+	reqCopy.Ext, err = json.Marshal(reqExt)
+	if err != nil {
+		return nil, err
+	}
 
 	// Last Step
 	reqJSON, err := json.Marshal(reqCopy)
