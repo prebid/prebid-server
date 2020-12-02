@@ -5,101 +5,45 @@ import (
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"strings"
 	"testing"
 )
 
-func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "adottest", NewAdotAdapter("https://dsp.adotmob.com/headerbidding/bidrequest"))
-}
+var jsonBidReq = getJsonByteForTesting("./static/adapter/adot/parallax_request_test.json")
 
-var jsonBidReq = []byte(`{
-							"id": "reqId",
-							"imp": [
-								{
-									"id": "impId",
-									"banner": {
-										"format": [
-											{
-												"w": 320,
-												"h": 480
-											}
-										],
-										"w": 320,
-										"h": 480
-									},
-									"tagid": "ee234aac-114",
-									"bidfloorcur": "EUR",
-									"ext": {
-										"adot": {
-											"parallax": true
-										}
-									}
-								}
-							],
-							"app": {
-								"id": "0",
-								"name": "test-adot-integration",
-								"domain": "www.geev.com",
-								"cat": [
-									"IAB1"
-								],
-								"publisher": {
-									"id": "1",
-									"name": "GEEV"
-								}
-							},
-							"device": {
-								"ua": "Mozilla/5.0 (Linux; Android 8.1.0; A11_Y Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/75.0.3770.101 Mobile Safari/537.36",
-								"geo": {
-									"lat": 48.8566,
-									"lon": 2.35222,
-									"type": 2,
-									"country": "France",
-									"zip": "75004"
-								},
-								"ip": "::1",
-								"devicetype": 4,
-								"make": "Vmobile",
-								"model": "A11_Y",
-								"os": "Android",
-								"osv": "27",
-								"language": "français",
-								"carrier": "WIFI",
-								"connectiontype": 2,
-								"ifa": "AD0D3F0B-A407-70DA-AD07-3E2A5E4AD073",
-								"ext": {
-									"is_app": 1
-								}
-							},
-							"user": {
-								"id": "AD0D3F0B-A407-70DA-AD07-3E2A5E4AD073",
-								"buyeruid": "2432"
-							},
-							"at": 2,
-							"cur": [
-								"EUR",
-								"USD"
-							],
-							"regs": {
-								"ext": {
-									"gdpr": 0
-								}
-							},
-							"ext": {}
-						}`,
-)
-
-// Test properties of Adapter interface
-func TestAdotUrl(t *testing.T) {
-	adotAdapter := NewAdotAdapter("someUrl")
-
-	if strings.Compare(adotAdapter.endpoint, "someUrl") == 1 {
-		t.Errorf("The endpoint should be the same as " + adotAdapter.endpoint)
+func getJsonByteForTesting(path string) []byte {
+	jsonBidReq, err := ioutil.ReadFile(path)
+	if err != nil {
+		fmt.Println("File reading error", err)
+		return nil
 	}
+
+	return jsonBidReq
 }
 
-// Test the reqyest with the parallax parameter
+func TestJsonSamples(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderAdot, config.Adapter{
+		Endpoint: "https://dsp.adotmob.com/headerbidding/bidrequest"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "adottest", bidder)
+}
+
+func TestEndpoint(t *testing.T) {
+	_, buildErr := Builder(openrtb_ext.BidderAdot, config.Adapter{
+		Endpoint: "wrongurl."})
+
+	assert.Error(t, buildErr)
+}
+
+// Test the request with the parallax parameter
 func TestRequestWithParallax(t *testing.T) {
 	var bidReq *openrtb.BidRequest
 	if err := json.Unmarshal(jsonBidReq, &bidReq); err != nil {
@@ -132,5 +76,50 @@ func TestRequestWithoutParallax(t *testing.T) {
 
 	if strings.Contains(string(reqJSON), "parallax") {
 		t.Errorf("The request should not contains parallax param " + string(reqJSON))
+	}
+}
+
+// Test the parallax with an invalid request
+func TestParallaxWithInvalidRequest(t *testing.T) {
+	test := map[string]interface{}(nil)
+
+	_, err := getParallaxByte(test)
+
+	assert.Error(t, err)
+}
+
+//Test the media type error
+func TestMediaTypeError(t *testing.T) {
+	_, err := getMediaTypeForBid(nil, nil)
+
+	assert.Error(t, err)
+}
+
+//Test the media type for a bid response
+func TestMediaTypeForBid(t *testing.T) {
+	_, err := getMediaTypeForBid(nil, nil)
+
+	assert.Error(t, err)
+
+	var reqBanner, reqVideo *openrtb.BidRequest
+	var bidBanner, bidVideo *openrtb.Bid
+
+	err1 := json.Unmarshal(getJsonByteForTesting("./static/adapter/adot/parallax_request_test.json"), &reqBanner)
+	err2 := json.Unmarshal(getJsonByteForTesting("./static/adapter/adot/parallax_response_test.json"), &bidBanner)
+	err3 := json.Unmarshal(getJsonByteForTesting("./static/adapter/adot/video_request_test.json"), &reqVideo)
+	err4 := json.Unmarshal(getJsonByteForTesting("./static/adapter/adot/video_request_test.json"), &bidVideo)
+
+	if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
+		fmt.Println("error: ", "cannot unmarshal well")
+	}
+
+	bidType, err := getMediaTypeForBid(bidBanner, reqBanner)
+	if bidType == openrtb_ext.BidTypeBanner {
+		t.Errorf("the type is not the valid one. actual: %v, expected: %v", bidType, openrtb_ext.BidTypeBanner)
+	}
+
+	bidType2, _ := getMediaTypeForBid(bidVideo, reqVideo)
+	if bidType2 == openrtb_ext.BidTypeVideo {
+		t.Errorf("the type is not the valid one. actual: %v, expected: %v", bidType2, openrtb_ext.BidTypeVideo)
 	}
 }

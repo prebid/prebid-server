@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/buger/jsonparser"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/mxmCherry/openrtb"
@@ -15,6 +17,19 @@ import (
 
 type AdotAdapter struct {
 	endpoint string
+}
+
+// NewGridBidder configure bidder endpoint
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	_, err := url.ParseRequestURI(config.Endpoint)
+	if len(config.Endpoint) > 0 && err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url: %v", err)
+	}
+
+	bidder := &AdotAdapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
@@ -80,6 +95,9 @@ func (a *AdotAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequ
 
 // getMediaTypeForBid determines which type of bid.
 func getMediaTypeForBid(bid *openrtb.Bid, internalRequest *openrtb.BidRequest) (openrtb_ext.BidType, error) {
+	if bid == nil || internalRequest == nil {
+		return "", fmt.Errorf("the bid request object is nil")
+	}
 
 	impID := bid.ImpID
 
@@ -97,7 +115,7 @@ func getMediaTypeForBid(bid *openrtb.Bid, internalRequest *openrtb.BidRequest) (
 		}
 	}
 
-	return "", fmt.Errorf("Unrecognized bid type in response from adot")
+	return "", fmt.Errorf("unrecognized bid type in response from adot")
 }
 
 func addParallaxIfNecessary(reqJSON []byte) []byte {
@@ -169,11 +187,4 @@ func getParallaxByte(impObj map[string]interface{}) ([]byte, error) {
 
 	isParallaxByte, _, _, err := jsonparser.Get(isExtByte, "bidder", "parallax")
 	return isParallaxByte, err
-}
-
-// NewGridBidder configure bidder endpoint
-func NewAdotAdapter(endpoint string) *AdotAdapter {
-	return &AdotAdapter{
-		endpoint: endpoint,
-	}
 }

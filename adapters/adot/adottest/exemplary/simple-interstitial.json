@@ -1,97 +1,108 @@
 {
-  "mockBidRequest": {
-    "id": "test-request-inter-id",
-    "imp": [
-      {
-        "id": "test-imp-inter-id",
-        "banner": {
-          "format": [
-            {
-              "w": 320,
-              "h": 480
-            }
-          ],
-          "w": 320,
-          "h": 480
-        },
-        "instl": 1,
-        "ext": {
-          "adot": {}
-        }
-      }
-    ]
-  },
-  "httpCalls": [
-    {
-      "expectedRequest": {
-        "uri": "https://dsp.adotmob.com/headerbidding/bidrequest",
-        "body": {
-          "id": "test-request-inter-id",
-          "imp": [
-            {
-              "id": "test-imp-inter-id",
-              "banner": {
-                "format": [
+   "mockBidRequest":{
+      "id":"test-request-inter-id",
+      "imp":[
+         {
+            "id":"test-imp-inter-id",
+            "banner":{
+               "format":[
                   {
-                    "w": 320,
-                    "h": 480
+                     "w":320,
+                     "h":480
                   }
-                ],
-                "w": 320,
-                "h": 480
-              },
-              "instl": 1,
-              "ext": {
-                "adot": {}
-              }
+               ],
+               "w":320,
+               "h":480
+            },
+            "instl":1,
+            "ext":{
+               "adot":{
+
+               }
             }
-          ]
-        }
-      },
-      "mockResponse": {
-        "status": 200,
-        "body": {
-          "id": "test-request-inter-id",
-          "seatbid": [
-            {
-              "seat": "adot",
-              "bid": [{
-                "id": "7706636740145184841",
-                "impid": "test-imp-inter-id",
-                "price": 1.16346,
-                "adid": "5e0f079916e6cb0017ffa6d4",
-                "adm": "some-test-ad",
-                "adomain": ["adomain.com"],
-                "cid": "5dcd2cbaf623b70018a42515",
-                "crid": "5e173e4556f69e0010e7cd9d",
-                "w": 320,
-                "h": 480
-              }]
+         }
+      ]
+   },
+
+   "httpCalls":[
+      {
+         "expectedRequest":{
+            "uri":"https://dsp.adotmob.com/headerbidding/bidrequest",
+            "body":{
+               "id":"test-request-inter-id",
+               "imp":[
+                  {
+                     "id":"test-imp-inter-id",
+                     "banner":{
+                        "format":[
+                           {
+                              "w":320,
+                              "h":480
+                           }
+                        ],
+                        "w":320,
+                        "h":480
+                     },
+                     "instl":1,
+                     "ext":{
+                        "adot":{
+
+                        }
+                     }
+                  }
+               ]
             }
-          ],
-          "bidid": "5778926625248726496",
-          "cur": "USD"
-        }
+         },
+
+         "mockResponse":{
+            "status":200,
+            "body":{
+               "id":"test-request-inter-id",
+               "seatbid":[
+                  {
+                     "seat":"adot",
+                     "bid":[
+                        {
+                           "id":"7706636740145184841",
+                           "impid":"test-imp-inter-id",
+                           "price":1.16346,
+                           "adid":"5e0f079916e6cb0017ffa6d4",
+                           "adm":"some-test-ad",
+                           "adomain":[
+                              "adomain.com"
+                           ],
+                           "cid":"5dcd2cbaf623b70018a42515",
+                           "crid":"5e173e4556f69e0010e7cd9d",
+                           "w":320,
+                           "h":480
+                        }
+                     ]
+                  }
+               ],
+               "bidid":"5778926625248726496",
+               "cur":"USD"
+            }
+         }
       }
-    }
-  ],
+   ],
 
-  "expectedBids": [
-    {
-      "bid": {
-        "id": "test-request-inter-id",
-        "impid": "test-imp-inter-id",
-        "price": 1.16346,
-        "adm": "some-test-ad",
-        "adid": "5e0f079916e6cb0017ffa6d4",
-        "adomain": ["adomain.com"],
-        "cid": "5dcd2cbaf623b70018a42515",
-        "crid": "5e173e4556f69e0010e7cd9d",
-        "w": 320,
-        "h": 480
-      },
-      "type": "banner"
-    }
-  ]
+   "expectedBids":[
+      {
+         "bid":{
+            "id":"test-request-inter-id",
+            "impid":"test-imp-inter-id",
+            "price":1.16346,
+            "adm":"some-test-ad",
+            "adid":"5e0f079916e6cb0017ffa6d4",
+            "adomain":[
+               "adomain.com"
+            ],
+            "cid":"5dcd2cbaf623b70018a42515",
+            "crid":"5e173e4556f69e0010e7cd9d",
+            "w":320,
+            "h":480
+         },
+         "type":"banner"
+      }
+   ]
 }
-
