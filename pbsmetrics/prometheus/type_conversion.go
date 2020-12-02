@@ -17,7 +17,7 @@ func actionsAsString() []string {
 }
 
 func adaptersAsString() []string {
-	values := openrtb_ext.BidderList()
+	values := openrtb_ext.CoreBidderNames()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)

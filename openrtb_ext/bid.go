@@ -16,11 +16,12 @@ type ExtBid struct {
 // DealTierSatisfied true represents corresponding bid has satisfied the deal tier
 type ExtBidPrebid struct {
 	Cache             *ExtBidPrebidCache `json:"cache,omitempty"`
+	DealPriority      int                `json:"dealpriority,omitempty"`
+	DealTierSatisfied bool               `json:"dealtiersatisfied,omitempty"`
+	Meta              *ExtBidPrebidMeta  `json:"meta,omitempty"`
 	Targeting         map[string]string  `json:"targeting,omitempty"`
 	Type              BidType            `json:"type"`
 	Video             *ExtBidPrebidVideo `json:"video,omitempty"`
-	DealPriority      int                `json:"dealpriority,omitempty"`
-	DealTierSatisfied bool               `json:"dealtiersatisfied,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
@@ -33,6 +34,22 @@ type ExtBidPrebidCache struct {
 type ExtBidPrebidCacheBids struct {
 	Url     string `json:"url"`
 	CacheId string `json:"cacheId"`
+}
+
+// ExtBidPrebidMeta defines the contract for bidresponse.seatbid.bid[i].ext.prebid.meta
+type ExtBidPrebidMeta struct {
+	AdvertiserDomains    []string `json:"advertiserDomains,omitempty"` // or advertiserDomain?
+	AdvertiserID         int      `json:"advertiserId,omitempty"`
+	AdvertiserName       string   `json:"advertiserName,omitempty"`
+	AgencyID             int      `json:"agencyId,omitempty"`
+	AgencyName           string   `json:"agencyName,omitempty"`
+	BrandID              int      `json:"brandId,omitempty"`
+	BrandName            string   `json:"brandName,omitempty"`
+	MediaType            string   `json:"mediaType,omitempty"`
+	NetworkID            int      `json:"networkId,omitempty"`
+	NetworkName          string   `json:"networkName,omitempty"`
+	PrimaryCategoryID    string   `json:"primaryCatId,omitempty"`
+	SecondaryCategoryIDs []string `json:"secondaryCatIds,omitempty"`
 }
 
 // ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video

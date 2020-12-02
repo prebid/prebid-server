@@ -9,6 +9,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -21,10 +22,12 @@ type connectadImpExt struct {
 	ConnectAd openrtb_ext.ExtImpConnectAd `json:"connectad"`
 }
 
-func NewConnectAdBidder(endpoint string) *ConnectAdAdapter {
-	return &ConnectAdAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the ConnectAd adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &ConnectAdAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }
 
 func (a *ConnectAdAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

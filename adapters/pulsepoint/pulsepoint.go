@@ -195,7 +195,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewPulsePointAdapter(config *adapters.HTTPAdapterConfig, uri string) *PulsePointAdapter {
+func NewPulsePointLegacyAdapter(config *adapters.HTTPAdapterConfig, uri string) *PulsePointAdapter {
 	a := adapters.NewHTTPAdapter(config)
 
 	return &PulsePointAdapter{

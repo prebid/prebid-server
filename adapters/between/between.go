@@ -3,9 +3,10 @@ package between
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -160,12 +161,15 @@ func getMediaType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return bidType
 }
 
-func NewBetweenBidder(endpoint string) *BetweenAdapter {
-	template, err := template.New("endpointTemplate").Parse(endpoint)
+// Builder builds a new instance of the Between adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	return &BetweenAdapter{EndpointTemplate: *template}
+	bidder := BetweenAdapter{
+		EndpointTemplate: *template,
+	}
+	return &bidder, nil
 }

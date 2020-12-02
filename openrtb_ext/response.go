@@ -17,6 +17,8 @@ type ExtBidResponse struct {
 	RequestTimeoutMillis int64 `json:"tmaxrequest,omitempty"`
 	// ResponseUserSync defines the contract for bidresponse.ext.usersync
 	Usersync map[BidderName]*ExtResponseSyncData `json:"usersync,omitempty"`
+	// Prebid defines the contract for bidresponse.ext.prebid
+	Prebid *ExtResponsePrebid `json:"prebid,omitempty"`
 }
 
 // ExtResponseDebug defines the contract for bidresponse.ext.debug
@@ -32,6 +34,11 @@ type ExtResponseSyncData struct {
 	Status CookieStatus `json:"status"`
 	// Syncs must have length > 0
 	Syncs []*ExtUserSync `json:"syncs"`
+}
+
+// ExtResponsePrebid defines the contract for bidresponse.ext.prebid
+type ExtResponsePrebid struct {
+	AuctionTimestamp int64 `json:"auctiontimestamp,omitempty"`
 }
 
 // ExtUserSync defines the contract for bidresponse.ext.usersync.{bidder}.syncs[i]

@@ -2,8 +2,10 @@ package engagebdr
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"fmt"
 
@@ -13,8 +15,7 @@ import (
 )
 
 type EngageBDRAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	URI string
 }
 
 func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -141,10 +142,10 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewEngageBDRBidder(client *http.Client, endpoint string) *EngageBDRAdapter {
-	adapter := &adapters.HTTPAdapter{Client: client}
-	return &EngageBDRAdapter{
-		http: adapter,
-		URI:  endpoint,
+// Builder builds a new instance of the EngageBDR adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &EngageBDRAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }
