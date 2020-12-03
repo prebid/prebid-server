@@ -73,6 +73,7 @@ const (
 	BidderCpmstar          BidderName = "cpmstar"
 	BidderDatablocks       BidderName = "datablocks"
 	BidderDmx              BidderName = "dmx"
+	BidderDeepintent       BidderName = "deepintent"
 	BidderEmxDigital       BidderName = "emx_digital"
 	BidderEngageBDR        BidderName = "engagebdr"
 	BidderEPlanning        BidderName = "eplanning"
@@ -167,6 +168,7 @@ func CoreBidderNames() []BidderName {
 		BidderConversant,
 		BidderCpmstar,
 		BidderDatablocks,
+		BidderDeepintent,
 		BidderDmx,
 		BidderEmxDigital,
 		BidderEngageBDR,
