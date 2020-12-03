@@ -37,12 +37,14 @@ const (
 	BidderDatablocks       BidderName = "datablocks"
 	BidderEmxDigital       BidderName = "emx_digital"
 	BidderEngageBDR        BidderName = "engagebdr"
+	BidderEngageBDROrtb    BidderName = "engagebdr_ortb"
 	BidderEPlanning        BidderName = "eplanning"
 	BidderFacebook         BidderName = "audienceNetwork"
 	BidderGamma            BidderName = "gamma"
 	BidderGamoshi          BidderName = "gamoshi"
 	BidderGrid             BidderName = "grid"
 	BidderGumGum           BidderName = "gumgum"
+	BidderGumGumOrtb       BidderName = "gumgum_ortb"
 	BidderImprovedigital   BidderName = "improvedigital"
 	BidderIx               BidderName = "ix"
 	BidderKubient          BidderName = "kubient"
@@ -54,6 +56,7 @@ const (
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
 	BidderPulsepoint       BidderName = "pulsepoint"
+	BidderPulsepointOrtb   BidderName = "pulsepoint_ortb"
 	BidderRhythmone        BidderName = "rhythmone"
 	BidderRTBHouse         BidderName = "rtbhouse"
 	BidderRubicon          BidderName = "rubicon"
@@ -92,12 +95,14 @@ var BidderMap = map[string]BidderName{
 	"datablocks":        BidderDatablocks,
 	"emx_digital":       BidderEmxDigital,
 	"engagebdr":         BidderEngageBDR,
+	"engagebdr_ortb":    BidderEngageBDROrtb,
 	"eplanning":         BidderEPlanning,
 	"audienceNetwork":   BidderFacebook,
 	"gamma":             BidderGamma,
 	"gamoshi":           BidderGamoshi,
 	"grid":              BidderGrid,
 	"gumgum":            BidderGumGum,
+	"gumgum_ortb":       BidderGumGumOrtb,
 	"improvedigital":    BidderImprovedigital,
 	"ix":                BidderIx,
 	"kubient":           BidderKubient,
@@ -109,6 +114,7 @@ var BidderMap = map[string]BidderName{
 	"pubmatic":          BidderPubmatic,
 	"pubnative":         BidderPubnative,
 	"pulsepoint":        BidderPulsepoint,
+	"pulsepoint_ortb":	 BidderPulsepointOrtb,
 	"rhythmone":         BidderRhythmone,
 	"rtbhouse":          BidderRTBHouse,
 	"rubicon":           BidderRubicon,
