@@ -7,21 +7,9 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
-
-func TestUcfunnelAdapterNames(t *testing.T) {
-	adapter := NewUcfunnelBidder("http://localhost/bid")
-	adapterstest.VerifyStringValue(adapter.Name(), "ucfunnel", t)
-}
-
-func TestSkipNoCookies(t *testing.T) {
-	adapter := NewUcfunnelBidder("http://localhost/bid")
-	status := adapter.SkipNoCookies()
-	if status != false {
-		t.Errorf("actual = %t expected != %t", status, false)
-	}
-}
 
 func TestMakeRequests(t *testing.T) {
 
@@ -58,7 +46,12 @@ func TestMakeRequests(t *testing.T) {
 	internalRequest03.Imp[3].Ext = []byte(`{"bidder": {"adunitid": "ad-488663D474E44841E8A293379892348","partnerid": "par-7E6D2DB9A8922AB07B44A444D2BA67"}}`)
 	internalRequest03.Imp[4].Ext = []byte(`{"bidder": {"adunitid": "aa","partnerid": ""}}`)
 
-	adapter := NewUcfunnelBidder("http://localhost/bid")
+	bidder, buildErr := Builder(openrtb_ext.BidderUcfunnel, config.Adapter{
+		Endpoint: "http://localhost/bid"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
 
 	var testCases = []struct {
 		in   []openrtb.BidRequest
@@ -74,7 +67,7 @@ func TestMakeRequests(t *testing.T) {
 
 	for idx := range testCases {
 		for i := range testCases[idx].in {
-			RequestData, err := adapter.MakeRequests(&testCases[idx].in[i], nil)
+			RequestData, err := bidder.MakeRequests(&testCases[idx].in[i], nil)
 			if ((RequestData == nil) == testCases[idx].out2[i]) && (len(err) == testCases[idx].out1[i]) {
 				t.Errorf("actual = %v expected = %v", len(err), testCases[idx].out1[i])
 			}
@@ -125,7 +118,12 @@ func TestMakeBids(t *testing.T) {
 	RequestData01 := adapters.RequestData{Method: "POST", Body: []byte(`{"imp":[{"id":"1234","banner":{}},{"id":"1235","video":{}},{"id":"1236","audio":{}},{"id":"1237","native":{}}]}`)}
 	RequestData02 := adapters.RequestData{Method: "POST", Body: []byte(`{"imp":[{"id":"1234","banne"1235","video":{}},{"id":"1236","audio":{}},{"id":"1237","native":{}}]}`)}
 
-	adapter := NewUcfunnelBidder("http://localhost/bid")
+	bidder, buildErr := Builder(openrtb_ext.BidderUcfunnel, config.Adapter{
+		Endpoint: "http://localhost/bid"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
 
 	var testCases = []struct {
 		in1  []openrtb.BidRequest
@@ -145,7 +143,7 @@ func TestMakeBids(t *testing.T) {
 
 	for idx := range testCases {
 		for i := range testCases[idx].in1 {
-			BidderResponse, err := adapter.MakeBids(&testCases[idx].in1[i], &testCases[idx].in2[i], &testCases[idx].in3[i])
+			BidderResponse, err := bidder.MakeBids(&testCases[idx].in1[i], &testCases[idx].in2[i], &testCases[idx].in3[i])
 
 			if (BidderResponse == nil) == testCases[idx].out1[i] {
 				fmt.Println(i)

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
@@ -21,6 +23,8 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
+
+const version = "0.1.3"
 
 type AdformAdapter struct {
 	http    *adapters.HTTPAdapter
@@ -79,6 +83,7 @@ type adformBid struct {
 	Height       uint64  `json:"height,omitempty"`
 	DealId       string  `json:"deal_id,omitempty"`
 	CreativeId   string  `json:"win_crid,omitempty"`
+	VastContent  string  `json:"vast_content,omitempty"`
 }
 
 const priceTypeGross = "gross"
@@ -94,8 +99,18 @@ func isPriceTypeValid(priceType string) (string, bool) {
 
 // ADAPTER Interface
 
-func NewAdformAdapter(config *adapters.HTTPAdapterConfig, endpointURL string) *AdformAdapter {
-	return NewAdformBidder(adapters.NewHTTPAdapter(config).Client, endpointURL)
+// Builder builds a new instance of the Adform adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	uri, err := url.Parse(config.Endpoint)
+	if err != nil {
+		return nil, errors.New("unable to parse endpoint")
+	}
+
+	bidder := &AdformAdapter{
+		URL:     uri,
+		version: version,
+	}
+	return bidder, nil
 }
 
 // used for cookies and such
@@ -241,7 +256,8 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 	bids := make(pbs.PBSBidSlice, 0)
 
 	for i, bid := range adformBids {
-		if bid.Banner == "" || bid.ResponseType != "banner" {
+		adm, bidType := getAdAndType(bid)
+		if adm == "" {
 			continue
 		}
 		pbsBid := pbs.PBSBid{
@@ -249,12 +265,12 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 			AdUnitCode:        r.adUnits[i].adUnitCode,
 			BidderCode:        r.bidderCode,
 			Price:             bid.Price,
-			Adm:               bid.Banner,
+			Adm:               adm,
 			Width:             bid.Width,
 			Height:            bid.Height,
 			DealId:            bid.DealId,
 			Creative_id:       bid.CreativeId,
-			CreativeMediaType: string(openrtb_ext.BidTypeBanner),
+			CreativeMediaType: string(bidType),
 		}
 
 		bids = append(bids, &pbsBid)
@@ -384,8 +400,7 @@ func parseAdformBids(response []byte) ([]*adformBid, error) {
 
 // BIDDER Interface
 
-func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
+func NewAdformLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, endpointURL string) *AdformAdapter {
 	var uriObj *url.URL
 	uriObj, err := url.Parse(endpointURL)
 	if err != nil {
@@ -393,9 +408,9 @@ func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
 	}
 
 	return &AdformAdapter{
-		http:    a,
+		http:    adapters.NewHTTPAdapter(httpConfig),
 		URL:     uriObj,
-		version: "0.1.3",
+		version: version,
 	}
 }
 
@@ -632,25 +647,36 @@ func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapt
 	}
 
 	for i, bid := range adformBids {
-		if bid.Banner == "" || bid.ResponseType != "banner" {
+		adm, bidType := getAdAndType(bid)
+		if adm == "" {
 			continue
 		}
+
 		openRtbBid := openrtb.Bid{
 			ID:     r.Imp[i].ID,
 			ImpID:  r.Imp[i].ID,
 			Price:  bid.Price,
-			AdM:    bid.Banner,
+			AdM:    adm,
 			W:      bid.Width,
 			H:      bid.Height,
 			DealID: bid.DealId,
 			CrID:   bid.CreativeId,
 		}
 
-		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: openrtb_ext.BidTypeBanner})
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: bidType})
 		currency = bid.Currency
 	}
 
 	bidResponse.Currency = currency
 
 	return bidResponse
+}
+
+func getAdAndType(bid *adformBid) (string, openrtb_ext.BidType) {
+	if bid.ResponseType == "banner" {
+		return bid.Banner, openrtb_ext.BidTypeBanner
+	} else if bid.ResponseType == "vast_content" {
+		return bid.VastContent, openrtb_ext.BidTypeVideo
+	}
+	return "", ""
 }

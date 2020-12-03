@@ -3,41 +3,25 @@ package unruly
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type UnrulyAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	URI string
 }
 
-func (a *UnrulyAdapter) Name() string {
-	return "unruly"
-}
-
-func (a *UnrulyAdapter) SkipNoCookies() bool {
-	return false
-}
-
-func GetClient(config *adapters.HTTPAdapterConfig) *http.Client {
-	return adapters.NewHTTPAdapter(config).Client
-}
-
-func NewUnrulyAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *UnrulyAdapter {
-	return NewUnrulyBidder(GetClient(config), endpoint)
-}
-
-func NewUnrulyBidder(client *http.Client, endpoint string) *UnrulyAdapter {
-	clientAdapter := &adapters.HTTPAdapter{Client: client}
-
-	return &UnrulyAdapter{
-		http: clientAdapter,
-		URI:  endpoint,
+// Builder builds a new instance of the Unruly adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &UnrulyAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }
 
 func (a *UnrulyAdapter) ReplaceImp(imp openrtb.Imp, request *openrtb.BidRequest) *openrtb.BidRequest {

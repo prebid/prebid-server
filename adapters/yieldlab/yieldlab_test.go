@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 const testURL = "https://ad.yieldlab.net/testing/"
@@ -27,11 +29,16 @@ func newTestYieldlabBidder(endpoint string) *YieldlabAdapter {
 }
 
 func TestNewYieldlabBidder(t *testing.T) {
-	bid := NewYieldlabBidder(testURL)
-	assert.NotNil(t, bid)
-	assert.Equal(t, bid.endpoint, testURL)
-	assert.NotNil(t, bid.cacheBuster)
-	assert.NotNil(t, bid.getWeek)
+	bidder, buildErr := Builder(openrtb_ext.BidderYieldlab, config.Adapter{
+		Endpoint: testURL})
+
+	assert.NoError(t, buildErr)
+	assert.NotNil(t, bidder)
+
+	bidderYieldlab := bidder.(*YieldlabAdapter)
+	assert.Equal(t, testURL, bidderYieldlab.endpoint)
+	assert.NotNil(t, bidderYieldlab.cacheBuster)
+	assert.NotNil(t, bidderYieldlab.getWeek)
 }
 
 func TestJsonSamples(t *testing.T) {
@@ -122,7 +129,14 @@ func Test_splitSize(t *testing.T) {
 }
 
 func TestYieldlabAdapter_makeEndpointURL_invalidEndpoint(t *testing.T) {
-	bid := NewYieldlabBidder("test$:/something§")
-	_, err := bid.makeEndpointURL(nil, nil)
+	bidder, buildErr := Builder(openrtb_ext.BidderYieldlab, config.Adapter{
+		Endpoint: "test$:/something§"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	bidderYieldlab := bidder.(*YieldlabAdapter)
+	_, err := bidderYieldlab.makeEndpointURL(nil, nil)
 	assert.Error(t, err)
 }

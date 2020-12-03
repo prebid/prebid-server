@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.user contains a digitrust object that is not valid.\n",
-  "requestPayload": {
+  "description": "Invalid digitrust object in user extension",
+  "mockBidRequest": {
     "id": "request-with-invalid-digitrust-obj",
     "site": {
       "page": "test.somepage.com"
@@ -40,5 +40,7 @@
         }
       }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.user contains a digitrust object that is not valid.\n"
 }
