@@ -147,7 +147,6 @@ func makeImps(imp openrtb.Imp) (openrtb.Imp, error) {
 	var impExt Ext
 	impExt.Ttx.Prod = ttxExt.ProductId
 
-	// Add zoneid if it's defined
 	impExt.Ttx.Zoneid = ttxExt.SiteId
 
 	if len(ttxExt.ZoneId) > 0 {
