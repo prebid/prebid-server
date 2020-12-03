@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderMobileFuse, config.Adapter{
-		Endpoint: "http://mfx-us-east.mobilefuse.com/openrtb?pub_id={{.PublisherID}}"})
+		Endpoint: "http://mfx.mobilefuse.com/openrtb?pub_id={{.PublisherID}}"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
