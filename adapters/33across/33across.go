@@ -126,7 +126,7 @@ func makeImps(imp openrtb.Imp) (openrtb.Imp, error) {
 
 	if impCopy.Banner == nil && impCopy.Video == nil {
 		return openrtb.Imp{}, &errortypes.BadInput{
-			Message: fmt.Sprintf("Imp ID %s must have at one of [Banner, Video] defined", impCopy.ID),
+			Message: fmt.Sprintf("Imp ID %s must have at least one of [Banner, Video] defined", impCopy.ID),
 		}
 	}
 
