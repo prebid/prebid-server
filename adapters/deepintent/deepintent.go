@@ -129,7 +129,9 @@ func (d *DeepintentAdapter) preprocess(request openrtb.BidRequest) (*adapters.Re
 		resImps = append(resImps, imp)
 	}
 	request.Imp = resImps
-
+	if errs != nil {
+		return nil, errs
+	}
 	reqJSON, err := json.Marshal(request)
 
 	if err != nil {
