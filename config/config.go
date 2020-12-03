@@ -978,6 +978,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.mobilefuse.endpoint", "http://mfx-us-east.mobilefuse.com/openrtb?pub_id={{.PublisherID}}")
 	v.SetDefault("adapters.moloco.disabled", true)
 	v.SetDefault("adapters.moloco.endpoint", "https://bidfnt-us.adsmoloco.com/tapjoy")
+	v.SetDefault("adapters.molococloud.disabled", true)
+	v.SetDefault("adapters.molococloud.endpoint", "https://bidfnt-us.adsmoloco.com/private_tapjoy")
 	v.SetDefault("adapters.nanointeractive.endpoint", "https://ad.audiencemanager.de/hbs")
 	v.SetDefault("adapters.ninthdecimal.endpoint", "http://rtb.ninthdecimal.com/xp/get?pubid={{.PublisherID}}")
 	v.SetDefault("adapters.openx.endpoint", "http://rtb.openx.net/prebid")
