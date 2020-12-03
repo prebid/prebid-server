@@ -13,21 +13,20 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// MobfoxpbAdapter adapter structure
-type MobfoxpbAdapter struct {
+type adapter struct {
 	URI string
 }
 
-// Builder builds a new instance of the Adman adapter for the given bidder with the given config.
+// Builder builds a new instance of the Mobfox adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &MobfoxpbAdapter{
+	bidder := &adapter{
 		URI: config.Endpoint,
 	}
 	return bidder, nil
 }
 
 // MakeRequests create bid request for mobfoxpb demand
-func (a *MobfoxpbAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var err error
 	var tagID string
@@ -35,28 +34,26 @@ func (a *MobfoxpbAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	var adapterRequests []*adapters.RequestData
 
 	reqCopy := *request
-	for _, imp := range request.Imp {
-		tagID, err = jsonparser.GetString(imp.Ext, "bidder", "TagID")
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		imp.TagID = tagID
-		reqCopy.Imp = []openrtb.Imp{imp}
-		adapterReq, err := a.makeRequest(&reqCopy)
-		if err != nil {
-			errs = append(errs, err)
-		}
-		if adapterReq != nil {
-			adapterRequests = append(adapterRequests, adapterReq)
-			break
-		}
+	imp := request.Imp[0]
+	tagID, err = jsonparser.GetString(imp.Ext, "bidder", "TagID")
+	if err != nil {
+		errs = append(errs, err)
+		continue
+	}
+	imp.TagID = tagID
+	reqCopy.Imp = []openrtb.Imp{imp}
+	adapterReq, err := a.makeRequest(&reqCopy)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	if adapterReq != nil {
+		adapterRequests = append(adapterRequests, adapterReq)
+		break
 	}
 	return adapterRequests, errs
 }
 
-func (a *MobfoxpbAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, error) {
 	reqJSON, err := json.Marshal(request)
 
 	if err != nil {
@@ -75,7 +72,7 @@ func (a *MobfoxpbAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Re
 }
 
 // MakeBids makes the bids
-func (a *MobfoxpbAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if response.StatusCode == http.StatusNoContent {

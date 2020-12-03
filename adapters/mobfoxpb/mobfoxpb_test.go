@@ -9,7 +9,10 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, _ := Builder(openrtb_ext.BidderMobfoxpb, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderMobfoxpb, config.Adapter{
 		Endpoint: "http://example.com/?c=o&m=ortb"})
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
 	adapterstest.RunJSONBidderTest(t, "mobfoxpbtest", bidder)
 }
