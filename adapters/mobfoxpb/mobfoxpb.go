@@ -38,7 +38,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 	tagID, err = jsonparser.GetString(imp.Ext, "bidder", "TagID")
 	if err != nil {
 		errs = append(errs, err)
-		continue
+		return nil, errs
 	}
 	imp.TagID = tagID
 	reqCopy.Imp = []openrtb.Imp{imp}
@@ -48,7 +48,6 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 	}
 	if adapterReq != nil {
 		adapterRequests = append(adapterRequests, adapterReq)
-		break
 	}
 	return adapterRequests, errs
 }
