@@ -65,8 +65,6 @@ func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters
 	return adapterRequests, errs
 }
 
-// Update the request object to include custom value
-// site.id
 func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp) (*adapters.RequestData, error) {
 	var imps []openrtb.Imp
 
