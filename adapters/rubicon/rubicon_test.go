@@ -34,6 +34,12 @@ type rubiAppendTrackerUrlTestScenario struct {
 	expected string
 }
 
+type rubiResolveVideoSizeIdTestScenario struct {
+	placement openrtb.VideoPlacementType
+	instl     int8
+	expected  int
+}
+
 type rubiTagInfo struct {
 	code              string
 	zoneID            int
@@ -521,6 +527,36 @@ func TestAppendTracker(t *testing.T) {
 	for _, scenario := range testScenarios {
 		res := appendTrackerToUrl(scenario.source, scenario.tracker)
 		assert.Equal(t, scenario.expected, res, "Failed to convert '%s' to '%s'", res, scenario.expected)
+	}
+}
+
+func TestResolveVideoSizeId(t *testing.T) {
+	testScenarios := []rubiResolveVideoSizeIdTestScenario{
+		{
+			placement: 1,
+			instl:     1,
+			expected:  201,
+		},
+		{
+			placement: 3,
+			instl:     1,
+			expected:  203,
+		},
+		{
+			placement: 4,
+			instl:     1,
+			expected:  202,
+		},
+		{
+			placement: 4,
+			instl:     3,
+			expected:  0,
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		res := resolveVideoSizeId(scenario.placement, scenario.instl)
+		assert.Equal(t, scenario.expected, res)
 	}
 }
 

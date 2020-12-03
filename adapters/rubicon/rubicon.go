@@ -489,7 +489,8 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		rubiReq.Device = &deviceCopy
 
 		if thisImp.Video != nil {
-			videoExt := rubiconVideoExt{Skip: params.Video.Skip, SkipDelay: params.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: params.Video.VideoSizeID}}
+			sizeId := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl)
+			videoExt := rubiconVideoExt{Skip: params.Video.Skip, SkipDelay: params.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: sizeId}}
 			thisImp.Video.Ext, err = json.Marshal(&videoExt)
 		} else {
 			primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
@@ -599,6 +600,22 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		return nil, err
 	}
 	return bids, nil
+}
+
+func resolveVideoSizeId(placement openrtb.VideoPlacementType, instl int8) (sizeID int) {
+	if placement != 0 {
+		if placement == 1 {
+			return 201
+		}
+		if placement == 3 {
+			return 203
+		}
+	}
+
+	if instl == 1 {
+		return 202
+	}
+	return 0
 }
 
 func appendTrackerToUrl(uri string, tracker string) (res string) {
@@ -785,7 +802,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			}
 
 			videoCopy := *thisImp.Video
-			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
+			sizeId := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl)
+			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: sizeId}}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			thisImp.Video = &videoCopy
 			thisImp.Banner = nil
