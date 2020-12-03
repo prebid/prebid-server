@@ -5,17 +5,13 @@
       {
         "id": "some-impression-id",
         "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
+          "format": []
         },
         "ext": {
           "bidder": {
             "sourceId": 123,
-            "publisher_id": "0"
+            "publisher_id": "0",
+            "host": "test"
           }
         }
       }
@@ -31,7 +27,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Failed to build endpoint URL: required BetweenSSP parameter \"host\" is missing",
+      "value": "Need at least one size to build request",
       "comparison": "literal"
     }
   ]
