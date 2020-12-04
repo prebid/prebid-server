@@ -111,14 +111,14 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	// bidder level privacy policies
-	for _, bidder := range bidderRequests {
+	for _, bidderRequest := range bidderRequests {
 		// CCPA
-		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidder.BidderName.String())
+		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
 
 		// GDPR
 		if gdpr == 1 && gdprEnabled {
 			var publisherID = req.LegacyLabels.PubID
-			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, bidder.BidderCoreName, publisherID, consent)
+			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, bidderRequest.BidderCoreName, publisherID, consent)
 			privacyEnforcement.GDPRGeo = !geo && err == nil
 			privacyEnforcement.GDPRID = !id && err == nil
 		} else {
@@ -126,7 +126,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			privacyEnforcement.GDPRID = false
 		}
 
-		privacyEnforcement.Apply(bidder.BidRequest, ampGDPRException)
+		privacyEnforcement.Apply(bidderRequest.BidRequest, ampGDPRException)
 	}
 
 	return

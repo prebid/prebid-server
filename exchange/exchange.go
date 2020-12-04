@@ -92,14 +92,17 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 			GDPR: cfg.GDPR,
 			LMT:  cfg.LMT,
 		},
+	}
+}
+
 // AuctionRequest holds the bid request for the auction
 // and all other information needed to process that request
 type AuctionRequest struct {
 	BidRequest  *openrtb.BidRequest
 	Account     config.Account
 	UserSyncs   IdFetcher
-	StartTime   time.Time
 	RequestType pbsmetrics.RequestType
+	StartTime   time.Time
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -107,14 +110,12 @@ type AuctionRequest struct {
 }
 
 // BidderRequest holds the bidder specific request and all other
-// information needed by to process that request.
+// information needed to process that bidder request.
 type BidderRequest struct {
 	BidRequest     *openrtb.BidRequest
 	BidderName     openrtb_ext.BidderName
 	BidderCoreName openrtb_ext.BidderName
 	BidderLabels   pbsmetrics.AdapterLabels
-}
-	}
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb.BidResponse, error) {
@@ -881,11 +882,11 @@ func buildCacheURL(cache prebid_cache_client.Client, uuid string) string {
 	return strings.TrimPrefix(cacheURL.String(), "//")
 }
 
-func listBiddersWithRequests(bidders []BidderRequest) []openrtb_ext.BidderName {
+func listBiddersWithRequests(bidderRequests []BidderRequest) []openrtb_ext.BidderName {
 	liveAdapters := make([]openrtb_ext.BidderName, len(bidders))
 	i := 0
-	for _, bidder := range bidders {
-		liveAdapters[i] = bidder.BidderName
+	for _, bidderRequest := range bidderRequests {
+		liveAdapters[i] = bidderRequest.BidderName
 		i++
 	}
 	// Randomize the list of adapters to make the auction more fair
