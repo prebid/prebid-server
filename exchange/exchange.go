@@ -883,7 +883,7 @@ func buildCacheURL(cache prebid_cache_client.Client, uuid string) string {
 }
 
 func listBiddersWithRequests(bidderRequests []BidderRequest) []openrtb_ext.BidderName {
-	liveAdapters := make([]openrtb_ext.BidderName, len(bidders))
+	liveAdapters := make([]openrtb_ext.BidderName, len(bidderRequests))
 	i := 0
 	for _, bidderRequest := range bidderRequests {
 		liveAdapters[i] = bidderRequest.BidderName
