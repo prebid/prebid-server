@@ -30,8 +30,16 @@ const (
 	Rewarded     PlacementType = "rewarded"
 )
 
+var molocoSKADNetIDs = map[string]bool{
+	"abc": true,
+}
+
 type molocoVideoExt struct {
 	PlacementType PlacementType `json:"placementtype"`
+}
+
+type molocoImpExt struct {
+	SKADN openrtb_ext.SKADN `json:"skadn"`
 }
 
 // MolocoAdapter ...
@@ -142,8 +150,20 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 			thisImp.Video = &videoCopy
 		}
 
-		// clean the impression extension
-		thisImp.Ext = nil
+		// Add impression extensions
+		impExt := molocoImpExt{
+			SKADN: openrtb_ext.SKADN{
+				Version:    bidderExt.Prebid.SKADN.Version,
+				SourceApp:  bidderExt.Prebid.SKADN.SourceApp,
+				SKADNetIDs: adapters.FilterArrayWithMap(bidderExt.Prebid.SKADN.SKADNetIDs, molocoSKADNetIDs),
+			},
+		}
+
+		thisImp.Ext, err = json.Marshal(&impExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
 
 		// reinit the values in the request object
 		request.Imp = []openrtb.Imp{thisImp}

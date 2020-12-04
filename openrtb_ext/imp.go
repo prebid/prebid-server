@@ -23,6 +23,8 @@ type ExtImpPrebid struct {
 	// Rewarded inventory signal, can be 0 or 1
 	IsRewardedInventory int8 `json:"is_rewarded_inventory"`
 
+	SKADN SKADN `json:"skadn"`
+
 	// NOTE: This is not part of the official API, we are not expecting clients
 	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
 	// at this time
@@ -33,4 +35,11 @@ type ExtImpPrebid struct {
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest
 type ExtStoredRequest struct {
 	ID string `json:"id"`
+}
+
+// SKADN ..
+type SKADN struct {
+	Version    string   `json:"version"`
+	SourceApp  string   `json:"sourceapp"`
+	SKADNetIDs []string `json:"skadnetids"`
 }

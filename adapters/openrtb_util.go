@@ -173,3 +173,14 @@ func copyFormats(sizes []openrtb.Format) []openrtb.Format {
 	}
 	return sizesCopy
 }
+
+// FilterArrayWithMap -- Added by Tapjoy to handle SKADN DSP filtering
+// returns a subset elemtns of arr whose keys were in filterMap
+func FilterArrayWithMap(arr []string, filterMap map[string]bool) (ret []string) {
+	for _, id := range arr {
+		if _, ok := filterMap[id]; ok {
+			ret = append(ret, id)
+		}
+	}
+	return ret
+}

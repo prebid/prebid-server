@@ -33,6 +33,10 @@ const (
 	badvLimitSize = 50
 )
 
+var rubiconSKADNetIDs = map[string]bool{
+	"abc": true,
+}
+
 type RubiconAdapter struct {
 	http             *adapters.HTTPAdapter
 	URI              string
@@ -91,8 +95,9 @@ type rubiconImpExtRP struct {
 }
 
 type rubiconImpExt struct {
-	RP                 rubiconImpExtRP `json:"rp"`
-	ViewabilityVendors []string        `json:"viewabilityvendors"`
+	RP                 rubiconImpExtRP   `json:"rp"`
+	ViewabilityVendors []string          `json:"viewabilityvendors"`
+	SKADN              openrtb_ext.SKADN `json:"skadn"`
 }
 
 type rubiconUserExtRP struct {
@@ -725,6 +730,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
 			ViewabilityVendors: rubiconExt.ViewabilityVendors,
+			SKADN: openrtb_ext.SKADN{
+				Version:    bidderExt.Prebid.SKADN.Version,
+				SourceApp:  bidderExt.Prebid.SKADN.SourceApp,
+				SKADNetIDs: adapters.FilterArrayWithMap(bidderExt.Prebid.SKADN.SKADNetIDs, rubiconSKADNetIDs),
+			},
 		}
 		thisImp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
