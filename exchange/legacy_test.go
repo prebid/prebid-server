@@ -329,7 +329,7 @@ func TestWithTargeting(t *testing.T) {
 	}
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	bid, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, openrtb_ext.BidderFacebook, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, nil)
+	bid, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, openrtb_ext.BidderAudienceNetwork, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, nil)
 	if len(errs) != 0 {
 		t.Fatalf("This should not produce errors. Got %v", errs)
 	}
