@@ -1237,9 +1237,9 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 type DNSDoneTripper struct{}
 
 func (DNSDoneTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	//Access the httptrace.ClientTrace
+	// Access the httptrace.ClientTrace
 	trace := httptrace.ContextClientTrace(req.Context())
-	// Define the DNSDone method for the client trace
+	// Call the DNSDone method on the client trace
 	trace.DNSDone(httptrace.DNSDoneInfo{})
 
 	return &http.Response{}, nil
@@ -1250,7 +1250,7 @@ type TLSHandshakeTripper struct{}
 func (TLSHandshakeTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Access the httptrace.ClientTrace
 	trace := httptrace.ContextClientTrace(req.Context())
-	// Define the TLSHandshakeDone method for the client trace
+	// Call the TLSHandshakeDone method on the client trace
 	trace.TLSHandshakeDone(tls.ConnectionState{}, nil)
 
 	return &http.Response{}, nil
