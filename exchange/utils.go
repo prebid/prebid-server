@@ -204,7 +204,6 @@ func splitBidRequest(r AuctionRequest,
 			RType:       r.LegacyLabels.RType,
 			Adapter:     coreBidder,
 			PubID:       r.LegacyLabels.PubID,
-			Browser:     r.LegacyLabels.Browser,
 			CookieFlag:  r.LegacyLabels.CookieFlag,
 			AdapterBids: pbsmetrics.AdapterBidPresent,
 		}

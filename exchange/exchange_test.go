@@ -1185,7 +1185,6 @@ func TestPanicRecovery(t *testing.T) {
 		RType:       pbsmetrics.ReqTypeORTB2Web,
 		Adapter:     openrtb_ext.BidderAppnexus,
 		PubID:       "test1",
-		Browser:     pbsmetrics.BrowserSafari,
 		CookieFlag:  pbsmetrics.CookieFlagYes,
 		AdapterBids: pbsmetrics.AdapterBidNone,
 	}

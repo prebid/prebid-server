@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/avocet"
 	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/beintoo"
+	"github.com/prebid/prebid-server/adapters/between"
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/colossus"
 	"github.com/prebid/prebid-server/adapters/connectad"
@@ -31,6 +32,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/cpmstar"
 	"github.com/prebid/prebid-server/adapters/datablocks"
+	"github.com/prebid/prebid-server/adapters/deepintent"
 	"github.com/prebid/prebid-server/adapters/dmx"
 	"github.com/prebid/prebid-server/adapters/emx_digital"
 	"github.com/prebid/prebid-server/adapters/engagebdr"
@@ -115,6 +117,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderConversant, conversant.NewConversantSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderCpmstar, cpmstar.NewCpmstarSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderDatablocks, datablocks.NewDatablocksSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderDeepintent, deepintent.NewDeepintentSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderDmx, dmx.NewDmxSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderEmxDigital, emx_digital.NewEMXDigitalSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderEngageBDR, engagebdr.NewEngageBDRSyncer)
@@ -164,6 +167,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderYieldmo, yieldmo.NewYieldmoSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderYieldone, yieldone.NewYieldoneSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderZeroClickFraud, zeroclickfraud.NewZeroClickFraudSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderBetween, between.NewBetweenSyncer)
 
 	return syncers
 }

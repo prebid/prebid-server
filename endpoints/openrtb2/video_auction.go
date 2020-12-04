@@ -118,7 +118,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeVideo,
 		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       getBrowserName(r),
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}

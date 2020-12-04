@@ -47,7 +47,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 		Source:        pbsmetrics.DemandWeb,
 		RType:         pbsmetrics.ReqTypeORTB2Web,
 		PubID:         "test1",
-		Browser:       pbsmetrics.BrowserSafari,
 		CookieFlag:    pbsmetrics.CookieFlagYes,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
@@ -56,7 +55,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 		RType:       pbsmetrics.ReqTypeORTB2Web,
 		Adapter:     openrtb_ext.BidderAppnexus,
 		PubID:       "test1",
-		Browser:     pbsmetrics.BrowserSafari,
 		CookieFlag:  pbsmetrics.CookieFlagYes,
 		AdapterBids: pbsmetrics.AdapterBidNone,
 	}
@@ -65,7 +63,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 		RType:       pbsmetrics.ReqTypeORTB2Web,
 		Adapter:     openrtb_ext.BidderPubmatic,
 		PubID:       "test1",
-		Browser:     pbsmetrics.BrowserSafari,
 		CookieFlag:  pbsmetrics.CookieFlagYes,
 		AdapterBids: pbsmetrics.AdapterBidPresent,
 	}
@@ -92,7 +89,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 			Source:        pbsmetrics.DemandWeb,
 			RType:         pbsmetrics.ReqTypeAMP,
 			PubID:         "test2",
-			Browser:       pbsmetrics.BrowserOther,
 			CookieFlag:    pbsmetrics.CookieFlagYes,
 			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
 		},
@@ -100,7 +96,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 			Source:        pbsmetrics.DemandWeb,
 			RType:         pbsmetrics.ReqTypeVideo,
 			PubID:         "test2",
-			Browser:       pbsmetrics.BrowserOther,
 			CookieFlag:    pbsmetrics.CookieFlagYes,
 			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
 		},
@@ -149,8 +144,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 8)
 	VerifyMetrics(t, "LegacyImpMeter", goEngine.LegacyImpMeter.Count(), 10)
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)
-	VerifyMetrics(t, "SafariRequestMeter", goEngine.SafariRequestMeter.Count(), 5)
-	VerifyMetrics(t, "SafariNoCookieMeter", goEngine.SafariNoCookieMeter.Count(), 0)
 	VerifyMetrics(t, "AdapterMetrics.Pubmatic.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].GotBidsMeter.Count(), 5)
 	VerifyMetrics(t, "AdapterMetrics.Pubmatic.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].NoBidMeter.Count(), 0)
 	for _, err := range pbsmetrics.AdapterErrors() {
