@@ -1,0 +1,8 @@
+maintainer:
+  email: renee@jixie.io
+modifyingVastXmlAllowed: false
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
