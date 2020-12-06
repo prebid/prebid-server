@@ -1,0 +1,431 @@
+How to test:
+go build .
+./prebid-server
+Then fire from postman loh
+
+That TagID thing is legit OpenRTB field loh:
+https://godoc.org/gopkg.in/mxmCherry/openrtb.v2
+
+==================================================
+//Some changes in index.js expected:
+//Here we are configuring express to use body-parser as middle-ware.
+app.use(bodyParser.urlencoded({ extended: false })); //dunno what is that?
+//app.use(bodyParser.text());
+//app.use(bodyParser.json());
+
+var jsonParser = bodyParser.json(); //dunno what is that?
+var txtParser = bodyParser.text(); //dunno what is that?
+
+app.post('/v2/hbsvrpost', jsonParser, getClientData, async (request, response, next) => {
+        console.log('xx');
+        console.log(JSON.stringify(request.body, null, 2));
+        console.log('xxxxx');
+});
+        
+================================================
+use Postman to test:
+
+http://localhost:8000/openrtb2/auction
+{
+   "id": "some-request-id",
+   "test": 1,
+  "site": {
+      "page": "abc.html",
+        "ext": {
+            "prebid":{
+                "source": "prebid-mobile",
+                "version": "1.0.0"
+            }
+        }
+      },
+   "imp": [{
+     "id": "some-impression-id",
+     "banner": {
+       "format": [{
+         "w": 300,
+         "h": 600
+       }]
+     },
+     "ext": {
+       "prebid": {
+         "bidder": {
+           "jixie":
+           {
+                       "tagid": "22222",
+                       "unit": "sfuosiufosdufiosfs"
+           }
+ 
+         }
+       }
+     }
+   }, 
+   {
+     "id": "some-impression-id2",
+     "banner": {
+       "format": [{
+         "w": 300,
+         "h": 600
+       }]
+     },
+     "ext": {
+       "prebid": {
+         "bidder": {
+           "jixie":
+           {
+                       "tagid": "11111",
+                       "unit": "sfuosiufosdufiosfs"
+           }
+ 
+         }
+       }
+     }
+   }
+  
+   ],
+   "tmax": 1000
+ }
+ === sample bid from ... JS world:
+ {
+   "auctionid":"142bb4d8-adf1-45c8-bdd3-556d9ffa0f07",
+   "timeout":1000,
+   "currency":"USD",
+   "timestamp":1607256926618,
+   "device":"desktop",
+   "domain":"fs-media.kontan.co.id",
+   "pageurl":"https://fs-media.kontan.co.id/dummy/gridjixienew2.html",
+   "bids":[
+      {
+         "bidId":"744f8499966c1bf",
+         "adUnitCode":"div-gpt-ad-head-banner",
+         "mediaTypes":{
+            "banner":{
+               "sizes":[
+                  [
+                     970,
+                     90
+                  ],
+                  [
+                     970,
+                     250
+                  ]
+               ]
+            }
+         },
+         "sizes":[
+            [
+               970,
+               90
+            ],
+            [
+               970,
+               250
+            ]
+         ],
+         "params":{
+            "unit":"1000008-ABCDEDtzZk"
+         }
+      },
+      {
+         "bidId":"75462e9f8c615da",
+         "adUnitCode":"div-gpt-ad-giant",
+         "mediaTypes":{
+            "banner":{
+               "sizes":[
+                  [
+                     300,
+                     600
+                  ]
+               ]
+            }
+         },
+         "sizes":[
+            [
+               300,
+               600
+            ]
+         ],
+         "params":{
+            "unit":"1000008-ABCDEDtzZk"
+         }
+      },
+      {
+         "bidId":"76d9a7c5a01b8ef",
+         "adUnitCode":"div-gpt-ad-MR3",
+         "mediaTypes":{
+            "video":{
+               "context":"outstream",
+               "playerSize":[
+                  [
+                     300,
+                     250
+                  ]
+               ]
+            }
+         },
+         "sizes":[
+            [
+               300,
+               250
+            ]
+         ],
+         "params":{
+            "unit":"1000008-PQRSTNDtzZk"
+         }
+      },
+      {
+         "bidId":"772ffe7360eecd7",
+         "adUnitCode":"div-gpt-ad-MR3",
+         "mediaTypes":{
+            "banner":{
+               "sizes":[
+                  [
+                     300,
+                     250
+                  ]
+               ]
+            }
+         },
+         "sizes":[
+            [
+               300,
+               250
+            ]
+         ],
+         "params":{
+            "unit":"1000008-ABCDEDtzZk"
+         }
+      },
+      {
+         "bidId":"782e511bb011aca",
+         "adUnitCode":"div-gpt-ad-bottom-frame",
+         "mediaTypes":{
+            "banner":{
+               "sizes":[
+                  [
+                     468,
+                     60
+                  ],
+                  [
+                     1100,
+                     50
+                  ]
+               ]
+            }
+         },
+         "sizes":[
+            [
+               468,
+               60
+            ],
+            [
+               1100,
+               50
+            ]
+         ],
+         "params":{
+            "unit":"1000008-ABCDEDtzZk"
+         }
+      },
+      {
+         "bidId":"7953e0b8a49fa15",
+         "adUnitCode":"div-Inside-MediumRectangle",
+         "mediaTypes":{
+            "banner":{
+               "sizes":[
+                  [
+                     300,
+                     250
+                  ],
+                  [
+                     300,
+                     100
+                  ]
+               ]
+            }
+         },
+         "sizes":[
+            [
+               300,
+               250
+            ],
+            [
+               300,
+               100
+            ]
+         ],
+         "params":{
+            "unit":"1000008-ABCDEDtzZk"
+         }
+      },
+      {
+         "bidId":"8073637a1da5cf8",
+         "adUnitCode":"div-gpt-ad-below-comment",
+         "mediaTypes":{
+            "banner":{
+               "sizes":[
+                  [
+                     300,
+                     250
+                  ]
+               ]
+            }
+         },
+         "sizes":[
+            [
+               300,
+               250
+            ]
+         ],
+         "params":{
+            "unit":"1000008-ABCDEDtzZk"
+         }
+      },
+      {
+         "bidId":"81c48af3c812425",
+         "adUnitCode":"div-gpt-ad-below-photo",
+         "mediaTypes":{
+            "banner":{
+               "sizes":[
+                  [
+                     728,
+                     90
+                  ],
+                  [
+                     468,
+                     60
+                  ]
+               ]
+            }
+         },
+         "sizes":[
+            [
+               728,
+               90
+            ],
+            [
+               468,
+               60
+            ]
+         ],
+         "params":{
+            "unit":"1000008-ABCDEDtzZk"
+         }
+      },
+      {
+         "bidId":"82f8538e9f74b91",
+         "adUnitCode":"div-gpt-ad-skin-left",
+         "mediaTypes":{
+            "banner":{
+               "sizes":[
+                  [
+                     100,
+                     550
+                  ],
+                  [
+                     120,
+                     600
+                  ],
+                  [
+                     100,
+                     650
+                  ]
+               ]
+            }
+         },
+         "sizes":[
+            [
+               100,
+               550
+            ],
+            [
+               120,
+               600
+            ],
+            [
+               100,
+               650
+            ]
+         ],
+         "params":{
+            "unit":"1000008-ABCDEDtzZk"
+         }
+      },
+      {
+         "bidId":"833e342e05da9a",
+         "adUnitCode":"div-gpt-ad-skin-right",
+         "mediaTypes":{
+            "banner":{
+               "sizes":[
+                  [
+                     100,
+                     550
+                  ],
+                  [
+                     120,
+                     600
+                  ],
+                  [
+                     100,
+                     650
+                  ]
+               ]
+            }
+         },
+         "sizes":[
+            [
+               100,
+               550
+            ],
+            [
+               120,
+               600
+            ],
+            [
+               100,
+               650
+            ]
+         ],
+         "params":{
+            "unit":"1000008-ABCDEDtzZk"
+         }
+      },
+      {
+         "bidId":"84ea8cbe59d6fbf",
+         "adUnitCode":"div-gpt-ad-skyscrapper",
+         "mediaTypes":{
+            "banner":{
+               "sizes":[
+                  [
+                     160,
+                     600
+                  ],
+                  [
+                     120,
+                     600
+                  ]
+               ]
+            }
+         },
+         "sizes":[
+            [
+               160,
+               600
+            ],
+            [
+               120,
+               600
+            ]
+         ],
+         "params":{
+            "unit":"1000008-ABCDEDtzZk"
+         }
+      }
+   ],
+   "cfg":{
+      "onTimeoutUrl":"https://hbtra.jixie.io/sync/hb?"
+   },
+   "client_id_c":"1aba6a40-f711-11e9-868c-53a2ae972dd8",
+   "client_id_ls":"1aba6a40-f711-11e9-868c-53a2ae972dd8",
+   "session_id_c":"1607256892-1aba6a40-f711-11e9-868c-53a2ae972dd8",
+   "session_id_ls":"1607256892-1aba6a40-f711-11e9-868c-53a2ae972dd8"
+}
