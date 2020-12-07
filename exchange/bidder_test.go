@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httptrace"
+	"strings"
 	"testing"
 	"time"
 
@@ -1242,7 +1244,12 @@ func (DNSDoneTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Call the DNSDone method on the client trace
 	trace.DNSDone(httptrace.DNSDoneInfo{})
 
-	return &http.Response{}, nil
+	resp := &http.Response{
+		StatusCode: 200,
+		Body:       ioutil.NopCloser(strings.NewReader("postBody")),
+	}
+
+	return resp, nil
 }
 
 type TLSHandshakeTripper struct{}
@@ -1253,7 +1260,12 @@ func (TLSHandshakeTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	// Call the TLSHandshakeDone method on the client trace
 	trace.TLSHandshakeDone(tls.ConnectionState{}, nil)
 
-	return &http.Response{}, nil
+	resp := &http.Response{
+		StatusCode: 200,
+		Body:       ioutil.NopCloser(strings.NewReader("postBody")),
+	}
+
+	return resp, nil
 }
 
 func TestCallRecordDNSTime(t *testing.T) {
