@@ -34,12 +34,6 @@ type rubiAppendTrackerUrlTestScenario struct {
 	expected string
 }
 
-type rubiResolveVideoSizeIdTestScenario struct {
-	placement openrtb.VideoPlacementType
-	instl     int8
-	expected  int
-}
-
 type rubiTagInfo struct {
 	code              string
 	zoneID            int
@@ -531,7 +525,11 @@ func TestAppendTracker(t *testing.T) {
 }
 
 func TestResolveVideoSizeId(t *testing.T) {
-	testScenarios := []rubiResolveVideoSizeIdTestScenario{
+	testScenarios := []struct {
+		placement openrtb.VideoPlacementType
+		instl     int8
+		expected  int
+	}{
 		{
 			placement: 1,
 			instl:     1,
