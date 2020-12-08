@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"sort"
 	"strings"
 	"time"
 
@@ -270,41 +269,37 @@ func getAccountId(httpRequest *http.Request) string {
 	return httpRequest.URL.Query().Get(AccountParameter)
 }
 
-// modifyVastXmlString rewrites and returns the string vastXML or an empty string if it was left unmodified
-func ModifyVastXmlString(externalUrl string, c string, bidid string, bidder string, accountId string, timestamp int64) string {
-	ci := strings.Index(c, ImpressionCloseTag)
+// ModifyVastXmlString rewrites and returns the string vastXML and a flag indicating if it was modified
+func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, timestamp int64) (string, bool) {
+	ci := strings.Index(vast, ImpressionCloseTag)
 
 	// no impression tag - pass it as it is
 	if ci == -1 {
-		return ""
+		return vast, false
 	}
 
-	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountId, timestamp)
+	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountID, timestamp)
 	impressionUrl := "<![CDATA[" + vastUrlTracking + "]]>"
-	oi := strings.Index(c, ImpressionOpenTag)
+	oi := strings.Index(vast, ImpressionOpenTag)
 
 	if ci-oi == len(ImpressionOpenTag) {
-		return strings.Replace(c, ImpressionOpenTag, ImpressionOpenTag+impressionUrl, 1)
+		return strings.Replace(vast, ImpressionOpenTag, ImpressionOpenTag+impressionUrl, 1), true
 	}
 
-	return strings.Replace(c, ImpressionCloseTag, ImpressionCloseTag+ImpressionOpenTag+impressionUrl+ImpressionCloseTag, 1)
+	return strings.Replace(vast, ImpressionCloseTag, ImpressionCloseTag+ImpressionOpenTag+impressionUrl+ImpressionCloseTag, 1), true
 }
 
-// modifyVastXml modifies BidCacheRequest element Vast XML data
-func ModifyVastXmlJSON(externalUrl string, data json.RawMessage, bidid string, bidder string, accountId string, timestamp int64) json.RawMessage {
-	c := string(data) // FIXME: should decode json, or escapes like "\u003e" will not be recognized as "<"
-	c = ModifyVastXmlString(externalUrl, c, bidid, bidder, accountId, timestamp)
-	if len(c) == 0 {
+// ModifyVastXmlJSON modifies BidCacheRequest element Vast XML data
+func ModifyVastXmlJSON(externalUrl string, data json.RawMessage, bidid, bidder, accountId string, timestamp int64) json.RawMessage {
+	var vast string
+	if err := json.Unmarshal(data, &vast); err != nil {
+		// failed to decode json, fall back to string
+		vast = string(data)
+	}
+	var ok bool
+	vast, ok = ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountId, timestamp)
+	if !ok {
 		return data
 	}
-	return json.RawMessage(c)
-}
-
-func contains(s []string, e string) bool {
-	if len(s) == 0 {
-		return false
-	}
-
-	i := sort.SearchStrings(s, e)
-	return i < len(s) && s[i] == e
+	return json.RawMessage(vast)
 }

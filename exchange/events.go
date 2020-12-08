@@ -30,7 +30,7 @@ func getExtEventsData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Ti
 	return &eventsData{
 		accountID:          account.ID,
 		enabledForAccount:  account.EventsEnabled,
-		enabledForRequest:  requestExtPrebid != nil && requestExtPrebid.Events != nil, // || account.analytics.auction-events.<web|app|amp>
+		enabledForRequest:  requestExtPrebid != nil && requestExtPrebid.Events != nil,
 		auctionTimestampMs: ts.UnixNano() / 1e+6,
 		integration:        "", // FIXME
 		bidderInfos:        bidderInfos,
@@ -46,7 +46,9 @@ func (ev *eventsData) isModifyingVASTXMLAllowed(bidderName string) bool {
 // modifyVAST injects event Impression url if needed, otherwise returns original VAST string
 func (ev *eventsData) modifyVAST(bid *openrtb.Bid, bidderName openrtb_ext.BidderName, vastXML string) string {
 	if ev.isModifyingVASTXMLAllowed(bidderName.String()) {
-		vastXML = events.ModifyVastXmlString(ev.externalURL, vastXML, bid.ID, bidderName.String(), ev.accountID, ev.auctionTimestampMs)
+		if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, vastXML, bid.ID, bidderName.String(), ev.accountID, ev.auctionTimestampMs); ok {
+			return newVastXML
+		}
 	}
 	return vastXML
 }
