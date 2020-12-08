@@ -38,6 +38,10 @@ type TtxCaller struct {
 	Version string `json:"version,omitempty"`
 }
 
+// CALLER Info used to track Prebid Server
+// as one of the hops in the request to exchange
+var CALLER = TtxCaller{"Prebid-Server", "n/a"}
+
 type bidExt struct {
 	Ttx bidTtxExt `json:"ttx,omitempty"`
 }
@@ -54,11 +58,10 @@ func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters
 	// Break up multi-imp request into multiple external requests since we don't
 	// support SRA in our exchange server
 	for i := 0; i < len(request.Imp); i++ {
-		adapterReq, err := a.makeRequest(request, request.Imp[i])
-		if adapterReq != nil {
+		// makeRequest will either return an adapterRequest or err
+		if adapterReq, err := a.makeRequest(request, request.Imp[i]); err == nil {
 			adapterRequests = append(adapterRequests, adapterReq)
-		}
-		if err != nil {
+		} else {
 			errs = append(errs, err)
 		}
 	}
@@ -79,8 +82,6 @@ func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp) (
 	reqCopy.Imp = append(imps, impCopy)
 
 	// Add info about caller
-	caller := TtxCaller{"Prebid-Server", "n/a"}
-
 	var reqExt reqExt
 	if len(reqCopy.Ext) > 0 {
 		if err := json.Unmarshal(reqCopy.Ext, &reqExt); err != nil {
@@ -96,7 +97,7 @@ func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp) (
 		reqExt.Ttx.Caller = make([]TtxCaller, 0)
 	}
 
-	reqExt.Ttx.Caller = append(reqExt.Ttx.Caller, caller)
+	reqExt.Ttx.Caller = append(reqExt.Ttx.Caller, CALLER)
 
 	reqCopy.Ext, err = json.Marshal(reqExt)
 	if err != nil {
@@ -121,16 +122,14 @@ func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp) (
 }
 
 func makeImps(imp openrtb.Imp) (openrtb.Imp, error) {
-	impCopy := imp
-
-	if impCopy.Banner == nil && impCopy.Video == nil {
+	if imp.Banner == nil && imp.Video == nil {
 		return openrtb.Imp{}, &errortypes.BadInput{
-			Message: fmt.Sprintf("Imp ID %s must have at least one of [Banner, Video] defined", impCopy.ID),
+			Message: fmt.Sprintf("Imp ID %s must have at least one of [Banner, Video] defined", imp.ID),
 		}
 	}
 
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(impCopy.Ext, &bidderExt); err != nil {
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return openrtb.Imp{}, &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -159,22 +158,22 @@ func makeImps(imp openrtb.Imp) (openrtb.Imp, error) {
 		}
 	}
 
-	impCopy.Ext = impExtJSON
+	imp.Ext = impExtJSON
 
 	// Validate Video if it exists
-	if impCopy.Video != nil {
-		videoCopy, err := validateVideoParams(impCopy.Video, impExt.Ttx.Prod)
+	if imp.Video != nil {
+		videoCopy, err := validateVideoParams(imp.Video, impExt.Ttx.Prod)
 
-		impCopy.Video = videoCopy
+		imp.Video = videoCopy
 
 		if err != nil {
-			return impCopy, &errortypes.BadInput{
+			return imp, &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 	}
 
-	return impCopy, nil
+	return imp, nil
 }
 
 // MakeBids make the bids for the bid response.
