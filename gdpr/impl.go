@@ -50,29 +50,29 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr Signal, consent string) (allowPI bool, allowGeo bool, allowID bool, err error) {
+func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string) (allowPI bool, allowGeo bool, allowID bool, err error) {
 	if _, ok := p.cfg.NonStandardPublisherMap[PublisherID]; ok {
 		return true, true, true, nil
 	}
 
-	if gdpr == SignalNo {
+	if gdprSignal == SignalNo {
 		return true, true, true, nil
 	}
-	if consent == "" && gdpr == SignalAmbiguous {
+	if consent == "" && gdprSignal == SignalAmbiguous {
 		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
 	}
-	if consent == "" && gdpr == SignalYes {
+	if consent == "" && gdprSignal == SignalYes {
 		return false, false, false, nil
 	}
 
 	if id, ok := p.vendorIDs[bidder]; ok {
-		return p.allowPI(ctx, id, gdpr, consent)
+		return p.allowPI(ctx, id, consent)
 	}
 
-	return p.defaultVendorPermissions(gdpr, consent)
+	return p.defaultVendorPermissions()
 }
 
-func (p *permissionsImpl) defaultVendorPermissions(gdpr Signal, consent string) (allowPI bool, allowGeo bool, allowID bool, err error) {
+func (p *permissionsImpl) defaultVendorPermissions() (allowPI bool, allowGeo bool, allowID bool, err error) {
 	return false, false, false, nil
 }
 
@@ -114,7 +114,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 	return false, nil
 }
 
-func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, gdpr Signal, consent string) (bool, bool, bool, error) {
+func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent string) (bool, bool, bool, error) {
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
 		return false, false, false, err
@@ -232,7 +232,7 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 	return true, nil
 }
 
-func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr Signal, consent string) (bool, bool, bool, error) {
+func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string) (bool, bool, bool, error) {
 	return true, true, true, nil
 }
 
@@ -251,7 +251,7 @@ func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 	return false, nil
 }
 
-func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr Signal, consent string) (bool, bool, bool, error) {
+func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string) (bool, bool, bool, error) {
 	return false, false, false, nil
 }
 
