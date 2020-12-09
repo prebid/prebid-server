@@ -201,7 +201,7 @@ type GDPR struct {
 	NonStandardPublisherMap map[string]struct{}
 	TCF1                    TCF1 `mapstructure:"tcf1"`
 	TCF2                    TCF2 `mapstructure:"tcf2"`
-	AMPException            bool `mapstructure:"amp_exception"`
+	AMPException            bool `mapstructure:"amp_exception"` // Deprecated: Use account-level GDPR settings (gdpr.integration_enabled.amp) instead
 	// EEACountries (EEA = European Economic Area) are a list of countries where we should assume GDPR applies.
 	// If the gdpr flag is unset in a request, but geo.country is set, we will assume GDPR applies if and only
 	// if the country matches one on this list. If both the GDPR flag and country are not set, we default
@@ -213,6 +213,9 @@ type GDPR struct {
 func (cfg *GDPR) validate(errs []error) []error {
 	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
 		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
+	}
+	if cfg.AMPException == true {
+		glog.Warning("gdpr.amp_exception is deprecated and will be removed in a future version. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp).")
 	}
 	return errs
 }
