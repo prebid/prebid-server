@@ -14,6 +14,7 @@
         "id": "test-imp-id",
         "instl": 1,
         "video": {
+          "placement": 3,
           "mimes": [
             "video/mp4"
           ],
@@ -27,7 +28,6 @@
         "ext": {
           "bidder": {
             "video": {
-              "size_id": 23
             },
             "accountId": 1001,
             "siteId":113932,
@@ -73,9 +73,10 @@
               "id": "test-imp-id",
               "instl": 1,
               "video": {
+                "placement": 3,
                 "ext": {
                   "rp": {
-                    "size_id": 202
+                    "size_id": 203
                   }
                 },
                 "mimes": [

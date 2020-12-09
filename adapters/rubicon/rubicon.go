@@ -489,8 +489,16 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		rubiReq.Device = &deviceCopy
 
 		if thisImp.Video != nil {
-			sizeId := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl)
-			videoExt := rubiconVideoExt{Skip: params.Video.Skip, SkipDelay: params.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: sizeId}}
+
+			videoSizeId := params.Video.VideoSizeID
+			if videoSizeId == 0 {
+				resolvedSizeId, err := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl, thisImp.ID)
+				if err == nil {
+					videoSizeId = resolvedSizeId
+				}
+			}
+
+			videoExt := rubiconVideoExt{Skip: params.Video.Skip, SkipDelay: params.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
 			thisImp.Video.Ext, err = json.Marshal(&videoExt)
 		} else {
 			primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
@@ -602,20 +610,22 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	return bids, nil
 }
 
-func resolveVideoSizeId(placement openrtb.VideoPlacementType, instl int8) (sizeID int) {
+func resolveVideoSizeId(placement openrtb.VideoPlacementType, instl int8, impId string) (sizeID int, err error) {
 	if placement != 0 {
 		if placement == 1 {
-			return 201
+			return 201, nil
 		}
 		if placement == 3 {
-			return 203
+			return 203, nil
 		}
 	}
 
 	if instl == 1 {
-		return 202
+		return 202, nil
 	}
-	return 0
+	return 0, &errortypes.BadInput{
+		Message: fmt.Sprintf("video.size_id can not be resolved in impression with id : %s", impId),
+	}
 }
 
 func appendTrackerToUrl(uri string, tracker string) (res string) {
@@ -788,11 +798,16 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 		isVideo := isVideo(thisImp)
 		if isVideo {
-			if rubiconExt.Video.VideoSizeID == 0 {
-				errs = append(errs, &errortypes.BadInput{
-					Message: fmt.Sprintf("imp[%d].ext.bidder.rubicon.video.size_id must be defined for video impression", i),
-				})
-				continue
+			videoCopy := *thisImp.Video
+
+			videoSizeId := rubiconExt.Video.VideoSizeID
+			if videoSizeId == 0 {
+				resolvedSizeId, err := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl, thisImp.ID)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				videoSizeId = resolvedSizeId
 			}
 
 			// if imp.ext.is_rewarded_inventory = 1, set imp.video.ext.videotype = "rewarded"
@@ -800,10 +815,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
 				videoType = "rewarded"
 			}
-
-			videoCopy := *thisImp.Video
-			sizeId := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl)
-			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: sizeId}}
+			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			thisImp.Video = &videoCopy
 			thisImp.Banner = nil

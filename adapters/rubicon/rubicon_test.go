@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/prebid/prebid-server/errortypes"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -526,35 +527,47 @@ func TestAppendTracker(t *testing.T) {
 
 func TestResolveVideoSizeId(t *testing.T) {
 	testScenarios := []struct {
-		placement openrtb.VideoPlacementType
-		instl     int8
-		expected  int
+		placement   openrtb.VideoPlacementType
+		instl       int8
+		impId       string
+		expected    int
+		expectedErr error
 	}{
 		{
-			placement: 1,
-			instl:     1,
-			expected:  201,
+			placement:   1,
+			instl:       1,
+			impId:       "impId",
+			expected:    201,
+			expectedErr: nil,
 		},
 		{
-			placement: 3,
-			instl:     1,
-			expected:  203,
+			placement:   3,
+			instl:       1,
+			impId:       "impId",
+			expected:    203,
+			expectedErr: nil,
 		},
 		{
-			placement: 4,
-			instl:     1,
-			expected:  202,
+			placement:   4,
+			instl:       1,
+			impId:       "impId",
+			expected:    202,
+			expectedErr: nil,
 		},
 		{
 			placement: 4,
 			instl:     3,
-			expected:  0,
+			impId:     "impId",
+			expectedErr: &errortypes.BadInput{
+				Message: "video.size_id can not be resolved in impression with id : impId",
+			},
 		},
 	}
 
 	for _, scenario := range testScenarios {
-		res := resolveVideoSizeId(scenario.placement, scenario.instl)
+		res, err := resolveVideoSizeId(scenario.placement, scenario.instl, scenario.impId)
 		assert.Equal(t, scenario.expected, res)
+		assert.Equal(t, scenario.expectedErr, err)
 	}
 }
 
