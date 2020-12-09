@@ -215,7 +215,7 @@ func (cfg *GDPR) validate(errs []error) []error {
 		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
 	}
 	if cfg.AMPException == true {
-		glog.Warning("gdpr.amp_exception is deprecated and will be removed in a future version. If you need to disable GDPR for AMP, you may do so on a per-account basis or disable it for all request types at the host level.")
+		glog.Warning("gdpr.amp_exception is deprecated and will be removed in a future version. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp).")
 	}
 	return errs
 }
