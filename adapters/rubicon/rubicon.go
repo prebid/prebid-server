@@ -495,6 +495,8 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 				resolvedSizeId, err := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl, thisImp.ID)
 				if err == nil {
 					videoSizeId = resolvedSizeId
+				} else {
+					continue
 				}
 			}
 

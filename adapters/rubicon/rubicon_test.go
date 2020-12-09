@@ -279,7 +279,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 
 	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	assert.Nil(t, err, "Should not have gotten an error: %v", err)
-	assert.Equal(t, 3, len(bids), "Received %d bids instead of 3", len(bids))
+	assert.Equal(t, 2, len(bids), "Received %d bids instead of 3", len(bids))
 
 	for _, bid := range bids {
 		matched := false
