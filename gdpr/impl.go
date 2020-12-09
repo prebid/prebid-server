@@ -58,6 +58,12 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 	if gdpr == SignalNo {
 		return true, true, true, nil
 	}
+	if consent == "" && gdpr == SignalAmbiguous {
+		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
+	}
+	if consent == "" && gdpr == SignalYes {
+		return false, false, false, nil
+	}
 
 	if id, ok := p.vendorIDs[bidder]; ok {
 		return p.allowPI(ctx, id, gdpr, consent)
@@ -67,9 +73,6 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 }
 
 func (p *permissionsImpl) defaultVendorPermissions(gdpr Signal, consent string) (allowPI bool, allowGeo bool, allowID bool, err error) {
-	if consent == "" && gdpr == SignalAmbiguous {
-		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
-	}
 	return false, false, false, nil
 }
 
@@ -112,13 +115,6 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 }
 
 func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, gdpr Signal, consent string) (bool, bool, bool, error) {
-	if consent == "" && gdpr == SignalAmbiguous {
-		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
-	}
-	if consent == "" && gdpr == SignalYes {
-		return false, false, false, nil
-	}
-
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
 		return false, false, false, err
