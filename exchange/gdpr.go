@@ -15,7 +15,7 @@ func extractGDPR(bidRequest *openrtb.BidRequest) gdpr.Signal {
 		err = json.Unmarshal(bidRequest.Regs.Ext, &re)
 	}
 	if re.GDPR == nil || err != nil {
-		return gdpr.AmbiguousGDPR
+		return gdpr.SignalAmbiguous
 	} else {
 		return gdpr.Signal(*re.GDPR)
 	}

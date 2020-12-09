@@ -18,32 +18,32 @@ func TestExtractGDPR(t *testing.T) {
 		{
 			description: "Regs Ext GDPR = 0",
 			giveRegs:    &openrtb.Regs{Ext: json.RawMessage(`{"gdpr": 0}`)},
-			wantGDPR:    gdpr.NoGDPR,
+			wantGDPR:    gdpr.SignalNo,
 		},
 		{
 			description: "Regs Ext GDPR = 1",
 			giveRegs:    &openrtb.Regs{Ext: json.RawMessage(`{"gdpr": 1}`)},
-			wantGDPR:    gdpr.YesGDPR,
+			wantGDPR:    gdpr.SignalYes,
 		},
 		{
 			description: "Regs Ext GDPR = null",
 			giveRegs:    &openrtb.Regs{Ext: json.RawMessage(`{"gdpr": null}`)},
-			wantGDPR:    gdpr.AmbiguousGDPR,
+			wantGDPR:    gdpr.SignalAmbiguous,
 		},
 		{
 			description: "Regs is nil",
 			giveRegs:    nil,
-			wantGDPR:    gdpr.AmbiguousGDPR,
+			wantGDPR:    gdpr.SignalAmbiguous,
 		},
 		{
 			description: "Regs Ext is nil",
 			giveRegs:    &openrtb.Regs{Ext: nil},
-			wantGDPR:    gdpr.AmbiguousGDPR,
+			wantGDPR:    gdpr.SignalAmbiguous,
 		},
 		{
 			description: "JSON unmarshal error",
 			giveRegs:    &openrtb.Regs{Ext: json.RawMessage(`{"`)},
-			wantGDPR:    gdpr.AmbiguousGDPR,
+			wantGDPR:    gdpr.SignalAmbiguous,
 		},
 	}
 

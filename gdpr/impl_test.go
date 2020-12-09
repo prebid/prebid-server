@@ -189,63 +189,63 @@ func TestAllowPersonalInfo(t *testing.T) {
 			description: "Allow PI - Non standard publisher",
 			bidderName:  openrtb_ext.BidderAppnexus,
 			publisherID: "appNexusAppID",
-			gdpr:        YesGDPR,
+			gdpr:        SignalYes,
 			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
 			allowPI:     true,
 		},
 		{
 			description: "Allow PI - known vendor with No GDPR",
 			bidderName:  openrtb_ext.BidderPubmatic,
-			gdpr:        NoGDPR,
+			gdpr:        SignalNo,
 			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
 			allowPI:     true,
 		},
 		{
 			description: "Allow PI - known vendor with Yes GDPR",
 			bidderName:  openrtb_ext.BidderPubmatic,
-			gdpr:        YesGDPR,
+			gdpr:        SignalYes,
 			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
 			allowPI:     true,
 		},
 		{
 			description: "Don't allow PI - known vendor with Yes GDPR but vendor is without TCF1 purposes",
 			bidderName:  openrtb_ext.BidderAppnexus,
-			gdpr:        YesGDPR,
+			gdpr:        SignalYes,
 			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
 			allowPI:     false,
 		},
 		{
 			description: "PI allowed according to host setting UserSyncIfAmbiguous - known vendor with ambiguous GDPR and empty consent",
 			bidderName:  openrtb_ext.BidderPubmatic,
-			gdpr:        AmbiguousGDPR,
+			gdpr:        SignalAmbiguous,
 			consent:     "",
 			allowPI:     true,
 		},
 		{
 			description: "Don't allow PI - known vendor with Yes GDPR and empty consent",
 			bidderName:  openrtb_ext.BidderPubmatic,
-			gdpr:        YesGDPR,
+			gdpr:        SignalYes,
 			consent:     "",
 			allowPI:     false,
 		},
 		{
 			description: "Don't allow PI - default vendor with Yes GDPR and empty consent",
 			bidderName:  openrtb_ext.BidderRubicon,
-			gdpr:        YesGDPR,
+			gdpr:        SignalYes,
 			consent:     "",
 			allowPI:     false,
 		},
 		{
 			description: "Don't allow PI - default vendor with ambiguous GDPR and non-empty consent",
 			bidderName:  openrtb_ext.BidderRubicon,
-			gdpr:        AmbiguousGDPR,
+			gdpr:        SignalAmbiguous,
 			consent:     "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA",
 			allowPI:     false,
 		},
 		{
 			description: "PI allowed according to host setting UserSyncIfAmbiguous - default vendor with ambiguous GDPR and empty consent",
 			bidderName:  openrtb_ext.BidderRubicon,
-			gdpr:        AmbiguousGDPR,
+			gdpr:        SignalAmbiguous,
 			consent:     "",
 			allowPI:     true,
 		},
@@ -386,7 +386,7 @@ func TestAllowPersonalInfoTCF2(t *testing.T) {
 	}
 
 	for _, td := range testDefs {
-		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", YesGDPR, td.consent)
+		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent)
 		assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowPI, allowPI, "AllowPI failure on %s", td.description)
 		assert.EqualValuesf(t, td.allowGeo, allowGeo, "AllowGeo failure on %s", td.description)
@@ -412,7 +412,7 @@ func TestAllowPersonalInfoWhitelistTCF2(t *testing.T) {
 	}
 	// Assert that an item that otherwise would not be allowed PI access, gets approved because it is found in the GDPR.NonStandardPublishers array
 	perms.cfg.NonStandardPublisherMap = map[string]struct{}{"appNexusAppID": {}}
-	allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "appNexusAppID", YesGDPR, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "appNexusAppID", SignalYes, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
 	assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed")
 	assert.EqualValuesf(t, true, allowPI, "AllowPI failure")
 	assert.EqualValuesf(t, true, allowGeo, "AllowGeo failure")
@@ -466,7 +466,7 @@ func TestAllowPersonalInfoTCF2PubRestrict(t *testing.T) {
 	}
 
 	for _, td := range testDefs {
-		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", YesGDPR, td.consent)
+		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent)
 		assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowPI, allowPI, "AllowPI failure on %s", td.description)
 		assert.EqualValuesf(t, td.allowGeo, allowGeo, "AllowGeo failure on %s", td.description)
@@ -522,7 +522,7 @@ func TestAllowPersonalInfoTCF2PurposeOneTrue(t *testing.T) {
 	}
 
 	for _, td := range testDefs {
-		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", YesGDPR, td.consent)
+		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent)
 		assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowPI, allowPI, "AllowPI failure on %s", td.description)
 		assert.EqualValuesf(t, td.allowGeo, allowGeo, "AllowGeo failure on %s", td.description)
@@ -579,7 +579,7 @@ func TestAllowPersonalInfoTCF2PurposeOneFalse(t *testing.T) {
 	}
 
 	for _, td := range testDefs {
-		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", YesGDPR, td.consent)
+		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent)
 		assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowPI, allowPI, "AllowPI failure on %s", td.description)
 		assert.EqualValuesf(t, td.allowGeo, allowGeo, "AllowGeo failure on %s", td.description)

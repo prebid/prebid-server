@@ -22,9 +22,9 @@ import (
 type Signal int
 
 const (
-	AmbiguousGDPR Signal = -1
-	NoGDPR        Signal = 0
-	YesGDPR       Signal = 1
+	SignalAmbiguous Signal = -1
+	SignalNo        Signal = 0
+	SignalYes       Signal = 1
 )
 
 type permissionsImpl struct {
@@ -55,7 +55,7 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 		return true, true, true, nil
 	}
 
-	if gdpr == NoGDPR {
+	if gdpr == SignalNo {
 		return true, true, true, nil
 	}
 
@@ -67,7 +67,7 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 }
 
 func (p *permissionsImpl) defaultVendorPermissions(gdpr Signal, consent string) (allowPI bool, allowGeo bool, allowID bool, err error) {
-	if consent == "" && gdpr == AmbiguousGDPR {
+	if consent == "" && gdpr == SignalAmbiguous {
 		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
 	}
 	return false, false, false, nil
@@ -112,10 +112,10 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 }
 
 func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, gdpr Signal, consent string) (bool, bool, bool, error) {
-	if consent == "" && gdpr == AmbiguousGDPR {
+	if consent == "" && gdpr == SignalAmbiguous {
 		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
 	}
-	if consent == "" && gdpr == YesGDPR {
+	if consent == "" && gdpr == SignalYes {
 		return false, false, false, nil
 	}
 
