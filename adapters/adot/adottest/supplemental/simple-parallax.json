@@ -58,43 +58,46 @@
             {
               "seat": "adot",
               "bid": [{
-                "id": "7706636740145184841",
-                "impid": "test-imp-banner-id",
+                "id": "test-request-parallax-id",
+                "impid": "test-imp-parallax-id",
                 "price": 0.5,
                 "adm": "some-test-ad",
-                "adomain": ["adomain.com"],
-                "cid": "5dcd2cbaf623b70018a42512",
-                "crid": "5e173e4556f69e0010e7cd9f",
-                "w": 320,
-                "h": 480
+                "w": 300,
+                "h": 600,
+                "ext": {
+                  "adot": {
+                    "media_type": "banner"
+                  }
+                }
               }]
             }
           ],
-          "bidid": "5778926625248726496",
           "cur": "USD"
         }
       }
     }
   ],
 
-  "expectedBids": [
+  "expectedBidResponses": [
     {
-      "bid": {
-        "id": "test-request-parallax-id",
-        "impid": "test-imp-parallax-id",
-        "price": 0.5,
-        "adm": "some-test-ad",
-        "adid": "29681110",
-        "adomain": ["adomain.com"],
-        "cid": "5dcd2cbaf623b70018a42512",
-        "crid": "5e173e4556f69e0010e7cd9f",
-        "w": 300,
-        "h": 600
-      },
-      "type": "banner"
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-parallax-id",
+            "impid": "test-imp-parallax-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "w": 300,
+            "h": 600,
+            "ext": {
+              "adot": {
+                "media_type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
-
 }
-
-

@@ -24,7 +24,6 @@
             2
           ]
         },
-        "bidfloorcur": "USD",
         "ext": {
           "adot": {}
         }
@@ -60,7 +59,6 @@
                   2
                 ]
               },
-              "bidfloorcur": "USD",
               "ext": {
                 "adot": {}
               }
@@ -76,50 +74,47 @@
             {
               "seat": "adot",
               "bid": [{
-                "id": "7706636740145184841",
-                "impid": "test-imp-banner-id",
+                "id": "test-request-video-id",
+                "impid": "test-imp-video-id",
                 "price": 1.16346,
-                "adid": "5e0dff8f478fb60016a08b78",
                 "adm": "some-test-ad",
-                "adomain": ["adomain.com"],
-                "cid": "5dcd2cbaf623b70018a42512",
-                "crid": "5e56900e56f69e0010e7cfd4",
-                "w": 320,
+                "w": 300,
                 "h": 250,
                 "ext": {
-                  "prebid": {
-                    "type": "video"
-                  },
-                  "bidder": {
-                    "adot": {
-                      "media_type": "video"
-                    }
+                  "adot": {
+                    "media_type": "video"
                   }
                 }
               }]
             }
           ],
-          "bidid": "5778926625248726496",
           "cur": "USD"
         }
       }
     }
   ],
-  "expectedBids": [
+
+  "expectedBidResponses": [
     {
-      "bid": {
-        "id": "test-request-video-id",
-        "impid": "test-imp-video-id",
-        "price":  1.16346,
-        "adm": "some-test-ad",
-        "adid": "29681110",
-        "adomain": ["adomain.com"],
-        "cid": "5dcd2cbaf623b70018a42512",
-        "crid": "5e56900e56f69e0010e7cfd4",
-        "w": 320,
-        "h": 250
-      },
-      "type": "video"
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-video-id",
+            "impid": "test-imp-video-id",
+            "price": 1.16346,
+            "adm": "some-test-ad",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "adot": {
+                "media_type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }
+
