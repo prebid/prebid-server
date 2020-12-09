@@ -18,7 +18,6 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
 	"github.com/mxmCherry/openrtb/native"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
@@ -125,7 +124,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeORTB2Web,
 		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       getBrowserName(r),
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
@@ -1279,20 +1277,6 @@ func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool
 	} else {
 		return "", false
 	}
-}
-
-// getBrowserName checks if a request comes from a Safari browser.
-// Returns pbsmetrics.BrowserSafari or pbsmetrics.BrowserOther
-// depending on the value of the "User-Agent" header of our http.Request
-func getBrowserName(r *http.Request) pbsmetrics.Browser {
-	var browser pbsmetrics.Browser = pbsmetrics.BrowserOther
-	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
-		name, _ := ua.Browser()
-		if name == "Safari" {
-			browser = pbsmetrics.BrowserSafari
-		}
-	}
-	return browser
 }
 
 // Write(return) errors to the client, if any. Returns true if errors were found.

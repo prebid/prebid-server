@@ -117,9 +117,12 @@ func preprocess(request *openrtb.BidRequest) error {
 	}
 
 	imp.Ext = impExtJSON
-	siteCopy := *request.Site
-	siteCopy.ID = ttxExt.SiteId
-	request.Site = &siteCopy
+
+	if request.Site != nil {
+		siteCopy := *request.Site
+		siteCopy.ID = ttxExt.SiteId
+		request.Site = &siteCopy
+	}
 
 	// Validate Video if it exists
 	if imp.Video != nil {
