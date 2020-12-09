@@ -55,7 +55,6 @@ func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext
 func cleanOpenRTBRequests(ctx context.Context,
 	req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
-	blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
 	privacyConfig config.Privacy) (bidderRequests []BidderRequest, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {

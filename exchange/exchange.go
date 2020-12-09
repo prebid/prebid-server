@@ -144,8 +144,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	usersyncIfAmbiguous := e.parseUsersyncIfAmbiguous(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, blabels, e.gDPR, usersyncIfAmbiguous, e.privacyConfig)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.gDPR, usersyncIfAmbiguous, e.privacyConfig)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -160,7 +159,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.currencyConverter.Rates()
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, blabels, conversions)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions)
 
 	var auc *auction
 	var cacheErrs []error
@@ -333,9 +332,12 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auc
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *exchange) getAllBids(ctx context.Context, bidderRequests []BidderRequest,
-	bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
-	conversions currencies.Conversions) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
+func (e *exchange) getAllBids(
+	ctx context.Context,
+	bidderRequests []BidderRequest,
+	bidAdjustments map[string]float64,
+	conversions currencies.Conversions) (
+	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(bidderRequests))
