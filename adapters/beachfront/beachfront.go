@@ -202,7 +202,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 	var bannerImps = make([]openrtb.Imp, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
-		if request.Imp[i].Banner != nil && ((request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
+		if request.Imp[i].Banner != nil && request.Imp[i].Banner.Format != nil && ((request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
 			(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil)) {
 			bannerImps = append(bannerImps, request.Imp[i])
 		}
@@ -258,6 +258,7 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 			appid = ext.AppIds.Video
 		} else if media == openrtb_ext.BidTypeBanner && ext.AppIds.Banner != "" {
 			appid = ext.AppIds.Banner
+
 		}
 	} else {
 		error = errors.New("unable to determine the appId(s) from the supplied extension")
