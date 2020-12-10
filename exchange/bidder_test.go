@@ -3,6 +3,7 @@ package exchange
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1238,21 +1239,36 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 type DNSDoneTripper struct{}
 
 func (DNSDoneTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	//Access the httptrace.ClientTrace
+	// Access the httptrace.ClientTrace
 	trace := httptrace.ContextClientTrace(req.Context())
-
-	//Force DNSDone call defined in exchange/bidder.go
+	// Call the DNSDone method on the client trace
 	trace.DNSDone(httptrace.DNSDoneInfo{})
 
 	resp := &http.Response{
 		StatusCode: 200,
-		Header:     map[string][]string{"Location": {"http://www.example.com/"}},
 		Body:       ioutil.NopCloser(strings.NewReader("postBody")),
 	}
+
 	return resp, nil
 }
 
-func TestCallRecordRecordDNSTime(t *testing.T) {
+type TLSHandshakeTripper struct{}
+
+func (TLSHandshakeTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Access the httptrace.ClientTrace
+	trace := httptrace.ContextClientTrace(req.Context())
+	// Call the TLSHandshakeDone method on the client trace
+	trace.TLSHandshakeDone(tls.ConnectionState{}, nil)
+
+	resp := &http.Response{
+		StatusCode: 200,
+		Body:       ioutil.NopCloser(strings.NewReader("postBody")),
+	}
+
+	return resp, nil
+}
+
+func TestCallRecordDNSTime(t *testing.T) {
 	// setup a mock metrics engine and its expectation
 	metricsMock := &pbsmetrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordDNSTime", mock.Anything).Return()
@@ -1263,6 +1279,27 @@ func TestCallRecordRecordDNSTime(t *testing.T) {
 	bidder := &bidderAdapter{
 		Bidder: &mixedMultiBidder{},
 		Client: &http.Client{Transport: DNSDoneTripper{}},
+		me:     metricsMock,
+	}
+
+	// Run test
+	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"})
+
+	// Tried one or another, none seem to work without panicking
+	metricsMock.AssertExpectations(t)
+}
+
+func TestCallRecordTLSHandshakeTime(t *testing.T) {
+	// setup a mock metrics engine and its expectation
+	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock.Mock.On("RecordTLSHandshakeTime", mock.Anything).Return()
+
+	// Instantiate the bidder that will send the request. We'll make sure to use an
+	// http.Client that runs our mock RoundTripper so DNSDone(httptrace.DNSDoneInfo{})
+	// gets called
+	bidder := &bidderAdapter{
+		Bidder: &mixedMultiBidder{},
+		Client: &http.Client{Transport: TLSHandshakeTripper{}},
 		me:     metricsMock,
 	}
 
