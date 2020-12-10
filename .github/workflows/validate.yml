@@ -23,6 +23,7 @@ jobs:
     - name: Checkout Branch
       uses: actions/checkout@v2
       with:
+        # Resolves to empty string for push events and falls back to HEAD.
         ref: ${{ github.event.pull_request.head.sha }}
 
     - name: Validate
