@@ -211,7 +211,6 @@ func splitBidRequest(req *openrtb.BidRequest,
 			RType:       labels.RType,
 			Adapter:     coreBidder,
 			PubID:       labels.PubID,
-			Browser:     labels.Browser,
 			CookieFlag:  labels.CookieFlag,
 			AdapterBids: pbsmetrics.AdapterBidPresent,
 		}
@@ -458,7 +457,7 @@ func resolveBidder(bidder string, aliases map[string]string) openrtb_ext.BidderN
 }
 
 // parseImpExts does a partial-unmarshal of the imp[].Ext field.
-// The keys in the returned map are expected to be "prebid", "context", core BidderNames, or Aliases for this request.
+// The keys in the returned map are expected to be "prebid", "context", CoreBidderNames, or Aliases for this request.
 func parseImpExts(imps []openrtb.Imp) ([]map[string]json.RawMessage, error) {
 	exts := make([]map[string]json.RawMessage, len(imps))
 	// Loop over every impression in the request
@@ -486,11 +485,7 @@ func parseAliases(orig *openrtb.BidRequest) (map[string]string, []error) {
 }
 
 func GetValidBidders(aliases map[string]string) map[string]struct{} {
-	validBidders := make(map[string]struct{})
-
-	for _, v := range openrtb_ext.BidderMap {
-		validBidders[v.String()] = struct{}{}
-	}
+	validBidders := openrtb_ext.BuildBidderNameHashSet()
 
 	for k := range aliases {
 		validBidders[k] = struct{}{}

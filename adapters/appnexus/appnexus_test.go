@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -12,7 +11,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
 
@@ -25,11 +27,26 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "appnexustest", NewAppNexusBidder(nil, "http://ib.adnxs.com/openrtb2", ""))
+	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+		Endpoint: "http://ib.adnxs.com/openrtb2"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "appnexustest", bidder)
 }
 
 func TestVideoSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "appnexusplatformtest", NewAppNexusBidder(nil, "http://ib.adnxs.com/openrtb2", "8"))
+	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+		Endpoint:   "http://ib.adnxs.com/openrtb2",
+		PlatformID: "8"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "appnexusplatformtest", bidder)
 }
 
 func TestMemberQueryParam(t *testing.T) {
@@ -492,7 +509,7 @@ func bidTypeToInt(bidType string) int {
 		return -1
 	}
 }
-func TestAppNexusBasicResponse(t *testing.T) {
+func TestAppNexusLegacyBasicResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyAppNexusServer))
 	defer server.Close()
 
@@ -531,7 +548,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, server.URL, "")
+	an := NewAppNexusLegacyAdapter(&conf, server.URL, "")
 
 	pbin := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 2),

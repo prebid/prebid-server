@@ -1,0 +1,9 @@
+maintainer:
+  email: "sourabh@deepintent.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

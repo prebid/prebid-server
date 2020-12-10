@@ -21,7 +21,6 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -856,7 +855,6 @@ func TestHandleError(t *testing.T) {
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeVideo,
 		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       "test browser",
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
@@ -1028,7 +1026,6 @@ func TestHandleErrorDebugLog(t *testing.T) {
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeVideo,
 		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       "test browser",
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
@@ -1201,8 +1198,8 @@ func TestFormatTargetingKeyLongKey(t *testing.T) {
 }
 
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	mockModule := &mockAnalyticsModule{}
+	metrics := newTestMetrics()
 	deps := &endpointDeps{
 		ex,
 		newParamsValidator(t),
@@ -1210,18 +1207,18 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *p
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		metrics,
 		mockModule,
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderMap(),
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	return deps, theMetrics, mockModule
+	return deps, metrics, mockModule
 }
 
 type mockAnalyticsModule struct {
@@ -1246,7 +1243,6 @@ func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) { return }
 func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { return }
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	deps := &endpointDeps{
 		ex,
 		newParamsValidator(t),
@@ -1254,12 +1250,12 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderMap(),
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
@@ -1269,7 +1265,6 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 }
 
 func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) *endpointDeps {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	deps := &endpointDeps{
 		ex,
 		newParamsValidator(t),
@@ -1277,12 +1272,12 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderMap(),
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
@@ -1292,7 +1287,6 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 }
 
 func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	edep := &endpointDeps{
 		ex,
 		newParamsValidator(t),
@@ -1300,12 +1294,12 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderMap(),
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},

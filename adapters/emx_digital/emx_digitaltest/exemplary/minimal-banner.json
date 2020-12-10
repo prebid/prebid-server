@@ -105,18 +105,19 @@
     }
   }],
 
-  "expectedBids": [{
-    "bid": {
-      "adm": "<div id=\"123456789_ad\"><script>!function(){console.log\"Hello, world.\";}();<\/script><\/div>",
-      "id": "some_test_ad_id",
-      "impid": "some_test_ad_id",
-      "ttl": 300,
-      "crid": "94395500",
-      "w": 300,
-      "price": 2.942808,
-      "adid": "94395500",
-      "h": 250
-    },
-    "type": "banner"
+  "expectedBidResponses": [{
+    "bids": [{
+      "bid": {
+        "adm": "<div id=\"123456789_ad\"><script>!function(){console.log\"Hello, world.\";}();<\/script><\/div>",
+        "id": "some_test_ad_id",
+        "impid": "some_test_ad_id",
+        "crid": "94395500",
+        "w": 300,
+        "price": 2.942808,
+        "adid": "94395500",
+        "h": 250
+      },
+      "type": "banner"
+    }]
   }]
 }

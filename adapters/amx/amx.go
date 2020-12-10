@@ -7,9 +7,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -24,24 +24,25 @@ type AMXAdapter struct {
 	endpoint string
 }
 
-// NewAMXBidder creates an AMXAdapter
-func NewAMXBidder(endpoint string) *AMXAdapter {
-	endpointURL, err := url.Parse(endpoint)
+// Builder builds a new instance of the AMX adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	endpointURL, err := url.Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatalf("invalid endpoint provided to AMX: %s, error: %v", endpoint, err)
-		return nil
+		return nil, fmt.Errorf("invalid endpoint: %v", err)
 	}
 
 	qs, err := url.ParseQuery(endpointURL.RawQuery)
 	if err != nil {
-		glog.Fatalf("invalid query parameters in the endpoint: %s, error: %v", endpointURL.RawQuery, err)
-		return nil
+		return nil, fmt.Errorf("invalid query parameters in the endpoint: %v", err)
 	}
 
 	qs.Add("v", adapterVersion)
 	endpointURL.RawQuery = qs.Encode()
 
-	return &AMXAdapter{endpoint: endpointURL.String()}
+	bidder := &AMXAdapter{
+		endpoint: endpointURL.String(),
+	}
+	return bidder, nil
 }
 
 type amxExt struct {
