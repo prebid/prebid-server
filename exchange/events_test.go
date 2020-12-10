@@ -59,7 +59,7 @@ func Test_eventsData_makeBidExtEvents(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evData := &eventsData{
+			evData := &eventTracking{
 				enabledForAccount:  tt.args.enabledForAccount,
 				enabledForRequest:  tt.args.enabledForRequest,
 				accountID:          "123456",
@@ -120,7 +120,7 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evData := &eventsData{
+			evData := &eventTracking{
 				enabledForAccount:  tt.args.enabledForAccount,
 				enabledForRequest:  tt.args.enabledForRequest,
 				accountID:          "123456",

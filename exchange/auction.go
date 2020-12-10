@@ -147,7 +147,7 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, evData *eventsData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string, debugLog *DebugLog) []error {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, evTracking *eventTracking, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string, debugLog *DebugLog) []error {
 	var bids, vast, includeBidderKeys, includeWinners bool = targData.includeCacheBids, targData.includeCacheVast, targData.includeBidderKeys, targData.includeWinners
 	if !((bids || vast) && (includeBidderKeys || includeWinners)) {
 		return nil
@@ -195,7 +195,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 			}
 			if bids {
 				if jsonBytes, err := json.Marshal(topBidPerBidder.bid); err == nil {
-					jsonBytes = evData.modifyBidJSON(topBidPerBidder.bid, bidderName, jsonBytes)
+					jsonBytes = evTracking.modifyBidJSON(topBidPerBidder.bid, bidderName, jsonBytes)
 					if useCustomCacheKey {
 						// not allowed if bids is true; log error and cache normally
 						errs = append(errs, errors.New("cannot use custom cache key for non-vast bids"))
@@ -212,7 +212,6 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 			}
 			if vast && topBidPerBidder.bidType == openrtb_ext.BidTypeVideo {
 				vastXML := makeVAST(topBidPerBidder.bid)
-				vastXML = evData.modifyVAST(topBidPerBidder.bid, bidderName, vastXML)
 				if jsonBytes, err := json.Marshal(vastXML); err == nil {
 					if useCustomCacheKey {
 						toCache = append(toCache, prebid_cache_client.Cacheable{

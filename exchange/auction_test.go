@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -209,19 +208,14 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 		winningBidsByBidder: winningBidsByBidder,
 		roundedPrices:       roundedPrices,
 	}
-	evData := &eventsData{
+	evTracking := &eventTracking{
 		accountID:          "ACCOUNT_ID",
 		enabledForAccount:  specData.EventsDataEnabledForAccount,
 		enabledForRequest:  specData.EventsDataEnabledForRequest,
 		externalURL:        "http://localhost",
 		auctionTimestampMs: 1234567890,
-		bidderInfos: adapters.BidderInfos{
-			"openx":    adapters.BidderInfo{ModifyingVastXmlAllowed: specData.BidderModifyingVastXmlAllowed},
-			"appnexus": adapters.BidderInfo{ModifyingVastXmlAllowed: specData.BidderModifyingVastXmlAllowed},
-			"pubmatic": adapters.BidderInfo{ModifyingVastXmlAllowed: specData.BidderModifyingVastXmlAllowed},
-		},
 	}
-	_ = testAuction.doCache(ctx, cache, targData, evData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory, &specData.DebugLog)
+	_ = testAuction.doCache(ctx, cache, targData, evTracking, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory, &specData.DebugLog)
 
 	if len(specData.ExpectedCacheables) > len(cache.items) {
 		t.Errorf("%s:  [CACHE_ERROR] Less elements were cached than expected \n", fileDisplayName)
@@ -492,18 +486,17 @@ func TestNewAuction(t *testing.T) {
 }
 
 type cacheSpec struct {
-	BidRequest                    openrtb.BidRequest              `json:"bidRequest"`
-	PbsBids                       []pbsBid                        `json:"pbsBids"`
-	ExpectedCacheables            []prebid_cache_client.Cacheable `json:"expectedCacheables"`
-	DefaultTTLs                   config.DefaultTTLs              `json:"defaultTTLs"`
-	TargetDataIncludeWinners      bool                            `json:"targetDataIncludeWinners"`
-	TargetDataIncludeBidderKeys   bool                            `json:"targetDataIncludeBidderKeys"`
-	TargetDataIncludeCacheBids    bool                            `json:"targetDataIncludeCacheBids"`
-	TargetDataIncludeCacheVast    bool                            `json:"targetDataIncludeCacheVast"`
-	EventsDataEnabledForAccount   bool                            `json:"eventsDataEnabledForAccount"`
-	EventsDataEnabledForRequest   bool                            `json:"eventsDataEnabledForRequest"`
-	BidderModifyingVastXmlAllowed bool                            `json:"bidderModifyingVastXMLAllowed`
-	DebugLog                      DebugLog                        `json:"debugLog,omitempty"`
+	BidRequest                  openrtb.BidRequest              `json:"bidRequest"`
+	PbsBids                     []pbsBid                        `json:"pbsBids"`
+	ExpectedCacheables          []prebid_cache_client.Cacheable `json:"expectedCacheables"`
+	DefaultTTLs                 config.DefaultTTLs              `json:"defaultTTLs"`
+	TargetDataIncludeWinners    bool                            `json:"targetDataIncludeWinners"`
+	TargetDataIncludeBidderKeys bool                            `json:"targetDataIncludeBidderKeys"`
+	TargetDataIncludeCacheBids  bool                            `json:"targetDataIncludeCacheBids"`
+	TargetDataIncludeCacheVast  bool                            `json:"targetDataIncludeCacheVast"`
+	EventsDataEnabledForAccount bool                            `json:"eventsDataEnabledForAccount"`
+	EventsDataEnabledForRequest bool                            `json:"eventsDataEnabledForRequest"`
+	DebugLog                    DebugLog                        `json:"debugLog,omitempty"`
 }
 
 type pbsBid struct {

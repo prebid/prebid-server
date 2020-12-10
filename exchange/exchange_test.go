@@ -1331,12 +1331,12 @@ func TestExchangeJSON(t *testing.T) {
 		for _, specFile := range specFiles {
 			fileName := "./exchangetest/" + specFile.Name()
 			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
-			specData, err := loadFile(fileName)
-			if err != nil {
-				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
-			}
-
-			runSpec(t, fileDisplayName, specData)
+			t.Run(fileDisplayName, func(t *testing.T) {
+				specData, err := loadFile(fileName)
+				if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
+					runSpec(t, fileDisplayName, specData)
+				}
+			})
 		}
 	}
 }
