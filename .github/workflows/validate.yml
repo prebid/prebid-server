@@ -23,7 +23,7 @@ jobs:
     - name: Checkout Branch
       uses: actions/checkout@v2
       with:
-        ref: ${{ github.event.milestone.title }}
+        ref: ${{ github.event.pull_request.head.sha }}
 
     - name: Validate
       run: |

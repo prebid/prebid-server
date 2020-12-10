@@ -19,6 +19,6 @@ jobs:
 
     - name: Validate
       run: |
-        ./validate.sh --nofmt
+        ./validate.sh --nofmt --cov --race 10
       env:
         GO111MODULE: "on"
