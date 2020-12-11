@@ -124,7 +124,7 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, 
 		}
 	}
 
-	// This shouldnt happen. Lets handle it just incase in case it returns an error.
+	// This shouldnt happen. Lets handle it just incase by returning an error.
 	return "", &errortypes.BadServerResponse{
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
 	}
