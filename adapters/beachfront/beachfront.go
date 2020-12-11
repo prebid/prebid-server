@@ -202,8 +202,9 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 	var bannerImps = make([]openrtb.Imp, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
-		if request.Imp[i].Banner != nil && request.Imp[i].Banner.Format != nil && ((request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
-			(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil)) {
+		if request.Imp[i].Banner != nil &&
+			(request.Imp[i].Banner.Format != nil && (request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
+				(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil)) {
 			bannerImps = append(bannerImps, request.Imp[i])
 		}
 
@@ -302,12 +303,20 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 			slot.Bidfloor = 0
 		}
 
-		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
+		if request.Imp[i].Banner.Format != nil && len(request.Imp[i].Banner.Format) > 0 {
+			for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
 
+				slot.Sizes = append(slot.Sizes, beachfrontSize{
+					H: request.Imp[i].Banner.Format[j].H,
+					W: request.Imp[i].Banner.Format[j].W,
+				})
+			}
+		} else {
 			slot.Sizes = append(slot.Sizes, beachfrontSize{
-				H: request.Imp[i].Banner.Format[j].H,
-				W: request.Imp[i].Banner.Format[j].W,
+				H: *request.Imp[i].Banner.H,
+				W: *request.Imp[i].Banner.W,
 			})
+
 		}
 
 		bfr.Slots = append(bfr.Slots, slot)
@@ -437,8 +446,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 		}
 
-		if bfReqs[i].Request.Device.DeviceType == 0 {
-			// More fine graned deviceType methods will be added in the future
+		if bfReqs[i].Request.Device != nil && bfReqs[i].Request.Device.DeviceType == 0 {
 			bfReqs[i].Request.Device.DeviceType = fallBackDeviceType(request)
 		}
 

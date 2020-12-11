@@ -1,0 +1,243 @@
+{
+  "mockBidRequest":
+  {
+    "id": "two-combo",
+    "imp": [
+      {
+        "id": "ComboADMVideoWithBannerImp1",
+        "ext": {
+          "bidder": {
+            "videoResponseType": "adm",
+            "bidfloor": 1.01,
+            "appIds": {
+              "banner" : "bannerAppId1",
+              "video" :  "videoAppId1"
+            }
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 300,
+          "h": 400
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 400
+            }
+          ]
+        }
+      },
+      {
+        "id": "ComboADMVideoWithBannerImp2",
+        "ext": {
+          "bidder": {
+            "videoResponseType": "adm",
+            "bidfloor": 1.01,
+            "appIds": {
+              "banner" : "bannerAppId2",
+              "video" :  "videoAppId1"
+            }
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 100,
+          "h": 150
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 100,
+              "h": 150
+            }
+          ]
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com/whatever/something.html"
+    }
+  } ,
+  "httpCalls": [
+    {
+      "expectedRequest":  {
+        "uri": "https://display.bfmio.com/prebid_display",
+        "body": {
+          "slots": [
+            {
+              "slot": "ComboADMVideoWithBannerImp1",
+              "id": "bannerAppId1",
+              "bidfloor": 1.01,
+              "sizes": [
+                {
+                  "w": 300,
+                  "h": 400
+                }
+              ]
+            },
+            {
+              "slot": "ComboADMVideoWithBannerImp2",
+              "id": "bannerAppId2",
+              "bidfloor": 1.01,
+              "sizes": [
+                {
+                  "w": 100,
+                  "h": 150
+                }
+              ]
+            }
+          ],
+          "domain": "example.com",
+          "page": "http://example.com/whatever/something.html",
+          "referrer": "",
+          "search": "",
+          "secure": 0,
+          "deviceOs": "",
+          "deviceModel": "",
+          "isMobile": 0,
+          "ua": "",
+          "dnt": 0,
+          "user": {},
+          "adapterName": "BF_PREBID_S2S",
+          "adapterVersion": "0.9.0",
+          "ip": "",
+          "requestId": "two-combo"
+        }
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": [
+          {
+            "crid": "crid_1",
+            "price": 1.594764,
+            "w": 100,
+            "h": 150,
+            "slot": "ComboADMVideoWithBannerImp1",
+            "adm": "<div id=\"crid_1\">Buy now!</div>"
+          },
+          {
+            "crid": "crid_2",
+            "price": 1.594764,
+            "w": 100,
+            "h": 150,
+            "slot": "ComboADMVideoWithBannerImp2",
+            "adm": "<div id=\"crid_2\">Buy now!</div>"
+          }
+        ]
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
+        "body": {
+          "id": "two-combo",
+          "imp": [
+            {
+              "id": "ComboADMVideoWithBannerImp1",
+              "secure": 0,
+              "bidfloor": 1.01,
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 300,
+                "h": 400
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever/something.html"
+          },
+          "cur": [
+            "USD"
+          ]
+        }
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": {
+          "id": "two-combo",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "crid_3",
+                  "impid": "ComboADMVideoWithBannerImp1",
+                  "price": 0.8,
+                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+                  "w": 300,
+                  "h": 400,
+                  "ext": {
+                    "duration": 30
+                  }
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },{
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
+        "body": {
+          "id": "two-combo",
+          "imp": [
+            {
+              "id": "ComboADMVideoWithBannerImp2",
+              "secure": 0,
+              "bidfloor": 1.01,
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 100,
+                "h": 150
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever/something.html"
+          },
+          "cur": [
+            "USD"
+          ]
+        }
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": {
+          "id": "5f4f8790dca51d29347f4dd8",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "crid_4",
+                  "impid": "ComboADMVideoWithBannerImp2",
+                  "price": 0.8,
+                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+                  "w": 100,
+                  "h": 150,
+                  "ext": {
+                    "duration": 30
+                  }
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ]
+}
