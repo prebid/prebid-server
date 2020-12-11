@@ -109,6 +109,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderTappx:        true,
 		openrtb_ext.BidderYeahmobi:     true,
 		openrtb_ext.BidderAdprime:      true,
+		openrtb_ext.BidderRevcontent:   true,
 	}
 
 	for bidder, config := range cfg.Adapters {

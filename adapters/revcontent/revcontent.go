@@ -2,7 +2,6 @@ package revcontent
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -18,10 +17,6 @@ type RevcontentAdapter struct {
 
 // Builder builds a new instance of the Revcontent adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	if config.Endpoint == "" {
-		return nil, errors.New("Endpoint is not configured. Did you set adapters.revcontent.endpoint in the app config?")
-	}
-
 	bidder := &RevcontentAdapter{
 		endpoint: config.Endpoint,
 	}
