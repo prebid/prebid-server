@@ -3,6 +3,7 @@
   {
     "id": "four-combo",
     "imp": [
+
       {
         "id": "ComboADMVideoWithBannerImp1",
         "ext": {
@@ -159,14 +160,31 @@
           "w": 1280,
           "h": 1024
         }
+      },
+      {
+        "id": "SeparateADMVideo",
+        "ext": {
+          "bidder": {
+            "videoResponseType": "adm",
+            "bidfloor": 1.01,
+            "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76"
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 100,
+          "h": 150
+        }
       }
-
     ],
     "site": {
       "page": "http://example.com/whatever/something.html"
     }
   } ,
   "httpCalls": [
+
     {
       "expectedRequest":  {
         "uri": "https://display.bfmio.com/prebid_display",
@@ -526,6 +544,69 @@
         }
       }
     },
+
+    {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
+        "body": {
+          "id": "four-combo",
+          "imp": [
+            {
+              "id": "SeparateADMVideo",
+              "bidfloor": 1.01,
+              "secure": 0,
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 100,
+                "h": 150
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever/something.html"
+          },
+          "cur": [
+            "USD"
+          ]
+        }
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": {
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "5f4f8790b9f0fc0e98b5db47",
+                  "impid": "SeparateADMVideo",
+                  "price": 20.0,
+                  "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><AdSystem version=\"2.0\">IO</AdSystem><AdTitle>Neptune</AdTitle><Impression></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00: 10: 15</Duration><MediaFiles><MediaFile delivery=\"progressive\" width=\"640\" height=\"480\" scalable=\"1\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[http://player-cdn.beachfrontmedia.com/players/neptune/3/20/1/neptune-player.js]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adid": "1088",
+                  "adomain": [
+                    "beachfront.io"
+                  ],
+                  "cid": "277",
+                  "crid": "532",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "duration": 15
+                  }
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "bidid": "5f4f8790b9f0fc0e98b5db47",
+          "cur": "USD"
+        }
+      }
+    },
+
     {
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1&prebidserver",
@@ -636,6 +717,7 @@
         }
       }
     },
+
     {
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
