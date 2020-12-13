@@ -1,10 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
-    "tmax": 1000,
-    "source": {
-      "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
-    },
+    "id": "simple-adm-video",
     "imp": [
       {
         "id": "video1",
@@ -12,7 +8,7 @@
           "bidder": {
             "videoResponseType": "adm",
             "bidfloor": 0.01,
-            "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76"
+            "appId": "videoAppId1"
           }
         },
         "video": {
@@ -26,27 +22,15 @@
       }
     ],
     "site": {
-      "publisher": {
-        "id": "publisher1"
-      },
-      "page": "http://example.com/whatever/something.html"
-    },
-    "user": {
-      "id": "some-user",
-      "buyeruid": "some-buyer"
-    },
-    "device": {
-      "devicetype": 2,
-      "ip": "127.0.0.1",
-      "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16"
+      "page": "https://some.domain.us/some/page.html"
     }
   },
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
         "body": {
-          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "id": "simple-adm-video",
           "imp": [
             {
               "video": {
@@ -57,32 +41,16 @@
                 ]
               },
               "id": "video1",
-              "secure": 0
+              "secure": 1
             }
           ],
           "site": {
-            "publisher": {
-              "id": "publisher1"
-            },
-            "page": "http://example.com/whatever/something.html",
-            "domain": "example.com"
+            "page": "https://some.domain.us/some/page.html",
+            "domain": "some.domain.us"
           },
-          "device": {
-            "devicetype": 2,
-            "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "ip": "192.168.255.255"
-          },
-          "source": {
-            "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
-          },
-          "tmax": 1000,
           "cur": [
             "USD"
-          ],
-          "user": {
-            "id": "some-user",
-            "buyeruid": "some-buyer"
-          }
+          ]
         }
       },
       "mockResponse": {
@@ -96,7 +64,7 @@
                   "id": "video1AdmVideo",
                   "impid": "video1",
                   "price": 20,
-                  "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><AdSystem version=\"2.0\">IO</AdSystem><AdTitle>Neptune</AdTitle><Impression></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" width=\"640\" height=\"480\" scalable=\"1\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[http://player-cdn.beachfrontmedia.com/players/neptune/3/17/5/neptune-player.js]]></MediaFile></MediaFiles><AdParameters><![CDATA[{\"dsp\":\"5d8393417cbc8e5aa4fe2202,0.01\",\"inventory_id\":\"bid:95d219a2-6025-44ba-bff8-1dca987beaae:11bc5dd5-7421-4dd8-c926-40fa653bec76:${AUCTION_PRICE}:20.0\",\"request_endpoint\":\"//useast.bfmio.com/getmu\",\"inventory_type\":\"pre\"}]]></AdParameters></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "adid": "1088",
                   "adomain": [
                     "beachfront.io"
@@ -127,7 +95,7 @@
             "id": "video1AdmVideo",
             "impid": "video1",
             "price": 20,
-            "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><AdSystem version=\"2.0\">IO</AdSystem><AdTitle>Neptune</AdTitle><Impression></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" width=\"640\" height=\"480\" scalable=\"1\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[http://player-cdn.beachfrontmedia.com/players/neptune/3/17/5/neptune-player.js]]></MediaFile></MediaFiles><AdParameters><![CDATA[{\"dsp\":\"5d8393417cbc8e5aa4fe2202,0.01\",\"inventory_id\":\"bid:95d219a2-6025-44ba-bff8-1dca987beaae:11bc5dd5-7421-4dd8-c926-40fa653bec76:${AUCTION_PRICE}:20.0\",\"request_endpoint\":\"//useast.bfmio.com/getmu\",\"inventory_type\":\"pre\"}]]></AdParameters></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
             "adid": "1088",
             "adomain": [
               "beachfront.io"

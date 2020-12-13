@@ -1,10 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
-    "tmax": 1000,
-    "source": {
-      "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
-    },
+    "id": "simple-mix",
     "imp": [
       {
         "id": "mix1",
@@ -13,8 +9,8 @@
             "videoResponseType": "adm",
             "bidfloor": 0.41,
             "appIds": {
-              "banner": "487cf244-5e95-43cb-e7b9-bb540873ca7e",
-              "video": "11bc5dd5-7421-4dd8-c926-40fa653bec76"
+              "banner": "bannerAppId1",
+              "video": "videoAppId1"
             }
           }
         },
@@ -37,15 +33,7 @@
       }
     ],
     "site": {
-      "page": "http://example.com/somepage.html"
-    },
-    "user": {
-      "id": "some-user",
-      "buyeruid": "some-buyer"
-    },
-    "device": {
-      "ip": "192.168.255.255",
-      "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16"
+      "page": "https://some.domain.us/some/page.html"
     }
   },
   "httpCalls": [
@@ -56,7 +44,7 @@
           "slots": [
             {
               "slot": "mix1",
-              "id": "487cf244-5e95-43cb-e7b9-bb540873ca7e",
+              "id": "bannerAppId1",
               "bidfloor": 0.41,
               "sizes": [
                 {
@@ -66,24 +54,21 @@
               ]
             }
           ],
-          "domain": "example.com",
-          "page": "http://example.com/somepage.html",
+          "domain": "some.domain.us",
+          "page": "https://some.domain.us/some/page.html",
           "referrer": "",
           "search": "",
-          "secure": 0,
+          "secure": 1,
           "deviceOs": "",
           "deviceModel": "",
           "isMobile": 0,
-          "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
+          "ua": "",
+          "ip": "",
           "dnt": 0,
-          "user": {
-            "id": "some-user",
-            "buyeruid": "some-buyer"
-          },
+          "user": {},
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.9.0",
-          "ip": "192.168.255.255",
-          "requestId": "61b87329-8790-47b7-90dd-c53ae7ce1723"
+          "adapterVersion": "0.9.1",
+          "requestId": "simple-mix"
         }
       },
       "mockResponse": {
@@ -102,9 +87,9 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
         "body": {
-          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "id": "simple-mix",
           "imp": [
             {
               "video": {
@@ -115,30 +100,17 @@
                 ]
               },
               "bidfloor": 0.41,
-              "secure": 0,
+              "secure": 1,
               "id": "mix1"
             }
           ],
           "site": {
-            "page": "http://example.com/somepage.html",
-            "domain": "example.com"
-          },
-          "source": {
-            "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
-          },
-          "device": {
-            "devicetype": 2,
-            "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "ip": "192.168.255.255"
+            "domain": "some.domain.us",
+            "page": "https://some.domain.us/some/page.html"
           },
           "cur": [
             "USD"
-          ],
-          "tmax": 1000,
-          "user": {
-            "id": "some-user",
-            "buyeruid": "some-buyer"
-          }
+          ]
         }
       },
       "mockResponse": {
@@ -152,7 +124,7 @@
                   "id": "5d839458f73decdc1572b7f6",
                   "impid": "mix1",
                   "price": 20,
-                  "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><AdSystem version=\"2.0\">IO</AdSystem><AdTitle>Neptune</AdTitle><Impression></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" width=\"640\" height=\"480\" scalable=\"1\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[http://player-cdn.beachfrontmedia.com/players/neptune/3/17/5/neptune-player.js]]></MediaFile></MediaFiles><AdParameters><![CDATA[{\"dsp\":\"5d839458f73decdc1572b7f6,0.41\",\"inventory_id\":\"bid:26826cf7-f8bb-4e47-a636-769d83dd9b4f:11bc5dd5-7421-4dd8-c926-40fa653bec76:${AUCTION_PRICE}:20.0\",\"request_endpoint\":\"//useast.bfmio.com/getmu\",\"inventory_type\":\"pre\"}]]></AdParameters></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "adid": "1088",
                   "adomain": [
                     "beachfront.io"
@@ -196,7 +168,7 @@
             "id": "mix1AdmVideo",
             "impid": "mix1",
             "price": 20,
-            "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><AdSystem version=\"2.0\">IO</AdSystem><AdTitle>Neptune</AdTitle><Impression></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" width=\"640\" height=\"480\" scalable=\"1\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[http://player-cdn.beachfrontmedia.com/players/neptune/3/17/5/neptune-player.js]]></MediaFile></MediaFiles><AdParameters><![CDATA[{\"dsp\":\"5d839458f73decdc1572b7f6,0.41\",\"inventory_id\":\"bid:26826cf7-f8bb-4e47-a636-769d83dd9b4f:11bc5dd5-7421-4dd8-c926-40fa653bec76:${AUCTION_PRICE}:20.0\",\"request_endpoint\":\"//useast.bfmio.com/getmu\",\"inventory_type\":\"pre\"}]]></AdParameters></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
             "adid": "1088",
             "adomain": [
               "beachfront.io"

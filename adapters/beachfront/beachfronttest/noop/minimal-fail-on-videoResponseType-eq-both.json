@@ -1,0 +1,188 @@
+{
+  "mockBidRequest": {
+    "id": "minimal-fail",
+    "imp": [
+      {
+        "id": "singleBothVideoImp",
+        "ext": {
+          "bidder": {
+            "bidfloor": 3.01,
+            "videoResponseType": "both",
+            "appId": "videoAppId1"
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4",
+            "video/webm"
+          ],
+          "w": 600,
+          "h": 450
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com/whatever"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1&prebidserver",
+        "body": {
+          "isPrebid": true,
+          "id": "minimal-fail",
+          "imp": [
+            {
+              "id": "singleBothVideoImp",
+              "secure": 0,
+              "video": {
+                "mimes": [
+                  "video/mp4",
+                  "video/webm"
+                ],
+                "w": 600,
+                "h": 450
+              },
+              "bidfloor": 3.01
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever"
+          },
+          "cur": [
+            "USD"
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "seatBid": [
+            {
+              "bid": [
+                {
+                  "id": "singleBothVideoImp",
+                  "price": 20.0,
+                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:b489a745-e577-4fcb-815d-0b6a1e052ec7:videoAppId1:20.0:20.0&v=1&dsp=5d8231a48d308d0a1f9b4526,0.61&i_type=pre",
+                  "adomain": [],
+                  "cat": [],
+                  "attr": [],
+                  "w": 0,
+                  "h": 0,
+                  "ext": {}
+                }
+              ],
+              "group": 0,
+              "ext": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
+        "body": {
+          "id": "minimal-fail",
+          "imp": [
+            {
+              "id": "singleBothVideoImp",
+              "secure": 0,
+              "video": {
+                "mimes": [
+                  "video/mp4",
+                  "video/webm"
+                ],
+                "w": 600,
+                "h": 450
+              },
+              "bidfloor": 3.01
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever"
+          },
+          "cur": [
+            "USD"
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "5d8231a4254b2eca804965a3",
+                  "impid": "singleBothVideoImp",
+                  "price": 20.0,
+                  "adm": "<div id=\"crid_1\">Buy now!</div>",
+                  "adid": "1088",
+                  "adomain": [
+                    "beachfront.io"
+                  ],
+                  "cid": "277",
+                  "crid": "532",
+                  "w": 600,
+                  "h": 450
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "bidid": "5d8231a4254b2eca804965a3",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+
+    {
+      "bids": [
+        {
+          "bid": {
+            "impid": "singleBothVideoImp",
+            "id": "singleBothVideoImpAdmVideo",
+            "price": 20,
+            "adm": "<div id=\"crid_1\">Buy now!</div>",
+            "adid": "1088",
+            "adomain": [
+              "beachfront.io"
+            ],
+            "cid": "277",
+            "crid": "532",
+            "w": 600,
+            "h": 450
+          },
+          "type": "video"
+        }
+      ],
+      "seat": "beachfront"
+    },
+    {
+      "bids": [
+        {
+          "bid": {
+            "impid": "singleBothVideoImp",
+            "id": "singleBothVideoImpNurlVideo",
+            "price": 20,
+            "nurl": "https://useast.bfmio.com/getBids?aid=bid:b489a745-e577-4fcb-815d-0b6a1e052ec7:videoAppId1:20.0:20.0&v=1&dsp=5d8231a48d308d0a1f9b4526,0.61&i_type=pre",
+            "crid": "b489a745-e577-4fcb-815d-0b6a1e052ec7",
+            "w": 600,
+            "h": 450,
+            "ext": {}
+          },
+          "type": "video"
+        }
+      ],
+      "seat": "beachfront"
+    }
+  ]
+}
