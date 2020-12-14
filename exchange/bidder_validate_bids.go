@@ -10,7 +10,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	go_currency "golang.org/x/text/currency"
+	goCurrency "golang.org/x/text/currency"
 )
 
 // addValidatedBidderMiddleware returns a bidder that removes invalid bids from the argument bidder's response.
@@ -71,7 +71,7 @@ func validateCurrency(requestAllowedCurrencies []string, bidCurrency string) err
 		// If bid currency is not set, then consider it's default currency.
 		bidCurrency = defaultCurrency
 	}
-	currencyUnit, cerr := go_currency.ParseISO(bidCurrency)
+	currencyUnit, cerr := goCurrency.ParseISO(bidCurrency)
 	if cerr != nil {
 		return cerr
 	}
