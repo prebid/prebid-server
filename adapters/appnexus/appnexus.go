@@ -20,8 +20,8 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 const defaultPlatformID int = 5
@@ -336,9 +336,9 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 	// Add Appnexus request level extension
 	var isAMP, isVIDEO int
-	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
+	if reqInfo.PbsEntryPoint == metrics.ReqTypeAMP {
 		isAMP = 1
-	} else if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeVideo {
+	} else if reqInfo.PbsEntryPoint == metrics.ReqTypeVideo {
 		isVIDEO = 1
 	}
 

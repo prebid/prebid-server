@@ -8,8 +8,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -258,5 +258,5 @@ func parseBidderInfo(info BidderInfo) parsedBidderInfo {
 }
 
 type ExtraRequestInfo struct {
-	PbsEntryPoint pbsmetrics.RequestType
+	PbsEntryPoint metrics.RequestType
 }
