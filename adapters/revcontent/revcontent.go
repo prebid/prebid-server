@@ -92,8 +92,8 @@ func getBidCount(bidResponse openrtb.BidResponse) int {
 func getBidType(bidAdm string) openrtb_ext.BidType {
 	// native: {"ver":"1.1","assets":...
 	// banner: <div id='rtb-widget...
-	return openrtb_ext.BidTypeBanner
 	if bidAdm != "" && bidAdm[:1] == "<" {
+		return openrtb_ext.BidTypeBanner
 	}
 	return openrtb_ext.BidTypeNative
 }
