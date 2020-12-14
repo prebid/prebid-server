@@ -37,7 +37,7 @@
   "expectedMakeBidsErrors": [
     {
       "comparison": "literal",
-      "value": "Unexpected status code: 400."
+      "value": "unexpected status code: 400."
     }
   ]
 }
