@@ -1,13 +1,13 @@
 {
   "mockBidRequest": {
-    "id": "simple-adm-video",
+    "id": "adm-video",
     "imp": [
       {
         "id": "video1",
         "ext": {
           "bidder": {
             "videoResponseType": "adm",
-            "bidfloor": 0.01,
+            "bidfloor": 3.01,
             "appId": "videoAppId1"
           }
         },
@@ -23,6 +23,9 @@
     ],
     "site": {
       "page": "https://some.domain.us/some/page.html"
+    },
+    "device":{
+      "ip":"192.168.255.255"
     }
   },
   "httpCalls": [
@@ -30,7 +33,7 @@
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
         "body": {
-          "id": "simple-adm-video",
+          "id": "adm-video",
           "imp": [
             {
               "video": {
@@ -40,6 +43,7 @@
                   "video/mp4"
                 ]
               },
+              "bidfloor": 3.01,
               "id": "video1",
               "secure": 1
             }
@@ -50,18 +54,22 @@
           },
           "cur": [
             "USD"
-          ]
+          ],
+          "device":{
+            "devicetype": 2,
+            "ip":"192.168.255.255"
+          }
         }
       },
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "id": "adm-video",
           "seatBid": [
             {
               "bid": [
                 {
-                  "id": "video1AdmVideo",
+                  "id": "5fd7c8a6ff2f1f0d42ee6427",
                   "impid": "video1",
                   "price": 20,
                   "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
@@ -74,13 +82,11 @@
                   "w": 300,
                   "h": 250,
                   "ext": {
-                    "prebid": {
-                      "type": "video"
-                    }
+                    "duration": 30
                   }
                 }
               ],
-              "seat": "beachfront"
+              "seat": "bfio-s-1"
             }
           ]
         }
@@ -105,9 +111,7 @@
             "w": 300,
             "h": 250,
             "ext": {
-              "prebid": {
-                "type": "video"
-              }
+              "duration": 30
             }
           },
           "type": "video"

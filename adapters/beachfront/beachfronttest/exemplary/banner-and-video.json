@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "simple-mix",
+    "id": "banner-and-video",
     "imp": [
       {
         "id": "mix1",
@@ -68,7 +68,7 @@
           "user": {},
           "adapterName": "BF_PREBID_S2S",
           "adapterVersion": "0.9.1",
-          "requestId": "simple-mix"
+          "requestId": "banner-and-video"
         }
       },
       "mockResponse": {
@@ -89,7 +89,7 @@
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
         "body": {
-          "id": "simple-mix",
+          "id": "banner-and-video",
           "imp": [
             {
               "video": {
