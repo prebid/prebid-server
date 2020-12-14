@@ -55,11 +55,18 @@ func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
+	// Construct request extension common to all imps
+	// NOTE: not blocking e
+	TTXRequestExt, err := makeReqExt(request)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
 	// Break up multi-imp request into multiple external requests since we don't
 	// support SRA in our exchange server
 	for i := 0; i < len(request.Imp); i++ {
 		// makeRequest will either return an adapterRequest or err
-		if adapterReq, err := a.makeRequest(request, request.Imp[i]); err == nil {
+		if adapterReq, err := a.makeRequest(request, request.Imp[i], TTXRequestExt); err == nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		} else {
 			errs = append(errs, err)
@@ -69,7 +76,7 @@ func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters
 	return adapterRequests, errs
 }
 
-func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp) (*adapters.RequestData, error) {
+func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp, TTXRequestExt []byte) (*adapters.RequestData, error) {
 	var imps []openrtb.Imp
 
 	reqCopy := *request
@@ -81,28 +88,7 @@ func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp) (
 
 	reqCopy.Imp = append(imps, impCopy)
 
-	// Add info about caller
-	var reqExt reqExt
-	if len(reqCopy.Ext) > 0 {
-		if err := json.Unmarshal(reqCopy.Ext, &reqExt); err != nil {
-			return nil, err
-		}
-	}
-
-	if reqExt.Ttx == nil {
-		reqExt.Ttx = &reqTtxExt{}
-	}
-
-	if reqExt.Ttx.Caller == nil {
-		reqExt.Ttx.Caller = make([]TtxCaller, 0)
-	}
-
-	reqExt.Ttx.Caller = append(reqExt.Ttx.Caller, CALLER)
-
-	reqCopy.Ext, err = json.Marshal(reqExt)
-	if err != nil {
-		return nil, err
-	}
+	reqCopy.Ext = TTXRequestExt
 
 	// Last Step
 	reqJSON, err := json.Marshal(reqCopy)
@@ -174,6 +160,28 @@ func makeImps(imp openrtb.Imp) (openrtb.Imp, error) {
 	}
 
 	return imp, nil
+}
+
+func makeReqExt(request *openrtb.BidRequest) ([]byte, error) {
+	var reqExt reqExt
+
+	if len(request.Ext) > 0 {
+		if err := json.Unmarshal(request.Ext, &reqExt); err != nil {
+			return nil, err
+		}
+	}
+
+	if reqExt.Ttx == nil {
+		reqExt.Ttx = &reqTtxExt{}
+	}
+
+	if reqExt.Ttx.Caller == nil {
+		reqExt.Ttx.Caller = make([]TtxCaller, 0)
+	}
+
+	reqExt.Ttx.Caller = append(reqExt.Ttx.Caller, CALLER)
+
+	return json.Marshal(reqExt)
 }
 
 // MakeBids make the bids for the bid response.
