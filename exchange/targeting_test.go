@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
 
 	"github.com/prebid/prebid-server/gdpr"
 
@@ -92,7 +92,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		cache:               &wellBehavedCache{},
 		cacheTime:           time.Duration(0),
 		gDPR:                gdpr.AlwaysAllow{},
-		currencyConverter:   currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		currencyConverter:   currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		UsersyncIfAmbiguous: false,
 		categoriesFetcher:   categoriesFetcher,
 	}
