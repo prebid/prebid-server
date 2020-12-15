@@ -2,7 +2,7 @@
   "mockBidRequest": {
     "id": "some_test_ad",
     "site": {
-      "page": "https://yourmomshouse.com"
+      "page": "https://some.domain.us/some/page.html"
     },
     "imp": [
       {
@@ -18,7 +18,7 @@
         "ext": {
           "bidder": {
             "bidfloor": 0.02,
-            "appId": "00000000-1111-2222-3333-11111111111"
+            "appId": "dudAppId1"
           }
         }
       }
@@ -33,7 +33,7 @@
           "slots": [
             {
               "slot": "",
-              "id": "00000000-1111-2222-3333-11111111111",
+              "id": "dudAppId1",
               "bidfloor": 0.02,
               "sizes": [
                 {
@@ -43,8 +43,8 @@
               ]
             }
           ],
-          "domain": "yourmomshouse.com",
-          "page": "https://yourmomshouse.com",
+          "domain": "some.domain.us",
+          "page": "https://some.domain.us/some/page.html",
           "referrer": "",
           "search": "",
           "secure": 1,

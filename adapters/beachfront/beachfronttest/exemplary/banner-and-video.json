@@ -36,6 +36,7 @@
       "page": "https://some.domain.us/some/page.html"
     }
   },
+
   "httpCalls": [
     {
       "expectedRequest": {
@@ -144,6 +145,7 @@
       }
     }
   ],
+
   "expectedBidResponses": [
     {
       "bids": [
