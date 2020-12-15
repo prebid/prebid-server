@@ -1197,6 +1197,39 @@ func TestRecordDNSTime(t *testing.T) {
 	}
 }
 
+func TestRecordTLSHandshakeTime(t *testing.T) {
+	testCases := []struct {
+		description          string
+		tLSHandshakeDuration time.Duration
+		expectedDuration     float64
+		expectedCount        uint64
+	}{
+		{
+			description:          "Five second DNS lookup time",
+			tLSHandshakeDuration: time.Second * 5,
+			expectedDuration:     5,
+			expectedCount:        1,
+		},
+		{
+			description:          "Zero DNS lookup time",
+			tLSHandshakeDuration: 0,
+			expectedDuration:     0,
+			expectedCount:        1,
+		},
+	}
+	for i, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordTLSHandshakeTime(test.tLSHandshakeDuration)
+
+		m := dto.Metric{}
+		pm.tlsHandhakeTimer.Write(&m)
+		histogram := *m.GetHistogram()
+
+		assert.Equal(t, test.expectedCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
+		assert.Equal(t, test.expectedDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+	}
+}
+
 func TestRecordAdapterConnections(t *testing.T) {
 
 	type testIn struct {

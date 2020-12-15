@@ -41,6 +41,7 @@ type Metrics struct {
 	storedVideoErrors            *prometheus.CounterVec
 	timeoutNotifications         *prometheus.CounterVec
 	dnsLookupTimer               prometheus.Histogram
+	tlsHandhakeTimer             prometheus.Histogram
 	privacyCCPA                  *prometheus.CounterVec
 	privacyCOPPA                 *prometheus.CounterVec
 	privacyLMT                   *prometheus.CounterVec
@@ -255,6 +256,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.dnsLookupTimer = newHistogram(cfg, metrics.Registry,
 		"dns_lookup_time",
 		"Seconds to resolve DNS",
+		standardTimeBuckets)
+
+	metrics.tlsHandhakeTimer = newHistogram(cfg, metrics.Registry,
+		"tls_handshake_time",
+		"Seconds to perform TLS Handshake",
 		standardTimeBuckets)
 
 	metrics.privacyCCPA = newCounter(cfg, metrics.Registry,
@@ -552,6 +558,10 @@ func (m *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName, c
 
 func (m *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
 	m.dnsLookupTimer.Observe(dnsLookupTime.Seconds())
+}
+
+func (m *Metrics) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
+	m.tlsHandhakeTimer.Observe(tlsHandshakeTime.Seconds())
 }
 
 func (m *Metrics) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {

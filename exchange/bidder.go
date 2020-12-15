@@ -3,6 +3,7 @@ package exchange
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -445,7 +446,7 @@ type httpCallInfo struct {
 // endpoint is established, we can keep track of whether the connection was newly created, reused, and
 // the time from the connection request, to the connection creation.
 func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context {
-	var connStart, dnsStart time.Time
+	var connStart, dnsStart, tlsStart time.Time
 
 	trace := &httptrace.ClientTrace{
 		// GetConn is called before a connection is created or retrieved from an idle pool
@@ -467,6 +468,16 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 			dnsLookupTime := time.Now().Sub(dnsStart)
 
 			bidder.me.RecordDNSTime(dnsLookupTime)
+		},
+
+		TLSHandshakeStart: func() {
+			tlsStart = time.Now()
+		},
+
+		TLSHandshakeDone: func(tls.ConnectionState, error) {
+			tlsHandshakeTime := time.Now().Sub(tlsStart)
+
+			bidder.me.RecordTLSHandshakeTime(tlsHandshakeTime)
 		},
 	}
 	return httptrace.WithClientTrace(ctx, trace)
