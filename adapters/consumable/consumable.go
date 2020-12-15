@@ -294,6 +294,7 @@ func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb
 // Builder builds a new instance of the Consumable adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &ConsumableAdapter{
+		clock:    realInstant{},
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil

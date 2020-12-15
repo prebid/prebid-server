@@ -21,8 +21,6 @@ type Metrics struct {
 	LegacyImpMeter                 metrics.Meter
 	AppRequestMeter                metrics.Meter
 	NoCookieMeter                  metrics.Meter
-	SafariRequestMeter             metrics.Meter
-	SafariNoCookieMeter            metrics.Meter
 	RequestTimer                   metrics.Timer
 	RequestsQueueTimer             map[RequestType]map[bool]metrics.Timer
 	PrebidCacheRequestTimerSuccess metrics.Timer
@@ -33,6 +31,7 @@ type Metrics struct {
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
 	AccountCacheMeter              map[CacheResult]metrics.Meter
 	DNSLookupTimer                 metrics.Timer
+	TLSHandshakeTimer              metrics.Timer
 
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
@@ -127,10 +126,9 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		LegacyImpMeter:                 blankMeter,
 		AppRequestMeter:                blankMeter,
 		NoCookieMeter:                  blankMeter,
-		SafariRequestMeter:             blankMeter,
-		SafariNoCookieMeter:            blankMeter,
 		RequestTimer:                   blankTimer,
 		DNSLookupTimer:                 blankTimer,
+		TLSHandshakeTimer:              blankTimer,
 		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
@@ -227,12 +225,11 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.ImpsTypeAudio = metrics.GetOrRegisterMeter("imp_audio", registry)
 	newMetrics.ImpsTypeNative = metrics.GetOrRegisterMeter("imp_native", registry)
 
-	newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
 	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
-	newMetrics.SafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", registry)
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
 	newMetrics.DNSLookupTimer = metrics.GetOrRegisterTimer("dns_lookup_time", registry)
+	newMetrics.TLSHandshakeTimer = metrics.GetOrRegisterTimer("tls_handshake_time", registry)
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 
@@ -410,12 +407,6 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	if labels.Source == DemandApp {
 		me.AppRequestMeter.Mark(1)
 	} else {
-		if labels.Browser == BrowserSafari {
-			me.SafariRequestMeter.Mark(1)
-			if labels.CookieFlag == CookieFlagNo {
-				me.SafariNoCookieMeter.Mark(1)
-			}
-		}
 		if labels.CookieFlag == CookieFlagNo {
 			// NOTE: Old behavior was log me.AMPNoCookieMeter here for AMP requests.
 			// AMP is still new and OpenRTB does not do this, so changing to match
@@ -552,6 +543,10 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 
 func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
 	me.DNSLookupTimer.Update(dnsLookupTime)
+}
+
+func (me *Metrics) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
+	me.TLSHandshakeTimer.Update(tlsHandshakeTime)
 }
 
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.

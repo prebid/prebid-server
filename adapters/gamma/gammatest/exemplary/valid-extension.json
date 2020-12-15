@@ -5,22 +5,26 @@
       {
         "id": "test-imp-id",
         "video": {
-          "mimes": ["video/mp4"],
-          "protocols": [2, 5],
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
           "w": 640,
           "h": 480
         },
-        "ext":{
-          "bidder":{
+        "ext": {
+          "bidder": {
             "id": "sample-id",
             "zid": "sample-zone-id",
             "wid": "sample-web-id"
-           }
+          }
         }
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -29,39 +33,47 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
+          "id": "test-imp-id",
           "cur": "USD",
           "seatbid": [
             {
               "seat": "gamma",
-              "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id",
-                "price": 0.500000,
-                "adm": "some-test-ad",
-                "crid": "crid_10",
-                "w": 640,
-                "h": 480
-              }]
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adm": "",
+                  "vastXml": "some-test-ad",
+                  "vastUrl": "some-test-url",
+                  "crid": "crid_10",
+                  "w": 640,
+                  "h": 480
+                }
+              ]
             }
           ]
         }
       }
     }
   ],
-
-  "expectedBids": [
+  "expectedBidResponses": [
     {
-      "bid": {
-        "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-        "impid": "test-imp-id",
-        "price": 0.5,
-        "adm": "some-test-ad",
-        "crid": "crid_10",
-        "w": 640,
-        "h": 480
-      },
-      "type": "video"
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "nurl": "some-test-url",
+            "crid": "crid_10",
+            "w": 640,
+            "h": 480
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }

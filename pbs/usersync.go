@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/prebid/prebid-server/ssl"
+	"github.com/prebid/prebid-server/server/ssl"
 	"github.com/prebid/prebid-server/usersync"
 )
 

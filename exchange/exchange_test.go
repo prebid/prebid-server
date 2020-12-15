@@ -1152,28 +1152,39 @@ func TestPanicRecovery(t *testing.T) {
 	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	chBids := make(chan *bidResponseWrapper, 1)
-	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
+	panicker := func(bidderRequest BidderRequest, conversions currencies.Conversions) {
 		panic("panic!")
 	}
-	cleanReqs := map[openrtb_ext.BidderName]*openrtb.BidRequest{
-		"bidder1": {
-			ID: "b-1",
-		},
-		"bidder2": {
-			ID: "b-2",
-		},
-	}
-	recovered := e.recoverSafely(cleanReqs, panicker, chBids)
+
 	apnLabels := pbsmetrics.AdapterLabels{
 		Source:      pbsmetrics.DemandWeb,
 		RType:       pbsmetrics.ReqTypeORTB2Web,
 		Adapter:     openrtb_ext.BidderAppnexus,
 		PubID:       "test1",
-		Browser:     pbsmetrics.BrowserSafari,
 		CookieFlag:  pbsmetrics.CookieFlagYes,
 		AdapterBids: pbsmetrics.AdapterBidNone,
 	}
-	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, &apnLabels, nil)
+
+	bidderRequests := []BidderRequest{
+		{
+			BidderName:     "bidder1",
+			BidderCoreName: "appnexus",
+			BidderLabels:   apnLabels,
+			BidRequest: &openrtb.BidRequest{
+				ID: "b-1",
+			},
+		},
+		{
+			BidderName:     "bidder2",
+			BidderCoreName: "bidder2",
+			BidRequest: &openrtb.BidRequest{
+				ID: "b-2",
+			},
+		},
+	}
+
+	recovered := e.recoverSafely(bidderRequests, panicker, chBids)
+	recovered(bidderRequests[0], nil)
 }
 
 func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {

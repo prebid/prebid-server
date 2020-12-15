@@ -147,6 +147,12 @@ func (me *MultiMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 	}
 }
 
+func (me *MultiMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordTLSHandshakeTime(tlsHandshakeTime)
+	}
+}
+
 // RecordAdapterBidReceived across all engines
 func (me *MultiMetricsEngine) RecordAdapterBidReceived(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	for _, thisME := range *me {
@@ -287,6 +293,10 @@ func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.Bi
 
 // RecordDNSTime as a noop
 func (me *DummyMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
+}
+
+// RecordTLSHandshakeTime as a noop
+func (me *DummyMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
 }
 
 // RecordAdapterBidReceived as a noop
