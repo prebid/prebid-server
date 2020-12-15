@@ -294,6 +294,8 @@ func (a *IxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.
 					} else {
 						multiSizeRequests = append(multiSizeRequests, requestData)
 					}
+				} else {
+					errs = append(errs, err)
 				}
 				if len(multiSizeRequests) == cap(multiSizeRequests) {
 					break
@@ -301,6 +303,8 @@ func (a *IxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.
 			}
 		} else if requestData, err := createRequestData(a, request, &headers); err == nil {
 			requests = append(requests, requestData)
+		} else {
+			errs = append(errs, err)
 		}
 	}
 	request.Imp = imps
@@ -381,6 +385,10 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReques
 			impMediaType[imp.ID] = openrtb_ext.BidTypeBanner
 		} else if imp.Video != nil {
 			impMediaType[imp.ID] = openrtb_ext.BidTypeVideo
+		} else if imp.Native != nil {
+			impMediaType[imp.ID] = openrtb_ext.BidTypeNative
+		} else if imp.Audio != nil {
+			impMediaType[imp.ID] = openrtb_ext.BidTypeAudio
 		}
 	}
 
