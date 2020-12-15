@@ -22,8 +22,16 @@ const (
 	SG     Region = "sg"
 )
 
+var turusxSKADNetIDs = map[string]bool{
+	"22mmun2rn5.skadnetwork": true,
+}
+
 type taurusxImpVideoExt struct {
 	Rewarded int `json:"rewarded"`
+}
+
+type taurusxImpExt struct {
+	SKADN openrtb_ext.SKADN `json:"skadn"`
 }
 
 // TaurusXAdapter ...
@@ -118,7 +126,16 @@ func (adapter *TaurusXAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 			continue
 		}
 
-		thisImp.Ext = nil
+		// Add impression extensions
+		impExt := taurusxImpExt{
+			SKADN: adapters.FilterPrebidSKADNExt(bidderExt.Prebid, turusxSKADNetIDs),
+		}
+
+		thisImp.Ext, err = json.Marshal(&impExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
 
 		// reinit the values in the request object
 		request.Imp = []openrtb.Imp{thisImp}

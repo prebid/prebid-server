@@ -31,7 +31,7 @@ const (
 )
 
 var molocoSKADNetIDs = map[string]bool{
-	"abc": true,
+	"9T245VHMPL.skadnetwork": true,
 }
 
 type molocoVideoExt struct {
@@ -152,11 +152,7 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 
 		// Add impression extensions
 		impExt := molocoImpExt{
-			SKADN: openrtb_ext.SKADN{
-				Version:    bidderExt.Prebid.SKADN.Version,
-				SourceApp:  bidderExt.Prebid.SKADN.SourceApp,
-				SKADNetIDs: adapters.FilterArrayWithMap(bidderExt.Prebid.SKADN.SKADNetIDs, molocoSKADNetIDs),
-			},
+			SKADN: adapters.FilterPrebidSKADNExt(bidderExt.Prebid, molocoSKADNetIDs),
 		}
 
 		thisImp.Ext, err = json.Marshal(&impExt)

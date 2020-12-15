@@ -730,11 +730,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
 			ViewabilityVendors: rubiconExt.ViewabilityVendors,
-			SKADN: openrtb_ext.SKADN{
-				Version:    bidderExt.Prebid.SKADN.Version,
-				SourceApp:  bidderExt.Prebid.SKADN.SourceApp,
-				SKADNetIDs: adapters.FilterArrayWithMap(bidderExt.Prebid.SKADN.SKADNetIDs, rubiconSKADNetIDs),
-			},
+			SKADN:              adapters.FilterPrebidSKADNExt(bidderExt.Prebid, rubiconSKADNetIDs),
 		}
 		thisImp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
