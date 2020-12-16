@@ -64,8 +64,9 @@ func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters
 	}
 	request.Ext = reqExt
 
+	// Break up multi-imp request into multiple external requests since we don't
+	// support SRA in our exchange server
 	for i := 0; i < len(request.Imp); i++ {
-		// makeRequest will either return an adapterRequest or err
 		if adapterReq, err := a.makeRequest(*request, request.Imp[i]); err == nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		} else {
