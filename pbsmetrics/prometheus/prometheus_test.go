@@ -1014,20 +1014,35 @@ func TestRecordPodCompetitiveExclusionTime(t *testing.T) {
 func TestRecordAdapterVideoBidDuration(t *testing.T) {
 
 	testCases := []struct {
-		description           string
-		bidderAdDurations     map[string][]int
-		expectedSum           int
-		expectedCount         int
-		expectBucketsAndCount map[int]int
+		description       string
+		bidderAdDurations map[string][]int
+		expectedSum       map[string]int
+		expectedCount     map[string]int
+		expectedBuckets   map[string]map[int]int // cumulative
 	}{
 		{
 			description: "single bidder multiple ad durations",
 			bidderAdDurations: map[string][]int{
 				"bidder_1": {5, 10, 11, 32},
 			},
-			expectedSum:           58,
-			expectedCount:         4,
-			expectBucketsAndCount: map[int]int{5: 1, 10: 2, 30: 1},
+			expectedSum:   map[string]int{"bidder_1": 58},
+			expectedCount: map[string]int{"bidder_1": 4},
+			expectedBuckets: map[string]map[int]int{
+				"bidder_1": {5: 1, 10: 2, 30: 3},
+			},
+		},
+		{
+			description: "multiple bidders multiple ad durations",
+			bidderAdDurations: map[string][]int{
+				"bidder_1": {5, 10, 11, 32},
+				"bidder_2": {25, 30},
+			},
+			expectedSum:   map[string]int{"bidder_1": 58, "bidder_2": 55},
+			expectedCount: map[string]int{"bidder_1": 4, "bidder_2": 2},
+			expectedBuckets: map[string]map[int]int{
+				"bidder_1": {5: 1, 10: 2, 30: 3},
+				"bidder_2": {25: 1, 30: 2},
+			},
 		},
 	}
 
@@ -1042,12 +1057,14 @@ func TestRecordAdapterVideoBidDuration(t *testing.T) {
 				}
 				result := getHistogramFromHistogramVec(m.adapterVideoBidDuration, adapterLabel, adapterName)
 				for _, bucket := range result.GetBucket() {
-					cnt, ok := test.expectBucketsAndCount[int(bucket.GetUpperBound())]
+					cnt, ok := test.expectedBuckets[adapterName][int(bucket.GetUpperBound())]
 					if ok {
 						assert.Equal(t, uint64(cnt), bucket.GetCumulativeCount())
 					}
 				}
-				assertHistogram(t, "adapter_vidbid_dur", result, uint64(test.expectedCount), float64(test.expectedSum))
+				expectedCount := test.expectedCount[adapterName]
+				expectedSum := test.expectedSum[adapterName]
+				assertHistogram(t, "adapter_vidbid_dur", result, uint64(expectedCount), float64(expectedSum))
 			}
 		})
 	}
