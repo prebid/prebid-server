@@ -230,6 +230,13 @@ func (me *MultiMetricsEngine) RecordPodCompititveExclusionTime(labels pbsmetrics
 	}
 }
 
+// RecordAdapterVideoBidDuration as a noop
+func (me *MultiMetricsEngine) RecordAdapterVideoBidDuration(labels pbsmetrics.AdapterLabels, videoBidDuration int) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterVideoBidDuration(labels, videoBidDuration)
+	}
+}
+
 // DummyMetricsEngine is a Noop metrics engine in case no metrics are configured. (may also be useful for tests)
 type DummyMetricsEngine struct{}
 
@@ -309,7 +316,6 @@ func (me *DummyMetricsEngine) RecordRequestQueueTime(success bool, requestType p
 func (me *DummyMetricsEngine) RecordTimeoutNotice(success bool) {
 }
 
-
 // RecordAdapterDuplicateBidID as a noop
 func (me *DummyMetricsEngine) RecordAdapterDuplicateBidID(adaptor string, collisions int) {
 }
@@ -328,4 +334,8 @@ func (me *DummyMetricsEngine) RecordPodCombGenTime(labels pbsmetrics.PodLabels, 
 
 // RecordPodCompititveExclusionTime as a noop
 func (me *DummyMetricsEngine) RecordPodCompititveExclusionTime(labels pbsmetrics.PodLabels, elapsedTime time.Duration) {
+}
+
+// RecordAdapterVideoBidDuration ...
+func (me *DummyMetricsEngine) RecordAdapterVideoBidDuration(labels pbsmetrics.AdapterLabels, videoBidDuration int) {
 }

@@ -582,6 +582,10 @@ func (me *Metrics) RecordPodCombGenTime(labels PodLabels, elapsedTime time.Durat
 func (me *Metrics) RecordPodCompititveExclusionTime(labels PodLabels, elapsedTime time.Duration) {
 }
 
+// RecordAdapterVideoBidDuration as a noop
+func (me *Metrics) RecordAdapterVideoBidDuration(labels AdapterLabels, videoBidDuration int) {
+}
+
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {
 	met, ok := meters[bidder]
 	if ok {

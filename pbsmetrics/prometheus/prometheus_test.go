@@ -1011,6 +1011,48 @@ func TestRecordPodCompetitiveExclusionTime(t *testing.T) {
 	})
 }
 
+func TestRecordAdapterVideoBidDuration(t *testing.T) {
+
+	testCases := []struct {
+		description           string
+		bidderAdDurations     map[string][]int
+		expectedSum           int
+		expectedCount         int
+		expectBucketsAndCount map[int]int
+	}{
+		{
+			description: "single bidder multiple ad durations",
+			bidderAdDurations: map[string][]int{
+				"bidder_1": {5, 10, 11, 32},
+			},
+			expectedSum:           58,
+			expectedCount:         4,
+			expectBucketsAndCount: map[int]int{5: 1, 10: 2, 30: 1},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			m := createMetricsForTesting()
+			for adapterName, adDurations := range test.bidderAdDurations {
+				for _, adDuration := range adDurations {
+					m.RecordAdapterVideoBidDuration(pbsmetrics.AdapterLabels{
+						Adapter: openrtb_ext.BidderName(adapterName),
+					}, adDuration)
+				}
+				result := getHistogramFromHistogramVec(m.adapterVideoBidDuration, adapterLabel, adapterName)
+				for _, bucket := range result.GetBucket() {
+					cnt, ok := test.expectBucketsAndCount[int(bucket.GetUpperBound())]
+					if ok {
+						assert.Equal(t, uint64(cnt), bucket.GetCumulativeCount())
+					}
+				}
+				assertHistogram(t, "adapter_vidbid_dur", result, uint64(test.expectedCount), float64(test.expectedSum))
+			}
+		})
+	}
+}
+
 func testAlgorithmMetrics(t *testing.T, input int, f func(m *Metrics) dto.Histogram) {
 	// test input
 	adRequests := 2
