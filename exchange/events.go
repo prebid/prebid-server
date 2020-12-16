@@ -5,7 +5,6 @@ import (
 	"time"
 
 	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -38,22 +37,18 @@ func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Ti
 	}
 }
 
-// modifyVASTForWinningBids
-func (ev *eventTracking) modifyVASTForWinningBids(auc *auction) {
-	for impID, topBidsPerImp := range auc.winningBidsByBidder {
-		overallWinner := auc.winningBids[impID]
-		for bidderName, topBidPerBidder := range topBidsPerImp {
-			isOverallWinner := overallWinner.bid.ID == topBidPerBidder.bid.ID
-			if !isOverallWinner {
-				continue
+// modifyBidsForEvents adds bidEvents and modifies VAST AdM if necessary.
+func (ev *eventTracking) modifyBidsForEvents(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid) map[openrtb_ext.BidderName]*pbsOrtbSeatBid {
+	for bidderName, seatBid := range seatBids {
+		modifyingVastXMLAllowed := ev.isModifyingVASTXMLAllowed(bidderName.String())
+		for _, pbsBid := range seatBid.bids {
+			if modifyingVastXMLAllowed {
+				ev.modifyBidVAST(pbsBid, bidderName)
 			}
-			bid := topBidPerBidder.bid
-			if topBidPerBidder.bidType == openrtb_ext.BidTypeVideo && (len(bid.AdM) > 0 || len(bid.NURL) > 0) {
-				vastXML := makeVAST(bid)
-				bid.AdM = ev.modifyVAST(bid, bidderName, vastXML)
-			}
+			pbsBid.bidEvents = ev.makeBidExtEvents(pbsBid, bidderName)
 		}
 	}
+	return seatBids
 }
 
 // isModifyingVASTXMLAllowed returns true if this bidder config allows modifying VAST XML for event tracking
@@ -61,23 +56,31 @@ func (ev *eventTracking) isModifyingVASTXMLAllowed(bidderName string) bool {
 	return ev.bidderInfos[bidderName].ModifyingVastXmlAllowed && ev.enabledForAccount
 }
 
-// modifyVAST injects event Impression url if needed, otherwise returns original VAST string
-func (ev *eventTracking) modifyVAST(bid *openrtb.Bid, bidderName openrtb_ext.BidderName, vastXML string) string {
-	if ev.isModifyingVASTXMLAllowed(bidderName.String()) {
-		if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, vastXML, bid.ID, bidderName.String(), ev.accountID, ev.auctionTimestampMs); ok {
-			return newVastXML
-		}
+// modifyBidVAST injects event Impression url if needed, otherwise returns original VAST string
+func (ev *eventTracking) modifyBidVAST(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName) {
+	bid := pbsBid.bid
+	if pbsBid.bidType != openrtb_ext.BidTypeVideo || len(bid.AdM) == 0 && len(bid.NURL) == 0 {
+		return
 	}
-	return vastXML
+	vastXML := makeVAST(bid)
+	if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, vastXML, bid.ID, bidderName.String(), ev.accountID, ev.auctionTimestampMs); ok {
+		bid.AdM = newVastXML
+	}
 }
 
 // modifyBidJSON injects "wurl" (win) event url if needed, otherwise returns original json
-func (ev *eventTracking) modifyBidJSON(bid *openrtb.Bid, bidderName openrtb_ext.BidderName, jsonBytes []byte) []byte {
-	if !ev.enabledForAccount && !ev.enabledForRequest {
+func (ev *eventTracking) modifyBidJSON(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName, jsonBytes []byte) []byte {
+	if !ev.enabledForAccount && !ev.enabledForRequest || pbsBid.bidType == openrtb_ext.BidTypeVideo {
 		return jsonBytes
 	}
+	var winEventURL string
+	if pbsBid.bidEvents != nil { // All bids should have already been updated with win/imp event URLs
+		winEventURL = pbsBid.bidEvents.Win
+	} else {
+		winEventURL = ev.makeEventURL(analytics.Win, pbsBid, bidderName)
+	}
 	// wurl attribute is not in the schema, so we have to patch
-	if patch, err := json.Marshal(map[string]string{"wurl": ev.makeEventURL(analytics.Win, bid, bidderName)}); err == nil {
+	if patch, err := json.Marshal(map[string]string{"wurl": winEventURL}); err == nil {
 		if modifiedJSON, err := jsonpatch.MergePatch(jsonBytes, patch); err == nil {
 			jsonBytes = modifiedJSON
 		}
@@ -86,22 +89,22 @@ func (ev *eventTracking) modifyBidJSON(bid *openrtb.Bid, bidderName openrtb_ext.
 }
 
 // makeBidExtEvents make the data for bid.ext.prebid.events if needed, otherwise returns nil
-func (ev *eventTracking) makeBidExtEvents(bid *openrtb.Bid, bidderName openrtb_ext.BidderName) *openrtb_ext.ExtBidPrebidEvents {
-	if !ev.enabledForAccount && !ev.enabledForRequest {
+func (ev *eventTracking) makeBidExtEvents(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName) *openrtb_ext.ExtBidPrebidEvents {
+	if !ev.enabledForAccount && !ev.enabledForRequest || pbsBid.bidType == openrtb_ext.BidTypeVideo {
 		return nil
 	}
 	return &openrtb_ext.ExtBidPrebidEvents{
-		Win: ev.makeEventURL(analytics.Win, bid, bidderName),
-		Imp: ev.makeEventURL(analytics.Imp, bid, bidderName),
+		Win: ev.makeEventURL(analytics.Win, pbsBid, bidderName),
+		Imp: ev.makeEventURL(analytics.Imp, pbsBid, bidderName),
 	}
 }
 
 // makeEventURL returns an analytics event url for the requested type (win or imp)
-func (ev *eventTracking) makeEventURL(evType analytics.EventType, bid *openrtb.Bid, bidderName openrtb_ext.BidderName) string {
+func (ev *eventTracking) makeEventURL(evType analytics.EventType, pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName) string {
 	return events.EventRequestToUrl(ev.externalURL,
 		&analytics.EventRequest{
 			Type:      evType,
-			BidID:     bid.ID,
+			BidID:     pbsBid.bid.ID,
 			Bidder:    string(bidderName),
 			AccountID: ev.accountID,
 			Timestamp: ev.auctionTimestampMs,
