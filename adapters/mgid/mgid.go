@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type MgidAdapter struct {
@@ -166,8 +168,10 @@ func (a *MgidAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.Requ
 	return bidResponse, nil
 }
 
-func NewMgidBidder(endpoint string) *MgidAdapter {
-	return &MgidAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Mgid adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &MgidAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

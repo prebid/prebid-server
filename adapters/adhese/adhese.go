@@ -13,6 +13,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -267,11 +268,15 @@ func ContainsAny(raw string, keys []string) bool {
 
 }
 
-func NewAdheseBidder(uri string) *AdheseAdapter {
-	template, err := template.New("endpointTemplate").Parse(uri)
+// Builder builds a new instance of the Adhese adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &AdheseAdapter{endpointTemplate: *template}
+
+	bidder := &AdheseAdapter{
+		endpointTemplate: *template,
+	}
+	return bidder, nil
 }

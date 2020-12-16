@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -116,9 +117,12 @@ func preprocess(request *openrtb.BidRequest) error {
 	}
 
 	imp.Ext = impExtJSON
-	siteCopy := *request.Site
-	siteCopy.ID = ttxExt.SiteId
-	request.Site = &siteCopy
+
+	if request.Site != nil {
+		siteCopy := *request.Site
+		siteCopy.ID = ttxExt.SiteId
+		request.Site = &siteCopy
+	}
 
 	// Validate Video if it exists
 	if imp.Video != nil {
@@ -219,9 +223,10 @@ func getBidType(ext bidExt) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeBanner
 }
 
-// New33AcrossBidder configures bidder endpoint
-func New33AcrossBidder(endpoint string) *TtxAdapter {
-	return &TtxAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the 33Across adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &TtxAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

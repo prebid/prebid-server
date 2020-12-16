@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -683,21 +683,39 @@ func removeVideoElement(slice []beachfrontVideoRequest, s int) []beachfrontVideo
 	return append(slice[:s], slice[s+1:]...)
 }
 
-func NewBeachfrontBidder(bannerEndpoint string, extraAdapterInfo string) adapters.Bidder {
-	var extraInfo ExtraInfo
-
-	if len(extraAdapterInfo) == 0 {
-		extraAdapterInfo = "{\"video_endpoint\":\"" + defaultVideoEndpoint + "\"}"
+// Builder builds a new instance of the Beachfront adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := json.Unmarshal([]byte(extraAdapterInfo), &extraInfo); err != nil {
-		glog.Fatal("Invalid Beachfront extra adapter info: " + err.Error())
-		return nil
+	bidder := &BeachfrontAdapter{
+		bannerEndpoint: config.Endpoint,
+		extraInfo:      extraInfo,
+	}
+	return bidder, nil
+}
+
+func getExtraInfo(v string) (ExtraInfo, error) {
+	if len(v) == 0 {
+		return getDefaultExtraInfo(), nil
+	}
+
+	var extraInfo ExtraInfo
+	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
 	}
 
 	if extraInfo.VideoEndpoint == "" {
 		extraInfo.VideoEndpoint = defaultVideoEndpoint
 	}
 
-	return &BeachfrontAdapter{bannerEndpoint: bannerEndpoint, extraInfo: extraInfo}
+	return extraInfo, nil
+}
+
+func getDefaultExtraInfo() ExtraInfo {
+	return ExtraInfo{
+		VideoEndpoint: defaultVideoEndpoint,
+	}
 }

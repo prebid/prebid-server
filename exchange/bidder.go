@@ -3,6 +3,7 @@ package exchange
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,13 +14,13 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config/util"
+	"github.com/prebid/prebid-server/currency"
 
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	nativeResponse "github.com/mxmCherry/openrtb/native/response"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -48,7 +49,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -116,7 +117,7 @@ type bidderAdapterConfig struct {
 	DisableConnMetrics bool
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -445,7 +446,7 @@ type httpCallInfo struct {
 // endpoint is established, we can keep track of whether the connection was newly created, reused, and
 // the time from the connection request, to the connection creation.
 func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context {
-	var connStart, dnsStart time.Time
+	var connStart, dnsStart, tlsStart time.Time
 
 	trace := &httptrace.ClientTrace{
 		// GetConn is called before a connection is created or retrieved from an idle pool
@@ -467,6 +468,16 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 			dnsLookupTime := time.Now().Sub(dnsStart)
 
 			bidder.me.RecordDNSTime(dnsLookupTime)
+		},
+
+		TLSHandshakeStart: func() {
+			tlsStart = time.Now()
+		},
+
+		TLSHandshakeDone: func(tls.ConnectionState, error) {
+			tlsHandshakeTime := time.Now().Sub(tlsStart)
+
+			bidder.me.RecordTLSHandshakeTime(tlsHandshakeTime)
 		},
 	}
 	return httptrace.WithClientTrace(ctx, trace)
