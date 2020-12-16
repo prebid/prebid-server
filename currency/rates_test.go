@@ -1,4 +1,4 @@
-package currencies_test
+package currency
 
 import (
 	"encoding/json"
@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/prebid/prebid-server/currencies"
 )
 
 func TestUnMarshallRates(t *testing.T) {
@@ -15,7 +13,7 @@ func TestUnMarshallRates(t *testing.T) {
 	// Setup:
 	testCases := []struct {
 		ratesJSON     string
-		expectedRates currencies.Rates
+		expectedRates Rates
 		expectsError  bool
 	}{
 		{
@@ -30,7 +28,7 @@ func TestUnMarshallRates(t *testing.T) {
 					}
 				}
 			}`,
-			expectedRates: currencies.Rates{
+			expectedRates: Rates{
 				DataAsOf: time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
 				Conversions: map[string]map[string]float64{
 					"USD": {
@@ -55,7 +53,7 @@ func TestUnMarshallRates(t *testing.T) {
 					}
 				}
 			}`,
-			expectedRates: currencies.Rates{
+			expectedRates: Rates{
 				DataAsOf: time.Time{},
 				Conversions: map[string]map[string]float64{
 					"USD": {
@@ -80,7 +78,7 @@ func TestUnMarshallRates(t *testing.T) {
 					}
 				}
 			}`,
-			expectedRates: currencies.Rates{
+			expectedRates: Rates{
 				DataAsOf: time.Time{},
 				Conversions: map[string]map[string]float64{
 					"USD": {
@@ -105,14 +103,14 @@ func TestUnMarshallRates(t *testing.T) {
 					}
 				}
 			}`,
-			expectedRates: currencies.Rates{},
+			expectedRates: Rates{},
 			expectsError:  true,
 		},
 	}
 
 	for _, tc := range testCases {
 		// Execute:
-		updatedRates := currencies.Rates{}
+		updatedRates := Rates{}
 		err := json.Unmarshal([]byte(tc.ratesJSON), &updatedRates)
 
 		// Verify:
@@ -124,7 +122,7 @@ func TestUnMarshallRates(t *testing.T) {
 func TestGetRate(t *testing.T) {
 
 	// Setup:
-	rates := currencies.NewRates(time.Now(), map[string]map[string]float64{
+	rates := NewRates(time.Now(), map[string]map[string]float64{
 		"USD": {
 			"GBP": 0.77208,
 		},
@@ -167,7 +165,7 @@ func TestGetRate(t *testing.T) {
 func TestGetRate_ReverseConversion(t *testing.T) {
 
 	// Setup:
-	rates := currencies.NewRates(time.Now(), map[string]map[string]float64{
+	rates := NewRates(time.Now(), map[string]map[string]float64{
 		"USD": {
 			"GBP": 0.77208,
 		},
@@ -221,7 +219,7 @@ func TestGetRate_ReverseConversion(t *testing.T) {
 func TestGetRate_EmptyRates(t *testing.T) {
 
 	// Setup:
-	rates := currencies.NewRates(time.Time{}, nil)
+	rates := NewRates(time.Time{}, nil)
 
 	// Execute:
 	rate, err := rates.GetRate("USD", "EUR")
@@ -234,7 +232,7 @@ func TestGetRate_EmptyRates(t *testing.T) {
 func TestGetRate_NotValidISOCurrency(t *testing.T) {
 
 	// Setup:
-	rates := currencies.NewRates(time.Time{}, nil)
+	rates := NewRates(time.Time{}, nil)
 
 	testCases := []struct {
 		from         string

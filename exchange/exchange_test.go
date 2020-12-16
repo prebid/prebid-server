@@ -17,7 +17,7 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -58,7 +58,7 @@ func TestNewExchange(t *testing.T) {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
@@ -102,7 +102,7 @@ func TestCharacterEscape(t *testing.T) {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
@@ -245,7 +245,7 @@ func TestDebugBehaviour(t *testing.T) {
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.DummyMetricsEngine{}
 	e.gDPR = gdpr.AlwaysAllow{}
-	e.currencyConverter = currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 
 	// Run tests
@@ -439,7 +439,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.DummyMetricsEngine{}
 	e.gDPR = gdpr.AlwaysAllow{}
-	e.currencyConverter = currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 
 	// Define mock incoming bid requeset
@@ -527,7 +527,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	pbc := pbc.NewClient(&http.Client{}, &cfg.CacheURL, &cfg.ExtCacheURL, testEngine)
 	e := NewExchange(adapters, pbc, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
@@ -721,7 +721,7 @@ func TestBidReturnsCreative(t *testing.T) {
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.DummyMetricsEngine{}
 	e.gDPR = gdpr.AlwaysAllow{}
-	e.currencyConverter = currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	//Run tests
 	for _, test := range testCases {
@@ -877,7 +877,7 @@ func TestBidResponseCurrency(t *testing.T) {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
@@ -1051,7 +1051,7 @@ func TestRaceIntegration(t *testing.T) {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	auctionRequest := AuctionRequest{
 		BidRequest: newRaceCheckingRequest(t),
@@ -1148,11 +1148,11 @@ func TestPanicRecovery(t *testing.T) {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	chBids := make(chan *bidResponseWrapper, 1)
-	panicker := func(bidderRequest BidderRequest, conversions currencies.Conversions) {
+	panicker := func(bidderRequest BidderRequest, conversions currency.Conversions) {
 		panic("panic!")
 	}
 
@@ -1234,7 +1234,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
@@ -1522,7 +1522,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		cache:               &wellBehavedCache{},
 		cacheTime:           0,
 		gDPR:                gdpr.AlwaysFail{},
-		currencyConverter:   currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		currencyConverter:   currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		UsersyncIfAmbiguous: privacyConfig.GDPR.UsersyncIfAmbiguous,
 		privacyConfig:       privacyConfig,
 		categoriesFetcher:   categoriesFetcher,
@@ -2608,7 +2608,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (seatBid *pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(name)]; ok {
 		if expectedRequest != nil {
 			if expectedRequest.BidAdjustment != bidAdjustment {
@@ -2787,7 +2787,7 @@ func (e *mockUsersync) LiveSyncCount() int {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (posb *pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (posb *pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 

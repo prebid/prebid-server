@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/endpoints/events"
 	"github.com/prebid/prebid-server/errortypes"
 
@@ -33,7 +34,6 @@ import (
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/endpoints"
 	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
@@ -174,7 +174,7 @@ type Router struct {
 	Shutdown        func()
 }
 
-func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r *Router, err error) {
+func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *Router, err error) {
 	const schemaDirectory = "./static/bidder-params"
 	const infoDirectory = "./static/bidder-info"
 

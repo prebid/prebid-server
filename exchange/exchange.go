@@ -21,7 +21,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -56,7 +56,7 @@ type exchange struct {
 	cache               prebid_cache_client.Client
 	cacheTime           time.Duration
 	gDPR                gdpr.Permissions
-	currencyConverter   *currencies.RateConverter
+	currencyConverter   *currency.RateConverter
 	UsersyncIfAmbiguous bool
 	privacyConfig       config.Privacy
 	categoriesFetcher   stored_requests.CategoryFetcher
@@ -77,7 +77,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
 	return &exchange{
 		adapterMap:          adapters,
 		cache:               cache,
@@ -336,7 +336,7 @@ func (e *exchange) getAllBids(
 	ctx context.Context,
 	bidderRequests []BidderRequest,
 	bidAdjustments map[string]float64,
-	conversions currencies.Conversions) (
+	conversions currency.Conversions) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -347,7 +347,7 @@ func (e *exchange) getAllBids(
 
 	for _, bidder := range bidderRequests {
 		// Here we actually call the adapters and collect the bids.
-		bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currencies.Conversions) {
+		bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currency.Conversions) {
 			// Passing in aName so a doesn't change out from under the go routine
 			if bidderRequest.BidderLabels.Adapter == "" {
 				glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", bidderRequest.BidderName, bidderRequest.BidderCoreName)
@@ -418,9 +418,9 @@ func (e *exchange) getAllBids(
 }
 
 func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
-	inner func(BidderRequest, currencies.Conversions),
-	chBids chan *bidResponseWrapper) func(BidderRequest, currencies.Conversions) {
-	return func(bidderRequest BidderRequest, conversions currencies.Conversions) {
+	inner func(BidderRequest, currency.Conversions),
+	chBids chan *bidResponseWrapper) func(BidderRequest, currency.Conversions) {
+	return func(bidderRequest BidderRequest, conversions currency.Conversions) {
 		defer func() {
 			if r := recover(); r != nil {
 
