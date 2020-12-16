@@ -365,6 +365,9 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 					var cpm = float64(bid.bid.Price * 1000)
 					e.me.RecordAdapterPrice(*bidlabels, cpm)
 					e.me.RecordAdapterBidReceived(*bidlabels, bid.bidType, bid.bid.AdM != "")
+					if bid.bidType == openrtb_ext.BidTypeVideo && bid.bidVideo != nil {
+						e.me.RecordAdapterVideoBidDuration(*bidlabels, bid.bidVideo.Duration)
+					}
 				}
 			}
 			chBids <- brw

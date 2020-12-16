@@ -315,4 +315,7 @@ type MetricsEngine interface {
 	// elapsedTime indicates the time taken by competitive exclusion to form final ad pod response using combinations and exclusion algorithm
 	// This function will take care of computing the elpased time
 	RecordPodCompititveExclusionTime(labels PodLabels, elapsedTime time.Duration)
+
+	//RecordAdapterVideoBidDuration records actual ad duration returned by the bidder
+	RecordAdapterVideoBidDuration(labels AdapterLabels, videoBidDuration int)
 }
