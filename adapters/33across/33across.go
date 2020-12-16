@@ -56,8 +56,8 @@ func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters
 	var adapterRequests []*adapters.RequestData
 
 	// Construct request extension common to all imps
-	// NOTE: not blocking errors since request extension
-	// is optional.
+	// NOTE: not blocking adapter requests on errors
+	// since request extension is optional.
 	reqExt, err := makeReqExt(request)
 	if err != nil {
 		errs = append(errs, err)
