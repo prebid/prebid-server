@@ -81,14 +81,6 @@ func (a *Adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 
 }
 
-func getBidCount(bidResponse openrtb.BidResponse) int {
-	c := 0
-	for _, sb := range bidResponse.SeatBid {
-		c = c + len(sb.Bid)
-	}
-	return c
-}
-
 func getBidType(bidAdm string) openrtb_ext.BidType {
 	// native: {"ver":"1.1","assets":...
 	// banner: <div id='rtb-widget...
