@@ -36,7 +36,20 @@ import (
 
 var defaultRequestTimeout int64 = 5000
 
-func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, videoFetcher stored_requests.Fetcher, accounts stored_requests.AccountFetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, cache prebid_cache_client.Client) (httprouter.Handle, error) {
+func NewVideoEndpoint(
+	ex exchange.Exchange,
+	validator openrtb_ext.BidderParamValidator,
+	requestsById stored_requests.Fetcher,
+	videoFetcher stored_requests.Fetcher,
+	accounts stored_requests.AccountFetcher,
+	cfg *config.Configuration,
+	met pbsmetrics.MetricsEngine,
+	pbsAnalytics analytics.PBSAnalyticsModule,
+	disabledBidders map[string]string,
+	defReqJSON []byte,
+	bidderMap map[string]openrtb_ext.BidderName,
+	cache prebid_cache_client.Client,
+) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewVideoEndpoint requires non-nil arguments.")
@@ -57,7 +70,6 @@ func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamVal
 		requestsById,
 		videoFetcher,
 		accounts,
-		categories,
 		cfg,
 		met,
 		pbsAnalytics,
@@ -94,18 +106,18 @@ func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamVal
 11. Build proper response format.
 */
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	start := time.Now()
 
 	vo := analytics.VideoObject{
-		Status: http.StatusOK,
-		Errors: make([]error, 0),
+		Status:    http.StatusOK,
+		Errors:    make([]error, 0),
+		StartTime: start,
 	}
 
-	start := time.Now()
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeVideo,
 		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       getBrowserName(r),
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
@@ -261,8 +273,17 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		handleError(&labels, w, acctIDErrs, &vo, &debugLog)
 		return
 	}
-	//execute auction logic
-	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, account, &deps.categories, &debugLog)
+
+	auctionRequest := exchange.AuctionRequest{
+		BidRequest:   bidReq,
+		Account:      *account,
+		UserSyncs:    usersyncs,
+		RequestType:  labels.RType,
+		StartTime:    start,
+		LegacyLabels: labels,
+	}
+
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
 	vo.Request = bidReq
 	vo.Response = response
 	if err != nil {

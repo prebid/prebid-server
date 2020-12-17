@@ -8,6 +8,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -226,11 +227,15 @@ func getMediaTypeForImpID(impID string, imps []openrtb.Imp) openrtb_ext.BidType 
 	return openrtb_ext.BidTypeBanner
 }
 
-// NewLunaMediaAdapter to be called in prebid-server core to create LunaMedia adapter instance
-func NewLunaMediaBidder(endpointTemplate string) adapters.Bidder {
-	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
+// Builder builds a new instance of the LunaMedia adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	urlTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &LunaMediaAdapter{EndpointTemplate: *template}
+
+	bidder := &LunaMediaAdapter{
+		EndpointTemplate: *urlTemplate,
+	}
+	return bidder, nil
 }

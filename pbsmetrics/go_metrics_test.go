@@ -16,8 +16,6 @@ func TestNewMetrics(t *testing.T) {
 
 	ensureContains(t, registry, "app_requests", m.AppRequestMeter)
 	ensureContains(t, registry, "no_cookie_requests", m.NoCookieMeter)
-	ensureContains(t, registry, "safari_requests", m.SafariRequestMeter)
-	ensureContains(t, registry, "safari_no_cookie_requests", m.SafariNoCookieMeter)
 	ensureContains(t, registry, "request_time", m.RequestTimer)
 	ensureContains(t, registry, "amp_no_cookie_requests", m.AmpNoCookieMeter)
 	ensureContainsAdapterMetrics(t, registry, "adapter.appnexus", m.AdapterMetrics["appnexus"])
@@ -208,6 +206,33 @@ func TestRecordDNSTime(t *testing.T) {
 		m.RecordDNSTime(test.inDnsLookupDuration)
 
 		assert.Equal(t, test.outExpDuration.Nanoseconds(), m.DNSLookupTimer.Sum(), test.description)
+	}
+}
+
+func TestRecordTLSHandshakeTime(t *testing.T) {
+	testCases := []struct {
+		description          string
+		tLSHandshakeDuration time.Duration
+		expectedDuration     time.Duration
+	}{
+		{
+			description:          "Five second TLS handshake time",
+			tLSHandshakeDuration: time.Second * 5,
+			expectedDuration:     time.Second * 5,
+		},
+		{
+			description:          "Zero TLS handshake time",
+			tLSHandshakeDuration: time.Duration(0),
+			expectedDuration:     time.Duration(0),
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
+
+		m.RecordTLSHandshakeTime(test.tLSHandshakeDuration)
+
+		assert.Equal(t, test.expectedDuration.Nanoseconds(), m.TLSHandshakeTimer.Sum(), test.description)
 	}
 }
 

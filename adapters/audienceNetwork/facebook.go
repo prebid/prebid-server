@@ -11,29 +11,28 @@ import (
 	"strings"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/maputil"
 
 	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 )
-
-type FacebookAdapter struct {
-	URI          string
-	nonSecureUri string
-	platformID   string
-	appSecret    string
-}
-
-type facebookAdMarkup struct {
-	BidID string `json:"bid_id"`
-}
 
 var supportedBannerHeights = map[uint64]bool{
 	50:  true,
 	250: true,
+}
+
+type FacebookAdapter struct {
+	URI        string
+	platformID string
+	appSecret  string
+}
+
+type facebookAdMarkup struct {
+	BidID string `json:"bid_id"`
 }
 
 type facebookReqExt struct {
@@ -429,30 +428,22 @@ func resolveImpType(imp *openrtb.Imp) (openrtb_ext.BidType, bool) {
 	return openrtb_ext.BidTypeBanner, false
 }
 
-func NewFacebookBidder(platformID string, appSecret string) adapters.Bidder {
-	if platformID == "" {
-		glog.Errorf("No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?")
-		return &adapters.MisconfiguredBidder{
-			Name:  "audienceNetwork",
-			Error: errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
-		}
+// Builder builds a new instance of Facebook's Audience Network adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	if config.PlatformID == "" {
+		return nil, errors.New("PartnerID is not configured. Did you set adapters.facebook.platform_id in the app config?")
 	}
 
-	if appSecret == "" {
-		glog.Errorf("No facebook app secret specified. Calls to the Audience Network will fail. Did you set adapters.facebook.app_secret in the app config?")
-		return &adapters.MisconfiguredBidder{
-			Name:  "audienceNetwork",
-			Error: errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
-		}
+	if config.AppSecret == "" {
+		return nil, errors.New("AppSecret is not configured. Did you set adapters.facebook.app_secret in the app config?")
 	}
 
-	return &FacebookAdapter{
-		URI: "https://an.facebook.com/placementbid.ortb",
-		//for AB test
-		nonSecureUri: "http://an.facebook.com/placementbid.ortb",
-		platformID:   platformID,
-		appSecret:    appSecret,
+	bidder := &FacebookAdapter{
+		URI:        config.Endpoint,
+		platformID: config.PlatformID,
+		appSecret:  config.AppSecret,
 	}
+	return bidder, nil
 }
 
 func (fa *FacebookAdapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {

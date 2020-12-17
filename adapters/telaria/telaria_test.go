@@ -1,34 +1,34 @@
 package telaria
 
 import (
-	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"testing"
+
+	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
-/**
- * Verify adapter names are setup correctly.
- */
-func TestTelariaAdapterNames(t *testing.T) {
-	adapter := NewTelariaBidder("")
-	adapterstest.VerifyStringValue(adapter.Name(), "telaria", t)
-}
+func TestEndpointFromConfig(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderTelaria, config.Adapter{
+		Endpoint: "providedurl.com",
+	})
 
-/**
- * Verify adapter SkipNoCookie is correct.
- */
-func TestTelariaAdapterSkipNoCookiesFlag(t *testing.T) {
-	adapter := NewTelariaBidder("")
-	adapterstest.VerifyBoolValue(adapter.SkipNoCookies(), false, t)
-}
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
 
-/**
- * Verify bidder has the proper URL
- */
-func TestTelariaAdapterEndpoint(t *testing.T) {
-	adapter := NewTelariaBidder("")
-	adapterstest.VerifyStringValue(adapter.URI, "https://ads.tremorhub.com/ad/rtb/prebid", t)
+	bidderTelari := bidder.(*TelariaAdapter)
+
+	assert.Equal(t, "providedurl.com", bidderTelari.URI)
 }
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "telariatest", NewTelariaBidder(""))
+	bidder, buildErr := Builder(openrtb_ext.BidderTelaria, config.Adapter{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "telariatest", bidder)
 }
