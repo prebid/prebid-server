@@ -39,27 +39,24 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "status": 200,
-          "body": {
-            "id": "test-request-id",
-            "seatbid": [
-              {
-                "seat": "adot",
-                "bid": [{
-                  "id": "test-request-audio-id",
-                  "impid": "test-imp-audio-id",
-                  "price": 1.16346,
-                  "adm": "some-audio-ad",
-                  "ext": {
-                    "adot": {
-                      "media_type": "audio"
-                    }
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "adot",
+              "bid": [{
+                "id": "test-request-audio-id",
+                "impid": "test-imp-audio-id",
+                "price": 1.16346,
+                "adm": "some-audio-ad",
+                "ext": {
+                  "adot": {
+                    "media_type": "audio"
                   }
-                }]
-              }
-            ],
-            "cur": "USD"
-          }
+                }
+              }]
+            }
+          ],
+          "cur": "USD"
         }
       }
     }
