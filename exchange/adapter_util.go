@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/ix"
@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func BuildAdapters(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+func BuildAdapters(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
 	exchangeBidders := buildExchangeBiddersLegacy(cfg.Adapters, infos)
 
 	exchangeBiddersModern, errs := buildExchangeBidders(cfg, infos, client, me)
@@ -32,7 +32,7 @@ func BuildAdapters(client *http.Client, cfg *config.Configuration, infos adapter
 	return exchangeBidders, nil
 }
 
-func buildExchangeBidders(cfg *config.Configuration, infos adapters.BidderInfos, client *http.Client, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+func buildExchangeBidders(cfg *config.Configuration, infos adapters.BidderInfos, client *http.Client, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
 	bidders, errs := buildBidders(cfg.Adapters, infos, newAdapterBuilders())
 	if len(errs) > 0 {
 		return nil, errs

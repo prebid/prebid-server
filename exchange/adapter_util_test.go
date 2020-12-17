@@ -15,8 +15,8 @@ import (
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
+	metrics "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	metrics "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -6,17 +6,17 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests/caches/nil_cache"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-func setupFetcherWithCacheDeps() (*mockCache, *mockCache, *mockFetcher, AllFetcher, *pbsmetrics.MetricsEngineMock) {
+func setupFetcherWithCacheDeps() (*mockCache, *mockCache, *mockFetcher, AllFetcher, *metrics.MetricsEngineMock) {
 	reqCache := &mockCache{}
 	impCache := &mockCache{}
-	metricsEngine := &pbsmetrics.MetricsEngineMock{}
+	metricsEngine := &metrics.MetricsEngineMock{}
 	fetcher := &mockFetcher{}
 	afetcherWithCache := WithCache(fetcher, Cache{reqCache, impCache, &nil_cache.NilCache{}}, metricsEngine)
 
@@ -37,10 +37,10 @@ func TestPerfectCache(t *testing.T) {
 		map[string]json.RawMessage{
 			"known": json.RawMessage(`{}`),
 		})
-	metricsEngine.On("RecordStoredReqCacheResult", pbsmetrics.CacheHit, 1)
-	metricsEngine.On("RecordStoredReqCacheResult", pbsmetrics.CacheMiss, 0)
-	metricsEngine.On("RecordStoredImpCacheResult", pbsmetrics.CacheHit, 1)
-	metricsEngine.On("RecordStoredImpCacheResult", pbsmetrics.CacheMiss, 0)
+	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 1)
+	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
+	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 1)
+	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheMiss, 0)
 
 	reqData, impData, errs := aFetcherWithCache.FetchRequests(ctx, reqIDs, impIDs)
 
@@ -77,10 +77,10 @@ func TestImperfectCache(t *testing.T) {
 			"uncached": json.RawMessage(`false`),
 		})
 	reqCache.On("Save", ctx, map[string]json.RawMessage{})
-	metricsEngine.On("RecordStoredReqCacheResult", pbsmetrics.CacheHit, 0)
-	metricsEngine.On("RecordStoredReqCacheResult", pbsmetrics.CacheMiss, 0)
-	metricsEngine.On("RecordStoredImpCacheResult", pbsmetrics.CacheHit, 1)
-	metricsEngine.On("RecordStoredImpCacheResult", pbsmetrics.CacheMiss, 1)
+	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 0)
+	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
+	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 1)
+	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheMiss, 1)
 
 	reqData, impData, errs := aFetcherWithCache.FetchRequests(ctx, nil, impIDs)
 
@@ -116,10 +116,10 @@ func TestMissingData(t *testing.T) {
 	reqCache.On("Save", ctx,
 		map[string]json.RawMessage{},
 	)
-	metricsEngine.On("RecordStoredReqCacheResult", pbsmetrics.CacheHit, 0)
-	metricsEngine.On("RecordStoredReqCacheResult", pbsmetrics.CacheMiss, 0)
-	metricsEngine.On("RecordStoredImpCacheResult", pbsmetrics.CacheHit, 0)
-	metricsEngine.On("RecordStoredImpCacheResult", pbsmetrics.CacheMiss, 1)
+	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 0)
+	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
+	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 0)
+	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheMiss, 1)
 
 	reqData, impData, errs := aFetcherWithCache.FetchRequests(ctx, nil, impIDs)
 
@@ -144,10 +144,10 @@ func TestCacheSaves(t *testing.T) {
 		})
 	reqCache.On("Get", ctx, []string(nil)).Return(
 		map[string]json.RawMessage{})
-	metricsEngine.On("RecordStoredReqCacheResult", pbsmetrics.CacheHit, 0)
-	metricsEngine.On("RecordStoredReqCacheResult", pbsmetrics.CacheMiss, 0)
-	metricsEngine.On("RecordStoredImpCacheResult", pbsmetrics.CacheHit, 2)
-	metricsEngine.On("RecordStoredImpCacheResult", pbsmetrics.CacheMiss, 0)
+	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 0)
+	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
+	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 2)
+	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheMiss, 0)
 
 	_, impData, errs := aFetcherWithCache.FetchRequests(ctx, nil, []string{"abc", "abc"})
 
@@ -159,9 +159,9 @@ func TestCacheSaves(t *testing.T) {
 	assert.Len(t, errs, 0, "FetchRequests with duplicate IDs shouldn't return an error")
 }
 
-func setupAccountFetcherWithCacheDeps() (*mockCache, *mockFetcher, AllFetcher, *pbsmetrics.MetricsEngineMock) {
+func setupAccountFetcherWithCacheDeps() (*mockCache, *mockFetcher, AllFetcher, *metrics.MetricsEngineMock) {
 	accCache := &mockCache{}
-	metricsEngine := &pbsmetrics.MetricsEngineMock{}
+	metricsEngine := &metrics.MetricsEngineMock{}
 	fetcher := &mockFetcher{}
 	afetcherWithCache := WithCache(fetcher, Cache{&nil_cache.NilCache{}, &nil_cache.NilCache{}, accCache}, metricsEngine)
 
@@ -179,7 +179,7 @@ func TestAccountCacheHit(t *testing.T) {
 			"known": json.RawMessage(`true`),
 		})
 
-	metricsEngine.On("RecordAccountCacheResult", pbsmetrics.CacheHit, 1)
+	metricsEngine.On("RecordAccountCacheResult", metrics.CacheHit, 1)
 	account, errs := aFetcherWithCache.FetchAccount(ctx, "known")
 
 	accCache.AssertExpectations(t)
@@ -201,7 +201,7 @@ func TestAccountCacheMiss(t *testing.T) {
 	accCache.On("Get", ctx, uncachedAccounts).Return(map[string]json.RawMessage{})
 	accCache.On("Save", ctx, uncachedAccountsData)
 	fetcher.On("FetchAccount", ctx, "uncached").Return(uncachedAccountsData["uncached"], []error{})
-	metricsEngine.On("RecordAccountCacheResult", pbsmetrics.CacheMiss, 1)
+	metricsEngine.On("RecordAccountCacheResult", metrics.CacheMiss, 1)
 
 	account, errs := aFetcherWithCache.FetchAccount(ctx, "uncached")
 
@@ -222,7 +222,7 @@ func TestComposedCache(t *testing.T) {
 		Requests: ComposedCache{c1, c2, c3, c4},
 		Imps:     impCache,
 	}
-	metricsEngine := &pbsmetrics.MetricsEngineMock{}
+	metricsEngine := &metrics.MetricsEngineMock{}
 	fetcher := &mockFetcher{}
 	aFetcherWithCache := WithCache(fetcher, cache, metricsEngine)
 	reqIDs := []string{"1", "2", "3"}
@@ -242,10 +242,10 @@ func TestComposedCache(t *testing.T) {
 			"3": json.RawMessage(`{"id": "3"}`),
 		})
 	impCache.On("Get", ctx, []string{}).Return(map[string]json.RawMessage{})
-	metricsEngine.On("RecordStoredReqCacheResult", pbsmetrics.CacheHit, 3)
-	metricsEngine.On("RecordStoredReqCacheResult", pbsmetrics.CacheMiss, 0)
-	metricsEngine.On("RecordStoredImpCacheResult", pbsmetrics.CacheHit, 0)
-	metricsEngine.On("RecordStoredImpCacheResult", pbsmetrics.CacheMiss, 0)
+	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 3)
+	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
+	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 0)
+	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheMiss, 0)
 
 	reqData, impData, errs := aFetcherWithCache.FetchRequests(ctx, reqIDs, impIDs)
 

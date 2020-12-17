@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -42,7 +42,7 @@ type dbConnection struct {
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *httprouter.Router, dbc *dbConnection) (fetcher stored_requests.AllFetcher, shutdown func()) {
+func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router, dbc *dbConnection) (fetcher stored_requests.AllFetcher, shutdown func()) {
 	// Create database connection if given options for one
 	if cfg.Postgres.ConnectionInfo.Database != "" {
 		conn := cfg.Postgres.ConnectionInfo.ConnString()
@@ -107,7 +107,7 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine pbsmetrics.M
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *httprouter.Router) (db *sql.DB, shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, accountsFetcher stored_requests.AccountFetcher, categoriesFetcher stored_requests.CategoryFetcher, videoFetcher stored_requests.Fetcher) {
+func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router) (db *sql.DB, shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, accountsFetcher stored_requests.AccountFetcher, categoriesFetcher stored_requests.CategoryFetcher, videoFetcher stored_requests.Fetcher) {
 	// TODO: Switch this to be set in config defaults
 	//if cfg.CategoryMapping.CacheEvents.Enabled && cfg.CategoryMapping.CacheEvents.Endpoint == "" {
 	//	cfg.CategoryMapping.CacheEvents.Endpoint = "/storedrequest/categorymapping"
@@ -190,7 +190,7 @@ func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 	return cache
 }
 
-func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, metricsEngine pbsmetrics.MetricsEngine, router *httprouter.Router) (eventProducers []events.EventProducer) {
+func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, metricsEngine metrics.MetricsEngine, router *httprouter.Router) (eventProducers []events.EventProducer) {
 	if cfg.CacheEvents.Enabled {
 		eventProducers = append(eventProducers, newEventsAPI(router, cfg.CacheEvents.Endpoint))
 	}

@@ -22,8 +22,8 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -91,7 +91,7 @@ type pbsOrtbSeatBid struct {
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me pbsmetrics.MetricsEngine, name openrtb_ext.BidderName) adaptedBidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName) adaptedBidder {
 	return &bidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
@@ -108,7 +108,7 @@ type bidderAdapter struct {
 	Bidder     adapters.Bidder
 	BidderName openrtb_ext.BidderName
 	Client     *http.Client
-	me         pbsmetrics.MetricsEngine
+	me         metrics.MetricsEngine
 	config     bidderAdapterConfig
 }
 

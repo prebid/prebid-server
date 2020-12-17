@@ -3,12 +3,12 @@ package prometheusmetrics
 import (
 	"strconv"
 
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 func actionsAsString() []string {
-	values := pbsmetrics.RequestActions()
+	values := metrics.RequestActions()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)
@@ -26,7 +26,7 @@ func adaptersAsString() []string {
 }
 
 func adapterErrorsAsString() []string {
-	values := pbsmetrics.AdapterErrors()
+	values := metrics.AdapterErrors()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)
@@ -42,7 +42,7 @@ func boolValuesAsString() []string {
 }
 
 func cookieTypesAsString() []string {
-	values := pbsmetrics.CookieTypes()
+	values := metrics.CookieTypes()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)
@@ -51,7 +51,7 @@ func cookieTypesAsString() []string {
 }
 
 func cacheResultsAsString() []string {
-	values := pbsmetrics.CacheResults()
+	values := metrics.CacheResults()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)
@@ -60,7 +60,7 @@ func cacheResultsAsString() []string {
 }
 
 func requestStatusesAsString() []string {
-	values := pbsmetrics.RequestStatuses()
+	values := metrics.RequestStatuses()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)
@@ -69,7 +69,7 @@ func requestStatusesAsString() []string {
 }
 
 func requestTypesAsString() []string {
-	values := pbsmetrics.RequestTypes()
+	values := metrics.RequestTypes()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)
@@ -78,7 +78,7 @@ func requestTypesAsString() []string {
 }
 
 func storedDataTypesAsString() []string {
-	values := pbsmetrics.StoredDataTypes()
+	values := metrics.StoredDataTypes()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)
@@ -87,7 +87,7 @@ func storedDataTypesAsString() []string {
 }
 
 func storedDataFetchTypesAsString() []string {
-	values := pbsmetrics.StoredDataFetchTypes()
+	values := metrics.StoredDataFetchTypes()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)
@@ -96,7 +96,7 @@ func storedDataFetchTypesAsString() []string {
 }
 
 func storedDataErrorsAsString() []string {
-	values := pbsmetrics.StoredDataErrors()
+	values := metrics.StoredDataErrors()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)
@@ -105,7 +105,7 @@ func storedDataErrorsAsString() []string {
 }
 
 func tcfVersionsAsString() []string {
-	values := pbsmetrics.TCFVersions()
+	values := metrics.TCFVersions()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)
