@@ -27,6 +27,16 @@
       "expectedRequest": {
         "uri": "http://ssc.33across.com",
         "body": {
+          "ext": {
+            "ttx": {
+              "caller": [
+                {
+                  "name": "Prebid-Server",
+                  "version": "n/a"
+                }
+              ]
+            }
+          },
           "id": "test-request-id",
           "imp": [
             {
@@ -41,14 +51,13 @@
               },
               "ext": {
                 "ttx": {
-                  "prod": "siab"
+                  "prod": "siab",
+                  "zoneid": "fake-site-id"
                 }
               }
             }
           ],
-          "site": {
-            "id": "fake-site-id"
-          }
+          "site": {}
         }
       },
       "mockResponse": {

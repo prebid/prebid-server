@@ -1,17 +1,15 @@
-package currencies_test
+package currency
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/prebid/prebid-server/currencies"
 )
 
 func TestGetRate_ConstantRates(t *testing.T) {
 
 	// Setup:
-	rates := currencies.NewConstantRates()
+	rates := NewConstantRates()
 
 	testCases := []struct {
 		from         string
@@ -48,7 +46,7 @@ func TestGetRate_ConstantRates(t *testing.T) {
 func TestGetRate_ConstantRates_NotValidISOCurrency(t *testing.T) {
 
 	// Setup:
-	rates := currencies.NewConstantRates()
+	rates := NewConstantRates()
 
 	testCases := []struct {
 		from         string

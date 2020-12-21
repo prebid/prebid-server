@@ -21,11 +21,11 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
@@ -52,11 +52,11 @@ type IdFetcher interface {
 
 type exchange struct {
 	adapterMap          map[openrtb_ext.BidderName]adaptedBidder
-	me                  pbsmetrics.MetricsEngine
+	me                  metrics.MetricsEngine
 	cache               prebid_cache_client.Client
 	cacheTime           time.Duration
 	gDPR                gdpr.Permissions
-	currencyConverter   *currencies.RateConverter
+	currencyConverter   *currency.RateConverter
 	UsersyncIfAmbiguous bool
 	privacyConfig       config.Privacy
 	categoriesFetcher   stored_requests.CategoryFetcher
@@ -77,7 +77,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
 	return &exchange{
 		adapterMap:          adapters,
 		cache:               cache,
@@ -101,12 +101,12 @@ type AuctionRequest struct {
 	BidRequest  *openrtb.BidRequest
 	Account     config.Account
 	UserSyncs   IdFetcher
-	RequestType pbsmetrics.RequestType
+	RequestType metrics.RequestType
 	StartTime   time.Time
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
-	LegacyLabels pbsmetrics.Labels
+	LegacyLabels metrics.Labels
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -115,7 +115,7 @@ type BidderRequest struct {
 	BidRequest     *openrtb.BidRequest
 	BidderName     openrtb_ext.BidderName
 	BidderCoreName openrtb_ext.BidderName
-	BidderLabels   pbsmetrics.AdapterLabels
+	BidderLabels   metrics.AdapterLabels
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb.BidResponse, error) {
@@ -248,9 +248,9 @@ func (e *exchange) parseUsersyncIfAmbiguous(bidRequest *openrtb.BidRequest) bool
 	return usersyncIfAmbiguous
 }
 
-func recordImpMetrics(bidRequest *openrtb.BidRequest, metricsEngine pbsmetrics.MetricsEngine) {
+func recordImpMetrics(bidRequest *openrtb.BidRequest, metricsEngine metrics.MetricsEngine) {
 	for _, impInRequest := range bidRequest.Imp {
-		var impLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
+		var impLabels metrics.ImpLabels = metrics.ImpLabels{
 			BannerImps: impInRequest.Banner != nil,
 			VideoImps:  impInRequest.Video != nil,
 			AudioImps:  impInRequest.Audio != nil,
@@ -336,7 +336,7 @@ func (e *exchange) getAllBids(
 	ctx context.Context,
 	bidderRequests []BidderRequest,
 	bidAdjustments map[string]float64,
-	conversions currencies.Conversions) (
+	conversions currency.Conversions) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -347,7 +347,7 @@ func (e *exchange) getAllBids(
 
 	for _, bidder := range bidderRequests {
 		// Here we actually call the adapters and collect the bids.
-		bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currencies.Conversions) {
+		bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currency.Conversions) {
 			// Passing in aName so a doesn't change out from under the go routine
 			if bidderRequest.BidderLabels.Adapter == "" {
 				glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", bidderRequest.BidderName, bidderRequest.BidderCoreName)
@@ -418,9 +418,9 @@ func (e *exchange) getAllBids(
 }
 
 func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
-	inner func(BidderRequest, currencies.Conversions),
-	chBids chan *bidResponseWrapper) func(BidderRequest, currencies.Conversions) {
-	return func(bidderRequest BidderRequest, conversions currencies.Conversions) {
+	inner func(BidderRequest, currency.Conversions),
+	chBids chan *bidResponseWrapper) func(BidderRequest, currency.Conversions) {
+	return func(bidderRequest BidderRequest, conversions currency.Conversions) {
 		defer func() {
 			if r := recover(); r != nil {
 
@@ -448,31 +448,31 @@ func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
 	}
 }
 
-func bidsToMetric(bids *pbsOrtbSeatBid) pbsmetrics.AdapterBid {
+func bidsToMetric(bids *pbsOrtbSeatBid) metrics.AdapterBid {
 	if bids == nil || len(bids.bids) == 0 {
-		return pbsmetrics.AdapterBidNone
+		return metrics.AdapterBidNone
 	}
-	return pbsmetrics.AdapterBidPresent
+	return metrics.AdapterBidPresent
 }
 
-func errorsToMetric(errs []error) map[pbsmetrics.AdapterError]struct{} {
+func errorsToMetric(errs []error) map[metrics.AdapterError]struct{} {
 	if len(errs) == 0 {
 		return nil
 	}
-	ret := make(map[pbsmetrics.AdapterError]struct{}, len(errs))
+	ret := make(map[metrics.AdapterError]struct{}, len(errs))
 	var s struct{}
 	for _, err := range errs {
 		switch errortypes.ReadCode(err) {
 		case errortypes.TimeoutErrorCode:
-			ret[pbsmetrics.AdapterErrorTimeout] = s
+			ret[metrics.AdapterErrorTimeout] = s
 		case errortypes.BadInputErrorCode:
-			ret[pbsmetrics.AdapterErrorBadInput] = s
+			ret[metrics.AdapterErrorBadInput] = s
 		case errortypes.BadServerResponseErrorCode:
-			ret[pbsmetrics.AdapterErrorBadServerResponse] = s
+			ret[metrics.AdapterErrorBadServerResponse] = s
 		case errortypes.FailedToRequestBidsErrorCode:
-			ret[pbsmetrics.AdapterErrorFailedToRequestBids] = s
+			ret[metrics.AdapterErrorFailedToRequestBids] = s
 		default:
-			ret[pbsmetrics.AdapterErrorUnknown] = s
+			ret[metrics.AdapterErrorUnknown] = s
 		}
 	}
 	return ret

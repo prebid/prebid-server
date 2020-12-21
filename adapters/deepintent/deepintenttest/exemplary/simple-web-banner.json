@@ -21,7 +21,7 @@
               "displaymanagerver": "2.0.0",
               "ext": {
                   "bidder": {
-                      "TagID": "1"
+                      "tagId": "1"
                   }
               }
           }
@@ -63,7 +63,7 @@
                     "displaymanagerver": "2.0.0",
                     "ext": {
                         "bidder": {
-                            "TagID": "1"
+                            "tagId": "1"
                         }
                     }
                 }

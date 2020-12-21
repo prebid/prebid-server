@@ -23,10 +23,6 @@
     {
       "value": "One or more invalid or missing video field(s) w, h, protocols, mimes, playbackmethod",
       "comparison": "literal"
-    },
-    {
-      "value": "At least one of [banner, video] formats must be defined in Imp. None found",
-      "comparison": "literal"
     }
   ]
 }
