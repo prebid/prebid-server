@@ -13,8 +13,8 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -26,7 +26,7 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
-func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metrics pbsmetrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.TTL) * 24 * time.Hour
 
 	validFamilyNameMap := make(map[string]struct{})
@@ -45,8 +45,8 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 		pc := usersync.ParsePBSCookieFromRequest(r, &cfg)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
-			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
-				Action: pbsmetrics.RequestActionOptOut,
+			metricsEngine.RecordUserIDSet(metrics.UserLabels{
+				Action: metrics.RequestActionOptOut,
 			})
 			so.Status = http.StatusUnauthorized
 			return
@@ -58,8 +58,8 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
-			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
-				Action: pbsmetrics.RequestActionErr,
+			metricsEngine.RecordUserIDSet(metrics.UserLabels{
+				Action: metrics.RequestActionErr,
 			})
 			so.Status = http.StatusBadRequest
 			return
@@ -69,8 +69,8 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 		if shouldReturn, status, body := preventSyncsGDPR(query.Get("gdpr"), query.Get("gdpr_consent"), perms); shouldReturn {
 			w.WriteHeader(status)
 			w.Write([]byte(body))
-			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
-				Action: pbsmetrics.RequestActionGDPR,
+			metricsEngine.RecordUserIDSet(metrics.UserLabels{
+				Action: metrics.RequestActionGDPR,
 				Bidder: openrtb_ext.BidderName(familyName),
 			})
 			so.Status = status
@@ -87,11 +87,11 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 		}
 
 		if err == nil {
-			labels := pbsmetrics.UserLabels{
-				Action: pbsmetrics.RequestActionSet,
+			labels := metrics.UserLabels{
+				Action: metrics.RequestActionSet,
 				Bidder: openrtb_ext.BidderName(familyName),
 			}
-			metrics.RecordUserIDSet(labels)
+			metricsEngine.RecordUserIDSet(labels)
 			so.Success = true
 		}
 

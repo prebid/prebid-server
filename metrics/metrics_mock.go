@@ -1,4 +1,4 @@
-package pbsmetrics
+package metrics
 
 import (
 	"time"
@@ -70,6 +70,10 @@ func (me *MetricsEngineMock) RecordAdapterConnections(bidderName openrtb_ext.Bid
 // RecordDNSTime mock
 func (me *MetricsEngineMock) RecordDNSTime(dnsLookupTime time.Duration) {
 	me.Called(dnsLookupTime)
+}
+
+func (me *MetricsEngineMock) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
+	me.Called(tlsHandshakeTime)
 }
 
 // RecordAdapterBidReceived mock

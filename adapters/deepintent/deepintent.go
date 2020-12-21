@@ -21,7 +21,7 @@ type DeepintentAdapter struct {
 }
 
 type deepintentParams struct {
-	TagID string `json:"tagId"`
+	tagId string `json:"tagId"`
 }
 
 // Builder builds a new instance of the Deepintent adapter for the given bidder with the given config.

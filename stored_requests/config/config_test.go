@@ -14,7 +14,7 @@ import (
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
@@ -79,7 +79,7 @@ func TestNewHTTPEvents(t *testing.T) {
 		},
 	}
 
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock := &metrics.MetricsEngineMock{}
 
 	evProducers := newEventProducers(cfg, server1.Client(), nil, metricsMock, nil)
 	assertSliceLength(t, evProducers, 1)
@@ -119,7 +119,7 @@ func TestNewInMemoryAccountCache(t *testing.T) {
 }
 
 func TestNewPostgresEventProducers(t *testing.T) {
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
 	metricsMock.Mock.On("RecordStoredDataError", mock.Anything).Return()
 

@@ -10,7 +10,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	"github.com/prebid/prebid-server/util/timeutil"
 )
@@ -19,12 +19,12 @@ func bytesNull() []byte {
 	return []byte{'n', 'u', 'l', 'l'}
 }
 
-var storedDataTypeMetricMap = map[config.DataType]pbsmetrics.StoredDataType{
-	config.RequestDataType:    pbsmetrics.RequestDataType,
-	config.CategoryDataType:   pbsmetrics.CategoryDataType,
-	config.VideoDataType:      pbsmetrics.VideoDataType,
-	config.AMPRequestDataType: pbsmetrics.AMPDataType,
-	config.AccountDataType:    pbsmetrics.AccountDataType,
+var storedDataTypeMetricMap = map[config.DataType]metrics.StoredDataType{
+	config.RequestDataType:    metrics.RequestDataType,
+	config.CategoryDataType:   metrics.CategoryDataType,
+	config.VideoDataType:      metrics.VideoDataType,
+	config.AMPRequestDataType: metrics.AMPDataType,
+	config.AccountDataType:    metrics.AccountDataType,
 }
 
 type PostgresEventProducerConfig struct {
@@ -34,7 +34,7 @@ type PostgresEventProducerConfig struct {
 	CacheInitTimeout   time.Duration
 	CacheUpdateQuery   string
 	CacheUpdateTimeout time.Duration
-	MetricsEngine      pbsmetrics.MetricsEngine
+	MetricsEngine      metrics.MetricsEngine
 }
 
 type PostgresEventProducer struct {
@@ -83,14 +83,14 @@ func (e *PostgresEventProducer) fetchAll() (fetchErr error) {
 	startTime := e.time.Now().UTC()
 	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheInitQuery)
 	elapsedTime := time.Since(startTime)
-	e.recordFetchTime(elapsedTime, pbsmetrics.FetchAll)
+	e.recordFetchTime(elapsedTime, metrics.FetchAll)
 
 	if err != nil {
 		glog.Warningf("Failed to fetch all Stored %s data from the DB: %v", e.cfg.RequestType, err)
 		if _, ok := err.(net.Error); ok {
-			e.recordError(pbsmetrics.StoredDataErrorNetwork)
+			e.recordError(metrics.StoredDataErrorNetwork)
 		} else {
-			e.recordError(pbsmetrics.StoredDataErrorUndefined)
+			e.recordError(metrics.StoredDataErrorUndefined)
 		}
 		return err
 	}
@@ -98,13 +98,13 @@ func (e *PostgresEventProducer) fetchAll() (fetchErr error) {
 	defer func() {
 		if err := rows.Close(); err != nil {
 			glog.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
-			e.recordError(pbsmetrics.StoredDataErrorUndefined)
+			e.recordError(metrics.StoredDataErrorUndefined)
 			fetchErr = err
 		}
 	}()
 	if err := e.sendEvents(rows); err != nil {
 		glog.Warningf("Failed to load all Stored %s data from the DB: %v", e.cfg.RequestType, err)
-		e.recordError(pbsmetrics.StoredDataErrorUndefined)
+		e.recordError(metrics.StoredDataErrorUndefined)
 		return err
 	}
 
@@ -120,14 +120,14 @@ func (e *PostgresEventProducer) fetchDelta() (fetchErr error) {
 	startTime := e.time.Now().UTC()
 	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheUpdateQuery, e.lastUpdate)
 	elapsedTime := time.Since(startTime)
-	e.recordFetchTime(elapsedTime, pbsmetrics.FetchDelta)
+	e.recordFetchTime(elapsedTime, metrics.FetchDelta)
 
 	if err != nil {
 		glog.Warningf("Failed to fetch updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
 		if _, ok := err.(net.Error); ok {
-			e.recordError(pbsmetrics.StoredDataErrorNetwork)
+			e.recordError(metrics.StoredDataErrorNetwork)
 		} else {
-			e.recordError(pbsmetrics.StoredDataErrorUndefined)
+			e.recordError(metrics.StoredDataErrorUndefined)
 		}
 		return err
 	}
@@ -135,13 +135,13 @@ func (e *PostgresEventProducer) fetchDelta() (fetchErr error) {
 	defer func() {
 		if err := rows.Close(); err != nil {
 			glog.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
-			e.recordError(pbsmetrics.StoredDataErrorUndefined)
+			e.recordError(metrics.StoredDataErrorUndefined)
 			fetchErr = err
 		}
 	}()
 	if err := e.sendEvents(rows); err != nil {
 		glog.Warningf("Failed to load updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
-		e.recordError(pbsmetrics.StoredDataErrorUndefined)
+		e.recordError(metrics.StoredDataErrorUndefined)
 		return err
 	}
 
@@ -149,17 +149,17 @@ func (e *PostgresEventProducer) fetchDelta() (fetchErr error) {
 	return nil
 }
 
-func (e *PostgresEventProducer) recordFetchTime(elapsedTime time.Duration, fetchType pbsmetrics.StoredDataFetchType) {
+func (e *PostgresEventProducer) recordFetchTime(elapsedTime time.Duration, fetchType metrics.StoredDataFetchType) {
 	e.cfg.MetricsEngine.RecordStoredDataFetchTime(
-		pbsmetrics.StoredDataLabels{
+		metrics.StoredDataLabels{
 			DataType:      storedDataTypeMetricMap[e.cfg.RequestType],
 			DataFetchType: fetchType,
 		}, elapsedTime)
 }
 
-func (e *PostgresEventProducer) recordError(errorType pbsmetrics.StoredDataError) {
+func (e *PostgresEventProducer) recordError(errorType metrics.StoredDataError) {
 	e.cfg.MetricsEngine.RecordStoredDataError(
-		pbsmetrics.StoredDataLabels{
+		metrics.StoredDataLabels{
 			DataType: storedDataTypeMetricMap[e.cfg.RequestType],
 			Error:    errorType,
 		})

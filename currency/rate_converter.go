@@ -1,4 +1,4 @@
-package currencies
+package currency
 
 import (
 	"encoding/json"
