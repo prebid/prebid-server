@@ -195,15 +195,22 @@ func getAuctionBidderRequests(req AuctionRequest,
 		return nil, []error{err}
 	}
 
+	var errs []error
 	for bidder, imps := range impsByBidder {
 		coreBidder := resolveBidder(bidder, aliases)
 
 		reqCopy := *req.BidRequest
 		reqCopy.Imp = imps
 		reqCopy.Ext = reqExt
+
 		prepareSource(&reqCopy, bidder, sChainsByBidder)
 
-		bidder := BidderRequest{
+		if err := removeUnpermissionedEids(&reqCopy, bidder, requestExt); err != nil {
+			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
+			continue
+		}
+
+		bidderRequest := BidderRequest{
 			BidderName:     openrtb_ext.BidderName(bidder),
 			BidderCoreName: coreBidder,
 			BidRequest:     &reqCopy,
@@ -216,15 +223,16 @@ func getAuctionBidderRequests(req AuctionRequest,
 				AdapterBids: pbsmetrics.AdapterBidPresent,
 			},
 		}
-		if hadSync := prepareUser(&reqCopy, bidder.BidderName.String(), coreBidder, explicitBuyerUIDs, req.UserSyncs); !hadSync && req.BidRequest.App == nil {
-			bidder.BidderLabels.CookieFlag = pbsmetrics.CookieFlagNo
+
+		if hadSync := prepareUser(&reqCopy, bidder, coreBidder, explicitBuyerUIDs, req.UserSyncs); !hadSync && req.BidRequest.App == nil {
+			bidderRequest.BidderLabels.CookieFlag = pbsmetrics.CookieFlagNo
 		} else {
-			bidder.BidderLabels.CookieFlag = pbsmetrics.CookieFlagYes
+			bidderRequest.BidderLabels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
 
-		bidderRequests = append(bidderRequests, bidder)
+		bidderRequests = append(bidderRequests, bidderRequest)
 	}
-	return bidderRequests, nil
+	return bidderRequests, errs
 }
 
 func getExtJson(req *openrtb.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
@@ -443,6 +451,100 @@ func copyWithBuyerUID(user *openrtb.User, buyerUID string) *openrtb.User {
 		return &clone
 	}
 	return user
+}
+
+// removeUnpermissionedEids modifies the request to remove any request.user.ext.eids not permissions for the specific bidder
+func removeUnpermissionedEids(request *openrtb.BidRequest, bidder string, requestExt *openrtb_ext.ExtRequest) error {
+	// ensure request might have eids (as much as we can check before unmarshalling)
+	if request.User == nil || len(request.User.Ext) == 0 {
+		return nil
+	}
+
+	// ensure request has eid permissions to enforce
+	if requestExt == nil || requestExt.Prebid.Data == nil || len(requestExt.Prebid.Data.EidPermissions) == 0 {
+		return nil
+	}
+
+	// low level unmarshal to preserve other request.user.ext values. prebid server is non-destructive.
+	var userExt map[string]json.RawMessage
+	if err := json.Unmarshal(request.User.Ext, &userExt); err != nil {
+		return err
+	}
+
+	eidsRaw, eidsSpecified := userExt["eids"]
+	if !eidsSpecified {
+		return nil
+	}
+
+	var eids []openrtb_ext.ExtUserEid
+	if err := json.Unmarshal(eidsRaw, &eids); err != nil {
+		return err
+	}
+
+	// exit early if no there are no eids (empty array)
+	if len(eids) == 0 {
+		return nil
+	}
+
+	// translate eid permissions to a map for quick lookup
+	eidRules := make(map[string][]string)
+	for _, p := range requestExt.Prebid.Data.EidPermissions {
+		eidRules[p.Source] = p.Bidders
+	}
+
+	eidsAllowed := make([]openrtb_ext.ExtUserEid, 0, len(eids))
+	for _, eid := range eids {
+		rule, hasRule := eidRules[eid.Source]
+
+		allowed := false
+		if hasRule {
+			for _, ruleBidder := range rule {
+				if ruleBidder == "*" || ruleBidder == bidder {
+					allowed = true
+					break
+				}
+			}
+		} else {
+			allowed = true
+		}
+
+		if allowed {
+			eidsAllowed = append(eidsAllowed, eid)
+		}
+	}
+
+	// exit early if all eids are allowed and nothing needs to be removed
+	if len(eids) == len(eidsAllowed) {
+		return nil
+	}
+
+	// marshal eidsAllowed back to userExt
+	if len(eidsAllowed) == 0 {
+		delete(userExt, "eids")
+	} else {
+		eidsRaw, err := json.Marshal(eidsAllowed)
+		if err != nil {
+			return err
+		}
+		userExt["eids"] = eidsRaw
+	}
+
+	// exit early if userExt is empty
+	if len(userExt) == 0 {
+		userCopy := *request.User
+		userCopy.Ext = nil
+		request.User = &userCopy
+		return nil
+	}
+
+	userExtJSON, err := json.Marshal(userExt)
+	if err != nil {
+		return err
+	}
+	userCopy := *request.User
+	userCopy.Ext = userExtJSON
+	request.User = &userCopy
+	return nil
 }
 
 // resolveBidder returns the known BidderName associated with bidder, if bidder is an alias. If it's not an alias, the bidder is returned.
