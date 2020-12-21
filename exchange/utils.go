@@ -225,9 +225,9 @@ func getAuctionBidderRequests(req AuctionRequest,
 		}
 
 		if hadSync := prepareUser(&reqCopy, bidder, coreBidder, explicitBuyerUIDs, req.UserSyncs); !hadSync && req.BidRequest.App == nil {
-			bidder.BidderLabels.CookieFlag = metrics.CookieFlagNo
+			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagNo
 		} else {
-			bidder.BidderLabels.CookieFlag = metrics.CookieFlagYes
+			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagYes
 		}
 
 		bidderRequests = append(bidderRequests, bidderRequest)
