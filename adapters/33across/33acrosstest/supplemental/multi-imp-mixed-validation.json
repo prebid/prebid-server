@@ -3,27 +3,28 @@
     "id": "test-request-id",
     "imp": [
       {
-        "id": "test-imp-id",
-        "video": {
-          "w": 728, 
-          "h": 90,
-          "protocols": [2],
-          "placement": 1,
-          "startdelay": -2,
-          "playbackmethod": [2],
-          "mimes": ["foo", "bar"]
+        "id": "test-imp-id1",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
         },
         "ext": {
           "bidder": {
             "siteId": "fake-site-id",
-            "productId": "instream"
+            "productId": "inview"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id2",
+        "ext": {
+          "bidder": {
+            "siteId": "fake-site-id",
+            "productId": "inview"
           }
         }
       }
     ],
-    "app": {
-      "id": "some-app-id"
-    }
+    "site": {}
   },
 
   "httpCalls": [
@@ -31,29 +32,32 @@
       "expectedRequest": {
         "uri": "http://ssc.33across.com",
         "body": {
+          "ext": {
+            "ttx": {
+              "caller": [
+                {
+                  "name": "Prebid-Server",
+                  "version": "n/a"
+                }
+              ]
+            }
+          },
           "id": "test-request-id",
           "imp": [
             {
-              "id":"test-imp-id",
-              "video": {
-                "w": 728, 
-                "h": 90,
-                "protocols": [2],
-                "placement": 1,
-                "startdelay": -2,
-                "playbackmethod": [2],
-                "mimes": ["foo", "bar"]
+              "id":"test-imp-id1",
+              "banner": {
+                "format": [{"w": 728, "h": 90}]
               },
               "ext": {
                 "ttx": {
-                  "prod": "instream"
+                  "prod": "inview",
+                  "zoneid": "fake-site-id"
                 }
               }
             }
           ],
-          "app": {
-            "id": "some-app-id"
-          }
+          "site": {}
         }
       },
       "mockResponse": {
@@ -65,15 +69,15 @@
               "seat": "ttx",
               "bid": [{
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id",
+                "impid": "test-imp-id1",
                 "price": 0.500000,
-                "adm": "some-test-vast-ad",
+                "adm": "some-test-ad",
                 "crid": "crid_10",
                 "h": 90,
                 "w": 728,
                 "ext": {
                   "ttx": {
-                    "mediaType": "video"
+                    "mediaType": "banner"
                   }
                 }
               }]
@@ -84,7 +88,12 @@
       }
     }
   ],
-
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Imp ID test-imp-id2 must have at least one of [Banner, Video] defined",
+      "comparison": "literal"
+    }
+  ],
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -92,19 +101,19 @@
         {
           "bid": {
             "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-            "impid": "test-imp-id",
+            "impid": "test-imp-id1",
             "price": 0.5,
-            "adm": "some-test-vast-ad",
+            "adm": "some-test-ad",
             "crid": "crid_10",
             "w": 728,
             "h": 90,
             "ext": {
               "ttx": {
-                "mediaType": "video"
+                "mediaType": "banner"
               }
             }
           },
-          "type": "video"
+          "type": "banner"
         }
       ]
     }

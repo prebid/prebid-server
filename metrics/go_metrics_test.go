@@ -1,4 +1,4 @@
-package pbsmetrics
+package metrics
 
 import (
 	"testing"
@@ -206,6 +206,33 @@ func TestRecordDNSTime(t *testing.T) {
 		m.RecordDNSTime(test.inDnsLookupDuration)
 
 		assert.Equal(t, test.outExpDuration.Nanoseconds(), m.DNSLookupTimer.Sum(), test.description)
+	}
+}
+
+func TestRecordTLSHandshakeTime(t *testing.T) {
+	testCases := []struct {
+		description          string
+		tLSHandshakeDuration time.Duration
+		expectedDuration     time.Duration
+	}{
+		{
+			description:          "Five second TLS handshake time",
+			tLSHandshakeDuration: time.Second * 5,
+			expectedDuration:     time.Second * 5,
+		},
+		{
+			description:          "Zero TLS handshake time",
+			tLSHandshakeDuration: time.Duration(0),
+			expectedDuration:     time.Duration(0),
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
+
+		m.RecordTLSHandshakeTime(test.tLSHandshakeDuration)
+
+		assert.Equal(t, test.expectedDuration.Nanoseconds(), m.TLSHandshakeTimer.Sum(), test.description)
 	}
 }
 
