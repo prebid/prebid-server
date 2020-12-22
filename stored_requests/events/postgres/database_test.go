@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -94,10 +94,10 @@ func TestFetchAllSuccess(t *testing.T) {
 		db, dbMock, _ := sqlmock.New()
 		dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 
-		metricsMock := &pbsmetrics.MetricsEngineMock{}
-		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataLabels{
-			DataType:      pbsmetrics.RequestDataType,
-			DataFetchType: pbsmetrics.FetchAll,
+		metricsMock := &metrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordStoredDataFetchTime", metrics.StoredDataLabels{
+			DataType:      metrics.RequestDataType,
+			DataFetchType: metrics.FetchAll,
 		}, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
@@ -141,14 +141,14 @@ func TestFetchAllErrors(t *testing.T) {
 		giveFakeTime      time.Time
 		giveTimeoutMS     int
 		giveMockRows      *sqlmock.Rows
-		wantRecordedError pbsmetrics.StoredDataError
+		wantRecordedError metrics.StoredDataError
 		wantLastUpdate    time.Time
 	}{
 		{
 			description:       "fetch all timeout",
 			giveFakeTime:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:      nil,
-			wantRecordedError: pbsmetrics.StoredDataErrorNetwork,
+			wantRecordedError: metrics.StoredDataErrorNetwork,
 			wantLastUpdate:    time.Time{},
 		},
 		{
@@ -156,7 +156,7 @@ func TestFetchAllErrors(t *testing.T) {
 			giveFakeTime:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveTimeoutMS:     100,
 			giveMockRows:      nil,
-			wantRecordedError: pbsmetrics.StoredDataErrorUndefined,
+			wantRecordedError: metrics.StoredDataErrorUndefined,
 			wantLastUpdate:    time.Time{},
 		},
 		{
@@ -166,7 +166,7 @@ func TestFetchAllErrors(t *testing.T) {
 			giveMockRows: sqlmock.NewRows([]string{"id", "data", "dataType"}).
 				AddRow("stored-req-id", "true", "request").
 				RowError(0, errors.New("Some row error.")),
-			wantRecordedError: pbsmetrics.StoredDataErrorUndefined,
+			wantRecordedError: metrics.StoredDataErrorUndefined,
 			wantLastUpdate:    time.Time{},
 		},
 	}
@@ -179,13 +179,13 @@ func TestFetchAllErrors(t *testing.T) {
 			dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 		}
 
-		metricsMock := &pbsmetrics.MetricsEngineMock{}
-		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataLabels{
-			DataType:      pbsmetrics.RequestDataType,
-			DataFetchType: pbsmetrics.FetchAll,
+		metricsMock := &metrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordStoredDataFetchTime", metrics.StoredDataLabels{
+			DataType:      metrics.RequestDataType,
+			DataFetchType: metrics.FetchAll,
 		}, mock.Anything).Return()
-		metricsMock.Mock.On("RecordStoredDataError", pbsmetrics.StoredDataLabels{
-			DataType: pbsmetrics.RequestDataType,
+		metricsMock.Mock.On("RecordStoredDataError", metrics.StoredDataLabels{
+			DataType: metrics.RequestDataType,
 			Error:    tt.wantRecordedError,
 		}).Return()
 
@@ -307,10 +307,10 @@ func TestFetchDeltaSuccess(t *testing.T) {
 		db, dbMock, _ := sqlmock.New()
 		dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 
-		metricsMock := &pbsmetrics.MetricsEngineMock{}
-		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataLabels{
-			DataType:      pbsmetrics.RequestDataType,
-			DataFetchType: pbsmetrics.FetchDelta,
+		metricsMock := &metrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordStoredDataFetchTime", metrics.StoredDataLabels{
+			DataType:      metrics.RequestDataType,
+			DataFetchType: metrics.FetchDelta,
 		}, mock.Anything).Return()
 
 		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
@@ -356,7 +356,7 @@ func TestFetchDeltaErrors(t *testing.T) {
 		giveTimeoutMS     int
 		giveLastUpdate    time.Time
 		giveMockRows      *sqlmock.Rows
-		wantRecordedError pbsmetrics.StoredDataError
+		wantRecordedError metrics.StoredDataError
 		wantLastUpdate    time.Time
 	}{
 		{
@@ -364,7 +364,7 @@ func TestFetchDeltaErrors(t *testing.T) {
 			giveFakeTime:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 			giveMockRows:      nil,
-			wantRecordedError: pbsmetrics.StoredDataErrorNetwork,
+			wantRecordedError: metrics.StoredDataErrorNetwork,
 			wantLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 		},
 		{
@@ -373,7 +373,7 @@ func TestFetchDeltaErrors(t *testing.T) {
 			giveTimeoutMS:     100,
 			giveLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 			giveMockRows:      nil,
-			wantRecordedError: pbsmetrics.StoredDataErrorUndefined,
+			wantRecordedError: metrics.StoredDataErrorUndefined,
 			wantLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 		},
 		{
@@ -384,7 +384,7 @@ func TestFetchDeltaErrors(t *testing.T) {
 			giveMockRows: sqlmock.NewRows([]string{"id", "data", "dataType"}).
 				AddRow("stored-req-id", "true", "request").
 				RowError(0, errors.New("Some row error.")),
-			wantRecordedError: pbsmetrics.StoredDataErrorUndefined,
+			wantRecordedError: metrics.StoredDataErrorUndefined,
 			wantLastUpdate:    time.Date(2020, time.June, 30, 6, 0, 0, 0, time.UTC),
 		},
 	}
@@ -397,13 +397,13 @@ func TestFetchDeltaErrors(t *testing.T) {
 			dbMock.ExpectQuery(fakeQueryRegex()).WillReturnRows(tt.giveMockRows)
 		}
 
-		metricsMock := &pbsmetrics.MetricsEngineMock{}
-		metricsMock.Mock.On("RecordStoredDataFetchTime", pbsmetrics.StoredDataLabels{
-			DataType:      pbsmetrics.RequestDataType,
-			DataFetchType: pbsmetrics.FetchDelta,
+		metricsMock := &metrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordStoredDataFetchTime", metrics.StoredDataLabels{
+			DataType:      metrics.RequestDataType,
+			DataFetchType: metrics.FetchDelta,
 		}, mock.Anything).Return()
-		metricsMock.Mock.On("RecordStoredDataError", pbsmetrics.StoredDataLabels{
-			DataType: pbsmetrics.RequestDataType,
+		metricsMock.Mock.On("RecordStoredDataError", metrics.StoredDataLabels{
+			DataType: metrics.RequestDataType,
 			Error:    tt.wantRecordedError,
 		}).Return()
 

@@ -1,4 +1,4 @@
-package pbsmetrics
+package metrics
 
 import (
 	"testing"
