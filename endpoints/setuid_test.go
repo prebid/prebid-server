@@ -441,10 +441,6 @@ func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrt
 	return g.allowPI, g.allowPI, g.allowPI, nil
 }
 
-func (g *mockPermsSetUID) AMPException() bool {
-	return false
-}
-
 func newFakeSyncer(familyName string) usersync.Usersyncer {
 	return fakeSyncer{
 		familyName: familyName,

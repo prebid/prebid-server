@@ -59,7 +59,6 @@ func TestApply(t *testing.T) {
 	testCases := []struct {
 		description        string
 		enforcement        Enforcement
-		ampGDPRException   bool
 		expectedDeviceID   ScrubStrategyDeviceID
 		expectedDeviceIPv4 ScrubStrategyIPV4
 		expectedDeviceIPv6 ScrubStrategyIPV6
@@ -124,7 +123,6 @@ func TestApply(t *testing.T) {
 				GDPRID:  true,
 				LMT:     false,
 			},
-			ampGDPRException:   false,
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
@@ -141,7 +139,6 @@ func TestApply(t *testing.T) {
 				GDPRID:  true,
 				LMT:     false,
 			},
-			ampGDPRException:   false,
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4None,
 			expectedDeviceIPv6: ScrubStrategyIPV6None,
@@ -158,7 +155,6 @@ func TestApply(t *testing.T) {
 				GDPRID:  false,
 				LMT:     false,
 			},
-			ampGDPRException:   false,
 			expectedDeviceID:   ScrubStrategyDeviceIDNone,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
@@ -183,7 +179,7 @@ func TestApply(t *testing.T) {
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "Interactions: COPPA + GDPR Full + AMP Exception",
+			description: "Interactions: COPPA + GDPR Full",
 			enforcement: Enforcement{
 				CCPA:    false,
 				COPPA:   true,
@@ -191,7 +187,6 @@ func TestApply(t *testing.T) {
 				GDPRID:  true,
 				LMT:     false,
 			},
-			ampGDPRException:   true,
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
