@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "SilverMob Adapter Params",
+    "description": "A schema which validates params accepted by the SilverMob adapter",
+    "type": "object",
+    "properties": {
+      "zoneid": {
+        "type": "string",
+        "description": "Zone ID"
+      },
+      "host": {
+        "type": "string",
+        "description": "Host"
+      }
+    },
+    "required": ["zoneid", "host"]
+  }

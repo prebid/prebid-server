@@ -1,9 +1,7 @@
 maintainer:
   email: "headerbidding@33across.com"
 capabilities:
-  app:
-    mediaTypes:
-    - banner
   site:
     mediaTypes:
     - banner
+    - video

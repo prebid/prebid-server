@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -228,18 +228,35 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewBrightrollBidder(endpoint string, extraAdapterInfo string) *BrightrollAdapter {
+// Builder builds a new instance of the Brightroll adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	bidder := &BrightrollAdapter{
+		URI:       config.Endpoint,
+		extraInfo: extraInfo,
+	}
+	return bidder, nil
+}
+
+func getExtraInfo(v string) (ExtraInfo, error) {
+	if len(v) == 0 {
+		return getDefaultExtraInfo(), nil
+	}
 
 	var extraInfo ExtraInfo
-
-	if len(extraAdapterInfo) == 0 {
-		extraAdapterInfo = "{\"accounts\":[]}"
+	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
 	}
-	err := json.Unmarshal([]byte(extraAdapterInfo), &extraInfo)
 
-	if err != nil {
-		glog.Fatalf("Invalid Brightroll extra adapter info: " + err.Error())
-		return nil
+	return extraInfo, nil
+}
+
+func getDefaultExtraInfo() ExtraInfo {
+	return ExtraInfo{
+		Accounts: []Account{},
 	}
-	return &BrightrollAdapter{URI: endpoint, extraInfo: extraInfo}
 }

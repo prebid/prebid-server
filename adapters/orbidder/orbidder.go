@@ -3,11 +3,13 @@ package orbidder
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type OrbidderAdapter struct {
@@ -120,8 +122,10 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 	return bidResponse, nil
 }
 
-func NewOrbidderBidder(endpoint string) *OrbidderAdapter {
-	return &OrbidderAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Orbidder adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &OrbidderAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

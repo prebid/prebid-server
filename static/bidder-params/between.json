@@ -6,9 +6,22 @@
   "properties": {
     "host": {
       "type": "string",
-      "description": "Network Host to request from"
+      "description": "Network Host to request from",
+      "enum": ["lbs-eu1.ads", "lbs-ru1.ads", "lbs-us-east1.ads", "lbs-asia1.ads"]
+    },
+    "publisher_id": {
+      "type": "string",
+      "description": "Publisher ID from Between Exchange control panel"
+    },
+    "bid_floor": {
+      "type": "number",
+      "description": "The minimum price acceptable for a bid"
+    },
+    "bid_floor_cur": {
+      "type": "string",
+      "description": "Currency of bid floor",
+      "enum": ["USD", "EUR", "RUB"]
     }
-
   },
-  "required": ["host"]
+  "required": ["host", "publisher_id"]
 }

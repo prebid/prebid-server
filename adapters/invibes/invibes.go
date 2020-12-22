@@ -9,13 +9,13 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 const adapterVersion = "prebid_1.0.0"
@@ -73,13 +73,17 @@ type InvibesAdapter struct {
 	EndpointTemplate template.Template
 }
 
-func NewInvibesBidder(endpointTemplate string) *InvibesAdapter {
-	urlTemplate, err := template.New("endpointTemplate").Parse(endpointTemplate)
+// Builder builds a new instance of the Invibes adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &InvibesAdapter{EndpointTemplate: *urlTemplate}
+
+	bidder := InvibesAdapter{
+		EndpointTemplate: *template,
+	}
+	return &bidder, nil
 }
 
 func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -129,7 +133,7 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		}
 		invibesInternalParams.TestLog = invibesExt.Debug.TestLog
 	}
-	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
+	if reqInfo.PbsEntryPoint == metrics.ReqTypeAMP {
 		invibesInternalParams.IsAMP = true
 	}
 
