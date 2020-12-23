@@ -149,6 +149,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderLogicad:          logicad.Builder,
 		openrtb_ext.BidderLunaMedia:        lunamedia.Builder,
 		openrtb_ext.BidderMarsmedia:        marsmedia.Builder,
+		openrtb_ext.BidderMediafuse:        adtelligent.Builder,
 		openrtb_ext.BidderMgid:             mgid.Builder,
 		openrtb_ext.BidderMobileFuse:       mobilefuse.Builder,
 		openrtb_ext.BidderNanoInteractive:  nanointeractive.Builder,
