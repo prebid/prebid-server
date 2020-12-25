@@ -28,7 +28,7 @@
     },
     "videoResponseType": {
       "type": "string",
-      "description": "By default the video response will be a nurl URL, but if you want AdM/VAST, set this to 'adm'. If you want both set it to 'both'. Setting it to any other string will have no effect and the default format will be returned."
+      "description": "By default the video response will be an AdM element containing VAST 3.0 markup including tracking, click through, and mediafile elements pointing to mp4, webm or other playable media files as indicated in the request. Optionally, set this to 'nurl' to receive a URI pointing to VAST 3.0 markup which will contain a mediafile pointing to a beachfront neptune javascript video player which will load your video and take care of tracking, etc. If you want both set it to 'both'. You can then choose which to use for the given impression at run time. Regardless of which format is selected, the id of the returned impression(s) will be the provided impression id (imp[{'id'...},...].n the request) with the format appended. The impression id will be returned unchanged as 'impid'. So if you indicate 'both', and an impression id 'someImp', two impressions will be returned, both with an 'impid' value of 'someImp', and one with the 'id' value 'someImpAdmVideo', and the other 'someImpNurlVideo'. Setting videoResponseType to any other string will have no effect and the default format (AdM) will be returned."
     }
   },
 

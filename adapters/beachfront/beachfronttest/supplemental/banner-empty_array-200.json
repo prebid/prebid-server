@@ -6,6 +6,7 @@
     },
     "imp": [
       {
+        "id": "dudImp",
         "bidfloor": 0.02,
         "banner": {
           "format": [
@@ -32,7 +33,7 @@
         "body": {
           "slots": [
             {
-              "slot": "",
+              "slot": "dudImp",
               "id": "dudAppId1",
               "bidfloor": 0.02,
               "sizes": [

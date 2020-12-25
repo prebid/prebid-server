@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+    "id": "some_test_id",
     "imp": [
       {
         "bidfloor": 0.02,
@@ -28,8 +28,9 @@
         "id":"video2",
         "ext":{
           "bidder":{
+            "videoResponseType": "nurl",
             "bidfloor":0.01,
-            "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
+            "appId":"videoAppId1"
           }
         },
         "video":{
@@ -43,30 +44,23 @@
       }
     ],
     "site": {
-      "domain": "example.com",
-      "page": "http://example.com/whatever"
+      "page": "https://some.domain.us/some/page.html"
     },
     "device": {
-      "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-      "ip": "127.0.0.1",
-      "js": 1
+      "ip": "255.255.255.255"
     },
     "cur": [
       "USD"
-    ],
-    "user": {
-      "id": "some-user",
-      "buyeruid": "some-buyer"
-    }
+    ]
   },
 
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1&prebidserver",
         "body": {
           "isPrebid": true,
-          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "id": "some_test_id",
           "imp": [
             {
               "video": {
@@ -78,26 +72,20 @@
                 ]
               },
               "id": "video2",
-              "secure": 0
+              "secure": 1
             }
           ],
           "site": {
-            "domain": "example.com",
-            "page": "http://example.com/whatever"
+            "domain": "some.domain.us",
+            "page": "https://some.domain.us/some/page.html"
           },
           "device": {
-            "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "ip": "192.168.255.255",
-            "devicetype": 2,
-            "js": 1
+            "ip": "255.255.255.255",
+            "devicetype": 2
           },
           "cur": [
             "USD"
-          ],
-          "user": {
-            "id": "some-user",
-            "buyeruid": "some-buyer"
-          }
+          ]
         }
       },
       "mockResponse": {

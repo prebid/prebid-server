@@ -422,7 +422,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		if beachfrontExt.VideoResponseType != "" {
 			bfReqs[i].VideoResponseType = beachfrontExt.VideoResponseType
 		} else {
-			bfReqs[i].VideoResponseType = "nurl"
+			bfReqs[i].VideoResponseType = "adm"
 		}
 
 		bfReqs[i].Request = *request
@@ -680,10 +680,9 @@ func isSecure(page string) int8 {
 
 func getIP(ip string) string {
 	// This will only effect testing. The backend will return "" for localhost IPs,
-	// and seems not to know what IPv6 is, so just setting it to one that is not likely to
-	// be used.
+	// and seems not to know what IPv6 is, so just setting it to the 'end of the internet'
 	if ip == "" || ip == "::1" || ip == "127.0.0.1" {
-		return "192.168.255.255"
+		return "255.255.255.255"
 	}
 	return ip
 }
