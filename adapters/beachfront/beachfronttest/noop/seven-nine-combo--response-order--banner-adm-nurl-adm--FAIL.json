@@ -1,11 +1,11 @@
 {
   "mockBidRequest":
   {
-    "id": "four-combo",
+    "id": "seven-nine-combo",
     "imp": [
 
       {
-        "id": "ComboADMVideoWithBannerImp1",
+        "id": "ADMVideoWithBannerImp1",
         "ext": {
           "bidder": {
             "videoResponseType": "adm",
@@ -33,7 +33,7 @@
         }
       },
       {
-        "id": "ComboADMVideoWithBannerImp2",
+        "id": "ADMVideoWithBannerImp2",
         "ext": {
           "bidder": {
             "videoResponseType": "adm",
@@ -61,70 +61,12 @@
         }
       },
       {
-        "id": "ComboBothVideoWithBannerImp1",
-        "ext": {
-          "bidder": {
-            "bidfloor": 1.01,
-            "videoResponseType": "both",
-            "appIds": {
-              "banner" : "bannerAppId1",
-              "video" : "videoAppId1"
-            }
-          }
-        },
-        "video": {
-          "mimes": [
-            "video/mp4"
-          ],
-          "context": "instream",
-          "w": 100,
-          "h": 150
-        },
-        "banner": {
-          "format": [
-            {
-              "w": 100,
-              "h": 150
-            }
-          ]
-        }
-      },
-      {
-        "id": "ComboBothVideoWithBannerImp2",
-        "ext": {
-          "bidder": {
-            "bidfloor": 1.01,
-            "videoResponseType": "both",
-            "appIds": {
-              "banner" : "bannerAppId1",
-              "video" : "videoAppId1"
-            }
-          }
-        },
-        "video": {
-          "mimes": [
-            "video/mp4"
-          ],
-          "context": "instream",
-          "w": 100,
-          "h": 150
-        },
-        "banner": {
-          "format": [
-            {
-              "w": 100,
-              "h": 150
-            }
-          ]
-        }
-      },
-      {
-        "id": "SeparateNURLVideo",
+        "id": "NURLVideoImp4",
         "ext": {
           "bidder": {
             "videoResponseType": "nurl",
             "bidfloor": 1.01,
-            "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76"
+            "appId": "videoAppId1"
           }
         },
         "video": {
@@ -136,7 +78,7 @@
         }
       },
       {
-        "id": "RegularBannerImp1",
+        "id": "RegularBannerImp5",
         "ext": {
           "bidder": {
             "bidfloor": 1.05,
@@ -149,7 +91,7 @@
         }
       },
       {
-        "id": "RegularBannerImp2",
+        "id": "RegularBannerImp6",
         "ext": {
           "bidder": {
             "bidfloor": 1.05,
@@ -162,12 +104,12 @@
         }
       },
       {
-        "id": "SeparateADMVideo",
+        "id": "ADMVideoImp7",
         "ext": {
           "bidder": {
             "videoResponseType": "adm",
             "bidfloor": 1.01,
-            "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76"
+            "appId": "videoAppId1"
           }
         },
         "video": {
@@ -191,7 +133,7 @@
         "body": {
           "slots": [
             {
-              "slot": "ComboADMVideoWithBannerImp1",
+              "slot": "ADMVideoWithBannerImp1",
               "id": "bannerAppId1",
               "bidfloor": 1.01,
               "sizes": [
@@ -202,7 +144,7 @@
               ]
             },
             {
-              "slot": "ComboADMVideoWithBannerImp2",
+              "slot": "ADMVideoWithBannerImp2",
               "id": "bannerAppId2",
               "bidfloor": 1.01,
               "sizes": [
@@ -213,29 +155,7 @@
               ]
             },
             {
-              "slot": "ComboBothVideoWithBannerImp1",
-              "id": "bannerAppId1",
-              "bidfloor": 1.01,
-              "sizes": [
-                {
-                  "w": 100,
-                  "h": 150
-                }
-              ]
-            },
-            {
-              "slot": "ComboBothVideoWithBannerImp2",
-              "id": "bannerAppId1",
-              "bidfloor": 1.01,
-              "sizes": [
-                {
-                  "w": 100,
-                  "h": 150
-                }
-              ]
-            },
-            {
-              "slot": "RegularBannerImp1",
+              "slot": "RegularBannerImp5",
               "id": "bannerAppId3",
               "bidfloor": 1.05,
               "sizes": [
@@ -246,7 +166,7 @@
               ]
             },
             {
-              "slot": "RegularBannerImp2",
+              "slot": "RegularBannerImp6",
               "id": "bannerAppId4",
               "bidfloor": 1.05,
               "sizes": [
@@ -271,7 +191,7 @@
           "adapterName": "BF_PREBID_S2S",
           "adapterVersion": "0.9.1",
           "ip": "",
-          "requestId": "four-combo"
+          "requestId": "seven-nine-combo"
         }
       },
       "mockResponse": {
@@ -328,15 +248,124 @@
         ]
       }
     },
+
     {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
         "body": {
-          "isPrebid": true,
-          "id": "four-combo",
+          "id": "seven-nine-combo",
           "imp": [
             {
-              "id": "SeparateNURLVideo",
+              "id": "ADMVideoWithBannerImp1",
+              "secure": 0,
+              "bidfloor": 1.01,
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 300,
+                "h": 400
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever/something.html"
+          },
+          "cur": [
+            "USD"
+          ]
+        }
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": {
+          "id": "seven-nine-combo",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "crid_7",
+                  "impid": "ADMVideoWithBannerImp2",
+                  "price": 0.8,
+                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+                  "w": 300,
+                  "h": 400,
+                  "ext": {
+                    "duration": 30
+                  }
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
+        "body": {
+          "id": "seven-nine-combo",
+          "imp": [
+            {
+              "id": "ADMVideoWithBannerImp2",
+              "secure": 0,
+              "bidfloor": 1.01,
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 100,
+                "h": 150
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever/something.html"
+          },
+          "cur": [
+            "USD"
+          ]
+        }
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": {
+          "id": "5f4f8790dca51d29347f4dd8",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "crid_8",
+                  "impid": "ADMVideoImp4",
+                  "price": 0.8,
+                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+                  "w": 100,
+                  "h": 150,
+                  "ext": {
+                    "duration": 30
+                  }
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1&prebidserver",
+        "body": {
+          "isPrebid": true,
+          "id": "seven-nine-combo",
+          "imp": [
+            {
+              "id": "NURLVideoImp4",
               "bidfloor": 1.01,
               "video": {
                 "mimes": [
@@ -367,7 +396,7 @@
                 {
                   "id": "SeparateNURLVideo",
                   "price": 20.0,
-                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:de5b4976-0d2a-4032-874c-35e2b3e3ab95: 11bc5dd5-7421-4dd8-c926-40fa653bec76: 10.0: 10.0&v=1&dsp=5f7da002b6b0ca361fc692b0,0.01&i_type=pre",
+                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:de5b4976-0d2a-4032-874c-35e2b3e3ab95: videoAppId1: 10.0: 10.0&v=1&dsp=5f7da002b6b0ca361fc692b0,0.01&i_type=pre",
                   "adomain": [
                   ],
                   "cat": [
@@ -392,336 +421,10 @@
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
         "body": {
-          "id": "four-combo",
+          "id": "seven-nine-combo",
           "imp": [
             {
-              "id": "ComboADMVideoWithBannerImp1",
-              "secure": 0,
-              "bidfloor": 1.01,
-              "video": {
-                "mimes": [
-                  "video/mp4"
-                ],
-                "w": 300,
-                "h": 400
-              }
-            }
-          ],
-          "site": {
-            "domain": "example.com",
-            "page": "http://example.com/whatever/something.html"
-          },
-          "cur": [
-            "USD"
-          ]
-        }
-      },
-      "mockResponse": {
-        "status" : 200,
-        "body": {
-          "id": "four-combo",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "crid_7",
-                  "impid": "ComboADMVideoWithBannerImp1",
-                  "price": 0.8,
-                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
-                  "w": 300,
-                  "h": 400,
-                  "ext": {
-                    "duration": 30
-                  }
-                }
-              ],
-              "seat": "bfb-io-s1"
-            }
-          ],
-          "cur": "USD"
-        }
-      }
-    },
-    {
-      "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1&prebidserver",
-        "body": {
-          "id": "four-combo",
-          "imp": [
-            {
-              "id": "ComboBothVideoWithBannerImp1",
-              "secure": 0,
-              "bidfloor": 1.01,
-              "video": {
-                "mimes": [
-                  "video/mp4"
-                ],
-                "w": 100,
-                "h": 150
-              }
-            }
-          ],
-          "isPrebid": true,
-          "site": {
-            "domain": "example.com",
-            "page": "http://example.com/whatever/something.html"
-          },
-          "cur": [
-            "USD"
-          ]
-        }
-      },
-      "mockResponse": {
-        "status" : 200,
-        "body": {
-          "id": "5f4f8790dca51d29347f4dd8",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "crid_11",
-                  "impid": "ComboBothVideoWithBannerImp2",
-                  "price": 0.8,
-                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:de5b4976-0d2a-4032-874c-35e2b3e3ab95: 11bc5dd5-7421-4dd8-c926-40fa653bec76: 10.0: 10.0&v=1&dsp=5f7da002b6b0ca361fc692b0,0.01&i_type=pre",
-                  "w": 100,
-                  "h": 150,
-                  "ext": {
-                    "duration": 30
-                  }
-                }
-              ],
-              "seat": "bfb-io-s1"
-            }
-          ],
-          "cur": "USD"
-        }
-      }
-    },
-    {
-      "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
-        "body": {
-          "id": "four-combo",
-          "imp": [
-            {
-              "id": "ComboADMVideoWithBannerImp2",
-              "secure": 0,
-              "bidfloor": 1.01,
-              "video": {
-                "mimes": [
-                  "video/mp4"
-                ],
-                "w": 100,
-                "h": 150
-              }
-            }
-          ],
-          "site": {
-            "domain": "example.com",
-            "page": "http://example.com/whatever/something.html"
-          },
-          "cur": [
-            "USD"
-          ]
-        }
-      },
-      "mockResponse": {
-        "status" : 200,
-        "body": {
-          "id": "5f4f8790dca51d29347f4dd8",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "crid_8",
-                  "impid": "ComboADMVideoWithBannerImp2",
-                  "price": 0.8,
-                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
-                  "w": 100,
-                  "h": 150,
-                  "ext": {
-                    "duration": 30
-                  }
-                }
-              ],
-              "seat": "bfb-io-s1"
-            }
-          ],
-          "cur": "USD"
-        }
-      }
-    },
-    {
-      "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
-        "body": {
-          "id": "four-combo",
-          "imp": [
-            {
-              "id": "ComboBothVideoWithBannerImp1",
-              "secure": 0,
-              "bidfloor": 1.01,
-              "video": {
-                "mimes": [
-                  "video/mp4"
-                ],
-                "w": 100,
-                "h": 150
-              }
-            }
-          ],
-          "site": {
-            "domain": "example.com",
-            "page": "http://example.com/whatever/something.html"
-          },
-          "cur": [
-            "USD"
-          ]
-        }
-      },
-      "mockResponse": {
-        "status" : 200,
-        "body": {
-          "id": "5f4f8790dca51d29347f4dd8",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "crid_9",
-                  "impid": "ComboBothVideoWithBannerImp1",
-                  "price": 0.8,
-                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
-                  "w": 100,
-                  "h": 150,
-                  "ext": {
-                    "duration": 30
-                  }
-                }
-              ],
-              "seat": "bfb-io-s1"
-            }
-          ],
-          "cur": "USD"
-        }
-      }
-    },
-    {
-      "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
-        "body": {
-          "id": "four-combo",
-          "imp": [
-            {
-              "id": "ComboBothVideoWithBannerImp2",
-              "secure": 0,
-              "bidfloor": 1.01,
-              "video": {
-                "mimes": [
-                  "video/mp4"
-                ],
-                "w": 100,
-                "h": 150
-              }
-            }
-          ],
-          "site": {
-            "domain": "example.com",
-            "page": "http://example.com/whatever/something.html"
-          },
-          "cur": [
-            "USD"
-          ]
-        }
-      },
-      "mockResponse": {
-        "status" : 200,
-        "body": {
-          "id": "5f4f8790dca51d29347f4dd8",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "crid_10",
-                  "impid": "ComboBothVideoWithBannerImp2",
-                  "price": 0.8,
-                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
-                  "w": 100,
-                  "h": 150,
-                  "ext": {
-                    "duration": 30
-                  }
-                }
-              ],
-              "seat": "bfb-io-s1"
-            }
-          ],
-          "cur": "USD"
-        }
-      }
-    },
-    {
-      "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1&prebidserver",
-        "body": {
-          "id": "four-combo",
-          "imp": [
-            {
-              "id": "ComboBothVideoWithBannerImp2",
-              "secure": 0,
-              "bidfloor": 1.01,
-              "video": {
-                "mimes": [
-                  "video/mp4"
-                ],
-                "w": 100,
-                "h": 150
-              }
-            }
-          ],
-          "isPrebid": true,
-          "site": {
-            "domain": "example.com",
-            "page": "http://example.com/whatever/something.html"
-          },
-          "cur": [
-            "USD"
-          ]
-        }
-      },
-      "mockResponse": {
-        "status" : 200,
-        "body": {
-          "id": "5f4f8790dca51d29347f4dd8",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "crid_12",
-                  "impid": "ComboBothVideoWithBannerImp2",
-                  "price": 0.8,
-                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:de5b4976-0d2a-4032-874c-35e2b3e3ab95: 11bc5dd5-7421-4dd8-c926-40fa653bec76: 10.0: 10.0&v=1&dsp=5f7da002b6b0ca361fc692b0,0.01&i_type=pre",
-                  "w": 100,
-                  "h": 150,
-                  "ext": {
-                    "duration": 30
-                  }
-                }
-              ],
-              "seat": "bfb-io-s1"
-            }
-          ],
-          "cur": "USD"
-        }
-      }
-    },
-    {
-      "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
-        "body": {
-          "id": "four-combo",
-          "imp": [
-            {
-              "id": "SeparateADMVideo",
+              "id": "ADMVideoImp7",
               "bidfloor": 1.01,
               "secure": 0,
               "video": {
@@ -772,6 +475,66 @@
           ],
           "bidid": "5f4f8790b9f0fc0e98b5db47",
           "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1&prebidserver",
+        "body": {
+          "isPrebid": true,
+          "id": "seven-nine-combo",
+          "imp": [
+            {
+              "id": "NURLVideoImp4",
+              "bidfloor": 1.01,
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 150,
+                "h": 300
+              },
+              "secure": 0
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever/something.html"
+          },
+          "cur": [
+            "USD"
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "seatBid": [
+            {
+              "bid": [
+                {
+                  "id": "SeparateNURLVideo",
+                  "price": 20.0,
+                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:de5b4976-0d2a-4032-874c-35e2b3e3ab95: videoAppId1: 10.0: 10.0&v=1&dsp=5f7da002b6b0ca361fc692b0,0.01&i_type=pre",
+                  "adomain": [
+                  ],
+                  "cat": [
+                  ],
+                  "attr": [
+                  ],
+                  "w": 0,
+                  "h": 0,
+                  "ext": {
+                  }
+                }
+              ],
+              "group": 0,
+              "ext": {
+              }
+            }
+          ]
         }
       }
     }

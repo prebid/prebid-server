@@ -233,11 +233,11 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 		errs = append(errs, videoErrs...)
 
 		for i := 0; i < len(videoList); i++ {
-			if videoList[i].VideoResponseType == "nurl" || videoList[i].VideoResponseType == "both" {
+			if videoList[i].VideoResponseType == "nurl" {
 				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoList[i])
 			}
 
-			if videoList[i].VideoResponseType == "adm" || videoList[i].VideoResponseType == "both" {
+			if videoList[i].VideoResponseType == "adm" {
 				beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, videoList[i])
 			}
 		}
@@ -688,7 +688,8 @@ func getIP(ip string) string {
 }
 
 func removeVideoElement(slice []beachfrontVideoRequest, s int) []beachfrontVideoRequest {
-	return append(slice[:s], slice[s+1:]...)
+	return slice
+	// return append(slice[:s], slice[s+1:]...)
 }
 
 // Builder builds a new instance of the Beachfront adapter for the given bidder with the given config.
