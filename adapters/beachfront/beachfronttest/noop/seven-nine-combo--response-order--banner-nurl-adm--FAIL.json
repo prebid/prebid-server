@@ -129,7 +129,7 @@
 
     {
       "expectedRequest":  {
-        "uri": "https://display.bfmio.com/prebid_display",
+        "uri": "https://qa.beachrtb.com/prebid_display",
         "body": {
           "slots": [
             {
@@ -250,7 +250,7 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1&prebidserver",
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1&prebidserver",
         "body": {
           "isPrebid": true,
           "id": "seven-nine-combo",
@@ -310,7 +310,7 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1",
         "body": {
           "id": "seven-nine-combo",
           "imp": [
@@ -364,7 +364,7 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1",
         "body": {
           "id": "seven-nine-combo",
           "imp": [
@@ -418,7 +418,7 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
         "body": {
           "id": "seven-nine-combo",
           "imp": [
@@ -479,7 +479,7 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
         "body": {
           "isPrebid": true,
           "id": "seven-nine-combo",

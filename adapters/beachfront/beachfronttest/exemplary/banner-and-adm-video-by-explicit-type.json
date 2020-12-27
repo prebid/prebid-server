@@ -40,7 +40,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://display.bfmio.com/prebid_display",
+        "uri": "https://qa.beachrtb.com/prebid_display",
         "body": {
           "slots": [
             {
@@ -88,7 +88,7 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=videoAppId1",
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1",
         "body": {
           "id": "banner-and-video",
           "imp": [

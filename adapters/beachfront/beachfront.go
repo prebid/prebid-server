@@ -28,8 +28,8 @@ const beachfrontAdapterVersion = "0.9.1"
 
 const minBidFloor = 0.01
 
-const DefaultVideoWidth = 300
-const DefaultVideoHeight = 250
+const defaultVideoWidth = 300
+const defaultVideoHeight = 250
 
 type BeachfrontAdapter struct {
 	bannerEndpoint string
@@ -51,7 +51,7 @@ type beachfrontRequests struct {
 // ---------------------------------------------------
 
 type beachfrontVideoRequest struct {
-	AppId             string             `json:"appId"`
+	AppID             string             `json:"appId"`
 	VideoResponseType string             `json:"videoResponseType"`
 	Request           openrtb.BidRequest `json:"request"`
 }
@@ -140,9 +140,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	// At most, I only ever have one banner request, and it does not need the cookie, so doing it first.
 	if len(beachfrontRequests.Banner.Slots) > 0 {
-		bytes, err := json.Marshal(beachfrontRequests.Banner)
-
-		if err == nil {
+		if bytes, err := json.Marshal(beachfrontRequests.Banner); err == nil {
 			reqs[0] = &adapters.RequestData{
 				Method:  "POST",
 				Uri:     a.bannerEndpoint,
@@ -162,11 +160,10 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}
 
 	for j := 0; j < len(beachfrontRequests.ADMVideo); j++ {
-		bytes, err := json.Marshal(beachfrontRequests.ADMVideo[j].Request)
-		if err == nil {
+		if bytes, err := json.Marshal(beachfrontRequests.ADMVideo[j].Request); err == nil {
 			reqs[j+nurlBump] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
+				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppID,
 				Body:    bytes,
 				Headers: headers,
 			}
@@ -179,13 +176,11 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}
 
 	for j := 0; j < len(beachfrontRequests.NurlVideo); j++ {
-		bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
-
-		if err == nil {
+		if bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request); err == nil {
 			bytes = append([]byte(`{"isPrebid":true,`), bytes[1:]...)
 			reqs[j+admBump] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
+				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppID + nurlVideoEndpointSuffix,
 				Body:    bytes,
 				Headers: headers,
 			}
@@ -246,7 +241,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 	return
 }
 
-func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (string, error) {
+func getAppID(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (string, error) {
 	var appid string
 	var err error
 
@@ -285,7 +280,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 			continue
 		}
 
-		appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeBanner)
+		appid, err := getAppID(beachfrontExt, openrtb_ext.BidTypeBanner)
 
 		if err != nil {
 			// Failed to get an appid, so this request is junk.
@@ -408,7 +403,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			continue
 		}
 
-		appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeVideo)
+		appid, err := getAppID(beachfrontExt, openrtb_ext.BidTypeVideo)
 
 		if err != nil {
 			// Failed to get an appid, so this request is junk.
@@ -417,7 +412,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			continue
 		}
 
-		bfReqs[i].AppId = appid
+		bfReqs[i].AppID = appid
 
 		if beachfrontExt.VideoResponseType != "" {
 			bfReqs[i].VideoResponseType = beachfrontExt.VideoResponseType
@@ -463,8 +458,8 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		}
 
 		if imp.Video.H == 0 && imp.Video.W == 0 {
-			imp.Video.W = DefaultVideoWidth
-			imp.Video.H = DefaultVideoHeight
+			imp.Video.W = defaultVideoWidth
+			imp.Video.H = defaultVideoHeight
 		}
 
 		if len(bfReqs[i].Request.Cur) == 0 {
