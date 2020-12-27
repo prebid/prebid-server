@@ -688,8 +688,7 @@ func getIP(ip string) string {
 }
 
 func removeVideoElement(slice []beachfrontVideoRequest, s int) []beachfrontVideoRequest {
-	return slice
-	// return append(slice[:s], slice[s+1:]...)
+	return append(slice[:s], slice[s+1:]...)
 }
 
 // Builder builds a new instance of the Beachfront adapter for the given bidder with the given config.
