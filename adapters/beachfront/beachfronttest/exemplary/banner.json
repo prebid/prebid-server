@@ -2,7 +2,7 @@
   "mockBidRequest": {
     "id": "some_test_ad",
     "site": {
-      "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
+      "page": "https://some.domain.us/some/page.html"
     },
     "imp": [
       {
@@ -18,21 +18,22 @@
         "ext": {
           "bidder": {
             "bidfloor": 0.02,
-            "appId": "3b16770b-17af-4d22-daff-9606bdf2c9c3"
+            "appId": "bannerAppId1"
           }
         }
       }
     ]
   },
+
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://display.bfmio.com/prebid_display",
+        "uri": "https://qa.beachrtb.com/prebid_display",
         "body": {
           "slots": [
             {
               "slot": "",
-              "id": "3b16770b-17af-4d22-daff-9606bdf2c9c3",
+              "id": "bannerAppId1",
               "bidfloor": 0.02,
               "sizes": [
                 {
@@ -42,8 +43,8 @@
               ]
             }
           ],
-          "domain": "test.opposingviews.com",
-          "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534",
+          "domain": "some.domain.us",
+          "page": "https://some.domain.us/some/page.html",
           "referrer": "",
           "search": "",
           "secure": 1,
@@ -55,7 +56,7 @@
           "dnt": 0,
           "ua": "",
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.9.0",
+          "adapterVersion": "0.9.1",
           "user": {}
         }
       },
