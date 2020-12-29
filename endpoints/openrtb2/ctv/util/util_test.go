@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+
 	"github.com/PubMatic-OpenWrap/openrtb"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/types"
@@ -172,5 +174,33 @@ func TestSortByDealPriority(t *testing.T) {
 		}
 		assert.Equal(t, test.expectedBidIDOrdering, actual, test.scenario+" failed")
 		fmt.Println("")
+	}
+}
+
+func TestGetTargeting(t *testing.T) {
+	var tests = []struct {
+		scenario    string // Testcase scenario
+		targeting   string
+		bidder      string
+		key         openrtb_ext.TargetingKey
+		expectValue string
+		expectError bool
+	}{
+		{"no hb_bidder, expect error", "", "", openrtb_ext.HbCategoryDurationKey, "", true},
+		{"hb_bidder present, no key present", `{"x" : "y"}`, "appnexus", openrtb_ext.HbCategoryDurationKey, "", true},
+		{"hb_bidder present, required key present (of length 20)", `{"x" : "y", "hb_pb_cat_dur_appnex" : "5.00_sports_10s"}`, "appnexus", openrtb_ext.HbCategoryDurationKey, "5.00_sports_10s", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.scenario, func(t *testing.T) {
+			bid := new(openrtb.Bid)
+			bid.Ext = []byte(`{"prebid" : { "targeting" : ` + test.targeting + `}}`)
+			value, err := GetTargeting(test.key, openrtb_ext.BidderName(test.bidder), *bid)
+			if test.expectError {
+				assert.NotNil(t, err)
+				assert.Empty(t, value)
+			}
+			assert.Equal(t, test.expectValue, value)
+		})
 	}
 }

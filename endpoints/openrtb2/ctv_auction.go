@@ -532,6 +532,18 @@ func (deps *ctvEndpointDeps) getBids(resp *openrtb.BidResponse) {
 				continue
 			}
 
+			value, err := util.GetTargeting(openrtb_ext.HbCategoryDurationKey, openrtb_ext.BidderName(seat.Seat), *bid)
+			if nil == err {
+				// ignore error
+				addTargetingKey(bid, openrtb_ext.HbCategoryDurationKey, value)
+			}
+
+			value, err = util.GetTargeting(openrtb_ext.HbpbConstantKey, openrtb_ext.BidderName(seat.Seat), *bid)
+			if nil == err {
+				// ignore error
+				addTargetingKey(bid, openrtb_ext.HbpbConstantKey, value)
+			}
+
 			index := deps.impIndices[originalImpID]
 			if len(deps.impData[index].Config) == 0 {
 				//adding pure video bids
@@ -851,4 +863,16 @@ func getAdPodBidExtension(adpod *types.AdPodBid) json.RawMessage {
 	}
 	rawExt, _ := json.Marshal(bidExt)
 	return rawExt
+}
+
+func addTargetingKey(bid *openrtb.Bid, key openrtb_ext.TargetingKey, value string) error {
+	if nil == bid {
+		return errors.New("Invalid bid")
+	}
+
+	raw, err := jsonparser.Set(bid.Ext, []byte(strconv.Quote(value)), "prebid", "targeting", string(key))
+	if nil == err {
+		bid.Ext = raw
+	}
+	return err
 }
