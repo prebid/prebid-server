@@ -579,7 +579,7 @@ func (deps *ctvEndpointDeps) getBids(resp *openrtb.BidResponse) {
 				impBids.Bids = append(impBids.Bids, &types.Bid{
 					Bid:               bid,
 					FilterReasonCode:  constant.CTVRCDidNotGetChance,
-					Duration:          int(deps.impData[index].Config[sequenceNumber-1].MaxDuration),
+					Duration:          getAdDuration(*bid, deps.impData[index].Config[sequenceNumber-1].MaxDuration),
 					DealTierSatisfied: util.GetDealTierSatisfied(&ext),
 				})
 			}
@@ -865,6 +865,18 @@ func getAdPodBidExtension(adpod *types.AdPodBid) json.RawMessage {
 	return rawExt
 }
 
+//getAdDuration determines the duration of video ad from given bid.
+//it will try to get the actual ad duration returned by the bidder using prebid.video.duration
+//if prebid.video.duration = 0 or there is error occured in determing it then
+//impress
+func getAdDuration(bid openrtb.Bid, defaultDuration int64) int {
+	duration, err := jsonparser.GetInt(bid.Ext, "prebid", "video", "duration")
+	if nil != err || duration <= 0 {
+		duration = defaultDuration
+	}
+	return int(duration)
+}
+  
 func addTargetingKey(bid *openrtb.Bid, key openrtb_ext.TargetingKey, value string) error {
 	if nil == bid {
 		return errors.New("Invalid bid")

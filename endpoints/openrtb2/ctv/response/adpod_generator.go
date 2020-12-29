@@ -111,7 +111,7 @@ func (o *AdPodGenerator) getAdPodBids(timeout time.Duration) []*highestCombinati
 				hbc := o.getUniqueBids(durations)
 				hbc.timeTakenCombGen = combGenElapsedTime
 				responseCh <- hbc
-				util.Logf("Tid:%v GetUniqueBids Durations:%v Price:%v Time:%v Bids:%v", o.request.ID, hbc.durations[:], hbc.price, hbc.timeTakenCompExcl, hbc.bidIDs[:])
+				util.Logf("Tid:%v GetUniqueBids Durations:%v Price:%v DealBids:%v Time:%v Bids:%v", o.request.ID, hbc.durations[:], hbc.price, hbc.nDealBids, hbc.timeTakenCompExcl, hbc.bidIDs[:])
 			}
 			wg.Done()
 		}()
@@ -262,7 +262,7 @@ func findUniqueCombinations(data [][]*types.Bid, combination []int, maxCategoryS
 
 		ehc, inext, jnext, rc = evaluate(data[:], indices[:], totalBids, maxCategoryScore, maxDomainScore)
 		if nil != ehc {
-			if nil == hc || hc.nDealBids < ehc.nDealBids || hc.price < ehc.price {
+			if nil == hc || (hc.nDealBids == ehc.nDealBids && hc.price < ehc.price) || (hc.nDealBids < ehc.nDealBids) {
 				hc = ehc
 			} else {
 				// if you see current combination price lower than the highest one then break the loop
