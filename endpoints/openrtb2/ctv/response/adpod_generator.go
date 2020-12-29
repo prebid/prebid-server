@@ -179,8 +179,13 @@ func (o *AdPodGenerator) getMaxAdPodBid(results []*highestCombination) *types.Ad
 				rc.bid.FilterReasonCode = rc.reasonCode
 			}
 		}
+		if len(result.bidIDs) == 0 {
+			continue
+		}
 
-		if len(result.bidIDs) > 0 && (nil == maxResult || maxResult.nDealBids < result.nDealBids || maxResult.price < result.price) {
+		if nil == maxResult ||
+			(maxResult.nDealBids < result.nDealBids) ||
+			(maxResult.nDealBids == result.nDealBids && maxResult.price < result.price) {
 			maxResult = result
 		}
 	}
