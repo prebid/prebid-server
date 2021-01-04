@@ -37,12 +37,15 @@
       "publisher": {
         "id": "123"
       }
+    },
+    "device": {
+      "IFA": "dum-my"
     }
   },
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads-demo.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/ag55/cigent;brussels/tlall/xtdummy"
+        "uri": "https://ads-demo.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/ag55/cigent;brussels/tlall/xtdummy/xzdum-my"
       },
       "mockResponse": {
         "status": 200,

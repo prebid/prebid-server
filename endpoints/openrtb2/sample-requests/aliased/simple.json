@@ -1,4 +1,9 @@
 {
+  "description": "Imp extension doesn't come with valid bidder name but does come with valid bidder alias as defined in the mockAliases list.",
+  "config": {
+      "aliases": "{\"ext\":{\"prebid\":{\"aliases\":{\"alias1\":\"appnexus\"}}}}"
+  },
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "test.somepage.com"
@@ -12,10 +17,29 @@
           ]
         },
         "ext": {
-          "test1": {
+          "alias1": {
             "placementId": 12883451
           }
         }
       }
     ]
-  }
+  },
+  "expectedBidResponse": {
+    "id":"some-request-id",
+    "bidid":"test bid id",
+    "nbr":0,
+     "seatbid": [
+       {
+         "bid": [
+           {
+             "id": "alias1-bid",
+             "impid": "",
+             "price": 0
+           }
+         ],
+        "seat": "alias1-bids"
+       }
+     ]
+  },
+  "expectedReturnCode": 200
+}

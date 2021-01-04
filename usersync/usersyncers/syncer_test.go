@@ -15,6 +15,7 @@ func TestNewSyncerMap(t *testing.T) {
 	cfg := &config.Configuration{
 		Adapters: map[string]config.Adapter{
 			string(openrtb_ext.Bidder33Across):         syncConfig,
+			string(openrtb_ext.BidderAcuityAds):        syncConfig,
 			string(openrtb_ext.BidderAdform):           syncConfig,
 			string(openrtb_ext.BidderAdkernel):         syncConfig,
 			string(openrtb_ext.BidderAdkernelAdn):      syncConfig,
@@ -26,10 +27,13 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderAdtelligent):      syncConfig,
 			string(openrtb_ext.BidderAdvangelists):     syncConfig,
 			string(openrtb_ext.BidderAJA):              syncConfig,
+			string(openrtb_ext.BidderAMX):              syncConfig,
 			string(openrtb_ext.BidderAppnexus):         syncConfig,
+			string(openrtb_ext.BidderAudienceNetwork):  syncConfig,
 			string(openrtb_ext.BidderAvocet):           syncConfig,
 			string(openrtb_ext.BidderBeachfront):       syncConfig,
 			string(openrtb_ext.BidderBeintoo):          syncConfig,
+			string(openrtb_ext.BidderBetween):          syncConfig,
 			string(openrtb_ext.BidderBrightroll):       syncConfig,
 			string(openrtb_ext.BidderColossus):         syncConfig,
 			string(openrtb_ext.BidderConnectAd):        syncConfig,
@@ -38,10 +42,10 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderCpmstar):          syncConfig,
 			string(openrtb_ext.BidderDatablocks):       syncConfig,
 			string(openrtb_ext.BidderDmx):              syncConfig,
+			string(openrtb_ext.BidderDeepintent):       syncConfig,
 			string(openrtb_ext.BidderEmxDigital):       syncConfig,
 			string(openrtb_ext.BidderEngageBDR):        syncConfig,
 			string(openrtb_ext.BidderEPlanning):        syncConfig,
-			string(openrtb_ext.BidderFacebook):         syncConfig,
 			string(openrtb_ext.BidderGamma):            syncConfig,
 			string(openrtb_ext.BidderGamoshi):          syncConfig,
 			string(openrtb_ext.BidderGrid):             syncConfig,
@@ -49,6 +53,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderImprovedigital):   syncConfig,
 			string(openrtb_ext.BidderInvibes):          syncConfig,
 			string(openrtb_ext.BidderIx):               syncConfig,
+			string(openrtb_ext.BidderKrushmedia):       syncConfig,
 			string(openrtb_ext.BidderLifestreet):       syncConfig,
 			string(openrtb_ext.BidderLockerDome):       syncConfig,
 			string(openrtb_ext.BidderLogicad):          syncConfig,
@@ -57,6 +62,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderMgid):             syncConfig,
 			string(openrtb_ext.BidderNanoInteractive):  syncConfig,
 			string(openrtb_ext.BidderNinthDecimal):     syncConfig,
+			string(openrtb_ext.BidderNoBid):            syncConfig,
 			string(openrtb_ext.BidderOpenx):            syncConfig,
 			string(openrtb_ext.BidderPubmatic):         syncConfig,
 			string(openrtb_ext.BidderPulsepoint):       syncConfig,
@@ -64,11 +70,12 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderRTBHouse):         syncConfig,
 			string(openrtb_ext.BidderRubicon):          syncConfig,
 			string(openrtb_ext.BidderSharethrough):     syncConfig,
+			string(openrtb_ext.BidderSmartAdserver):    syncConfig,
+			string(openrtb_ext.BidderSmartRTB):         syncConfig,
+			string(openrtb_ext.BidderSmartyAds):        syncConfig,
 			string(openrtb_ext.BidderSomoaudience):     syncConfig,
 			string(openrtb_ext.BidderSonobi):           syncConfig,
 			string(openrtb_ext.BidderSovrn):            syncConfig,
-			string(openrtb_ext.BidderSmartadserver):    syncConfig,
-			string(openrtb_ext.BidderSmartRTB):         syncConfig,
 			string(openrtb_ext.BidderSynacormedia):     syncConfig,
 			string(openrtb_ext.BidderTelaria):          syncConfig,
 			string(openrtb_ext.BidderTriplelift):       syncConfig,
@@ -76,10 +83,10 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderUcfunnel):         syncConfig,
 			string(openrtb_ext.BidderUnruly):           syncConfig,
 			string(openrtb_ext.BidderValueImpression):  syncConfig,
-			string(openrtb_ext.BidderYieldlab):         syncConfig,
 			string(openrtb_ext.BidderVerizonMedia):     syncConfig,
 			string(openrtb_ext.BidderVisx):             syncConfig,
 			string(openrtb_ext.BidderVrtcal):           syncConfig,
+			string(openrtb_ext.BidderYieldlab):         syncConfig,
 			string(openrtb_ext.BidderYieldmo):          syncConfig,
 			string(openrtb_ext.BidderYieldone):         syncConfig,
 			string(openrtb_ext.BidderZeroClickFraud):   syncConfig,
@@ -97,11 +104,11 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderMobileFuse:   true,
 		openrtb_ext.BidderOrbidder:     true,
 		openrtb_ext.BidderPubnative:    true,
+		openrtb_ext.BidderSilverMob:    true,
 		openrtb_ext.BidderSmaato:       true,
 		openrtb_ext.BidderTappx:        true,
 		openrtb_ext.BidderYeahmobi:     true,
 		openrtb_ext.BidderAdprime:      true,
-		openrtb_ext.BidderBetween:      true,
 	}
 
 	for bidder, config := range cfg.Adapters {
@@ -110,7 +117,7 @@ func TestNewSyncerMap(t *testing.T) {
 	}
 
 	syncers := NewSyncerMap(cfg)
-	for _, bidderName := range openrtb_ext.BidderMap {
+	for _, bidderName := range openrtb_ext.CoreBidderNames() {
 		_, adapterWithoutSyncer := adaptersWithoutSyncers[bidderName]
 		if _, ok := syncers[bidderName]; !ok && !adapterWithoutSyncer {
 			t.Errorf("No syncer exists for adapter: %s", bidderName)

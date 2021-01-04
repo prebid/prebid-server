@@ -8,8 +8,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -201,10 +201,11 @@ const (
 )
 
 type BidderInfo struct {
-	Status       BidderStatus      `yaml:"status" json:"status"`
-	Maintainer   *MaintainerInfo   `yaml:"maintainer" json:"maintainer"`
-	Capabilities *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
-	AliasOf      string            `json:"aliasOf,omitempty"`
+	Status                  BidderStatus      `yaml:"status" json:"status"`
+	Maintainer              *MaintainerInfo   `yaml:"maintainer" json:"maintainer"`
+	Capabilities            *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
+	AliasOf                 string            `json:"aliasOf,omitempty"`
+	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" json:"-" xml:"-"`
 }
 
 type MaintainerInfo struct {
@@ -245,11 +246,11 @@ type parsedSupports struct {
 
 func parseBidderInfo(info BidderInfo) parsedBidderInfo {
 	var parsedInfo parsedBidderInfo
-	if info.Capabilities.App != nil {
+	if info.Capabilities != nil && info.Capabilities.App != nil {
 		parsedInfo.app.enabled = true
 		parsedInfo.app.banner, parsedInfo.app.video, parsedInfo.app.audio, parsedInfo.app.native = parseAllowedTypes(info.Capabilities.App.MediaTypes)
 	}
-	if info.Capabilities.Site != nil {
+	if info.Capabilities != nil && info.Capabilities.Site != nil {
 		parsedInfo.site.enabled = true
 		parsedInfo.site.banner, parsedInfo.site.video, parsedInfo.site.audio, parsedInfo.site.native = parseAllowedTypes(info.Capabilities.Site.MediaTypes)
 	}
@@ -257,5 +258,5 @@ func parseBidderInfo(info BidderInfo) parsedBidderInfo {
 }
 
 type ExtraRequestInfo struct {
-	PbsEntryPoint pbsmetrics.RequestType
+	PbsEntryPoint metrics.RequestType
 }

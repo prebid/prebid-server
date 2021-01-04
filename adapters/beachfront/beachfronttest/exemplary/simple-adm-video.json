@@ -1,34 +1,33 @@
 {
-  "mockBidRequest":
-  {
-    "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
-    "tmax":1000,
-    "source":{
-      "tid":"61b87329-8790-47b7-90dd-c53ae7ce1723"
+  "mockBidRequest": {
+    "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+    "tmax": 1000,
+    "source": {
+      "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
     },
-    "imp":[
+    "imp": [
       {
-        "id":"video1",
-        "ext":{
-          "bidder":{
-            "videoResponseType" : "adm",
-            "bidfloor":0.01,
-            "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
+        "id": "video1",
+        "ext": {
+          "bidder": {
+            "videoResponseType": "adm",
+            "bidfloor": 0.01,
+            "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76"
           }
         },
-        "video":{
-          "mimes":[
+        "video": {
+          "mimes": [
             "video/mp4"
           ],
-          "context":"instream",
-          "w":300,
-          "h":250
+          "context": "instream",
+          "w": 300,
+          "h": 250
         }
       }
     ],
-    "site":{
-      "publisher":{
-        "id":"publisher1"
+    "site": {
+      "publisher": {
+        "id": "publisher1"
       },
       "page": "http://example.com/whatever/something.html"
     },
@@ -42,7 +41,6 @@
       "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16"
     }
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -63,8 +61,8 @@
             }
           ],
           "site": {
-            "publisher":{
-              "id":"publisher1"
+            "publisher": {
+              "id": "publisher1"
             },
             "page": "http://example.com/whatever/something.html",
             "domain": "example.com"
@@ -75,10 +73,9 @@
             "ip": "192.168.255.255"
           },
           "source": {
-           "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
+            "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
           },
           "tmax": 1000,
-
           "cur": [
             "USD"
           ],
@@ -87,12 +84,12 @@
             "buyeruid": "some-buyer"
           }
         }
-        },
+      },
       "mockResponse": {
-        "status" : 200,
+        "status": 200,
         "body": {
-          "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
-          "seatBid":[
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "seatBid": [
             {
               "bid": [
                 {
@@ -122,29 +119,30 @@
       }
     }
   ],
-
-  "expectedBids": [
+  "expectedBidResponses": [
     {
-
-      "bid":[
+      "bids": [
         {
-          "id": "video1AdmVideo",
-          "impid": "video1",
-          "price": 20,
-          "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><AdSystem version=\"2.0\">IO</AdSystem><AdTitle>Neptune</AdTitle><Impression></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" width=\"640\" height=\"480\" scalable=\"1\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[http://player-cdn.beachfrontmedia.com/players/neptune/3/17/5/neptune-player.js]]></MediaFile></MediaFiles><AdParameters><![CDATA[{\"dsp\":\"5d8393417cbc8e5aa4fe2202,0.01\",\"inventory_id\":\"bid:95d219a2-6025-44ba-bff8-1dca987beaae:11bc5dd5-7421-4dd8-c926-40fa653bec76:${AUCTION_PRICE}:20.0\",\"request_endpoint\":\"//useast.bfmio.com/getmu\",\"inventory_type\":\"pre\"}]]></AdParameters></Linear></Creative></Creatives></InLine></Ad></VAST>",
-          "adid": "1088",
-          "adomain": [
-            "beachfront.io"
-          ],
-          "cid": "277",
-          "crid": "532",
-          "w": 300,
-          "h": 250,
-          "ext": {
-            "prebid": {
-              "type": "video"
+          "bid": {
+            "id": "video1AdmVideo",
+            "impid": "video1",
+            "price": 20,
+            "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><AdSystem version=\"2.0\">IO</AdSystem><AdTitle>Neptune</AdTitle><Impression></Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" width=\"640\" height=\"480\" scalable=\"1\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[http://player-cdn.beachfrontmedia.com/players/neptune/3/17/5/neptune-player.js]]></MediaFile></MediaFiles><AdParameters><![CDATA[{\"dsp\":\"5d8393417cbc8e5aa4fe2202,0.01\",\"inventory_id\":\"bid:95d219a2-6025-44ba-bff8-1dca987beaae:11bc5dd5-7421-4dd8-c926-40fa653bec76:${AUCTION_PRICE}:20.0\",\"request_endpoint\":\"//useast.bfmio.com/getmu\",\"inventory_type\":\"pre\"}]]></AdParameters></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "adid": "1088",
+            "adomain": [
+              "beachfront.io"
+            ],
+            "cid": "277",
+            "crid": "532",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
             }
-          }
+          },
+          "type": "video"
         }
       ]
     }

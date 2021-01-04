@@ -51,6 +51,11 @@ func TestSampleModule(t *testing.T) {
 	if count != 5 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
+
+	am.LogNotificationEventObject(&analytics.NotificationEvent{})
+	if count != 6 {
+		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
+	}
 }
 
 type sampleModule struct {
@@ -66,6 +71,8 @@ func (m *sampleModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) { *m
 func (m *sampleModule) LogSetUIDObject(so *analytics.SetUIDObject) { *m.count++ }
 
 func (m *sampleModule) LogAmpObject(ao *analytics.AmpObject) { *m.count++ }
+
+func (m *sampleModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { *m.count++ }
 
 func initAnalytics(count *int) analytics.PBSAnalyticsModule {
 	modules := make(enabledAnalytics, 0)
