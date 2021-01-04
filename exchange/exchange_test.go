@@ -19,10 +19,10 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
+	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
-	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
@@ -1156,13 +1156,13 @@ func TestPanicRecovery(t *testing.T) {
 		panic("panic!")
 	}
 
-	apnLabels := pbsmetrics.AdapterLabels{
-		Source:      pbsmetrics.DemandWeb,
-		RType:       pbsmetrics.ReqTypeORTB2Web,
+	apnLabels := metrics.AdapterLabels{
+		Source:      metrics.DemandWeb,
+		RType:       metrics.ReqTypeORTB2Web,
 		Adapter:     openrtb_ext.BidderAppnexus,
 		PubID:       "test1",
-		CookieFlag:  pbsmetrics.CookieFlagYes,
-		AdapterBids: pbsmetrics.AdapterBidNone,
+		CookieFlag:  metrics.CookieFlagYes,
+		AdapterBids: metrics.AdapterBidNone,
 	}
 
 	bidderRequests := []BidderRequest{

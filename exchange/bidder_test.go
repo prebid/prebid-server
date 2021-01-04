@@ -20,10 +20,9 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/metrics"
+	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
-	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
@@ -204,7 +203,7 @@ func TestBidderTimeout(t *testing.T) {
 		Bidder:     &mixedMultiBidder{},
 		BidderName: openrtb_ext.BidderAppnexus,
 		Client:     server.Client(),
-		me:         &metricsConf.DummyMetricsEngine{},
+		me:         &metricsConfig.DummyMetricsEngine{},
 	}
 
 	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
@@ -247,7 +246,7 @@ func TestConnectionClose(t *testing.T) {
 		Bidder:     &mixedMultiBidder{},
 		Client:     server.Client(),
 		BidderName: openrtb_ext.BidderAppnexus,
-		me:         &metricsConf.DummyMetricsEngine{},
+		me:         &metricsConfig.DummyMetricsEngine{},
 	}
 
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
@@ -1218,7 +1217,7 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	}
 
 	// setup a mock metrics engine and its expectation
-	metrics := &pbsmetrics.MetricsEngineMock{}
+	metrics := &metrics.MetricsEngineMock{}
 	expectedAdapterName := openrtb_ext.BidderAppnexus
 	compareConnWaitTime := func(dur time.Duration) bool { return dur.Nanoseconds() > 0 }
 
@@ -1270,7 +1269,7 @@ func (TLSHandshakeTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 
 func TestCallRecordDNSTime(t *testing.T) {
 	// setup a mock metrics engine and its expectation
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordDNSTime", mock.Anything).Return()
 
 	// Instantiate the bidder that will send the request. We'll make sure to use an
@@ -1291,7 +1290,7 @@ func TestCallRecordDNSTime(t *testing.T) {
 
 func TestCallRecordTLSHandshakeTime(t *testing.T) {
 	// setup a mock metrics engine and its expectation
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordTLSHandshakeTime", mock.Anything).Return()
 
 	// Instantiate the bidder that will send the request. We'll make sure to use an
@@ -1328,7 +1327,7 @@ func TestTimeoutNotificationOff(t *testing.T) {
 		Bidder: bidderImpl,
 		Client: server.Client(),
 		config: bidderAdapterConfig{Debug: config.Debug{}},
-		me:     &metricsConf.DummyMetricsEngine{},
+		me:     &metricsConfig.DummyMetricsEngine{},
 	}
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")
@@ -1369,7 +1368,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 				},
 			},
 		},
-		me: &metricsConf.DummyMetricsEngine{},
+		me: &metricsConfig.DummyMetricsEngine{},
 	}
 
 	// Unwrap To Mimic exchange.go Casting Code

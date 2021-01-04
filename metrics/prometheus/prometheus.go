@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -429,26 +429,26 @@ func (m *Metrics) RecordConnectionClose(success bool) {
 	}
 }
 
-func (m *Metrics) RecordRequest(labels pbsmetrics.Labels) {
+func (m *Metrics) RecordRequest(labels metrics.Labels) {
 	m.requests.With(prometheus.Labels{
 		requestTypeLabel:   string(labels.RType),
 		requestStatusLabel: string(labels.RequestStatus),
 	}).Inc()
 
-	if labels.CookieFlag == pbsmetrics.CookieFlagNo {
+	if labels.CookieFlag == metrics.CookieFlagNo {
 		m.requestsWithoutCookie.With(prometheus.Labels{
 			requestTypeLabel: string(labels.RType),
 		}).Inc()
 	}
 
-	if labels.PubID != pbsmetrics.PublisherUnknown {
+	if labels.PubID != metrics.PublisherUnknown {
 		m.accountRequests.With(prometheus.Labels{
 			accountLabel: labels.PubID,
 		}).Inc()
 	}
 }
 
-func (m *Metrics) RecordImps(labels pbsmetrics.ImpLabels) {
+func (m *Metrics) RecordImps(labels metrics.ImpLabels) {
 	m.impressions.With(prometheus.Labels{
 		isBannerLabel: strconv.FormatBool(labels.BannerImps),
 		isVideoLabel:  strconv.FormatBool(labels.VideoImps),
@@ -457,73 +457,73 @@ func (m *Metrics) RecordImps(labels pbsmetrics.ImpLabels) {
 	}).Inc()
 }
 
-func (m *Metrics) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
+func (m *Metrics) RecordLegacyImps(labels metrics.Labels, numImps int) {
 	m.impressionsLegacy.Add(float64(numImps))
 }
 
-func (m *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
-	if labels.RequestStatus == pbsmetrics.RequestStatusOK {
+func (m *Metrics) RecordRequestTime(labels metrics.Labels, length time.Duration) {
+	if labels.RequestStatus == metrics.RequestStatusOK {
 		m.requestsTimer.With(prometheus.Labels{
 			requestTypeLabel: string(labels.RType),
 		}).Observe(length.Seconds())
 	}
 }
 
-func (m *Metrics) RecordStoredDataFetchTime(labels pbsmetrics.StoredDataLabels, length time.Duration) {
+func (m *Metrics) RecordStoredDataFetchTime(labels metrics.StoredDataLabels, length time.Duration) {
 	switch labels.DataType {
-	case pbsmetrics.AccountDataType:
+	case metrics.AccountDataType:
 		m.storedAccountFetchTimer.With(prometheus.Labels{
 			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
-	case pbsmetrics.AMPDataType:
+	case metrics.AMPDataType:
 		m.storedAMPFetchTimer.With(prometheus.Labels{
 			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
-	case pbsmetrics.CategoryDataType:
+	case metrics.CategoryDataType:
 		m.storedCategoryFetchTimer.With(prometheus.Labels{
 			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
-	case pbsmetrics.RequestDataType:
+	case metrics.RequestDataType:
 		m.storedRequestFetchTimer.With(prometheus.Labels{
 			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
-	case pbsmetrics.VideoDataType:
+	case metrics.VideoDataType:
 		m.storedVideoFetchTimer.With(prometheus.Labels{
 			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
 	}
 }
 
-func (m *Metrics) RecordStoredDataError(labels pbsmetrics.StoredDataLabels) {
+func (m *Metrics) RecordStoredDataError(labels metrics.StoredDataLabels) {
 	switch labels.DataType {
-	case pbsmetrics.AccountDataType:
+	case metrics.AccountDataType:
 		m.storedAccountErrors.With(prometheus.Labels{
 			storedDataErrorLabel: string(labels.Error),
 		}).Inc()
-	case pbsmetrics.AMPDataType:
+	case metrics.AMPDataType:
 		m.storedAMPErrors.With(prometheus.Labels{
 			storedDataErrorLabel: string(labels.Error),
 		}).Inc()
-	case pbsmetrics.CategoryDataType:
+	case metrics.CategoryDataType:
 		m.storedCategoryErrors.With(prometheus.Labels{
 			storedDataErrorLabel: string(labels.Error),
 		}).Inc()
-	case pbsmetrics.RequestDataType:
+	case metrics.RequestDataType:
 		m.storedRequestErrors.With(prometheus.Labels{
 			storedDataErrorLabel: string(labels.Error),
 		}).Inc()
-	case pbsmetrics.VideoDataType:
+	case metrics.VideoDataType:
 		m.storedVideoErrors.With(prometheus.Labels{
 			storedDataErrorLabel: string(labels.Error),
 		}).Inc()
 	}
 }
 
-func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
+func (m *Metrics) RecordAdapterRequest(labels metrics.AdapterLabels) {
 	m.adapterRequests.With(prometheus.Labels{
 		adapterLabel: string(labels.Adapter),
 		cookieLabel:  string(labels.CookieFlag),
-		hasBidsLabel: strconv.FormatBool(labels.AdapterBids == pbsmetrics.AdapterBidPresent),
+		hasBidsLabel: strconv.FormatBool(labels.AdapterBids == metrics.AdapterBidPresent),
 	}).Inc()
 
 	for err := range labels.AdapterErrors {
@@ -564,13 +564,13 @@ func (m *Metrics) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
 	m.tlsHandhakeTimer.Observe(tlsHandshakeTime.Seconds())
 }
 
-func (m *Metrics) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
+func (m *Metrics) RecordAdapterPanic(labels metrics.AdapterLabels) {
 	m.adapterPanics.With(prometheus.Labels{
 		adapterLabel: string(labels.Adapter),
 	}).Inc()
 }
 
-func (m *Metrics) RecordAdapterBidReceived(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+func (m *Metrics) RecordAdapterBidReceived(labels metrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	markupDelivery := markupDeliveryNurl
 	if hasAdm {
 		markupDelivery = markupDeliveryAdm
@@ -582,13 +582,13 @@ func (m *Metrics) RecordAdapterBidReceived(labels pbsmetrics.AdapterLabels, bidT
 	}).Inc()
 }
 
-func (m *Metrics) RecordAdapterPrice(labels pbsmetrics.AdapterLabels, cpm float64) {
+func (m *Metrics) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) {
 	m.adapterPrices.With(prometheus.Labels{
 		adapterLabel: string(labels.Adapter),
 	}).Observe(cpm)
 }
 
-func (m *Metrics) RecordAdapterTime(labels pbsmetrics.AdapterLabels, length time.Duration) {
+func (m *Metrics) RecordAdapterTime(labels metrics.AdapterLabels, length time.Duration) {
 	if len(labels.AdapterErrors) == 0 {
 		m.adapterRequestsTimer.With(prometheus.Labels{
 			adapterLabel: string(labels.Adapter),
@@ -607,7 +607,7 @@ func (m *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, privac
 	}).Inc()
 }
 
-func (m *Metrics) RecordUserIDSet(labels pbsmetrics.UserLabels) {
+func (m *Metrics) RecordUserIDSet(labels metrics.UserLabels) {
 	adapter := string(labels.Bidder)
 	if adapter != "" {
 		m.adapterUserSync.With(prometheus.Labels{
@@ -617,19 +617,19 @@ func (m *Metrics) RecordUserIDSet(labels pbsmetrics.UserLabels) {
 	}
 }
 
-func (m *Metrics) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+func (m *Metrics) RecordStoredReqCacheResult(cacheResult metrics.CacheResult, inc int) {
 	m.storedRequestCacheResult.With(prometheus.Labels{
 		cacheResultLabel: string(cacheResult),
 	}).Add(float64(inc))
 }
 
-func (m *Metrics) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+func (m *Metrics) RecordStoredImpCacheResult(cacheResult metrics.CacheResult, inc int) {
 	m.storedImpressionsCacheResult.With(prometheus.Labels{
 		cacheResultLabel: string(cacheResult),
 	}).Add(float64(inc))
 }
 
-func (m *Metrics) RecordAccountCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+func (m *Metrics) RecordAccountCacheResult(cacheResult metrics.CacheResult, inc int) {
 	m.accountCacheResult.With(prometheus.Labels{
 		cacheResultLabel: string(cacheResult),
 	}).Add(float64(inc))
@@ -641,7 +641,7 @@ func (m *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Duratio
 	}).Observe(length.Seconds())
 }
 
-func (m *Metrics) RecordRequestQueueTime(success bool, requestType pbsmetrics.RequestType, length time.Duration) {
+func (m *Metrics) RecordRequestQueueTime(success bool, requestType metrics.RequestType, length time.Duration) {
 	successLabelFormatted := requestRejectLabel
 	if success {
 		successLabelFormatted = requestSuccessLabel
@@ -664,7 +664,7 @@ func (m *Metrics) RecordTimeoutNotice(success bool) {
 	}
 }
 
-func (m *Metrics) RecordRequestPrivacy(privacy pbsmetrics.PrivacyLabels) {
+func (m *Metrics) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
 	if privacy.CCPAProvided {
 		m.privacyCCPA.With(prometheus.Labels{
 			sourceLabel: sourceRequest,

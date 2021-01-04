@@ -27,8 +27,8 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/stretchr/testify/assert"
@@ -1695,12 +1695,12 @@ func TestGetAccountID(t *testing.T) {
 		{
 			description:   "Neither Publisher.ID or Publisher.Ext.Prebid.ParentAccount present",
 			pub:           &openrtb.Publisher{},
-			expectedAccID: pbsmetrics.PublisherUnknown,
+			expectedAccID: metrics.PublisherUnknown,
 		},
 		{
 			description:   "Publisher is nil",
 			pub:           nil,
-			expectedAccID: pbsmetrics.PublisherUnknown,
+			expectedAccID: metrics.PublisherUnknown,
 		},
 	}
 

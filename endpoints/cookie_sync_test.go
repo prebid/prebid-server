@@ -18,8 +18,8 @@ import (
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 )
