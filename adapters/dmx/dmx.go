@@ -31,6 +31,14 @@ type dmxExt struct {
 	Bidder dmxParams `json:"bidder"`
 }
 
+type dmxPubExt struct {
+	Dmx dmxPubExtId `json:"dmx,omitempty"`
+}
+
+type dmxPubExtId struct {
+	Id string `json:"id,omitempty"`
+}
+
 type dmxParams struct {
 	TagId       string `json:"tagid,omitempty"`
 	DmxId       string `json:"dmxid,omitempty"`
@@ -55,6 +63,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	var anyHasId = false
 	var reqCopy openrtb.BidRequest = *request
 	var dmxReq *openrtb.BidRequest = &reqCopy
+	var dmxRawPubId dmxPubExt
 
 	if request.User == nil {
 		if request.App == nil {
@@ -77,6 +86,15 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		appPublisherCopy := *request.App.Publisher
 		dmxReq.App = &appCopy
 		dmxReq.App.Publisher = &appPublisherCopy
+		if rootExtInfo.Bidder.MemberId != "" {
+			dmxRawPubId.Dmx.Id = rootExtInfo.Bidder.MemberId
+		} else {
+			dmxRawPubId.Dmx.Id = rootExtInfo.Bidder.PublisherId
+		}
+		ext, err := json.Marshal(dmxRawPubId)
+		if err == nil {
+		}
+		dmxReq.App.Publisher.Ext = ext
 		if dmxReq.App.ID != "" {
 			anyHasId = true
 		}
@@ -91,6 +109,15 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		dmxReq.Site.Publisher = &sitePublisherCopy
 		if dmxReq.Site.Publisher != nil {
 			dmxReq.Site.Publisher.ID = publisherId
+			if rootExtInfo.Bidder.MemberId != "" {
+				dmxRawPubId.Dmx.Id = rootExtInfo.Bidder.MemberId
+			} else {
+				dmxRawPubId.Dmx.Id = rootExtInfo.Bidder.PublisherId
+			}
+			ext, err := json.Marshal(dmxRawPubId)
+			if err == nil {
+			}
+			dmxReq.Site.Publisher.Ext = ext
 		} else {
 			dmxReq.Site.Publisher = &openrtb.Publisher{ID: publisherId}
 		}
