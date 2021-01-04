@@ -1058,12 +1058,8 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		gdpr                string
 		gdprConsent         string
 		gdprScrub           bool
-<<<<<<< HEAD
 		userSyncIfAmbiguous bool
-		expectPrivacyLabels pbsmetrics.PrivacyLabels
-=======
 		expectPrivacyLabels metrics.PrivacyLabels
->>>>>>> upstream/master
 	}{
 		{
 			description:        "Enforce - TCF Invalid",
@@ -1169,9 +1165,9 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprConsent:         "BONV8oqONXwgmADACHENAO7pqzAAppY",
 			gdprScrub:           true,
 			userSyncIfAmbiguous: false,
-			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
-				GDPRTCFVersion: pbsmetrics.TCFVersionV1,
+				GDPRTCFVersion: metrics.TCFVersionV1,
 			},
 		},
 		{
@@ -1182,7 +1178,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprConsent:         "BONV8oqONXwgmADACHENAO7pqzAAppY",
 			gdprScrub:           false,
 			userSyncIfAmbiguous: true,
-			expectPrivacyLabels: pbsmetrics.PrivacyLabels{
+			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
 				GDPRTCFVersion: "",
 			},
