@@ -31,7 +31,7 @@ const (
 )
 
 var molocoSKADNetIDs = map[string]bool{
-	"9T245VHMPL.skadnetwork": true,
+	"9t245vhmpl.skadnetwork": true,
 }
 
 type molocoVideoExt struct {
