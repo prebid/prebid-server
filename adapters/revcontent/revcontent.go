@@ -30,6 +30,10 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 		return nil, []error{err}
 	}
 
+	if err := checkRequest(request); err != nil {
+		return nil, []error{err}
+	}
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
@@ -40,6 +44,22 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 		Headers: headers,
 	}
 	return []*adapters.RequestData{req}, nil
+}
+
+func checkRequest(request *openrtb.BidRequest) error {
+	if (request.App == nil || len(request.App.Name) == 0) && (request.Site == nil || len(request.Site.Domain) == 0) {
+		return &errortypes.BadInput{
+			Message: "Impression is missing app name or site domain, and must contain one.",
+		}
+	}
+
+	if request.App != nil && request.Site != nil {
+		return &errortypes.BadInput{
+			Message: "Impression contains both app and site, and must contain only one.",
+		}
+	}
+
+	return nil
 }
 
 // MakeBids make the bids for the bid response.

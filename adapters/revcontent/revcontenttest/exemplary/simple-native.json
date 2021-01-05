@@ -9,7 +9,10 @@
           "ver": "1.2"
         }
       }
-    ]
+    ],
+    "site": {
+      "domain": "test.com"
+    }
   },
   "httpcalls": [
     {
@@ -25,7 +28,10 @@
                 "ver": "1.2"
               }
             }
-          ]
+          ],
+          "site": {
+            "domain": "test.com"
+          }
         }
       },
       "mockResponse": {

@@ -8,7 +8,10 @@
           "format": [{"w": 300, "h": 50}]
         }
       }
-    ]
+    ],
+    "site": {
+      "domain": "test.com"
+    }
   },
 
   "httpCalls": [
@@ -24,7 +27,10 @@
                 "format": [{"w": 300, "h": 50}]
               }
             }
-          ]
+          ],
+          "site": {
+            "domain": "test.com"
+          }
         }
       },
       "mockResponse": {
