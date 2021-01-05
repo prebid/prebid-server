@@ -60,10 +60,6 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 	return false, false, false, nil
 }
 
-func (p *permissionsImpl) AMPException() bool {
-	return p.cfg.AMPException
-}
-
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string) (bool, error) {
 	// If we're not given a consent string, respect the preferences in the app config.
 	if consent == "" {
@@ -225,10 +221,6 @@ func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext
 	return true, true, true, nil
 }
 
-func (a AlwaysAllow) AMPException() bool {
-	return false
-}
-
 // Exporting to allow for easy test setups
 type AlwaysFail struct{}
 
@@ -242,8 +234,4 @@ func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 
 func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
 	return false, false, false, nil
-}
-
-func (a AlwaysFail) AMPException() bool {
-	return false
 }
