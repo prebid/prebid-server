@@ -598,14 +598,14 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 						BidVideo:     impVideo,
 						DealPriority: bidExt.Appnexus.DealPriority,
 					})
-					if len(internalRequest.Cur) > 0 {
-						bidResponse.Currency = internalRequest.Cur[0]
-					}
 				} else {
 					errs = append(errs, err)
 				}
 			}
 		}
+	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
 	}
 	return bidResponse, errs
 }
