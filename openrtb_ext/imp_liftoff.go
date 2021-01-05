@@ -2,8 +2,9 @@ package openrtb_ext
 
 // ExtImpLiftoff defines the contract for bidrequest.imp[i].ext.liftoff
 type ExtImpLiftoff struct {
-	Video  liftoffVideoParams `json:"video"`
-	Region string             `json:"region"`
+	Video          liftoffVideoParams `json:"video"`
+	Region         string             `json:"region"`
+	SKADNSupported bool               `json:"skadn_supported"`
 }
 
 // liftoffVideoParams defines the contract for bidrequest.imp[i].ext.liftoff.video

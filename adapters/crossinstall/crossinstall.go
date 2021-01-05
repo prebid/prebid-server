@@ -111,10 +111,14 @@ func (adapter *CrossInstallAdapter) MakeRequests(request *openrtb.BidRequest, _ 
 			continue
 		}
 
+		skadn := openrtb_ext.SKADN{}
+		if crossinstallExt.SKADNSupported {
+			skadn = adapters.FilterPrebidSKADNExt(bidderExt.Prebid, crossinstallSKADNetIDs)
+		}
+
 		impExt := crossinstallImpExt{
 			Reward: crossinstallExt.Reward,
-
-			SKADN: adapters.FilterPrebidSKADNExt(bidderExt.Prebid, crossinstallSKADNetIDs),
+			SKADN:  skadn,
 		}
 
 		thisImp.Ext, err = json.Marshal(&impExt)

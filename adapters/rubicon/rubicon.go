@@ -723,6 +723,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			}
 		}
 
+		skadn := openrtb_ext.SKADN{}
+		if rubiconExt.SKADNSupported {
+			skadn = adapters.FilterPrebidSKADNExt(bidderExt.Prebid, rubiconSKADNetIDs)
+		}
+
 		impExt := rubiconImpExt{
 			RP: rubiconImpExtRP{
 				ZoneID: rubiconExt.ZoneId,
@@ -730,7 +735,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
 			ViewabilityVendors: rubiconExt.ViewabilityVendors,
-			SKADN:              adapters.FilterPrebidSKADNExt(bidderExt.Prebid, rubiconSKADNetIDs),
+			SKADN:              skadn,
 		}
 		thisImp.Ext, err = json.Marshal(&impExt)
 		if err != nil {

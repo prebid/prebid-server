@@ -32,7 +32,7 @@ const (
 )
 
 var liftoffSKADNetIDs = map[string]bool{
-	"7UG5ZH24HU.skadnetwork": true,
+	"7ug5zh24hu.skadnetwork": true,
 }
 
 // PlacementType ...
@@ -196,9 +196,14 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			thisImp.Banner = &bannerCopy
 		}
 
+		skadn := openrtb_ext.SKADN{}
+		if liftoffExt.SKADNSupported {
+			skadn = adapters.FilterPrebidSKADNExt(bidderExt.Prebid, liftoffSKADNetIDs)
+		}
+
 		impExt := liftoffImpExt{
 			Rewarded: rewarded,
-			SKADN:    adapters.FilterPrebidSKADNExt(bidderExt.Prebid, liftoffSKADNetIDs),
+			SKADN:    skadn,
 		}
 
 		thisImp.Ext, err = json.Marshal(&impExt)

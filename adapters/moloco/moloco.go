@@ -150,9 +150,14 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 			thisImp.Video = &videoCopy
 		}
 
+		skadn := openrtb_ext.SKADN{}
+		if molocoExt.SKADNSupported {
+			skadn = adapters.FilterPrebidSKADNExt(bidderExt.Prebid, molocoSKADNetIDs)
+		}
+
 		// Add impression extensions
 		impExt := molocoImpExt{
-			SKADN: adapters.FilterPrebidSKADNExt(bidderExt.Prebid, molocoSKADNetIDs),
+			SKADN: skadn,
 		}
 
 		thisImp.Ext, err = json.Marshal(&impExt)

@@ -22,7 +22,7 @@ const (
 	SG     Region = "sg"
 )
 
-var turusxSKADNetIDs = map[string]bool{
+var taurusxExtSKADNetIDs = map[string]bool{
 	"22mmun2rn5.skadnetwork": true,
 }
 
@@ -126,9 +126,14 @@ func (adapter *TaurusXAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 			continue
 		}
 
+		skadn := openrtb_ext.SKADN{}
+		if taurusxExt.SKADNSupported {
+			skadn = adapters.FilterPrebidSKADNExt(bidderExt.Prebid, taurusxExtSKADNetIDs)
+		}
+
 		// Add impression extensions
 		impExt := taurusxImpExt{
-			SKADN: adapters.FilterPrebidSKADNExt(bidderExt.Prebid, turusxSKADNetIDs),
+			SKADN: skadn,
 		}
 
 		thisImp.Ext, err = json.Marshal(&impExt)
