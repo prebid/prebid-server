@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
@@ -51,7 +51,7 @@ type Cacheable struct {
 	Timestamp int64  `json:"timestamp,omitempty"` // this is "/vtrack" specific
 }
 
-func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
+func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics metrics.MetricsEngine) Client {
 	return &clientImpl{
 		httpClient:          httpClient,
 		putUrl:              conf.GetBaseURL() + "/cache",
@@ -68,7 +68,7 @@ type clientImpl struct {
 	externalCacheScheme string
 	externalCacheHost   string
 	externalCachePath   string
-	metrics             pbsmetrics.MetricsEngine
+	metrics             metrics.MetricsEngine
 }
 
 func (c *clientImpl) GetExtCacheData() (string, string, string) {
