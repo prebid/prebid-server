@@ -11,19 +11,19 @@ import (
 	"net/http"
 )
 
-type Adapter struct {
+type adapter struct {
 	endpoint string
 }
 
 // Builder builds a new instance of the Revcontent adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &Adapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *Adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	reqBody, err := json.Marshal(request)
 
 	if err != nil {
@@ -53,17 +53,11 @@ func checkRequest(request *openrtb.BidRequest) error {
 		}
 	}
 
-	if request.App != nil && request.Site != nil {
-		return &errortypes.BadInput{
-			Message: "Impression contains both app and site, and must contain only one.",
-		}
-	}
-
 	return nil
 }
 
 // MakeBids make the bids for the bid response.
-func (a *Adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
