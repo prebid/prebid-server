@@ -257,7 +257,3 @@ func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
 	return true, true, true, nil
 }
-
-func (g *gdprPerms) AMPException() bool {
-	return false
-}

@@ -34,10 +34,6 @@ func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrt
 	return p.personalInfoAllowed, p.personalInfoAllowed, p.personalInfoAllowed, nil
 }
 
-func (p *permissionsMock) AMPException() bool {
-	return false
-}
-
 func assertReq(t *testing.T, bidderRequests []BidderRequest,
 	applyCOPPA bool, consentedVendors map[string]bool) {
 	// assert individual bidder requests

@@ -1,15 +1,11 @@
 maintainer:
-  email: "pdu-supply-prebid@indexexchange.com"
+  email: "platform@mobfox.com"
 capabilities:
   app:
     mediaTypes:
       - banner
       - video
-      - native
-      - audio
   site:
     mediaTypes:
       - banner
       - video
-      - native
-      - audio

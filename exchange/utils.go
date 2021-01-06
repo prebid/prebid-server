@@ -77,7 +77,6 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	gdpr := extractGDPR(req.BidRequest, usersyncIfAmbiguous)
 	consent := extractConsent(req.BidRequest)
-	ampGDPRException := (req.LegacyLabels.RType == metrics.ReqTypeAMP) && gDPR.AMPException()
 
 	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &req.Account, aliases, integrationTypeMap[req.LegacyLabels.RType])
 	if err != nil {
@@ -125,7 +124,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			privacyEnforcement.GDPRID = false
 		}
 
-		privacyEnforcement.Apply(bidderRequest.BidRequest, ampGDPRException)
+		privacyEnforcement.Apply(bidderRequest.BidRequest)
 	}
 
 	return
