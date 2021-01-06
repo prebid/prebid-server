@@ -55,12 +55,18 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 		return true, true, true, nil
 	}
 
+	if gdprSignal == SignalAmbiguous {
+		if p.cfg.UsersyncIfAmbiguous {
+			gdprSignal = SignalNo
+		} else {
+			gdprSignal = SignalYes
+		}
+	}
+
 	if gdprSignal == SignalNo {
 		return true, true, true, nil
 	}
-	if consent == "" && gdprSignal == SignalAmbiguous {
-		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
-	}
+
 	if consent == "" && gdprSignal == SignalYes {
 		return false, false, false, nil
 	}
