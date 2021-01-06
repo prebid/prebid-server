@@ -9,8 +9,8 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/events"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 // eventTracking has configuration fields needed for adding event tracking to an auction response
@@ -19,7 +19,7 @@ type eventTracking struct {
 	enabledForAccount  bool
 	enabledForRequest  bool
 	auctionTimestampMs int64
-	integration        pbsmetrics.DemandSource // web app amp
+	integration        metrics.DemandSource // web app amp
 	bidderInfos        adapters.BidderInfos
 	externalURL        string
 }
