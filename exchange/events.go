@@ -53,7 +53,7 @@ func (ev *eventTracking) modifyBidsForEvents(seatBids map[openrtb_ext.BidderName
 
 // isModifyingVASTXMLAllowed returns true if this bidder config allows modifying VAST XML for event tracking
 func (ev *eventTracking) isModifyingVASTXMLAllowed(bidderName string) bool {
-	return ev.bidderInfos[bidderName].ModifyingVastXmlAllowed && ev.enabledForAccount
+	return ev.bidderInfos[bidderName].ModifyingVastXmlAllowed && (ev.enabledForAccount || ev.enabledForRequest)
 }
 
 // modifyBidVAST injects event Impression url if needed, otherwise returns original VAST string
