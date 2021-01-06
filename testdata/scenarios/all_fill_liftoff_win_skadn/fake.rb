@@ -54,7 +54,7 @@ class Endpoint < Struct.new(:source, :method, :path, :status)
 end
 endpoints = [
   Endpoint.new('../../responses/rubicon/fill_low_bid.json', 'POST', '/a/api/exchange.json'),
-  Endpoint.new('../../responses/liftoff/fill_high_skadn_bid.json', 'POST', '/givemeads'),
+  Endpoint.new('../../responses/liftoff/fill_high_bid_skadn.json', 'POST', '/givemeads'),
   Endpoint.new('../../responses/moloco/fill_low_bid.json', 'POST', '/moloco_givemeads'),
   Endpoint.new('../../responses/crossinstall/fill_low_bid.json', 'POST', '/crossinstall_givemeads'),
   Endpoint.new('../../responses/taurusx/fill_low_bid.json', 'POST', '/taurusx_givemeads'),
