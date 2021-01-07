@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"reflect"
 	"testing"
 
 	"encoding/json"
@@ -540,4 +541,34 @@ func TestGDPRMobile(t *testing.T) {
 
 	assert.EqualValues(t, resp.User.Ext, userExt)
 	assert.EqualValues(t, resp.Regs.Ext, regsExt)
+}
+
+func TestFilterArrayWithMap(t *testing.T) {
+
+	staticList := []string{"abc", "def"}
+	cases := []struct {
+		tag       string
+		baseList  []string
+		filter    map[string]bool
+		expOutput []string
+		message   string
+	}{
+		{"Empty input", staticList, map[string]bool{}, []string{}, "failed to filter empty array\n"},
+		{"Item not in list", staticList, map[string]bool{"xyz": true}, []string{}, "failed to item not in list\n"},
+		{"Has one value", staticList, map[string]bool{"abc": true}, []string{"abc"}, "failed to filter one element\n"},
+		{"Has more than one value", staticList, map[string]bool{"abc": true, "def": true}, []string{"abc", "def"}, "failed to filter more than one element\n"},
+		{"No base set", []string{}, map[string]bool{"abc": true, "def": true}, []string{}, "found element in empty set\n"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.tag, func(t *testing.T) {
+			result := filterArrayWithMap(c.baseList, c.filter)
+			if len(result) == 0 && len(c.expOutput) == 0 {
+				return
+			}
+			if !reflect.DeepEqual(c.expOutput[:], result) {
+				t.Fatalf(c.message)
+			}
+		})
+	}
 }

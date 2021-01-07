@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 
 	"github.com/mxmCherry/openrtb"
@@ -172,4 +173,29 @@ func copyFormats(sizes []openrtb.Format) []openrtb.Format {
 		sizesCopy[i].Ext = append([]byte(nil), sizes[i].Ext...)
 	}
 	return sizesCopy
+}
+
+// FilterPrebidSKADNExt -- Added by Tapjoy to handle SKADN DSP extensions
+// returns filtered openrtb_ext.SKADN extension object filtered by map
+func FilterPrebidSKADNExt(prebidExt *openrtb_ext.ExtImpPrebid, filterMap map[string]bool) openrtb_ext.SKADN {
+	if prebidExt == nil {
+		return openrtb_ext.SKADN{}
+	}
+
+	return openrtb_ext.SKADN{
+		Version:    prebidExt.SKADN.Version,
+		SourceApp:  prebidExt.SKADN.SourceApp,
+		SKADNetIDs: filterArrayWithMap(prebidExt.SKADN.SKADNetIDs, filterMap),
+	}
+}
+
+// filterArrayWithMap -- Added by Tapjoy to handle SKADN DSP filtering
+// returns a subset elements of arr whose keys were in filterMap
+func filterArrayWithMap(arr []string, filterMap map[string]bool) (ret []string) {
+	for _, id := range arr {
+		if _, ok := filterMap[id]; ok {
+			ret = append(ret, id)
+		}
+	}
+	return ret
 }

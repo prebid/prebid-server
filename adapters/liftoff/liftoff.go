@@ -31,6 +31,10 @@ const (
 	Vertical   Orientation = "v"
 )
 
+var liftoffSKADNetIDs = map[string]bool{
+	"7ug5zh24hu.skadnetwork": true,
+}
+
 // PlacementType ...
 type PlacementType string
 
@@ -65,7 +69,8 @@ type liftoffVideoExt struct {
 }
 
 type liftoffImpExt struct {
-	Rewarded int `json:"rewarded"`
+	Rewarded int               `json:"rewarded"`
+	SKADN    openrtb_ext.SKADN `json:"skadn"`
 }
 
 type liftoffAppExt struct {
@@ -191,9 +196,16 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			thisImp.Banner = &bannerCopy
 		}
 
+		skadn := openrtb_ext.SKADN{}
+		if liftoffExt.SKADNSupported {
+			skadn = adapters.FilterPrebidSKADNExt(bidderExt.Prebid, liftoffSKADNetIDs)
+		}
+
 		impExt := liftoffImpExt{
 			Rewarded: rewarded,
+			SKADN:    skadn,
 		}
+
 		thisImp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
 			errs = append(errs, err)

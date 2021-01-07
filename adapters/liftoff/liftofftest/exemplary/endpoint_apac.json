@@ -35,6 +35,11 @@
         "ext": {
           "bidder": {
             "region": "apac",
+            "skadn": {
+              "skadnetids": null,
+              "sourceapp": "",
+              "version": ""
+            },
             "video": {
               "skip": 1,
               "skipdelay": 5,
@@ -90,7 +95,12 @@
                 }
               },
               "ext": {
-                "rewarded": 0
+                "rewarded": 0,
+                "skadn": {
+                  "skadnetids": null,
+                  "sourceapp": "",
+                  "version": ""
+                }
               }
             }
           ]
