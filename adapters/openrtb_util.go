@@ -190,7 +190,7 @@ func FilterPrebidSKADNExt(prebidExt *openrtb_ext.ExtImpPrebid, filterMap map[str
 }
 
 // filterArrayWithMap -- Added by Tapjoy to handle SKADN DSP filtering
-// returns a subset elemtns of arr whose keys were in filterMap
+// returns a subset elements of arr whose keys were in filterMap
 func filterArrayWithMap(arr []string, filterMap map[string]bool) (ret []string) {
 	for _, id := range arr {
 		if _, ok := filterMap[id]; ok {
