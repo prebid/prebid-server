@@ -10,6 +10,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,7 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr gdpr.Signal, consent string) (bool, bool, bool, error) {
 	return p.personalInfoAllowed, p.personalInfoAllowed, p.personalInfoAllowed, nil
 }
 
@@ -1053,6 +1054,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		gdpr                string
 		gdprConsent         string
 		gdprScrub           bool
+		userSyncIfAmbiguous bool
 		expectPrivacyLabels metrics.PrivacyLabels
 	}{
 		{
@@ -1151,6 +1153,32 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 				GDPRTCFVersion: "",
 			},
 		},
+		{
+			description:         "Enforce - Ambiguous signal, don't sync user if ambiguous",
+			gdprAccountEnabled:  nil,
+			gdprHostEnabled:     true,
+			gdpr:                "null",
+			gdprConsent:         "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:           true,
+			userSyncIfAmbiguous: false,
+			expectPrivacyLabels: metrics.PrivacyLabels{
+				GDPREnforced:   true,
+				GDPRTCFVersion: metrics.TCFVersionV1,
+			},
+		},
+		{
+			description:         "Not Enforce - Ambiguous signal, sync user if ambiguous",
+			gdprAccountEnabled:  nil,
+			gdprHostEnabled:     true,
+			gdpr:                "null",
+			gdprConsent:         "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:           false,
+			userSyncIfAmbiguous: true,
+			expectPrivacyLabels: metrics.PrivacyLabels{
+				GDPREnforced:   false,
+				GDPRTCFVersion: "",
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -1162,7 +1190,8 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 
 		privacyConfig := config.Privacy{
 			GDPR: config.GDPR{
-				Enabled: test.gdprHostEnabled,
+				Enabled:             test.gdprHostEnabled,
+				UsersyncIfAmbiguous: test.userSyncIfAmbiguous,
 				TCF2: config.TCF2{
 					Enabled: true,
 				},
@@ -1186,7 +1215,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			auctionReq,
 			nil,
 			&permissionsMock{personalInfoAllowed: !test.gdprScrub},
-			true,
+			test.userSyncIfAmbiguous,
 			privacyConfig)
 		result := results[0]
 
