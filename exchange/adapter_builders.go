@@ -46,6 +46,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/improvedigital"
 	"github.com/prebid/prebid-server/adapters/inmobi"
 	"github.com/prebid/prebid-server/adapters/invibes"
+	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/kidoz"
 	"github.com/prebid/prebid-server/adapters/krushmedia"
 	"github.com/prebid/prebid-server/adapters/kubient"
@@ -54,6 +55,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/lunamedia"
 	"github.com/prebid/prebid-server/adapters/marsmedia"
 	"github.com/prebid/prebid-server/adapters/mgid"
+	"github.com/prebid/prebid-server/adapters/mobfoxpb"
 	"github.com/prebid/prebid-server/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/adapters/nanointeractive"
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
@@ -142,6 +144,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderImprovedigital:   improvedigital.Builder,
 		openrtb_ext.BidderInMobi:           inmobi.Builder,
 		openrtb_ext.BidderInvibes:          invibes.Builder,
+		openrtb_ext.BidderIx:               ix.Builder,
 		openrtb_ext.BidderKidoz:            kidoz.Builder,
 		openrtb_ext.BidderKrushmedia:       krushmedia.Builder,
 		openrtb_ext.BidderKubient:          kubient.Builder,
@@ -150,6 +153,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderLunaMedia:        lunamedia.Builder,
 		openrtb_ext.BidderMarsmedia:        marsmedia.Builder,
 		openrtb_ext.BidderMgid:             mgid.Builder,
+		openrtb_ext.BidderMobfoxpb:         mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:       mobilefuse.Builder,
 		openrtb_ext.BidderNanoInteractive:  nanointeractive.Builder,
 		openrtb_ext.BidderNinthDecimal:     ninthdecimal.Builder,
