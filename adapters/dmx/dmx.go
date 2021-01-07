@@ -86,6 +86,9 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		appPublisherCopy := *request.App.Publisher
 		dmxReq.App = &appCopy
 		dmxReq.App.Publisher = &appPublisherCopy
+		if dmxReq.App.Publisher.ID == "" {
+			dmxReq.App.Publisher.ID = publisherId
+		}
 		if rootExtInfo.Bidder.MemberId != "" {
 			dmxRawPubId.Dmx.Id = rootExtInfo.Bidder.MemberId
 		} else {
@@ -108,7 +111,9 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		dmxReq.Site = &siteCopy
 		dmxReq.Site.Publisher = &sitePublisherCopy
 		if dmxReq.Site.Publisher != nil {
-			dmxReq.Site.Publisher.ID = publisherId
+			if dmxReq.Site.Publisher.ID == "" {
+				dmxReq.Site.Publisher.ID = publisherId
+			}
 			if rootExtInfo.Bidder.MemberId != "" {
 				dmxRawPubId.Dmx.Id = rootExtInfo.Bidder.MemberId
 			} else {
