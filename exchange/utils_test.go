@@ -1184,7 +1184,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			},
 		},
 		{
-			description:        "Not Enforce - error while checking if personal info is allowed",
+			description:        "Enforce - error while checking if personal info is allowed",
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
