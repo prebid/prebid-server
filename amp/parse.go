@@ -31,7 +31,7 @@ type Size struct {
 	Width          uint64
 }
 
-// ParseParams parses the AMP request paramters from a http request.
+// ParseParams parses the AMP paramters from a HTTP request.
 func ParseParams(httpRequest *http.Request) (Params, error) {
 	query := httpRequest.URL.Query()
 
