@@ -18,8 +18,8 @@ import (
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 )
@@ -254,10 +254,6 @@ func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 	return ok, nil
 }
 
-func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string) (bool, bool, bool, error) {
 	return true, true, true, nil
-}
-
-func (g *gdprPerms) AMPException() bool {
-	return false
 }

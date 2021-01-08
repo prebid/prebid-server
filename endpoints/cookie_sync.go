@@ -16,8 +16,8 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
@@ -28,7 +28,7 @@ func NewCookieSyncEndpoint(
 	syncers map[openrtb_ext.BidderName]usersync.Usersyncer,
 	cfg *config.Configuration,
 	syncPermissions gdpr.Permissions,
-	metrics pbsmetrics.MetricsEngine,
+	metrics metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
 	bidderMap map[string]openrtb_ext.BidderName) httprouter.Handle {
 
@@ -55,7 +55,7 @@ type cookieSyncDeps struct {
 	hostCookie      *config.HostCookie
 	gDPR            *config.GDPR
 	syncPermissions gdpr.Permissions
-	metrics         pbsmetrics.MetricsEngine
+	metrics         metrics.MetricsEngine
 	pbsAnalytics    analytics.PBSAnalyticsModule
 	enforceCCPA     bool
 	bidderLookup    map[string]struct{}

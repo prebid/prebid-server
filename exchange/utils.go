@@ -12,18 +12,18 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/lmt"
 )
 
-var integrationTypeMap = map[pbsmetrics.RequestType]config.IntegrationType{
-	pbsmetrics.ReqTypeAMP:      config.IntegrationTypeAMP,
-	pbsmetrics.ReqTypeORTB2App: config.IntegrationTypeApp,
-	pbsmetrics.ReqTypeVideo:    config.IntegrationTypeVideo,
-	pbsmetrics.ReqTypeORTB2Web: config.IntegrationTypeWeb,
+var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
+	metrics.ReqTypeAMP:      config.IntegrationTypeAMP,
+	metrics.ReqTypeORTB2App: config.IntegrationTypeApp,
+	metrics.ReqTypeVideo:    config.IntegrationTypeVideo,
+	metrics.ReqTypeORTB2Web: config.IntegrationTypeWeb,
 }
 
 const unknownBidder string = ""
@@ -57,7 +57,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	requestExt *openrtb_ext.ExtRequest,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
-	privacyConfig config.Privacy) (bidderRequests []BidderRequest, privacyLabels pbsmetrics.PrivacyLabels, errs []error) {
+	privacyConfig config.Privacy) (bidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, errs := splitImps(req.BidRequest.Imp)
 	if len(errs) > 0 {
@@ -75,9 +75,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	gdpr := extractGDPR(req.BidRequest, usersyncIfAmbiguous)
+	gdprSignal := extractGDPR(req.BidRequest)
 	consent := extractConsent(req.BidRequest)
-	ampGDPRException := (req.LegacyLabels.RType == pbsmetrics.ReqTypeAMP) && gDPR.AMPException()
+	gdprEnforced := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && !usersyncIfAmbiguous)
 
 	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &req.Account, aliases, integrationTypeMap[req.LegacyLabels.RType])
 	if err != nil {
@@ -98,14 +98,14 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
-	gdprEnabled := gdprEnabled(&req.Account, privacyConfig, integrationTypeMap[req.LegacyLabels.RType])
+	gdprEnforced = gdprEnforced && gdprEnabled(&req.Account, privacyConfig, integrationTypeMap[req.LegacyLabels.RType])
 
-	if gdpr == 1 && gdprEnabled {
+	if gdprEnforced {
 		privacyLabels.GDPREnforced = true
 		parsedConsent, err := vendorconsent.ParseString(consent)
 		if err == nil {
 			version := int(parsedConsent.Version())
-			privacyLabels.GDPRTCFVersion = pbsmetrics.TCFVersionToValue(version)
+			privacyLabels.GDPRTCFVersion = metrics.TCFVersionToValue(version)
 		}
 	}
 
@@ -115,9 +115,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
 
 		// GDPR
-		if gdpr == 1 && gdprEnabled {
+		if gdprEnforced {
 			var publisherID = req.LegacyLabels.PubID
-			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, bidderRequest.BidderCoreName, publisherID, consent)
+			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, bidderRequest.BidderCoreName, publisherID, gdprSignal, consent)
 			privacyEnforcement.GDPRGeo = !geo && err == nil
 			privacyEnforcement.GDPRID = !id && err == nil
 		} else {
@@ -125,7 +125,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			privacyEnforcement.GDPRID = false
 		}
 
-		privacyEnforcement.Apply(bidderRequest.BidRequest, ampGDPRException)
+		privacyEnforcement.Apply(bidderRequest.BidRequest)
 	}
 
 	return
@@ -207,19 +207,19 @@ func getAuctionBidderRequests(req AuctionRequest,
 			BidderName:     openrtb_ext.BidderName(bidder),
 			BidderCoreName: coreBidder,
 			BidRequest:     &reqCopy,
-			BidderLabels: pbsmetrics.AdapterLabels{
+			BidderLabels: metrics.AdapterLabels{
 				Source:      req.LegacyLabels.Source,
 				RType:       req.LegacyLabels.RType,
 				Adapter:     coreBidder,
 				PubID:       req.LegacyLabels.PubID,
 				CookieFlag:  req.LegacyLabels.CookieFlag,
-				AdapterBids: pbsmetrics.AdapterBidPresent,
+				AdapterBids: metrics.AdapterBidPresent,
 			},
 		}
 		if hadSync := prepareUser(&reqCopy, bidder.BidderName.String(), coreBidder, explicitBuyerUIDs, req.UserSyncs); !hadSync && req.BidRequest.App == nil {
-			bidder.BidderLabels.CookieFlag = pbsmetrics.CookieFlagNo
+			bidder.BidderLabels.CookieFlag = metrics.CookieFlagNo
 		} else {
-			bidder.BidderLabels.CookieFlag = pbsmetrics.CookieFlagYes
+			bidder.BidderLabels.CookieFlag = metrics.CookieFlagYes
 		}
 
 		bidderRequests = append(bidderRequests, bidder)

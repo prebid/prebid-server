@@ -21,8 +21,8 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/gdpr"
@@ -49,7 +49,7 @@ func NewAmpEndpoint(
 	requestsById stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
-	met pbsmetrics.MetricsEngine,
+	met metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
@@ -103,12 +103,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	// Set this as an AMP request in Metrics.
 
-	labels := pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandWeb,
-		RType:         pbsmetrics.ReqTypeAMP,
-		PubID:         pbsmetrics.PublisherUnknown,
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusOK,
+	labels := metrics.Labels{
+		Source:        metrics.DemandWeb,
+		RType:         metrics.ReqTypeAMP,
+		PubID:         metrics.PublisherUnknown,
+		CookieFlag:    metrics.CookieFlagUnknown,
+		RequestStatus: metrics.RequestStatusOK,
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
@@ -137,7 +137,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		for _, err := range errortypes.FatalOnly(errL) {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		labels.RequestStatus = metrics.RequestStatusBadInput
 		return
 	}
 
@@ -154,9 +154,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if usersyncs.LiveSyncCount() == 0 {
-		labels.CookieFlag = pbsmetrics.CookieFlagNo
+		labels.CookieFlag = metrics.CookieFlagNo
 	} else {
-		labels.CookieFlag = pbsmetrics.CookieFlagYes
+		labels.CookieFlag = metrics.CookieFlagYes
 	}
 	labels.PubID = getAccountID(req.Site.Publisher)
 	// Look up account now that we have resolved the pubID value
@@ -164,12 +164,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if len(acctIDErrs) > 0 {
 		errL = append(errL, acctIDErrs...)
 		httpStatus := http.StatusBadRequest
-		metricsStatus := pbsmetrics.RequestStatusBadInput
+		metricsStatus := metrics.RequestStatusBadInput
 		for _, er := range errL {
 			errCode := errortypes.ReadCode(er)
 			if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
 				httpStatus = http.StatusServiceUnavailable
-				metricsStatus = pbsmetrics.RequestStatusBlacklisted
+				metricsStatus = metrics.RequestStatusBlacklisted
 				break
 			}
 		}
@@ -275,7 +275,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(ampResponse); err != nil {
-		labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
+		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Failed to send response: %v", err))
 	}
 }
