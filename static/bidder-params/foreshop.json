@@ -1,0 +1,27 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "Foreshop Adapter Params",
+	"description": "A schema which validates params accepted by the Foreshop adapter",
+	"type": "object",
+	"properties": {
+		"sourceId": {
+			"type": "integer",
+			"minimum": 1,
+			"description": "The source website's ID (Source ID)"
+		},
+		"placementId": {
+			"type": "integer",
+			"minimum": 1,
+			"description": "Identifies impression placement"
+		},
+		"host": {
+			"type": "string",
+			"description": "Network Host to request from"
+		}
+	},
+	"required": [
+		"host",
+		"placementId",
+		"sourceId"
+	]
+}

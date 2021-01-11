@@ -1,0 +1,81 @@
+{
+	"mockBidRequest": {
+		"id": "test-bad-server-response-request-id",
+		"imp": [
+			{
+				"id": "test-bad-server-response-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 350,
+							"h": 250
+						}
+					]
+				},
+				"ext": {
+					"bidder": {
+						"host": "www.postman.com",
+						"sourceId": 444444,
+						"placementId": 963852
+					}
+				}
+			}
+		],
+		"site": {
+			"page": "prebid.org"
+		},
+		"device": {
+			"ip": "1.2.3.45"
+		},
+		"at": 1,
+		"tmax": 500
+	},
+	"httpCalls": [
+		{
+			"expectedRequest": {
+				"uri": "https://www.postman.com/collections/15133c6f751986ea9eb9",
+				"body": {
+					"id": "test-bad-server-response-request-id",
+					"imp": [
+						{
+							"id": "test-bad-server-response-imp-id",
+							"banner": {
+								"format": [
+									{
+										"w": 350,
+										"h": 250
+									}
+								]
+							},
+							"ext": {
+								"bidder": {
+									"host": "www.postman.com",
+									"sourceId": 444444,
+									"placementId": 963852
+								}
+							}
+						}
+					],
+					"site": {
+						"page": "prebid.org"
+					},
+					"device": {
+						"ip": "1.2.3.45"
+					},
+					"at": 1,
+					"tmax": 500
+				}
+			},
+			"mockResponse": {
+				"status": 500,
+				"body": {}
+			}
+		}
+	],
+	"expectedMakeBidsErrors": [
+		{
+			"value": "Failed with response status code 500",
+			"comparison": "literal"
+		}
+	]
+}

@@ -77,6 +77,7 @@ const (
 	BidderEmxDigital       BidderName = "emx_digital"
 	BidderEngageBDR        BidderName = "engagebdr"
 	BidderEPlanning        BidderName = "eplanning"
+	BidderForeshop         BidderName = "foreshop"
 	BidderGamma            BidderName = "gamma"
 	BidderGamoshi          BidderName = "gamoshi"
 	BidderGrid             BidderName = "grid"
@@ -174,6 +175,7 @@ func CoreBidderNames() []BidderName {
 		BidderEmxDigital,
 		BidderEngageBDR,
 		BidderEPlanning,
+		BidderForeshop,
 		BidderGamma,
 		BidderGamoshi,
 		BidderGrid,

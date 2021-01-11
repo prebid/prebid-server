@@ -1,0 +1,6 @@
+maintainer:
+  email: "support@foreshop.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
