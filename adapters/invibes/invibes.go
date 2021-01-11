@@ -14,8 +14,8 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 const adapterVersion = "prebid_1.0.0"
@@ -133,7 +133,7 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		}
 		invibesInternalParams.TestLog = invibesExt.Debug.TestLog
 	}
-	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
+	if reqInfo.PbsEntryPoint == metrics.ReqTypeAMP {
 		invibesInternalParams.IsAMP = true
 	}
 

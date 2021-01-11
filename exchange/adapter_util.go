@@ -4,17 +4,16 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func BuildAdapters(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+func BuildAdapters(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
 	exchangeBidders := buildExchangeBiddersLegacy(cfg.Adapters, infos)
 
 	exchangeBiddersModern, errs := buildExchangeBidders(cfg, infos, client, me)
@@ -32,7 +31,7 @@ func BuildAdapters(client *http.Client, cfg *config.Configuration, infos adapter
 	return exchangeBidders, nil
 }
 
-func buildExchangeBidders(cfg *config.Configuration, infos adapters.BidderInfos, client *http.Client, me pbsmetrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+func buildExchangeBidders(cfg *config.Configuration, infos adapters.BidderInfos, client *http.Client, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
 	bidders, errs := buildBidders(cfg.Adapters, infos, newAdapterBuilders())
 	if len(errs) > 0 {
 		return nil, errs
@@ -59,7 +58,7 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 		}
 
 		// Ignore Legacy Bidders
-		if bidderName == openrtb_ext.BidderIx || bidderName == openrtb_ext.BidderLifestreet || bidderName == openrtb_ext.BidderPulsepoint {
+		if bidderName == openrtb_ext.BidderLifestreet || bidderName == openrtb_ext.BidderPulsepoint {
 			continue
 		}
 
@@ -92,13 +91,7 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 }
 
 func buildExchangeBiddersLegacy(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
-	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 3)
-
-	// Index
-	if infos[string(openrtb_ext.BidderIx)].Status == adapters.StatusActive {
-		adapter := ix.NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderIx)].Endpoint)
-		bidders[openrtb_ext.BidderIx] = adaptLegacyAdapter(adapter)
-	}
+	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 2)
 
 	// Lifestreet
 	if infos[string(openrtb_ext.BidderLifestreet)].Status == adapters.StatusActive {

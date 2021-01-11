@@ -18,9 +18,9 @@ import (
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	metrics "github.com/rcrowley/go-metrics"
+	gometrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1269,6 +1269,6 @@ func TestBuildAmpObject(t *testing.T) {
 	}
 }
 
-func newTestMetrics() *pbsmetrics.Metrics {
-	return pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.CoreBidderNames(), config.DisabledMetrics{})
+func newTestMetrics() *metrics.Metrics {
+	return metrics.NewMetrics(gometrics.NewRegistry(), openrtb_ext.CoreBidderNames(), config.DisabledMetrics{})
 }

@@ -51,6 +51,7 @@ const (
 	BidderAdmixer          BidderName = "admixer"
 	BidderAdOcean          BidderName = "adocean"
 	BidderAdoppler         BidderName = "adoppler"
+	BidderAdot             BidderName = "adot"
 	BidderAdpone           BidderName = "adpone"
 	BidderAdprime          BidderName = "adprime"
 	BidderAdtarget         BidderName = "adtarget"
@@ -94,6 +95,7 @@ const (
 	BidderLunaMedia        BidderName = "lunamedia"
 	BidderMarsmedia        BidderName = "marsmedia"
 	BidderMgid             BidderName = "mgid"
+	BidderMobfoxpb         BidderName = "mobfoxpb"
 	BidderMobileFuse       BidderName = "mobilefuse"
 	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderNinthDecimal     BidderName = "ninthdecimal"
@@ -148,6 +150,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdmixer,
 		BidderAdOcean,
 		BidderAdoppler,
+		BidderAdot,
 		BidderAdpone,
 		BidderAdprime,
 		BidderAdtarget,
@@ -191,6 +194,7 @@ func CoreBidderNames() []BidderName {
 		BidderLunaMedia,
 		BidderMarsmedia,
 		BidderMgid,
+		BidderMobfoxpb,
 		BidderMobileFuse,
 		BidderNanoInteractive,
 		BidderNinthDecimal,
