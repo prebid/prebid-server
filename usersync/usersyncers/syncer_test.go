@@ -97,6 +97,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderAdgeneration: true,
 		openrtb_ext.BidderAdhese:       true,
 		openrtb_ext.BidderAdoppler:     true,
+		openrtb_ext.BidderAdot:         true,
 		openrtb_ext.BidderApplogy:      true,
 		openrtb_ext.BidderInMobi:       true,
 		openrtb_ext.BidderKidoz:        true,
