@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
+	"sort"
 	"strconv"
 )
 
@@ -25,6 +26,10 @@ const defaultPageURL = "FILE"
 const sec = "ROS"
 const dfpClientID = "1"
 const requestTargetInventory = "1"
+
+var isMobile = -1
+var priorityOrderForMobileSizesAsc = []string{"1x1", "300x50", "320x50", "300x250"}
+var priorityOrderForDesktopSizesAsc = []string{"1x1", "970x90", "970x250", "160x600", "300x600", "728x90", "300x250"}
 
 var cleanNameSteps = []cleanNameStep{
 	{regexp.MustCompile(`_|\.|-|\/`), ""},
@@ -61,12 +66,47 @@ type hbResponseAd struct {
 	Height       uint64 `json:"h,omitempty"`
 }
 
+type byPriority []openrtb.Format
+
+func (a byPriority) Len() int      { return len(a) }
+func (a byPriority) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a byPriority) Less(i, j int) bool {
+	var priorityOrderForSizesAsc []string
+	if isMobile > 0 {
+		priorityOrderForSizesAsc = priorityOrderForMobileSizesAsc
+	} else {
+		priorityOrderForSizesAsc = priorityOrderForDesktopSizesAsc
+	}
+	size1 := fmt.Sprintf("%dx%d", a[i].W, a[i].H)
+	size2 := fmt.Sprintf("%dx%d", a[j].W, a[j].H)
+	index1 := indexOf(size1, priorityOrderForSizesAsc)
+	index2 := indexOf(size2, priorityOrderForSizesAsc)
+	if index1 > -1 {
+		if index2 > -1 {
+			if index1 < index2 {
+				return false
+			} else {
+				return true
+			}
+		} else {
+			return false
+		}
+	} else {
+		if index2 > -1 {
+			return true
+		} else {
+			return false
+		}
+	}
+}
+
 func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errors := make([]error, 0, len(request.Imp))
 	totalImps := len(request.Imp)
 	spacesStrings := make([]string, 0, totalImps)
 	totalRequests := 0
 	clientID := ""
+	isMobile = isMobileDevice(request)
 
 	for i := 0; i < totalImps; i++ {
 		imp := request.Imp[i]
@@ -187,6 +227,20 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 	return requests, errors
 }
 
+func isMobileDevice(request *openrtb.BidRequest) int {
+	if request.Device != nil {
+		if request.Device.DeviceType == openrtb.DeviceTypePersonalComputer {
+			return 0
+		}
+		if request.Device.DeviceType == openrtb.DeviceTypeMobileTablet ||
+			request.Device.DeviceType == openrtb.DeviceTypePhone ||
+			request.Device.DeviceType == openrtb.DeviceTypeTablet {
+			return 1
+		}
+	}
+	return -1
+}
+
 func cleanName(name string) string {
 	for _, step := range cleanNameSteps {
 		name = step.expression.ReplaceAllString(name, step.replacementString)
@@ -232,13 +286,29 @@ func verifyImp(imp *openrtb.Imp) (*openrtb_ext.ExtImpEPlanning, error) {
 	return &impExt, nil
 }
 
+func indexOf(element string, data []string) int {
+	for k, v := range data {
+		if element == v {
+			return k
+		}
+	}
+	return -1
+}
+
+func getSizesSortedByPriority(sizeArray []openrtb.Format) []openrtb.Format {
+	sort.Sort(byPriority(sizeArray))
+	return sizeArray
+}
+
 func getSizeFromImp(imp *openrtb.Imp) (uint64, uint64) {
 	if imp.Banner.W != nil && imp.Banner.H != nil {
 		return *imp.Banner.W, *imp.Banner.H
 	}
 
 	if imp.Banner.Format != nil {
-		for _, format := range imp.Banner.Format {
+		sizesSortedByPriority := getSizesSortedByPriority(imp.Banner.Format)
+		for _, format := range sizesSortedByPriority {
+			fmt.Println(format)
 			if format.W != 0 && format.H != 0 {
 				return format.W, format.H
 			}
