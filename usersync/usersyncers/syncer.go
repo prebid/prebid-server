@@ -50,6 +50,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/logicad"
 	"github.com/prebid/prebid-server/adapters/lunamedia"
 	"github.com/prebid/prebid-server/adapters/marsmedia"
+	"github.com/prebid/prebid-server/adapters/mediafuse"
 	"github.com/prebid/prebid-server/adapters/mgid"
 	"github.com/prebid/prebid-server/adapters/nanointeractive"
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
@@ -136,6 +137,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLogicad, logicad.NewLogicadSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLunaMedia, lunamedia.NewLunaMediaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderMarsmedia, marsmedia.NewMarsmediaSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderMediafuse, mediafuse.NewMediafuseSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderMgid, mgid.NewMgidSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderNanoInteractive, nanointeractive.NewNanoInteractiveSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderNinthDecimal, ninthdecimal.NewNinthDecimalSyncer)
