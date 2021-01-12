@@ -50,6 +50,70 @@ type RequestLabels struct {
 	RequestStatus RequestStatus
 }
 
+// PrivacyLabels defines metrics describing the result of privacy enforcement.
+type PrivacyLabels struct {
+	CCPAEnforced   bool
+	CCPAProvided   bool
+	COPPAEnforced  bool
+	GDPREnforced   bool
+	GDPRTCFVersion TCFVersionValue
+	LMTEnforced    bool
+}
+
+type StoredDataType string
+
+const (
+	AccountDataType  StoredDataType = "account"
+	AMPDataType      StoredDataType = "amp"
+	CategoryDataType StoredDataType = "category"
+	RequestDataType  StoredDataType = "request"
+	VideoDataType    StoredDataType = "video"
+)
+
+func StoredDataTypes() []StoredDataType {
+	return []StoredDataType{
+		AccountDataType,
+		AMPDataType,
+		CategoryDataType,
+		RequestDataType,
+		VideoDataType,
+	}
+}
+
+type StoredDataFetchType string
+
+const (
+	FetchAll   StoredDataFetchType = "all"
+	FetchDelta StoredDataFetchType = "delta"
+)
+
+func StoredDataFetchTypes() []StoredDataFetchType {
+	return []StoredDataFetchType{
+		FetchAll,
+		FetchDelta,
+	}
+}
+
+type StoredDataLabels struct {
+	DataType      StoredDataType
+	DataFetchType StoredDataFetchType
+	Error         StoredDataError
+}
+
+type StoredDataError string
+
+const (
+	StoredDataErrorNetwork   StoredDataError = "network"
+	StoredDataErrorUndefined StoredDataError = "undefined"
+)
+
+func StoredDataErrors() []StoredDataError {
+	return []StoredDataError{
+		StoredDataErrorNetwork,
+		StoredDataErrorUndefined,
+	}
+}
+
 // Label typecasting. Se below the type definitions for possible values
 
 // DemandSource : Demand source enumeration
@@ -257,6 +321,35 @@ func RequestActions() []RequestAction {
 	}
 }
 
+// TCFVersionValue : The possible values for TCF versions
+type TCFVersionValue string
+
+const (
+	TCFVersionErr TCFVersionValue = "err"
+	TCFVersionV1  TCFVersionValue = "v1"
+	TCFVersionV2  TCFVersionValue = "v2"
+)
+
+// TCFVersions returns the possible values for the TCF version
+func TCFVersions() []TCFVersionValue {
+	return []TCFVersionValue{
+		TCFVersionErr,
+		TCFVersionV1,
+		TCFVersionV2,
+	}
+}
+
+// TCFVersionToValue takes an integer TCF version and returns the corresponding TCFVersionValue
+func TCFVersionToValue(version int) TCFVersionValue {
+	switch {
+	case version == 1:
+		return TCFVersionV1
+	case version == 2:
+		return TCFVersionV2
+	}
+	return TCFVersionErr
+}
+
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
 // The first three metrics function fire off once per incoming request, so total metrics
 // will equal the total number of incoming requests. The remaining 5 fire off per outgoing
@@ -271,6 +364,8 @@ type MetricsEngine interface {
 	RecordLegacyImps(labels Labels, numImps int)           // RecordImps for the legacy engine
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
+	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration)
+	RecordDNSTime(dnsLookupTime time.Duration)
 	RecordAdapterPanic(labels AdapterLabels)
 	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
 	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
@@ -282,9 +377,14 @@ type MetricsEngine interface {
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
+	RecordAccountCacheResult(cacheResult CacheResult, inc int)
+	RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration)
+	RecordStoredDataError(labels StoredDataLabels)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(sucess bool)
+	RecordRequestPrivacy(privacy PrivacyLabels)
+
 	// RecordAdapterDuplicateBidID captures the  bid.ID collisions when adaptor
 	// gives the bid response with multiple bids containing  same bid.ID
 	RecordAdapterDuplicateBidID(adaptor string, collisions int)
@@ -315,4 +415,7 @@ type MetricsEngine interface {
 	// elapsedTime indicates the time taken by competitive exclusion to form final ad pod response using combinations and exclusion algorithm
 	// This function will take care of computing the elpased time
 	RecordPodCompititveExclusionTime(labels PodLabels, elapsedTime time.Duration)
+
+	//RecordAdapterVideoBidDuration records actual ad duration returned by the bidder
+	RecordAdapterVideoBidDuration(labels AdapterLabels, videoBidDuration int)
 }

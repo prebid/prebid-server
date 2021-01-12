@@ -23,6 +23,10 @@ type ImpressionExtOut struct {
 	OriginalPublisherID string `json:"originalPublisherid"`
 }
 
+type telariaBidExt struct {
+	Extra json.RawMessage `json:"extra,omitempty"`
+}
+
 // used for cookies and such
 func (a *TelariaAdapter) Name() string {
 	return "telaria"
@@ -186,15 +190,17 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 	originalPublisherID := a.FetchOriginalPublisherID(&request)
 
 	var errors []error
+	var telariaImpExt *openrtb_ext.ExtImpTelaria
+	var err error
 	for i, imp := range request.Imp {
 		// fetch adCode & seatCode from Imp[i].Ext
-		telariaExt, err := a.FetchTelariaExtImpParams(&imp)
+		telariaImpExt, err = a.FetchTelariaExtImpParams(&imp)
 		if err != nil {
 			errors = append(errors, err)
 			break
 		}
 
-		seatCode = telariaExt.SeatCode
+		seatCode = telariaImpExt.SeatCode
 
 		// move the original tagId and the original publisher.id into the Imp[i].Ext object
 		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID, originalPublisherID})
@@ -204,7 +210,15 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *ad
 		}
 
 		// Swap the tagID with adCode
-		request.Imp[i].TagID = telariaExt.AdCode
+		request.Imp[i].TagID = telariaImpExt.AdCode
+	}
+
+	// Add the Extra from Imp to the top level Ext
+	if telariaImpExt != nil && telariaImpExt.Extra != nil {
+		request.Ext, err = json.Marshal(&telariaBidExt{Extra: telariaImpExt.Extra})
+		if err != nil {
+			errors = append(errors, err)
+		}
 	}
 
 	if len(errors) > 0 {

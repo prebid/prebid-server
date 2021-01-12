@@ -2,6 +2,7 @@ package pbsmetrics
 
 import (
 	"testing"
+	"time"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
@@ -56,6 +57,14 @@ func TestNewMetrics(t *testing.T) {
 
 	ensureContains(t, registry, "timeout_notification.ok", m.TimeoutNotificationSuccess)
 	ensureContains(t, registry, "timeout_notification.failed", m.TimeoutNotificationFailure)
+
+	ensureContains(t, registry, "privacy.request.ccpa.specified", m.PrivacyCCPARequest)
+	ensureContains(t, registry, "privacy.request.ccpa.opt-out", m.PrivacyCCPARequestOptOut)
+	ensureContains(t, registry, "privacy.request.coppa", m.PrivacyCOPPARequest)
+	ensureContains(t, registry, "privacy.request.lmt", m.PrivacyLMTRequest)
+	ensureContains(t, registry, "privacy.request.tcf.v1", m.PrivacyTCFRequestVersion[TCFVersionV1])
+	ensureContains(t, registry, "privacy.request.tcf.v2", m.PrivacyTCFRequestVersion[TCFVersionV2])
+	ensureContains(t, registry, "privacy.request.tcf.err", m.PrivacyTCFRequestVersion[TCFVersionErr])
 }
 
 func TestRecordBidType(t *testing.T) {
@@ -107,6 +116,10 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".request_time", adapterMetrics.RequestTimer)
 	ensureContains(t, registry, name+".prices", adapterMetrics.PriceHistogram)
 	ensureContainsBidTypeMetrics(t, registry, name, adapterMetrics.MarkupMetrics)
+
+	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
+	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
+	ensureContains(t, registry, name+".connection_wait_time", adapterMetrics.ConnWaitTime)
 }
 
 func TestRecordBidTypeDisabledConfig(t *testing.T) {
@@ -171,6 +184,140 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 	}
 }
 
+func TestRecordDNSTime(t *testing.T) {
+	testCases := []struct {
+		description         string
+		inDnsLookupDuration time.Duration
+		outExpDuration      time.Duration
+	}{
+		{
+			description:         "Five second DNS lookup time",
+			inDnsLookupDuration: time.Second * 5,
+			outExpDuration:      time.Second * 5,
+		},
+		{
+			description:         "Zero DNS lookup time",
+			inDnsLookupDuration: time.Duration(0),
+			outExpDuration:      time.Duration(0),
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
+
+		m.RecordDNSTime(test.inDnsLookupDuration)
+
+		assert.Equal(t, test.outExpDuration.Nanoseconds(), m.DNSLookupTimer.Sum(), test.description)
+	}
+}
+
+func TestRecordAdapterConnections(t *testing.T) {
+	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
+
+	type testIn struct {
+		adapterName         openrtb_ext.BidderName
+		connWasReused       bool
+		connWait            time.Duration
+		connMetricsDisabled bool
+	}
+
+	type testOut struct {
+		expectedConnReusedCount  int64
+		expectedConnCreatedCount int64
+		expectedConnWaitTime     time.Duration
+	}
+
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "Successful, new connection created, has connection wait",
+			in: testIn{
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       false,
+				connWait:            time.Second * 5,
+				connMetricsDisabled: false,
+			},
+			out: testOut{
+				expectedConnReusedCount:  0,
+				expectedConnCreatedCount: 1,
+				expectedConnWaitTime:     time.Second * 5,
+			},
+		},
+		{
+			description: "Successful, new connection created, has connection wait",
+			in: testIn{
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       false,
+				connWait:            time.Second * 4,
+				connMetricsDisabled: false,
+			},
+			out: testOut{
+				expectedConnCreatedCount: 1,
+				expectedConnWaitTime:     time.Second * 4,
+			},
+		},
+		{
+			description: "Successful, was reused, no connection wait",
+			in: testIn{
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       true,
+				connMetricsDisabled: false,
+			},
+			out: testOut{
+				expectedConnReusedCount: 1,
+				expectedConnWaitTime:    0,
+			},
+		},
+		{
+			description: "Successful, was reused, has connection wait",
+			in: testIn{
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       true,
+				connWait:            time.Second * 5,
+				connMetricsDisabled: false,
+			},
+			out: testOut{
+				expectedConnReusedCount: 1,
+				expectedConnWaitTime:    time.Second * 5,
+			},
+		},
+		{
+			description: "Fake bidder, nothing gets updated",
+			in: testIn{
+				adapterName:         fakeBidder,
+				connWasReused:       false,
+				connWait:            0,
+				connMetricsDisabled: false,
+			},
+			out: testOut{},
+		},
+		{
+			description: "Adapter connection metrics are disabled, nothing gets updated",
+			in: testIn{
+				adapterName:         openrtb_ext.BidderAppnexus,
+				connWasReused:       false,
+				connWait:            time.Second * 5,
+				connMetricsDisabled: true,
+			},
+			out: testOut{},
+		},
+	}
+
+	for i, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterConnectionMetrics: test.in.connMetricsDisabled})
+
+		m.RecordAdapterConnections(test.in.adapterName, test.in.connWasReused, test.in.connWait)
+
+		assert.Equal(t, test.out.expectedConnReusedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnReused.Count(), "Test [%d] incorrect number of reused connections to adapter", i)
+		assert.Equal(t, test.out.expectedConnCreatedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnCreated.Count(), "Test [%d] incorrect number of new connections to adapter created", i)
+		assert.Equal(t, test.out.expectedConnWaitTime.Nanoseconds(), m.AdapterMetrics[openrtb_ext.BidderAppnexus].ConnWaitTime.Sum(), "Test [%d] incorrect wait time in connection to adapter", i)
+	}
+}
+
 func TestNewMetricsWithDisabledConfig(t *testing.T) {
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
@@ -196,6 +343,206 @@ func TestRecordPrebidCacheRequestTimeWithNotSuccess(t *testing.T) {
 
 	assert.Equal(t, m.PrebidCacheRequestTimerSuccess.Count(), int64(0))
 	assert.Equal(t, m.PrebidCacheRequestTimerError.Count(), int64(1))
+}
+
+func TestRecordStoredDataFetchTime(t *testing.T) {
+	tests := []struct {
+		description string
+		dataType    StoredDataType
+		fetchType   StoredDataFetchType
+	}{
+		{
+			description: "Update stored_account_fetch_time.all timer",
+			dataType:    AccountDataType,
+			fetchType:   FetchAll,
+		},
+		{
+			description: "Update stored_amp_fetch_time.all timer",
+			dataType:    AMPDataType,
+			fetchType:   FetchAll,
+		},
+		{
+			description: "Update stored_category_fetch_time.all timer",
+			dataType:    CategoryDataType,
+			fetchType:   FetchAll,
+		},
+		{
+			description: "Update stored_request_fetch_time.all timer",
+			dataType:    RequestDataType,
+			fetchType:   FetchAll,
+		},
+		{
+			description: "Update stored_video_fetch_time.all timer",
+			dataType:    VideoDataType,
+			fetchType:   FetchAll,
+		},
+		{
+			description: "Update stored_account_fetch_time.delta timer",
+			dataType:    AccountDataType,
+			fetchType:   FetchDelta,
+		},
+		{
+			description: "Update stored_amp_fetch_time.delta timer",
+			dataType:    AMPDataType,
+			fetchType:   FetchDelta,
+		},
+		{
+			description: "Update stored_category_fetch_time.delta timer",
+			dataType:    CategoryDataType,
+			fetchType:   FetchDelta,
+		},
+		{
+			description: "Update stored_request_fetch_time.delta timer",
+			dataType:    RequestDataType,
+			fetchType:   FetchDelta,
+		},
+		{
+			description: "Update stored_video_fetch_time.delta timer",
+			dataType:    VideoDataType,
+			fetchType:   FetchDelta,
+		},
+	}
+
+	for _, tt := range tests {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+		m.RecordStoredDataFetchTime(StoredDataLabels{
+			DataType:      tt.dataType,
+			DataFetchType: tt.fetchType,
+		}, time.Duration(500))
+
+		actualCount := m.StoredDataFetchTimer[tt.dataType][tt.fetchType].Count()
+		assert.Equal(t, int64(1), actualCount, tt.description)
+
+		actualDuration := m.StoredDataFetchTimer[tt.dataType][tt.fetchType].Sum()
+		assert.Equal(t, int64(500), actualDuration, tt.description)
+	}
+}
+
+func TestRecordStoredDataError(t *testing.T) {
+	tests := []struct {
+		description string
+		dataType    StoredDataType
+		errorType   StoredDataError
+	}{
+		{
+			description: "Increment stored_account_error.network meter",
+			dataType:    AccountDataType,
+			errorType:   StoredDataErrorNetwork,
+		},
+		{
+			description: "Increment stored_amp_error.network meter",
+			dataType:    AMPDataType,
+			errorType:   StoredDataErrorNetwork,
+		},
+		{
+			description: "Increment stored_category_error.network meter",
+			dataType:    CategoryDataType,
+			errorType:   StoredDataErrorNetwork,
+		},
+		{
+			description: "Increment stored_request_error.network meter",
+			dataType:    RequestDataType,
+			errorType:   StoredDataErrorNetwork,
+		},
+		{
+			description: "Increment stored_video_error.network meter",
+			dataType:    VideoDataType,
+			errorType:   StoredDataErrorNetwork,
+		},
+		{
+			description: "Increment stored_account_error.undefined meter",
+			dataType:    AccountDataType,
+			errorType:   StoredDataErrorUndefined,
+		},
+		{
+			description: "Increment stored_amp_error.undefined meter",
+			dataType:    AMPDataType,
+			errorType:   StoredDataErrorUndefined,
+		},
+		{
+			description: "Increment stored_category_error.undefined meter",
+			dataType:    CategoryDataType,
+			errorType:   StoredDataErrorUndefined,
+		},
+		{
+			description: "Increment stored_request_error.undefined meter",
+			dataType:    RequestDataType,
+			errorType:   StoredDataErrorUndefined,
+		},
+		{
+			description: "Increment stored_video_error.undefined meter",
+			dataType:    VideoDataType,
+			errorType:   StoredDataErrorUndefined,
+		},
+	}
+
+	for _, tt := range tests {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+		m.RecordStoredDataError(StoredDataLabels{
+			DataType: tt.dataType,
+			Error:    tt.errorType,
+		})
+
+		actualCount := m.StoredDataErrorMeter[tt.dataType][tt.errorType].Count()
+		assert.Equal(t, int64(1), actualCount, tt.description)
+	}
+}
+
+func TestRecordRequestPrivacy(t *testing.T) {
+	registry := metrics.NewRegistry()
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+
+	// CCPA
+	m.RecordRequestPrivacy(PrivacyLabels{
+		CCPAEnforced: true,
+		CCPAProvided: true,
+	})
+	m.RecordRequestPrivacy(PrivacyLabels{
+		CCPAEnforced: true,
+		CCPAProvided: false,
+	})
+	m.RecordRequestPrivacy(PrivacyLabels{
+		CCPAEnforced: false,
+		CCPAProvided: true,
+	})
+
+	// COPPA
+	m.RecordRequestPrivacy(PrivacyLabels{
+		COPPAEnforced: true,
+	})
+
+	// LMT
+	m.RecordRequestPrivacy(PrivacyLabels{
+		LMTEnforced: true,
+	})
+
+	// GDPR
+	m.RecordRequestPrivacy(PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: TCFVersionErr,
+	})
+	m.RecordRequestPrivacy(PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: TCFVersionV1,
+	})
+	m.RecordRequestPrivacy(PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: TCFVersionV2,
+	})
+	m.RecordRequestPrivacy(PrivacyLabels{
+		GDPREnforced:   true,
+		GDPRTCFVersion: TCFVersionV1,
+	})
+
+	assert.Equal(t, m.PrivacyCCPARequest.Count(), int64(2), "CCPA")
+	assert.Equal(t, m.PrivacyCCPARequestOptOut.Count(), int64(1), "CCPA Opt Out")
+	assert.Equal(t, m.PrivacyCOPPARequest.Count(), int64(1), "COPPA")
+	assert.Equal(t, m.PrivacyLMTRequest.Count(), int64(1), "LMT")
+	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionErr].Count(), int64(1), "TCF Err")
+	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionV1].Count(), int64(2), "TCF V1")
+	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionV2].Count(), int64(1), "TCF V2")
 }
 
 func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefix string, mdm map[openrtb_ext.BidType]*MarkupDeliveryMetrics) {

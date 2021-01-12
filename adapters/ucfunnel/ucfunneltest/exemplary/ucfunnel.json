@@ -29,7 +29,8 @@
             "exp": 3600,
             "ext":{
                 "ucfunnel":{
-                    "adunitid":"ad-BE7E9EB323E9996218A733887B6E924"
+                    "adunitid": "test-ad-83444226E44368D1E32E49EEBE6D29",
+                    "partnerid": "par-2EDDB423AA24474188B843EE4842932"
                 }
             }
         }

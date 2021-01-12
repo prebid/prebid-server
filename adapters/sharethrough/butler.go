@@ -3,16 +3,17 @@ package sharethrough
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/PubMatic-OpenWrap/openrtb"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
 )
 
 const defaultTmax = 10000 // 10 sec
@@ -97,8 +98,8 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 	}
 
 	usPolicySignal := ""
-	if usPolicy, err := ccpa.ReadPolicy(request); err == nil {
-		usPolicySignal = usPolicy.Value
+	if usPolicy, err := ccpa.ReadFromRequest(request); err == nil {
+		usPolicySignal = usPolicy.Consent
 	}
 
 	return &adapters.RequestData{

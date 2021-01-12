@@ -8,5 +8,5 @@ import (
 )
 
 func NewAdtelligentSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("adtelligent", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("adtelligent", 410, temp, adapters.SyncTypeRedirect)
 }

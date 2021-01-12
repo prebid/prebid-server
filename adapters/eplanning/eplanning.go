@@ -104,25 +104,28 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 		}
 	}
 
-	var pageURL string
+	pageURL := defaultPageURL
 	if request.Site != nil && request.Site.Page != "" {
 		pageURL = request.Site.Page
-	} else {
-		pageURL = defaultPageURL
 	}
 
-	var pageDomain string
-	if request.Site != nil && request.Site.Domain != "" {
-		pageDomain = request.Site.Domain
-	} else {
-		pageDomain = defaultPageURL
+	pageDomain := defaultPageURL
+	if request.Site != nil {
+		if request.Site.Domain != "" {
+			pageDomain = request.Site.Domain
+		} else if request.Site.Page != "" {
+			u, err := url.Parse(request.Site.Page)
+			if err != nil {
+				errors = append(errors, err)
+				return nil, errors
+			}
+			pageDomain = u.Hostname()
+		}
 	}
 
-	var requestTarget string
+	requestTarget := pageDomain
 	if request.App != nil && request.App.Bundle != "" {
 		requestTarget = request.App.Bundle
-	} else {
-		requestTarget = pageDomain
 	}
 
 	uriObj, err := url.Parse(adapter.URI)

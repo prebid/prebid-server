@@ -33,7 +33,7 @@ type ExtUserDigiTrust struct {
 
 // ExtUserEid defines the contract for bidrequest.user.ext.eids
 // Responsible for the Universal User ID support: establishing pseudonymous IDs for users.
-// See https://github.com/PubMatic-OpenWrap/Prebid.js/issues/3900 for details.
+// See https://github.com/prebid/Prebid.js/issues/3900 for details.
 type ExtUserEid struct {
 	Source string          `json:"source"`
 	ID     string          `json:"id,omitempty"`
@@ -44,6 +44,6 @@ type ExtUserEid struct {
 // ExtUserEidUid defines the contract for bidrequest.user.ext.eids[i].uids[j]
 type ExtUserEidUid struct {
 	ID    string          `json:"id"`
-	AType int             `json:"atype,omitempty"`
+	Atype int             `json:"atype,omitempty"`
 	Ext   json.RawMessage `json:"ext,omitempty"`
 }

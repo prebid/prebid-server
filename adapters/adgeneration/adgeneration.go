@@ -54,6 +54,9 @@ func (adg *AdgenerationAdapter) MakeRequests(request *openrtb.BidRequest, reqInf
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	if request.Device != nil && len(request.Device.UA) > 0 {
+		headers.Add("User-Agent", request.Device.UA)
+	}
 
 	bidRequestArray := make([]*adapters.RequestData, 0, numRequests)
 
@@ -106,10 +109,13 @@ func (adg *AdgenerationAdapter) getRawQuery(id string, request *openrtb.BidReque
 	v.Set("adapterver", adg.version)
 	adSize := getSizes(imp)
 	if adSize != "" {
-		v.Set("size", adSize)
+		v.Set("sizes", adSize)
 	}
 	if request.Site != nil && request.Site.Page != "" {
 		v.Set("tp", request.Site.Page)
+	}
+	if request.Source != nil && request.Source.TID != "" {
+		v.Set("transactionid", request.Source.TID)
 	}
 	return &v
 }
@@ -135,7 +141,7 @@ func getSizes(imp *openrtb.Imp) string {
 	}
 	var sizeStr string
 	for _, v := range imp.Banner.Format {
-		sizeStr += strconv.FormatUint(v.W, 10) + "×" + strconv.FormatUint(v.H, 10) + ","
+		sizeStr += strconv.FormatUint(v.W, 10) + "x" + strconv.FormatUint(v.H, 10) + ","
 	}
 	if len(sizeStr) > 0 && strings.LastIndex(sizeStr, ",") == len(sizeStr)-1 {
 		sizeStr = sizeStr[:len(sizeStr)-1]
@@ -210,6 +216,7 @@ func (adg *AdgenerationAdapter) MakeBids(internalRequest *openrtb.BidRequest, ex
 				Bid:     &bid,
 				BidType: bitType,
 			})
+			bidResponse.Currency = adg.getCurrency(internalRequest)
 			return bidResponse, nil
 		}
 	}
@@ -254,7 +261,7 @@ func removeWrapper(ad string) string {
 func NewAdgenerationAdapter(endpoint string) *AdgenerationAdapter {
 	return &AdgenerationAdapter{
 		endpoint,
-		"1.0.0",
+		"1.0.2",
 		"JPY",
 	}
 }

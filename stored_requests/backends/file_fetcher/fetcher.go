@@ -33,6 +33,21 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	return storedRequests, storedImpressions, errs
 }
 
+// FetchAccount fetches the host account configuration for a publisher
+func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+	if len(accountID) == 0 {
+		return nil, []error{fmt.Errorf("Cannot look up an empty accountID")}
+	}
+	accountJSON, ok := fetcher.FileSystem.Directories["accounts"].Files[accountID]
+	if !ok {
+		return nil, []error{stored_requests.NotFoundError{
+			ID:       accountID,
+			DataType: "Account",
+		}}
+	}
+	return accountJSON, nil
+}
+
 func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	fileName := primaryAdServer
 

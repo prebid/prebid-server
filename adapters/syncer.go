@@ -46,7 +46,7 @@ func (s *Syncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.Us
 	syncURL, err := macros.ResolveMacros(*s.urlTemplate, macros.UserSyncTemplateParams{
 		GDPR:        privacyPolicies.GDPR.Signal,
 		GDPRConsent: privacyPolicies.GDPR.Consent,
-		USPrivacy:   privacyPolicies.CCPA.Value,
+		USPrivacy:   privacyPolicies.CCPA.Consent,
 	})
 	if err != nil {
 		return nil, err

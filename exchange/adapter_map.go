@@ -9,26 +9,33 @@ import (
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	ttx "github.com/PubMatic-OpenWrap/prebid-server/adapters/33across"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/acuityads"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adform"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adgeneration"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adhese"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adkernel"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adkernelAdn"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adman"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/admixer"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adocean"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adoppler"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adpone"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adprime"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adtarget"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adtelligent"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/advangelists"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/aja"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/amx"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/applogy"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/appnexus"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/audienceNetwork"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/avocet"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/beachfront"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/beintoo"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/between"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/brightroll"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/colossus"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/connectad"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/consumable"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/conversant"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/cpmstar"
@@ -42,17 +49,22 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/grid"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/gumgum"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/improvedigital"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/inmobi"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/invibes"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/ix"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/kidoz"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/krushmedia"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/kubient"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/lifestreet"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/lockerdome"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/logicad"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/lunamedia"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/marsmedia"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/mgid"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/mobilefuse"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/nanointeractive"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/ninthdecimal"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/nobid"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/openx"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/orbidder"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/pubmatic"
@@ -62,7 +74,11 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/rtbhouse"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/rubicon"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/sharethrough"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/silvermob"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/smaato"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/smartadserver"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/smartrtb"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/smartyads"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/somoaudience"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/sonobi"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/sovrn"
@@ -93,26 +109,33 @@ import (
 func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me pbsmetrics.MetricsEngine) map[openrtb_ext.BidderName]adaptedBidder {
 	ortbBidders := map[openrtb_ext.BidderName]adapters.Bidder{
 		openrtb_ext.Bidder33Across:     ttx.New33AcrossBidder(cfg.Adapters[string(openrtb_ext.Bidder33Across)].Endpoint),
+		openrtb_ext.BidderAcuityAds:    acuityads.NewAcuityAdsBidder(cfg.Adapters[string(openrtb_ext.BidderAcuityAds)].Endpoint),
 		openrtb_ext.BidderAdform:       adform.NewAdformBidder(client, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
 		openrtb_ext.BidderAdgeneration: adgeneration.NewAdgenerationAdapter(cfg.Adapters[string(openrtb_ext.BidderAdgeneration)].Endpoint),
 		openrtb_ext.BidderAdhese:       adhese.NewAdheseBidder(cfg.Adapters[string(openrtb_ext.BidderAdhese)].Endpoint),
 		openrtb_ext.BidderAdkernel:     adkernel.NewAdkernelAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernel))].Endpoint),
 		openrtb_ext.BidderAdkernelAdn:  adkernelAdn.NewAdkernelAdnAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].Endpoint),
+		openrtb_ext.BidderAdman:        adman.NewAdmanBidder(cfg.Adapters[string(openrtb_ext.BidderAdman)].Endpoint),
 		openrtb_ext.BidderAdmixer:      admixer.NewAdmixerBidder(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdmixer))].Endpoint),
 		openrtb_ext.BidderAdOcean:      adocean.NewAdOceanBidder(client, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdOcean))].Endpoint),
 		openrtb_ext.BidderAdoppler:     adoppler.NewAdopplerBidder(cfg.Adapters[string(openrtb_ext.BidderAdoppler)].Endpoint),
 		openrtb_ext.BidderAdpone:       adpone.NewAdponeBidder(cfg.Adapters[string(openrtb_ext.BidderAdpone)].Endpoint),
+		openrtb_ext.BidderAdprime:      adprime.NewAdprimeBidder(cfg.Adapters[string(openrtb_ext.BidderAdprime)].Endpoint),
 		openrtb_ext.BidderAdtarget:     adtarget.NewAdtargetBidder(cfg.Adapters[string(openrtb_ext.BidderAdtarget)].Endpoint),
 		openrtb_ext.BidderAdtelligent:  adtelligent.NewAdtelligentBidder(cfg.Adapters[string(openrtb_ext.BidderAdtelligent)].Endpoint),
 		openrtb_ext.BidderAdvangelists: advangelists.NewAdvangelistsBidder(cfg.Adapters[string(openrtb_ext.BidderAdvangelists)].Endpoint),
 		openrtb_ext.BidderAJA:          aja.NewAJABidder(cfg.Adapters[string(openrtb_ext.BidderAJA)].Endpoint),
+		openrtb_ext.BidderAMX:          amx.NewAMXBidder(cfg.Adapters[string(openrtb_ext.BidderAMX)].Endpoint),
 		openrtb_ext.BidderApplogy:      applogy.NewApplogyBidder(cfg.Adapters[string(openrtb_ext.BidderApplogy)].Endpoint),
 		openrtb_ext.BidderAppnexus:     appnexus.NewAppNexusBidder(client, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
 		openrtb_ext.BidderAvocet:       avocet.NewAvocetAdapter(cfg.Adapters[string(openrtb_ext.BidderAvocet)].Endpoint),
 		openrtb_ext.BidderBeachfront:   beachfront.NewBeachfrontBidder(cfg.Adapters[string(openrtb_ext.BidderBeachfront)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderBeachfront)].ExtraAdapterInfo),
 		openrtb_ext.BidderBeintoo:      beintoo.NewBeintooBidder(cfg.Adapters[string(openrtb_ext.BidderBeintoo)].Endpoint),
-		openrtb_ext.BidderBrightroll:   brightroll.NewBrightrollBidder(cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint),
+		openrtb_ext.BidderBrightroll:   brightroll.NewBrightrollBidder(cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderBrightroll)].ExtraAdapterInfo),
+		openrtb_ext.BidderColossus:     colossus.NewColossusBidder(cfg.Adapters[string(openrtb_ext.BidderColossus)].Endpoint),
+		openrtb_ext.BidderConnectAd:    connectad.NewConnectAdBidder(cfg.Adapters[string(openrtb_ext.BidderConnectAd)].Endpoint),
 		openrtb_ext.BidderConsumable:   consumable.NewConsumableBidder(cfg.Adapters[string(openrtb_ext.BidderConsumable)].Endpoint),
+		openrtb_ext.BidderConversant:   conversant.NewConversantBidder(cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
 		openrtb_ext.BidderCpmstar:      cpmstar.NewCpmstarBidder(cfg.Adapters[string(openrtb_ext.BidderCpmstar)].Endpoint),
 		openrtb_ext.BidderDatablocks:   datablocks.NewDatablocksBidder(cfg.Adapters[string(openrtb_ext.BidderDatablocks)].Endpoint),
 		openrtb_ext.BidderDmx:          dmx.NewDmxBidder(cfg.Adapters[string(openrtb_ext.BidderDmx)].Endpoint),
@@ -120,7 +143,6 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderEngageBDR:    engagebdr.NewEngageBDRBidder(client, cfg.Adapters[string(openrtb_ext.BidderEngageBDR)].Endpoint),
 		openrtb_ext.BidderEPlanning:    eplanning.NewEPlanningBidder(client, cfg.Adapters[string(openrtb_ext.BidderEPlanning)].Endpoint),
 		openrtb_ext.BidderFacebook: audienceNetwork.NewFacebookBidder(
-			client,
 			cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID,
 			cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].AppSecret),
 		openrtb_ext.BidderGamma:           gamma.NewGammaBidder(cfg.Adapters[string(openrtb_ext.BidderGamma)].Endpoint),
@@ -128,15 +150,20 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderGrid:            grid.NewGridBidder(cfg.Adapters[string(openrtb_ext.BidderGrid)].Endpoint),
 		openrtb_ext.BidderGumGum:          gumgum.NewGumGumBidder(cfg.Adapters[string(openrtb_ext.BidderGumGum)].Endpoint),
 		openrtb_ext.BidderImprovedigital:  improvedigital.NewImprovedigitalBidder(cfg.Adapters[string(openrtb_ext.BidderImprovedigital)].Endpoint),
+		openrtb_ext.BidderInMobi:          inmobi.NewInMobiAdapter(cfg.Adapters[string(openrtb_ext.BidderInMobi)].Endpoint),
+		openrtb_ext.BidderInvibes:         invibes.NewInvibesBidder(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderInvibes))].Endpoint),
 		openrtb_ext.BidderKidoz:           kidoz.NewKidozBidder(cfg.Adapters[string(openrtb_ext.BidderKidoz)].Endpoint),
+		openrtb_ext.BidderKrushmedia:      krushmedia.NewKrushmediaBidder(cfg.Adapters[string(openrtb_ext.BidderKrushmedia)].Endpoint),
 		openrtb_ext.BidderKubient:         kubient.NewKubientBidder(cfg.Adapters[string(openrtb_ext.BidderKubient)].Endpoint),
 		openrtb_ext.BidderLockerDome:      lockerdome.NewLockerDomeBidder(cfg.Adapters[string(openrtb_ext.BidderLockerDome)].Endpoint),
 		openrtb_ext.BidderLunaMedia:       lunamedia.NewLunaMediaBidder(cfg.Adapters[string(openrtb_ext.BidderLunaMedia)].Endpoint),
+		openrtb_ext.BidderLogicad:         logicad.NewLogicadBidder(cfg.Adapters[string(openrtb_ext.BidderLogicad)].Endpoint),
 		openrtb_ext.BidderMarsmedia:       marsmedia.NewMarsmediaBidder(cfg.Adapters[string(openrtb_ext.BidderMarsmedia)].Endpoint),
 		openrtb_ext.BidderMgid:            mgid.NewMgidBidder(cfg.Adapters[string(openrtb_ext.BidderMgid)].Endpoint),
 		openrtb_ext.BidderMobileFuse:      mobilefuse.NewMobileFuseBidder(cfg.Adapters[string(openrtb_ext.BidderMobileFuse)].Endpoint),
 		openrtb_ext.BidderNanoInteractive: nanointeractive.NewNanoIneractiveBidder(cfg.Adapters[string(openrtb_ext.BidderNanoInteractive)].Endpoint),
 		openrtb_ext.BidderNinthDecimal:    ninthdecimal.NewNinthDecimalBidder(cfg.Adapters[string(openrtb_ext.BidderNinthDecimal)].Endpoint),
+		openrtb_ext.BidderNoBid:           nobid.NewNoBidBidder(cfg.Adapters[string(openrtb_ext.BidderNoBid)].Endpoint),
 		openrtb_ext.BidderOrbidder:        orbidder.NewOrbidderBidder(cfg.Adapters[string(openrtb_ext.BidderOrbidder)].Endpoint),
 		openrtb_ext.BidderOpenx:           openx.NewOpenxBidder(cfg.Adapters[string(openrtb_ext.BidderOpenx)].Endpoint),
 		openrtb_ext.BidderPubmatic:        pubmatic.NewPubmaticBidder(client, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
@@ -151,7 +178,11 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
 
 		openrtb_ext.BidderSharethrough:     sharethrough.NewSharethroughBidder(cfg.Adapters[string(openrtb_ext.BidderSharethrough)].Endpoint),
+		openrtb_ext.BidderSilverMob:        silvermob.NewSilverMobBidder(cfg.Adapters[string(openrtb_ext.BidderSilverMob)].Endpoint),
+		openrtb_ext.BidderSmaato:           smaato.NewSmaatoBidder(cfg.Adapters[string(openrtb_ext.BidderSmaato)].Endpoint),
+		openrtb_ext.BidderSmartadserver:    smartadserver.NewSmartadserverBidder(cfg.Adapters[string(openrtb_ext.BidderSmartadserver)].Endpoint),
 		openrtb_ext.BidderSmartRTB:         smartrtb.NewSmartRTBBidder(cfg.Adapters[string(openrtb_ext.BidderSmartRTB)].Endpoint),
+		openrtb_ext.BidderSmartyAds:        smartyads.NewSmartyAdsBidder(cfg.Adapters[string(openrtb_ext.BidderSmartyAds)].Endpoint),
 		openrtb_ext.BidderSomoaudience:     somoaudience.NewSomoaudienceBidder(cfg.Adapters[string(openrtb_ext.BidderSomoaudience)].Endpoint),
 		openrtb_ext.BidderSonobi:           sonobi.NewSonobiBidder(client, cfg.Adapters[string(openrtb_ext.BidderSonobi)].Endpoint),
 		openrtb_ext.BidderSovrn:            sovrn.NewSovrnBidder(client, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
@@ -172,11 +203,10 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderYieldmo:          yieldmo.NewYieldmoBidder(cfg.Adapters[string(openrtb_ext.BidderYieldmo)].Endpoint),
 		openrtb_ext.BidderYieldone:         yieldone.NewYieldoneBidder(cfg.Adapters[string(openrtb_ext.BidderYieldone)].Endpoint),
 		openrtb_ext.BidderZeroClickFraud:   zeroclickfraud.NewZeroClickFraudBidder(cfg.Adapters[string(openrtb_ext.BidderZeroClickFraud)].Endpoint),
+		openrtb_ext.BidderBetween:          between.NewBetweenBidder(cfg.Adapters[string(openrtb_ext.BidderBetween)].Endpoint),
 	}
 
 	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{
-		// TODO #267: Upgrade the Conversant adapter
-		openrtb_ext.BidderConversant: conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
 		// TODO #212: Upgrade the Index adapter
 		openrtb_ext.BidderIx: ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
 		// TODO #213: Upgrade the Lifestreet adapter
@@ -198,7 +228,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	for name, bidder := range ortbBidders {
 		// Clean out any disabled bidders
 		if infos[string(name)].Status == adapters.StatusActive {
-			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client, cfg, me)
+			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client, cfg, me, name)
 		}
 	}
 

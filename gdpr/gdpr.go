@@ -23,15 +23,16 @@ type Permissions interface {
 	// Determines whether or not to send PI information to a bidder, or mask it out.
 	//
 	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
-	PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, error)
+	PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error)
 
 	// Exposes the AMP execption flag
 	AMPException() bool
 }
 
+// Versions of the GDPR TCF technical specification.
 const (
-	tCF1 uint8 = 1
-	tCF2 uint8 = 2
+	tcf1SpecVersion uint8 = 1
+	tcf2SpecVersion uint8 = 2
 )
 
 // NewPermissions gets an instance of the Permissions for use elsewhere in the project.
@@ -45,8 +46,8 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 		cfg:       cfg,
 		vendorIDs: vendorIDs,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			tCF1: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tCF1),
-			tCF2: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tCF2)},
+			tcf1SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf1SpecVersion),
+			tcf2SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf2SpecVersion)},
 	}
 }
 

@@ -16,6 +16,7 @@ require (
 	github.com/cespare/xxhash v1.0.0 // indirect
 	github.com/chasex/glog v0.0.0-20160217080310-c62392af379c
 	github.com/coocood/freecache v1.0.1
+	github.com/docker/go-units v0.4.0
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5
 	github.com/evanphx/json-patch v0.0.0-20180720181644-f195058310bd
 	github.com/gofrs/uuid v3.2.0+incompatible
@@ -33,7 +34,7 @@ require (
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
-	github.com/prebid/go-gdpr v0.8.2
+	github.com/prebid/go-gdpr v0.8.3
 	github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed
 	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
 	github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e // indirect

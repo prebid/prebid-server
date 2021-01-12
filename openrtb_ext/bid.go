@@ -13,6 +13,7 @@ type ExtBid struct {
 
 // ExtBidPrebid defines the contract for bidresponse.seatbid.bid[i].ext.prebid
 // DealPriority represents priority of deal bid. If its non deal bid then value will be 0
+// DealTierSatisfied true represents corresponding bid has satisfied the deal tier
 type ExtBidPrebid struct {
 	Cache             *ExtBidPrebidCache `json:"cache,omitempty"`
 	Targeting         map[string]string  `json:"targeting,omitempty"`
@@ -101,6 +102,9 @@ const (
 	HbBidderConstantKey TargetingKey = "hb_bidder"
 	HbSizeConstantKey   TargetingKey = "hb_size"
 	HbDealIDConstantKey TargetingKey = "hb_deal"
+
+	// HbFormatKey is the format of the bid. For example, "video", "banner"
+	HbFormatKey TargetingKey = "hb_format"
 
 	// HbCacheKey and HbVastCacheKey store UUIDs which can be used to fetch things from prebid cache.
 	// Callers should *never* assume that either of these exist, since the call to the cache may always fail.

@@ -42,6 +42,16 @@ func (me *MetricsEngineMock) RecordRequestTime(labels Labels, length time.Durati
 	me.Called(labels, length)
 }
 
+// RecordStoredDataFetchTime mock
+func (me *MetricsEngineMock) RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration) {
+	me.Called(labels, length)
+}
+
+// RecordStoredDataError mock
+func (me *MetricsEngineMock) RecordStoredDataError(labels StoredDataLabels) {
+	me.Called(labels)
+}
+
 // RecordAdapterPanic mock
 func (me *MetricsEngineMock) RecordAdapterPanic(labels AdapterLabels) {
 	me.Called(labels)
@@ -50,6 +60,16 @@ func (me *MetricsEngineMock) RecordAdapterPanic(labels AdapterLabels) {
 // RecordAdapterRequest mock
 func (me *MetricsEngineMock) RecordAdapterRequest(labels AdapterLabels) {
 	me.Called(labels)
+}
+
+// RecordAdapterConnections mock
+func (me *MetricsEngineMock) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+	me.Called(bidderName, connWasReused, connWaitTime)
+}
+
+// RecordDNSTime mock
+func (me *MetricsEngineMock) RecordDNSTime(dnsLookupTime time.Duration) {
+	me.Called(dnsLookupTime)
 }
 
 // RecordAdapterBidReceived mock
@@ -92,6 +112,11 @@ func (me *MetricsEngineMock) RecordStoredImpCacheResult(cacheResult CacheResult,
 	me.Called(cacheResult, inc)
 }
 
+// RecordAccountCacheResult mock
+func (me *MetricsEngineMock) RecordAccountCacheResult(cacheResult CacheResult, inc int) {
+	me.Called(cacheResult, inc)
+}
+
 // RecordPrebidCacheRequestTime mock
 func (me *MetricsEngineMock) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
 	me.Called(success, length)
@@ -105,6 +130,11 @@ func (me *MetricsEngineMock) RecordRequestQueueTime(success bool, requestType Re
 // RecordTimeoutNotice mock
 func (me *MetricsEngineMock) RecordTimeoutNotice(success bool) {
 	me.Called(success)
+}
+
+// RecordRequestPrivacy mock
+func (me *MetricsEngineMock) RecordRequestPrivacy(privacy PrivacyLabels) {
+	me.Called(privacy)
 }
 
 // RecordAdapterDuplicateBidID mock
@@ -130,4 +160,9 @@ func (me *MetricsEngineMock) RecordPodCombGenTime(labels PodLabels, elapsedTime 
 // RecordPodCompititveExclusionTime mock
 func (me *MetricsEngineMock) RecordPodCompititveExclusionTime(labels PodLabels, elapsedTime time.Duration) {
 	me.Called(labels, elapsedTime)
+}
+
+//RecordAdapterVideoBidDuration mock
+func (me *MetricsEngineMock) RecordAdapterVideoBidDuration(labels AdapterLabels, videoBidDuration int) {
+	me.Called(labels, videoBidDuration)
 }

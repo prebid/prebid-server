@@ -380,21 +380,6 @@ func getCookiesFromRequest(request *openrtb.BidRequest) ([]string, error) {
 	return cookies, nil
 }
 
-/*func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	// convert mxmcherry.openrtb.BidRequest object to PubMatic-OpenWrap.openrtb.BidRequest object
-	var newRequest *owortb.BidRequest
-	reqBytes, err := json.Marshal(request)
-	if reqBytes, err = json.Marshal(request); err == nil {
-		if err = json.Unmarshal(reqBytes, &newRequest); err == nil {
-			return a.internalMakeRequests(newRequest, reqInfo)
-		}
-	}
-	errs := make([]error, 0, 1)
-	err1 := fmt.Errorf("%s Error occurred while parsing the request", PUBMATIC)
-	errs = append(errs, err1)
-	return nil, errs
-}*/
-
 func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
@@ -468,7 +453,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 					for _, uid := range eid.Uids {
 						newUID := &openrtb.Uid{
 							ID:    uid.ID,
-							AType: uid.AType,
+							AType: uid.Atype,
 							Ext:   uid.Ext,
 						}
 						uidArr = append(uidArr, *newUID)

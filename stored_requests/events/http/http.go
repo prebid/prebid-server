@@ -42,6 +42,13 @@ import (
 //     "imp2": { ... stored data for imp2 ... },
 //   }
 // }
+// or
+// {
+//   "accounts": {
+//     "acc1": { ... config data for acc1 ... },
+//     "acc2": { ... config data for acc2 ... },
+//   },
+// }
 //
 // To signal deletions, the endpoint may return { "deleted": true }
 // in place of the Stored Data if the "last-modified" param existed.
@@ -82,10 +89,11 @@ func (e *HTTPEvents) fetchAll() {
 	defer cancel()
 	resp, err := ctxhttp.Get(ctx, e.client, e.Endpoint)
 	if respObj, ok := e.parse(e.Endpoint, resp, err); ok &&
-		(len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0) {
+		(len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 || len(respObj.Accounts) > 0) {
 		e.saves <- events.Save{
 			Requests: respObj.StoredRequests,
 			Imps:     respObj.StoredImps,
+			Accounts: respObj.Accounts,
 		}
 	}
 }
@@ -125,14 +133,16 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 				invalidations := events.Invalidation{
 					Requests: extractInvalidations(respObj.StoredRequests),
 					Imps:     extractInvalidations(respObj.StoredImps),
+					Accounts: extractInvalidations(respObj.Accounts),
 				}
-				if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 {
+				if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 || len(respObj.Accounts) > 0 {
 					e.saves <- events.Save{
 						Requests: respObj.StoredRequests,
 						Imps:     respObj.StoredImps,
+						Accounts: respObj.Accounts,
 					}
 				}
-				if len(invalidations.Requests) > 0 || len(invalidations.Imps) > 0 {
+				if len(invalidations.Requests) > 0 || len(invalidations.Imps) > 0 || len(invalidations.Accounts) > 0 {
 					e.invalidations <- invalidations
 				}
 				e.lastUpdate = thisTimeInUTC
@@ -193,4 +203,5 @@ func (e *HTTPEvents) Invalidations() <-chan events.Invalidation {
 type responseContract struct {
 	StoredRequests map[string]json.RawMessage `json:"requests"`
 	StoredImps     map[string]json.RawMessage `json:"imps"`
+	Accounts       map[string]json.RawMessage `json:"accounts"`
 }

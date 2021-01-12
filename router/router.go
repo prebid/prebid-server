@@ -12,9 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints"
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adform"
@@ -34,8 +37,6 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/cache/postgrescache"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
@@ -44,7 +45,6 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/ssl"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	storedRequestsConf "github.com/PubMatic-OpenWrap/prebid-server/stored_requests/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync/usersyncers"
 
 	"github.com/golang/glog"
@@ -59,6 +59,7 @@ var (
 	g_syncers           map[openrtb_ext.BidderName]usersync.Usersyncer
 	g_cfg               *config.Configuration
 	g_ex                exchange.Exchange
+	g_accounts          stored_requests.AccountFetcher
 	g_paramsValidator   openrtb_ext.BidderParamValidator
 	g_storedReqFetcher  stored_requests.Fetcher
 	g_gdprPerms         gdpr.Permissions
@@ -207,6 +208,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 
 	generalHttpClient := &http.Client{
 		Transport: &http.Transport{
+			MaxConnsPerHost:     cfg.Client.MaxConnsPerHost,
 			MaxIdleConns:        cfg.Client.MaxIdleConns,
 			MaxIdleConnsPerHost: cfg.Client.MaxIdleConnsPerHost,
 			IdleConnTimeout:     time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
@@ -216,6 +218,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 
 	cacheHttpClient := &http.Client{
 		Transport: &http.Transport{
+			MaxConnsPerHost:     cfg.CacheClient.MaxConnsPerHost,
 			MaxIdleConns:        cfg.CacheClient.MaxIdleConns,
 			MaxIdleConnsPerHost: cfg.CacheClient.MaxIdleConnsPerHost,
 			IdleConnTimeout:     time.Duration(cfg.CacheClient.IdleConnTimeout) * time.Second,
@@ -230,7 +233,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	var db *sql.DB
 	// Metrics engine
 	g_metrics = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
-	db, _, g_storedReqFetcher, _, g_categoriesFetcher, g_videoFetcher = storedRequestsConf.NewStoredRequests(cfg, g_metrics, generalHttpClient, r.Router)
+	db, _, g_storedReqFetcher, _, g_accounts, g_categoriesFetcher, g_videoFetcher = storedRequestsConf.NewStoredRequests(cfg, g_metrics, generalHttpClient, r.Router)
 
 	// todo(zachbadgett): better shutdown
 	//r.Shutdown = shutdown
@@ -260,22 +263,22 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 
 	exchanges = newExchangeMap(cfg)
 	g_cacheClient = pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, g_metrics)
-	g_ex = exchange.NewExchange(generalHttpClient, g_cacheClient, cfg, g_metrics, bidderInfos, g_gdprPerms, rateConvertor)
+	g_ex = exchange.NewExchange(generalHttpClient, g_cacheClient, cfg, g_metrics, bidderInfos, g_gdprPerms, rateConvertor, g_categoriesFetcher)
 
 	/*
-		openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap)
+		openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap)
 
 		if err != nil {
 			glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 		}
 
-		ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap)
+		ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap)
 
 		if err != nil {
 			glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 		}
 
-		videoEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, videoFetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap, cacheClient)
+		videoEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap, cacheClient)
 		if err != nil {
 			glog.Fatalf("Failed to create the video endpoint handler. %v", err)
 		}
@@ -297,6 +300,16 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		r.GET("/", serveIndex)
 		r.ServeFiles("/static/*filepath", http.Dir("static"))
 
+		// vtrack endpoint
+		if cfg.VTrack.Enabled {
+			vtrackEndpoint := events.NewVTrackEndpoint(cfg, accounts, cacheClient, bidderInfos)
+			r.POST("/vtrack", vtrackEndpoint)
+		}
+
+		// event endpoint
+		eventEndpoint := events.NewEventEndpoint(cfg, accounts, pbsAnalytics)
+		r.GET("/event", eventEndpoint)
+
 		userSyncDeps := &pbs.UserSyncDeps{
 			HostCookieConfig: &(cfg.HostCookie),
 			ExternalUrl:      cfg.ExternalURL,
@@ -309,13 +322,14 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 		r.POST("/optout", userSyncDeps.OptOut)
 		r.GET("/optout", userSyncDeps.OptOut)
+
 	*/
 	return r, nil
 }
 
 //OrtbAuctionEndpointWrapper Openwrap wrapper method for calling /openrtb2/auction endpoint
 func OrtbAuctionEndpointWrapper(w http.ResponseWriter, r *http.Request) error {
-	ortbAuctionEndpoint, err := openrtb2.NewEndpoint(g_ex, g_paramsValidator, g_storedReqFetcher, g_categoriesFetcher, g_cfg, g_metrics, g_analytics, g_disabledBidders, g_defReqJSON, g_bidderMap)
+	ortbAuctionEndpoint, err := openrtb2.NewEndpoint(g_ex, g_paramsValidator, g_storedReqFetcher, g_accounts, g_cfg, g_metrics, g_analytics, g_disabledBidders, g_defReqJSON, g_bidderMap)
 	if err != nil {
 		return err
 	}
@@ -325,7 +339,7 @@ func OrtbAuctionEndpointWrapper(w http.ResponseWriter, r *http.Request) error {
 
 //VideoAuctionEndpointWrapper Openwrap wrapper method for calling /openrtb2/video endpoint
 func VideoAuctionEndpointWrapper(w http.ResponseWriter, r *http.Request) error {
-	videoAuctionEndpoint, err := openrtb2.NewCTVEndpoint(g_ex, g_paramsValidator, g_storedReqFetcher, g_videoFetcher, g_categoriesFetcher, g_cfg, g_metrics, g_analytics, g_disabledBidders, g_defReqJSON, g_bidderMap)
+	videoAuctionEndpoint, err := openrtb2.NewCTVEndpoint(g_ex, g_paramsValidator, g_storedReqFetcher, g_videoFetcher, g_accounts, g_cfg, g_metrics, g_analytics, g_disabledBidders, g_defReqJSON, g_bidderMap)
 	if err != nil {
 		return err
 	}

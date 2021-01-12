@@ -42,7 +42,6 @@
       ],
       "ext": {
         "prebid": {
-          "debug":1,
           "targeting": {
             "durationRangeSec": [
               15,
@@ -204,9 +203,7 @@
           },
           "test": 1,
           "ext": {
-            
             "prebid": {
-              "debug": 1,
               "targeting": {
                 "durationRangeSec": [
                   15,

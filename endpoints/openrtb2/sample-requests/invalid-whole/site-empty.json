@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.site should include at least one of request.site.id or request.site.page.\n",
-  "requestPayload": {
+  "description": "Bid request's site field is missing an id",
+  "mockBidRequest": {
     "id": "req-id",
     "site": {},
     "imp": [
@@ -9,7 +9,7 @@
         "video": {
           "mimes": [
             "video/mp4"
-          ]
+            ]
         },
         "ext": {
           "appnexus": {
@@ -18,5 +18,7 @@
         }
       }
     ]
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.site should include at least one of request.site.id or request.site.page.\n"
 }

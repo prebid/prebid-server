@@ -164,14 +164,16 @@ type httpRequest struct {
 }
 
 type httpResponse struct {
-	Status int             `json:"status"`
-	Body   json.RawMessage `json:"body"`
+	Status  int             `json:"status"`
+	Body    json.RawMessage `json:"body"`
+	Headers http.Header     `json:"headers"`
 }
 
 func (resp *httpResponse) ToResponseData(t *testing.T) *adapters.ResponseData {
 	return &adapters.ResponseData{
 		StatusCode: resp.Status,
 		Body:       resp.Body,
+		Headers:    resp.Headers,
 	}
 }
 

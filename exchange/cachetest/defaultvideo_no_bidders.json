@@ -26,9 +26,9 @@
     }],
     "expectedCacheables": [
         {
-            "Type": "json",
-            "TTLSeconds": 660,
-            "Data": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64}"
+            "type": "json",
+            "ttlseconds": 660,
+            "value": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64}"
         }
     ],
     "defaultTTLs": {

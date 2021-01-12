@@ -42,10 +42,10 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, error) {
+func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
 	_, ok := p.cfg.NonStandardPublisherMap[PublisherID]
 	if ok {
-		return true, true, nil
+		return true, true, true, nil
 	}
 
 	id, ok := p.vendorIDs[bidder]
@@ -54,10 +54,10 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 	}
 
 	if consent == "" {
-		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
+		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
 	}
 
-	return false, false, nil
+	return false, false, false, nil
 }
 
 func (p *permissionsImpl) AMPException() bool {
@@ -98,19 +98,19 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 	return false, nil
 }
 
-func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent string) (bool, bool, error) {
+func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent string) (bool, bool, bool, error) {
 	// If we're not given a consent string, respect the preferences in the app config.
 	if consent == "" {
-		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
+		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
 	}
 
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
-		return false, false, err
+		return false, false, false, err
 	}
 
 	if vendor == nil {
-		return false, false, nil
+		return false, false, false, nil
 	}
 
 	if parsedConsent.Version() == 2 {
@@ -118,21 +118,22 @@ func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent 
 			return p.allowPITCF2(parsedConsent, vendor, vendorID)
 		}
 		if (vendor.Purpose(consentconstants.InfoStorageAccess) || vendor.LegitimateInterest(consentconstants.InfoStorageAccess)) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && (vendor.Purpose(consentconstants.PersonalizationProfile) || vendor.LegitimateInterest(consentconstants.PersonalizationProfile)) && parsedConsent.PurposeAllowed(consentconstants.PersonalizationProfile) && parsedConsent.VendorConsent(vendorID) {
-			return true, true, nil
+			return true, true, true, nil
 		}
 	} else {
 		if (vendor.Purpose(tcf1constants.InfoStorageAccess) || vendor.LegitimateInterest(tcf1constants.InfoStorageAccess)) && parsedConsent.PurposeAllowed(tcf1constants.InfoStorageAccess) && (vendor.Purpose(tcf1constants.AdSelectionDeliveryReporting) || vendor.LegitimateInterest(tcf1constants.AdSelectionDeliveryReporting)) && parsedConsent.PurposeAllowed(tcf1constants.AdSelectionDeliveryReporting) && parsedConsent.VendorConsent(vendorID) {
-			return true, true, nil
+			return true, true, true, nil
 		}
 	}
-	return false, false, nil
+	return false, false, false, nil
 }
 
-func (p *permissionsImpl) allowPITCF2(parsedConsent api.VendorConsents, vendor api.Vendor, vendorID uint16) (allowPI bool, allowGeo bool, err error) {
+func (p *permissionsImpl) allowPITCF2(parsedConsent api.VendorConsents, vendor api.Vendor, vendorID uint16) (allowPI bool, allowGeo bool, allowID bool, err error) {
 	consent, ok := parsedConsent.(tcf2.ConsentMetadata)
 	err = nil
 	allowPI = false
 	allowGeo = false
+	allowID = false
 	if !ok {
 		err = fmt.Errorf("Unable to access TCF2 parsed consent")
 		return
@@ -141,6 +142,12 @@ func (p *permissionsImpl) allowPITCF2(parsedConsent api.VendorConsents, vendor a
 		allowGeo = consent.SpecialFeatureOptIn(1) && vendor.SpecialPurpose(1)
 	} else {
 		allowGeo = true
+	}
+	for i := 2; i <= 10; i++ {
+		if p.checkPurpose(consent, vendor, vendorID, tcf1constants.Purpose(i)) {
+			allowID = true
+			break
+		}
 	}
 	// Set to true so any purpose check can flip it to false
 	allowPI = true
@@ -214,10 +221,29 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 	return true, nil
 }
 
-func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, error) {
-	return true, true, nil
+func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+	return true, true, true, nil
 }
 
 func (a AlwaysAllow) AMPException() bool {
+	return false
+}
+
+// Exporting to allow for easy test setups
+type AlwaysFail struct{}
+
+func (a AlwaysFail) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+	return false, nil
+}
+
+func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	return false, nil
+}
+
+func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+	return false, false, false, nil
+}
+
+func (a AlwaysFail) AMPException() bool {
 	return false
 }

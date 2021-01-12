@@ -25,6 +25,11 @@ type Fetcher interface {
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
 }
 
+type AccountFetcher interface {
+	// FetchAccount fetches the host account configuration for a publisher
+	FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error)
+}
+
 type CategoryFetcher interface {
 	// FetchCategories fetches the ad-server/publisher specific category for the given IAB category
 	FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error)
@@ -32,8 +37,9 @@ type CategoryFetcher interface {
 
 // AllFetcher is an interface that encapsulates both the original Fetcher and the CategoryFetcher
 type AllFetcher interface {
-	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
-	FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error)
+	Fetcher
+	AccountFetcher
+	CategoryFetcher
 }
 
 // NotFoundError is an error type to flag that an ID was not found by the Fetcher.
@@ -56,7 +62,12 @@ func (e NotFoundError) Error() string {
 // Cache is an intermediate layer which can be used to create more complex Fetchers by composition.
 // Implementations must be safe for concurrent access by multiple goroutines.
 // To add a Cache layer in front of a Fetcher, see WithCache()
-type Cache interface {
+type Cache struct {
+	Requests CacheJSON
+	Imps     CacheJSON
+	Accounts CacheJSON
+}
+type CacheJSON interface {
 	// Get works much like Fetcher.FetchRequests, with a few exceptions:
 	//
 	// 1. Any (actionable) errors should be logged by the implementation, rather than returned.
@@ -67,37 +78,33 @@ type Cache interface {
 	//
 	// Nil slices and empty strings are treated as "no ops". That is, a nil requestID will always produce a nil
 	// "stored request data" in the response.
-	Get(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage)
+	Get(ctx context.Context, ids []string) (data map[string]json.RawMessage)
 
 	// Invalidate will ensure that all values associated with the given IDs
 	// are no longer returned by the cache until new values are saved via Update
-	Invalidate(ctx context.Context, requestIDs []string, impIDs []string)
+	Invalidate(ctx context.Context, ids []string)
 
 	// Save will add or overwrite the data in the cache at the given keys
-	Save(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage)
+	Save(ctx context.Context, data map[string]json.RawMessage)
 }
 
 // ComposedCache creates an interface to treat a slice of caches as a single cache
-type ComposedCache []Cache
+type ComposedCache []CacheJSON
 
 // Get will attempt to Get from the caches in the order in which they are in the slice,
 // stopping as soon as a value is found (or when all caches have been exhausted)
-func (c ComposedCache) Get(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
-	requestData = make(map[string]json.RawMessage, len(requestIDs))
-	impData = make(map[string]json.RawMessage, len(impIDs))
+func (c ComposedCache) Get(ctx context.Context, ids []string) (data map[string]json.RawMessage) {
+	data = make(map[string]json.RawMessage, len(ids))
 
-	remainingReqIDs := requestIDs
-	remainingImpIDs := impIDs
+	remainingIDs := ids
 
 	for _, cache := range c {
-		cachedReqData, cachedImpData := cache.Get(ctx, remainingReqIDs, remainingImpIDs)
+		cachedData := cache.Get(ctx, remainingIDs)
+		data, remainingIDs = updateFromCache(data, remainingIDs, cachedData)
 
-		requestData, remainingReqIDs = updateFromCache(requestData, remainingReqIDs, cachedReqData)
-		impData, remainingImpIDs = updateFromCache(impData, remainingImpIDs, cachedImpData)
-
-		// return if all ids filled
-		if len(remainingReqIDs) == 0 && len(remainingImpIDs) == 0 {
-			return
+		// finish early if all ids filled
+		if len(remainingIDs) == 0 {
+			break
 		}
 	}
 
@@ -123,16 +130,16 @@ func updateFromCache(data map[string]json.RawMessage, ids []string, newData map[
 }
 
 // Invalidate will propagate invalidations to all underlying caches
-func (c ComposedCache) Invalidate(ctx context.Context, requestIDs []string, impIDs []string) {
+func (c ComposedCache) Invalidate(ctx context.Context, ids []string) {
 	for _, cache := range c {
-		cache.Invalidate(ctx, requestIDs, impIDs)
+		cache.Invalidate(ctx, ids)
 	}
 }
 
 // Save will propagate saves to all underlying caches
-func (c ComposedCache) Save(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
+func (c ComposedCache) Save(ctx context.Context, data map[string]json.RawMessage) {
 	for _, cache := range c {
-		cache.Save(ctx, requestData, impData)
+		cache.Save(ctx, data)
 	}
 }
 
@@ -142,7 +149,7 @@ type fetcherWithCache struct {
 	metricsEngine pbsmetrics.MetricsEngine
 }
 
-// WithCache returns a Fetcher which uses the given Cache before delegating to the original.
+// WithCache returns a Fetcher which uses the given Caches before delegating to the original.
 // This can be called multiple times to compose Cache layers onto the backing Fetcher, though
 // it is usually more desirable to first compose caches with Compose, ensuring propagation of updates
 // and invalidations through all cache layers.
@@ -155,7 +162,9 @@ func WithCache(fetcher AllFetcher, cache Cache, metricsEngine pbsmetrics.Metrics
 }
 
 func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	requestData, impData = f.cache.Get(ctx, requestIDs, impIDs)
+
+	requestData = f.cache.Requests.Get(ctx, requestIDs)
+	impData = f.cache.Imps.Get(ctx, impIDs)
 
 	// Fixes #311
 	leftoverImps := findLeftovers(impIDs, impData)
@@ -172,13 +181,30 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 		fetcherReqData, fetcherImpData, fetcherErrs := f.fetcher.FetchRequests(ctx, leftoverReqs, leftoverImps)
 		errs = fetcherErrs
 
-		f.cache.Save(ctx, fetcherReqData, fetcherImpData)
+		f.cache.Requests.Save(ctx, fetcherReqData)
+		f.cache.Imps.Save(ctx, fetcherImpData)
 
 		requestData = mergeData(requestData, fetcherReqData)
 		impData = mergeData(impData, fetcherImpData)
 	}
 
 	return
+}
+
+func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (account json.RawMessage, errs []error) {
+	accountData := f.cache.Accounts.Get(ctx, []string{accountID})
+	// TODO: add metrics
+	if account, ok := accountData[accountID]; ok {
+		f.metricsEngine.RecordAccountCacheResult(pbsmetrics.CacheHit, 1)
+		return account, errs
+	} else {
+		f.metricsEngine.RecordAccountCacheResult(pbsmetrics.CacheMiss, 1)
+	}
+	account, errs = f.fetcher.FetchAccount(ctx, accountID)
+	if len(errs) == 0 {
+		f.cache.Accounts.Save(ctx, map[string]json.RawMessage{accountID: account})
+	}
+	return account, errs
 }
 
 func (f *fetcherWithCache) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {

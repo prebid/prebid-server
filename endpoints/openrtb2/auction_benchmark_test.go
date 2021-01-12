@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
@@ -77,7 +78,8 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 			theMetrics,
 			infos,
 			gdpr.AlwaysAllow{},
-			currencies.NewRateConverterDefault(),
+			currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+			empty_fetcher.EmptyFetcher{},
 		),
 		paramValidator,
 		empty_fetcher.EmptyFetcher{},

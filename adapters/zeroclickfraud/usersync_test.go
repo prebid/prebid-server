@@ -23,7 +23,7 @@ func TestZeroClickFraudSyncer(t *testing.T) {
 			Consent: "BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
 		},
 		CCPA: ccpa.Policy{
-			Value: "1NYN",
+			Consent: "1NYN",
 		},
 	})
 

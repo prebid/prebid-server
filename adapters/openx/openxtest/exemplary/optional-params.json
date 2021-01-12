@@ -11,6 +11,7 @@
           "bidder": {
             "unit": "539439964",
             "delDomain": "se-demo-d.openx.net",
+            "platform": "PLATFORM",
             "customFloor": 0.1,
             "customParams": {"foo": "bar"}
           }
@@ -40,7 +41,8 @@
           ],
           "ext": {
             "bc": "hb_pbs_1.0.0",
-            "delDomain": "se-demo-d.openx.net"
+            "delDomain": "se-demo-d.openx.net",
+            "platform": "PLATFORM"
           }
         }
       },

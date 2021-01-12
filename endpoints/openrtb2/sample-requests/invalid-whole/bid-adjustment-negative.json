@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.ext.prebid.bidadjustmentfactors.appnexus must be a positive number. Got -2.000000\n",
-  "requestPayload": {
+  "description": "Negative bid adjustment factor",
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "test.somepage.com"
@@ -25,5 +25,7 @@
         }
       }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.ext.prebid.bidadjustmentfactors.appnexus must be a positive number. Got -2.000000\n"
 }

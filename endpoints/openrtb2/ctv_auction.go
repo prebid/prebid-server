@@ -14,6 +14,7 @@ import (
 
 	"github.com/PubMatic-OpenWrap/etree"
 	"github.com/PubMatic-OpenWrap/openrtb"
+	accountService "github.com/PubMatic-OpenWrap/prebid-server/account"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/combination"
@@ -28,6 +29,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/PubMatic-OpenWrap/prebid-server/util/iputil"
 	"github.com/buger/jsonparser"
 	uuid "github.com/gofrs/uuid"
 	"github.com/golang/glog"
@@ -55,7 +57,8 @@ func NewCTVEndpoint(
 	validator openrtb_ext.BidderParamValidator,
 	requestsByID stored_requests.Fetcher,
 	videoFetcher stored_requests.Fetcher,
-	categories stored_requests.CategoryFetcher,
+	accounts stored_requests.AccountFetcher,
+	//categories stored_requests.CategoryFetcher,
 	cfg *config.Configuration,
 	met pbsmetrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
@@ -63,10 +66,15 @@ func NewCTVEndpoint(
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
 
-	if ex == nil || validator == nil || requestsByID == nil || cfg == nil || met == nil {
+	if ex == nil || validator == nil || requestsByID == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewCTVEndpoint requires non-nil arguments.")
 	}
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
+
+	ipValidator := iputil.PublicNetworkIPValidator{
+		IPv4PrivateNetworks: cfg.RequestValidation.IPv4PrivateNetworksParsed,
+		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
+	}
 
 	return httprouter.Handle((&ctvEndpointDeps{
 		endpointDeps: endpointDeps{
@@ -74,7 +82,7 @@ func NewCTVEndpoint(
 			validator,
 			requestsByID,
 			videoFetcher,
-			categories,
+			accounts,
 			cfg,
 			met,
 			pbsAnalytics,
@@ -84,6 +92,7 @@ func NewCTVEndpoint(
 			bidderMap,
 			nil,
 			nil,
+			ipValidator,
 		},
 	}).CTVAuctionEndpoint), nil
 }
@@ -157,7 +166,7 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	if request.App != nil {
 		deps.labels.Source = pbsmetrics.DemandApp
 		deps.labels.RType = pbsmetrics.ReqTypeVideo
-		deps.labels.PubID = effectivePubID(request.App.Publisher)
+		deps.labels.PubID = getAccountID(request.App.Publisher)
 	} else { //request.Site != nil
 		deps.labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -165,17 +174,18 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 		} else {
 			deps.labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		deps.labels.PubID = effectivePubID(request.Site.Publisher)
-	}
-
-	//Validate Accounts
-	if err = validateAccount(deps.cfg, deps.labels.PubID); err != nil {
-		errL = append(errL, err)
-		writeError(errL, w, &deps.labels)
-		return
+		deps.labels.PubID = getAccountID(request.Site.Publisher)
 	}
 
 	deps.ctx = context.Background()
+
+	// Look up account now that we have resolved the pubID value
+	account, acctIDErrs := accountService.GetAccount(deps.ctx, deps.cfg, deps.accounts, deps.labels.PubID)
+	if len(acctIDErrs) > 0 {
+		errL = append(errL, acctIDErrs...)
+		writeError(errL, w, &deps.labels)
+		return
+	}
 
 	//Setting Timeout for Request
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(request.TMax) * time.Millisecond)
@@ -185,7 +195,8 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 		defer cancel()
 	}
 
-	response, err = deps.holdAuction(request, usersyncs)
+	response, err = deps.holdAuction(request, usersyncs, account)
+
 	ao.Request = request
 	ao.Response = response
 	if err != nil || nil == response {
@@ -234,7 +245,7 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	}
 }
 
-func (deps *ctvEndpointDeps) holdAuction(request *openrtb.BidRequest, usersyncs *usersync.PBSCookie) (*openrtb.BidResponse, error) {
+func (deps *ctvEndpointDeps) holdAuction(request *openrtb.BidRequest, usersyncs *usersync.PBSCookie, account *config.Account) (*openrtb.BidResponse, error) {
 	defer util.TimeTrack(time.Now(), fmt.Sprintf("Tid:%v CTVHoldAuction", deps.request.ID))
 
 	//Hold OpenRTB Standard Auction
@@ -243,7 +254,15 @@ func (deps *ctvEndpointDeps) holdAuction(request *openrtb.BidRequest, usersyncs 
 		return &openrtb.BidResponse{ID: request.ID}, nil
 	}
 
-	return deps.ex.HoldAuction(deps.ctx, request, usersyncs, deps.labels, &deps.categories, nil)
+	auctionRequest := exchange.AuctionRequest{
+		BidRequest:   request,
+		Account:      *account,
+		UserSyncs:    usersyncs,
+		RequestType:  deps.labels.RType,
+		LegacyLabels: deps.labels,
+	}
+
+	return deps.ex.HoldAuction(deps.ctx, auctionRequest, nil)
 }
 
 /********************* BidRequest Processing *********************/
@@ -876,7 +895,7 @@ func getAdDuration(bid openrtb.Bid, defaultDuration int64) int {
 	}
 	return int(duration)
 }
-  
+
 func addTargetingKey(bid *openrtb.Bid, key openrtb_ext.TargetingKey, value string) error {
 	if nil == bid {
 		return errors.New("Invalid bid")

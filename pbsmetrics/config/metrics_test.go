@@ -116,6 +116,13 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordImps(impTypeLabels)
 	}
 
+	metricsEngine.RecordStoredReqCacheResult(pbsmetrics.CacheMiss, 1)
+	metricsEngine.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, 2)
+	metricsEngine.RecordAccountCacheResult(pbsmetrics.CacheMiss, 3)
+	metricsEngine.RecordStoredReqCacheResult(pbsmetrics.CacheHit, 4)
+	metricsEngine.RecordStoredImpCacheResult(pbsmetrics.CacheHit, 5)
+	metricsEngine.RecordAccountCacheResult(pbsmetrics.CacheHit, 6)
+
 	metricsEngine.RecordRequestQueueTime(false, pbsmetrics.ReqTypeVideo, time.Duration(1))
 
 	//Make the metrics engine, instantiated here with goEngine, fill its RequestStatuses[RequestType][pbsmetrics.RequestStatusXX] with the new boolean values added to pbsmetrics.Labels
@@ -154,6 +161,13 @@ func TestMultiMetricsEngine(t *testing.T) {
 
 	VerifyMetrics(t, "RecordRequestQueueTime.Video.Rejected", goEngine.RequestsQueueTimer[pbsmetrics.ReqTypeVideo][false].Count(), 1)
 	VerifyMetrics(t, "RecordRequestQueueTime.Video.Accepted", goEngine.RequestsQueueTimer[pbsmetrics.ReqTypeVideo][true].Count(), 0)
+
+	VerifyMetrics(t, "StoredReqCache.Miss", goEngine.StoredReqCacheMeter[pbsmetrics.CacheMiss].Count(), 1)
+	VerifyMetrics(t, "StoredImpCache.Miss", goEngine.StoredImpCacheMeter[pbsmetrics.CacheMiss].Count(), 2)
+	VerifyMetrics(t, "AccountCache.Miss", goEngine.AccountCacheMeter[pbsmetrics.CacheMiss].Count(), 3)
+	VerifyMetrics(t, "StoredReqCache.Hit", goEngine.StoredReqCacheMeter[pbsmetrics.CacheHit].Count(), 4)
+	VerifyMetrics(t, "StoredImpCache.Hit", goEngine.StoredImpCacheMeter[pbsmetrics.CacheHit].Count(), 5)
+	VerifyMetrics(t, "AccountCache.Hit", goEngine.AccountCacheMeter[pbsmetrics.CacheHit].Count(), 6)
 }
 
 func VerifyMetrics(t *testing.T, name string, actual int64, expected int64) {

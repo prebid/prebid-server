@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.site or request.app must be defined, but not both.\n",
-  "requestPayload": {
+  "description": "Bid request comes with both site and app fields, it should only come with one or the other",
+  "mockBidRequest": {
     "id": "req-id",
     "site": {
       "page": "test.mysite.com"
@@ -12,7 +12,7 @@
         "video": {
           "mimes": [
             "video/mp4"
-          ]
+            ]
         },
         "ext": {
           "appnexus": {
@@ -21,5 +21,7 @@
         }
       }
     ]
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.site or request.app must be defined, but not both.\n"
 }

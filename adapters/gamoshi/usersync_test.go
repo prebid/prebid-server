@@ -18,7 +18,7 @@ func TestGamoshiSyncer(t *testing.T) {
 	syncer := NewGamoshiSyncer(syncURLTemplate)
 	syncInfo, err := syncer.GetUsersyncInfo(privacy.Policies{
 		CCPA: ccpa.Policy{
-			Value: "anyValue",
+			Consent: "anyValue",
 		},
 	})
 

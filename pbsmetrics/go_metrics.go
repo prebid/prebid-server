@@ -27,8 +27,12 @@ type Metrics struct {
 	RequestsQueueTimer             map[RequestType]map[bool]metrics.Timer
 	PrebidCacheRequestTimerSuccess metrics.Timer
 	PrebidCacheRequestTimerError   metrics.Timer
+	StoredDataFetchTimer           map[StoredDataType]map[StoredDataFetchType]metrics.Timer
+	StoredDataErrorMeter           map[StoredDataType]map[StoredDataError]metrics.Meter
 	StoredReqCacheMeter            map[CacheResult]metrics.Meter
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
+	AccountCacheMeter              map[CacheResult]metrics.Meter
+	DNSLookupTimer                 metrics.Timer
 
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
@@ -48,8 +52,16 @@ type Metrics struct {
 	ImpsTypeAudio  metrics.Meter
 	ImpsTypeNative metrics.Meter
 
+	// Notification timeout metrics
 	TimeoutNotificationSuccess metrics.Meter
 	TimeoutNotificationFailure metrics.Meter
+
+	// TCF adaption metrics
+	PrivacyCCPARequest       metrics.Meter
+	PrivacyCCPARequestOptOut metrics.Meter
+	PrivacyCOPPARequest      metrics.Meter
+	PrivacyLMTRequest        metrics.Meter
+	PrivacyTCFRequestVersion map[TCFVersionValue]metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -73,6 +85,9 @@ type AdapterMetrics struct {
 	BidsReceivedMeter metrics.Meter
 	PanicMeter        metrics.Meter
 	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
+	ConnCreated       metrics.Counter
+	ConnReused        metrics.Counter
+	ConnWaitTime      metrics.Timer
 }
 
 type MarkupDeliveryMetrics struct {
@@ -98,7 +113,7 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 // rather than loading legacy metrics that never get filled.
 // This will also eventually let us configure metrics, such as setting a limited set of metrics
 // for a production instance, and then expanding again when we need more debugging.
-func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableMetrics config.DisabledMetrics) *Metrics {
+func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disabledMetrics config.DisabledMetrics) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	blankTimer := &metrics.NilTimer{}
 
@@ -115,11 +130,15 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		SafariRequestMeter:             blankMeter,
 		SafariNoCookieMeter:            blankMeter,
 		RequestTimer:                   blankTimer,
+		DNSLookupTimer:                 blankTimer,
 		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
+		StoredDataFetchTimer:           make(map[StoredDataType]map[StoredDataFetchType]metrics.Timer),
+		StoredDataErrorMeter:           make(map[StoredDataType]map[StoredDataError]metrics.Meter),
 		StoredReqCacheMeter:            make(map[CacheResult]metrics.Meter),
 		StoredImpCacheMeter:            make(map[CacheResult]metrics.Meter),
+		AccountCacheMeter:              make(map[CacheResult]metrics.Meter),
 		AmpNoCookieMeter:               blankMeter,
 		CookieSyncMeter:                blankMeter,
 		CookieSyncGen:                  make(map[openrtb_ext.BidderName]metrics.Meter),
@@ -137,20 +156,48 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		TimeoutNotificationSuccess: blankMeter,
 		TimeoutNotificationFailure: blankMeter,
 
+		PrivacyCCPARequest:       blankMeter,
+		PrivacyCCPARequestOptOut: blankMeter,
+		PrivacyCOPPARequest:      blankMeter,
+		PrivacyLMTRequest:        blankMeter,
+		PrivacyTCFRequestVersion: make(map[TCFVersionValue]metrics.Meter, len(TCFVersions())),
+
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
-		MetricsDisabled: disableMetrics,
+		MetricsDisabled: disabledMetrics,
 
 		exchanges: exchanges,
 	}
+
 	for _, a := range exchanges {
-		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
+		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics(newMetrics.MetricsDisabled)
 	}
 
 	for _, t := range RequestTypes() {
 		newMetrics.RequestStatuses[t] = make(map[RequestStatus]metrics.Meter)
 		for _, s := range RequestStatuses() {
 			newMetrics.RequestStatuses[t][s] = blankMeter
+		}
+	}
+
+	for _, c := range CacheResults() {
+		newMetrics.StoredReqCacheMeter[c] = blankMeter
+		newMetrics.StoredImpCacheMeter[c] = blankMeter
+		newMetrics.AccountCacheMeter[c] = blankMeter
+	}
+
+	for _, v := range TCFVersions() {
+		newMetrics.PrivacyTCFRequestVersion[v] = blankMeter
+	}
+
+	for _, dt := range StoredDataTypes() {
+		newMetrics.StoredDataFetchTimer[dt] = make(map[StoredDataFetchType]metrics.Timer)
+		newMetrics.StoredDataErrorMeter[dt] = make(map[StoredDataError]metrics.Meter)
+		for _, ft := range StoredDataFetchTypes() {
+			newMetrics.StoredDataFetchTimer[dt][ft] = blankTimer
+		}
+		for _, e := range StoredDataErrors() {
+			newMetrics.StoredDataErrorMeter[dt][e] = blankMeter
 		}
 	}
 
@@ -185,8 +232,20 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
 	newMetrics.SafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", registry)
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
+	newMetrics.DNSLookupTimer = metrics.GetOrRegisterTimer("dns_lookup_time", registry)
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
+
+	for _, dt := range StoredDataTypes() {
+		for _, ft := range StoredDataFetchTypes() {
+			timerName := fmt.Sprintf("stored_%s_fetch_time.%s", string(dt), string(ft))
+			newMetrics.StoredDataFetchTimer[dt][ft] = metrics.GetOrRegisterTimer(timerName, registry)
+		}
+		for _, e := range StoredDataErrors() {
+			meterName := fmt.Sprintf("stored_%s_error.%s", string(dt), string(e))
+			newMetrics.StoredDataErrorMeter[dt][e] = metrics.GetOrRegisterMeter(meterName, registry)
+		}
+	}
 
 	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
 	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
@@ -208,6 +267,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	for _, cacheRes := range CacheResults() {
 		newMetrics.StoredReqCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_request_cache_%s", string(cacheRes)), registry)
 		newMetrics.StoredImpCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_imp_cache_%s", string(cacheRes)), registry)
+		newMetrics.AccountCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("account_cache_%s", string(cacheRes)), registry)
 	}
 
 	newMetrics.RequestsQueueTimer["video"][true] = metrics.GetOrRegisterTimer("queued_requests.video.accepted", registry)
@@ -218,11 +278,20 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 
 	newMetrics.TimeoutNotificationSuccess = metrics.GetOrRegisterMeter("timeout_notification.ok", registry)
 	newMetrics.TimeoutNotificationFailure = metrics.GetOrRegisterMeter("timeout_notification.failed", registry)
+
+	newMetrics.PrivacyCCPARequest = metrics.GetOrRegisterMeter("privacy.request.ccpa.specified", registry)
+	newMetrics.PrivacyCCPARequestOptOut = metrics.GetOrRegisterMeter("privacy.request.ccpa.opt-out", registry)
+	newMetrics.PrivacyCOPPARequest = metrics.GetOrRegisterMeter("privacy.request.coppa", registry)
+	newMetrics.PrivacyLMTRequest = metrics.GetOrRegisterMeter("privacy.request.lmt", registry)
+	for _, version := range TCFVersions() {
+		newMetrics.PrivacyTCFRequestVersion[version] = metrics.GetOrRegisterMeter(fmt.Sprintf("privacy.request.tcf.%s", string(version)), registry)
+	}
+
 	return newMetrics
 }
 
 // Part of setting up blank metrics, the adapter metrics.
-func makeBlankAdapterMetrics() *AdapterMetrics {
+func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMetrics {
 	blankMeter := &metrics.NilMeter{}
 	newAdapter := &AdapterMetrics{
 		NoCookieMeter:     blankMeter,
@@ -234,6 +303,11 @@ func makeBlankAdapterMetrics() *AdapterMetrics {
 		BidsReceivedMeter: blankMeter,
 		PanicMeter:        blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
+	}
+	if !disabledMetrics.AdapterConnectionMetrics {
+		newAdapter.ConnCreated = metrics.NilCounter{}
+		newAdapter.ConnReused = metrics.NilCounter{}
+		newAdapter.ConnWaitTime = &metrics.NilTimer{}
 	}
 	for _, err := range AdapterErrors() {
 		newAdapter.ErrorMeters[err] = blankMeter
@@ -269,6 +343,9 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
 		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative),
 	}
+	am.ConnCreated = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_created", adapterOrAccount, exchange), registry)
+	am.ConnReused = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_reused", adapterOrAccount, exchange), registry)
+	am.ConnWaitTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_wait_time", adapterOrAccount, exchange), registry)
 	for err := range am.ErrorMeters {
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
@@ -315,7 +392,7 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
 	if !me.MetricsDisabled.AccountAdapterDetails {
 		for _, a := range me.exchanges {
-			am.adapterMetrics[a] = makeBlankAdapterMetrics()
+			am.adapterMetrics[a] = makeBlankAdapterMetrics(me.MetricsDisabled)
 			registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
 		}
 	}
@@ -397,6 +474,16 @@ func (me *Metrics) RecordRequestTime(labels Labels, length time.Duration) {
 	}
 }
 
+// RecordStoredDataFetchTime implements a part of the MetricsEngine interface
+func (me *Metrics) RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration) {
+	me.StoredDataFetchTimer[labels.DataType][labels.DataFetchType].Update(length)
+}
+
+// RecordStoredDataError implements a part of the MetricsEngine interface
+func (me *Metrics) RecordStoredDataError(labels StoredDataLabels) {
+	me.StoredDataErrorMeter[labels.DataType][labels.Error].Mark(1)
+}
+
 // RecordAdapterPanic implements a part of the MetricsEngine interface
 func (me *Metrics) RecordAdapterPanic(labels AdapterLabels) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
@@ -437,6 +524,34 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 	if labels.CookieFlag == CookieFlagNo {
 		am.NoCookieMeter.Mark(1)
 	}
+}
+
+// Keeps track of created and reused connections to adapter bidders and the time from the
+// connection request, to the connection creation, or reuse from the pool across all engines
+func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
+	connWasReused bool,
+	connWaitTime time.Duration) {
+
+	if me.MetricsDisabled.AdapterConnectionMetrics {
+		return
+	}
+
+	am, ok := me.AdapterMetrics[adapterName]
+	if !ok {
+		glog.Errorf("Trying to log adapter connection metrics for %s: adapter not found", string(adapterName))
+		return
+	}
+
+	if connWasReused {
+		am.ConnReused.Inc(1)
+	} else {
+		am.ConnCreated.Inc(1)
+	}
+	am.ConnWaitTime.Update(connWaitTime)
+}
+
+func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
+	me.DNSLookupTimer.Update(dnsLookupTime)
 }
 
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.
@@ -536,6 +651,12 @@ func (me *Metrics) RecordStoredImpCacheResult(cacheResult CacheResult, inc int) 
 	me.StoredImpCacheMeter[cacheResult].Mark(int64(inc))
 }
 
+// RecordAccountCacheResult implements a part of the MetricsEngine interface. Records the
+// cache hits and misses when looking up accounts.
+func (me *Metrics) RecordAccountCacheResult(cacheResult CacheResult, inc int) {
+	me.AccountCacheMeter[cacheResult].Mark(int64(inc))
+}
+
 // RecordPrebidCacheRequestTime implements a part of the MetricsEngine interface. Records the
 // amount of time taken to store the auction result in Prebid Cache.
 func (me *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
@@ -562,6 +683,32 @@ func (me *Metrics) RecordTimeoutNotice(success bool) {
 	return
 }
 
+func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
+	if privacy.CCPAProvided {
+		me.PrivacyCCPARequest.Mark(1)
+		if privacy.CCPAEnforced {
+			me.PrivacyCCPARequestOptOut.Mark(1)
+		}
+	}
+
+	if privacy.COPPAEnforced {
+		me.PrivacyCOPPARequest.Mark(1)
+	}
+
+	if privacy.GDPREnforced {
+		if metric, ok := me.PrivacyTCFRequestVersion[privacy.GDPRTCFVersion]; ok {
+			metric.Mark(1)
+		} else {
+			me.PrivacyTCFRequestVersion[TCFVersionErr].Mark(1)
+		}
+	}
+
+	if privacy.LMTEnforced {
+		me.PrivacyLMTRequest.Mark(1)
+	}
+	return
+}
+
 // RecordAdapterDuplicateBidID as noop
 func (me *Metrics) RecordAdapterDuplicateBidID(adaptor string, collisions int) {
 }
@@ -580,6 +727,10 @@ func (me *Metrics) RecordPodCombGenTime(labels PodLabels, elapsedTime time.Durat
 
 // RecordPodCompititveExclusionTime as a noop
 func (me *Metrics) RecordPodCompititveExclusionTime(labels PodLabels, elapsedTime time.Duration) {
+}
+
+// RecordAdapterVideoBidDuration as a noop
+func (me *Metrics) RecordAdapterVideoBidDuration(labels AdapterLabels, videoBidDuration int) {
 }
 
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {

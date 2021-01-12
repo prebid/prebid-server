@@ -73,6 +73,13 @@ func extractRefererParameter(request *openrtb.BidRequest) string {
 	return ""
 }
 
+func extractIfaParameter(request *openrtb.BidRequest) string {
+	if request.Device != nil && request.Device.IFA != "" {
+		return "/xz" + url.QueryEscape(request.Device.IFA)
+	}
+	return ""
+}
+
 func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
@@ -106,12 +113,13 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		errs = append(errs, WrapReqError("Could not compose url from template and request account val: "+err.Error()))
 		return nil, errs
 	}
-	complete_url := fmt.Sprintf("%s%s%s%s%s",
+	complete_url := fmt.Sprintf("%s%s%s%s%s%s",
 		host,
 		extractSlotParameter(params),
 		extractTargetParameters(params),
 		extractGdprParameter(request),
-		extractRefererParameter(request))
+		extractRefererParameter(request),
+		extractIfaParameter(request))
 
 	return []*adapters.RequestData{{
 		Method: "GET",

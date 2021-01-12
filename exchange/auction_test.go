@@ -280,6 +280,225 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	}
 }
 
+func TestNewAuction(t *testing.T) {
+	bid1p077 := pbsOrtbBid{
+		bid: &openrtb.Bid{
+			ImpID: "imp1",
+			Price: 0.77,
+		},
+	}
+	bid1p123 := pbsOrtbBid{
+		bid: &openrtb.Bid{
+			ImpID: "imp1",
+			Price: 1.23,
+		},
+	}
+	bid1p230 := pbsOrtbBid{
+		bid: &openrtb.Bid{
+			ImpID: "imp1",
+			Price: 2.30,
+		},
+	}
+	bid1p088d := pbsOrtbBid{
+		bid: &openrtb.Bid{
+			ImpID:  "imp1",
+			Price:  0.88,
+			DealID: "SpecialDeal",
+		},
+	}
+	bid1p166d := pbsOrtbBid{
+		bid: &openrtb.Bid{
+			ImpID:  "imp1",
+			Price:  1.66,
+			DealID: "BigDeal",
+		},
+	}
+	bid2p123 := pbsOrtbBid{
+		bid: &openrtb.Bid{
+			ImpID: "imp2",
+			Price: 1.23,
+		},
+	}
+	bid2p144 := pbsOrtbBid{
+		bid: &openrtb.Bid{
+			ImpID: "imp2",
+			Price: 1.44,
+		},
+	}
+	tests := []struct {
+		description     string
+		seatBids        map[openrtb_ext.BidderName]*pbsOrtbSeatBid
+		numImps         int
+		preferDeals     bool
+		expectedAuction auction
+	}{
+		{
+			description: "Basic auction test",
+			seatBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+				"appnexus": {
+					bids: []*pbsOrtbBid{&bid1p123},
+				},
+				"rubicon": {
+					bids: []*pbsOrtbBid{&bid1p230},
+				},
+			},
+			numImps:     1,
+			preferDeals: false,
+			expectedAuction: auction{
+				winningBids: map[string]*pbsOrtbBid{
+					"imp1": &bid1p230,
+				},
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+					"imp1": {
+						"appnexus": &bid1p123,
+						"rubicon":  &bid1p230,
+					},
+				},
+			},
+		},
+		{
+			description: "Multi-imp auction",
+			seatBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+				"appnexus": {
+					bids: []*pbsOrtbBid{&bid1p230, &bid2p123},
+				},
+				"rubicon": {
+					bids: []*pbsOrtbBid{&bid1p077, &bid2p144},
+				},
+				"openx": {
+					bids: []*pbsOrtbBid{&bid1p123},
+				},
+			},
+			numImps:     2,
+			preferDeals: false,
+			expectedAuction: auction{
+				winningBids: map[string]*pbsOrtbBid{
+					"imp1": &bid1p230,
+					"imp2": &bid2p144,
+				},
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+					"imp1": {
+						"appnexus": &bid1p230,
+						"rubicon":  &bid1p077,
+						"openx":    &bid1p123,
+					},
+					"imp2": {
+						"appnexus": &bid2p123,
+						"rubicon":  &bid2p144,
+					},
+				},
+			},
+		},
+		{
+			description: "Basic auction with deals, no preference",
+			seatBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+				"appnexus": {
+					bids: []*pbsOrtbBid{&bid1p123},
+				},
+				"rubicon": {
+					bids: []*pbsOrtbBid{&bid1p088d},
+				},
+			},
+			numImps:     1,
+			preferDeals: false,
+			expectedAuction: auction{
+				winningBids: map[string]*pbsOrtbBid{
+					"imp1": &bid1p123,
+				},
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+					"imp1": {
+						"appnexus": &bid1p123,
+						"rubicon":  &bid1p088d,
+					},
+				},
+			},
+		},
+		{
+			description: "Basic auction with deals, prefer deals",
+			seatBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+				"appnexus": {
+					bids: []*pbsOrtbBid{&bid1p123},
+				},
+				"rubicon": {
+					bids: []*pbsOrtbBid{&bid1p088d},
+				},
+			},
+			numImps:     1,
+			preferDeals: true,
+			expectedAuction: auction{
+				winningBids: map[string]*pbsOrtbBid{
+					"imp1": &bid1p088d,
+				},
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+					"imp1": {
+						"appnexus": &bid1p123,
+						"rubicon":  &bid1p088d,
+					},
+				},
+			},
+		},
+		{
+			description: "Auction with 2 deals",
+			seatBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+				"appnexus": {
+					bids: []*pbsOrtbBid{&bid1p166d},
+				},
+				"rubicon": {
+					bids: []*pbsOrtbBid{&bid1p088d},
+				},
+			},
+			numImps:     1,
+			preferDeals: true,
+			expectedAuction: auction{
+				winningBids: map[string]*pbsOrtbBid{
+					"imp1": &bid1p166d,
+				},
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+					"imp1": {
+						"appnexus": &bid1p166d,
+						"rubicon":  &bid1p088d,
+					},
+				},
+			},
+		},
+		{
+			description: "Auction with 3 bids and 2 deals",
+			seatBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+				"appnexus": {
+					bids: []*pbsOrtbBid{&bid1p166d},
+				},
+				"rubicon": {
+					bids: []*pbsOrtbBid{&bid1p088d},
+				},
+				"openx": {
+					bids: []*pbsOrtbBid{&bid1p230},
+				},
+			},
+			numImps:     1,
+			preferDeals: true,
+			expectedAuction: auction{
+				winningBids: map[string]*pbsOrtbBid{
+					"imp1": &bid1p166d,
+				},
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+					"imp1": {
+						"appnexus": &bid1p166d,
+						"rubicon":  &bid1p088d,
+						"openx":    &bid1p230,
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		auc := newAuction(test.seatBids, test.numImps, test.preferDeals)
+
+		assert.Equal(t, test.expectedAuction, *auc, test.description)
+	}
+
+}
+
 type cacheSpec struct {
 	BidRequest                  openrtb.BidRequest              `json:"bidRequest"`
 	PbsBids                     []pbsBid                        `json:"pbsBids"`
@@ -298,22 +517,27 @@ type pbsBid struct {
 	Bidder  openrtb_ext.BidderName `json:"bidder"`
 }
 
-type mockCache struct {
-	items []prebid_cache_client.Cacheable
-}
-
 type cacheComparator struct {
 	freq         int
 	expectedKeys []string
 	actualKeys   []string
 }
 
-func (c *mockCache) GetExtCacheData() (string, string) {
-	return "", ""
+type mockCache struct {
+	scheme string
+	host   string
+	path   string
+	items  []prebid_cache_client.Cacheable
 }
+
+func (c *mockCache) GetExtCacheData() (scheme string, host string, path string) {
+	return c.scheme, c.host, c.path
+}
+
 func (c *mockCache) GetPutUrl() string {
 	return ""
 }
+
 func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
 	c.items = values
 	return []string{"", "", "", "", ""}, nil

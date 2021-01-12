@@ -12,9 +12,10 @@ import (
 
 	"github.com/PubMatic-OpenWrap/prebid-server/cache"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/prebid"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/PubMatic-OpenWrap/prebid-server/util/httputil"
+	"github.com/PubMatic-OpenWrap/prebid-server/util/iputil"
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/blang/semver"
@@ -216,6 +217,8 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
+var ipv4Validator iputil.IPValidator = iputil.VersionIPValidator{iputil.IPv4}
+
 func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.Cache, hostCookieConfig *config.HostCookie) (*PBSRequest, error) {
 	defer r.Body.Close()
 
@@ -235,7 +238,9 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 	if pbsReq.Device == nil {
 		pbsReq.Device = &openrtb.Device{}
 	}
-	pbsReq.Device.IP = prebid.GetIP(r)
+	if ip, _ := httputil.FindIP(r, ipv4Validator); ip != nil {
+		pbsReq.Device.IP = ip.String()
+	}
 
 	if pbsReq.SDK == nil {
 		pbsReq.SDK = &SDK{}
@@ -291,7 +296,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 		pbsReq.IsDebug = true
 	}
 
-	if prebid.IsSecure(r) {
+	if httputil.IsSecure(r) {
 		pbsReq.Secure = 1
 	}
 

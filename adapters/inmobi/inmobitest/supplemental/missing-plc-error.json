@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "req-id",
+    "imp": [
+      {
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "a": 1
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "'plc' is a required attribute for InMobi's bidder ext",
+      "comparison": "literal"
+    }
+  ]
+}

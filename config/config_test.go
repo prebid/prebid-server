@@ -2,7 +2,9 @@ package config
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
+	"net"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +15,106 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestExternalCacheURLValidate(t *testing.T) {
+	testCases := []struct {
+		desc      string
+		data      ExternalCache
+		expErrors int
+	}{
+		{
+			desc:      "With http://",
+			data:      ExternalCache{Host: "http://www.google.com", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Without http://",
+			data:      ExternalCache{Host: "www.google.com", Path: "/path/v1"},
+			expErrors: 0,
+		},
+		{
+			desc:      "No scheme but '//' prefix",
+			data:      ExternalCache{Host: "//www.google.com", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "// appears twice",
+			data:      ExternalCache{Host: "//www.google.com//", Path: "path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Host has an only // value",
+			data:      ExternalCache{Host: "//", Path: "path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "only scheme host, valid path",
+			data:      ExternalCache{Host: "http://", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "No host, path only",
+			data:      ExternalCache{Host: "", Path: "path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "No host, nor path",
+			data:      ExternalCache{Host: "", Path: ""},
+			expErrors: 0,
+		},
+		{
+			desc:      "Invalid http at the end",
+			data:      ExternalCache{Host: "www.google.com", Path: "http://"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Host has an unknown scheme",
+			data:      ExternalCache{Host: "unknownscheme://host", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Wrong colon side in scheme",
+			data:      ExternalCache{Host: "http//:www.appnexus.com", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Missing '/' in scheme",
+			data:      ExternalCache{Host: "http:/www.appnexus.com", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "host with scheme, no path",
+			data:      ExternalCache{Host: "http://www.appnexus.com", Path: ""},
+			expErrors: 1,
+		},
+		{
+			desc:      "scheme, no host nor path",
+			data:      ExternalCache{Host: "http://", Path: ""},
+			expErrors: 1,
+		},
+		{
+			desc:      "Scheme Invalid",
+			data:      ExternalCache{Scheme: "invalid", Host: "www.google.com", Path: "/path/v1"},
+			expErrors: 1,
+		},
+		{
+			desc:      "Scheme HTTP",
+			data:      ExternalCache{Scheme: "http", Host: "www.google.com", Path: "/path/v1"},
+			expErrors: 0,
+		},
+		{
+			desc:      "Scheme HTTPS",
+			data:      ExternalCache{Scheme: "https", Host: "www.google.com", Path: "/path/v1"},
+			expErrors: 0,
+		},
+	}
+	for _, test := range testCases {
+		var errs configErrors
+		errs = test.data.validate(errs)
+
+		assert.Equal(t, test.expErrors, len(errs), "Test case threw unexpected number of errors. Desc: %s errMsg = %v \n", test.desc, errs)
+	}
+}
 
 func TestDefaults(t *testing.T) {
 	v := viper.New()
@@ -33,7 +135,11 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_required", cfg.AccountRequired, false)
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
+	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
+	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
+	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
+	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 }
 
 var fullConfig = []byte(`
@@ -64,13 +170,16 @@ cache:
   host: prebidcache.net
   query: uuid=%PBS_CACHE_UUID%
 external_cache:
+  scheme: https
   host: www.externalprebidcache.net
-  path: endpoints/cache
+  path: /endpoints/cache
 http_client:
+  max_connections_per_host: 10
   max_idle_connections: 500
   max_idle_connections_per_host: 20
   idle_connection_timeout_seconds: 30
 http_client_cache:
+  max_connections_per_host: 5
   max_idle_connections: 1
   max_idle_connections_per_host: 2
   idle_connection_timeout_seconds: 3
@@ -87,6 +196,7 @@ metrics:
     metric_send_interval: 30
   disabled_metrics:
     account_adapter_details: true
+    adapter_connections_metrics: true
 datacache:
   type: postgres
   filename: /usr/db/db.db
@@ -116,7 +226,11 @@ adapters:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
+auto_gen_source_tid: false
 certificates_file: /etc/ssl/cert.pem
+request_validation:
+    ipv4_private_networks: ["1.1.1.0/24"]
+    ipv6_private_networks: ["1111::/16", "2222::/16"]
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -179,6 +293,12 @@ adapters:
      usersync_url: http:\\tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
 `)
 
+var oldStoredRequestsConfig = []byte(`
+stored_requests:
+  filesystem: true
+  directorypath: "/somepath"
+`)
+
 func cmpStrings(t *testing.T, key string, a string, b string) {
 	t.Helper()
 	assert.Equal(t, a, b, "%s: %s != %s", key, a, b)
@@ -215,11 +335,14 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
+	cmpStrings(t, "external_cache.scheme", cfg.ExtCacheURL.Scheme, "https")
 	cmpStrings(t, "external_cache.host", cfg.ExtCacheURL.Host, "www.externalprebidcache.net")
-	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "endpoints/cache")
+	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "/endpoints/cache")
+	cmpInts(t, "http_client.max_connections_per_host", cfg.Client.MaxConnsPerHost, 10)
 	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
 	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
 	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
+	cmpInts(t, "http_client_cache.max_connections_per_host", cfg.CacheClient.MaxConnsPerHost, 5)
 	cmpInts(t, "http_client_cache.max_idle_connections", cfg.CacheClient.MaxIdleConns, 1)
 	cmpInts(t, "http_client_cache.max_idle_connections_per_host", cfg.CacheClient.MaxIdleConnsPerHost, 2)
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
@@ -286,8 +409,13 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fsec%3D%7BSecParam%7D%26bidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
+	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, false)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
+	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
+	cmpStrings(t, "request_validation.ipv4_private_networks", cfg.RequestValidation.IPv4PrivateNetworks[0], "1.1.1.0/24")
+	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[0], "1111::/16")
+	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
@@ -325,15 +453,55 @@ func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
 		StoredRequests: StoredRequests{
-			Files: true,
+			Files: FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{
 				Type: "none",
 			},
 		},
+		StoredVideo: StoredRequests{
+			Files: FileFetcherConfig{Enabled: true},
+			InMemoryCache: InMemoryCache{
+				Type: "none",
+			},
+		},
+		CategoryMapping: StoredRequests{
+			Files: FileFetcherConfig{Enabled: true},
+		},
+		Accounts: StoredRequests{
+			Files:         FileFetcherConfig{Enabled: true},
+			InMemoryCache: InMemoryCache{Type: "none"},
+		},
 	}
 
+	resolvedStoredRequestsConfig(&cfg)
 	err := cfg.validate()
 	assert.Nil(t, err, "OpenRTB filesystem config should work. %v", err)
+}
+
+func TestMigrateConfig(t *testing.T) {
+	v := viper.New()
+	SetupViper(v, "")
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(oldStoredRequestsConfig))
+	migrateConfig(v)
+	cfg, err := New(v)
+	assert.NoError(t, err, "Setting up config should work but it doesn't")
+	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
+	cmpStrings(t, "stored_requests.filesystem.path", "/somepath", cfg.StoredRequests.Files.Path)
+}
+
+func TestMigrateConfigFromEnv(t *testing.T) {
+	if oldval, ok := os.LookupEnv("PBS_STORED_REQUESTS_FILESYSTEM"); ok {
+		defer os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", oldval)
+	} else {
+		defer os.Unsetenv("PBS_STORED_REQUESTS_FILESYSTEM")
+	}
+	os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", "true")
+	v := viper.New()
+	SetupViper(v, "")
+	cfg, err := New(v)
+	assert.NoError(t, err, "Setting up config should work but it doesn't")
+	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 }
 
 func TestInvalidAdapterEndpointConfig(t *testing.T) {
@@ -408,23 +576,63 @@ func TestLimitTimeout(t *testing.T) {
 }
 
 func TestCookieSizeError(t *testing.T) {
-	type aTest struct {
-		cookieHost  *HostCookie
+	testCases := []struct {
+		description string
+		cookieSize  int
 		expectError bool
+	}{
+		{"MIN_COOKIE_SIZE_BYTES + 1", MIN_COOKIE_SIZE_BYTES + 1, false},
+		{"MIN_COOKIE_SIZE_BYTES", MIN_COOKIE_SIZE_BYTES, false},
+		{"MIN_COOKIE_SIZE_BYTES - 1", MIN_COOKIE_SIZE_BYTES - 1, true},
+		{"Zero", 0, false},
+		{"Negative", -100, true},
 	}
-	testCases := []aTest{
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 1 << 15}, expectError: false}, //32 KB, no error
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 800}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 500}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 0}, expectError: false},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: 200}, expectError: true},
-		{cookieHost: &HostCookie{MaxCookieSizeBytes: -100}, expectError: true},
-	}
-	for i := range testCases {
-		if testCases[i].expectError {
-			assert.Error(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCookie.MaxCookieSizeBytes less than MIN_COOKIE_SIZE_BYTES = %d and not equal to zero should return an error", MIN_COOKIE_SIZE_BYTES))
+
+	for _, test := range testCases {
+		resultErr := isValidCookieSize(test.cookieSize)
+
+		if test.expectError {
+			assert.Error(t, resultErr, test.description)
 		} else {
-			assert.NoError(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCookie.MaxCookieSizeBytes greater than MIN_COOKIE_SIZE_BYTES = %d or equal to zero should not return an error", MIN_COOKIE_SIZE_BYTES))
+			assert.NoError(t, resultErr, test.description)
+		}
+	}
+}
+
+func TestNewCallsRequestValidation(t *testing.T) {
+	testCases := []struct {
+		description       string
+		privateIPNetworks string
+		expectedError     string
+		expectedIPs       []net.IPNet
+	}{
+		{
+			description:       "Valid",
+			privateIPNetworks: `["1.1.1.0/24"]`,
+			expectedIPs:       []net.IPNet{{IP: net.IP{1, 1, 1, 0}, Mask: net.CIDRMask(24, 32)}},
+		},
+		{
+			description:       "Invalid",
+			privateIPNetworks: `["1"]`,
+			expectedError:     "Invalid private IPv4 networks: '1'",
+		},
+	}
+
+	for _, test := range testCases {
+		v := viper.New()
+		SetupViper(v, "")
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer([]byte(
+			`request_validation:
+    ipv4_private_networks: ` + test.privateIPNetworks)))
+
+		result, resultErr := New(v)
+
+		if test.expectedError == "" {
+			assert.NoError(t, resultErr, test.description+":err")
+			assert.ElementsMatch(t, test.expectedIPs, result.RequestValidation.IPv4PrivateNetworksParsed, test.description+":parsed")
+		} else {
+			assert.Error(t, resultErr, test.description+":err")
 		}
 	}
 }
@@ -435,6 +643,17 @@ func TestValidateDebug(t *testing.T) {
 
 	err := cfg.validate()
 	assert.NotNil(t, err, "cfg.debug.timeout_notification.sampling_rate should not be allowed to be greater than 1.0, but it was allowed")
+}
+
+func TestValidateAccountsConfigRestrictions(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.Accounts.Files.Enabled = true
+	cfg.Accounts.HTTP.Endpoint = "http://localhost"
+	cfg.Accounts.Postgres.ConnectionInfo.Database = "accounts"
+
+	errs := cfg.validate()
+	assert.Len(t, errs, 1)
+	assert.Contains(t, errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
 }
 
 func newDefaultConfig(t *testing.T) *Configuration {

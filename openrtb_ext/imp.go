@@ -4,30 +4,16 @@ import (
 	"encoding/json"
 )
 
-// ExtImp defines the contract for bidrequest.imp[i].ext
-type ExtImp struct {
-	Prebid     *ExtImpPrebid     `json:"prebid,omitempty"`
-	Appnexus   *ExtImpAppnexus   `json:"appnexus"`
-	Consumable *ExtImpConsumable `json:"consumable"`
-	Rubicon    *ExtImpRubicon    `json:"rubicon"`
-	Adform     *ExtImpAdform     `json:"adform"`
-	Rhythmone  *ExtImpRhythmone  `json:"rhythmone"`
-	Unruly     *ExtImpUnruly     `json:"unruly"`
-	EmxDigital *ExtImpEmxDigital `json:"emx_digital"`
-}
-
 // ExtImpPrebid defines the contract for bidrequest.imp[i].ext.prebid
 type ExtImpPrebid struct {
-	StoredRequest *ExtStoredRequest `json:"storedrequest,omitempty"`
+	// StoredRequest specifies which stored impression to use, if any.
+	StoredRequest *ExtStoredRequest `json:"storedrequest"`
 
-	// Rewarded inventory signal, can be 0 or 1
-	IsRewardedInventory int8 `json:"is_rewarded_inventory,omitempty"`
+	// IsRewardedInventory is a signal intended for video impressions. Must be 0 or 1.
+	IsRewardedInventory int8 `json:"is_rewarded_inventory"`
 
-	// NOTE: This is not part of the official API, we are not expecting clients
-	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
-	// at this time
-	// https://github.com/PubMatic-OpenWrap/prebid-server/pull/846#issuecomment-476352224
-	Bidder map[string]json.RawMessage `json:"bidder,omitempty"`
+	// Bidder is the preferred approach for providing paramters to be interepreted by the bidder's adapter.
+	Bidder map[string]json.RawMessage `json:"bidder"`
 
 	SKAdnetwork json.RawMessage `json:"skadn,omitempty"`
 }
