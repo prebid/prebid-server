@@ -20,7 +20,8 @@ import (
 //
 // It only allows appnexus for GDPR consent
 type permissionsMock struct {
-	personalInfoAllowed bool
+	personalInfoAllowed      bool
+	personalInfoAllowedError error
 }
 
 func (p *permissionsMock) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
@@ -32,7 +33,7 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 }
 
 func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr gdpr.Signal, consent string) (bool, bool, bool, error) {
-	return p.personalInfoAllowed, p.personalInfoAllowed, p.personalInfoAllowed, nil
+	return p.personalInfoAllowed, p.personalInfoAllowed, p.personalInfoAllowed, p.personalInfoAllowedError
 }
 
 func assertReq(t *testing.T, bidderRequests []BidderRequest,
@@ -1045,6 +1046,8 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
+	tcf1Consent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	tcf2Consent := "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA"
 	trueValue, falseValue := true, false
 
 	testCases := []struct {
@@ -1054,6 +1057,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		gdpr                string
 		gdprConsent         string
 		gdprScrub           bool
+		permissionsError    error
 		userSyncIfAmbiguous bool
 		expectPrivacyLabels metrics.PrivacyLabels
 	}{
@@ -1074,7 +1078,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1086,7 +1090,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1098,7 +1102,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "0",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
@@ -1110,7 +1114,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    false,
 			gdpr:               "1",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1122,7 +1126,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &falseValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
@@ -1134,7 +1138,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1146,7 +1150,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    false,
 			gdpr:               "1",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
@@ -1158,7 +1162,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled:  nil,
 			gdprHostEnabled:     true,
 			gdpr:                "null",
-			gdprConsent:         "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:         tcf1Consent,
 			gdprScrub:           true,
 			userSyncIfAmbiguous: false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
@@ -1171,12 +1175,25 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled:  nil,
 			gdprHostEnabled:     true,
 			gdpr:                "null",
-			gdprConsent:         "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:         tcf1Consent,
 			gdprScrub:           false,
 			userSyncIfAmbiguous: true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
 				GDPRTCFVersion: "",
+			},
+		},
+		{
+			description:        "Enforce - error while checking if personal info is allowed",
+			gdprAccountEnabled: nil,
+			gdprHostEnabled:    true,
+			gdpr:               "1",
+			gdprConsent:        tcf1Consent,
+			gdprScrub:          true,
+			permissionsError:   errors.New("Some error"),
+			expectPrivacyLabels: metrics.PrivacyLabels{
+				GDPREnforced:   true,
+				GDPRTCFVersion: metrics.TCFVersionV1,
 			},
 		},
 	}
@@ -1214,7 +1231,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			context.Background(),
 			auctionReq,
 			nil,
-			&permissionsMock{personalInfoAllowed: !test.gdprScrub},
+			&permissionsMock{personalInfoAllowed: !test.gdprScrub, personalInfoAllowedError: test.permissionsError},
 			test.userSyncIfAmbiguous,
 			privacyConfig)
 		result := results[0]
