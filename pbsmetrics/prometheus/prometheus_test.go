@@ -1512,7 +1512,7 @@ func TestRecordAdapterVideoBidDuration(t *testing.T) {
 			expectedSum:   map[string]int{"bidder_1": 97, "bidder_2": 55},
 			expectedCount: map[string]int{"bidder_1": 5, "bidder_2": 2},
 			expectedBuckets: map[string]map[int]int{
-				"bidder_1": {5: 1, 10: 2, 15: 3, 35: 4, 40: 5, 41: 5},
+				"bidder_1": {5: 1, 10: 2, 15: 3, 35: 4, 40: 5},
 				"bidder_2": {25: 1, 30: 2},
 			},
 		},
@@ -1527,6 +1527,28 @@ func TestRecordAdapterVideoBidDuration(t *testing.T) {
 				"bidder_1": {5: 1, 30: 2},
 			},
 		},
+		{
+			description: "bidder with similar durations",
+			bidderAdDurations: map[string][]int{
+				"bidder_1": {23, 23, 23},
+			},
+			expectedSum:   map[string]int{"bidder_1": 69},
+			expectedCount: map[string]int{"bidder_1": 3}, //
+			expectedBuckets: map[string]map[int]int{
+				"bidder_1": {25: 3},
+			},
+		},
+		{
+			description: "bidder with ad durations >= 60",
+			bidderAdDurations: map[string][]int{
+				"bidder_1": {33, 60, 93, 90, 90, 120},
+			},
+			expectedSum:   map[string]int{"bidder_1": 486},
+			expectedCount: map[string]int{"bidder_1": 6}, //
+			expectedBuckets: map[string]map[int]int{
+				"bidder_1": {35: 1, 60: 2, 120: 6},
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -1539,10 +1561,17 @@ func TestRecordAdapterVideoBidDuration(t *testing.T) {
 					}, adDuration)
 				}
 				result := getHistogramFromHistogramVec(m.adapterVideoBidDuration, adapterLabel, adapterName)
-				for _, bucket := range result.GetBucket() {
-					cnt, ok := test.expectedBuckets[adapterName][int(bucket.GetUpperBound())]
-					if ok {
-						assert.Equal(t, uint64(cnt), bucket.GetCumulativeCount())
+				for bucketDuration, durationCnt := range test.expectedBuckets[adapterName] {
+					validBucket := false
+					for _, bucket := range result.GetBucket() {
+						if int(bucket.GetUpperBound()) == bucketDuration {
+							validBucket = true
+							assert.Equal(t, uint64(durationCnt), bucket.GetCumulativeCount())
+							break
+						}
+					}
+					if !validBucket {
+						assert.Fail(t, "Invalid expected bucket = "+strconv.Itoa(bucketDuration))
 					}
 				}
 				expectedCount := test.expectedCount[adapterName]

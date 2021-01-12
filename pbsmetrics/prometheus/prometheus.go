@@ -409,7 +409,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.adapterVideoBidDuration = newHistogramVec(cfg, metrics.Registry,
 		"adapter_vidbid_dur",
 		"Video Ad durations returned by the bidder", []string{adapterLabel},
-		[]float64{4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60})
+		[]float64{4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 120})
 	preloadLabelValues(&metrics)
 
 	return &metrics
