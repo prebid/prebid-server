@@ -511,7 +511,7 @@ func removeUnpermissionedEids(request *openrtb.BidRequest, bidder string, reques
 		}
 	}
 
-	// exit early if all eidsgetAuctionBidderRequests are allowed and nothing needs to be removed
+	// exit early if all eids are allowed and nothing needs to be removed
 	if len(eids) == len(eidsAllowed) {
 		return nil
 	}
