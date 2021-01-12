@@ -65,6 +65,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/orbidder"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pubnative"
+	"github.com/prebid/prebid-server/adapters/revcontent"
 	"github.com/prebid/prebid-server/adapters/rhythmone"
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
@@ -165,6 +166,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderOrbidder:         orbidder.Builder,
 		openrtb_ext.BidderPubmatic:         pubmatic.Builder,
 		openrtb_ext.BidderPubnative:        pubnative.Builder,
+		openrtb_ext.BidderRevcontent:       revcontent.Builder,
 		openrtb_ext.BidderRhythmone:        rhythmone.Builder,
 		openrtb_ext.BidderRTBHouse:         rtbhouse.Builder,
 		openrtb_ext.BidderRubicon:          rubicon.Builder,
