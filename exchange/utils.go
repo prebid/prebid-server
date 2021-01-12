@@ -298,7 +298,9 @@ func extractBuyerUIDs(user *openrtb.User) (map[string]string, error) {
 	// as long as user.ext.prebid exists.
 	buyerUIDs := userExt.Prebid.BuyerUIDs
 	userExt.Prebid = nil
-	if userExt.Consent != "" || userExt.DigiTrust != nil {
+
+	// Remarshal (instead of removing) if the ext has other known fields
+	if userExt.Consent != "" || userExt.DigiTrust != nil || len(userExt.Eids) > 0 {
 		if newUserExtBytes, err := json.Marshal(userExt); err != nil {
 			return nil, err
 		} else {
@@ -471,13 +473,13 @@ func removeUnpermissionedEids(request *openrtb.BidRequest, bidder string, reques
 		return err
 	}
 
-	eidsRaw, eidsSpecified := userExt["eids"]
+	eidsJSON, eidsSpecified := userExt["eids"]
 	if !eidsSpecified {
 		return nil
 	}
 
 	var eids []openrtb_ext.ExtUserEid
-	if err := json.Unmarshal(eidsRaw, &eids); err != nil {
+	if err := json.Unmarshal(eidsJSON, &eids); err != nil {
 		return err
 	}
 
@@ -529,9 +531,7 @@ func removeUnpermissionedEids(request *openrtb.BidRequest, bidder string, reques
 
 	// exit early if userExt is empty
 	if len(userExt) == 0 {
-		userCopy := *request.User
-		userCopy.Ext = nil
-		request.User = &userCopy
+		setUserExtWithCopy(request, nil)
 		return nil
 	}
 
@@ -539,10 +539,14 @@ func removeUnpermissionedEids(request *openrtb.BidRequest, bidder string, reques
 	if err != nil {
 		return err
 	}
+	setUserExtWithCopy(request, userExtJSON)
+	return nil
+}
+
+func setUserExtWithCopy(request *openrtb.BidRequest, userExtJSON json.RawMessage) {
 	userCopy := *request.User
 	userCopy.Ext = userExtJSON
 	request.User = &userCopy
-	return nil
 }
 
 // resolveBidder returns the known BidderName associated with bidder, if bidder is an alias. If it's not an alias, the bidder is returned.
