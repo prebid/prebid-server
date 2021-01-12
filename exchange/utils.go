@@ -481,7 +481,7 @@ func removeUnpermissionedEids(request *openrtb.BidRequest, bidder string, reques
 		return err
 	}
 
-	// exit early if no there are no eids (empty array)
+	// exit early if there are no eids (empty array)
 	if len(eids) == 0 {
 		return nil
 	}
@@ -494,10 +494,8 @@ func removeUnpermissionedEids(request *openrtb.BidRequest, bidder string, reques
 
 	eidsAllowed := make([]openrtb_ext.ExtUserEid, 0, len(eids))
 	for _, eid := range eids {
-		rule, hasRule := eidRules[eid.Source]
-
 		allowed := false
-		if hasRule {
+		if rule, hasRule := eidRules[eid.Source]; hasRule {
 			for _, ruleBidder := range rule {
 				if ruleBidder == "*" || ruleBidder == bidder {
 					allowed = true
@@ -513,7 +511,7 @@ func removeUnpermissionedEids(request *openrtb.BidRequest, bidder string, reques
 		}
 	}
 
-	// exit early if all eids are allowed and nothing needs to be removed
+	// exit early if all eidsgetAuctionBidderRequests are allowed and nothing needs to be removed
 	if len(eids) == len(eidsAllowed) {
 		return nil
 	}
