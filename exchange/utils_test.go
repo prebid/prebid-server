@@ -1046,8 +1046,8 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
-	TCF1Consent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
-	TCF2Consent := "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA"
+	tcf1Consent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	tcf2Consent := "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA"
 	trueValue, falseValue := true, false
 
 	testCases := []struct {
@@ -1078,7 +1078,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        TCF1Consent,
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1090,7 +1090,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        TCF2Consent,
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1102,7 +1102,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "0",
-			gdprConsent:        TCF1Consent,
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
@@ -1114,7 +1114,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    false,
 			gdpr:               "1",
-			gdprConsent:        TCF1Consent,
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1126,7 +1126,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &falseValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        TCF1Consent,
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
@@ -1138,7 +1138,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        TCF1Consent,
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1150,7 +1150,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    false,
 			gdpr:               "1",
-			gdprConsent:        TCF1Consent,
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
@@ -1162,7 +1162,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled:  nil,
 			gdprHostEnabled:     true,
 			gdpr:                "null",
-			gdprConsent:         TCF1Consent,
+			gdprConsent:         tcf1Consent,
 			gdprScrub:           true,
 			userSyncIfAmbiguous: false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
@@ -1175,7 +1175,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled:  nil,
 			gdprHostEnabled:     true,
 			gdpr:                "null",
-			gdprConsent:         TCF1Consent,
+			gdprConsent:         tcf1Consent,
 			gdprScrub:           false,
 			userSyncIfAmbiguous: true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
@@ -1188,7 +1188,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        TCF1Consent,
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          true,
 			permissionsError:   errors.New("Some error"),
 			expectPrivacyLabels: metrics.PrivacyLabels{
