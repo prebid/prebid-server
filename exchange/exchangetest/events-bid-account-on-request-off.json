@@ -19,9 +19,7 @@
         }
       ],
       "ext": {
-        "prebid": {
-          "events": {}
-        }
+        "prebid": {}
       }
     }
   },
