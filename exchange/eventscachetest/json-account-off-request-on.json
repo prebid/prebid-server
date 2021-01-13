@@ -26,11 +26,11 @@
         {
             "type": "json",
             "ttlseconds": 660,
-            "value":{ "id": "bidOne", "impid": "oneImp", "price": 7.64, "exp": 600, "wurl": "http://localhost/event?t=win\u0026b=bidOne\u0026a=ACCOUNT_ID\u0026bidder=appnexus\u0026ts=1234567890"}
+            "value":{ "id": "bidOne", "impid": "oneImp", "price": 7.64, "exp": 600, "wurl": "http://localhost/event?t=win&b=bidOne&a=ACCOUNT_ID&bidder=appnexus&ts=1234567890"}
         }, {
             "type": "json",
             "ttlseconds": 360,
-            "value": { "id": "bidTwo", "impid": "oneImp", "price": 5.64, "wurl": "http://localhost/event?t=win\u0026b=bidTwo\u0026a=ACCOUNT_ID\u0026bidder=pubmatic\u0026ts=1234567890"}
+            "value": { "id": "bidTwo", "impid": "oneImp", "price": 5.64, "wurl": "http://localhost/event?t=win&b=bidTwo&a=ACCOUNT_ID&bidder=pubmatic&ts=1234567890"}
         }
     ],
     "defaultTTLs": {
