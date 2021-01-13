@@ -92,9 +92,6 @@
           ]
         }
       ]
-    },
-    "prebid": {
-      "auctiontimestamp": 1234567890
     }
   }
 }
