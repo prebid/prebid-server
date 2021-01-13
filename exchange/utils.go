@@ -75,14 +75,19 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	gdprSignal := extractGDPR(req.BidRequest)
-	consent := extractConsent(req.BidRequest)
+	gdprSignal, err := extractGDPR(req.BidRequest)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	consent, err := extractConsent(req.BidRequest)
+	if err != nil {
+		errs = append(errs, err)
+	}
 	gdprEnforced := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && !usersyncIfAmbiguous)
 
 	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &req.Account, aliases, integrationTypeMap[req.LegacyLabels.RType])
 	if err != nil {
 		errs = append(errs, err)
-		return
 	}
 
 	lmtEnforcer := extractLMT(req.BidRequest, privacyConfig)
