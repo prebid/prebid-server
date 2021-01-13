@@ -40,11 +40,12 @@ type dmxPubExtId struct {
 }
 
 type dmxParams struct {
-	TagId       string `json:"tagid,omitempty"`
-	DmxId       string `json:"dmxid,omitempty"`
-	MemberId    string `json:"memberid,omitempty"`
-	PublisherId string `json:"publisher_id,omitempty"`
-	SellerId    string `json:"seller_id,omitempty"`
+	TagId       string  `json:"tagid,omitempty"`
+	DmxId       string  `json:"dmxid,omitempty"`
+	MemberId    string  `json:"memberid,omitempty"`
+	PublisherId string  `json:"publisher_id,omitempty"`
+	SellerId    string  `json:"seller_id,omitempty"`
+	Bidfloor    float64 `json:"bidfloor,omitempty"`
 }
 
 func UserSellerOrPubId(str1, str2 string) string {
@@ -89,11 +90,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		if dmxReq.App.Publisher.ID == "" {
 			dmxReq.App.Publisher.ID = publisherId
 		}
-		if rootExtInfo.Bidder.MemberId != "" {
-			dmxRawPubId.Dmx.Id = rootExtInfo.Bidder.MemberId
-		} else {
-			dmxRawPubId.Dmx.Id = rootExtInfo.Bidder.PublisherId
-		}
+		dmxRawPubId.Dmx.Id = UserSellerOrPubId(rootExtInfo.Bidder.PublisherId, rootExtInfo.Bidder.MemberId)
 		ext, err := json.Marshal(dmxRawPubId)
 		if err == nil {
 		}
@@ -114,11 +111,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 			if dmxReq.Site.Publisher.ID == "" {
 				dmxReq.Site.Publisher.ID = publisherId
 			}
-			if rootExtInfo.Bidder.MemberId != "" {
-				dmxRawPubId.Dmx.Id = rootExtInfo.Bidder.MemberId
-			} else {
-				dmxRawPubId.Dmx.Id = rootExtInfo.Bidder.PublisherId
-			}
+			dmxRawPubId.Dmx.Id = UserSellerOrPubId(rootExtInfo.Bidder.PublisherId, rootExtInfo.Bidder.MemberId)
 			ext, err := json.Marshal(dmxRawPubId)
 			if err == nil {
 			}
@@ -261,6 +254,9 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner *openrtb.Banner, video *openrtb.Video, intVal int8) []openrtb.Imp {
 	var tempimp openrtb.Imp
 	tempimp = inst
+	if params.Bidder.Bidfloor != 0 {
+		tempimp.BidFloor = params.Bidder.Bidfloor
+	}
 	if params.Bidder.TagId != "" {
 		tempimp.TagID = params.Bidder.TagId
 		tempimp.Secure = &intVal
