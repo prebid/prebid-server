@@ -27,7 +27,6 @@ const sec = "ROS"
 const dfpClientID = "1"
 const requestTargetInventory = "1"
 
-var isMobile = -1
 var priorityOrderForMobileSizesAsc = []string{"1x1", "300x50", "320x50", "300x250"}
 var priorityOrderForDesktopSizesAsc = []string{"1x1", "970x90", "970x250", "160x600", "300x600", "728x90", "300x250"}
 
@@ -66,21 +65,7 @@ type hbResponseAd struct {
 	Height       uint64 `json:"h,omitempty"`
 }
 
-type byPriority []openrtb.Format
-
-func (a byPriority) Len() int      { return len(a) }
-func (a byPriority) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a byPriority) Less(i, j int) bool {
-	var priorityOrderForSizesAsc []string
-	if isMobile > 0 {
-		priorityOrderForSizesAsc = priorityOrderForMobileSizesAsc
-	} else {
-		priorityOrderForSizesAsc = priorityOrderForDesktopSizesAsc
-	}
-	size1 := fmt.Sprintf("%dx%d", a[i].W, a[i].H)
-	size2 := fmt.Sprintf("%dx%d", a[j].W, a[j].H)
-	index1 := indexOf(size1, priorityOrderForSizesAsc)
-	index2 := indexOf(size2, priorityOrderForSizesAsc)
+func isPriority(index1 int, index2 int) bool {
 	if index1 > -1 {
 		if index2 > -1 {
 			if index1 < index2 {
@@ -100,17 +85,42 @@ func (a byPriority) Less(i, j int) bool {
 	}
 }
 
+func lessByPriority(w1, h1, w2, h2 uint64, priorityOrderForSizesAsc []string) bool {
+	size1 := fmt.Sprintf("%dx%d", w1, h1)
+	size2 := fmt.Sprintf("%dx%d", w2, h2)
+	index1 := indexOf(size1, priorityOrderForSizesAsc)
+	index2 := indexOf(size2, priorityOrderForSizesAsc)
+
+	return isPriority(index1, index2)
+}
+
+type byPriorityMobile []openrtb.Format
+
+func (a byPriorityMobile) Len() int      { return len(a) }
+func (a byPriorityMobile) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a byPriorityMobile) Less(i, j int) bool {
+	return lessByPriority(a[i].W, a[i].H, a[j].W, a[j].H, priorityOrderForMobileSizesAsc)
+}
+
+type byPriorityDesktop []openrtb.Format
+
+func (a byPriorityDesktop) Len() int      { return len(a) }
+func (a byPriorityDesktop) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a byPriorityDesktop) Less(i, j int) bool {
+	return lessByPriority(a[i].W, a[i].H, a[j].W, a[j].H, priorityOrderForDesktopSizesAsc)
+}
+
 func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errors := make([]error, 0, len(request.Imp))
 	totalImps := len(request.Imp)
 	spacesStrings := make([]string, 0, totalImps)
 	totalRequests := 0
 	clientID := ""
-	isMobile = isMobileDevice(request)
+	isMobile := isMobileDevice(request)
 
 	for i := 0; i < totalImps; i++ {
 		imp := request.Imp[i]
-		extImp, err := verifyImp(&imp)
+		extImp, err := verifyImp(&imp, isMobile)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -227,18 +237,8 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 	return requests, errors
 }
 
-func isMobileDevice(request *openrtb.BidRequest) int {
-	if request.Device != nil {
-		if request.Device.DeviceType == openrtb.DeviceTypePersonalComputer {
-			return 0
-		}
-		if request.Device.DeviceType == openrtb.DeviceTypeMobileTablet ||
-			request.Device.DeviceType == openrtb.DeviceTypePhone ||
-			request.Device.DeviceType == openrtb.DeviceTypeTablet {
-			return 1
-		}
-	}
-	return -1
+func isMobileDevice(request *openrtb.BidRequest) bool {
+	return request.Device != nil && (request.Device.DeviceType == openrtb.DeviceTypeMobileTablet || request.Device.DeviceType == openrtb.DeviceTypePhone || request.Device.DeviceType == openrtb.DeviceTypeTablet)
 }
 
 func cleanName(name string) string {
@@ -248,7 +248,7 @@ func cleanName(name string) string {
 	return name
 }
 
-func verifyImp(imp *openrtb.Imp) (*openrtb_ext.ExtImpEPlanning, error) {
+func verifyImp(imp *openrtb.Imp, isMobile bool) (*openrtb_ext.ExtImpEPlanning, error) {
 	var bidderExt adapters.ExtImpBidder
 
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -271,7 +271,7 @@ func verifyImp(imp *openrtb.Imp) (*openrtb_ext.ExtImpEPlanning, error) {
 		}
 	}
 
-	width, height := getSizeFromImp(imp)
+	width, height := getSizeFromImp(imp, isMobile)
 
 	if width == 0 && height == 0 {
 		impExt.SizeString = nullSize
@@ -295,20 +295,19 @@ func indexOf(element string, data []string) int {
 	return -1
 }
 
-func getSizesSortedByPriority(sizeArray []openrtb.Format) []openrtb.Format {
-	sort.Sort(byPriority(sizeArray))
-	return sizeArray
-}
-
-func getSizeFromImp(imp *openrtb.Imp) (uint64, uint64) {
+func getSizeFromImp(imp *openrtb.Imp, isMobile bool) (uint64, uint64) {
 	if imp.Banner.W != nil && imp.Banner.H != nil {
 		return *imp.Banner.W, *imp.Banner.H
 	}
 
 	if imp.Banner.Format != nil {
-		sizesSortedByPriority := getSizesSortedByPriority(imp.Banner.Format)
+		sizesSortedByPriority := imp.Banner.Format
+		if isMobile {
+			sort.Sort(byPriorityMobile(sizesSortedByPriority))
+		} else {
+			sort.Sort(byPriorityDesktop(sizesSortedByPriority))
+		}
 		for _, format := range sizesSortedByPriority {
-			fmt.Println(format)
 			if format.W != 0 && format.H != 0 {
 				return format.W, format.H
 			}
@@ -348,12 +347,14 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, e
 		}}
 	}
 
+	isMobile := isMobileDevice(internalRequest)
+
 	bidResponse := adapters.NewBidderResponse()
 
 	spaceNameToImpID := make(map[string]string)
 
 	for _, imp := range internalRequest.Imp {
-		extImp, err := verifyImp(&imp)
+		extImp, err := verifyImp(&imp, isMobile)
 		if err != nil {
 			continue
 		}
