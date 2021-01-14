@@ -26,7 +26,7 @@
     },
     "bidfloor": {
       "type": "number",
-      "description": "The minimum price acceptable for a bid"
+      "description": "The minimum price acceptable for a bid, this is optional since we do get the one from the original openrtb request"
     }
   },
 
