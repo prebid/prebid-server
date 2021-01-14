@@ -209,7 +209,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 		roundedPrices:       roundedPrices,
 	}
 	evTracking := &eventTracking{
-		accountID:          "ACCOUNT_ID",
+		accountID:          "TEST_ACC_ID",
 		enabledForAccount:  specData.EventsDataEnabledForAccount,
 		enabledForRequest:  specData.EventsDataEnabledForRequest,
 		externalURL:        "http://localhost",
