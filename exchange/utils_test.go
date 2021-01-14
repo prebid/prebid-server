@@ -1461,7 +1461,7 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 		{
 			description:     "Allowed By Nil Permissions",
 			userExt:         json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
-			eidPermissions:  []openrtb_ext.ExtRequestPrebidDataEidPermission{},
+			eidPermissions:  nil,
 			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
 		},
 		{
