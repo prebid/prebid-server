@@ -296,8 +296,7 @@ func ModifyVastXmlJSON(externalUrl string, data json.RawMessage, bidid, bidder, 
 		// failed to decode json, fall back to string
 		vast = string(data)
 	}
-	var ok bool
-	vast, ok = ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountId, timestamp)
+	vast, ok := ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountId, timestamp)
 	if !ok {
 		return data
 	}
