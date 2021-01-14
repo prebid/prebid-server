@@ -331,6 +331,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		if err := validateSChains(bidExt); err != nil {
 			return []error{err}
 		}
+
+		if err := deps.validateEidPermissions(bidExt, aliases); err != nil {
+			return []error{err}
+		}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -417,6 +421,51 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 func validateSChains(req *openrtb_ext.ExtRequest) error {
 	_, err := exchange.BidderToPrebidSChains(req)
 	return err
+}
+
+func (deps *endpointDeps) validateEidPermissions(req *openrtb_ext.ExtRequest, aliases map[string]string) error {
+	if req == nil || req.Prebid.Data == nil {
+		return nil
+	}
+
+	uniqueSources := make(map[string]struct{}, len(req.Prebid.Data.EidPermissions))
+	for i, eid := range req.Prebid.Data.EidPermissions {
+		if len(eid.Source) == 0 {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i)
+		}
+
+		if _, exists := uniqueSources[eid.Source]; exists {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] duplicate entry with field: "source"`, i)
+		}
+		uniqueSources[eid.Source] = struct{}{}
+
+		if len(eid.Bidders) == 0 {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i)
+		}
+
+		if err := validateBidders(eid.Bidders, deps.bidderMap, aliases); err != nil {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
+		}
+	}
+
+	return nil
+}
+
+func validateBidders(bidders []string, knownBidders map[string]openrtb_ext.BidderName, knownAliases map[string]string) error {
+	for _, bidder := range bidders {
+		if bidder == "*" {
+			if len(bidders) > 1 {
+				return errors.New(`bidder wildcard "*" mixed with specific bidders`)
+			}
+		} else {
+			_, isCoreBidder := knownBidders[bidder]
+			_, isAlias := knownAliases[bidder]
+			if !isCoreBidder && !isAlias {
+				return fmt.Errorf(`unrecognized bidder "%v"`, bidder)
+			}
+		}
+	}
+	return nil
 }
 
 func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]string, index int) []error {

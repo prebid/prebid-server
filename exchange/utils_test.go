@@ -1450,3 +1450,254 @@ func TestBidderToPrebidChainsZeroLengthSChains(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(output), 0)
 }
+
+func TestRemoveUnpermissionedEids(t *testing.T) {
+	bidder := "bidderA"
+
+	testCases := []struct {
+		description     string
+		userExt         json.RawMessage
+		eidPermissions  []openrtb_ext.ExtRequestPrebidDataEidPermission
+		expectedUserExt json.RawMessage
+	}{
+		{
+			description: "Extension Nil",
+			userExt:     nil,
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: nil,
+		},
+		{
+			description: "Extension Empty",
+			userExt:     json.RawMessage(`{}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{}`),
+		},
+		{
+			description: "Extension Empty - Keep Other Data",
+			userExt:     json.RawMessage(`{"other":42}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{"other":42}`),
+		},
+		{
+			description: "Eids Empty",
+			userExt:     json.RawMessage(`{"eids":[]}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[]}`),
+		},
+		{
+			description: "Eids Empty - Keep Other Data",
+			userExt:     json.RawMessage(`{"eids":[],"other":42}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[],"other":42}`),
+		},
+		{
+			description:     "Allowed By Nil Permissions",
+			userExt:         json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions:  nil,
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+		},
+		{
+			description:     "Allowed By Empty Permissions",
+			userExt:         json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions:  []openrtb_ext.ExtRequestPrebidDataEidPermission{},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+		},
+		{
+			description: "Allowed By Specific Bidder",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+		},
+		{
+			description: "Allowed By All Bidders",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"*"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+		},
+		{
+			description: "Allowed By Lack Of Matching Source",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source2", Bidders: []string{"otherBidder"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+		},
+		{
+			description: "Allowed - Keep Other Data",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"other":42}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"other":42}`),
+		},
+		{
+			description: "Denied",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"otherBidder"}},
+			},
+			expectedUserExt: nil,
+		},
+		{
+			description: "Denied - Keep Other Data",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"otherdata":42}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"otherBidder"}},
+			},
+			expectedUserExt: json.RawMessage(`{"otherdata":42}`),
+		},
+		{
+			description: "Mix Of Allowed By Specific Bidder, Allowed By Lack Of Matching Source, Denied, Keep Other Data",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"},{"source":"source2","id":"anyID"},{"source":"source3","id":"anyID"}],"other":42}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+				{Source: "source3", Bidders: []string{"otherBidder"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"},{"source":"source2","id":"anyID"}],"other":42}`),
+		},
+	}
+
+	for _, test := range testCases {
+		request := &openrtb.BidRequest{
+			User: &openrtb.User{Ext: test.userExt},
+		}
+
+		requestExt := &openrtb_ext.ExtRequest{
+			Prebid: openrtb_ext.ExtRequestPrebid{
+				Data: &openrtb_ext.ExtRequestPrebidData{
+					EidPermissions: test.eidPermissions,
+				},
+			},
+		}
+
+		expectedRequest := &openrtb.BidRequest{
+			User: &openrtb.User{Ext: test.expectedUserExt},
+		}
+
+		resultErr := removeUnpermissionedEids(request, bidder, requestExt)
+		assert.NoError(t, resultErr, test.description)
+		assert.Equal(t, expectedRequest, request, test.description)
+	}
+}
+
+func TestRemoveUnpermissionedEidsUnmarshalErrors(t *testing.T) {
+	testCases := []struct {
+		description string
+		userExt     json.RawMessage
+		expectedErr string
+	}{
+		{
+			description: "Malformed Ext",
+			userExt:     json.RawMessage(`malformed`),
+			expectedErr: "invalid character 'm' looking for beginning of value",
+		},
+		{
+			description: "Malformed Eid Array Type",
+			userExt:     json.RawMessage(`{"eids":[42]}`),
+			expectedErr: "json: cannot unmarshal number into Go value of type openrtb_ext.ExtUserEid",
+		},
+		{
+			description: "Malformed Eid Item Type",
+			userExt:     json.RawMessage(`{"eids":[{"source":42,"id":"anyID"}]}`),
+			expectedErr: "json: cannot unmarshal number into Go struct field ExtUserEid.source of type string",
+		},
+	}
+
+	for _, test := range testCases {
+		request := &openrtb.BidRequest{
+			User: &openrtb.User{Ext: test.userExt},
+		}
+
+		requestExt := &openrtb_ext.ExtRequest{
+			Prebid: openrtb_ext.ExtRequestPrebid{
+				Data: &openrtb_ext.ExtRequestPrebidData{
+					EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+						{Source: "source1", Bidders: []string{"*"}},
+					},
+				},
+			},
+		}
+
+		resultErr := removeUnpermissionedEids(request, "bidderA", requestExt)
+		assert.EqualError(t, resultErr, test.expectedErr, test.description)
+	}
+}
+
+func TestRemoveUnpermissionedEidsEmptyValidations(t *testing.T) {
+	testCases := []struct {
+		description string
+		request     *openrtb.BidRequest
+		requestExt  *openrtb_ext.ExtRequest
+	}{
+		{
+			description: "Nil User",
+			request: &openrtb.BidRequest{
+				User: nil,
+			},
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Data: &openrtb_ext.ExtRequestPrebidData{
+						EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+							{Source: "source1", Bidders: []string{"*"}},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "Empty User",
+			request: &openrtb.BidRequest{
+				User: &openrtb.User{},
+			},
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Data: &openrtb_ext.ExtRequestPrebidData{
+						EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+							{Source: "source1", Bidders: []string{"*"}},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "Nil Ext",
+			request: &openrtb.BidRequest{
+				User: &openrtb.User{Ext: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`)},
+			},
+			requestExt: nil,
+		},
+		{
+			description: "Nil Prebid Data",
+			request: &openrtb.BidRequest{
+				User: &openrtb.User{Ext: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`)},
+			},
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Data: nil,
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		requestExpected := *test.request
+
+		resultErr := removeUnpermissionedEids(test.request, "bidderA", test.requestExt)
+		assert.NoError(t, resultErr, test.description+":err")
+		assert.Equal(t, &requestExpected, test.request, test.description+":request")
+	}
+}
