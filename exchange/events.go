@@ -31,7 +31,7 @@ func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Ti
 		enabledForAccount:  account.EventsEnabled,
 		enabledForRequest:  requestExtPrebid != nil && requestExtPrebid.Events != nil,
 		auctionTimestampMs: ts.UnixNano() / 1e+6,
-		integration:        "", // FIXME
+		integration:        "", // TODO: add integration support, see #1428
 		bidderInfos:        bidderInfos,
 		externalURL:        externalURL,
 	}
@@ -69,9 +69,9 @@ func (ev *eventTracking) modifyBidVAST(pbsBid *pbsOrtbBid, bidderName openrtb_ex
 }
 
 // modifyBidJSON injects "wurl" (win) event url if needed, otherwise returns original json
-func (ev *eventTracking) modifyBidJSON(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName, jsonBytes []byte) []byte {
+func (ev *eventTracking) modifyBidJSON(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName, jsonBytes []byte) ([]byte, error) {
 	if !ev.enabledForAccount && !ev.enabledForRequest || pbsBid.bidType == openrtb_ext.BidTypeVideo {
-		return jsonBytes
+		return jsonBytes, nil
 	}
 	var winEventURL string
 	if pbsBid.bidEvents != nil { // All bids should have already been updated with win/imp event URLs
@@ -80,12 +80,15 @@ func (ev *eventTracking) modifyBidJSON(pbsBid *pbsOrtbBid, bidderName openrtb_ex
 		winEventURL = ev.makeEventURL(analytics.Win, pbsBid, bidderName)
 	}
 	// wurl attribute is not in the schema, so we have to patch
-	if patch, err := json.Marshal(map[string]string{"wurl": winEventURL}); err == nil {
-		if modifiedJSON, err := jsonpatch.MergePatch(jsonBytes, patch); err == nil {
-			jsonBytes = modifiedJSON
-		}
+	patch, err := json.Marshal(map[string]string{"wurl": winEventURL})
+	if err != nil {
+		return jsonBytes, err
 	}
-	return jsonBytes
+	modifiedJSON, err := jsonpatch.MergePatch(jsonBytes, patch)
+	if err != nil {
+		return jsonBytes, err
+	}
+	return modifiedJSON, nil
 }
 
 // makeBidExtEvents make the data for bid.ext.prebid.events if needed, otherwise returns nil

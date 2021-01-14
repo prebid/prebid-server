@@ -195,7 +195,10 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 			}
 			if bids {
 				if jsonBytes, err := json.Marshal(topBidPerBidder.bid); err == nil {
-					jsonBytes = evTracking.modifyBidJSON(topBidPerBidder, bidderName, jsonBytes)
+					jsonBytes, err = evTracking.modifyBidJSON(topBidPerBidder, bidderName, jsonBytes)
+					if err != nil {
+						errs = append(errs, err)
+					}
 					if useCustomCacheKey {
 						// not allowed if bids is true; log error and cache normally
 						errs = append(errs, errors.New("cannot use custom cache key for non-vast bids"))

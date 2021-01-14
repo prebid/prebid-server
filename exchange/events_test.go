@@ -73,34 +73,46 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 		bidType           openrtb_ext.BidType
 	}
 	tests := []struct {
-		name string
-		args args
-		want []byte
+		name      string
+		args      args
+		jsonBytes []byte
+		want      []byte
 	}{
 		{
-			name: "banner: events enabled for request, disabled for account",
-			args: args{enabledForAccount: false, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner},
-			want: []byte(`{"ID": "something", "wurl": "http://localhost/event?t=win&b=BID-1&a=123456&bidder=openx&ts=1234567890"}`),
+			name:      "banner: events enabled for request, disabled for account",
+			args:      args{enabledForAccount: false, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner},
+			jsonBytes: []byte(`{"ID": "something"}`),
+			want:      []byte(`{"ID": "something", "wurl": "http://localhost/event?t=win&b=BID-1&a=123456&bidder=openx&ts=1234567890"}`),
 		},
 		{
-			name: "banner: events enabled for account, disabled for request",
-			args: args{enabledForAccount: true, enabledForRequest: false, bidType: openrtb_ext.BidTypeBanner},
-			want: []byte(`{"ID": "something", "wurl": "http://localhost/event?t=win&b=BID-1&a=123456&bidder=openx&ts=1234567890"}`),
+			name:      "banner: events enabled for account, disabled for request",
+			args:      args{enabledForAccount: true, enabledForRequest: false, bidType: openrtb_ext.BidTypeBanner},
+			jsonBytes: []byte(`{"ID": "something"}`),
+			want:      []byte(`{"ID": "something", "wurl": "http://localhost/event?t=win&b=BID-1&a=123456&bidder=openx&ts=1234567890"}`),
 		},
 		{
-			name: "banner: events disabled for account and request",
-			args: args{enabledForAccount: false, enabledForRequest: false, bidType: openrtb_ext.BidTypeBanner},
-			want: []byte(`{"ID": "something"}`),
+			name:      "banner: events disabled for account and request",
+			args:      args{enabledForAccount: false, enabledForRequest: false, bidType: openrtb_ext.BidTypeBanner},
+			jsonBytes: []byte(`{"ID": "something"}`),
+			want:      []byte(`{"ID": "something"}`),
 		},
 		{
-			name: "video: events disabled for account and request",
-			args: args{enabledForAccount: false, enabledForRequest: false, bidType: openrtb_ext.BidTypeVideo},
-			want: []byte(`{"ID": "something"}`),
+			name:      "video: events disabled for account and request",
+			args:      args{enabledForAccount: false, enabledForRequest: false, bidType: openrtb_ext.BidTypeVideo},
+			jsonBytes: []byte(`{"ID": "something"}`),
+			want:      []byte(`{"ID": "something"}`),
 		},
 		{
-			name: "video: events enabled for account and request",
-			args: args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeVideo},
-			want: []byte(`{"ID": "something"}`),
+			name:      "video: events enabled for account and request",
+			args:      args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeVideo},
+			jsonBytes: []byte(`{"ID": "something"}`),
+			want:      []byte(`{"ID": "something"}`),
+		},
+		{
+			name:      "banner: broken json expected to fail patching",
+			args:      args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner},
+			jsonBytes: []byte(`broken json`),
+			want:      nil,
 		},
 	}
 	for _, tt := range tests {
@@ -113,8 +125,14 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 				externalURL:        "http://localhost",
 			}
 			bid := &pbsOrtbBid{bid: &openrtb.Bid{ID: "BID-1"}, bidType: tt.args.bidType}
-			jsonBytes := []byte(`{"ID": "something"}`)
-			assert.JSONEq(t, string(tt.want), string(evData.modifyBidJSON(bid, openrtb_ext.BidderOpenx, jsonBytes)))
+			modifiedJSON, err := evData.modifyBidJSON(bid, openrtb_ext.BidderOpenx, tt.jsonBytes)
+			if tt.want != nil {
+				assert.NoError(t, err, "Unexpected error")
+				assert.JSONEq(t, string(tt.want), string(modifiedJSON))
+			} else {
+				assert.Error(t, err)
+				assert.Equal(t, string(tt.jsonBytes), string(modifiedJSON), "Expected original json on failure to modify")
+			}
 		})
 	}
 }
