@@ -91,9 +91,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 			dmxReq.App.Publisher.ID = publisherId
 		}
 		dmxRawPubId.Dmx.Id = UserSellerOrPubId(rootExtInfo.Bidder.PublisherId, rootExtInfo.Bidder.MemberId)
-		ext, err := json.Marshal(dmxRawPubId)
-		if err == nil {
-		}
+		ext, _ := json.Marshal(dmxRawPubId)
 		dmxReq.App.Publisher.Ext = ext
 		if dmxReq.App.ID != "" {
 			anyHasId = true
@@ -112,9 +110,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 				dmxReq.Site.Publisher.ID = publisherId
 			}
 			dmxRawPubId.Dmx.Id = UserSellerOrPubId(rootExtInfo.Bidder.PublisherId, rootExtInfo.Bidder.MemberId)
-			ext, err := json.Marshal(dmxRawPubId)
-			if err == nil {
-			}
+			ext, _ := json.Marshal(dmxRawPubId)
 			dmxReq.Site.Publisher.Ext = ext
 		} else {
 			dmxReq.Site.Publisher = &openrtb.Publisher{ID: publisherId}
