@@ -1502,6 +1502,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 			bidderInfos[string(bidderName)] = adapters.BidderInfo{ModifyingVastXmlAllowed: spec.ModifyingVastXmlAllowed}
 		}
 	}
+
 	for alias, coreBidder := range aliases {
 		if spec, ok := expectations[alias]; ok {
 			if bidder, ok := bidderAdapters[openrtb_ext.BidderName(coreBidder)]; ok {
@@ -1512,8 +1513,8 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 					t:             t,
 					fileName:      filename,
 					bidderName:    coreBidder,
-					expectations:  map[string]*bidderRequest{coreBidder: spec.ExpectedRequest},
-					mockResponses: map[string]bidderResponse{coreBidder: spec.MockResponse},
+					expectations:  map[string]*bidderRequest{alias: spec.ExpectedRequest},
+					mockResponses: map[string]bidderResponse{alias: spec.MockResponse},
 				}
 			}
 		}

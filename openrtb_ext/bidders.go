@@ -51,6 +51,7 @@ const (
 	BidderAdmixer          BidderName = "admixer"
 	BidderAdOcean          BidderName = "adocean"
 	BidderAdoppler         BidderName = "adoppler"
+	BidderAdot             BidderName = "adot"
 	BidderAdpone           BidderName = "adpone"
 	BidderAdprime          BidderName = "adprime"
 	BidderAdtarget         BidderName = "adtarget"
@@ -93,6 +94,7 @@ const (
 	BidderLogicad          BidderName = "logicad"
 	BidderLunaMedia        BidderName = "lunamedia"
 	BidderMarsmedia        BidderName = "marsmedia"
+	BidderMediafuse        BidderName = "mediafuse"
 	BidderMgid             BidderName = "mgid"
 	BidderMobfoxpb         BidderName = "mobfoxpb"
 	BidderMobileFuse       BidderName = "mobilefuse"
@@ -104,6 +106,7 @@ const (
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
 	BidderPulsepoint       BidderName = "pulsepoint"
+	BidderRevcontent       BidderName = "revcontent"
 	BidderRhythmone        BidderName = "rhythmone"
 	BidderRTBHouse         BidderName = "rtbhouse"
 	BidderRubicon          BidderName = "rubicon"
@@ -148,6 +151,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdmixer,
 		BidderAdOcean,
 		BidderAdoppler,
+		BidderAdot,
 		BidderAdpone,
 		BidderAdprime,
 		BidderAdtarget,
@@ -190,6 +194,7 @@ func CoreBidderNames() []BidderName {
 		BidderLogicad,
 		BidderLunaMedia,
 		BidderMarsmedia,
+		BidderMediafuse,
 		BidderMgid,
 		BidderMobfoxpb,
 		BidderMobileFuse,
@@ -201,6 +206,7 @@ func CoreBidderNames() []BidderName {
 		BidderPubmatic,
 		BidderPubnative,
 		BidderPulsepoint,
+		BidderRevcontent,
 		BidderRhythmone,
 		BidderRTBHouse,
 		BidderRubicon,

@@ -7,7 +7,6 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/config"
@@ -59,7 +58,7 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 		}
 
 		// Ignore Legacy Bidders
-		if bidderName == openrtb_ext.BidderIx || bidderName == openrtb_ext.BidderLifestreet || bidderName == openrtb_ext.BidderPulsepoint {
+		if bidderName == openrtb_ext.BidderLifestreet || bidderName == openrtb_ext.BidderPulsepoint {
 			continue
 		}
 
@@ -92,13 +91,7 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 }
 
 func buildExchangeBiddersLegacy(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
-	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 3)
-
-	// Index
-	if infos[string(openrtb_ext.BidderIx)].Status == adapters.StatusActive {
-		adapter := ix.NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderIx)].Endpoint)
-		bidders[openrtb_ext.BidderIx] = adaptLegacyAdapter(adapter)
-	}
+	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 2)
 
 	// Lifestreet
 	if infos[string(openrtb_ext.BidderLifestreet)].Status == adapters.StatusActive {
