@@ -109,6 +109,10 @@ data:
   PBS_ADAPTERS_TAURUSX_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/taurusx_givemeads"
   PBS_ADAPTERS_TAURUSX_XAPI_ENDPOINT_JP:      "http://localhost:4646/taurusx_givemeads"
   PBS_ADAPTERS_TAURUSX_XAPI_ENDPOINT_SG:      "http://localhost:4646/taurusx_givemeads"
+
+  # unicorn values
+  PBS_ADAPTERS_UNICORN_DISABLED:         "false"
+  PBS_ADAPTERS_UNICORN_XAPI_ENDPOINT_JP: "http://localhost:4646/unicorn_givemeads"
 ---
 ########################################################################################################################
 ## WORKLOAD-RELATED MANIFESTS

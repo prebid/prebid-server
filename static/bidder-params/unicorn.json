@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Unicorn Adapter Params",
+  "description": "A schema which validates params accepted by the Unicorn adapter",
+  "type": "object",
+  "properties": {
+    "reward": {
+      "type": "integer",
+      "description": "An integer defining the reward (skip) from Unicorn"
+    },
+    "region": {
+      "type": "string",
+      "description": "A string defining region for choosing the closest Unicorn endpoint"
+    }
+  }
+}

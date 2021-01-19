@@ -103,6 +103,7 @@ const (
 	BidderTriplelift       BidderName = "triplelift"
 	BidderTripleliftNative BidderName = "triplelift_native"
 	BidderUcfunnel         BidderName = "ucfunnel"
+	BidderUnicorn          BidderName = "unicorn"
 	BidderUnruly           BidderName = "unruly"
 	BidderValueImpression  BidderName = "valueimpression"
 	BidderVerizonMedia     BidderName = "verizonmedia"
@@ -194,6 +195,7 @@ var BidderMap = map[string]BidderName{
 	"triplelift":        BidderTriplelift,
 	"triplelift_native": BidderTripleliftNative,
 	"ucfunnel":          BidderUcfunnel,
+	"unicorn":           BidderUnicorn,
 	"unruly":            BidderUnruly,
 	"valueimpression":   BidderValueImpression,
 	"verizonmedia":      BidderVerizonMedia,
