@@ -52,11 +52,13 @@ type IdFetcher interface {
 
 type exchange struct {
 	adapterMap          map[openrtb_ext.BidderName]adaptedBidder
+	bidderInfo          adapters.BidderInfos
 	me                  metrics.MetricsEngine
 	cache               prebid_cache_client.Client
 	cacheTime           time.Duration
 	gDPR                gdpr.Permissions
 	currencyConverter   *currency.RateConverter
+	externalURL         string
 	UsersyncIfAmbiguous bool
 	privacyConfig       config.Privacy
 	categoriesFetcher   stored_requests.CategoryFetcher
@@ -77,13 +79,15 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
 	return &exchange{
 		adapterMap:          adapters,
+		bidderInfo:          infos,
 		cache:               cache,
 		cacheTime:           time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
 		categoriesFetcher:   categoriesFetcher,
 		currencyConverter:   currencyConverter,
+		externalURL:         cfg.ExternalURL,
 		gDPR:                gDPR,
 		me:                  metricsEngine,
 		UsersyncIfAmbiguous: cfg.GDPR.UsersyncIfAmbiguous,
@@ -178,6 +182,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			}
 		}
 
+		evTracking := getEventTracking(&requestExt.Prebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL)
+		adapterBids = evTracking.modifyBidsForEvents(adapterBids)
+
 		if targData != nil {
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
 			auc = newAuction(adapterBids, len(r.BidRequest.Imp), targData.preferDeals)
@@ -187,8 +194,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				dealErrs := applyDealSupport(r.BidRequest, auc, bidCategory)
 				errs = append(errs, dealErrs...)
 			}
-
-			cacheErrs := auc.doCache(ctx, e.cache, targData, r.BidRequest, 60, &r.Account.CacheTTL, bidCategory, debugLog)
+			cacheErrs := auc.doCache(ctx, e.cache, targData, evTracking, r.BidRequest, 60, &r.Account.CacheTTL, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}
@@ -813,6 +819,7 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, auc *auction, returnCreative bool
 				Targeting:         thisBid.bidTargets,
 				Type:              thisBid.bidType,
 				Video:             thisBid.bidVideo,
+				Events:            thisBid.bidEvents,
 				DealPriority:      thisBid.dealPriority,
 				DealTierSatisfied: thisBid.dealTierSatisfied,
 			},
