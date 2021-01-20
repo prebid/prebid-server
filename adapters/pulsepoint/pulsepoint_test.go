@@ -25,8 +25,8 @@ func TestOpenRTBRequest(t *testing.T) {
 				},
 			},
 			Ext: json.RawMessage(`{"bidder": {
-				"cp": "1234",
-				"ct": "1001"
+				"cp": 1234,
+				"ct": 1001
 			}}`),
 		}, {
 			ID: "test-imp-video-id",
@@ -38,8 +38,8 @@ func TestOpenRTBRequest(t *testing.T) {
 				MaxDuration: 30,
 			},
 			Ext: json.RawMessage(`{"bidder": {
-				"cp": "1234",
-				"ct": "2001"
+				"cp": 1234,
+				"ct": 2001
 			}}`),
 		}},
 		Site: &openrtb.Site{
@@ -84,8 +84,8 @@ func TestOpenRTBRequestNoPubProvided(t *testing.T) {
 				},
 			},
 			Ext: json.RawMessage(`{"bidder": {
-				"cp": "1234",
-				"ct": "1001"
+				"cp": 1234,
+				"ct": 1001
 			}}`),
 		},
 		},
