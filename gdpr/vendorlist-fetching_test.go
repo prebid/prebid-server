@@ -596,25 +596,25 @@ func TestVendorListURLMaker(t *testing.T) {
 			description:       "TCF1 - Latest",
 			tcfSpecVersion:    1,
 			vendorListVersion: 0, // Forces latest version.
-			expectedURL:       "https://vendorlist.consensu.org/vendorlist.json",
+			expectedURL:       "https://vendor-list.consensu.org/vendorlist.json",
 		},
 		{
 			description:       "TCF1 - Specific",
 			tcfSpecVersion:    1,
 			vendorListVersion: 42,
-			expectedURL:       "https://vendorlist.consensu.org/v-42/vendorlist.json",
+			expectedURL:       "https://vendor-list.consensu.org/v-42/vendorlist.json",
 		},
 		{
 			description:       "TCF2 - Latest",
 			tcfSpecVersion:    2,
 			vendorListVersion: 0, // Forces latest version.
-			expectedURL:       "https://vendorlist.consensu.org/v2/vendor-list.json",
+			expectedURL:       "https://vendor-list.consensu.org/v2/vendor-list.json",
 		},
 		{
 			description:       "TCF2 - Specific",
 			tcfSpecVersion:    2,
 			vendorListVersion: 42,
-			expectedURL:       "https://vendorlist.consensu.org/v2/archives/vendor-list-v42.json",
+			expectedURL:       "https://vendor-list.consensu.org/v2/archives/vendor-list-v42.json",
 		},
 	}
 
@@ -710,7 +710,7 @@ type serverSettings struct {
 // If the "version" query param doesn't exist, it returns a 400.
 //
 // If the "version" query param points to a version which doesn't exist, it returns a 403.
-// Don't ask why... that's just what the official page is doing. See https://vendorlist.consensu.org/v-9999/vendorlist.json
+// Don't ask why... that's just what the official page is doing. See https://vendor-list.consensu.org/v-9999/vendorlist.json
 func mockServer(settings serverSettings) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		vendorListVersion := req.URL.Query().Get("version")

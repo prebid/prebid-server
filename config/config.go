@@ -216,6 +216,9 @@ func (cfg *GDPR) validate(errs []error) []error {
 	if cfg.AMPException == true {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
 	}
+	if cfg.TCF1.FetchGVL == true {
+		glog.Warning("gdpr.tcf1.fetch_gvl is deprecated and will be removed in a future version, at which point TCF1 will always use the fallback GVL")
+	}
 	return errs
 }
 
@@ -234,7 +237,7 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 
 // TCF1 defines the TCF1 specific configurations for GDPR
 type TCF1 struct {
-	FetchGVL        bool   `mapstructure:"fetch_gvl"`
+	FetchGVL        bool   `mapstructure:"fetch_gvl"` // Deprecated: In a future version TCF1 will always use the fallback GVL
 	FallbackGVLPath string `mapstructure:"fallback_gvl_path"`
 }
 
