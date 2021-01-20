@@ -225,22 +225,12 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 
 // DisallowHostCookies represents a GDPR permissions policy with host cookie syncing disallowed
 type DisallowHostCookies struct {
-	permissionsImpl Permissions
+	*permissionsImpl
 }
 
 // HostCookiesAllowed always returns false
 func (p *DisallowHostCookies) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
 	return false, nil
-}
-
-// BidderSyncAllowed determines whether bidder syncing is allowed by delegation
-func (p *DisallowHostCookies) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
-	return p.permissionsImpl.BidderSyncAllowed(ctx, bidder, consent)
-}
-
-// PersonalInfoAllowed returns whether personal info is allowed by delegation
-func (p *DisallowHostCookies) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string) (bool, bool, bool, error) {
-	return p.permissionsImpl.PersonalInfoAllowed(ctx, bidder, PublisherID, gdprSignal, consent)
 }
 
 // Exporting to allow for easy test setups
