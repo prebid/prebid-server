@@ -913,7 +913,8 @@ func TestOpenRTBRequest(t *testing.T) {
 				"siteId": 283282,
 				"accountId": 7891,
 				"inventory": {"key1" : "val1"},
-				"visitor": {"key2" : "val2"}
+				"visitor": {"key2" : "val2"},
+				"mraid_supported": true
 			}}`),
 		}, {
 			ID: "test-imp-video-id",
@@ -1056,7 +1057,9 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 				"siteId": 283282,
 				"accountId": 7891,
 				"inventory": {"key1" : "val1"},
-				"visitor": {"key2" : "val2"}
+				"visitor": {"key2" : "val2"},
+				"video": {"size_id": 1},
+				"mraid_supported": true
 			}}`),
 		}},
 	}
@@ -1074,7 +1077,7 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 
 	assert.Equal(t, 1, len(rubiconReq.Imp), "Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
 
-	assert.Nil(t, rubiconReq.Imp[0].Video, "Unexpected video object in request impression")
+	assert.NotNil(t, rubiconReq.Imp[0].Video, "Video object must be in request impression")
 
 	assert.NotNil(t, rubiconReq.Imp[0].Banner, "Banner object must be in request impression")
 }

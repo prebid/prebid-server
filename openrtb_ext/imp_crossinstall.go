@@ -5,4 +5,5 @@ type ExtImpCrossInstall struct {
 	Reward         int    `json:"reward"`
 	Region         string `json:"region"`          // this field added to support multiple crossinstall endpoints
 	SKADNSupported bool   `json:"skadn_supported"` // enable skadn ext parameters
+	MRAIDSupported bool   `json:"mraid_supported"`
 }

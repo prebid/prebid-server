@@ -62,6 +62,18 @@
           "description": "number of seconds until the ad can be skipped"
         }
       }
+    },
+    "region": {
+      "type": "string",
+      "description": "A string defining region for choosing the closest Rubicon endpoint"
+    },
+    "viewabilityvendors": {
+      "type": "array",
+      "description": "A string array defining viewability vendors, like moat"
+    },
+    "mraid_supported": {
+      "type": "boolean",
+      "description": "A bool config to determine if MRAID is supported by Rubicon"
     }
   },
   "required": ["accountId", "siteId", "zoneId"]

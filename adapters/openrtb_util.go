@@ -10,6 +10,14 @@ import (
 	"github.com/mxmCherry/openrtb"
 )
 
+// PlacementType ...
+type PlacementType string
+
+const (
+	Interstitial PlacementType = "interstitial"
+	Rewarded     PlacementType = "rewarded"
+)
+
 func min(x, y int) int {
 	if x < y {
 		return x

@@ -13,7 +13,8 @@
           "bidder": {
             "accountId": 1001,
             "siteId":113932,
-            "zoneId":535510
+            "zoneId":535510,
+            "mraid_supported":true
           }
         }
       }

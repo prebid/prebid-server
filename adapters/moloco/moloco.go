@@ -22,20 +22,16 @@ const (
 	APAC   Region = "apac"
 )
 
-// PlacementType ...
-type PlacementType string
-
-const (
-	Interstitial PlacementType = "interstitial"
-	Rewarded     PlacementType = "rewarded"
-)
-
 var molocoSKADNetIDs = map[string]bool{
 	"9t245vhmpl.skadnetwork": true,
 }
 
 type molocoVideoExt struct {
-	PlacementType PlacementType `json:"placementtype"`
+	PlacementType adapters.PlacementType `json:"placementtype"`
+}
+
+type molocoBannerExt struct {
+	PlacementType adapters.PlacementType `json:"placementtype"`
 }
 
 type molocoImpExt struct {
@@ -125,12 +121,12 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 		}
 
 		// placement type is either Rewarded or Interstitial, default is Interstitial
-		placementType := Interstitial
-		if thisImp.Video != nil {
-			if molocoExt.PlacementType == string(Rewarded) {
-				placementType = Rewarded
-			}
+		placementType := adapters.Interstitial
+		if molocoExt.PlacementType == string(adapters.Rewarded) {
+			placementType = adapters.Rewarded
+		}
 
+		if thisImp.Video != nil {
 			// instantiate moloco video extension struct
 			videoExt := molocoVideoExt{
 				PlacementType: placementType,
@@ -148,6 +144,25 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 
 			// assign cloned video element to imp object
 			thisImp.Video = &videoCopy
+		}
+
+		if thisImp.Banner != nil {
+			if molocoExt.MRAIDSupported {
+				bannerCopy := *thisImp.Banner
+
+				bannerExt := molocoBannerExt{
+					PlacementType: placementType,
+				}
+				bannerCopy.Ext, err = json.Marshal(&bannerExt)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				thisImp.Banner = &bannerCopy
+			} else {
+				thisImp.Banner = nil
+			}
 		}
 
 		skadn := openrtb_ext.SKADN{}
