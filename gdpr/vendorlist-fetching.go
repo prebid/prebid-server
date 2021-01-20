@@ -95,14 +95,14 @@ func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16
 func vendorListURLMaker(vendorListVersion uint16, tcfSpecVersion uint8) string {
 	if tcfSpecVersion == tcf2SpecVersion {
 		if vendorListVersion == 0 {
-			return "https://vendorlist.consensu.org/v2/vendor-list.json"
+			return "https://vendor-list.consensu.org/v2/vendor-list.json"
 		}
-		return "https://vendorlist.consensu.org/v2/archives/vendor-list-v" + strconv.Itoa(int(vendorListVersion)) + ".json"
+		return "https://vendor-list.consensu.org/v2/archives/vendor-list-v" + strconv.Itoa(int(vendorListVersion)) + ".json"
 	}
 	if vendorListVersion == 0 {
-		return "https://vendorlist.consensu.org/vendorlist.json"
+		return "https://vendor-list.consensu.org/vendorlist.json"
 	}
-	return "https://vendorlist.consensu.org/v-" + strconv.Itoa(int(vendorListVersion)) + "/vendorlist.json"
+	return "https://vendor-list.consensu.org/v-" + strconv.Itoa(int(vendorListVersion)) + "/vendorlist.json"
 }
 
 // newOccasionalSaver returns a wrapped version of saveOne() which only activates every few minutes.
