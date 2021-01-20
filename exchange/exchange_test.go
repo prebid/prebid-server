@@ -1340,6 +1340,9 @@ func TestSetDebugContextKey(t *testing.T) {
 func TestExchangeJSON(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./exchangetest"); err == nil {
 		for _, specFile := range specFiles {
+			if specFile.Name() != "request-multi-bidders-debug-info.json" {
+				continue
+			}
 			fileName := "./exchangetest/" + specFile.Name()
 			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
 			specData, err := loadFile(fileName)

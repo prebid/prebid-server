@@ -65,6 +65,7 @@
           {
             "uri": "appnexusTest.com",
             "requestbody": "appnexusTestRequestBody",
+            "requestheaders": null,
             "responsebody": "appnexusTestResponseBody",
             "status": 200
           }
@@ -95,7 +96,8 @@
             "uri": "audienceNetworkTest.com",
             "requestbody": "audienceNetworkTestRequestBody",
             "responsebody": "audienceNetworkTestResponseBody",
-            "status": 200
+            "status": 200,
+            "requestheaders": null
           }
         ]
       }
@@ -150,7 +152,8 @@
               "uri": "appnexusTest.com",
               "requestbody": "appnexusTestRequestBody",
               "responsebody": "appnexusTestResponseBody",
-              "status": 200
+              "status": 200,
+              "requestheaders": null
             }
           ],
           "audienceNetwork": [
@@ -158,7 +161,8 @@
               "uri": "audienceNetworkTest.com",
               "requestbody": "audienceNetworkTestRequestBody",
               "responsebody": "audienceNetworkTestResponseBody",
-              "status": 200
+              "status": 200,
+              "requestheaders": null
             }
           ]
         },
