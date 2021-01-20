@@ -1060,6 +1060,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		permissionsError    error
 		userSyncIfAmbiguous bool
 		expectPrivacyLabels metrics.PrivacyLabels
+		expectError         bool
 	}{
 		{
 			description:        "Enforce - TCF Invalid",
@@ -1108,6 +1109,19 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 				GDPREnforced:   false,
 				GDPRTCFVersion: "",
 			},
+		},
+		{
+			description:        "Enforce - TCF 1; GDPR signal extraction error",
+			gdprAccountEnabled: &trueValue,
+			gdprHostEnabled:    true,
+			gdpr:               "0{",
+			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:          true,
+			expectPrivacyLabels: metrics.PrivacyLabels{
+				GDPREnforced:   true,
+				GDPRTCFVersion: metrics.TCFVersionV1,
+			},
+			expectError: true,
 		},
 		{
 			description:        "Enforce - TCF 1; account GDPR enabled, host GDPR setting disregarded",
@@ -1236,7 +1250,12 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			privacyConfig)
 		result := results[0]
 
-		assert.Nil(t, errs)
+		if test.expectError {
+			assert.NotNil(t, errs)
+		} else {
+			assert.Nil(t, errs)
+		}
+
 		if test.gdprScrub {
 			assert.Equal(t, result.BidRequest.User.BuyerUID, "", test.description+":User.BuyerUID")
 			assert.Equal(t, result.BidRequest.Device.DIDMD5, "", test.description+":Device.DIDMD5")

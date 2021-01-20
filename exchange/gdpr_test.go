@@ -14,6 +14,7 @@ func TestExtractGDPR(t *testing.T) {
 		description string
 		giveRegs    *openrtb.Regs
 		wantGDPR    gdpr.Signal
+		wantError   bool
 	}{
 		{
 			description: "Regs Ext GDPR = 0",
@@ -44,6 +45,7 @@ func TestExtractGDPR(t *testing.T) {
 			description: "JSON unmarshal error",
 			giveRegs:    &openrtb.Regs{Ext: json.RawMessage(`{"`)},
 			wantGDPR:    gdpr.SignalAmbiguous,
+			wantError:   true,
 		},
 	}
 
@@ -52,8 +54,14 @@ func TestExtractGDPR(t *testing.T) {
 			Regs: tt.giveRegs,
 		}
 
-		result := extractGDPR(&bidReq)
+		result, err := extractGDPR(&bidReq)
 		assert.Equal(t, tt.wantGDPR, result, tt.description)
+
+		if tt.wantError {
+			assert.NotNil(t, err, tt.description)
+		} else {
+			assert.Nil(t, err, tt.description)
+		}
 	}
 }
 
@@ -62,6 +70,7 @@ func TestExtractConsent(t *testing.T) {
 		description string
 		giveUser    *openrtb.User
 		wantConsent string
+		wantError   bool
 	}{
 		{
 			description: "User Ext Consent is not empty",
@@ -87,6 +96,7 @@ func TestExtractConsent(t *testing.T) {
 			description: "JSON unmarshal error",
 			giveUser:    &openrtb.User{Ext: json.RawMessage(`{`)},
 			wantConsent: "",
+			wantError:   true,
 		},
 	}
 
@@ -95,7 +105,13 @@ func TestExtractConsent(t *testing.T) {
 			User: tt.giveUser,
 		}
 
-		result := extractConsent(&bidReq)
+		result, err := extractConsent(&bidReq)
 		assert.Equal(t, tt.wantConsent, result, tt.description)
+
+		if tt.wantError {
+			assert.NotNil(t, err, tt.description)
+		} else {
+			assert.Nil(t, err, tt.description)
+		}
 	}
 }
