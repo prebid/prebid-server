@@ -34,18 +34,25 @@ const (
 
 // NewPermissions gets an instance of the Permissions for use elsewhere in the project.
 func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_ext.BidderName]uint16, client *http.Client) Permissions {
-	// If the host doesn't buy into the IAB GDPR consent framework, then save some cycles and let all syncs happen.
-	if cfg.HostVendorID == 0 {
-		return AlwaysAllow{}
+	if !cfg.Enabled {
+		return &AlwaysAllow{}
 	}
 
-	return &permissionsImpl{
+	permissionsImpl := &permissionsImpl{
 		cfg:       cfg,
 		vendorIDs: vendorIDs,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
 			tcf1SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf1SpecVersion),
 			tcf2SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf2SpecVersion)},
 	}
+
+	if cfg.HostVendorID == 0 {
+		return &AllowHostCookies{
+			permissionsImpl: permissionsImpl,
+		}
+	}
+
+	return permissionsImpl
 }
 
 // An ErrorMalformedConsent will be returned by the Permissions interface if
