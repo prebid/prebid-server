@@ -223,14 +223,14 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 	return
 }
 
-// DisallowHostCookies represents a GDPR permissions policy with host cookie syncing disallowed
-type DisallowHostCookies struct {
+// AllowHostCookies represents a GDPR permissions policy with host cookie syncing disallowed
+type AllowHostCookies struct {
 	*permissionsImpl
 }
 
 // HostCookiesAllowed always returns false
-func (p *DisallowHostCookies) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
-	return false, nil
+func (p *AllowHostCookies) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+	return true, nil
 }
 
 // Exporting to allow for easy test setups

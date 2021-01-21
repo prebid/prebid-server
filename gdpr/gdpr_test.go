@@ -26,7 +26,7 @@ func TestNewPermissions(t *testing.T) {
 		{
 			gdprEnabled:  true,
 			hostVendorID: 0,
-			wantType:     &DisallowHostCookies{},
+			wantType:     &AllowHostCookies{},
 		},
 		{
 			gdprEnabled:  true,

@@ -47,7 +47,7 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 	}
 
 	if cfg.HostVendorID == 0 {
-		return &DisallowHostCookies{
+		return &AllowHostCookies{
 			permissionsImpl: permissionsImpl,
 		}
 	}
