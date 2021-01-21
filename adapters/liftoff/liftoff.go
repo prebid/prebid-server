@@ -31,6 +31,7 @@ const (
 	Vertical   Orientation = "v"
 )
 
+// SKAN IDs must be lower case
 var liftoffSKADNetIDs = map[string]bool{
 	"7ug5zh24hu.skadnetwork": true,
 }

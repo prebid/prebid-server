@@ -22,6 +22,7 @@ const (
 	APAC   Region = "apac"
 )
 
+// SKAN IDs must be lower case
 var molocoSKADNetIDs = map[string]bool{
 	"9t245vhmpl.skadnetwork": true,
 }
