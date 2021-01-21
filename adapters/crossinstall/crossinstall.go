@@ -21,6 +21,7 @@ const (
 	USWest Region = "us_west"
 )
 
+// SKAN IDs must be lower case
 var crossinstallSKADNetIDs = map[string]bool{
 	"prcb7njmu6.skadnetwork": true,
 }

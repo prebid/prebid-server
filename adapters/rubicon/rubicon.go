@@ -33,6 +33,7 @@ const (
 	badvLimitSize = 50
 )
 
+// SKAN IDs must be lower case
 var rubiconSKADNetIDs = map[string]bool{
 	"abc": true,
 }

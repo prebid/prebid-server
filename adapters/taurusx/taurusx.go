@@ -22,6 +22,7 @@ const (
 	SG     Region = "sg"
 )
 
+// SKAN IDs must be lower case
 var taurusxExtSKADNetIDs = map[string]bool{
 	"22mmun2rn5.skadnetwork": true,
 }
