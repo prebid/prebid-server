@@ -13,12 +13,12 @@ type Permissions interface {
 	// Determines whether or not the host company is allowed to read/write cookies.
 	//
 	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
-	HostCookiesAllowed(ctx context.Context, consent string) (bool, error)
+	HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error)
 
 	// Determines whether or not the given bidder is allowed to user personal info for ad targeting.
 	//
 	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
-	BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error)
+	BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error)
 
 	// Determines whether or not to send PI information to a bidder, or mask it out.
 	//

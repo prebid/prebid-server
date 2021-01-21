@@ -397,11 +397,22 @@ func TestShouldUsersync(t *testing.T) {
 			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
 		}
 	}
-	doTest("0", "", false, false, true)
-	doTest("1", "", true, true, false)
-	doTest("1", "a", true, false, false)
-	doTest("1", "a", false, true, false)
-	doTest("1", "a", true, true, true)
+
+	doTest("0", "", false, false, false)
+	doTest("1", "", false, false, false)
+	doTest("", "", false, false, false)
+	doTest("0", "", true, false, false)
+	doTest("1", "", true, false, false)
+	doTest("", "", true, false, false)
+	doTest("0", "", true, true, true)
+	doTest("1", "", true, true, true)
+	doTest("", "", true, true, true)
+	doTest("2", "", false, false, false)
+	doTest("2", "", true, false, false)
+	doTest("2", "", true, true, true)
+	doTest("abc", "", false, false, false)
+	doTest("abc", "", true, false, false)
+	doTest("abc", "", true, true, true)
 }
 
 type auctionMockPermissions struct {
@@ -412,11 +423,11 @@ type auctionMockPermissions struct {
 	allowID          bool
 }
 
-func (m *auctionMockPermissions) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (m *auctionMockPermissions) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	return m.allowHostCookies, nil
 }
 
-func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	return m.allowBidderSync, nil
 }
 

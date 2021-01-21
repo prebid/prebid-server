@@ -101,12 +101,13 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:           "Add the uid for the requested bidder to the list of existing syncs",
 		},
 		{
-			uri:                  "/setuid?bidder=pubmatic&uid=123&gdpr=0",
-			validFamilyNames:     []string{"pubmatic"},
-			existingSyncs:        nil,
-			expectedSyncs:        map[string]string{"pubmatic": "123"},
-			expectedResponseCode: http.StatusOK,
-			description:          "Don't care about GDPR consent if GDPR is set to 0",
+			uri:                   "/setuid?bidder=pubmatic&uid=123&gdpr=0",
+			validFamilyNames:      []string{"pubmatic"},
+			existingSyncs:         nil,
+			gdprAllowsHostCookies: true,
+			expectedSyncs:         map[string]string{"pubmatic": "123"},
+			expectedResponseCode:  http.StatusOK,
+			description:           "Don't care about GDPR consent if GDPR is set to 0",
 		},
 		{
 			uri:                  "/setuid?bidder=pubmatic&uid=123",
@@ -426,7 +427,7 @@ type mockPermsSetUID struct {
 	allowPI   bool
 }
 
-func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	var err error
 	if g.errorHost {
 		err = errors.New("something went wrong")
@@ -434,7 +435,7 @@ func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, consent string
 	return g.allowHost, err
 }
 
-func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	return false, nil
 }
 
