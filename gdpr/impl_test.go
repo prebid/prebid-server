@@ -796,8 +796,8 @@ func TestNormalizeGDPR(t *testing.T) {
 			},
 		}
 
-		perms.normalizeGDPR(&tt.giveSignal)
+		normalizedSignal := perms.normalizeGDPR(tt.giveSignal)
 
-		assert.Equal(t, tt.wantSignal, tt.giveSignal, tt.description)
+		assert.Equal(t, tt.wantSignal, normalizedSignal, tt.description)
 	}
 }

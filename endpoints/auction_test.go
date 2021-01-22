@@ -22,6 +22,8 @@ import (
 	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
 	"github.com/spf13/viper"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
@@ -376,43 +378,134 @@ func TestCacheVideoOnly(t *testing.T) {
 }
 
 func TestShouldUsersync(t *testing.T) {
-	doTest := func(gdprApplies string, consent string, allowBidderSync bool, allowHostCookies bool, expectAllow bool) {
-		t.Helper()
-		deps := auction{
-			cfg:     nil,
-			syncers: nil,
-			gdprPerms: &auctionMockPermissions{
-				allowBidderSync:  allowBidderSync,
-				allowHostCookies: allowHostCookies,
-			},
-			metricsEngine: nil,
-		}
-		gdprPrivacyPolicy := gdprPolicy.Policy{
-			Signal:  gdprApplies,
-			Consent: consent,
-		}
-
-		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprPrivacyPolicy)
-		if allowSyncs != expectAllow {
-			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
-		}
+	tests := []struct {
+		description      string
+		signal           string
+		allowHostCookies bool
+		allowBidderSync  bool
+		wantAllow        bool
+	}{
+		{
+			description:      "Don't sync - GDPR off, host cookies allows and bidder sync disallows",
+			signal:           "0",
+			allowHostCookies: true,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
+		{
+			description:      "Don't sync - GDPR on, host cookies allows and bidder sync disallows",
+			signal:           "1",
+			allowHostCookies: true,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
+		{
+			description:      "Don't sync - GDPR ambiguous, host cookies allows and bidder sync disallows",
+			signal:           "",
+			allowHostCookies: true,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
+		{
+			description:      "Don't sync - GDPR off, host cookies disallows and bidder sync allows",
+			signal:           "0",
+			allowHostCookies: false,
+			allowBidderSync:  true,
+			wantAllow:        false,
+		},
+		{
+			description:      "Don't sync - GDPR on, host cookies disallows and bidder sync allows",
+			signal:           "1",
+			allowHostCookies: false,
+			allowBidderSync:  true,
+			wantAllow:        false,
+		},
+		{
+			description:      "Don't sync - GDPR ambiguous, host cookies disallows and bidder sync allows",
+			signal:           "",
+			allowHostCookies: false,
+			allowBidderSync:  true,
+			wantAllow:        false,
+		},
+		{
+			description:      "Sync - GDPR off, host cookies allows and bidder sync allows",
+			signal:           "0",
+			allowHostCookies: true,
+			allowBidderSync:  true,
+			wantAllow:        true,
+		},
+		{
+			description:      "Sync - GDPR on, host cookies allows and bidder sync allows",
+			signal:           "1",
+			allowHostCookies: true,
+			allowBidderSync:  true,
+			wantAllow:        true,
+		},
+		{
+			description:      "Sync - GDPR ambiguous, host cookies allows and bidder sync allows",
+			signal:           "",
+			allowHostCookies: true,
+			allowBidderSync:  true,
+			wantAllow:        true,
+		},
+		{
+			description:      "Don't sync - GDPR invalid integer, host cookies allows and bidder sync disallows",
+			signal:           "2",
+			allowHostCookies: true,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
+		{
+			description:      "Don't sync - GDPR invalid integer, host cookies disallows and bidder sync allows",
+			signal:           "2",
+			allowHostCookies: false,
+			allowBidderSync:  true,
+			wantAllow:        false,
+		},
+		{
+			description:      "Sync - GDPR invalid integer, host cookies allows and bidder sync allows",
+			signal:           "2",
+			allowHostCookies: true,
+			allowBidderSync:  true,
+			wantAllow:        true,
+		},
+		{
+			description:      "Don't sync - GDPR not an integer, host cookies allows and bidder sync disallows",
+			signal:           "abc",
+			allowHostCookies: true,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
+		{
+			description:      "Don't sync - GDPR not an integer, host cookies disallows and bidder sync allows",
+			signal:           "abc",
+			allowHostCookies: false,
+			allowBidderSync:  true,
+			wantAllow:        false,
+		},
+		{
+			description:      "Sync - GDPR not an integer, host cookies allows and bidder sync disallows",
+			signal:           "abc",
+			allowHostCookies: true,
+			allowBidderSync:  true,
+			wantAllow:        true,
+		},
 	}
 
-	doTest("0", "", false, false, false)
-	doTest("1", "", false, false, false)
-	doTest("", "", false, false, false)
-	doTest("0", "", true, false, false)
-	doTest("1", "", true, false, false)
-	doTest("", "", true, false, false)
-	doTest("0", "", true, true, true)
-	doTest("1", "", true, true, true)
-	doTest("", "", true, true, true)
-	doTest("2", "", false, false, false)
-	doTest("2", "", true, false, false)
-	doTest("2", "", true, true, true)
-	doTest("abc", "", false, false, false)
-	doTest("abc", "", true, false, false)
-	doTest("abc", "", true, true, true)
+	for _, tt := range tests {
+		deps := auction{
+			gdprPerms: &auctionMockPermissions{
+				allowBidderSync:  tt.allowBidderSync,
+				allowHostCookies: tt.allowHostCookies,
+			},
+		}
+		gdprPrivacyPolicy := gdprPolicy.Policy{
+			Signal: tt.signal,
+		}
+
+		allow := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprPrivacyPolicy)
+		assert.Equal(t, tt.wantAllow, allow, tt.description)
+	}
 }
 
 type auctionMockPermissions struct {

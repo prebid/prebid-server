@@ -34,7 +34,7 @@ type permissionsImpl struct {
 }
 
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
-	p.normalizeGDPR(&gdprSignal)
+	gdprSignal = p.normalizeGDPR(gdprSignal)
 
 	if gdprSignal == SignalNo {
 		return true, nil
@@ -44,7 +44,7 @@ func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Sig
 }
 
 func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
-	p.normalizeGDPR(&gdprSignal)
+	gdprSignal = p.normalizeGDPR(gdprSignal)
 
 	if gdprSignal == SignalNo {
 		return true, nil
@@ -63,7 +63,7 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 		return true, true, true, nil
 	}
 
-	p.normalizeGDPR(&gdprSignal)
+	gdprSignal = p.normalizeGDPR(gdprSignal)
 
 	if gdprSignal == SignalNo {
 		return true, true, true, nil
@@ -84,16 +84,16 @@ func (p *permissionsImpl) defaultVendorPermissions() (allowPI bool, allowGeo boo
 	return false, false, false, nil
 }
 
-func (p *permissionsImpl) normalizeGDPR(gdprSignal *Signal) {
-	if *gdprSignal != SignalAmbiguous {
-		return
+func (p *permissionsImpl) normalizeGDPR(gdprSignal Signal) Signal {
+	if gdprSignal != SignalAmbiguous {
+		return gdprSignal
 	}
 
 	if p.cfg.UsersyncIfAmbiguous {
-		*gdprSignal = SignalNo
-	} else {
-		*gdprSignal = SignalYes
+		return SignalNo
 	}
+
+	return SignalYes
 }
 
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string) (bool, error) {
