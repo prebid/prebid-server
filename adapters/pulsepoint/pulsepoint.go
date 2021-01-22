@@ -32,6 +32,11 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	var err error
 	pubID := ""
 
+	// No impressions given.
+	if len(request.Imp) == 0 {
+		return nil, errs
+	}
+
 	for i := 0; i < len(request.Imp); i++ {
 		imp := request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
@@ -53,8 +58,7 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 			pubID = strconv.Itoa(pulsepointExt.PubID)
 		}
 		// tag id to be sent
-		imp.TagID = strconv.Itoa(pulsepointExt.TagID)
-		request.Imp[i] = imp
+		request.Imp[i].TagID = strconv.Itoa(pulsepointExt.TagID)
 	}
 
 	// add the publisher id from ext to the site.pub.id or app.pub.id
@@ -81,11 +85,6 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}
 
 	uri := a.URI
-
-	// If all the impressions are invalid, no requests added.
-	if len(request.Imp) == 0 {
-		return nil, errs
-	}
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
