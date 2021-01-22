@@ -32,20 +32,6 @@ func (a *DecenterAdsAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapte
 			})
 			continue
 		}
-		if impression.Banner != nil {
-			banner := impression.Banner
-			if banner.W == nil || banner.H == nil || *banner.W == 0 || *banner.H == 0 {
-				if len(banner.Format) == 0 {
-					errs = append(errs, &errortypes.BadInput{
-						Message: "banner size information missing",
-					})
-					continue
-				}
-				format := banner.Format[0]
-				banner.W = &format.W
-				banner.H = &format.H
-			}
-		}
 		if len(impression.Ext) == 0 {
 			errs = append(errs, errors.New("impression extensions required"))
 			continue
