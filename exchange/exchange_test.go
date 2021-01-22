@@ -240,13 +240,18 @@ func TestDebugBehaviour(t *testing.T) {
 
 	e := new(exchange)
 	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus),
+		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: true}),
 	}
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.DummyMetricsEngine{}
 	e.gDPR = gdpr.AlwaysAllow{}
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugAllowedContextKey, true)
+	ctx = context.WithValue(ctx, DebugContextKey, true)
+	debugLog := DebugLog{}
 
 	// Run tests
 	for _, test := range testCases {
@@ -266,7 +271,7 @@ func TestDebugBehaviour(t *testing.T) {
 		}
 
 		// Run test
-		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, nil)
+		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, &debugLog)
 
 		// Assert no HoldAuction error
 		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
@@ -434,7 +439,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 
 	e := new(exchange)
 	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus),
+		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
 	}
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.DummyMetricsEngine{}
@@ -716,7 +721,7 @@ func TestBidReturnsCreative(t *testing.T) {
 	}
 	e := new(exchange)
 	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus),
+		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
 	}
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.DummyMetricsEngine{}
@@ -1412,8 +1417,11 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if spec.StartTime > 0 {
 		auctionRequest.StartTime = time.Unix(0, spec.StartTime*1e+6)
 	}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugAllowedContextKey, true)
+	ctx = context.WithValue(ctx, DebugContextKey, true)
 
-	bid, err := ex.HoldAuction(context.Background(), auctionRequest, debugLog)
+	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
 	responseTimes := extractResponseTimes(t, filename, bid)
 	for _, bidderName := range biddersInAuction {
 		if _, ok := responseTimes[bidderName]; !ok {
