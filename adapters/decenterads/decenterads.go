@@ -2,8 +2,9 @@ package decenterads
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -16,118 +17,147 @@ type DecenterAdsAdapter struct {
 	endpoint string
 }
 
-// MakeRequests makes the HTTP requests which should be made to fetch bids from decenterads.
-func (rcv *DecenterAdsAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
-	var validImps []openrtb.Imp
-
-	// check if imps exists, if not return error and do send request to decenterads.
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "No impressions in request",
-		}}
-	}
-
-	// validate imps
-	for _, imp := range request.Imp {
-		if err := preprocess(&imp); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		validImps = append(validImps, imp)
-	}
-
-	if len(validImps) == 0 {
-		return nil, errs
-	}
-
-	//set imp array to only valid imps
-	request.Imp = validImps
-
-	requestBodyJSON, err := json.Marshal(request)
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
-
+func (a *DecenterAdsAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	impressions := request.Imp
+	result := make([]*adapters.RequestData, 0, len(impressions))
+	errs := make([]error, 0, len(impressions))
 
-	return []*adapters.RequestData{{
-		Method:  "POST",
-		Uri:     rcv.endpoint,
-		Body:    requestBodyJSON,
-		Headers: headers,
-	}}, errs
-}
-
-func preprocess(imp *openrtb.Imp) error {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return &errortypes.BadInput{
-			Message: err.Error(),
+	for i, impression := range impressions {
+		if impression.Banner == nil && impression.Video == nil && impression.Native == nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: "DecenterAds only supports banner, video or native ads",
+			})
+			continue
 		}
+		if impression.Banner != nil {
+			banner := impression.Banner
+			if banner.W == nil || banner.H == nil || *banner.W == 0 || *banner.H == 0 {
+				if len(banner.Format) == 0 {
+					errs = append(errs, &errortypes.BadInput{
+						Message: "banner size information missing",
+					})
+					continue
+				}
+				format := banner.Format[0]
+				banner.W = &format.W
+				banner.H = &format.H
+			}
+		}
+		if len(impression.Ext) == 0 {
+			errs = append(errs, errors.New("impression extensions required"))
+			continue
+		}
+		var bidderExt adapters.ExtImpBidder
+		err := json.Unmarshal(impression.Ext, &bidderExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if len(bidderExt.Bidder) == 0 {
+			errs = append(errs, errors.New("bidder required"))
+			continue
+		}
+		var decenteradsExt openrtb_ext.ExtImpDecenterAds
+		err = json.Unmarshal(bidderExt.Bidder, &decenteradsExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if decenteradsExt.PlacementID == "" {
+			errs = append(errs, errors.New("DecenterAds placementId required"))
+			continue
+		}
+		impExtJSON, err := json.Marshal(decenteradsExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		request.Imp = impressions[i : i+1]
+		request.Imp[i].Ext = impExtJSON
+		body, err := json.Marshal(request)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		result = append(result, &adapters.RequestData{
+			Method:  "POST",
+			Uri:     a.endpoint,
+			Body:    body,
+			Headers: headers,
+		})
 	}
 
-	var decenteradsExt openrtb_ext.ExtImpDecenterAds
-	if err := json.Unmarshal(bidderExt.Bidder, &decenteradsExt); err != nil {
-		return &errortypes.BadInput{
-			Message: "Wrong decenterads bidder ext: " + err.Error(),
-		}
+	request.Imp = impressions
+
+	if len(result) == 0 {
+		return nil, errs
 	}
-	impExtJSON, err := json.Marshal(decenteradsExt)
-    if err != nil {
-        return &errortypes.BadInput{
-            Message: err.Error(),
-        }
-    }
-
-    imp.Ext = impExtJSON
-
-	return nil
+	return result, errs
 }
 
-// MakeBids unpacks server response into Bids.
-func (rcv DecenterAdsAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+func (a *DecenterAdsAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	var errs []error
+
+	switch responseData.StatusCode {
+	case http.StatusNoContent:
 		return nil, nil
-	}
-
-	if response.StatusCode >= http.StatusInternalServerError {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Dsp server internal error.", response.StatusCode),
-		}}
-	}
-
-	if response.StatusCode >= http.StatusBadRequest {
+	case http.StatusBadRequest:
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Bad request to dsp.", response.StatusCode),
+			Message: "unexpected status code: " + strconv.Itoa(responseData.StatusCode),
 		}}
-	}
-
-	if response.StatusCode != http.StatusOK {
+	case http.StatusOK:
+		break
+	default:
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Bad response from dsp.", response.StatusCode),
+			Message: "unexpected status code: " + strconv.Itoa(responseData.StatusCode),
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{err}
+	var bidResponse openrtb.BidResponse
+	err := json.Unmarshal(responseData.Body, &bidResponse)
+	if err != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: err.Error(),
+		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	response := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 
-	for _, seatBid := range bidResp.SeatBid {
+	for _, seatBid := range bidResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			bid := bid // pin https://github.com/kyoh86/scopelint#whats-this
+			var bidType openrtb_ext.BidType
+			for _, impression := range request.Imp {
+				if impression.ID != bid.ImpID {
+					continue
+				}
+				switch {
+				case impression.Banner != nil:
+					bidType = openrtb_ext.BidTypeBanner
+				case impression.Video != nil:
+					bidType = openrtb_ext.BidTypeVideo
+				case impression.Native != nil:
+					bidType = openrtb_ext.BidTypeNative
+				}
+				break
+			}
+			if bidType == "" {
+				errs = append(errs, &errortypes.BadServerResponse{
+					Message: "ignoring bid id=" + bid.ID + ", request doesn't contain any valid impression with id=" + bid.ImpID,
+				})
+				continue
+			}
+			response.Bids = append(response.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType: bidType,
 			})
 		}
 	}
-	return bidResponse, nil
+
+	return response, errs
 }
 
 // Builder builds a new instance of the DecenterAds adapter for the given bidder with the given config.
