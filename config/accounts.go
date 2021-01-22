@@ -19,6 +19,7 @@ type Account struct {
 	EventsEnabled bool        `mapstructure:"events_enabled" json:"events_enabled"`
 	CCPA          AccountCCPA `mapstructure:"ccpa" json:"ccpa"`
 	GDPR          AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
+	DebugAllowed  bool        `mapstructure:"debugallowed" json:"debugallowed"`
 }
 
 // AccountCCPA represents account-specific CCPA configuration

@@ -93,7 +93,7 @@ type pbsOrtbSeatBid struct {
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName) adaptedBidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo) adaptedBidder {
 	return &bidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
@@ -102,8 +102,20 @@ func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		config: bidderAdapterConfig{
 			Debug:              cfg.Debug,
 			DisableConnMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
+			DebugInfo:          parseDebugInfo(debugInfo),
 		},
 	}
+}
+
+func parseDebugInfo(info *config.DebugInfo) config.DebugInfo {
+	var confDebugInfo config.DebugInfo
+
+	if info == nil {
+		confDebugInfo.Allow = true
+	} else {
+		confDebugInfo.Allow = info.Allow
+	}
+	return confDebugInfo
 }
 
 type bidderAdapter struct {
@@ -117,6 +129,7 @@ type bidderAdapter struct {
 type bidderAdapterConfig struct {
 	Debug              config.Debug
 	DisableConnMetrics bool
+	DebugInfo          config.DebugInfo
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
@@ -155,8 +168,16 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	for i := 0; i < len(reqData); i++ {
 		httpInfo := <-responseChannel
 		// If this is a test bid, capture debugging info from the requests.
+		// Write debug data to ext in case if:
+		// - debugContextKey (url param) in true
+		// - account debug is allowed
+		// - bidder debug is allowed
 		if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
-			seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+			if debugAllowed := ctx.Value(DebugAllowedContextKey); debugAllowed != nil && debugAllowed.(bool) {
+				if bidder.config.DebugInfo.Allow {
+					seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+				}
+			}
 		}
 
 		if httpInfo.err == nil {

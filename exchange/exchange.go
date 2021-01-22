@@ -33,6 +33,9 @@ type ContextKey string
 
 const DebugContextKey = ContextKey("debugInfo")
 
+//Account level debug variable
+const DebugAllowedContextKey = ContextKey("debugAllowed")
+
 type extCacheInstructions struct {
 	cacheBids, cacheVAST, returnCreative bool
 }
@@ -136,6 +139,12 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	}
 
 	debugInfo := getDebugInfo(r.BidRequest, requestExt)
+
+	if debugAllowed := ctx.Value(DebugAllowedContextKey); debugAllowed != nil {
+		debugInfo = debugInfo && debugAllowed.(bool)
+		debugLog.Enabled = debugLog.Enabled && debugAllowed.(bool)
+	}
+
 	if debugInfo {
 		ctx = e.makeDebugContext(ctx, debugInfo)
 	}
@@ -758,7 +767,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 
 	for bidderName, responseExtra := range adapterExtra {
 
-		if debugInfo {
+		if debugInfo && len(responseExtra.HttpCalls) > 0 {
 			bidResponseExt.Debug.HttpCalls[bidderName] = responseExtra.HttpCalls
 		}
 		// Only make an entry for bidder errors if the bidder reported any.

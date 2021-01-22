@@ -446,6 +446,10 @@ type Debug struct {
 	TimeoutNotification TimeoutNotification `mapstructure:"timeout_notification"`
 }
 
+type DebugInfo struct {
+	Allow bool `yaml:"allow" json:"allow"`
+}
+
 func (cfg *Debug) validate(errs []error) []error {
 	return cfg.TimeoutNotification.validate(errs)
 }
@@ -937,6 +941,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("blacklisted_accts", []string{""})
 	v.SetDefault("account_required", false)
 	v.SetDefault("account_defaults.disabled", false)
+	v.SetDefault("account_defaults.debugallowed", true)
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
 
