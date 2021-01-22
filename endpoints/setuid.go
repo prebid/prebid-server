@@ -149,8 +149,6 @@ func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permiss
 		return true, http.StatusBadRequest, "the gdpr query param must be either 0 or 1. You gave " + gdprEnabled
 	}
 
-	// TODO: keep or delete this logic? We could delete since this check is performed in HostCookiesAllowed, which is
-	// called below, but we won't get an error message back to include in the response like we see here.
 	if gdprEnabled == "1" && gdprConsent == "" {
 		return true, http.StatusBadRequest, "gdpr_consent is required when gdpr=1"
 	}
