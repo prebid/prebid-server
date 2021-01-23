@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	uuid "github.com/gofrs/uuid"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
@@ -176,6 +175,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	var auc *auction
 	var cacheErrs []error
+	var bidResponseExt *openrtb_ext.ExtBidResponse
 	if anyBidsReturned {
 
 		var bidCategory map[string]string
@@ -203,35 +203,56 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				dealErrs := applyDealSupport(r.BidRequest, auc, bidCategory)
 				errs = append(errs, dealErrs...)
 			}
-			cacheErrs := auc.doCache(ctx, e.cache, targData, evTracking, r.BidRequest, 60, &r.Account.CacheTTL, bidCategory, debugLog)
+
+			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
+			if debugLog != nil && debugLog.Enabled {
+				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+					debugLog.Data.Response = string(bidRespExtBytes)
+				} else {
+					debugLog.Data.Response = "Unable to marshal response ext for debugging"
+					errs = append(errs, err)
+				}
+			}
+
+			cacheErrs = auc.doCache(ctx, e.cache, targData, evTracking, r.BidRequest, 60, &r.Account.CacheTTL, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}
+			/*// Ensure caching errors are added in case auc.doCache was called and errors were returned
+			if len(cacheErrs) > 0 {
+				bidderCacheErrs := errsToBidderErrors(cacheErrs)
+				bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = append(bidResponseExt.Errors[openrtb_ext.PrebidExtKey], bidderCacheErrs...)
+			}*/
 			targData.setTargeting(auc, r.BidRequest.App != nil, bidCategory)
 
 		}
-	}
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
+	} else {
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
 
-	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
+		if debugLog != nil && debugLog.Enabled {
 
-	// Ensure caching errors are added in case auc.doCache was called and errors were returned
-	if len(cacheErrs) > 0 {
-		bidderCacheErrs := errsToBidderErrors(cacheErrs)
-		bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = append(bidResponseExt.Errors[openrtb_ext.PrebidExtKey], bidderCacheErrs...)
-	}
-
-	if debugLog != nil && debugLog.Enabled {
-		if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
-			debugLog.Data.Response = string(bidRespExtBytes)
-		} else {
-			debugLog.Data.Response = "Unable to marshal response ext for debugging"
-			errs = append(errs, err)
-		}
-		if !anyBidsReturned {
-			if rawUUID, err := uuid.NewV4(); err == nil {
-				debugLog.CacheKey = rawUUID.String()
+			if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+				debugLog.Data.Response = string(bidRespExtBytes)
 			} else {
+				debugLog.Data.Response = "Unable to marshal response ext for debugging"
 				errs = append(errs, err)
+			}
+
+			debugLog.BuildCacheString()
+			toCache := make([]prebid_cache_client.Cacheable, 0, 0)
+
+			if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
+				toCache = append(toCache, prebid_cache_client.Cacheable{
+					Type:       debugLog.CacheType,
+					Data:       jsonBytes,
+					TTLSeconds: debugLog.TTL,
+					Key:        "log_" + debugLog.CacheKey,
+				})
+			}
+			_, err := e.cache.PutJson(ctx, toCache)
+			if err != nil {
+				errs = append(errs, err...)
 			}
 		}
 	}
