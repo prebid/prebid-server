@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -249,16 +248,12 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 	var appid string
 	var error error
 
-	if fmt.Sprintf("%s", reflect.TypeOf(ext.AppId)) == "string" &&
-		ext.AppId != "" {
-
+	if ext.AppId != "" {
 		appid = ext.AppId
-	} else if fmt.Sprintf("%s", reflect.TypeOf(ext.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" {
-		if media == openrtb_ext.BidTypeVideo && ext.AppIds.Video != "" {
-			appid = ext.AppIds.Video
-		} else if media == openrtb_ext.BidTypeBanner && ext.AppIds.Banner != "" {
-			appid = ext.AppIds.Banner
-		}
+	} else if media == openrtb_ext.BidTypeVideo && ext.AppIds.Video != "" {
+		appid = ext.AppIds.Video
+	} else if media == openrtb_ext.BidTypeBanner && ext.AppIds.Banner != "" {
+		appid = ext.AppIds.Banner
 	} else {
 		error = errors.New("unable to determine the appId(s) from the supplied extension")
 	}
