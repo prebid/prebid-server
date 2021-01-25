@@ -25,7 +25,7 @@ func (a *DecenterAdsAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapte
 	result := make([]*adapters.RequestData, 0, len(impressions))
 	errs := make([]error, 0, len(impressions))
 
-	for i, impression := range impressions {
+	for _, impression := range impressions {
 		if impression.Banner == nil && impression.Video == nil && impression.Native == nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "DecenterAds only supports banner, video or native ads",
@@ -61,8 +61,8 @@ func (a *DecenterAdsAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapte
 			errs = append(errs, err)
 			continue
 		}
-		request.Imp = impressions[i : i+1]
-		request.Imp[i].Ext = impExtJSON
+		impression.Ext = impExtJSON
+		request.Imp = []openrtb.Imp{impression}
 		body, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
