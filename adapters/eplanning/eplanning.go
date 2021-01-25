@@ -17,7 +17,6 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"sort"
 	"strconv"
 )
 
@@ -63,51 +62,6 @@ type hbResponseAd struct {
 	CrID         string `json:"crid"`
 	Width        uint64 `json:"w,omitempty"`
 	Height       uint64 `json:"h,omitempty"`
-}
-
-func isPriority(index1 int, index2 int) bool {
-	if index1 > -1 {
-		if index2 > -1 {
-			if index1 < index2 {
-				return false
-			} else {
-				return true
-			}
-		} else {
-			return false
-		}
-	} else {
-		if index2 > -1 {
-			return true
-		} else {
-			return false
-		}
-	}
-}
-
-func lessByPriority(w1, h1, w2, h2 uint64, priorityOrderForSizesAsc []string) bool {
-	size1 := fmt.Sprintf("%dx%d", w1, h1)
-	size2 := fmt.Sprintf("%dx%d", w2, h2)
-	index1 := indexOf(size1, priorityOrderForSizesAsc)
-	index2 := indexOf(size2, priorityOrderForSizesAsc)
-
-	return isPriority(index1, index2)
-}
-
-type byPriorityMobile []openrtb.Format
-
-func (a byPriorityMobile) Len() int      { return len(a) }
-func (a byPriorityMobile) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a byPriorityMobile) Less(i, j int) bool {
-	return lessByPriority(a[i].W, a[i].H, a[j].W, a[j].H, priorityOrderForMobileSizesAsc)
-}
-
-type byPriorityDesktop []openrtb.Format
-
-func (a byPriorityDesktop) Len() int      { return len(a) }
-func (a byPriorityDesktop) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a byPriorityDesktop) Less(i, j int) bool {
-	return lessByPriority(a[i].W, a[i].H, a[j].W, a[j].H, priorityOrderForDesktopSizesAsc)
 }
 
 func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -286,13 +240,13 @@ func verifyImp(imp *openrtb.Imp, isMobile bool) (*openrtb_ext.ExtImpEPlanning, e
 	return &impExt, nil
 }
 
-func indexOf(element string, data []string) int {
-	for k, v := range data {
-		if element == v {
-			return k
+func searchSizePriority(hashedFormats map[string]int, format []openrtb.Format, priorityOrderForSizesAsc []string) (uint64, uint64) {
+	for i := len(priorityOrderForSizesAsc) - 1; i >= 0; i-- {
+		if formatIndex, wasFound := hashedFormats[priorityOrderForSizesAsc[i]]; wasFound {
+			return format[formatIndex].W, format[formatIndex].H
 		}
 	}
-	return -1
+	return format[0].W, format[0].H
 }
 
 func getSizeFromImp(imp *openrtb.Imp, isMobile bool) (uint64, uint64) {
@@ -301,16 +255,18 @@ func getSizeFromImp(imp *openrtb.Imp, isMobile bool) (uint64, uint64) {
 	}
 
 	if imp.Banner.Format != nil {
-		sizesSortedByPriority := imp.Banner.Format
-		if isMobile {
-			sort.Sort(byPriorityMobile(sizesSortedByPriority))
-		} else {
-			sort.Sort(byPriorityDesktop(sizesSortedByPriority))
-		}
-		for _, format := range sizesSortedByPriority {
+		hashedFormats := make(map[string]int, 0)
+
+		for i, format := range imp.Banner.Format {
 			if format.W != 0 && format.H != 0 {
-				return format.W, format.H
+				hashedFormats[fmt.Sprintf("%dx%d", format.W, format.H)] = i
 			}
+		}
+
+		if isMobile {
+			return searchSizePriority(hashedFormats, imp.Banner.Format, priorityOrderForMobileSizesAsc)
+		} else {
+			return searchSizePriority(hashedFormats, imp.Banner.Format, priorityOrderForDesktopSizesAsc)
 		}
 	}
 
