@@ -66,9 +66,10 @@
       }
     }
   ],
+
   "expectedMakeBidsErrors": [
     {
-      "value": "bad request status code 400 from https://qa.beachrtb.com/prebid_display. Run with request.debug = 1 for more info",
+      "value": "request error status code 400 from https://qa.beachrtb.com/prebid_display. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]

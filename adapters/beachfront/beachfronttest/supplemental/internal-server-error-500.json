@@ -71,7 +71,7 @@
 
   "expectedMakeBidsErrors": [
     {
-      "value": "unexpected status code 500 from https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1&prebidserver. Run with request.debug = 1 for more info",
+      "value": "server error status code 500 from https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1&prebidserver. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]

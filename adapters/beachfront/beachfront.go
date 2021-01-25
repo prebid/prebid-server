@@ -479,15 +479,24 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
-	var errs []error
 
+	// the case of response status == 200 and response body length == 2 below covers the case of the banner endpoint returning
+	// an empty JSON array ('[]'), which is functionally no content.
 	if response.StatusCode == http.StatusNoContent || (response.StatusCode == http.StatusOK && len(response.Body) <= 2) {
-		return nil, nil
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("no content or truncated content received from server. status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
+		}}
 	}
 
-	if response.StatusCode == http.StatusBadRequest {
+	if response.StatusCode >= 500 {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("bad request status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
+			Message: fmt.Sprintf("server error status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
+		}}
+	}
+
+	if response.StatusCode >= 400 {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("request error status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
 		}}
 	}
 
@@ -496,6 +505,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	}
 
 	var xtrnal openrtb.BidRequest
+	var errs = make([]error, 0)
 
 	// For video, which uses RTB for the external request, this will unmarshal as expected. For banner, it will
 	// only get the User struct and everything else will be nil
@@ -545,18 +555,17 @@ func (a *BeachfrontAdapter) getBidType(externalRequest *adapters.RequestData) op
 
 func postprocess(response *adapters.ResponseData, xtrnal openrtb.BidRequest, uri string, id string) ([]openrtb.Bid, []error) {
 	var beachfrontResp []beachfrontResponseSlot
-	var errs = make([]error, 0)
 
 	var openrtbResp openrtb.BidResponse
 
 	// try it as a video
-	if err := json.Unmarshal(response.Body, &openrtbResp); err != nil {
-		errs = append(errs, err)
+	if err := json.Unmarshal(response.Body, &openrtbResp); err != nil || len(openrtbResp.SeatBid) == 0 {
 
 		// try it as a banner
 		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
-			errs = append(errs, err)
-			return nil, errs
+			return nil, []error{&errortypes.BadServerResponse{
+				Message: fmt.Sprint("server response failed to unmarshal as valid rtb. Run with request.debug = 1 for more info"),
+			}}
 		} else {
 			return postprocessBanner(beachfrontResp, id)
 		}

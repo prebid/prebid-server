@@ -69,5 +69,12 @@
     }
   ],
 
-  "expectedBidResponses": []
+  "expectedBidResponses": [],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "no content or truncated content received from server. status code 200 from https://qa.beachrtb.com/prebid_display. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
 }
