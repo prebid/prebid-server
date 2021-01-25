@@ -67,7 +67,7 @@
           "dnt": 0,
           "user": {},
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.9.1",
+          "adapterVersion": "0.9.2",
           "requestId": "banner-and-video"
         }
       },
