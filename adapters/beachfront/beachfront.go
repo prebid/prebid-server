@@ -23,7 +23,9 @@ const defaultVideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
 const nurlVideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
-const beachfrontAdapterVersion = "0.9.1"
+const beachfrontAdapterVersion = "0.9.2"
+const theEndOfTheInternet = "255.255.255.255" // Dummy IP address to use for 'live' test requests, i.e. Postman. The
+// video backend requires an IP and it cant be local.
 
 const minBidFloor = 0.01
 
@@ -480,7 +482,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
 
-	// the case of response status == 200 and response body length == 2 below covers the case of the banner endpoint returning
+	// The case of response status == 200 and response body length == 2 below covers the case of the banner endpoint returning
 	// an empty JSON array ('[]'), which is functionally no content.
 	if response.StatusCode == http.StatusNoContent || (response.StatusCode == http.StatusOK && len(response.Body) <= 2) {
 		return nil, []error{&errortypes.BadInput{
@@ -488,13 +490,13 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		}}
 	}
 
-	if response.StatusCode >= 500 {
+	if response.StatusCode >= http.StatusInternalServerError {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("server error status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
 		}}
 	}
 
-	if response.StatusCode >= 400 {
+	if response.StatusCode >= http.StatusBadRequest {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("request error status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
 		}}
@@ -560,6 +562,11 @@ func postprocess(response *adapters.ResponseData, xtrnal openrtb.BidRequest, uri
 
 	// try it as a video
 	if err := json.Unmarshal(response.Body, &openrtbResp); err != nil || len(openrtbResp.SeatBid) == 0 {
+		// when running postman tests with the request in supplemental/bidder_response_unmarshal_error_{adm|nurl}_video.json, an
+		// error was thrown here by the attempt at un-marshaling, and, correctly, the true branch was followed. When running
+		// those tests through ./validate.sh, the same request failed the condition, err was nil, and the false branch was
+		// followed, resulting in an "index out of range" error at the postprocessVideo call below. I am not clear on how that
+		// passed, but I added the "or" clause to cover it. That works, though it looks redundant.
 
 		// try it as a banner
 		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
@@ -678,7 +685,7 @@ func getIP(ip string) string {
 	// and seems not to know what IPv6 is, so just setting it to one that is not likely to
 	// be used.
 	if ip == "" || ip == "::1" || ip == "127.0.0.1" {
-		return "192.168.255.255"
+		return theEndOfTheInternet
 	}
 	return ip
 }
