@@ -65,7 +65,7 @@
           {
             "uri": "appnexusTest.com",
             "requestbody": "appnexusTestRequestBody",
-            "requestheaders": null,
+            "requestheaders": { "header_1" : ["value_11", "value_12"], "header_2" : ["value_21"] },
             "responsebody": "appnexusTestResponseBody",
             "status": 200
           }
@@ -153,7 +153,7 @@
               "requestbody": "appnexusTestRequestBody",
               "responsebody": "appnexusTestResponseBody",
               "status": 200,
-              "requestheaders": null
+              "requestheaders": { "header_1" : ["value_11", "value_12"], "header_2" : ["value_21"] }
             }
           ],
           "audienceNetwork": [
