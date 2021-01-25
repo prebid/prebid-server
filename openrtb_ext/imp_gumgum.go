@@ -4,11 +4,11 @@ package openrtb_ext
 // Either Zone or PubId must be present, others are optional parameters
 type ExtImpGumGum struct {
 	Zone   string  `json:"zone,omitempty"`
-	PubId  float64 `json:"pubId,omitempty"`
-	Irisid string  `json:"irisid,omitempty"`
+	PubID  float64 `json:"pubId,omitempty"`
+	IrisID string  `json:"irisid,omitempty"`
 }
 
 // ExtImpGumGumVideo defines the contract for bidresponse.seatbid.bid[i].ext.gumgum.video
 type ExtImpGumGumVideo struct {
-	Irisid string `json:"irisid,omitempty"`
+	IrisID string `json:"irisid,omitempty"`
 }

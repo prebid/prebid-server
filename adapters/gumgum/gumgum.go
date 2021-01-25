@@ -39,8 +39,8 @@ func (g *GumGumAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 			if gumgumExt.Zone != "" {
 				siteCopy.ID = gumgumExt.Zone
 			}
-			if gumgumExt.PubId != 0 {
-				siteCopy.Publisher.ID = strconv.FormatFloat(gumgumExt.PubId, 'f', -1, 64)
+			if gumgumExt.PubID != 0 {
+				siteCopy.Publisher.ID = strconv.FormatFloat(gumgumExt.PubID, 'f', -1, 64)
 			}
 
 			validImps = append(validImps, imp)
@@ -150,12 +150,14 @@ func preprocess(imp *openrtb.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 			return nil, err
 		}
 
-		if gumgumExt.Irisid != "" {
-			videoExt := openrtb_ext.ExtImpGumGumVideo{Irisid: gumgumExt.Irisid}
-			imp.Video.Ext, err = json.Marshal(&videoExt)
+		if gumgumExt.IrisID != "" {
+			videoCopy := *imp.Video
+			videoExt := openrtb_ext.ExtImpGumGumVideo{IrisID: gumgumExt.IrisID}
+			videoCopy.Ext, err = json.Marshal(&videoExt)
 			if err != nil {
 				return nil, err
 			}
+			imp.Video = &videoCopy
 		}
 	}
 
