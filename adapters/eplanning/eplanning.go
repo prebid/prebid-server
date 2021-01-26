@@ -255,7 +255,7 @@ func getSizeFromImp(imp *openrtb.Imp, isMobile bool) (uint64, uint64) {
 	}
 
 	if imp.Banner.Format != nil {
-		hashedFormats := make(map[string]int, 0)
+		hashedFormats := make(map[string]int, len(imp.Banner.Format))
 
 		for i, format := range imp.Banner.Format {
 			if format.W != 0 && format.H != 0 {
