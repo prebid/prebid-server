@@ -233,22 +233,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				debugLog.Data.Response = "Unable to marshal response ext for debugging"
 				errs = append(errs, err)
 			}
-
-			debugLog.BuildCacheString()
-			toCache := make([]prebid_cache_client.Cacheable, 0, 0)
-
-			if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
-				toCache = append(toCache, prebid_cache_client.Cacheable{
-					Type:       debugLog.CacheType,
-					Data:       jsonBytes,
-					TTLSeconds: debugLog.TTL,
-					Key:        "log_" + debugLog.CacheKey,
-				})
-			}
-			_, err := e.cache.PutJson(ctx, toCache)
-			if err != nil {
-				errs = append(errs, err...)
-			}
 		}
 	}
 
