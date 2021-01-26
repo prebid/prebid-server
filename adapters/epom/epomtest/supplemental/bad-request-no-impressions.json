@@ -1,0 +1,19 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "device": {
+      "ip":"238.89.104.156"
+    },
+    "imp": [
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No impressions in request",
+      "comparison": "literal"
+    }
+  ]
+}

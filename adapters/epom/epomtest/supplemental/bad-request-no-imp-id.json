@@ -1,0 +1,29 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "device": {
+      "ip":"238.89.104.156"
+    },
+    "imp": [
+      {
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 50
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Impression id is empty",
+      "comparison": "literal"
+    }
+  ]
+}
