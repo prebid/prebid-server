@@ -1428,18 +1428,18 @@ func TestTimeoutNotificationOn(t *testing.T) {
 func TestParseDebugInfoTrue(t *testing.T) {
 	debugInfo := &config.DebugInfo{Allow: true}
 	resDebugInfo := parseDebugInfo(debugInfo)
-	assert.True(t, resDebugInfo.Allow, "Debug Allow value should be false")
+	assert.True(t, resDebugInfo, "Debug Allow value should be true")
 }
 
 func TestParseDebugInfoFalse(t *testing.T) {
 	debugInfo := &config.DebugInfo{Allow: false}
 	resDebugInfo := parseDebugInfo(debugInfo)
-	assert.False(t, resDebugInfo.Allow, "Debug Allow value should be false")
+	assert.False(t, resDebugInfo, "Debug Allow value should be false")
 }
 
 func TestParseDebugInfoIsNil(t *testing.T) {
 	resDebugInfo := parseDebugInfo(nil)
-	assert.True(t, resDebugInfo.Allow, "Debug Allow value should be false")
+	assert.True(t, resDebugInfo, "Debug Allow value should be true")
 }
 
 func wrapWithBidderInfo(bidder adapters.Bidder) adapters.Bidder {

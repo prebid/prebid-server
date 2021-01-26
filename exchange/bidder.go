@@ -102,20 +102,16 @@ func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		config: bidderAdapterConfig{
 			Debug:              cfg.Debug,
 			DisableConnMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
-			DebugInfo:          parseDebugInfo(debugInfo),
+			DebugInfo:          config.DebugInfo{parseDebugInfo(debugInfo)},
 		},
 	}
 }
 
-func parseDebugInfo(info *config.DebugInfo) config.DebugInfo {
-	var confDebugInfo config.DebugInfo
-
+func parseDebugInfo(info *config.DebugInfo) bool {
 	if info == nil {
-		confDebugInfo.Allow = true
-	} else {
-		confDebugInfo.Allow = info.Allow
+		return true
 	}
-	return confDebugInfo
+	return info.Allow
 }
 
 type bidderAdapter struct {
