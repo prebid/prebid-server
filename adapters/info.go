@@ -206,7 +206,11 @@ type BidderInfo struct {
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
 	AliasOf                 string            `json:"aliasOf,omitempty"`
 	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" json:"-" xml:"-"`
-	DebugInfo               *config.DebugInfo `yaml:"debug,omitempty" json:"debug,omitempty"`
+	DebugInfo               *DebugInfo        `yaml:"debug,omitempty" json:"debug,omitempty"`
+}
+
+type DebugInfo struct {
+	Allow bool `yaml:"allow" json:"allow"`
 }
 
 type MaintainerInfo struct {

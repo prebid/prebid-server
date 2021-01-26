@@ -446,10 +446,6 @@ type Debug struct {
 	TimeoutNotification TimeoutNotification `mapstructure:"timeout_notification"`
 }
 
-type DebugInfo struct {
-	Allow bool `yaml:"allow" json:"allow"`
-}
-
 func (cfg *Debug) validate(errs []error) []error {
 	return cfg.TimeoutNotification.validate(errs)
 }
