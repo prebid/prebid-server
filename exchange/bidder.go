@@ -3,18 +3,26 @@ package exchange
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptrace"
+	"time"
+
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/config/util"
+	"github.com/prebid/prebid-server/currency"
 
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	nativeResponse "github.com/mxmCherry/openrtb/native/response"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -41,7 +49,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -50,11 +58,17 @@ type adaptedBidder interface {
 // pbsOrtbBid.bidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // pbsOrtbBid.bidTargets does not need to be filled out by the Bidder. It will be set later by the exchange.
 // pbsOrtbBid.bidVideo is optional but should be filled out by the Bidder if bidType is video.
+// pbsOrtbBid.bidEvents is set by exchange when event tracking is enabled
+// pbsOrtbBid.dealPriority is optionally provided by adapters and used internally by the exchange to support deal targeted campaigns.
+// pbsOrtbBid.dealTierSatisfied is set to true by exchange.updateHbPbCatDur if deal tier satisfied otherwise it will be set to false
 type pbsOrtbBid struct {
-	bid        *openrtb.Bid
-	bidType    openrtb_ext.BidType
-	bidTargets map[string]string
-	bidVideo   *openrtb_ext.ExtBidPrebidVideo
+	bid               *openrtb.Bid
+	bidType           openrtb_ext.BidType
+	bidTargets        map[string]string
+	bidVideo          *openrtb_ext.ExtBidPrebidVideo
+	bidEvents         *openrtb_ext.ExtBidPrebidEvents
+	dealPriority      int
+	dealTierSatisfied bool
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -79,19 +93,33 @@ type pbsOrtbSeatBid struct {
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client) adaptedBidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName) adaptedBidder {
 	return &bidderAdapter{
-		Bidder: bidder,
-		Client: client,
+		Bidder:     bidder,
+		BidderName: name,
+		Client:     client,
+		me:         me,
+		config: bidderAdapterConfig{
+			Debug:              cfg.Debug,
+			DisableConnMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
+		},
 	}
 }
 
 type bidderAdapter struct {
-	Bidder adapters.Bidder
-	Client *http.Client
+	Bidder     adapters.Bidder
+	BidderName openrtb_ext.BidderName
+	Client     *http.Client
+	me         metrics.MetricsEngine
+	config     bidderAdapterConfig
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
+type bidderAdapterConfig struct {
+	Debug              config.Debug
+	DisableConnMetrics bool
+}
+
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -127,7 +155,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	for i := 0; i < len(reqData); i++ {
 		httpInfo := <-responseChannel
 		// If this is a test bid, capture debugging info from the requests.
-		if request.Test == 1 {
+		if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
 			seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
 		}
 
@@ -182,9 +210,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment * conversionRate
 						}
 						seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-							bid:      bidResponse.Bids[i].Bid,
-							bidType:  bidResponse.Bids[i].BidType,
-							bidVideo: bidResponse.Bids[i].BidVideo,
+							bid:          bidResponse.Bids[i].Bid,
+							bidType:      bidResponse.Bids[i].BidType,
+							bidVideo:     bidResponse.Bids[i].BidVideo,
+							dealPriority: bidResponse.Bids[i].DealPriority,
 						})
 					}
 				} else {
@@ -204,7 +233,7 @@ func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest) (*nativeRespo
 	var errs []error
 	var nativeMarkup *nativeResponse.Response
 	if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
-		// Some bidders are returning non-IAB complaiant native markup. In this case Prebid server will not be able to add types. E.g Facebook
+		// Some bidders are returning non-IAB compliant native markup. In this case Prebid server will not be able to add types. E.g Facebook
 		return nil, errs
 	}
 
@@ -220,26 +249,43 @@ func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest) (*nativeRespo
 	}
 
 	for _, asset := range nativeMarkup.Assets {
-		setAssetTypes(asset, nativePayload)
+		if err := setAssetTypes(asset, nativePayload); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	return nativeMarkup, errs
 }
 
-func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Request) {
+func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Request) error {
 	if asset.Img != nil {
-		tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
-		if tempAsset.Img.Type != 0 {
-			asset.Img.Type = tempAsset.Img.Type
+		if tempAsset, err := getAssetByID(asset.ID, nativePayload.Assets); err == nil {
+			if tempAsset.Img != nil {
+				if tempAsset.Img.Type != 0 {
+					asset.Img.Type = tempAsset.Img.Type
+				}
+			} else {
+				return fmt.Errorf("Response has an Image asset with ID:%d present that doesn't exist in the request", asset.ID)
+			}
+		} else {
+			return err
 		}
 	}
 
 	if asset.Data != nil {
-		tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
-		if tempAsset.Data.Type != 0 {
-			asset.Data.Type = tempAsset.Data.Type
+		if tempAsset, err := getAssetByID(asset.ID, nativePayload.Assets); err == nil {
+			if tempAsset.Data != nil {
+				if tempAsset.Data.Type != 0 {
+					asset.Data.Type = tempAsset.Data.Type
+				}
+			} else {
+				return fmt.Errorf("Response has a Data asset with ID:%d present that doesn't exist in the request", asset.ID)
+			}
+		} else {
+			return err
 		}
 	}
+	return nil
 }
 
 func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Native, error) {
@@ -251,13 +297,13 @@ func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Na
 	return nil, errors.New("Could not find native imp")
 }
 
-func getAssetByID(id int64, assets []nativeRequests.Asset) nativeRequests.Asset {
+func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset, error) {
 	for _, asset := range assets {
 		if id == asset.ID {
-			return asset
+			return asset, nil
 		}
 	}
-	return nativeRequests.Asset{}
+	return nativeRequests.Asset{}, fmt.Errorf("Unable to find asset with ID:%d in the request", id)
 }
 
 // makeExt transforms information about the HTTP call into the contract class for the PBS response.
@@ -282,6 +328,10 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 // doRequest makes a request, handles the response, and returns the data needed by the
 // Bidder interface.
 func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData) *httpCallInfo {
+	return bidder.doRequestImpl(ctx, req, glog.Warningf)
+}
+
+func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg) *httpCallInfo {
 	httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(req.Body))
 	if err != nil {
 		return &httpCallInfo{
@@ -291,10 +341,29 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	}
 	httpReq.Header = req.Headers
 
+	// If adapter connection metrics are not disabled, add the client trace
+	// to get complete connection info into our metrics
+	if !bidder.config.DisableConnMetrics {
+		ctx = bidder.addClientTrace(ctx)
+	}
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			err = &errortypes.Timeout{Message: err.Error()}
+			var corebidder adapters.Bidder = bidder.Bidder
+			// The bidder adapter normally stores an info-aware bidder (a bidder wrapper)
+			// rather than the actual bidder. So we need to unpack that first.
+			if b, ok := corebidder.(*adapters.InfoAwareBidder); ok {
+				corebidder = b.Bidder
+			}
+			if tb, ok := corebidder.(adapters.TimeoutBidder); ok {
+				// Toss the timeout notification call into a go routine, as we are out of time'
+				// and cannot delay processing. We don't do anything result, as there is not much
+				// we can do about a timeout notification failure. We do not want to get stuck in
+				// a loop of trying to report timeouts to the timeout notifications.
+				go bidder.doTimeoutNotification(tb, req, logger)
+			}
+
 		}
 		return &httpCallInfo{
 			request: req,
@@ -328,8 +397,90 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	}
 }
 
+func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.TimeoutBidder, req *adapters.RequestData, logger util.LogMsg) {
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	toReq, errL := timeoutBidder.MakeTimeoutNotification(req)
+	if toReq != nil && len(errL) == 0 {
+		httpReq, err := http.NewRequest(toReq.Method, toReq.Uri, bytes.NewBuffer(toReq.Body))
+		if err == nil {
+			httpReq.Header = req.Headers
+			httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
+			success := (err == nil && httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
+			bidder.me.RecordTimeoutNotice(success)
+			if bidder.config.Debug.TimeoutNotification.Log && !(bidder.config.Debug.TimeoutNotification.FailOnly && success) {
+				var msg string
+				if err == nil {
+					msg = fmt.Sprintf("TimeoutNotification: status:(%d) body:%s", httpResp.StatusCode, string(toReq.Body))
+				} else {
+					msg = fmt.Sprintf("TimeoutNotification: error:(%s) body:%s", err.Error(), string(toReq.Body))
+				}
+				// If logging is turned on, and logging is not disallowed via FailOnly
+				util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
+			}
+		} else {
+			bidder.me.RecordTimeoutNotice(false)
+			if bidder.config.Debug.TimeoutNotification.Log {
+				msg := fmt.Sprintf("TimeoutNotification: Failed to make timeout request: method(%s), uri(%s), error(%s)", toReq.Method, toReq.Uri, err.Error())
+				util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
+			}
+		}
+	} else if bidder.config.Debug.TimeoutNotification.Log {
+		reqJSON, err := json.Marshal(req)
+		var msg string
+		if err == nil {
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errL[0].Error(), string(reqJSON))
+		} else {
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errL[0].Error(), err.Error())
+		}
+		util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
+	}
+
+}
+
 type httpCallInfo struct {
 	request  *adapters.RequestData
 	response *adapters.ResponseData
 	err      error
+}
+
+// This function adds an httptrace.ClientTrace object to the context so, if connection with the bidder
+// endpoint is established, we can keep track of whether the connection was newly created, reused, and
+// the time from the connection request, to the connection creation.
+func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context {
+	var connStart, dnsStart, tlsStart time.Time
+
+	trace := &httptrace.ClientTrace{
+		// GetConn is called before a connection is created or retrieved from an idle pool
+		GetConn: func(hostPort string) {
+			connStart = time.Now()
+		},
+		// GotConn is called after a successful connection is obtained
+		GotConn: func(info httptrace.GotConnInfo) {
+			connWaitTime := time.Now().Sub(connStart)
+
+			bidder.me.RecordAdapterConnections(bidder.BidderName, info.Reused, connWaitTime)
+		},
+		// DNSStart is called when a DNS lookup begins.
+		DNSStart: func(info httptrace.DNSStartInfo) {
+			dnsStart = time.Now()
+		},
+		// DNSDone is called when a DNS lookup ends.
+		DNSDone: func(info httptrace.DNSDoneInfo) {
+			dnsLookupTime := time.Now().Sub(dnsStart)
+
+			bidder.me.RecordDNSTime(dnsLookupTime)
+		},
+
+		TLSHandshakeStart: func() {
+			tlsStart = time.Now()
+		},
+
+		TLSHandshakeDone: func(tls.ConnectionState, error) {
+			tlsHandshakeTime := time.Now().Sub(tlsStart)
+
+			bidder.me.RecordTLSHandshakeTime(tlsHandshakeTime)
+		},
+	}
+	return httptrace.WithClientTrace(ctx, trace)
 }

@@ -14,10 +14,10 @@ import (
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
@@ -349,11 +349,11 @@ func TestCacheVideoOnly(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	syncers := usersyncers.NewSyncerMap(cfg)
-	gdprPerms := gdpr.NewPermissions(nil, config.GDPR{
+	gdprPerms := gdpr.NewPermissions(context.Background(), config.GDPR{
 		HostVendorID: 0,
 	}, nil, nil)
 	prebid_cache_client.InitPrebidCache(server.URL)
-	var labels = &pbsmetrics.Labels{}
+	var labels = &metrics.Labels{}
 	if err := cacheVideoOnly(bids, ctx, &auction{cfg: cfg, syncers: syncers, gdprPerms: gdprPerms, metricsEngine: &metricsConf.DummyMetricsEngine{}}, labels); err != nil {
 		t.Errorf("Prebid cache failed: %v \n", err)
 		return
@@ -387,11 +387,12 @@ func TestShouldUsersync(t *testing.T) {
 			},
 			metricsEngine: nil,
 		}
-		privacyPolicy := gdprPolicy.Policy{
+		gdprPrivacyPolicy := gdprPolicy.Policy{
 			Signal:  gdprApplies,
 			Consent: consent,
 		}
-		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, privacyPolicy)
+
+		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprPrivacyPolicy)
 		if allowSyncs != expectAllow {
 			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
 		}
@@ -407,6 +408,8 @@ type auctionMockPermissions struct {
 	allowBidderSync  bool
 	allowHostCookies bool
 	allowPI          bool
+	allowGeo         bool
+	allowID          bool
 }
 
 func (m *auctionMockPermissions) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
@@ -417,8 +420,8 @@ func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder o
 	return m.allowBidderSync, nil
 }
 
-func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error) {
-	return m.allowPI, nil
+func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string) (bool, bool, bool, error) {
+	return m.allowPI, m.allowGeo, m.allowID, nil
 }
 
 func TestBidSizeValidate(t *testing.T) {
@@ -608,9 +611,9 @@ func TestPanicRecovery(t *testing.T) {
 		},
 		metricsEngine: &metricsConf.DummyMetricsEngine{},
 	}
-	panicker := func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
+	panicker := func(bidder *pbs.PBSBidder, blables metrics.AdapterLabels) {
 		panic("panic!")
 	}
 	recovered := dummy.recoverSafely(panicker)
-	recovered(nil, pbsmetrics.AdapterLabels{})
+	recovered(nil, metrics.AdapterLabels{})
 }

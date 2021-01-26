@@ -1,0 +1,56 @@
+{
+  "mockBidRequest":{
+    "id":"req1",
+    "imp":[
+      {
+        "id":"imp1",
+        "banner":{
+          "w":100,
+          "h":200
+        },
+        "ext":{
+          "bidder":{
+            "adunit":"unit1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls":[
+    {
+      "expectedRequest":{
+        "uri":"http://app.trustedmarketplace.com/processHeaderBid/unit1",
+        "body":{
+          "id":"req1-unit1",
+          "imp":[
+            {
+              "id":"imp1",
+              "banner":{
+                "w":100,
+                "h":200
+              },
+              "ext":{
+                "bidder":{
+                  "adunit":"unit1"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse":{
+        "status":500,
+        "body":""
+      }
+    }
+  ],
+  "expectedBidResponses":[
+
+  ],
+  "expectedMakeBidsErrors":[
+    {
+      "value":"unexpected status: 500",
+      "comparison":"literal"
+    }
+  ]
+}

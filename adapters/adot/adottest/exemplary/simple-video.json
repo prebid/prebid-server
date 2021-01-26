@@ -1,0 +1,120 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-video-id",
+    "imp": [
+      {
+        "id": "test-imp-video-id",
+        "video": {
+          "w": 300,
+          "h": 250,
+          "maxduration": 60,
+          "minduration": 1,
+          "api": [
+            1,
+            2,
+            5,
+            6,
+            7
+          ],
+          "mimes": [
+            "video\/mp4"
+          ],
+          "placement": 4,
+          "protocols": [
+            2
+          ]
+        },
+        "ext": {
+          "adot": {}
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dsp.adotmob.com/headerbidding/bidrequest",
+        "body": {
+          "id": "test-request-video-id",
+          "imp": [
+            {
+              "id": "test-imp-video-id",
+              "video": {
+                "w": 300,
+                "h": 250,
+                "maxduration": 60,
+                "minduration": 1,
+                "api": [
+                  1,
+                  2,
+                  5,
+                  6,
+                  7
+                ],
+                "mimes": [
+                  "video\/mp4"
+                ],
+                "placement": 4,
+                "protocols": [
+                  2
+                ]
+              },
+              "ext": {
+                "adot": {}
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "adot",
+              "bid": [{
+                "id": "test-request-video-id",
+                "impid": "test-imp-video-id",
+                "price": 1.16346,
+                "adm": "some-test-ad",
+                "w": 300,
+                "h": 250,
+                "ext": {
+                  "adot": {
+                    "media_type": "video"
+                  }
+                }
+              }]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-video-id",
+            "impid": "test-imp-video-id",
+            "price": 1.16346,
+            "adm": "some-test-ad",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "adot": {
+                "media_type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
+

@@ -7,7 +7,7 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-const adponeGDPRVendorID = uint16(16)
+const adponeGDPRVendorID = uint16(799)
 const adponeFamilyName = "adpone"
 
 func NewadponeSyncer(urlTemplate *template.Template) usersync.Usersyncer {

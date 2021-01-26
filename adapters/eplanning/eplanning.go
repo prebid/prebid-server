@@ -13,6 +13,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
@@ -23,6 +24,7 @@ const nullSize = "1x1"
 const defaultPageURL = "FILE"
 const sec = "ROS"
 const dfpClientID = "1"
+const requestTargetInventory = "1"
 
 var cleanNameSteps = []cleanNameStep{
 	{regexp.MustCompile(`_|\.|-|\/`), ""},
@@ -36,7 +38,6 @@ type cleanNameStep struct {
 }
 
 type EPlanningAdapter struct {
-	http    *adapters.HTTPAdapter
 	URI     string
 	testing bool
 }
@@ -103,37 +104,76 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 		}
 	}
 
-	var pageURL string
+	pageURL := defaultPageURL
 	if request.Site != nil && request.Site.Page != "" {
 		pageURL = request.Site.Page
-	} else {
-		pageURL = defaultPageURL
 	}
 
-	var pageDomain string
-	if request.Site != nil && request.Site.Domain != "" {
-		pageDomain = request.Site.Domain
-	} else {
-		pageDomain = defaultPageURL
+	pageDomain := defaultPageURL
+	if request.Site != nil {
+		if request.Site.Domain != "" {
+			pageDomain = request.Site.Domain
+		} else if request.Site.Page != "" {
+			u, err := url.Parse(request.Site.Page)
+			if err != nil {
+				errors = append(errors, err)
+				return nil, errors
+			}
+			pageDomain = u.Hostname()
+		}
 	}
 
-	uri := adapter.URI + fmt.Sprintf("/%s/%s/%s/%s?r=pbs&ncb=1&ur=%s&e=%s", clientID, dfpClientID, pageDomain, sec, url.QueryEscape(pageURL), strings.Join(spacesStrings, "+"))
+	requestTarget := pageDomain
+	if request.App != nil && request.App.Bundle != "" {
+		requestTarget = request.App.Bundle
+	}
+
+	uriObj, err := url.Parse(adapter.URI)
+	if err != nil {
+		errors = append(errors, err)
+		return nil, errors
+	}
+
+	uriObj.Path = uriObj.Path + fmt.Sprintf("/%s/%s/%s/%s", clientID, dfpClientID, requestTarget, sec)
+	query := url.Values{}
+	query.Set("ncb", "1")
+	if request.App == nil {
+		query.Set("ur", pageURL)
+	}
+	query.Set("e", strings.Join(spacesStrings, "+"))
 
 	if request.User != nil && request.User.BuyerUID != "" {
-		uri = uri + fmt.Sprintf("&uid=%s", request.User.BuyerUID)
+		query.Set("uid", request.User.BuyerUID)
 	}
 
 	if ip != "" {
-		uri = uri + fmt.Sprintf("&ip=%s", ip)
+		query.Set("ip", ip)
 	}
 
 	var body []byte
 	if adapter.testing {
 		body = []byte("{}")
 	} else {
-		uri = uri + fmt.Sprintf("&rnd=%d", rand.Int())
+		t := strconv.Itoa(rand.Int())
+		query.Set("rnd", t)
 		body = nil
 	}
+
+	if request.App != nil {
+		if request.App.Name != "" {
+			query.Set("appn", request.App.Name)
+		}
+		if request.App.ID != "" {
+			query.Set("appid", request.App.ID)
+		}
+		if request.Device != nil && request.Device.IFA != "" {
+			query.Set("ifa", request.Device.IFA)
+		}
+		query.Set("app", requestTargetInventory)
+	}
+
+	uriObj.RawQuery = query.Encode()
+	uri := uriObj.String()
 
 	requestData := adapters.RequestData{
 		Method:  "GET",
@@ -277,12 +317,11 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, e
 	return bidResponse, nil
 }
 
-func NewEPlanningBidder(client *http.Client, endpoint string) *EPlanningAdapter {
-	adapter := &adapters.HTTPAdapter{Client: client}
-
-	return &EPlanningAdapter{
-		http:    adapter,
-		URI:     endpoint,
+// Builder builds a new instance of the EPlanning adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &EPlanningAdapter{
+		URI:     config.Endpoint,
 		testing: false,
 	}
+	return bidder, nil
 }

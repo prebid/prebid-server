@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -39,17 +40,17 @@ type Bidder interface {
 	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
 }
 
-type MisconfiguredBidder struct {
-	Name  string
-	Error error
-}
+// TimeoutBidder is used to identify bidders that support timeout notifications.
+type TimeoutBidder interface {
+	Bidder
 
-func (this *MisconfiguredBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
-	return nil, []error{this.Error}
-}
-
-func (this *MisconfiguredBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
-	return nil, []error{this.Error}
+	// MakeTimeoutNotice functions much the same as MakeRequests, except it is fed the bidder request that timed out,
+	// and expects that only one notification "request" will be generated. A use case for multiple timeout notifications
+	// has not been anticipated.
+	//
+	// Do note that if MakeRequests returns multiple requests, and more than one of these times out, MakeTimeoutNotice will be called
+	// once for each timed out request.
+	MakeTimeoutNotification(req *RequestData) (*RequestData, []error)
 }
 
 func BadInput(msg string) *errortypes.BadInput {
@@ -95,10 +96,12 @@ func NewBidderResponse() *BidderResponse {
 // TypedBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // TypedBid.BidVideo will become "response.seatbid[i].bid.ext.prebid.video" in the final OpenRTB response.
+// TypedBid.DealPriority is optionally provided by adapters and used internally by the exchange to support deal targeted campaigns.
 type TypedBid struct {
-	Bid      *openrtb.Bid
-	BidType  openrtb_ext.BidType
-	BidVideo *openrtb_ext.ExtBidPrebidVideo
+	Bid          *openrtb.Bid
+	BidType      openrtb_ext.BidType
+	BidVideo     *openrtb_ext.ExtBidPrebidVideo
+	DealPriority int
 }
 
 // RequestData and ResponseData exist so that prebid-server core code can implement its "debug" functionality
@@ -137,3 +140,5 @@ type ExtImpBidder struct {
 func (r *RequestData) SetBasicAuth(username string, password string) {
 	r.Headers.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
 }
+
+type Builder func(openrtb_ext.BidderName, config.Adapter) (Bidder, error)

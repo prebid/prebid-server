@@ -12,19 +12,18 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mssola/user_agent"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/privacy"
-	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
+	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -61,12 +60,12 @@ type auction struct {
 	cfg           *config.Configuration
 	syncers       map[openrtb_ext.BidderName]usersync.Usersyncer
 	gdprPerms     gdpr.Permissions
-	metricsEngine pbsmetrics.MetricsEngine
+	metricsEngine metrics.MetricsEngine
 	dataCache     cache.Cache
 	exchanges     map[string]adapters.Adapter
 }
 
-func Auction(cfg *config.Configuration, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, gdprPerms gdpr.Permissions, metricsEngine pbsmetrics.MetricsEngine, dataCache cache.Cache, exchanges map[string]adapters.Adapter) httprouter.Handle {
+func Auction(cfg *config.Configuration, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, gdprPerms gdpr.Permissions, metricsEngine metrics.MetricsEngine, dataCache cache.Cache, exchanges map[string]adapters.Adapter) httprouter.Handle {
 	a := &auction{
 		cfg:           cfg,
 		syncers:       syncers,
@@ -90,7 +89,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 			glog.Infof("Failed to parse /auction request: %v", err)
 		}
 		writeAuctionError(w, "Error parsing request", err)
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		labels.RequestStatus = metrics.RequestStatusBadInput
 		return
 	}
 	status := "OK"
@@ -103,7 +102,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 			glog.Infof("Invalid account id: %v", err)
 		}
 		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		labels.RequestStatus = metrics.RequestStatusBadInput
 		return
 	}
 	labels.PubID = req.AccountID
@@ -117,20 +116,19 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	for _, bidder := range req.Bidders {
 		if ex, ok := a.exchanges[bidder.BidderCode]; ok {
 			// Make sure we have an independent label struct for each bidder. We don't want to run into issues with the goroutine below.
-			blabels := pbsmetrics.AdapterLabels{
+			blabels := metrics.AdapterLabels{
 				Source:      labels.Source,
 				RType:       labels.RType,
-				Adapter:     getAdapterValue(bidder),
+				Adapter:     openrtb_ext.BidderName(bidder.BidderCode),
 				PubID:       labels.PubID,
-				Browser:     labels.Browser,
 				CookieFlag:  labels.CookieFlag,
-				AdapterBids: pbsmetrics.AdapterBidPresent,
+				AdapterBids: metrics.AdapterBidPresent,
 			}
 			if skip := a.processUserSync(req, bidder, blabels, ex, &ctx); skip == true {
 				continue
 			}
 			sentBids++
-			bidderRunner := a.recoverSafely(func(bidder *pbs.PBSBidder, aLabels pbsmetrics.AdapterLabels) {
+			bidderRunner := a.recoverSafely(func(bidder *pbs.PBSBidder, aLabels metrics.AdapterLabels) {
 
 				start := time.Now()
 				bidList, err := ex.Call(ctx, req, bidder)
@@ -160,7 +158,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	}
 	if err := cacheAccordingToMarkup(req, &resp, ctx, a, &labels); err != nil {
 		writeAuctionError(w, "Prebid cache failed", err)
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		labels.RequestStatus = metrics.RequestStatusErr
 		return
 	}
 	if req.SortBids == 1 {
@@ -174,8 +172,8 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	enc.Encode(resp)
 }
 
-func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*pbs.PBSBidder, pbsmetrics.AdapterLabels) {
-	return func(bidder *pbs.PBSBidder, labels pbsmetrics.AdapterLabels) {
+func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, metrics.AdapterLabels)) func(*pbs.PBSBidder, metrics.AdapterLabels) {
+	return func(bidder *pbs.PBSBidder, labels metrics.AdapterLabels) {
 		defer func() {
 			if r := recover(); r != nil {
 				if bidder == nil {
@@ -190,7 +188,7 @@ func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLab
 	}
 }
 
-func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprPrivacyPolicy gdprPolicy.Policy) bool {
+func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprPrivacyPolicy gdprPrivacy.Policy) bool {
 	switch gdprPrivacyPolicy.Signal {
 	case "0":
 		return true
@@ -209,7 +207,7 @@ func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderN
 }
 
 // cache video bids only for Web
-func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, deps *auction, labels *pbsmetrics.Labels) error {
+func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, deps *auction, labels *metrics.Labels) error {
 	var cobjs []*pbc.CacheObject
 	for _, bid := range bids {
 		if bid.CreativeMediaType == "video" {
@@ -310,10 +308,7 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 		// after sorting we need to add the ad targeting keywords
 		for i, bid := range bar {
 			// We should eventually check for the error and do something.
-			roundedCpm, err := exchange.GetCpmStringValue(bid.Price, openrtb_ext.PriceGranularityFromString(priceGranularitySetting))
-			if err != nil {
-				glog.Error(err.Error())
-			}
+			roundedCpm := exchange.GetPriceBucket(bid.Price, openrtb_ext.PriceGranularityFromString(priceGranularitySetting))
 
 			hbSize := ""
 			if bid.Width != 0 && bid.Height != 0 {
@@ -367,49 +362,31 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 	}
 }
 
-func getDefaultLabels(r *http.Request) pbsmetrics.Labels {
-	rlabels := pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeLegacy,
+func getDefaultLabels(r *http.Request) metrics.Labels {
+	return metrics.Labels{
+		Source:        metrics.DemandUnknown,
+		RType:         metrics.ReqTypeLegacy,
 		PubID:         "",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusOK,
+		CookieFlag:    metrics.CookieFlagUnknown,
+		RequestStatus: metrics.RequestStatusOK,
 	}
-
-	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
-		name, _ := ua.Browser()
-		if name == "Safari" {
-			rlabels.Browser = pbsmetrics.BrowserSafari
-		}
-	}
-	return rlabels
 }
 
-func setLabelSource(labels *pbsmetrics.Labels, req *pbs.PBSRequest, status *string) {
+func setLabelSource(labels *metrics.Labels, req *pbs.PBSRequest, status *string) {
 	if req.App != nil {
-		labels.Source = pbsmetrics.DemandApp
+		labels.Source = metrics.DemandApp
 	} else {
-		labels.Source = pbsmetrics.DemandWeb
+		labels.Source = metrics.DemandWeb
 		if req.Cookie.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
+			labels.CookieFlag = metrics.CookieFlagNo
 			*status = "no_cookie"
 		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
+			labels.CookieFlag = metrics.CookieFlagYes
 		}
 	}
 }
 
-func getAdapterValue(bidder *pbs.PBSBidder) openrtb_ext.BidderName {
-	adapterLabelName, ok := openrtb_ext.BidderMap[bidder.BidderCode]
-	if ok && adapterLabelName != "" {
-		return adapterLabelName
-	} else {
-		return openrtb_ext.BidderName(bidder.BidderCode)
-	}
-}
-
-func cacheAccordingToMarkup(req *pbs.PBSRequest, resp *pbs.PBSResponse, ctx context.Context, a *auction, labels *pbsmetrics.Labels) error {
+func cacheAccordingToMarkup(req *pbs.PBSRequest, resp *pbs.PBSResponse, ctx context.Context, a *auction, labels *metrics.Labels) error {
 	if req.CacheMarkup == 1 {
 		cobjs := make([]*pbc.CacheObject, len(resp.Bids))
 		for i, bid := range resp.Bids {
@@ -445,22 +422,22 @@ func cacheAccordingToMarkup(req *pbs.PBSRequest, resp *pbs.PBSResponse, ctx cont
 	return nil
 }
 
-func processBidResult(bidList pbs.PBSBidSlice, bidder *pbs.PBSBidder, aLabels *pbsmetrics.AdapterLabels, metrics pbsmetrics.MetricsEngine, err error) {
+func processBidResult(bidList pbs.PBSBidSlice, bidder *pbs.PBSBidder, aLabels *metrics.AdapterLabels, metricsEngine metrics.MetricsEngine, err error) {
 	if err != nil {
 		var s struct{}
 		if err == context.DeadlineExceeded {
-			aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorTimeout: s}
+			aLabels.AdapterErrors = map[metrics.AdapterError]struct{}{metrics.AdapterErrorTimeout: s}
 			bidder.Error = "Timed out"
 		} else if err != context.Canceled {
 			bidder.Error = err.Error()
 			switch err.(type) {
 			case *errortypes.BadInput:
-				aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadInput: s}
+				aLabels.AdapterErrors = map[metrics.AdapterError]struct{}{metrics.AdapterErrorBadInput: s}
 			case *errortypes.BadServerResponse:
-				aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadServerResponse: s}
+				aLabels.AdapterErrors = map[metrics.AdapterError]struct{}{metrics.AdapterErrorBadServerResponse: s}
 			default:
 				glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
-				aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorUnknown: s}
+				aLabels.AdapterErrors = map[metrics.AdapterError]struct{}{metrics.AdapterErrorUnknown: s}
 			}
 		}
 	} else if bidList != nil {
@@ -468,22 +445,22 @@ func processBidResult(bidList pbs.PBSBidSlice, bidder *pbs.PBSBidder, aLabels *p
 		bidder.NumBids = len(bidList)
 		for _, bid := range bidList {
 			var cpm = float64(bid.Price * 1000)
-			metrics.RecordAdapterPrice(*aLabels, cpm)
+			metricsEngine.RecordAdapterPrice(*aLabels, cpm)
 			switch bid.CreativeMediaType {
 			case "banner":
-				metrics.RecordAdapterBidReceived(*aLabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
+				metricsEngine.RecordAdapterBidReceived(*aLabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
 			case "video":
-				metrics.RecordAdapterBidReceived(*aLabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
+				metricsEngine.RecordAdapterBidReceived(*aLabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
 			}
 			bid.ResponseTime = bidder.ResponseTime
 		}
 	} else {
 		bidder.NoBid = true
-		aLabels.AdapterBids = pbsmetrics.AdapterBidNone
+		aLabels.AdapterBids = metrics.AdapterBidNone
 	}
 }
 
-func (a *auction) recordMetrics(req *pbs.PBSRequest, labels pbsmetrics.Labels) {
+func (a *auction) recordMetrics(req *pbs.PBSRequest, labels metrics.Labels) {
 	a.metricsEngine.RecordRequest(labels)
 	if req == nil {
 		a.metricsEngine.RecordLegacyImps(labels, 0)
@@ -493,7 +470,7 @@ func (a *auction) recordMetrics(req *pbs.PBSRequest, labels pbsmetrics.Labels) {
 	a.metricsEngine.RecordRequestTime(labels, time.Since(req.Start))
 }
 
-func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, blabels pbsmetrics.AdapterLabels, ex adapters.Adapter, ctx *context.Context) bool {
+func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, blabels metrics.AdapterLabels, ex adapters.Adapter, ctx *context.Context) bool {
 	var skip bool = false
 	if req.App != nil {
 		return skip
@@ -511,7 +488,7 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 	if uid == "" {
 		bidder.NoCookie = true
 		privacyPolicies := privacy.Policies{
-			GDPR: gdprPolicy.Policy{
+			GDPR: gdprPrivacy.Policy{
 				Signal:  req.ParseGDPR(),
 				Consent: req.ParseConsent(),
 			},
@@ -524,7 +501,7 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 				glog.Errorf("Failed to get usersync info for %s: %v", syncerCode, err)
 			}
 		}
-		blabels.CookieFlag = pbsmetrics.CookieFlagNo
+		blabels.CookieFlag = metrics.CookieFlagNo
 		if ex.SkipNoCookies() {
 			skip = true
 		}

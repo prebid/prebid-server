@@ -1,0 +1,63 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"imp": [
+			{
+				"id": "test-impression-id-1",
+				"banner": {
+					"format": [
+						{
+							"h": 250,
+							"w": 300
+						}
+					]
+				},
+				"ext": {
+					"bidder": {
+						"access_token": "test-token-1",
+						"publisher_id": "test-publisher-1"
+					}
+				}
+			}
+		]
+	},
+	"httpCalls": [
+		{
+			"expectedRequest": {
+				"uri": "http://example.com/prebid",
+				"body": {
+					"id": "test-request-id",
+					"imp": [
+						{
+							"id": "test-impression-id-1",
+							"banner": {
+								"format": [
+									{
+										"h": 250,
+										"w": 300
+									}
+								]
+							},
+							"ext": {
+								"bidder": {
+									"access_token": "test-token-1",
+									"publisher_id": "test-publisher-1"
+								}
+							}
+						}
+					]
+				}
+			},
+			"mockResponse": {
+				"status": 500,
+				"body": "server text here"
+			}
+		}
+	],
+	"expectedMakeBidsErrors": [
+		{
+			"value": "unexpected status code: 500 \"server text here\"",
+			"comparison": "literal"
+		}
+	]
+}

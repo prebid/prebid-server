@@ -1,0 +1,23 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 300, "h": 50}]
+        }
+      }
+    ],
+    "site": {
+      "id":"test-imp-id"
+    }
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Impression is missing app name or site domain, and must contain one.",
+      "comparison": "literal"
+    }
+  ]
+}

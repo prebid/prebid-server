@@ -1,0 +1,47 @@
+{
+  "description": "Well formed request with valid IPV6 in its device field",
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+      },
+      "imp": [{
+        "id": "my-imp-id",
+        "banner": {
+          "format": [{
+            "w": 300,
+            "h": 600
+          }]
+        },
+        "pmp": {
+          "deals": [{
+            "id": "some-deal-id"
+          }]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }],
+      "device": {
+        "ipv6": "8888::"
+      },
+      "ext": {
+        "prebid": {
+          "targeting": {
+            "pricegranularity": "low"
+          },
+          "cache": {
+            "bids": {}
+          }
+        }
+      }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 200
+}

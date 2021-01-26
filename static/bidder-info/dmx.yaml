@@ -1,0 +1,11 @@
+maintainer:
+  email: "prebid@districtm.net"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video

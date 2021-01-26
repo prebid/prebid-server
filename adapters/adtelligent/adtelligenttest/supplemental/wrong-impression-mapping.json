@@ -24,7 +24,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://hb.adtelligent.com/auction?aid=1000",
+        "uri": "http://ghb.adtelligent.com/pbs/ortb?aid=1000",
         "body": {
           "id": "test-request-id",
           "imp": [

@@ -66,7 +66,7 @@ func processInterstitialsForImp(imp *openrtb.Imp, devExt *openrtb_ext.ExtDevice,
 }
 
 func genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight uint64) []openrtb.Format {
-	sizes := make(config.InterstitialSizes, 0, 10)
+	sizes := make([]config.InterstitialSize, 0, 10)
 	for _, size := range config.ResolvedInterstitialSizes {
 		if size.Width >= minWidth && size.Width <= maxWidth && size.Height >= minHeight && size.Height <= maxHeight {
 			sizes = append(sizes, size)

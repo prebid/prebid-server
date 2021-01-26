@@ -3,17 +3,23 @@ package gumgum
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
+// GumGumAdapter implements Bidder interface.
 type GumGumAdapter struct {
 	URI string
 }
 
+// MakeRequests makes the HTTP requests which should be made to fetch bids.
 func (g *GumGumAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var validImps []openrtb.Imp
 	var trackingId string
@@ -26,15 +32,21 @@ func (g *GumGumAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		zone, err := preprocess(&imp)
 		if err != nil {
 			errs = append(errs, err)
-		} else {
-			if request.Imp[i].Banner != nil {
-				bannerCopy := *request.Imp[i].Banner
-				if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
-					format := bannerCopy.Format[0]
-					bannerCopy.W = &(format.W)
-					bannerCopy.H = &(format.H)
-				}
-				request.Imp[i].Banner = &bannerCopy
+		} else if request.Imp[i].Banner != nil {
+			bannerCopy := *request.Imp[i].Banner
+			if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
+				format := bannerCopy.Format[0]
+				bannerCopy.W = &(format.W)
+				bannerCopy.H = &(format.H)
+			}
+			request.Imp[i].Banner = &bannerCopy
+			validImps = append(validImps, request.Imp[i])
+			trackingId = zone
+		} else if request.Imp[i].Video != nil {
+			err := validateVideoParams(request.Imp[i].Video)
+			if err != nil {
+				errs = append(errs, err)
+			} else {
 				validImps = append(validImps, request.Imp[i])
 				trackingId = zone
 			}
@@ -70,6 +82,7 @@ func (g *GumGumAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	}}, errs
 }
 
+// MakeBids unpacks the server's response into Bids.
 func (g *GumGumAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -98,12 +111,19 @@ func (g *GumGumAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
+			mediaType := getMediaTypeForImpID(sb.Bid[i].ImpID, internalRequest.Imp)
+			if mediaType == openrtb_ext.BidTypeVideo {
+				price := strconv.FormatFloat(sb.Bid[i].Price, 'f', -1, 64)
+				sb.Bid[i].AdM = strings.Replace(sb.Bid[i].AdM, "${AUCTION_PRICE}", price, -1)
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType: mediaType,
 			})
 		}
 	}
+
 	return bidResponse, errs
 }
 
@@ -128,8 +148,28 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 	return zone, nil
 }
 
-func NewGumGumBidder(endpoint string) *GumGumAdapter {
-	return &GumGumAdapter{
-		URI: endpoint,
+func getMediaTypeForImpID(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+	for _, imp := range imps {
+		if imp.ID == impID && imp.Banner != nil {
+			return openrtb_ext.BidTypeBanner
+		}
 	}
+	return openrtb_ext.BidTypeVideo
+}
+
+func validateVideoParams(video *openrtb.Video) (err error) {
+	if video.W == 0 || video.H == 0 || video.MinDuration == 0 || video.MaxDuration == 0 || video.Placement == 0 || video.Linearity == 0 {
+		return &errortypes.BadInput{
+			Message: "Invalid or missing video field(s)",
+		}
+	}
+	return nil
+}
+
+// Builder builds a new instance of the GumGum adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &GumGumAdapter{
+		URI: config.Endpoint,
+	}
+	return bidder, nil
 }

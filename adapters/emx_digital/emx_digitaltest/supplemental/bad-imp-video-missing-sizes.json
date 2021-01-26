@@ -1,0 +1,36 @@
+{
+    "mockBidRequest": {
+      "id": "some_test_auction",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4",
+              "application/javascript"
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "tagid": "12356"
+            }
+          }
+        }
+      ],
+      "site": {
+        "domain": "www.publisher.com",
+        "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+      }
+    },
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "Video: Need at least one size to build request",
+        "comparison": "literal"
+      },
+      {
+        "value": "Error in preprocess of Imp, err: [Video: Need at least one size to build request]",
+        "comparison": "literal"
+      }
+    ]
+  }
+  

@@ -1,0 +1,95 @@
+{
+    "mockBidRequest":{
+        "id": "some-request-id",
+        "site": {
+            "page": "http://example.com/test.html"
+        },
+        "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+        },
+        "imp": [
+            {
+                "id": "some-impression-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "id": "58278"
+                    }
+                }
+            }
+        ],
+        "tmax": 500
+    },
+    "httpCalls": [
+        {
+            "internalRequest": {
+                "id": "some-request-id",
+                "site": {
+                    "page": "http://example.com/test.html"
+                },
+                "imp": [
+                    {
+                        "id": "some-impression-id",
+                        "banner": {
+                            "format": [
+                                {
+                                    "w": 300,
+                                    "h": 250
+                                }
+                            ]
+                        },
+                        "ext": {
+                            "bidder": {
+                                "id": "58278"
+                            }
+                        }
+                    }
+                ],
+                "tmax": 500
+            },
+            "expectedRequest":{
+                "uri": "https://d.socdm.com/adsv/v1?adapterver=1.0.2&currency=JPY&hb=true&id=58278&posall=SSPLOC&sdkname=prebidserver&sdktype=0&sizes=300x250&t=json3&tp=http%3A%2F%2Fexample.com%2Ftest.html",
+                "headers": {
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Content-Type": [
+                        "application/json;charset=utf-8"
+                    ],
+                    "User-Agent": [
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+                    ]
+                }
+            },
+            "mockResponse":{
+                "status": 200,
+                "body": {
+                    "ad": "<!-- st=noad : id=58278 : pos=SSPLOC -->\n",
+                    "beacon": "<img src=\"https://tg.socdm.com/bc/v3?b=beaconID&amp;xuid=XUID&amp;ctsv=CTSV&amp;seqid=SeqID&amp;seqtime=SeqTime&amp;seqctx=SeqCtx&amp;t=.gif\" width=\"1\" height=\"1\" style=\"display:none;border:none;padding:0;margin:0;width:1px;height:1px\"/>",
+                    "beaconurl": "https://tg.socdm.com/bc/v3?b=beaconID&t=.gif",
+                    "displaytype": "1",
+                    "ids": {
+                        "anid": "",
+                        "diid": "",
+                        "idfa": "",
+                        "soc": "XNvISMCo5mIAAMa7gNQAAAAA"
+                    },
+                    "location_params": null,
+                    "locationid": "58278",
+                    "results": [],
+                    "rotation": "0",
+                    "sdktype": "0"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": []
+}
+
