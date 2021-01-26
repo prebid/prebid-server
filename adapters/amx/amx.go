@@ -147,10 +147,9 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
-	for _, seatbid := range bidResp.SeatBid {
-		sb := seatbid
-		for _, bidExternal := range sb.Bid {
-			bid := bidExternal
+	for _, sb := range bidResp.SeatBid {
+		for _, bid := range sb.Bid {
+			bid := bid
 			bidExt, bidExtErr := getBidExt(bid.Ext)
 			if bidExtErr != nil {
 				errs = append(errs, bidExtErr)
