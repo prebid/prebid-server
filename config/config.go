@@ -937,7 +937,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("blacklisted_accts", []string{""})
 	v.SetDefault("account_required", false)
 	v.SetDefault("account_defaults.disabled", false)
-	v.SetDefault("account_defaults.debugallowed", true)
+	v.SetDefault("account_defaults.debug_allowed", true)
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
 
