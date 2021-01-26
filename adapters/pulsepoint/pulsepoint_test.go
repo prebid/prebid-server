@@ -21,7 +21,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -33,32 +32,6 @@ func TestJsonSamples(t *testing.T) {
 	}
 
 	adapterstest.RunJSONBidderTest(t, "pulsepointtest", bidder)
-}
-
-func TestUnknownImpId(t *testing.T) {
-	bidder := new(PulsePointAdapter)
-
-	request := &openrtb.BidRequest{
-		ID: "request-1001",
-		Imp: []openrtb.Imp{{
-			ID: "imp-234",
-			Video: &openrtb.Video{
-				W: 640,
-				H: 360,
-			},
-		},
-		},
-	}
-
-	httpResp := &adapters.ResponseData{
-		StatusCode: http.StatusOK,
-		Body:       []byte(`{"id":"request-1001","seatbid":[{"bid":[{"id":"1234567890","impid":"imp-345","price":2,"crid":"4122982","adm":"<vast></vast>"}]}]}`),
-	}
-
-	openrtbResponse, errs := bidder.MakeBids(request, nil, httpResp)
-	assert.NotNil(t, openrtbResponse, "Expected not empty response")
-	assert.Equal(t, 0, len(openrtbResponse.Bids), "Expected 1 bid. Got %d", len(openrtbResponse.Bids))
-	assert.Empty(t, errs, "Expected 0 errors. Got %d", len(errs))
 }
 
 /////////////////////////////////
