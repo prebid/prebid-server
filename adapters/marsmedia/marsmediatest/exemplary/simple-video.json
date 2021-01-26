@@ -12,7 +12,8 @@
         },
         "ext":{
           "bidder":{
-            "zone": "9999"
+            "zone": "9999",
+            "bidFloor": 0.1
           }
         }
       }
@@ -37,7 +38,8 @@
               },
               "ext": {
                 "bidder": {
-                  "zone": "9999"
+                  "zone": "9999",
+                  "bidFloor": 0.1
                 }
               }
             }

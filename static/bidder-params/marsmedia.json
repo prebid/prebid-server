@@ -7,6 +7,10 @@
     "zone": {
       "type": "string",
       "description": "Zone ID to use."
+    },
+    "bidFloor": {
+      "type": "number",
+      "description": "BidFloor, US Dollars"
     }
   },
   "required": ["zone"]
