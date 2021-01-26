@@ -32,9 +32,6 @@ type ContextKey string
 
 const DebugContextKey = ContextKey("debugInfo")
 
-//Account level debug variable
-const DebugAllowedContextKey = ContextKey("debugAllowed")
-
 type extCacheInstructions struct {
 	cacheBids, cacheVAST, returnCreative bool
 }
@@ -139,10 +136,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	debugInfo := getDebugInfo(r.BidRequest, requestExt)
 
-	if debugAllowed := ctx.Value(DebugAllowedContextKey); debugAllowed != nil {
-		debugInfo = debugInfo && debugAllowed.(bool)
-		debugLog.Enabled = debugLog.Enabled && debugAllowed.(bool)
-	}
+	debugInfo = debugInfo && r.Account.DebugAllowed
+	debugLog.Enabled = debugLog.Enabled && r.Account.DebugAllowed
 
 	if debugInfo {
 		ctx = e.makeDebugContext(ctx, debugInfo)
@@ -171,7 +166,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.currencyConverter.Rates()
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllowed)
 
 	var auc *auction
 	var cacheErrs []error
@@ -372,7 +367,8 @@ func (e *exchange) getAllBids(
 	ctx context.Context,
 	bidderRequests []BidderRequest,
 	bidAdjustments map[string]float64,
-	conversions currency.Conversions) (
+	conversions currency.Conversions,
+	accountDebugAllowed bool) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -403,7 +399,7 @@ func (e *exchange) getAllBids(
 			}
 			var reqInfo adapters.ExtraRequestInfo
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo)
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed)
 
 			// Add in time reporting
 			elapsed := time.Since(start)

@@ -169,7 +169,6 @@ func TestDebugBehaviour(t *testing.T) {
 	type debugData struct {
 		bidderLevelDebugAllowed  bool
 		accountLevelDebugAllowed bool
-		requestLevelDebugAllowed bool
 	}
 
 	type aTest struct {
@@ -183,49 +182,49 @@ func TestDebugBehaviour(t *testing.T) {
 			desc:      "test flag equals zero, ext debug flag false, no debug info expected",
 			in:        inTest{test: 0, debug: false},
 			out:       outTest{debugInfoIncluded: false},
-			debugData: debugData{true, true, true},
+			debugData: debugData{true, true},
 		},
 		{
 			desc:      "test flag equals zero, ext debug flag true, debug info expected",
 			in:        inTest{test: 0, debug: true},
 			out:       outTest{debugInfoIncluded: true},
-			debugData: debugData{true, true, true},
+			debugData: debugData{true, true},
 		},
 		{
 			desc:      "test flag equals 1, ext debug flag false, debug info expected",
 			in:        inTest{test: 1, debug: false},
 			out:       outTest{debugInfoIncluded: true},
-			debugData: debugData{true, true, true},
+			debugData: debugData{true, true},
 		},
 		{
 			desc:      "test flag equals 1, ext debug flag true, debug info expected",
 			in:        inTest{test: 1, debug: true},
 			out:       outTest{debugInfoIncluded: true},
-			debugData: debugData{true, true, true},
+			debugData: debugData{true, true},
 		},
 		{
 			desc:      "test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
 			in:        inTest{test: 2, debug: false},
 			out:       outTest{debugInfoIncluded: false},
-			debugData: debugData{true, true, true},
+			debugData: debugData{true, true},
 		},
 		{
 			desc:      "test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
 			in:        inTest{test: -1, debug: true},
 			out:       outTest{debugInfoIncluded: true},
-			debugData: debugData{true, true, true},
+			debugData: debugData{true, true},
 		},
 		{
 			desc:      "test account level debug disabled",
 			in:        inTest{test: -1, debug: true},
 			out:       outTest{debugInfoIncluded: false},
-			debugData: debugData{true, false, true},
+			debugData: debugData{true, false},
 		},
 		{
 			desc:      "test bidder level debug disabled",
 			in:        inTest{test: -1, debug: true},
 			out:       outTest{debugInfoIncluded: false},
-			debugData: debugData{false, true, true},
+			debugData: debugData{false, true},
 		},
 	}
 
@@ -282,10 +281,8 @@ func TestDebugBehaviour(t *testing.T) {
 			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: test.debugData.bidderLevelDebugAllowed}),
 		}
 
-		//account level debug key
-		ctx = context.WithValue(ctx, DebugAllowedContextKey, test.debugData.accountLevelDebugAllowed)
 		//request level debug key
-		ctx = context.WithValue(ctx, DebugContextKey, test.debugData.requestLevelDebugAllowed)
+		ctx = context.WithValue(ctx, DebugContextKey, test.in.debug)
 
 		bidRequest.Test = test.in.test
 
@@ -297,7 +294,7 @@ func TestDebugBehaviour(t *testing.T) {
 
 		auctionRequest := AuctionRequest{
 			BidRequest: bidRequest,
-			Account:    config.Account{},
+			Account:    config.Account{DebugAllowed: test.debugData.accountLevelDebugAllowed},
 			UserSyncs:  &emptyUsersync{},
 			StartTime:  time.Now(),
 		}
@@ -386,21 +383,19 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugAllowedContextKey, true)
 	debugLog := DebugLog{}
 
 	bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
 
 	auctionRequest := AuctionRequest{
 		BidRequest: bidRequest,
-		Account:    config.Account{},
+		Account:    config.Account{DebugAllowed: true},
 		UserSyncs:  &emptyUsersync{},
 		StartTime:  time.Now(),
 	}
 
 	// Run test
-	outBidResponse, err := e.HoldAuction(ctx, auctionRequest, &debugLog)
+	outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
 
 	// Assert no HoldAuction error
 	assert.NoErrorf(t, err, "ex.HoldAuction returned an error")
@@ -593,7 +588,8 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 			}
 
 			// Run test
-			outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, nil)
+			debugLog := DebugLog{}
+			outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
 
 			// Assert return error, if any
 			if testGroup.expectError {
@@ -1187,8 +1183,9 @@ func TestRaceIntegration(t *testing.T) {
 		UserSyncs:  &emptyUsersync{},
 	}
 
+	debugLog := DebugLog{}
 	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, &nilCategoryFetcher{}).(*exchange)
-	_, err := ex.HoldAuction(context.Background(), auctionRequest, nil)
+	_, err := ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -1407,8 +1404,8 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		Account:    config.Account{},
 		UserSyncs:  &emptyUsersync{},
 	}
-
-	_, err := e.HoldAuction(context.Background(), auctionRequest, nil)
+	debugLog := DebugLog{}
+	_, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -1534,6 +1531,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		Account: config.Account{
 			ID:            "testaccount",
 			EventsEnabled: spec.EventsEnabled,
+			DebugAllowed:  true,
 		},
 		UserSyncs: mockIdFetcher(spec.IncomingRequest.Usersyncs),
 	}
@@ -1541,7 +1539,6 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		auctionRequest.StartTime = time.Unix(0, spec.StartTime*1e+6)
 	}
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugAllowedContextKey, true)
 	ctx = context.WithValue(ctx, DebugContextKey, true)
 
 	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
@@ -2753,7 +2750,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (seatBid *pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(name)]; ok {
 		if expectedRequest != nil {
 			if expectedRequest.BidAdjustment != bidAdjustment {
@@ -2932,7 +2929,7 @@ func (e *mockUsersync) LiveSyncCount() int {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (posb *pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (posb *pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 

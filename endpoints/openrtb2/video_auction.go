@@ -274,17 +274,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	ctx = context.WithValue(ctx, exchange.DebugAllowedContextKey, account.DebugAllowed)
-
-	/*if debugLog.Enabled && account.DebugAllowed {
-		debugLog.Data.Request = string(requestJson)
-		if headerBytes, err := json.Marshal(r.Header); err == nil {
-			debugLog.Data.Headers = string(headerBytes)
-		} else {
-			debugLog.Data.Headers = fmt.Sprintf("Unable to marshal headers data: %s", err.Error())
-		}
-	}*/
-
 	auctionRequest := exchange.AuctionRequest{
 		BidRequest:   bidReq,
 		Account:      *account,
