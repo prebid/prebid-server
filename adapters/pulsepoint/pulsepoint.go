@@ -8,6 +8,9 @@ import (
 
 	"bytes"
 	"context"
+	"io/ioutil"
+	"strings"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -15,8 +18,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
-	"io/ioutil"
-	"strings"
 )
 
 type PulsePointAdapter struct {
@@ -37,11 +38,6 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	var err error
 	pubID := ""
-
-	// No impressions given.
-	if len(request.Imp) == 0 {
-		return nil, errs
-	}
 
 	for i := 0; i < len(request.Imp); i++ {
 		imp := request.Imp[i]
@@ -90,8 +86,6 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		request.App = &app
 	}
 
-	uri := a.URI
-
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
@@ -103,7 +97,7 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	headers.Add("Accept", "application/json")
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     uri,
+		Uri:     a.URI,
 		Body:    reqJSON,
 		Headers: headers,
 	}}, errs
@@ -114,9 +108,17 @@ func (a *PulsePointAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
+	// bad requests
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Bad user input: HTTP status %d", response.StatusCode),
+		}}
+	}
 	// error
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d.", response.StatusCode)}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Bad server response: HTTP status %d", response.StatusCode),
+		}}
 	}
 	// parse response
 	var bidResp openrtb.BidResponse
