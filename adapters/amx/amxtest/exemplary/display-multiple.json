@@ -213,15 +213,12 @@
                 "cid": "668",
                 "crid": "253510977",
                 "ext": {
-                  "dp": 0.475762,
-                  "lid": 142443,
-                  "sbid": "668"
                 },
                 "h": 250,
                 "id": "8911104898220857797",
                 "impid": "6a362d3a9db4eba300x250",
-                "nurl": "https://1x1.a-mo.net/hbx/bwin?A=an&B=142443&D=&a=redflagdeals%2Fhotdeals_home&ad=dell.com.au&ai=12601&aid=_dax0tpmca&aud=1&av=&b=forums.redflagdeals.com&bid=8911104898220857797&ci=668&cn=&cn3=9&cr=253510977&ct=0&cv=f0ca0bda&do=forums.redflagdeals.com&h=250&i=1&mid=c29ydGFibGUuY29t&p=0.14811014298411188&pp=1481&r=0&uf=&v=&w=300&wv=aas-1f823e18-a&np=${AUCTION_PRICE}",
-                "price": 0.14811014298411188,
+                "nurl": "https://1x1.a-mo.net/hbx/bwin",
+                "price": 0.50,
                 "w": 300
               },
               {
@@ -232,16 +229,12 @@
                 ],
                 "cid": "668",
                 "crid": "253510977",
-                "ext": {
-                  "dp": 0.437403,
-                  "lid": 142443,
-                  "sbid": "668"
-                },
+                "ext": {},
                 "h": 250,
                 "id": "430444686086263488",
                 "impid": "6a362d3a9db4eba300x250",
-                "nurl": "https://1x1.a-mo.net/hbx/bwin?A=an&B=142443&D=&a=redflagdeals%2Fhotdeals_home&ad=dell.com.au&ai=12601&aid=_dax0tpmca&aud=1&av=&b=forums.redflagdeals.com&bid=430444686086263488&ci=668&cn=&cn3=9&cr=253510977&ct=0&cv=f0ca0bda&do=forums.redflagdeals.com&h=250&i=1&mid=c29ydGFibGUuY29t&p=0.1361685482902785&pp=1361&r=0&uf=&v=&w=300&wv=aas-1f823e18-a&np=${AUCTION_PRICE}",
-                "price": 0.1361685482902785,
+                "nurl": "https://1x1.a-mo.net/hbx/bwin",
+                "price": 0.50,
                 "w": 300
               }
             ],
@@ -264,16 +257,12 @@
             ],
             "cid": "668",
             "crid": "253510977",
-            "ext": {
-              "dp": 0.475762,
-              "lid": 142443,
-              "sbid": "668"
-            },
+            "ext": {},
             "h": 250,
             "id": "8911104898220857797",
             "impid": "6a362d3a9db4eba300x250",
-            "nurl": "https://1x1.a-mo.net/hbx/bwin?A=an&B=142443&D=&a=redflagdeals%2Fhotdeals_home&ad=dell.com.au&ai=12601&aid=_dax0tpmca&aud=1&av=&b=forums.redflagdeals.com&bid=8911104898220857797&ci=668&cn=&cn3=9&cr=253510977&ct=0&cv=f0ca0bda&do=forums.redflagdeals.com&h=250&i=1&mid=c29ydGFibGUuY29t&p=0.14811014298411188&pp=1481&r=0&uf=&v=&w=300&wv=aas-1f823e18-a&np=${AUCTION_PRICE}",
-            "price": 0.14811014298411188,
+            "nurl": "https://1x1.a-mo.net/hbx/bwin",
+            "price": 0.50,
             "w": 300
           },
           "type": "banner"
@@ -287,16 +276,12 @@
             ],
             "cid": "668",
             "crid": "253510977",
-            "ext": {
-              "dp": 0.437403,
-              "lid": 142443,
-              "sbid": "668"
-            },
+            "ext": {},
             "h": 250,
             "id": "430444686086263488",
             "impid": "6a362d3a9db4eba300x250",
-            "nurl": "https://1x1.a-mo.net/hbx/bwin?A=an&B=142443&D=&a=redflagdeals%2Fhotdeals_home&ad=dell.com.au&ai=12601&aid=_dax0tpmca&aud=1&av=&b=forums.redflagdeals.com&bid=430444686086263488&ci=668&cn=&cn3=9&cr=253510977&ct=0&cv=f0ca0bda&do=forums.redflagdeals.com&h=250&i=1&mid=c29ydGFibGUuY29t&p=0.1361685482902785&pp=1361&r=0&uf=&v=&w=300&wv=aas-1f823e18-a&np=${AUCTION_PRICE}",
-            "price": 0.1361685482902785,
+            "nurl": "https://1x1.a-mo.net/hbx/bwin",
+            "price": 0.50,
             "w": 300
           },
           "type": "banner"
