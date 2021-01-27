@@ -886,7 +886,7 @@ func TestBadRequestLogging(t *testing.T) {
 	if ext.Status != 0 {
 		t.Errorf("The Status code should be 0. Got %d", ext.Status)
 	}
-	if nil != ext.RequestHeaders || len(ext.RequestHeaders) > 0 {
+	if len(ext.RequestHeaders) > 0 {
 		t.Errorf("The request headers should be empty. Got %s", ext.RequestHeaders)
 	}
 }

@@ -95,9 +95,9 @@
           {
             "uri": "audienceNetworkTest.com",
             "requestbody": "audienceNetworkTestRequestBody",
+            "requestheaders": null,
             "responsebody": "audienceNetworkTestResponseBody",
-            "status": 200,
-            "requestheaders": null
+            "status": 200
           }
         ]
       }
@@ -151,18 +151,18 @@
             {
               "uri": "appnexusTest.com",
               "requestbody": "appnexusTestRequestBody",
+              "requestheaders": { "header_1" : ["value_11", "value_12"], "header_2" : ["value_21"] },
               "responsebody": "appnexusTestResponseBody",
-              "status": 200,
-              "requestheaders": { "header_1" : ["value_11", "value_12"], "header_2" : ["value_21"] }
+              "status": 200
             }
           ],
           "audienceNetwork": [
             {
               "uri": "audienceNetworkTest.com",
               "requestbody": "audienceNetworkTestRequestBody",
+              "requestheaders": null,
               "responsebody": "audienceNetworkTestResponseBody",
-              "status": 200,
-              "requestheaders": null
+              "status": 200
             }
           ]
         },

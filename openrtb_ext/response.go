@@ -57,9 +57,9 @@ type ExtBidderError struct {
 type ExtHttpCall struct {
 	Uri            string              `json:"uri"`
 	RequestBody    string              `json:"requestbody"`
+	RequestHeaders map[string][]string `json:"requestheaders"`
 	ResponseBody   string              `json:"responsebody"`
 	Status         int                 `json:"status"`
-	RequestHeaders map[string][]string `json:"requestheaders"`
 }
 
 // CookieStatus describes the allowed values for bidresponse.ext.usersync.{bidder}.status
