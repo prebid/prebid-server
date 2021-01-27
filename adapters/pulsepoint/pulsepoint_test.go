@@ -92,7 +92,6 @@ func TestPulsePointOpenRTBRequest(t *testing.T) {
 	bidder := req.Bidders[0]
 	adapter := NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	adapter.Call(ctx, req, bidder)
-	fmt.Println(service.LastBidRequest)
 	adapterstest.VerifyIntValue(len(service.LastBidRequest.Imp), 1, t)
 	adapterstest.VerifyStringValue(service.LastBidRequest.Imp[0].TagID, "1001", t)
 	adapterstest.VerifyStringValue(service.LastBidRequest.Site.Publisher.ID, "2001", t)
