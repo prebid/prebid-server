@@ -24,8 +24,6 @@ const nurlVideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
 const beachfrontAdapterVersion = "0.9.2"
-const theEndOfTheInternet = "255.255.255.255" // Dummy IP address to use for 'live' test requests, i.e. Postman. The
-// video backend requires an IP and it cant be local.
 
 const minBidFloor = 0.01
 
@@ -314,7 +312,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	}
 
 	if request.Device != nil {
-		bfr.IP = getIP(request.Device.IP)
+		bfr.IP = request.Device.IP
 		bfr.DeviceModel = request.Device.Model
 		bfr.DeviceOs = request.Device.OS
 		if request.Device.DNT != nil {
@@ -465,7 +463,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		bfReqs[i].Request.Imp[0] = imp
 
 		if bfReqs[i].Request.Device != nil && bfReqs[i].Request.Device.IP != "" {
-			bfReqs[i].Request.Device.IP = getIP(bfReqs[i].Request.Device.IP)
+			bfReqs[i].Request.Device.IP = bfReqs[i].Request.Device.IP
 		}
 	}
 
@@ -678,16 +676,6 @@ func isSecure(page string) int8 {
 
 	return 0
 
-}
-
-func getIP(ip string) string {
-	// This will only effect testing. The backend will return "" for localhost IPs,
-	// and seems not to know what IPv6 is, so just setting it to one that is not likely to
-	// be used.
-	if ip == "" || ip == "::1" || ip == "127.0.0.1" {
-		return theEndOfTheInternet
-	}
-	return ip
 }
 
 func removeVideoElement(slice []beachfrontVideoRequest, s int) []beachfrontVideoRequest {
