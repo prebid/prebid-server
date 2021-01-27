@@ -34,7 +34,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "bidder required",
+      "value": "bidder parameters required",
       "comparison": "literal"
     }
   ]

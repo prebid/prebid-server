@@ -13,11 +13,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type DecenterAdsAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
-func (a *DecenterAdsAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -26,16 +26,6 @@ func (a *DecenterAdsAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapte
 	errs := make([]error, 0, len(impressions))
 
 	for _, impression := range impressions {
-		if impression.Banner == nil && impression.Video == nil && impression.Native == nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: "DecenterAds only supports banner, video or native ads",
-			})
-			continue
-		}
-		if len(impression.Ext) == 0 {
-			errs = append(errs, errors.New("impression extensions required"))
-			continue
-		}
 		var bidderExt adapters.ExtImpBidder
 		err := json.Unmarshal(impression.Ext, &bidderExt)
 		if err != nil {
@@ -43,17 +33,13 @@ func (a *DecenterAdsAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapte
 			continue
 		}
 		if len(bidderExt.Bidder) == 0 {
-			errs = append(errs, errors.New("bidder required"))
+			errs = append(errs, errors.New("bidder parameters required"))
 			continue
 		}
 		var decenteradsExt openrtb_ext.ExtImpDecenterAds
 		err = json.Unmarshal(bidderExt.Bidder, &decenteradsExt)
 		if err != nil {
 			errs = append(errs, err)
-			continue
-		}
-		if decenteradsExt.PlacementID == "" {
-			errs = append(errs, errors.New("DecenterAds placementId required"))
 			continue
 		}
 		impExtJSON, err := json.Marshal(decenteradsExt)
@@ -77,14 +63,10 @@ func (a *DecenterAdsAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapte
 	}
 
 	request.Imp = impressions
-
-	if len(result) == 0 {
-		return nil, errs
-	}
 	return result, errs
 }
 
-func (a *DecenterAdsAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	switch responseData.StatusCode {
@@ -113,32 +95,10 @@ func (a *DecenterAdsAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.R
 	response := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 
 	for _, seatBid := range bidResponse.SeatBid {
-		for _, bid := range seatBid.Bid {
-			bid := bid // pin https://github.com/kyoh86/scopelint#whats-this
-			var bidType openrtb_ext.BidType
-			for _, impression := range request.Imp {
-				if impression.ID != bid.ImpID {
-					continue
-				}
-				switch {
-				case impression.Banner != nil:
-					bidType = openrtb_ext.BidTypeBanner
-				case impression.Video != nil:
-					bidType = openrtb_ext.BidTypeVideo
-				case impression.Native != nil:
-					bidType = openrtb_ext.BidTypeNative
-				}
-				break
-			}
-			if bidType == "" {
-				errs = append(errs, &errortypes.BadServerResponse{
-					Message: "ignoring bid id=" + bid.ID + ", request doesn't contain any valid impression with id=" + bid.ImpID,
-				})
-				continue
-			}
+		for i := range seatBid.Bid {
 			response.Bids = append(response.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: bidType,
+				Bid:     &seatBid.Bid[i],
+				BidType: getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp),
 			})
 		}
 	}
@@ -146,9 +106,26 @@ func (a *DecenterAdsAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.R
 	return response, errs
 }
 
+func getMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner
+			} else if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo
+			} else if imp.Native != nil {
+				return openrtb_ext.BidTypeNative
+			} else if imp.Audio != nil {
+				return openrtb_ext.BidTypeAudio
+			}
+		}
+	}
+	return openrtb_ext.BidTypeBanner
+}
+
 // Builder builds a new instance of the DecenterAds adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &DecenterAdsAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
