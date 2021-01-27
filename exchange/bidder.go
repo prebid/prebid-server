@@ -94,8 +94,6 @@ type pbsOrtbSeatBid struct {
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
 func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *adapters.DebugInfo) adaptedBidder {
-	bidderDebugInfo := adapters.DebugInfo{parseDebugInfo(debugInfo)}
-
 	return &bidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
@@ -104,7 +102,7 @@ func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		config: bidderAdapterConfig{
 			Debug:              cfg.Debug,
 			DisableConnMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
-			DebugInfo:          bidderDebugInfo,
+			DebugInfo:          adapters.DebugInfo{Allow: parseDebugInfo(debugInfo)},
 		},
 	}
 }
