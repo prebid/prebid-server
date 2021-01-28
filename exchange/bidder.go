@@ -310,17 +310,19 @@ func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset
 func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 	if httpInfo.err == nil {
 		return &openrtb_ext.ExtHttpCall{
-			Uri:          httpInfo.request.Uri,
-			RequestBody:  string(httpInfo.request.Body),
-			ResponseBody: string(httpInfo.response.Body),
-			Status:       httpInfo.response.StatusCode,
+			Uri:            httpInfo.request.Uri,
+			RequestBody:    string(httpInfo.request.Body),
+			ResponseBody:   string(httpInfo.response.Body),
+			Status:         httpInfo.response.StatusCode,
+			RequestHeaders: httpInfo.request.Headers,
 		}
 	} else if httpInfo.request == nil {
 		return &openrtb_ext.ExtHttpCall{}
 	} else {
 		return &openrtb_ext.ExtHttpCall{
-			Uri:         httpInfo.request.Uri,
-			RequestBody: string(httpInfo.request.Body),
+			Uri:            httpInfo.request.Uri,
+			RequestBody:    string(httpInfo.request.Body),
+			RequestHeaders: httpInfo.request.Headers,
 		}
 	}
 }
