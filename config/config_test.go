@@ -534,12 +534,6 @@ func TestNegativePrometheusTimeout(t *testing.T) {
 	assertOneError(t, cfg.validate(), "metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got timeout=0 and port=8001")
 }
 
-func TestOverflowedVendorID(t *testing.T) {
-	cfg := newDefaultConfig(t)
-	cfg.GDPR.HostVendorID = (0xffff) + 1
-	assertOneError(t, cfg.validate(), "gdpr.host_vendor_id must be in the range [0, 65535]. Got 65536")
-}
-
 func TestInvalidHostVendorID(t *testing.T) {
 	tests := []struct {
 		description  string
