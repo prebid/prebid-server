@@ -40,7 +40,7 @@ func TestBuildAdaptersSuccess(t *testing.T) {
 
 	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{})
 	appnexusBidderWithInfo := adapters.EnforceBidderInfo(appnexusBidder, infoActive)
-	appnexusBidderAdapted := adaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus)
+	appnexusBidderAdapted := adaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil)
 	appnexusBidderValidated := addValidatedBidderMiddleware(appnexusBidderAdapted)
 
 	idLegacyAdapted := &adaptedAdapter{lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "anyEndpoint")}
@@ -77,11 +77,11 @@ func TestBuildExchangeBidders(t *testing.T) {
 
 	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{})
 	appnexusBidderWithInfo := adapters.EnforceBidderInfo(appnexusBidder, infoActive)
-	appnexusBidderAdapted := adaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus)
+	appnexusBidderAdapted := adaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil)
 
 	rubiconBidder, _ := rubicon.Builder(openrtb_ext.BidderRubicon, config.Adapter{})
 	rubiconBidderWithInfo := adapters.EnforceBidderInfo(rubiconBidder, infoActive)
-	rubiconBidderAdapted := adaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon)
+	rubiconBidderAdapted := adaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon, nil)
 
 	testCases := []struct {
 		description     string
@@ -397,7 +397,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 
 type fakeAdaptedBidder struct{}
 
-func (fakeAdaptedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
+func (fakeAdaptedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	return nil, nil
 }
 

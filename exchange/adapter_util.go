@@ -38,7 +38,12 @@ func buildExchangeBidders(cfg *config.Configuration, infos adapters.BidderInfos,
 
 	exchangeBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(bidders))
 	for bidderName, bidder := range bidders {
-		exchangeBidders[bidderName] = adaptBidder(bidder, client, cfg, me, bidderName)
+		info, infoFound := infos[string(bidderName)]
+		if !infoFound {
+			errs = append(errs, fmt.Errorf("%v: bidder info not found", bidder))
+			continue
+		}
+		exchangeBidders[bidderName] = adaptBidder(bidder, client, cfg, me, bidderName, info.Debug)
 	}
 
 	return exchangeBidders, nil
