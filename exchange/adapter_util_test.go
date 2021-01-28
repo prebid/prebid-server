@@ -10,7 +10,6 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
-	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -214,9 +213,9 @@ func TestBuildBidders(t *testing.T) {
 		},
 		{
 			description:   "Success - Ignores Legacy",
-			adapterConfig: map[string]config.Adapter{"appnexus": {}, "lifestreet": {}, "pulsepoint": {}},
-			bidderInfos:   map[string]adapters.BidderInfo{"appnexus": infoActive, "lifestreet": infoActive, "pulsepoint": infoActive},
-			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderLifestreet: inconsequentialBuilder, openrtb_ext.BidderPulsepoint: inconsequentialBuilder},
+			adapterConfig: map[string]config.Adapter{"appnexus": {}, "lifestreet": {}},
+			bidderInfos:   map[string]adapters.BidderInfo{"appnexus": infoActive, "lifestreet": infoActive},
+			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderLifestreet: inconsequentialBuilder},
 			expectedBidders: map[openrtb_ext.BidderName]adapters.Bidder{
 				openrtb_ext.BidderAppnexus: adapters.EnforceBidderInfo(appnexusBidder, infoActive),
 			},
@@ -267,7 +266,6 @@ func TestBuildExchangeBiddersLegacy(t *testing.T) {
 	cfg := config.Adapter{Endpoint: "anyEndpoint"}
 
 	expectedLifestreet := &adaptedAdapter{lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "anyEndpoint")}
-	expectedPulsepoint := &adaptedAdapter{pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "anyEndpoint")}
 
 	testCases := []struct {
 		description   string
@@ -276,28 +274,22 @@ func TestBuildExchangeBiddersLegacy(t *testing.T) {
 		expected      map[openrtb_ext.BidderName]adaptedBidder
 	}{
 		{
-			description:   "All Active",
-			adapterConfig: map[string]config.Adapter{"lifestreet": cfg, "pulsepoint": cfg},
-			bidderInfos:   map[string]adapters.BidderInfo{"lifestreet": infoActive, "pulsepoint": infoActive},
-			expected:      map[openrtb_ext.BidderName]adaptedBidder{"lifestreet": expectedLifestreet, "pulsepoint": expectedPulsepoint},
-		},
-		{
-			description:   "All Disabled",
-			adapterConfig: map[string]config.Adapter{"lifestreet": cfg, "pulsepoint": cfg},
-			bidderInfos:   map[string]adapters.BidderInfo{"lifestreet": infoDisabled, "pulsepoint": infoDisabled},
-			expected:      map[openrtb_ext.BidderName]adaptedBidder{},
-		},
-		{
-			description:   "All Unknown",
-			adapterConfig: map[string]config.Adapter{"lifestreet": cfg, "pulsepoint": cfg},
-			bidderInfos:   map[string]adapters.BidderInfo{"lifestreet": infoUnknown, "pulsepoint": infoUnknown},
-			expected:      map[openrtb_ext.BidderName]adaptedBidder{},
-		},
-		{
-			description:   "Mixed",
-			adapterConfig: map[string]config.Adapter{"lifestreet": cfg, "pulsepoint": cfg},
-			bidderInfos:   map[string]adapters.BidderInfo{"lifestreet": infoActive, "pulsepoint": infoUnknown},
+			description:   "Active",
+			adapterConfig: map[string]config.Adapter{"lifestreet": cfg},
+			bidderInfos:   map[string]adapters.BidderInfo{"lifestreet": infoActive},
 			expected:      map[openrtb_ext.BidderName]adaptedBidder{"lifestreet": expectedLifestreet},
+		},
+		{
+			description:   "Disabled",
+			adapterConfig: map[string]config.Adapter{"lifestreet": cfg},
+			bidderInfos:   map[string]adapters.BidderInfo{"lifestreet": infoDisabled},
+			expected:      map[openrtb_ext.BidderName]adaptedBidder{},
+		},
+		{
+			description:   "Unknown",
+			adapterConfig: map[string]config.Adapter{"lifestreet": cfg},
+			bidderInfos:   map[string]adapters.BidderInfo{"lifestreet": infoUnknown},
+			expected:      map[openrtb_ext.BidderName]adaptedBidder{},
 		},
 	}
 
