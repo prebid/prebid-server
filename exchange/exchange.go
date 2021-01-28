@@ -134,10 +134,14 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
 
+	if debugLog == nil {
+		debugLog = &DebugLog{Enabled: false}
+	}
+
 	debugInfo := getDebugInfo(r.BidRequest, requestExt)
 
-	debugInfo = debugInfo && r.Account.DebugAllowed
-	debugLog.Enabled = debugLog.Enabled && r.Account.DebugAllowed
+	debugInfo = debugInfo && r.Account.DebugAllow
+	debugLog.Enabled = debugLog.Enabled && r.Account.DebugAllow
 
 	if debugInfo {
 		ctx = e.makeDebugContext(ctx, debugInfo)
@@ -166,7 +170,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.currencyConverter.Rates()
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllowed)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow)
 
 	var auc *auction
 	var cacheErrs []error
@@ -200,7 +204,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			}
 
 			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
-			if debugLog != nil && debugLog.Enabled {
+			if debugLog.Enabled {
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)
 				} else {
@@ -213,11 +217,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}
-			/*// Ensure caching errors are added in case auc.doCache was called and errors were returned
-			if len(cacheErrs) > 0 {
-				bidderCacheErrs := errsToBidderErrors(cacheErrs)
-				bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = append(bidResponseExt.Errors[openrtb_ext.PrebidExtKey], bidderCacheErrs...)
-			}*/
+
 			targData.setTargeting(auc, r.BidRequest.App != nil, bidCategory)
 
 		}
@@ -225,7 +225,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	} else {
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
 
-		if debugLog != nil && debugLog.Enabled {
+		if debugLog.Enabled {
 
 			if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 				debugLog.Data.Response = string(bidRespExtBytes)

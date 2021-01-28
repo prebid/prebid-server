@@ -168,11 +168,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		// - debugContextKey (url param) in true
 		// - account debug is allowed
 		// - bidder debug is allowed
-		if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
-			if accountDebugAllowed {
-				if bidder.config.DebugInfo.Allow {
-					seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
-				}
+		if accountDebugAllowed && bidder.config.DebugInfo.Allow {
+			if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
+				seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
 			}
 		}
 

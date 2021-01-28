@@ -272,7 +272,6 @@ func TestDebugBehaviour(t *testing.T) {
 	e.categoriesFetcher = categoriesFetcher
 
 	ctx := context.Background()
-	debugLog := DebugLog{}
 
 	// Run tests
 	for _, test := range testCases {
@@ -294,13 +293,13 @@ func TestDebugBehaviour(t *testing.T) {
 
 		auctionRequest := AuctionRequest{
 			BidRequest: bidRequest,
-			Account:    config.Account{DebugAllowed: test.debugData.accountLevelDebugAllowed},
+			Account:    config.Account{DebugAllow: test.debugData.accountLevelDebugAllowed},
 			UserSyncs:  &emptyUsersync{},
 			StartTime:  time.Now(),
 		}
 
 		// Run test
-		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, &debugLog)
+		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, nil)
 
 		// Assert no HoldAuction error
 		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
@@ -337,6 +336,26 @@ func TestDebugBehaviour(t *testing.T) {
 
 func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 
+	type testCase struct {
+		bidder1DebugEnabled bool
+		bidder2DebugEnabled bool
+	}
+
+	testCases := []testCase{
+		{
+			bidder1DebugEnabled: true, bidder2DebugEnabled: true,
+		},
+		{
+			bidder1DebugEnabled: true, bidder2DebugEnabled: false,
+		},
+		{
+			bidder1DebugEnabled: false, bidder2DebugEnabled: true,
+		},
+		{
+			bidder1DebugEnabled: false, bidder2DebugEnabled: false,
+		},
+	}
+
 	// Set up test
 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
@@ -344,22 +363,9 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(noBidServer))
 	defer server.Close()
 
-	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
-	if error != nil {
-		t.Errorf("Failed to create a category Fetcher: %v", error)
-	}
-
-	bidRequest := &openrtb.BidRequest{
-		ID: "some-request-id",
-		Imp: []openrtb.Imp{{
-			ID:     "some-impression-id",
-			Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"telaria": {"placementId": 1}}`),
-		}},
-		Site:   &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
-		Device: &openrtb.Device{UA: "curl/7.54.0", IP: "::1"},
-		AT:     1,
-		TMax:   500,
+	categoriesFetcher, err := newCategoryFetcher("./test/category-mapping")
+	if err != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
 
 	bidderImpl := &goodSingleBidder{
@@ -373,10 +379,6 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 	}
 
 	e := new(exchange)
-	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &adapters.DebugInfo{Allow: false}),
-		openrtb_ext.BidderTelaria:  adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &adapters.DebugInfo{Allow: true}),
-	}
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.DummyMetricsEngine{}
 	e.gDPR = gdpr.AlwaysAllow{}
@@ -385,37 +387,69 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 
 	debugLog := DebugLog{}
 
-	bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
+	for _, testCase := range testCases {
+		bidRequest := &openrtb.BidRequest{
+			ID: "some-request-id",
+			Imp: []openrtb.Imp{{
+				ID:     "some-impression-id",
+				Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+				Ext:    json.RawMessage(`{"telaria": {"placementId": 1}, "appnexus": {"placementid": 2}}`),
+			}},
+			Site:   &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+			Device: &openrtb.Device{UA: "curl/7.54.0", IP: "::1"},
+			AT:     1,
+			TMax:   500,
+		}
 
-	auctionRequest := AuctionRequest{
-		BidRequest: bidRequest,
-		Account:    config.Account{DebugAllowed: true},
-		UserSyncs:  &emptyUsersync{},
-		StartTime:  time.Now(),
+		bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
+
+		auctionRequest := AuctionRequest{
+			BidRequest: bidRequest,
+			Account:    config.Account{DebugAllow: true},
+			UserSyncs:  &emptyUsersync{},
+			StartTime:  time.Now(),
+		}
+
+		e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
+			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &adapters.DebugInfo{Allow: testCase.bidder1DebugEnabled}),
+			openrtb_ext.BidderTelaria:  adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &adapters.DebugInfo{Allow: testCase.bidder2DebugEnabled}),
+		}
+		// Run test
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
+		// Assert no HoldAuction err
+		assert.NoErrorf(t, err, "ex.HoldAuction returned an err")
+		assert.NotNilf(t, outBidResponse.Ext, "outBidResponse.Ext should not be nil")
+
+		actualExt := &openrtb_ext.ExtBidResponse{}
+		err = json.Unmarshal(outBidResponse.Ext, actualExt)
+		assert.NoErrorf(t, err, "JSON field unmarshaling err. ")
+
+		assert.NotEmpty(t, actualExt.Prebid, "ext.prebid should not be empty")
+		assert.NotEmpty(t, actualExt.Prebid.AuctionTimestamp, "ext.prebid.auctiontimestamp should not be empty when AuctionRequest.StartTime is set")
+		assert.Equal(t, auctionRequest.StartTime.UnixNano()/1e+6, actualExt.Prebid.AuctionTimestamp, "ext.prebid.auctiontimestamp has incorrect value")
+
+		assert.NotNilf(t, actualExt, "ext.debug field is expected to be included in this outBidResponse.Ext and not be nil")
+
+		// Assert "Debug fields
+		if testCase.bidder1DebugEnabled {
+			assert.Equal(t, server.URL, actualExt.Debug.HttpCalls["appnexus"][0].Uri, "Url for bidder with debug enabled is incorrect")
+			assert.NotNilf(t, actualExt.Debug.HttpCalls["appnexus"][0].RequestBody, "ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil")
+		}
+		if testCase.bidder2DebugEnabled {
+			assert.Equal(t, server.URL, actualExt.Debug.HttpCalls["telaria"][0].Uri, "Url for bidder with debug enabled is incorrect")
+			assert.NotNilf(t, actualExt.Debug.HttpCalls["telaria"][0].RequestBody, "ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil")
+		}
+		if !testCase.bidder1DebugEnabled {
+			assert.Nil(t, actualExt.Debug.HttpCalls["appnexus"], "ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil")
+		}
+		if !testCase.bidder2DebugEnabled {
+			assert.Nil(t, actualExt.Debug.HttpCalls["telaria"], "ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil")
+		}
+
+		if testCase.bidder1DebugEnabled && testCase.bidder2DebugEnabled {
+			assert.Equal(t, 2, len(actualExt.Debug.HttpCalls), "With bidder level debug enable option for both bidders http calls should have 2 elements")
+		}
 	}
-
-	// Run test
-	outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
-
-	// Assert no HoldAuction error
-	assert.NoErrorf(t, err, "ex.HoldAuction returned an error")
-	assert.NotNilf(t, outBidResponse.Ext, "outBidResponse.Ext should not be nil")
-
-	actualExt := &openrtb_ext.ExtBidResponse{}
-	err = json.Unmarshal(outBidResponse.Ext, actualExt)
-	assert.NoErrorf(t, err, "JSON field unmarshaling error. ")
-
-	assert.NotEmpty(t, actualExt.Prebid, "ext.prebid should not be empty")
-	assert.NotEmpty(t, actualExt.Prebid.AuctionTimestamp, "ext.prebid.auctiontimestamp should not be empty when AuctionRequest.StartTime is set")
-	assert.Equal(t, auctionRequest.StartTime.UnixNano()/1e+6, actualExt.Prebid.AuctionTimestamp, "ext.prebid.auctiontimestamp has incorrect value")
-
-	assert.NotNilf(t, actualExt, "ext.debug field is expected to be included in this outBidResponse.Ext and not be nil")
-
-	// Assert "Debug fields
-	assert.Equal(t, 1, len(actualExt.Debug.HttpCalls), "With bidder level debug disable option http calls should be empty")
-	assert.Equal(t, server.URL, actualExt.Debug.HttpCalls["telaria"][0].Uri, "Url for bidder with debug enabled is incorrect")
-	assert.NotNilf(t, actualExt.Debug.HttpCalls["telaria"][0].RequestBody, "ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil")
-	assert.Nil(t, actualExt.Debug.HttpCalls["appnexus"], "ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil")
 
 }
 
@@ -1531,7 +1565,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		Account: config.Account{
 			ID:            "testaccount",
 			EventsEnabled: spec.EventsEnabled,
-			DebugAllowed:  true,
+			DebugAllow:    true,
 		},
 		UserSyncs: mockIdFetcher(spec.IncomingRequest.Usersyncs),
 	}
