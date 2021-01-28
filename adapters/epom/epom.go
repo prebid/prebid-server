@@ -12,42 +12,35 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type EpomAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
 // Builder builds a new instance of the Epom adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &EpomAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *EpomAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requests []*adapters.RequestData, errors []error) {
+func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requests []*adapters.RequestData, errors []error) {
 	rq, errs := a.makeRequest(request)
 
 	if len(errs) > 0 {
-		errors = append(errors, errs...)
-		return nil, errors
+		return nil, errs
 	}
 
 	if rq != nil {
 		requests = append(requests, rq)
 	}
 
-	return requests, errors
+	return requests, nil
 }
 
-func (a *EpomAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 	var validImps []openrtb.Imp
-
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "No impressions in request",
-		}}
-	}
 
 	if request.Device == nil || request.Device.IP == "" {
 		return nil, []error{&errortypes.BadInput{
@@ -58,12 +51,6 @@ func (a *EpomAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Reques
 	if request.Site == nil && request.App == nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Site or app field shouldn't be empty",
-		}}
-	}
-
-	if request.Site != nil && request.App != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Site and app can't be filled simultaneously",
 		}}
 	}
 
@@ -108,7 +95,7 @@ func preprocess(imp *openrtb.Imp) error {
 	return nil
 }
 
-func (a *EpomAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
