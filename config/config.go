@@ -217,7 +217,7 @@ func (cfg *GDPR) validate(errs []error) []error {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
 	}
 	if cfg.TCF1.FetchGVL == true {
-		glog.Warning("gdpr.tcf1.fetch_gvl is deprecated and will be removed in a future version, at which point TCF1 will always use the fallback GVL")
+		errs = append(errs, fmt.Errorf("gdpr.tcf1.fetch_gvl has been discontinued and must be removed from your config. TCF1 will always use the fallback GVL going forward"))
 	}
 	return errs
 }
@@ -910,7 +910,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
-	v.SetDefault("gdpr.tcf1.fetch_gvl", true)
+	v.SetDefault("gdpr.tcf1.fetch_gvl", false)
 	v.SetDefault("gdpr.tcf1.fallback_gvl_path", "./static/tcf1/fallback_gvl.json")
 	v.SetDefault("gdpr.tcf2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose1.enabled", true)
