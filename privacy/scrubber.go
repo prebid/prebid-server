@@ -1,9 +1,21 @@
 package privacy
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
+)
+
+// ScrubStrategyIPV4 defines the approach to scrub PII from an IPV4 address.
+type ScrubStrategyIPV4 int
+
+const (
+	// ScrubStrategyIPV4None does not remove any part of an IPV4 address.
+	ScrubStrategyIPV4None ScrubStrategyIPV4 = iota
+
+	// ScrubStrategyIPV4Lowest8 zeroes out the last 8 bits of an IPV4 address.
+	ScrubStrategyIPV4Lowest8
 )
 
 // ScrubStrategyIPV6 defines the approach to scrub PII from an IPV6 address.
@@ -34,21 +46,35 @@ const (
 	ScrubStrategyGeoReducedPrecision
 )
 
-// ScrubStrategyDemographic defines the approach to non-location demographic data.
-type ScrubStrategyDemographic int
+// ScrubStrategyUser defines the approach to scrub PII from user data.
+type ScrubStrategyUser int
 
 const (
-	// ScrubStrategyDemographicNone does not remove non-location demographic data.
-	ScrubStrategyDemographicNone ScrubStrategyDemographic = iota
+	// ScrubStrategyUserNone does not remove non-location data.
+	ScrubStrategyUserNone ScrubStrategyUser = iota
 
-	// ScrubStrategyDemographicAgeAndGender removes age and gender data.
-	ScrubStrategyDemographicAgeAndGender
+	// ScrubStrategyUserIDAndDemographic removes the user's buyer id, exchange id year of birth, and gender.
+	ScrubStrategyUserIDAndDemographic
+
+	// ScrubStrategyUserID removes the user's buyer id.
+	ScrubStrategyUserID
+)
+
+// ScrubStrategyDeviceID defines the approach to remove hardware id and device id data.
+type ScrubStrategyDeviceID int
+
+const (
+	// ScrubStrategyDeviceIDNone does not remove hardware id and device id data.
+	ScrubStrategyDeviceIDNone ScrubStrategyDeviceID = iota
+
+	// ScrubStrategyDeviceIDAll removes all hardware and device id data (ifa, mac hashes device id hashes)
+	ScrubStrategyDeviceIDAll
 )
 
 // Scrubber removes PII from parts of an OpenRTB request.
 type Scrubber interface {
-	ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device
-	ScrubUser(user *openrtb.User, demographic ScrubStrategyDemographic, geo ScrubStrategyGeo) *openrtb.User
+	ScrubDevice(device *openrtb.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device
+	ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb.User
 }
 
 type scrubber struct{}
@@ -58,20 +84,28 @@ func NewScrubber() Scrubber {
 	return scrubber{}
 }
 
-func (scrubber) ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
+func (scrubber) ScrubDevice(device *openrtb.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
 	if device == nil {
 		return nil
 	}
 
 	deviceCopy := *device
-	deviceCopy.DIDMD5 = ""
-	deviceCopy.DIDSHA1 = ""
-	deviceCopy.DPIDMD5 = ""
-	deviceCopy.DPIDSHA1 = ""
-	deviceCopy.IFA = ""
-	deviceCopy.MACMD5 = ""
-	deviceCopy.MACSHA1 = ""
-	deviceCopy.IP = scrubIPV4(device.IP)
+
+	switch id {
+	case ScrubStrategyDeviceIDAll:
+		deviceCopy.DIDMD5 = ""
+		deviceCopy.DIDSHA1 = ""
+		deviceCopy.DPIDMD5 = ""
+		deviceCopy.DPIDSHA1 = ""
+		deviceCopy.IFA = ""
+		deviceCopy.MACMD5 = ""
+		deviceCopy.MACSHA1 = ""
+	}
+
+	switch ipv4 {
+	case ScrubStrategyIPV4Lowest8:
+		deviceCopy.IP = scrubIPV4Lowest8(device.IP)
+	}
 
 	switch ipv6 {
 	case ScrubStrategyIPV6Lowest16:
@@ -90,19 +124,24 @@ func (scrubber) ScrubDevice(device *openrtb.Device, ipv6 ScrubStrategyIPV6, geo 
 	return &deviceCopy
 }
 
-func (scrubber) ScrubUser(user *openrtb.User, demographic ScrubStrategyDemographic, geo ScrubStrategyGeo) *openrtb.User {
+func (scrubber) ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb.User {
 	if user == nil {
 		return nil
 	}
 
 	userCopy := *user
-	userCopy.BuyerUID = ""
-	userCopy.ID = ""
 
-	switch demographic {
-	case ScrubStrategyDemographicAgeAndGender:
+	switch strategy {
+	case ScrubStrategyUserIDAndDemographic:
+		userCopy.BuyerUID = ""
+		userCopy.ID = ""
+		userCopy.Ext = scrubUserExtIDs(userCopy.Ext)
 		userCopy.Yob = 0
 		userCopy.Gender = ""
+	case ScrubStrategyUserID:
+		userCopy.BuyerUID = ""
+		userCopy.ID = ""
+		userCopy.Ext = scrubUserExtIDs(userCopy.Ext)
 	}
 
 	switch geo {
@@ -115,7 +154,7 @@ func (scrubber) ScrubUser(user *openrtb.User, demographic ScrubStrategyDemograph
 	return &userCopy
 }
 
-func scrubIPV4(ip string) string {
+func scrubIPV4Lowest8(ip string) string {
 	i := strings.LastIndex(ip, ".")
 	if i == -1 {
 		return ""
@@ -172,4 +211,30 @@ func scrubGeoPrecision(geo *openrtb.Geo) *openrtb.Geo {
 	geoCopy.Lat = float64(int(geo.Lat*100.0+0.5)) / 100.0 // Round Latitude
 	geoCopy.Lon = float64(int(geo.Lon*100.0+0.5)) / 100.0 // Round Longitude
 	return &geoCopy
+}
+
+func scrubUserExtIDs(userExt json.RawMessage) json.RawMessage {
+	if len(userExt) == 0 {
+		return userExt
+	}
+
+	var userExtParsed map[string]json.RawMessage
+	err := json.Unmarshal(userExt, &userExtParsed)
+	if err != nil {
+		return userExt
+	}
+
+	_, hasEids := userExtParsed["eids"]
+	_, hasDigitrust := userExtParsed["digitrust"]
+	if hasEids || hasDigitrust {
+		delete(userExtParsed, "eids")
+		delete(userExtParsed, "digitrust")
+
+		result, err := json.Marshal(userExtParsed)
+		if err == nil {
+			return result
+		}
+	}
+
+	return userExt
 }

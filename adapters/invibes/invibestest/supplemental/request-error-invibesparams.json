@@ -1,0 +1,36 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://publisher.com/url"
+    },
+    "user": {
+      "buyeruid": "1"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 150
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+            "debug": "error"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Error parsing invibesExt parameters",
+      "comparison": "literal"
+    }
+  ]
+}

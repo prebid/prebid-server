@@ -1,0 +1,9 @@
+maintainer:
+  email: "prebiddev@deepintent.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

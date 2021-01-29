@@ -22,9 +22,9 @@ func TestMain(m *testing.M) {
 var validator BidderParamValidator
 
 // TestBidderParamSchemas makes sure that the validator.Schema() function
-// returns valid JSON for all known BidderNames.
+// returns valid JSON for all known CoreBidderNames.
 func TestBidderParamSchemas(t *testing.T) {
-	for _, bidderName := range BidderMap {
+	for _, bidderName := range CoreBidderNames() {
 		schema := validator.Schema(bidderName)
 		if schema == "" {
 			t.Errorf("No schema exists for bidder %s. Does static/bidder-params/%s.json exist?", bidderName, bidderName)
@@ -50,14 +50,66 @@ func TestInvalidParams(t *testing.T) {
 	}
 }
 
-func TestBidderListMatchesBidderMap(t *testing.T) {
-	bidders := BidderList()
-	for _, bidderName := range BidderMap {
-		assert.Contains(t, bidders, bidderName)
-	}
+func TestBidderListDoesNotDefineGeneral(t *testing.T) {
+	assert.NotContains(t, CoreBidderNames(), BidderNameGeneral)
 }
 
-func TestBidderListDoesNotDefineGeneral(t *testing.T) {
-	bidders := BidderList()
-	assert.NotContains(t, bidders, BidderNameGeneral)
+func TestBidderListDoesNotDefineContext(t *testing.T) {
+	assert.NotContains(t, CoreBidderNames(), BidderNameContext)
+}
+
+// TestBidderUniquenessGatekeeping acts as a gatekeeper of bidder name uniqueness. If this test fails
+// when you're building a new adapter, please consider choosing a different bidder name to maintain the
+// current uniqueness threshold, or else start a discussion in the PR.
+func TestBidderUniquenessGatekeeping(t *testing.T) {
+	// Get List Of Bidders
+	// - Exclude duplicates of adapters for the same bidder, as it's unlikely a publisher will use both.
+	var bidders []string
+	for _, bidder := range CoreBidderNames() {
+		if bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn {
+			bidders = append(bidders, string(bidder))
+		}
+	}
+
+	currentThreshold := 6
+	measuredThreshold := minUniquePrefixLength(bidders)
+
+	assert.NotZero(t, measuredThreshold, "BidderMap contains duplicate bidder name values.")
+	assert.LessOrEqual(t, measuredThreshold, currentThreshold)
+}
+
+// minUniquePrefixLength measures the minimun amount of characters needed to uniquely identify
+// one of the strings, or returns 0 if there are duplicates.
+func minUniquePrefixLength(b []string) int {
+	targetingKeyMaxLength := 20
+	for prefixLength := 1; prefixLength <= targetingKeyMaxLength; prefixLength++ {
+		if uniqueForPrefixLength(b, prefixLength) {
+			return prefixLength
+		}
+	}
+	return 0
+}
+
+func uniqueForPrefixLength(b []string, prefixLength int) bool {
+	m := make(map[string]struct{})
+
+	if prefixLength <= 0 {
+		return false
+	}
+
+	for i, n := range b {
+		ns := string(n)
+
+		if len(ns) > prefixLength {
+			ns = ns[0:prefixLength]
+		}
+
+		m[ns] = struct{}{}
+
+		if len(m) != i+1 {
+			return false
+		}
+	}
+
+	return true
 }

@@ -12,6 +12,7 @@ type ExtImpRubicon struct {
 	Inventory json.RawMessage    `json:"inventory,omitempty"`
 	Visitor   json.RawMessage    `json:"visitor,omitempty"`
 	Video     rubiconVideoParams `json:"video"`
+	Debug     impExtRubiconDebug `json:"debug,omitempty"`
 }
 
 // rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.video
@@ -22,4 +23,9 @@ type rubiconVideoParams struct {
 	VideoSizeID  int    `json:"size_id,omitempty"`
 	Skip         int    `json:"skip,omitempty"`
 	SkipDelay    int    `json:"skipdelay,omitempty"`
+}
+
+// rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.debug
+type impExtRubiconDebug struct {
+	CpmOverride float64 `json:"cpmoverride,omitempty"`
 }

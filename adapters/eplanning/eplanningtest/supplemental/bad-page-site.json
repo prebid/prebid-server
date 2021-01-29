@@ -1,0 +1,31 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "w": 600,
+            "h": 300
+          },
+          "ext": {
+            "bidder": {
+              "ci": "12345",
+              "adunit_code": "test_adunitcode"
+            }
+          }
+        }
+      ],
+      "site": {
+        "page": "http://www.page%test.com"
+      }
+    },
+
+    "expectedMakeRequestsErrors": [
+    {
+      "value": "parse (\\\")?http://www.page%test.com(\\\")?: invalid URL escape \\\"%te\\\"",
+      "comparison": "regex"
+    }
+  ]
+}
+  

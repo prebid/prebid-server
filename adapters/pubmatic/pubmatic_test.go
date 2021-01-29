@@ -23,7 +23,14 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "pubmatictest", NewPubmaticBidder(nil, "https://hbopenbid.pubmatic.com/translator?source=prebid-server"))
+	bidder, buildErr := Builder(openrtb_ext.BidderPubmatic, config.Adapter{
+		Endpoint: "https://hbopenbid.pubmatic.com/translator?source=prebid-server"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "pubmatictest", bidder)
 }
 
 // ----------------------------------------------------------------------------
@@ -91,7 +98,7 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 
 func TestPubmaticInvalidCall(t *testing.T) {
 
-	an := NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "blah")
+	an := NewPubmaticLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "blah")
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -112,7 +119,7 @@ func TestPubmaticTimeout(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
@@ -149,7 +156,7 @@ func TestPubmaticInvalidJson(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -185,7 +192,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -216,7 +223,7 @@ func TestPubmaticInvalidInputParameters(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 
 	pbReq := pbs.PBSRequest{}
@@ -289,7 +296,7 @@ func TestPubmaticBasicResponse_MandatoryParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -325,7 +332,7 @@ func TestPubmaticBasicResponse_AllParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -369,7 +376,7 @@ func TestPubmaticMultiImpressionResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -417,7 +424,7 @@ func TestPubmaticMultiAdUnitResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -466,7 +473,7 @@ func TestPubmaticMobileResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -507,7 +514,7 @@ func TestPubmaticInvalidLookupBidIDParameter(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -538,7 +545,7 @@ func TestPubmaticAdSlotParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -674,18 +681,18 @@ func TestPubmaticSampleRequest(t *testing.T) {
 }
 
 func TestGetBidTypeVideo(t *testing.T) {
-	extJSON := `{"BidType":1}`
-	extrm := json.RawMessage(extJSON)
-	actualBidTypeValue := getBidType(extrm)
+	pubmaticExt := new(pubmaticBidExt)
+	pubmaticExt.BidType = new(int)
+	*pubmaticExt.BidType = 1
+	actualBidTypeValue := getBidType(pubmaticExt)
 	if actualBidTypeValue != openrtb_ext.BidTypeVideo {
 		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeVideo, actualBidTypeValue)
 	}
 }
 
 func TestGetBidTypeForMissingBidTypeExt(t *testing.T) {
-	extJSON := `{}`
-	extrm := json.RawMessage(extJSON)
-	actualBidTypeValue := getBidType(extrm)
+	pubmaticExt := pubmaticBidExt{}
+	actualBidTypeValue := getBidType(&pubmaticExt)
 	// banner is the default bid type when no bidType key is present in the bid.ext
 	if actualBidTypeValue != "banner" {
 		t.Errorf("Expected Bid Type value was: banner, actual value is: %v", actualBidTypeValue)
@@ -693,27 +700,30 @@ func TestGetBidTypeForMissingBidTypeExt(t *testing.T) {
 }
 
 func TestGetBidTypeBanner(t *testing.T) {
-	extJSON := `{"BidType":0}`
-	extrm := json.RawMessage(extJSON)
-	actualBidTypeValue := getBidType(extrm)
+	pubmaticExt := new(pubmaticBidExt)
+	pubmaticExt.BidType = new(int)
+	*pubmaticExt.BidType = 0
+	actualBidTypeValue := getBidType(pubmaticExt)
 	if actualBidTypeValue != openrtb_ext.BidTypeBanner {
 		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeBanner, actualBidTypeValue)
 	}
 }
 
 func TestGetBidTypeNative(t *testing.T) {
-	extJSON := `{"BidType":2}`
-	extrm := json.RawMessage(extJSON)
-	actualBidTypeValue := getBidType(extrm)
+	pubmaticExt := new(pubmaticBidExt)
+	pubmaticExt.BidType = new(int)
+	*pubmaticExt.BidType = 2
+	actualBidTypeValue := getBidType(pubmaticExt)
 	if actualBidTypeValue != openrtb_ext.BidTypeNative {
 		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeNative, actualBidTypeValue)
 	}
 }
 
 func TestGetBidTypeForUnsupportedCode(t *testing.T) {
-	extJSON := `{"BidType":99}`
-	extrm := json.RawMessage(extJSON)
-	actualBidTypeValue := getBidType(extrm)
+	pubmaticExt := new(pubmaticBidExt)
+	pubmaticExt.BidType = new(int)
+	*pubmaticExt.BidType = 99
+	actualBidTypeValue := getBidType(pubmaticExt)
 	if actualBidTypeValue != openrtb_ext.BidTypeBanner {
 		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeBanner, actualBidTypeValue)
 	}

@@ -9,3 +9,4 @@ capabilities:
     mediaTypes:
       - banner
       - video
+modifyingVastXmlAllowed: true

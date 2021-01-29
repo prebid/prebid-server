@@ -2,24 +2,26 @@ package adocean
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const adapterVersion = "1.0.0"
+const adapterVersion = "1.1.0"
 const maxUriLength = 8000
 const measurementCode = `
 	<script>
@@ -51,25 +53,29 @@ type ResponseAdUnit struct {
 	Error    string `json:"error"`
 }
 
-func NewAdOceanBidder(client *http.Client, endpointTemplateString string) *AdOceanAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
-	endpointTemplate, err := template.New("endpointTemplate").Parse(endpointTemplateString)
+type requestData struct {
+	Url        *url.URL
+	Headers    *http.Header
+	SlaveSizes map[string]string
+}
+
+// Builder builds a new instance of the AdOcean adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint template")
-		return nil
+		return nil, errors.New("Unable to parse endpoint template")
 	}
 
 	whiteSpace := regexp.MustCompile(`\s+`)
 
-	return &AdOceanAdapter{
-		http:             a,
+	bidder := &AdOceanAdapter{
 		endpointTemplate: *endpointTemplate,
 		measurementCode:  whiteSpace.ReplaceAllString(measurementCode, " "),
 	}
+	return bidder, nil
 }
 
 type AdOceanAdapter struct {
-	http             *adapters.HTTPAdapter
 	endpointTemplate template.Template
 	measurementCode  string
 }
@@ -89,44 +95,59 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		}
 	}
 
-	var httpRequests []*adapters.RequestData
 	var errors []error
-
+	var err error
+	requestsData := make([]*requestData, 0, len(request.Imp))
 	for _, auction := range request.Imp {
-		newHttpRequest, err := a.makeRequest(httpRequests, &auction, request, consentString)
+		requestsData, err = a.addNewBid(requestsData, &auction, request, consentString)
 		if err != nil {
 			errors = append(errors, err)
-		} else if newHttpRequest != nil {
-			httpRequests = append(httpRequests, newHttpRequest)
 		}
+	}
+
+	httpRequests := make([]*adapters.RequestData, 0, len(requestsData))
+	for _, requestData := range requestsData {
+		httpRequests = append(httpRequests, &adapters.RequestData{
+			Method:  "GET",
+			Uri:     requestData.Url.String(),
+			Headers: *requestData.Headers,
+		})
 	}
 
 	return httpRequests, errors
 }
 
-func (a *AdOceanAdapter) makeRequest(existingRequests []*adapters.RequestData, imp *openrtb.Imp, request *openrtb.BidRequest, consentString string) (*adapters.RequestData, error) {
+func (a *AdOceanAdapter) addNewBid(
+	requestsData []*requestData,
+	imp *openrtb.Imp,
+	request *openrtb.BidRequest,
+	consentString string,
+) ([]*requestData, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{
+		return requestsData, &errortypes.BadInput{
 			Message: "Error parsing bidderExt object",
 		}
 	}
 
 	var adOceanExt openrtb_ext.ExtImpAdOcean
 	if err := json.Unmarshal(bidderExt.Bidder, &adOceanExt); err != nil {
-		return nil, &errortypes.BadInput{
+		return requestsData, &errortypes.BadInput{
 			Message: "Error parsing adOceanExt parameters",
 		}
 	}
 
-	addedToExistingRequest := addToExistingRequest(existingRequests, &adOceanExt, imp.ID)
+	addedToExistingRequest := addToExistingRequest(requestsData, &adOceanExt, imp, (request.Test == 1))
 	if addedToExistingRequest {
-		return nil, nil
+		return requestsData, nil
 	}
 
-	url, err := a.makeURL(&adOceanExt, imp.ID, request, consentString)
+	slaveSizes := map[string]string{}
+	slaveSizes[adOceanExt.SlaveID] = getImpSizes(imp)
+
+	url, err := a.makeURL(&adOceanExt, imp, request, slaveSizes, consentString)
 	if err != nil {
-		return nil, err
+		return requestsData, err
 	}
 
 	headers := http.Header{}
@@ -147,54 +168,63 @@ func (a *AdOceanAdapter) makeRequest(existingRequests []*adapters.RequestData, i
 		headers.Add("Referer", request.Site.Page)
 	}
 
-	return &adapters.RequestData{
-		Method:  "GET",
-		Uri:     url,
-		Headers: headers,
-	}, nil
+	requestsData = append(requestsData, &requestData{
+		Url:        url,
+		Headers:    &headers,
+		SlaveSizes: slaveSizes,
+	})
+
+	return requestsData, nil
 }
 
-func addToExistingRequest(existingRequests []*adapters.RequestData, newParams *openrtb_ext.ExtImpAdOcean, auctionID string) bool {
-requestsLoop:
-	for _, request := range existingRequests {
-		endpointURL, _ := url.Parse(request.Uri)
-		queryParams := endpointURL.Query()
+func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.ExtImpAdOcean, imp *openrtb.Imp, testImp bool) bool {
+	auctionID := imp.ID
+
+	for _, requestData := range requestsData {
+		queryParams := requestData.Url.Query()
 		masterID := queryParams["id"][0]
 
 		if masterID == newParams.MasterID {
-			aids := queryParams["aid"]
-			for _, aid := range aids {
-				slaveID := strings.SplitN(aid, ":", 2)[0]
-				if slaveID == newParams.SlaveID {
-					continue requestsLoop
-				}
+			if _, has := requestData.SlaveSizes[newParams.SlaveID]; has {
+				continue
 			}
 
 			queryParams.Add("aid", newParams.SlaveID+":"+auctionID)
-			endpointURL.RawQuery = queryParams.Encode()
-			newUri := endpointURL.String()
-			if len(newUri) < maxUriLength {
-				request.Uri = newUri
+			requestData.SlaveSizes[newParams.SlaveID] = getImpSizes(imp)
+			setSlaveSizesParam(&queryParams, requestData.SlaveSizes, testImp)
+
+			newUrl := *(requestData.Url)
+			newUrl.RawQuery = queryParams.Encode()
+			if len(newUrl.String()) < maxUriLength {
+				requestData.Url = &newUrl
 				return true
 			}
+
+			delete(requestData.SlaveSizes, newParams.SlaveID)
 		}
 	}
 
 	return false
 }
 
-func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID string, request *openrtb.BidRequest, consentString string) (string, error) {
+func (a *AdOceanAdapter) makeURL(
+	params *openrtb_ext.ExtImpAdOcean,
+	imp *openrtb.Imp,
+	request *openrtb.BidRequest,
+	slaveSizes map[string]string,
+	consentString string,
+) (*url.URL, error) {
 	endpointParams := macros.EndpointTemplateParams{Host: params.EmitterDomain}
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
-		return "", &errortypes.BadInput{
+		return nil, &errortypes.BadInput{
 			Message: "Unable to parse endpoint url template: " + err.Error(),
 		}
 	}
 
 	endpointURL, err := url.Parse(host)
 	if err != nil {
-		return "", &errortypes.BadInput{
+		return nil, &errortypes.BadInput{
 			Message: "Malformed URL: " + err.Error(),
 		}
 	}
@@ -205,6 +235,7 @@ func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID st
 	}
 	endpointURL.Path = "/_" + strconv.Itoa(randomizedPart) + "/ad.json"
 
+	auctionID := imp.ID
 	queryParams := url.Values{}
 	queryParams.Add("pbsrv_v", adapterVersion)
 	queryParams.Add("id", params.MasterID)
@@ -218,9 +249,58 @@ func (a *AdOceanAdapter) makeURL(params *openrtb_ext.ExtImpAdOcean, auctionID st
 	if request.User != nil && request.User.BuyerUID != "" {
 		queryParams.Add("hcuserid", request.User.BuyerUID)
 	}
+
+	setSlaveSizesParam(&queryParams, slaveSizes, (request.Test == 1))
 	endpointURL.RawQuery = queryParams.Encode()
 
-	return endpointURL.String(), nil
+	return endpointURL, nil
+}
+
+func getImpSizes(imp *openrtb.Imp) string {
+	if imp.Banner == nil {
+		return ""
+	}
+
+	if len(imp.Banner.Format) > 0 {
+		sizes := make([]string, len(imp.Banner.Format))
+		for i, format := range imp.Banner.Format {
+			sizes[i] = strconv.FormatUint(format.W, 10) + "x" + strconv.FormatUint(format.H, 10)
+		}
+
+		return strings.Join(sizes, "_")
+	}
+
+	if imp.Banner.W != nil && imp.Banner.H != nil {
+		return strconv.FormatUint(*imp.Banner.W, 10) + "x" + strconv.FormatUint(*imp.Banner.H, 10)
+	}
+
+	return ""
+}
+
+func setSlaveSizesParam(queryParams *url.Values, slaveSizes map[string]string, orderByKey bool) {
+	sizeValues := make([]string, 0, len(slaveSizes))
+	slaveIDs := make([]string, 0, len(slaveSizes))
+	for k := range slaveSizes {
+		slaveIDs = append(slaveIDs, k)
+	}
+
+	if orderByKey {
+		sort.Strings(slaveIDs)
+	}
+
+	for _, slaveID := range slaveIDs {
+		sizes := slaveSizes[slaveID]
+		if sizes == "" {
+			continue
+		}
+
+		rawSlaveID := strings.Replace(slaveID, "adocean", "", 1)
+		sizeValues = append(sizeValues, rawSlaveID+"~"+sizes)
+	}
+
+	if len(sizeValues) > 0 {
+		queryParams.Set("aosspsizes", strings.Join(sizeValues, "-"))
+	}
 }
 
 func (a *AdOceanAdapter) MakeBids(

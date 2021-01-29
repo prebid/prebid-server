@@ -164,14 +164,16 @@ type httpRequest struct {
 }
 
 type httpResponse struct {
-	Status int             `json:"status"`
-	Body   json.RawMessage `json:"body"`
+	Status  int             `json:"status"`
+	Body    json.RawMessage `json:"body"`
+	Headers http.Header     `json:"headers"`
 }
 
 func (resp *httpResponse) ToResponseData(t *testing.T) *adapters.ResponseData {
 	return &adapters.ResponseData{
 		StatusCode: resp.Status,
 		Body:       resp.Body,
+		Headers:    resp.Headers,
 	}
 }
 
@@ -208,7 +210,7 @@ func diffErrorLists(t *testing.T, description string, actual []error, expected [
 	t.Helper()
 
 	if len(expected) != len(actual) {
-		t.Fatalf("%s had wrong error count. Expected %d, got %d", description, len(expected), len(actual))
+		t.Fatalf("%s had wrong error count. Expected %d, got %d (%v)", description, len(expected), len(actual), actual)
 	}
 	for i := 0; i < len(actual); i++ {
 		if expected[i].Comparison == "literal" {

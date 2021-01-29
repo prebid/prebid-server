@@ -1,0 +1,22 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "ext": {
+                    "prebid": 1
+                }
+            }
+        ],
+        "site": {
+            "page": "https://www.example.com/"
+        }
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "json: cannot unmarshal number into Go struct field ExtImpBidder.prebid of type openrtb_ext.ExtImpPrebid",
+            "comparison": "literal"
+        }
+    ]
+}

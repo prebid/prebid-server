@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/prebid/prebid-server/errortypes"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -278,7 +279,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 
 	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	assert.Nil(t, err, "Should not have gotten an error: %v", err)
-	assert.Equal(t, 3, len(bids), "Received %d bids instead of 3", len(bids))
+	assert.Equal(t, 2, len(bids), "Received %d bids instead of 3", len(bids))
 
 	for _, bid := range bids {
 		matched := false
@@ -311,7 +312,8 @@ func TestRubiconBasicResponse(t *testing.T) {
 }
 
 func TestRubiconUserSyncInfo(t *testing.T) {
-	an := NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := NewRubiconLegacyAdapter(&conf, "uri", "xuser", "xpass", "pbs-test-tracker")
 
 	assert.Equal(t, "rubicon", an.Name(), "Name '%s' != 'rubicon'", an.Name())
 
@@ -520,6 +522,52 @@ func TestAppendTracker(t *testing.T) {
 	for _, scenario := range testScenarios {
 		res := appendTrackerToUrl(scenario.source, scenario.tracker)
 		assert.Equal(t, scenario.expected, res, "Failed to convert '%s' to '%s'", res, scenario.expected)
+	}
+}
+
+func TestResolveVideoSizeId(t *testing.T) {
+	testScenarios := []struct {
+		placement   openrtb.VideoPlacementType
+		instl       int8
+		impId       string
+		expected    int
+		expectedErr error
+	}{
+		{
+			placement:   1,
+			instl:       1,
+			impId:       "impId",
+			expected:    201,
+			expectedErr: nil,
+		},
+		{
+			placement:   3,
+			instl:       1,
+			impId:       "impId",
+			expected:    203,
+			expectedErr: nil,
+		},
+		{
+			placement:   4,
+			instl:       1,
+			impId:       "impId",
+			expected:    202,
+			expectedErr: nil,
+		},
+		{
+			placement: 4,
+			instl:     3,
+			impId:     "impId",
+			expectedErr: &errortypes.BadInput{
+				Message: "video.size_id can not be resolved in impression with id : impId",
+			},
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		res, err := resolveVideoSizeId(scenario.placement, scenario.instl, scenario.impId)
+		assert.Equal(t, scenario.expected, res)
+		assert.Equal(t, scenario.expectedErr, err)
 	}
 }
 
@@ -808,7 +856,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an = NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker")
+	an = NewRubiconLegacyAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker")
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
@@ -973,9 +1021,9 @@ func TestOpenRTBRequest(t *testing.T) {
 		}
 
 		assert.Equal(t, request.ID, rpRequest.ID, "Bad Request ID. Expected %s, Got %s", request.ID, rpRequest.ID)
-		assert.Equal(t, len(request.Imp), len(rpRequest.Imp), "Wrong len(request.Imp). Expected %d, Got %d", len(request.Imp), len(rpRequest.Imp))
+		assert.Equal(t, 1, len(rpRequest.Imp), "Wrong len(request.Imp). Expected %d, Got %d", len(request.Imp), len(rpRequest.Imp))
 		assert.Nil(t, rpRequest.Cur, "Wrong request.Cur. Expected nil, Got %s", rpRequest.Cur)
-		assert.Nil(t, request.Ext, "Wrong request.ext. Expected nil, Got %v", request.Ext)
+		assert.Nil(t, rpRequest.Ext, "Wrong request.ext. Expected nil, Got %v", rpRequest.Ext)
 
 		if rpRequest.Imp[0].ID == "test-imp-banner-id" {
 			var rpExt rubiconBannerExt
@@ -1219,6 +1267,15 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 				"ext": {
 					"segments": ["999","888"]
 				}
+			},
+			{
+				"source": "liveramp.com",
+				"uids": [{
+					"id": "LIVERAMPID"
+				}],
+				"ext": {
+					"segments": ["111","222"]
+				}
 			}
 			]}`),
 		},
@@ -1239,7 +1296,7 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 	}
 
 	assert.NotNil(t, userExt.Eids)
-	assert.Equal(t, 3, len(userExt.Eids), "Eids values are not as expected!")
+	assert.Equal(t, 4, len(userExt.Eids), "Eids values are not as expected!")
 
 	assert.NotNil(t, userExt.TpID)
 	assert.Equal(t, 2, len(userExt.TpID), "TpID values are not as expected!")
@@ -1249,6 +1306,9 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 
 	// liveintent.com
 	assert.Equal(t, "liveintent.com", userExt.TpID[1].Source, "TpID source value is not as expected!")
+
+	// liveramp.com
+	assert.Equal(t, "LIVERAMPID", userExt.LiverampIdl, "Liveramp_idl value is not as expected!")
 
 	userExtRPTarget := make(map[string]interface{})
 	if err := json.Unmarshal(userExt.RP.Target, &userExtRPTarget); err != nil {
@@ -1425,6 +1485,103 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 	assert.Equal(t, "1234567890", theBid.ID, "Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)
 }
 
+func TestOpenRTBResponseOverridePriceFromBidRequest(t *testing.T) {
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 320,
+					H: 50,
+				}},
+			},
+			Ext: json.RawMessage(`{"bidder": {
+				"accountId": 2763,
+				"siteId": 68780,
+				"zoneId": 327642
+			}}`),
+		}},
+		Ext: json.RawMessage(`{"prebid": {
+			"bidders": {
+				"rubicon": {
+					"debug": {
+						"cpmoverride": 10
+			}}}}}`),
+	}
+
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     "test-uri",
+		Body:    requestJson,
+		Headers: nil,
+	}
+
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"test-request-id","seatbid":[{"bid":[{"id":"1234567890","impid":"test-imp-id","price": 2,"crid":"4122982","adm":"some ad","h": 50,"w": 320,"ext":{"bidder":{"rp":{"targeting": {"key": "rpfl_2763", "values":["43_tier0100"]},"mime": "text/html","size_id": 43}}}}]}]}`),
+	}
+
+	bidder := new(RubiconAdapter)
+	bidResponse, errs := bidder.MakeBids(request, reqData, httpResp)
+
+	assert.Empty(t, errs, "Expected 0 errors. Got %d", len(errs))
+
+	assert.Equal(t, float64(10), bidResponse.Bids[0].Bid.Price,
+		"Expected Price 10. Got: %s", bidResponse.Bids[0].Bid.Price)
+}
+
+func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 320,
+					H: 50,
+				}},
+			},
+			Ext: json.RawMessage(`{"bidder": {
+				"accountId": 2763,
+				"siteId": 68780,
+				"zoneId": 327642,
+				"debug": {
+					"cpmoverride" : 20 
+				}
+			}}`),
+		}},
+		Ext: json.RawMessage(`{"prebid": {
+			"bidders": {
+				"rubicon": {
+					"debug": {
+						"cpmoverride": 10
+			}}}}}`),
+	}
+
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     "test-uri",
+		Body:    requestJson,
+		Headers: nil,
+	}
+
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"test-request-id","seatbid":[{"bid":[{"id":"1234567890","impid":"test-imp-id","price": 2,"crid":"4122982","adm":"some ad","h": 50,"w": 320,"ext":{"bidder":{"rp":{"targeting": {"key": "rpfl_2763", "values":["43_tier0100"]},"mime": "text/html","size_id": 43}}}}]}]}`),
+	}
+
+	bidder := new(RubiconAdapter)
+	bidResponse, errs := bidder.MakeBids(request, reqData, httpResp)
+
+	assert.Empty(t, errs, "Expected 0 errors. Got %d", len(errs))
+
+	assert.Equal(t, float64(20), bidResponse.Bids[0].Bid.Price,
+		"Expected Price 20. Got: %s", bidResponse.Bids[0].Bid.Price)
+}
+
 func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
 	request := &openrtb.BidRequest{
 		ID:  "test-request-id",
@@ -1447,5 +1604,17 @@ func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
 }
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker"))
+	bidder, buildErr := Builder(openrtb_ext.BidderRubicon, config.Adapter{
+		Endpoint: "uri",
+		XAPI: config.AdapterXAPI{
+			Username: "xuser",
+			Password: "xpass",
+			Tracker:  "pbs-test-tracker",
+		}})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "rubicontest", bidder)
 }

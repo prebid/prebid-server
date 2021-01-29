@@ -16,9 +16,9 @@
                 }
             }
         ],
-        "site": {
-            "domain": "prebid.org",
-            "page": "prebid.org"
+        "app": {
+            "id": "app-abc",
+            "bundle": "com.prebid"
         },
         "device": {
             "ip": "152.193.6.74"
@@ -56,15 +56,9 @@
                             "tagid": "123_456"
                         }
                     ],
-                    "ext": {
-                        "appnexus": {
-                            "hb_source": 5
-                        },
-                        "prebid": {}
-                    },
-                    "site": {
-                        "domain": "prebid.org",
-                        "page": "prebid.org",
+                    "app": {
+                        "id": "app-abc",
+                        "bundle": "com.prebid",
                         "publisher": {
                             "id": "123"
                         }
@@ -87,5 +81,6 @@
                 "status": 204
             }
         }
-    ]
+    ],
+    "expectedBidResponses": []
 }

@@ -13,10 +13,26 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 )
 
-const url string = "http://appnexus-us-east.lb.indexww.com/bidder?p=184932"
+const endpoint string = "http://host/endpoint"
+
+func TestJsonSamples(t *testing.T) {
+	if bidder, err := Builder(openrtb_ext.BidderIx, config.Adapter{Endpoint: endpoint}); err == nil {
+		ixBidder := bidder.(*IxAdapter)
+		ixBidder.maxRequests = 2
+		adapterstest.RunJSONBidderTest(t, "ixtest", bidder)
+	} else {
+		t.Fatalf("Builder returned unexpected error %v", err)
+	}
+}
+
+// Tests for the legacy, non-openrtb code.
+// They can be removed after the legacy interface is deprecated.
 
 func getAdUnit() pbs.PBSAdUnit {
 	return pbs.PBSAdUnit{
@@ -33,22 +49,50 @@ func getAdUnit() pbs.PBSAdUnit {
 	}
 }
 
+func getVideoAdUnit() pbs.PBSAdUnit {
+	return pbs.PBSAdUnit{
+		Code:       "unitCodeVideo",
+		MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO},
+		BidID:      "bididvideo",
+		Sizes: []openrtb.Format{
+			{
+				W: 100,
+				H: 75,
+			},
+		},
+		Video: pbs.PBSVideo{
+			Mimes:          []string{"video/mp4"},
+			Minduration:    15,
+			Maxduration:    30,
+			Startdelay:     5,
+			Skippable:      0,
+			PlaybackMethod: 1,
+			Protocols:      []int8{2, 3},
+		},
+		Params: json.RawMessage("{\"siteId\":\"12\"}"),
+	}
+}
+
 func getOpenRTBBid(i openrtb.Imp) openrtb.Bid {
 	return openrtb.Bid{
-		ID:     fmt.Sprintf("%d", rand.Intn(1000)),
-		ImpID:  i.ID,
-		Price:  1.0,
-		AdM:    "Content",
-		CrID:   fmt.Sprintf("%d", rand.Intn(1000)),
-		W:      *i.Banner.W,
-		H:      *i.Banner.H,
-		DealID: "5",
+		ID:    fmt.Sprintf("%d", rand.Intn(1000)),
+		ImpID: i.ID,
+		Price: 1.0,
+		AdM:   "Content",
 	}
+}
+
+func newAdapter(endpoint string) *IxAdapter {
+	return NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, endpoint)
 }
 
 func dummyIXServer(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	var breq openrtb.BidRequest
 	err = json.Unmarshal(body, &breq)
@@ -78,43 +122,36 @@ func dummyIXServer(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
+func TestIxSkipNoCookies(t *testing.T) {
+	if newAdapter(endpoint).SkipNoCookies() {
+		t.Fatalf("SkipNoCookies must return false")
+	}
+}
+
 func TestIxInvalidCall(t *testing.T) {
-
-	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
-	an.URI = "blah"
-
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
+	_, err := newAdapter(endpoint).Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
 		t.Fatalf("No error received for invalid request")
 	}
 }
 
 func TestIxInvalidCallReqAppNil(t *testing.T) {
-
-	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
-	an.URI = "blah"
-
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{
 		App: &openrtb.App{},
 	}
-
 	pbBidder := pbs.PBSBidder{}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
 
+	_, err := newAdapter(endpoint).Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
 		t.Fatalf("No error received for invalid request")
 	}
 }
 
 func TestIxInvalidCallMissingSiteID(t *testing.T) {
-
-	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
-	an.URI = "blah"
-
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnit := getAdUnit()
@@ -126,7 +163,7 @@ func TestIxInvalidCallMissingSiteID(t *testing.T) {
 			adUnit,
 		},
 	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
+	_, err := newAdapter(endpoint).Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
 		t.Fatalf("No error received for request with missing siteId")
 	}
@@ -141,8 +178,6 @@ func TestIxTimeout(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
@@ -153,7 +188,7 @@ func TestIxTimeout(t *testing.T) {
 			getAdUnit(),
 		},
 	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
+	_, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder)
 	if err == nil || err != context.DeadlineExceeded {
 		t.Fatalf("Invalid timeout error received")
 	}
@@ -207,8 +242,6 @@ func TestIxTimeoutMultipleSlots(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	pbReq := pbs.PBSRequest{}
 
 	adUnit1 := getAdUnit()
@@ -227,7 +260,7 @@ func TestIxTimeoutMultipleSlots(t *testing.T) {
 			adUnit2,
 		},
 	}
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
+	bids, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder)
 
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
@@ -252,8 +285,6 @@ func TestIxInvalidJsonResponse(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -262,7 +293,7 @@ func TestIxInvalidJsonResponse(t *testing.T) {
 			getAdUnit(),
 		},
 	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
+	_, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
 		t.Fatalf("No error received for invalid request")
 	}
@@ -278,17 +309,15 @@ func TestIxInvalidStatusCode(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
+	pbReq := pbs.PBSRequest{IsDebug: true}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			getAdUnit(),
 		},
 	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
+	_, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
 		t.Fatalf("No error received for invalid request")
 	}
@@ -304,8 +333,6 @@ func TestIxBadRequest(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -314,7 +341,7 @@ func TestIxBadRequest(t *testing.T) {
 			getAdUnit(),
 		},
 	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
+	_, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
 		t.Fatalf("No error received for bad request")
 	}
@@ -330,8 +357,6 @@ func TestIxNoContent(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -341,7 +366,7 @@ func TestIxNoContent(t *testing.T) {
 		},
 	}
 
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
+	bids, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder)
 	if err != nil || bids != nil {
 		t.Fatalf("Must return nil for no content")
 	}
@@ -354,8 +379,6 @@ func TestIxInvalidCallMissingSize(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnit := getAdUnit()
@@ -366,7 +389,7 @@ func TestIxInvalidCallMissingSize(t *testing.T) {
 			adUnit,
 		},
 	}
-	if _, err := an.Call(ctx, &pbReq, &pbBidder); err == nil {
+	if _, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder); err == nil {
 		t.Fatalf("Should not have gotten an error for missing/invalid size: %v", err)
 	}
 }
@@ -378,8 +401,6 @@ func TestIxInvalidCallEmptyBidIDResponse(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnit := getAdUnit()
@@ -390,7 +411,7 @@ func TestIxInvalidCallEmptyBidIDResponse(t *testing.T) {
 			adUnit,
 		},
 	}
-	if _, err := an.Call(ctx, &pbReq, &pbBidder); err == nil {
+	if _, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder); err == nil {
 		t.Fatalf("Should have gotten an error for unknown adunit code")
 	}
 }
@@ -414,14 +435,12 @@ func TestIxMismatchUnitCode(t *testing.T) {
 					{
 						Bid: []openrtb.Bid{
 							{
-								ID:     fmt.Sprintf("%d", rand.Intn(1000)),
-								ImpID:  "unitCode_bogus",
-								Price:  1.0,
-								AdM:    "Content",
-								CrID:   "567",
-								W:      10,
-								H:      12,
-								DealID: "5",
+								ID:    fmt.Sprintf("%d", rand.Intn(1000)),
+								ImpID: "unitCode_bogus",
+								Price: 1.0,
+								AdM:   "Content",
+								W:     10,
+								H:     12,
 							},
 						},
 					},
@@ -439,8 +458,6 @@ func TestIxMismatchUnitCode(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -449,8 +466,90 @@ func TestIxMismatchUnitCode(t *testing.T) {
 			getAdUnit(),
 		},
 	}
-	if _, err := an.Call(ctx, &pbReq, &pbBidder); err == nil {
+	if _, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder); err == nil {
 		t.Fatalf("Should have gotten an error for unknown adunit code")
+	}
+}
+
+func TestNoSeatBid(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer r.Body.Close()
+			body, err := ioutil.ReadAll(r.Body)
+
+			var breq openrtb.BidRequest
+			err = json.Unmarshal(body, &breq)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			resp := openrtb.BidResponse{}
+
+			js, err := json.Marshal(resp)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(js)
+		}),
+	)
+	defer server.Close()
+
+	ctx := context.TODO()
+	pbReq := pbs.PBSRequest{}
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			getAdUnit(),
+		},
+	}
+	if _, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder); err != nil {
+		t.Fatalf("Should not have gotten an error: %v", err)
+	}
+}
+
+func TestNoSeatBidBid(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer r.Body.Close()
+			body, err := ioutil.ReadAll(r.Body)
+
+			var breq openrtb.BidRequest
+			err = json.Unmarshal(body, &breq)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			resp := openrtb.BidResponse{
+				SeatBid: []openrtb.SeatBid{
+					{},
+				},
+			}
+
+			js, err := json.Marshal(resp)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(js)
+		}),
+	)
+	defer server.Close()
+
+	ctx := context.TODO()
+	pbReq := pbs.PBSRequest{}
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			getAdUnit(),
+		},
+	}
+	if _, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder); err != nil {
+		t.Fatalf("Should not have gotten an error: %v", err)
 	}
 }
 
@@ -461,8 +560,6 @@ func TestIxInvalidParam(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnit := getAdUnit()
@@ -473,7 +570,7 @@ func TestIxInvalidParam(t *testing.T) {
 			adUnit,
 		},
 	}
-	if _, err := an.Call(ctx, &pbReq, &pbBidder); err == nil {
+	if _, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder); err == nil {
 		t.Fatalf("Should have gotten an error for unrecognized params")
 	}
 }
@@ -485,8 +582,6 @@ func TestIxSingleSlotSingleValidSize(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -495,7 +590,7 @@ func TestIxSingleSlotSingleValidSize(t *testing.T) {
 			getAdUnit(),
 		},
 	}
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
+	bids, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder)
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
 	}
@@ -512,19 +607,10 @@ func TestIxTwoSlotValidSize(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnit1 := getAdUnit()
-	adUnit2 := getAdUnit()
-	adUnit2.Code = "unitCode2"
-	adUnit2.Sizes = []openrtb.Format{
-		{
-			W: 8,
-			H: 10,
-		},
-	}
+	adUnit2 := getVideoAdUnit()
 	adUnit2.Params = json.RawMessage("{\"siteId\":\"1111\"}")
 
 	pbBidder := pbs.PBSBidder{
@@ -534,7 +620,7 @@ func TestIxTwoSlotValidSize(t *testing.T) {
 			adUnit2,
 		},
 	}
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
+	bids, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder)
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
 	}
@@ -561,8 +647,6 @@ func TestIxTwoSlotMultiSizeOnlyValidIXSizeResponse(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnit := getAdUnit()
@@ -574,8 +658,7 @@ func TestIxTwoSlotMultiSizeOnlyValidIXSizeResponse(t *testing.T) {
 			adUnit,
 		},
 	}
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
-
+	bids, err := newAdapter(server.URL).Call(ctx, &pbReq, &pbBidder)
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
 	}
@@ -609,20 +692,19 @@ func findBidByAdUnitCode(bids pbs.PBSBidSlice, c string) *pbs.PBSBid {
 	return &pbs.PBSBid{}
 }
 
-func TestIxRequestLimit(t *testing.T) {
+func TestIxMaxRequests(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(dummyIXServer),
 	)
 	defer server.Close()
 
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
+	adapter := newAdapter(server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	adUnits := []pbs.PBSAdUnit{}
 
-	for i := 0; i < requestLimit+1; i++ {
+	for i := 0; i < adapter.maxRequests+1; i++ {
 		adUnits = append(adUnits, getAdUnit())
 	}
 
@@ -631,13 +713,12 @@ func TestIxRequestLimit(t *testing.T) {
 		AdUnits:    adUnits,
 	}
 
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
-
+	bids, err := adapter.Call(ctx, &pbReq, &pbBidder)
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
 	}
 
-	if len(bids) != requestLimit {
-		t.Fatalf("Should have received %d bid", requestLimit)
+	if len(bids) != adapter.maxRequests {
+		t.Fatalf("Should have received %d bid", adapter.maxRequests)
 	}
 }
