@@ -102,6 +102,7 @@ const (
 	BidderNinthDecimal     BidderName = "ninthdecimal"
 	BidderNoBid            BidderName = "nobid"
 	BidderOpenx            BidderName = "openx"
+	BidderOrbidder         BidderName = "orbidder"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
 	BidderPulsepoint       BidderName = "pulsepoint"
