@@ -27,8 +27,9 @@ const beachfrontAdapterVersion = "0.9.2"
 
 const minBidFloor = 0.01
 
-const DefaultVideoWidth = 300
-const DefaultVideoHeight = 250
+const defaultVideoWidth = 300
+const defaultVideoHeight = 250
+const fakeIP = "255.255.255.255"
 
 type BeachfrontAdapter struct {
 	bannerEndpoint string
@@ -406,19 +407,17 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		bfReqs[i].Request = *request
 		var secure int8
 
+		if bfReqs[i].Request.Device == nil {
+			bfReqs[i].Request.Device = &openrtb.Device{}
+		}
+
 		if beachfrontExt.VideoResponseType == "nurl" {
 			bfReqs[i].VideoResponseType = "nurl"
-			if bfReqs[i].Request.Device == nil {
-				bfReqs[i].Request.Device = &openrtb.Device{}
-			}
 		} else {
 			bfReqs[i].VideoResponseType = "adm"
-			if bfReqs[i].Request.Device == nil || bfReqs[i].Request.Device.IP == "" {
-				failedRequestIndicies = append(failedRequestIndicies, i)
-				errs = append(errs, &errortypes.BadInput{
-					Message: fmt.Sprintf("AdM video request missing required IP address for imp %s", bfReqs[i].Request.Imp[i].ID)},
-				)
-				continue
+
+			if bfReqs[i].Request.Device.IP == "" {
+				bfReqs[i].Request.Device.IP = fakeIP
 			}
 		}
 
@@ -456,8 +455,8 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		}
 
 		if imp.Video.H == 0 && imp.Video.W == 0 {
-			imp.Video.W = DefaultVideoWidth
-			imp.Video.H = DefaultVideoHeight
+			imp.Video.W = defaultVideoWidth
+			imp.Video.H = defaultVideoHeight
 		}
 
 		if len(bfReqs[i].Request.Cur) == 0 {
