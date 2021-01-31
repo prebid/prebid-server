@@ -110,6 +110,9 @@
             "page": "https://some.domain.us/some/page.html"
           },
           "isPrebid": true,
+          "device": {
+            "devicetype": 2
+          },
           "cur": [
             "USD"
           ]

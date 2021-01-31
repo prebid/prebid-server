@@ -394,6 +394,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		}
 
 		appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeVideo)
+		bfReqs[i].AppId = appid
 
 		if err != nil {
 			// Failed to get an appid, so this request is junk.
@@ -402,20 +403,27 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			continue
 		}
 
-		bfReqs[i].AppId = appid
-
-		if beachfrontExt.VideoResponseType != "" {
-			bfReqs[i].VideoResponseType = beachfrontExt.VideoResponseType
-		} else {
-			bfReqs[i].VideoResponseType = "adm"
-		}
-
 		bfReqs[i].Request = *request
 		var secure int8
 
+		if beachfrontExt.VideoResponseType == "nurl" {
+			bfReqs[i].VideoResponseType = "nurl"
+			if bfReqs[i].Request.Device == nil {
+				bfReqs[i].Request.Device = &openrtb.Device{}
+			}
+		} else {
+			bfReqs[i].VideoResponseType = "adm"
+			if bfReqs[i].Request.Device == nil || bfReqs[i].Request.Device.IP == "" {
+				failedRequestIndicies = append(failedRequestIndicies, i)
+				errs = append(errs, &errortypes.BadInput{
+					Message: fmt.Sprintf("AdM video request missing required IP address for imp %s", bfReqs[i].Request.Imp[i].ID)},
+				)
+				continue
+			}
+		}
+
 		if bfReqs[i].Request.Site != nil && bfReqs[i].Request.Site.Domain == "" && bfReqs[i].Request.Site.Page != "" {
 			bfReqs[i].Request.Site.Domain = getDomain(bfReqs[i].Request.Site.Page)
-
 			secure = isSecure(bfReqs[i].Request.Site.Page)
 		}
 
@@ -428,7 +436,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 						fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
 				}
 			}
-
 		}
 
 		if bfReqs[i].Request.Device != nil && bfReqs[i].Request.Device.DeviceType == 0 {
@@ -462,9 +469,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		bfReqs[i].Request.Imp = make([]openrtb.Imp, 1, 1)
 		bfReqs[i].Request.Imp[0] = imp
 
-		if bfReqs[i].Request.Device != nil && bfReqs[i].Request.Device.IP != "" {
-			bfReqs[i].Request.Device.IP = bfReqs[i].Request.Device.IP
-		}
 	}
 
 	// Strip out any failed requests
@@ -679,7 +683,11 @@ func isSecure(page string) int8 {
 }
 
 func removeVideoElement(slice []beachfrontVideoRequest, s int) []beachfrontVideoRequest {
-	return append(slice[:s], slice[s+1:]...)
+	if len(slice) >= s+1 {
+		return append(slice[:s], slice[s+1:]...)
+	}
+
+	return []beachfrontVideoRequest{}
 }
 
 // Builder builds a new instance of the Beachfront adapter for the given bidder with the given config.
