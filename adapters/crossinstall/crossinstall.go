@@ -28,7 +28,7 @@ var crossinstallSKADNetIDs = map[string]bool{
 
 type crossinstallImpExt struct {
 	Reward int               `json:"reward"`
-	SKADN  openrtb_ext.SKADN `json:"skadn"`
+	SKADN  openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
 type crossinstallBannerExt struct {
@@ -140,14 +140,16 @@ func (adapter *CrossInstallAdapter) MakeRequests(request *openrtb.BidRequest, _ 
 			}
 		}
 
-		skadn := openrtb_ext.SKADN{}
-		if crossinstallExt.SKADNSupported {
-			skadn = adapters.FilterPrebidSKADNExt(bidderExt.Prebid, crossinstallSKADNetIDs)
-		}
-
 		impExt := crossinstallImpExt{
 			Reward: crossinstallExt.Reward,
-			SKADN:  skadn,
+		}
+
+		// Add SKADN if supported and present
+		if crossinstallExt.SKADNSupported {
+			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, crossinstallSKADNetIDs)
+			if len(skadn.SKADNetIDs) > 0 {
+				impExt.SKADN = skadn
+			}
 		}
 
 		thisImp.Ext, err = json.Marshal(&impExt)
