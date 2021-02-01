@@ -27,7 +27,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
-		Endpoint: "http://adx.adform.net/adx"})
+		Endpoint: "https://adx.adform.net/adx"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -300,7 +300,7 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 
 func TestOpenRTBRequest(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
-		Endpoint: "http://adx.adform.net"})
+		Endpoint: "https://adx.adform.net"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

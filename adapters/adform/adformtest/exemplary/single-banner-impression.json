@@ -23,7 +23,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://adx.adform.net/adx?CC=1&fd=1&gdpr=&gdpr_consent=&ip=&rp=4&stid=&bWlkPTEyMzQ1JnJjdXI9VVNE"
+        "uri": "https://adx.adform.net/adx?CC=1&fd=1&gdpr=&gdpr_consent=&ip=&rp=4&stid=&bWlkPTEyMzQ1JnJjdXI9VVNE"
       },
       "mockResponse": {
         "status": 200,
