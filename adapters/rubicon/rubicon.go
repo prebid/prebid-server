@@ -98,7 +98,7 @@ type rubiconImpExtRP struct {
 type rubiconImpExt struct {
 	RP                 rubiconImpExtRP   `json:"rp"`
 	ViewabilityVendors []string          `json:"viewabilityvendors"`
-	SKADN              openrtb_ext.SKADN `json:"skadn"`
+	SKADN              openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
 type rubiconUserExtRP struct {
@@ -724,11 +724,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			}
 		}
 
-		skadn := openrtb_ext.SKADN{}
-		if rubiconExt.SKADNSupported {
-			skadn = adapters.FilterPrebidSKADNExt(bidderExt.Prebid, rubiconSKADNetIDs)
-		}
-
 		impExt := rubiconImpExt{
 			RP: rubiconImpExtRP{
 				ZoneID: rubiconExt.ZoneId,
@@ -736,8 +731,16 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
 			ViewabilityVendors: rubiconExt.ViewabilityVendors,
-			SKADN:              skadn,
 		}
+
+		if rubiconExt.SKADNSupported {
+			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, rubiconSKADNetIDs)
+			// only add if present
+			if len(skadn.SKADNetIDs) > 0 {
+				impExt.SKADN = skadn
+			}
+		}
+
 		thisImp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
 			errs = append(errs, err)

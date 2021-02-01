@@ -36,7 +36,7 @@ type molocoBannerExt struct {
 }
 
 type molocoImpExt struct {
-	SKADN openrtb_ext.SKADN `json:"skadn"`
+	SKADN openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
 // MolocoAdapter ...
@@ -166,14 +166,15 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 			}
 		}
 
-		skadn := openrtb_ext.SKADN{}
-		if molocoExt.SKADNSupported {
-			skadn = adapters.FilterPrebidSKADNExt(bidderExt.Prebid, molocoSKADNetIDs)
-		}
-
 		// Add impression extensions
-		impExt := molocoImpExt{
-			SKADN: skadn,
+		impExt := molocoImpExt{}
+
+		// Add SKADN if supported and present=
+		if molocoExt.SKADNSupported {
+			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, molocoSKADNetIDs)
+			if len(skadn.SKADNetIDs) > 0 {
+				impExt.SKADN = skadn
+			}
 		}
 
 		thisImp.Ext, err = json.Marshal(&impExt)
