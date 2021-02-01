@@ -5,7 +5,3 @@ capabilities:
     mediaTypes:
       - banner
       - native
-  site:
-    mediaTypes:
-      - banner
-      - native

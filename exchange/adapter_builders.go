@@ -89,6 +89,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/triplelift"
 	"github.com/prebid/prebid-server/adapters/triplelift_native"
 	"github.com/prebid/prebid-server/adapters/ucfunnel"
+	"github.com/prebid/prebid-server/adapter/unicorn"
 	"github.com/prebid/prebid-server/adapters/unruly"
 	"github.com/prebid/prebid-server/adapters/valueimpression"
 	"github.com/prebid/prebid-server/adapters/verizonmedia"
@@ -195,6 +196,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTriplelift:       triplelift.Builder,
 		openrtb_ext.BidderTripleliftNative: triplelift_native.Builder,
 		openrtb_ext.BidderUcfunnel:         ucfunnel.Builder,
+		openrtb_ext.BidderUnicorn:          unicorn.Builder,
 		openrtb_ext.BidderUnruly:           unruly.Builder,
 		openrtb_ext.BidderValueImpression:  valueimpression.Builder,
 		openrtb_ext.BidderVerizonMedia:     verizonmedia.Builder,
