@@ -1,0 +1,198 @@
+{
+    "mockBidRequest": {
+      "id": "some_test_auction",
+      "imp": [{
+        "id": "some_test_ad_id_1",
+        "banner": {
+          "format": [{
+            "w": 300,
+            "h": 250
+          }],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "tagid": "25251"
+          }
+        }
+      },
+      {
+        "id": "some_test_ad_id_2",
+        "video":{
+            "mimes": [
+              "video/mp4",
+              "application/javascript"
+            ],
+            "protocols":[
+               2,
+               3,
+               5,
+               6
+            ],
+            "w":640,
+            "h":480
+        },
+        "ext": {
+          "bidder": {
+            "tagid": "25251"
+          }
+        }
+      }],
+      "device": {
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+        "ip": "123.123.123.123",
+        "dnt": 1
+      },
+      "app": {
+        "domain": "www.publisher.com",
+        "storeurl": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+      }
+    },
+  
+    "httpCalls": [{
+      "expectedRequest": {
+        "uri": "https://hb.emxdgt.com?t=1000&ts=2060541160",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ],
+          "Dnt": [
+            "1"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36"
+          ]
+        },
+        "body": {
+          "id": "some_test_auction",
+          "imp": [{
+            "id": "some_test_ad_id_1",
+            "banner": {
+              "format": [{
+                "w": 300,
+                "h": 250
+              }],
+              "w": 300,
+              "h": 250
+            },
+          "ext": {
+            "bidder": {
+              "tagid": "25251"
+            }
+          },
+            "tagid": "25251",
+            "secure": 0
+          },
+          {
+            "id": "some_test_ad_id_2",
+            "video":{
+                "mimes": [
+                  "video/mp4",
+                  "application/javascript"
+                ],
+                "protocols":[
+                   2,
+                   3,
+                   5,
+                   6
+                ],
+                "w":640,
+                "h":480
+            },
+          "ext": {
+            "bidder": {
+              "tagid": "25251"
+            }
+          },
+            "tagid": "25251",
+            "secure": 0
+          }],
+          "app": {
+            "domain": "www.publisher.com",
+            "storeurl": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+            "ip": "123.123.123.123",
+            "dnt": 1
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some_test_auction",
+          "seatbid": [
+            {
+              "seat": "12356",
+              "bid": [{
+                "adm": "<div id=\"emximp\"><script>var adm='\\<script\\ src\\=\\'https\\:\\/\\/presentation\\-atl1\\.turn\\.com\\/server\\/ads\\.js\\?code\\=180858515\\&aid\\=49508660\\&tuid\\=3697246472959142409\\&duid\\=3592248512493872937\\&dt\\=a\\&uimpd\\=1OB0KmixN8sHuJc8RPFjxbSZrYW2YZcBuHKg\\-pD5EUJnlrGZTGPpxpl3uYcBYQ7GO937FCfn8dB72mF1jiGRToh8X_UEdA5MP\\-U6ORPQsQ8hmQV0VpZDR7yCaVRZu\\-I8GC4aswLJKm1ehJk2JLqoR8fNGOTt5N02R4_bafcFcCDQehYt_oMETehbgQUsGUuJOUrv\\-rRl46jWaNxtTjLFx01U8qDhPdLKvi2iEiNPYp2pLFfly7qg\\-pjrs0yN8zASsoG5g0qWiuyTjJKZ62irD5SLwF4jQYBxaXIFyF\\-pGADUX2GD6JPzOK9mLaWdX\\-N_fB9gUj8TnVS0WHJ5XJWnCMijjO4qguAQo7LiUftTOQZ66OhXUiNcdI55yMwK0uS_fo2FyHMj2JXiOVpZaJHnWE\\-9QOR3F1E4D9qv9EpOMFAwH1kJqoY\\-G3CBJWC_zUjizw2diGrctqk_tJ9b0jujUs_LmoarsIJcKdWBQoF4xfCjfO7DyaM4l0SBbwLA07GYz0tdDtMd7hbstccVk0PPPVNTOv\\-Pan6yUSHX\\-r\\-U7yDLcFLWxwEaapCh_mKwrATp9oJuOXuK0oIioxIIX9n4raGZPHkl27AX1stb2eIpawf5FkEnwY5YrYIiycI38zuqVAE2ZoI\\-Rn0l8Uckhf1zurAgg6_4AjqZp8oi26jsIHbIc5IsI\\-9UoAoJR_nv_gTojvepaSsA97RYysgopxAW_YzeixMr0LJTvo53DFh4WzrcgaMMPXPf79kdetKmcjPBTPC3bhu9BgI4zAdSobLNCH5BYV1aUcv80K3a1WD7cDZtUXckjWnHt\\-JdzFutuwFnNn66YqhPRxbuWKrW\\-grBHm4T2xv0NxEQIEJxnExroXYCEsPmcki2QTLHbo1fSPgqMF5U4fnfq3\\-3MwNKhtpT4\\-iZN1mzvqeTZPD7TdBWee7k1JXOO_PRyRtwQXaDPQy3HPPvGlRnin_bp26aHCP13HKhn63gh4unBlH7R1xgw0KeaYeBt6C_J9EnIgJQrbpHpwZK0LpM1GSqZ20CbfV891w\\&acp\\=\\$\\{EMX_MACRO\\}\\'\\>\\<\\/script\\><script src=\"https://imp.emxdgt.com/imp/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720\"><\\/script>'; window.vc= 'https://imp.emxdgt.com/view/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720';  var ap=\"${AUCTION_PRICE}\";var rf=document.domain; window.cp=\"0.36666\";  if(ap == \"test=1\" || ap == \"AUDIT\" || rf == \"s3.amazonaws.com\"){var  finaladm=adm.replace(/\\${EMX_MACRO}/g,\"AUDIT\"); window.audit =  true;}else{var  finaladm=finaladm=adm.replace(/\\${EMX_MACRO}/g,window.cp);}finaladm=finaladm.replace(/\\${RF_MACRO}/g,rf);try{document.write(decodeURI(finaladm));}catch(e){document.write(unescape(finaladm));};</script><script   src=\"https://js.brealtime.com/openvv.js\"></script></div>",
+                "id": "some_test_ad_id_1",
+                "impid": "some_test_ad_id_1",
+                "ttl": 300,
+                "crid": "94395500",
+                "w": 300,
+                "price": 2.942808,
+                "adid": "94395500",
+                "h": 250
+              }]
+          },
+          {
+            "seat": "45678",
+            "bid": [{
+              "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><AdParameters><![CDATA[{\"adType\":\"VIDEO\",\"ad\":{\"viewTrk\":\"https%3A%2F%2Fimp.emxdgt.com%2Fview%2F%3Fcp%3D30.0000%26ts%3D1583442857%26adom%3Dhttps%3A%2F%2Femxdigital.com%26seat%3D1356%26w%3D5%26h%3D5%26pb%3D24%26sid%3D7732%26tid%3D71423%26pid%3D1158%26uid%3D29451583442857274462e1%26wid%3D1%26dom%3Dwww.brit.co%26tp%3D%24%7BEMX_MACRO%7D%26rf%3D%24%7BRF_MACRO%7D%26cat%3D3-1%26crid%3D209610044\",\"tag\":\"%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%20standalone%3D%22yes%22%3F%3E%3CVAST%20version%3D%223.0%22%3E%3CAd%20id%3D%22209610044%22%3E%3CWrapper%3E%3CAdSystem%20version%3D%223.0%22%3Eadnxs%3C%2FAdSystem%3E%3CVASTAdTagURI%3E%3C%21%5BCDATA%5Bhttps%3A%2F%2Fnym1-ib.adnxs.com%2Fab%3Fan_audit%3D0%26referrer%3Dhttps%253A%252F%252Fwww.brit.co%252Fthese-actors-cant-escape-their-famous-lines%252F%26e%3DwqT_3QLkCvBDZAUAAAMA1gAFAQir14XzBRCQ2fHY6OTvjT4YhqCpw5iblL0LKjYJR6zFpwAAPkARR6zFpwAAPkAZAAAA4FE4NkAhR6wJGwApESTIMQAAAAAp3CNAMPqI3Qc4zApAzApIAlC8yvljWL_Bc2AAaIrFCni14gSAAQGKAQNVU0SSBQbwPpgBAaABAagBAbABALgBA8ABBMgBAtABCdgBAOABAPABAIoCO3VmKCdhJywgMjg5MTAxLCAxNTgzNDQyODU5KQUcAHIBHCAwOTYxMDA0NCwyHwD0FwGSAt0CIXB6OWpKZ2l0b3NvU0VMekstV01ZQUNDX3dYTXdBRGdBUUFSSXpBcFEtb2pkQjFnQVlMNENhQUJ3QUhnQWdBRUFpQUVBa0FFQW1BRUFvQUVCcUFFRHNBRUF1UUh0QktEMkFBQS1RTUVCN1FTZzlnQUFQa0RKQVZ3MUt3WjloQUJBMlFFQUFBQUFBQUR3UC1BQkFQVUJBQUFBQUpnQ0FLQUNBTFVDQUFBQUFMMENBQUFBQU9BQ0FPZ0NBUGdDQUlBREFaZ0RBYWdEcmFMS0Vyb0RDVTVaVFRJNk5ERXlNLUFEZ1J5SUJBQ1FCQUNZQkFHeUJBb0kwN2JfQ1JDNTRjb013UVFBQUFBQUFBQUFBTWtFQUFBBWcQQUFEUkINCiB3Q0ZBMkFRQTguLAAgSWdGbXlDcEJRDSUUUEFfc1FVDQ0BASwuLpoCiQEhYkJBdko6YQEkdjhGeklBUW9BRBH9XEEtUURvSlRsbE5Nam8wTVRJelFJRWNTUQFJBEFBAV0AVREMDEFBQVcdDABZHQwAYR0MAGMNDAG98LBlQUEu2AKsA-ACiZ1S6gJAaHR0cHM6Ly93d3cuYnJpdC5jby90aGVzZS1hY3RvcnMtY2FudC1lc2NhcGUtdGhlaXItZmFtb3VzLWxpbmVzL_ICEAoGQURWX0lEEgYyODkxMDHyAhIKBkNQR19JRBIIMTExMDg3NznyAhEKBUNQX0lEEggzODk2NTU0OfICDQoIQURWX0ZSRVESATDyAg0KCFJFTV9VU0VSEgEw8gIMCggBIDRDT0RFEgDyAgwKCENQRxUPEAsKB0NQFQ4cCQoFSU9fSUQBKRALCgdJTxUaOBMKD0NVU1RPTV9NT0RFTA0kCBoKFjIWABxMRUFGX05BTQVqCB4KGjYdAAhBU1QBPgxJRklFBWIcDQoIU1BMSVQBTfCLATCAAwCIAwGQAwCYAxSgAwGqAwDAA-CoAcgDANgD3q434AMA6AMA-AMDgAQAkgQJL29wZW5ydGIymAQAogQOMTA0LjE2Mi41MC4yNDWoBAGyBBIIARAQGNwGIOQDKAEoAjAAOAO4BADABADIBIGhggHSBA4xMzU2I05ZTTI6NDEyM9oEAggB4AQA8ASBSgz6BBIJgWgQiFxEQBGBjDDpdVLAiAUBmAUAoAX_EQEgAaoFFjI5NDUxkSc0NzI3NDQ2MmUxwAUAyQUBQRgAAPA_0gUJBU0BAXDYBQHgBQHwBYCvM_oFBAgAEACQBgGYBgC4BgDBBgEhATEg0AbCBNoGFgoQCREZAVAQABgA4AYE8gYCCACABwGIBwCgB0A.%26s%3Dc26c363d17931ce09fc5383e6f8aa1ff7e9324ca%26pp%3D%24%7BEMX_MACRO%7D%5D%5D%3E%3C%2FVASTAdTagURI%3E%3CImpression%3E%3C%21%5BCDATA%5Bhttps%3A%2F%2Fib.adnxs.com%2Fnop%5D%5D%3E%3C%2FImpression%3E%3CCreatives%3E%3CCreative%20adID%3D%22209610044%22%3E%3CLinear%3E%3C%2FLinear%3E%3C%2FCreative%3E%3C%2FCreatives%3E%3CImpression%3E%3C%21%5BCDATA%5Bhttps%3A%2F%2Fimp.emxdgt.com%2Fimp%2F%3Fcp%3D30.0000%26ts%3D1583442857%26adom%3Dhttps%3A%2F%2Femxdigital.com%26seat%3D1356%26w%3D5%26h%3D5%26pb%3D24%26sid%3D7732%26tid%3D71423%26pid%3D1158%26uid%3D29451583442857274462e1%26wid%3D1%26dom%3Dwww.brit.co%26tp%3D%24%7BEMX_MACRO%7D%26rf%3D%24%7BRF_MACRO%7D%26cat%3D3-1%26crid%3D209610044%5D%5D%3E%3C%2FImpression%3E%3C%2FWrapper%3E%3C%2FAd%3E%3C%2FVAST%3E\",\"avg\": \"30.0000\", \"auction\" : \"${AUCTION_PRICE}\"}}]]></AdParameters><MediaFiles><MediaFile delivery=\"progressive\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[https://js.brealtime.com/ovvbundle-vcr_1.1.js]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+              "id": "some_test_ad_id_2",
+              "impid": "some_test_ad_id_2",
+              "ttl": 300,
+              "crid": "9999999",
+              "w": 1020,
+              "price": 1,
+              "adid": "9999999",
+              "h": 1000
+            }
+          ]
+        }],
+          "cur": "USD"
+      }
+      }
+    }],
+  
+    "expectedBidResponses": [
+    {
+      "bids": [{
+        "bid": {
+          "adm": "<div id=\"emximp\"><script>var adm='\\<script\\ src\\=\\'https\\:\\/\\/presentation\\-atl1\\.turn\\.com\\/server\\/ads\\.js\\?code\\=180858515\\&aid\\=49508660\\&tuid\\=3697246472959142409\\&duid\\=3592248512493872937\\&dt\\=a\\&uimpd\\=1OB0KmixN8sHuJc8RPFjxbSZrYW2YZcBuHKg\\-pD5EUJnlrGZTGPpxpl3uYcBYQ7GO937FCfn8dB72mF1jiGRToh8X_UEdA5MP\\-U6ORPQsQ8hmQV0VpZDR7yCaVRZu\\-I8GC4aswLJKm1ehJk2JLqoR8fNGOTt5N02R4_bafcFcCDQehYt_oMETehbgQUsGUuJOUrv\\-rRl46jWaNxtTjLFx01U8qDhPdLKvi2iEiNPYp2pLFfly7qg\\-pjrs0yN8zASsoG5g0qWiuyTjJKZ62irD5SLwF4jQYBxaXIFyF\\-pGADUX2GD6JPzOK9mLaWdX\\-N_fB9gUj8TnVS0WHJ5XJWnCMijjO4qguAQo7LiUftTOQZ66OhXUiNcdI55yMwK0uS_fo2FyHMj2JXiOVpZaJHnWE\\-9QOR3F1E4D9qv9EpOMFAwH1kJqoY\\-G3CBJWC_zUjizw2diGrctqk_tJ9b0jujUs_LmoarsIJcKdWBQoF4xfCjfO7DyaM4l0SBbwLA07GYz0tdDtMd7hbstccVk0PPPVNTOv\\-Pan6yUSHX\\-r\\-U7yDLcFLWxwEaapCh_mKwrATp9oJuOXuK0oIioxIIX9n4raGZPHkl27AX1stb2eIpawf5FkEnwY5YrYIiycI38zuqVAE2ZoI\\-Rn0l8Uckhf1zurAgg6_4AjqZp8oi26jsIHbIc5IsI\\-9UoAoJR_nv_gTojvepaSsA97RYysgopxAW_YzeixMr0LJTvo53DFh4WzrcgaMMPXPf79kdetKmcjPBTPC3bhu9BgI4zAdSobLNCH5BYV1aUcv80K3a1WD7cDZtUXckjWnHt\\-JdzFutuwFnNn66YqhPRxbuWKrW\\-grBHm4T2xv0NxEQIEJxnExroXYCEsPmcki2QTLHbo1fSPgqMF5U4fnfq3\\-3MwNKhtpT4\\-iZN1mzvqeTZPD7TdBWee7k1JXOO_PRyRtwQXaDPQy3HPPvGlRnin_bp26aHCP13HKhn63gh4unBlH7R1xgw0KeaYeBt6C_J9EnIgJQrbpHpwZK0LpM1GSqZ20CbfV891w\\&acp\\=\\$\\{EMX_MACRO\\}\\'\\>\\<\\/script\\><script src=\"https://imp.emxdgt.com/imp/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720\"><\\/script>'; window.vc= 'https://imp.emxdgt.com/view/?cp=0.36666&ts=1603222211&adom=www.avis.com&seat=1085&w=320&h=50&pb=0.293328&sid=13835&tid=114507&pid=1764&uid=91441603222210784060e1&wid=15&dom=358899126&tp=${EMX_MACRO}&mt=1&dt=1&st=3&os=&ip=108.17.145.117&sz=&country=US&region=VA&city=Chesapeake&zip=&dma=&agency_id=0&cluster=staging&rf=${RF_MACRO}&cat=1-4&crid=1607428720';  var ap=\"${AUCTION_PRICE}\";var rf=document.domain; window.cp=\"0.36666\";  if(ap == \"test=1\" || ap == \"AUDIT\" || rf == \"s3.amazonaws.com\"){var  finaladm=adm.replace(/\\${EMX_MACRO}/g,\"AUDIT\"); window.audit =  true;}else{var  finaladm=finaladm=adm.replace(/\\${EMX_MACRO}/g,window.cp);}finaladm=finaladm.replace(/\\${RF_MACRO}/g,rf);try{document.write(decodeURI(finaladm));}catch(e){document.write(unescape(finaladm));};</script><script   src=\"https://js.brealtime.com/openvv.js\"></script></div>",
+          "id": "some_test_ad_id_1",
+          "impid": "some_test_ad_id_1",
+          "crid": "94395500",
+          "w": 300,
+          "price": 2.942808,
+          "adid": "94395500",
+          "h": 250
+        },
+        "type": "banner"
+      },
+      {
+        "bid": {
+          "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"2.0\"><Ad id=\"VPAID\"><InLine><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15</Duration><AdParameters><![CDATA[{\"adType\":\"VIDEO\",\"ad\":{\"viewTrk\":\"https%3A%2F%2Fimp.emxdgt.com%2Fview%2F%3Fcp%3D30.0000%26ts%3D1583442857%26adom%3Dhttps%3A%2F%2Femxdigital.com%26seat%3D1356%26w%3D5%26h%3D5%26pb%3D24%26sid%3D7732%26tid%3D71423%26pid%3D1158%26uid%3D29451583442857274462e1%26wid%3D1%26dom%3Dwww.brit.co%26tp%3D%24%7BEMX_MACRO%7D%26rf%3D%24%7BRF_MACRO%7D%26cat%3D3-1%26crid%3D209610044\",\"tag\":\"%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%20standalone%3D%22yes%22%3F%3E%3CVAST%20version%3D%223.0%22%3E%3CAd%20id%3D%22209610044%22%3E%3CWrapper%3E%3CAdSystem%20version%3D%223.0%22%3Eadnxs%3C%2FAdSystem%3E%3CVASTAdTagURI%3E%3C%21%5BCDATA%5Bhttps%3A%2F%2Fnym1-ib.adnxs.com%2Fab%3Fan_audit%3D0%26referrer%3Dhttps%253A%252F%252Fwww.brit.co%252Fthese-actors-cant-escape-their-famous-lines%252F%26e%3DwqT_3QLkCvBDZAUAAAMA1gAFAQir14XzBRCQ2fHY6OTvjT4YhqCpw5iblL0LKjYJR6zFpwAAPkARR6zFpwAAPkAZAAAA4FE4NkAhR6wJGwApESTIMQAAAAAp3CNAMPqI3Qc4zApAzApIAlC8yvljWL_Bc2AAaIrFCni14gSAAQGKAQNVU0SSBQbwPpgBAaABAagBAbABALgBA8ABBMgBAtABCdgBAOABAPABAIoCO3VmKCdhJywgMjg5MTAxLCAxNTgzNDQyODU5KQUcAHIBHCAwOTYxMDA0NCwyHwD0FwGSAt0CIXB6OWpKZ2l0b3NvU0VMekstV01ZQUNDX3dYTXdBRGdBUUFSSXpBcFEtb2pkQjFnQVlMNENhQUJ3QUhnQWdBRUFpQUVBa0FFQW1BRUFvQUVCcUFFRHNBRUF1UUh0QktEMkFBQS1RTUVCN1FTZzlnQUFQa0RKQVZ3MUt3WjloQUJBMlFFQUFBQUFBQUR3UC1BQkFQVUJBQUFBQUpnQ0FLQUNBTFVDQUFBQUFMMENBQUFBQU9BQ0FPZ0NBUGdDQUlBREFaZ0RBYWdEcmFMS0Vyb0RDVTVaVFRJNk5ERXlNLUFEZ1J5SUJBQ1FCQUNZQkFHeUJBb0kwN2JfQ1JDNTRjb013UVFBQUFBQUFBQUFBTWtFQUFBBWcQQUFEUkINCiB3Q0ZBMkFRQTguLAAgSWdGbXlDcEJRDSUUUEFfc1FVDQ0BASwuLpoCiQEhYkJBdko6YQEkdjhGeklBUW9BRBH9XEEtUURvSlRsbE5Nam8wTVRJelFJRWNTUQFJBEFBAV0AVREMDEFBQVcdDABZHQwAYR0MAGMNDAG98LBlQUEu2AKsA-ACiZ1S6gJAaHR0cHM6Ly93d3cuYnJpdC5jby90aGVzZS1hY3RvcnMtY2FudC1lc2NhcGUtdGhlaXItZmFtb3VzLWxpbmVzL_ICEAoGQURWX0lEEgYyODkxMDHyAhIKBkNQR19JRBIIMTExMDg3NznyAhEKBUNQX0lEEggzODk2NTU0OfICDQoIQURWX0ZSRVESATDyAg0KCFJFTV9VU0VSEgEw8gIMCggBIDRDT0RFEgDyAgwKCENQRxUPEAsKB0NQFQ4cCQoFSU9fSUQBKRALCgdJTxUaOBMKD0NVU1RPTV9NT0RFTA0kCBoKFjIWABxMRUFGX05BTQVqCB4KGjYdAAhBU1QBPgxJRklFBWIcDQoIU1BMSVQBTfCLATCAAwCIAwGQAwCYAxSgAwGqAwDAA-CoAcgDANgD3q434AMA6AMA-AMDgAQAkgQJL29wZW5ydGIymAQAogQOMTA0LjE2Mi41MC4yNDWoBAGyBBIIARAQGNwGIOQDKAEoAjAAOAO4BADABADIBIGhggHSBA4xMzU2I05ZTTI6NDEyM9oEAggB4AQA8ASBSgz6BBIJgWgQiFxEQBGBjDDpdVLAiAUBmAUAoAX_EQEgAaoFFjI5NDUxkSc0NzI3NDQ2MmUxwAUAyQUBQRgAAPA_0gUJBU0BAXDYBQHgBQHwBYCvM_oFBAgAEACQBgGYBgC4BgDBBgEhATEg0AbCBNoGFgoQCREZAVAQABgA4AYE8gYCCACABwGIBwCgB0A.%26s%3Dc26c363d17931ce09fc5383e6f8aa1ff7e9324ca%26pp%3D%24%7BEMX_MACRO%7D%5D%5D%3E%3C%2FVASTAdTagURI%3E%3CImpression%3E%3C%21%5BCDATA%5Bhttps%3A%2F%2Fib.adnxs.com%2Fnop%5D%5D%3E%3C%2FImpression%3E%3CCreatives%3E%3CCreative%20adID%3D%22209610044%22%3E%3CLinear%3E%3C%2FLinear%3E%3C%2FCreative%3E%3C%2FCreatives%3E%3CImpression%3E%3C%21%5BCDATA%5Bhttps%3A%2F%2Fimp.emxdgt.com%2Fimp%2F%3Fcp%3D30.0000%26ts%3D1583442857%26adom%3Dhttps%3A%2F%2Femxdigital.com%26seat%3D1356%26w%3D5%26h%3D5%26pb%3D24%26sid%3D7732%26tid%3D71423%26pid%3D1158%26uid%3D29451583442857274462e1%26wid%3D1%26dom%3Dwww.brit.co%26tp%3D%24%7BEMX_MACRO%7D%26rf%3D%24%7BRF_MACRO%7D%26cat%3D3-1%26crid%3D209610044%5D%5D%3E%3C%2FImpression%3E%3C%2FWrapper%3E%3C%2FAd%3E%3C%2FVAST%3E\",\"avg\": \"30.0000\", \"auction\" : \"${AUCTION_PRICE}\"}}]]></AdParameters><MediaFiles><MediaFile delivery=\"progressive\" type=\"application/javascript\" apiFramework=\"VPAID\"><![CDATA[https://js.brealtime.com/ovvbundle-vcr_1.1.js]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+          "id": "some_test_ad_id_2",
+          "impid": "some_test_ad_id_2",
+          "crid": "9999999",
+          "w": 1020,
+          "price": 1,
+          "adid": "9999999",
+          "h": 1000
+        },
+        "type": "video"
+      }]
+    }
+  ]
+}
+  

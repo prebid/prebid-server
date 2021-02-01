@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -94,11 +95,12 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, ex
 
 }
 
-// NewImprovedigitalBidder configure bidder endpoint
-func NewImprovedigitalBidder(endpoint string) *ImprovedigitalAdapter {
-	return &ImprovedigitalAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Improvedigital adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &ImprovedigitalAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {

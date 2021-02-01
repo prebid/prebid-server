@@ -1,0 +1,15 @@
+maintainer:
+  email: "prebid@admixer.net"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio

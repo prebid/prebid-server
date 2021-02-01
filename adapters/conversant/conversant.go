@@ -1,291 +1,182 @@
 package conversant
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/pbs"
-	"golang.org/x/net/context/ctxhttp"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type ConversantAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	URI string
 }
 
-// Corresponds to the bidder name in cookies and requests
-func (a *ConversantAdapter) Name() string {
-	return "conversant"
+func (c ConversantAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	for i := 0; i < len(request.Imp); i++ {
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(request.Imp[i].Ext, &bidderExt); err != nil {
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("Impression[%d] missing ext object", i),
+			}}
+		}
+
+		var cnvrExt openrtb_ext.ExtImpConversant
+		if err := json.Unmarshal(bidderExt.Bidder, &cnvrExt); err != nil {
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("Impression[%d] missing ext.bidder object", i),
+			}}
+		}
+
+		if cnvrExt.SiteID == "" {
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("Impression[%d] requires ext.bidder.site_id", i),
+			}}
+		}
+
+		if i == 0 {
+			if request.Site != nil {
+				tmpSite := *request.Site
+				request.Site = &tmpSite
+				request.Site.ID = cnvrExt.SiteID
+			} else if request.App != nil {
+				tmpApp := *request.App
+				request.App = &tmpApp
+				request.App.ID = cnvrExt.SiteID
+			}
+		}
+		parseCnvrParams(&request.Imp[i], cnvrExt)
+	}
+
+	//create the request body
+	data, err := json.Marshal(request)
+	if err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Error in packaging request to JSON"),
+		}}
+	}
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	return []*adapters.RequestData{{
+		Method:  "POST",
+		Uri:     c.URI,
+		Body:    data,
+		Headers: headers,
+	}}, nil
 }
 
-// Return true so no request will be sent unless user has been sync'ed.
-func (a *ConversantAdapter) SkipNoCookies() bool {
-	return true
+func parseCnvrParams(imp *openrtb.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
+	imp.DisplayManager = "prebid-s2s"
+	imp.DisplayManagerVer = "2.0.0"
+	imp.BidFloor = cnvrExt.BidFloor
+	imp.TagID = cnvrExt.TagID
+
+	// Take care not to override the global secure flag
+	if (imp.Secure == nil || *imp.Secure == 0) && cnvrExt.Secure != nil {
+		imp.Secure = cnvrExt.Secure
+	}
+
+	var position *openrtb.AdPosition
+	if cnvrExt.Position != nil {
+		position = openrtb.AdPosition(*cnvrExt.Position).Ptr()
+	}
+	if imp.Banner != nil {
+		tmpBanner := *imp.Banner
+		imp.Banner = &tmpBanner
+		imp.Banner.Pos = position
+
+	} else if imp.Video != nil {
+		tmpVideo := *imp.Video
+		imp.Video = &tmpVideo
+		imp.Video.Pos = position
+
+		if len(cnvrExt.API) > 0 {
+			imp.Video.API = make([]openrtb.APIFramework, 0, len(cnvrExt.API))
+			for _, api := range cnvrExt.API {
+				imp.Video.API = append(imp.Video.API, openrtb.APIFramework(api))
+			}
+		}
+
+		// Include protocols, mimes, and max duration if specified
+		// These properties can also be specified in ad unit's video object,
+		// but are overridden if the custom params object also contains them.
+
+		if len(cnvrExt.Protocols) > 0 {
+			imp.Video.Protocols = make([]openrtb.Protocol, 0, len(cnvrExt.Protocols))
+			for _, protocol := range cnvrExt.Protocols {
+				imp.Video.Protocols = append(imp.Video.Protocols, openrtb.Protocol(protocol))
+			}
+		}
+
+		if len(cnvrExt.MIMEs) > 0 {
+			imp.Video.MIMEs = make([]string, len(cnvrExt.MIMEs))
+			copy(imp.Video.MIMEs, cnvrExt.MIMEs)
+		}
+
+		if cnvrExt.MaxDuration != nil {
+			imp.Video.MaxDuration = *cnvrExt.MaxDuration
+		}
+	}
 }
 
-type conversantParams struct {
-	SiteID      string   `json:"site_id"`
-	Secure      *int8    `json:"secure"`
-	TagID       string   `json:"tag_id"`
-	Position    *int8    `json:"position"`
-	BidFloor    float64  `json:"bidfloor"`
-	Mobile      *int8    `json:"mobile"`
-	MIMEs       []string `json:"mimes"`
-	API         []int8   `json:"api"`
-	Protocols   []int8   `json:"protocols"`
-	MaxDuration *int64   `json:"maxduration"`
+func (c ConversantAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil // no bid response
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d", response.StatusCode),
+		}}
+	}
+
+	var resp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &resp); err != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("bad server response: %d. ", err),
+		}}
+	}
+
+	if len(resp.SeatBid) == 0 {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Empty bid request"),
+		}}
+	}
+
+	bids := resp.SeatBid[0].Bid
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bids))
+	for i := 0; i < len(bids); i++ {
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			Bid:     &bids[i],
+			BidType: getBidType(bids[i].ImpID, internalRequest.Imp),
+		})
+	}
+	return bidResponse, nil
 }
 
-func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	cnvrReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a map of impression objects for both request creation
-	// and response parsing.
-
-	impMap := make(map[string]*openrtb.Imp, len(cnvrReq.Imp))
-	for idx := range cnvrReq.Imp {
-		impMap[cnvrReq.Imp[idx].ID] = &cnvrReq.Imp[idx]
-	}
-
-	// Fill in additional info from custom params
-
-	for _, unit := range bidder.AdUnits {
-		var params conversantParams
-
-		imp := impMap[unit.Code]
-		if imp == nil {
-			// Skip ad units that do not have corresponding impressions.
-			continue
-		}
-
-		err := json.Unmarshal(unit.Params, &params)
-		if err != nil {
-			return nil, &errortypes.BadInput{
-				Message: err.Error(),
-			}
-		}
-
-		// Fill in additional Site info
-		if params.SiteID != "" {
-			if cnvrReq.Site != nil {
-				cnvrReq.Site.ID = params.SiteID
-			}
-			if cnvrReq.App != nil {
-				cnvrReq.App.ID = params.SiteID
-			}
-		}
-
-		if params.Mobile != nil && !(cnvrReq.Site == nil) {
-			cnvrReq.Site.Mobile = *params.Mobile
-		}
-
-		// Fill in additional impression info
-
-		imp.DisplayManager = "prebid-s2s"
-		imp.DisplayManagerVer = "1.0.1"
-		imp.BidFloor = params.BidFloor
-		imp.TagID = params.TagID
-
-		var position *openrtb.AdPosition
-		if params.Position != nil {
-			position = openrtb.AdPosition(*params.Position).Ptr()
-		}
-
-		if imp.Banner != nil {
-			imp.Banner.Pos = position
-		} else if imp.Video != nil {
-			imp.Video.Pos = position
-
-			if len(params.API) > 0 {
-				imp.Video.API = make([]openrtb.APIFramework, 0, len(params.API))
-				for _, api := range params.API {
-					imp.Video.API = append(imp.Video.API, openrtb.APIFramework(api))
-				}
-			}
-
-			// Include protocols, mimes, and max duration if specified
-			// These properties can also be specified in ad unit's video object,
-			// but are overridden if the custom params object also contains them.
-
-			if len(params.Protocols) > 0 {
-				imp.Video.Protocols = make([]openrtb.Protocol, 0, len(params.Protocols))
-				for _, protocol := range params.Protocols {
-					imp.Video.Protocols = append(imp.Video.Protocols, openrtb.Protocol(protocol))
-				}
-			}
-
-			if len(params.MIMEs) > 0 {
-				imp.Video.MIMEs = make([]string, len(params.MIMEs))
-				copy(imp.Video.MIMEs, params.MIMEs)
-			}
-
-			if params.MaxDuration != nil {
-				imp.Video.MaxDuration = *params.MaxDuration
-			}
-		}
-
-		// Take care not to override the global secure flag
-
-		if (imp.Secure == nil || *imp.Secure == 0) && params.Secure != nil {
-			imp.Secure = params.Secure
-		}
-	}
-
-	// Do a quick check on required parameters
-
-	if cnvrReq.Site != nil && cnvrReq.Site.ID == "" {
-		return nil, &errortypes.BadInput{
-			Message: "Missing site id",
-		}
-	}
-
-	if cnvrReq.App != nil && cnvrReq.App.ID == "" {
-		return nil, &errortypes.BadInput{
-			Message: "Missing app id",
-		}
-	}
-
-	// Start capturing debug info
-
-	debug := &pbs.BidderDebug{
-		RequestURI: a.URI,
-	}
-
-	if cnvrReq.Device == nil {
-		cnvrReq.Device = &openrtb.Device{}
-	}
-
-	// Convert request to json to be sent over http
-
-	j, _ := json.Marshal(cnvrReq)
-
-	if req.IsDebug {
-		debug.RequestBody = string(j)
-		bidder.Debug = append(bidder.Debug, debug)
-	}
-
-	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(j))
-	httpReq.Header.Add("Content-Type", "application/json")
-	httpReq.Header.Add("Accept", "application/json")
-
-	resp, err := ctxhttp.Do(ctx, a.http.Client, httpReq)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if req.IsDebug {
-		debug.StatusCode = resp.StatusCode
-	}
-
-	if resp.StatusCode == 204 {
-		return nil, nil
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode == http.StatusBadRequest {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("HTTP status: %d, body: %s", resp.StatusCode, string(body)),
-		}
-	}
-
-	if resp.StatusCode != 200 {
-		return nil, &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("HTTP status: %d, body: %s", resp.StatusCode, string(body)),
-		}
-	}
-
-	if req.IsDebug {
-		debug.ResponseBody = string(body)
-	}
-
-	var bidResp openrtb.BidResponse
-
-	err = json.Unmarshal(body, &bidResp)
-	if err != nil {
-		return nil, &errortypes.BadServerResponse{
-			Message: err.Error(),
-		}
-	}
-
-	bids := make(pbs.PBSBidSlice, 0)
-
-	for _, seatbid := range bidResp.SeatBid {
-		for _, bid := range seatbid.Bid {
-			if bid.Price <= 0 {
-				continue
-			}
-
-			imp := impMap[bid.ImpID]
-			if imp == nil {
-				// All returned bids should have a matching impression
-				return nil, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Unknown impression id '%s'", bid.ImpID),
-				}
-			}
-
-			bidID := bidder.LookupBidID(bid.ImpID)
-			if bidID == "" {
-				return nil, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
-				}
-			}
-
-			pbsBid := pbs.PBSBid{
-				BidID:       bidID,
-				AdUnitCode:  bid.ImpID,
-				Price:       bid.Price,
-				Creative_id: bid.CrID,
-				BidderCode:  bidder.BidderCode,
-			}
-
+func getBidType(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+	bidType := openrtb_ext.BidTypeBanner
+	for _, imp := range imps {
+		if imp.ID == impId {
 			if imp.Video != nil {
-				pbsBid.CreativeMediaType = "video"
-				pbsBid.NURL = bid.AdM // Assign to NURL so it'll be interpreted as a vastUrl
-				pbsBid.Width = imp.Video.W
-				pbsBid.Height = imp.Video.H
-			} else {
-				pbsBid.CreativeMediaType = "banner"
-				pbsBid.NURL = bid.NURL
-				pbsBid.Adm = bid.AdM
-				pbsBid.Width = bid.W
-				pbsBid.Height = bid.H
+				bidType = openrtb_ext.BidTypeVideo
 			}
-
-			bids = append(bids, &pbsBid)
+			break
 		}
 	}
-
-	if len(bids) == 0 {
-		return nil, nil
-	}
-
-	return bids, nil
+	return bidType
 }
 
-func NewConversantAdapter(config *adapters.HTTPAdapterConfig, uri string) *ConversantAdapter {
-	a := adapters.NewHTTPAdapter(config)
-
-	return &ConversantAdapter{
-		http: a,
-		URI:  uri,
+// Builder builds a new instance of the Conversant adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &ConversantAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }

@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 	"os"
 	"strings"
@@ -34,6 +35,15 @@ func TestAuctionObject_ToJson(t *testing.T) {
 	}
 }
 
+func TestVideoObject_ToJson(t *testing.T) {
+	vo := &analytics.VideoObject{
+		Status: http.StatusOK,
+	}
+	if voJson := jsonifyVideoObject(vo); strings.Contains(voJson, "Transactional Logs Error") {
+		t.Fatalf("AuctionObject failed to convert to json")
+	}
+}
+
 func TestSetUIDObject_ToJson(t *testing.T) {
 	so := &analytics.SetUIDObject{
 		Status: http.StatusOK,
@@ -55,6 +65,20 @@ func TestCookieSyncObject_ToJson(t *testing.T) {
 	}
 }
 
+func TestLogNotificationEventObject_ToJson(t *testing.T) {
+	neo := &analytics.NotificationEvent{
+		Request: &analytics.EventRequest{
+			Bidder: "bidder",
+		},
+		Account: &config.Account{
+			ID: "id",
+		},
+	}
+	if neoJson := jsonifyNotificationEventObject(neo); strings.Contains(neoJson, "Transactional Logs Error") {
+		t.Fatalf("NotificationEventObject failed to convert to json")
+	}
+}
+
 func TestFileLogger_LogObjects(t *testing.T) {
 	if _, err := os.Stat(TEST_DIR); os.IsNotExist(err) {
 		if err = os.MkdirAll(TEST_DIR, 0755); err != nil {
@@ -64,9 +88,11 @@ func TestFileLogger_LogObjects(t *testing.T) {
 	defer os.RemoveAll(TEST_DIR)
 	if fl, err := NewFileLogger(TEST_DIR + "//test"); err == nil {
 		fl.LogAuctionObject(&analytics.AuctionObject{})
+		fl.LogVideoObject(&analytics.VideoObject{})
 		fl.LogAmpObject(&analytics.AmpObject{})
 		fl.LogSetUIDObject(&analytics.SetUIDObject{})
 		fl.LogCookieSyncObject(&analytics.CookieSyncObject{})
+		fl.LogNotificationEventObject(&analytics.NotificationEvent{})
 	} else {
 		t.Fatalf("Couldn't initialize file logger: %v", err)
 	}

@@ -1,6 +1,9 @@
 maintainer:
-  email: "hb-fe-tech@verizonmedia.com"
+  email: "dsp-supply-prebid@verizonmedia.com"
 capabilities:
+  app:
+    mediaTypes:
+      - banner
   site:
     mediaTypes:
       - banner

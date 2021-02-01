@@ -1,0 +1,6 @@
+maintainer:
+  email: "adops@beintoo.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner

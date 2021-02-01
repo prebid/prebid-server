@@ -4,20 +4,20 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
+	"github.com/prebid/prebid-server/metrics"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-// Prevents #197
 func TestEmptyPut(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Errorf("The server should not be called.")
@@ -25,7 +25,7 @@ func TestEmptyPut(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock := &metrics.MetricsEngineMock{}
 
 	client := &clientImpl{
 		httpClient: server.Client(),
@@ -47,7 +47,7 @@ func TestBadResponse(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
 
 	client := &clientImpl{
@@ -72,39 +72,77 @@ func TestBadResponse(t *testing.T) {
 }
 
 func TestCancelledContext(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-	})
-	server := httptest.NewServer(handler)
-	defer server.Close()
-
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
-	metricsMock.On("RecordPrebidCacheRequestTime", false, mock.Anything).Once()
-
-	client := &clientImpl{
-		httpClient: server.Client(),
-		putUrl:     server.URL,
-		metrics:    metricsMock,
+	testCases := []struct {
+		description         string
+		cacheable           []Cacheable
+		expectedItems       int
+		expectedPayloadSize int
+	}{
+		{
+			description: "1 Item",
+			cacheable: []Cacheable{
+				{
+					Type: TypeJSON,
+					Data: json.RawMessage("true"),
+				},
+			},
+			expectedItems:       1,
+			expectedPayloadSize: 39,
+		},
+		{
+			description: "2 Items",
+			cacheable: []Cacheable{
+				{
+					Type: TypeJSON,
+					Data: json.RawMessage("true"),
+				},
+				{
+					Type: TypeJSON,
+					Data: json.RawMessage("false"),
+				},
+			},
+			expectedItems:       2,
+			expectedPayloadSize: 69,
+		},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	ids, _ := client.PutJson(ctx, []Cacheable{{
-		Type: TypeJSON,
-		Data: json.RawMessage("true"),
-	},
+	// Initialize Stub Server
+	stubHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
 	})
-	assertIntEqual(t, len(ids), 1)
-	assertStringEqual(t, ids[0], "")
+	stubServer := httptest.NewServer(stubHandler)
+	defer stubServer.Close()
 
-	metricsMock.AssertExpectations(t)
+	// Run Tests
+	for _, testCase := range testCases {
+		metricsMock := &metrics.MetricsEngineMock{}
+		metricsMock.On("RecordPrebidCacheRequestTime", false, mock.Anything).Once()
+
+		client := &clientImpl{
+			httpClient: stubServer.Client(),
+			putUrl:     stubServer.URL,
+			metrics:    metricsMock,
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		ids, errs := client.PutJson(ctx, testCase.cacheable)
+
+		expectedErrorMessage := fmt.Sprintf("Items=%v, Payload Size=%v", testCase.expectedItems, testCase.expectedPayloadSize)
+
+		assert.Equal(t, testCase.expectedItems, len(ids), testCase.description+":ids")
+		assert.Len(t, errs, 1)
+		assert.Contains(t, errs[0].Error(), "Error sending the request to Prebid Cache: context canceled", testCase.description+":error")
+		assert.Contains(t, errs[0].Error(), expectedErrorMessage, testCase.description+":error_dimensions")
+		metricsMock.AssertExpectations(t)
+	}
 }
 
 func TestSuccessfulPut(t *testing.T) {
 	server := httptest.NewServer(newHandler(2))
 	defer server.Close()
 
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
 
 	client := &clientImpl{
@@ -136,8 +174,11 @@ func TestEncodeValueToBuffer(t *testing.T) {
 		Type:       TypeJSON,
 		Data:       json.RawMessage(`{}`),
 		TTLSeconds: 300,
+		BidID:      "bid",
+		Bidder:     "bdr",
+		Timestamp:  123456789,
 	}
-	expected := string(`{"type":"json","ttlseconds":300,"value":{}}`)
+	expected := string(`{"type":"json","ttlseconds":300,"value":{},"bidid":"bid","bidder":"bdr","timestamp":123456789}`)
 	_ = encodeValueToBuffer(testCache, false, buf)
 	actual := buf.String()
 	assertStringEqual(t, expected, actual)
@@ -148,60 +189,80 @@ func TestEncodeValueToBuffer(t *testing.T) {
 func TestStripCacheHostAndPath(t *testing.T) {
 	inCacheURL := config.Cache{ExpectedTimeMillis: 10}
 	type aTest struct {
-		inExtCacheURL config.ExternalCache
-		expectedHost  string
-		expectedPath  string
+		inExtCacheURL  config.ExternalCache
+		expectedScheme string
+		expectedHost   string
+		expectedPath   string
 	}
 	testInput := []aTest{
 		{
 			inExtCacheURL: config.ExternalCache{
-				Host: "prebid-server.prebid.org",
-				Path: "/pbcache/endpoint",
+				Scheme: "",
+				Host:   "prebid-server.prebid.org",
+				Path:   "/pbcache/endpoint",
 			},
-			expectedHost: "prebid-server.prebid.org",
-			expectedPath: "/pbcache/endpoint",
+			expectedScheme: "",
+			expectedHost:   "prebid-server.prebid.org",
+			expectedPath:   "/pbcache/endpoint",
 		},
 		{
 			inExtCacheURL: config.ExternalCache{
-				Host: "prebidcache.net",
-				Path: "",
+				Scheme: "https",
+				Host:   "prebid-server.prebid.org",
+				Path:   "/pbcache/endpoint",
 			},
-			expectedHost: "prebidcache.net",
-			expectedPath: "",
+			expectedScheme: "https",
+			expectedHost:   "prebid-server.prebid.org",
+			expectedPath:   "/pbcache/endpoint",
 		},
 		{
 			inExtCacheURL: config.ExternalCache{
-				Host: "",
-				Path: "",
+				Scheme: "",
+				Host:   "prebidcache.net",
+				Path:   "",
 			},
-			expectedHost: "",
-			expectedPath: "",
+			expectedScheme: "",
+			expectedHost:   "prebidcache.net",
+			expectedPath:   "",
 		},
 		{
 			inExtCacheURL: config.ExternalCache{
-				Host: "prebid-server.prebid.org",
-				Path: "pbcache/endpoint",
+				Scheme: "",
+				Host:   "",
+				Path:   "",
 			},
-			expectedHost: "prebid-server.prebid.org",
-			expectedPath: "/pbcache/endpoint",
+			expectedScheme: "",
+			expectedHost:   "",
+			expectedPath:   "",
 		},
 		{
 			inExtCacheURL: config.ExternalCache{
-				Host: "prebidcache.net",
-				Path: "/",
+				Scheme: "",
+				Host:   "prebid-server.prebid.org",
+				Path:   "pbcache/endpoint",
 			},
-			expectedHost: "prebidcache.net",
-			expectedPath: "",
+			expectedScheme: "",
+			expectedHost:   "prebid-server.prebid.org",
+			expectedPath:   "/pbcache/endpoint",
+		},
+		{
+			inExtCacheURL: config.ExternalCache{
+				Scheme: "",
+				Host:   "prebidcache.net",
+				Path:   "/",
+			},
+			expectedScheme: "",
+			expectedHost:   "prebidcache.net",
+			expectedPath:   "",
 		},
 	}
 	for _, test := range testInput {
-		//start client
-		cacheClient := NewClient(&inCacheURL, &test.inExtCacheURL, &metricsConf.DummyMetricsEngine{})
-		cHost, cPath := cacheClient.GetExtCacheData()
+		cacheClient := NewClient(&http.Client{}, &inCacheURL, &test.inExtCacheURL, &metricsConf.DummyMetricsEngine{})
+		scheme, host, path := cacheClient.GetExtCacheData()
 
-		//assert
-		assert.Equal(t, test.expectedHost, cHost)
-		assert.Equal(t, test.expectedPath, cPath)
+		assert.Equal(t, test.expectedScheme, scheme)
+		assert.Equal(t, test.expectedHost, host)
+		assert.Equal(t, test.expectedPath, path)
 	}
 }
 

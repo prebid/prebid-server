@@ -1,0 +1,19 @@
+
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Cpmstar Adapter Params",
+    "description": "Schema to validate params accepted by the Cpmstar adapter",
+  
+    "type": "object",
+    "properties": {
+      "placementId": {
+        "type": "integer",
+        "description": "Cpmstar-specific ID for ad pool"
+      },
+      "subpoolId": {
+        "type": "integer",
+        "description": "Cpmstar-specific ID for ad subpool"
+      }
+    },
+    "required": ["placementId"]
+  }

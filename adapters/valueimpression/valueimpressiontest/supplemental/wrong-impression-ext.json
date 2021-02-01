@@ -1,0 +1,26 @@
+{
+  "mockBidRequest": {
+    "id": "rqid",
+    "imp": [
+      {
+        "id": "impid",
+        "video": {
+         "w": 100,
+          "h": 200
+        },
+        "ext": {
+          "bidder": {
+            "siteId": 123
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "json: cannot unmarshal number into Go struct field ExtImpValueImpression.siteId of type string",
+      "comparison": "literal"
+    }
+  ]
+}

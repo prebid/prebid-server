@@ -1,0 +1,11 @@
+maintainer:
+  email: "engineering@smrtb.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

@@ -27,6 +27,11 @@
                     },
                     "id": "some_test_ad",
                     "secure": 0,
+                    "ext": {
+                        "bidder": {
+                            "tagid": "654321"
+                        }
+                    },
                     "tagid": "654321"
                 }]
             }

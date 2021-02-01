@@ -1,0 +1,53 @@
+{
+    "mockBidRequest": {
+      "id": "some_test_auction",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "w": 600,
+            "h": 300
+          },
+          "ext": {
+            "bidder": {
+              "siteId": "123"
+            }
+          }
+        }
+      ]
+    },
+
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "//host",
+          "body": {
+            "id": "some_test_auction",
+            "imp": [
+              {
+                "id": "test-imp-id",
+                "banner": {
+                  "w": 600,
+                  "h": 300
+                },
+                "ext": {
+                  "siteId": "123"
+                }
+              }
+            ]
+          }
+        },
+        "mockResponse": {
+          "status": 500,
+          "body": {}
+        }
+      }
+    ],
+
+    "expectedMakeBidsErrors": [
+      {
+        "value": "Bad server response: HTTP status 500",
+        "comparison": "literal"
+      }
+    ]
+  }

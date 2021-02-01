@@ -93,6 +93,10 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 	return storedRequestData, storedImpData, errs
 }
 
+func (fetcher *dbFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
+}
+
 func (fetcher *dbFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
 }
@@ -113,7 +117,7 @@ func appendErrors(dataType string, ids []string, data map[string]json.RawMessage
 //
 // These errors are documented here: https://www.postgresql.org/docs/9.3/static/errcodes-appendix.html
 func isBadInput(err error) bool {
-	// Unfortunately, Postgres queries will fail if a non-UUID is passedd into a query for a UUID column. For example:
+	// Unfortunately, Postgres queries will fail if a non-UUID is passed into a query for a UUID column. For example:
 	//
 	//    SELECT uuid, data, dataType FROM stored_requests WHERE uuid IN ('abc');
 	//

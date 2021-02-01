@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -18,9 +20,11 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 )
+
+const defaultPlatformID int = 5
 
 type AppNexusAdapter struct {
 	http           *adapters.HTTPAdapter
@@ -87,6 +91,7 @@ type appnexusBidExtAppnexus struct {
 	BrandId       int                    `json:"brand_id"`
 	BrandCategory int                    `json:"brand_category_id"`
 	CreativeInfo  appnexusBidExtCreative `json:"creative_info"`
+	DealPriority  int                    `json:"deal_priority"`
 }
 
 type appnexusBidExt struct {
@@ -94,10 +99,11 @@ type appnexusBidExt struct {
 }
 
 type appnexusReqExtAppnexus struct {
-	IncludeBrandCategory    *bool `json:"include_brand_category,omitempty"`
-	BrandCategoryUniqueness *bool `json:"brand_category_uniqueness,omitempty"`
-	IsAMP                   int   `json:"is_amp,omitempty"`
-	HeaderBiddingSource     int   `json:"hb_source,omitempty"`
+	IncludeBrandCategory    *bool  `json:"include_brand_category,omitempty"`
+	BrandCategoryUniqueness *bool  `json:"brand_category_uniqueness,omitempty"`
+	IsAMP                   int    `json:"is_amp,omitempty"`
+	HeaderBiddingSource     int    `json:"hb_source,omitempty"`
+	AdPodId                 string `json:"adpod_id,omitempty"`
 }
 
 // Full request extension including appnexus extension object
@@ -330,9 +336,9 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 	// Add Appnexus request level extension
 	var isAMP, isVIDEO int
-	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
+	if reqInfo.PbsEntryPoint == metrics.ReqTypeAMP {
 		isAMP = 1
-	} else if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeVideo {
+	} else if reqInfo.PbsEntryPoint == metrics.ReqTypeVideo {
 		isVIDEO = 1
 	}
 
@@ -353,14 +359,56 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	}
 	reqExt.Appnexus.IsAMP = isAMP
 	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
-	var err error
-	request.Ext, err = json.Marshal(reqExt)
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
 
 	imps := request.Imp
+
+	// For long form requests adpod_id must be sent downstream.
+	// Adpod id is a unique identifier for pod
+	// All impressions in the same pod must have the same pod id in request extension
+	// For this all impressions in  request should belong to the same pod
+	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
+	if isVIDEO == 1 {
+		podImps := groupByPods(imps)
+
+		requests := make([]*adapters.RequestData, 0, len(podImps))
+		for _, podImps := range podImps {
+			reqExt.Appnexus.AdPodId = generatePodId()
+
+			reqs, errors := splitRequests(podImps, request, reqExt, thisURI, errs)
+			requests = append(requests, reqs...)
+			errs = append(errs, errors...)
+		}
+		return requests, errs
+	}
+
+	return splitRequests(imps, request, reqExt, thisURI, errs)
+}
+
+func generatePodId() string {
+	val := rand.Int63()
+	return fmt.Sprint(val)
+}
+
+func groupByPods(imps []openrtb.Imp) map[string]([]openrtb.Imp) {
+	// find number of pods in response
+	podImps := make(map[string][]openrtb.Imp)
+	for _, imp := range imps {
+		pod := strings.Split(imp.ID, "_")[0]
+		podImps[pod] = append(podImps[pod], imp)
+	}
+	return podImps
+}
+
+func marshalAndSetRequestExt(request *openrtb.BidRequest, requestExtension appnexusReqExt, errs []error) {
+	var err error
+	request.Ext, err = json.Marshal(requestExtension)
+	if err != nil {
+		errs = append(errs, err)
+	}
+}
+
+func splitRequests(imps []openrtb.Imp, request *openrtb.BidRequest, requestExtension appnexusReqExt, uri string, errs []error) ([]*adapters.RequestData, []error) {
+
 	// Initial capacity for future array of requests, memory optimization.
 	// Let's say there are 35 impressions and limit impressions per request equals to 10.
 	// In this case we need to create 4 requests with 10, 10, 10 and 5 impressions.
@@ -373,6 +421,8 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+
+	marshalAndSetRequestExt(request, requestExtension, errs)
 
 	for impsLeft {
 
@@ -392,7 +442,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 		resArr = append(resArr, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     thisURI,
+			Uri:     uri,
 			Body:    reqJSON,
 			Headers: headers,
 		})
@@ -543,15 +593,19 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 					}
 
 					bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-						Bid:      &bid,
-						BidType:  bidType,
-						BidVideo: impVideo,
+						Bid:          &bid,
+						BidType:      bidType,
+						BidVideo:     impVideo,
+						DealPriority: bidExt.Appnexus.DealPriority,
 					})
 				} else {
 					errs = append(errs, err)
 				}
 			}
 		}
+	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
 	}
 	return bidResponse, errs
 }
@@ -590,35 +644,46 @@ func appendMemberId(uri string, memberId string) string {
 	return uri + "?member_id=" + memberId
 }
 
-func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, endpoint, platformID string) *AppNexusAdapter {
-	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client, endpoint, platformID)
+// Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &AppNexusAdapter{
+		URI:            config.Endpoint,
+		iabCategoryMap: loadCategoryMapFromFileSystem(),
+		hbSource:       resolvePlatformID(config.PlatformID),
+	}
+	return bidder, nil
 }
 
-func NewAppNexusBidder(client *http.Client, endpoint, platformID string) *AppNexusAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
+// NewAppNexusLegacyAdapter builds a legacy version of the AppNexus adapter.
+func NewAppNexusLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, endpoint, platformID string) *AppNexusAdapter {
+	return &AppNexusAdapter{
+		http:           adapters.NewHTTPAdapter(httpConfig),
+		URI:            endpoint,
+		iabCategoryMap: loadCategoryMapFromFileSystem(),
+		hbSource:       resolvePlatformID(platformID),
+	}
+}
 
+func resolvePlatformID(platformID string) int {
+	if len(platformID) > 0 {
+		if val, err := strconv.Atoi(platformID); err == nil {
+			return val
+		}
+	}
+
+	return defaultPlatformID
+}
+
+func loadCategoryMapFromFileSystem() map[string]string {
 	// Load custom options for our adapter (currently just a lookup table to convert appnexus => iab categories)
-	var catmap map[string]string
 	opts, err := ioutil.ReadFile("./static/adapter/appnexus/opts.json")
 	if err == nil {
 		var adapterOptions appnexusAdapterOptions
 
 		if err := json.Unmarshal(opts, &adapterOptions); err == nil {
-			catmap = adapterOptions.IabCategories
+			return adapterOptions.IabCategories
 		}
 	}
 
-	platid := 5
-	if len(platformID) > 0 {
-		if val, err := strconv.Atoi(platformID); err == nil {
-			platid = val
-		}
-	}
-
-	return &AppNexusAdapter{
-		http:           a,
-		URI:            endpoint,
-		iabCategoryMap: catmap,
-		hbSource:       platid,
-	}
+	return nil
 }

@@ -12,10 +12,12 @@ import (
 type RequestType string
 
 const (
-	COOKIE_SYNC RequestType = "/cookie_sync"
-	AUCTION     RequestType = "/openrtb2/auction"
-	SETUID      RequestType = "/set_uid"
-	AMP         RequestType = "/openrtb2/amp"
+	COOKIE_SYNC        RequestType = "/cookie_sync"
+	AUCTION            RequestType = "/openrtb2/auction"
+	VIDEO              RequestType = "/openrtb2/video"
+	SETUID             RequestType = "/set_uid"
+	AMP                RequestType = "/openrtb2/amp"
+	NOTIFICATION_EVENT RequestType = "/event"
 )
 
 //Module that can perform transactional logging
@@ -28,6 +30,15 @@ func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
 	b.WriteString(jsonifyAuctionObject(ao))
+	f.Logger.Debug(b.String())
+	f.Logger.Flush()
+}
+
+//Writes VideoObject to file
+func (f *FileLogger) LogVideoObject(vo *analytics.VideoObject) {
+	//Code to parse the object and log in a way required
+	var b bytes.Buffer
+	b.WriteString(jsonifyVideoObject(vo))
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
 }
@@ -58,6 +69,18 @@ func (f *FileLogger) LogAmpObject(ao *analytics.AmpObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
 	b.WriteString(jsonifyAmpObject(ao))
+	f.Logger.Debug(b.String())
+	f.Logger.Flush()
+}
+
+//Logs NotificationEvent to file
+func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent) {
+	if ne == nil {
+		return
+	}
+	//Code to parse the object and log in a way required
+	var b bytes.Buffer
+	b.WriteString(jsonifyNotificationEventObject(ne))
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
 }
@@ -95,6 +118,23 @@ func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
 		return string(b)
 	} else {
 		return fmt.Sprintf("Transactional Logs Error: Auction object badly formed %v", err)
+	}
+}
+
+func jsonifyVideoObject(vo *analytics.VideoObject) string {
+	type alias analytics.VideoObject
+	b, err := json.Marshal(&struct {
+		Type RequestType `json:"type"`
+		*alias
+	}{
+		Type:  VIDEO,
+		alias: (*alias)(vo),
+	})
+
+	if err == nil {
+		return string(b)
+	} else {
+		return fmt.Sprintf("Transactional Logs Error: Video object badly formed %v", err)
 	}
 }
 
@@ -147,5 +187,22 @@ func jsonifyAmpObject(ao *analytics.AmpObject) string {
 		return string(b)
 	} else {
 		return fmt.Sprintf("Transactional Logs Error: Amp object badly formed %v", err)
+	}
+}
+
+func jsonifyNotificationEventObject(ne *analytics.NotificationEvent) string {
+	type alias analytics.NotificationEvent
+	b, err := json.Marshal(&struct {
+		Type RequestType `json:"type"`
+		*alias
+	}{
+		Type:  NOTIFICATION_EVENT,
+		alias: (*alias)(ne),
+	})
+
+	if err == nil {
+		return string(b)
+	} else {
+		return fmt.Sprintf("Transactional Logs Error: NotificationEvent object badly formed %v", err)
 	}
 }
