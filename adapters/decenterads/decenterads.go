@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"fmt"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -26,29 +27,20 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 	errs := make([]error, 0, len(impressions))
 
 	for _, impression := range impressions {
-		var bidderExt adapters.ExtImpBidder
-		err := json.Unmarshal(impression.Ext, &bidderExt)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if len(bidderExt.Bidder) == 0 {
-			errs = append(errs, errors.New("bidder parameters required"))
-			continue
-		}
-		var decenteradsExt openrtb_ext.ExtImpDecenterAds
-		err = json.Unmarshal(bidderExt.Bidder, &decenteradsExt)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		impExtJSON, err := json.Marshal(decenteradsExt)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		impression.Ext = impExtJSON
-		request.Imp = []openrtb.Imp{impression}
+		var impExt map[string]json.RawMessage
+        if err := json.Unmarshal(impression.Ext, &impExt); err != nil {
+            errs = append(errs, fmt.Errorf("unable to parse bidder parameers: %s", err))
+            continue
+        }
+
+        bidderExt, bidderExtExists := impExt["bidder"]
+        if !bidderExtExists || len(bidderExt) == 0 {
+            errs = append(errs, errors.New("bidder parameters required"))
+            continue
+        }
+
+        impression.Ext = bidderExt
+        request.Imp = []openrtb.Imp{impression}
 		body, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
