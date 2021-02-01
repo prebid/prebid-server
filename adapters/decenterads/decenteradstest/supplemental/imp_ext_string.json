@@ -30,7 +30,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
+      "value": "unable to parse bidder parameers: json: cannot unmarshal string into Go value of type map[string]json.RawMessage",
       "comparison": "literal"
     }
   ]

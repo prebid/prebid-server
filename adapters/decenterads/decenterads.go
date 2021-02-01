@@ -3,9 +3,9 @@ package decenterads
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
-	"fmt"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -28,19 +28,19 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 	for _, impression := range impressions {
 		var impExt map[string]json.RawMessage
-        if err := json.Unmarshal(impression.Ext, &impExt); err != nil {
-            errs = append(errs, fmt.Errorf("unable to parse bidder parameers: %s", err))
-            continue
-        }
+		if err := json.Unmarshal(impression.Ext, &impExt); err != nil {
+			errs = append(errs, fmt.Errorf("unable to parse bidder parameers: %s", err))
+			continue
+		}
 
-        bidderExt, bidderExtExists := impExt["bidder"]
-        if !bidderExtExists || len(bidderExt) == 0 {
-            errs = append(errs, errors.New("bidder parameters required"))
-            continue
-        }
+		bidderExt, bidderExtExists := impExt["bidder"]
+		if !bidderExtExists || len(bidderExt) == 0 {
+			errs = append(errs, errors.New("bidder parameters required"))
+			continue
+		}
 
-        impression.Ext = bidderExt
-        request.Imp = []openrtb.Imp{impression}
+		impression.Ext = bidderExt
+		request.Imp = []openrtb.Imp{impression}
 		body, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
