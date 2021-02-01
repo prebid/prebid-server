@@ -1,4 +1,4 @@
-package {bidder}
+package tappx
 
 import (
   "testing"
