@@ -1,0 +1,82 @@
+{
+    "mockBidRequest":
+    {
+        "id": "some-request-id",
+        "imp": [
+        {
+            "id": "some-impression-id",
+            "banner":
+            {
+                "format": [
+                {
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext":
+            {
+                "bidder":
+                {
+                    "host": "q.0cf.io",
+                    "sourceId": 123
+                }
+            }
+        }],
+        "site":
+        {
+            "page": "prebid.org"
+        },
+        "device":
+        {
+            "ip": "8.8.8.10"
+        },
+        "at": 1,
+        "tmax": 500
+    },
+    "httpCalls": [
+    {
+        "expectedRequest":
+        {
+            "uri": "http://q.0cf.io/openrtb2?sid=123",
+            "body":
+            {
+                "id": "some-request-id",
+                "imp": [
+                {
+                    "id": "some-impression-id",
+                    "banner":
+                    {
+                        "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }]
+                    },
+                    "ext":
+                    {
+                        "bidder":
+                        {
+                            "host": "q.0cf.io",
+                            "sourceId": 123
+                        }
+                    }
+                }],
+                "site":
+                {
+                    "page": "prebid.org"
+                },
+                "device":
+                {
+                    "ip": "8.8.8.10"
+                },
+                "at": 1,
+                "tmax": 500
+            }
+        },
+        "mockResponse":
+        {
+            "status": 204
+        }
+    }],
+    "expectedBidResponses": []
+}

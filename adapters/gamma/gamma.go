@@ -9,12 +9,34 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type GammaAdapter struct {
 	URI string
+}
+
+type gammaBid struct {
+	openrtb.Bid        //base
+	VastXML     string `json:"vastXml,omitempty"`
+	VastURL     string `json:"vastUrl,omitempty"`
+}
+
+type gammaSeatBid struct {
+	Bid   []gammaBid      `json:"bid"`
+	Group int8            `json:"group,omitempty"`
+	Ext   json.RawMessage `json:"ext,omitempty"`
+}
+type gammaBidResponse struct {
+	ID         string                   `json:"id"`
+	SeatBid    []gammaSeatBid           `json:"seatbid,omitempty"`
+	BidID      string                   `json:"bidid,omitempty"`
+	Cur        string                   `json:"cur,omitempty"`
+	CustomData string                   `json:"customdata,omitempty"`
+	NBR        *openrtb.NoBidReasonCode `json:"nbr,omitempty"`
+	Ext        json.RawMessage          `json:"ext,omitempty"`
 }
 
 func checkParams(gammaExt openrtb_ext.ExtImpGamma) error {
@@ -180,6 +202,28 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 	return adapterRequests, errs
 }
 
+func convertBid(gBid gammaBid, mediaType openrtb_ext.BidType) *openrtb.Bid {
+	var bid openrtb.Bid
+	bid = gBid.Bid
+
+	if mediaType == openrtb_ext.BidTypeVideo {
+		//Return inline VAST XML Document (Section 6.4.2)
+		if len(gBid.VastXML) > 0 {
+			if len(gBid.VastURL) > 0 {
+				bid.NURL = gBid.VastURL
+			}
+			bid.AdM = gBid.VastXML
+		} else {
+			return nil
+		}
+	} else {
+		if len(gBid.Bid.AdM) == 0 {
+			return nil
+		}
+	}
+	return &bid
+}
+
 func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -197,24 +241,38 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	var gammaResp gammaBidResponse
+	if err := json.Unmarshal(response.Body, &gammaResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %d. ", err),
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-	for _, sb := range bidResp.SeatBid {
+	//(Section 7.1 No-Bid Signaling)
+	if len(gammaResp.SeatBid) == 0 {
+		return nil, nil
+	}
+
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(gammaResp.SeatBid[0].Bid))
+	errs := make([]error, 0, len(gammaResp.SeatBid[0].Bid))
+	for _, sb := range gammaResp.SeatBid {
 		for i := range sb.Bid {
-			bid := sb.Bid[i]
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: getMediaTypeForImp(bidResp.ID, internalRequest.Imp),
-			})
+			mediaType := getMediaTypeForImp(gammaResp.ID, internalRequest.Imp)
+			bid := convertBid(sb.Bid[i], mediaType)
+			if bid != nil {
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+					Bid:     bid,
+					BidType: mediaType,
+				})
+			} else {
+				err := &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Missing Ad Markup. Run with request.debug = 1 for more info"),
+				}
+				errs = append(errs, err)
+			}
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 //Adding header fields to request header
@@ -238,8 +296,10 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewGammaBidder(endpoint string) *GammaAdapter {
-	return &GammaAdapter{
-		URI: endpoint,
+// Builder builds a new instance of the Gamma adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &GammaAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }

@@ -1,145 +1,161 @@
 package http
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	httpCore "net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestStartupReqsOnly(t *testing.T) {
-	server := httptest.NewServer(&mockResponseHandler{
-		statusCode: httpCore.StatusOK,
-		response:   `{"requests":{"request1":{"value":1}, "request2":{"value":2}}}`,
-	})
-	defer server.Close()
-
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theSave := <-ev.Saves()
-
-	assertLen(t, theSave.Requests, 2)
-	assertHasValue(t, theSave.Requests, "request1", `{"value":1}`)
-	assertHasValue(t, theSave.Requests, "request2", `{"value":2}`)
-
-	assertLen(t, theSave.Imps, 0)
+func ctxProducer() (context.Context, func()) {
+	return context.WithTimeout(context.Background(), -1)
 }
 
-func TestStartupImpsOnly(t *testing.T) {
-	server := httptest.NewServer(&mockResponseHandler{
-		statusCode: httpCore.StatusOK,
-		response:   `{"imps":{"imp1":{"value":1}}}`,
-	})
-	defer server.Close()
-
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theSave := <-ev.Saves()
-
-	assertLen(t, theSave.Requests, 0)
-
-	assertLen(t, theSave.Imps, 1)
-	assertHasValue(t, theSave.Imps, "imp1", `{"value":1}`)
-}
-
-func TestStartupBothTypes(t *testing.T) {
-	server := httptest.NewServer(&mockResponseHandler{
-		statusCode: httpCore.StatusOK,
-		response:   `{"requests":{"request1":{"value":1}, "request2":{"value":2}},"imps":{"imp1":{"value":1}}}`,
-	})
-	defer server.Close()
-
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theSave := <-ev.Saves()
-
-	assertLen(t, theSave.Requests, 2)
-	assertHasValue(t, theSave.Requests, "request1", `{"value":1}`)
-	assertHasValue(t, theSave.Requests, "request2", `{"value":2}`)
-
-	assertLen(t, theSave.Imps, 1)
-	assertHasValue(t, theSave.Imps, "imp1", `{"value":1}`)
-}
-
-func TestUpdates(t *testing.T) {
-	handler := &mockResponseHandler{
-		statusCode: httpCore.StatusOK,
-		response:   `{"requests":{"request1":{"value":1}, "request2":{"value":2}},"imps":{"imp1":{"value":3},"imp2":{"value":4}}}`,
+func TestStartup(t *testing.T) {
+	type testStep struct {
+		statusCode    int
+		response      string
+		timeout       bool
+		saves         string
+		invalidations string
 	}
-	server := httptest.NewServer(handler)
-	defer server.Close()
-
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-
-	handler.response = `{"requests":{"request1":{"value":5}, "request2":{"deleted":true}},"imps":{"imp1":{"deleted":true},"imp2":{"value":6}}}`
-	timeChan := make(chan time.Time, 1)
-	timeChan <- time.Now()
-	go ev.refresh(timeChan)
-	firstSave := <-ev.Saves()
-	secondSave := <-ev.Saves()
-	inv := <-ev.Invalidations()
-
-	assertLen(t, firstSave.Requests, 2)
-	assertHasValue(t, firstSave.Requests, "request1", `{"value":1}`)
-	assertHasValue(t, firstSave.Requests, "request2", `{"value":2}`)
-	assertLen(t, firstSave.Imps, 2)
-	assertHasValue(t, firstSave.Imps, "imp1", `{"value":3}`)
-	assertHasValue(t, firstSave.Imps, "imp2", `{"value":4}`)
-
-	assertLen(t, secondSave.Requests, 1)
-	assertHasValue(t, secondSave.Requests, "request1", `{"value":5}`)
-	assertLen(t, secondSave.Imps, 1)
-	assertHasValue(t, secondSave.Imps, "imp2", `{"value":6}`)
-
-	assertArrLen(t, inv.Requests, 1)
-	assertArrContains(t, inv.Requests, "request2")
-	assertArrLen(t, inv.Imps, 1)
-	assertArrContains(t, inv.Imps, "imp1")
-}
-
-func TestErrorResponse(t *testing.T) {
-	handler := &mockResponseHandler{
-		statusCode: httpCore.StatusInternalServerError,
-		response:   "Something horrible happened.",
+	testCases := []struct {
+		description string
+		tests       []testStep
+	}{
+		{
+			description: "Load requests at startup",
+			tests: []testStep{
+				{
+					statusCode: httpCore.StatusOK,
+					response:   `{"requests": {"request1": {"value":1}, "request2": {"value":2}}}`,
+					saves:      `{"requests": {"request1": {"value":1}, "request2": {"value":2}}, "imps": null, "accounts": null}`,
+				},
+			},
+		},
+		{
+			description: "Load imps at startup",
+			tests: []testStep{
+				{
+					statusCode: httpCore.StatusOK,
+					response:   `{"imps": {"imp1": {"value":1}}}`,
+					saves:      `{"imps": {"imp1": {"value":1}}, "requests": null, "accounts": null}`,
+				},
+			},
+		},
+		{
+			description: "Load requests and imps then update",
+			tests: []testStep{
+				{
+					statusCode: httpCore.StatusOK,
+					response:   `{"requests": {"request1": {"value":1}, "request2": {"value":2}}, "imps": {"imp1": {"value":3}, "imp2": {"value":4}}}`,
+					saves:      `{"requests": {"request1": {"value":1}, "request2": {"value":2}}, "imps": {"imp1": {"value":3}, "imp2": {"value":4}}, "accounts":null}`,
+				},
+				{
+					statusCode:    httpCore.StatusOK,
+					response:      `{"requests": {"request1": {"value":5}, "request2": {"deleted":true}}, "imps": {"imp1": {"deleted":true}, "imp2": {"value":6}}}`,
+					saves:         `{"requests": {"request1": {"value":5}}, "imps": {"imp2": {"value":6}}, "accounts":null}`,
+					invalidations: `{"requests": ["request2"], "imps": ["imp1"], "accounts": []}`,
+				},
+			},
+		},
+		{
+			description: "Load accounts then update",
+			tests: []testStep{
+				{
+					statusCode: httpCore.StatusOK,
+					response:   `{"accounts":{"account1":{"value":1}, "account2":{"value":2}}}`,
+					saves:      `{"accounts":{"account1":{"value":1}, "account2":{"value":2}}, "imps": null, "requests": null}`,
+				},
+				{
+					statusCode:    httpCore.StatusOK,
+					response:      `{"accounts":{"account1":{"value":5}, "account2":{"deleted": true}}}`,
+					saves:         `{"accounts":{"account1":{"value":5}}, "imps": null, "requests": null}`,
+					invalidations: `{"accounts":["account2"], "requests": [], "imps": []}`,
+				},
+			},
+		},
+		{
+			description: "Load nothing at startup",
+			tests: []testStep{
+				{
+					statusCode: httpCore.StatusOK,
+					response:   `{}`,
+				},
+			},
+		},
+		{
+			description: "Malformed response at startup",
+			tests: []testStep{
+				{
+					statusCode: httpCore.StatusOK,
+					response:   `{some bad json`,
+				},
+			},
+		},
+		{
+			description: "Server error at startup",
+			tests: []testStep{
+				{
+					statusCode: httpCore.StatusInternalServerError,
+					response:   ``,
+				},
+			},
+		},
+		{
+			description: "HTTP timeout error at startup",
+			tests: []testStep{
+				{
+					timeout: true,
+				},
+			},
+		},
 	}
-	server := httptest.NewServer(handler)
-	defer server.Close()
+	for _, tests := range testCases {
+		t.Run(tests.description, func(t *testing.T) {
+			handler := &mockResponseHandler{}
+			server := httptest.NewServer(handler)
+			defer server.Close()
 
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	if len(ev.Saves()) != 0 {
-		t.Errorf("No saves should be emitted if the HTTP call fails. Got %d", len(ev.Saves()))
-	}
-}
+			var ev *HTTPEvents
 
-func TestExpiredContext(t *testing.T) {
-	handler := &mockResponseHandler{
-		statusCode: httpCore.StatusInternalServerError,
-		response:   "Something horrible happened.",
-	}
-	server := httptest.NewServer(handler)
-	defer server.Close()
-
-	ctxProducer := func() (context.Context, func()) {
-		return context.WithTimeout(context.Background(), -1)
-	}
-
-	ev := NewHTTPEvents(server.Client(), server.URL, ctxProducer, -1)
-	if len(ev.Saves()) != 0 {
-		t.Errorf("No saves should be emitted if the HTTP call is cancelled. Got %d", len(ev.Saves()))
-	}
-}
-
-func TestMalformedResponse(t *testing.T) {
-	handler := &mockResponseHandler{
-		statusCode: httpCore.StatusOK,
-		response:   "This isn't JSON.",
-	}
-	server := httptest.NewServer(handler)
-	defer server.Close()
-
-	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	if len(ev.Saves()) != 0 {
-		t.Errorf("No updates should be emitted if the HTTP call fails. Got %d", len(ev.Saves()))
+			for i, test := range tests.tests {
+				handler.statusCode = test.statusCode
+				handler.response = test.response
+				if i == 0 { // NewHTTPEvents() calls the API immediately
+					if test.timeout {
+						ev = NewHTTPEvents(server.Client(), server.URL, ctxProducer, -1) // force timeout
+					} else {
+						ev = NewHTTPEvents(server.Client(), server.URL, nil, -1)
+					}
+				} else { // Second test triggers API call by initiating a 1s refresh loop
+					timeChan := make(chan time.Time, 1)
+					timeChan <- time.Now()
+					go ev.refresh(timeChan)
+				}
+				t.Run(fmt.Sprintf("Step %d", i+1), func(t *testing.T) {
+					// Check expected Saves
+					if len(test.saves) > 0 {
+						saves, err := json.Marshal(<-ev.Saves())
+						assert.NoError(t, err, `Failed to marshal event.Save object: %v`, err)
+						assert.JSONEq(t, test.saves, string(saves))
+					}
+					assert.Empty(t, ev.Saves(), "Unexpected additional messages in save channel")
+					// Check expected Invalidations
+					if len(test.invalidations) > 0 {
+						invalidations, err := json.Marshal(<-ev.Invalidations())
+						assert.NoError(t, err, `Failed to marshal event.Invalidation object: %v`, err)
+						assert.JSONEq(t, test.invalidations, string(invalidations))
+					}
+					assert.Empty(t, ev.Invalidations(), "Unexpected additional messages in invalidations channel")
+				})
+			}
+		})
 	}
 }
 
@@ -151,39 +167,4 @@ type mockResponseHandler struct {
 func (m *mockResponseHandler) ServeHTTP(rw httpCore.ResponseWriter, r *httpCore.Request) {
 	rw.WriteHeader(m.statusCode)
 	rw.Write([]byte(m.response))
-}
-
-func assertLen(t *testing.T, m map[string]json.RawMessage, length int) {
-	t.Helper()
-	if len(m) != length {
-		t.Errorf("Expected map with %d elements, but got %v", length, m)
-	}
-}
-
-func assertArrLen(t *testing.T, list []string, length int) {
-	t.Helper()
-	if len(list) != length {
-		t.Errorf("Expected list with %d elements, but got %v", length, list)
-	}
-}
-
-func assertArrContains(t *testing.T, haystack []string, needle string) {
-	t.Helper()
-	for _, elm := range haystack {
-		if elm == needle {
-			return
-		}
-	}
-	t.Errorf("expected element %s to be in list %v", needle, haystack)
-}
-
-func assertHasValue(t *testing.T, m map[string]json.RawMessage, key string, val string) {
-	t.Helper()
-	if mapVal, ok := m[key]; ok {
-		if !bytes.Equal(mapVal, []byte(val)) {
-			t.Errorf("expected map[%s] to be %s, but got %s", key, val, string(mapVal))
-		}
-	} else {
-		t.Errorf("map missing expected key: %s", key)
-	}
 }

@@ -1,6 +1,11 @@
 maintainer:
-  email: "progsupport@yieldmo.com"
+  email: "prebid@yieldmo.com"
 capabilities:
+  app:
+    mediaTypes:
+    - banner
+    - video
   site:
     mediaTypes:
     - banner
+    - video

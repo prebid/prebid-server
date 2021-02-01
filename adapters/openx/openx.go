@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -22,7 +23,8 @@ type openxImpExt struct {
 }
 
 type openxReqExt struct {
-	DelDomain    string `json:"delDomain"`
+	DelDomain    string `json:"delDomain,omitempty"`
+	Platform     string `json:"platform,omitempty"`
 	BidderConfig string `json:"bc"`
 }
 
@@ -125,6 +127,7 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 	}
 
 	reqExt.DelDomain = openxExt.DelDomain
+	reqExt.Platform = openxExt.Platform
 
 	imp.TagID = openxExt.Unit
 	imp.BidFloor = openxExt.CustomFloor
@@ -140,6 +143,16 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 				Message: err.Error(),
 			}
 		}
+	}
+
+	if imp.Video != nil {
+		videoCopy := *imp.Video
+		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
+			videoCopy.Ext = json.RawMessage(`{"rewarded":1}`)
+		} else {
+			videoCopy.Ext = nil
+		}
+		imp.Video = &videoCopy
 	}
 
 	return nil
@@ -169,6 +182,11 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
+	// overrride default currency
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
+
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -197,8 +215,10 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewOpenxBidder(endpoint string) *OpenxAdapter {
-	return &OpenxAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Openx adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &OpenxAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

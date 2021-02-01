@@ -7,8 +7,8 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-const datablocksGDPRVendorID = uint16(14)
+const datablocksGDPRVendorID = uint16(0)
 
 func NewDatablocksSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("datablocks", 14, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("datablocks", datablocksGDPRVendorID, temp, adapters.SyncTypeRedirect)
 }

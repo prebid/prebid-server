@@ -1,0 +1,104 @@
+{
+    "imp": [
+        {
+            "id": "1",
+            "banner": {
+                "w": 970,
+                "h": 250,
+                "mimes": [
+                    "image/gif",
+                    "image/jpeg",
+                    "image/png",
+                    "text/html",
+                    "text/javascript",
+                    "application/javascript"
+                ],
+                "pos": 1,
+                "battr": [
+                    6,
+                    7
+                ],
+                "topframe": 1
+            },
+            "instl": 0,
+            "displaymanager": "aralego.com",
+            "displaymanagerver": "v1.0.0",
+            "secure": 0,
+            "bidfloor": 0.01,
+            "bidfloorcur": "USD",
+            "exp": 3600,
+            "ext":{
+                "ucfunnel":{
+                    "adunitid": "test-ad-83444226E44368D1E32E49EEBE6D29",
+                    "partnerid": "par-2EDDB423AA24474188B843EE4842932"
+                }
+            }
+        }
+    ],
+    "id": "c901f218-4ca6-480b-97dc-c6fd50e24544",
+    "at": 2,
+    "tmax": 300,
+    "bcat": [
+        "IAB11-1"
+    ],
+    "badv": [
+        "abc.com",
+        "cbn.com",
+        "xyz.com"
+    ],
+    "regs": {
+        "coppa": 0,
+        "ext": {
+            "gdpr": 0
+        },
+        "us_privacy": "1--"
+    },
+    "site": {
+        "id": "5b88fd05beffd764bb0f7a3a",
+        "name": "test",
+        "page": "http://127.0.0.1:8000/tmp66.html",
+        "domain": "127.0.0.1",
+        "cat": [
+            "IAB1"
+        ],
+        "publisher": {
+            "id": "par-7E6D2DB9A8922AB07B44A444D2BA67"
+        }
+    },
+    "device": {
+        "w": 1440,
+        "h": 900,
+        "dnt": 1,
+        "ip": "127.0.0.1",
+        "js": 1,
+        "os": "MacOS",
+        "osv": "10.15.1",
+        "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36",
+        "language": "zh-TW",
+        "devicetype": 2,
+        "geo": {
+            "country": "unknown",
+            "type": 2
+        }
+    },
+    "user": {
+        "id": "e7bf9b85-9554-441c-964e-c8112d35d17b"
+    },
+    "source": {
+        "fd": 1,
+        "ext": {
+            "schain": {
+                "complete": 1,
+                "ver": "1.0",
+                "nodes": [
+                    {
+                        "asi": "aralego.com",
+                        "sid": "par-7E6D2DB9A8922AB07B44A444D2BA67",
+                        "rid": "c8f800c2-d285-4cb9-8fc9-f95df52f6e0c",
+                        "hp": 1
+                    }
+                ]
+            }
+        }
+    }
+}

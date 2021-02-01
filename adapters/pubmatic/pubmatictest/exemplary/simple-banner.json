@@ -43,7 +43,7 @@
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "http://hbopenbid.pubmatic.com/translator?source=prebid-server",
+          "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server",
           "body": {
             "id": "test-request-id",
             "imp": [

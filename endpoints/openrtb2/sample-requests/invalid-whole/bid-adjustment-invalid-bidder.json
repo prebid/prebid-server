@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.ext.prebid.bidadjustmentfactors.unknown is not a known bidder or alias\n",
-  "requestPayload": {
+  "description": "Bid adjustment factor assigned to an unknown bidder",
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "test.somepage.com"
@@ -13,7 +13,7 @@
         },
         "ext": {
           "appnexus": {
-            "placementId": 10433394
+            "placementId": 12883451
           }
         }
       }
@@ -25,5 +25,7 @@
         }
       }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.ext.prebid.bidadjustmentfactors.unknown is not a known bidder or alias\n"
 }

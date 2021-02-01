@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -20,19 +20,24 @@ type SynacorMediaAdapter struct {
 
 type SyncEndpointTemplateParams struct {
 	SeatId string
+	TagId  string
 }
 
 type ReqExt struct {
 	SeatId string `json:"seatId"`
 }
 
-func NewSynacorMediaBidder(endpointTemplate string) adapters.Bidder {
-	syncTemplate, err := template.New("endpointTemplate").Parse(endpointTemplate)
+// Builder builds a new instance of the SynacorMedia adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &SynacorMediaAdapter{EndpointTemplate: *syncTemplate}
+
+	bidder := &SynacorMediaAdapter{
+		EndpointTemplate: *template,
+	}
+	return bidder, nil
 }
 
 func (a *SynacorMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -55,14 +60,23 @@ func (a *SynacorMediaAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 	var firstExtImp *openrtb_ext.ExtImpSynacormedia = nil
 
 	for _, imp := range request.Imp {
-		validImp, err := getExtImpObj(&imp)
+		validExtImpObj, err := getExtImpObj(&imp) // getExtImpObj returns {seatId:"", tagId:""}
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
+		// if the bid request is missing seatId or TagId then ignore it
+		if validExtImpObj.SeatId == "" || validExtImpObj.TagId == "" {
+			errs = append(errs, &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Invalid Impression"),
+			})
+			continue
+		}
+		// right here is where we need to take out the tagId and then add it to imp
+		imp.TagID = validExtImpObj.TagId
 		validImps = append(validImps, imp)
 		if firstExtImp == nil {
-			firstExtImp = validImp
+			firstExtImp = validExtImpObj
 		}
 	}
 
@@ -72,11 +86,12 @@ func (a *SynacorMediaAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 
 	var err error
 
-	if firstExtImp == nil || firstExtImp.SeatId == "" {
+	if firstExtImp == nil || firstExtImp.SeatId == "" || firstExtImp.TagId == "" {
 		return nil, append(errs, &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Impression missing seat id"),
+			Message: fmt.Sprintf("Invalid Impression"),
 		})
 	}
+	// this is where the empty seatId is filled
 	re = &ReqExt{SeatId: firstExtImp.SeatId}
 
 	// create JSON Request Body

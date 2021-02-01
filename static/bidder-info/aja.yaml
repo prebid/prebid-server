@@ -1,0 +1,13 @@
+maintainer:
+  email: "dev@aja-kk.co.jp"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+
+  app:
+    mediaTypes:
+      - banner
+      - video
+
