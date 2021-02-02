@@ -65,8 +65,8 @@ type liftoffBannerExt struct {
 }
 
 type liftoffImpExt struct {
-	Rewarded int               `json:"rewarded"`
-	SKADN    openrtb_ext.SKADN `json:"skadn,omitempty"`
+	Rewarded int                `json:"rewarded"`
+	SKADN    *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
 type liftoffAppExt struct {
@@ -203,7 +203,7 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		if liftoffExt.SKADNSupported {
 			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, liftoffSKADNetIDs)
 			if len(skadn.SKADNetIDs) > 0 {
-				impExt.SKADN = skadn
+				impExt.SKADN = &skadn
 			}
 		}
 

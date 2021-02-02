@@ -35,11 +35,6 @@
         "ext": {
           "bidder": {
             "region": "us_east",
-            "skadn": {
-              "skadnetids": null,
-              "sourceapp": "",
-              "version": ""
-            },
             "video": {
               "skip": 0,
               "skipdelay": 0,
@@ -95,12 +90,7 @@
                 }
               },
               "ext": {
-                "rewarded": 1,
-                "skadn": {
-                  "skadnetids": null,
-                  "sourceapp": "",
-                  "version": ""
-                }
+                "rewarded": 1
               }
             }
           ]

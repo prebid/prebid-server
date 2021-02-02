@@ -34,12 +34,7 @@
         },
         "ext": {
           "bidder": {
-            "reward": 1,
-            "skadn": {
-              "skadnetids": null,
-              "sourceapp": "",
-              "version": ""
-            }
+            "reward": 1
           }
         }
       }
@@ -54,12 +49,7 @@
           "imp": [
             {
               "ext": {
-                "reward": 1,
-                "skadn": {
-                  "skadnetids": null,
-                  "sourceapp": "",
-                  "version": ""
-                }
+                "reward": 1
               },
               "id": "test-imp-id",
               "video": {
