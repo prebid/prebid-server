@@ -31,4 +31,5 @@ func TestTappxSyncer(t *testing.T) {
 	assert.Equal(t, "//ssp.api.tappx.com/cs/usersync.php?gdpr_optin=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw&us_privacy=1YNN&type=iframe&ruid=localhost%2Fsetuid%3Fbidder%3Dtappx%26gdpr%3D1%26gdpr_consent%3DBONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw%26uid%3D%7B%7BTPPXUID%7D%7D", syncInfo.URL)
 	assert.Equal(t, "iframe", syncInfo.Type)
 	assert.EqualValues(t, 628, syncer.GDPRVendorID())
+	assert.Equal(t, false, syncInfo.SupportCORS)
 }
