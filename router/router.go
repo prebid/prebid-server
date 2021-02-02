@@ -30,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/adapters/taurusx"
+	"github.com/prebid/prebid-server/adapters/unicorn"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
@@ -197,6 +198,10 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			cfg.Adapters[string(openrtb_ext.BidderTaurusX)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderTaurusX)].XAPI.EndpointJP,
 			cfg.Adapters[string(openrtb_ext.BidderTaurusX)].XAPI.EndpointSG),
+		"unicorn": unicorn.NewUnicornAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters[string(openrtb_ext.BidderUnicorn)].Endpoint,
+			cfg.Adapters[string(openrtb_ext.BidderUnicorn)].XAPI.EndpointJP),
 	}
 }
 

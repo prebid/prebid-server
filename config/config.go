@@ -1005,6 +1005,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.triplelift_native.extra_info", "{\"publisher_whitelist\":[]}")
 	v.SetDefault("adapters.triplelift.endpoint", "https://tlx.3lift.com/s2s/auction?sra=1&supplier_id=20")
 	v.SetDefault("adapters.ucfunnel.endpoint", "http://apac-hk-adx.aralego.com/prebid")
+	v.SetDefault("adapters.unicorn.disabled", true)
+	v.SetDefault("adapters.unicorn.endpoint", "https://ds-staging.uncn.jp/tj/0/bid.json")
 	v.SetDefault("adapters.unruly.endpoint", "http://targeting.unrulymedia.com/openrtb/2.2")
 	v.SetDefault("adapters.valueimpression.endpoint", "https://rtb.valueimpression.com/endpoint")
 	v.SetDefault("adapters.verizonmedia.disabled", true)

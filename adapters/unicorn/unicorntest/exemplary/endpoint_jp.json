@@ -1,0 +1,127 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 1,
+          "maxduration": 2,
+          "protocols": [
+            1,
+            2,
+            5
+          ],
+          "w": 1020,
+          "h": 780,
+          "startdelay": 1,
+          "placement": 1,
+          "playbackmethod": [
+            2
+          ],
+          "delivery": [
+            1
+          ],
+          "api": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "reward": 1,
+            "region": "jp"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://jp.unicorn.com/tapjoy",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "ext": {
+                "reward": 1
+              },
+              "id": "test-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 1,
+                "maxduration": 2,
+                "protocols": [
+                  1,
+                  2,
+                  5
+                ],
+                "w": 1020,
+                "h": 780,
+                "startdelay": 1,
+                "placement": 1,
+                "playbackmethod": [
+                  2
+                ],
+                "delivery": [
+                  1
+                ],
+                "api": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "liftoff",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 0.5,
+                  "adm": "some-test-ad",
+                  "crid": "crid_10",
+                  "w": 1024,
+                  "h": 576
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBids": [
+    {
+      "bid": {
+        "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+        "impid": "test-imp-id",
+        "price": 0.5,
+        "adm": "some-test-ad",
+        "crid": "crid_10",
+        "w": 1024,
+        "h": 576
+      },
+      "type": "video"
+    }
+  ]
+}
