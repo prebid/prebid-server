@@ -48,13 +48,7 @@
           "id": "test-request-id",
           "imp": [
             {
-              "ext": {
-                "skadn": {
-                  "skadnetids": null,
-                   "sourceapp": "",
-                   "version": ""
-                }
-              },
+              "ext": {},
               "id": "test-imp-id",
               "video": {
                 "mimes": [

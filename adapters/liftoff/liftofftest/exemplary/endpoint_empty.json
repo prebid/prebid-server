@@ -33,11 +33,6 @@
           ]
         },
         "ext": {
-          "skadn": {
-            "skadnetids": null,
-            "sourceapp": "",
-            "version": ""
-          },
           "bidder": {
             "video": {
               "skip": 1,
@@ -94,12 +89,7 @@
                 }
               },
               "ext": {
-                "rewarded": 0,
-                "skadn": {
-                  "skadnetids": null,
-                  "sourceapp": "",
-                  "version": ""
-                }
+                "rewarded": 0
               }
             }
           ]

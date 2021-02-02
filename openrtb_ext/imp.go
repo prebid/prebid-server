@@ -39,7 +39,7 @@ type ExtStoredRequest struct {
 
 // SKADN ..
 type SKADN struct {
-	Version    string   `json:"version"`
-	SourceApp  string   `json:"sourceapp"`
-	SKADNetIDs []string `json:"skadnetids"`
+	Version    string   `json:"version,omitempty"`
+	SourceApp  string   `json:"sourceapp,omitempty"`
+	SKADNetIDs []string `json:"skadnetids,omitempty"`
 }

@@ -36,7 +36,7 @@ type taurusxBannerExt struct {
 }
 
 type taurusxImpExt struct {
-	SKADN openrtb_ext.SKADN `json:"skadn,omitempty"`
+	SKADN *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
 // TaurusXAdapter ...
@@ -155,7 +155,7 @@ func (adapter *TaurusXAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, taurusxExtSKADNetIDs)
 			// only add if present
 			if len(skadn.SKADNetIDs) > 0 {
-				impExt.SKADN = skadn
+				impExt.SKADN = &skadn
 			}
 		}
 

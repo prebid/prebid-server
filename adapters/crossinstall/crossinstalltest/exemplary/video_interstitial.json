@@ -35,11 +35,6 @@
         "ext": {
           "bidder": {
             "reward": 0,
-            "skadn": {
-              "skadnetids": null,
-              "sourceapp": "",
-              "version": ""
-            },
             "region": "us_east"
           }
         }
@@ -55,12 +50,7 @@
           "imp": [
             {
               "ext": {
-                "reward": 0,
-                "skadn": {
-                  "skadnetids": null,
-                  "sourceapp": "",
-                  "version": ""
-                }
+                "reward": 0
               },
               "id": "test-imp-id",
               "video": {
