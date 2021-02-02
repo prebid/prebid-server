@@ -23,29 +23,45 @@ type UnicornAdapter struct {
   endpoint string
 }
 
+// unicornImpExt is imp ext for UNICORN
 type unicornImpExt struct {
-  bidder unicornBidder `json:"bidder"`
+  Bidder openrtb_ext.ExtImpUnicorn `json:"bidder"`
 }
 
 type unicornBidder struct {
-  accountID   int64  `json:"account_id"`
-  publisherID int64  `json:"publisher_id"`
-  mediaID     string `json:"media_id"`
-  placementID string `json:"placement_id"`
+  AccountID   int64  `json:"account_id"`
+  PublisherID int64  `json:"publisher_id"`
+  MediaID     string `json:"media_id"`
+  PlacementID string `json:"placement_id"`
 }
 
+// unicornAppExt is app ext for UNICORN
 type unicornAppExt struct {
-  prebid unicornAppExtPrebid `json:"prebid"`
+  Prebid unicornAppExtPrebid `json:"prebid"`
 }
 
 type unicornAppExtPrebid struct {
-  version string `json:"version"`
-  source string `json:"source"`
+  Version string `json:"version"`
+  Source  string `json:"source"`
 }
 
+// unicornSourceExt is source ext for UNICORN
 type unicornSourceExt struct {
-  stype string `json:"stype"`
-  bidder string `json"bidder"`
+  Stype  string `json:"stype"`
+  Bidder string `json"bidder"`
+}
+
+type unicornExt struct {
+  Prebid    unicornExtPrebid `json:"prebid"`
+  AccountID int64            `json:"account_id"`
+}
+
+type unicornExtPrebid struct {
+  Data unicornExtPrebidData `json:"data"`
+}
+
+type unicornExtPrebidData struct {
+  Bidder string `json:"bidder"`
 }
 
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
@@ -111,47 +127,37 @@ func getImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
   for i := 0; i < len(request.Imp); i++ {
     imp := request.Imp[i]
 
-    placementID, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "placementId")
+    var ext unicornImpExt
+    err := json.Unmarshal(imp.Ext, &ext)
+
     if err != nil {
+      return nil, err
+    }
+
+    var placementID string
+    if ext.Bidder.PlacementID == "" {
       placementID = imp.TagID
+    } else {
+      placementID = ext.Bidder.PlacementID
     }
-    publisherID, err := jsonparser.GetInt(request.Imp[0].Ext, "bidder", "publisherId")
+    ext.Bidder.PlacementID = placementID
+
+    imp.Ext, err = json.Marshal(ext)
     if err != nil {
-      publisherID = 0
-    }
-    mediaID, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "mediaId")
-    if err != nil {
-      mediaID = ""
-    }
-    accountID, err := jsonparser.GetInt(request.Imp[0].Ext, "bidder", "accountId")
-    if err != nil {
-      accountID = 0
+      return nil, err
     }
 
     secure := int8(1)
     imp.Secure = &secure
     imp.TagID = placementID
-    impBidder := unicornBidder {
-        accountID: accountID,
-        publisherID: publisherID,
-        mediaID: mediaID,
-        placementID: placementID,
-    }
-    impExt := &unicornImpExt {
-      bidder: impBidder,
-    }
-    imp.Ext, err = json.Marshal(impExt)
-    if err != nil {
-      return nil, err
-    }
   }
   return request.Imp, nil
 }
 
 func getSourceExt() (json.RawMessage, error) {
   siteExt, err := json.Marshal(unicornSourceExt{
-    stype: "prebid_uncn",
-    bidder: "unicorn",
+    Stype: "prebid_uncn",
+    Bidder: "unicorn",
   })
   if err != nil {
     return nil, err
@@ -161,16 +167,35 @@ func getSourceExt() (json.RawMessage, error) {
 
 func getAppExt(request *openrtb.BidRequest) (json.RawMessage, error) {
   appExtPrebid := unicornAppExtPrebid{
-    version: request.App.Ver,
-    source: "prebid-mobile",
+    Version: request.App.Ver,
+    Source: "prebid-mobile",
   }
   appExt, err := json.Marshal(unicornAppExt{
-    prebid: appExtPrebid,
+    Prebid: appExtPrebid,
   })
   if err != nil {
     return nil, err
   }
   return appExt, nil
+}
+
+func getExt(request *openrtb.BidRequest) (json.RawMessage, error) {
+  accountID, err := jsonparser.GetInt(request.Imp[0].Ext, "bidder", "accountId")
+  if err != nil {
+    accountID = 0
+  }
+  ext, err := json.Marshal(unicornExt{
+    Prebid: unicornExtPrebid{
+      Data: unicornExtPrebidData{
+        Bidder: "unicorn",
+      },
+    },
+    AccountID: accountID,
+  })
+  if err != nil {
+    return nil, err
+  }
+  return ext, nil
 }
 
 // MakeBids unpacks the server's response into Bids.
