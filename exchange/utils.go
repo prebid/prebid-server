@@ -28,11 +28,11 @@ var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
 
 const unknownBidder string = ""
 
-func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
+func BidderToPrebidSChains(prebid *openrtb_ext.ExtRequestPrebid) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
-	if req != nil {
-		for _, schainWrapper := range req.Prebid.SChains {
+	if prebid != nil {
+		for _, schainWrapper := range prebid.SChains {
 			for _, bidder := range schainWrapper.Bidders {
 				if _, present := bidderToSChains[bidder]; present {
 					return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+

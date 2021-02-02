@@ -141,7 +141,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	ctx := context.Background()
 
-	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
+	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.Request.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
@@ -149,10 +149,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if req.App != nil {
+	if req.Request.App != nil {
 		labels.Source = metrics.DemandApp
 		labels.RType = metrics.ReqTypeORTB2App
-		labels.PubID = getAccountID(req.App.Publisher)
+		labels.PubID = getAccountID(req.Request.App.Publisher)
 	} else { //req.Site != nil
 		labels.Source = metrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -160,7 +160,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		} else {
 			labels.CookieFlag = metrics.CookieFlagYes
 		}
-		labels.PubID = getAccountID(req.Site.Publisher)
+		labels.PubID = getAccountID(req.Request.Site.Publisher)
 	}
 
 	// Look up account now that we have resolved the pubID value
@@ -220,8 +220,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, errs []error) {
-	req = &openrtb.BidRequest{}
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, errs []error) {
+	req.Request = &openrtb.BidRequest{}
 	errs = nil
 
 	// Pull the request body into a buffer, so we have it for later usage.
@@ -251,13 +251,13 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
-	if err := json.Unmarshal(requestJson, req); err != nil {
+	if err := json.Unmarshal(requestJson, req.Request); err != nil {
 		errs = []error{err}
 		return
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req)
+	deps.setFieldsImplicitly(httpRequest, req.Request)
 
 	if err := processInterstitials(req); err != nil {
 		errs = []error{err}
@@ -287,63 +287,65 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
+func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []error {
 	errL := []error{}
-	if req.ID == "" {
+	if req.Request.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
 	}
 
-	if req.TMax < 0 {
-		return []error{fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)}
+	if req.Request.TMax < 0 {
+		return []error{fmt.Errorf("request.tmax must be nonnegative. Got %d", req.Request.TMax)}
 	}
 
-	if len(req.Imp) < 1 {
+	if len(req.Request.Imp) < 1 {
 		return []error{errors.New("request.imp must contain at least one element.")}
 	}
 
-	if len(req.Cur) > 1 {
-		req.Cur = req.Cur[0:1]
-		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("A prebid request can only process one currency. Taking the first currency in the list, %s, as the active currency", req.Cur[0])})
+	if len(req.Request.Cur) > 1 {
+		req.Request.Cur = req.Request.Cur[0:1]
+		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("A prebid request can only process one currency. Taking the first currency in the list, %s, as the active currency", req.Request.Cur[0])})
 	}
 
 	// If automatically filling source TID is enabled then validate that
 	// source.TID exists and If it doesn't, fill it with a randomly generated UUID
 	if deps.cfg.AutoGenSourceTID {
-		if err := validateAndFillSourceTID(req); err != nil {
+		if err := validateAndFillSourceTID(req.Request); err != nil {
 			return []error{err}
 		}
 	}
 
 	var aliases map[string]string
-	if bidExt, err := deps.parseBidExt(req.Ext); err != nil {
+	if err := deps.parseBidExt(req); err != nil {
 		return []error{err}
-	} else if bidExt != nil {
-		aliases = bidExt.Prebid.Aliases
+	} else if req.RequestExt.Prebid != nil {
+		aliases = req.RequestExt.Prebid.Aliases
 
 		if err := deps.validateAliases(aliases); err != nil {
 			return []error{err}
 		}
 
-		if err := deps.validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
+		if err := deps.validateBidAdjustmentFactors(req.RequestExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
 			return []error{err}
 		}
 
-		if err := validateSChains(bidExt); err != nil {
+		if err := validateSChains(req.RequestExt.Prebid); err != nil {
 			return []error{err}
 		}
 
-		if err := deps.validateEidPermissions(bidExt, aliases); err != nil {
+		if err := deps.validateEidPermissions(req.RequestExt.Prebid, aliases); err != nil {
 			return []error{err}
 		}
 	}
 
-	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
+	if (req.Request.Site == nil && req.Request.App == nil) || (req.Request.Site != nil && req.Request.App != nil) {
 		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
-	if err := deps.validateSite(req.Site); err != nil {
+	if err := deps.validateSite(req); err != nil {
 		return append(errL, err)
 	}
+
+	// START HERE
 
 	if err := deps.validateApp(req.App); err != nil {
 		return append(errL, err)
@@ -418,18 +420,18 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 	return nil
 }
 
-func validateSChains(req *openrtb_ext.ExtRequest) error {
-	_, err := exchange.BidderToPrebidSChains(req)
+func validateSChains(prebid *openrtb_ext.ExtRequestPrebid) error {
+	_, err := exchange.BidderToPrebidSChains(prebid)
 	return err
 }
 
-func (deps *endpointDeps) validateEidPermissions(req *openrtb_ext.ExtRequest, aliases map[string]string) error {
-	if req == nil || req.Prebid.Data == nil {
+func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebid, aliases map[string]string) error {
+	if prebid == nil || prebid.Data == nil {
 		return nil
 	}
 
-	uniqueSources := make(map[string]struct{}, len(req.Prebid.Data.EidPermissions))
-	for i, eid := range req.Prebid.Data.EidPermissions {
+	uniqueSources := make(map[string]struct{}, len(prebid.Data.EidPermissions))
+	for i, eid := range prebid.Data.EidPermissions {
 		if len(eid.Source) == 0 {
 			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i)
 		}
@@ -899,15 +901,12 @@ func isBidderToValidate(bidder string) bool {
 	return bidder != openrtb_ext.PrebidExtKey && bidder != openrtb_ext.FirstPartyDataContextExtKey
 }
 
-func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequest, error) {
-	if len(ext) < 1 {
-		return nil, nil
+func (deps *endpointDeps) parseBidExt(req *openrtb_ext.RequestWrapper) error {
+	err := req.ExtractRequestExt()
+	if err != nil {
+		return fmt.Errorf("request.ext is invalid: %v", err)
 	}
-	var tmpExt openrtb_ext.ExtRequest
-	if err := json.Unmarshal(ext, &tmpExt); err != nil {
-		return nil, fmt.Errorf("request.ext is invalid: %v", err)
-	}
-	return &tmpExt, nil
+	return nil
 }
 
 func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
@@ -922,19 +921,18 @@ func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 	return nil
 }
 
-func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
-	if site == nil {
+func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
+	if req.Request.Site == nil {
 		return nil
 	}
 
-	if site.ID == "" && site.Page == "" {
+	if req.Request.Site.ID == "" && req.Request.Site.Page == "" {
 		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
 	}
-	if len(site.Ext) > 0 {
-		var s openrtb_ext.ExtSite
-		if err := json.Unmarshal(site.Ext, &s); err != nil {
-			return err
-		}
+
+	err := req.ExtractSiteExt()
+	if err != nil {
+		return err
 	}
 
 	return nil

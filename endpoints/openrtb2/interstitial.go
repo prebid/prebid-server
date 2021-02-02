@@ -1,7 +1,6 @@
 package openrtb2
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/mxmCherry/openrtb"
@@ -10,26 +9,25 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func processInterstitials(req *openrtb.BidRequest) error {
-	var devExt openrtb_ext.ExtDevice
+func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 	unmarshalled := true
-	for i := range req.Imp {
-		if req.Imp[i].Instl == 1 {
+	for i := range req.Request.Imp {
+		if req.Request.Imp[i].Instl == 1 {
 			if unmarshalled {
-				if req.Device.Ext == nil {
+				if req.Request.Device.Ext == nil {
 					// No special interstitial support requested, so bail as there is nothing to do
 					return nil
 				}
-				err := json.Unmarshal(req.Device.Ext, &devExt)
+				err := req.ExtractDeviceExt()
 				if err != nil {
 					return err
 				}
-				if devExt.Prebid.Interstitial == nil {
+				if req.DeviceExt.Prebid.Interstitial == nil {
 					// No special interstitial support requested, so bail as there is nothing to do
 					return nil
 				}
 			}
-			err := processInterstitialsForImp(&req.Imp[i], &devExt, req.Device)
+			err := processInterstitialsForImp(&req.Request.Imp[i], req.DeviceExt.Prebid, req.Request.Device)
 			if err != nil {
 				return err
 			}
@@ -38,7 +36,7 @@ func processInterstitials(req *openrtb.BidRequest) error {
 	return nil
 }
 
-func processInterstitialsForImp(imp *openrtb.Imp, devExt *openrtb_ext.ExtDevice, device *openrtb.Device) error {
+func processInterstitialsForImp(imp *openrtb.Imp, devExt *openrtb_ext.ExtDevicePrebid, device *openrtb.Device) error {
 	var maxWidth, maxHeight, minWidth, minHeight uint64
 	if imp.Banner == nil {
 		// custom interstitial support is only available for banner requests.
@@ -56,8 +54,8 @@ func processInterstitialsForImp(imp *openrtb.Imp, devExt *openrtb_ext.ExtDevice,
 		maxWidth = device.W
 		maxHeight = device.H
 	}
-	minWidth = (maxWidth * devExt.Prebid.Interstitial.MinWidthPerc) / 100
-	minHeight = (maxHeight * devExt.Prebid.Interstitial.MinHeightPerc) / 100
+	minWidth = (maxWidth * devExt.Interstitial.MinWidthPerc) / 100
+	minHeight = (maxHeight * devExt.Interstitial.MinHeightPerc) / 100
 	imp.Banner.Format = genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight)
 	if len(imp.Banner.Format) == 0 {
 		return &errortypes.BadInput{Message: fmt.Sprintf("Unable to set interstitial size list for Imp id=%s (No valid sizes between %dx%d and %dx%d)", imp.ID, minWidth, minHeight, maxWidth, maxHeight)}

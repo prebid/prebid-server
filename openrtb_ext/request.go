@@ -3,6 +3,8 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"errors"
+
+	"github.com/mxmCherry/openrtb"
 )
 
 // FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
@@ -301,4 +303,232 @@ type ExtRequestPrebidData struct {
 type ExtRequestPrebidDataEidPermission struct {
 	Source  string   `json:"source"`
 	Bidders []string `json:"bidders"`
+}
+
+// RequestWrapper wraps the OpenRTB request to provide a storage location for unmarshalled ext fields, so they
+// will not need to be unmarshalled multiple times.
+type RequestWrapper struct {
+	// json json.RawMessage
+	Request *openrtb.BidRequest
+	// Dirty bool // Probably don't care
+	UserExt    *UserExt
+	DeviceExt  *DeviceExt
+	RequestExt *RequestExt
+	SiteExt    *SiteExt
+}
+
+type UserExt struct {
+	Ext         map[string]json.RawMessage
+	Dirty       bool
+	Prebid      *ExtUserPrebid
+	PrebidDirty bool
+	Sync        *ExtUserSync
+	SyncDirty   bool
+}
+
+func (ue *UserExt) Extract(extJson json.RawMessage) (*UserExt, error) {
+	newUE := &UserExt{}
+	err := newUE.Unmarshal(extJson)
+	return newUE, err
+}
+
+func (ue *UserExt) Unmarshal(extJson json.RawMessage) error {
+	if len(extJson) == 0 || len(ue.Ext) != 0 {
+		return nil
+	}
+	err := json.Unmarshal(extJson, ue.Ext)
+	if err != nil {
+		return err
+	}
+	prebidJson, hasPrebid := ue.Ext["prebid"]
+	if hasPrebid {
+		ue.Prebid = &ExtUserPrebid{}
+		err = json.Unmarshal(prebidJson, ue.Prebid)
+	}
+
+	return nil
+}
+
+func (ue *UserExt) Marshal() (json.RawMessage, error) {
+	if ue.PrebidDirty {
+		prebidJson, err := json.Marshal(ue.Prebid)
+		if err != nil {
+			return nil, err
+		}
+		ue.Ext["prebid"] = json.RawMessage(prebidJson)
+	}
+
+	// Device
+
+	return json.Marshal(ue.Ext)
+
+}
+
+type RequestExt struct {
+	Ext         map[string]json.RawMessage
+	Dirty       bool
+	Prebid      *ExtRequestPrebid
+	PrebidDirty bool
+}
+
+func (re *RequestExt) Extract(extJson json.RawMessage) (*RequestExt, error) {
+	newRE := &RequestExt{}
+	err := newRE.Unmarshal(extJson)
+	return newRE, err
+}
+
+func (re *RequestExt) Unmarshal(extJson json.RawMessage) error {
+	if len(extJson) == 0 || len(re.Ext) != 0 {
+		return nil
+	}
+	err := json.Unmarshal(extJson, re.Ext)
+	if err != nil {
+		return err
+	}
+	prebidJson, hasPrebid := re.Ext["prebid"]
+	if hasPrebid {
+		re.Prebid = &ExtRequestPrebid{}
+		err = json.Unmarshal(prebidJson, re.Prebid)
+	}
+
+	return nil
+}
+
+func (re *RequestExt) Marshal() (json.RawMessage, error) {
+	if re.PrebidDirty {
+		prebidJson, err := json.Marshal(re.Prebid)
+		if err != nil {
+			return nil, err
+		}
+		re.Ext["prebid"] = json.RawMessage(prebidJson)
+	}
+
+	// Device
+
+	return json.Marshal(re.Ext)
+
+}
+
+type DeviceExt struct {
+	Ext         map[string]json.RawMessage
+	Dirty       bool
+	Prebid      *ExtDevicePrebid
+	PrebidDirty bool
+}
+
+func (de *DeviceExt) Extract(extJson json.RawMessage) (*DeviceExt, error) {
+	newDE := &DeviceExt{}
+	err := newDE.Unmarshal(extJson)
+	return newDE, err
+}
+
+func (de *DeviceExt) Unmarshal(extJson json.RawMessage) error {
+	if len(extJson) == 0 || len(de.Ext) != 0 {
+		return nil
+	}
+	err := json.Unmarshal(extJson, de.Ext)
+	if err != nil {
+		return err
+	}
+	prebidJson, hasPrebid := de.Ext["prebid"]
+	if hasPrebid {
+		de.Prebid = &ExtDevicePrebid{}
+		err = json.Unmarshal(prebidJson, de.Prebid)
+	}
+
+	return nil
+}
+
+func (de *DeviceExt) Marshal() (json.RawMessage, error) {
+	if de.PrebidDirty {
+		prebidJson, err := json.Marshal(de.Prebid)
+		if err != nil {
+			return nil, err
+		}
+		de.Ext["prebid"] = json.RawMessage(prebidJson)
+	}
+
+	// Device
+
+	return json.Marshal(de.Ext)
+
+}
+
+type SiteExt struct {
+	Ext ExtSite
+}
+
+func (se *SiteExt) Extract(extJson json.RawMessage) (*SiteExt, error) {
+	newSE := &SiteExt{}
+	err := newSE.Unmarshal(extJson)
+	return newSE, err
+}
+
+func (se *SiteExt) Unmarshal(extJson json.RawMessage) error {
+	if len(extJson) == 0 || len(se.Ext) != 0 {
+		return nil
+	}
+	err := json.Unmarshal(extJson, de.Ext)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (se *SiteExt) Marshal() (json.RawMessage, error) {
+	return json.Marshal(se.Ext)
+}
+
+func (rw *RequestWrapper) ExtractUserExt() error {
+	if rw.UserExt != nil || rw.Request.User.Ext == nil {
+		return nil
+	}
+	var err error
+	rw.UserExt, err = rw.UserExt.Extract(rw.Request.User.Ext)
+	return err
+}
+
+func (rw *RequestWrapper) ExtractDeviceExt() error {
+	if rw.DeviceExt != nil || rw.Request.Device.Ext == nil {
+		return nil
+	}
+	var err error
+	rw.DeviceExt, err = rw.DeviceExt.Extract(rw.Request.Device.Ext)
+	return err
+}
+
+func (rw *RequestWrapper) ExtractRequestExt() error {
+	if rw.RequestExt != nil || rw.Request.Ext == nil {
+		return nil
+	}
+	var err error
+	rw.RequestExt, err = rw.RequestExt.Extract(rw.Request.Ext)
+	return err
+}
+
+func (rw *RequestWrapper) ExtractSiteExt() error {
+	if rw.SiteExt != nil || rw.Request.Site.Ext == nil {
+		return nil
+	}
+	var err error
+	rw.SiteExt, err = rw.SiteExt.Extract(rw.Request.Site.Ext)
+	return err
+}
+
+func (rw *RequestWrapper) Marshal() (json.RawMessage, error) {
+	if rw.UserExt.Dirty {
+		userJson, err := rw.UserExt.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		rw.Request.User.Ext = userJson
+	}
+	if rw.DeviceExt.Dirty {
+		deviceJson, err := rw.DeviceExt.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		rw.Request.Device.Ext = deviceJson
+	}
+	return json.Marshal(rw.Request)
 }
