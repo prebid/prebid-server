@@ -190,12 +190,11 @@ func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, metrics.AdapterLabels
 
 func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprPrivacyPolicy gdprPrivacy.Policy) bool {
 	gdprSignal := gdpr.SignalAmbiguous
-	// invalid data is treated as an ambiguous signal
-	if i, err := strconv.Atoi(gdprPrivacyPolicy.Signal); err == nil && (i == 0 || i == 1) {
-		gdprSignal = gdpr.Signal(i)
+	if signal, err := gdpr.SignalParse(gdprPrivacyPolicy.Signal); err != nil {
+		gdprSignal = signal
 	}
 
-	if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, gdprSignal, gdprPrivacyPolicy.Consent); !canSync || err != nil {
+	if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, gdprSignal, gdprPrivacyPolicy.Consent); err != nil || !canSync {
 		return false
 	}
 	canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, gdprSignal, gdprPrivacyPolicy.Consent)

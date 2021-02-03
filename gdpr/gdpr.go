@@ -3,9 +3,11 @@ package gdpr
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -64,4 +66,18 @@ type ErrorMalformedConsent struct {
 
 func (e *ErrorMalformedConsent) Error() string {
 	return "malformed consent string " + e.consent + ": " + e.cause.Error()
+}
+
+// SignalParse parses a raw signal and returns
+func SignalParse(rawSignal string) (Signal, error) {
+	i, err := strconv.Atoi(rawSignal)
+
+	if err != nil {
+		return SignalAmbiguous, err
+	}
+	if i != 0 && i != 1 {
+		return SignalAmbiguous, &errortypes.BadInput{"GDPR signal should be integer 0 or 1"}
+	}
+
+	return Signal(i), nil
 }
