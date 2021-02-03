@@ -61,7 +61,8 @@ type liftoffVideoExt struct {
 }
 
 type liftoffBannerExt struct {
-	PlacementType string `json:"placementtype"`
+	PlacementType           string `json:"placementtype"`
+	AllowsCustomCloseButton bool   `json:"allowscustomclosebutton"`
 }
 
 type liftoffImpExt struct {
@@ -182,7 +183,8 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			if liftoffExt.MRAIDSupported {
 				bannerCopy := *thisImp.Banner
 				bannerExt := liftoffBannerExt{
-					PlacementType: string(placementType),
+					PlacementType:           string(placementType),
+					AllowsCustomCloseButton: false,
 				}
 				bannerCopy.Ext, err = json.Marshal(&bannerExt)
 				if err != nil {

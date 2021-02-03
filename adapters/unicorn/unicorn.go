@@ -31,7 +31,8 @@ type unicornImpExt struct {
 }
 
 type unicornBannerExt struct {
-	Reward int `json:"reward"`
+	Reward                  int  `json:"reward"`
+	AllowsCustomCloseButton bool `json:"allowscustomclosebutton"`
 }
 
 // UnicornAdapter ...
@@ -119,7 +120,8 @@ func (adapter *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 				bannerCopy := *thisImp.Banner
 
 				bannerExt := unicornBannerExt{
-					Reward: unicornExt.Reward,
+					Reward:                  unicornExt.Reward,
+					AllowsCustomCloseButton: false,
 				}
 				bannerCopy.Ext, err = json.Marshal(&bannerExt)
 				if err != nil {
