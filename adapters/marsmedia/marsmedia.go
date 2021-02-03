@@ -67,10 +67,6 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		} else if request.Imp[i].Video != nil {
 			validImpExists = true
 		}
-
-		if marsmediaExt.BidFloor > 0 {
-			request.Imp[i].BidFloor = marsmediaExt.BidFloor
-		}
 	}
 	if !validImpExists {
 		return nil, []error{&errortypes.BadInput{
