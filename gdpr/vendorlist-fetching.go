@@ -28,19 +28,18 @@ type saveVendors func(uint16, api.VendorList)
 
 func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16, uint8) string, tcfSpecVersion uint8) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
 	var fallback api.VendorList
-	if tcfSpecVersion == tcf1SpecVersion && len(cfg.TCF1.FallbackGVLPath) > 0 {
-		fallback = loadFallbackGVL(cfg.TCF1.FallbackGVLPath)
-	}
 
-	// If we are not going to try fetching the GVL dynamically, we have a simple fetcher.
-	if !cfg.TCF1.FetchGVL && tcfSpecVersion == tcf1SpecVersion {
-		if fallback != nil {
-			return func(ctx context.Context, vendorListVersion uint16) (vendorlist.VendorList, error) {
-				return fallback, nil
-			}
-		}
+	if tcfSpecVersion == tcf1SpecVersion && len(cfg.TCF1.FallbackGVLPath) == 0 {
 		return func(ctx context.Context, vendorListVersion uint16) (vendorlist.VendorList, error) {
 			return nil, makeVendorListNotFoundError(vendorListVersion)
+		}
+	}
+
+	if tcfSpecVersion == tcf1SpecVersion {
+		fallback = loadFallbackGVL(cfg.TCF1.FallbackGVLPath)
+
+		return func(ctx context.Context, vendorListVersion uint16) (vendorlist.VendorList, error) {
+			return fallback, nil
 		}
 	}
 

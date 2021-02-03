@@ -112,7 +112,6 @@
         "id": "TL3JS6F43CKNDQFY",
         "imp": [
           {
-            "tagid": "example-tag-id",
             "banner": {
               "format": [
                 {
@@ -129,6 +128,7 @@
                 "tagId": "cHJlYmlkLm9yZw"
               }
             },
+            "tagid": "example-tag-id",
             "id": "1",
             "secure": 1
           }
@@ -199,43 +199,89 @@
     "mockResponse": {
       "status": 200,
       "body": {
-        "id": "WQ5V2DWVTMNXABDD",
-        "seatbid": [{
-          "bid": [{
-            "id": "TEST",
-            "impid": "1",
-            "price": 10.0,
-            "adid": "1",
-            "adm": "<script src=\"https://assets.a-mo.net/tmode.v1.js\"></script>",
-            "adomain": ["amxrtb.com"],
-            "iurl": "https://assets.a-mo.net/300x250.v2.png",
-            "cid": "1",
-            "crid": "1",
-            "h": 600,
-            "w": 300
-          }]
-        }],
-        "cur": "USD"
+        "cur": "USD",
+        "id": "os4jorvupkyaa===",
+        "seatbid": [
+          {
+            "bid": [
+              {
+                "adid": "253510977",
+                "adm": "<i></i><script>_c=[];</script><script src=\"https://assets.a-mo.net/js/c.js\"></script>",
+                "adomain": [
+                  "dell.com.au"
+                ],
+                "cid": "668",
+                "crid": "253510977",
+                "ext": {
+                },
+                "h": 250,
+                "id": "8911104898220857797",
+                "impid": "6a362d3a9db4eba300x250",
+                "nurl": "https://1x1.a-mo.net/hbx/bwin",
+                "price": 0.50,
+                "w": 300
+              },
+              {
+                "adid": "253510977",
+                "adm": "<i></i><script>_c=[];</script><script src=\"https://assets.a-mo.net/js/c.js\"></script>",
+                "adomain": [
+                  "dell.com.au"
+                ],
+                "cid": "668",
+                "crid": "253510977",
+                "ext": {},
+                "h": 250,
+                "id": "430444686086263488",
+                "impid": "6a362d3a9db4eba300x250",
+                "nurl": "https://1x1.a-mo.net/hbx/bwin",
+                "price": 0.50,
+                "w": 300
+              }
+            ],
+            "group": 0
+          }
+        ]
       }
     }
   }],
-
   "expectedBidResponses": [
     {
       "currency": "USD",
       "bids": [
         {
           "bid": {
-            "id": "TEST",
-            "impid": "1",
-            "price": 10.0,
-            "adid": "1",
-            "adm": "<script src=\"https://assets.a-mo.net/tmode.v1.js\"></script>",
-            "adomain": ["amxrtb.com"],
-            "iurl": "https://assets.a-mo.net/300x250.v2.png",
-            "cid": "1",
-            "crid": "1",
-            "h": 600,
+            "adid": "253510977",
+            "adm": "<i></i><script>_c=[];</script><script src=\"https://assets.a-mo.net/js/c.js\"></script>",
+            "adomain": [
+              "dell.com.au"
+            ],
+            "cid": "668",
+            "crid": "253510977",
+            "ext": {},
+            "h": 250,
+            "id": "8911104898220857797",
+            "impid": "6a362d3a9db4eba300x250",
+            "nurl": "https://1x1.a-mo.net/hbx/bwin",
+            "price": 0.50,
+            "w": 300
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "adid": "253510977",
+            "adm": "<i></i><script>_c=[];</script><script src=\"https://assets.a-mo.net/js/c.js\"></script>",
+            "adomain": [
+              "dell.com.au"
+            ],
+            "cid": "668",
+            "crid": "253510977",
+            "ext": {},
+            "h": 250,
+            "id": "430444686086263488",
+            "impid": "6a362d3a9db4eba300x250",
+            "nurl": "https://1x1.a-mo.net/hbx/bwin",
+            "price": 0.50,
             "w": 300
           },
           "type": "banner"
