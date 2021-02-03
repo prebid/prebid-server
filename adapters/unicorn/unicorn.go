@@ -52,16 +52,8 @@ type unicornSourceExt struct {
 }
 
 type unicornExt struct {
-  Prebid    unicornExtPrebid `json:"prebid"`
-  AccountID int64            `json:"account_id"`
-}
-
-type unicornExtPrebid struct {
-  Data unicornExtPrebidData `json:"data"`
-}
-
-type unicornExtPrebidData struct {
-  Bidder string `json:"bidder"`
+  Prebid    openrtb_ext.ExtImpPrebid `json:"prebid"`
+  AccountID int64                    `json:"account_id,omitempty"`
 }
 
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
@@ -99,12 +91,12 @@ func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
   request.Imp = imp
   request.Cur = []string{unicornDefaultCurrency}
 
-  request.App.Ext, err = getAppExt(request)
+  request.Source.Ext, err = getSourceExt()
   if err != nil {
     return nil, []error{err}
   }
 
-  request.Source.Ext, err = getSourceExt()
+  request.Ext, err = getExt(request)
   if err != nil {
     return nil, []error{err}
   }
@@ -125,7 +117,7 @@ func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
 
 func getImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]openrtb.Imp, error) {
   for i := 0; i < len(request.Imp); i++ {
-    imp := request.Imp[i]
+    imp := &request.Imp[i]
 
     var ext unicornImpExt
     err := json.Unmarshal(imp.Ext, &ext)
@@ -165,33 +157,19 @@ func getSourceExt() (json.RawMessage, error) {
   return siteExt, nil
 }
 
-func getAppExt(request *openrtb.BidRequest) (json.RawMessage, error) {
-  appExtPrebid := unicornAppExtPrebid{
-    Version: request.App.Ver,
-    Source: "prebid-mobile",
-  }
-  appExt, err := json.Marshal(unicornAppExt{
-    Prebid: appExtPrebid,
-  })
-  if err != nil {
-    return nil, err
-  }
-  return appExt, nil
-}
-
 func getExt(request *openrtb.BidRequest) (json.RawMessage, error) {
   accountID, err := jsonparser.GetInt(request.Imp[0].Ext, "bidder", "accountId")
   if err != nil {
     accountID = 0
   }
-  ext, err := json.Marshal(unicornExt{
-    Prebid: unicornExtPrebid{
-      Data: unicornExtPrebidData{
-        Bidder: "unicorn",
-      },
-    },
-    AccountID: accountID,
-  })
+  var decodedExt *unicornExt
+  err = json.Unmarshal(request.Ext, &decodedExt)
+  if err != nil {
+    return nil, err
+  }
+  decodedExt.AccountID = accountID
+
+  ext, err := json.Marshal(decodedExt)
   if err != nil {
     return nil, err
   }
@@ -200,6 +178,7 @@ func getExt(request *openrtb.BidRequest) (json.RawMessage, error) {
 
 // MakeBids unpacks the server's response into Bids.
 func (a *UnicornAdapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+
   if responseData.StatusCode == http.StatusNoContent {
     return nil, nil
   }
