@@ -4,3 +4,4 @@ capabilities:
   app:
     mediaTypes:
       - video
+      - banner
