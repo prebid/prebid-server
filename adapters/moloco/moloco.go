@@ -32,7 +32,8 @@ type molocoVideoExt struct {
 }
 
 type molocoBannerExt struct {
-	PlacementType adapters.PlacementType `json:"placementtype"`
+	PlacementType           adapters.PlacementType `json:"placementtype"`
+	AllowsCustomCloseButton bool                   `json:"allowscustomclosebutton"`
 }
 
 type molocoImpExt struct {
@@ -152,7 +153,8 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 				bannerCopy := *thisImp.Banner
 
 				bannerExt := molocoBannerExt{
-					PlacementType: placementType,
+					PlacementType:           placementType,
+					AllowsCustomCloseButton: false,
 				}
 				bannerCopy.Ext, err = json.Marshal(&bannerExt)
 				if err != nil {
