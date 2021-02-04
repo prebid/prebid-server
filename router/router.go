@@ -241,7 +241,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
-	validateDefaultAliases(defaultAliases)
+	if err := validateDefaultAliases(defaultAliases); err != nil {
+		glog.Fatal(err)
+	}
 
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, adapters.GDPRAwareSyncerIDs(syncers), generalHttpClient)
@@ -263,7 +265,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders)
-
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
@@ -379,7 +380,7 @@ func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []
 	return aliases, []byte{}
 }
 
-func validateDefaultAliases(aliases map[string]string) {
+func validateDefaultAliases(aliases map[string]string) error {
 	var errs []error
 
 	for alias := range aliases {
@@ -389,7 +390,8 @@ func validateDefaultAliases(aliases map[string]string) {
 	}
 
 	if len(errs) > 0 {
-		aggregate := errortypes.NewAggregateError("default request alias errors", errs)
-		glog.Fatal(aggregate)
+		return errortypes.NewAggregateError("default request alias errors", errs)
 	}
+
+	return nil
 }
