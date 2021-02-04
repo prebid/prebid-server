@@ -70,13 +70,17 @@ func (e *ErrorMalformedConsent) Error() string {
 
 // SignalParse parses a raw signal and returns
 func SignalParse(rawSignal string) (Signal, error) {
+	if rawSignal == "" {
+		return SignalAmbiguous, nil
+	}
+
 	i, err := strconv.Atoi(rawSignal)
 
 	if err != nil {
 		return SignalAmbiguous, err
 	}
 	if i != 0 && i != 1 {
-		return SignalAmbiguous, &errortypes.BadInput{"GDPR signal should be integer 0 or 1"}
+		return SignalAmbiguous, &errortypes.BadInput{Message: "GDPR signal should be integer 0 or 1"}
 	}
 
 	return Signal(i), nil

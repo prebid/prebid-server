@@ -69,19 +69,13 @@ func TestSignalParse(t *testing.T) {
 			wantError:   false,
 		},
 		{
-			description: "Invalid signal - raw signal is empty",
+			description: "Valid signal - raw signal is empty",
 			rawSignal:   "",
 			wantSignal:  SignalAmbiguous,
-			wantError:   true,
+			wantError:   false,
 		},
 		{
 			description: "Invalid signal - raw signal is -1",
-			rawSignal:   "-1",
-			wantSignal:  SignalAmbiguous,
-			wantError:   true,
-		},
-		{
-			description: "Invalid signal - raw signal is 2",
 			rawSignal:   "-1",
 			wantSignal:  SignalAmbiguous,
 			wantError:   true,

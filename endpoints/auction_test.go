@@ -413,6 +413,13 @@ func TestShouldUsersync(t *testing.T) {
 			allowBidderSync:  true,
 			wantAllow:        true,
 		},
+		{
+			description:      "Don't sync - invalid GDPR signal, host cookies disallows and bidder sync disallows",
+			signal:           "2",
+			allowHostCookies: false,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
 	}
 
 	for _, tt := range tests {
