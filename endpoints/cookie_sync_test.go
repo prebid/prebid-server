@@ -245,11 +245,11 @@ type gdprPerms struct {
 	allowedBidders map[openrtb_ext.BidderName]usersync.Usersyncer
 }
 
-func (g *gdprPerms) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (g *gdprPerms) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	return g.allowHost, nil
 }
 
-func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	_, ok := g.allowedBidders[bidder]
 	return ok, nil
 }
