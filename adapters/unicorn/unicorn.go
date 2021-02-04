@@ -28,32 +28,16 @@ type unicornImpExt struct {
   Bidder openrtb_ext.ExtImpUnicorn `json:"bidder"`
 }
 
-type unicornBidder struct {
-  AccountID   int64  `json:"account_id"`
-  PublisherID int64  `json:"publisher_id"`
-  MediaID     string `json:"media_id"`
-  PlacementID string `json:"placement_id"`
-}
-
-// unicornAppExt is app ext for UNICORN
-type unicornAppExt struct {
-  Prebid unicornAppExtPrebid `json:"prebid"`
-}
-
-type unicornAppExtPrebid struct {
-  Version string `json:"version"`
-  Source  string `json:"source"`
-}
-
 // unicornSourceExt is source ext for UNICORN
 type unicornSourceExt struct {
   Stype  string `json:"stype"`
   Bidder string `json"bidder"`
 }
 
+// unicornExt is ext for UNICORN
 type unicornExt struct {
-  Prebid    openrtb_ext.ExtImpPrebid `json:"prebid"`
-  AccountID int64                    `json:"account_id,omitempty"`
+  Prebid    *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
+  AccountID int64                     `json:"accountId,omitempty"`
 }
 
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
@@ -83,7 +67,7 @@ func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
 
   request.AT = unicornAuctionType
 
-  imp, err := getImps(request, requestInfo)
+  imp, err := setImps(request, requestInfo)
   if err != nil {
     return nil, []error{err}
   }
@@ -91,12 +75,12 @@ func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
   request.Imp = imp
   request.Cur = []string{unicornDefaultCurrency}
 
-  request.Source.Ext, err = getSourceExt()
+  request.Source.Ext, err = setSourceExt()
   if err != nil {
     return nil, []error{err}
   }
 
-  request.Ext, err = getExt(request)
+  request.Ext, err = setExt(request)
   if err != nil {
     return nil, []error{err}
   }
@@ -115,7 +99,7 @@ func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
   return []*adapters.RequestData{requestData}, nil
 }
 
-func getImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]openrtb.Imp, error) {
+func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]openrtb.Imp, error) {
   for i := 0; i < len(request.Imp); i++ {
     imp := &request.Imp[i]
 
@@ -123,7 +107,9 @@ func getImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
     err := json.Unmarshal(imp.Ext, &ext)
 
     if err != nil {
-      return nil, err
+      return nil, &errortypes.BadInput{
+			  Message: fmt.Sprintf("Error while decoding imp[%d].ext, err: %s", i, err),
+		  }
     }
 
     var placementID string
@@ -136,7 +122,9 @@ func getImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
 
     imp.Ext, err = json.Marshal(ext)
     if err != nil {
-      return nil, err
+      return nil, &errortypes.BadInput{
+			  Message: fmt.Sprintf("Error while encoding imp[%d].ext, err: %s", i, err),
+		  }
     }
 
     secure := int8(1)
@@ -146,18 +134,20 @@ func getImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
   return request.Imp, nil
 }
 
-func getSourceExt() (json.RawMessage, error) {
+func setSourceExt() (json.RawMessage, error) {
   siteExt, err := json.Marshal(unicornSourceExt{
     Stype: "prebid_uncn",
     Bidder: "unicorn",
   })
   if err != nil {
-    return nil, err
+    return nil, &errortypes.BadInput{
+		  Message: fmt.Sprintf("Error while encoding source.ext, err: %s", err),
+		}
   }
   return siteExt, nil
 }
 
-func getExt(request *openrtb.BidRequest) (json.RawMessage, error) {
+func setExt(request *openrtb.BidRequest) (json.RawMessage, error) {
   accountID, err := jsonparser.GetInt(request.Imp[0].Ext, "bidder", "accountId")
   if err != nil {
     accountID = 0
@@ -165,13 +155,17 @@ func getExt(request *openrtb.BidRequest) (json.RawMessage, error) {
   var decodedExt *unicornExt
   err = json.Unmarshal(request.Ext, &decodedExt)
   if err != nil {
-    return nil, err
+    return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("Error while decoding ext, err: %s", err),
+		}
   }
   decodedExt.AccountID = accountID
 
   ext, err := json.Marshal(decodedExt)
   if err != nil {
-    return nil, err
+    return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("Error while encoding ext, err: %s", err),
+		}
   }
   return ext, nil
 }
@@ -206,9 +200,20 @@ func (a *UnicornAdapter) MakeBids(request *openrtb.BidRequest, requestData *adap
   bidResponse.Currency = response.Cur
   for _, seatBid := range response.SeatBid {
     for _, bid := range seatBid.Bid {
+      var bidType openrtb_ext.BidType
+      for _, imp := range request.Imp {
+        if imp.ID == bid.ImpID {
+          if imp.Banner != nil {
+            bidType = openrtb_ext.BidTypeBanner
+          }
+          if imp.Native != nil {
+            bidType = openrtb_ext.BidTypeNative
+          }
+        }
+      }
       b := &adapters.TypedBid{
         Bid:     &bid,
-        BidType: "",
+        BidType: bidType,
       }
       bidResponse.Bids = append(bidResponse.Bids, b)
     }
