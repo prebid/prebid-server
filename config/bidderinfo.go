@@ -23,23 +23,23 @@ type BidderInfo struct {
 
 // MaintainerInfo is the support email address for a bidder.
 type MaintainerInfo struct {
-	Email string `yaml:"email" json:"email"`
+	Email string `yaml:"email"`
 }
 
 // CapabilitiesInfo is the supported platforms for a bidder.
 type CapabilitiesInfo struct {
-	App  *PlatformInfo `yaml:"app" json:"app"`
-	Site *PlatformInfo `yaml:"site" json:"site"`
+	App  *PlatformInfo `yaml:"app"`
+	Site *PlatformInfo `yaml:"site"`
 }
 
 // PlatformInfo is the supported media types for a bidder.
 type PlatformInfo struct {
-	MediaTypes []openrtb_ext.BidType `yaml:"mediaTypes" json:"mediaTypes"`
+	MediaTypes []openrtb_ext.BidType `yaml:"mediaTypes"`
 }
 
 // DebugInfo is the supported debug options for a bidder.
 type DebugInfo struct {
-	Allow bool `yaml:"allow" json:"allow"`
+	Allow bool `yaml:"allow"`
 }
 
 // LoadBidderInfoFromDisk parses all static/bidder-info/{bidder}.yaml files from the file system.
