@@ -36,13 +36,13 @@ import (
 // 2. The returned values are correct for a non-test bid.
 func TestSingleBidder(t *testing.T) {
 	type aTest struct {
-		debugInfo    *adapters.DebugInfo
+		debugInfo    *config.DebugInfo
 		httpCallsLen int
 	}
 
 	testCases := []*aTest{
-		{&adapters.DebugInfo{Allow: false}, 0},
-		{&adapters.DebugInfo{Allow: true}, 1},
+		{&config.DebugInfo{Allow: false}, 0},
+		{&config.DebugInfo{Allow: true}, 1},
 	}
 
 	respStatus := 200
@@ -1437,13 +1437,13 @@ func TestTimeoutNotificationOn(t *testing.T) {
 }
 
 func TestParseDebugInfoTrue(t *testing.T) {
-	debugInfo := &adapters.DebugInfo{Allow: true}
+	debugInfo := &config.DebugInfo{Allow: true}
 	resDebugInfo := parseDebugInfo(debugInfo)
 	assert.True(t, resDebugInfo, "Debug Allow value should be true")
 }
 
 func TestParseDebugInfoFalse(t *testing.T) {
-	debugInfo := &adapters.DebugInfo{Allow: false}
+	debugInfo := &config.DebugInfo{Allow: false}
 	resDebugInfo := parseDebugInfo(debugInfo)
 	assert.False(t, resDebugInfo, "Debug Allow value should be false")
 }

@@ -18,6 +18,7 @@ type BidderInfo struct {
 	Maintainer              *MaintainerInfo   `yaml:"maintainer"`
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities"`
 	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed"`
+	Debug                   *DebugInfo        `yaml:"debug,omitempty"`
 }
 
 // MaintainerInfo is the support email address for a bidder.
@@ -34,6 +35,11 @@ type CapabilitiesInfo struct {
 // PlatformInfo is the supported media types for a bidder.
 type PlatformInfo struct {
 	MediaTypes []openrtb_ext.BidType `yaml:"mediaTypes" json:"mediaTypes"`
+}
+
+// DebugInfo is the supported debug options for a bidder.
+type DebugInfo struct {
+	Allow bool `yaml:"allow" json:"allow"`
 }
 
 // LoadBidderInfoFromDisk parses all static/bidder-info/{bidder}.yaml files from the file system.
