@@ -358,10 +358,6 @@ func runTestTCF1(t *testing.T, test test, server *httptest.Server) {
 
 func runTestTCF2(t *testing.T, test test, server *httptest.Server) {
 	config := testConfig()
-	if test.setup.enableTCF1Fallback {
-		config.TCF1.FallbackGVLPath = "../static/tcf1/fallback_gvl.json"
-	}
-
 	fetcher := newVendorListFetcherTCF2(context.Background(), config, server.Client(), testURLMaker(server))
 	vendorList, err := fetcher(context.Background(), test.setup.vendorListVersion)
 
