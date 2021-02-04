@@ -112,7 +112,3 @@ func uniqueForPrefixLength(b []string, prefixLength int) bool {
 
 	return true
 }
-
-// test reserved
-// populate alias validation in router, with reserved name (or already a core bidder name??)
-// write details endpoint test
