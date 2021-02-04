@@ -10,7 +10,6 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
-	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -40,7 +39,7 @@ func TestBuildAdaptersSuccess(t *testing.T) {
 
 	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{})
 	appnexusBidderWithInfo := adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled)
-	appnexusBidderAdapted := adaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus)
+	appnexusBidderAdapted := adaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil)
 	appnexusBidderValidated := addValidatedBidderMiddleware(appnexusBidderAdapted)
 
 	idLegacyAdapted := &adaptedAdapter{lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "anyEndpoint")}
@@ -77,11 +76,11 @@ func TestBuildExchangeBidders(t *testing.T) {
 
 	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{})
 	appnexusBidderWithInfo := adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled)
-	appnexusBidderAdapted := adaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus)
+	appnexusBidderAdapted := adaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil)
 
 	rubiconBidder, _ := rubicon.Builder(openrtb_ext.BidderRubicon, config.Adapter{})
 	rubiconBidderWithInfo := adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled)
-	rubiconBidderAdapted := adaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon)
+	rubiconBidderAdapted := adaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon, nil)
 
 	testCases := []struct {
 		description     string
@@ -213,9 +212,9 @@ func TestBuildBidders(t *testing.T) {
 		},
 		{
 			description:   "Success - Ignores Legacy",
-			adapterConfig: map[string]config.Adapter{"appnexus": {}, "lifestreet": {}, "pulsepoint": {}},
-			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoEnabled, "lifestreet": infoEnabled, "pulsepoint": infoEnabled},
-			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderLifestreet: inconsequentialBuilder, openrtb_ext.BidderPulsepoint: inconsequentialBuilder},
+			adapterConfig: map[string]config.Adapter{"appnexus": {}, "lifestreet": {}},
+			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoEnabled, "lifestreet": infoEnabled},
+			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderLifestreet: inconsequentialBuilder},
 			expectedBidders: map[openrtb_ext.BidderName]adapters.Bidder{
 				openrtb_ext.BidderAppnexus: adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled),
 			},
@@ -257,7 +256,6 @@ func TestBuildExchangeBiddersLegacy(t *testing.T) {
 	cfg := config.Adapter{Endpoint: "anyEndpoint"}
 
 	expectedLifestreet := &adaptedAdapter{lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "anyEndpoint")}
-	expectedPulsepoint := &adaptedAdapter{pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "anyEndpoint")}
 
 	testCases := []struct {
 		description   string
@@ -266,22 +264,16 @@ func TestBuildExchangeBiddersLegacy(t *testing.T) {
 		expected      map[openrtb_ext.BidderName]adaptedBidder
 	}{
 		{
-			description:   "All Enabled",
-			adapterConfig: map[string]config.Adapter{"lifestreet": cfg, "pulsepoint": cfg},
-			bidderInfos:   map[string]config.BidderInfo{"lifestreet": infoEnabled, "pulsepoint": infoEnabled},
-			expected:      map[openrtb_ext.BidderName]adaptedBidder{"lifestreet": expectedLifestreet, "pulsepoint": expectedPulsepoint},
-		},
-		{
-			description:   "All Disabled",
-			adapterConfig: map[string]config.Adapter{"lifestreet": cfg, "pulsepoint": cfg},
-			bidderInfos:   map[string]config.BidderInfo{"lifestreet": infoDisabled, "pulsepoint": infoDisabled},
-			expected:      map[openrtb_ext.BidderName]adaptedBidder{},
-		},
-		{
-			description:   "Mixed",
-			adapterConfig: map[string]config.Adapter{"lifestreet": cfg, "pulsepoint": cfg},
-			bidderInfos:   map[string]config.BidderInfo{"lifestreet": infoEnabled, "pulsepoint": infoDisabled},
+			description:   "Active",
+			adapterConfig: map[string]config.Adapter{"lifestreet": cfg},
+			bidderInfos:   map[string]config.BidderInfo{"lifestreet": infoEnabled},
 			expected:      map[openrtb_ext.BidderName]adaptedBidder{"lifestreet": expectedLifestreet},
+		},
+		{
+			description:   "Disabled",
+			adapterConfig: map[string]config.Adapter{"lifestreet": cfg},
+			bidderInfos:   map[string]config.BidderInfo{"lifestreet": infoDisabled},
+			expected:      map[openrtb_ext.BidderName]adaptedBidder{},
 		},
 	}
 
@@ -379,7 +371,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 
 type fakeAdaptedBidder struct{}
 
-func (fakeAdaptedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
+func (fakeAdaptedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	return nil, nil
 }
 

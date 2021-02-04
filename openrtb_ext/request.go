@@ -20,11 +20,13 @@ type ExtRequestPrebid struct {
 	Aliases              map[string]string         `json:"aliases,omitempty"`
 	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
 	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
+	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
+	Debug                bool                      `json:"debug,omitempty"`
+	Events               json.RawMessage           `json:"events,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
-	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
-	Debug                bool                      `json:"debug,omitempty"`
+	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
 
 	// NoSale specifies bidders with whom the publisher has a legal relationship where the
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
@@ -288,4 +290,15 @@ var priceGranularityAuto = PriceGranularity{
 			Increment: 0.5,
 		},
 	},
+}
+
+// ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.
+type ExtRequestPrebidData struct {
+	EidPermissions []ExtRequestPrebidDataEidPermission `json:"eidpermissions"`
+}
+
+// ExtRequestPrebidDataEidPermission defines a filter rule for filter user.ext.eids
+type ExtRequestPrebidDataEidPermission struct {
+	Source  string   `json:"source"`
+	Bidders []string `json:"bidders"`
 }

@@ -49,7 +49,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -58,6 +58,7 @@ type adaptedBidder interface {
 // pbsOrtbBid.bidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // pbsOrtbBid.bidTargets does not need to be filled out by the Bidder. It will be set later by the exchange.
 // pbsOrtbBid.bidVideo is optional but should be filled out by the Bidder if bidType is video.
+// pbsOrtbBid.bidEvents is set by exchange when event tracking is enabled
 // pbsOrtbBid.dealPriority is optionally provided by adapters and used internally by the exchange to support deal targeted campaigns.
 // pbsOrtbBid.dealTierSatisfied is set to true by exchange.updateHbPbCatDur if deal tier satisfied otherwise it will be set to false
 type pbsOrtbBid struct {
@@ -65,6 +66,7 @@ type pbsOrtbBid struct {
 	bidType           openrtb_ext.BidType
 	bidTargets        map[string]string
 	bidVideo          *openrtb_ext.ExtBidPrebidVideo
+	bidEvents         *openrtb_ext.ExtBidPrebidEvents
 	dealPriority      int
 	dealTierSatisfied bool
 }
@@ -91,7 +93,7 @@ type pbsOrtbSeatBid struct {
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName) adaptedBidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *adapters.DebugInfo) adaptedBidder {
 	return &bidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
@@ -100,8 +102,16 @@ func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		config: bidderAdapterConfig{
 			Debug:              cfg.Debug,
 			DisableConnMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
+			DebugInfo:          adapters.DebugInfo{Allow: parseDebugInfo(debugInfo)},
 		},
 	}
+}
+
+func parseDebugInfo(info *adapters.DebugInfo) bool {
+	if info == nil {
+		return true
+	}
+	return info.Allow
 }
 
 type bidderAdapter struct {
@@ -115,9 +125,10 @@ type bidderAdapter struct {
 type bidderAdapterConfig struct {
 	Debug              config.Debug
 	DisableConnMetrics bool
+	DebugInfo          adapters.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -153,8 +164,14 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	for i := 0; i < len(reqData); i++ {
 		httpInfo := <-responseChannel
 		// If this is a test bid, capture debugging info from the requests.
-		if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
-			seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+		// Write debug data to ext in case if:
+		// - debugContextKey (url param) in true
+		// - account debug is allowed
+		// - bidder debug is allowed
+		if accountDebugAllowed && bidder.config.DebugInfo.Allow {
+			if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
+				seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+			}
 		}
 
 		if httpInfo.err == nil {
@@ -308,17 +325,19 @@ func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset
 func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 	if httpInfo.err == nil {
 		return &openrtb_ext.ExtHttpCall{
-			Uri:          httpInfo.request.Uri,
-			RequestBody:  string(httpInfo.request.Body),
-			ResponseBody: string(httpInfo.response.Body),
-			Status:       httpInfo.response.StatusCode,
+			Uri:            httpInfo.request.Uri,
+			RequestBody:    string(httpInfo.request.Body),
+			ResponseBody:   string(httpInfo.response.Body),
+			Status:         httpInfo.response.StatusCode,
+			RequestHeaders: httpInfo.request.Headers,
 		}
 	} else if httpInfo.request == nil {
 		return &openrtb_ext.ExtHttpCall{}
 	} else {
 		return &openrtb_ext.ExtHttpCall{
-			Uri:         httpInfo.request.Uri,
-			RequestBody: string(httpInfo.request.Body),
+			Uri:            httpInfo.request.Uri,
+			RequestBody:    string(httpInfo.request.Body),
+			RequestHeaders: httpInfo.request.Headers,
 		}
 	}
 }

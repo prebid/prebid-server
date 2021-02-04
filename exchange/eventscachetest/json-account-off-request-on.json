@@ -1,0 +1,49 @@
+{
+    "bidRequest": {
+        "imp": [{
+            "id":  "oneImp"
+        }]
+    },
+    "pbsBids": [{
+        "bid":{
+            "id": "bidOne",
+            "impid": "oneImp",
+            "price": 7.64,
+            "exp":   600
+        },
+        "bidType": "banner",
+        "bidder": "appnexus"
+    }, {
+        "bid": {
+            "id": "bidTwo",
+            "impid": "oneImp",
+            "price": 5.64
+        },
+        "bidType": "banner",
+        "bidder": "pubmatic"
+    }],
+    "expectedCacheables": [
+        {
+            "type": "json",
+            "ttlseconds": 660,
+            "value":{ "id": "bidOne", "impid": "oneImp", "price": 7.64, "exp": 600, "wurl": "http://localhost/event?t=win&b=bidOne&a=TEST_ACC_ID&bidder=appnexus&ts=1234567890"}
+        }, {
+            "type": "json",
+            "ttlseconds": 360,
+            "value": { "id": "bidTwo", "impid": "oneImp", "price": 5.64, "wurl": "http://localhost/event?t=win&b=bidTwo&a=TEST_ACC_ID&bidder=pubmatic&ts=1234567890"}
+        }
+    ],
+    "defaultTTLs": {
+        "banner": 300,
+        "video": 3600,
+        "audio": 1800,
+        "native": 300
+    },
+    "targetDataIncludeWinners":true,
+    "targetDataIncludeBidderKeys":true,
+    "targetDataIncludeCacheBids":true,
+    "targetDataIncludeCacheVast":false,
+    "eventsDataEnabledForAccount": false,
+    "eventsDataEnabledForRequest": true
+}
+

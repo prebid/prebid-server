@@ -349,7 +349,7 @@ func TestCacheVideoOnly(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	syncers := usersyncers.NewSyncerMap(cfg)
-	gdprPerms := gdpr.NewPermissions(nil, config.GDPR{
+	gdprPerms := gdpr.NewPermissions(context.Background(), config.GDPR{
 		HostVendorID: 0,
 	}, nil, nil)
 	prebid_cache_client.InitPrebidCache(server.URL)

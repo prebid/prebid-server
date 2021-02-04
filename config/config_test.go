@@ -527,12 +527,6 @@ func TestNegativeRequestSize(t *testing.T) {
 	assertOneError(t, cfg.validate(), "cfg.max_request_size must be >= 0. Got -1")
 }
 
-func TestNegativeVendorID(t *testing.T) {
-	cfg := newDefaultConfig(t)
-	cfg.GDPR.HostVendorID = -1
-	assertOneError(t, cfg.validate(), "gdpr.host_vendor_id must be in the range [0, 65535]. Got -1")
-}
-
 func TestNegativePrometheusTimeout(t *testing.T) {
 	cfg := newDefaultConfig(t)
 	cfg.Metrics.Prometheus.Port = 8001
@@ -540,10 +534,44 @@ func TestNegativePrometheusTimeout(t *testing.T) {
 	assertOneError(t, cfg.validate(), "metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got timeout=0 and port=8001")
 }
 
-func TestOverflowedVendorID(t *testing.T) {
+func TestInvalidHostVendorID(t *testing.T) {
+	tests := []struct {
+		description  string
+		vendorID     int
+		wantErrorMsg string
+	}{
+		{
+			description:  "Negative GDPR.HostVendorID",
+			vendorID:     -1,
+			wantErrorMsg: "gdpr.host_vendor_id must be in the range [0, 65535]. Got -1",
+		},
+		{
+			description:  "Overflowed GDPR.HostVendorID",
+			vendorID:     (0xffff) + 1,
+			wantErrorMsg: "gdpr.host_vendor_id must be in the range [0, 65535]. Got 65536",
+		},
+	}
+
+	for _, tt := range tests {
+		cfg := newDefaultConfig(t)
+		cfg.GDPR.HostVendorID = tt.vendorID
+		errs := cfg.validate()
+
+		assert.Equal(t, 1, len(errs), tt.description)
+		assert.EqualError(t, errs[0], tt.wantErrorMsg, tt.description)
+	}
+}
+
+func TestInvalidFetchGVL(t *testing.T) {
 	cfg := newDefaultConfig(t)
-	cfg.GDPR.HostVendorID = (0xffff) + 1
-	assertOneError(t, cfg.validate(), "gdpr.host_vendor_id must be in the range [0, 65535]. Got 65536")
+	cfg.GDPR.TCF1.FetchGVL = true
+	assertOneError(t, cfg.validate(), "gdpr.tcf1.fetch_gvl has been discontinued and must be removed from your config. TCF1 will always use the fallback GVL going forward")
+}
+
+func TestInvalidAMPException(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.GDPR.AMPException = true
+	assertOneError(t, cfg.validate(), "gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)")
 }
 
 func TestNegativeCurrencyConverterFetchInterval(t *testing.T) {

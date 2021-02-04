@@ -76,6 +76,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		nil,
 		&config.Configuration{},
 		newTestMetrics(),
+		infos,
 		gdpr.AlwaysAllow{},
 		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		empty_fetcher.EmptyFetcher{},

@@ -8,7 +8,6 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
-	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -39,7 +38,12 @@ func buildExchangeBidders(cfg *config.Configuration, infos config.BidderInfos, c
 
 	exchangeBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(bidders))
 	for bidderName, bidder := range bidders {
-		exchangeBidders[bidderName] = adaptBidder(bidder, client, cfg, me, bidderName)
+		info, infoFound := infos[string(bidderName)]
+		if !infoFound {
+			errs = append(errs, fmt.Errorf("%v: bidder info not found", bidder))
+			continue
+		}
+		exchangeBidders[bidderName] = adaptBidder(bidder, client, cfg, me, bidderName, info.Debug)
 	}
 
 	return exchangeBidders, nil
@@ -58,7 +62,7 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos config.BidderIn
 		}
 
 		// Ignore Legacy Bidders
-		if bidderName == openrtb_ext.BidderLifestreet || bidderName == openrtb_ext.BidderPulsepoint {
+		if bidderName == openrtb_ext.BidderLifestreet {
 			continue
 		}
 
@@ -97,12 +101,6 @@ func buildExchangeBiddersLegacy(adapterConfig map[string]config.Adapter, infos c
 	if infos[string(openrtb_ext.BidderLifestreet)].Enabled {
 		adapter := lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderLifestreet)].Endpoint)
 		bidders[openrtb_ext.BidderLifestreet] = adaptLegacyAdapter(adapter)
-	}
-
-	// Pulsepoint
-	if infos[string(openrtb_ext.BidderPulsepoint)].Enabled {
-		adapter := pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderPulsepoint)].Endpoint)
-		bidders[openrtb_ext.BidderPulsepoint] = adaptLegacyAdapter(adapter)
 	}
 
 	return bidders
