@@ -1402,15 +1402,15 @@ func TestTimeoutNotificationOn(t *testing.T) {
 }
 
 func wrapWithBidderInfo(bidder adapters.Bidder) adapters.Bidder {
-	bidderInfo := adapters.BidderInfo{
-		Status: adapters.StatusActive,
-		Capabilities: &adapters.CapabilitiesInfo{
-			App: &adapters.PlatformInfo{
+	bidderInfo := config.BidderInfo{
+		Enabled: true,
+		Capabilities: &config.CapabilitiesInfo{
+			App: &config.PlatformInfo{
 				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 			},
 		},
 	}
-	return adapters.EnforceBidderInfo(bidder, bidderInfo)
+	return adapters.BuildInfoAwareBidder(bidder, bidderInfo)
 }
 
 type goodSingleBidder struct {

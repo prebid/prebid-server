@@ -13,7 +13,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func BuildAdapters(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
 	exchangeBidders := buildExchangeBiddersLegacy(cfg.Adapters, infos)
 
 	exchangeBiddersModern, errs := buildExchangeBidders(cfg, infos, client, me)
@@ -31,7 +31,7 @@ func BuildAdapters(client *http.Client, cfg *config.Configuration, infos adapter
 	return exchangeBidders, nil
 }
 
-func buildExchangeBidders(cfg *config.Configuration, infos adapters.BidderInfos, client *http.Client, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+func buildExchangeBidders(cfg *config.Configuration, infos config.BidderInfos, client *http.Client, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
 	bidders, errs := buildBidders(cfg.Adapters, infos, newAdapterBuilders())
 	if len(errs) > 0 {
 		return nil, errs
@@ -46,7 +46,7 @@ func buildExchangeBidders(cfg *config.Configuration, infos adapters.BidderInfos,
 
 }
 
-func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
+func buildBidders(adapterConfig map[string]config.Adapter, infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 	var errs []error
 
@@ -74,14 +74,14 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 			continue
 		}
 
-		if info.Status == adapters.StatusActive {
+		if info.Enabled {
 			bidderInstance, builderErr := builder(bidderName, cfg)
 			if builderErr != nil {
 				errs = append(errs, fmt.Errorf("%v: %v", bidder, builderErr))
 				continue
 			}
 
-			bidderWithInfoEnforcement := adapters.EnforceBidderInfo(bidderInstance, info)
+			bidderWithInfoEnforcement := adapters.BuildInfoAwareBidder(bidderInstance, info)
 
 			bidders[bidderName] = bidderWithInfoEnforcement
 		}
@@ -90,17 +90,17 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos adapters.Bidder
 	return bidders, errs
 }
 
-func buildExchangeBiddersLegacy(adapterConfig map[string]config.Adapter, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
+func buildExchangeBiddersLegacy(adapterConfig map[string]config.Adapter, infos config.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
 	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 2)
 
 	// Lifestreet
-	if infos[string(openrtb_ext.BidderLifestreet)].Status == adapters.StatusActive {
+	if infos[string(openrtb_ext.BidderLifestreet)].Enabled {
 		adapter := lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderLifestreet)].Endpoint)
 		bidders[openrtb_ext.BidderLifestreet] = adaptLegacyAdapter(adapter)
 	}
 
 	// Pulsepoint
-	if infos[string(openrtb_ext.BidderPulsepoint)].Status == adapters.StatusActive {
+	if infos[string(openrtb_ext.BidderPulsepoint)].Enabled {
 		adapter := pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderPulsepoint)].Endpoint)
 		bidders[openrtb_ext.BidderPulsepoint] = adaptLegacyAdapter(adapter)
 	}
@@ -115,11 +115,11 @@ func wrapWithMiddleware(bidders map[openrtb_ext.BidderName]adaptedBidder) {
 }
 
 // GetActiveBidders returns a map of all active bidder names.
-func GetActiveBidders(infos adapters.BidderInfos) map[string]openrtb_ext.BidderName {
+func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderName {
 	activeBidders := make(map[string]openrtb_ext.BidderName)
 
 	for name, info := range infos {
-		if info.Status != adapters.StatusDisabled {
+		if info.Enabled {
 			activeBidders[name] = openrtb_ext.BidderName(name)
 		}
 	}
@@ -128,13 +128,13 @@ func GetActiveBidders(infos adapters.BidderInfos) map[string]openrtb_ext.BidderN
 }
 
 // GetDisabledBiddersErrorMessages returns a map of error messages for disabled bidders.
-func GetDisabledBiddersErrorMessages(infos adapters.BidderInfos) map[string]string {
+func GetDisabledBiddersErrorMessages(infos config.BidderInfos) map[string]string {
 	disabledBidders := make(map[string]string)
 
-	for bidderName, bidderInfo := range infos {
-		if bidderInfo.Status == adapters.StatusDisabled {
-			msg := fmt.Sprintf(`Bidder "%s" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, bidderName)
-			disabledBidders[bidderName] = msg
+	for name, info := range infos {
+		if !info.Enabled {
+			msg := fmt.Sprintf(`Bidder "%s" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, name)
+			disabledBidders[name] = msg
 		}
 	}
 

@@ -50,12 +50,11 @@ func TestInvalidParams(t *testing.T) {
 	}
 }
 
-func TestBidderListDoesNotDefineGeneral(t *testing.T) {
-	assert.NotContains(t, CoreBidderNames(), BidderNameGeneral)
-}
-
-func TestBidderListDoesNotDefineContext(t *testing.T) {
-	assert.NotContains(t, CoreBidderNames(), BidderNameContext)
+func TestBidderReservedNames(t *testing.T) {
+	for _, bidder := range CoreBidderNames() {
+		isReserved := IsBidderNameReserved(string(bidder))
+		assert.False(t, isReserved, "bidder %v conflicts with a reserved name", bidder)
+	}
 }
 
 // TestBidderUniquenessGatekeeping acts as a gatekeeper of bidder name uniqueness. If this test fails
@@ -113,3 +112,7 @@ func uniqueForPrefixLength(b []string, prefixLength int) bool {
 
 	return true
 }
+
+// test reserved
+// populate alias validation in router, with reserved name (or already a core bidder name??)
+// write details endpoint test
