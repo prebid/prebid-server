@@ -26,13 +26,16 @@ var unicornExtSKADNetIDs = map[string]bool{
 }
 
 type unicornImpExt struct {
-	Reward int                `json:"reward"`
-	SKADN  *openrtb_ext.SKADN `json:"skadn,omitempty"`
+	SKADN *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
 type unicornBannerExt struct {
-	Reward                  int  `json:"reward"`
+	Rewarded                int  `json:"rewarded"`
 	AllowsCustomCloseButton bool `json:"allowscustomclosebutton"`
+}
+
+type unicornVideoExt struct {
+	Rewarded int `json:"rewarded"`
 }
 
 // UnicornAdapter ...
@@ -120,7 +123,7 @@ func (adapter *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 				bannerCopy := *thisImp.Banner
 
 				bannerExt := unicornBannerExt{
-					Reward:                  unicornExt.Reward,
+					Rewarded:                unicornExt.Reward,
 					AllowsCustomCloseButton: false,
 				}
 				bannerCopy.Ext, err = json.Marshal(&bannerExt)
@@ -135,9 +138,23 @@ func (adapter *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 			}
 		}
 
-		impExt := unicornImpExt{
-			Reward: unicornExt.Reward,
+		if thisImp.Video != nil {
+			videoCopy := *thisImp.Video
+
+			videoExt := unicornVideoExt{
+				Rewarded: unicornExt.Reward,
+			}
+
+			videoCopy.Ext, err = json.Marshal(&videoExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			thisImp.Video = &videoCopy
 		}
+
+		impExt := unicornImpExt{}
 
 		if unicornExt.SKADNSupported {
 			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, unicornExtSKADNetIDs)
