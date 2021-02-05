@@ -21,11 +21,15 @@
         }
       }
     ],
-    "app": {
-      "id": "app_001",
-      "bundle": "com.rovio.angrybirds",
+    "site": {
+      "id": "102855",
+      "cat": [ "IAB3-1" ],
+      "domain": "www.tappx.com",
+      "page": "https://www.tappx.com/example.html ",
       "publisher": {
-        "id": "2"
+        "id": "8953", "name": "publisher.com",
+        "cat": [ "IAB3-1" ],
+        "domain": "publisher.com"
       }
     },
     "user": {
