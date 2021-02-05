@@ -53,14 +53,20 @@ func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
   var extRegs openrtb_ext.ExtRegs
   if request.Regs != nil {
     if request.Regs.COPPA == 1 {
-      return nil, []error{}
+      return nil, []error{&errortypes.BadInput{
+        Message: "COPPA is not supported",
+      }}
     }
     if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
       if extRegs.GDPR != nil && (*extRegs.GDPR == 1) {
-        return nil, []error{}
+        return nil, []error{&errortypes.BadInput{
+          Message: "GDPR is not supported",
+        }}
       }
       if extRegs.USPrivacy != "" {
-        return nil, []error{}
+        return nil, []error{&errortypes.BadInput{
+          Message: "CCPA is not supported",
+        }}
       }
     }
   }
@@ -94,9 +100,33 @@ func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
     Method:  "POST",
     Uri:     a.endpoint,
     Body:    requestJSON,
+    Headers: getHeaders(request),
   }
 
   return []*adapters.RequestData{requestData}, nil
+}
+
+func getHeaders(request *openrtb.BidRequest) http.Header {
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	headers.Add("X-Openrtb-Version", "2.5")
+
+	if request.Device != nil {
+		if len(request.Device.UA) > 0 {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+
+		if len(request.Device.IPv6) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+
+		if len(request.Device.IP) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
+	}
+
+	return headers
 }
 
 func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]openrtb.Imp, error) {
@@ -136,7 +166,7 @@ func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
 
 func setSourceExt() (json.RawMessage, error) {
   siteExt, err := json.Marshal(unicornSourceExt{
-    Stype: "prebid_uncn",
+    Stype: "prebid_server_uncn",
     Bidder: "unicorn",
   })
   if err != nil {
