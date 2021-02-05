@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type onetagAdapter struct {
+type adapter struct {
 	endpointTemplate template.Template
 }
 
@@ -24,21 +24,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &onetagAdapter{
+	bidder := &adapter{
 		endpointTemplate: *template,
 	}
 
 	return bidder, nil
 }
 
-func (a *onetagAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
-	if len(request.Imp) <= 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Missing Imp Object",
-		}}
-	}
-
+func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	pubID := ""
 	for idx, imp := range request.Imp {
 		onetagExt, err := getImpressionExt(imp)
@@ -101,12 +94,12 @@ func getImpressionExt(imp openrtb.Imp) (*openrtb_ext.ExtImpOnetag, error) {
 	return &onetagExt, nil
 }
 
-func (a *onetagAdapter) buildEndpointURL(pubID string) (string, error) {
+func (a *adapter) buildEndpointURL(pubID string) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{PublisherID: pubID}
 	return macros.ResolveMacros(a.endpointTemplate, endpointParams)
 }
 
-func (a *onetagAdapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
