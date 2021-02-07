@@ -1,7 +1,9 @@
 package openrtb_ext
 
 type ExtImpJixie struct {
-	TagID    string `json:"tagid"`
-	Unit     string `json:"unit"`
-	BidFloor string `json:"bidfloor,omitempty"`
+	Unit      string `json:"unit"`
+	AccountId string `json:"accountid,omitempty"`
+	JxProp1   string `json:"jxprop1,omitempty"`
+	JxProp2   string `json:"jxprop2,omitempty"`
+	BidFloor  string `json:"bidfloor,omitempty"`
 }

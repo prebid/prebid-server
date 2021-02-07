@@ -4,20 +4,27 @@
     "description": "A schema which validates params accepted by the Jixie adapter",
     "type": "object",
     "properties": {
-      "tagid" : {
-        "type": "string",
-        "description": "The id of an inventory target"
-      },
       "unit" : {
         "type": "string",
         "description": "The unit code of an inventory target"
+      },
+      "accountid" : {
+        "type": "string",
+        "description": "The accountid of an inventory target"
+      },
+      "jxprop1" : {
+        "type": "string",
+        "description": "jxprop1 of an inventory target"
+      },
+      "jxprop2" : {
+        "type": "string",
+        "description": "jxprop2 of an inventory target"
       },
       "bidfloor": {
         "type": "string",
         "description": "The minimum price acceptable for a bid"
       }
     },
-
-    "required": ["tagid","unit"]
+    "required": ["unit"]
   }
 

@@ -1,6 +1,6 @@
 maintainer:
-  email: renee@jixie.io
-modifyingVastXmlAllowed: false
+  email: contact@jixie.io
+modifyingVastXmlAllowed: true
 capabilities:
   site:
     mediaTypes:

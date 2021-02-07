@@ -34,7 +34,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"tagid": "25251", "bidfloor": "0.01"}`,
+	`{"unit": "1000008-AA77BB88CC", "accountid": "9988776655", "bidfloor": "0.01", "jxprop1": "somethingimportant" }`,
 }
 
 var invalidParams = []string{
@@ -44,10 +44,10 @@ var invalidParams = []string{
 	`[]`,
 	`true`,
 	`{}`,
-	`{"tagid":12345678}`,
-	`{"tagId":"12345678"}`,
-	`{"tagid":"25251", "bidfloor": 0.01}`,
-	`{"tagId": 12345678}`,
-	`{"placementId": "1"}`,
-	`{"placementId": 1}`,
+	`{"unit":12345678}`,
+	`{"Unit":"12345678"}`,
+	`{"unit":"1000008-AA77BB88CC", "bidfloor": 0.01}`,
+	`{"Unit": 12345678}`,
+	`{"AdUnit": "1"}`,
+	`{"adUnit": 1}`,
 }
