@@ -16,7 +16,7 @@ type Policy struct {
 }
 
 // ReadFromRequest extracts the CCPA regulatory information from an OpenRTB bid request.
-func ReadFromRequest(req *openrtb.BidRequest) (Policy, error) {
+func ReadFromRequest(req *openrtb_ext.RequestWrapper) (Policy, error) {
 	var consent string
 	var noSaleBidders []string
 
@@ -25,21 +25,19 @@ func ReadFromRequest(req *openrtb.BidRequest) (Policy, error) {
 	}
 
 	// Read consent from request.regs.ext
-	if req.Regs != nil && len(req.Regs.Ext) > 0 {
-		var ext openrtb_ext.ExtRegs
-		if err := json.Unmarshal(req.Regs.Ext, &ext); err != nil {
-			return Policy{}, fmt.Errorf("error reading request.regs.ext: %s", err)
+	req.ExtractRegExt()
+	if req.RegExt != nil {
+		usPrivacyJSON, hasUSPrivacy := req.RegExt.Ext["us_privacy"]
+		if hasUSPrivacy {
+			if err := json.Unmarshal(usPrivacyJSON, &consent); err != nil {
+				return Policy{}, fmt.Errorf("error reading request.regs.ext: %s", err)
+			}
 		}
-		consent = ext.USPrivacy
 	}
-
 	// Read no sale bidders from request.ext.prebid
-	if len(req.Ext) > 0 {
-		var ext openrtb_ext.ExtRequest
-		if err := json.Unmarshal(req.Ext, &ext); err != nil {
-			return Policy{}, fmt.Errorf("error reading request.ext.prebid: %s", err)
-		}
-		noSaleBidders = ext.Prebid.NoSale
+	req.ExtractRequestExt()
+	if req.RequestExt != nil && req.RequestExt.Prebid != nil {
+		noSaleBidders = req.RequestExt.Prebid.NoSale
 	}
 
 	return Policy{consent, noSaleBidders}, nil
@@ -65,7 +63,8 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 	return nil
 }
 
-func buildRegs(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
+// START HERE
+func buildRegs(consent string, regs *openrtb_ext.RegExt) (*openrtb.Regs, error) {
 	if consent == "" {
 		return buildRegsClear(regs)
 	}

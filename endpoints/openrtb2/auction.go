@@ -345,17 +345,15 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		return append(errL, err)
 	}
 
-	// START HERE
-
-	if err := deps.validateApp(req.App); err != nil {
+	if err := deps.validateApp(req); err != nil {
 		return append(errL, err)
 	}
 
-	if err := deps.validateUser(req.User, aliases); err != nil {
+	if err := deps.validateUser(req, aliases); err != nil {
 		return append(errL, err)
 	}
 
-	if err := validateRegs(req.Regs); err != nil {
+	if err := validateRegs(req); err != nil {
 		return append(errL, err)
 	}
 
@@ -365,7 +363,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
 			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
 			consentWriter := ccpa.ConsentWriter{Consent: ""}
-			if err := consentWriter.Write(req); err != nil {
+			if err := consentWriter.Write(req); err != nil { // START BELOW HERE
 				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
 			}
 		} else {
@@ -938,98 +936,92 @@ func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
 	return nil
 }
 
-func (deps *endpointDeps) validateApp(app *openrtb.App) error {
-	if app == nil {
+func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
+
+	if req.Request.App == nil {
 		return nil
 	}
 
-	if app.ID != "" {
-		if _, found := deps.cfg.BlacklistedAppMap[app.ID]; found {
-			return &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", app.ID)}
+	if req.Request.App.ID != "" {
+		if _, found := deps.cfg.BlacklistedAppMap[req.Request.App.ID]; found {
+			return &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.Request.App.ID)}
 		}
 	}
 
-	if len(app.Ext) > 0 {
-		var a openrtb_ext.ExtApp
-		if err := json.Unmarshal(app.Ext, &a); err != nil {
-			return err
-		}
+	err := req.ExtractAppExt()
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (deps *endpointDeps) validateUser(user *openrtb.User, aliases map[string]string) error {
+func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases map[string]string) error {
+	err := req.ExtractUserExt()
+	if err != nil {
+		// Return error.
+		return fmt.Errorf("request.user.ext object is not valid: %v", err)
+	}
 	// DigiTrust support
-	if user != nil && user.Ext != nil {
-		// Creating ExtUser object to check if DigiTrust is valid
-		var userExt openrtb_ext.ExtUser
-		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
-			if userExt.DigiTrust != nil && userExt.DigiTrust.Pref != 0 {
-				// DigiTrust is not valid. Return error.
-				return errors.New("request.user contains a digitrust object that is not valid.")
-			}
-			// Check if the buyeruids are valid
-			if userExt.Prebid != nil {
-				if len(userExt.Prebid.BuyerUIDs) < 1 {
-					return errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)
-				}
-				for bidderName := range userExt.Prebid.BuyerUIDs {
-					if _, ok := deps.bidderMap[bidderName]; !ok {
-						if _, ok := aliases[bidderName]; !ok {
-							return fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases.", bidderName)
-						}
-					}
+	if req.UserExt.DigiTrust != nil && req.UserExt.DigiTrust.Pref != 0 {
+		// DigiTrust is not valid. Return error.
+		return errors.New("request.user contains a digitrust object that is not valid.")
+	}
+	// Check if the buyeruids are valid
+	if req.UserExt.Prebid != nil {
+		if len(req.UserExt.Prebid.BuyerUIDs) < 1 {
+			return errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)
+		}
+		for bidderName := range req.UserExt.Prebid.BuyerUIDs {
+			if _, ok := deps.bidderMap[bidderName]; !ok {
+				if _, ok := aliases[bidderName]; !ok {
+					return fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases.", bidderName)
 				}
 			}
-			// Check Universal User ID
-			if userExt.Eids != nil {
-				if len(userExt.Eids) == 0 {
-					return fmt.Errorf("request.user.ext.eids must contain at least one element or be undefined")
-				}
-				uniqueSources := make(map[string]struct{}, len(userExt.Eids))
-				for eidIndex, eid := range userExt.Eids {
-					if eid.Source == "" {
-						return fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex)
-					}
-					if _, ok := uniqueSources[eid.Source]; ok {
-						return fmt.Errorf("request.user.ext.eids must contain unique sources")
-					}
-					uniqueSources[eid.Source] = struct{}{}
+		}
+	}
+	// Check Universal User ID
+	if req.UserExt.Eids != nil {
+		if len(*req.UserExt.Eids) == 0 {
+			return fmt.Errorf("request.user.ext.eids must contain at least one element or be undefined")
+		}
+		uniqueSources := make(map[string]struct{}, len(*req.UserExt.Eids))
+		for eidIndex, eid := range *req.UserExt.Eids {
+			if eid.Source == "" {
+				return fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex)
+			}
+			if _, ok := uniqueSources[eid.Source]; ok {
+				return fmt.Errorf("request.user.ext.eids must contain unique sources")
+			}
+			uniqueSources[eid.Source] = struct{}{}
 
-					if eid.ID == "" && eid.Uids == nil {
-						return fmt.Errorf("request.user.ext.eids[%d] must contain either \"id\" or \"uids\" field", eidIndex)
-					}
-					if eid.ID == "" {
-						if len(eid.Uids) == 0 {
-							return fmt.Errorf("request.user.ext.eids[%d].uids must contain at least one element or be undefined", eidIndex)
-						}
-						for uidIndex, uid := range eid.Uids {
-							if uid.ID == "" {
-								return fmt.Errorf("request.user.ext.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex)
-							}
-						}
+			if eid.ID == "" && eid.Uids == nil {
+				return fmt.Errorf("request.user.ext.eids[%d] must contain either \"id\" or \"uids\" field", eidIndex)
+			}
+			if eid.ID == "" {
+				if len(eid.Uids) == 0 {
+					return fmt.Errorf("request.user.ext.eids[%d].uids must contain at least one element or be undefined", eidIndex)
+				}
+				for uidIndex, uid := range eid.Uids {
+					if uid.ID == "" {
+						return fmt.Errorf("request.user.ext.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex)
 					}
 				}
 			}
-		} else {
-			// Return error.
-			return fmt.Errorf("request.user.ext object is not valid: %v", err)
 		}
 	}
 
 	return nil
 }
 
-func validateRegs(regs *openrtb.Regs) error {
-	if regs != nil && len(regs.Ext) > 0 {
-		var regsExt openrtb_ext.ExtRegs
-		if err := json.Unmarshal(regs.Ext, &regsExt); err != nil {
-			return fmt.Errorf("request.regs.ext is invalid: %v", err)
-		}
-		if regsExt.GDPR != nil && (*regsExt.GDPR < 0 || *regsExt.GDPR > 1) {
-			return errors.New("request.regs.ext.gdpr must be either 0 or 1.")
-		}
+func validateRegs(req *openrtb_ext.RequestWrapper) error {
+	err := req.ExtractRegExt()
+	if err != nil {
+		return fmt.Errorf("request.regs.ext is invalid: %v", err)
+	}
+	gdprJSON, hasGDPR := req.RegExt.Ext["gdpr"]
+	if hasGDPR && (string(gdprJSON) != "\"0\"" && string(gdprJSON) != "\"1\"") {
+		return errors.New("request.regs.ext.gdpr must be either 0 or 1.")
 	}
 	return nil
 }

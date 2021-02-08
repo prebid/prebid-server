@@ -315,15 +315,19 @@ type RequestWrapper struct {
 	DeviceExt  *DeviceExt
 	RequestExt *RequestExt
 	SiteExt    *SiteExt
+	AppExt     *AppExt
+	RegExt     *RegExt
 }
 
 type UserExt struct {
-	Ext         map[string]json.RawMessage
-	Dirty       bool
-	Prebid      *ExtUserPrebid
-	PrebidDirty bool
-	Sync        *ExtUserSync
-	SyncDirty   bool
+	Ext            map[string]json.RawMessage
+	Dirty          bool
+	Prebid         *ExtUserPrebid
+	PrebidDirty    bool
+	DigiTrust      *ExtUserDigiTrust
+	DigiTrustDirty bool
+	Eids           *[]ExtUserEid
+	EidsDirty      bool
 }
 
 func (ue *UserExt) Extract(extJson json.RawMessage) (*UserExt, error) {
@@ -344,6 +348,27 @@ func (ue *UserExt) Unmarshal(extJson json.RawMessage) error {
 	if hasPrebid {
 		ue.Prebid = &ExtUserPrebid{}
 		err = json.Unmarshal(prebidJson, ue.Prebid)
+		if err != nil {
+			return err
+		}
+	}
+
+	digiTrustJson, hasDigiTrust := ue.Ext["digitrust"]
+	if hasDigiTrust {
+		ue.DigiTrust = &ExtUserDigiTrust{}
+		err = json.Unmarshal(digiTrustJson, ue.DigiTrust)
+		if err != nil {
+			return err
+		}
+	}
+
+	eidsJson, hasEids := ue.Ext["eids"]
+	ue.Eids = &[]ExtUserEid{}
+	if hasEids {
+		err = json.Unmarshal(eidsJson, ue.Eids)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -358,7 +383,21 @@ func (ue *UserExt) Marshal() (json.RawMessage, error) {
 		ue.Ext["prebid"] = json.RawMessage(prebidJson)
 	}
 
-	// Device
+	if ue.DigiTrustDirty {
+		digiTrustJson, err := json.Marshal(ue.DigiTrust)
+		if err != nil {
+			return nil, err
+		}
+		ue.Ext["digitrust"] = json.RawMessage(digiTrustJson)
+	}
+
+	if ue.EidsDirty {
+		eidsJson, err := json.Marshal(ue.Eids)
+		if err != nil {
+			return nil, err
+		}
+		ue.Ext["eids"] = json.RawMessage(eidsJson)
+	}
 
 	return json.Marshal(ue.Ext)
 
@@ -454,6 +493,76 @@ func (de *DeviceExt) Marshal() (json.RawMessage, error) {
 
 }
 
+type AppExt struct {
+	Ext         map[string]json.RawMessage
+	Dirty       bool
+	Prebid      *ExtAppPrebid
+	PrebidDirty bool
+}
+
+func (ae *AppExt) Extract(extJson json.RawMessage) (*AppExt, error) {
+	newAE := &AppExt{}
+	err := newAE.Unmarshal(extJson)
+	return newAE, err
+}
+
+func (ae *AppExt) Unmarshal(extJson json.RawMessage) error {
+	if len(extJson) == 0 || len(ae.Ext) != 0 {
+		return nil
+	}
+	err := json.Unmarshal(extJson, ae.Ext)
+	if err != nil {
+		return err
+	}
+	prebidJson, hasPrebid := ae.Ext["prebid"]
+	if hasPrebid {
+		ae.Prebid = &ExtAppPrebid{}
+		err = json.Unmarshal(prebidJson, ae.Prebid)
+	}
+
+	return nil
+}
+
+func (ae *AppExt) Marshal() (json.RawMessage, error) {
+	if ae.PrebidDirty {
+		prebidJson, err := json.Marshal(ae.Prebid)
+		if err != nil {
+			return nil, err
+		}
+		ae.Ext["prebid"] = json.RawMessage(prebidJson)
+	}
+
+	return json.Marshal(ae.Ext)
+}
+
+type RegExt struct {
+	Ext   map[string]json.RawMessage
+	Dirty bool
+}
+
+func (re *RegExt) Extract(extJson json.RawMessage) (*RegExt, error) {
+	newRE := &RegExt{}
+	err := newRE.Unmarshal(extJson)
+	return newRE, err
+}
+
+func (re *RegExt) Unmarshal(extJson json.RawMessage) error {
+	if len(extJson) == 0 || len(re.Ext) != 0 {
+		return nil
+	}
+	err := json.Unmarshal(extJson, re.Ext)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (re *RegExt) Marshal() (json.RawMessage, error) {
+
+	return json.Marshal(re.Ext)
+}
+
 type SiteExt struct {
 	Ext ExtSite
 }
@@ -465,10 +574,10 @@ func (se *SiteExt) Extract(extJson json.RawMessage) (*SiteExt, error) {
 }
 
 func (se *SiteExt) Unmarshal(extJson json.RawMessage) error {
-	if len(extJson) == 0 || len(se.Ext) != 0 {
+	if len(extJson) == 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, de.Ext)
+	err := json.Unmarshal(extJson, se.Ext)
 	if err != nil {
 		return err
 	}
@@ -480,7 +589,7 @@ func (se *SiteExt) Marshal() (json.RawMessage, error) {
 }
 
 func (rw *RequestWrapper) ExtractUserExt() error {
-	if rw.UserExt != nil || rw.Request.User.Ext == nil {
+	if rw.UserExt != nil || rw.Request.User == nil || rw.Request.User.Ext == nil {
 		return nil
 	}
 	var err error
@@ -489,7 +598,7 @@ func (rw *RequestWrapper) ExtractUserExt() error {
 }
 
 func (rw *RequestWrapper) ExtractDeviceExt() error {
-	if rw.DeviceExt != nil || rw.Request.Device.Ext == nil {
+	if rw.DeviceExt != nil || rw.Request.Device == nil || rw.Request.Device.Ext == nil {
 		return nil
 	}
 	var err error
@@ -507,11 +616,29 @@ func (rw *RequestWrapper) ExtractRequestExt() error {
 }
 
 func (rw *RequestWrapper) ExtractSiteExt() error {
-	if rw.SiteExt != nil || rw.Request.Site.Ext == nil {
+	if rw.SiteExt != nil || rw.Request.Site == nil || rw.Request.Site.Ext == nil {
 		return nil
 	}
 	var err error
 	rw.SiteExt, err = rw.SiteExt.Extract(rw.Request.Site.Ext)
+	return err
+}
+
+func (rw *RequestWrapper) ExtractAppExt() error {
+	if rw.AppExt != nil || rw.Request.App == nil || rw.Request.App.Ext == nil {
+		return nil
+	}
+	var err error
+	rw.AppExt, err = rw.AppExt.Extract(rw.Request.App.Ext)
+	return err
+}
+
+func (rw *RequestWrapper) ExtractRegExt() error {
+	if rw.RegExt != nil || rw.Request.Regs == nil || rw.Request.Regs.Ext == nil {
+		return nil
+	}
+	var err error
+	rw.RegExt, err = rw.RegExt.Extract(rw.Request.Regs.Ext)
 	return err
 }
 
@@ -530,5 +657,6 @@ func (rw *RequestWrapper) Marshal() (json.RawMessage, error) {
 		}
 		rw.Request.Device.Ext = deviceJson
 	}
+	// TODO Add all other objects
 	return json.Marshal(rw.Request)
 }
