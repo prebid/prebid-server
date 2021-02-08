@@ -51,6 +51,7 @@ const (
 	BidderAdmixer          BidderName = "admixer"
 	BidderAdOcean          BidderName = "adocean"
 	BidderAdoppler         BidderName = "adoppler"
+	BidderAdot             BidderName = "adot"
 	BidderAdpone           BidderName = "adpone"
 	BidderAdprime          BidderName = "adprime"
 	BidderAdtarget         BidderName = "adtarget"
@@ -73,6 +74,7 @@ const (
 	BidderCpmstar          BidderName = "cpmstar"
 	BidderDatablocks       BidderName = "datablocks"
 	BidderDmx              BidderName = "dmx"
+	BidderDecenterAds      BidderName = "decenterads"
 	BidderDeepintent       BidderName = "deepintent"
 	BidderEmxDigital       BidderName = "emx_digital"
 	BidderEngageBDR        BidderName = "engagebdr"
@@ -94,7 +96,9 @@ const (
 	BidderLogicad          BidderName = "logicad"
 	BidderLunaMedia        BidderName = "lunamedia"
 	BidderMarsmedia        BidderName = "marsmedia"
+	BidderMediafuse        BidderName = "mediafuse"
 	BidderMgid             BidderName = "mgid"
+	BidderMobfoxpb         BidderName = "mobfoxpb"
 	BidderMobileFuse       BidderName = "mobilefuse"
 	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderNinthDecimal     BidderName = "ninthdecimal"
@@ -104,6 +108,7 @@ const (
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
 	BidderPulsepoint       BidderName = "pulsepoint"
+	BidderRevcontent       BidderName = "revcontent"
 	BidderRhythmone        BidderName = "rhythmone"
 	BidderRTBHouse         BidderName = "rtbhouse"
 	BidderRubicon          BidderName = "rubicon"
@@ -148,6 +153,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdmixer,
 		BidderAdOcean,
 		BidderAdoppler,
+		BidderAdot,
 		BidderAdpone,
 		BidderAdprime,
 		BidderAdtarget,
@@ -169,6 +175,7 @@ func CoreBidderNames() []BidderName {
 		BidderConversant,
 		BidderCpmstar,
 		BidderDatablocks,
+		BidderDecenterAds,
 		BidderDeepintent,
 		BidderDmx,
 		BidderEmxDigital,
@@ -191,7 +198,9 @@ func CoreBidderNames() []BidderName {
 		BidderLogicad,
 		BidderLunaMedia,
 		BidderMarsmedia,
+		BidderMediafuse,
 		BidderMgid,
+		BidderMobfoxpb,
 		BidderMobileFuse,
 		BidderNanoInteractive,
 		BidderNinthDecimal,
@@ -201,6 +210,7 @@ func CoreBidderNames() []BidderName {
 		BidderPubmatic,
 		BidderPubnative,
 		BidderPulsepoint,
+		BidderRevcontent,
 		BidderRhythmone,
 		BidderRTBHouse,
 		BidderRubicon,

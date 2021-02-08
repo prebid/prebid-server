@@ -8,7 +8,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
@@ -33,7 +33,7 @@ type adaptedAdapter struct {
 //
 // This is not ideal. OpenRTB provides a superset of the legacy data structures.
 // For requests which use those features, the best we can do is respond with "no bid".
-func (bidder *adaptedAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
+func (bidder *adaptedAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	legacyRequest, legacyBidder, errs := bidder.toLegacyAdapterInputs(request, name)
 	if legacyRequest == nil || legacyBidder == nil {
 		return nil, errs

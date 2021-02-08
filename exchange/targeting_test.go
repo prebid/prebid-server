@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
 
 	"github.com/prebid/prebid-server/gdpr"
 
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
-	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
+	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -92,7 +92,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		cache:               &wellBehavedCache{},
 		cacheTime:           time.Duration(0),
 		gDPR:                gdpr.AlwaysAllow{},
-		currencyConverter:   currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		currencyConverter:   currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		UsersyncIfAmbiguous: false,
 		categoriesFetcher:   categoriesFetcher,
 	}
@@ -115,7 +115,8 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		UserSyncs:  &emptyUsersync{},
 	}
 
-	bidResp, err := ex.HoldAuction(context.Background(), auctionRequest, nil)
+	debugLog := DebugLog{}
+	bidResp, err := ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
 
 	if err != nil {
 		t.Fatalf("Unexpected errors running auction: %v", err)
@@ -141,7 +142,7 @@ func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb.Bid, mockServerU
 		adapterMap[bidder] = adaptBidder(&mockTargetingBidder{
 			mockServerURL: mockServerURL,
 			bids:          bids,
-		}, client, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus)
+		}, client, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 	}
 	return adapterMap
 }

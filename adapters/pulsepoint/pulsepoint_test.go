@@ -1,25 +1,42 @@
 package pulsepoint
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
+
+	"bytes"
+	"context"
+	"fmt"
+	"io/ioutil"
+	"net/http/httptest"
+	"time"
+
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
 )
+
+func TestJsonSamples(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderPulsepoint, config.Adapter{
+		Endpoint: "http://bidder.pulsepoint.com"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "pulsepointtest", bidder)
+}
+
+/////////////////////////////////
+// Legacy implementation: Start
+/////////////////////////////////
 
 /**
  * Verify adapter names are setup correctly.
@@ -75,7 +92,6 @@ func TestPulsePointOpenRTBRequest(t *testing.T) {
 	bidder := req.Bidders[0]
 	adapter := NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	adapter.Call(ctx, req, bidder)
-	fmt.Println(service.LastBidRequest)
 	adapterstest.VerifyIntValue(len(service.LastBidRequest.Imp), 1, t)
 	adapterstest.VerifyStringValue(service.LastBidRequest.Imp[0].TagID, "1001", t)
 	adapterstest.VerifyStringValue(service.LastBidRequest.Site.Publisher.ID, "2001", t)
@@ -290,3 +306,7 @@ func CreateService(tagsToBid map[string]bool) adapterstest.OrtbMockService {
 	service.LastBidRequest = &lastBidRequest
 	return service
 }
+
+/////////////////////////////////
+// Legacy implementation: End
+/////////////////////////////////

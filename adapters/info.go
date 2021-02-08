@@ -8,8 +8,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -206,6 +206,11 @@ type BidderInfo struct {
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
 	AliasOf                 string            `json:"aliasOf,omitempty"`
 	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" json:"-" xml:"-"`
+	Debug                   *DebugInfo        `yaml:"debug,omitempty" json:"-" xml:"-"`
+}
+
+type DebugInfo struct {
+	Allow bool `yaml:"allow" json:"allow"`
 }
 
 type MaintainerInfo struct {
@@ -258,5 +263,5 @@ func parseBidderInfo(info BidderInfo) parsedBidderInfo {
 }
 
 type ExtraRequestInfo struct {
-	PbsEntryPoint pbsmetrics.RequestType
+	PbsEntryPoint metrics.RequestType
 }

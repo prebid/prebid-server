@@ -18,8 +18,8 @@ import (
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 )
@@ -245,19 +245,15 @@ type gdprPerms struct {
 	allowedBidders map[openrtb_ext.BidderName]usersync.Usersyncer
 }
 
-func (g *gdprPerms) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (g *gdprPerms) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	return g.allowHost, nil
 }
 
-func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	_, ok := g.allowedBidders[bidder]
 	return ok, nil
 }
 
-func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string) (bool, bool, bool, error) {
 	return true, true, true, nil
-}
-
-func (g *gdprPerms) AMPException() bool {
-	return false
 }

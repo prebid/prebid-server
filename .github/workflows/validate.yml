@@ -1,26 +1,31 @@
+name: Validate
+
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   pull_request:
-  release:
-    types:
-      - created
-name: Validate
+    branches: [master]
+
 jobs:
-  Go:
+  validate:
     strategy:
       matrix:
-        go-version: [1.13.x, 1.14.x, 1.15.x]
+        go-version: [1.14.x, 1.15.x]
         os: [ubuntu-18.04]
     runs-on: ${{ matrix.os }}
+    
     steps:
     - name: Install Go
       uses: actions/setup-go@v2
       with:
         go-version: ${{ matrix.go-version }}
-    - name: Checkout code
+
+    - name: Checkout Branch
       uses: actions/checkout@v2
+      with:
+        # Resolves to empty string for push events and falls back to HEAD.
+        ref: ${{ github.event.pull_request.head.sha }}
+
     - name: Validate
       run: |
         ./validate.sh --nofmt --cov --race 10
