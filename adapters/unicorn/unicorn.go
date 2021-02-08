@@ -138,7 +138,7 @@ func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
 
     if err != nil {
       return nil, &errortypes.BadInput{
-        Message: fmt.Sprintf("Error while decoding imp[%d].ext, err: %s", i, err),
+        Message: fmt.Sprintf("Error while decoding imp[%d].ext: %s", i, err),
       }
     }
 
@@ -159,7 +159,7 @@ func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
     imp.Ext, err = json.Marshal(ext)
     if err != nil {
       return nil, &errortypes.BadInput{
-        Message: fmt.Sprintf("Error while encoding imp[%d].ext, err: %s", i, err),
+        Message: fmt.Sprintf("Error while encoding imp[%d].ext: %s", i, err),
       }
     }
 
@@ -245,14 +245,14 @@ func (a *UnicornAdapter) MakeBids(request *openrtb.BidRequest, requestData *adap
 
   if responseData.StatusCode == http.StatusBadRequest {
     err := &errortypes.BadInput{
-      Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
+      Message: "Unexpected http status code: 400",
     }
     return nil, []error{err}
   }
 
   if responseData.StatusCode != http.StatusOK {
     err := &errortypes.BadServerResponse{
-      Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
+      Message: fmt.Sprintf("Unexpected http status code: %d", responseData.StatusCode),
     }
     return nil, []error{err}
   }
