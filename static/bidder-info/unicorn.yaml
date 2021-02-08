@@ -4,4 +4,3 @@ capabilities:
   app:
     mediaTypes:
       - banner
-      - native
