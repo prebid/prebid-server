@@ -15,7 +15,7 @@ import (
 
 const (
   unicornDefaultCurrency = "JPY"
-  unicornAuctionType = 1
+  unicornAuctionType     = 1
 )
 
 // UnicornAdapter describes a Smaato prebid server adapter.
@@ -107,26 +107,26 @@ func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
 }
 
 func getHeaders(request *openrtb.BidRequest) http.Header {
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	headers.Add("X-Openrtb-Version", "2.5")
+  headers := http.Header{}
+  headers.Add("Content-Type", "application/json;charset=utf-8")
+  headers.Add("Accept", "application/json")
+  headers.Add("X-Openrtb-Version", "2.5")
 
-	if request.Device != nil {
-		if len(request.Device.UA) > 0 {
-			headers.Add("User-Agent", request.Device.UA)
-		}
+  if request.Device != nil {
+    if len(request.Device.UA) > 0 {
+      headers.Add("User-Agent", request.Device.UA)
+    }
 
-		if len(request.Device.IPv6) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IPv6)
-		}
+    if len(request.Device.IPv6) > 0 {
+      headers.Add("X-Forwarded-For", request.Device.IPv6)
+    }
 
-		if len(request.Device.IP) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IP)
-		}
-	}
+    if len(request.Device.IP) > 0 {
+      headers.Add("X-Forwarded-For", request.Device.IP)
+    }
+  }
 
-	return headers
+  return headers
 }
 
 func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]openrtb.Imp, error) {
@@ -138,23 +138,29 @@ func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
 
     if err != nil {
       return nil, &errortypes.BadInput{
-			  Message: fmt.Sprintf("Error while decoding imp[%d].ext, err: %s", i, err),
-		  }
+        Message: fmt.Sprintf("Error while decoding imp[%d].ext, err: %s", i, err),
+      }
     }
 
     var placementID string
-    if ext.Bidder.PlacementID == "" {
-      placementID = imp.TagID
-    } else {
+    if ext.Bidder.PlacementID != "" {
       placementID = ext.Bidder.PlacementID
+    } else {
+      placementID, err = getStoredRequestImpID(imp)
+      if err != nil {
+        return nil, &errortypes.BadInput{
+          Message: fmt.Sprintf("Error get StoredRequestImpID from imp[%d]: %s", i, err),
+        }
+      }
     }
+
     ext.Bidder.PlacementID = placementID
 
     imp.Ext, err = json.Marshal(ext)
     if err != nil {
       return nil, &errortypes.BadInput{
-			  Message: fmt.Sprintf("Error while encoding imp[%d].ext, err: %s", i, err),
-		  }
+        Message: fmt.Sprintf("Error while encoding imp[%d].ext, err: %s", i, err),
+      }
     }
 
     secure := int8(1)
@@ -164,15 +170,45 @@ func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
   return request.Imp, nil
 }
 
+func getStoredRequestImpID(imp *openrtb.Imp) (string, error) {
+  var impExt map[string]json.RawMessage
+
+  err := json.Unmarshal(imp.Ext, &impExt)
+
+  if err != nil {
+    return "", fmt.Errorf("Error while decoding ext because: %s", err)
+  }
+
+  rawPrebidExt, ok := impExt[openrtb_ext.PrebidExtKey]
+
+  if !ok {
+    return "", fmt.Errorf("ext.prebid is null")
+  }
+
+  var prebidExt openrtb_ext.ExtImpPrebid
+
+  err = json.Unmarshal(rawPrebidExt, &prebidExt)
+
+  if err != nil {
+    return "", fmt.Errorf("cannot decoding ext.prebid because: %s", err)
+  }
+
+  if prebidExt.StoredRequest == nil {
+    return "", fmt.Errorf("ext.prebid.storedrequest is null")
+  }
+
+  return prebidExt.StoredRequest.ID, nil
+}
+
 func setSourceExt() (json.RawMessage, error) {
   siteExt, err := json.Marshal(unicornSourceExt{
-    Stype: "prebid_server_uncn",
+    Stype:  "prebid_server_uncn",
     Bidder: "unicorn",
   })
   if err != nil {
     return nil, &errortypes.BadInput{
-		  Message: fmt.Sprintf("Error while encoding source.ext, err: %s", err),
-		}
+      Message: fmt.Sprintf("Error while encoding source.ext, err: %s", err),
+    }
   }
   return siteExt, nil
 }
@@ -185,17 +221,17 @@ func setExt(request *openrtb.BidRequest) (json.RawMessage, error) {
   var decodedExt *unicornExt
   err = json.Unmarshal(request.Ext, &decodedExt)
   if err != nil {
-    return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error while decoding ext, err: %s", err),
-		}
+    decodedExt = &unicornExt{
+      Prebid: nil,
+    }
   }
   decodedExt.AccountID = accountID
 
   ext, err := json.Marshal(decodedExt)
   if err != nil {
     return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error while encoding ext, err: %s", err),
-		}
+      Message: fmt.Sprintf("Error while encoding ext, err: %s", err),
+    }
   }
   return ext, nil
 }

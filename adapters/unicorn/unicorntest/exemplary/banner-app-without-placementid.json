@@ -22,8 +22,7 @@
           "bidder": {
             "accountId": 199578,
             "publisherId": 123456,
-            "mediaId": "test_media",
-            "placementId": "test_placement"
+            "mediaId": "test_media"
           }
         }
       }
@@ -137,10 +136,10 @@
                   "accountId": 199578,
                   "publisherId": 123456,
                   "mediaId": "test_media",
-                  "placementId": "test_placement"
+                  "placementId": "test_unicorn"
                 }
               },
-              "tagid": "test_placement",
+              "tagid": "test_unicorn",
               "id": "29D2F33E-F865-40DA-9320-16EF77935254",
               "secure": 1
             }
