@@ -6,7 +6,7 @@
   "properties": {
     "placementId": {
       "type": "string",
-      "description": "If placementId is empty, adunit code will be used as placementId."
+      "description": "In Application, if placementId is empty, prebid server configuration id will be used as placementId."
     },
     "publisherId": {
       "type": "integer",
