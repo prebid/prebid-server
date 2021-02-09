@@ -20,9 +20,7 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderOneTag, config.Adapter{
 		Endpoint: "https://example.com/prebid-server/{{.PublisherID}}"})
 
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
+	assert.NoError(t, buildErr, "Builder returned unexpected error %v", buildErr)
 
 	adapterstest.RunJSONBidderTest(t, "onetagtest", bidder)
 }
