@@ -250,6 +250,8 @@ var BidderMap = map[string]BidderName{
 	"adform":            BidderAdform,
 	"advangelists":      BidderAdvangelists,
 	"adyoulike":         BidderAdyoulike,
+	"aja":               BidderAJA,
+	"applogy":           BidderApplogy,
 	"appnexus":          BidderAppnexus,
 	"beachfront":        BidderBeachfront,
 	"audienceNetwork":   BidderFacebook,
