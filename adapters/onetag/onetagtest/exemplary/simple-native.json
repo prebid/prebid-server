@@ -100,7 +100,7 @@
       ],
       "expectedBidResponses": [
         {
-          "cur": "USD",
+          "currency": "USD",
           "bids":[
             {
               "type": "native",
