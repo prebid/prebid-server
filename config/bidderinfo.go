@@ -57,7 +57,7 @@ func loadBidderInfo(r infoReader, adapterConfigs map[string]Adapter, bidders []s
 			return nil, err
 		}
 
-		var info BidderInfo
+		info := BidderInfo{}
 		if err := yaml.Unmarshal(data, &info); err != nil {
 			return nil, fmt.Errorf("error parsing yaml for bidder %s: %v", bidder, err)
 		}
