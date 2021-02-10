@@ -35,6 +35,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/cpmstar"
 	"github.com/prebid/prebid-server/adapters/datablocks"
+	"github.com/prebid/prebid-server/adapters/decenterads"
 	"github.com/prebid/prebid-server/adapters/deepintent"
 	"github.com/prebid/prebid-server/adapters/dmx"
 	"github.com/prebid/prebid-server/adapters/emx_digital"
@@ -136,6 +137,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderConversant:       conversant.Builder,
 		openrtb_ext.BidderCpmstar:          cpmstar.Builder,
 		openrtb_ext.BidderDatablocks:       datablocks.Builder,
+		openrtb_ext.BidderDecenterAds:      decenterads.Builder,
 		openrtb_ext.BidderDeepintent:       deepintent.Builder,
 		openrtb_ext.BidderDmx:              dmx.Builder,
 		openrtb_ext.BidderEmxDigital:       emx_digital.Builder,

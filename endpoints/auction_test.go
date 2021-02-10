@@ -22,6 +22,8 @@ import (
 	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
 	"github.com/spf13/viper"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
@@ -376,32 +378,64 @@ func TestCacheVideoOnly(t *testing.T) {
 }
 
 func TestShouldUsersync(t *testing.T) {
-	doTest := func(gdprApplies string, consent string, allowBidderSync bool, allowHostCookies bool, expectAllow bool) {
-		t.Helper()
+	tests := []struct {
+		description      string
+		signal           string
+		allowHostCookies bool
+		allowBidderSync  bool
+		wantAllow        bool
+	}{
+		{
+			description:      "Don't sync - GDPR on, host cookies disallows and bidder sync disallows",
+			signal:           "1",
+			allowHostCookies: false,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
+		{
+			description:      "Don't sync - GDPR on, host cookies disallows and bidder sync allows",
+			signal:           "1",
+			allowHostCookies: false,
+			allowBidderSync:  true,
+			wantAllow:        false,
+		},
+		{
+			description:      "Don't sync - GDPR on, host cookies allows and bidder sync disallows",
+			signal:           "1",
+			allowHostCookies: true,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
+		{
+			description:      "Sync - GDPR on, host cookies allows and bidder sync allows",
+			signal:           "1",
+			allowHostCookies: true,
+			allowBidderSync:  true,
+			wantAllow:        true,
+		},
+		{
+			description:      "Don't sync - invalid GDPR signal, host cookies disallows and bidder sync disallows",
+			signal:           "2",
+			allowHostCookies: false,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
+	}
+
+	for _, tt := range tests {
 		deps := auction{
-			cfg:     nil,
-			syncers: nil,
 			gdprPerms: &auctionMockPermissions{
-				allowBidderSync:  allowBidderSync,
-				allowHostCookies: allowHostCookies,
+				allowBidderSync:  tt.allowBidderSync,
+				allowHostCookies: tt.allowHostCookies,
 			},
-			metricsEngine: nil,
 		}
 		gdprPrivacyPolicy := gdprPolicy.Policy{
-			Signal:  gdprApplies,
-			Consent: consent,
+			Signal: tt.signal,
 		}
 
-		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprPrivacyPolicy)
-		if allowSyncs != expectAllow {
-			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
-		}
+		allow := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprPrivacyPolicy)
+		assert.Equal(t, tt.wantAllow, allow, tt.description)
 	}
-	doTest("0", "", false, false, true)
-	doTest("1", "", true, true, false)
-	doTest("1", "a", true, false, false)
-	doTest("1", "a", false, true, false)
-	doTest("1", "a", true, true, true)
 }
 
 type auctionMockPermissions struct {
@@ -412,11 +446,11 @@ type auctionMockPermissions struct {
 	allowID          bool
 }
 
-func (m *auctionMockPermissions) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (m *auctionMockPermissions) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	return m.allowHostCookies, nil
 }
 
-func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	return m.allowBidderSync, nil
 }
 
