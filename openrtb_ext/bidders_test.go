@@ -50,7 +50,39 @@ func TestInvalidParams(t *testing.T) {
 	}
 }
 
-func TestBidderReservedNames(t *testing.T) {
+func TestIsBidderNameReserved(t *testing.T) {
+	testCases := []struct {
+		bidder   string
+		expected bool
+	}{
+		{"all", true},
+		{"aLl", true},
+		{"ALL", true},
+		{"context", true},
+		{"CONTEXT", true},
+		{"conTExt", true},
+		{"data", true},
+		{"DATA", true},
+		{"DaTa", true},
+		{"general", true},
+		{"gEnErAl", true},
+		{"GENERAL", true},
+		{"skadn", true},
+		{"skADN", true},
+		{"SKADN", true},
+		{"prebid", true},
+		{"PREbid", true},
+		{"PREBID", true},
+		{"notreserved", false},
+	}
+
+	for _, test := range testCases {
+		result := IsBidderNameReserved(test.bidder)
+		assert.Equal(t, test.expected, result, test.bidder)
+	}
+}
+
+func TestCoreBidderNamesValid(t *testing.T) {
 	for _, bidder := range CoreBidderNames() {
 		isReserved := IsBidderNameReserved(string(bidder))
 		assert.False(t, isReserved, "bidder %v conflicts with a reserved name", bidder)
