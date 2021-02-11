@@ -561,15 +561,8 @@ func postprocess(response *adapters.ResponseData, xtrnal openrtb.BidRequest, uri
 
 	var openrtbResp openrtb.BidResponse
 
-	// try it as a video
 	if err := json.Unmarshal(response.Body, &openrtbResp); err != nil || len(openrtbResp.SeatBid) == 0 {
-		// when running postman tests with the request in supplemental/bidder_response_unmarshal_error_{adm|nurl}_video.json, an
-		// error was thrown here by the attempt at un-marshaling, and, correctly, the true branch was followed. When running
-		// those tests through ./validate.sh, the same request failed the condition, err was nil, and the false branch was
-		// followed, resulting in an "index out of range" error at the postprocessVideo call below. I am not clear on how that
-		// passed, but I added the "or" clause to cover it. That works, though it looks redundant.
 
-		// try it as a banner
 		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
 			return nil, []error{&errortypes.BadServerResponse{
 				Message: fmt.Sprint("server response failed to unmarshal as valid rtb. Run with request.debug = 1 for more info"),
