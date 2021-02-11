@@ -1,0 +1,38 @@
+{
+  "mockBidRequest": {
+    "id": "nurl-video",
+    "imp": [
+      {
+        "id": "video1",
+        "ext": {
+          "bidder": {
+            "videoResponseType": "nurl",
+            "bidfloor": 0.01,
+            "appId": ""
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "context": "instream",
+          "w": 300,
+          "h": 250
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com/whatever/something.html"
+    },
+    "device": {
+      "ip": "255.255.255.255"
+    }
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "unable to determine the appId(s) from the supplied extension",
+      "comparison": "literal"
+    }
+  ] 
+}
