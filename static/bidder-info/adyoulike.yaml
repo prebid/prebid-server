@@ -1,5 +1,6 @@
 maintainer:
   email: "guillaume.andouard@adyoulike.com"
+modifyingVastXmlAllowed: true
 capabilities:
   site:
     mediaTypes:
