@@ -239,6 +239,7 @@ func CoreBidderNames() []BidderName {
 		BidderYieldone,
 		BidderZeroClickFraud,
 	}
+}
 
 // BuildBidderMap builds a map of string to BidderName, to remain compatbile with the
 // prebioud BidderMap variable.
