@@ -303,14 +303,13 @@ func workaroundIOS14PrivacyBug(req *openrtb.BidRequest) {
 			return
 		}
 
-		// what to do for 1 and 3? looks like a typo in the issue. wait for response.
 		switch *atts {
 		case openrtb_ext.IOSAppTrackingStatusNotDetermined:
 			req.Device.Lmt = openrtb.Int8Ptr(0)
 		case openrtb_ext.IOSAppTrackingStatusRestricted:
-			req.Device.Lmt = openrtb.Int8Ptr(0)
+			req.Device.Lmt = openrtb.Int8Ptr(1)
 		case openrtb_ext.IOSAppTrackingStatusDenied:
-			req.Device.Lmt = openrtb.Int8Ptr(0)
+			req.Device.Lmt = openrtb.Int8Ptr(1)
 		case openrtb_ext.IOSAppTrackingStatusAuthorized:
 			req.Device.Lmt = openrtb.Int8Ptr(0)
 		}
