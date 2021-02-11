@@ -41,20 +41,17 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 		if onetagExt.PubId != "" {
 			if pubID == "" {
 				pubID = onetagExt.PubId
-			}
-			if pubID != onetagExt.PubId {
+			} else if pubID != onetagExt.PubId {
 				return nil, []error{&errortypes.BadInput{
 					Message: "There must be only one publisher ID",
 				}}
 			}
+		} else {
+			return nil, []error{&errortypes.BadInput{
+				Message: "The publisher ID must not be empty",
+			}}
 		}
 		request.Imp[idx].Ext = onetagExt.Ext
-	}
-
-	if pubID == "" {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Missing Publisher ID",
-		}}
 	}
 
 	url, err := a.buildEndpointURL(pubID)
@@ -102,13 +99,6 @@ func (a *adapter) buildEndpointURL(pubID string) (string, error) {
 func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
-	}
-
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
-		return nil, []error{err}
 	}
 
 	if responseData.StatusCode != http.StatusOK {

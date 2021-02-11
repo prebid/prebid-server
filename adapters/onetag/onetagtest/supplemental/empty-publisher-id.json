@@ -11,9 +11,11 @@
           },
           "bidfloor": 0.05,
           "ext": {
-             "bidder": {}
-           }
-         },
+            "bidder": {
+              "pubId" : "1"
+            }
+          }
+        },
         {
           "id": "121-dt2",
           "banner": {
@@ -23,13 +25,10 @@
           },
           "bidfloor": 0.12,
           "ext": {
-             "bidder": {
-               "ext": {
-                 "key1": "value1",
-                 "key2": "value2"
-               }
-             }
-           }
+            "bidder": {
+              "pubId" : ""
+            }
+          }
         }
       ],
       "site": {
