@@ -78,6 +78,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderSonobi):           syncConfig,
 			string(openrtb_ext.BidderSovrn):            syncConfig,
 			string(openrtb_ext.BidderSynacormedia):     syncConfig,
+			string(openrtb_ext.BidderTappx):            syncConfig,
 			string(openrtb_ext.BidderTelaria):          syncConfig,
 			string(openrtb_ext.BidderTriplelift):       syncConfig,
 			string(openrtb_ext.BidderTripleliftNative): syncConfig,
@@ -112,7 +113,6 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderRevcontent:   true,
 		openrtb_ext.BidderSilverMob:    true,
 		openrtb_ext.BidderSmaato:       true,
-		openrtb_ext.BidderTappx:        true,
 		openrtb_ext.BidderYeahmobi:     true,
 	}
 
