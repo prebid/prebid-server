@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/magiconair/properties/assert"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -791,37 +790,4 @@ func TestCopySBExtToBidExtWithNoSeatExt(t *testing.T) {
 	if bidextnew == nil {
 		t.Errorf("it should not be nil")
 	}
-}
-
-func TestMakeRequestsTrimsPubID(t *testing.T) {
-	var a PubmaticAdapter
-	a.URI = "http://test.com/openrtb2"
-
-	var bidderExt adapters.ExtImpBidder
-	extImpPubMatic := openrtb_ext.ExtImpPubmatic{}
-	extImpPubMatic.PublisherId = " 5890 "
-	bidderExt.Bidder, _ = json.Marshal(extImpPubMatic)
-	extRaw, _ := json.Marshal(bidderExt)
-
-	var w, h uint64
-	w = 300
-	h = 250
-	var impression = openrtb.Imp{
-		Banner: &openrtb.Banner{
-			W: &w,
-			H: &h,
-		},
-		Ext: extRaw,
-	}
-	request := &openrtb.BidRequest{
-		Imp: []openrtb.Imp{impression},
-		Site: &openrtb.Site{
-			Publisher: &openrtb.Publisher{},
-		},
-	}
-	a.MakeRequests(request, nil)
-
-	updatedPubID := request.Site.Publisher.ID
-
-	assert.Equal(t, updatedPubID, "5890", "Publisher.ID field should be trimmed")
 }
