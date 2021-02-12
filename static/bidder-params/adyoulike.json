@@ -4,30 +4,30 @@
   "description": "A schema which validates params accepted by the AdYouLike adapter",
   "type": "object",
   "properties": {
-    "placementId": {
+    "placement": {
       "type": "string",
       "description": "Placement Id"
     },
-    "Campaign": {
+    "campaign": {
       "type": "string",
       "description": "Id of a forced campaign"
     },
-    "Track": {
+    "track": {
       "type": "string",
       "description": "Id of a forced Track"
     },
-    "Creative": {
+    "creative": {
       "type": "string",
       "description": "Id of a forced creative"
     },
-    "Source": {
+    "source": {
       "type": "string",
       "description": "context of the campaign"
     },
-    "Debug": {
+    "debug": {
       "type": "string",
       "description": "Abitrary id used for debug purpose"
     }
   },
-  "required": ["placementId"]
+  "required": ["placement"]
 }
