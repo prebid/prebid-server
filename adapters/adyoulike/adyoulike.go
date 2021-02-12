@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 
+	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -29,6 +30,9 @@ func (adapter *AdYouLikeAdapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
+	var err error
+	var tagID string
+
 	if len(openRTBRequest.Imp) > 0 {
 		var imp = &openRTBRequest.Imp[0]
 		var bidderExt adapters.ExtImpBidder
@@ -46,7 +50,20 @@ func (adapter *AdYouLikeAdapter) MakeRequests(
 		return nil, errs
 	}
 
-	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
+	reqCopy := *openRTBRequest
+	for _, imp := range openRTBRequest.Imp {
+		reqCopy.Imp = []openrtb.Imp{imp}
+
+		tagID, err = jsonparser.GetString(reqCopy.Imp[0].Ext, "bidder", "placement")
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		reqCopy.Imp[0].TagID = tagID
+	}
+
+	openRTBRequestJSON, err := json.Marshal(reqCopy)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -101,20 +118,37 @@ func (adapter *AdYouLikeAdapter) MakeBids(
 		return nil, []error{err}
 	}
 
-	bidsCapacity := len(openRTBBidderResponse.SeatBid[0].Bid)
-	bidderResponse = adapters.NewBidderResponseWithBidsCapacity(bidsCapacity)
-	var typedBid *adapters.TypedBid
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(openRTBRequest.Imp))
+	bidResponse.Currency = openRTBBidderResponse.Cur
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
-			bid := bid
-			typedBid = &adapters.TypedBid{Bid: &bid, BidType: "banner"}
-			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+		  b := &adapters.TypedBid{
+		    Bid:     &bid,
+		    BidType: getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp),
+		  }
+		  bidResponse.Bids = append(bidResponse.Bids, b)
+		}
+	}
+	return bidResponse, nil
+}
+
+// getMediaTypeForBid determines which type of bid.
+
+func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType) {
+	mediaType := openrtb_ext.BidTypeBanner
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner == nil && imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
+			} else if imp.Banner == nil && imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
+			}
 		}
 	}
 
-	return bidderResponse, nil
-
+	return mediaType
 }
+
 
 func newBadInputError(message string) error {
 	return &errortypes.BadInput{
