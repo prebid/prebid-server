@@ -3,6 +3,7 @@ package adyoulike
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 
@@ -11,15 +12,17 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 )
 
-func NewAdyoulikeBidder(endpoint string) *adyoulikeAdapter {
-	return &adyoulikeAdapter{endpoint: endpoint}
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	return &AdYouLikeAdapter{
+		endpoint: config.Endpoint,
+	}, nil
 }
 
-type adyoulikeAdapter struct {
+type AdYouLikeAdapter struct {
 	endpoint string
 }
 
-func (adapter *adyoulikeAdapter) MakeRequests(
+func (adapter *AdYouLikeAdapter) MakeRequests(
 	openRTBRequest *openrtb.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
@@ -68,7 +71,7 @@ func (adapter *adyoulikeAdapter) MakeRequests(
 const unexpectedStatusCodeFormat = "" +
 	"Unexpected status code: %d. Run with request.debug = 1 for more info"
 
-func (adapter *adyoulikeAdapter) MakeBids(
+func (adapter *AdYouLikeAdapter) MakeBids(
 	openRTBRequest *openrtb.BidRequest,
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
