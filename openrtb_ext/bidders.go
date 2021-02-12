@@ -159,6 +159,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdtarget,
 		BidderAdtelligent,
 		BidderAdvangelists,
+		BidderAdyoulike,
 		BidderAJA,
 		BidderAMX,
 		BidderApplogy,
