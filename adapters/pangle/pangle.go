@@ -12,7 +12,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type pangleAdapter struct {
+type adapter struct {
 	Endpoint string
 }
 
@@ -32,7 +32,7 @@ type bidExt struct {
 /* Builder */
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &pangleAdapter{
+	bidder := &adapter{
 		Endpoint: config.Endpoint,
 	}
 
@@ -41,38 +41,33 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 
 /* MakeRequests */
 
-func getAdType(imp openrtb.Imp, parsedImpExt *wrappedExtImpBidder) (adType int) {
-	adType = -1
+func getAdType(imp openrtb.Imp, parsedImpExt *wrappedExtImpBidder) int {
 	// video
 	if imp.Video != nil {
 		if parsedImpExt != nil && parsedImpExt.Prebid != nil && parsedImpExt.Prebid.IsRewardedInventory == 1 {
-			adType = 7
-			return
+			return 7
 		}
 		if imp.Instl == 1 {
-			adType = 8
-			return
+			return 8
 		}
 	}
 	// banner
 	if imp.Banner != nil {
 		if imp.Instl == 1 {
-			adType = 2
+			return 2
 		} else {
-			adType = 1
+			return 1
 		}
-		return
 	}
 	// native
 	if imp.Native != nil && len(imp.Native.Request) > 0 {
-		adType = 5
-		return
+		return 5
 	}
 
-	return
+	return -1
 }
 
-func (pa *pangleAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errs []error
 
@@ -85,7 +80,7 @@ func (pa *pangleAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
 		}
 		// detect and fill adtype
 		if adType := getAdType(imp, &impExt); adType == -1 {
-			errs = append(errs, fmt.Errorf("not a supported adtype"))
+			errs = append(errs, adapters.BadInput("not a supported adtype"))
 			continue
 		} else {
 			impExt.AdType = adType
@@ -112,7 +107,7 @@ func (pa *pangleAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
 
 		requestData := &adapters.RequestData{
 			Method: "POST",
-			Uri:    pa.Endpoint,
+			Uri:    a.Endpoint,
 			Body:   requestJSON,
 			Headers: http.Header{
 				"TOKEN":        []string{bidderImpExt.Token},
@@ -155,7 +150,7 @@ func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
 	return "", fmt.Errorf("unrecognized adtype in response")
 }
 
-func (p *pangleAdapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -180,7 +175,7 @@ func (p *pangleAdapter) MakeBids(request *openrtb.BidRequest, requestData *adapt
 	}
 
 	var errs []error
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
 		for _, bid := range seatBid.Bid {

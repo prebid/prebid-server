@@ -10,8 +10,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	conf := config.Adapter{
-		Endpoint:         "https://pangle.io/api/get_ads",
-		ExtraAdapterInfo: "{\"token\": \"123\"}",
+		Endpoint: "https://pangle.io/api/get_ads",
 	}
 	bidder, buildErr := Builder(openrtb_ext.BidderPangle, conf)
 	if buildErr != nil {
