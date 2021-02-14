@@ -74,7 +74,7 @@
   
     "httpCalls": [{
       "expectedRequest": {
-        "uri": "https://hb.jixie.io/v2/hbsvrpost?hbofftest=1",
+        "uri": "https://hb.jixie.io/v2/hbsvrpost",
         "headers": {
           "Accept": [
             "application/json"
@@ -203,6 +203,7 @@
     }],
   
     "expectedBidResponses": [{
+      "currency": "USD",
       "bids": [{
         "bid": {
           "adm": "<div id=\"jxoutstream-dcc0ca9c6591\" style=\"width: 100%;\"> <script type=\"text/javascript\" src=\"https://creatives.b-cdn.net/js/hbrenderer.min.js\" defer=\"\"></script> <script> var p ={ responsive: 1, nested: 1, maxwidth: 640,  container: \"jxoutstream-dcc0ca9c6591\", jsoncreativeobj64: \"eyJ0ZXN0dmFyIjoxMjN9\"}; function jxdefer(p) { if (window.jxhbuniversal) { window.jxhbuniversal.hbinit(p); } else { setTimeout(function() { jxdefer(p) }, 100); } } jxdefer(p); </script> </div>",

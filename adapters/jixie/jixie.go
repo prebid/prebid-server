@@ -16,7 +16,6 @@ import (
 
 type JixieAdapter struct {
 	endpoint string
-	testing  bool
 }
 
 // Builder builds a new instance of the Jixie adapter for the given bidder with the given config.
@@ -34,20 +33,13 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-func buildEndpoint(endpoint string, testing bool, timeout int64) string {
-
-	if timeout == 0 {
-		timeout = 1000
-	}
-
-	if testing {
-		return endpoint + "?hbofftest=1"
-	}
-	return endpoint
-}
+//func buildEndpoint(endpoint string, timeout int64) string {
+//	return endpoint + "?pstimeout=" + strconv.FormatInt(timeout, 10)
+//}
 
 func (a *JixieAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
+
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("No Imps in Bid Request"),
@@ -58,23 +50,23 @@ func (a *JixieAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: err.Error()},
-			}
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("Impression id=%s has an Error: %s", imp.ID, err.Error()),
+			})
+			continue
 		}
 		var jxExt openrtb_ext.ExtImpJixie
 		if err := json.Unmarshal(bidderExt.Bidder, &jxExt); err != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: fmt.Sprintf("ignoring imp id=%s, invalid ImpExt", imp.ID)},
-			}
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("Impression id=%s, has invalid Ext", imp.ID),
+			})
+			continue
 		}
 	}
 
 	data, err := json.Marshal(request)
 	if err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Error in packaging request to JSON"),
-		}}
+		errs = append(errs, err)
 	}
 
 	headers := http.Header{}
@@ -93,10 +85,11 @@ func (a *JixieAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		addHeaderIfNonEmpty(headers, "Referer", request.Site.Page)
 	}
 
-	theurl := buildEndpoint(a.endpoint, a.testing, request.TMax)
+	//theurl := buildEndpoint(a.endpoint, request.TMax)
+
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     theurl,
+		Uri:     a.endpoint,
 		Body:    data,
 		Headers: headers,
 	}}, errs
@@ -157,6 +150,11 @@ func (a *JixieAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	}
 	adsResp := adapters.NewBidderResponseWithBidsCapacity(len(bids))
 	adsResp.Bids = bids
+	if bidResp.Cur != "" {
+		adsResp.Currency = bidResp.Cur
+	} else {
+		adsResp.Currency = "USD"
+	}
 
 	return adsResp, nil
 
