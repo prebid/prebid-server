@@ -56,6 +56,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/nanointeractive"
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
 	"github.com/prebid/prebid-server/adapters/nobid"
+	"github.com/prebid/prebid-server/adapters/onetag"
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
@@ -70,6 +71,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/adapters/synacormedia"
+	"github.com/prebid/prebid-server/adapters/tappx"
 	"github.com/prebid/prebid-server/adapters/telaria"
 	"github.com/prebid/prebid-server/adapters/triplelift"
 	"github.com/prebid/prebid-server/adapters/triplelift_native"
@@ -144,6 +146,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderNanoInteractive, nanointeractive.NewNanoInteractiveSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderNinthDecimal, ninthdecimal.NewNinthDecimalSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderNoBid, nobid.NewNoBidSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderOneTag, onetag.NewSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderOpenx, openx.NewOpenxSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderPubmatic, pubmatic.NewPubmaticSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderPulsepoint, pulsepoint.NewPulsepointSyncer)
@@ -158,6 +161,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartRTB, smartrtb.NewSmartRTBSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartyAds, smartyads.NewSmartyAdsSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSynacormedia, synacormedia.NewSynacorMediaSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderTappx, tappx.NewTappxSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTelaria, telaria.NewTelariaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTriplelift, triplelift.NewTripleliftSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTripleliftNative, triplelift_native.NewTripleliftSyncer)

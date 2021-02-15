@@ -103,6 +103,7 @@ const (
 	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderNinthDecimal     BidderName = "ninthdecimal"
 	BidderNoBid            BidderName = "nobid"
+	BidderOneTag           BidderName = "onetag"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
 	BidderPubmatic         BidderName = "pubmatic"
@@ -205,6 +206,7 @@ func CoreBidderNames() []BidderName {
 		BidderNanoInteractive,
 		BidderNinthDecimal,
 		BidderNoBid,
+		BidderOneTag,
 		BidderOpenx,
 		BidderOrbidder,
 		BidderPubmatic,
