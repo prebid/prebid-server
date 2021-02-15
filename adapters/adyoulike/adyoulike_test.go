@@ -1,9 +1,9 @@
 package adyoulike
 
 import (
-	"testing"
 	"encoding/json"
 	"net/http"
+	"testing"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
@@ -68,7 +68,7 @@ func TestMakeRequestInvalidParams(t *testing.T) {
 func TestMakeRequestTagId(t *testing.T) {
 
 	bidder, buildErr := Builder(openrtb_ext.BidderAdyoulike, config.Adapter{
-	Endpoint: testsBidderEndpoint})
+		Endpoint: testsBidderEndpoint})
 
 	assert.Nil(t, buildErr, "buildErr must be nil")
 
@@ -96,13 +96,12 @@ func TestMakeRequestTagId(t *testing.T) {
 		assert.True(t, imp.ID == "1_0" || imp.ID == "1_1")
 
 		if imp.ID == "1_0" {
-			assert.Equal(t, imp.TagID,"placementid1")
+			assert.Equal(t, imp.TagID, "placementid1")
 		} else if imp.ID == "1_1" {
-			assert.Equal(t, imp.TagID,"placementid2")
+			assert.Equal(t, imp.TagID, "placementid2")
 		}
 	}
 }
-
 
 func TestOpenRTBStandardResponse(t *testing.T) {
 
@@ -110,45 +109,45 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 		ID: "123",
 		SeatBid: []openrtb.SeatBid{
 			{
-			    Bid:  []openrtb.Bid{
-			      	{
-				        ID:     "12340",
-				        ImpID:  "10",
-				        Price:  300.00,
-				        NURL:   "http://example.com/winnoticeurl0",
-				        AdM:    "%3C%3Fxml%20version%3D%221.0%22%20encod%2Fhtml%3E",
-			        },
-			    	{
-				        ID:     "12341",
-				        ImpID:  "11",
-				        Price:  301.00,
-				        NURL:   "http://example.com/winnoticeurl1",
-				        AdM:    "%3C%3Fxml%20version%3D%221.0%22%20encod%2FVAST%3E",
-			        },
-			        {
-				        ID:     "12342",
-				        ImpID:  "12",
-				        Price:  302.00,
-				        NURL:   "http://example.com/winnoticeurl2",
-				        AdM:    "{'json':'response','for':'native'}",
-			        },
-			    },
+				Bid: []openrtb.Bid{
+					{
+						ID:    "12340",
+						ImpID: "10",
+						Price: 300.00,
+						NURL:  "http://example.com/winnoticeurl0",
+						AdM:   "%3C%3Fxml%20version%3D%221.0%22%20encod%2Fhtml%3E",
+					},
+					{
+						ID:    "12341",
+						ImpID: "11",
+						Price: 301.00,
+						NURL:  "http://example.com/winnoticeurl1",
+						AdM:   "%3C%3Fxml%20version%3D%221.0%22%20encod%2FVAST%3E",
+					},
+					{
+						ID:    "12342",
+						ImpID: "12",
+						Price: 302.00,
+						NURL:  "http://example.com/winnoticeurl2",
+						AdM:   "{'json':'response','for':'native'}",
+					},
+				},
 			},
 		},
 	})
-	
+
 	request := openrtb.BidRequest{
 		Imp: []openrtb.Imp{
 			{
-				ID: "10",
+				ID:     "10",
 				Banner: &openrtb.Banner{},
 			},
 			{
-				ID: "11",
+				ID:    "11",
 				Video: &openrtb.Video{},
-			}, 
+			},
 			{
-				ID: "12",
+				ID:     "12",
 				Native: &openrtb.Native{},
 			},
 		},
@@ -159,31 +158,31 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 		Bids: []*adapters.TypedBid{
 			{
 				Bid: &openrtb.Bid{
-					ID: "12340",
+					ID:    "12340",
 					ImpID: "10",
 					Price: 300,
-					NURL: "http://example.com/winnoticeurl0",
-					AdM: "%3C%3Fxml%20version%3D%221.0%22%20encod%2Fhtml%3E",
+					NURL:  "http://example.com/winnoticeurl0",
+					AdM:   "%3C%3Fxml%20version%3D%221.0%22%20encod%2Fhtml%3E",
 				},
 				BidType: "banner",
 			},
 			{
 				Bid: &openrtb.Bid{
-					ID: "12341",
+					ID:    "12341",
 					ImpID: "11",
 					Price: 301,
-					NURL: "http://example.com/winnoticeurl1",
-					AdM: "%3C%3Fxml%20version%3D%221.0%22%20encod%2FVAST%3E",
+					NURL:  "http://example.com/winnoticeurl1",
+					AdM:   "%3C%3Fxml%20version%3D%221.0%22%20encod%2FVAST%3E",
 				},
 				BidType: "video",
-			}, 
+			},
 			{
 				Bid: &openrtb.Bid{
-					ID: "12342",
+					ID:    "12342",
 					ImpID: "12",
 					Price: 302,
-					NURL: "http://example.com/winnoticeurl2",
-					AdM: "{'json':'response','for':'native'}",
+					NURL:  "http://example.com/winnoticeurl2",
+					AdM:   "{'json':'response','for':'native'}",
 				},
 				BidType: "native",
 			},
@@ -196,7 +195,6 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 
 	assert.Nil(t, buildErr, "buildErr must be nil")
 
-
 	httpResponse := &adapters.ResponseData{StatusCode: http.StatusOK, Body: responseBody}
 	bidResponse, errs := bidder.MakeBids(&request, nil, httpResponse)
 
@@ -206,25 +204,25 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 	if len(errs) != 0 {
 		t.Errorf("Expected 0 errors. Got %d", len(errs))
 	}
-	
+
 	for i, typedBid := range bidResponse.Bids {
 
-		expected := expectedResponse.Bids[i].Bid;
+		expected := expectedResponse.Bids[i].Bid
 
-		assert.Equal(t, expected.ID, typedBid.Bid.ID, "Incorrect Bid.id");
-		assert.Equal(t, expected.ImpID, typedBid.Bid.ImpID, "Incorrect Bid.impid");
-		assert.Equal(t, expected.Price, typedBid.Bid.Price, "Incorrect Bid.price");
-		assert.Equal(t, expected.NURL, typedBid.Bid.NURL, "Incorrect Bid.nurl");
-		assert.Equal(t, expected.AdM, typedBid.Bid.AdM, "Incorrect Bid.adm");
+		assert.Equal(t, expected.ID, typedBid.Bid.ID, "Incorrect Bid.id")
+		assert.Equal(t, expected.ImpID, typedBid.Bid.ImpID, "Incorrect Bid.impid")
+		assert.Equal(t, expected.Price, typedBid.Bid.Price, "Incorrect Bid.price")
+		assert.Equal(t, expected.NURL, typedBid.Bid.NURL, "Incorrect Bid.nurl")
+		assert.Equal(t, expected.AdM, typedBid.Bid.AdM, "Incorrect Bid.adm")
 
 		assert.Equal(t, expectedResponse.Bids[i].BidType, typedBid.BidType, "Incorrect BidType")
 	}
-	
+
 }
 
 func TestOpenRTBSurpriseResponse(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdyoulike, config.Adapter{
-	Endpoint: testsBidderEndpoint})
+		Endpoint: testsBidderEndpoint})
 
 	assert.Nil(t, buildErr, "buildErr must be nil")
 

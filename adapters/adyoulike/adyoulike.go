@@ -125,19 +125,19 @@ func (adapter *AdYouLikeAdapter) MakeBids(
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(openRTBRequest.Imp))
 	bidResponse.Currency = openRTBBidderResponse.Cur
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
-		for idx, _ := range seatBid.Bid {
-		  b := &adapters.TypedBid{
-		    Bid: &seatBid.Bid[idx],
-		    BidType: getMediaTypeForImp(seatBid.Bid[idx].ImpID, openRTBRequest.Imp),
-		  }
-		  bidResponse.Bids = append(bidResponse.Bids, b)
+		for idx := range seatBid.Bid {
+			b := &adapters.TypedBid{
+				Bid:     &seatBid.Bid[idx],
+				BidType: getMediaTypeForImp(seatBid.Bid[idx].ImpID, openRTBRequest.Imp),
+			}
+			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
 	return bidResponse, nil
 }
 
 // getMediaTypeForBid determines which type of bid.
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType) {
+func getMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {
@@ -151,7 +151,6 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType) 
 
 	return mediaType
 }
-
 
 func newBadInputError(message string) error {
 	return &errortypes.BadInput{

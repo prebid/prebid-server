@@ -19,8 +19,8 @@ import (
 	"github.com/prebid/prebid-server/adapters/adtarget"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/advangelists"
-	"github.com/prebid/prebid-server/adapters/aja"
 	"github.com/prebid/prebid-server/adapters/adyoulike"
+	"github.com/prebid/prebid-server/adapters/aja"
 	"github.com/prebid/prebid-server/adapters/amx"
 	"github.com/prebid/prebid-server/adapters/applogy"
 	"github.com/prebid/prebid-server/adapters/appnexus"
@@ -122,7 +122,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdtarget:         adtarget.Builder,
 		openrtb_ext.BidderAdtelligent:      adtelligent.Builder,
 		openrtb_ext.BidderAdvangelists:     advangelists.Builder,
-		openrtb_ext.BidderAdyoulike: 		adyoulike.Builder,
+		openrtb_ext.BidderAdyoulike:        adyoulike.Builder,
 		openrtb_ext.BidderAJA:              aja.Builder,
 		openrtb_ext.BidderAMX:              amx.Builder,
 		openrtb_ext.BidderApplogy:          applogy.Builder,
