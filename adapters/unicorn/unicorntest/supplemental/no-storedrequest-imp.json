@@ -24,6 +24,7 @@
         }
       }
     ],
+    "cur": ["JPY"],
     "app": {
       "publisher": {
         "id": "test"

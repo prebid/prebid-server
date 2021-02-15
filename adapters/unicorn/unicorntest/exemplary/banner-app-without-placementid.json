@@ -27,6 +27,7 @@
         }
       }
     ],
+    "cur": ["USD"],
     "app": {
       "publisher": {
         "id": "test"
@@ -94,7 +95,7 @@
             "ver": "1.9.0"
           },
           "at": 1,
-          "cur": ["JPY"],
+          "cur": ["USD"],
           "device": {
             "connectiontype": 1,
             "ext": {
@@ -166,7 +167,7 @@
         },
         "body": {
           "bidid": "f1248280-24ec-4fbc-bdf5-6a866e7dcea4",
-          "cur": "JPY",
+          "cur": "USD",
           "ext": {},
           "id": "CFD24FB1-916F-467D-8825-34892B315DB7",
           "seatbid": [
@@ -185,7 +186,7 @@
                   "id": "1",
                   "impid": "29D2F33E-F865-40DA-9320-16EF77935254",
                   "iurl": "https://example.com/banner.png",
-                  "price": 73.283,
+                  "price": 0.783,
                   "w": 300
                 }
               ],
@@ -200,13 +201,13 @@
   ],
   "expectedBidResponses": [
     {
-      "Currency": "JPY",
+      "Currency": "USD",
       "bids": [
         {
           "Bid": {
             "id": "1",
             "impid": "29D2F33E-F865-40DA-9320-16EF77935254",
-            "price": 73.283,
+            "price": 0.783,
             "adm": "awesome domain",
             "adid": "uoNYbq1L_-123456",
             "adomain": ["example.com"],

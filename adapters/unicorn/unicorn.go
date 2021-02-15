@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	unicornDefaultCurrency = "JPY"
-	unicornAuctionType     = 1
+	unicornAuctionType = 1
 )
 
 // UnicornAdapter describes a Smaato prebid server adapter.
@@ -79,7 +78,6 @@ func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
 	}
 
 	request.Imp = imp
-	request.Cur = []string{unicornDefaultCurrency}
 
 	request.Source.Ext, err = setSourceExt()
 	if err != nil {

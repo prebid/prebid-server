@@ -15,6 +15,7 @@
         "secure": 1
       }
     ],
+    "cur": ["JPY"],
     "app": {
       "publisher": {
         "id": "test"
