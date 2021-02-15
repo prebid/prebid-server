@@ -1,0 +1,9 @@
+maintainer:
+  email: "core@adyoulike.com"
+modifyingVastXmlAllowed: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
