@@ -39,6 +39,7 @@ func (adapter *AdYouLikeAdapter) MakeRequests(
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, newBadInputError(err.Error()))
 		}
+
 		var ttxExt openrtb_ext.ExtImpAdyoulike
 		if err := json.Unmarshal(bidderExt.Bidder, &ttxExt); err != nil {
 			errs = append(errs, newBadInputError(err.Error()))
@@ -47,25 +48,28 @@ func (adapter *AdYouLikeAdapter) MakeRequests(
 
 	if len(openRTBRequest.Imp) == 0 {
 		errs = append(errs, newBadInputError("No impression in the bid request"))
-		return nil, errs
 	}
 
 	reqCopy := *openRTBRequest
-	for _, imp := range openRTBRequest.Imp {
-		reqCopy.Imp = []openrtb.Imp{imp}
+	reqCopy.Imp = []openrtb.Imp{}
+	for ind, imp := range openRTBRequest.Imp {
+		reqCopy.Imp = append(reqCopy.Imp, imp)
 
-		tagID, err = jsonparser.GetString(reqCopy.Imp[0].Ext, "bidder", "placement")
+		tagID, err = jsonparser.GetString(reqCopy.Imp[ind].Ext, "bidder", "placement")
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		reqCopy.Imp[0].TagID = tagID
+		reqCopy.Imp[ind].TagID = tagID
 	}
 
 	openRTBRequestJSON, err := json.Marshal(reqCopy)
 	if err != nil {
 		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
 		return nil, errs
 	}
 
@@ -121,10 +125,10 @@ func (adapter *AdYouLikeAdapter) MakeBids(
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(openRTBRequest.Imp))
 	bidResponse.Currency = openRTBBidderResponse.Cur
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
-		for _, bid := range seatBid.Bid {
+		for idx, _ := range seatBid.Bid {
 		  b := &adapters.TypedBid{
-		    Bid:     &bid,
-		    BidType: getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp),
+		    Bid: &seatBid.Bid[idx],
+		    BidType: getMediaTypeForImp(seatBid.Bid[idx].ImpID, openRTBRequest.Imp),
 		  }
 		  bidResponse.Bids = append(bidResponse.Bids, b)
 		}
@@ -133,7 +137,6 @@ func (adapter *AdYouLikeAdapter) MakeBids(
 }
 
 // getMediaTypeForBid determines which type of bid.
-
 func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType) {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
