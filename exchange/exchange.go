@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	uuid "github.com/gofrs/uuid"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
@@ -135,7 +134,15 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
 
+	if debugLog == nil {
+		debugLog = &DebugLog{Enabled: false}
+	}
+
 	debugInfo := getDebugInfo(r.BidRequest, requestExt)
+
+	debugInfo = debugInfo && r.Account.DebugAllow
+	debugLog.Enabled = debugLog.Enabled && r.Account.DebugAllow
+
 	if debugInfo {
 		ctx = e.makeDebugContext(ctx, debugInfo)
 	}
@@ -163,10 +170,11 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.currencyConverter.Rates()
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow)
 
 	var auc *auction
 	var cacheErrs []error
+	var bidResponseExt *openrtb_ext.ExtBidResponse
 	if anyBidsReturned {
 
 		var bidCategory map[string]string
@@ -194,34 +202,35 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				dealErrs := applyDealSupport(r.BidRequest, auc, bidCategory)
 				errs = append(errs, dealErrs...)
 			}
-			cacheErrs := auc.doCache(ctx, e.cache, targData, evTracking, r.BidRequest, 60, &r.Account.CacheTTL, bidCategory, debugLog)
+
+			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
+			if debugLog.Enabled {
+				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+					debugLog.Data.Response = string(bidRespExtBytes)
+				} else {
+					debugLog.Data.Response = "Unable to marshal response ext for debugging"
+					errs = append(errs, err)
+				}
+			}
+
+			cacheErrs = auc.doCache(ctx, e.cache, targData, evTracking, r.BidRequest, 60, &r.Account.CacheTTL, bidCategory, debugLog)
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}
+
 			targData.setTargeting(auc, r.BidRequest.App != nil, bidCategory)
 
 		}
-	}
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
+	} else {
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
 
-	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
+		if debugLog.Enabled {
 
-	// Ensure caching errors are added in case auc.doCache was called and errors were returned
-	if len(cacheErrs) > 0 {
-		bidderCacheErrs := errsToBidderErrors(cacheErrs)
-		bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = append(bidResponseExt.Errors[openrtb_ext.PrebidExtKey], bidderCacheErrs...)
-	}
-
-	if debugLog != nil && debugLog.Enabled {
-		if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
-			debugLog.Data.Response = string(bidRespExtBytes)
-		} else {
-			debugLog.Data.Response = "Unable to marshal response ext for debugging"
-			errs = append(errs, err)
-		}
-		if !anyBidsReturned {
-			if rawUUID, err := uuid.NewV4(); err == nil {
-				debugLog.CacheKey = rawUUID.String()
+			if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
+				debugLog.Data.Response = string(bidRespExtBytes)
 			} else {
+				debugLog.Data.Response = "Unable to marshal response ext for debugging"
 				errs = append(errs, err)
 			}
 		}
@@ -342,7 +351,8 @@ func (e *exchange) getAllBids(
 	ctx context.Context,
 	bidderRequests []BidderRequest,
 	bidAdjustments map[string]float64,
-	conversions currency.Conversions) (
+	conversions currency.Conversions,
+	accountDebugAllowed bool) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -373,7 +383,7 @@ func (e *exchange) getAllBids(
 			}
 			var reqInfo adapters.ExtraRequestInfo
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo)
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -758,7 +768,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 
 	for bidderName, responseExtra := range adapterExtra {
 
-		if debugInfo {
+		if debugInfo && len(responseExtra.HttpCalls) > 0 {
 			bidResponseExt.Debug.HttpCalls[bidderName] = responseExtra.HttpCalls
 		}
 		// Only make an entry for bidder errors if the bidder reported any.

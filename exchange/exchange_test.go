@@ -165,41 +165,66 @@ func TestDebugBehaviour(t *testing.T) {
 	type outTest struct {
 		debugInfoIncluded bool
 	}
+
+	type debugData struct {
+		bidderLevelDebugAllowed  bool
+		accountLevelDebugAllowed bool
+	}
+
 	type aTest struct {
-		desc string
-		in   inTest
-		out  outTest
+		desc      string
+		in        inTest
+		out       outTest
+		debugData debugData
 	}
 	testCases := []aTest{
 		{
-			desc: "test flag equals zero, ext debug flag false, no debug info expected",
-			in:   inTest{test: 0, debug: false},
-			out:  outTest{debugInfoIncluded: false},
+			desc:      "test flag equals zero, ext debug flag false, no debug info expected",
+			in:        inTest{test: 0, debug: false},
+			out:       outTest{debugInfoIncluded: false},
+			debugData: debugData{true, true},
 		},
 		{
-			desc: "test flag equals zero, ext debug flag true, debug info expected",
-			in:   inTest{test: 0, debug: true},
-			out:  outTest{debugInfoIncluded: true},
+			desc:      "test flag equals zero, ext debug flag true, debug info expected",
+			in:        inTest{test: 0, debug: true},
+			out:       outTest{debugInfoIncluded: true},
+			debugData: debugData{true, true},
 		},
 		{
-			desc: "test flag equals 1, ext debug flag false, debug info expected",
-			in:   inTest{test: 1, debug: false},
-			out:  outTest{debugInfoIncluded: true},
+			desc:      "test flag equals 1, ext debug flag false, debug info expected",
+			in:        inTest{test: 1, debug: false},
+			out:       outTest{debugInfoIncluded: true},
+			debugData: debugData{true, true},
 		},
 		{
-			desc: "test flag equals 1, ext debug flag true, debug info expected",
-			in:   inTest{test: 1, debug: true},
-			out:  outTest{debugInfoIncluded: true},
+			desc:      "test flag equals 1, ext debug flag true, debug info expected",
+			in:        inTest{test: 1, debug: true},
+			out:       outTest{debugInfoIncluded: true},
+			debugData: debugData{true, true},
 		},
 		{
-			desc: "test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
-			in:   inTest{test: 2, debug: false},
-			out:  outTest{debugInfoIncluded: false},
+			desc:      "test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
+			in:        inTest{test: 2, debug: false},
+			out:       outTest{debugInfoIncluded: false},
+			debugData: debugData{true, true},
 		},
 		{
-			desc: "test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
-			in:   inTest{test: -1, debug: true},
-			out:  outTest{debugInfoIncluded: true},
+			desc:      "test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
+			in:        inTest{test: -1, debug: true},
+			out:       outTest{debugInfoIncluded: true},
+			debugData: debugData{true, true},
+		},
+		{
+			desc:      "test account level debug disabled",
+			in:        inTest{test: -1, debug: true},
+			out:       outTest{debugInfoIncluded: false},
+			debugData: debugData{true, false},
+		},
+		{
+			desc:      "test bidder level debug disabled",
+			in:        inTest{test: -1, debug: true},
+			out:       outTest{debugInfoIncluded: false},
+			debugData: debugData{false, true},
 		},
 	}
 
@@ -239,17 +264,25 @@ func TestDebugBehaviour(t *testing.T) {
 	}
 
 	e := new(exchange)
-	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus),
-	}
+
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.DummyMetricsEngine{}
 	e.gDPR = gdpr.AlwaysAllow{}
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 
+	ctx := context.Background()
+
 	// Run tests
 	for _, test := range testCases {
+
+		e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
+			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &adapters.DebugInfo{Allow: test.debugData.bidderLevelDebugAllowed}),
+		}
+
+		//request level debug key
+		ctx = context.WithValue(ctx, DebugContextKey, test.in.debug)
+
 		bidRequest.Test = test.in.test
 
 		if test.in.debug {
@@ -260,13 +293,13 @@ func TestDebugBehaviour(t *testing.T) {
 
 		auctionRequest := AuctionRequest{
 			BidRequest: bidRequest,
-			Account:    config.Account{},
+			Account:    config.Account{DebugAllow: test.debugData.accountLevelDebugAllowed},
 			UserSyncs:  &emptyUsersync{},
 			StartTime:  time.Now(),
 		}
 
 		// Run test
-		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, nil)
+		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, nil)
 
 		// Assert no HoldAuction error
 		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
@@ -292,8 +325,132 @@ func TestDebugBehaviour(t *testing.T) {
 			if test.in.debug {
 				diffJson(t, test.desc, bidRequest.Ext, actualExt.Debug.ResolvedRequest.Ext)
 			}
+		} else if !test.debugData.bidderLevelDebugAllowed && test.debugData.accountLevelDebugAllowed {
+			assert.Equal(t, len(actualExt.Debug.HttpCalls), 0, "%s. ext.debug.httpcalls array should not be empty", "With bidder level debug disable option http calls should be empty")
+
+		} else {
+			assert.Nil(t, actualExt.Debug, "%s. ext.debug.httpcalls array should not be empty", "With bidder level debug disable option http calls should be empty")
 		}
 	}
+}
+
+func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
+
+	type testCase struct {
+		bidder1DebugEnabled bool
+		bidder2DebugEnabled bool
+	}
+
+	testCases := []testCase{
+		{
+			bidder1DebugEnabled: true, bidder2DebugEnabled: true,
+		},
+		{
+			bidder1DebugEnabled: true, bidder2DebugEnabled: false,
+		},
+		{
+			bidder1DebugEnabled: false, bidder2DebugEnabled: true,
+		},
+		{
+			bidder1DebugEnabled: false, bidder2DebugEnabled: false,
+		},
+	}
+
+	// Set up test
+	noBidServer := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(204)
+	}
+	server := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer server.Close()
+
+	categoriesFetcher, err := newCategoryFetcher("./test/category-mapping")
+	if err != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", err)
+	}
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: &adapters.BidderResponse{},
+	}
+
+	e := new(exchange)
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.DummyMetricsEngine{}
+	e.gDPR = gdpr.AlwaysAllow{}
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.categoriesFetcher = categoriesFetcher
+
+	debugLog := DebugLog{}
+
+	for _, testCase := range testCases {
+		bidRequest := &openrtb.BidRequest{
+			ID: "some-request-id",
+			Imp: []openrtb.Imp{{
+				ID:     "some-impression-id",
+				Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+				Ext:    json.RawMessage(`{"telaria": {"placementId": 1}, "appnexus": {"placementid": 2}}`),
+			}},
+			Site:   &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+			Device: &openrtb.Device{UA: "curl/7.54.0", IP: "::1"},
+			AT:     1,
+			TMax:   500,
+		}
+
+		bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
+
+		auctionRequest := AuctionRequest{
+			BidRequest: bidRequest,
+			Account:    config.Account{DebugAllow: true},
+			UserSyncs:  &emptyUsersync{},
+			StartTime:  time.Now(),
+		}
+
+		e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
+			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &adapters.DebugInfo{Allow: testCase.bidder1DebugEnabled}),
+			openrtb_ext.BidderTelaria:  adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &adapters.DebugInfo{Allow: testCase.bidder2DebugEnabled}),
+		}
+		// Run test
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
+		// Assert no HoldAuction err
+		assert.NoErrorf(t, err, "ex.HoldAuction returned an err")
+		assert.NotNilf(t, outBidResponse.Ext, "outBidResponse.Ext should not be nil")
+
+		actualExt := &openrtb_ext.ExtBidResponse{}
+		err = json.Unmarshal(outBidResponse.Ext, actualExt)
+		assert.NoErrorf(t, err, "JSON field unmarshaling err. ")
+
+		assert.NotEmpty(t, actualExt.Prebid, "ext.prebid should not be empty")
+		assert.NotEmpty(t, actualExt.Prebid.AuctionTimestamp, "ext.prebid.auctiontimestamp should not be empty when AuctionRequest.StartTime is set")
+		assert.Equal(t, auctionRequest.StartTime.UnixNano()/1e+6, actualExt.Prebid.AuctionTimestamp, "ext.prebid.auctiontimestamp has incorrect value")
+
+		assert.NotNilf(t, actualExt, "ext.debug field is expected to be included in this outBidResponse.Ext and not be nil")
+
+		// Assert "Debug fields
+		if testCase.bidder1DebugEnabled {
+			assert.Equal(t, server.URL, actualExt.Debug.HttpCalls["appnexus"][0].Uri, "Url for bidder with debug enabled is incorrect")
+			assert.NotNilf(t, actualExt.Debug.HttpCalls["appnexus"][0].RequestBody, "ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil")
+		}
+		if testCase.bidder2DebugEnabled {
+			assert.Equal(t, server.URL, actualExt.Debug.HttpCalls["telaria"][0].Uri, "Url for bidder with debug enabled is incorrect")
+			assert.NotNilf(t, actualExt.Debug.HttpCalls["telaria"][0].RequestBody, "ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil")
+		}
+		if !testCase.bidder1DebugEnabled {
+			assert.Nil(t, actualExt.Debug.HttpCalls["appnexus"], "ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil")
+		}
+		if !testCase.bidder2DebugEnabled {
+			assert.Nil(t, actualExt.Debug.HttpCalls["telaria"], "ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil")
+		}
+
+		if testCase.bidder1DebugEnabled && testCase.bidder2DebugEnabled {
+			assert.Equal(t, 2, len(actualExt.Debug.HttpCalls), "With bidder level debug enable option for both bidders http calls should have 2 elements")
+		}
+	}
+
 }
 
 func TestReturnCreativeEndToEnd(t *testing.T) {
@@ -434,7 +591,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 
 	e := new(exchange)
 	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus),
+		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
 	}
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.DummyMetricsEngine{}
@@ -465,7 +622,8 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 			}
 
 			// Run test
-			outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, nil)
+			debugLog := DebugLog{}
+			outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
 
 			// Assert return error, if any
 			if testGroup.expectError {
@@ -716,7 +874,7 @@ func TestBidReturnsCreative(t *testing.T) {
 	}
 	e := new(exchange)
 	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus),
+		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
 	}
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.DummyMetricsEngine{}
@@ -1059,8 +1217,9 @@ func TestRaceIntegration(t *testing.T) {
 		UserSyncs:  &emptyUsersync{},
 	}
 
+	debugLog := DebugLog{}
 	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, &nilCategoryFetcher{}).(*exchange)
-	_, err := ex.HoldAuction(context.Background(), auctionRequest, nil)
+	_, err := ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -1279,8 +1438,8 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		Account:    config.Account{},
 		UserSyncs:  &emptyUsersync{},
 	}
-
-	_, err := e.HoldAuction(context.Background(), auctionRequest, nil)
+	debugLog := DebugLog{}
+	_, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -1406,14 +1565,17 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		Account: config.Account{
 			ID:            "testaccount",
 			EventsEnabled: spec.EventsEnabled,
+			DebugAllow:    true,
 		},
 		UserSyncs: mockIdFetcher(spec.IncomingRequest.Usersyncs),
 	}
 	if spec.StartTime > 0 {
 		auctionRequest.StartTime = time.Unix(0, spec.StartTime*1e+6)
 	}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugContextKey, true)
 
-	bid, err := ex.HoldAuction(context.Background(), auctionRequest, debugLog)
+	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
 	responseTimes := extractResponseTimes(t, filename, bid)
 	for _, bidderName := range biddersInAuction {
 		if _, ok := responseTimes[bidderName]; !ok {
@@ -2622,7 +2784,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (seatBid *pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(name)]; ok {
 		if expectedRequest != nil {
 			if expectedRequest.BidAdjustment != bidAdjustment {
@@ -2801,7 +2963,7 @@ func (e *mockUsersync) LiveSyncCount() int {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo) (posb *pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (posb *pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 

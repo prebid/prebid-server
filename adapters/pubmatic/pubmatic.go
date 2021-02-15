@@ -471,7 +471,7 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 	}
 
 	if *pubID == "" {
-		*pubID = pubmaticExt.PublisherId
+		*pubID = strings.TrimSpace(pubmaticExt.PublisherId)
 	}
 
 	// Parse Wrapper Extension only once per request

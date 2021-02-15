@@ -6,7 +6,7 @@
         "id": "mix1",
         "ext": {
           "bidder": {
-            "videoResponseType": "adm",
+            "videoResponseType": "nurl",
             "bidfloor": 0.41,
             "appIds": {
               "banner": "bannerAppId1",
@@ -68,7 +68,7 @@
           "dnt": 0,
           "user": {},
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.9.1",
+          "adapterVersion": "0.9.2",
           "requestId": "banner-and-video"
         }
       },
@@ -88,7 +88,7 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1",
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1&prebidserver",
         "body": {
           "id": "banner-and-video",
           "imp": [
@@ -109,6 +109,10 @@
             "domain": "some.domain.us",
             "page": "https://some.domain.us/some/page.html"
           },
+          "isPrebid": true,
+          "device": {
+            "devicetype": 2
+          },
           "cur": [
             "USD"
           ]
@@ -125,13 +129,13 @@
                   "id": "5d839458f73decdc1572b7f6",
                   "impid": "mix1",
                   "price": 20,
-                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:70b99087-1b92-4e81-bc42-05c940fd6014:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5d8391a85f35945a70c9ddf0,0.01&i_type=pre",
+                  "crid": "70b99087-1b92-4e81-bc42-05c940fd6014",
                   "adid": "1088",
                   "adomain": [
                     "beachfront.io"
                   ],
                   "cid": "277",
-                  "crid": "532",
                   "w": 300,
                   "h": 250
                 }
@@ -167,16 +171,16 @@
       "bids": [
         {
           "bid": {
-            "id": "mix1AdmVideo",
+            "id": "mix1NurlVideo",
             "impid": "mix1",
             "price": 20,
-            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "nurl": "https://useast.bfmio.com/getBids?aid=bid:70b99087-1b92-4e81-bc42-05c940fd6014:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5d8391a85f35945a70c9ddf0,0.01&i_type=pre",
             "adid": "1088",
             "adomain": [
               "beachfront.io"
             ],
             "cid": "277",
-            "crid": "532",
+            "crid": "70b99087-1b92-4e81-bc42-05c940fd6014",
             "w": 300,
             "h": 250
           },

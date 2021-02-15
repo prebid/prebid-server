@@ -55,10 +55,11 @@ type ExtBidderError struct {
 
 // ExtHttpCall defines the contract for a bidresponse.ext.debug.httpcalls.{bidder}[i]
 type ExtHttpCall struct {
-	Uri          string `json:"uri"`
-	RequestBody  string `json:"requestbody"`
-	ResponseBody string `json:"responsebody"`
-	Status       int    `json:"status"`
+	Uri            string              `json:"uri"`
+	RequestBody    string              `json:"requestbody"`
+	RequestHeaders map[string][]string `json:"requestheaders"`
+	ResponseBody   string              `json:"responsebody"`
+	Status         int                 `json:"status"`
 }
 
 // CookieStatus describes the allowed values for bidresponse.ext.usersync.{bidder}.status

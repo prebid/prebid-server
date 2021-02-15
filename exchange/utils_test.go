@@ -24,11 +24,11 @@ type permissionsMock struct {
 	personalInfoAllowedError error
 }
 
-func (p *permissionsMock) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (p *permissionsMock) HostCookiesAllowed(ctx context.Context, gdpr gdpr.Signal, consent string) (bool, error) {
 	return true, nil
 }
 
-func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdpr gdpr.Signal, consent string) (bool, error) {
 	return true, nil
 }
 

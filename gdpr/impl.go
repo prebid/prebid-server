@@ -33,18 +33,26 @@ type permissionsImpl struct {
 	fetchVendorList map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
 }
 
-func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
+	gdprSignal = p.normalizeGDPR(gdprSignal)
+
+	if gdprSignal == SignalNo {
+		return true, nil
+	}
+
 	return p.allowSync(ctx, uint16(p.cfg.HostVendorID), consent)
 }
 
-func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
+	gdprSignal = p.normalizeGDPR(gdprSignal)
+
+	if gdprSignal == SignalNo {
+		return true, nil
+	}
+
 	id, ok := p.vendorIDs[bidder]
 	if ok {
 		return p.allowSync(ctx, id, consent)
-	}
-
-	if consent == "" {
-		return p.cfg.UsersyncIfAmbiguous, nil
 	}
 
 	return false, nil
@@ -55,13 +63,7 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 		return true, true, true, nil
 	}
 
-	if gdprSignal == SignalAmbiguous {
-		if p.cfg.UsersyncIfAmbiguous {
-			gdprSignal = SignalNo
-		} else {
-			gdprSignal = SignalYes
-		}
-	}
+	gdprSignal = p.normalizeGDPR(gdprSignal)
 
 	if gdprSignal == SignalNo {
 		return true, true, true, nil
@@ -82,10 +84,22 @@ func (p *permissionsImpl) defaultVendorPermissions() (allowPI bool, allowGeo boo
 	return false, false, false, nil
 }
 
+func (p *permissionsImpl) normalizeGDPR(gdprSignal Signal) Signal {
+	if gdprSignal != SignalAmbiguous {
+		return gdprSignal
+	}
+
+	if p.cfg.UsersyncIfAmbiguous {
+		return SignalNo
+	}
+
+	return SignalYes
+}
+
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string) (bool, error) {
-	// If we're not given a consent string, respect the preferences in the app config.
+
 	if consent == "" {
-		return p.cfg.UsersyncIfAmbiguous, nil
+		return false, nil
 	}
 
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
@@ -229,18 +243,18 @@ type AllowHostCookies struct {
 }
 
 // HostCookiesAllowed always returns true
-func (p *AllowHostCookies) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (p *AllowHostCookies) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
 	return true, nil
 }
 
 // Exporting to allow for easy test setups
 type AlwaysAllow struct{}
 
-func (a AlwaysAllow) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (a AlwaysAllow) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
 	return true, nil
 }
 
-func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
 	return true, nil
 }
 
@@ -251,11 +265,11 @@ func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext
 // Exporting to allow for easy test setups
 type AlwaysFail struct{}
 
-func (a AlwaysFail) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (a AlwaysFail) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
 	return false, nil
 }
 
-func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
 	return false, nil
 }
 
