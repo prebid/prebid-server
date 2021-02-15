@@ -9,12 +9,9 @@
     },
     "imp": [
       {
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 50
-            }
+        "audio": {
+          "mimes": [
+            "audio/mp4"
           ]
         }
       }
@@ -22,7 +19,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Impression id is empty",
+      "value": "Audio is not supported",
       "comparison": "literal"
     }
   ]

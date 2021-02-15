@@ -44,13 +44,7 @@ func (a *adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestDat
 
 	if request.Device == nil || request.Device.IP == "" {
 		return nil, []error{&errortypes.BadInput{
-			Message: "No ip address in request",
-		}}
-	}
-
-	if request.Site == nil && request.App == nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Site or app field shouldn't be empty",
+			Message: "ipv4 address is required field",
 		}}
 	}
 
@@ -86,9 +80,9 @@ func (a *adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestDat
 }
 
 func preprocess(imp *openrtb.Imp) error {
-	if imp.ID == "" {
+	if imp.Audio != nil {
 		return &errortypes.BadInput{
-			Message: "Impression id is empty",
+			Message: "Audio is not supported",
 		}
 	}
 

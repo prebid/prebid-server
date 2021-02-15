@@ -22,7 +22,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "No ip address in request",
+      "value": "ipv4 address is required field",
       "comparison": "literal"
     }
   ]
