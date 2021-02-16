@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
@@ -11,6 +12,16 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+)
+
+const (
+	ROUTE_NATIVE  = "o"
+	ROUTE_RTB     = "rtb"
+	METHOD_NATIVE = "ortb"
+	METHOD_RTB    = "req"
+	MACROS_ROUTE  = "__route__"
+	MACROS_METHOD = "__method__"
+	MACROS_KEY    = "__key__"
 )
 
 type adapter struct {
@@ -28,21 +39,40 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 // MakeRequests create bid request for mobfoxpb demand
 func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var err error
 	var tagID string
-
+	var err_tag error
+	var key string
+	var err_key error
+	var route string
+	var method string
 	var adapterRequests []*adapters.RequestData
 
+	requestURI := a.URI
 	reqCopy := *request
 	imp := request.Imp[0]
-	tagID, err = jsonparser.GetString(imp.Ext, "bidder", "TagID")
-	if err != nil {
-		errs = append(errs, err)
+	tagID, err_tag = jsonparser.GetString(imp.Ext, "bidder", "TagID")
+	key, err_key = jsonparser.GetString(imp.Ext, "bidder", "key")
+	if err_tag != nil && err_key != nil {
+		errs = append(errs, &errortypes.BadInput{
+			Message: fmt.Sprintf("Invalid or non existing key or tagId, atleast one should be present"),
+		})
 		return nil, errs
 	}
-	imp.TagID = tagID
+
+	if key != "" {
+		route = ROUTE_RTB
+		method = METHOD_RTB
+		requestURI = strings.Replace(requestURI, MACROS_KEY, key, 1)
+	} else if tagID != "" {
+		method = METHOD_NATIVE
+		route = ROUTE_NATIVE
+	}
+
+	requestURI = strings.Replace(requestURI, MACROS_ROUTE, route, 1)
+	requestURI = strings.Replace(requestURI, MACROS_METHOD, method, 1)
+
 	reqCopy.Imp = []openrtb.Imp{imp}
-	adapterReq, err := a.makeRequest(&reqCopy)
+	adapterReq, err := a.makeRequest(&reqCopy, requestURI)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -52,7 +82,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 	return adapterRequests, errs
 }
 
-func (a *adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(request *openrtb.BidRequest, requestURI string) (*adapters.RequestData, error) {
 	reqJSON, err := json.Marshal(request)
 
 	if err != nil {
@@ -64,7 +94,7 @@ func (a *adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestDat
 	headers.Add("Accept", "application/json")
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     a.URI,
+		Uri:     requestURI,
 		Body:    reqJSON,
 		Headers: headers,
 	}, nil
@@ -125,7 +155,5 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, 
 	}
 
 	// This shouldnt happen. Lets handle it just incase by returning an error.
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
-	}
+	return "", nil
 }
