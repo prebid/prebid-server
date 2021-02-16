@@ -1,0 +1,101 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-inter-id",
+    "imp": [
+      {
+        "id": "test-imp-inter-id",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 480
+            }
+          ],
+          "w": 320,
+          "h": 480
+        },
+        "instl":1,
+        "ext": {
+          "adot": {}
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dsp.adotmob.com/headerbidding/bidrequest",
+        "body": {
+          "id": "test-request-inter-id",
+          "imp": [
+            {
+              "id": "test-imp-inter-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 480
+                  }
+                ],
+                "w": 320,
+                "h": 480
+              },
+              "instl":1,
+              "ext": {
+                "adot": {}
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "adot",
+              "bid": [{
+                "id": "test-request-inter-id",
+                "impid": "test-imp-inter-id",
+                "adm": "some-test-ad",
+                "price": 1.16346,
+                "w": 320,
+                "h": 480,
+                "ext": {
+                  "adot": {
+                    "media_type": "banner"
+                  }
+                }
+              }]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+        "bids": [{
+            "bid": {
+                "id": "test-request-inter-id",
+                "impid": "test-imp-inter-id",
+                "price":  1.16346,
+                "adm": "some-test-ad",
+                "w": 320,
+                "h": 480,
+                "ext": {
+                    "adot": {
+                        "media_type": "banner"
+                    }
+                }
+            },
+            "type": "banner"
+        }
+      ]
+    }
+  ]
+}
+

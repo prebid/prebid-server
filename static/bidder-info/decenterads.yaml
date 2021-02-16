@@ -1,0 +1,14 @@
+maintainer:
+  email: "support@decenterads.com"
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

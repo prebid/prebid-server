@@ -10,6 +10,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -19,23 +20,20 @@ import (
 //
 // It only allows appnexus for GDPR consent
 type permissionsMock struct {
-	personalInfoAllowed bool
+	personalInfoAllowed      bool
+	personalInfoAllowedError error
 }
 
-func (p *permissionsMock) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (p *permissionsMock) HostCookiesAllowed(ctx context.Context, gdpr gdpr.Signal, consent string) (bool, error) {
 	return true, nil
 }
 
-func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdpr gdpr.Signal, consent string) (bool, error) {
 	return true, nil
 }
 
-func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
-	return p.personalInfoAllowed, p.personalInfoAllowed, p.personalInfoAllowed, nil
-}
-
-func (p *permissionsMock) AMPException() bool {
-	return false
+func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr gdpr.Signal, consent string) (bool, bool, bool, error) {
+	return p.personalInfoAllowed, p.personalInfoAllowed, p.personalInfoAllowed, p.personalInfoAllowedError
 }
 
 func assertReq(t *testing.T, bidderRequests []BidderRequest,
@@ -1048,6 +1046,8 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
+	tcf1Consent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	tcf2Consent := "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA"
 	trueValue, falseValue := true, false
 
 	testCases := []struct {
@@ -1057,7 +1057,10 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		gdpr                string
 		gdprConsent         string
 		gdprScrub           bool
+		permissionsError    error
+		userSyncIfAmbiguous bool
 		expectPrivacyLabels metrics.PrivacyLabels
+		expectError         bool
 	}{
 		{
 			description:        "Enforce - TCF Invalid",
@@ -1076,7 +1079,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1088,7 +1091,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1100,7 +1103,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "0",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
@@ -1108,11 +1111,24 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			},
 		},
 		{
+			description:        "Enforce - TCF 1; GDPR signal extraction error",
+			gdprAccountEnabled: &trueValue,
+			gdprHostEnabled:    true,
+			gdpr:               "0{",
+			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprScrub:          true,
+			expectPrivacyLabels: metrics.PrivacyLabels{
+				GDPREnforced:   true,
+				GDPRTCFVersion: metrics.TCFVersionV1,
+			},
+			expectError: true,
+		},
+		{
 			description:        "Enforce - TCF 1; account GDPR enabled, host GDPR setting disregarded",
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    false,
 			gdpr:               "1",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1124,7 +1140,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: &falseValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
@@ -1136,7 +1152,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
@@ -1148,11 +1164,50 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    false,
 			gdpr:               "1",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf1Consent,
 			gdprScrub:          false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
 				GDPRTCFVersion: "",
+			},
+		},
+		{
+			description:         "Enforce - Ambiguous signal, don't sync user if ambiguous",
+			gdprAccountEnabled:  nil,
+			gdprHostEnabled:     true,
+			gdpr:                "null",
+			gdprConsent:         tcf1Consent,
+			gdprScrub:           true,
+			userSyncIfAmbiguous: false,
+			expectPrivacyLabels: metrics.PrivacyLabels{
+				GDPREnforced:   true,
+				GDPRTCFVersion: metrics.TCFVersionV1,
+			},
+		},
+		{
+			description:         "Not Enforce - Ambiguous signal, sync user if ambiguous",
+			gdprAccountEnabled:  nil,
+			gdprHostEnabled:     true,
+			gdpr:                "null",
+			gdprConsent:         tcf1Consent,
+			gdprScrub:           false,
+			userSyncIfAmbiguous: true,
+			expectPrivacyLabels: metrics.PrivacyLabels{
+				GDPREnforced:   false,
+				GDPRTCFVersion: "",
+			},
+		},
+		{
+			description:        "Enforce - error while checking if personal info is allowed",
+			gdprAccountEnabled: nil,
+			gdprHostEnabled:    true,
+			gdpr:               "1",
+			gdprConsent:        tcf1Consent,
+			gdprScrub:          true,
+			permissionsError:   errors.New("Some error"),
+			expectPrivacyLabels: metrics.PrivacyLabels{
+				GDPREnforced:   true,
+				GDPRTCFVersion: metrics.TCFVersionV1,
 			},
 		},
 	}
@@ -1166,7 +1221,8 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 
 		privacyConfig := config.Privacy{
 			GDPR: config.GDPR{
-				Enabled: test.gdprHostEnabled,
+				Enabled:             test.gdprHostEnabled,
+				UsersyncIfAmbiguous: test.userSyncIfAmbiguous,
 				TCF2: config.TCF2{
 					Enabled: true,
 				},
@@ -1189,12 +1245,17 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			context.Background(),
 			auctionReq,
 			nil,
-			&permissionsMock{personalInfoAllowed: !test.gdprScrub},
-			true,
+			&permissionsMock{personalInfoAllowed: !test.gdprScrub, personalInfoAllowedError: test.permissionsError},
+			test.userSyncIfAmbiguous,
 			privacyConfig)
 		result := results[0]
 
-		assert.Nil(t, errs)
+		if test.expectError {
+			assert.NotNil(t, errs)
+		} else {
+			assert.Nil(t, errs)
+		}
+
 		if test.gdprScrub {
 			assert.Equal(t, result.BidRequest.User.BuyerUID, "", test.description+":User.BuyerUID")
 			assert.Equal(t, result.BidRequest.Device.DIDMD5, "", test.description+":Device.DIDMD5")
@@ -1407,4 +1468,255 @@ func TestBidderToPrebidChainsZeroLengthSChains(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(output), 0)
+}
+
+func TestRemoveUnpermissionedEids(t *testing.T) {
+	bidder := "bidderA"
+
+	testCases := []struct {
+		description     string
+		userExt         json.RawMessage
+		eidPermissions  []openrtb_ext.ExtRequestPrebidDataEidPermission
+		expectedUserExt json.RawMessage
+	}{
+		{
+			description: "Extension Nil",
+			userExt:     nil,
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: nil,
+		},
+		{
+			description: "Extension Empty",
+			userExt:     json.RawMessage(`{}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{}`),
+		},
+		{
+			description: "Extension Empty - Keep Other Data",
+			userExt:     json.RawMessage(`{"other":42}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{"other":42}`),
+		},
+		{
+			description: "Eids Empty",
+			userExt:     json.RawMessage(`{"eids":[]}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[]}`),
+		},
+		{
+			description: "Eids Empty - Keep Other Data",
+			userExt:     json.RawMessage(`{"eids":[],"other":42}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[],"other":42}`),
+		},
+		{
+			description:     "Allowed By Nil Permissions",
+			userExt:         json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions:  nil,
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+		},
+		{
+			description:     "Allowed By Empty Permissions",
+			userExt:         json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions:  []openrtb_ext.ExtRequestPrebidDataEidPermission{},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+		},
+		{
+			description: "Allowed By Specific Bidder",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+		},
+		{
+			description: "Allowed By All Bidders",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"*"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+		},
+		{
+			description: "Allowed By Lack Of Matching Source",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source2", Bidders: []string{"otherBidder"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+		},
+		{
+			description: "Allowed - Keep Other Data",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"other":42}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"other":42}`),
+		},
+		{
+			description: "Denied",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"otherBidder"}},
+			},
+			expectedUserExt: nil,
+		},
+		{
+			description: "Denied - Keep Other Data",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"otherdata":42}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"otherBidder"}},
+			},
+			expectedUserExt: json.RawMessage(`{"otherdata":42}`),
+		},
+		{
+			description: "Mix Of Allowed By Specific Bidder, Allowed By Lack Of Matching Source, Denied, Keep Other Data",
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"},{"source":"source2","id":"anyID"},{"source":"source3","id":"anyID"}],"other":42}`),
+			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "source1", Bidders: []string{"bidderA"}},
+				{Source: "source3", Bidders: []string{"otherBidder"}},
+			},
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"},{"source":"source2","id":"anyID"}],"other":42}`),
+		},
+	}
+
+	for _, test := range testCases {
+		request := &openrtb.BidRequest{
+			User: &openrtb.User{Ext: test.userExt},
+		}
+
+		requestExt := &openrtb_ext.ExtRequest{
+			Prebid: openrtb_ext.ExtRequestPrebid{
+				Data: &openrtb_ext.ExtRequestPrebidData{
+					EidPermissions: test.eidPermissions,
+				},
+			},
+		}
+
+		expectedRequest := &openrtb.BidRequest{
+			User: &openrtb.User{Ext: test.expectedUserExt},
+		}
+
+		resultErr := removeUnpermissionedEids(request, bidder, requestExt)
+		assert.NoError(t, resultErr, test.description)
+		assert.Equal(t, expectedRequest, request, test.description)
+	}
+}
+
+func TestRemoveUnpermissionedEidsUnmarshalErrors(t *testing.T) {
+	testCases := []struct {
+		description string
+		userExt     json.RawMessage
+		expectedErr string
+	}{
+		{
+			description: "Malformed Ext",
+			userExt:     json.RawMessage(`malformed`),
+			expectedErr: "invalid character 'm' looking for beginning of value",
+		},
+		{
+			description: "Malformed Eid Array Type",
+			userExt:     json.RawMessage(`{"eids":[42]}`),
+			expectedErr: "json: cannot unmarshal number into Go value of type openrtb_ext.ExtUserEid",
+		},
+		{
+			description: "Malformed Eid Item Type",
+			userExt:     json.RawMessage(`{"eids":[{"source":42,"id":"anyID"}]}`),
+			expectedErr: "json: cannot unmarshal number into Go struct field ExtUserEid.source of type string",
+		},
+	}
+
+	for _, test := range testCases {
+		request := &openrtb.BidRequest{
+			User: &openrtb.User{Ext: test.userExt},
+		}
+
+		requestExt := &openrtb_ext.ExtRequest{
+			Prebid: openrtb_ext.ExtRequestPrebid{
+				Data: &openrtb_ext.ExtRequestPrebidData{
+					EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+						{Source: "source1", Bidders: []string{"*"}},
+					},
+				},
+			},
+		}
+
+		resultErr := removeUnpermissionedEids(request, "bidderA", requestExt)
+		assert.EqualError(t, resultErr, test.expectedErr, test.description)
+	}
+}
+
+func TestRemoveUnpermissionedEidsEmptyValidations(t *testing.T) {
+	testCases := []struct {
+		description string
+		request     *openrtb.BidRequest
+		requestExt  *openrtb_ext.ExtRequest
+	}{
+		{
+			description: "Nil User",
+			request: &openrtb.BidRequest{
+				User: nil,
+			},
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Data: &openrtb_ext.ExtRequestPrebidData{
+						EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+							{Source: "source1", Bidders: []string{"*"}},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "Empty User",
+			request: &openrtb.BidRequest{
+				User: &openrtb.User{},
+			},
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Data: &openrtb_ext.ExtRequestPrebidData{
+						EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+							{Source: "source1", Bidders: []string{"*"}},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "Nil Ext",
+			request: &openrtb.BidRequest{
+				User: &openrtb.User{Ext: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`)},
+			},
+			requestExt: nil,
+		},
+		{
+			description: "Nil Prebid Data",
+			request: &openrtb.BidRequest{
+				User: &openrtb.User{Ext: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`)},
+			},
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Data: nil,
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		requestExpected := *test.request
+
+		resultErr := removeUnpermissionedEids(test.request, "bidderA", test.requestExt)
+		assert.NoError(t, resultErr, test.description+":err")
+		assert.Equal(t, &requestExpected, test.request, test.description+":request")
+	}
 }
