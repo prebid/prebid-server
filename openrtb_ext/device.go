@@ -37,6 +37,22 @@ const (
 	IOSAppTrackingStatusAuthorized    IOSAppTrackingStatus = 3
 )
 
+// IsKnownIOSAppTrackingStatus returns true if the value is a known iOS app tracking authorization status.
+func IsKnownIOSAppTrackingStatus(v int64) bool {
+	switch IOSAppTrackingStatus(v) {
+	case IOSAppTrackingStatusNotDetermined:
+		return true
+	case IOSAppTrackingStatusRestricted:
+		return true
+	case IOSAppTrackingStatusDenied:
+		return true
+	case IOSAppTrackingStatusAuthorized:
+		return true
+	default:
+		return false
+	}
+}
+
 // ExtDevicePrebid defines the contract for bidrequest.device.ext.prebid
 type ExtDevicePrebid struct {
 	Interstitial *ExtDeviceInt `json:"interstitial"`
@@ -73,19 +89,25 @@ func (edi *ExtDeviceInt) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// what happens if not found? error?
+// ParseDeviceExtATTS parses the ATTS value from the request.device.ext OpenRTB field.
 func ParseDeviceExtATTS(deviceExt json.RawMessage) (*IOSAppTrackingStatus, error) {
+	v, err := jsonparser.GetInt(deviceExt, "atts")
 
-	// better / faster to use GetInt, but want nil instead of 0 if not found.
-	// what happens if not found?
-	value, dataType, _, err := jsonparser.Get(deviceExt, "atts")
-	if err != nil || dataType != jsonparser.Number {
-		return nil, errors.New("dfdf")
+	// node not found error
+	if err == jsonparser.KeyPathNotFoundError {
+		return nil, nil
 	}
 
-	if v, ok := parseInt(value); !ok {
-		return nil, errors.New("dfdf")
-	} else {
-		return &v, nil
+	// unexpected parse error
+	if err != nil {
+		return nil, err
 	}
+
+	// invalid value error
+	if !IsKnownIOSAppTrackingStatus(v) {
+		return nil, errors.New("invalid status")
+	}
+
+	status := IOSAppTrackingStatus(v)
+	return &status, nil
 }
