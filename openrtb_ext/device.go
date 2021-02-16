@@ -2,6 +2,7 @@ package openrtb_ext
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
 
 	"github.com/buger/jsonparser"
@@ -72,6 +73,19 @@ func (edi *ExtDeviceInt) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// what happens if not found? error?
 func ParseDeviceExtATTS(deviceExt json.RawMessage) (*IOSAppTrackingStatus, error) {
-	return nil, nil
+
+	// better / faster to use GetInt, but want nil instead of 0 if not found.
+	// what happens if not found?
+	value, dataType, _, err := jsonparser.Get(deviceExt, "atts")
+	if err != nil || dataType != jsonparser.Number {
+		return nil, errors.New("dfdf")
+	}
+
+	if v, ok := parseInt(value); !ok {
+		return nil, errors.New("dfdf")
+	} else {
+		return &v, nil
+	}
 }

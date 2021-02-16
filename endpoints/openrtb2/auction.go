@@ -314,14 +314,6 @@ func workaroundIOS14PrivacyBug(req *openrtb.BidRequest) {
 			req.Device.Lmt = openrtb.Int8Ptr(0)
 		}
 	}
-
-	// 14.2 or greater
-	if req.Device.OSV == "14.2" {
-		atts, err := jsonparser.GetInt(req.Ext, "atts")
-		if err != nil {
-			// Not a valid integer.
-		}
-	}
 }
 
 // parseTimeout returns parses tmax from the requestJson, or returns the default if it doesn't exist.
