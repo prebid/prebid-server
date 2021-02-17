@@ -44,8 +44,8 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 		cfg:       cfg,
 		vendorIDs: vendorIDs,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			tcf1SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf1SpecVersion),
-			tcf2SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf2SpecVersion)},
+			tcf1SpecVersion: newVendorListFetcherTCF1(cfg),
+			tcf2SpecVersion: newVendorListFetcherTCF2(ctx, cfg, client, vendorListURLMaker)},
 	}
 
 	if cfg.HostVendorID == 0 {

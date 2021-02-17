@@ -130,6 +130,9 @@
     ],
     "site": {
       "page": "http://example.com/whatever/something.html"
+    },
+    "device":{
+      "ip":"255.255.255.255"
     }
   } ,
   "httpCalls": [
@@ -196,8 +199,8 @@
           "dnt": 0,
           "user": {},
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.9.1",
-          "ip": "",
+          "adapterVersion": "0.9.2",
+          "ip": "255.255.255.255",
           "requestId": "six-nine-combo"
         }
       },
@@ -262,6 +265,10 @@
             "domain": "example.com",
             "page": "http://example.com/whatever/something.html"
           },
+          "device": {
+            "devicetype": 2,
+            "ip": "255.255.255.255"
+          },
           "cur": [
             "USD"
           ]
@@ -315,6 +322,10 @@
           "site": {
             "domain": "example.com",
             "page": "http://example.com/whatever/something.html"
+          },
+          "device": {
+            "devicetype": 2,
+            "ip": "255.255.255.255"
           },
           "cur": [
             "USD"
@@ -370,6 +381,10 @@
             "domain": "example.com",
             "page": "http://example.com/whatever/something.html"
           },
+          "device": {
+            "devicetype": 2,
+            "ip": "255.255.255.255"
+          },
           "cur": [
             "USD"
           ]
@@ -424,6 +439,10 @@
           "site": {
             "domain": "example.com",
             "page": "http://example.com/whatever/something.html"
+          },
+          "device": {
+            "devicetype": 2,
+            "ip": "255.255.255.255"
           },
           "cur": [
             "USD"

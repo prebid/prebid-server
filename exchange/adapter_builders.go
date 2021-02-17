@@ -62,6 +62,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/nanointeractive"
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
 	"github.com/prebid/prebid-server/adapters/nobid"
+	"github.com/prebid/prebid-server/adapters/onetag"
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/orbidder"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
@@ -165,6 +166,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderNanoInteractive:  nanointeractive.Builder,
 		openrtb_ext.BidderNinthDecimal:     ninthdecimal.Builder,
 		openrtb_ext.BidderNoBid:            nobid.Builder,
+		openrtb_ext.BidderOneTag:           onetag.Builder,
 		openrtb_ext.BidderOpenx:            openx.Builder,
 		openrtb_ext.BidderOrbidder:         orbidder.Builder,
 		openrtb_ext.BidderPubmatic:         pubmatic.Builder,
