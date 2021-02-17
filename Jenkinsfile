@@ -3,6 +3,11 @@ pipeline {
        buildDiscarder(logRotator(numToKeepStr: '10'))
     }
     agent any
+
+    parameters {
+        string(description: 'Set an arbitrary build tag name. Please reference prebid-server version.', name: 'tag')
+    }
+
     stages {
         stage('Build image') {
             steps {
@@ -10,11 +15,9 @@ pipeline {
             }
         }
         stage('Push image') {
-            when { expression { env.TAG_NAME != null }}
             steps {
-                sh "docker build -t prebid-server ."
-                sh "docker tag prebid-server:latest docker.ayl.io/ayl/prebid-server:${env.TAG_NAME}"
-                sh "docker push docker.ayl.io/ayl/tag:${env.TAG_NAME}"
+                sh "docker tag prebid-server:latest docker.ayl.io/ayl/prebid-server:${params.tag}"
+                sh "docker push docker.ayl.io/ayl/prebid-server:${params.tag}"
             }
         }
     }
