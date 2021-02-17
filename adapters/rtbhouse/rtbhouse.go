@@ -7,14 +7,20 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
-func NewRTBHouseBidder(endpoint string) *RTBHouseAdapter {
-	return &RTBHouseAdapter{endpoint: endpoint}
+// Builder builds a new instance of the RTBHouse adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &RTBHouseAdapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }
 
-// Implements Bidder interface.
+// RTBHouseAdapter implements the Bidder interface.
 type RTBHouseAdapter struct {
 	endpoint string
 }

@@ -1,10 +1,20 @@
 package nanointeractive
 
 import (
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
 	"testing"
+
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "nanointeractivetest", NewNanoIneractiveBidder("https://ad.audiencemanager.de/hbs"))
+	bidder, buildErr := Builder(openrtb_ext.BidderNanoInteractive, config.Adapter{
+		Endpoint: "https://ad.audiencemanager.de/hbs"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "nanointeractivetest", bidder)
 }

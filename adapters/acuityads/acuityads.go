@@ -8,23 +8,27 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/macros"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/golang/glog"
 )
 
 type AcuityAdsAdapter struct {
 	endpoint template.Template
 }
 
-func NewAcuityAdsBidder(endpointTemplate string) *AcuityAdsAdapter {
-	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
+// Builder builds a new instance of the AcuityAds adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &AcuityAdsAdapter{endpoint: *template}
+
+	bidder := &AcuityAdsAdapter{
+		endpoint: *template,
+	}
+	return bidder, nil
 }
 
 func getHeaders(request *openrtb.BidRequest) http.Header {

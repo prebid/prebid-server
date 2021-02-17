@@ -38,7 +38,8 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, nil)
+	alias := map[string]string{"aliastest": "appnexus"}
+	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, alias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
@@ -57,14 +58,17 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 			ensureHasKey(t, data, adapterFile.Name())
 		}
 	}
+
+	ensureHasKey(t, data, "aliastest")
 }
 
 func TestExchangeMap(t *testing.T) {
 	exchanges := newExchangeMap(&config.Configuration{})
+	bidderMap := openrtb_ext.BuildBidderMap()
 	for bidderName := range exchanges {
 		// OpenRTB doesn't support hardcoded aliases... so this test skips districtm,
 		// which was the only alias in the legacy adapter map.
-		if _, ok := openrtb_ext.BidderMap[bidderName]; bidderName != "districtm" && !ok {
+		if _, ok := bidderMap[bidderName]; bidderName != "districtm" && !ok {
 			t.Errorf("Bidder %s exists in exchange, but is not a part of the BidderMap.", bidderName)
 		}
 	}

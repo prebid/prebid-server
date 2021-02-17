@@ -48,20 +48,21 @@ func testGetBidders(t *testing.T, aliases map[string]string) {
 	assert.Equal(t, http.StatusOK, r.Code, "GET /info/bidders returned bad status: %d", r.Code)
 	assert.Equal(t, "application/json", r.Header().Get("Content-Type"), "Bad /info/bidders content type. Expected application/json. Got %s", r.Header().Get("Content-Type"))
 
+	bidderMap := openrtb_ext.BuildBidderNameHashSet()
+
 	bodyBytes := r.Body.Bytes()
-	bidderSlice := make([]string, 0, len(openrtb_ext.BidderMap)+len(aliases))
+	bidderSlice := make([]string, 0)
 	err = json.Unmarshal(bodyBytes, &bidderSlice)
 	assert.NoError(t, err, "Failed to unmarshal /info/bidders response: %v", err)
 
 	for _, bidderName := range bidderSlice {
-		if _, ok := openrtb_ext.BidderMap[bidderName]; !ok {
+		if _, ok := bidderMap[bidderName]; !ok {
 			assert.Contains(t, aliases, bidderName, "Response from /info/bidders contained unexpected BidderName: %s", bidderName)
 		}
 	}
 
-	assert.Len(t, bidderSlice, len(openrtb_ext.BidderMap)+len(aliases),
-		"Response from /info/bidders did not match BidderMap. Expected %d elements. Got %d",
-		len(openrtb_ext.BidderMap)+len(aliases), len(bidderSlice))
+	expectedBidderSliceLength := len(bidderMap) + len(aliases)
+	assert.Len(t, bidderSlice, expectedBidderSliceLength, "Response from /info/bidders did not match BidderMap. Expected %d elements. Got %d", expectedBidderSliceLength)
 }
 
 // TestGetSpecificBidders validates all the GET /info/bidders/{bidderName} endpoints
@@ -86,19 +87,19 @@ func TestGetSpecificBidders(t *testing.T) {
 		if tc.status == adapters.StatusDisabled {
 			bidderDisabled = true
 		}
-		cfg := blankAdapterConfigWithStatus(openrtb_ext.BidderList(), bidderDisabled)
-		bidderInfos := adapters.ParseBidderInfos(cfg, "../../static/bidder-info", openrtb_ext.BidderList())
+		cfg := blankAdapterConfigWithStatus(openrtb_ext.CoreBidderNames(), bidderDisabled)
+		bidderInfos := adapters.ParseBidderInfos(cfg, "../../static/bidder-info", openrtb_ext.CoreBidderNames())
 		endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
 
-		for bidderName := range openrtb_ext.BidderMap {
-			req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+bidderName, strings.NewReader(""))
+		for _, bidderName := range openrtb_ext.CoreBidderNames() {
+			req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+string(bidderName), strings.NewReader(""))
 			if err != nil {
 				t.Errorf("Failed to create a GET /info/bidders request: %v", err)
 				continue
 			}
 			params := []httprouter.Param{{
 				Key:   "bidderName",
-				Value: bidderName,
+				Value: string(bidderName),
 			}}
 			r := httptest.NewRecorder()
 
@@ -106,8 +107,8 @@ func TestGetSpecificBidders(t *testing.T) {
 			endpoint(r, req, params)
 
 			// Verify:
-			assert.Equal(t, http.StatusOK, r.Code, "GET /info/bidders/"+bidderName+" returned a %d. Expected 200", r.Code, tc.description)
-			assert.Equal(t, "application/json", r.HeaderMap.Get("Content-Type"), "GET /info/bidders/"+bidderName+" returned Content-Type %s. Expected application/json", r.HeaderMap.Get("Content-Type"), tc.description)
+			assert.Equal(t, http.StatusOK, r.Code, "GET /info/bidders/"+string(bidderName)+" returned a %d. Expected 200", r.Code, tc.description)
+			assert.Equal(t, "application/json", r.HeaderMap.Get("Content-Type"), "GET /info/bidders/"+string(bidderName)+" returned Content-Type %s. Expected application/json", r.HeaderMap.Get("Content-Type"), tc.description)
 
 			var resBidderInfo adapters.BidderInfo
 			if err := json.Unmarshal(r.Body.Bytes(), &resBidderInfo); err != nil {
@@ -129,7 +130,7 @@ func TestGetBidderAccuracyAliases(t *testing.T) {
 
 // TestGetBidderAccuracyAlias validates the output for an alias of a known file.
 func testGetBidderAccuracy(t *testing.T, alias string) {
-	cfg := blankAdapterConfig(openrtb_ext.BidderList())
+	cfg := blankAdapterConfig(openrtb_ext.CoreBidderNames())
 	bidderInfos := adapters.ParseBidderInfos(cfg, "../../adapters/adapterstest/bidder-info", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
 
 	aliases := map[string]string{}
@@ -188,8 +189,8 @@ func TestGetUnknownBidder(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, r.Code, "GET /info/bidders/* should return a 404 on unknown bidders. Got %d", r.Code)
 }
 func TestGetAllBidders(t *testing.T) {
-	cfg := blankAdapterConfig(openrtb_ext.BidderList())
-	bidderInfos := adapters.ParseBidderInfos(cfg, "../../static/bidder-info", openrtb_ext.BidderList())
+	cfg := blankAdapterConfig(openrtb_ext.CoreBidderNames())
+	bidderInfos := adapters.ParseBidderInfos(cfg, "../../static/bidder-info", openrtb_ext.CoreBidderNames())
 	endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/all", strings.NewReader(""))
 	if err != nil {
@@ -222,12 +223,13 @@ func TestInfoFiles(t *testing.T) {
 	}
 
 	// Make sure that files exist for each BidderName
-	for bidderName := range openrtb_ext.BidderMap {
-		_, err := os.Stat(fmt.Sprintf("../../static/bidder-info/%s.yaml", bidderName))
+	for _, bidderName := range openrtb_ext.CoreBidderNames() {
+		_, err := os.Stat(fmt.Sprintf("../../static/bidder-info/%s.yaml", string(bidderName)))
 		assert.False(t, os.IsNotExist(err), "static/bidder-info/%s.yaml not found. Did you forget to create it?", bidderName)
 	}
 
-	assert.Len(t, fileInfos, len(openrtb_ext.BidderMap), "static/bidder-info contains %d files, but the BidderMap has %d entries. These two should be in sync.", len(fileInfos), len(openrtb_ext.BidderMap))
+	expectedFileInfosLength := len(openrtb_ext.CoreBidderNames())
+	assert.Len(t, fileInfos, expectedFileInfosLength, "static/bidder-info contains %d files, but the BidderMap has %d entries. These two should be in sync.", len(fileInfos), expectedFileInfosLength)
 
 	// Make sure that all the files have valid content
 	for _, fileInfo := range fileInfos {

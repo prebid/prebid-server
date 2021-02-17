@@ -26,7 +26,21 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "adformtest", NewAdformBidder(nil, "http://adx.adform.net/adx"))
+	bidder, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
+		Endpoint: "https://adx.adform.net/adx"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "adformtest", bidder)
+}
+
+func TestEndpointMalformed(t *testing.T) {
+	_, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
+		Endpoint: ` https://malformed`})
+
+	assert.Error(t, buildErr)
 }
 
 type aTagInfo struct {
@@ -193,7 +207,7 @@ func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, contex
 
 	// prepare adapter
 	conf := *adapters.DefaultHTTPAdapterConfig
-	adapter := NewAdformAdapter(&conf, server.URL)
+	adapter := NewAdformLegacyAdapter(&conf, server.URL)
 
 	prebidRequest := preparePrebidRequest(server.URL, t)
 	ctx := context.TODO()
@@ -285,7 +299,12 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 // OpenRTB auction tests
 
 func TestOpenRTBRequest(t *testing.T) {
-	bidder := NewAdformBidder(nil, "http://adx.adform.net")
+	bidder, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
+		Endpoint: "https://adx.adform.net"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
 
 	testData := createTestData(true)
 	request := createOpenRtbRequest(&testData)
@@ -483,7 +502,7 @@ func TestOpenRTBSurpriseResponse(t *testing.T) {
 // Properties tests
 
 func TestAdformProperties(t *testing.T) {
-	adapter := NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, "adx.adform.net/adx")
+	adapter := NewAdformLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "adx.adform.net/adx")
 
 	if adapter.SkipNoCookies() != false {
 		t.Fatalf("should have been false")
@@ -506,12 +525,6 @@ func getRegs() openrtb.Regs {
 }
 
 func getUserExt() []byte {
-	digitrust := openrtb_ext.ExtUserDigiTrust{
-		ID:   "digitrustId",
-		KeyV: 1,
-		Pref: 0,
-	}
-
 	eids := []openrtb_ext.ExtUserEid{
 		{
 			Source: "test.com",
@@ -537,9 +550,8 @@ func getUserExt() []byte {
 	}
 
 	userExt := openrtb_ext.ExtUser{
-		Eids:      eids,
-		Consent:   "abc",
-		DigiTrust: &digitrust,
+		Eids:    eids,
+		Consent: "abc",
 	}
 	userExtData, err := json.Marshal(userExt)
 	if err == nil {
@@ -611,7 +623,7 @@ func assertAdformServerRequest(testData aBidInfo, r *http.Request, isOpenRtb boo
 	if ok, err := equal(testData.referrer, r.Header.Get("Referer"), "Referer"); !ok {
 		return err
 	}
-	if ok, err := equal(fmt.Sprintf("uid=%s;DigiTrust.v1.identity=eyJpZCI6ImRpZ2l0cnVzdElkIiwidmVyc2lvbiI6MSwia2V5diI6MSwicHJpdmFjeSI6eyJvcHRvdXQiOmZhbHNlfX0", testData.buyerUID), r.Header.Get("Cookie"), "Buyer ID"); !ok {
+	if ok, err := equal(fmt.Sprintf("uid=%s;", testData.buyerUID), r.Header.Get("Cookie"), "Buyer ID"); !ok {
 		return err
 	}
 	return nil

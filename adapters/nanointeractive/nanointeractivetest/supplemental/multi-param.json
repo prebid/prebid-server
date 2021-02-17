@@ -127,25 +127,23 @@
     }
   ],
 
-  "expectedBids": [
+  "expectedBidResponses": [
     {
-      "bid": {
-        "id": "1",
-        "impid": "test-imp-id",
-        "price": 0.4580126,
-        "adm": "<a href=\"https://www.nanointeractive.com\" target=\"_blank\"><img width=\"300\" height=\"250\" src=\"https://cdn.audiencemanager.de/images/d941c4456b1bc2320db0a15334f86527.png\"/></a>",
-        "adid": "test_ad_id",
-        "adomain": ["yahoo.com"],
-        "cid": "test_cid",
-        "crid": "test_banner_crid",
-        "h": 250,
-        "w": 300
-      },
-      "ext": {
-          "prebid": {
-              "type": "banner"
-          }
-      }
+      "bids": [{
+        "bid": {
+          "id": "1",
+          "impid": "test-imp-id",
+          "price": 0.4580126,
+          "adm": "<a href=\"https://www.nanointeractive.com\" target=\"_blank\"><img width=\"300\" height=\"250\" src=\"https://cdn.audiencemanager.de/images/d941c4456b1bc2320db0a15334f86527.png\"/></a>",
+          "adid": "test_ad_id",
+          "adomain": ["audiencemanager.de"],
+          "cid": "test_cid",
+          "crid": "test_banner_crid",
+          "h": 250,
+          "w": 300
+        },
+        "type": "banner"
+      }]
     }
   ]
 }

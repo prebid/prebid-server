@@ -25,8 +25,8 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/util"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
+	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/PubMatic-OpenWrap/prebid-server/util/iputil"
@@ -48,7 +48,7 @@ type ctvEndpointDeps struct {
 
 	//Prebid Specific
 	ctx    context.Context
-	labels pbsmetrics.Labels
+	labels metrics.Labels
 }
 
 //NewCTVEndpoint new ctv endpoint object
@@ -60,7 +60,7 @@ func NewCTVEndpoint(
 	accounts stored_requests.AccountFetcher,
 	//categories stored_requests.CategoryFetcher,
 	cfg *config.Configuration,
-	met pbsmetrics.MetricsEngine,
+	met metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
@@ -118,13 +118,12 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	// to compute the auction timeout.
 	start := time.Now()
 	//Prebid Stats
-	deps.labels = pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeVideo,
-		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       getBrowserName(r),
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusOK,
+	deps.labels = metrics.Labels{
+		Source:        metrics.DemandUnknown,
+		RType:         metrics.ReqTypeVideo,
+		PubID:         metrics.PublisherUnknown,
+		CookieFlag:    metrics.CookieFlagUnknown,
+		RequestStatus: metrics.RequestStatusOK,
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(deps.labels)
@@ -164,15 +163,15 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	//Parsing Cookies and Set Stats
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if request.App != nil {
-		deps.labels.Source = pbsmetrics.DemandApp
-		deps.labels.RType = pbsmetrics.ReqTypeVideo
+		deps.labels.Source = metrics.DemandApp
+		deps.labels.RType = metrics.ReqTypeVideo
 		deps.labels.PubID = getAccountID(request.App.Publisher)
 	} else { //request.Site != nil
-		deps.labels.Source = pbsmetrics.DemandWeb
+		deps.labels.Source = metrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
-			deps.labels.CookieFlag = pbsmetrics.CookieFlagNo
+			deps.labels.CookieFlag = metrics.CookieFlagNo
 		} else {
-			deps.labels.CookieFlag = pbsmetrics.CookieFlagYes
+			deps.labels.CookieFlag = metrics.CookieFlagYes
 		}
 		deps.labels.PubID = getAccountID(request.Site.Publisher)
 	}
@@ -195,12 +194,12 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 		defer cancel()
 	}
 
-	response, err = deps.holdAuction(request, usersyncs, account)
+	response, err = deps.holdAuction(request, usersyncs, account, start)
 
 	ao.Request = request
 	ao.Response = response
 	if err != nil || nil == response {
-		deps.labels.RequestStatus = pbsmetrics.RequestStatusErr
+		deps.labels.RequestStatus = metrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/video Critical error: %v", err)
@@ -240,12 +239,12 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
-		deps.labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
+		deps.labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/video Failed to send response: %v", err))
 	}
 }
 
-func (deps *ctvEndpointDeps) holdAuction(request *openrtb.BidRequest, usersyncs *usersync.PBSCookie, account *config.Account) (*openrtb.BidResponse, error) {
+func (deps *ctvEndpointDeps) holdAuction(request *openrtb.BidRequest, usersyncs *usersync.PBSCookie, account *config.Account, startTime time.Time) (*openrtb.BidResponse, error) {
 	defer util.TimeTrack(time.Now(), fmt.Sprintf("Tid:%v CTVHoldAuction", deps.request.ID))
 
 	//Hold OpenRTB Standard Auction
@@ -259,6 +258,7 @@ func (deps *ctvEndpointDeps) holdAuction(request *openrtb.BidRequest, usersyncs 
 		Account:      *account,
 		UserSyncs:    usersyncs,
 		RequestType:  deps.labels.RType,
+		StartTime:    startTime,
 		LegacyLabels: deps.labels,
 	}
 
@@ -441,7 +441,7 @@ func (deps *ctvEndpointDeps) getAllAdPodImpsConfigs() {
 //getAdPodImpsConfigs will return number of impressions configurations within adpod
 func (deps *ctvEndpointDeps) getAdPodImpsConfigs(imp *openrtb.Imp, adpod *openrtb_ext.VideoAdPod) []*types.ImpAdPodConfig {
 	selectedAlgorithm := impressions.MinMaxAlgorithm
-	labels := pbsmetrics.PodLabels{AlgorithmName: impressions.MonitorKey[selectedAlgorithm], NoOfImpressions: new(int)}
+	labels := metrics.PodLabels{AlgorithmName: impressions.MonitorKey[selectedAlgorithm], NoOfImpressions: new(int)}
 
 	// monitor
 	start := time.Now()

@@ -23,7 +23,14 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "pubmatictest", NewPubmaticBidder(nil, "https://hbopenbid.pubmatic.com/translator?source=prebid-server"))
+	bidder, buildErr := Builder(openrtb_ext.BidderPubmatic, config.Adapter{
+		Endpoint: "https://hbopenbid.pubmatic.com/translator?source=prebid-server"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "pubmatictest", bidder)
 }
 
 // ----------------------------------------------------------------------------
@@ -93,7 +100,7 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 
 func TestPubmaticInvalidCall(t *testing.T) {
 
-	an := NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "blah")
+	an := NewPubmaticLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "blah")
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -114,7 +121,7 @@ func TestPubmaticTimeout(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
@@ -151,7 +158,7 @@ func TestPubmaticInvalidJson(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -187,7 +194,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -218,7 +225,7 @@ func TestPubmaticInvalidInputParameters(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 
 	pbReq := pbs.PBSRequest{}
@@ -291,7 +298,7 @@ func TestPubmaticBasicResponse_MandatoryParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -327,7 +334,7 @@ func TestPubmaticBasicResponse_AllParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -371,7 +378,7 @@ func TestPubmaticMultiImpressionResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -419,7 +426,7 @@ func TestPubmaticMultiAdUnitResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -468,7 +475,7 @@ func TestPubmaticMobileResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -509,7 +516,7 @@ func TestPubmaticInvalidLookupBidIDParameter(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -540,7 +547,7 @@ func TestPubmaticAdSlotParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}

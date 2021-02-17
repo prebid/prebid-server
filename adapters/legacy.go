@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
-	"github.com/PubMatic-OpenWrap/prebid-server/ssl"
+	"github.com/PubMatic-OpenWrap/prebid-server/server/ssl"
 )
 
 // This file contains some deprecated, legacy types.

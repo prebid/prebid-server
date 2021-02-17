@@ -13,9 +13,10 @@ import (
 
 // NewBiddersEndpoint implements /info/bidders
 func NewBiddersEndpoint(aliases map[string]string) httprouter.Handle {
-	bidderNames := make([]string, 0, len(openrtb_ext.BidderMap)+len(aliases))
-	for bidderName := range openrtb_ext.BidderMap {
-		bidderNames = append(bidderNames, bidderName)
+	bidderNames := make([]string, 0)
+
+	for _, bidderName := range openrtb_ext.CoreBidderNames() {
+		bidderNames = append(bidderNames, string(bidderName))
 	}
 
 	for aliasName := range aliases {

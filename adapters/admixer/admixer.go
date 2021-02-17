@@ -3,19 +3,25 @@ package admixer
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type AdmixerAdapter struct {
 	endpoint string
 }
 
-func NewAdmixerBidder(endpoint string) *AdmixerAdapter {
-	return &AdmixerAdapter{endpoint: endpoint}
+// Builder builds a new instance of the Admixer adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &AdmixerAdapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }
 
 type admixerImpExt struct {
