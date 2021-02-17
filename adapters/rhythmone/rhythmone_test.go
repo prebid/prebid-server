@@ -1,20 +1,10 @@
 package rhythmone
 
 import (
-	"testing"
-
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"testing"
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderRhythmone, config.Adapter{
-		Endpoint: "http://tag.1rx.io/rmp"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "rhythmonetest", bidder)
+	adapterstest.RunJSONBidderTest(t, "rhythmonetest", NewRhythmoneBidder("http://tag.1rx.io/rmp"))
 }

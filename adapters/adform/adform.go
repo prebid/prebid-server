@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -14,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
@@ -23,8 +21,6 @@ import (
 	"github.com/buger/jsonparser"
 	"golang.org/x/net/context/ctxhttp"
 )
-
-const version = "0.1.3"
 
 type AdformAdapter struct {
 	http    *adapters.HTTPAdapter
@@ -44,9 +40,21 @@ type adformRequest struct {
 	adUnits       []*adformAdUnit
 	gdprApplies   string
 	consent       string
+	digitrust     *adformDigitrust
 	currency      string
 	eids          string
 	url           string
+}
+
+type adformDigitrust struct {
+	Id      string                 `json:"id"`
+	Version int                    `json:"version"`
+	Keyv    int                    `json:"keyv"`
+	Privacy adformDigitrustPrivacy `json:"privacy"`
+}
+
+type adformDigitrustPrivacy struct {
+	Optout bool `json:"optout"`
 }
 
 type adformAdUnit struct {
@@ -87,18 +95,8 @@ func isPriceTypeValid(priceType string) (string, bool) {
 
 // ADAPTER Interface
 
-// Builder builds a new instance of the Adform adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	uri, err := url.Parse(config.Endpoint)
-	if err != nil {
-		return nil, errors.New("unable to parse endpoint")
-	}
-
-	bidder := &AdformAdapter{
-		URL:     uri,
-		version: version,
-	}
-	return bidder, nil
+func NewAdformAdapter(config *adapters.HTTPAdapterConfig, endpointURL string) *AdformAdapter {
+	return NewAdformBidder(adapters.NewHTTPAdapter(config).Client, endpointURL)
 }
 
 // used for cookies and such
@@ -204,6 +202,24 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		gdprApplies = ""
 	}
 	consent := request.ParseConsent()
+	var digitrustData *openrtb_ext.ExtUserDigiTrust
+	if request.User != nil {
+		var extUser *openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+			digitrustData = extUser.DigiTrust
+		}
+	}
+
+	var digitrust *adformDigitrust = nil
+	if digitrustData != nil {
+		digitrust = new(adformDigitrust)
+		digitrust.Id = digitrustData.ID
+		digitrust.Keyv = digitrustData.KeyV
+		digitrust.Version = 1
+		digitrust.Privacy = adformDigitrustPrivacy{
+			Optout: digitrustData.Pref != 0,
+		}
+	}
 
 	return &adformRequest{
 		adUnits:       adUnits,
@@ -217,6 +233,7 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		tid:           request.Tid,
 		gdprApplies:   gdprApplies,
 		consent:       consent,
+		digitrust:     digitrust,
 		currency:      defaultCurrency,
 	}, nil
 }
@@ -340,9 +357,18 @@ func (r *adformRequest) buildAdformHeaders(a *AdformAdapter) http.Header {
 		header.Set("Referer", r.referer)
 	}
 
+	cookie := make([]string, 0, 2)
 	if r.userId != "" {
-		header.Set("Cookie", fmt.Sprintf("uid=%s;", r.userId))
+		cookie = append(cookie, fmt.Sprintf("uid=%s", r.userId))
 	}
+	if r.digitrust != nil {
+		if digitrustBytes, err := json.Marshal(r.digitrust); err == nil {
+			digitrust := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digitrustBytes)
+			// Cookie name and structure are described here: https://github.com/digi-trust/dt-cdn/wiki/Cookies-for-Platforms
+			cookie = append(cookie, fmt.Sprintf("DigiTrust.v1.identity=%s", digitrust))
+		}
+	}
+	header.Set("Cookie", strings.Join(cookie, ";"))
 
 	return header
 }
@@ -360,7 +386,8 @@ func parseAdformBids(response []byte) ([]*adformBid, error) {
 
 // BIDDER Interface
 
-func NewAdformLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, endpointURL string) *AdformAdapter {
+func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
 	var uriObj *url.URL
 	uriObj, err := url.Parse(endpointURL)
 	if err != nil {
@@ -368,9 +395,9 @@ func NewAdformLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, endpointURL 
 	}
 
 	return &AdformAdapter{
-		http:    adapters.NewHTTPAdapter(httpConfig),
+		http:    a,
 		URL:     uriObj,
-		version: version,
+		version: "0.1.3",
 	}
 }
 
@@ -466,11 +493,24 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 
 	eids := ""
 	consent := ""
+	var digitrustData *openrtb_ext.ExtUserDigiTrust
 	if request.User != nil {
 		var extUser openrtb_ext.ExtUser
 		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
 			consent = extUser.Consent
+			digitrustData = extUser.DigiTrust
 			eids = encodeEids(extUser.Eids)
+		}
+	}
+
+	var digitrust *adformDigitrust = nil
+	if digitrustData != nil {
+		digitrust = new(adformDigitrust)
+		digitrust.Id = digitrustData.ID
+		digitrust.Keyv = digitrustData.KeyV
+		digitrust.Version = 1
+		digitrust.Privacy = adformDigitrustPrivacy{
+			Optout: digitrustData.Pref != 0,
 		}
 	}
 
@@ -499,6 +539,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		tid:           tid,
 		gdprApplies:   gdprApplies,
 		consent:       consent,
+		digitrust:     digitrust,
 		currency:      requestCurrency,
 		eids:          eids,
 		url:           url,

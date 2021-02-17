@@ -3,26 +3,42 @@ package sonobi
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"net/http"
 )
 
 // SonobiAdapter - Sonobi SonobiAdapter definition
 type SonobiAdapter struct {
-	URI string
+	http *adapters.HTTPAdapter
+	URI  string
 }
 
-// Builder builds a new instance of the Sonobi adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &SonobiAdapter{
-		URI: config.Endpoint,
+// Name returns the name fo cookie stuff
+func (a *SonobiAdapter) Name() string {
+	return "sonobi"
+}
+
+//SkipNoCookies flag for skipping no cookies...
+func (a *SonobiAdapter) SkipNoCookies() bool {
+	return false
+}
+
+// NewSonobiAdapter create a new SovrnSonobiAdapter instance
+func NewSonobiAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *SonobiAdapter {
+	return NewSonobiBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
+}
+
+// NewSonobiBidder Initializes the Bidder
+func NewSonobiBidder(client *http.Client, endpoint string) *SonobiAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
+
+	return &SonobiAdapter{
+		http: a,
+		URI:  endpoint,
 	}
-	return bidder, nil
 }
 
 type sonobiParams struct {

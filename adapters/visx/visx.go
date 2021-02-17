@@ -7,9 +7,7 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 type VisxAdapter struct {
@@ -112,10 +110,9 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequ
 
 }
 
-// Builder builds a new instance of the Visx adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &VisxAdapter{
-		endpoint: config.Endpoint,
+// NewVisxBidder configure bidder endpoint
+func NewVisxBidder(endpoint string) *VisxAdapter {
+	return &VisxAdapter{
+		endpoint: endpoint,
 	}
-	return bidder, nil
 }

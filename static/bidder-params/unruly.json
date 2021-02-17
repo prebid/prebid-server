@@ -13,5 +13,5 @@
         "description": "ID for publisher site"
       }
     },
-  "required": ["uuid", "siteid"]
+  "required": ["UUID", "SiteId"]
 }

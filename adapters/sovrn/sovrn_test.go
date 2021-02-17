@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 
@@ -26,14 +25,8 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderSovrn, config.Adapter{
-		Endpoint: "http://sovrn.com/test/endpoint"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "sovrntest", bidder)
+	sovrnAdapter := NewSovrnBidder(new(http.Client), "http://sovrn.com/test/endpoint")
+	adapterstest.RunJSONBidderTest(t, "sovrntest", sovrnAdapter)
 }
 
 // ----------------------------------------------------------------------------
@@ -46,13 +39,13 @@ var testUrl = "http://news.pub/topnews"
 var testIp = "123.123.123.123"
 
 func TestSovrnAdapterNames(t *testing.T) {
-	adapter := NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid")
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid")
 	adapterstest.VerifyStringValue(adapter.Name(), "sovrn", t)
 	adapterstest.VerifyStringValue(adapter.FamilyName(), "sovrn", t)
 }
 
 func TestSovrnAdapter_SkipNoCookies(t *testing.T) {
-	adapter := NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid")
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid")
 	adapterstest.VerifyBoolValue(adapter.SkipNoCookies(), false, t)
 }
 
@@ -62,7 +55,7 @@ func TestSovrnOpenRtbRequest(t *testing.T) {
 	ctx := context.Background()
 	req := SampleSovrnRequest(1, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	adapter.Call(ctx, req, bidder)
 
 	adapterstest.VerifyIntValue(len(service.LastBidRequest.Imp), 1, t)
@@ -77,7 +70,7 @@ func TestSovrnBiddingBehavior(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleSovrnRequest(1, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	bids, _ := adapter.Call(ctx, req, bidder)
 
 	adapterstest.VerifyIntValue(len(bids), 1, t)
@@ -101,7 +94,7 @@ func TestSovrntMultiImpPartialBidding(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleSovrnRequest(2, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	bids, _ := adapter.Call(ctx, req, bidder)
 	// two impressions sent.
 	// number of bids should be 1
@@ -121,7 +114,7 @@ func TestSovrnMultiImpAllBid(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleSovrnRequest(2, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	bids, _ := adapter.Call(ctx, req, bidder)
 	// two impressions sent.
 	// number of bids should be 1
@@ -223,7 +216,7 @@ func TestNoContentResponse(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleSovrnRequest(1, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	_, err := adapter.Call(ctx, req, bidder)
 
 	if err != nil {
@@ -242,7 +235,7 @@ func TestNotFoundResponse(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleSovrnRequest(1, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	_, err := adapter.Call(ctx, req, bidder)
 
 	adapterstest.VerifyStringValue(err.Error(), "HTTP status 404; body: ", t)

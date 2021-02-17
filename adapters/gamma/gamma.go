@@ -9,7 +9,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
@@ -296,10 +295,8 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-// Builder builds a new instance of the Gamma adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &GammaAdapter{
-		URI: config.Endpoint,
+func NewGammaBidder(endpoint string) *GammaAdapter {
+	return &GammaAdapter{
+		URI: endpoint,
 	}
-	return bidder, nil
 }

@@ -1,16 +1,15 @@
 package aspects
 
 import (
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
-	"github.com/julienschmidt/httprouter"
 )
 
-func QueuedRequestTimeout(f httprouter.Handle, reqTimeoutHeaders config.RequestTimeoutHeaders, metricsEngine metrics.MetricsEngine, requestType metrics.RequestType) httprouter.Handle {
+func QueuedRequestTimeout(f httprouter.Handle, reqTimeoutHeaders config.RequestTimeoutHeaders, metricsEngine pbsmetrics.MetricsEngine, requestType pbsmetrics.RequestType) httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 

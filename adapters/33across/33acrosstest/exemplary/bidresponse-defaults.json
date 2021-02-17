@@ -29,16 +29,6 @@
       "expectedRequest": {
         "uri": "http://ssc.33across.com",
         "body": {
-          "ext": {
-            "ttx": {
-              "caller": [
-                {
-                  "name": "Prebid-Server",
-                  "version": "n/a"
-                }
-              ]
-            }
-          },
           "id": "test-request-id",
           "imp": [
             {
@@ -54,13 +44,14 @@
               },
               "ext": {
                 "ttx": {
-                  "prod": "instream",
-                  "zoneid": "fake-site-id"
+                  "prod": "instream"
                 }
               }
             }
           ],
-          "site": {}
+          "site": {
+            "id": "fake-site-id"
+          }
         }
       },
       "mockResponse": {

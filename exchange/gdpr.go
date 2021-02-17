@@ -4,26 +4,32 @@ import (
 	"encoding/json"
 
 	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 )
 
 // ExtractGDPR will pull the gdpr flag from an openrtb request
-func extractGDPR(bidRequest *openrtb.BidRequest) (gdpr.Signal, error) {
+func extractGDPR(bidRequest *openrtb.BidRequest, usersyncIfAmbiguous bool) (gdpr int) {
 	var re regsExt
 	var err error
-	if bidRequest.Regs != nil && bidRequest.Regs.Ext != nil {
+	if bidRequest.Regs != nil {
 		err = json.Unmarshal(bidRequest.Regs.Ext, &re)
 	}
 	if re.GDPR == nil || err != nil {
-		return gdpr.SignalAmbiguous, err
+		if usersyncIfAmbiguous {
+			gdpr = 0
+		} else {
+			gdpr = 1
+		}
+	} else {
+		gdpr = *re.GDPR
 	}
-	return gdpr.Signal(*re.GDPR), nil
+	return
 }
 
 // ExtractConsent will pull the consent string from an openrtb request
-func extractConsent(bidRequest *openrtb.BidRequest) (consent string, err error) {
+func extractConsent(bidRequest *openrtb.BidRequest) (consent string) {
 	var ue userExt
-	if bidRequest.User != nil && bidRequest.User.Ext != nil {
+	var err error
+	if bidRequest.User != nil {
 		err = json.Unmarshal(bidRequest.User.Ext, &ue)
 	}
 	if err != nil {

@@ -3,34 +3,28 @@ package yeahmobi
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
-	"text/template"
-
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/macros"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/golang/glog"
+	"net/http"
+	"net/url"
+	"text/template"
 )
 
 type YeahmobiAdapter struct {
 	EndpointTemplate template.Template
 }
 
-// Builder builds a new instance of the Yeahmobi adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+func NewYeahmobiBidder(endpointTemplate string) adapters.Bidder {
+	tpl, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+		glog.Fatal("Unable parse url template err:" + err.Error())
+		return nil
 	}
-
-	bidder := &YeahmobiAdapter{
-		EndpointTemplate: *template,
-	}
-	return bidder, nil
+	return &YeahmobiAdapter{EndpointTemplate: *tpl}
 }
 
 func (adapter *YeahmobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

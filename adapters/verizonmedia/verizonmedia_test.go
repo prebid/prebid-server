@@ -1,34 +1,35 @@
 package verizonmedia
 
 import (
-	"testing"
-
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/influxdata/influxdb/pkg/testing/assert"
+	"testing"
 )
 
+/**
+ * Verify adapter names are setup correctly.
+ */
+func TestVerizonMediaAdapterNames(t *testing.T) {
+	adapter := NewVerizonMediaAdapter(adapters.DefaultHTTPAdapterConfig, "http://localhost/bid")
+	adapterstest.VerifyStringValue(adapter.Name(), "verizonmedia", t)
+}
+
+/**
+ * Verify adapter SkipNoCookie is correct.
+ */
+func TestVerizonMediaAdapterSkipNoCookieFlag(t *testing.T) {
+	adapter := NewVerizonMediaAdapter(adapters.DefaultHTTPAdapterConfig, "http://localhost/bid")
+	adapterstest.VerifyBoolValue(adapter.SkipNoCookies(), false, t)
+}
+
+/**
+ * Verify bidder is created with the provided endpoint.
+ */
 func TestVerizonMediaBidderEndpointConfig(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderVerizonMedia, config.Adapter{
-		Endpoint: "http://localhost/bid",
-	})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	bidderVerizonMedia := bidder.(*VerizonMediaAdapter)
-
-	assert.Equal(t, "http://localhost/bid", bidderVerizonMedia.URI)
+	bidder := NewVerizonMediaBidder(nil, "http://localhost/bid")
+	adapterstest.VerifyStringValue(bidder.URI, "http://localhost/bid", t)
 }
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderVerizonMedia, config.Adapter{})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "verizonmediatest", bidder)
+	adapterstest.RunJSONBidderTest(t, "verizonmediatest", new(VerizonMediaAdapter))
 }

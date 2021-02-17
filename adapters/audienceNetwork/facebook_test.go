@@ -1,13 +1,12 @@
 package audienceNetwork
 
 import (
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,34 +41,16 @@ type FacebookExt struct {
 }
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
-		Endpoint:   "https://an.facebook.com/placementbid.ortb",
-		PlatformID: "test-platform-id",
-		AppSecret:  "test-app-secret",
-	})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "audienceNetworktest", bidder)
+	adapterstest.RunJSONBidderTest(t, "audienceNetworktest", NewFacebookBidder("test-platform-id", "test-app-secret"))
 }
 
 func TestMakeTimeoutNoticeApp(t *testing.T) {
 	req := adapters.RequestData{
 		Body: []byte(`{"id":"1234","imp":[{"id":"1234"}],"app":{"publisher":{"id":"5678"}}}`),
 	}
-	bidder, buildErr := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
-		Endpoint:   "https://an.facebook.com/placementbid.ortb",
-		PlatformID: "test-platform-id",
-		AppSecret:  "test-app-secret",
-	})
+	fba := NewFacebookBidder("test-platform-id", "test-app-secret")
 
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	tb, ok := bidder.(adapters.TimeoutBidder)
+	tb, ok := fba.(adapters.TimeoutBidder)
 	if !ok {
 		t.Error("Facebook adapter is not a TimeoutAdapter")
 	}
@@ -84,17 +65,9 @@ func TestMakeTimeoutNoticeBadRequest(t *testing.T) {
 	req := adapters.RequestData{
 		Body: []byte(`{"imp":[{{"id":"1234"}}`),
 	}
-	bidder, buildErr := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
-		Endpoint:   "https://an.facebook.com/placementbid.ortb",
-		PlatformID: "test-platform-id",
-		AppSecret:  "test-app-secret",
-	})
+	fba := NewFacebookBidder("test-platform-id", "test-app-secret")
 
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	tb, ok := bidder.(adapters.TimeoutBidder)
+	tb, ok := fba.(adapters.TimeoutBidder)
 	if !ok {
 		t.Error("Facebook adapter is not a TimeoutAdapter")
 	}
@@ -106,21 +79,23 @@ func TestMakeTimeoutNoticeBadRequest(t *testing.T) {
 }
 
 func TestNewFacebookBidderMissingPlatformID(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
-		Endpoint:  "https://an.facebook.com/placementbid.ortb",
-		AppSecret: "test-app-secret",
-	})
+	result := NewFacebookBidder("", "anyAppSecret")
 
-	assert.Empty(t, bidder)
-	assert.EqualError(t, err, "PartnerID is not configured. Did you set adapters.facebook.platform_id in the app config?")
+	expected := &adapters.MisconfiguredBidder{
+		Name:  "audienceNetwork",
+		Error: errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
+	}
+
+	assert.Equal(t, expected, result)
 }
 
 func TestNewFacebookBidderMissingAppSecret(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
-		Endpoint:   "https://an.facebook.com/placementbid.ortb",
-		PlatformID: "test-platform-id",
-	})
+	result := NewFacebookBidder("anyPlatformID", "")
 
-	assert.Empty(t, bidder)
-	assert.EqualError(t, err, "AppSecret is not configured. Did you set adapters.facebook.app_secret in the app config?")
+	expected := &adapters.MisconfiguredBidder{
+		Name:  "audienceNetwork",
+		Error: errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
+	}
+
+	assert.Equal(t, expected, result)
 }

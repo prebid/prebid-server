@@ -7,7 +7,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
@@ -95,12 +94,11 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, ex
 
 }
 
-// Builder builds a new instance of the Improvedigital adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &ImprovedigitalAdapter{
-		endpoint: config.Endpoint,
+// NewImprovedigitalBidder configure bidder endpoint
+func NewImprovedigitalBidder(endpoint string) *ImprovedigitalAdapter {
+	return &ImprovedigitalAdapter{
+		endpoint: endpoint,
 	}
-	return bidder, nil
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {

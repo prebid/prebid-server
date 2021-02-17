@@ -259,14 +259,14 @@ func TestPostgresConfigValidation(t *testing.T) {
 	}
 }
 
-func assertErrsExist(t *testing.T, err []error) {
+func assertErrsExist(t *testing.T, err configErrors) {
 	t.Helper()
 	if len(err) == 0 {
 		t.Error("Expected error was not not found.")
 	}
 }
 
-func assertNoErrs(t *testing.T, err []error) {
+func assertNoErrs(t *testing.T, err configErrors) {
 	t.Helper()
 	if len(err) > 0 {
 		t.Errorf("Got unexpected error(s): %v", err)

@@ -7,7 +7,7 @@ import (
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	jsonpatch "github.com/evanphx/json-patch"
 )
@@ -20,7 +20,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 			Message: fmt.Sprintf("Prebid-server has disabled Account ID: %s, please reach out to the prebid server host.", accountID),
 		}}
 	}
-	if cfg.AccountRequired && accountID == metrics.PublisherUnknown {
+	if cfg.AccountRequired && accountID == pbsmetrics.PublisherUnknown {
 		return nil, []error{&errortypes.AcctRequired{
 			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
 		}}

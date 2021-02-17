@@ -17,10 +17,11 @@ import (
 	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/backends/empty_fetcher"
+	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -851,12 +852,13 @@ func TestHandleError(t *testing.T) {
 		Errors: make([]error, 0),
 	}
 
-	labels := metrics.Labels{
-		Source:        metrics.DemandUnknown,
-		RType:         metrics.ReqTypeVideo,
-		PubID:         metrics.PublisherUnknown,
-		CookieFlag:    metrics.CookieFlagUnknown,
-		RequestStatus: metrics.RequestStatusOK,
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeVideo,
+		PubID:         pbsmetrics.PublisherUnknown,
+		Browser:       "test browser",
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
 
 	recorder := httptest.NewRecorder()
@@ -864,7 +866,7 @@ func TestHandleError(t *testing.T) {
 	err2 := errors.New("Error for testing handleError 2")
 	handleError(&labels, recorder, []error{err1, err2}, &vo, nil)
 
-	assert.Equal(t, metrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
+	assert.Equal(t, pbsmetrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
 	assert.Equal(t, 500, recorder.Code, "Error status should be written to writer")
 	assert.Equal(t, 500, vo.Status, "Analytics object should have error status")
 	assert.Equal(t, 2, len(vo.Errors), "New errors should be appended to Analytics object Errors")
@@ -885,8 +887,8 @@ func TestHandleErrorMetrics(t *testing.T) {
 	deps, met, mod := mockDepsWithMetrics(t, ex)
 	deps.VideoAuctionEndpoint(recorder, req, nil)
 
-	assert.Equal(t, int64(0), met.RequestStatuses[metrics.ReqTypeVideo][metrics.RequestStatusOK].Count(), "OK requests count should be 0")
-	assert.Equal(t, int64(1), met.RequestStatuses[metrics.ReqTypeVideo][metrics.RequestStatusErr].Count(), "Error requests count should be 1")
+	assert.Equal(t, int64(0), met.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusOK].Count(), "OK requests count should be 0")
+	assert.Equal(t, int64(1), met.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusErr].Count(), "Error requests count should be 1")
 	assert.Equal(t, 1, len(mod.videoObjects), "Mock AnalyticsModule should have 1 AuctionObject")
 	assert.Equal(t, 500, mod.videoObjects[0].Status, "AnalyticsObject should have 500 status")
 	assert.Equal(t, 2, len(mod.videoObjects[0].Errors), "AnalyticsObject should have Errors length of 2")
@@ -1022,12 +1024,13 @@ func TestHandleErrorDebugLog(t *testing.T) {
 		Errors: make([]error, 0),
 	}
 
-	labels := metrics.Labels{
-		Source:        metrics.DemandUnknown,
-		RType:         metrics.ReqTypeVideo,
-		PubID:         metrics.PublisherUnknown,
-		CookieFlag:    metrics.CookieFlagUnknown,
-		RequestStatus: metrics.RequestStatusOK,
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeVideo,
+		PubID:         pbsmetrics.PublisherUnknown,
+		Browser:       "test browser",
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
 
 	recorder := httptest.NewRecorder()
@@ -1046,7 +1049,7 @@ func TestHandleErrorDebugLog(t *testing.T) {
 	}
 	handleError(&labels, recorder, []error{err1, err2}, &vo, &debugLog)
 
-	assert.Equal(t, metrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
+	assert.Equal(t, pbsmetrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
 	assert.Equal(t, 500, recorder.Code, "Error status should be written to writer")
 	assert.Equal(t, 500, vo.Status, "Analytics object should have error status")
 	assert.Equal(t, 3, len(vo.Errors), "New errors including debug cache ID should be appended to Analytics object Errors")
@@ -1197,9 +1200,9 @@ func TestFormatTargetingKeyLongKey(t *testing.T) {
 	assert.Equal(t, "hb_pb_20.00", res, "Tergeting key constructed incorrectly")
 }
 
-func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *metrics.Metrics, *mockAnalyticsModule) {
+func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	mockModule := &mockAnalyticsModule{}
-	metrics := newTestMetrics()
 	deps := &endpointDeps{
 		ex,
 		newParamsValidator(t),
@@ -1207,18 +1210,18 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		metrics,
+		theMetrics,
 		mockModule,
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderMap(),
+		openrtb_ext.BidderMap,
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	return deps, metrics, mockModule
+	return deps, theMetrics, mockModule
 }
 
 type mockAnalyticsModule struct {
@@ -1243,6 +1246,7 @@ func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) { return }
 func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { return }
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	deps := &endpointDeps{
 		ex,
 		newParamsValidator(t),
@@ -1250,12 +1254,12 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderMap(),
+		openrtb_ext.BidderMap,
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
@@ -1265,6 +1269,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 }
 
 func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) *endpointDeps {
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	deps := &endpointDeps{
 		ex,
 		newParamsValidator(t),
@@ -1272,12 +1277,12 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderMap(),
+		openrtb_ext.BidderMap,
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
@@ -1287,6 +1292,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 }
 
 func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	edep := &endpointDeps{
 		ex,
 		newParamsValidator(t),
@@ -1294,12 +1300,12 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
-		openrtb_ext.BuildBidderMap(),
+		openrtb_ext.BidderMap,
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},

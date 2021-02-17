@@ -7,8 +7,8 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/golang/glog"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -206,11 +206,6 @@ type BidderInfo struct {
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
 	AliasOf                 string            `json:"aliasOf,omitempty"`
 	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" json:"-" xml:"-"`
-	Debug                   *DebugInfo        `yaml:"debug,omitempty" json:"-" xml:"-"`
-}
-
-type DebugInfo struct {
-	Allow bool `yaml:"allow" json:"allow"`
 }
 
 type MaintainerInfo struct {
@@ -251,11 +246,11 @@ type parsedSupports struct {
 
 func parseBidderInfo(info BidderInfo) parsedBidderInfo {
 	var parsedInfo parsedBidderInfo
-	if info.Capabilities != nil && info.Capabilities.App != nil {
+	if info.Capabilities.App != nil {
 		parsedInfo.app.enabled = true
 		parsedInfo.app.banner, parsedInfo.app.video, parsedInfo.app.audio, parsedInfo.app.native = parseAllowedTypes(info.Capabilities.App.MediaTypes)
 	}
-	if info.Capabilities != nil && info.Capabilities.Site != nil {
+	if info.Capabilities.Site != nil {
 		parsedInfo.site.enabled = true
 		parsedInfo.site.banner, parsedInfo.site.video, parsedInfo.site.audio, parsedInfo.site.native = parseAllowedTypes(info.Capabilities.Site.MediaTypes)
 	}
@@ -263,5 +258,5 @@ func parseBidderInfo(info BidderInfo) parsedBidderInfo {
 }
 
 type ExtraRequestInfo struct {
-	PbsEntryPoint metrics.RequestType
+	PbsEntryPoint pbsmetrics.RequestType
 }

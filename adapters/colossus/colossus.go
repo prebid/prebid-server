@@ -7,7 +7,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/buger/jsonparser"
@@ -17,12 +16,11 @@ type ColossusAdapter struct {
 	URI string
 }
 
-// Builder builds a new instance of the Colossus adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &ColossusAdapter{
-		URI: config.Endpoint,
+// NewColossusBidder Initializes the Bidder
+func NewColossusBidder(endpoint string) *ColossusAdapter {
+	return &ColossusAdapter{
+		URI: endpoint,
 	}
-	return bidder, nil
 }
 
 // MakeRequests create bid request for colossus demand

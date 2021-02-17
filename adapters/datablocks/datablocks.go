@@ -3,16 +3,15 @@ package datablocks
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strconv"
-	"text/template"
-
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/macros"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/golang/glog"
+	"net/http"
+	"strconv"
+	"text/template"
 )
 
 type DatablocksAdapter struct {
@@ -178,15 +177,12 @@ func getMediaType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return bidType
 }
 
-// Builder builds a new instance of the Datablocks adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+func NewDatablocksBidder(endpoint string) *DatablocksAdapter {
+	template, err := template.New("endpointTemplate").Parse(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+		glog.Fatal("Unable to parse endpoint url template")
+		return nil
 	}
 
-	bidder := &DatablocksAdapter{
-		EndpointTemplate: *template,
-	}
-	return bidder, nil
+	return &DatablocksAdapter{EndpointTemplate: *template}
 }

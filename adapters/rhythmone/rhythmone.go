@@ -4,13 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"net/http"
-
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"net/http"
 )
 
 type RhythmoneAdapter struct {
@@ -95,12 +93,10 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-// Builder builds a new instance of the Rythomone adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &RhythmoneAdapter{
-		endPoint: config.Endpoint,
+func NewRhythmoneBidder(endpoint string) *RhythmoneAdapter {
+	return &RhythmoneAdapter{
+		endPoint: endpoint,
 	}
-	return bidder, nil
 }
 
 func (a *RhythmoneAdapter) preProcess(req *openrtb.BidRequest, errors []error) (*openrtb.BidRequest, string, []error) {

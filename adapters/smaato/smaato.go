@@ -8,7 +8,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/buger/jsonparser"
@@ -49,12 +48,11 @@ type siteExtData struct {
 	Keywords string `json:"keywords"`
 }
 
-// Builder builds a new instance of the Smaato adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &SmaatoAdapter{
-		URI: config.Endpoint,
+// NewSmaatoBidder creates a Smaato bid adapter.
+func NewSmaatoBidder(uri string) *SmaatoAdapter {
+	return &SmaatoAdapter{
+		URI: uri,
 	}
-	return bidder, nil
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.

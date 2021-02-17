@@ -8,17 +8,17 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/currency"
+	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	goCurrency "golang.org/x/text/currency"
+	"golang.org/x/text/currency"
 )
 
-// addValidatedBidderMiddleware returns a bidder that removes invalid bids from the argument bidder's response.
+// ensureValidBids returns a bidder that removes invalid bids from the argument bidder's response.
 // These will be converted into errors instead.
 //
 // The goal here is to make sure that the response contains Bids which are valid given the initial Request,
 // so that Publishers can trust the Bids they get from Prebid Server.
-func addValidatedBidderMiddleware(bidder adaptedBidder) adaptedBidder {
+func ensureValidBids(bidder adaptedBidder) adaptedBidder {
 	return &validatedBidder{
 		bidder: bidder,
 	}
@@ -28,8 +28,8 @@ type validatedBidder struct {
 	bidder adaptedBidder
 }
 
-func (v *validatedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
-	seatBid, errs := v.bidder.requestBid(ctx, request, name, bidAdjustment, conversions, reqInfo, accountDebugAllowed)
+func (v *validatedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
+	seatBid, errs := v.bidder.requestBid(ctx, request, name, bidAdjustment, conversions, reqInfo)
 	if validationErrors := removeInvalidBids(request, seatBid); len(validationErrors) > 0 {
 		errs = append(errs, validationErrors...)
 	}
@@ -71,7 +71,7 @@ func validateCurrency(requestAllowedCurrencies []string, bidCurrency string) err
 		// If bid currency is not set, then consider it's default currency.
 		bidCurrency = defaultCurrency
 	}
-	currencyUnit, cerr := goCurrency.ParseISO(bidCurrency)
+	currencyUnit, cerr := currency.ParseISO(bidCurrency)
 	if cerr != nil {
 		return cerr
 	}

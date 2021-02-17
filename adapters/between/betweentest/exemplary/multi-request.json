@@ -16,8 +16,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "127.0.0.2",
-            "publisher_id": "1"
+            "host": "127.0.0.2"
           }
         }
       },
@@ -35,8 +34,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "127.0.0.2",
-            "publisher_id": "1"
+            "host": "127.0.0.2"
           }
         }
       }
@@ -47,11 +45,13 @@
     "tmax": 500
   },
   "httpCalls": [
+
     {
       "expectedRequest": {
-        "uri": "http://127.0.0.2/1",
+        "uri": "http://127.0.0.2/",
         "body": {
           "id": "some-request-id1",
+
           "imp": [
             {
               "id": "some-impression-id1",
@@ -64,15 +64,7 @@
                 ],
                 "h": 250,
                 "w": 300
-              },
-              "ext": {
-                "bidder": {
-                  "host": "127.0.0.2",
-                  "publisher_id": "1"
-                }
-              },
-              "bidfloor": 1e-05,
-              "secure": 0
+              }, "ext": {"bidder": {"host": "127.0.0.2"}}
             },
             {
               "id": "some-impression-id2",
@@ -85,17 +77,10 @@
                 ],
                 "h": 250,
                 "w": 300
-              },
-              "ext": {
-                "bidder": {
-                  "host": "127.0.0.2",
-                  "publisher_id": "1"
-                }
-              },
-              "bidfloor": 1e-05,
-              "secure": 0
+              }, "ext": {"bidder": {"host": "127.0.0.2"}}
             }
           ],
+
           "device": {
             "ip": "8.8.8.12"
           },
@@ -126,6 +111,7 @@
             }
           ],
           "cur": "USD"
+
         }
       }
     }

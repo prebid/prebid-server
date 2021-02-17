@@ -10,7 +10,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
@@ -291,11 +290,10 @@ func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb
 	return &bidderExt, &consumableExt, nil
 }
 
-// Builder builds a new instance of the Consumable adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &ConsumableAdapter{
-		clock:    realInstant{},
-		endpoint: config.Endpoint,
-	}
-	return bidder, nil
+func testConsumableBidder(testClock instant, endpoint string) *ConsumableAdapter {
+	return &ConsumableAdapter{testClock, endpoint}
+}
+
+func NewConsumableBidder(endpoint string) *ConsumableAdapter {
+	return &ConsumableAdapter{realInstant{}, endpoint}
 }

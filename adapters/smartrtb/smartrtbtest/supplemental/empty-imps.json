@@ -4,13 +4,11 @@
     "site": {
       "page": "prebid.org"
     },
-    "publisher": {},
+    "publisher": { },
     "imp": [
       {
         "id": "imp123"
       }
     ]
-  },
-  "httpCalls": [],
-  "expectedBidResponses": []
+  }
 }

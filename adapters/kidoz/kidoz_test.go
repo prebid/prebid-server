@@ -8,20 +8,12 @@ import (
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
-		Endpoint: "http://example.com/prebid"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "kidoztest", bidder)
+	adapterstest.RunJSONBidderTest(t, "kidoztest", NewKidozBidder("http://example.com/prebid"))
 }
 
 func makeBidRequest() *openrtb.BidRequest {
@@ -46,18 +38,13 @@ func makeBidRequest() *openrtb.BidRequest {
 }
 
 func TestMakeRequests(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
-		Endpoint: "http://example.com/prebid"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
+	kidoz := NewKidozBidder("http://example.com/prebid")
 
 	t.Run("Handles Request marshal failure", func(t *testing.T) {
 		request := makeBidRequest()
 		request.Imp[0].BidFloor = math.Inf(1) // cant be marshalled
 		extra := &adapters.ExtraRequestInfo{}
-		reqs, errs := bidder.MakeRequests(request, extra)
+		reqs, errs := kidoz.MakeRequests(request, extra)
 		// cant assert message its different on different versions of go
 		assert.Equal(t, 1, len(errs))
 		assert.Contains(t, errs[0].Error(), "json")
@@ -66,12 +53,7 @@ func TestMakeRequests(t *testing.T) {
 }
 
 func TestMakeBids(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
-		Endpoint: "http://example.com/prebid"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
+	kidoz := NewKidozBidder("http://example.com/prebid")
 
 	t.Run("Handles response marshal failure", func(t *testing.T) {
 		request := makeBidRequest()
@@ -80,7 +62,7 @@ func TestMakeBids(t *testing.T) {
 			StatusCode: http.StatusOK,
 		}
 
-		resp, errs := bidder.MakeBids(request, requestData, responseData)
+		resp, errs := kidoz.MakeBids(request, requestData, responseData)
 		// cant assert message its different on different versions of go
 		assert.Equal(t, 1, len(errs))
 		assert.Contains(t, errs[0].Error(), "JSON")

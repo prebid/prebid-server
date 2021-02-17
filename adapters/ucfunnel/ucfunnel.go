@@ -3,26 +3,29 @@ package ucfunnel
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
-
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"net/http"
+	"net/url"
 )
 
 type UcfunnelAdapter struct {
 	URI string
 }
 
-// Builder builds a new instance of the Ucfunnel adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &UcfunnelAdapter{
-		URI: config.Endpoint,
-	}
-	return bidder, nil
+func NewUcfunnelBidder(endpoint string) *UcfunnelAdapter {
+	return &UcfunnelAdapter{
+		URI: endpoint}
+}
+
+func (a *UcfunnelAdapter) Name() string {
+	return "ucfunnel"
+}
+
+func (a *UcfunnelAdapter) SkipNoCookies() bool {
+	return false
 }
 
 func (a *UcfunnelAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {

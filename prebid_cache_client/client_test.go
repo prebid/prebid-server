@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
-	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/metrics/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -25,7 +25,7 @@ func TestEmptyPut(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	metricsMock := &metrics.MetricsEngineMock{}
+	metricsMock := &pbsmetrics.MetricsEngineMock{}
 
 	client := &clientImpl{
 		httpClient: server.Client(),
@@ -47,7 +47,7 @@ func TestBadResponse(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	metricsMock := &metrics.MetricsEngineMock{}
+	metricsMock := &pbsmetrics.MetricsEngineMock{}
 	metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
 
 	client := &clientImpl{
@@ -115,7 +115,7 @@ func TestCancelledContext(t *testing.T) {
 
 	// Run Tests
 	for _, testCase := range testCases {
-		metricsMock := &metrics.MetricsEngineMock{}
+		metricsMock := &pbsmetrics.MetricsEngineMock{}
 		metricsMock.On("RecordPrebidCacheRequestTime", false, mock.Anything).Once()
 
 		client := &clientImpl{
@@ -142,7 +142,7 @@ func TestSuccessfulPut(t *testing.T) {
 	server := httptest.NewServer(newHandler(2))
 	defer server.Close()
 
-	metricsMock := &metrics.MetricsEngineMock{}
+	metricsMock := &pbsmetrics.MetricsEngineMock{}
 	metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
 
 	client := &clientImpl{

@@ -1,6 +1,6 @@
 module github.com/PubMatic-OpenWrap/prebid-server
 
-go 1.14
+go 1.13
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
@@ -22,7 +22,7 @@ require (
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/influxdata/influxdb v1.6.1
+	github.com/influxdata/influxdb v1.6.1 // indirect
 	github.com/julienschmidt/httprouter v1.1.0
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/lib/pq v1.0.0
@@ -30,6 +30,7 @@ require (
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.0.0 // indirect
+	github.com/mssola/user_agent v0.4.1
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect

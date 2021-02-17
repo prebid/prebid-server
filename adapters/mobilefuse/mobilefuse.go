@@ -3,33 +3,30 @@ package mobilefuse
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strconv"
-	"text/template"
-
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/macros"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/golang/glog"
+	"net/http"
+	"strconv"
+	"text/template"
 )
 
 type MobileFuseAdapter struct {
 	EndpointTemplate template.Template
 }
 
-// Builder builds a new instance of the MobileFuse adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+func NewMobileFuseBidder(endpointTemplate string) adapters.Bidder {
+	parsedTemplate, err := template.New("endpointTemplate").Parse(endpointTemplate)
+
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+		glog.Fatal("Unable parse endpoint template: " + err.Error())
+		return nil
 	}
 
-	bidder := &MobileFuseAdapter{
-		EndpointTemplate: *template,
-	}
-	return bidder, nil
+	return &MobileFuseAdapter{EndpointTemplate: *parsedTemplate}
 }
 
 func (adapter *MobileFuseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

@@ -3,41 +3,30 @@ package unruly
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"reflect"
-	"testing"
-
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/stretchr/testify/assert"
+	"net/http"
+	"reflect"
+	"testing"
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderUnruly, config.Adapter{
-		Endpoint: "http://targeting.unrulymedia.com/openrtb/2.2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "unrulytest", bidder)
+	adapterConfig := new(adapters.HTTPAdapterConfig)
+	adapterstest.RunJSONBidderTest(t, "unrulytest", NewUnrulyAdapter(adapterConfig, "http://targeting.unrulymedia.com/openrtb/2.2"))
 }
 
 func TestReturnsNewUnrulyBidderWithParams(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderUnruly, config.Adapter{
-		Endpoint: "http://mockEndpoint.com"})
+	mockClient := &http.Client{}
+	mockAdapter := &adapters.HTTPAdapter{Client: mockClient}
+	actual := *(NewUnrulyBidder(mockClient, "http://mockEndpoint.com"))
+	expected := UnrulyAdapter{mockAdapter, "http://mockEndpoint.com"}
 
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("actual = %v expected = %v", actual, expected)
 	}
-
-	bidderUnruly := bidder.(*UnrulyAdapter)
-
-	assert.Equal(t, "http://mockEndpoint.com", bidderUnruly.URI)
 }
 
 func TestBuildRequest(t *testing.T) {

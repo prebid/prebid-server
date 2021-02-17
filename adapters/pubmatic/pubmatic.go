@@ -13,7 +13,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
@@ -701,7 +700,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			impVideo := &openrtb_ext.ExtBidPrebidVideo{}
 
 			if len(bid.Cat) > 1 {
-				bid.Cat = bid.Cat[0:1]
+				bid.Cat = []string{bid.Cat[0]}
 			}
 
 			var bidExt *pubmaticBidExt
@@ -750,7 +749,7 @@ func logf(msg string, args ...interface{}) {
 	}
 }
 
-func NewPubmaticLegacyAdapter(config *adapters.HTTPAdapterConfig, uri string) *PubmaticAdapter {
+func NewPubmaticAdapter(config *adapters.HTTPAdapterConfig, uri string) *PubmaticAdapter {
 	a := adapters.NewHTTPAdapter(config)
 
 	return &PubmaticAdapter{
@@ -759,12 +758,12 @@ func NewPubmaticLegacyAdapter(config *adapters.HTTPAdapterConfig, uri string) *P
 	}
 }
 
-// Builder builds a new instance of the Pubmatic adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &PubmaticAdapter{
-		URI: config.Endpoint,
+func NewPubmaticBidder(client *http.Client, uri string) *PubmaticAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
+	return &PubmaticAdapter{
+		http: a,
+		URI:  uri,
 	}
-	return bidder, nil
 }
 
 func getTargetingKeys(bidExt json.RawMessage) map[string]string {

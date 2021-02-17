@@ -2,13 +2,10 @@ package dmx
 
 import (
 	"encoding/json"
-	"strings"
-	"testing"
-
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"strings"
+	"testing"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
 )
@@ -58,13 +55,7 @@ func TestFetchParams(t *testing.T) {
 
 }
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "dmxtest", bidder)
+	adapterstest.RunJSONBidderTest(t, "dmxtest", new(DmxAdapter))
 }
 
 func TestMakeRequestsOtherPlacement(t *testing.T) {
@@ -72,13 +63,7 @@ func TestMakeRequestsOtherPlacement(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
@@ -101,7 +86,7 @@ func TestMakeRequestsOtherPlacement(t *testing.T) {
 		ID: "1234",
 	}
 
-	actualAdapterRequests, err := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 
 	if actualAdapterRequests == nil {
 		t.Errorf("request should be nil")
@@ -117,13 +102,7 @@ func TestMakeRequestsInvalid(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}"),
@@ -145,7 +124,7 @@ func TestMakeRequestsInvalid(t *testing.T) {
 		ID: "1234",
 	}
 
-	actualAdapterRequests, err := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 
 	if len(actualAdapterRequests) != 0 {
 		t.Errorf("request should be nil")
@@ -161,13 +140,7 @@ func TestMakeRequestNoSite(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
@@ -185,7 +158,7 @@ func TestMakeRequestNoSite(t *testing.T) {
 		ID:  "1234",
 	}
 
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("openrtb type should be an Array when it's an App")
@@ -209,13 +182,7 @@ func TestMakeRequestsApp(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
@@ -238,7 +205,7 @@ func TestMakeRequestsApp(t *testing.T) {
 		ID:  "1234",
 	}
 
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("openrtb type should be an Array when it's an App")
@@ -259,13 +226,7 @@ func TestMakeRequestsNoUser(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
@@ -287,7 +248,7 @@ func TestMakeRequestsNoUser(t *testing.T) {
 		ID: "1234",
 	}
 
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 
 	if actualAdapterRequests != nil {
 		t.Errorf("openrtb type should be empty")
@@ -301,13 +262,7 @@ func TestMakeRequests(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
@@ -350,7 +305,7 @@ func TestMakeRequests(t *testing.T) {
 		ID:   "1234",
 	}
 
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("should have 1 request")
@@ -371,13 +326,7 @@ func TestMakeBidVideo(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
@@ -398,7 +347,7 @@ func TestMakeBidVideo(t *testing.T) {
 		ID:   "1234",
 	}
 
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("should have 1 request")
@@ -418,13 +367,7 @@ func TestMakeBidsNoContent(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
@@ -447,21 +390,21 @@ func TestMakeBidsNoContent(t *testing.T) {
 		ID:   "1234",
 	}
 
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 
-	_, err204 := bidder.MakeBids(&inputRequest, actualAdapterRequests[0], &adapters.ResponseData{StatusCode: 204})
+	_, err204 := adapter.MakeBids(&inputRequest, actualAdapterRequests[0], &adapters.ResponseData{StatusCode: 204})
 
 	if err204 != nil {
 		t.Errorf("Was expecting nil")
 	}
 
-	_, err400 := bidder.MakeBids(&inputRequest, actualAdapterRequests[0], &adapters.ResponseData{StatusCode: 400})
+	_, err400 := adapter.MakeBids(&inputRequest, actualAdapterRequests[0], &adapters.ResponseData{StatusCode: 400})
 
 	if err400 == nil {
 		t.Errorf("Was expecting error")
 	}
 
-	_, err500 := bidder.MakeBids(&inputRequest, actualAdapterRequests[0], &adapters.ResponseData{StatusCode: 500})
+	_, err500 := adapter.MakeBids(&inputRequest, actualAdapterRequests[0], &adapters.ResponseData{StatusCode: 500})
 
 	if err500 == nil {
 		t.Errorf("Was expecting error")
@@ -541,11 +484,11 @@ func TestMakeBidsNoContent(t *testing.T) {
 }`),
 	}
 
-	bids, _ := bidder.MakeBids(&inputRequest, actualAdapterRequests[0], bidResponse)
+	bids, _ := adapter.MakeBids(&inputRequest, actualAdapterRequests[0], bidResponse)
 	if bids == nil {
 		t.Errorf("ads not parse")
 	}
-	bidsNoMatching, _ := bidder.MakeBids(&inputRequest, actualAdapterRequests[0], bidResponseNoMatch)
+	bidsNoMatching, _ := adapter.MakeBids(&inputRequest, actualAdapterRequests[0], bidResponseNoMatch)
 	if bidsNoMatching == nil {
 		t.Errorf("ads not parse")
 	}
@@ -556,13 +499,7 @@ func TestUserExtEmptyObject(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
@@ -585,7 +522,7 @@ func TestUserExtEmptyObject(t *testing.T) {
 		ID:   "1234",
 	}
 
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 	if len(actualAdapterRequests) != 0 {
 		t.Errorf("should have 0 request")
 	}
@@ -595,13 +532,7 @@ func TestUserEidsOnly(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
@@ -638,7 +569,7 @@ func TestUserEidsOnly(t *testing.T) {
 		ID: "1234",
 	}
 
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("should have 1 request")
 	}
@@ -649,13 +580,7 @@ func TestUserDigitrustOnly(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
@@ -682,7 +607,7 @@ func TestUserDigitrustOnly(t *testing.T) {
 		ID: "1234",
 	}
 
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("should have 1 request")
 	}
@@ -693,13 +618,7 @@ func TestUsersEids(t *testing.T) {
 
 	var width, height uint64 = uint64(w), uint64(h)
 
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	adapter := NewDmxBidder("https://dmx.districtm.io/b/v2")
 	imp1 := openrtb.Imp{
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
@@ -776,7 +695,7 @@ func TestUsersEids(t *testing.T) {
 		ID: "1234",
 	}
 
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 	if len(actualAdapterRequests) != 1 {
 		t.Errorf("should have 1 request")
 	}

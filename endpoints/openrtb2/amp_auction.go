@@ -8,18 +8,18 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	accountService "github.com/PubMatic-OpenWrap/prebid-server/account"
-	"github.com/PubMatic-OpenWrap/prebid-server/amp"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
@@ -49,7 +49,7 @@ func NewAmpEndpoint(
 	requestsById stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
-	met metrics.MetricsEngine,
+	met pbsmetrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
@@ -87,28 +87,29 @@ func NewAmpEndpoint(
 }
 
 func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	ao := analytics.AmpObject{
+		Status: http.StatusOK,
+		Errors: make([]error, 0),
+	}
+
 	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
 	// to wait for bids. However, tmax may be defined in the Stored Request data.
 	//
 	// If so, then the trip to the backend might use a significant amount of this time.
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
-	start := time.Now()
-
-	ao := analytics.AmpObject{
-		Status:    http.StatusOK,
-		Errors:    make([]error, 0),
-		StartTime: start,
-	}
 
 	// Set this as an AMP request in Metrics.
 
-	labels := metrics.Labels{
-		Source:        metrics.DemandWeb,
-		RType:         metrics.ReqTypeAMP,
-		PubID:         metrics.PublisherUnknown,
-		CookieFlag:    metrics.CookieFlagUnknown,
-		RequestStatus: metrics.RequestStatusOK,
+	start := time.Now()
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandWeb,
+		RType:         pbsmetrics.ReqTypeAMP,
+		PubID:         pbsmetrics.PublisherUnknown,
+		Browser:       getBrowserName(r),
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
@@ -137,7 +138,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		for _, err := range errortypes.FatalOnly(errL) {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		labels.RequestStatus = metrics.RequestStatusBadInput
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
 
@@ -154,9 +155,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if usersyncs.LiveSyncCount() == 0 {
-		labels.CookieFlag = metrics.CookieFlagNo
+		labels.CookieFlag = pbsmetrics.CookieFlagNo
 	} else {
-		labels.CookieFlag = metrics.CookieFlagYes
+		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
 	labels.PubID = getAccountID(req.Site.Publisher)
 	// Look up account now that we have resolved the pubID value
@@ -164,12 +165,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if len(acctIDErrs) > 0 {
 		errL = append(errL, acctIDErrs...)
 		httpStatus := http.StatusBadRequest
-		metricsStatus := metrics.RequestStatusBadInput
+		metricsStatus := pbsmetrics.RequestStatusBadInput
 		for _, er := range errL {
 			errCode := errortypes.ReadCode(er)
 			if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
 				httpStatus = http.StatusServiceUnavailable
-				metricsStatus = metrics.RequestStatusBlacklisted
+				metricsStatus = pbsmetrics.RequestStatusBlacklisted
 				break
 			}
 		}
@@ -187,7 +188,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Account:      *account,
 		UserSyncs:    usersyncs,
 		RequestType:  labels.RType,
-		StartTime:    start,
 		LegacyLabels: labels,
 	}
 
@@ -275,7 +275,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(ampResponse); err != nil {
-		labels.RequestStatus = metrics.RequestStatusNetworkErr
+		labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Failed to send response: %v", err))
 	}
 }
@@ -314,41 +314,43 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	req = &openrtb.BidRequest{}
 	errs = nil
 
-	ampParams, err := amp.ParseParams(httpRequest)
-	if err != nil {
-		return nil, []error{err}
+	ampID := httpRequest.FormValue("tag_id")
+	if ampID == "" {
+		errs = []error{errors.New("AMP requests require an AMP tag_id")}
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
-	storedRequests, _, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampParams.StoredRequestID}, nil)
+	storedRequests, _, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampID}, nil)
 	if len(errs) > 0 {
 		return nil, errs
 	}
 	if len(storedRequests) == 0 {
-		errs = []error{fmt.Errorf("No AMP config found for tag_id '%s'", ampParams.StoredRequestID)}
+		errs = []error{fmt.Errorf("No AMP config found for tag_id '%s'", ampID)}
 		return
 	}
 
 	// The fetched config becomes the entire OpenRTB request
-	requestJSON := storedRequests[ampParams.StoredRequestID]
+	requestJSON := storedRequests[ampID]
 	if err := json.Unmarshal(requestJSON, req); err != nil {
 		errs = []error{err}
 		return
 	}
 
-	if ampParams.Debug {
+	debugParam := httpRequest.FormValue("debug")
+	if debugParam == "1" {
 		req.Test = 1
 	}
 
 	// Two checks so users know which way the Imp check failed.
 	if len(req.Imp) == 0 {
-		errs = []error{fmt.Errorf("data for tag_id='%s' does not define the required imp array", ampParams.StoredRequestID)}
+		errs = []error{fmt.Errorf("data for tag_id='%s' does not define the required imp array", ampID)}
 		return
 	}
 	if len(req.Imp) > 1 {
-		errs = []error{fmt.Errorf("data for tag_id '%s' includes %d imp elements. Only one is allowed", ampParams.StoredRequestID, len(req.Imp))}
+		errs = []error{fmt.Errorf("data for tag_id '%s' includes %d imp elements. Only one is allowed", ampID, len(req.Imp))}
 		return
 	}
 
@@ -365,30 +367,35 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		*req.Imp[0].Secure = 1
 	}
 
-	errs = deps.overrideWithParams(ampParams, req)
+	errs = deps.overrideWithParams(httpRequest, req)
 	return
 }
 
-func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb.BidRequest) []error {
+func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) []error {
 	if req.Site == nil {
 		req.Site = &openrtb.Site{}
 	}
 
 	// Override the stored request sizes with AMP ones, if they exist.
 	if req.Imp[0].Banner != nil {
-		if format := makeFormatReplacement(ampParams.Size); len(format) != 0 {
+		width := parseFormInt(httpRequest, "w", 0)
+		height := parseFormInt(httpRequest, "h", 0)
+		overrideWidth := parseFormInt(httpRequest, "ow", 0)
+		overrideHeight := parseFormInt(httpRequest, "oh", 0)
+		if format := makeFormatReplacement(overrideWidth, overrideHeight, width, height, httpRequest.FormValue("ms")); len(format) != 0 {
 			req.Imp[0].Banner.Format = format
-		} else if ampParams.Size.Width != 0 {
-			setWidths(req.Imp[0].Banner.Format, ampParams.Size.Width)
-		} else if ampParams.Size.Height != 0 {
-			setHeights(req.Imp[0].Banner.Format, ampParams.Size.Height)
+		} else if width != 0 {
+			setWidths(req.Imp[0].Banner.Format, width)
+		} else if height != 0 {
+			setHeights(req.Imp[0].Banner.Format, height)
 		}
 	}
 
-	if ampParams.CanonicalURL != "" {
-		req.Site.Page = ampParams.CanonicalURL
+	canonicalURL := httpRequest.FormValue("curl")
+	if canonicalURL != "" {
+		req.Site.Page = canonicalURL
 		// Fixes #683
-		if parsedURL, err := url.Parse(ampParams.CanonicalURL); err == nil {
+		if parsedURL, err := url.Parse(canonicalURL); err == nil {
 			domain := parsedURL.Host
 			if colonIndex := strings.LastIndex(domain, ":"); colonIndex != -1 {
 				domain = domain[:colonIndex]
@@ -399,13 +406,14 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb.
 
 	setAmpExt(req.Site, "1")
 
-	setEffectiveAmpPubID(req, ampParams.Account)
+	setEffectiveAmpPubID(req, httpRequest.URL.Query())
 
-	if ampParams.Slot != "" {
-		req.Imp[0].TagID = ampParams.Slot
+	slot := httpRequest.FormValue("slot")
+	if slot != "" {
+		req.Imp[0].TagID = slot
 	}
 
-	policyWriter, policyWriterErr := readPolicy(ampParams.Consent)
+	policyWriter, policyWriterErr := readPolicyFromUrl(httpRequest.URL)
 	if policyWriterErr != nil {
 		return []error{policyWriterErr}
 	}
@@ -413,38 +421,42 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb.
 		return []error{err}
 	}
 
-	if ampParams.Timeout != nil {
-		req.TMax = int64(*ampParams.Timeout) - deps.cfg.AMPTimeoutAdjustment
+	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
+		req.TMax = timeout - deps.cfg.AMPTimeoutAdjustment
 	}
 
 	return nil
 }
 
-func makeFormatReplacement(size amp.Size) []openrtb.Format {
+func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width uint64, height uint64, multisize string) []openrtb.Format {
 	var formats []openrtb.Format
-	if size.OverrideWidth != 0 && size.OverrideHeight != 0 {
+	if overrideWidth != 0 && overrideHeight != 0 {
 		formats = []openrtb.Format{{
-			W: size.OverrideWidth,
-			H: size.OverrideHeight,
+			W: overrideWidth,
+			H: overrideHeight,
 		}}
-	} else if size.OverrideWidth != 0 && size.Height != 0 {
+	} else if overrideWidth != 0 && height != 0 {
 		formats = []openrtb.Format{{
-			W: size.OverrideWidth,
-			H: size.Height,
+			W: overrideWidth,
+			H: height,
 		}}
-	} else if size.Width != 0 && size.OverrideHeight != 0 {
+	} else if width != 0 && overrideHeight != 0 {
 		formats = []openrtb.Format{{
-			W: size.Width,
-			H: size.OverrideHeight,
+			W: width,
+			H: overrideHeight,
 		}}
-	} else if size.Width != 0 && size.Height != 0 {
+	} else if width != 0 && height != 0 {
 		formats = []openrtb.Format{{
-			W: size.Width,
-			H: size.Height,
+			W: width,
+			H: height,
 		}}
 	}
 
-	return append(formats, size.Multisize...)
+	if parsedSizes := parseMultisize(multisize); len(parsedSizes) != 0 {
+		formats = append(formats, parsedSizes...)
+	}
+
+	return formats
 }
 
 func setWidths(formats []openrtb.Format, width uint64) {
@@ -457,6 +469,42 @@ func setHeights(formats []openrtb.Format, height uint64) {
 	for i := 0; i < len(formats); i++ {
 		formats[i].H = height
 	}
+}
+
+func parseMultisize(multisize string) []openrtb.Format {
+	if multisize == "" {
+		return nil
+	}
+
+	sizeStrings := strings.Split(multisize, ",")
+	sizes := make([]openrtb.Format, 0, len(sizeStrings))
+	for _, sizeString := range sizeStrings {
+		wh := strings.Split(sizeString, "x")
+		if len(wh) != 2 {
+			return nil
+		}
+		f := openrtb.Format{
+			W: parseIntErrorless(wh[0], 0),
+			H: parseIntErrorless(wh[1], 0),
+		}
+		if f.W == 0 && f.H == 0 {
+			return nil
+		}
+
+		sizes = append(sizes, f)
+	}
+	return sizes
+}
+
+func parseFormInt(req *http.Request, value string, defaultTo uint64) uint64 {
+	return parseIntErrorless(req.FormValue(value), defaultTo)
+}
+
+func parseIntErrorless(value string, defaultTo uint64) uint64 {
+	if parsed, err := strconv.ParseUint(value, 10, 64); err == nil {
+		return parsed
+	}
+	return defaultTo
 }
 
 // AMP won't function unless ext.prebid.targeting and ext.prebid.cache.bids are defined.
@@ -515,7 +563,9 @@ func setAmpExt(site *openrtb.Site, value string) {
 	}
 }
 
-func readPolicy(consent string) (privacy.PolicyWriter, error) {
+func readPolicyFromUrl(url *url.URL) (privacy.PolicyWriter, error) {
+	consent := readConsentFromURL(url)
+
 	if len(consent) == 0 {
 		return privacy.NilPolicyWriter{}, nil
 	}
@@ -533,8 +583,17 @@ func readPolicy(consent string) (privacy.PolicyWriter, error) {
 	}
 }
 
+func readConsentFromURL(url *url.URL) string {
+	if v := url.Query().Get("consent_string"); v != "" {
+		return v
+	}
+
+	// Fallback to 'gdpr_consent' for compatability until it's no longer used by AMP.
+	return url.Query().Get("gdpr_consent")
+}
+
 // Sets the effective publisher ID for amp request
-func setEffectiveAmpPubID(req *openrtb.BidRequest, account string) {
+func setEffectiveAmpPubID(req *openrtb.BidRequest, urlQueryParams url.Values) {
 	var pub *openrtb.Publisher
 	if req.App != nil {
 		if req.App.Publisher == nil {
@@ -549,9 +608,10 @@ func setEffectiveAmpPubID(req *openrtb.BidRequest, account string) {
 	}
 
 	if pub.ID == "" {
-		// ACCOUNT_ID is the unresolved macro name and should be ignored.
-		if account != "" && account != "ACCOUNT_ID" {
-			pub.ID = account
+		// For amp requests, the publisher ID could be sent via the account
+		// query string
+		if acc := urlQueryParams.Get("account"); acc != "" && acc != "ACCOUNT_ID" {
+			pub.ID = acc
 		}
 	}
 }

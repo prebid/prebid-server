@@ -8,7 +8,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/macros"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
@@ -227,15 +226,11 @@ func getMediaTypeForImpID(impID string, imps []openrtb.Imp) openrtb_ext.BidType 
 	return openrtb_ext.BidTypeBanner
 }
 
-// Builder builds a new instance of the NinthDecimal adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+// NewNinthDecimalAdapter to be called in prebid-server core to create NinthDecimal adapter instance
+func NewNinthDecimalBidder(endpointTemplate string) adapters.Bidder {
+	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+		return nil
 	}
-
-	bidder := &NinthDecimalAdapter{
-		EndpointTemplate: *template,
-	}
-	return bidder, nil
+	return &NinthDecimalAdapter{EndpointTemplate: *template}
 }

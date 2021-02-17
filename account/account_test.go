@@ -8,7 +8,7 @@ import (
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,7 +29,7 @@ func (af mockAccountFetcher) FetchAccount(ctx context.Context, accountID string)
 }
 
 func TestGetAccount(t *testing.T) {
-	unknown := metrics.PublisherUnknown
+	unknown := pbsmetrics.PublisherUnknown
 	testCases := []struct {
 		accountID string
 		// account_required

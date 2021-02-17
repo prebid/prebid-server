@@ -7,7 +7,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
@@ -17,12 +16,11 @@ type NoBidAdapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the NoBid adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &NoBidAdapter{
-		endpoint: config.Endpoint,
+// NewNoBidBidder Initializes the Bidder
+func NewNoBidBidder(endpoint string) *NoBidAdapter {
+	return &NoBidAdapter{
+		endpoint: endpoint,
 	}
-	return bidder, nil
 }
 
 // MakeRequests Makes the OpenRTB request payload

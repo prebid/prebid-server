@@ -20,6 +20,7 @@
     "imp": [
       {
         "id": "some-impression-id",
+        
         "video": {
           "mimes": [
             "video/mp4"
@@ -75,6 +76,7 @@
           "imp": [
             {
               "id": "some-impression-id",
+              
               "video": {
                 "mimes": [
                   "video/mp4"
@@ -107,9 +109,9 @@
               "bid": [
                 {
                   "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-                  "impid": "some-impression-id",
+                  "impid": "1",
                   "price": 3.5,
-                  "adm": "awesome-markup",
+                  "adm": "asesome-markup",
                   "adomain": [
                     "awesome.com"
                   ],
@@ -137,30 +139,23 @@
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedBids": [
     {
-      "bids": [
-        {
-          "bid": {
-            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-            "impid": "some-impression-id",
-            "price": 3.5,
-            "adm": "awesome-markup",
-            "adomain": [
-              "awesome.com"
-            ],
-            "crid": "20",
-            "w": 1280,
-            "h": 720,
-            "ext": {
-              "prebid": {
-                "type": "video"
-              }
-            }
-          },
+      "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+      "impid": "1",
+      "price": 3.5,
+      "adm": "asesome-markup",
+      "adomain": [
+        "awesome.com"
+      ],
+      "crid": "20",
+      "w": 1280,
+      "h": 720,
+      "ext": {
+        "prebid": {
           "type": "video"
         }
-      ]
+      }
     }
   ]
 }

@@ -11,8 +11,8 @@ import (
 
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
-	"github.com/PubMatic-OpenWrap/prebid-server/server/ssl"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/ssl"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -40,7 +40,7 @@ type UserSyncDeps struct {
 	ExternalUrl      string
 	RecaptchaSecret  string
 	HostCookieConfig *config.HostCookie
-	MetricsEngine    metrics.MetricsEngine
+	MetricsEngine    pbsmetrics.MetricsEngine
 	PBSAnalytics     analytics.PBSAnalyticsModule
 }
 

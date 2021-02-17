@@ -2,7 +2,6 @@ package adocean
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -15,10 +14,10 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/macros"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/golang/glog"
 )
 
 const adapterVersion = "1.1.0"
@@ -59,23 +58,25 @@ type requestData struct {
 	SlaveSizes map[string]string
 }
 
-// Builder builds a new instance of the AdOcean adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
+func NewAdOceanBidder(client *http.Client, endpointTemplateString string) *AdOceanAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
+	endpointTemplate, err := template.New("endpointTemplate").Parse(endpointTemplateString)
 	if err != nil {
-		return nil, errors.New("Unable to parse endpoint template")
+		glog.Fatal("Unable to parse endpoint template")
+		return nil
 	}
 
 	whiteSpace := regexp.MustCompile(`\s+`)
 
-	bidder := &AdOceanAdapter{
+	return &AdOceanAdapter{
+		http:             a,
 		endpointTemplate: *endpointTemplate,
 		measurementCode:  whiteSpace.ReplaceAllString(measurementCode, " "),
 	}
-	return bidder, nil
 }
 
 type AdOceanAdapter struct {
+	http             *adapters.HTTPAdapter
 	endpointTemplate template.Template
 	measurementCode  string
 }

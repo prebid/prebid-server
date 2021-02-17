@@ -13,7 +13,6 @@ import (
 	"golang.org/x/text/currency"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
@@ -25,14 +24,13 @@ type YieldlabAdapter struct {
 	getWeek     weekGenerator
 }
 
-// Builder builds a new instance of the Yieldlab adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &YieldlabAdapter{
-		endpoint:    config.Endpoint,
+// NewYieldlabBidder returns a new YieldlabBidder instance
+func NewYieldlabBidder(endpoint string) *YieldlabAdapter {
+	return &YieldlabAdapter{
+		endpoint:    endpoint,
 		cacheBuster: defaultCacheBuster,
 		getWeek:     defaultWeekGenerator,
 	}
-	return bidder, nil
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext

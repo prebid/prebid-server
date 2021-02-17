@@ -3,38 +3,46 @@ package tappx
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/PubMatic-OpenWrap/openrtb"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
+	"github.com/PubMatic-OpenWrap/prebid-server/macros"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/golang/glog"
 	"net/http"
 	"net/url"
 	"strconv"
 	"text/template"
 	"time"
-
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/macros"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 const TAPPX_BIDDER_VERSION = "1.1"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
+	http             *adapters.HTTPAdapter
 	endpointTemplate template.Template
 }
 
-// Builder builds a new instance of the Tappx adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+func NewTappxBidder(client *http.Client, endpointTemplate string) *TappxAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
+	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+		glog.Fatal("Unable to parse endpoint url template: " + err.Error())
+		return nil
 	}
-
-	bidder := &TappxAdapter{
+	return &TappxAdapter{
+		http:             a,
 		endpointTemplate: *template,
 	}
-	return bidder, nil
+}
+
+func (a *TappxAdapter) Name() string {
+	return "tappx"
+}
+
+func (a *TappxAdapter) SkipNoCookies() bool {
+	return false
 }
 
 func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

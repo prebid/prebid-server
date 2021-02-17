@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/currency"
+	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 
-	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/metrics/config"
-	metricsConfig "github.com/PubMatic-OpenWrap/prebid-server/metrics/config"
+	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
+	metricsConfig "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
@@ -92,7 +92,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		cache:               &wellBehavedCache{},
 		cacheTime:           time.Duration(0),
 		gDPR:                gdpr.AlwaysAllow{},
-		currencyConverter:   currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		currencyConverter:   currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		UsersyncIfAmbiguous: false,
 		categoriesFetcher:   categoriesFetcher,
 	}
@@ -115,8 +115,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		UserSyncs:  &emptyUsersync{},
 	}
 
-	debugLog := DebugLog{}
-	bidResp, err := ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
+	bidResp, err := ex.HoldAuction(context.Background(), auctionRequest, nil)
 
 	if err != nil {
 		t.Fatalf("Unexpected errors running auction: %v", err)
@@ -142,7 +141,7 @@ func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb.Bid, mockServerU
 		adapterMap[bidder] = adaptBidder(&mockTargetingBidder{
 			mockServerURL: mockServerURL,
 			bids:          bids,
-		}, client, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		}, client, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus)
 	}
 	return adapterMap
 }

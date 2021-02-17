@@ -8,7 +8,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/golang/glog"
@@ -181,10 +180,8 @@ func getMediaType(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeBanner
 }
 
-// Builder builds a new instance of the Gamoshi adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &GamoshiAdapter{
-		URI: config.Endpoint,
+func NewGamoshiBidder(endpoint string) *GamoshiAdapter {
+	return &GamoshiAdapter{
+		URI: endpoint,
 	}
-	return bidder, nil
 }

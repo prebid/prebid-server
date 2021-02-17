@@ -8,13 +8,15 @@ import (
 	"time"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/currency"
+	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
+	metrics "github.com/rcrowley/go-metrics"
 
 	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/backends/empty_fetcher"
 )
 
@@ -62,34 +64,28 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 
 	var infos adapters.BidderInfos
 	infos["appnexus"] = adapters.BidderInfo{Capabilities: &adapters.CapabilitiesInfo{Site: &adapters.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}}}
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
 		return
 	}
 
-	adapters, adaptersErr := exchange.BuildAdapters(server.Client(), &config.Configuration{}, infos, newTestMetrics())
-	if adaptersErr != nil {
-		b.Fatal("unable to build adapters")
-	}
-
-	exchange := exchange.NewExchange(
-		adapters,
-		nil,
-		&config.Configuration{},
-		newTestMetrics(),
-		infos,
-		gdpr.AlwaysAllow{},
-		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
-		empty_fetcher.EmptyFetcher{},
-	)
-
 	endpoint, _ := NewEndpoint(
-		exchange,
+		exchange.NewExchange(
+			server.Client(),
+			nil,
+			&config.Configuration{},
+			theMetrics,
+			infos,
+			gdpr.AlwaysAllow{},
+			currencies.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+			empty_fetcher.EmptyFetcher{},
+		),
 		paramValidator,
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},

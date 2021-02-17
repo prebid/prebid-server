@@ -2,7 +2,7 @@
   "mockBidRequest": {
     "id": "some_test_ad",
     "site": {
-      "page": "https://some.domain.us/some/page.html"
+      "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
     },
     "imp": [
       {
@@ -19,7 +19,7 @@
         "ext": {
           "bidder": {
             "bidfloor": 0.02,
-            "appId": 123456
+            "appId": 123456789101112
           }
         }
       }

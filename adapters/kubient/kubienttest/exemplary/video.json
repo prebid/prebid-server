@@ -70,23 +70,21 @@
     }
   ],
 
-  "expectedBidResponses": [
+  "expectedBids": [
     {
-      "bids": [{
-        "bid": {
-          "id": "7706636740145184841",
-          "impid": "test-imp-video-id",
-          "price": 0.5,
-          "adm": "some-video-ad",
-          "adid": "29681110",
-          "adomain": ["advertsite.com"],
-          "cid": "958",
-          "crid": "29681110",
-          "w": 1024,
-          "h": 576
-        },
-        "type": "video"
-      }]
+      "bid": {
+        "id": "7706636740145184841",
+        "impid": "test-imp-video-id",
+        "price": 0.5,
+        "adm": "some-test-ad",
+        "adid": "29681110",
+        "adomain": ["advertsite.com"],
+        "cid": "83",
+        "crid": "29681110",
+        "w": 1024,
+        "h": 576
+      },
+      "type": "video"
     }
   ]
 

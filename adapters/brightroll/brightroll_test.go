@@ -1,25 +1,14 @@
 package brightroll
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 func TestEmptyConfig(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderBrightroll, config.Adapter{
-		Endpoint:         `http://test-bid.ybp.yahoo.com/bid/appnexuspbs`,
-		ExtraAdapterInfo: ``,
-	})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	output := NewBrightrollBidder("http://test-bid.ybp.yahoo.com/bid/appnexuspbs", "")
 	ex := ExtraInfo{
 		Accounts: []Account{},
 	}
@@ -27,47 +16,22 @@ func TestEmptyConfig(t *testing.T) {
 		URI:       "http://test-bid.ybp.yahoo.com/bid/appnexuspbs",
 		extraInfo: ex,
 	}
-	assert.Equal(t, expected, bidder)
+	assert.Equal(t, expected, output, "")
 }
 
 func TestNonEmptyConfig(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderBrightroll, config.Adapter{
-		Endpoint:         `http://test-bid.ybp.yahoo.com/bid/appnexuspbs`,
-		ExtraAdapterInfo: `{"accounts": [{"id": "test","bidfloor":0.1}]}`,
-	})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	output := NewBrightrollBidder("http://test-bid.ybp.yahoo.com/bid/appnexuspbs", "{\"accounts\": [{\"id\": \"test\",\"bidfloor\":0.1}]}")
 	ex := ExtraInfo{
 		Accounts: []Account{{ID: "test", BidFloor: 0.1}},
 	}
+
 	expected := &BrightrollAdapter{
 		URI:       "http://test-bid.ybp.yahoo.com/bid/appnexuspbs",
 		extraInfo: ex,
 	}
-	assert.Equal(t, expected, bidder)
-}
-
-func TestMalformedEmpty(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderBrightroll, config.Adapter{
-		Endpoint:         `http://test-bid.ybp.yahoo.com/bid/appnexuspbs`,
-		ExtraAdapterInfo: `malformed`,
-	})
-
-	assert.Error(t, buildErr)
+	assert.Equal(t, expected, output, "")
 }
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderBrightroll, config.Adapter{
-		Endpoint:         `http://test-bid.ybp.yahoo.com/bid/appnexuspbs`,
-		ExtraAdapterInfo: `{"accounts": [{"id": "adthrive","badv": [], "bcat": ["IAB8-5","IAB8-18"],"battr": [1,2,3], "bidfloor":0.0}]}`,
-	})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "brightrolltest", bidder)
+	adapterstest.RunJSONBidderTest(t, "brightrolltest", NewBrightrollBidder("http://test-bid.ybp.yahoo.com/bid/appnexuspbs", "{\"accounts\": [{\"id\": \"adthrive\",\"badv\": [], \"bcat\": [\"IAB8-5\",\"IAB8-18\"],\"battr\": [1,2,3], \"bidfloor\":0.0}]}"))
 }

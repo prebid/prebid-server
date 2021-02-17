@@ -2,16 +2,13 @@ package sharethrough
 
 import (
 	"fmt"
+	"github.com/PubMatic-OpenWrap/openrtb"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"regexp"
 	"testing"
-
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/stretchr/testify/assert"
 )
 
 type MockStrAdServer struct {
@@ -46,11 +43,11 @@ func (m MockStrUriHelper) parseUri(uri string) (*StrAdSeverParams, error) {
 
 func TestNewSharethroughBidder(t *testing.T) {
 	tests := map[string]struct {
-		input  config.Adapter
+		input  string
 		output SharethroughAdapter
 	}{
 		"Creates Sharethrough adapter": {
-			input: config.Adapter{Endpoint: "test endpoint"},
+			input: "test endpoint",
 			output: SharethroughAdapter{
 				AdServer: StrOpenRTBTranslator{
 					UriHelper: StrUriHelper{BaseURI: "test endpoint", Clock: Clock{}},
@@ -69,10 +66,8 @@ func TestNewSharethroughBidder(t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 
-		bidder, buildErr := Builder(openrtb_ext.BidderSharethrough, test.input)
-
-		assert.NoError(buildErr)
-		assert.Equal(bidder, &test.output)
+		actual := NewSharethroughBidder(test.input)
+		assert.Equal(actual, &test.output)
 	}
 }
 

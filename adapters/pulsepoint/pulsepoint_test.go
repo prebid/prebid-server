@@ -1,48 +1,31 @@
 package pulsepoint
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-
-	"bytes"
-	"context"
-	"fmt"
-	"io/ioutil"
-	"net/http/httptest"
-	"time"
-
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
 	"github.com/PubMatic-OpenWrap/prebid-server/cache/dummycache"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 )
-
-func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderPulsepoint, config.Adapter{
-		Endpoint: "http://bidder.pulsepoint.com"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "pulsepointtest", bidder)
-}
-
-/////////////////////////////////
-// Legacy implementation: Start
-/////////////////////////////////
 
 /**
  * Verify adapter names are setup correctly.
  */
 func TestPulsePointAdapterNames(t *testing.T) {
-	adapter := NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "http://localhost/bid")
+	adapter := NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, "http://localhost/bid")
 	adapterstest.VerifyStringValue(adapter.Name(), "pulsepoint", t)
 }
 
@@ -50,7 +33,7 @@ func TestPulsePointAdapterNames(t *testing.T) {
  * Test required parameters not sent
  */
 func TestPulsePointRequiredBidParameters(t *testing.T) {
-	adapter := NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "http://localhost/bid")
+	adapter := NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, "http://localhost/bid")
 	ctx := context.TODO()
 	req := SampleRequest(1, t)
 	bidder := req.Bidders[0]
@@ -90,8 +73,9 @@ func TestPulsePointOpenRTBRequest(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleRequest(1, t)
 	bidder := req.Bidders[0]
-	adapter := NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	adapter.Call(ctx, req, bidder)
+	fmt.Println(service.LastBidRequest)
 	adapterstest.VerifyIntValue(len(service.LastBidRequest.Imp), 1, t)
 	adapterstest.VerifyStringValue(service.LastBidRequest.Imp[0].TagID, "1001", t)
 	adapterstest.VerifyStringValue(service.LastBidRequest.Site.Publisher.ID, "2001", t)
@@ -107,7 +91,7 @@ func TestPulsePointBiddingBehavior(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleRequest(1, t)
 	bidder := req.Bidders[0]
-	adapter := NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	bids, _ := adapter.Call(ctx, req, bidder)
 	// number of bids should be 1
 	adapterstest.VerifyIntValue(len(bids), 1, t)
@@ -131,7 +115,7 @@ func TestPulsePointMultiImpPartialBidding(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleRequest(2, t)
 	bidder := req.Bidders[0]
-	adapter := NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	bids, _ := adapter.Call(ctx, req, bidder)
 	// two impressions sent.
 	// number of bids should be 1
@@ -150,7 +134,7 @@ func TestPulsePointMultiImpPassback(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleRequest(2, t)
 	bidder := req.Bidders[0]
-	adapter := NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	bids, _ := adapter.Call(ctx, req, bidder)
 	// two impressions sent.
 	// number of bids should be 1
@@ -168,7 +152,7 @@ func TestPulsePointMultiImpAllBid(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleRequest(2, t)
 	bidder := req.Bidders[0]
-	adapter := NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	bids, _ := adapter.Call(ctx, req, bidder)
 	// two impressions sent.
 	// number of bids should be 1
@@ -192,7 +176,7 @@ func TestMobileAppRequest(t *testing.T) {
 		Name: "facebook",
 	}
 	bidder := req.Bidders[0]
-	adapter := NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	adapter := NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	bids, _ := adapter.Call(ctx, req, bidder)
 	// one mobile app impression sent.
 	// verify appropriate fields are sent to pulsepoint endpoint.
@@ -306,7 +290,3 @@ func CreateService(tagsToBid map[string]bool) adapterstest.OrtbMockService {
 	service.LastBidRequest = &lastBidRequest
 	return service
 }
-
-/////////////////////////////////
-// Legacy implementation: End
-/////////////////////////////////

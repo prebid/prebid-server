@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
@@ -217,10 +216,8 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-// Builder builds a new instance of the Somoaudience adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &SomoaudienceAdapter{
-		endpoint: config.Endpoint,
+func NewSomoaudienceBidder(endpoint string) *SomoaudienceAdapter {
+	return &SomoaudienceAdapter{
+		endpoint: endpoint,
 	}
-	return bidder, nil
 }

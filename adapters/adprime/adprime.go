@@ -7,7 +7,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/buger/jsonparser"
@@ -18,12 +17,11 @@ type AdprimeAdapter struct {
 	URI string
 }
 
-// Builder builds a new instance of the Adprime adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &AdprimeAdapter{
-		URI: config.Endpoint,
+// NewAdprimeBidder Initializes the Bidder
+func NewAdprimeBidder(endpoint string) *AdprimeAdapter {
+	return &AdprimeAdapter{
+		URI: endpoint,
 	}
-	return bidder, nil
 }
 
 // MakeRequests create bid request for adprime demand

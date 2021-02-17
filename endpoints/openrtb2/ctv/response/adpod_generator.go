@@ -10,8 +10,8 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/constant"
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/types"
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/util"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 )
 
 /********************* AdPodGenerator Functions *********************/
@@ -45,11 +45,11 @@ type AdPodGenerator struct {
 	buckets  types.BidsBuckets
 	comb     combination.ICombination
 	adpod    *openrtb_ext.VideoAdPod
-	met      metrics.MetricsEngine
+	met      pbsmetrics.MetricsEngine
 }
 
 //NewAdPodGenerator will generate adpod based on configuration
-func NewAdPodGenerator(request *openrtb.BidRequest, impIndex int, buckets types.BidsBuckets, comb combination.ICombination, adpod *openrtb_ext.VideoAdPod, met metrics.MetricsEngine) *AdPodGenerator {
+func NewAdPodGenerator(request *openrtb.BidRequest, impIndex int, buckets types.BidsBuckets, comb combination.ICombination, adpod *openrtb_ext.VideoAdPod, met pbsmetrics.MetricsEngine) *AdPodGenerator {
 	return &AdPodGenerator{
 		request:  request,
 		impIndex: impIndex,
@@ -145,14 +145,14 @@ func (o *AdPodGenerator) getAdPodBids(timeout time.Duration) []*highestCombinati
 
 	defer ticker.Stop()
 
-	labels := metrics.PodLabels{
+	labels := pbsmetrics.PodLabels{
 		AlgorithmName:    string(constant.CombinationGeneratorV1),
 		NoOfCombinations: new(int),
 	}
 	*labels.NoOfCombinations = combinationCount
 	o.met.RecordPodCombGenTime(labels, time.Duration(totalTimeByCombGen))
 
-	compExclLabels := metrics.PodLabels{
+	compExclLabels := pbsmetrics.PodLabels{
 		AlgorithmName:    string(constant.CompetitiveExclusionV1),
 		NoOfResponseBids: new(int),
 	}

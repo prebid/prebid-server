@@ -12,7 +12,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
@@ -259,12 +258,10 @@ func removeWrapper(ad string) string {
 	return str
 }
 
-// Builder builds a new instance of the Adgeneration adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &AdgenerationAdapter{
-		config.Endpoint,
+func NewAdgenerationAdapter(endpoint string) *AdgenerationAdapter {
+	return &AdgenerationAdapter{
+		endpoint,
 		"1.0.2",
 		"JPY",
 	}
-	return bidder, nil
 }

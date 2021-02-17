@@ -3,22 +3,16 @@ package kubient
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"net/http"
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 )
 
-// Builder builds a new instance of the Kubient adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &KubientAdapter{
-		endpoint: config.Endpoint,
-	}
-	return bidder, nil
+func NewKubientBidder(endpoint string) *KubientAdapter {
+	return &KubientAdapter{endpoint: endpoint}
 }
 
 // Implements Bidder interface.

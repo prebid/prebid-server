@@ -8,8 +8,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
@@ -22,40 +20,13 @@ const (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: amxTestEndpoint})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "amxtest", bidder)
-}
-
-func TestEndpointMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: " http://leading.space.is.invalid"})
-
-	assert.Error(t, buildErr)
-}
-
-func TestEndpointQueryStringMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: "http://invalid.query.from.go.docs/page?%gh&%ij"})
-
-	assert.Error(t, buildErr)
+	adapterstest.RunJSONBidderTest(t, "amxtest", NewAMXBidder(amxTestEndpoint))
 }
 
 func TestMakeRequestsTagID(t *testing.T) {
 	var w, h int = 300, 250
 	var width, height uint64 = uint64(w), uint64(h)
-
-	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: amxTestEndpoint})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
+	adapter := NewAMXBidder(amxTestEndpoint)
 
 	type testCase struct {
 		tagID         string
@@ -100,7 +71,7 @@ func TestMakeRequestsTagID(t *testing.T) {
 			Site: &openrtb.Site{},
 		}
 
-		actualAdapterRequests, err := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+		actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 		assert.Len(t, actualAdapterRequests, 1)
 		assert.Empty(t, err)
 		var body openrtb.BidRequest
@@ -112,13 +83,7 @@ func TestMakeRequestsTagID(t *testing.T) {
 func TestMakeRequestsPublisherId(t *testing.T) {
 	var w, h int = 300, 250
 	var width, height uint64 = uint64(w), uint64(h)
-
-	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: amxTestEndpoint})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
+	adapter := NewAMXBidder(amxTestEndpoint)
 
 	type testCase struct {
 		publisherID         string
@@ -165,7 +130,7 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 			}
 		}
 
-		actualAdapterRequests, err := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
+		actualAdapterRequests, err := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 		assert.Len(t, actualAdapterRequests, 1)
 		assert.Empty(t, err)
 		var body openrtb.BidRequest

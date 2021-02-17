@@ -6,9 +6,9 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
-	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
@@ -100,21 +100,57 @@ func TestBuildCacheString(t *testing.T) {
 // TestCacheJSON executes tests for all the *.json files in cachetest.
 // customcachekey.json test here verifies custom cache key not used for non-vast video
 func TestCacheJSON(t *testing.T) {
-	for _, dir := range []string{"cachetest", "customcachekeytest", "impcustomcachekeytest", "eventscachetest"} {
-		if specFiles, err := ioutil.ReadDir(dir); err == nil {
-			for _, specFile := range specFiles {
-				fileName := filepath.Join(dir, specFile.Name())
-				fileDisplayName := "exchange/" + fileName
-				t.Run(fileDisplayName, func(t *testing.T) {
-					specData, err := loadCacheSpec(fileName)
-					if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
-						runCacheSpec(t, fileDisplayName, specData)
-					}
-				})
+	if specFiles, err := ioutil.ReadDir("./cachetest"); err == nil {
+		for _, specFile := range specFiles {
+			fileName := "./cachetest/" + specFile.Name()
+			fileDisplayName := "exchange/cachetest/" + specFile.Name()
+			specData, err := loadCacheSpec(fileName)
+			if err != nil {
+				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
 			}
-		} else {
-			t.Fatalf("Failed to read contents of directory exchange/%s: %v", dir, err)
+
+			runCacheSpec(t, fileDisplayName, specData)
 		}
+	} else {
+		t.Fatalf("Failed to read contents of directory exchange/cachetest/: %v", err)
+	}
+}
+
+// TestCacheJSON executes tests for all the *.json files in customcachekeytest.
+// customcachekey.json test here verifies custom cache key is used for vast video
+func TestCustomCacheKeyJSON(t *testing.T) {
+	if specFiles, err := ioutil.ReadDir("./customcachekeytest"); err == nil {
+		for _, specFile := range specFiles {
+			fileName := "./customcachekeytest/" + specFile.Name()
+			fileDisplayName := "exchange/customcachekeytest/" + specFile.Name()
+			specData, err := loadCacheSpec(fileName)
+			if err != nil {
+				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
+			}
+
+			runCacheSpec(t, fileDisplayName, specData)
+		}
+	} else {
+		t.Fatalf("Failed to read contents of directory exchange/customcachekeytest/: %v", err)
+	}
+}
+
+// TestMultiImpCache executes multi-Imp test cases found in *.json files in
+// impcustomcachekeytest.
+func TestCustomCacheKeyMultiImp(t *testing.T) {
+	if specFiles, err := ioutil.ReadDir("./impcustomcachekeytest"); err == nil {
+		for _, specFile := range specFiles {
+			fileName := "./impcustomcachekeytest/" + specFile.Name()
+			fileDisplayName := "exchange/impcustomcachekeytest/" + specFile.Name()
+			multiImpSpecData, err := loadCacheSpec(fileName)
+			if err != nil {
+				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
+			}
+
+			runCacheSpec(t, fileDisplayName, multiImpSpecData)
+		}
+	} else {
+		t.Fatalf("Failed to read contents of directory exchange/customcachekeytest/: %v", err)
 	}
 }
 
@@ -133,8 +169,9 @@ func loadCacheSpec(filename string) (*cacheSpec, error) {
 	return &spec, nil
 }
 
-// runCacheSpec cycles through the bids found in the json test cases and
-// finds the highest bid of every Imp, then tests doCache() with resulting auction object
+// runCacheSpec has been modified to handle multi-Imp and multi-bid Json test files,
+// it cycles through the bids found in the test cases hardcoded in json files and
+// finds the highest bid of every Imp.
 func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	var bid *pbsOrtbBid
 	winningBidsByImp := make(map[string]*pbsOrtbBid)
@@ -208,14 +245,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 		winningBidsByBidder: winningBidsByBidder,
 		roundedPrices:       roundedPrices,
 	}
-	evTracking := &eventTracking{
-		accountID:          "TEST_ACC_ID",
-		enabledForAccount:  specData.EventsDataEnabledForAccount,
-		enabledForRequest:  specData.EventsDataEnabledForRequest,
-		externalURL:        "http://localhost",
-		auctionTimestampMs: 1234567890,
-	}
-	_ = testAuction.doCache(ctx, cache, targData, evTracking, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory, &specData.DebugLog)
+	_ = testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory, &specData.DebugLog)
 
 	if len(specData.ExpectedCacheables) > len(cache.items) {
 		t.Errorf("%s:  [CACHE_ERROR] Less elements were cached than expected \n", fileDisplayName)
@@ -224,43 +254,27 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	} else { // len(specData.ExpectedCacheables) == len(cache.items)
 		// We cached the exact number of elements we expected, now we compare them side by side in n^2
 		var matched int = 0
-		for i, expectedCacheable := range specData.ExpectedCacheables {
-			found := false
-			var expectedData interface{}
-			if err := json.Unmarshal(expectedCacheable.Data, &expectedData); err != nil {
-				t.Fatalf("Failed to decode expectedCacheables[%d].value: %v", i, err)
-			}
-			if s, ok := expectedData.(string); ok && expectedCacheable.Type == prebid_cache_client.TypeJSON {
-				// decode again if we have pre-encoded json string values
-				if err := json.Unmarshal([]byte(s), &expectedData); err != nil {
-					t.Fatalf("Failed to re-decode expectedCacheables[%d].value :%v", i, err)
-				}
-			}
-			for j, cachedItem := range cache.items {
-				var actualData interface{}
-				if err := json.Unmarshal(cachedItem.Data, &actualData); err != nil {
-					t.Fatalf("Failed to decode actual cache[%d].value: %s", j, err)
-				}
-				if assert.ObjectsAreEqual(expectedData, actualData) &&
-					expectedCacheable.TTLSeconds == cachedItem.TTLSeconds &&
-					expectedCacheable.Type == cachedItem.Type &&
-					len(expectedCacheable.Key) <= len(cachedItem.Key) &&
-					expectedCacheable.Key == cachedItem.Key[:len(expectedCacheable.Key)] {
-					found = true
-					cache.items = append(cache.items[:j], cache.items[j+1:]...) // remove matched item
-					break
-				}
-			}
-			if found {
-				matched++
+		var formattedExpectedData string
+		for i := 0; i < len(specData.ExpectedCacheables); i++ {
+			if specData.ExpectedCacheables[i].Type == prebid_cache_client.TypeJSON {
+				ExpectedData := strings.Replace(string(specData.ExpectedCacheables[i].Data), "\\", "", -1)
+				ExpectedData = strings.Replace(ExpectedData, " ", "", -1)
+				formattedExpectedData = ExpectedData[1 : len(ExpectedData)-1]
 			} else {
-				t.Errorf("%s: [CACHE_ERROR] Did not see expected cacheable #%d: type=%s, ttl=%d, value=%s", fileDisplayName, i, expectedCacheable.Type, expectedCacheable.TTLSeconds, string(expectedCacheable.Data))
+				formattedExpectedData = string(specData.ExpectedCacheables[i].Data)
+			}
+			for j := 0; j < len(cache.items); j++ {
+				if formattedExpectedData == string(cache.items[j].Data) &&
+					specData.ExpectedCacheables[i].TTLSeconds == cache.items[j].TTLSeconds &&
+					specData.ExpectedCacheables[i].Type == cache.items[j].Type &&
+					len(specData.ExpectedCacheables[i].Key) <= len(cache.items[j].Key) &&
+					specData.ExpectedCacheables[i].Key == cache.items[j].Key[:len(specData.ExpectedCacheables[i].Key)] {
+					matched++
+				}
 			}
 		}
 		if matched != len(specData.ExpectedCacheables) {
-			for i, item := range cache.items {
-				t.Errorf("%s: [CACHE_ERROR] Got unexpected cached item #%d: type=%s, ttl=%d, value=%s", fileDisplayName, i, item.Type, item.TTLSeconds, string(item.Data))
-			}
+			t.Errorf("%s: [CACHE_ERROR] One or more keys were not cached as we expected \n", fileDisplayName)
 			t.FailNow()
 		}
 	}
@@ -494,8 +508,6 @@ type cacheSpec struct {
 	TargetDataIncludeBidderKeys bool                            `json:"targetDataIncludeBidderKeys"`
 	TargetDataIncludeCacheBids  bool                            `json:"targetDataIncludeCacheBids"`
 	TargetDataIncludeCacheVast  bool                            `json:"targetDataIncludeCacheVast"`
-	EventsDataEnabledForAccount bool                            `json:"eventsDataEnabledForAccount"`
-	EventsDataEnabledForRequest bool                            `json:"eventsDataEnabledForRequest"`
 	DebugLog                    DebugLog                        `json:"debugLog,omitempty"`
 }
 

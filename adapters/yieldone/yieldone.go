@@ -7,7 +7,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
@@ -90,12 +89,11 @@ func (a *YieldoneAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 
 }
 
-// Builder builds a new instance of the Yieldone adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &YieldoneAdapter{
-		endpoint: config.Endpoint,
+// NewYieldoneBidder configure bidder endpoint
+func NewYieldoneBidder(endpoint string) *YieldoneAdapter {
+	return &YieldoneAdapter{
+		endpoint: endpoint,
 	}
-	return bidder, nil
 }
 
 func preprocess(imp *openrtb.Imp) error {

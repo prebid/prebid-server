@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/buger/jsonparser"
 
@@ -20,11 +19,9 @@ import (
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 )
-
-const defaultPlatformID int = 5
 
 type AppNexusAdapter struct {
 	http           *adapters.HTTPAdapter
@@ -336,9 +333,9 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 	// Add Appnexus request level extension
 	var isAMP, isVIDEO int
-	if reqInfo.PbsEntryPoint == metrics.ReqTypeAMP {
+	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
 		isAMP = 1
-	} else if reqInfo.PbsEntryPoint == metrics.ReqTypeVideo {
+	} else if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeVideo {
 		isVIDEO = 1
 	}
 
@@ -604,9 +601,6 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			}
 		}
 	}
-	if bidResp.Cur != "" {
-		bidResponse.Currency = bidResp.Cur
-	}
 	return bidResponse, errs
 }
 
@@ -644,49 +638,42 @@ func appendMemberId(uri string, memberId string) string {
 	return uri + "?member_id=" + memberId
 }
 
-// Builder builds a new instance of the AppNexus adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &AppNexusAdapter{
-		URI:            config.Endpoint,
-		iabCategoryMap: loadCategoryMapFromFileSystem(),
-		hbSource:       resolvePlatformID(config.PlatformID),
-	}
-	return bidder, nil
+func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, endpoint, platformID string) *AppNexusAdapter {
+	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client, endpoint, platformID)
 }
 
-// NewAppNexusLegacyAdapter builds a legacy version of the AppNexus adapter.
-func NewAppNexusLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, endpoint, platformID string) *AppNexusAdapter {
-	return &AppNexusAdapter{
-		http:           adapters.NewHTTPAdapter(httpConfig),
-		URI:            endpoint,
-		iabCategoryMap: loadCategoryMapFromFileSystem(),
-		hbSource:       resolvePlatformID(platformID),
-	}
-}
+func NewAppNexusBidder(client *http.Client, endpoint, platformID string) *AppNexusAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
 
-func resolvePlatformID(platformID string) int {
-	if len(platformID) > 0 {
-		if val, err := strconv.Atoi(platformID); err == nil {
-			return val
-		}
-	}
-
-	return defaultPlatformID
-}
-
-func loadCategoryMapFromFileSystem() map[string]string {
 	// Load custom options for our adapter (currently just a lookup table to convert appnexus => iab categories)
-	opts, err := ioutil.ReadFile("./home/http/GO_SERVER/dmhbserver/static/adapter/appnexus/opts.json")
-	//this is for tests
-	if err != nil {
-		opts, err = ioutil.ReadFile("./static/adapter/appnexus/opts.json")
+	var catmap map[string]string
+	var fileUri string
+	if client == nil {
+		// This is for tests
+		fileUri = "./static/adapter/appnexus/opts.json"
+	} else {
+		fileUri = "./home/http/GO_SERVER/dmhbserver/static/adapter/appnexus/opts.json"
 	}
+	opts, err := ioutil.ReadFile(fileUri)
 	if err == nil {
 		var adapterOptions appnexusAdapterOptions
 
 		if err := json.Unmarshal(opts, &adapterOptions); err == nil {
-			return adapterOptions.IabCategories
+			catmap = adapterOptions.IabCategories
 		}
 	}
-	return nil
+
+	platid := 5
+	if len(platformID) > 0 {
+		if val, err := strconv.Atoi(platformID); err == nil {
+			platid = val
+		}
+	}
+
+	return &AppNexusAdapter{
+		http:           a,
+		URI:            endpoint,
+		iabCategoryMap: catmap,
+		hbSource:       platid,
+	}
 }

@@ -3,15 +3,13 @@ package gumgum
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/PubMatic-OpenWrap/openrtb"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 // GumGumAdapter implements Bidder interface.
@@ -166,10 +164,9 @@ func validateVideoParams(video *openrtb.Video) (err error) {
 	return nil
 }
 
-// Builder builds a new instance of the GumGum adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &GumGumAdapter{
-		URI: config.Endpoint,
+// NewGumGumBidder configures bidder endpoint.
+func NewGumGumBidder(endpoint string) *GumGumAdapter {
+	return &GumGumAdapter{
+		URI: endpoint,
 	}
-	return bidder, nil
 }

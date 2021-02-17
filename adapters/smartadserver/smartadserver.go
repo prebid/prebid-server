@@ -10,7 +10,6 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
@@ -19,12 +18,10 @@ type SmartAdserverAdapter struct {
 	host string
 }
 
-// Builder builds a new instance of the SmartAdserver adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &SmartAdserverAdapter{
-		host: config.Endpoint,
+func NewSmartadserverBidder(host string) *SmartAdserverAdapter {
+	return &SmartAdserverAdapter{
+		host: host,
 	}
-	return bidder, nil
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.

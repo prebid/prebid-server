@@ -10,10 +10,10 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/macros"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/golang/glog"
 )
 
 const DefaultClient = "app"
@@ -36,17 +36,14 @@ type AdopplerAdapter struct {
 	endpoint *template.Template
 }
 
-// Builder builds a new instance of the Adoppler adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+func NewAdopplerBidder(endpoint string) *AdopplerAdapter {
+	t, err := template.New("endpoint").Parse(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+		glog.Fatalf("Unable to parse endpoint url template: %s", err)
+		return nil
 	}
 
-	bidder := &AdopplerAdapter{
-		endpoint: template,
-	}
-	return bidder, nil
+	return &AdopplerAdapter{t}
 }
 
 func (ads *AdopplerAdapter) MakeRequests(
