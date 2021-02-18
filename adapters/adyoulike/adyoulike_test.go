@@ -27,22 +27,6 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "adyouliketest", bidder)
 }
 
-func TestMakeRequestNoImp(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAdyoulike, config.Adapter{
-		Endpoint: testsBidderEndpoint})
-
-	assert.Nil(t, buildErr, "buildErr must be nil")
-
-	var reqInfo adapters.ExtraRequestInfo
-	var req openrtb.BidRequest
-	req.ID = "test_id"
-
-	bids, errs := bidder.MakeRequests(&req, &reqInfo)
-
-	assert.EqualError(t, errs[0], "No impression in the bid request")
-	assert.Len(t, bids, 0)
-}
-
 func TestMakeRequestInvalidParams(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdyoulike, config.Adapter{
 		Endpoint: testsBidderEndpoint})
