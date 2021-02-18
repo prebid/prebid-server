@@ -80,7 +80,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 		}
 		// detect and fill adtype
 		if adType := getAdType(imp, &impExt); adType == -1 {
-			errs = append(errs, adapters.BadInput("not a supported adtype"))
+			errs = append(errs, &errortypes.BadInput{Message: "not a supported adtype"})
 			continue
 		} else {
 			impExt.AdType = adType
