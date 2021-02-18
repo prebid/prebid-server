@@ -32,11 +32,10 @@ RUN apt-get update && \
     apt-get install -y ca-certificates mtr && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ADD docker_ports.sh /
-RUN chmod +x /docker_ports.sh
-RUN /docker_ports.sh
 
 EXPOSE $PBS_PORT
 EXPOSE $PBS_ADMIN_PORT
-ENTRYPOINT ["/usr/local/bin/prebid-server"]
-CMD ["-v", "1", "-logtostderr"]
+
+# server launch is made by infra team along with port configuration
+#ENTRYPOINT ["/usr/local/bin/prebid-server"]
+#CMD ["-v", "1", "-logtostderr"]
