@@ -17,7 +17,7 @@ const (
 	unicornAuctionType = 1
 )
 
-// UnicornAdapter describes a Smaato prebid server adapter.
+// UnicornAdapter describes a UNICORN prebid server adapter.
 type UnicornAdapter struct {
 	endpoint string
 }

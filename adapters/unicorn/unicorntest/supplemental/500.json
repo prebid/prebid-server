@@ -159,14 +159,14 @@
         }
       },
       "mockResponse": {
-        "status": 400,
+        "status": 500,
         "body": {}
       }
     }
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected http status code: 400",
+      "value": "Unexpected http status code: 500",
       "comparison": "literal"
     }
   ]
