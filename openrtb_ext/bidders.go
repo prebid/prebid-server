@@ -74,6 +74,7 @@ const (
 	BidderCpmstar          BidderName = "cpmstar"
 	BidderDatablocks       BidderName = "datablocks"
 	BidderDmx              BidderName = "dmx"
+	BidderDecenterAds      BidderName = "decenterads"
 	BidderDeepintent       BidderName = "deepintent"
 	BidderEmxDigital       BidderName = "emx_digital"
 	BidderEngageBDR        BidderName = "engagebdr"
@@ -102,6 +103,7 @@ const (
 	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderNinthDecimal     BidderName = "ninthdecimal"
 	BidderNoBid            BidderName = "nobid"
+	BidderOneTag           BidderName = "onetag"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
 	BidderPubmatic         BidderName = "pubmatic"
@@ -174,6 +176,7 @@ func CoreBidderNames() []BidderName {
 		BidderConversant,
 		BidderCpmstar,
 		BidderDatablocks,
+		BidderDecenterAds,
 		BidderDeepintent,
 		BidderDmx,
 		BidderEmxDigital,
@@ -203,6 +206,7 @@ func CoreBidderNames() []BidderName {
 		BidderNanoInteractive,
 		BidderNinthDecimal,
 		BidderNoBid,
+		BidderOneTag,
 		BidderOpenx,
 		BidderOrbidder,
 		BidderPubmatic,

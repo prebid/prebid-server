@@ -17,7 +17,7 @@ import (
 const vastImpressionFormat = "<Impression><![CDATA[%s]]></Impression>"
 const vastSearchPoint = "</Impression>"
 const nbrHeaderName = "x-nbr"
-const adapterVersion = "pbs1.0"
+const adapterVersion = "pbs1.1"
 
 // AMXAdapter is the AMX bid adapter
 type AMXAdapter struct {
@@ -149,6 +149,7 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
+			bid := bid
 			bidExt, bidExtErr := getBidExt(bid.Ext)
 			if bidExtErr != nil {
 				errs = append(errs, bidExtErr)
@@ -165,11 +166,12 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 				// remove the NURL so a client/player doesn't fire it twice
 				b.Bid.NURL = ""
 			}
+
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
-	return bidResponse, errs
 
+	return bidResponse, errs
 }
 
 func getBidExt(ext json.RawMessage) (amxBidExt, error) {

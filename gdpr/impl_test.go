@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNoConsentButAllowByDefault(t *testing.T) {
+func TestDisallowOnEmptyConsent(t *testing.T) {
 	perms := permissionsImpl{
 		cfg: config.GDPR{
 			HostVendorID:        3,
@@ -27,32 +27,25 @@ func TestNoConsentButAllowByDefault(t *testing.T) {
 			tcf2SpecVersion: failedListFetcher,
 		},
 	}
-	allowSync, err := perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderAppnexus, "")
-	assertBoolsEqual(t, true, allowSync)
+	allowSync, err := perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderAppnexus, SignalYes, "")
+	assertBoolsEqual(t, false, allowSync)
 	assertNilErr(t, err)
-	allowSync, err = perms.HostCookiesAllowed(context.Background(), "")
-	assertBoolsEqual(t, true, allowSync)
+	allowSync, err = perms.HostCookiesAllowed(context.Background(), SignalYes, "")
+	assertBoolsEqual(t, false, allowSync)
 	assertNilErr(t, err)
 }
 
-func TestNoConsentAndRejectByDefault(t *testing.T) {
-	perms := permissionsImpl{
-		cfg: config.GDPR{
-			HostVendorID:        3,
-			UsersyncIfAmbiguous: false,
-		},
-		vendorIDs: nil,
-		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			tcf1SpecVersion: failedListFetcher,
-			tcf2SpecVersion: failedListFetcher,
-		},
-	}
-	allowSync, err := perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderAppnexus, "")
-	assertBoolsEqual(t, false, allowSync)
-	assertNilErr(t, err)
-	allowSync, err = perms.HostCookiesAllowed(context.Background(), "")
-	assertBoolsEqual(t, false, allowSync)
-	assertNilErr(t, err)
+func TestAllowOnSignalNo(t *testing.T) {
+	perms := permissionsImpl{}
+	emptyConsent := ""
+
+	allowSync, err := perms.HostCookiesAllowed(context.Background(), SignalNo, emptyConsent)
+	assert.Equal(t, true, allowSync)
+	assert.Nil(t, err)
+
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderAppnexus, SignalNo, emptyConsent)
+	assert.Equal(t, true, allowSync)
+	assert.Nil(t, err)
 }
 
 func TestAllowedSyncs(t *testing.T) {
@@ -81,11 +74,11 @@ func TestAllowedSyncs(t *testing.T) {
 		},
 	}
 
-	allowSync, err := perms.HostCookiesAllowed(context.Background(), "BON3PCUON3PCUABABBAAABoAAAAAMw")
+	allowSync, err := perms.HostCookiesAllowed(context.Background(), SignalYes, "BON3PCUON3PCUABABBAAABoAAAAAMw")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, true, allowSync)
 
-	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderPubmatic, "BON3PCUON3PCUABABBAAABoAAAAAMw")
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderPubmatic, SignalYes, "BON3PCUON3PCUABABBAAABoAAAAAMw")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, true, allowSync)
 }
@@ -116,11 +109,11 @@ func TestProhibitedPurposes(t *testing.T) {
 		},
 	}
 
-	allowSync, err := perms.HostCookiesAllowed(context.Background(), "BON3PCUON3PCUABABBAAABAAAAAAMw")
+	allowSync, err := perms.HostCookiesAllowed(context.Background(), SignalYes, "BON3PCUON3PCUABABBAAABAAAAAAMw")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, false, allowSync)
 
-	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderPubmatic, "BON3PCUON3PCUABABBAAABAAAAAAMw")
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderPubmatic, SignalYes, "BON3PCUON3PCUABABBAAABAAAAAAMw")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, false, allowSync)
 }
@@ -151,11 +144,11 @@ func TestProhibitedVendors(t *testing.T) {
 		},
 	}
 
-	allowSync, err := perms.HostCookiesAllowed(context.Background(), "BOS2bx5OS2bx5ABABBAAABoAAAAAFA")
+	allowSync, err := perms.HostCookiesAllowed(context.Background(), SignalYes, "BOS2bx5OS2bx5ABABBAAABoAAAAAFA")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, false, allowSync)
 
-	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderPubmatic, "BOS2bx5OS2bx5ABABBAAABoAAAAAFA")
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderPubmatic, SignalYes, "BOS2bx5OS2bx5ABABBAAABoAAAAAFA")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, false, allowSync)
 }
@@ -171,7 +164,7 @@ func TestMalformedConsent(t *testing.T) {
 		},
 	}
 
-	sync, err := perms.HostCookiesAllowed(context.Background(), "BON")
+	sync, err := perms.HostCookiesAllowed(context.Background(), SignalYes, "BON")
 	assertErr(t, err, true)
 	assertBoolsEqual(t, false, sync)
 }
@@ -618,11 +611,11 @@ func TestAllowSyncTCF2(t *testing.T) {
 	}
 
 	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : TCF2 with full consensts to purposes and vendors 2, 6, 8
-	allowSync, err := perms.HostCookiesAllowed(context.Background(), "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	allowSync, err := perms.HostCookiesAllowed(context.Background(), SignalYes, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
 	assert.NoErrorf(t, err, "Error processing HostCookiesAllowed")
 	assert.EqualValuesf(t, true, allowSync, "HostCookiesAllowed failure")
 
-	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderRubicon, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderRubicon, SignalYes, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
 	assert.NoErrorf(t, err, "Error processing BidderSyncAllowed")
 	assert.EqualValuesf(t, true, allowSync, "BidderSyncAllowed failure")
 }
@@ -648,11 +641,11 @@ func TestProhibitedPurposeSyncTCF2(t *testing.T) {
 	perms.cfg.HostVendorID = 8
 
 	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : TCF2 with full consents to purposes for vendors 2, 6, 8
-	allowSync, err := perms.HostCookiesAllowed(context.Background(), "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	allowSync, err := perms.HostCookiesAllowed(context.Background(), SignalYes, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
 	assert.NoErrorf(t, err, "Error processing HostCookiesAllowed")
 	assert.EqualValuesf(t, false, allowSync, "HostCookiesAllowed failure")
 
-	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderRubicon, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderRubicon, SignalYes, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
 	assert.NoErrorf(t, err, "Error processing BidderSyncAllowed")
 	assert.EqualValuesf(t, false, allowSync, "BidderSyncAllowed failure")
 }
@@ -677,12 +670,12 @@ func TestProhibitedVendorSyncTCF2(t *testing.T) {
 	perms.cfg.HostVendorID = 10
 
 	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : TCF2 with full consents to purposes for vendors 2, 6, 8
-	allowSync, err := perms.HostCookiesAllowed(context.Background(), "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	allowSync, err := perms.HostCookiesAllowed(context.Background(), SignalYes, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
 	assert.NoErrorf(t, err, "Error processing HostCookiesAllowed")
 	assert.EqualValuesf(t, false, allowSync, "HostCookiesAllowed failure")
 
 	// Permission disallowed due to consent string not including vendor 10.
-	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderOpenx, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderOpenx, SignalYes, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
 	assert.NoErrorf(t, err, "Error processing BidderSyncAllowed")
 	assert.EqualValuesf(t, false, allowSync, "BidderSyncAllowed failure")
 }
@@ -748,5 +741,63 @@ func assertStringsEqual(t *testing.T, expected string, actual string) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("Expected %s, got %s", expected, actual)
+	}
+}
+
+func TestNormalizeGDPR(t *testing.T) {
+	tests := []struct {
+		description         string
+		userSyncIfAmbiguous bool
+		giveSignal          Signal
+		wantSignal          Signal
+	}{
+		{
+			description:         "Don't normalize - Signal No and userSyncIfAmbiguous false",
+			userSyncIfAmbiguous: false,
+			giveSignal:          SignalNo,
+			wantSignal:          SignalNo,
+		},
+		{
+			description:         "Don't normalize - Signal No and userSyncIfAmbiguous true",
+			userSyncIfAmbiguous: true,
+			giveSignal:          SignalNo,
+			wantSignal:          SignalNo,
+		},
+		{
+			description:         "Don't normalize - Signal Yes and userSyncIfAmbiguous false",
+			userSyncIfAmbiguous: false,
+			giveSignal:          SignalYes,
+			wantSignal:          SignalYes,
+		},
+		{
+			description:         "Don't normalize - Signal Yes and userSyncIfAmbiguous true",
+			userSyncIfAmbiguous: true,
+			giveSignal:          SignalYes,
+			wantSignal:          SignalYes,
+		},
+		{
+			description:         "Normalize - Signal Ambiguous and userSyncIfAmbiguous false",
+			userSyncIfAmbiguous: false,
+			giveSignal:          SignalAmbiguous,
+			wantSignal:          SignalYes,
+		},
+		{
+			description:         "Normalize - Signal Ambiguous and userSyncIfAmbiguous true",
+			userSyncIfAmbiguous: true,
+			giveSignal:          SignalAmbiguous,
+			wantSignal:          SignalNo,
+		},
+	}
+
+	for _, tt := range tests {
+		perms := permissionsImpl{
+			cfg: config.GDPR{
+				UsersyncIfAmbiguous: tt.userSyncIfAmbiguous,
+			},
+		}
+
+		normalizedSignal := perms.normalizeGDPR(tt.giveSignal)
+
+		assert.Equal(t, tt.wantSignal, normalizedSignal, tt.description)
 	}
 }
