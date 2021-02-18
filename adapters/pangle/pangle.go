@@ -178,7 +178,8 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.Re
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
-		for _, bid := range seatBid.Bid {
+		for _, temp := range seatBid.Bid {
+			bid := temp // avoid taking address of a for loop variable
 			mediaType, err := getMediaTypeForBid(&bid)
 			if err != nil {
 				errs = append(errs, err)
