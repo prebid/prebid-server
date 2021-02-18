@@ -39,33 +39,15 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 }
 
 func (a *adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
-	var errs []error
-	var validImps []openrtb.Imp
-
 	if request.Device == nil || request.Device.IP == "" {
 		return nil, []error{&errortypes.BadInput{
 			Message: "ipv4 address is required field",
 		}}
 	}
 
-	for _, imp := range request.Imp {
-		if err := preprocess(&imp); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		validImps = append(validImps, imp)
-	}
-
-	if len(validImps) == 0 {
-		return nil, errs
-	}
-
-	request.Imp = validImps
-
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{err}
 	}
 
 	headers := http.Header{}
@@ -76,17 +58,7 @@ func (a *adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestDat
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-	}, errs
-}
-
-func preprocess(imp *openrtb.Imp) error {
-	if imp.Audio != nil {
-		return &errortypes.BadInput{
-			Message: "Audio is not supported",
-		}
-	}
-
-	return nil
+	}, nil
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -119,7 +91,9 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 
 	//additional no content check
 	if len(bidResp.SeatBid) == 0 || len(bidResp.SeatBid[0].Bid) == 0 {
-		return nil, nil
+		return nil, []error{&errortypes.Warning{
+			Message: "No bids in response",
+		}}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
