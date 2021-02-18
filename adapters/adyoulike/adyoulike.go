@@ -14,16 +14,16 @@ import (
 )
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	return &AdYouLikeAdapter{
+	return &adapter{
 		endpoint: config.Endpoint,
 	}, nil
 }
 
-type AdYouLikeAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
-func (adapter *AdYouLikeAdapter) MakeRequests(
+func (a *adapter) MakeRequests(
 	openRTBRequest *openrtb.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
@@ -80,7 +80,7 @@ func (adapter *AdYouLikeAdapter) MakeRequests(
 
 	requestToBidder := &adapters.RequestData{
 		Method:  "POST",
-		Uri:     adapter.endpoint,
+		Uri:     a.endpoint,
 		Body:    openRTBRequestJSON,
 		Headers: headers,
 	}
@@ -92,7 +92,7 @@ func (adapter *AdYouLikeAdapter) MakeRequests(
 const unexpectedStatusCodeFormat = "" +
 	"Unexpected status code: %d. Run with request.debug = 1 for more info"
 
-func (adapter *AdYouLikeAdapter) MakeBids(
+func (a *adapter) MakeBids(
 	openRTBRequest *openrtb.BidRequest,
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
