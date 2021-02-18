@@ -41,6 +41,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/emx_digital"
 	"github.com/prebid/prebid-server/adapters/engagebdr"
 	"github.com/prebid/prebid-server/adapters/eplanning"
+	"github.com/prebid/prebid-server/adapters/epom"
 	"github.com/prebid/prebid-server/adapters/gamma"
 	"github.com/prebid/prebid-server/adapters/gamoshi"
 	"github.com/prebid/prebid-server/adapters/grid"
@@ -144,6 +145,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEmxDigital:       emx_digital.Builder,
 		openrtb_ext.BidderEngageBDR:        engagebdr.Builder,
 		openrtb_ext.BidderEPlanning:        eplanning.Builder,
+		openrtb_ext.BidderEpom:             epom.Builder,
 		openrtb_ext.BidderGamma:            gamma.Builder,
 		openrtb_ext.BidderGamoshi:          gamoshi.Builder,
 		openrtb_ext.BidderGrid:             grid.Builder,
