@@ -13,7 +13,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -30,7 +29,7 @@ const (
 type vtrackEndpoint struct {
 	Cfg         *config.Configuration
 	Accounts    stored_requests.AccountFetcher
-	BidderInfos adapters.BidderInfos
+	BidderInfos config.BidderInfos
 	Cache       prebid_cache_client.Client
 }
 
@@ -46,7 +45,7 @@ type CacheObject struct {
 	UUID string `json:"uuid"`
 }
 
-func NewVTrackEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, cache prebid_cache_client.Client, bidderInfos adapters.BidderInfos) httprouter.Handle {
+func NewVTrackEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, cache prebid_cache_client.Client, bidderInfos config.BidderInfos) httprouter.Handle {
 	vte := &vtrackEndpoint{
 		Cfg:         cfg,
 		Accounts:    accounts,
@@ -240,7 +239,7 @@ func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheReque
 }
 
 // getBiddersAllowingVastUpdate returns a list of bidders that allow VAST XML modification
-func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *adapters.BidderInfos, allowUnknownBidder bool) map[string]struct{} {
+func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.BidderInfos, allowUnknownBidder bool) map[string]struct{} {
 	bl := map[string]struct{}{}
 
 	for _, bcr := range req.Puts {
@@ -253,12 +252,12 @@ func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *adapters.Bi
 }
 
 // isAllowVastForBidder checks if a bidder is active and allowed to modify vast xml data
-func isAllowVastForBidder(bidder string, bidderInfos *adapters.BidderInfos, allowUnknownBidder bool) bool {
+func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowUnknownBidder bool) bool {
 	//if bidder is active and isModifyingVastXmlAllowed is true
 	// check if bidder is configured
 	if b, ok := (*bidderInfos)[bidder]; bidderInfos != nil && ok {
 		// check if bidder is enabled
-		return b.Status == adapters.StatusActive && b.ModifyingVastXmlAllowed
+		return b.Enabled && b.ModifyingVastXmlAllowed
 	}
 
 	return allowUnknownBidder

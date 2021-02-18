@@ -479,7 +479,7 @@ func TestInvalidConsent(t *testing.T) {
 
 	// Assert Result
 	expectedWarnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError{
-		openrtb_ext.BidderNameGeneral: {
+		openrtb_ext.BidderReservedGeneral: {
 			{
 				Code:    10001,
 				Message: "Consent '" + invalidConsent + "' is not recognized as either CCPA or GDPR TCF.",

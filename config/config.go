@@ -522,7 +522,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(); len(errs) > 0 {
-		return &c, errortypes.NewAggregateErrors("validation errors", errs)
+		return &c, errortypes.NewAggregateError("validation errors", errs)
 	}
 
 	return &c, nil
