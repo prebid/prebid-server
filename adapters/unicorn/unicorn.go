@@ -13,10 +13,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const (
-	unicornAuctionType = 1
-)
-
 // UnicornAdapter describes a UNICORN prebid server adapter.
 type UnicornAdapter struct {
 	endpoint string
@@ -69,8 +65,6 @@ func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
 			}
 		}
 	}
-
-	request.AT = unicornAuctionType
 
 	imp, err := setImps(request, requestInfo)
 	if err != nil {

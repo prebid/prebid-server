@@ -1,5 +1,6 @@
 {
   "mockBidRequest": {
+    "at": 1,
     "regs": {
       "ext": {
         "us_privacy": "1YNN"

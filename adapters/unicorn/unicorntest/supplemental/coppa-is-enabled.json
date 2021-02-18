@@ -1,5 +1,6 @@
 {
   "mockBidRequest": {
+    "at": 1,
     "regs": {
       "coppa": 1
     },
