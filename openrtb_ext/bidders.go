@@ -139,6 +139,7 @@ const (
 	BidderOneTag           BidderName = "onetag"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
+	BidderPangle           BidderName = "pangle"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
 	BidderPulsepoint       BidderName = "pulsepoint"
@@ -242,6 +243,7 @@ func CoreBidderNames() []BidderName {
 		BidderOneTag,
 		BidderOpenx,
 		BidderOrbidder,
+		BidderPangle,
 		BidderPubmatic,
 		BidderPubnative,
 		BidderPulsepoint,

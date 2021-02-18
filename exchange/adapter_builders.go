@@ -66,6 +66,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/onetag"
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/orbidder"
+	"github.com/prebid/prebid-server/adapters/pangle"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pubnative"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
@@ -171,6 +172,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderOneTag:           onetag.Builder,
 		openrtb_ext.BidderOpenx:            openx.Builder,
 		openrtb_ext.BidderOrbidder:         orbidder.Builder,
+		openrtb_ext.BidderPangle:           pangle.Builder,
 		openrtb_ext.BidderPubmatic:         pubmatic.Builder,
 		openrtb_ext.BidderPubnative:        pubnative.Builder,
 		openrtb_ext.BidderPulsepoint:       pulsepoint.Builder,

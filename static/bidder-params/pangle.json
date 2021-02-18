@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Pangle Adapter Params",
+  "description": "A schema which validates params accepted by the Pangle adapter",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "description": "Access Token",
+      "pattern": ".+"
+    }
+  },
+  "required": [
+    "token"
+  ]
+}
