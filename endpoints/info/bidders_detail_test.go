@@ -211,7 +211,6 @@ func TestMarshalDetailsResponse(t *testing.T) {
 		description      string
 		givenDetails     map[string]bidderDetail
 		expectedResponse map[string][]byte
-		expectedError    string
 	}{
 		{
 			description:      "None",
@@ -233,13 +232,8 @@ func TestMarshalDetailsResponse(t *testing.T) {
 	for _, test := range testCases {
 		response, err := marshalDetailsResponse(test.givenDetails)
 
-		if test.expectedError == "" {
-			assert.Equal(t, test.expectedResponse, response, test.description+":response")
-			assert.NoError(t, err, test.expectedError, test.description+":err")
-		} else {
-			assert.Empty(t, response, test.description+":response")
-			assert.EqualError(t, err, test.expectedError, test.description+":err")
-		}
+		assert.NoError(t, err, test.description+":err")
+		assert.Equal(t, test.expectedResponse, response, test.description+":response")
 	}
 }
 
