@@ -5,7 +5,7 @@ pipeline {
     agent any
 
     parameters {
-        string(description: 'Set an arbitrary build tag name. Please reference prebid-server version.', name: 'image_tag')
+        string(description: 'Set an arbitrary build tag name. \nPlease reference prebid-server version.\n ex:  AYL-<PBSVersion>-JIRA-123', name: 'image_tag')
     }
 
     stages {
