@@ -1,5 +1,5 @@
 {
-    "description": "Well formed app",
+    "description": "Well Formed iOS 14.0 App Request With Unspecified LMT + Empty IFA",
     "mockBidRequest": {
         "id": "some-request-id",
         "app": {
