@@ -2,7 +2,6 @@ package adapters_test
 
 import (
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -15,14 +14,14 @@ import (
 
 func TestAppNotSupported(t *testing.T) {
 	bidder := &mockBidder{}
-	info := adapters.BidderInfo{
-		Capabilities: &adapters.CapabilitiesInfo{
-			Site: &adapters.PlatformInfo{
+	info := config.BidderInfo{
+		Capabilities: &config.CapabilitiesInfo{
+			Site: &config.PlatformInfo{
 				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 			},
 		},
 	}
-	constrained := adapters.EnforceBidderInfo(bidder, info)
+	constrained := adapters.BuildInfoAwareBidder(bidder, info)
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
 		Imp: []openrtb.Imp{{ID: "imp-1", Banner: &openrtb.Banner{}}},
 		App: &openrtb.App{},
@@ -37,14 +36,14 @@ func TestAppNotSupported(t *testing.T) {
 
 func TestSiteNotSupported(t *testing.T) {
 	bidder := &mockBidder{}
-	info := adapters.BidderInfo{
-		Capabilities: &adapters.CapabilitiesInfo{
-			App: &adapters.PlatformInfo{
+	info := config.BidderInfo{
+		Capabilities: &config.CapabilitiesInfo{
+			App: &config.PlatformInfo{
 				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 			},
 		},
 	}
-	constrained := adapters.EnforceBidderInfo(bidder, info)
+	constrained := adapters.BuildInfoAwareBidder(bidder, info)
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
 		Imp:  []openrtb.Imp{{ID: "imp-1", Banner: &openrtb.Banner{}}},
 		Site: &openrtb.Site{},
@@ -59,18 +58,18 @@ func TestSiteNotSupported(t *testing.T) {
 
 func TestImpFiltering(t *testing.T) {
 	bidder := &mockBidder{}
-	info := adapters.BidderInfo{
-		Capabilities: &adapters.CapabilitiesInfo{
-			Site: &adapters.PlatformInfo{
+	info := config.BidderInfo{
+		Capabilities: &config.CapabilitiesInfo{
+			Site: &config.PlatformInfo{
 				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeVideo},
 			},
-			App: &adapters.PlatformInfo{
+			App: &config.PlatformInfo{
 				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 			},
 		},
 	}
 
-	constrained := adapters.EnforceBidderInfo(bidder, info)
+	constrained := adapters.BuildInfoAwareBidder(bidder, info)
 
 	testCases := []struct {
 		description    string
@@ -194,34 +193,4 @@ func (m *mockBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters
 
 func (m *mockBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	return nil, []error{errors.New("mock MakeBids error")}
-}
-
-func blankAdapterConfig(bidderName openrtb_ext.BidderName) map[string]config.Adapter {
-	adapters := make(map[string]config.Adapter)
-	adapters[strings.ToLower(string(bidderName))] = config.Adapter{}
-
-	return adapters
-}
-
-func TestParsing(t *testing.T) {
-	mockBidderName := openrtb_ext.BidderName("someBidder")
-	infos := adapters.ParseBidderInfos(blankAdapterConfig(mockBidderName), "./adapterstest/bidder-info", []openrtb_ext.BidderName{mockBidderName})
-	if infos[string(mockBidderName)].Maintainer.Email != "some-email@domain.com" {
-		t.Errorf("Bad maintainer email. Got %s", infos[string(mockBidderName)].Maintainer.Email)
-	}
-
-	assert.Equal(t, true, infos.IsActive(mockBidderName))
-
-	assert.Equal(t, true, infos.HasAppSupport(mockBidderName))
-	assert.Equal(t, true, infos.HasSiteSupport(mockBidderName))
-
-	assert.Equal(t, true, infos.SupportsAppMediaType(mockBidderName, openrtb_ext.BidTypeBanner))
-	assert.Equal(t, false, infos.SupportsAppMediaType(mockBidderName, openrtb_ext.BidTypeVideo))
-	assert.Equal(t, false, infos.SupportsAppMediaType(mockBidderName, openrtb_ext.BidTypeAudio))
-	assert.Equal(t, true, infos.SupportsAppMediaType(mockBidderName, openrtb_ext.BidTypeNative))
-
-	assert.Equal(t, true, infos.SupportsWebMediaType(mockBidderName, openrtb_ext.BidTypeBanner))
-	assert.Equal(t, true, infos.SupportsWebMediaType(mockBidderName, openrtb_ext.BidTypeVideo))
-	assert.Equal(t, false, infos.SupportsWebMediaType(mockBidderName, openrtb_ext.BidTypeAudio))
-	assert.Equal(t, true, infos.SupportsWebMediaType(mockBidderName, openrtb_ext.BidTypeNative))
 }

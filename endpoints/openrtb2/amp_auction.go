@@ -245,7 +245,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			Code:    errortypes.ReadCode(v),
 			Message: v.Error(),
 		}
-		warnings[openrtb_ext.BidderNameGeneral] = append(warnings[openrtb_ext.BidderNameGeneral], bidderErr)
+		warnings[openrtb_ext.BidderReservedGeneral] = append(warnings[openrtb_ext.BidderReservedGeneral], bidderErr)
 	}
 
 	// Now JSONify the targets for the AMP response.

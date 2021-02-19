@@ -51,7 +51,7 @@ type IdFetcher interface {
 
 type exchange struct {
 	adapterMap          map[openrtb_ext.BidderName]adaptedBidder
-	bidderInfo          adapters.BidderInfos
+	bidderInfo          config.BidderInfos
 	me                  metrics.MetricsEngine
 	cache               prebid_cache_client.Client
 	cacheTime           time.Duration
@@ -78,7 +78,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
 	return &exchange{
 		adapterMap:          adapters,
 		bidderInfo:          infos,

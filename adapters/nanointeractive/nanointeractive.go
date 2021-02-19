@@ -95,7 +95,9 @@ func (a *NanoInteractiveAdapter) MakeBids(
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	} else if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{adapters.BadInput("Invalid request.")}
+		return nil, []error{&errortypes.BadInput{
+			Message: "Invalid request.",
+		}}
 	} else if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unexpected HTTP status %d.", response.StatusCode),

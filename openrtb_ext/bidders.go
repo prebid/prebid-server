@@ -17,12 +17,6 @@ const schemaDirectory = "static/bidder-params"
 // BidderName refers to a core bidder id or an alias id.
 type BidderName string
 
-// BidderNameGeneral is reserved for non-bidder specific messages when using a map keyed on the bidder name.
-const BidderNameGeneral = BidderName("general")
-
-// BidderNameContext is reserved for first party data.
-const BidderNameContext = BidderName("context")
-
 func (name BidderName) MarshalJSON() ([]byte, error) {
 	return []byte(name), nil
 }
@@ -32,6 +26,45 @@ func (name *BidderName) String() string {
 		return ""
 	}
 	return string(*name)
+}
+
+// Names of reserved bidders. These names may not be used by a core bidder or alias.
+const (
+	BidderReservedAll     BidderName = "all"     // Reserved for the /info/bidders/all endpoint.
+	BidderReservedContext BidderName = "context" // Reserved for first party data.
+	BidderReservedData    BidderName = "data"    // Reserved for first party data.
+	BidderReservedGeneral BidderName = "general" // Reserved for non-bidder specific messages when using a map keyed on the bidder name.
+	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
+	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for SKAdNetwork OpenRTB extension.
+)
+
+// IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
+func IsBidderNameReserved(name string) bool {
+	if strings.EqualFold(name, string(BidderReservedAll)) {
+		return true
+	}
+
+	if strings.EqualFold(name, string(BidderReservedContext)) {
+		return true
+	}
+
+	if strings.EqualFold(name, string(BidderReservedData)) {
+		return true
+	}
+
+	if strings.EqualFold(name, string(BidderReservedGeneral)) {
+		return true
+	}
+
+	if strings.EqualFold(name, string(BidderReservedSKAdN)) {
+		return true
+	}
+
+	if strings.EqualFold(name, string(BidderReservedPrebid)) {
+		return true
+	}
+
+	return false
 }
 
 // Names of core bidders. These names *must* match the bidder code in Prebid.js if an adapter also exists in that
@@ -80,6 +113,7 @@ const (
 	BidderEmxDigital       BidderName = "emx_digital"
 	BidderEngageBDR        BidderName = "engagebdr"
 	BidderEPlanning        BidderName = "eplanning"
+	BidderEpom             BidderName = "epom"
 	BidderGamma            BidderName = "gamma"
 	BidderGamoshi          BidderName = "gamoshi"
 	BidderGrid             BidderName = "grid"
@@ -106,6 +140,7 @@ const (
 	BidderOneTag           BidderName = "onetag"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
+	BidderPangle           BidderName = "pangle"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
 	BidderPulsepoint       BidderName = "pulsepoint"
@@ -183,6 +218,7 @@ func CoreBidderNames() []BidderName {
 		BidderEmxDigital,
 		BidderEngageBDR,
 		BidderEPlanning,
+		BidderEpom,
 		BidderGamma,
 		BidderGamoshi,
 		BidderGrid,
@@ -209,6 +245,7 @@ func CoreBidderNames() []BidderName {
 		BidderOneTag,
 		BidderOpenx,
 		BidderOrbidder,
+		BidderPangle,
 		BidderPubmatic,
 		BidderPubnative,
 		BidderPulsepoint,
@@ -252,6 +289,16 @@ func BuildBidderMap() map[string]BidderName {
 		lookup[string(name)] = name
 	}
 	return lookup
+}
+
+// BuildBidderStringSlice builds a slioce of strings for each BidderName.
+func BuildBidderStringSlice() []string {
+	coreBidders := CoreBidderNames()
+	slice := make([]string, len(coreBidders))
+	for i, name := range CoreBidderNames() {
+		slice[i] = string(name)
+	}
+	return slice
 }
 
 func BuildBidderNameHashSet() map[string]struct{} {

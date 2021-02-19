@@ -5,7 +5,6 @@ import (
 	"time"
 
 	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/events"
@@ -20,12 +19,12 @@ type eventTracking struct {
 	enabledForRequest  bool
 	auctionTimestampMs int64
 	integration        metrics.DemandSource // web app amp
-	bidderInfos        adapters.BidderInfos
+	bidderInfos        config.BidderInfos
 	externalURL        string
 }
 
 // getEventTracking creates an eventTracking object from the different configuration sources
-func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Time, account *config.Account, bidderInfos adapters.BidderInfos, externalURL string) *eventTracking {
+func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Time, account *config.Account, bidderInfos config.BidderInfos, externalURL string) *eventTracking {
 	return &eventTracking{
 		accountID:          account.ID,
 		enabledForAccount:  account.EventsEnabled,
