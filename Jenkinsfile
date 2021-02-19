@@ -16,7 +16,7 @@ pipeline {
         }
         stage('Push image') {
             when {
-                expression { params.image_tag =~ "^v" }
+                expression { params.image_tag =~ "^(?!\s*$).+" }
             }
             steps {
                 sh "docker tag prebid-server:latest docker.ayl.io/ayl/prebid-server:${params.image_tag}"
@@ -25,7 +25,7 @@ pipeline {
         }
         stage('Deploy Docker image') {
             when {
-                expression { params.image_tag =~ "^v" }
+                expression { params.image_tag =~ "^(?!\s*$).+" }
             }
             environment {
                 MARATHON_URL = "https://deploy-pprod.ayl.io/v2/apps/tag/prebid-server-test"
