@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
@@ -33,40 +32,56 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-//func buildEndpoint(endpoint string, timeout int64) string {
-//	return endpoint + "?pstimeout=" + strconv.FormatInt(timeout, 10)
-//}
+func processImp(imp *openrtb.Imp) error {
+	var bidderExt adapters.ExtImpBidder
+
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return err
+	}
+	var jxExt openrtb_ext.ExtImpJixie
+	if err := json.Unmarshal(bidderExt.Bidder, &jxExt); err != nil {
+		return err
+	}
+
+	if jxExt.Unit == "" {
+		err := &errortypes.BadInput{
+			Message: "No valid jixie unit",
+		}
+		return err
+	}
+
+	// no error
+	return nil
+}
 
 func (a *JixieAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
+	var errs = make([]error, 0)
 
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No Imps in Bid Request"),
-		}}
-	}
-
-	for _, imp := range request.Imp {
-
-		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: fmt.Sprintf("Impression id=%s has an Error: %s", imp.ID, err.Error()),
-			})
-			continue
-		}
-		var jxExt openrtb_ext.ExtImpJixie
-		if err := json.Unmarshal(bidderExt.Bidder, &jxExt); err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: fmt.Sprintf("Impression id=%s, has invalid Ext", imp.ID),
-			})
-			continue
+	// copy the request, because we are going to mutate it
+	requestCopy := *request
+	// this will contain all the valid impressions
+	var validImps []openrtb.Imp
+	// pre-process the imps
+	for _, imp := range requestCopy.Imp {
+		if err := processImp(&imp); err == nil {
+			validImps = append(validImps, imp)
+		} else {
+			errs = append(errs, err)
 		}
 	}
+	if len(validImps) == 0 {
+		err := &errortypes.BadInput{
+			Message: "No valid impressions for jixie",
+		}
+		errs = append(errs, err)
+		return nil, errs
+	}
+	requestCopy.Imp = validImps
 
-	data, err := json.Marshal(request)
+	data, err := json.Marshal(requestCopy)
 	if err != nil {
 		errs = append(errs, err)
+		return nil, errs
 	}
 
 	headers := http.Header{}
@@ -75,17 +90,11 @@ func (a *JixieAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 	if request.Device != nil {
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
 		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
-		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
-		if request.Device.DNT != nil {
-			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
-		}
 	}
 
 	if request.Site != nil {
 		addHeaderIfNonEmpty(headers, "Referer", request.Site.Page)
 	}
-
-	//theurl := buildEndpoint(a.endpoint, request.TMax)
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -119,6 +128,12 @@ func (a *JixieAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	if response.StatusCode == http.StatusNoContent {
 		// no bid response
 		return nil, nil
+	}
+
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	if response.StatusCode != http.StatusOK {

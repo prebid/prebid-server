@@ -1,0 +1,93 @@
+{
+    "mockBidRequest": {
+      "id": "some_test_auction",
+      "imp": [{
+        "id": "some_test_ad_id_1",
+        "banner": {
+          "format": [{
+            "w": 300,
+            "h": 100
+          }, {
+            "w": 300,
+            "h": 600
+          }],
+          "w": 300,
+          "h": 100
+        },
+        "ext": {
+          "bidder": {
+            
+          }
+        }
+      },
+      {
+        "id": "some_test_ad_id_2",
+        "banner": {
+          "format": [{
+            "w": 300,
+            "h": 50
+          }],
+          "w": 300,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            
+          }
+        }
+      },
+      {
+        "id": "some_test_ad_id_3",
+        "video":{
+            "mimes": [
+              "video/mp4",
+              "application/javascript"
+            ],
+            "protocols":[
+               2,
+               3,
+               5,
+               6
+            ],
+            "w":640,
+            "h":480
+        },
+        "ext": {
+          "bidder": {
+          }
+        }
+      }
+    ],
+      "device": {
+        "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36",
+        "ip": "111.222.333.444"
+      },
+      "site": {
+        "domain": "www.publisher.com",
+        "page": "http://www.publisher.com/today/site?param1=a&param2=b"
+      }
+    },
+  
+    "httpCalls": [],
+    "expectedBidResponses": [
+    ],
+    "expectedMakeRequestsErrors": [{
+            "value": "No valid jixie unit",
+            "comparison": "literal"
+        },
+        {
+            "value": "No valid jixie unit",
+            "comparison": "literal"
+        },
+        {
+            "value": "No valid jixie unit",
+            "comparison": "literal"
+        },
+        {
+            "value": "No valid impressions for jixie",
+            "comparison": "literal"
+        }
+    ]
+}
+  
+

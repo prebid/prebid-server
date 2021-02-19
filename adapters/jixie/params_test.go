@@ -34,6 +34,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{"unit": "1000008-AA77BB88CC" }`,
 	`{"unit": "1000008-AA77BB88CC", "accountid": "9988776655", "bidfloor": "0.01", "jxprop1": "somethingimportant" }`,
 }
 
