@@ -17,7 +17,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/buger/jsonparser"
@@ -2520,8 +2519,8 @@ func (m *mockExchange) HoldAuction(ctx context.Context, r exchange.AuctionReques
 	}, nil
 }
 
-func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.BidderName) adapters.BidderInfos {
-	biddersInfos := make(adapters.BidderInfos)
+func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.BidderName) config.BidderInfos {
+	biddersInfos := make(config.BidderInfos)
 	for _, name := range biddersNames {
 		adapterConfig, ok := cfg[string(name)]
 		if !ok {
@@ -2532,14 +2531,9 @@ func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.Bi
 	return biddersInfos
 }
 
-func newBidderInfo(cfg config.Adapter) adapters.BidderInfo {
-	status := adapters.StatusActive
-	if cfg.Disabled == true {
-		status = adapters.StatusDisabled
-	}
-
-	return adapters.BidderInfo{
-		Status: status,
+func newBidderInfo(cfg config.Adapter) config.BidderInfo {
+	return config.BidderInfo{
+		Enabled: !cfg.Disabled,
 	}
 }
 

@@ -62,12 +62,16 @@ func (adapter *SmartRTBAdapter) buildEndpointURL(pubID string) (string, error) {
 func parseExtImp(dst *bidRequestExt, imp *openrtb.Imp) error {
 	var ext adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
-		return adapters.BadInput(err.Error())
+		return &errortypes.BadInput{
+			Message: err.Error(),
+		}
 	}
 
 	var src openrtb_ext.ExtImpSmartRTB
 	if err := json.Unmarshal(ext.Bidder, &src); err != nil {
-		return adapters.BadInput(err.Error())
+		return &errortypes.BadInput{
+			Message: err.Error(),
+		}
 	}
 
 	if dst.PubID == "" {
@@ -107,7 +111,7 @@ func (s *SmartRTBAdapter) MakeRequests(brq *openrtb.BidRequest, reqInfo *adapter
 	}
 
 	if ext.PubID == "" {
-		return nil, append(errs, adapters.BadInput("Cannot infer publisher ID from bid ext"))
+		return nil, append(errs, &errortypes.BadInput{Message: "Cannot infer publisher ID from bid ext"})
 	}
 
 	brq.Ext, err = json.Marshal(ext)
@@ -146,7 +150,7 @@ func (s *SmartRTBAdapter) MakeBids(
 	if rs.StatusCode == http.StatusNoContent {
 		return nil, nil
 	} else if rs.StatusCode == http.StatusBadRequest {
-		return nil, []error{adapters.BadInput("Invalid request.")}
+		return nil, []error{&errortypes.BadInput{Message: "Invalid request."}}
 	} else if rs.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected HTTP status %d.", rs.StatusCode),
