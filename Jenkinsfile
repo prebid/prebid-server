@@ -4,10 +4,6 @@ pipeline {
     }
     agent any
 
-    parameters {
-        string(description: 'Set an arbitrary build tag name. Please reference prebid-server version.', name: 'tag')
-    }
-
     stages {
         stage('Build image') {
             steps {
@@ -16,14 +12,14 @@ pipeline {
         }
         stage('Push image') {
             steps {
-                sh "docker tag prebid-server:latest docker.ayl.io/ayl/prebid-server:${params.tag}"
-                sh "docker push docker.ayl.io/ayl/prebid-server:${params.tag}"
+                sh "docker tag prebid-server:latest docker.ayl.io/ayl/prebid-server:${env.VERSION}"
+                sh "docker push docker.ayl.io/ayl/prebid-server:${env.VERSION}"
             }
         }
         stage('Deploy Docker image') {
             environment {
                 MARATHON_URL = "https://deploy-pprod.ayl.io/v2/apps/tag/prebid-server-test"
-                JSON = "{\"container\":{\"docker\":{\"image\":\"docker.ayl.io/ayl/prebid-server:${params.tag}\"}}}"
+                JSON = "{\"container\":{\"docker\":{\"image\":\"docker.ayl.io/ayl/prebid-server:${env.VERSION}\"}}}"
             }
             steps {
                 withCredentials([file(credentialsId: 'p12_cert', variable: 'cert')]) {
@@ -34,7 +30,7 @@ pipeline {
             }
             post {
                 success {
-                    slackSend channel: '#test-guillaume', message: "Prebid-server ${params.tag} deployed!\n"
+                    slackSend channel: '#test-guillaume', message: "Prebid-server ${env.VERSION} deployed!\n"
                 }
             }
         }
