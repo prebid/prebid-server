@@ -59,60 +59,53 @@ func TestParseIOSVersion(t *testing.T) {
 }
 
 func TestEqualOrGreater(t *testing.T) {
-	version := IOSVersion{Major: 14, Minor: 2}
+	givenMajor := 14
+	givenMinor := 2
 
 	tests := []struct {
-		description string
-		givenMajor  int
-		givenMinor  int
-		expected    bool
+		description  string
+		givenVersion IOSVersion
+		expected     bool
 	}{
 		{
-			description: "Less Than By Major + Minor",
-			givenMajor:  13,
-			givenMinor:  1,
-			expected:    false,
+			description:  "Less Than By Major + Minor",
+			givenVersion: IOSVersion{Major: 13, Minor: 1},
+			expected:     false,
 		},
 		{
-			description: "Less Than By Major",
-			givenMajor:  13,
-			givenMinor:  2,
-			expected:    false,
+			description:  "Less Than By Major",
+			givenVersion: IOSVersion{Major: 13, Minor: 2},
+			expected:     false,
 		},
 		{
-			description: "Less Than By Minor",
-			givenMajor:  14,
-			givenMinor:  1,
-			expected:    false,
+			description:  "Less Than By Minor",
+			givenVersion: IOSVersion{Major: 14, Minor: 1},
+			expected:     false,
 		},
 		{
-			description: "Equal",
-			givenMajor:  14,
-			givenMinor:  2,
-			expected:    true,
+			description:  "Equal",
+			givenVersion: IOSVersion{Major: 14, Minor: 2},
+			expected:     true,
 		},
 		{
-			description: "Greater By Major + Minor",
-			givenMajor:  15,
-			givenMinor:  3,
-			expected:    true,
+			description:  "Greater By Major + Minor",
+			givenVersion: IOSVersion{Major: 15, Minor: 3},
+			expected:     true,
 		},
 		{
-			description: "Greater By Major",
-			givenMajor:  15,
-			givenMinor:  2,
-			expected:    true,
+			description:  "Greater By Major",
+			givenVersion: IOSVersion{Major: 15, Minor: 2},
+			expected:     true,
 		},
 		{
-			description: "Greater By Minor",
-			givenMajor:  14,
-			givenMinor:  3,
-			expected:    true,
+			description:  "Greater By Minor",
+			givenVersion: IOSVersion{Major: 14, Minor: 3},
+			expected:     true,
 		},
 	}
 
 	for _, test := range tests {
-		result := version.EqualOrGreater(test.givenMajor, test.givenMinor)
+		result := test.givenVersion.EqualOrGreater(givenMajor, givenMinor)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }

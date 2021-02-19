@@ -39,9 +39,9 @@ func ParseIOSVersion(v string) (IOSVersion, error) {
 
 // EqualOrGreater returns true if iOS device version is equal or greater to the desired version, using semantic versioning.
 func (v IOSVersion) EqualOrGreater(major, minor int) bool {
-	if major == v.Major {
-		return minor >= v.Minor
+	if v.Major == major {
+		return v.Minor >= minor
 	}
 
-	return v.Major < major
+	return v.Major > major
 }

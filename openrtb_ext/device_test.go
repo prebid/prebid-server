@@ -32,6 +32,19 @@ func TestValidDeviceExt(t *testing.T) {
 	assert.EqualValues(t, 60, s.Prebid.Interstitial.MinHeightPerc)
 }
 
+func TestIsKnownIOSAppTrackingStatus(t *testing.T) {
+	valid := []int64{0, 1, 2, 3}
+	invalid := []int64{-1, 4}
+
+	for _, v := range valid {
+		assert.True(t, IsKnownIOSAppTrackingStatus(v))
+	}
+
+	for _, v := range invalid {
+		assert.False(t, IsKnownIOSAppTrackingStatus(v))
+	}
+}
+
 func TestParseDeviceExtATTS(t *testing.T) {
 	authorized := IOSAppTrackingStatusAuthorized
 

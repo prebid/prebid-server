@@ -22,8 +22,15 @@ type ExtDevice struct {
 	//   iOS app tracking authorization status.
 	// Extention Spec:
 	//   https://github.com/InteractiveAdvertisingBureau/openrtb/blob/master/extensions/community_extensions/skadnetwork.md
-	ATTS   *IOSAppTrackingStatus `json:"atts"`
-	Prebid ExtDevicePrebid       `json:"prebid"`
+	ATTS *IOSAppTrackingStatus `json:"atts"`
+
+	// Attribute:
+	//   prebid
+	// Type:
+	//   object; optional
+	// Description:
+	//   Prebid specific extensions for the Device object.
+	Prebid ExtDevicePrebid `json:"prebid"`
 }
 
 // IOSAppTrackingStatus describes the values for iOS app tracking authorization status.

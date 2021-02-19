@@ -297,9 +297,9 @@ func workaroundIOS14PrivacyBug(req *openrtb.BidRequest) {
 	}
 
 	// semantic versioning comparison second. parsing required.
-	if iosVersion, err := iosutil.ParseIOSVersion(req.Device.OSV); err != nil && iosVersion.EqualOrGreater(14, 2) {
+	if iosVersion, err := iosutil.ParseIOSVersion(req.Device.OSV); err == nil && iosVersion.EqualOrGreater(14, 2) {
 		atts, err := openrtb_ext.ParseDeviceExtATTS(req.Device.Ext)
-		if err != nil {
+		if err != nil || atts == nil {
 			return
 		}
 
