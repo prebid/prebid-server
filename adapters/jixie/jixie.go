@@ -57,28 +57,7 @@ func processImp(imp *openrtb.Imp) error {
 func (a *JixieAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs = make([]error, 0)
 
-	// copy the request, because we are going to mutate it
-	requestCopy := *request
-	// this will contain all the valid impressions
-	var validImps []openrtb.Imp
-	// pre-process the imps
-	for _, imp := range requestCopy.Imp {
-		if err := processImp(&imp); err == nil {
-			validImps = append(validImps, imp)
-		} else {
-			errs = append(errs, err)
-		}
-	}
-	if len(validImps) == 0 {
-		err := &errortypes.BadInput{
-			Message: "No valid impressions for jixie",
-		}
-		errs = append(errs, err)
-		return nil, errs
-	}
-	requestCopy.Imp = validImps
-
-	data, err := json.Marshal(requestCopy)
+	data, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -104,7 +83,7 @@ func (a *JixieAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 	}}, errs
 }
 
-func ContainsAny(raw string, keys []string) bool {
+func containsAny(raw string, keys []string) bool {
 	lowerCased := strings.ToLower(raw)
 	for i := 0; i < len(keys); i++ {
 		if strings.Contains(lowerCased, keys[i]) {
@@ -116,7 +95,7 @@ func ContainsAny(raw string, keys []string) bool {
 }
 
 func getBidType(bidAdm string) openrtb_ext.BidType {
-	if bidAdm != "" && ContainsAny(bidAdm, []string{"<?xml", "<vast"}) {
+	if bidAdm != "" && containsAny(bidAdm, []string{"<?xml", "<vast"}) {
 		return openrtb_ext.BidTypeVideo
 	}
 	return openrtb_ext.BidTypeBanner

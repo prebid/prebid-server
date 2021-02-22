@@ -6,7 +6,8 @@
     "properties": {
       "unit" : {
         "type": "string",
-        "description": "The unit code of an inventory target"
+        "description": "The unit code of an inventory target",
+        "minLength": 18
       },
       "accountid" : {
         "type": "string",

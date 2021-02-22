@@ -51,4 +51,7 @@ var invalidParams = []string{
 	`{"Unit": 12345678}`,
 	`{"AdUnit": "1"}`,
 	`{"adUnit": 1}`,
+	`{"unit": ""}`,
+	`{"unit":"1000008-AA77BB88CC", "accountid", "bidfloor": "0.01", "jxprop1": "somethingimportant" }`,
+	`{"unit":"1000008-AA77BB88CC", malformed, }`,
 }
