@@ -39,8 +39,13 @@ func (g *GumGumAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 			if gumgumExt.Zone != "" {
 				siteCopy.ID = gumgumExt.Zone
 			}
+
 			if gumgumExt.PubID != 0 {
-				siteCopy.Publisher.ID = strconv.FormatFloat(gumgumExt.PubID, 'f', -1, 64)
+				if siteCopy.Publisher != nil {
+					siteCopy.Publisher.ID = strconv.FormatFloat(gumgumExt.PubID, 'f', -1, 64)
+				} else {
+					siteCopy.Publisher = &openrtb.Publisher{ID: strconv.FormatFloat(gumgumExt.PubID, 'f', -1, 64)}
+				}
 			}
 
 			validImps = append(validImps, imp)
@@ -136,15 +141,15 @@ func preprocess(imp *openrtb.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		return nil, err
 	}
 
-	if imp.Banner != nil {
+	if imp.Banner != nil && imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0{
 		bannerCopy := *imp.Banner
-		if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
-			format := bannerCopy.Format[0]
-			bannerCopy.W = &(format.W)
-			bannerCopy.H = &(format.H)
-		}
+		format := bannerCopy.Format[0]
+		bannerCopy.W = &(format.W)
+		bannerCopy.H = &(format.H)
 		imp.Banner = &bannerCopy
-	} else if imp.Video != nil {
+	} 
+	
+	if imp.Video != nil {
 		err := validateVideoParams(imp.Video)
 		if err != nil {
 			return nil, err
