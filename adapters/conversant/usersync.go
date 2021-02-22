@@ -8,5 +8,5 @@ import (
 )
 
 func NewConversantSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("conversant", 24, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("conversant", temp, adapters.SyncTypeRedirect)
 }

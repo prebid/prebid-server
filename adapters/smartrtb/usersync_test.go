@@ -15,6 +15,5 @@ func TestSmartRTBSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "http://market-east.smrtb.com/sync/all?nid=smartrtb&gdpr=&gdpr_consent=&url=localhost%2Fsetuid%3Fbidder%smartrtb%26gdpr%3D%26gdpr_consent%3D%26uid%3D%24%7BUID%7D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

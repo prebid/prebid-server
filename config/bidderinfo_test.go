@@ -13,6 +13,7 @@ const testInfoFilesPath = "./test/bidder-info"
 const testYAML = `
 maintainer:
   email: "some-email@domain.com"
+gvlVendorID: 42
 capabilities:
   app:
     mediaTypes:
@@ -36,12 +37,13 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := map[string]BidderInfo{
+	expected := BidderInfos{
 		bidder: {
 			Enabled: true,
 			Maintainer: &MaintainerInfo{
 				Email: "some-email@domain.com",
 			},
+			GVLVendorID: 42,
 			Capabilities: &CapabilitiesInfo{
 				App: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
@@ -63,7 +65,7 @@ func TestLoadBidderInfo(t *testing.T) {
 		givenConfigs  map[string]Adapter
 		givenContent  string
 		givenError    error
-		expectedInfo  map[string]BidderInfo
+		expectedInfo  BidderInfos
 		expectedError string
 	}{
 		{
@@ -76,6 +78,7 @@ func TestLoadBidderInfo(t *testing.T) {
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
+					GVLVendorID: 42,
 					Capabilities: &CapabilitiesInfo{
 						App: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
@@ -97,6 +100,7 @@ func TestLoadBidderInfo(t *testing.T) {
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
+					GVLVendorID: 42,
 					Capabilities: &CapabilitiesInfo{
 						App: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
@@ -118,6 +122,7 @@ func TestLoadBidderInfo(t *testing.T) {
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
+					GVLVendorID: 42,
 					Capabilities: &CapabilitiesInfo{
 						App: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
@@ -139,6 +144,7 @@ func TestLoadBidderInfo(t *testing.T) {
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
+					GVLVendorID: 42,
 					Capabilities: &CapabilitiesInfo{
 						App: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},

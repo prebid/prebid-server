@@ -8,5 +8,5 @@ import (
 )
 
 func NewTelariaSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("telaria", 202, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("telaria", temp, adapters.SyncTypeRedirect)
 }

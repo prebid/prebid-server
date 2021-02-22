@@ -8,5 +8,5 @@ import (
 )
 
 func NewImprovedigitalSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("improvedigital", 253, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("improvedigital", temp, adapters.SyncTypeRedirect)
 }

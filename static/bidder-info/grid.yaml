@@ -1,5 +1,6 @@
 maintainer:
   email: "grid-tech@themediagrid.com"
+gvlVendorID: 686
 capabilities:
   app:
     mediaTypes:

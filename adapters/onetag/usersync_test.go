@@ -20,5 +20,4 @@ func TestOneTagSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://onetag-sys.com/usync/?redir=", syncInfo.URL)
 	assert.Equal(t, "iframe", syncInfo.Type)
-	assert.EqualValues(t, 241, syncer.GDPRVendorID())
 }

@@ -30,6 +30,5 @@ func TestImprovedigitalSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://ad.360yield.com/server_match?gdpr=A&gdpr_consent=B&us_privacy=C&r=%2Fsetuid%3Fbidder%3Dimprovedigital%26gdpr%3DA%26gdpr_consent%3DB%26uid%3D%7BPUB_USER_ID%7D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 253, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

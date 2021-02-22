@@ -1,5 +1,6 @@
 maintainer:
   email: "hb@azerion.com"
+gvlVendorID: 253
 capabilities:
   app:
     mediaTypes:

@@ -1,5 +1,6 @@
 maintainer:
   email: devops@onetag.com
+gvlVendorID: 241
 capabilities:
   app:
     mediaTypes:

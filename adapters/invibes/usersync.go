@@ -10,7 +10,6 @@ import (
 func NewInvibesSyncer(urlTemplate *template.Template) usersync.Usersyncer {
 	return adapters.NewSyncer(
 		"invibes",
-		436,
 		urlTemplate,
 		adapters.SyncTypeIframe,
 	)
