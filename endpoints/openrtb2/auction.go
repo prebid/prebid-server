@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -31,11 +30,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/lmt"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
-	"github.com/prebid/prebid-server/util/iosutil"
 	"github.com/prebid/prebid-server/util/iputil"
 	"golang.org/x/net/publicsuffix"
 )
@@ -266,7 +265,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
-	workaroundIOS14PrivacyBug(req)
+	lmt.ModifyForIOS(req)
 
 	errL := deps.validateRequest(req)
 	if len(errL) > 0 {
@@ -274,46 +273,6 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 	}
 
 	return
-}
-
-// workaroundIOS14PrivacyBug implements issue 1699, a bug fix for the handling of the LMT flag
-// for requests from the Prebid iOS SDK.
-func workaroundIOS14PrivacyBug(req *openrtb.BidRequest) {
-	if req.App == nil {
-		return
-	}
-
-	if req.Device == nil || !strings.EqualFold(req.Device.OS, "ios") {
-		return
-	}
-
-	// exact comparisons first. no parsing required.
-	if req.Device.OSV == "14.0" || req.Device.OSV == "14.1" {
-		if req.Device.IFA == "" || req.Device.IFA == "00000000-0000-0000-0000-000000000000" {
-			req.Device.Lmt = openrtb.Int8Ptr(1)
-		} else {
-			req.Device.Lmt = openrtb.Int8Ptr(0)
-		}
-	}
-
-	// semantic versioning comparison second. parsing required.
-	if iosVersion, err := iosutil.ParseIOSVersion(req.Device.OSV); err == nil && iosVersion.EqualOrGreater(14, 2) {
-		atts, err := openrtb_ext.ParseDeviceExtATTS(req.Device.Ext)
-		if err != nil || atts == nil {
-			return
-		}
-
-		switch *atts {
-		case openrtb_ext.IOSAppTrackingStatusNotDetermined:
-			req.Device.Lmt = openrtb.Int8Ptr(0)
-		case openrtb_ext.IOSAppTrackingStatusRestricted:
-			req.Device.Lmt = openrtb.Int8Ptr(1)
-		case openrtb_ext.IOSAppTrackingStatusDenied:
-			req.Device.Lmt = openrtb.Int8Ptr(1)
-		case openrtb_ext.IOSAppTrackingStatusAuthorized:
-			req.Device.Lmt = openrtb.Int8Ptr(0)
-		}
-	}
 }
 
 // parseTimeout returns parses tmax from the requestJson, or returns the default if it doesn't exist.

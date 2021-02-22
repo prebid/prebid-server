@@ -6,17 +6,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseIOSVersion(t *testing.T) {
+func TestParseVersion(t *testing.T) {
 	tests := []struct {
 		description     string
 		given           string
-		expectedVersion IOSVersion
+		expectedVersion Version
 		expectedError   string
 	}{
 		{
 			description:     "Valid",
 			given:           "14.2",
-			expectedVersion: IOSVersion{Major: 14, Minor: 2},
+			expectedVersion: Version{Major: 14, Minor: 2},
 		},
 		{
 			description:   "Invalid Parts - Empty",
@@ -46,7 +46,7 @@ func TestParseIOSVersion(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		version, err := ParseIOSVersion(test.given)
+		version, err := ParseVersion(test.given)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
@@ -64,42 +64,42 @@ func TestEqualOrGreater(t *testing.T) {
 
 	tests := []struct {
 		description  string
-		givenVersion IOSVersion
+		givenVersion Version
 		expected     bool
 	}{
 		{
 			description:  "Less Than By Major + Minor",
-			givenVersion: IOSVersion{Major: 13, Minor: 1},
+			givenVersion: Version{Major: 13, Minor: 1},
 			expected:     false,
 		},
 		{
 			description:  "Less Than By Major",
-			givenVersion: IOSVersion{Major: 13, Minor: 2},
+			givenVersion: Version{Major: 13, Minor: 2},
 			expected:     false,
 		},
 		{
 			description:  "Less Than By Minor",
-			givenVersion: IOSVersion{Major: 14, Minor: 1},
+			givenVersion: Version{Major: 14, Minor: 1},
 			expected:     false,
 		},
 		{
 			description:  "Equal",
-			givenVersion: IOSVersion{Major: 14, Minor: 2},
+			givenVersion: Version{Major: 14, Minor: 2},
 			expected:     true,
 		},
 		{
 			description:  "Greater By Major + Minor",
-			givenVersion: IOSVersion{Major: 15, Minor: 3},
+			givenVersion: Version{Major: 15, Minor: 3},
 			expected:     true,
 		},
 		{
 			description:  "Greater By Major",
-			givenVersion: IOSVersion{Major: 15, Minor: 2},
+			givenVersion: Version{Major: 15, Minor: 2},
 			expected:     true,
 		},
 		{
 			description:  "Greater By Minor",
-			givenVersion: IOSVersion{Major: 14, Minor: 3},
+			givenVersion: Version{Major: 14, Minor: 3},
 			expected:     true,
 		},
 	}
@@ -107,5 +107,43 @@ func TestEqualOrGreater(t *testing.T) {
 	for _, test := range tests {
 		result := test.givenVersion.EqualOrGreater(givenMajor, givenMinor)
 		assert.Equal(t, test.expected, result, test.description)
+	}
+}
+
+func TestDetectVersionGroup(t *testing.T) {
+
+	tests := []struct {
+		given    string
+		expected VersionClassification
+	}{
+		{
+			given:    "13.0",
+			expected: VersionUnknown,
+		},
+		{
+			given:    "14.0",
+			expected: Version140,
+		},
+		{
+			given:    "14.1",
+			expected: Version141,
+		},
+		{
+			given:    "14.2",
+			expected: Version142OrGreater,
+		},
+		{
+			given:    "14.3",
+			expected: Version142OrGreater,
+		},
+		{
+			given:    "15.0",
+			expected: Version142OrGreater,
+		},
+	}
+
+	for _, test := range tests {
+		result := DetectVersionClassification(test.given)
+		assert.Equal(t, test.expected, result, test.given)
 	}
 }
