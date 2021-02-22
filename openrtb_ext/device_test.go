@@ -50,33 +50,33 @@ func TestParseDeviceExtATTS(t *testing.T) {
 
 	tests := []struct {
 		description    string
-		ext            json.RawMessage
+		givenExt       json.RawMessage
 		expectedStatus *IOSAppTrackingStatus
 		expectedError  string
 	}{
 		{
 			description:    "Nil",
-			ext:            nil,
+			givenExt:       nil,
 			expectedStatus: nil,
 		},
 		{
 			description:    "Empty",
-			ext:            json.RawMessage(``),
+			givenExt:       json.RawMessage(``),
 			expectedStatus: nil,
 		},
 		{
 			description:    "Empty Object",
-			ext:            json.RawMessage(`{}`),
+			givenExt:       json.RawMessage(`{}`),
 			expectedStatus: nil,
 		},
 		{
 			description:    "Valid",
-			ext:            json.RawMessage(`{"atts":3}`),
+			givenExt:       json.RawMessage(`{"atts":3}`),
 			expectedStatus: &authorized,
 		},
 		{
 			description:    "Invalid Value",
-			ext:            json.RawMessage(`{"atts":5}`),
+			givenExt:       json.RawMessage(`{"atts":5}`),
 			expectedStatus: nil,
 			expectedError:  "invalid status",
 		},
@@ -84,19 +84,19 @@ func TestParseDeviceExtATTS(t *testing.T) {
 			// This test case produces an error with the standard Go library, but jsonparser doesn't
 			// return an error for malformed JSON. It treats this case the same as not being found.
 			description:    "Malformed - Standard Test Case",
-			ext:            json.RawMessage(`malformed`),
+			givenExt:       json.RawMessage(`malformed`),
 			expectedStatus: nil,
 		},
 		{
 			description:    "Malformed - Wrong Type",
-			ext:            json.RawMessage(`{"atts":"1"}`),
+			givenExt:       json.RawMessage(`{"atts":"1"}`),
 			expectedStatus: nil,
 			expectedError:  "Value is not a number: 1",
 		},
 	}
 
 	for _, test := range tests {
-		status, err := ParseDeviceExtATTS(test.ext)
+		status, err := ParseDeviceExtATTS(test.givenExt)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
