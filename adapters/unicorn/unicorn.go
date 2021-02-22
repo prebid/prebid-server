@@ -20,7 +20,12 @@ type UnicornAdapter struct {
 
 // unicornImpExt is imp ext for UNICORN
 type unicornImpExt struct {
+  Context *unicornImpExtContext `json:"context,omitempty"`
 	Bidder openrtb_ext.ExtImpUnicorn `json:"bidder"`
+}
+
+type unicornImpExtContext struct {
+  Data interface{} `json:"data,omitempty"`
 }
 
 // unicornSourceExt is source ext for UNICORN
