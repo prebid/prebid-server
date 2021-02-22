@@ -44,16 +44,16 @@ func ReadFromRequest(req *openrtb_ext.RequestWrapper) (Policy, error) {
 }
 
 // Write mutates an OpenRTB bid request with the CCPA regulatory information.
-func (p Policy) Write(req *openrtb.BidRequest) error {
+func (p Policy) Write(req *openrtb_ext.RequestWrapper) error {
 	if req == nil {
 		return nil
 	}
 
-	regs, err := buildRegs(p.Consent, req.Regs)
-	if err != nil {
-		return err
-	}
-	ext, err := buildExt(p.NoSaleBidders, req.Ext)
+	req.ExtractRegExt()
+	req.ExtractRequestExt()
+	buildRegs(p.Consent, req.RegExt)
+
+	ext, err := buildExt(p.NoSaleBidders, req.RequestExt, req.RegExt)
 	if err != nil {
 		return err
 	}
@@ -64,58 +64,31 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 }
 
 // START HERE
-func buildRegs(consent string, regs *openrtb_ext.RegExt) (*openrtb.Regs, error) {
+// was regs == *openrtb.Regs
+// No need to return RegExt as the containing struct should still exist. I don't
+// think there was a need to make a new Regs.Ext when the Ext was modified.
+func buildRegs(consent string, regs *openrtb_ext.RegExt) {
 	if consent == "" {
-		return buildRegsClear(regs)
+		buildRegsClear(regs)
+	} else {
+		buildRegsWrite(consent, regs)
 	}
-	return buildRegsWrite(consent, regs)
 }
 
-func buildRegsClear(regs *openrtb.Regs) (*openrtb.Regs, error) {
+func buildRegsClear(regs *openrtb_ext.RegExt) {
 	if regs == nil || len(regs.Ext) == 0 {
-		return regs, nil
+		return
 	}
 
-	var extMap map[string]interface{}
-	if err := json.Unmarshal(regs.Ext, &extMap); err != nil {
-		return nil, err
+	if _, hasUSPrivacy := regs.Ext["us_privacy"]; hasUSPrivacy {
+		delete(regs.Ext, "us_privacy")
+		regs.Dirty = true
 	}
-
-	delete(extMap, "us_privacy")
-
-	// Remove entire ext if it's now empty
-	if len(extMap) == 0 {
-		regsResult := *regs
-		regsResult.Ext = nil
-		return &regsResult, nil
-	}
-
-	// Marshal ext if there are still other fields
-	var regsResult openrtb.Regs
-	ext, err := json.Marshal(extMap)
-	if err == nil {
-		regsResult = *regs
-		regsResult.Ext = ext
-	}
-	return &regsResult, err
 }
 
-func buildRegsWrite(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
-	if regs == nil {
-		return marshalRegsExt(openrtb.Regs{}, openrtb_ext.ExtRegs{USPrivacy: consent})
-	}
-
-	if regs.Ext == nil {
-		return marshalRegsExt(*regs, openrtb_ext.ExtRegs{USPrivacy: consent})
-	}
-
-	var extMap map[string]interface{}
-	if err := json.Unmarshal(regs.Ext, &extMap); err != nil {
-		return nil, err
-	}
-
-	extMap["us_privacy"] = consent
-	return marshalRegsExt(*regs, extMap)
+// buildRegsWrite becomes an almost a one liner
+func buildRegsWrite(consent string, regs *openrtb_ext.RegExt) {
+	regs.Ext["us_privacy"] = consent
 }
 
 func marshalRegsExt(regs openrtb.Regs, ext interface{}) (*openrtb.Regs, error) {
@@ -126,46 +99,22 @@ func marshalRegsExt(regs openrtb.Regs, ext interface{}) (*openrtb.Regs, error) {
 	return &regs, err
 }
 
-func buildExt(noSaleBidders []string, ext json.RawMessage) (json.RawMessage, error) {
+func buildExt(noSaleBidders []string, ext openrtb_ext.RequestExt) {
 	if len(noSaleBidders) == 0 {
-		return buildExtClear(ext)
+		buildExtClear(ext)
+	} else {
+		buildExtWrite(noSaleBidders, ext)
 	}
-	return buildExtWrite(noSaleBidders, ext)
 }
 
-func buildExtClear(ext json.RawMessage) (json.RawMessage, error) {
-	if len(ext) == 0 {
-		return ext, nil
-	}
-
-	var extMap map[string]interface{}
-	if err := json.Unmarshal(ext, &extMap); err != nil {
-		return nil, err
-	}
-
-	prebidExt, exists := extMap["prebid"]
-	if !exists {
-		return ext, nil
-	}
-
-	// Verify prebid is an object
-	prebidExtMap, ok := prebidExt.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("request.ext.prebid is not a json object")
+func buildExtClear(ext openrtb_ext.RequestExt) {
+	if ext.Prebid == nil {
+		return
 	}
 
 	// Remove no sale member
-	delete(prebidExtMap, "nosale")
-	if len(prebidExtMap) == 0 {
-		delete(extMap, "prebid")
-	}
-
-	// Remove entire ext if it's empty
-	if len(extMap) == 0 {
-		return nil, nil
-	}
-
-	return json.Marshal(extMap)
+	ext.Prebid.NoSale = []string{}
+	ext.PrebidDirty = true
 }
 
 func buildExtWrite(noSaleBidders []string, ext json.RawMessage) (json.RawMessage, error) {

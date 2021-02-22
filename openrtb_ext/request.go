@@ -536,8 +536,11 @@ func (ae *AppExt) Marshal() (json.RawMessage, error) {
 }
 
 type RegExt struct {
-	Ext   map[string]json.RawMessage
-	Dirty bool
+	Ext            map[string]json.RawMessage
+	Dirty          bool
+	USPrivacy      string
+	USPrivacyDirty bool
+	Prebid
 }
 
 func (re *RegExt) Extract(extJson json.RawMessage) (*RegExt, error) {
@@ -554,11 +557,18 @@ func (re *RegExt) Unmarshal(extJson json.RawMessage) error {
 	if err != nil {
 		return err
 	}
+	uspJson, hasUsp := re.ext["us_privacy"]
+	if hasUsp {
+		json.Unmarshal(uspJson, &re.UsPrivacy)
+	}
 
 	return nil
 }
 
 func (re *RegExt) Marshal() (json.RawMessage, error) {
+	if len(re.Ext) == 0 {
+		return nil, nil
+	}
 
 	return json.Marshal(re.Ext)
 }
