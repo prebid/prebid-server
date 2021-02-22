@@ -141,14 +141,14 @@ func preprocess(imp *openrtb.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		return nil, err
 	}
 
-	if imp.Banner != nil && imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0{
+	if imp.Banner != nil && imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0 {
 		bannerCopy := *imp.Banner
 		format := bannerCopy.Format[0]
 		bannerCopy.W = &(format.W)
 		bannerCopy.H = &(format.H)
 		imp.Banner = &bannerCopy
-	} 
-	
+	}
+
 	if imp.Video != nil {
 		err := validateVideoParams(imp.Video)
 		if err != nil {
