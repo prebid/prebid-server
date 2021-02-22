@@ -5,22 +5,22 @@ import (
 	"strconv"
 )
 
-// AggregateErrors represents one or more errors.
-type AggregateErrors struct {
+// AggregateError represents one or more errors.
+type AggregateError struct {
 	Message string
 	Errors  []error
 }
 
-// NewAggregateErrors builds a AggregateErrors struct.
-func NewAggregateErrors(msg string, errs []error) AggregateErrors {
-	return AggregateErrors{
+// NewAggregateError builds a AggregateError struct.
+func NewAggregateError(msg string, errs []error) AggregateError {
+	return AggregateError{
 		Message: msg,
 		Errors:  errs,
 	}
 }
 
 // Error implements the standard error interface.
-func (e AggregateErrors) Error() string {
+func (e AggregateError) Error() string {
 	if len(e.Errors) == 0 {
 		return ""
 	}
