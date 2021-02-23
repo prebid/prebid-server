@@ -50,7 +50,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 	key, errKey := jsonparser.GetString(imp.Ext, "bidder", "key")
 	if errTag != nil && errKey != nil {
 		errs = append(errs, &errortypes.BadInput{
-			Message: fmt.Sprintf("Invalid or non existing key or tagId, atleast one should be present"),
+			Message: fmt.Sprintf("Invalid or non existing key and tagId, atleast one should be present"),
 		})
 		return nil, errs
 	}
@@ -137,7 +137,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
-		fmt.Println(impID, imp.ID)
 		if imp.ID == impID {
 			if imp.Banner != nil {
 				mediaType = openrtb_ext.BidTypeBanner
