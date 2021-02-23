@@ -248,13 +248,14 @@ func (req *cookieSyncRequest) filterForGDPR(permissions gdpr.Permissions) {
 		return
 	}
 
-	if allowSync, err := permissions.HostCookiesAllowed(context.Background(), req.Consent); err != nil || !allowSync {
+	// At this point we know the gdpr signal is Yes because the upstream call to parseRequest already denormalized the signal if it was ambiguous
+	if allowSync, err := permissions.HostCookiesAllowed(context.Background(), gdpr.SignalYes, req.Consent); err != nil || !allowSync {
 		req.Bidders = nil
 		return
 	}
 
 	for i := 0; i < len(req.Bidders); i++ {
-		if allowSync, err := permissions.BidderSyncAllowed(context.Background(), openrtb_ext.BidderName(req.Bidders[i]), req.Consent); err != nil || !allowSync {
+		if allowSync, err := permissions.BidderSyncAllowed(context.Background(), openrtb_ext.BidderName(req.Bidders[i]), gdpr.SignalYes, req.Consent); err != nil || !allowSync {
 			req.Bidders = append(req.Bidders[:i], req.Bidders[i+1:]...)
 			i--
 		}

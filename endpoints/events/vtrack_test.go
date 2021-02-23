@@ -5,15 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -374,13 +374,13 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	cfg.MarshalAccountDefaults()
 
 	// bidder info
-	bidderInfos := make(adapters.BidderInfos)
-	bidderInfos["bidder"] = adapters.BidderInfo{
-		Status:                  adapters.StatusActive,
+	bidderInfos := make(config.BidderInfos)
+	bidderInfos["bidder"] = config.BidderInfo{
+		Enabled:                 true,
 		ModifyingVastXmlAllowed: false,
 	}
-	bidderInfos["updatable_bidder"] = adapters.BidderInfo{
-		Status:                  adapters.StatusActive,
+	bidderInfos["updatable_bidder"] = config.BidderInfo{
+		Enabled:                 true,
 		ModifyingVastXmlAllowed: true,
 	}
 
@@ -437,13 +437,13 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	cfg.MarshalAccountDefaults()
 
 	// bidder info
-	bidderInfos := make(adapters.BidderInfos)
-	bidderInfos["bidder"] = adapters.BidderInfo{
-		Status:                  adapters.StatusActive,
+	bidderInfos := make(config.BidderInfos)
+	bidderInfos["bidder"] = config.BidderInfo{
+		Enabled:                 true,
 		ModifyingVastXmlAllowed: true,
 	}
-	bidderInfos["updatable_bidder"] = adapters.BidderInfo{
-		Status:                  adapters.StatusActive,
+	bidderInfos["updatable_bidder"] = config.BidderInfo{
+		Enabled:                 true,
 		ModifyingVastXmlAllowed: true,
 	}
 
@@ -500,7 +500,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	cfg.MarshalAccountDefaults()
 
 	// bidder info
-	bidderInfos := make(adapters.BidderInfos)
+	bidderInfos := make(config.BidderInfos)
 
 	// prepare
 	data, err := getValidVTrackRequestBody(true, false)
@@ -556,7 +556,7 @@ func TestShouldReturnBadRequestWhenRequestExceedsMaxRequestSize(t *testing.T) {
 	cfg.MarshalAccountDefaults()
 
 	// bidder info
-	bidderInfos := make(adapters.BidderInfos)
+	bidderInfos := make(config.BidderInfos)
 
 	// prepare
 	data, err := getValidVTrackRequestBody(true, false)

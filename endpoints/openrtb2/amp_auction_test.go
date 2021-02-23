@@ -479,7 +479,7 @@ func TestInvalidConsent(t *testing.T) {
 
 	// Assert Result
 	expectedWarnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError{
-		openrtb_ext.BidderNameGeneral: {
+		openrtb_ext.BidderReservedGeneral: {
 			{
 				Code:    10001,
 				Message: "Consent '" + invalidConsent + "' is not recognized as either CCPA or GDPR TCF.",
@@ -1031,14 +1031,12 @@ func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool,
 
 func TestSetEffectiveAmpPubID(t *testing.T) {
 	testPubID := "test-pub"
-	testURLQueryParams := url.Values{}
-	testURLQueryParams.Add("account", testPubID)
 
 	testCases := []struct {
-		description    string
-		req            *openrtb.BidRequest
-		urlQueryParams url.Values
-		expectedPubID  string
+		description   string
+		req           *openrtb.BidRequest
+		account       string
+		expectedPubID string
 	}{
 		{
 			description: "No publisher ID provided",
@@ -1072,7 +1070,7 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 			expectedPubID: testPubID,
 		},
 		{
-			description: "Publisher ID present in account query parameter",
+			description: "Publisher ID present in account parameter",
 			req: &openrtb.BidRequest{
 				App: &openrtb.App{
 					Publisher: &openrtb.Publisher{
@@ -1080,8 +1078,8 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 					},
 				},
 			},
-			urlQueryParams: testURLQueryParams,
-			expectedPubID:  testPubID,
+			account:       testPubID,
+			expectedPubID: testPubID,
 		},
 		{
 			description: "req.Site.Publisher present but ID set to empty string",
@@ -1097,7 +1095,7 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		setEffectiveAmpPubID(test.req, test.urlQueryParams)
+		setEffectiveAmpPubID(test.req, test.account)
 		if test.req.Site != nil {
 			assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
 				"should return the expected Publisher ID for test case: %s", test.description)

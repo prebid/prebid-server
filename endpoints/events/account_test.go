@@ -3,16 +3,16 @@ package events
 import (
 	"errors"
 	"fmt"
-	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHandleAccountServiceErrors(t *testing.T) {
@@ -155,7 +155,7 @@ func vast(t *testing.T, cfg *config.Configuration, fetcher stored_requests.Accou
 		r    *http.Request
 	}{
 		name: "vast",
-		h:    NewVTrackEndpoint(cfg, fetcher, &vtrackMockCacheClient{}, adapters.BidderInfos{}),
+		h:    NewVTrackEndpoint(cfg, fetcher, &vtrackMockCacheClient{}, config.BidderInfos{}),
 		r:    httptest.NewRequest("POST", "/vtrack?a=testacc", strings.NewReader(vtrackBody)),
 	}
 }

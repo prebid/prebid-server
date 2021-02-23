@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currency"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -60,8 +59,8 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(dummyServer))
 	defer server.Close()
 
-	var infos adapters.BidderInfos
-	infos["appnexus"] = adapters.BidderInfo{Capabilities: &adapters.CapabilitiesInfo{Site: &adapters.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}}}
+	var infos config.BidderInfos
+	infos["appnexus"] = config.BidderInfo{Capabilities: &config.CapabilitiesInfo{Site: &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}}}
 	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
 		return
@@ -77,6 +76,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		nil,
 		&config.Configuration{},
 		newTestMetrics(),
+		infos,
 		gdpr.AlwaysAllow{},
 		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		empty_fetcher.EmptyFetcher{},
