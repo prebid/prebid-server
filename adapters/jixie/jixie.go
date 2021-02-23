@@ -32,28 +32,6 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-func processImp(imp *openrtb.Imp) error {
-	var bidderExt adapters.ExtImpBidder
-
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return err
-	}
-	var jxExt openrtb_ext.ExtImpJixie
-	if err := json.Unmarshal(bidderExt.Bidder, &jxExt); err != nil {
-		return err
-	}
-
-	if jxExt.Unit == "" {
-		err := &errortypes.BadInput{
-			Message: "No valid jixie unit",
-		}
-		return err
-	}
-
-	// no error
-	return nil
-}
-
 func (a *JixieAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs = make([]error, 0)
 
