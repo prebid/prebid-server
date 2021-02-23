@@ -1183,6 +1183,106 @@ func TestContentType(t *testing.T) {
 	}
 }
 
+func TestValidateCustomRates(t *testing.T) {
+	testCases := []struct {
+		desc                  string
+		inBidReqCurrencies    map[string]map[string]float64
+		outFilteredCurrencies map[string]map[string]float64
+	}{
+		{
+			desc:                  "nil input, nil output",
+			inBidReqCurrencies:    nil,
+			outFilteredCurrencies: nil,
+		},
+		{
+			desc: "bidExt fromCurrency is fake, expect empty output",
+			inBidReqCurrencies: map[string]map[string]float64{
+				"FOO": {
+					"GBP": 1.2,
+					"MXN": 0.05,
+					"CAN": 0.95,
+				},
+			},
+			outFilteredCurrencies: map[string]map[string]float64{},
+		},
+		{
+			desc: "bidExt fromCurrency exists but some of its mapped currencies do not, expect output that maps to only real currencies",
+			inBidReqCurrencies: map[string]map[string]float64{
+				"USD": {
+					"FOO": 10.0,
+					"MXN": 0.05,
+					"BAR": 10.95,
+				},
+			},
+			outFilteredCurrencies: map[string]map[string]float64{
+				"USD": {
+					"MXN": 0.05,
+				},
+			},
+		},
+		{
+			desc: "bidExt fromCurrency exists but all of its mapped currencies do not, expect empty output",
+			inBidReqCurrencies: map[string]map[string]float64{
+				"USD": {
+					"FOO": 10.0,
+					"BAR": 10.95,
+				},
+			},
+			outFilteredCurrencies: map[string]map[string]float64{},
+		},
+		{
+			desc: "Some fromCurrency and toCurrency 3-digit currency codes do not exist, output only keeps valid ones",
+			inBidReqCurrencies: map[string]map[string]float64{
+				"FOO": {
+					"MXN": 0.05,
+					"CAN": 0.95,
+				},
+				"USD": {
+					"FOO": 10.0,
+					"MXN": 0.05,
+					"BAR": 10.95,
+				},
+				"JPY": {
+					"FOO": 10.0,
+					"BAR": 10.95,
+				},
+			},
+			outFilteredCurrencies: map[string]map[string]float64{
+				"USD": {
+					"MXN": 0.05,
+				},
+			},
+		},
+		{
+			desc: "All 3-digit currency codes exist, output identical to input",
+			inBidReqCurrencies: map[string]map[string]float64{
+				"USD": {
+					"MXN": 0.05,
+				},
+				"MXN": {
+					"JPY": 10.0,
+					"EUR": 10.95,
+				},
+			},
+			outFilteredCurrencies: map[string]map[string]float64{
+				"USD": {
+					"MXN": 0.05,
+				},
+				"MXN": {
+					"JPY": 10.0,
+					"EUR": 10.95,
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		validateCustomRates(tc.inBidReqCurrencies)
+
+		assert.Equal(t, tc.outFilteredCurrencies, tc.inBidReqCurrencies, tc.desc)
+	}
+}
+
 func TestValidateImpExt(t *testing.T) {
 	type testCase struct {
 		description    string

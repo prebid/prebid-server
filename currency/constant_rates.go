@@ -3,6 +3,7 @@ package currency
 import (
 	"fmt"
 
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/text/currency"
 )
 
@@ -39,3 +40,5 @@ func (r *ConstantRates) GetRate(from string, to string) (float64, error) {
 func (r *ConstantRates) GetRates() *map[string]map[string]float64 {
 	return nil
 }
+
+func (r *ConstantRates) UpdateRates(customRates *openrtb_ext.ExtRequestCurrency) {}

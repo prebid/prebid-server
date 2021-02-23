@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/text/currency"
 )
 
@@ -76,4 +77,34 @@ func (r *Rates) GetRate(from string, to string) (float64, error) {
 // GetRates returns current rates
 func (r *Rates) GetRates() *map[string]map[string]float64 {
 	return &r.Conversions
+}
+
+// UpdateRates updates the Conversions field with the values found in the customRates parameter. If
+// usePbsRates is set to false, all previous Conversions values are discarded and this function
+// merely substitutes Conversions with customRates. But if true, customRates' values update or add to
+// the Conversions map
+func (r *Rates) UpdateRates(customRates *openrtb_ext.ExtRequestCurrency) {
+	if customRates == nil || len(customRates.ConversionRates) == 0 {
+		return
+	}
+
+	var usePbsRates bool = true
+	if customRates.UsePBSRates != nil {
+		usePbsRates = *customRates.UsePBSRates
+	}
+
+	if !usePbsRates || r.Conversions == nil {
+		// Either we shouldn't use PBS rates or PBS couldn't fetch rates to begin with
+		// create a fresh Conversions map
+		r.Conversions = make(map[string]map[string]float64, len(customRates.ConversionRates))
+	}
+
+	for fromCurrency, rates := range customRates.ConversionRates {
+		if _, ok := r.Conversions[fromCurrency]; !ok {
+			r.Conversions[fromCurrency] = make(map[string]float64, len(rates))
+		}
+		for toCurrency, rate := range rates {
+			r.Conversions[fromCurrency][toCurrency] = rate
+		}
+	}
 }

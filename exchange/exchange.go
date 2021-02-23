@@ -158,6 +158,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Get currency rates conversions for the auction
 	conversions := e.currencyConverter.Rates()
+	// If the BidRequest extension defines its own rates, use them
+	conversions.UpdateRates(requestExt.Prebid.BidReqConversions)
 
 	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions)
 

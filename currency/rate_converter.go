@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/timeutil"
 )
 
@@ -157,4 +158,5 @@ type httpClient interface {
 type Conversions interface {
 	GetRate(from string, to string) (float64, error)
 	GetRates() *map[string]map[string]float64
+	UpdateRates(customRates *openrtb_ext.ExtRequestCurrency)
 }

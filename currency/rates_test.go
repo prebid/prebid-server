@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -227,6 +228,135 @@ func TestGetRate_EmptyRates(t *testing.T) {
 	// Verify:
 	assert.NotNil(t, err, "err shouldn't be nil")
 	assert.Equal(t, float64(0), rate, "rate should be 0")
+}
+
+func TestUpdateRates(t *testing.T) {
+
+	boolTrue, boolFalse := true, false
+
+	pbsRates := map[string]map[string]float64{
+		"MXN": {
+			"USD": 20.13,
+			"EUR": 27.82,
+			"JPY": 5.09, // "MXN" to "JPY" rate not found in customRates
+		},
+		// Euro exchange rates not found in customRates
+		"EUR": {
+			"JPY": 0.05,
+			"MXN": 0.05,
+			"USD": 0.92,
+		},
+	}
+
+	customRates := map[string]map[string]float64{
+		// "MXN" can also be found in pbsRates but maps to some rate values
+		// that are different. This map also includes some currencies not found in pbsRates
+		"MXN": {
+			"USD": 25.00, // different rate than in pbsRates
+			"EUR": 27.82, // same as in pbsRates
+			"GBP": 31.12, // not found in pbsRates at all
+		},
+		// Currency can not be found in pbsRates add this entry as is
+		"USD": {
+			"GBP": 1.2,
+			"MXN": 0.05,
+			"CAN": 0.95,
+		},
+	}
+
+	testCases := []struct {
+		desc              string
+		inPbsRates        map[string]map[string]float64
+		inBidExtCurrency  *openrtb_ext.ExtRequestCurrency
+		outResultingRates map[string]map[string]float64
+	}{
+		{
+			desc:       "Valid Conversions objects, UsePBSRates set to false. Resulting rates will be identical to customRates",
+			inPbsRates: pbsRates,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: customRates,
+				UsePBSRates:     &boolFalse,
+			},
+			outResultingRates: customRates,
+		},
+		{
+			desc:       "Valid Conversions objects, UsePBSRates set to true. Resulting rates will keep field values found in pbsRates but not found in customRates and the rest will be added or overwritten with customRates' values",
+			inPbsRates: pbsRates,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: customRates,
+				UsePBSRates:     &boolTrue,
+			},
+			outResultingRates: map[string]map[string]float64{
+				// Currency was found in both pbsRates and customRates and got updated
+				"MXN": {
+					"USD": 25.00, //updated with customRates' value
+					"EUR": 27.82, //same in pbsRates than in customRates, no update
+					"GBP": 31.12, //added because it was found in customRates and not in pbsRates
+					"JPY": 5.09,  //kept from pbsRates as it wasn't found in customRates
+				},
+				// Currency added as is because it wasn't found in pbsRates
+				"USD": {
+					"GBP": 1.2,
+					"MXN": 0.05,
+					"CAN": 0.95,
+				},
+				// customRates didn't have exchange rates for this currency, entry
+				// kept from pbsRates
+				"EUR": {
+					"JPY": 0.05,
+					"MXN": 0.05,
+					"USD": 0.92,
+				},
+			},
+		},
+		{
+			desc:       "pbsRates are nil, UsePBSRates set to false. Resulting rates will be identical to customRates",
+			inPbsRates: nil,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: customRates,
+				UsePBSRates:     &boolFalse,
+			},
+			outResultingRates: customRates,
+		},
+		{
+			desc:       "pbsRates are nil, UsePBSRates set to true. Resulting rates will be identical to customRates",
+			inPbsRates: nil,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: customRates,
+				UsePBSRates:     &boolTrue,
+			},
+			outResultingRates: customRates,
+		},
+		{
+			desc:       "customRates empty, UsePBSRates set to false. Resulting rates will be identical to pbsRates",
+			inPbsRates: pbsRates,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				// ConversionRates inCustomRates not initialized makes for a zero-length map
+				UsePBSRates: &boolFalse,
+			},
+			outResultingRates: pbsRates,
+		},
+		{
+			desc:       "customRates empty, UsePBSRates set to true. Resulting rates will be identical to pbsRates",
+			inPbsRates: pbsRates,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				// ConversionRates inCustomRates not initialized makes for a zero-length map
+				UsePBSRates: &boolTrue,
+			},
+			outResultingRates: pbsRates,
+		},
+	}
+
+	for _, tc := range testCases {
+		// Test setup:
+		rates := NewRates(time.Time{}, tc.inPbsRates)
+
+		// Run test
+		rates.UpdateRates(tc.inBidExtCurrency)
+
+		// Assertions
+		assert.Equal(t, tc.outResultingRates, *rates.GetRates(), tc.desc)
+	}
 }
 
 func TestGetRate_NotValidISOCurrency(t *testing.T) {

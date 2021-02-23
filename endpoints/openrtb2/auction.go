@@ -36,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/iputil"
 	"golang.org/x/net/publicsuffix"
+	"golang.org/x/text/currency"
 )
 
 const storedRequestTimeoutMillis = 50
@@ -331,6 +332,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		if err := validateSChains(bidExt); err != nil {
 			return []error{err}
 		}
+
+		if bidExt.Prebid.BidReqConversions != nil {
+			validateCustomRates(bidExt.Prebid.BidReqConversions.ConversionRates)
+		}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -417,6 +422,28 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 func validateSChains(req *openrtb_ext.ExtRequest) error {
 	_, err := exchange.BidderToPrebidSChains(req)
 	return err
+}
+
+func validateCustomRates(customRates map[string]map[string]float64) {
+	//Traverse and ConversionRates and discard strings that are not currencies
+	for fromCurrency, rates := range customRates {
+		// Check if fromCurrency is a valid 3-letter currency code
+		_, err := currency.ParseISO(fromCurrency)
+		if err != nil {
+			delete(customRates, fromCurrency)
+		}
+		// Check if fromCurrency's mapped currencies are valid 3-letter currency codes
+		for toCurrency := range rates {
+			_, err := currency.ParseISO(toCurrency)
+			if err != nil {
+				delete(rates, toCurrency)
+			}
+		}
+		// If all of fromCurrency's mapped currencies were invalid, remove fromCurrency map entry
+		if len(rates) == 0 {
+			delete(customRates, fromCurrency)
+		}
+	}
 }
 
 func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]string, index int) []error {
