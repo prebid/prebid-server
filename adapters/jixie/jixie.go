@@ -13,13 +13,13 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type JixieAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
 // Builder builds a new instance of the Jixie adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &JixieAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
@@ -32,7 +32,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-func (a *JixieAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs = make([]error, 0)
 
 	data, err := json.Marshal(request)
@@ -80,7 +80,7 @@ func getBidType(bidAdm string) openrtb_ext.BidType {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *JixieAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		// no bid response
