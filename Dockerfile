@@ -31,7 +31,11 @@ COPY stored_requests/data stored_requests/data
 RUN apt-get update && \
     apt-get install -y ca-certificates mtr && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-EXPOSE 8000
-EXPOSE 6060
-ENTRYPOINT ["/usr/local/bin/prebid-server"]
-CMD ["-v", "1", "-logtostderr"]
+
+
+EXPOSE $PBS_PORT
+EXPOSE $PBS_ADMIN_PORT
+
+# server launch is made by infra team along with port configuration
+#ENTRYPOINT ["/usr/local/bin/prebid-server"]
+#CMD ["-v", "1", "-logtostderr"]
