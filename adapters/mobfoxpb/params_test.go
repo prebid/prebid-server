@@ -45,4 +45,7 @@ var invalidParams = []string{
 	`{"tagid": "123"}`,
 	`{"TagID": 16}`,
 	`{"TagID": ""}`,
+	`{"Key": "1"}`,
+	`{"key": 1}`,
+	`{"key":""}`,
 }

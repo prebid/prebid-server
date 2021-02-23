@@ -39,10 +39,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 // MakeRequests create bid request for mobfoxpb demand
 func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var tagID string
-	var err_tag error
-	var key string
-	var err_key error
 	var route string
 	var method string
 	var adapterRequests []*adapters.RequestData
@@ -50,9 +46,9 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 	requestURI := a.URI
 	reqCopy := *request
 	imp := request.Imp[0]
-	tagID, err_tag = jsonparser.GetString(imp.Ext, "bidder", "TagID")
-	key, err_key = jsonparser.GetString(imp.Ext, "bidder", "key")
-	if err_tag != nil && err_key != nil {
+	tagID, errTag := jsonparser.GetString(imp.Ext, "bidder", "TagID")
+	key, errKey := jsonparser.GetString(imp.Ext, "bidder", "key")
+	if errTag != nil && errKey != nil {
 		errs = append(errs, &errortypes.BadInput{
 			Message: fmt.Sprintf("Invalid or non existing key or tagId, atleast one should be present"),
 		})
@@ -128,11 +124,10 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 			if err != nil {
 				errs = append(errs, err)
 			} else {
-				b := &adapters.TypedBid{
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &bid,
 					BidType: bidType,
-				}
-				bidResponse.Bids = append(bidResponse.Bids, b)
+				})
 			}
 		}
 	}
@@ -142,6 +137,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
+		fmt.Println(impID, imp.ID)
 		if imp.ID == impID {
 			if imp.Banner != nil {
 				mediaType = openrtb_ext.BidTypeBanner
@@ -155,5 +151,7 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, 
 	}
 
 	// This shouldnt happen. Lets handle it just incase by returning an error.
-	return "", nil
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to find impression \"%s\"", impID),
+	}
 }
