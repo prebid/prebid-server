@@ -29,7 +29,7 @@ type ExtDevice struct {
 	// Type:
 	//   object; optional
 	// Description:
-	//   Prebid specific extensions for the Device object.
+	//   Prebid extensions for the Device object.
 	Prebid ExtDevicePrebid `json:"prebid"`
 }
 
