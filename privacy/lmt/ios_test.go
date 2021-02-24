@@ -30,7 +30,7 @@ func TestModifyForIOS(t *testing.T) {
 				App:    &openrtb.App{},
 				Device: &openrtb.Device{OS: "iOS", OSV: "14.0", IFA: "", Lmt: nil},
 			},
-			expectedLMT: &int8One,
+			expectedLMT: openrtb.Int8Ptr(1),
 		},
 	}
 
@@ -189,22 +189,22 @@ func TestModifyForIOS14X(t *testing.T) {
 		{
 			description: "IFA Empty",
 			givenDevice: openrtb.Device{IFA: "", Lmt: nil},
-			expectedLMT: &int8One,
+			expectedLMT: openrtb.Int8Ptr(1),
 		},
 		{
 			description: "IFA Zero UUID",
 			givenDevice: openrtb.Device{IFA: "00000000-0000-0000-0000-000000000000", Lmt: nil},
-			expectedLMT: &int8One,
+			expectedLMT: openrtb.Int8Ptr(1),
 		},
 		{
 			description: "IFA Populated",
 			givenDevice: openrtb.Device{IFA: "any-real-value", Lmt: nil},
-			expectedLMT: &int8Zero,
+			expectedLMT: openrtb.Int8Ptr(0),
 		},
 		{
 			description: "Overwrites Existing",
-			givenDevice: openrtb.Device{IFA: "", Lmt: &int8Zero},
-			expectedLMT: &int8One,
+			givenDevice: openrtb.Device{IFA: "", Lmt: openrtb.Int8Ptr(0)},
+			expectedLMT: openrtb.Int8Ptr(1),
 		},
 	}
 
@@ -224,27 +224,27 @@ func TestModifyForIOS142OrGreater(t *testing.T) {
 		{
 			description: "Not Determined",
 			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":0}`), Lmt: nil},
-			expectedLMT: &int8Zero,
+			expectedLMT: openrtb.Int8Ptr(0),
 		},
 		{
 			description: "Restricted",
 			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":1}`), Lmt: nil},
-			expectedLMT: &int8One,
+			expectedLMT: openrtb.Int8Ptr(1),
 		},
 		{
 			description: "Denied",
 			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":2}`), Lmt: nil},
-			expectedLMT: &int8One,
+			expectedLMT: openrtb.Int8Ptr(1),
 		},
 		{
 			description: "Authorized",
 			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":3}`), Lmt: nil},
-			expectedLMT: &int8Zero,
+			expectedLMT: openrtb.Int8Ptr(0),
 		},
 		{
 			description: "Overwrites Existing",
-			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":3}`), Lmt: &int8One},
-			expectedLMT: &int8Zero,
+			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":3}`), Lmt: openrtb.Int8Ptr(1)},
+			expectedLMT: openrtb.Int8Ptr(0),
 		},
 		{
 			description: "Invalid Value - Unknown",

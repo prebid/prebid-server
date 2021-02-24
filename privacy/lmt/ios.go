@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	int8Zero int8 = 1
+	int8Zero int8 = 0
 	int8One  int8 = 1
 )
 
