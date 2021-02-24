@@ -35,7 +35,7 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"unit": "1000008-AA77BB88CC" }`,
-	`{"unit": "1000008-AA77BB88CC", "accountid": "9988776655", "bidfloor": "0.01", "jxprop1": "somethingimportant" }`,
+	`{"unit": "1000008-AA77BB88CC", "accountid": "9988776655", "jxprop1": "somethingimportant" }`,
 }
 
 var invalidParams = []string{
@@ -47,12 +47,11 @@ var invalidParams = []string{
 	`{}`,
 	`{"unit":12345678}`,
 	`{"Unit":"12345678"}`,
-	`{"unit":"1000008-AA77BB88CC", "bidfloor": 0.01}`,
 	`{"Unit": 12345678}`,
 	`{"AdUnit": "1"}`,
 	`{"adUnit": 1}`,
 	`{"unit": ""}`,
 	`{"unit": "12345678901234567"}`,
-	`{"unit":"1000008-AA77BB88CC", "accountid", "bidfloor": "0.01", "jxprop1": "somethingimportant" }`,
+	`{"unit":"1000008-AA77BB88CC", "accountid",  "jxprop1": "somethingimportant" }`,
 	`{"unit":"1000008-AA77BB88CC", malformed, }`,
 }

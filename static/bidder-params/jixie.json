@@ -20,10 +20,6 @@
       "jxprop2" : {
         "type": "string",
         "description": "jxprop2 of an inventory target"
-      },
-      "bidfloor": {
-        "type": "string",
-        "description": "The minimum price acceptable for a bid"
       }
     },
     "required": ["unit"]

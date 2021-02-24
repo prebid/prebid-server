@@ -5,5 +5,4 @@ type ExtImpJixie struct {
 	AccountId string `json:"accountid,omitempty"`
 	JxProp1   string `json:"jxprop1,omitempty"`
 	JxProp2   string `json:"jxprop2,omitempty"`
-	BidFloor  string `json:"bidfloor,omitempty"`
 }
