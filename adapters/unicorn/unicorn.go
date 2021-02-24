@@ -13,7 +13,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// adapter describes a UNICORN prebid server adapter.
 type adapter struct {
 	endpoint string
 }
