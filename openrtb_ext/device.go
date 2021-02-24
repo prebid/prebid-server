@@ -20,7 +20,7 @@ type ExtDevice struct {
 	//   integer; optional - iOS Only
 	// Description:
 	//   iOS app tracking authorization status.
-	// Extention Spec:
+	// Extension Spec:
 	//   https://github.com/InteractiveAdvertisingBureau/openrtb/blob/master/extensions/community_extensions/skadnetwork.md
 	ATTS *IOSAppTrackingStatus `json:"atts"`
 
