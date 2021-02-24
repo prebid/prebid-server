@@ -80,7 +80,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://localhost:4000",
+        "uri": "https://ds.uncn.jp",
         "body": {
           "app": {
             "bundle": "net.ada.test",
@@ -148,7 +148,7 @@
           ],
           "source": {
             "ext": {
-              "Bidder": "unicorn",
+              "bidder": "unicorn",
               "stype": "prebid_server_uncn"
             },
             "tid": "A4B3EA9F-FF57-4716-AC85-6CBF6A46CFBD"
@@ -159,7 +159,7 @@
         }
       },
       "mockResponse": {
-        "url": "http://localhost:4000",
+        "url": "https://ds.uncn.jp",
         "status": 200,
         "headers": {
           "Content-Type": ["application/json"],

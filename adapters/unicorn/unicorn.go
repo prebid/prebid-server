@@ -13,8 +13,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// UnicornAdapter describes a UNICORN prebid server adapter.
-type UnicornAdapter struct {
+// adapter describes a UNICORN prebid server adapter.
+type adapter struct {
 	endpoint string
 }
 
@@ -28,28 +28,22 @@ type unicornImpExtContext struct {
 	Data interface{} `json:"data,omitempty"`
 }
 
-// unicornSourceExt is source ext for UNICORN
-type unicornSourceExt struct {
-	Stype  string `json:"stype"`
-	Bidder string `json"bidder"`
-}
-
 // unicornExt is ext for UNICORN
 type unicornExt struct {
 	Prebid    *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
 	AccountID int64                     `json:"accountId,omitempty"`
 }
 
-// Builder builds a new instance of the Foo adapter for the given bidder with the given config.
+// Builder builds a new instance of the UNICORN adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &UnicornAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var extRegs openrtb_ext.ExtRegs
 	if request.Regs != nil {
 		if request.Regs.COPPA == 1 {
@@ -71,17 +65,12 @@ func (a *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, requestInfo *
 		}
 	}
 
-	imp, err := setImps(request, requestInfo)
+	err := modifyImps(request, requestInfo)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	request.Imp = imp
-
-	request.Source.Ext, err = setSourceExt()
-	if err != nil {
-		return nil, []error{err}
-	}
+	request.Source.Ext = setSourceExt()
 
 	request.Ext, err = setExt(request)
 	if err != nil {
@@ -126,7 +115,7 @@ func getHeaders(request *openrtb.BidRequest) http.Header {
 	return headers
 }
 
-func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]openrtb.Imp, error) {
+func modifyImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) error {
 	for i := 0; i < len(request.Imp); i++ {
 		imp := &request.Imp[i]
 
@@ -134,7 +123,7 @@ func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
 		err := json.Unmarshal(imp.Ext, &ext)
 
 		if err != nil {
-			return nil, &errortypes.BadInput{
+			return &errortypes.BadInput{
 				Message: fmt.Sprintf("Error while decoding imp[%d].ext: %s", i, err),
 			}
 		}
@@ -145,7 +134,7 @@ func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
 		} else {
 			placementID, err = getStoredRequestImpID(imp)
 			if err != nil {
-				return nil, &errortypes.BadInput{
+				return &errortypes.BadInput{
 					Message: fmt.Sprintf("Error get StoredRequestImpID from imp[%d]: %s", i, err),
 				}
 			}
@@ -155,7 +144,7 @@ func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
 
 		imp.Ext, err = json.Marshal(ext)
 		if err != nil {
-			return nil, &errortypes.BadInput{
+			return &errortypes.BadInput{
 				Message: fmt.Sprintf("Error while encoding imp[%d].ext: %s", i, err),
 			}
 		}
@@ -164,50 +153,21 @@ func setImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo
 		imp.Secure = &secure
 		imp.TagID = placementID
 	}
-	return request.Imp, nil
+	return nil
 }
 
 func getStoredRequestImpID(imp *openrtb.Imp) (string, error) {
-	var impExt map[string]json.RawMessage
-
-	err := json.Unmarshal(imp.Ext, &impExt)
+	v, err := jsonparser.GetString(imp.Ext, "prebid", "storedrequest", "id")
 
 	if err != nil {
-		return "", fmt.Errorf("Error while decoding ext because: %s", err)
+		return "", fmt.Errorf("stored request id not found: %s", err)
 	}
 
-	rawPrebidExt, ok := impExt[openrtb_ext.PrebidExtKey]
-
-	if !ok {
-		return "", fmt.Errorf("ext.prebid is null")
-	}
-
-	var prebidExt openrtb_ext.ExtImpPrebid
-
-	err = json.Unmarshal(rawPrebidExt, &prebidExt)
-
-	if err != nil {
-		return "", fmt.Errorf("cannot decoding ext.prebid because: %s", err)
-	}
-
-	if prebidExt.StoredRequest == nil {
-		return "", fmt.Errorf("ext.prebid.storedrequest is null")
-	}
-
-	return prebidExt.StoredRequest.ID, nil
+	return v, nil
 }
 
-func setSourceExt() (json.RawMessage, error) {
-	siteExt, err := json.Marshal(unicornSourceExt{
-		Stype:  "prebid_server_uncn",
-		Bidder: "unicorn",
-	})
-	if err != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error while encoding source.ext, err: %s", err),
-		}
-	}
-	return siteExt, nil
+func setSourceExt() json.RawMessage {
+	return json.RawMessage(`{"stype": "prebid_server_uncn", "bidder": "unicorn"}`)
 }
 
 func setExt(request *openrtb.BidRequest) (json.RawMessage, error) {
@@ -234,7 +194,7 @@ func setExt(request *openrtb.BidRequest) (json.RawMessage, error) {
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (a *UnicornAdapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -263,6 +223,7 @@ func (a *UnicornAdapter) MakeBids(request *openrtb.BidRequest, requestData *adap
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
 		for _, bid := range seatBid.Bid {
+			bid := bid
 			var bidType openrtb_ext.BidType
 			for _, imp := range request.Imp {
 				if imp.ID == bid.ImpID {

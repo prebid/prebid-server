@@ -25,9 +25,6 @@
             "publisherId": 123456,
             "mediaId": "test_media",
             "placementId": "test_placement"
-          },
-          "context": {
-            "data": {}
           }
         }
       }
@@ -53,6 +50,8 @@
     "device": {
       "make": "Apple",
       "osv": "14.4",
+      "ipv6": "2400:2410:9120:3400:15f3:8c50:3a0:6820",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
       "connectiontype": 1,
       "os": "iOS",
       "w": 320,
@@ -106,6 +105,8 @@
             "ext": {
               "atts": 0
             },
+            "ipv6": "2400:2410:9120:3400:15f3:8c50:3a0:6820",
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
             "h": 568,
             "ifa": "00000000-0000-0000-0000-000000000000",
             "make": "Apple",
@@ -143,9 +144,6 @@
                   "publisherId": 123456,
                   "mediaId": "test_media",
                   "placementId": "test_placement"
-                },
-                "context": {
-                  "data": {}
                 }
               },
               "tagid": "test_placement",

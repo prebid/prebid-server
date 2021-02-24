@@ -63,7 +63,7 @@
     }
   },
   "expectedMakeRequestsErrors" : [{
-    "value": "Error get StoredRequestImpID from imp[0]: ext.prebid.storedrequest is null",
+    "value": "Error get StoredRequestImpID from imp[0]: stored request id not found: Key path not found",
     "comparison": "literal"
   }]
 }
