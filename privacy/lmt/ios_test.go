@@ -42,10 +42,10 @@ func TestModifyForIOS(t *testing.T) {
 
 func TestModifyForIOSHelper(t *testing.T) {
 	testCases := []struct {
-		description         string
-		givenRequest        *openrtb.BidRequest
-		expectedModifier140 bool
-		expectedModifier142 bool
+		description               string
+		givenRequest              *openrtb.BidRequest
+		expectedModifier140Called bool
+		expectedModifier142Called bool
 	}{
 		{
 			description: "Valid 14.0",
@@ -53,8 +53,8 @@ func TestModifyForIOSHelper(t *testing.T) {
 				App:    &openrtb.App{},
 				Device: &openrtb.Device{OS: "iOS", OSV: "14.0"},
 			},
-			expectedModifier140: true,
-			expectedModifier142: false,
+			expectedModifier140Called: true,
+			expectedModifier142Called: false,
 		},
 		{
 			description: "Valid 14.2 Or Greater",
@@ -62,8 +62,8 @@ func TestModifyForIOSHelper(t *testing.T) {
 				App:    &openrtb.App{},
 				Device: &openrtb.Device{OS: "iOS", OSV: "14.2"},
 			},
-			expectedModifier140: false,
-			expectedModifier142: true,
+			expectedModifier140Called: false,
+			expectedModifier142Called: true,
 		},
 		{
 			description: "Invalid Version",
@@ -71,8 +71,8 @@ func TestModifyForIOSHelper(t *testing.T) {
 				App:    &openrtb.App{},
 				Device: &openrtb.Device{OS: "iOS", OSV: "invalid"},
 			},
-			expectedModifier140: false,
-			expectedModifier142: false,
+			expectedModifier140Called: false,
+			expectedModifier142Called: false,
 		},
 		{
 			description: "Invalid OS",
@@ -80,8 +80,8 @@ func TestModifyForIOSHelper(t *testing.T) {
 				App:    &openrtb.App{},
 				Device: &openrtb.Device{OS: "invalid", OSV: "14.0"},
 			},
-			expectedModifier140: false,
-			expectedModifier142: false,
+			expectedModifier140Called: false,
+			expectedModifier142Called: false,
 		},
 		{
 			description: "Invalid Nil Device",
@@ -89,8 +89,8 @@ func TestModifyForIOSHelper(t *testing.T) {
 				App:    &openrtb.App{},
 				Device: nil,
 			},
-			expectedModifier140: false,
-			expectedModifier142: false,
+			expectedModifier140Called: false,
+			expectedModifier142Called: false,
 		},
 	}
 
@@ -108,8 +108,8 @@ func TestModifyForIOSHelper(t *testing.T) {
 
 		modifyForIOS(test.givenRequest, modifiers)
 
-		assert.Equal(t, test.expectedModifier140, modifierIOS140Called, test.description)
-		assert.Equal(t, test.expectedModifier142, modifierIOS142Called, test.description)
+		assert.Equal(t, test.expectedModifier140Called, modifierIOS140Called, test.description)
+		assert.Equal(t, test.expectedModifier142Called, modifierIOS142Called, test.description)
 	}
 }
 
