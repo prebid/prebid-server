@@ -453,7 +453,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 
 	gdprApplies := ""
 	var extRegs openrtb_ext.ExtRegs
-	if request.Regs != nil {
+	if request.Regs != nil && request.Regs.Ext != nil {
 		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
@@ -466,7 +466,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 
 	eids := ""
 	consent := ""
-	if request.User != nil {
+	if request.User != nil && request.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
 		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
 			consent = extUser.Consent
