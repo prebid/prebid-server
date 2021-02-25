@@ -110,7 +110,7 @@ func TestEqualOrGreater(t *testing.T) {
 	}
 }
 
-func TestDetectVersionGroup(t *testing.T) {
+func TestDetectVersionClassification(t *testing.T) {
 
 	tests := []struct {
 		given    string
