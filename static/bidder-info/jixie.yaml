@@ -1,0 +1,8 @@
+maintainer:
+  email: contact@jixie.io
+modifyingVastXmlAllowed: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
