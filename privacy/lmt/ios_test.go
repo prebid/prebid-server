@@ -252,6 +252,11 @@ func TestModifyForIOS142OrGreater(t *testing.T) {
 			expectedLMT: nil,
 		},
 		{
+			description: "Invalid Value - Unknown - Does Not Overwrite Existing",
+			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":4}`), Lmt: openrtb.Int8Ptr(1)},
+			expectedLMT: openrtb.Int8Ptr(1),
+		},
+		{
 			description: "Invalid Value - Missing",
 			givenDevice: openrtb.Device{Ext: json.RawMessage(`{}`), Lmt: nil},
 			expectedLMT: nil,
