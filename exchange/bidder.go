@@ -3,6 +3,7 @@ package exchange
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,16 +14,16 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config/util"
+	"github.com/prebid/prebid-server/currency"
 
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	nativeResponse "github.com/mxmCherry/openrtb/native/response"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -48,7 +49,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -57,13 +58,17 @@ type adaptedBidder interface {
 // pbsOrtbBid.bidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // pbsOrtbBid.bidTargets does not need to be filled out by the Bidder. It will be set later by the exchange.
 // pbsOrtbBid.bidVideo is optional but should be filled out by the Bidder if bidType is video.
+// pbsOrtbBid.bidEvents is set by exchange when event tracking is enabled
 // pbsOrtbBid.dealPriority is optionally provided by adapters and used internally by the exchange to support deal targeted campaigns.
+// pbsOrtbBid.dealTierSatisfied is set to true by exchange.updateHbPbCatDur if deal tier satisfied otherwise it will be set to false
 type pbsOrtbBid struct {
-	bid          *openrtb.Bid
-	bidType      openrtb_ext.BidType
-	bidTargets   map[string]string
-	bidVideo     *openrtb_ext.ExtBidPrebidVideo
-	dealPriority int
+	bid               *openrtb.Bid
+	bidType           openrtb_ext.BidType
+	bidTargets        map[string]string
+	bidVideo          *openrtb_ext.ExtBidPrebidVideo
+	bidEvents         *openrtb_ext.ExtBidPrebidEvents
+	dealPriority      int
+	dealTierSatisfied bool
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -88,7 +93,7 @@ type pbsOrtbSeatBid struct {
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me pbsmetrics.MetricsEngine, name openrtb_ext.BidderName) adaptedBidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo) adaptedBidder {
 	return &bidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
@@ -97,24 +102,33 @@ func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		config: bidderAdapterConfig{
 			Debug:              cfg.Debug,
 			DisableConnMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
+			DebugInfo:          config.DebugInfo{Allow: parseDebugInfo(debugInfo)},
 		},
 	}
+}
+
+func parseDebugInfo(info *config.DebugInfo) bool {
+	if info == nil {
+		return true
+	}
+	return info.Allow
 }
 
 type bidderAdapter struct {
 	Bidder     adapters.Bidder
 	BidderName openrtb_ext.BidderName
 	Client     *http.Client
-	me         pbsmetrics.MetricsEngine
+	me         metrics.MetricsEngine
 	config     bidderAdapterConfig
 }
 
 type bidderAdapterConfig struct {
 	Debug              config.Debug
 	DisableConnMetrics bool
+	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -150,8 +164,14 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	for i := 0; i < len(reqData); i++ {
 		httpInfo := <-responseChannel
 		// If this is a test bid, capture debugging info from the requests.
-		if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
-			seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+		// Write debug data to ext in case if:
+		// - debugContextKey (url param) in true
+		// - account debug is allowed
+		// - bidder debug is allowed
+		if accountDebugAllowed && bidder.config.DebugInfo.Allow {
+			if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
+				seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+			}
 		}
 
 		if httpInfo.err == nil {
@@ -305,17 +325,19 @@ func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset
 func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 	if httpInfo.err == nil {
 		return &openrtb_ext.ExtHttpCall{
-			Uri:          httpInfo.request.Uri,
-			RequestBody:  string(httpInfo.request.Body),
-			ResponseBody: string(httpInfo.response.Body),
-			Status:       httpInfo.response.StatusCode,
+			Uri:            httpInfo.request.Uri,
+			RequestBody:    string(httpInfo.request.Body),
+			ResponseBody:   string(httpInfo.response.Body),
+			Status:         httpInfo.response.StatusCode,
+			RequestHeaders: httpInfo.request.Headers,
 		}
 	} else if httpInfo.request == nil {
 		return &openrtb_ext.ExtHttpCall{}
 	} else {
 		return &openrtb_ext.ExtHttpCall{
-			Uri:         httpInfo.request.Uri,
-			RequestBody: string(httpInfo.request.Body),
+			Uri:            httpInfo.request.Uri,
+			RequestBody:    string(httpInfo.request.Body),
+			RequestHeaders: httpInfo.request.Headers,
 		}
 	}
 }
@@ -443,7 +465,7 @@ type httpCallInfo struct {
 // endpoint is established, we can keep track of whether the connection was newly created, reused, and
 // the time from the connection request, to the connection creation.
 func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context {
-	var connStart, dnsStart time.Time
+	var connStart, dnsStart, tlsStart time.Time
 
 	trace := &httptrace.ClientTrace{
 		// GetConn is called before a connection is created or retrieved from an idle pool
@@ -465,6 +487,16 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 			dnsLookupTime := time.Now().Sub(dnsStart)
 
 			bidder.me.RecordDNSTime(dnsLookupTime)
+		},
+
+		TLSHandshakeStart: func() {
+			tlsStart = time.Now()
+		},
+
+		TLSHandshakeDone: func(tls.ConnectionState, error) {
+			tlsHandshakeTime := time.Now().Sub(tlsStart)
+
+			bidder.me.RecordTLSHandshakeTime(tlsHandshakeTime)
 		},
 	}
 	return httptrace.WithClientTrace(ctx, trace)

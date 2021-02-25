@@ -12,11 +12,17 @@ type ExtBid struct {
 }
 
 // ExtBidPrebid defines the contract for bidresponse.seatbid.bid[i].ext.prebid
+// DealPriority represents priority of deal bid. If its non deal bid then value will be 0
+// DealTierSatisfied true represents corresponding bid has satisfied the deal tier
 type ExtBidPrebid struct {
-	Cache     *ExtBidPrebidCache `json:"cache,omitempty"`
-	Targeting map[string]string  `json:"targeting,omitempty"`
-	Type      BidType            `json:"type"`
-	Video     *ExtBidPrebidVideo `json:"video,omitempty"`
+	Cache             *ExtBidPrebidCache  `json:"cache,omitempty"`
+	DealPriority      int                 `json:"dealpriority,omitempty"`
+	DealTierSatisfied bool                `json:"dealtiersatisfied,omitempty"`
+	Meta              *ExtBidPrebidMeta   `json:"meta,omitempty"`
+	Targeting         map[string]string   `json:"targeting,omitempty"`
+	Type              BidType             `json:"type"`
+	Video             *ExtBidPrebidVideo  `json:"video,omitempty"`
+	Events            *ExtBidPrebidEvents `json:"events,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
@@ -31,10 +37,32 @@ type ExtBidPrebidCacheBids struct {
 	CacheId string `json:"cacheId"`
 }
 
+// ExtBidPrebidMeta defines the contract for bidresponse.seatbid.bid[i].ext.prebid.meta
+type ExtBidPrebidMeta struct {
+	AdvertiserDomains    []string `json:"advertiserDomains,omitempty"` // or advertiserDomain?
+	AdvertiserID         int      `json:"advertiserId,omitempty"`
+	AdvertiserName       string   `json:"advertiserName,omitempty"`
+	AgencyID             int      `json:"agencyId,omitempty"`
+	AgencyName           string   `json:"agencyName,omitempty"`
+	BrandID              int      `json:"brandId,omitempty"`
+	BrandName            string   `json:"brandName,omitempty"`
+	MediaType            string   `json:"mediaType,omitempty"`
+	NetworkID            int      `json:"networkId,omitempty"`
+	NetworkName          string   `json:"networkName,omitempty"`
+	PrimaryCategoryID    string   `json:"primaryCatId,omitempty"`
+	SecondaryCategoryIDs []string `json:"secondaryCatIds,omitempty"`
+}
+
 // ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video
 type ExtBidPrebidVideo struct {
 	Duration        int    `json:"duration"`
 	PrimaryCategory string `json:"primary_category"`
+}
+
+// ExtBidPrebidEvents defines the contract for bidresponse.seatbid.bid[i].ext.prebid.events
+type ExtBidPrebidEvents struct {
+	Win string `json:"win,omitempty"`
+	Imp string `json:"imp,omitempty"`
 }
 
 // BidType describes the allowed values for bidresponse.seatbid.bid[i].ext.prebid.type

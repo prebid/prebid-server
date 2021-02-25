@@ -19,55 +19,87 @@ import (
 //
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
+type Signal int
+
+const (
+	SignalAmbiguous Signal = -1
+	SignalNo        Signal = 0
+	SignalYes       Signal = 1
+)
+
 type permissionsImpl struct {
 	cfg             config.GDPR
 	vendorIDs       map[openrtb_ext.BidderName]uint16
 	fetchVendorList map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
 }
 
-func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
+	gdprSignal = p.normalizeGDPR(gdprSignal)
+
+	if gdprSignal == SignalNo {
+		return true, nil
+	}
+
 	return p.allowSync(ctx, uint16(p.cfg.HostVendorID), consent)
 }
 
-func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
+	gdprSignal = p.normalizeGDPR(gdprSignal)
+
+	if gdprSignal == SignalNo {
+		return true, nil
+	}
+
 	id, ok := p.vendorIDs[bidder]
 	if ok {
 		return p.allowSync(ctx, id, consent)
 	}
 
-	if consent == "" {
-		return p.cfg.UsersyncIfAmbiguous, nil
-	}
-
 	return false, nil
 }
 
-func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
-	_, ok := p.cfg.NonStandardPublisherMap[PublisherID]
-	if ok {
+func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string) (allowPI bool, allowGeo bool, allowID bool, err error) {
+	if _, ok := p.cfg.NonStandardPublisherMap[PublisherID]; ok {
 		return true, true, true, nil
 	}
 
-	id, ok := p.vendorIDs[bidder]
-	if ok {
+	gdprSignal = p.normalizeGDPR(gdprSignal)
+
+	if gdprSignal == SignalNo {
+		return true, true, true, nil
+	}
+
+	if consent == "" && gdprSignal == SignalYes {
+		return false, false, false, nil
+	}
+
+	if id, ok := p.vendorIDs[bidder]; ok {
 		return p.allowPI(ctx, id, consent)
 	}
 
-	if consent == "" {
-		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
-	}
+	return p.defaultVendorPermissions()
+}
 
+func (p *permissionsImpl) defaultVendorPermissions() (allowPI bool, allowGeo bool, allowID bool, err error) {
 	return false, false, false, nil
 }
 
-func (p *permissionsImpl) AMPException() bool {
-	return p.cfg.AMPException
+func (p *permissionsImpl) normalizeGDPR(gdprSignal Signal) Signal {
+	if gdprSignal != SignalAmbiguous {
+		return gdprSignal
+	}
+
+	if p.cfg.UsersyncIfAmbiguous {
+		return SignalNo
+	}
+
+	return SignalYes
 }
 
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string) (bool, error) {
-	// If we're not given a consent string, respect the preferences in the app config.
+
 	if consent == "" {
-		return p.cfg.UsersyncIfAmbiguous, nil
+		return false, nil
 	}
 
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
@@ -99,11 +131,6 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 }
 
 func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent string) (bool, bool, bool, error) {
-	// If we're not given a consent string, respect the preferences in the app config.
-	if consent == "" {
-		return p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, p.cfg.UsersyncIfAmbiguous, nil
-	}
-
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
 		return false, false, false, err
@@ -210,40 +237,42 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 	return
 }
 
+// AllowHostCookies represents a GDPR permissions policy with host cookie syncing always allowed
+type AllowHostCookies struct {
+	*permissionsImpl
+}
+
+// HostCookiesAllowed always returns true
+func (p *AllowHostCookies) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
+	return true, nil
+}
+
 // Exporting to allow for easy test setups
 type AlwaysAllow struct{}
 
-func (a AlwaysAllow) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (a AlwaysAllow) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
 	return true, nil
 }
 
-func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
 	return true, nil
 }
 
-func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string) (bool, bool, bool, error) {
 	return true, true, true, nil
-}
-
-func (a AlwaysAllow) AMPException() bool {
-	return false
 }
 
 // Exporting to allow for easy test setups
 type AlwaysFail struct{}
 
-func (a AlwaysFail) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (a AlwaysFail) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
 	return false, nil
 }
 
-func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
 	return false, nil
 }
 
-func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string) (bool, bool, bool, error) {
 	return false, false, false, nil
-}
-
-func (a AlwaysFail) AMPException() bool {
-	return false
 }

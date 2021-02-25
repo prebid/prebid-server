@@ -1,0 +1,34 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": []
+        },
+        "ext": {
+          "bidder": {
+            "sourceId": 123,
+            "publisher_id": "0",
+            "host": "test"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "prebid.org"
+    },
+    "device": {
+      "ip": "8.8.8.8"
+    },
+    "at": 1,
+    "tmax": 500
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Need at least one size to build request",
+      "comparison": "literal"
+    }
+  ]
+}

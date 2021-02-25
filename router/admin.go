@@ -5,11 +5,11 @@ import (
 	"net/http/pprof"
 	"time"
 
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/endpoints"
 )
 
-func Admin(revision string, rateConverter *currencies.RateConverter, rateConverterFetchingInterval time.Duration) *http.ServeMux {
+func Admin(revision string, rateConverter *currency.RateConverter, rateConverterFetchingInterval time.Duration) *http.ServeMux {
 	// Add endpoints to the admin server
 	// Making sure to add pprof routes
 	mux := http.NewServeMux()

@@ -13,6 +13,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -73,6 +74,13 @@ func extractRefererParameter(request *openrtb.BidRequest) string {
 	return ""
 }
 
+func extractIfaParameter(request *openrtb.BidRequest) string {
+	if request.Device != nil && request.Device.IFA != "" {
+		return "/xz" + url.QueryEscape(request.Device.IFA)
+	}
+	return ""
+}
+
 func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
@@ -106,12 +114,13 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		errs = append(errs, WrapReqError("Could not compose url from template and request account val: "+err.Error()))
 		return nil, errs
 	}
-	complete_url := fmt.Sprintf("%s%s%s%s%s",
+	complete_url := fmt.Sprintf("%s%s%s%s%s%s",
 		host,
 		extractSlotParameter(params),
 		extractTargetParameters(params),
 		extractGdprParameter(request),
-		extractRefererParameter(request))
+		extractRefererParameter(request),
+		extractIfaParameter(request))
 
 	return []*adapters.RequestData{{
 		Method: "GET",
@@ -259,11 +268,15 @@ func ContainsAny(raw string, keys []string) bool {
 
 }
 
-func NewAdheseBidder(uri string) *AdheseAdapter {
-	template, err := template.New("endpointTemplate").Parse(uri)
+// Builder builds a new instance of the Adhese adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &AdheseAdapter{endpointTemplate: *template}
+
+	bidder := &AdheseAdapter{
+		endpointTemplate: *template,
+	}
+	return bidder, nil
 }

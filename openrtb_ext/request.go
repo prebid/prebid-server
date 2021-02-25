@@ -8,6 +8,7 @@ import (
 // FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
 // for first party data support.
 const FirstPartyDataContextExtKey string = "context"
+const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
@@ -19,11 +20,13 @@ type ExtRequestPrebid struct {
 	Aliases              map[string]string         `json:"aliases,omitempty"`
 	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
 	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
+	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
+	Debug                bool                      `json:"debug,omitempty"`
+	Events               json.RawMessage           `json:"events,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
-	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
-	Debug                bool                      `json:"debug,omitempty"`
+	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
 
 	// NoSale specifies bidders with whom the publisher has a legal relationship where the
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
@@ -101,6 +104,8 @@ type ExtRequestTargeting struct {
 	IncludeBrandCategory *ExtIncludeBrandCategory `json:"includebrandcategory"`
 	IncludeFormat        bool                     `json:"includeformat"`
 	DurationRangeSec     []int                    `json:"durationrangesec"`
+	PreferDeals          bool                     `json:"preferdeals"`
+	AppendBidderNames    bool                     `json:"appendbiddernames,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
@@ -178,6 +183,9 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 	if pgraw.Precision < 0 {
 		return errors.New("Price granularity error: precision must be non-negative")
 	}
+	if pgraw.Precision > MaxDecimalFigures {
+		return errors.New("Price granularity error: precision of more than 15 significant figures is not supported")
+	}
 	if len(pgraw.Ranges) > 0 {
 		var prevMax float64 = 0
 		for i, gr := range pgraw.Ranges {
@@ -189,9 +197,6 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 			}
 			// Enforce that we don't read "min" from the request
 			pgraw.Ranges[i].Min = prevMax
-			if pgraw.Ranges[i].Min < prevMax {
-				return errors.New("Price granularity error: overlapping granularity ranges")
-			}
 			prevMax = gr.Max
 		}
 		*pg = PriceGranularity(pgraw)
@@ -285,4 +290,15 @@ var priceGranularityAuto = PriceGranularity{
 			Increment: 0.5,
 		},
 	},
+}
+
+// ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.
+type ExtRequestPrebidData struct {
+	EidPermissions []ExtRequestPrebidDataEidPermission `json:"eidpermissions"`
+}
+
+// ExtRequestPrebidDataEidPermission defines a filter rule for filter user.ext.eids
+type ExtRequestPrebidDataEidPermission struct {
+	Source  string   `json:"source"`
+	Bidders []string `json:"bidders"`
 }

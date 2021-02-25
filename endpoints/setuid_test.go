@@ -11,7 +11,8 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
 )
 
 func TestSetUIDEndpoint(t *testing.T) {
@@ -100,12 +101,13 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:           "Add the uid for the requested bidder to the list of existing syncs",
 		},
 		{
-			uri:                  "/setuid?bidder=pubmatic&uid=123&gdpr=0",
-			validFamilyNames:     []string{"pubmatic"},
-			existingSyncs:        nil,
-			expectedSyncs:        map[string]string{"pubmatic": "123"},
-			expectedResponseCode: http.StatusOK,
-			description:          "Don't care about GDPR consent if GDPR is set to 0",
+			uri:                   "/setuid?bidder=pubmatic&uid=123&gdpr=0",
+			validFamilyNames:      []string{"pubmatic"},
+			existingSyncs:         nil,
+			gdprAllowsHostCookies: true,
+			expectedSyncs:         map[string]string{"pubmatic": "123"},
+			expectedResponseCode:  http.StatusOK,
+			description:           "Don't care about GDPR consent if GDPR is set to 0",
 		},
 		{
 			uri:                  "/setuid?bidder=pubmatic&uid=123",
@@ -204,7 +206,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		cookies               []*usersync.PBSCookie
 		validFamilyNames      []string
 		gdprAllowsHostCookies bool
-		expectedMetricAction  pbsmetrics.RequestAction
+		expectedMetricAction  metrics.RequestAction
 		expectedMetricBidder  openrtb_ext.BidderName
 		expectedResponseCode  int
 		description           string
@@ -214,7 +216,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			cookies:               []*usersync.PBSCookie{},
 			validFamilyNames:      []string{"pubmatic"},
 			gdprAllowsHostCookies: true,
-			expectedMetricAction:  pbsmetrics.RequestActionSet,
+			expectedMetricAction:  metrics.RequestActionSet,
 			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
 			expectedResponseCode:  200,
 			description:           "Success - Sync",
@@ -224,7 +226,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			cookies:               []*usersync.PBSCookie{},
 			validFamilyNames:      []string{"pubmatic"},
 			gdprAllowsHostCookies: true,
-			expectedMetricAction:  pbsmetrics.RequestActionSet,
+			expectedMetricAction:  metrics.RequestActionSet,
 			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
 			expectedResponseCode:  200,
 			description:           "Success - Unsync",
@@ -234,7 +236,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			cookies:               []*usersync.PBSCookie{usersync.NewPBSCookieWithOptOut()},
 			validFamilyNames:      []string{"pubmatic"},
 			gdprAllowsHostCookies: true,
-			expectedMetricAction:  pbsmetrics.RequestActionOptOut,
+			expectedMetricAction:  metrics.RequestActionOptOut,
 			expectedResponseCode:  401,
 			description:           "Cookie Opted Out",
 		},
@@ -243,7 +245,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			cookies:               []*usersync.PBSCookie{},
 			validFamilyNames:      []string{},
 			gdprAllowsHostCookies: true,
-			expectedMetricAction:  pbsmetrics.RequestActionErr,
+			expectedMetricAction:  metrics.RequestActionErr,
 			expectedResponseCode:  400,
 			description:           "Unsupported Cookie Name",
 		},
@@ -252,7 +254,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			cookies:               []*usersync.PBSCookie{},
 			validFamilyNames:      []string{"pubmatic"},
 			gdprAllowsHostCookies: false,
-			expectedMetricAction:  pbsmetrics.RequestActionGDPR,
+			expectedMetricAction:  metrics.RequestActionGDPR,
 			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
 			expectedResponseCode:  400,
 			description:           "Prevented By GDPR",
@@ -260,21 +262,21 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		metrics := &pbsmetrics.MetricsEngineMock{}
-		expectedLabels := pbsmetrics.UserLabels{
+		metricsEngine := &metrics.MetricsEngineMock{}
+		expectedLabels := metrics.UserLabels{
 			Action: test.expectedMetricAction,
 			Bidder: test.expectedMetricBidder,
 		}
-		metrics.On("RecordUserIDSet", expectedLabels).Once()
+		metricsEngine.On("RecordUserIDSet", expectedLabels).Once()
 
 		req := httptest.NewRequest("GET", test.uri, nil)
 		for _, v := range test.cookies {
 			addCookie(req, v)
 		}
-		response := doRequest(req, metrics, test.validFamilyNames, test.gdprAllowsHostCookies, false)
+		response := doRequest(req, metricsEngine, test.validFamilyNames, test.gdprAllowsHostCookies, false)
 
 		assert.Equal(t, test.expectedResponseCode, response.Code, test.description)
-		metrics.AssertExpectations(t)
+		metricsEngine.AssertExpectations(t)
 	}
 }
 
@@ -384,7 +386,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, metrics pbsmetrics.MetricsEngine, validFamilyNames []string, gdprAllowsHostCookies bool, gdprReturnsError bool) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, metrics metrics.MetricsEngine, validFamilyNames []string, gdprAllowsHostCookies bool, gdprReturnsError bool) *httptest.ResponseRecorder {
 	cfg := config.Configuration{}
 	perms := &mockPermsSetUID{
 		allowHost: gdprAllowsHostCookies,
@@ -425,7 +427,7 @@ type mockPermsSetUID struct {
 	allowPI   bool
 }
 
-func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	var err error
 	if g.errorHost {
 		err = errors.New("something went wrong")
@@ -433,16 +435,12 @@ func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, consent string
 	return g.allowHost, err
 }
 
-func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	return false, nil
 }
 
-func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string) (bool, bool, bool, error) {
 	return g.allowPI, g.allowPI, g.allowPI, nil
-}
-
-func (g *mockPermsSetUID) AMPException() bool {
-	return false
 }
 
 func newFakeSyncer(familyName string) usersync.Usersyncer {

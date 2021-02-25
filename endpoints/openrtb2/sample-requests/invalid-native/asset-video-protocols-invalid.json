@@ -1,14 +1,25 @@
 {
-    "context": 1,
-    "plcmttype": 1,
-    "assets": [
-        {
-            "video": {
-                "mimes": ["video/mp4"],
-                "minduration": 30,
-                "maxduration": 120,
-                "protocols": [97]
-            }
+  "description": "Native request with an out of scope protocol value in a video asset in the imp.native.request field",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"video\":{\"mimes\":[\"video/mp4\"],\"minduration\":30,\"maxduration\":120,\"protocols\":[97]}}]}"
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
         }
+      }
     ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

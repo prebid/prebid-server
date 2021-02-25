@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -123,7 +124,7 @@ func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: "banner",
+				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
 			})
 		}
 	}
@@ -131,8 +132,20 @@ func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 
 }
 
-func NewYieldmoBidder(endpoint string) *YieldmoAdapter {
-	return &YieldmoAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Yieldmo adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &YieldmoAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
+}
+
+func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+	//default to video unless banner exists in impression
+	for _, imp := range imps {
+		if imp.ID == impId && imp.Banner != nil {
+			return openrtb_ext.BidTypeBanner
+		}
+	}
+	return openrtb_ext.BidTypeVideo
 }
