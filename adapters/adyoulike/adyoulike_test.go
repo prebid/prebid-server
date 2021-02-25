@@ -1,7 +1,6 @@
 package adyoulike
 
 import (
-	"encoding/json"
 	"net/http"
 	"testing"
 
