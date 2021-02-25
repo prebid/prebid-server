@@ -49,44 +49,6 @@ func TestMakeRequestInvalidParams(t *testing.T) {
 	assert.Len(t, bids, 0)
 }
 
-func TestMakeRequestTagId(t *testing.T) {
-
-	bidder, buildErr := Builder(openrtb_ext.BidderAdyoulike, config.Adapter{
-		Endpoint: testsBidderEndpoint})
-
-	assert.Nil(t, buildErr, "buildErr must be nil")
-
-	var reqInfo adapters.ExtraRequestInfo
-	var req openrtb.BidRequest
-	req.ID = "test_id"
-
-	reqExt := `{"prebid":{}}`
-	impExt1 := `{"bidder":{"placement":"placementid1"}}`
-	impExt2 := `{"bidder":{"placement":"placementid2"}}`
-	req.Ext = []byte(reqExt)
-
-	req.Imp = append(req.Imp, openrtb.Imp{ID: "1_0", Ext: []byte(impExt1)})
-	req.Imp = append(req.Imp, openrtb.Imp{ID: "1_1", Ext: []byte(impExt2)})
-
-	requests, errs := bidder.MakeRequests(&req, &reqInfo)
-
-	assert.Len(t, errs, 0)
-
-	var request *openrtb.BidRequest
-	json.Unmarshal(requests[0].Body, &request)
-
-	for _, imp := range request.Imp {
-
-		assert.True(t, imp.ID == "1_0" || imp.ID == "1_1")
-
-		if imp.ID == "1_0" {
-			assert.Equal(t, imp.TagID, "placementid1")
-		} else if imp.ID == "1_1" {
-			assert.Equal(t, imp.TagID, "placementid2")
-		}
-	}
-}
-
 func TestOpenRTBSurpriseResponse(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdyoulike, config.Adapter{
 		Endpoint: testsBidderEndpoint})
