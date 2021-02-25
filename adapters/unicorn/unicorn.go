@@ -228,8 +228,7 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.Re
 				if imp.ID == bid.ImpID {
 					if imp.Banner != nil {
 						bidType = openrtb_ext.BidTypeBanner
-					}
-					if imp.Native != nil {
+					} else if imp.Native != nil {
 						bidType = openrtb_ext.BidTypeNative
 					}
 				}
