@@ -1,6 +1,6 @@
 package openrtb_ext
 
-// ExtImpAdkernel defines the contract for bidrequest.imp[i].ext.adkernel
+// ExtImpAdyoulike defines the contract for bidrequest.imp[i].ext.adyoulike
 type ExtImpAdyoulike struct {
 	// placementId, only mandatory field
 	PlacementId string `json:"placement"`
