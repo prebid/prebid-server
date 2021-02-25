@@ -134,9 +134,3 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
 
 	return mediaType
 }
-
-func newBadInputError(message string) error {
-	return &errortypes.BadInput{
-		Message: message,
-	}
-}
