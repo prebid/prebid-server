@@ -1,6 +1,7 @@
 package adyoulike
 
 import (
+	"errors"
 	"encoding/json"
 	"fmt"
 	"github.com/prebid/prebid-server/config"
@@ -87,7 +88,7 @@ func (a *adapter) MakeBids(
 	case http.StatusOK:
 		break
 	case http.StatusNoContent:
-		return nil, nil
+		return nil, []error{errors.New("MakeBids error: No Content")}
 	case http.StatusBadRequest:
 		err := &errortypes.BadInput{
 			Message: fmt.Sprintf(unexpectedStatusCodeFormat, bidderRawResponse.StatusCode),
