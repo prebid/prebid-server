@@ -18,16 +18,18 @@
                 },
                 "ext": {
                     "bidder": {
-                        "TagID": "100000000"
+                        "TagID": "8"
                     }
                 }
             }
         ],
-        "app": {
+        "site": {
             "id": "1",
-            "bundle": "com.wls.testwlsapplication"
+            "domain": "test.com"
         },
-        "device": {}
+        "device": {
+            "ip": "123.123.123.123"
+        }
     },
     "httpCalls": [
         {
@@ -52,27 +54,55 @@
                             },
                             "ext": {
                                 "bidder": {
-                                    "TagID": "100000000"
+                                    "TagID": "8"
                                 }
                             }
                         }
                     ],
-                    "app": {
+                    "site": {
                         "id": "1",
-                        "bundle": "com.wls.testwlsapplication"
+                        "domain": "test.com"
                     },
-                    "device": {}
+                    "device": {
+                        "ip": "123.123.123.123"
+                    }
                 }
             },
             "mockResponse": {
-                "status": 400,
-                "body": {}
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "test_bid_id",
+                                    "impid": "test-imp-id-not",
+                                    "price": 0.27543,
+                                    "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://bes.mobfox.com/?c=o&m=adm&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
+                                    "cid": "test_cid",
+                                    "crid": "test_crid",
+                                    "dealid": "test_dealid",
+                                    "w": 468,
+                                    "h": 60,
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "banner"
+                                        }
+                                    }
+                                }
+                            ],
+                            "seat": "mobfoxpb"
+                        }
+                    ],
+                    "cur": "USD"
+                }
             }
         }
     ],
     "expectedMakeBidsErrors": [
         {
-            "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+            "value": "Failed to find impression \"test-imp-id-not\"",
             "comparison": "literal"
         }
     ]
