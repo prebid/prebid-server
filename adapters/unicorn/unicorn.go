@@ -64,12 +64,19 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 		}
 	}
 
-	err := modifyImps(request, requestInfo)
+	err := modifyImps(request)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	request.Source.Ext = setSourceExt()
+	var modifiableSource *openrtb.Source
+	if request.Source != nil {
+		modifiableSource = request.Source
+	} else {
+		modifiableSource = &openrtb.Source{}
+	}
+	modifiableSource.Ext = setSourceExt()
+	request.Source = modifiableSource
 
 	request.Ext, err = setExt(request)
 	if err != nil {
@@ -114,7 +121,7 @@ func getHeaders(request *openrtb.BidRequest) http.Header {
 	return headers
 }
 
-func modifyImps(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) error {
+func modifyImps(request *openrtb.BidRequest) error {
 	for i := 0; i < len(request.Imp); i++ {
 		imp := &request.Imp[i]
 
