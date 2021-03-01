@@ -363,17 +363,15 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
 			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
 			consentWriter := ccpa.ConsentWriter{Consent: ""}
-			if err := consentWriter.Write(req); err != nil { // START BELOW HERE
-				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
-			}
+			consentWriter.Write(req)
 		} else {
 			return append(errL, err)
 		}
 	}
 
-	impIDs := make(map[string]int, len(req.Imp))
-	for index := range req.Imp {
-		imp := &req.Imp[index]
+	impIDs := make(map[string]int, len(req.Request.Imp))
+	for index := range req.Request.Imp {
+		imp := &req.Request.Imp[index]
 		if firstIndex, ok := impIDs[imp.ID]; ok {
 			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
 		}
@@ -926,11 +924,6 @@ func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
 
 	if req.Request.Site.ID == "" && req.Request.Site.Page == "" {
 		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
-	}
-
-	err := req.ExtractSiteExt()
-	if err != nil {
-		return err
 	}
 
 	return nil
