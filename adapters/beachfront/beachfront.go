@@ -485,9 +485,20 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 	// The case of response status == 200 and response body length == 2 below covers the case of the banner endpoint returning
 	// an empty JSON array ('[]'), which is functionally no content.
-	if response.StatusCode == http.StatusNoContent || (response.StatusCode == http.StatusOK && len(response.Body) <= 2) {
+	if response.StatusCode == http.StatusNoContent {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("no content or truncated content received from server. status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
+			Message: fmt.Sprintf("no content received from server. status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
+		}}
+	}
+
+	if response.StatusCode == http.StatusOK && len(response.Body) <= 2 {
+
+		response.StatusCode = http.StatusNoContent
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("truncated content received from server. status code %d has been corrected to %d from %s. Run with request.debug = 1 for more info",
+				http.StatusOK,
+				response.StatusCode,
+				externalRequest.Uri),
 		}}
 	}
 

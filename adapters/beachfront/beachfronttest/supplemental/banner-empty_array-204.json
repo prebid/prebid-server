@@ -63,7 +63,7 @@
         }
       },
       "mockResponse": {
-        "status": 200,
+        "status": 204,
         "body": []
       }
     }
@@ -73,7 +73,7 @@
 
   "expectedMakeBidsErrors": [
     {
-      "value": "truncated content received from server. status code 200 has been corrected to 204 from https://qa.beachrtb.com/prebid_display. Run with request.debug = 1 for more info",
+      "value": "no content received from server. status code 204 from https://qa.beachrtb.com/prebid_display. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]
