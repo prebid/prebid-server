@@ -483,8 +483,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
 
-	// The case of response status == 200 and response body length == 2 below covers the case of the banner endpoint returning
-	// an empty JSON array ('[]'), which is functionally no content.
 	if response.StatusCode == http.StatusNoContent {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("no content received from server. status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
