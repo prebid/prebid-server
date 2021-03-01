@@ -69,14 +69,14 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 		return nil, []error{err}
 	}
 
-	var modifiableSource *openrtb.Source
+	var modifiableSource openrtb.Source
 	if request.Source != nil {
-		modifiableSource = request.Source
+		modifiableSource = *request.Source
 	} else {
-		modifiableSource = &openrtb.Source{}
+		modifiableSource = openrtb.Source{}
 	}
 	modifiableSource.Ext = setSourceExt()
-	request.Source = modifiableSource
+	request.Source = &modifiableSource
 
 	request.Ext, err = setExt(request)
 	if err != nil {
