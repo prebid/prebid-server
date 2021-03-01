@@ -321,7 +321,6 @@ type RequestWrapper struct {
 
 type UserExt struct {
 	Ext            map[string]json.RawMessage
-	Dirty          bool
 	Prebid         *ExtUserPrebid
 	PrebidDirty    bool
 	DigiTrust      *ExtUserDigiTrust
@@ -381,6 +380,7 @@ func (ue *UserExt) Marshal() (json.RawMessage, error) {
 			return nil, err
 		}
 		ue.Ext["prebid"] = json.RawMessage(prebidJson)
+		ue.PrebidDirty = false
 	}
 
 	if ue.DigiTrustDirty {
@@ -389,6 +389,7 @@ func (ue *UserExt) Marshal() (json.RawMessage, error) {
 			return nil, err
 		}
 		ue.Ext["digitrust"] = json.RawMessage(digiTrustJson)
+		ue.DigiTrustDirty = false
 	}
 
 	if ue.EidsDirty {
@@ -397,15 +398,19 @@ func (ue *UserExt) Marshal() (json.RawMessage, error) {
 			return nil, err
 		}
 		ue.Ext["eids"] = json.RawMessage(eidsJson)
+		ue.EidsDirty = false
 	}
 
 	return json.Marshal(ue.Ext)
 
 }
 
+func (ue *UserExt) Dirty() bool {
+	return ue.DigiTrustDirty || ue.EidsDirty || ue.PrebidDirty
+}
+
 type RequestExt struct {
 	Ext         map[string]json.RawMessage
-	Dirty       bool
 	Prebid      *ExtRequestPrebid
 	PrebidDirty bool
 }
@@ -440,6 +445,7 @@ func (re *RequestExt) Marshal() (json.RawMessage, error) {
 			return nil, err
 		}
 		re.Ext["prebid"] = json.RawMessage(prebidJson)
+		re.PrebidDirty = false
 	}
 
 	// Device
@@ -448,9 +454,12 @@ func (re *RequestExt) Marshal() (json.RawMessage, error) {
 
 }
 
+func (re *RequestExt) Dirty() bool {
+	return re.PrebidDirty
+}
+
 type DeviceExt struct {
 	Ext         map[string]json.RawMessage
-	Dirty       bool
 	Prebid      *ExtDevicePrebid
 	PrebidDirty bool
 }
@@ -485,7 +494,14 @@ func (de *DeviceExt) Marshal() (json.RawMessage, error) {
 			return nil, err
 		}
 		de.Ext["prebid"] = json.RawMessage(prebidJson)
+		de.PrebidDirty = false
 	}
+
+	rawJson, err := json.Marshal(de.Ext)
+	if err == nil {
+		ae.PrebidDirty = false
+	}
+	return rawJson, err
 
 	// Device
 
@@ -493,9 +509,12 @@ func (de *DeviceExt) Marshal() (json.RawMessage, error) {
 
 }
 
+func (de *DeviceExt) Dirty() bool {
+	return de.PrebidDirty
+}
+
 type AppExt struct {
 	Ext         map[string]json.RawMessage
-	Dirty       bool
 	Prebid      *ExtAppPrebid
 	PrebidDirty bool
 }
@@ -532,12 +551,19 @@ func (ae *AppExt) Marshal() (json.RawMessage, error) {
 		ae.Ext["prebid"] = json.RawMessage(prebidJson)
 	}
 
-	return json.Marshal(ae.Ext)
+	rawJson, err := json.Marshal(ae.Ext)
+	if err == nil {
+		ae.PrebidDirty = false
+	}
+	return rawJson, err
+}
+
+func (ae *AppExt) Dirty() bool {
+	return ae.PrebidDirty
 }
 
 type RegExt struct {
 	Ext            map[string]json.RawMessage
-	Dirty          bool
 	USPrivacy      string
 	USPrivacyDirty bool
 }
@@ -566,7 +592,6 @@ func (re *RegExt) Unmarshal(extJson json.RawMessage) error {
 
 func (re *RegExt) Marshal() (json.RawMessage, error) {
 	if re.USPrivacyDirty {
-		re.Dirty = true
 		if len(re.USPrivacy) > 0 {
 			rawjson, err := json.Marshal(re.USPrivacy)
 			if err != nil {
@@ -581,32 +606,15 @@ func (re *RegExt) Marshal() (json.RawMessage, error) {
 		return nil, nil
 	}
 
-	return json.Marshal(re.Ext)
-}
-
-type SiteExt struct {
-	Ext ExtSite
-}
-
-func (se *SiteExt) Extract(extJson json.RawMessage) (*SiteExt, error) {
-	newSE := &SiteExt{}
-	err := newSE.Unmarshal(extJson)
-	return newSE, err
-}
-
-func (se *SiteExt) Unmarshal(extJson json.RawMessage) error {
-	if len(extJson) == 0 {
-		return nil
+	rawJson, err := json.Marshal(re.Ext)
+	if err == nil {
+		re.USPrivacyDirty = false
 	}
-	err := json.Unmarshal(extJson, se.Ext)
-	if err != nil {
-		return err
-	}
-	return nil
+	return rawJson, err
 }
 
-func (se *SiteExt) Marshal() (json.RawMessage, error) {
-	return json.Marshal(se.Ext)
+func (re *RegExt) Dirty() bool {
+	return re.USPrivacyDirty
 }
 
 func (rw *RequestWrapper) ExtractUserExt() error {
@@ -636,15 +644,6 @@ func (rw *RequestWrapper) ExtractRequestExt() error {
 	return err
 }
 
-func (rw *RequestWrapper) ExtractSiteExt() error {
-	if rw.SiteExt != nil || rw.Request.Site == nil || rw.Request.Site.Ext == nil {
-		return nil
-	}
-	var err error
-	rw.SiteExt, err = rw.SiteExt.Extract(rw.Request.Site.Ext)
-	return err
-}
-
 func (rw *RequestWrapper) ExtractAppExt() error {
 	if rw.AppExt != nil || rw.Request.App == nil || rw.Request.App.Ext == nil {
 		return nil
@@ -663,21 +662,41 @@ func (rw *RequestWrapper) ExtractRegExt() error {
 	return err
 }
 
-func (rw *RequestWrapper) Marshal() (json.RawMessage, error) {
-	if rw.UserExt.Dirty {
+func (rw *RequestWrapper) Sync() error {
+	if rw.UserExt.Dirty() {
 		userJson, err := rw.UserExt.Marshal()
 		if err != nil {
 			return nil, err
 		}
 		rw.Request.User.Ext = userJson
 	}
-	if rw.DeviceExt.Dirty {
+	if rw.DeviceExt.Dirty() {
 		deviceJson, err := rw.DeviceExt.Marshal()
 		if err != nil {
 			return nil, err
 		}
 		rw.Request.Device.Ext = deviceJson
 	}
-	// TODO Add all other objects
+	if rw.RequestExt.Dirty() {
+		requestJson, err := rw.RequestExt.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		rw.Request.Ext = requestJson
+	}
+	if rw.AppExt.Dirty() {
+		appJson, err := rw.AppExt.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		rw.Request.App.Ext = appJson
+	}
+	if rw.RegExt.Dirty() {
+		regsJson, err := rw.RegExt.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		rw.Request.Regs.Ext = regsJson
+	}
 	return json.Marshal(rw.Request)
 }
