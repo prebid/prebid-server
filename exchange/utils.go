@@ -153,7 +153,8 @@ func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestT
 }
 
 func extractCCPA(orig *openrtb.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.IntegrationType) (privacy.PolicyEnforcer, error) {
-	ccpaPolicy, err := ccpa.ReadFromRequest(orig)
+	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
+	ccpaPolicy, err := ccpa.ReadFromRequest(&openrtb_ext.RequestWrapper{Request: orig})
 	if err != nil {
 		return privacy.NilPolicyEnforcer{}, err
 	}
@@ -192,7 +193,8 @@ func getAuctionBidderRequests(req AuctionRequest,
 
 	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
 
-	sChainsByBidder, err = BidderToPrebidSChains(requestExt)
+	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
+	sChainsByBidder, err = BidderToPrebidSChains(&requestExt.Prebid)
 	if err != nil {
 		return nil, []error{err}
 	}

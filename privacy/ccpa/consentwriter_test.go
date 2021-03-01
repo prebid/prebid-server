@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +34,7 @@ func TestConsentWriter(t *testing.T) {
 			request: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`malformed}`)},
 			},
-			expectedError: true,
+			expectedError: false,
 			expected: &openrtb.BidRequest{
 				Regs: &openrtb.Regs{Ext: json.RawMessage(`malformed}`)},
 			},
@@ -43,7 +44,9 @@ func TestConsentWriter(t *testing.T) {
 	for _, test := range testCases {
 		writer := ConsentWriter{consent}
 
-		err := writer.Write(test.request)
+		reqWrapper := &openrtb_ext.RequestWrapper{Request: test.request}
+		var err error
+		writer.Write(reqWrapper)
 
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, test.request, test.description)

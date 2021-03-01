@@ -540,7 +540,6 @@ type RegExt struct {
 	Dirty          bool
 	USPrivacy      string
 	USPrivacyDirty bool
-	Prebid
 }
 
 func (re *RegExt) Extract(extJson json.RawMessage) (*RegExt, error) {
@@ -557,15 +556,27 @@ func (re *RegExt) Unmarshal(extJson json.RawMessage) error {
 	if err != nil {
 		return err
 	}
-	uspJson, hasUsp := re.ext["us_privacy"]
+	uspJson, hasUsp := re.Ext["us_privacy"]
 	if hasUsp {
-		json.Unmarshal(uspJson, &re.UsPrivacy)
+		json.Unmarshal(uspJson, &re.USPrivacy)
 	}
 
 	return nil
 }
 
 func (re *RegExt) Marshal() (json.RawMessage, error) {
+	if re.USPrivacyDirty {
+		re.Dirty = true
+		if len(re.USPrivacy) > 0 {
+			rawjson, err := json.Marshal(re.USPrivacy)
+			if err != nil {
+				return nil, err
+			}
+			re.Ext["us_privacy"] = rawjson
+		} else {
+			delete(re.Ext, "us_privacy")
+		}
+	}
 	if len(re.Ext) == 0 {
 		return nil, nil
 	}

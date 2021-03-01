@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -155,7 +156,8 @@ func TestReadFromRequest(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := ReadFromRequest(test.request)
+		reqWrapper := &openrtb_ext.RequestWrapper{Request: test.request}
+		result, err := ReadFromRequest(reqWrapper)
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expectedPolicy, result, test.description)
 	}
@@ -209,7 +211,8 @@ func TestWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		err := test.policy.Write(test.request)
+		reqWrapper := &openrtb_ext.RequestWrapper{Request: test.request}
+		err := test.policy.Write(reqWrapper)
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, test.request, test.description)
 	}
@@ -258,9 +261,14 @@ func TestBuildRegs(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildRegs(test.consent, test.regs)
+		regDummy := &openrtb_ext.RegExt{}
+		regsExt, err := regDummy.Extract(test.regs.Ext)
+		if err == nil {
+			buildRegs(test.consent, regsExt)
+			test.regs.Ext, err = regsExt.Marshal()
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, result, test.description)
+		assert.Equal(t, test.expected, test.regs, test.description)
 	}
 }
 
@@ -309,9 +317,14 @@ func TestBuildRegsClear(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildRegsClear(test.regs)
+		regDummy := &openrtb_ext.RegExt{}
+		regsExt, err := regDummy.Extract(test.regs.Ext)
+		if err == nil {
+			buildRegsClear(regsExt)
+			test.regs.Ext, err = regsExt.Marshal()
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, result, test.description)
+		assert.Equal(t, test.expected, test.regs, test.description)
 	}
 }
 
@@ -368,9 +381,14 @@ func TestBuildRegsWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildRegsWrite(test.consent, test.regs)
+		regDummy := &openrtb_ext.RegExt{}
+		regsExt, err := regDummy.Extract(test.regs.Ext)
+		if err == nil {
+			buildRegsWrite(test.consent, regsExt)
+			test.regs.Ext, err = regsExt.Marshal()
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, result, test.description)
+		assert.Equal(t, test.expected, test.regs, test.description)
 	}
 }
 
@@ -415,7 +433,13 @@ func TestBuildExt(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildExt(test.noSaleBidders, test.ext)
+		reqDummy := &openrtb_ext.RequestExt{}
+		reqExt, err := reqDummy.Extract(test.ext)
+		var result json.RawMessage
+		if err == nil {
+			buildExt(test.noSaleBidders, reqExt)
+			result, err = reqExt.Marshal()
+		}
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, result, test.description)
 	}
@@ -486,7 +510,13 @@ func TestBuildExtClear(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildExtClear(test.ext)
+		reqDummy := &openrtb_ext.RequestExt{}
+		reqExt, err := reqDummy.Extract(test.ext)
+		var result json.RawMessage
+		if err == nil {
+			buildExtClear(reqExt)
+			result, err = reqExt.Marshal()
+		}
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, result, test.description)
 	}
@@ -575,7 +605,13 @@ func TestBuildExtWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildExtWrite(test.noSaleBidders, test.ext)
+		reqDummy := &openrtb_ext.RequestExt{}
+		reqExt, err := reqDummy.Extract(test.ext)
+		var result json.RawMessage
+		if err == nil {
+			buildExtWrite(test.noSaleBidders, reqExt)
+			result, err = reqExt.Marshal()
+		}
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, result, test.description)
 	}

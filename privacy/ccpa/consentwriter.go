@@ -10,16 +10,9 @@ type ConsentWriter struct {
 }
 
 // Write mutates an OpenRTB bid request with the CCPA consent string.
-func (c ConsentWriter) Write(req *openrtb_ext.RequestWrapper) error {
+func (c ConsentWriter) Write(req *openrtb_ext.RequestWrapper) {
 	if req == nil {
-		return nil
+		return
 	}
-	// START BELOW HERE
-	regs, err := buildRegs(c.Consent, req.Regs)
-	if err != nil {
-		return err
-	}
-	req.Regs = regs
-
-	return nil
+	buildRegs(c.Consent, req.RegExt)
 }

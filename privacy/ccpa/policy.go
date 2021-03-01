@@ -2,10 +2,8 @@ package ccpa
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -53,13 +51,7 @@ func (p Policy) Write(req *openrtb_ext.RequestWrapper) error {
 	req.ExtractRequestExt()
 	buildRegs(p.Consent, req.RegExt)
 
-	ext, err := buildExt(p.NoSaleBidders, req.RequestExt, req.RegExt)
-	if err != nil {
-		return err
-	}
-
-	req.Regs = regs
-	req.Ext = ext
+	buildExt(p.NoSaleBidders, req.RequestExt)
 	return nil
 }
 
@@ -88,18 +80,11 @@ func buildRegsClear(regs *openrtb_ext.RegExt) {
 
 // buildRegsWrite becomes an almost a one liner
 func buildRegsWrite(consent string, regs *openrtb_ext.RegExt) {
-	regs.Ext["us_privacy"] = consent
+	regs.USPrivacy = consent
+	regs.USPrivacyDirty = true
 }
 
-func marshalRegsExt(regs openrtb.Regs, ext interface{}) (*openrtb.Regs, error) {
-	extJSON, err := json.Marshal(ext)
-	if err == nil {
-		regs.Ext = extJSON
-	}
-	return &regs, err
-}
-
-func buildExt(noSaleBidders []string, ext openrtb_ext.RequestExt) {
+func buildExt(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
 	if len(noSaleBidders) == 0 {
 		buildExtClear(ext)
 	} else {
@@ -107,7 +92,7 @@ func buildExt(noSaleBidders []string, ext openrtb_ext.RequestExt) {
 	}
 }
 
-func buildExtClear(ext openrtb_ext.RequestExt) {
+func buildExtClear(ext *openrtb_ext.RequestExt) {
 	if ext.Prebid == nil {
 		return
 	}
@@ -117,30 +102,16 @@ func buildExtClear(ext openrtb_ext.RequestExt) {
 	ext.PrebidDirty = true
 }
 
-func buildExtWrite(noSaleBidders []string, ext json.RawMessage) (json.RawMessage, error) {
-	if len(ext) == 0 {
-		return json.Marshal(openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{NoSale: noSaleBidders}})
+func buildExtWrite(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
+	if ext == nil {
+		// This should hopefully not be possible. The only caller insures that this has been initialized
+		return
 	}
 
-	var extMap map[string]interface{}
-	if err := json.Unmarshal(ext, &extMap); err != nil {
-		return nil, err
+	if ext.Prebid == nil {
+		ext.Prebid = &openrtb_ext.ExtRequestPrebid{}
 	}
-
-	var prebidExt map[string]interface{}
-	if prebidExtInterface, exists := extMap["prebid"]; exists {
-		// Reference Existing Prebid Ext Map
-		if prebidExtMap, ok := prebidExtInterface.(map[string]interface{}); ok {
-			prebidExt = prebidExtMap
-		} else {
-			return nil, errors.New("request.ext.prebid is not a json object")
-		}
-	} else {
-		// Create New Empty Prebid Ext Map
-		prebidExt = make(map[string]interface{})
-		extMap["prebid"] = prebidExt
-	}
-
-	prebidExt["nosale"] = noSaleBidders
-	return json.Marshal(extMap)
+	ext.Prebid.NoSale = noSaleBidders
+	ext.PrebidDirty = true
+	return
 }
