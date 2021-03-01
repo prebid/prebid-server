@@ -492,7 +492,6 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	}
 
 	if response.StatusCode == http.StatusOK && len(response.Body) <= 2 {
-
 		response.StatusCode = http.StatusNoContent
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("truncated content received from server. status code %d has been corrected to %d from %s. Run with request.debug = 1 for more info",

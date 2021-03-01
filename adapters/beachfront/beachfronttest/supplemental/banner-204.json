@@ -63,8 +63,7 @@
         }
       },
       "mockResponse": {
-        "status": 204,
-        "body": []
+        "status": 204
       }
     }
   ],
