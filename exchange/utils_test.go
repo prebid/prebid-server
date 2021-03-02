@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
@@ -219,7 +219,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 	for _, test := range testCases {
 		req := newBidRequest(t)
 		req.Ext = test.reqExt
-		req.Regs = &openrtb.Regs{
+		req.Regs = &openrtb2.Regs{
 			Ext: json.RawMessage(`{"us_privacy":"` + test.ccpaConsent + `"}`),
 		}
 
@@ -286,7 +286,7 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 	for _, test := range testCases {
 		req := newBidRequest(t)
 		req.Ext = test.reqExt
-		req.Regs = &openrtb.Regs{Ext: test.reqRegsExt}
+		req.Regs = &openrtb2.Regs{Ext: test.reqRegsExt}
 
 		var reqExtStruct openrtb_ext.ExtRequest
 		err := json.Unmarshal(req.Ext, &reqExtStruct)
@@ -335,7 +335,7 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 
 	for _, test := range testCases {
 		req := newBidRequest(t)
-		req.Regs = &openrtb.Regs{COPPA: test.coppa}
+		req.Regs = &openrtb2.Regs{COPPA: test.coppa}
 
 		auctionReq := AuctionRequest{
 			BidRequest: req,
@@ -469,13 +469,13 @@ func TestExtractBidRequestExt(t *testing.T) {
 
 	testCases := []struct {
 		desc          string
-		inBidRequest  *openrtb.BidRequest
+		inBidRequest  *openrtb2.BidRequest
 		outRequestExt *openrtb_ext.ExtRequest
 		outError      error
 	}{
 		{
 			desc:         "Valid vastxml.returnCreative set to false",
-			inBidRequest: &openrtb.BidRequest{Ext: json.RawMessage(`{"prebid":{"debug":true,"cache":{"vastxml":{"returnCreative":false}}}}`)},
+			inBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"debug":true,"cache":{"vastxml":{"returnCreative":false}}}}`)},
 			outRequestExt: &openrtb_ext.ExtRequest{
 				Prebid: openrtb_ext.ExtRequestPrebid{
 					Debug: true,
@@ -490,7 +490,7 @@ func TestExtractBidRequestExt(t *testing.T) {
 		},
 		{
 			desc:         "Valid vastxml.returnCreative set to true",
-			inBidRequest: &openrtb.BidRequest{Ext: json.RawMessage(`{"prebid":{"debug":true,"cache":{"vastxml":{"returnCreative":true}}}}`)},
+			inBidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"debug":true,"cache":{"vastxml":{"returnCreative":true}}}}`)},
 			outRequestExt: &openrtb_ext.ExtRequest{
 				Prebid: openrtb_ext.ExtRequestPrebid{
 					Debug: true,
@@ -511,13 +511,13 @@ func TestExtractBidRequestExt(t *testing.T) {
 		},
 		{
 			desc:          "Non-nil bidRequest with empty Ext, we expect a blank requestExt",
-			inBidRequest:  &openrtb.BidRequest{},
+			inBidRequest:  &openrtb2.BidRequest{},
 			outRequestExt: &openrtb_ext.ExtRequest{},
 			outError:      nil,
 		},
 		{
 			desc:          "Non-nil bidRequest with non-empty, invalid Ext, we expect unmarshaling error",
-			inBidRequest:  &openrtb.BidRequest{Ext: json.RawMessage(`invalid`)},
+			inBidRequest:  &openrtb2.BidRequest{Ext: json.RawMessage(`invalid`)},
 			outRequestExt: &openrtb_ext.ExtRequest{},
 			outError:      fmt.Errorf("Error decoding Request.ext : invalid character 'i' looking for beginning of value"),
 		},
@@ -885,7 +885,7 @@ func TestGetExtTargetData(t *testing.T) {
 
 func TestGetDebugInfo(t *testing.T) {
 	type inTest struct {
-		bidRequest *openrtb.BidRequest
+		bidRequest *openrtb2.BidRequest
 		requestExt *openrtb_ext.ExtRequest
 	}
 	testCases := []struct {
@@ -900,7 +900,7 @@ func TestGetDebugInfo(t *testing.T) {
 		},
 		{
 			desc: "bid request test == 0, nil requestExt",
-			in:   inTest{&openrtb.BidRequest{Test: 0}, nil},
+			in:   inTest{&openrtb2.BidRequest{Test: 0}, nil},
 			out:  false,
 		},
 		{
@@ -910,22 +910,22 @@ func TestGetDebugInfo(t *testing.T) {
 		},
 		{
 			desc: "bid request test == 0, requestExt debug flag false",
-			in:   inTest{&openrtb.BidRequest{Test: 0}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
+			in:   inTest{&openrtb2.BidRequest{Test: 0}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
 			out:  false,
 		},
 		{
 			desc: "bid request test == 1, requestExt debug flag false",
-			in:   inTest{&openrtb.BidRequest{Test: 1}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
+			in:   inTest{&openrtb2.BidRequest{Test: 1}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: false}}},
 			out:  true,
 		},
 		{
 			desc: "bid request test == 0, requestExt debug flag true",
-			in:   inTest{&openrtb.BidRequest{Test: 0}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}}},
+			in:   inTest{&openrtb2.BidRequest{Test: 0}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}}},
 			out:  true,
 		},
 		{
 			desc: "bid request test == 1, requestExt debug flag true",
-			in:   inTest{&openrtb.BidRequest{Test: 1}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}}},
+			in:   inTest{&openrtb2.BidRequest{Test: 1}, &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Debug: true}}},
 			out:  true,
 		},
 	}
@@ -1215,7 +1215,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 	for _, test := range testCases {
 		req := newBidRequest(t)
 		req.User.Ext = json.RawMessage(`{"consent":"` + test.gdprConsent + `"}`)
-		req.Regs = &openrtb.Regs{
+		req.Regs = &openrtb2.Regs{
 			Ext: json.RawMessage(`{"gdpr":` + test.gdpr + `}`),
 		}
 
@@ -1268,17 +1268,17 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 }
 
 // newAdapterAliasBidRequest builds a BidRequest with aliases
-func newAdapterAliasBidRequest(t *testing.T) *openrtb.BidRequest {
+func newAdapterAliasBidRequest(t *testing.T) *openrtb2.BidRequest {
 	dnt := int8(1)
-	return &openrtb.BidRequest{
-		Site: &openrtb.Site{
+	return &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
 			Page:   "www.some.domain.com",
 			Domain: "domain.com",
-			Publisher: &openrtb.Publisher{
+			Publisher: &openrtb2.Publisher{
 				ID: "some-publisher-id",
 			},
 		},
-		Device: &openrtb.Device{
+		Device: &openrtb2.Device{
 			DIDMD5:   "some device ID hash",
 			UA:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36",
 			IFA:      "ifa",
@@ -1286,21 +1286,21 @@ func newAdapterAliasBidRequest(t *testing.T) *openrtb.BidRequest {
 			DNT:      &dnt,
 			Language: "EN",
 		},
-		Source: &openrtb.Source{
+		Source: &openrtb2.Source{
 			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
 		},
-		User: &openrtb.User{
+		User: &openrtb2.User{
 			ID:       "our-id",
 			BuyerUID: "their-id",
 			Ext:      json.RawMessage(`{"consent":"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw","digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
 		},
-		Regs: &openrtb.Regs{
+		Regs: &openrtb2.Regs{
 			Ext: json.RawMessage(`{"gdpr":1}`),
 		},
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "some-imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{
 					W: 300,
 					H: 250,
 				}, {
@@ -1314,35 +1314,35 @@ func newAdapterAliasBidRequest(t *testing.T) *openrtb.BidRequest {
 	}
 }
 
-func newBidRequest(t *testing.T) *openrtb.BidRequest {
-	return &openrtb.BidRequest{
-		Site: &openrtb.Site{
+func newBidRequest(t *testing.T) *openrtb2.BidRequest {
+	return &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
 			Page:   "www.some.domain.com",
 			Domain: "domain.com",
-			Publisher: &openrtb.Publisher{
+			Publisher: &openrtb2.Publisher{
 				ID: "some-publisher-id",
 			},
 		},
-		Device: &openrtb.Device{
+		Device: &openrtb2.Device{
 			DIDMD5:   "some device ID hash",
 			UA:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36",
 			IFA:      "ifa",
 			IP:       "132.173.230.74",
 			Language: "EN",
 		},
-		Source: &openrtb.Source{
+		Source: &openrtb2.Source{
 			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
 		},
-		User: &openrtb.User{
+		User: &openrtb2.User{
 			ID:       "our-id",
 			BuyerUID: "their-id",
 			Yob:      1982,
 			Ext:      json.RawMessage(`{"digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
 		},
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "some-imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{
 					W: 300,
 					H: 250,
 				}, {
@@ -1591,8 +1591,8 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		request := &openrtb.BidRequest{
-			User: &openrtb.User{Ext: test.userExt},
+		request := &openrtb2.BidRequest{
+			User: &openrtb2.User{Ext: test.userExt},
 		}
 
 		requestExt := &openrtb_ext.ExtRequest{
@@ -1603,8 +1603,8 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 			},
 		}
 
-		expectedRequest := &openrtb.BidRequest{
-			User: &openrtb.User{Ext: test.expectedUserExt},
+		expectedRequest := &openrtb2.BidRequest{
+			User: &openrtb2.User{Ext: test.expectedUserExt},
 		}
 
 		resultErr := removeUnpermissionedEids(request, bidder, requestExt)
@@ -1637,8 +1637,8 @@ func TestRemoveUnpermissionedEidsUnmarshalErrors(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		request := &openrtb.BidRequest{
-			User: &openrtb.User{Ext: test.userExt},
+		request := &openrtb2.BidRequest{
+			User: &openrtb2.User{Ext: test.userExt},
 		}
 
 		requestExt := &openrtb_ext.ExtRequest{
@@ -1659,12 +1659,12 @@ func TestRemoveUnpermissionedEidsUnmarshalErrors(t *testing.T) {
 func TestRemoveUnpermissionedEidsEmptyValidations(t *testing.T) {
 	testCases := []struct {
 		description string
-		request     *openrtb.BidRequest
+		request     *openrtb2.BidRequest
 		requestExt  *openrtb_ext.ExtRequest
 	}{
 		{
 			description: "Nil User",
-			request: &openrtb.BidRequest{
+			request: &openrtb2.BidRequest{
 				User: nil,
 			},
 			requestExt: &openrtb_ext.ExtRequest{
@@ -1679,8 +1679,8 @@ func TestRemoveUnpermissionedEidsEmptyValidations(t *testing.T) {
 		},
 		{
 			description: "Empty User",
-			request: &openrtb.BidRequest{
-				User: &openrtb.User{},
+			request: &openrtb2.BidRequest{
+				User: &openrtb2.User{},
 			},
 			requestExt: &openrtb_ext.ExtRequest{
 				Prebid: openrtb_ext.ExtRequestPrebid{
@@ -1694,15 +1694,15 @@ func TestRemoveUnpermissionedEidsEmptyValidations(t *testing.T) {
 		},
 		{
 			description: "Nil Ext",
-			request: &openrtb.BidRequest{
-				User: &openrtb.User{Ext: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`)},
+			request: &openrtb2.BidRequest{
+				User: &openrtb2.User{Ext: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`)},
 			},
 			requestExt: nil,
 		},
 		{
 			description: "Nil Prebid Data",
-			request: &openrtb.BidRequest{
-				User: &openrtb.User{Ext: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`)},
+			request: &openrtb2.BidRequest{
+				User: &openrtb2.User{Ext: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`)},
 			},
 			requestExt: &openrtb_ext.ExtRequest{
 				Prebid: openrtb_ext.ExtRequestPrebid{
