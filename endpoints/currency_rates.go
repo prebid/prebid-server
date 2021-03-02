@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
+	"github.com/PubMatic-OpenWrap/prebid-server/currency"
 	"github.com/golang/glog"
 )
 
@@ -20,7 +20,7 @@ type currencyRatesInfo struct {
 }
 
 type rateConverter interface {
-	GetInfo() currencies.ConverterInfo
+	GetInfo() currency.ConverterInfo
 }
 
 // newCurrencyRatesInfo creates a new CurrencyRatesInfo instance.

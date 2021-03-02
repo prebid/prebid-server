@@ -13,14 +13,14 @@ import (
 	"time"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"golang.org/x/net/context/ctxhttp"
 )
 
-// Client stores values in Prebid Cache. For more info, see https://github.com/PubMatic-OpenWrap/prebid-cache
+// Client stores values in Prebid Cache. For more info, see https://github.com/prebid/prebid-cache
 type Client interface {
 	// PutJson stores JSON values for the given openrtb.Bids in the cache. Null values will be
 	//
@@ -51,7 +51,7 @@ type Cacheable struct {
 	Timestamp int64  `json:"timestamp,omitempty"` // this is "/vtrack" specific
 }
 
-func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
+func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics metrics.MetricsEngine) Client {
 	return &clientImpl{
 		httpClient:          httpClient,
 		putUrl:              conf.GetBaseURL() + "/cache",
@@ -68,7 +68,7 @@ type clientImpl struct {
 	externalCacheScheme string
 	externalCacheHost   string
 	externalCachePath   string
-	metrics             pbsmetrics.MetricsEngine
+	metrics             metrics.MetricsEngine
 }
 
 func (c *clientImpl) GetExtCacheData() (string, string, string) {

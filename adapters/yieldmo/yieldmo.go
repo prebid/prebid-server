@@ -7,6 +7,7 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
@@ -131,10 +132,12 @@ func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 
 }
 
-func NewYieldmoBidder(endpoint string) *YieldmoAdapter {
-	return &YieldmoAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Yieldmo adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &YieldmoAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }
 
 func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {

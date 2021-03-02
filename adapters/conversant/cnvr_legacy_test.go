@@ -33,7 +33,7 @@ const DefaultParam = `{"site_id": "12345"}`
 // Test properties of Adapter interface
 
 func TestConversantProperties(t *testing.T) {
-	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl")
+	an := NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl")
 
 	assertNotEqual(t, an.Name(), "", "Missing family name")
 	assertTrue(t, an.SkipNoCookies(), "SkipNoCookies should be true")
@@ -42,7 +42,7 @@ func TestConversantProperties(t *testing.T) {
 // Test empty bid requests
 
 func TestConversantEmptyBid(t *testing.T) {
-	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl")
+	an := NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl")
 
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -61,7 +61,7 @@ func TestConversantRequiredParameters(t *testing.T) {
 	)
 	defer server.Close()
 
-	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
+	an := NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	ctx := context.TODO()
 
 	testParams := func(params ...string) (pbs.PBSBidSlice, error) {
@@ -94,7 +94,7 @@ func TestConversantBadStatus(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	ctx := context.TODO()
 	pbReq, err := CreateBannerRequest(DefaultParam)
@@ -121,7 +121,7 @@ func TestConversantTimeout(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	// Create a context that expires before http returns
 
@@ -158,7 +158,7 @@ func TestConversantNoBid(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	ctx := context.TODO()
 	pbReq, err := CreateBannerRequest(DefaultParam)
@@ -185,7 +185,7 @@ func TestConversantRequestDefault(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	ctx := context.TODO()
 	pbReq, err := CreateBannerRequest(DefaultParam)
@@ -224,7 +224,7 @@ func TestConversantInappVideoRequest(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	requestParam := `{"secure": 1, "site_id": "12345"}`
 	appParam := `{ "bundle": "com.naver.linewebtoon" }`
@@ -265,7 +265,7 @@ func TestConversantInappBannerRequest(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	param := `{ "secure": 1,
 		"site_id": "12345",
@@ -303,7 +303,7 @@ func TestConversantRequest(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345",
 		"secure": 1,
@@ -353,7 +353,7 @@ func TestConversantResponse(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345",
 		   "secure": 1,
@@ -404,7 +404,7 @@ func TestConversantBasicVideoRequest(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345",
 		   "tag_id": "bottom left",
@@ -457,7 +457,7 @@ func TestConversantVideoRequestWithParams(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345",
 		   "tag_id": "bottom left",
@@ -518,7 +518,7 @@ func TestConversantVideoRequestWithParams2(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345" }`
 	videoParam := `{ "mimes": ["video/x-ms-wmv"],
@@ -576,7 +576,7 @@ func TestConversantVideoResponse(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL)
+	an := NewConversantLegacyAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345",
 		   "secure": 1,

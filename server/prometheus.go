@@ -8,8 +8,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	metricsconfig "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
-	prometheusMetrics "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/prometheus"
+	metricsconfig "github.com/PubMatic-OpenWrap/prebid-server/metrics/config"
+	prometheusMetrics "github.com/PubMatic-OpenWrap/prebid-server/metrics/prometheus"
 )
 
 func newPrometheusServer(cfg *config.Configuration, metrics *metricsconfig.DetailedMetricsEngine) *http.Server {

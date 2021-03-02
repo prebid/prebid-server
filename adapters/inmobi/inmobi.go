@@ -3,21 +3,25 @@ package inmobi
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type InMobiAdapter struct {
 	endPoint string
 }
 
-func NewInMobiAdapter(endpoint string) *InMobiAdapter {
-	return &InMobiAdapter{
-		endPoint: endpoint,
+// Builder builds a new instance of the InMobi adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &InMobiAdapter{
+		endPoint: config.Endpoint,
 	}
+	return bidder, nil
 }
 
 func (a *InMobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

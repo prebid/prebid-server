@@ -4,8 +4,17 @@ import (
 	"testing"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "visxtest", NewVisxBidder("http://localhost/prebid"))
+	bidder, buildErr := Builder(openrtb_ext.BidderVisx, config.Adapter{
+		Endpoint: "http://localhost/prebid"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "visxtest", bidder)
 }

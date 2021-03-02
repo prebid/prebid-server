@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type Adapter struct {
@@ -166,4 +168,12 @@ func NewSpotxBidder(url string) *Adapter {
 	return &Adapter{
 		url: url,
 	}
+}
+
+// Builder builds a new instance of the Sovrn adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &Adapter{
+		url: config.Endpoint,
+	}
+	return bidder, nil
 }

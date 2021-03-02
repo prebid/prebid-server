@@ -9,12 +9,20 @@ import (
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "avocet", NewAvocetAdapter("https://bid.staging.avct.cloud/ortb/bid/5e722ee9bd6df11d063a8013"))
+	bidder, buildErr := Builder(openrtb_ext.BidderAvocet, config.Adapter{
+		Endpoint: "https://bid.staging.avct.cloud/ortb/bid/5e722ee9bd6df11d063a8013"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "avocet", bidder)
 }
 
 func TestAvocetAdapter_MakeRequests(t *testing.T) {

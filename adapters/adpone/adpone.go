@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
 	"github.com/PubMatic-OpenWrap/openrtb"
@@ -12,8 +13,12 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 )
 
-func NewAdponeBidder(endpoint string) *adponeAdapter {
-	return &adponeAdapter{endpoint: endpoint}
+// Builder builds a new instance of the Adpone adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &adponeAdapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }
 
 type adponeAdapter struct {

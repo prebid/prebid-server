@@ -23,6 +23,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/avocet"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/beachfront"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/beintoo"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/between"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/brightroll"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/colossus"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/connectad"
@@ -30,6 +31,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/conversant"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/cpmstar"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/datablocks"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/deepintent"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/dmx"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/emx_digital"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/engagebdr"
@@ -47,6 +49,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/logicad"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/lunamedia"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/marsmedia"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/mediafuse"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/mgid"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/nanointeractive"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/ninthdecimal"
@@ -115,11 +118,12 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderConversant, conversant.NewConversantSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderCpmstar, cpmstar.NewCpmstarSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderDatablocks, datablocks.NewDatablocksSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderDeepintent, deepintent.NewDeepintentSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderDmx, dmx.NewDmxSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderEmxDigital, emx_digital.NewEMXDigitalSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderEngageBDR, engagebdr.NewEngageBDRSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderEPlanning, eplanning.NewEPlanningSyncer)
-	insertIntoMap(cfg, syncers, openrtb_ext.BidderFacebook, audienceNetwork.NewFacebookSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAudienceNetwork, audienceNetwork.NewFacebookSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderGamma, gamma.NewGammaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderGamoshi, gamoshi.NewGamoshiSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderGrid, grid.NewGridSyncer)
@@ -133,6 +137,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLogicad, logicad.NewLogicadSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLunaMedia, lunamedia.NewLunaMediaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderMarsmedia, marsmedia.NewMarsmediaSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderMediafuse, mediafuse.NewMediafuseSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderMgid, mgid.NewMgidSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderNanoInteractive, nanointeractive.NewNanoInteractiveSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderNinthDecimal, ninthdecimal.NewNinthDecimalSyncer)
@@ -147,7 +152,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSomoaudience, somoaudience.NewSomoaudienceSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSonobi, sonobi.NewSonobiSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSovrn, sovrn.NewSovrnSyncer)
-	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartadserver, smartadserver.NewSmartadserverSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartAdserver, smartadserver.NewSmartadserverSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartRTB, smartrtb.NewSmartRTBSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartyAds, smartyads.NewSmartyAdsSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSynacormedia, synacormedia.NewSynacorMediaSyncer)
@@ -164,6 +169,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderYieldmo, yieldmo.NewYieldmoSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderYieldone, yieldone.NewYieldoneSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderZeroClickFraud, zeroclickfraud.NewZeroClickFraudSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderBetween, between.NewBetweenSyncer)
 
 	return syncers
 }

@@ -17,6 +17,8 @@ type ExtBidResponse struct {
 	RequestTimeoutMillis int64 `json:"tmaxrequest,omitempty"`
 	// ResponseUserSync defines the contract for bidresponse.ext.usersync
 	Usersync map[BidderName]*ExtResponseSyncData `json:"usersync,omitempty"`
+	// Prebid defines the contract for bidresponse.ext.prebid
+	Prebid *ExtResponsePrebid `json:"prebid,omitempty"`
 }
 
 // ExtResponseDebug defines the contract for bidresponse.ext.debug
@@ -34,6 +36,11 @@ type ExtResponseSyncData struct {
 	Syncs []*ExtUserSync `json:"syncs"`
 }
 
+// ExtResponsePrebid defines the contract for bidresponse.ext.prebid
+type ExtResponsePrebid struct {
+	AuctionTimestamp int64 `json:"auctiontimestamp,omitempty"`
+}
+
 // ExtUserSync defines the contract for bidresponse.ext.usersync.{bidder}.syncs[i]
 type ExtUserSync struct {
 	Url  string       `json:"url"`
@@ -48,10 +55,11 @@ type ExtBidderError struct {
 
 // ExtHttpCall defines the contract for a bidresponse.ext.debug.httpcalls.{bidder}[i]
 type ExtHttpCall struct {
-	Uri          string `json:"uri"`
-	RequestBody  string `json:"requestbody"`
-	ResponseBody string `json:"responsebody"`
-	Status       int    `json:"status"`
+	Uri            string              `json:"uri"`
+	RequestBody    string              `json:"requestbody"`
+	RequestHeaders map[string][]string `json:"requestheaders"`
+	ResponseBody   string              `json:"responsebody"`
+	Status         int                 `json:"status"`
 }
 
 // CookieStatus describes the allowed values for bidresponse.ext.usersync.{bidder}.status

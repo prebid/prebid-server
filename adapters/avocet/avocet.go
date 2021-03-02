@@ -7,6 +7,7 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
@@ -116,9 +117,10 @@ func getBidType(bid openrtb.Bid, ext avocetBidExt) openrtb_ext.BidType {
 	}
 }
 
-// NewAvocetAdapter returns a new AvocetAdapter using the provided endpoint.
-func NewAvocetAdapter(endpoint string) *AvocetAdapter {
-	return &AvocetAdapter{
-		Endpoint: endpoint,
+// Builder builds a new instance of the Avocet adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &AvocetAdapter{
+		Endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

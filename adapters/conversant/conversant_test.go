@@ -1,10 +1,19 @@
 package conversant
 
 import (
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
 	"testing"
+
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "conversanttest", NewConversantBidder(""))
+	bidder, buildErr := Builder(openrtb_ext.BidderConversant, config.Adapter{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "conversanttest", bidder)
 }

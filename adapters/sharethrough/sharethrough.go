@@ -2,20 +2,24 @@ package sharethrough
 
 import (
 	"fmt"
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"net/http"
 	"regexp"
+
+	"github.com/PubMatic-OpenWrap/openrtb"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 const supplyId = "FGMrCMMc"
 const strVersion = 8
 
-func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
-	return &SharethroughAdapter{
+// Builder builds a new instance of the Sharethrough adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &SharethroughAdapter{
 		AdServer: StrOpenRTBTranslator{
-			UriHelper: StrUriHelper{BaseURI: endpoint, Clock: Clock{}},
+			UriHelper: StrUriHelper{BaseURI: config.Endpoint, Clock: Clock{}},
 			Util:      Util{Clock: Clock{}},
 			UserAgentParsers: UserAgentParsers{
 				ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
@@ -24,6 +28,7 @@ func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
 			},
 		},
 	}
+	return bidder, nil
 }
 
 type SharethroughAdapter struct {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
@@ -151,8 +152,10 @@ func buildImpVideo(imp *openrtb.Imp) error {
 		}
 	}
 
-	if imp.Video.Protocols != nil {
-		imp.Video.Protocols = cleanProtocol(imp.Video.Protocols)
+	if len(imp.Video.Protocols) > 0 {
+		videoCopy := *imp.Video
+		videoCopy.Protocols = cleanProtocol(imp.Video.Protocols)
+		imp.Video = &videoCopy
 	}
 
 	return nil
@@ -305,9 +308,11 @@ func ContainsAny(raw string, keys []string) bool {
 
 }
 
-func NewEmxDigitalBidder(endpoint string) *EmxDigitalAdapter {
-	return &EmxDigitalAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the EmxDigital adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &EmxDigitalAdapter{
+		endpoint: config.Endpoint,
 		testing:  false,
 	}
+	return bidder, nil
 }

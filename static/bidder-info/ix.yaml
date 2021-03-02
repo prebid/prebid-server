@@ -1,6 +1,15 @@
 maintainer:
   email: "pdu-supply-prebid@indexexchange.com"
 capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
   site:
     mediaTypes:
       - banner
+      - video
+      - native
+      - audio

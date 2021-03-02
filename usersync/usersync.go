@@ -17,7 +17,7 @@ type Usersyncer interface {
 
 	// GDPRVendorID returns the ID in the IAB Global Vendor List which refers to this Bidder.
 	//
-	// The Global Vendor list can be found here: https://vendorlist.consensu.org/vendorlist.json
+	// The Global Vendor list can be found here: https://vendor-list.consensu.org/vendorlist.json
 	// Bidders can register for the list here: https://register.consensu.org/
 	//
 	// If you're not on the list, this should return 0. If cookie sync requests have GDPR consent info,

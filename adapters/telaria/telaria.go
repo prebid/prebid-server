@@ -3,12 +3,14 @@ package telaria
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"net/http"
 	"strconv"
+
+	"github.com/PubMatic-OpenWrap/openrtb"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 const Endpoint = "https://ads.tremorhub.com/ad/rtb/prebid"
@@ -25,15 +27,6 @@ type ImpressionExtOut struct {
 
 type telariaBidExt struct {
 	Extra json.RawMessage `json:"extra,omitempty"`
-}
-
-// used for cookies and such
-func (a *TelariaAdapter) Name() string {
-	return "telaria"
-}
-
-func (a *TelariaAdapter) SkipNoCookies() bool {
-	return false
 }
 
 // Endpoint for Telaria Ad server
@@ -298,12 +291,15 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	return bidResponse, nil
 }
 
-func NewTelariaBidder(endpoint string) *TelariaAdapter {
+// Builder builds a new instance of the Telaria adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	endpoint := config.Endpoint
 	if endpoint == "" {
-		endpoint = Endpoint
+		endpoint = Endpoint // Hardcoded default
 	}
 
-	return &TelariaAdapter{
+	bidder := &TelariaAdapter{
 		URI: endpoint,
 	}
+	return bidder, nil
 }

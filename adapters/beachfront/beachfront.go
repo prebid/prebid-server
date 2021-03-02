@@ -11,9 +11,9 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/golang/glog"
 )
 
 const Seat = "beachfront"
@@ -24,7 +24,7 @@ const defaultVideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
 const nurlVideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
-const beachfrontAdapterVersion = "0.9.0"
+const beachfrontAdapterVersion = "0.9.1"
 
 const minBidFloor = 0.01
 
@@ -202,8 +202,8 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 	var bannerImps = make([]openrtb.Imp, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
-		if request.Imp[i].Banner != nil && ((request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
-			(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil)) {
+		if request.Imp[i].Banner != nil && request.Imp[i].Banner.Format != nil &&
+			request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0 {
 			bannerImps = append(bannerImps, request.Imp[i])
 		}
 
@@ -232,11 +232,11 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 		errs = append(errs, videoErrs...)
 
 		for i := 0; i < len(videoList); i++ {
-			if videoList[i].VideoResponseType == "nurl" || videoList[i].VideoResponseType == "both" {
+			if videoList[i].VideoResponseType == "nurl" {
 				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoList[i])
 			}
 
-			if videoList[i].VideoResponseType == "adm" || videoList[i].VideoResponseType == "both" {
+			if videoList[i].VideoResponseType == "adm" {
 				beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, videoList[i])
 			}
 		}
@@ -412,7 +412,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		if beachfrontExt.VideoResponseType != "" {
 			bfReqs[i].VideoResponseType = beachfrontExt.VideoResponseType
 		} else {
-			bfReqs[i].VideoResponseType = "nurl"
+			bfReqs[i].VideoResponseType = "adm"
 		}
 
 		bfReqs[i].Request = *request
@@ -436,7 +436,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 		}
 
-		if bfReqs[i].Request.Device.DeviceType == 0 {
+		if bfReqs[i].Request.Device != nil && bfReqs[i].Request.Device.DeviceType == 0 {
 			// More fine graned deviceType methods will be added in the future
 			bfReqs[i].Request.Device.DeviceType = fallBackDeviceType(request)
 		}
@@ -683,21 +683,39 @@ func removeVideoElement(slice []beachfrontVideoRequest, s int) []beachfrontVideo
 	return append(slice[:s], slice[s+1:]...)
 }
 
-func NewBeachfrontBidder(bannerEndpoint string, extraAdapterInfo string) adapters.Bidder {
-	var extraInfo ExtraInfo
-
-	if len(extraAdapterInfo) == 0 {
-		extraAdapterInfo = "{\"video_endpoint\":\"" + defaultVideoEndpoint + "\"}"
+// Builder builds a new instance of the Beachfront adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := json.Unmarshal([]byte(extraAdapterInfo), &extraInfo); err != nil {
-		glog.Fatal("Invalid Beachfront extra adapter info: " + err.Error())
-		return nil
+	bidder := &BeachfrontAdapter{
+		bannerEndpoint: config.Endpoint,
+		extraInfo:      extraInfo,
+	}
+	return bidder, nil
+}
+
+func getExtraInfo(v string) (ExtraInfo, error) {
+	if len(v) == 0 {
+		return getDefaultExtraInfo(), nil
+	}
+
+	var extraInfo ExtraInfo
+	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
 	}
 
 	if extraInfo.VideoEndpoint == "" {
 		extraInfo.VideoEndpoint = defaultVideoEndpoint
 	}
 
-	return &BeachfrontAdapter{bannerEndpoint: bannerEndpoint, extraInfo: extraInfo}
+	return extraInfo, nil
+}
+
+func getDefaultExtraInfo() ExtraInfo {
+	return ExtraInfo{
+		VideoEndpoint: defaultVideoEndpoint,
+	}
 }

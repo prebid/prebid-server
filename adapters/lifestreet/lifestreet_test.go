@@ -176,7 +176,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewLifestreetAdapter(&conf, "https://prebid.s2s.lfstmedia.com/adrequest")
+	an := NewLifestreetLegacyAdapter(&conf, "https://prebid.s2s.lfstmedia.com/adrequest")
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{

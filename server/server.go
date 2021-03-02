@@ -13,8 +13,8 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
-	metricsconfig "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
+	metricsconfig "github.com/PubMatic-OpenWrap/prebid-server/metrics/config"
 	"github.com/golang/glog"
 )
 
@@ -93,7 +93,7 @@ func runServer(server *http.Server, name string, listener net.Listener) {
 	glog.Errorf("%s server quit with error: %v", name, err)
 }
 
-func newListener(address string, metrics pbsmetrics.MetricsEngine) (net.Listener, error) {
+func newListener(address string, metrics metrics.MetricsEngine) (net.Listener, error) {
 	ln, err := net.Listen("tcp", address)
 	if err != nil {
 		return nil, fmt.Errorf("Error listening for TCP connections on %s: %v", address, err)

@@ -9,39 +9,40 @@ import (
 
 	"github.com/PubMatic-OpenWrap/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/golang/glog"
 )
 
 const vastImpressionFormat = "<Impression><![CDATA[%s]]></Impression>"
 const vastSearchPoint = "</Impression>"
 const nbrHeaderName = "x-nbr"
-const adapterVersion = "pbs1.0"
+const adapterVersion = "pbs1.1"
 
 // AMXAdapter is the AMX bid adapter
 type AMXAdapter struct {
 	endpoint string
 }
 
-// NewAMXBidder creates an AMXAdapter
-func NewAMXBidder(endpoint string) *AMXAdapter {
-	endpointURL, err := url.Parse(endpoint)
+// Builder builds a new instance of the AMX adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	endpointURL, err := url.Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatalf("invalid endpoint provided to AMX: %s, error: %v", endpoint, err)
-		return nil
+		return nil, fmt.Errorf("invalid endpoint: %v", err)
 	}
 
 	qs, err := url.ParseQuery(endpointURL.RawQuery)
 	if err != nil {
-		glog.Fatalf("invalid query parameters in the endpoint: %s, error: %v", endpointURL.RawQuery, err)
-		return nil
+		return nil, fmt.Errorf("invalid query parameters in the endpoint: %v", err)
 	}
 
 	qs.Add("v", adapterVersion)
 	endpointURL.RawQuery = qs.Encode()
 
-	return &AMXAdapter{endpoint: endpointURL.String()}
+	bidder := &AMXAdapter{
+		endpoint: endpointURL.String(),
+	}
+	return bidder, nil
 }
 
 type amxExt struct {
@@ -148,6 +149,7 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
+			bid := bid
 			bidExt, bidExtErr := getBidExt(bid.Ext)
 			if bidExtErr != nil {
 				errs = append(errs, bidExtErr)
@@ -164,11 +166,12 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 				// remove the NURL so a client/player doesn't fire it twice
 				b.Bid.NURL = ""
 			}
+
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
-	return bidResponse, errs
 
+	return bidResponse, errs
 }
 
 func getBidExt(ext json.RawMessage) (amxBidExt, error) {
