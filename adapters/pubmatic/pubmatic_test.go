@@ -667,7 +667,7 @@ func TestPubmaticSampleRequest(t *testing.T) {
 	pc.TrySync("pubmatic", "12345")
 	fakewriter := httptest.NewRecorder()
 
-	pc.SetCookieOnResponse(fakewriter, false, "", &config.HostCookie{Domain: ""}, 90*24*time.Hour)
+	pc.SetCookieOnResponse(fakewriter, false, &config.HostCookie{Domain: ""}, 90*24*time.Hour)
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()

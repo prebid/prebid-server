@@ -175,8 +175,10 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie bool, secParam string, cfg *config.HostCookie, ttl time.Duration) {
+func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie bool, cfg *config.HostCookie, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
+	httpCookie.Secure = true
+
 	var domain string = cfg.Domain
 
 	if domain != "" {
@@ -202,11 +204,6 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCooki
 		currSize = len([]byte(httpCookie.String()))
 	}
 
-	// Set the secure flag to 'uids' cookie; using sec query param for backward compatibility
-	if secParam == "1" {
-		httpCookie.Secure = true
-	}
-
 	var uidsCookieStr string
 	var sameSiteCookie *http.Cookie
 	if setSiteCookie {
@@ -219,10 +216,9 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCooki
 			Value:   SameSiteCookieValue,
 			Expires: time.Now().Add(ttl),
 			Path:    "/",
+			Secure:  true,
 		}
-		if secParam == "1" {
-			sameSiteCookie.Secure = true
-		}
+
 		sameSiteCookieStr := sameSiteCookie.String()
 		sameSiteCookieStr += SameSiteAttribute
 		w.Header().Add("Set-Cookie", sameSiteCookieStr)

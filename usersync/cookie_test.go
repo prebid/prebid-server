@@ -403,7 +403,7 @@ func newTestCookie() (*PBSCookie, int) {
 func writeThenRead(cookie *PBSCookie, maxCookieSize int) *PBSCookie {
 	w := httptest.NewRecorder()
 	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: maxCookieSize}
-	cookie.SetCookieOnResponse(w, false, "", hostCookie, 90*24*time.Hour)
+	cookie.SetCookieOnResponse(w, false, hostCookie, 90*24*time.Hour)
 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
 
 	header := http.Header{}
@@ -419,7 +419,7 @@ func TestSetCookieOnResponseForSameSiteNone(t *testing.T) {
 	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
 	req.Header.Set("User-Agent", ua)
 	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: 0}
-	cookie.SetCookieOnResponse(w, true, "1", hostCookie, 90*24*time.Hour)
+	cookie.SetCookieOnResponse(w, true, hostCookie, 90*24*time.Hour)
 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
 	t.Log("Set-Cookie is: ", writtenCookie)
 	if !strings.Contains(writtenCookie, "SSCookie=1") {
@@ -437,7 +437,7 @@ func TestSetCookieOnResponseForOlderChromeVersion(t *testing.T) {
 	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3770.142 Safari/537.36"
 	req.Header.Set("User-Agent", ua)
 	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: 0}
-	cookie.SetCookieOnResponse(w, false, "", hostCookie, 90*24*time.Hour)
+	cookie.SetCookieOnResponse(w, false, hostCookie, 90*24*time.Hour)
 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
 	t.Log("Set-Cookie is: ", writtenCookie)
 	if strings.Contains(writtenCookie, "SameSite=none") {
