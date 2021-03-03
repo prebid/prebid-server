@@ -134,19 +134,14 @@ func modifyImps(request *openrtb.BidRequest) error {
 			}
 		}
 
-		var placementID string
-		if ext.Bidder.PlacementID != "" {
-			placementID = ext.Bidder.PlacementID
-		} else {
-			placementID, err = getStoredRequestImpID(imp)
+		if ext.Bidder.PlacementID == "" {
+			ext.Bidder.PlacementID, err = getStoredRequestImpID(imp)
 			if err != nil {
 				return &errortypes.BadInput{
 					Message: fmt.Sprintf("Error get StoredRequestImpID from imp[%d]: %s", i, err),
 				}
 			}
 		}
-
-		ext.Bidder.PlacementID = placementID
 
 		imp.Ext, err = json.Marshal(ext)
 		if err != nil {
@@ -157,7 +152,7 @@ func modifyImps(request *openrtb.BidRequest) error {
 
 		secure := int8(1)
 		imp.Secure = &secure
-		imp.TagID = placementID
+		imp.TagID = ext.Bidder.PlacementID
 	}
 	return nil
 }
@@ -235,8 +230,6 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.Re
 				if imp.ID == bid.ImpID {
 					if imp.Banner != nil {
 						bidType = openrtb_ext.BidTypeBanner
-					} else if imp.Native != nil {
-						bidType = openrtb_ext.BidTypeNative
 					}
 				}
 			}
