@@ -76,6 +76,7 @@ type beachfrontBannerRequest struct {
 	AdapterVersion string           `json:"adapterVersion"`
 	IP             string           `json:"ip"`
 	RequestID      string           `json:"requestId"`
+	Real204        bool             `json:"real204"`
 }
 
 type beachfrontSlot struct {
@@ -367,6 +368,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	if request.Imp[0].Secure != nil {
 		bfr.Secure = *request.Imp[0].Secure
 	}
+	bfr.Real204 = true
 
 	return bfr, errs
 }
@@ -484,23 +486,11 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	var bids []openrtb.Bid
 
 	if response.StatusCode == http.StatusNoContent {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("no content received from server. status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
-		}}
-	}
-
-	if response.StatusCode == http.StatusOK && len(response.Body) <= 2 {
-		response.StatusCode = http.StatusNoContent
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("truncated content received from server. status code %d has been corrected to %d from %s. Run with request.debug = 1 for more info",
-				http.StatusOK,
-				response.StatusCode,
-				externalRequest.Uri),
-		}}
+		return nil, nil
 	}
 
 	if response.StatusCode >= http.StatusInternalServerError {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("server error status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
 		}}
 	}
