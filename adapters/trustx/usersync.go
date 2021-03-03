@@ -7,6 +7,6 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-func NewTrustxSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("trustx", 0, temp, adapters.SyncTypeRedirect)
+func NewTrustXSyncer(temp *template.Template) usersync.Usersyncer {
+	return adapters.NewSyncer("trustx", 686, temp, adapters.SyncTypeRedirect)
 }
