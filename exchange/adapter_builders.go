@@ -196,6 +196,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTelaria:          telaria.Builder,
 		openrtb_ext.BidderTriplelift:       triplelift.Builder,
 		openrtb_ext.BidderTripleliftNative: triplelift_native.Builder,
+		openrtb_ext.BidderTrustX:           grid.Builder,
 		openrtb_ext.BidderUcfunnel:         ucfunnel.Builder,
 		openrtb_ext.BidderUnruly:           unruly.Builder,
 		openrtb_ext.BidderValueImpression:  valueimpression.Builder,
