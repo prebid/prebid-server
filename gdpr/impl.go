@@ -201,15 +201,17 @@ func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictNotAllowed, vendorID) {
 		return false
 	}
+
+	purposeAllowed := vendor.Purpose(purpose) && consent.PurposeAllowed(purpose) && consent.VendorConsent(vendorID)
+	legitInterest := vendor.LegitimateInterest(purpose) && consent.PurposeLITransparency(purpose) && consent.VendorLegitInterest(vendorID)
+
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictRequireConsent, vendorID) {
-		return vendor.PurposeStrict(purpose) && consent.PurposeAllowed(purpose) && consent.VendorConsent(vendorID)
+		return purposeAllowed
 	}
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictRequireLegitInterest, vendorID) {
 		// Need LITransparency here
-		return vendor.LegitimateInterestStrict(purpose) && consent.PurposeLITransparency(purpose) && consent.VendorLegitInterest(vendorID)
+		return legitInterest
 	}
-	purposeAllowed := vendor.Purpose(purpose) && consent.PurposeAllowed(purpose) && consent.VendorConsent(vendorID)
-	legitInterest := vendor.LegitimateInterest(purpose) && consent.PurposeLITransparency(purpose) && consent.VendorLegitInterest(vendorID)
 
 	return purposeAllowed || legitInterest
 }
