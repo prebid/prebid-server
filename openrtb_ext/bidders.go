@@ -163,7 +163,9 @@ const (
 	BidderTelaria          BidderName = "telaria"
 	BidderTriplelift       BidderName = "triplelift"
 	BidderTripleliftNative BidderName = "triplelift_native"
+	BidderTrustX           BidderName = "trustx"
 	BidderUcfunnel         BidderName = "ucfunnel"
+	BidderUnicorn          BidderName = "unicorn"
 	BidderUnruly           BidderName = "unruly"
 	BidderValueImpression  BidderName = "valueimpression"
 	BidderVerizonMedia     BidderName = "verizonmedia"
@@ -269,7 +271,9 @@ func CoreBidderNames() []BidderName {
 		BidderTelaria,
 		BidderTriplelift,
 		BidderTripleliftNative,
+		BidderTrustX,
 		BidderUcfunnel,
+		BidderUnicorn,
 		BidderUnruly,
 		BidderValueImpression,
 		BidderVerizonMedia,

@@ -85,6 +85,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderTelaria):          syncConfig,
 			string(openrtb_ext.BidderTriplelift):       syncConfig,
 			string(openrtb_ext.BidderTripleliftNative): syncConfig,
+			string(openrtb_ext.BidderTrustX):           syncConfig,
 			string(openrtb_ext.BidderUcfunnel):         syncConfig,
 			string(openrtb_ext.BidderUnruly):           syncConfig,
 			string(openrtb_ext.BidderValueImpression):  syncConfig,
@@ -118,6 +119,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderRevcontent:   true,
 		openrtb_ext.BidderSilverMob:    true,
 		openrtb_ext.BidderSmaato:       true,
+		openrtb_ext.BidderUnicorn:      true,
 		openrtb_ext.BidderYeahmobi:     true,
 	}
 
