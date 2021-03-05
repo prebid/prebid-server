@@ -483,7 +483,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var bids []openrtb.Bid
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -505,8 +504,9 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		return nil, []error{fmt.Errorf("unexpected status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri)}
 	}
 
-	var xtrnal openrtb.BidRequest
+	var bids []openrtb.Bid
 	var errs = make([]error, 0)
+	var xtrnal openrtb.BidRequest
 
 	// For video, which uses RTB for the external request, this will unmarshal as expected. For banner, it will
 	// only get the User struct and everything else will be nil

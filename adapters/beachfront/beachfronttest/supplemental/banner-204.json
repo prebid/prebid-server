@@ -70,12 +70,5 @@
     }
   ],
 
-  "expectedBidResponses": [],
-
-  "expectedMakeBidsWarnings": [
-    {
-      "value": "no content received from server. status code 204 from https://qa.beachrtb.com/prebid_display. Run with request.debug = 1 for more info",
-      "comparison": "literal"
-    }
-  ]
+  "expectedBidResponses": []
 }
