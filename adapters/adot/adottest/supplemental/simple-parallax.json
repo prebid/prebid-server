@@ -1,0 +1,103 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-parallax-id",
+    "imp": [
+      {
+        "id": "test-imp-parallax-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ],
+          "w": 300,
+          "h": 600
+        },
+        "ext": {
+          "adot": {
+            "parallax": true
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dsp.adotmob.com/headerbidding/bidrequest",
+        "body": {
+          "id": "test-request-parallax-id",
+          "imp": [
+            {
+              "id": "test-imp-parallax-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ],
+                "w": 300,
+                "h": 600
+              },
+              "ext": {
+                "adot": {
+                  "parallax": true
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "adot",
+              "bid": [{
+                "id": "test-request-parallax-id",
+                "impid": "test-imp-parallax-id",
+                "price": 0.5,
+                "adm": "some-test-ad",
+                "w": 300,
+                "h": 600,
+                "ext": {
+                  "adot": {
+                    "media_type": "banner"
+                  }
+                }
+              }]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-parallax-id",
+            "impid": "test-imp-parallax-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "w": 300,
+            "h": 600,
+            "ext": {
+              "adot": {
+                "media_type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

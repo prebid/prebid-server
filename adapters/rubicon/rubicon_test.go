@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/prebid/prebid-server/errortypes"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -278,7 +279,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 
 	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	assert.Nil(t, err, "Should not have gotten an error: %v", err)
-	assert.Equal(t, 3, len(bids), "Received %d bids instead of 3", len(bids))
+	assert.Equal(t, 2, len(bids), "Received %d bids instead of 3", len(bids))
 
 	for _, bid := range bids {
 		matched := false
@@ -521,6 +522,52 @@ func TestAppendTracker(t *testing.T) {
 	for _, scenario := range testScenarios {
 		res := appendTrackerToUrl(scenario.source, scenario.tracker)
 		assert.Equal(t, scenario.expected, res, "Failed to convert '%s' to '%s'", res, scenario.expected)
+	}
+}
+
+func TestResolveVideoSizeId(t *testing.T) {
+	testScenarios := []struct {
+		placement   openrtb.VideoPlacementType
+		instl       int8
+		impId       string
+		expected    int
+		expectedErr error
+	}{
+		{
+			placement:   1,
+			instl:       1,
+			impId:       "impId",
+			expected:    201,
+			expectedErr: nil,
+		},
+		{
+			placement:   3,
+			instl:       1,
+			impId:       "impId",
+			expected:    203,
+			expectedErr: nil,
+		},
+		{
+			placement:   4,
+			instl:       1,
+			impId:       "impId",
+			expected:    202,
+			expectedErr: nil,
+		},
+		{
+			placement: 4,
+			instl:     3,
+			impId:     "impId",
+			expectedErr: &errortypes.BadInput{
+				Message: "video.size_id can not be resolved in impression with id : impId",
+			},
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		res, err := resolveVideoSizeId(scenario.placement, scenario.instl, scenario.impId)
+		assert.Equal(t, scenario.expected, res)
+		assert.Equal(t, scenario.expectedErr, err)
 	}
 }
 

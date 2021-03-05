@@ -152,8 +152,10 @@ func buildImpVideo(imp *openrtb.Imp) error {
 		}
 	}
 
-	if imp.Video.Protocols != nil {
-		imp.Video.Protocols = cleanProtocol(imp.Video.Protocols)
+	if len(imp.Video.Protocols) > 0 {
+		videoCopy := *imp.Video
+		videoCopy.Protocols = cleanProtocol(imp.Video.Protocols)
+		imp.Video = &videoCopy
 	}
 
 	return nil

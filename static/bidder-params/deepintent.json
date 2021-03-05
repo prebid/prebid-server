@@ -5,10 +5,10 @@
 
   "type": "object",
   "properties": {
-    "TagID": {
+    "tagId": {
       "type": "string",
       "description": "An ID which identifies the deepintent ad tag"
     }
   },
-  "required" : [ "TagID" ]
+  "required" : [ "tagId" ]
 }
