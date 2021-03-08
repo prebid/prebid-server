@@ -818,39 +818,54 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	return seatBid
 }
 
-// Create the Bid array inside of SeatBid
-func (e *exchange) makeBid(Bids []*pbsOrtbBid, auc *auction, returnCreative bool) ([]openrtb.Bid, []error) {
-	bids := make([]openrtb.Bid, 0, len(Bids))
-	errList := make([]error, 0, 1)
-	for _, thisBid := range Bids {
-		bidExt := &openrtb_ext.ExtBid{
-			Bidder: thisBid.bid.Ext,
-			Prebid: &openrtb_ext.ExtBidPrebid{
-				Targeting:         thisBid.bidTargets,
-				Type:              thisBid.bidType,
-				Video:             thisBid.bidVideo,
-				Events:            thisBid.bidEvents,
-				DealPriority:      thisBid.dealPriority,
-				DealTierSatisfied: thisBid.dealTierSatisfied,
-			},
+func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool) ([]openrtb.Bid, []error) {
+	result := make([]openrtb.Bid, 0, len(bids))
+	errs := make([]error, 0, 1)
+
+	for _, bid := range bids {
+		bidExtPrebid := &openrtb_ext.ExtBidPrebid{
+			DealPriority:      bid.dealPriority,
+			DealTierSatisfied: bid.dealTierSatisfied,
+			Events:            bid.bidEvents,
+			Targeting:         bid.bidTargets,
+			Type:              bid.bidType,
+			Video:             bid.bidVideo,
 		}
-		if cacheInfo, found := e.getBidCacheInfo(thisBid, auc); found {
-			bidExt.Prebid.Cache = &openrtb_ext.ExtBidPrebidCache{
+
+		if cacheInfo, found := e.getBidCacheInfo(bid, auc); found {
+			bidExtPrebid.Cache = &openrtb_ext.ExtBidPrebidCache{
 				Bids: &cacheInfo,
 			}
 		}
-		ext, err := json.Marshal(bidExt)
-		if err != nil {
-			errList = append(errList, err)
+
+		if bidExtJSON, err := makeBidExtJSON(bid.bid.Ext, bidExtPrebid); err != nil {
+			errs = append(errs, err)
 		} else {
-			bids = append(bids, *thisBid.bid)
-			bids[len(bids)-1].Ext = ext
+			bidCopy := *bid.bid
+			bidCopy.Ext = bidExtJSON
+
 			if !returnCreative {
-				bids[len(bids)-1].AdM = ""
+				bidCopy.AdM = ""
 			}
+
+			result = append(result, bidCopy)
 		}
 	}
-	return bids, errList
+	return result, errs
+}
+
+func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid) (json.RawMessage, error) {
+	if len(ext) == 0 {
+		bidExt := &openrtb_ext.ExtBid{Prebid: prebid}
+		return json.Marshal(bidExt)
+	}
+
+	var extMap map[string]interface{}
+	if err := json.Unmarshal(ext, &extMap); err != nil {
+		return nil, err
+	}
+	extMap["prebid"] = prebid
+	return json.Marshal(extMap)
 }
 
 // If bid got cached inside `(a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string)`,
