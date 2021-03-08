@@ -785,8 +785,6 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 	return bidResponseExt
 }
 
-// Return an openrtb seatBid for a bidder
-// BuildBidResponse is responsible for ensuring nil bid seatbids are not included
 func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, returnCreative bool) *openrtb2.SeatBid {
 	seatBid := new(openrtb2.SeatBid)
 	seatBid.Seat = adapter.String()
