@@ -230,7 +230,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			expectedError:     "",
 		},
 		{
-			description: "Valid - imp.ext.prebid - Bidders Only",
+			description: "imp.ext.prebid - Bidders Only",
 			givenImpExt: map[string]json.RawMessage{
 				"prebid":  json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
 				"context": json.RawMessage(`"anyContext"`),
@@ -246,11 +246,61 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			expectedError: "",
 		},
 		{
-			description: "Valid - imp.ext.prebid - Bidders + Other Values",
+			description: "imp.ext.prebid - Bidders + Other Values",
 			givenImpExt: map[string]json.RawMessage{
 				"prebid":  json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+			},
+			givenImpExtPrebid: map[string]json.RawMessage{
+				"bidder":    json.RawMessage(`"anyBidder"`),
+				"someOther": json.RawMessage(`"value"`),
+			},
+			expected: map[string]json.RawMessage{
+				"prebid":  json.RawMessage(`{"someOther":"value"}`),
+				"context": json.RawMessage(`"anyContext"`),
+				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+			},
+			expectedError: "",
+		},
+		{
+			description: "imp.ext",
+			givenImpExt: map[string]json.RawMessage{
+				"anyBidder": json.RawMessage(`"anyBidderValues"`),
+				"context":   json.RawMessage(`"anyContext"`),
+				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
+			},
+			givenImpExtPrebid: map[string]json.RawMessage{},
+			expected: map[string]json.RawMessage{
+				"context": json.RawMessage(`"anyContext"`),
+				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+			},
+			expectedError: "",
+		},
+		{
+			description: "imp.ext + imp.ext.prebid - Prebid Bidders Only",
+			givenImpExt: map[string]json.RawMessage{
+				"anyBidder": json.RawMessage(`"anyBidderValues"`),
+				"prebid":    json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
+				"context":   json.RawMessage(`"anyContext"`),
+				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
+			},
+			givenImpExtPrebid: map[string]json.RawMessage{
+				"bidder": json.RawMessage(`"anyBidder"`),
+			},
+			expected: map[string]json.RawMessage{
+				"context": json.RawMessage(`"anyContext"`),
+				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+			},
+			expectedError: "",
+		},
+		{
+			description: "imp.ext + imp.ext.prebid - Prebid Bidders + Other Values",
+			givenImpExt: map[string]json.RawMessage{
+				"anyBidder": json.RawMessage(`"anyBidderValues"`),
+				"prebid":    json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
+				"context":   json.RawMessage(`"anyContext"`),
+				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"bidder":    json.RawMessage(`"anyBidder"`),
