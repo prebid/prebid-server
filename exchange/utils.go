@@ -344,7 +344,7 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, error) {
 		}
 
 		var impExtPrebidBidder map[string]json.RawMessage
-		if impExtPrebidBidderJSON, exists := impExtPrebid["bidder"]; exists {
+		if impExtPrebidBidderJSON, exists := impExtPrebid[openrtb_ext.PrebidExtBidderKey]; exists {
 			// validation already performed by impExt unmarshal. no error is possible here, proven by tests.
 			json.Unmarshal(impExtPrebidBidderJSON, &impExtPrebidBidder)
 		}
@@ -357,7 +357,7 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, error) {
 		for bidder, bidderExt := range extractBidderExts(impExt, impExtPrebidBidder) {
 			impCopy := imp
 
-			sanitizedImpExt["bidder"] = bidderExt
+			sanitizedImpExt[openrtb_ext.PrebidExtBidderKey] = bidderExt
 
 			impExtJSON, err := json.Marshal(sanitizedImpExt)
 			if err != nil {
@@ -375,7 +375,7 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, error) {
 func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map[string]json.RawMessage, error) {
 	sanitizedImpExt := make(map[string]json.RawMessage, 3)
 
-	delete(impExtPrebid, "bidder")
+	delete(impExtPrebid, openrtb_ext.PrebidExtBidderKey)
 	if len(impExtPrebid) > 0 {
 		if impExtPrebidJSON, err := json.Marshal(impExtPrebid); err == nil {
 			sanitizedImpExt[openrtb_ext.PrebidExtKey] = impExtPrebidJSON

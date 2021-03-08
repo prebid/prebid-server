@@ -1,5 +1,5 @@
 {
-    "description": "The imp.ext.skadn field is valid for SKAdNetwork and should be exempt from bidder name validation.",
+    "description": "The imp.ext.skadn field is valid for Apple's SKAdNetwork and should be exempt from bidder name validation.",
 
     "mockBidRequest": {
         "id": "some-request-id",

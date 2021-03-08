@@ -5,11 +5,11 @@ import (
 	"errors"
 )
 
-// FirstPartyDataContextExtKey defines the field name within request.ext reserved for first party data support.
-const FirstPartyDataContextExtKey string = "context"
+// FirstPartyDataContextExtKey defines the field name within request.ext reserved for first party data.
+const FirstPartyDataContextExtKey = "context"
 
-// SKAdNExtKey defines the field name wirthin request.ext reserved for Apple's SKAdN support.
-const SKAdNExtKey string = "skadn"
+// SKAdNExtKey defines the field name within request.ext reserved for Apple's SKAdNetwork.
+const SKAdNExtKey = "skadn"
 
 const MaxDecimalFigures int = 15
 
