@@ -90,6 +90,7 @@ const (
 	BidderAdtarget         BidderName = "adtarget"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
+	BidderAdyoulike        BidderName = "adyoulike"
 	BidderAJA              BidderName = "aja"
 	BidderAMX              BidderName = "amx"
 	BidderApplogy          BidderName = "applogy"
@@ -121,6 +122,7 @@ const (
 	BidderInMobi           BidderName = "inmobi"
 	BidderInvibes          BidderName = "invibes"
 	BidderIx               BidderName = "ix"
+	BidderJixie            BidderName = "jixie"
 	BidderKidoz            BidderName = "kidoz"
 	BidderKrushmedia       BidderName = "krushmedia"
 	BidderKubient          BidderName = "kubient"
@@ -161,7 +163,9 @@ const (
 	BidderTelaria          BidderName = "telaria"
 	BidderTriplelift       BidderName = "triplelift"
 	BidderTripleliftNative BidderName = "triplelift_native"
+	BidderTrustX           BidderName = "trustx"
 	BidderUcfunnel         BidderName = "ucfunnel"
+	BidderUnicorn          BidderName = "unicorn"
 	BidderUnruly           BidderName = "unruly"
 	BidderValueImpression  BidderName = "valueimpression"
 	BidderVerizonMedia     BidderName = "verizonmedia"
@@ -194,6 +198,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdtarget,
 		BidderAdtelligent,
 		BidderAdvangelists,
+		BidderAdyoulike,
 		BidderAJA,
 		BidderAMX,
 		BidderApplogy,
@@ -225,6 +230,7 @@ func CoreBidderNames() []BidderName {
 		BidderInMobi,
 		BidderInvibes,
 		BidderIx,
+		BidderJixie,
 		BidderKidoz,
 		BidderKrushmedia,
 		BidderKubient,
@@ -265,7 +271,9 @@ func CoreBidderNames() []BidderName {
 		BidderTelaria,
 		BidderTriplelift,
 		BidderTripleliftNative,
+		BidderTrustX,
 		BidderUcfunnel,
+		BidderUnicorn,
 		BidderUnruly,
 		BidderValueImpression,
 		BidderVerizonMedia,
