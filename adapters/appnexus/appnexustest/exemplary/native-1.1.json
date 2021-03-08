@@ -51,6 +51,8 @@
           "ext": {
             "appnexus": {
               "hb_source": 5
+            },
+            "prebid": {
             }
           },
           "site": {

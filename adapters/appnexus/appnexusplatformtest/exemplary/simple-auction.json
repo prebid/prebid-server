@@ -30,6 +30,8 @@
 			"ext": {
 				"appnexus": {
 				  "hb_source": 8
+				},
+				"prebid": {
 				}
 			  },
 			"imp": [
