@@ -88,7 +88,7 @@ func (r infoReaderFromDisk) Read(bidder string) ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
 
-// ToGVLVendorIDMap transforms a BidderInfos object to a map of bidder name to GVL id. Disabled
+// ToGVLVendorIDMap transforms a BidderInfos object to a map of bidder names to GVL id. Disabled
 // bidders are omitted from the result.
 func (infos BidderInfos) ToGVLVendorIDMap() map[openrtb_ext.BidderName]uint16 {
 	m := make(map[openrtb_ext.BidderName]uint16, len(infos))
