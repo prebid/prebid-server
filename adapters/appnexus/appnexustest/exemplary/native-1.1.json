@@ -52,8 +52,7 @@
             "appnexus": {
               "hb_source": 5
             },
-            "prebid": {
-            }
+            "prebid": {}
           },
           "site": {
             "domain": "prebid.org",
