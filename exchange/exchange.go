@@ -788,25 +788,10 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 // Return an openrtb seatBid for a bidder
 // BuildBidResponse is responsible for ensuring nil bid seatbids are not included
 func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, returnCreative bool) *openrtb.SeatBid {
-	seatBid := new(openrtb.SeatBid)
-	seatBid.Seat = adapter.String()
-	// Prebid cannot support roadblocking
-	seatBid.Group = 0
-
-	if len(adapterBid.ext) > 0 {
-		sbExt := ExtSeatBid{
-			Bidder: adapterBid.ext,
-		}
-
-		ext, err := json.Marshal(sbExt)
-		if err != nil {
-			extError := openrtb_ext.ExtBidderError{
-				Code:    errortypes.ReadCode(err),
-				Message: fmt.Sprintf("Error writing SeatBid.Ext: %s", err.Error()),
-			}
-			adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, extError)
-		}
-		seatBid.Ext = ext
+	seatBid := &openrtb.SeatBid{
+		Seat:  adapter.String(),
+		Group: 0, // Prebid cannot support roadblocking
+		Ext:   adapterBid.ext,
 	}
 
 	var errList []error
