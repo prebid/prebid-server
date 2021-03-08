@@ -192,3 +192,19 @@ type fakeInfoReader struct {
 func (r fakeInfoReader) Read(bidder string) ([]byte, error) {
 	return []byte(r.content), r.err
 }
+
+func TestToGVLVendorIDMap(t *testing.T) {
+	givenBidderInfos := BidderInfos{
+		"bidderA": BidderInfo{Enabled: true, GVLVendorID: 0},
+		"bidderB": BidderInfo{Enabled: true, GVLVendorID: 100},
+		"bidderC": BidderInfo{Enabled: false, GVLVendorID: 0},
+		"bidderD": BidderInfo{Enabled: false, GVLVendorID: 200},
+	}
+
+	expectedGVLVendorIDMap := map[openrtb_ext.BidderName]uint16{
+		"bidderB": 100,
+	}
+
+	result := givenBidderInfos.ToGVLVendorIDMap()
+	assert.Equal(t, expectedGVLVendorIDMap, result)
+}
