@@ -1525,18 +1525,18 @@ func TestSetDebugContextKey(t *testing.T) {
 
 // TestExchangeJSON executes tests for all the *.json files in exchangetest.
 func TestExchangeJSON(t *testing.T) {
-	//if specFiles, err := ioutil.ReadDir("./exchangetest"); err == nil {
-	//	for _, specFile := range specFiles {
-	fileName := "./exchangetest/firstpartydata-imp-ext-one-prebid-bidder.json"
-	fileDisplayName := "fpoo"
-	t.Run(fileDisplayName, func(t *testing.T) {
-		specData, err := loadFile(fileName)
-		if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
-			runSpec(t, fileDisplayName, specData)
+	if specFiles, err := ioutil.ReadDir("./exchangetest"); err == nil {
+		for _, specFile := range specFiles {
+			fileName := "./exchangetest/" + specFile.Name()
+			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
+			t.Run(fileDisplayName, func(t *testing.T) {
+				specData, err := loadFile(fileName)
+				if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
+					runSpec(t, fileDisplayName, specData)
+				}
+			})
 		}
-	})
-	//}
-	//}
+	}
 }
 
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
