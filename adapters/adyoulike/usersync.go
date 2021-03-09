@@ -8,5 +8,5 @@ import (
 )
 
 func NewAdyoulikeSyncer(urlTemplate *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("adyoulike", 259, urlTemplate, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("adyoulike", urlTemplate, adapters.SyncTypeRedirect)
 }

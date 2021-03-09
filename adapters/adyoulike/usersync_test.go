@@ -31,6 +31,5 @@ func TestAdyoulikeSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "//visitor.omnitagjs.com/visitor/bsync?uid=19340f4f097d16f41f34fc0274981ca4&name=PrebidServer&gdpr_consent_string=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw&gdpr=1&us_privacy=1-YY", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 259, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

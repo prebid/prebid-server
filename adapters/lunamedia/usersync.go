@@ -8,5 +8,5 @@ import (
 )
 
 func NewLunaMediaSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("lunamedia", 0, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("lunamedia", temp, adapters.SyncTypeIframe)
 }

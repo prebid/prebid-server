@@ -462,8 +462,3 @@ func (s fakeSyncer) FamilyName() string {
 func (s fakeSyncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.UsersyncInfo, error) {
 	return nil, nil
 }
-
-// GDPRVendorID implements the Usersyncer interface with a no-op.
-func (s fakeSyncer) GDPRVendorID() uint16 {
-	return 0
-}

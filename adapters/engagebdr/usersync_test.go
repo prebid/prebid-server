@@ -30,6 +30,5 @@ func TestEngageBDRSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://match.bnmla.com/usersync/s2s?gdpr=1&gdpr_consent=BOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA&us_privacy=1NYN&r=localhost%2Fsetuid%3Fbidder%3Dengagebdr%26gdpr%3D1%26gdpr_consent%3DBOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA%26uid%3D", syncInfo.URL)
 	assert.Equal(t, "iframe", syncInfo.Type)
-	assert.EqualValues(t, 62, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

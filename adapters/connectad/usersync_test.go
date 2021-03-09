@@ -30,6 +30,5 @@ func TestConnectAdSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://cdn.connectad.io/connectmyusers.php?gdpr=1&consent=fakeconsent&us_privacy=fake&cb=localhost%2Fsetuid%3Fbidder%3Dconnectad%26gdpr%3D1%26gdpr_consent%3Dfakeconsent%26uid%3D%24UID", syncInfo.URL)
 	assert.Equal(t, "iframe", syncInfo.Type)
-	assert.EqualValues(t, 138, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }
