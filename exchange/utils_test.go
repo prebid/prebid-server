@@ -394,7 +394,7 @@ func TestExtractBidderExts(t *testing.T) {
 			expected:                 map[string]json.RawMessage{"bidderA": bidderAJSON, "bidderB": bidderBJSON},
 		},
 		{
-			description:              "Special Names Not Treated Differently -imp.ext.prebid.bidder.BIDDER",
+			description:              "Special Names Not Treated Differently - imp.ext.prebid.bidder.BIDDER",
 			givenImpExt:              map[string]json.RawMessage{},
 			givenImpExtPrebidBidders: map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`)},
 			expected:                 map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`)},
