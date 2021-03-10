@@ -121,6 +121,14 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, &dbc)
 	fetcher5, shutdown5 := CreateStoredRequests(&cfg.Accounts, metricsEngine, client, router, &dbc)
 
+	if true { // FIXME: add config setting to enable ab testing
+		fetcher1 = stored_requests.WithABFetcher(fetcher1, metricsEngine)
+		fetcher2 = stored_requests.WithABFetcher(fetcher2, metricsEngine)
+		fetcher3 = stored_requests.WithABFetcher(fetcher3, metricsEngine)
+		fetcher4 = stored_requests.WithABFetcher(fetcher4, metricsEngine)
+		fetcher5 = stored_requests.WithABFetcher(fetcher5, metricsEngine)
+	}
+
 	db = dbc.db
 
 	fetcher = fetcher1.(stored_requests.Fetcher)
