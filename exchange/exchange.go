@@ -826,14 +826,12 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 		if bidExtJSON, err := makeBidExtJSON(bid.bid.Ext, bidExtPrebid); err != nil {
 			errs = append(errs, err)
 		} else {
-			bidCopy := *bid.bid
-			bidCopy.Ext = bidExtJSON
-
+			result = append(result, *bid.bid)
+			resultBid := &result[len(result)-1]
+			resultBid.Ext = bidExtJSON
 			if !returnCreative {
-				bidCopy.AdM = ""
+				resultBid.AdM = ""
 			}
-
-			result = append(result, bidCopy)
 		}
 	}
 	return result, errs
