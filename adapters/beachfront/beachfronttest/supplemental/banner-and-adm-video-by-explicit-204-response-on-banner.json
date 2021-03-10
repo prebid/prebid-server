@@ -143,5 +143,29 @@
         }
       }
     }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "mix1AdmVideo",
+            "impid": "mix1",
+            "price": 20,
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "adid": "1088",
+            "adomain": [
+              "beachfront.io"
+            ],
+            "cid": "277",
+            "crid": "532",
+            "w": 300,
+            "h": 250
+          },
+          "type": "video"
+        }
+      ]
+    }
   ]
 }
