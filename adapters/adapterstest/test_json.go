@@ -123,9 +123,7 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 	diffErrorLists(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
 
 	for i := 0; i < len(spec.BidResponses); i++ {
-		if len(bidResponses) > i &&
-			bidResponses[i] != nil &&
-			spec.BidResponses[i].Bids != nil {
+		if bidResponses[i] != nil {
 			diffBidLists(t, filename, bidResponses[i].Bids, spec.BidResponses[i].Bids)
 		}
 	}
