@@ -59,8 +59,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 	usersyncIfAmbiguous bool,
 	privacyConfig config.Privacy) (bidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
-	impsByBidder, errs := splitImps(req.BidRequest.Imp)
-	if len(errs) > 0 {
+	impsByBidder, err := splitImps(req.BidRequest.Imp)
+	if err != nil {
+		errs = []error{err}
 		return
 	}
 
@@ -327,106 +328,99 @@ func extractBuyerUIDs(user *openrtb.User) (map[string]string, error) {
 // The "imp.ext" value of the rubicon Imp will only contain the "prebid" values, and "rubicon" value at the "bidder" key.
 //
 // The goal here is so that Bidders only get Imps and Imp.Ext values which are intended for them.
-func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
-	impExts, err := parseImpExts(imps)
-	if err != nil {
-		return nil, []error{err}
-	}
+func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, error) {
+	bidderImps := make(map[string][]openrtb.Imp)
 
-	splitImps := make(map[string][]openrtb.Imp, len(imps))
-	var errList []error
-
-	for i := 0; i < len(imps); i++ {
-		imp := imps[i]
-		impExt := impExts[i]
-
-		var firstPartyDataContext json.RawMessage
-		if context, exists := impExt[openrtb_ext.FirstPartyDataContextExtKey]; exists {
-			firstPartyDataContext = context
+	for i, imp := range imps {
+		var impExt map[string]json.RawMessage
+		if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+			return nil, fmt.Errorf("invalid json for imp[%d]: %v", i, err)
 		}
 
-		rawPrebidExt, ok := impExt[openrtb_ext.PrebidExtKey]
+		var impExtPrebid map[string]json.RawMessage
+		if impExtPrebidJSON, exists := impExt[openrtb_ext.PrebidExtKey]; exists {
+			// validation already performed by impExt unmarshal. no error is possible here, proven by tests.
+			json.Unmarshal(impExtPrebidJSON, &impExtPrebid)
+		}
 
-		if ok {
-			var prebidExt openrtb_ext.ExtImpPrebid
+		var impExtPrebidBidder map[string]json.RawMessage
+		if impExtPrebidBidderJSON, exists := impExtPrebid[openrtb_ext.PrebidExtBidderKey]; exists {
+			// validation already performed by impExt unmarshal. no error is possible here, proven by tests.
+			json.Unmarshal(impExtPrebidBidderJSON, &impExtPrebidBidder)
+		}
 
-			if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil && prebidExt.Bidder != nil {
-				if errs := sanitizedImpCopy(&imp, prebidExt.Bidder, rawPrebidExt, firstPartyDataContext, &splitImps); errs != nil {
-					errList = append(errList, errs...)
-				}
+		sanitizedImpExt, err := createSanitizedImpExt(impExt, impExtPrebid)
+		if err != nil {
+			return nil, fmt.Errorf("unable to remove other bidder fields for imp[%d]: %v", i, err)
+		}
 
-				continue
+		for bidder, bidderExt := range extractBidderExts(impExt, impExtPrebidBidder) {
+			impCopy := imp
+
+			sanitizedImpExt[openrtb_ext.PrebidExtBidderKey] = bidderExt
+
+			impExtJSON, err := json.Marshal(sanitizedImpExt)
+			if err != nil {
+				return nil, fmt.Errorf("unable to remove other bidder fields for imp[%d]: cannot marshal ext: %v", i, err)
 			}
-		}
+			impCopy.Ext = impExtJSON
 
-		if errs := sanitizedImpCopy(&imp, impExt, rawPrebidExt, firstPartyDataContext, &splitImps); errs != nil {
-			errList = append(errList, errs...)
+			bidderImps[bidder] = append(bidderImps[bidder], impCopy)
 		}
 	}
 
-	return splitImps, nil
+	return bidderImps, nil
 }
 
-// sanitizedImpCopy returns a copy of imp with its ext filtered so that only "prebid", "context", and bidder params exist.
-// It will not mutate the input imp.
-// This function will write the new imps to the output map passed in
-func sanitizedImpCopy(imp *openrtb.Imp,
-	bidderExts map[string]json.RawMessage,
-	rawPrebidExt json.RawMessage,
-	firstPartyDataContext json.RawMessage,
-	out *map[string][]openrtb.Imp) []error {
+func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map[string]json.RawMessage, error) {
+	sanitizedImpExt := make(map[string]json.RawMessage, 3)
 
-	var prebidExt map[string]json.RawMessage
-	var errs []error
-
-	if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil {
-		// Remove the entire bidder field. We will already have the content we need in bidderExts. We
-		// don't want to include other demand partners' bidder params in the sanitized imp.
-		if _, hasBidderField := prebidExt["bidder"]; hasBidderField {
-			delete(prebidExt, "bidder")
-
-			var err error
-			if rawPrebidExt, err = json.Marshal(prebidExt); err != nil {
-				errs = append(errs, err)
-			}
+	delete(impExtPrebid, openrtb_ext.PrebidExtBidderKey)
+	if len(impExtPrebid) > 0 {
+		if impExtPrebidJSON, err := json.Marshal(impExtPrebid); err == nil {
+			sanitizedImpExt[openrtb_ext.PrebidExtKey] = impExtPrebidJSON
+		} else {
+			return nil, fmt.Errorf("cannot marshal ext.prebid: %v", err)
 		}
 	}
 
-	for bidder, ext := range bidderExts {
-		if bidder == openrtb_ext.PrebidExtKey || bidder == openrtb_ext.FirstPartyDataContextExtKey {
+	if v, exists := impExt[openrtb_ext.FirstPartyDataContextExtKey]; exists {
+		sanitizedImpExt[openrtb_ext.FirstPartyDataContextExtKey] = v
+	}
+
+	if v, exists := impExt[openrtb_ext.SKAdNExtKey]; exists {
+		sanitizedImpExt[openrtb_ext.SKAdNExtKey] = v
+	}
+
+	return sanitizedImpExt, nil
+}
+
+func extractBidderExts(impExt, impExtPrebidBidders map[string]json.RawMessage) map[string]json.RawMessage {
+	bidderExts := make(map[string]json.RawMessage)
+
+	// prefer imp.ext.prebid.bidder.BIDDER
+	for bidder, bidderExt := range impExtPrebidBidders {
+		bidderExts[bidder] = bidderExt
+	}
+
+	// fallback to imp.BIDDER
+	for bidder, bidderExt := range impExt {
+		if isSpecialField(bidder) {
 			continue
 		}
 
-		impCopy := *imp
-		newExt := make(map[string]json.RawMessage, 3)
-
-		newExt["bidder"] = ext
-
-		if rawPrebidExt != nil {
-			newExt[openrtb_ext.PrebidExtKey] = rawPrebidExt
+		if _, exists := bidderExts[bidder]; !exists {
+			bidderExts[bidder] = bidderExt
 		}
-
-		if len(firstPartyDataContext) > 0 {
-			newExt[openrtb_ext.FirstPartyDataContextExtKey] = firstPartyDataContext
-		}
-
-		rawExt, err := json.Marshal(newExt)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		impCopy.Ext = rawExt
-
-		otherImps, _ := (*out)[bidder]
-		(*out)[bidder] = append(otherImps, impCopy)
 	}
 
-	if len(errs) > 0 {
-		return errs
-	}
+	return bidderExts
+}
 
-	return nil
+func isSpecialField(bidder string) bool {
+	return bidder == openrtb_ext.FirstPartyDataContextExtKey ||
+		bidder == openrtb_ext.SKAdNExtKey ||
+		bidder == openrtb_ext.PrebidExtKey
 }
 
 // prepareUser changes req.User so that it's ready for the given bidder.
@@ -562,21 +556,6 @@ func resolveBidder(bidder string, aliases map[string]string) openrtb_ext.BidderN
 		return openrtb_ext.BidderName(coreBidder)
 	}
 	return openrtb_ext.BidderName(bidder)
-}
-
-// parseImpExts does a partial-unmarshal of the imp[].Ext field.
-// The keys in the returned map are expected to be "prebid", "context", CoreBidderNames, or Aliases for this request.
-func parseImpExts(imps []openrtb.Imp) ([]map[string]json.RawMessage, error) {
-	exts := make([]map[string]json.RawMessage, len(imps))
-	// Loop over every impression in the request
-	for i := 0; i < len(imps); i++ {
-		// Unpack each set of extensions found in the Imp array
-		err := json.Unmarshal(imps[i].Ext, &exts[i])
-		if err != nil {
-			return nil, fmt.Errorf("Error unpacking extensions for Imp[%d]: %s", i, err.Error())
-		}
-	}
-	return exts, nil
 }
 
 // parseAliases parses the aliases from the BidRequest

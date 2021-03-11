@@ -56,7 +56,6 @@
                             "bidder": {
                                 "placementId": 1
                             },
-                            "prebid": {},
                             "context": {
                                 "data": {
                                     "keywords": "prebid server example"
