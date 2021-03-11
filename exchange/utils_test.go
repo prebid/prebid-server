@@ -64,7 +64,7 @@ func TestSplitImps(t *testing.T) {
 	}{
 		{
 			description:   "Nil",
-			givenImps:     []openrtb.Imp{},
+			givenImps:     nil,
 			expectedImps:  map[string][]openrtb.Imp{},
 			expectedError: "",
 		},
