@@ -132,9 +132,9 @@ func (a *RhythmoneAdapter) preProcess(req *openrtb.BidRequest, errors []error) (
 			errors = append(errors, err)
 			return nil, "", errors
 		}
-		bidderExtCopy := openrtb_ext.ExtBid{
-			Bidder: rhythmoneExtCopy,
-		}
+		bidderExtCopy := struct {
+			Bidder json.RawMessage `json:"bidder,omitempty"`
+		}{rhythmoneExtCopy}
 		impExtCopy, err := json.Marshal(&bidderExtCopy)
 		if err != nil {
 			errors = append(errors, err)
