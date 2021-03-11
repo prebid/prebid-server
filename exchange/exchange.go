@@ -791,7 +791,6 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	seatBid := &openrtb.SeatBid{
 		Seat:  adapter.String(),
 		Group: 0, // Prebid cannot support roadblocking
-		Ext:   adapterBid.ext,
 	}
 
 	var errList []error
@@ -838,16 +837,18 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 }
 
 func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid) (json.RawMessage, error) {
+	// no existing bid.ext. generate a bid.ext with just our prebid section populated.
 	if len(ext) == 0 {
 		bidExt := &openrtb_ext.ExtBid{Prebid: prebid}
 		return json.Marshal(bidExt)
 	}
 
+	// update existing bid.ext with our prebid section. if bid.ext.prebid already exists, it will be overwritten.
 	var extMap map[string]interface{}
 	if err := json.Unmarshal(ext, &extMap); err != nil {
 		return nil, err
 	}
-	extMap["prebid"] = prebid
+	extMap[openrtb_ext.PrebidExtKey] = prebid
 	return json.Marshal(extMap)
 }
 
