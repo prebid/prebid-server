@@ -189,21 +189,16 @@ func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, metrics.AdapterLabels
 }
 
 func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprPrivacyPolicy gdprPrivacy.Policy) bool {
-	switch gdprPrivacyPolicy.Signal {
-	case "0":
-		return true
-	case "1":
-		if gdprPrivacyPolicy.Consent == "" {
-			return false
-		}
-		fallthrough
-	default:
-		if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, gdprPrivacyPolicy.Consent); !canSync || err != nil {
-			return false
-		}
-		canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, gdprPrivacyPolicy.Consent)
-		return canSync && err == nil
+	gdprSignal := gdpr.SignalAmbiguous
+	if signal, err := gdpr.SignalParse(gdprPrivacyPolicy.Signal); err != nil {
+		gdprSignal = signal
 	}
+
+	if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, gdprSignal, gdprPrivacyPolicy.Consent); err != nil || !canSync {
+		return false
+	}
+	canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, gdprSignal, gdprPrivacyPolicy.Consent)
+	return canSync && err == nil
 }
 
 // cache video bids only for Web

@@ -30,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/lmt"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -263,6 +264,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		errs = []error{err}
 		return
 	}
+
+	lmt.ModifyForIOS(req)
 
 	errL := deps.validateRequest(req)
 	if len(errL) > 0 {
@@ -827,19 +830,15 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 		return []error{err}
 	}
 
-	// Also accept bidder exts within imp[...].ext.prebid.bidder
-	// NOTE: This is not part of the official API yet, so we are not expecting clients
-	// to migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
-	// at this time
-	// https://github.com/prebid/prebid-server/pull/846#issuecomment-476352224
-	if rawPrebidExt, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
-		var prebidExt openrtb_ext.ExtImpPrebid
-		if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil && prebidExt.Bidder != nil {
-			for bidder, ext := range prebidExt.Bidder {
+	// Prefer bidder params from request.imp.ext.prebid.bidder.BIDDER over request.imp.ext.BIDDER
+	// to avoid confusion beteween prebid specific adapter config and other ext protocols.
+	if extPrebidJSON, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
+		var extPrebid openrtb_ext.ExtImpPrebid
+		if err := json.Unmarshal(extPrebidJSON, &extPrebid); err == nil && extPrebid.Bidder != nil {
+			for bidder, ext := range extPrebid.Bidder {
 				if ext == nil {
 					continue
 				}
-
 				bidderExts[bidder] = ext
 			}
 		}
@@ -890,13 +889,18 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	return errL
 }
 
+// isBidderToValidate determines if the bidder name in request.imp[].prebid should be validated.
 func isBidderToValidate(bidder string) bool {
-	// PrebidExtKey is a special case for the prebid config section and is not considered a bidder.
-
-	// FirstPartyDataContextExtKey is a special case for the first party data context section
-	// and is not considered a bidder.
-
-	return bidder != openrtb_ext.PrebidExtKey && bidder != openrtb_ext.FirstPartyDataContextExtKey
+	switch openrtb_ext.BidderName(bidder) {
+	case openrtb_ext.BidderReservedContext:
+		return false
+	case openrtb_ext.BidderReservedPrebid:
+		return false
+	case openrtb_ext.BidderReservedSKAdN:
+		return false
+	default:
+		return true
+	}
 }
 
 func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequest, error) {

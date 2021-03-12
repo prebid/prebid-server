@@ -1,5 +1,6 @@
 maintainer:
   email: "mobile.tech@lifestreet.com"
+gvlVendorID: 67
 capabilities:
   app:
     mediaTypes:

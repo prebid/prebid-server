@@ -8,5 +8,5 @@ import (
 )
 
 func NewEMXDigitalSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("emx_digital", 183, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("emx_digital", temp, adapters.SyncTypeIframe)
 }

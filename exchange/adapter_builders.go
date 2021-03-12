@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adtarget"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/advangelists"
+	"github.com/prebid/prebid-server/adapters/adyoulike"
 	"github.com/prebid/prebid-server/adapters/aja"
 	"github.com/prebid/prebid-server/adapters/amx"
 	"github.com/prebid/prebid-server/adapters/applogy"
@@ -35,11 +36,13 @@ import (
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/cpmstar"
 	"github.com/prebid/prebid-server/adapters/datablocks"
+	"github.com/prebid/prebid-server/adapters/decenterads"
 	"github.com/prebid/prebid-server/adapters/deepintent"
 	"github.com/prebid/prebid-server/adapters/dmx"
 	"github.com/prebid/prebid-server/adapters/emx_digital"
 	"github.com/prebid/prebid-server/adapters/engagebdr"
 	"github.com/prebid/prebid-server/adapters/eplanning"
+	"github.com/prebid/prebid-server/adapters/epom"
 	"github.com/prebid/prebid-server/adapters/gamma"
 	"github.com/prebid/prebid-server/adapters/gamoshi"
 	"github.com/prebid/prebid-server/adapters/grid"
@@ -48,6 +51,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/inmobi"
 	"github.com/prebid/prebid-server/adapters/invibes"
 	"github.com/prebid/prebid-server/adapters/ix"
+	"github.com/prebid/prebid-server/adapters/jixie"
 	"github.com/prebid/prebid-server/adapters/kidoz"
 	"github.com/prebid/prebid-server/adapters/krushmedia"
 	"github.com/prebid/prebid-server/adapters/kubient"
@@ -61,8 +65,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/nanointeractive"
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
 	"github.com/prebid/prebid-server/adapters/nobid"
+	"github.com/prebid/prebid-server/adapters/onetag"
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/orbidder"
+	"github.com/prebid/prebid-server/adapters/pangle"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pubnative"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
@@ -85,6 +91,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/triplelift"
 	"github.com/prebid/prebid-server/adapters/triplelift_native"
 	"github.com/prebid/prebid-server/adapters/ucfunnel"
+	"github.com/prebid/prebid-server/adapters/unicorn"
 	"github.com/prebid/prebid-server/adapters/unruly"
 	"github.com/prebid/prebid-server/adapters/valueimpression"
 	"github.com/prebid/prebid-server/adapters/verizonmedia"
@@ -120,6 +127,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdtarget:         adtarget.Builder,
 		openrtb_ext.BidderAdtelligent:      adtelligent.Builder,
 		openrtb_ext.BidderAdvangelists:     advangelists.Builder,
+		openrtb_ext.BidderAdyoulike:        adyoulike.Builder,
 		openrtb_ext.BidderAJA:              aja.Builder,
 		openrtb_ext.BidderAMX:              amx.Builder,
 		openrtb_ext.BidderApplogy:          applogy.Builder,
@@ -136,11 +144,13 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderConversant:       conversant.Builder,
 		openrtb_ext.BidderCpmstar:          cpmstar.Builder,
 		openrtb_ext.BidderDatablocks:       datablocks.Builder,
+		openrtb_ext.BidderDecenterAds:      decenterads.Builder,
 		openrtb_ext.BidderDeepintent:       deepintent.Builder,
 		openrtb_ext.BidderDmx:              dmx.Builder,
 		openrtb_ext.BidderEmxDigital:       emx_digital.Builder,
 		openrtb_ext.BidderEngageBDR:        engagebdr.Builder,
 		openrtb_ext.BidderEPlanning:        eplanning.Builder,
+		openrtb_ext.BidderEpom:             epom.Builder,
 		openrtb_ext.BidderGamma:            gamma.Builder,
 		openrtb_ext.BidderGamoshi:          gamoshi.Builder,
 		openrtb_ext.BidderGrid:             grid.Builder,
@@ -149,6 +159,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderInMobi:           inmobi.Builder,
 		openrtb_ext.BidderInvibes:          invibes.Builder,
 		openrtb_ext.BidderIx:               ix.Builder,
+		openrtb_ext.BidderJixie:            jixie.Builder,
 		openrtb_ext.BidderKidoz:            kidoz.Builder,
 		openrtb_ext.BidderKrushmedia:       krushmedia.Builder,
 		openrtb_ext.BidderKubient:          kubient.Builder,
@@ -163,8 +174,10 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderNanoInteractive:  nanointeractive.Builder,
 		openrtb_ext.BidderNinthDecimal:     ninthdecimal.Builder,
 		openrtb_ext.BidderNoBid:            nobid.Builder,
+		openrtb_ext.BidderOneTag:           onetag.Builder,
 		openrtb_ext.BidderOpenx:            openx.Builder,
 		openrtb_ext.BidderOrbidder:         orbidder.Builder,
+		openrtb_ext.BidderPangle:           pangle.Builder,
 		openrtb_ext.BidderPubmatic:         pubmatic.Builder,
 		openrtb_ext.BidderPubnative:        pubnative.Builder,
 		openrtb_ext.BidderPulsepoint:       pulsepoint.Builder,
@@ -186,7 +199,9 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTelaria:          telaria.Builder,
 		openrtb_ext.BidderTriplelift:       triplelift.Builder,
 		openrtb_ext.BidderTripleliftNative: triplelift_native.Builder,
+		openrtb_ext.BidderTrustX:           grid.Builder,
 		openrtb_ext.BidderUcfunnel:         ucfunnel.Builder,
+		openrtb_ext.BidderUnicorn:          unicorn.Builder,
 		openrtb_ext.BidderUnruly:           unruly.Builder,
 		openrtb_ext.BidderValueImpression:  valueimpression.Builder,
 		openrtb_ext.BidderVerizonMedia:     verizonmedia.Builder,

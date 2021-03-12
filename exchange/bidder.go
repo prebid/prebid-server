@@ -83,17 +83,13 @@ type pbsOrtbSeatBid struct {
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
 	httpCalls []*openrtb_ext.ExtHttpCall
-	// ext contains the extension for this seatbid.
-	// if len(bids) > 0, this will become response.seatbid[i].ext.{bidder} on the final OpenRTB response.
-	// if len(bids) == 0, this will be ignored because the OpenRTB spec doesn't allow a SeatBid with 0 Bids.
-	ext json.RawMessage
 }
 
 // adaptBidder converts an adapters.Bidder into an exchange.adaptedBidder.
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *adapters.DebugInfo) adaptedBidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo) adaptedBidder {
 	return &bidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
@@ -102,12 +98,12 @@ func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		config: bidderAdapterConfig{
 			Debug:              cfg.Debug,
 			DisableConnMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
-			DebugInfo:          adapters.DebugInfo{Allow: parseDebugInfo(debugInfo)},
+			DebugInfo:          config.DebugInfo{Allow: parseDebugInfo(debugInfo)},
 		},
 	}
 }
 
-func parseDebugInfo(info *adapters.DebugInfo) bool {
+func parseDebugInfo(info *config.DebugInfo) bool {
 	if info == nil {
 		return true
 	}
@@ -125,7 +121,7 @@ type bidderAdapter struct {
 type bidderAdapterConfig struct {
 	Debug              config.Debug
 	DisableConnMetrics bool
-	DebugInfo          adapters.DebugInfo
+	DebugInfo          config.DebugInfo
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {

@@ -52,7 +52,11 @@ func TestNewExchange(t *testing.T) {
 		},
 	}
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", knownAdapters)
+	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -96,7 +100,11 @@ func TestCharacterEscape(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -277,7 +285,7 @@ func TestDebugBehaviour(t *testing.T) {
 	for _, test := range testCases {
 
 		e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &adapters.DebugInfo{Allow: test.debugData.bidderLevelDebugAllowed}),
+			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: test.debugData.bidderLevelDebugAllowed}),
 		}
 
 		//request level debug key
@@ -411,8 +419,8 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		}
 
 		e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &adapters.DebugInfo{Allow: testCase.bidder1DebugEnabled}),
-			openrtb_ext.BidderTelaria:  adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &adapters.DebugInfo{Allow: testCase.bidder2DebugEnabled}),
+			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder1DebugEnabled}),
+			openrtb_ext.BidderTelaria:  adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder2DebugEnabled}),
 		}
 		// Run test
 		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
@@ -680,7 +688,11 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -1029,7 +1041,11 @@ func TestBidResponseCurrency(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -1203,7 +1219,11 @@ func TestRaceIntegration(t *testing.T) {
 		ExtraAdapterInfo: "{\"video_endpoint\":\"" + server.URL + "\"}",
 	}
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -1219,7 +1239,7 @@ func TestRaceIntegration(t *testing.T) {
 
 	debugLog := DebugLog{}
 	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, &nilCategoryFetcher{}).(*exchange)
-	_, err := ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
+	_, err = ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -1301,7 +1321,11 @@ func TestPanicRecovery(t *testing.T) {
 		Adapters: blankAdapterConfig(openrtb_ext.CoreBidderNames()),
 	}
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	adapters, adaptersErr := BuildAdapters(&http.Client{}, cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -1387,7 +1411,11 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 	}
 	cfg.Adapters["audiencenetwork"] = config.Adapter{Disabled: true}
 
-	biddersInfo := adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.CoreBidderNames())
+	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.DummyMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
@@ -1439,7 +1467,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		UserSyncs:  &emptyUsersync{},
 	}
 	debugLog := DebugLog{}
-	_, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
+	_, err = e.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -1608,7 +1636,6 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if spec.IncomingRequest.OrtbRequest.Test == 1 {
 		//compare debug info
 		diffJson(t, "Debug info modified", bid.Ext, spec.Response.Ext)
-
 	}
 }
 
@@ -1651,7 +1678,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb.BidResponse
 
 func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy) Exchange {
 	bidderAdapters := make(map[openrtb_ext.BidderName]adaptedBidder, len(expectations))
-	bidderInfos := make(adapters.BidderInfos, len(expectations))
+	bidderInfos := make(config.BidderInfos, len(expectations))
 	for _, bidderName := range openrtb_ext.CoreBidderNames() {
 		if spec, ok := expectations[string(bidderName)]; ok {
 			bidderAdapters[bidderName] = &validatingBidder{
@@ -1661,7 +1688,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 				expectations:  map[string]*bidderRequest{string(bidderName): spec.ExpectedRequest},
 				mockResponses: map[string]bidderResponse{string(bidderName): spec.MockResponse},
 			}
-			bidderInfos[string(bidderName)] = adapters.BidderInfo{ModifyingVastXmlAllowed: spec.ModifyingVastXmlAllowed}
+			bidderInfos[string(bidderName)] = config.BidderInfo{ModifyingVastXmlAllowed: spec.ModifyingVastXmlAllowed}
 		}
 	}
 
@@ -1796,7 +1823,7 @@ func TestCategoryMapping(t *testing.T) {
 		&bid1_4,
 	}
 
-	seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+	seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("appnexus")
 
 	adapterBids[bidderName1] = &seatBid
@@ -1851,7 +1878,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 		&bid1_4,
 	}
 
-	seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+	seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("appnexus")
 
 	adapterBids[bidderName1] = &seatBid
@@ -1903,7 +1930,7 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 		&bid1_3,
 	}
 
-	seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+	seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("appnexus")
 
 	adapterBids[bidderName1] = &seatBid
@@ -1985,7 +2012,7 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 		&bid1_3,
 	}
 
-	seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+	seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("appnexus")
 
 	adapterBids[bidderName1] = &seatBid
@@ -2055,7 +2082,7 @@ func TestCategoryDedupe(t *testing.T) {
 			&bid1_5,
 		}
 
-		seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+		seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 		bidderName1 := openrtb_ext.BidderName("appnexus")
 
 		adapterBids[bidderName1] = &seatBid
@@ -2135,7 +2162,7 @@ func TestNoCategoryDedupe(t *testing.T) {
 			&bid1_5,
 		}
 
-		seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+		seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 		bidderName1 := openrtb_ext.BidderName("appnexus")
 
 		adapterBids[bidderName1] = &seatBid
@@ -2196,10 +2223,10 @@ func TestCategoryMappingBidderName(t *testing.T) {
 		&bid1_2,
 	}
 
-	seatBid1 := pbsOrtbSeatBid{innerBids1, "USD", nil, nil}
+	seatBid1 := pbsOrtbSeatBid{bids: innerBids1, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("bidder1")
 
-	seatBid2 := pbsOrtbSeatBid{innerBids2, "USD", nil, nil}
+	seatBid2 := pbsOrtbSeatBid{bids: innerBids2, currency: "USD"}
 	bidderName2 := openrtb_ext.BidderName("bidder2")
 
 	adapterBids[bidderName1] = &seatBid1
@@ -2250,10 +2277,10 @@ func TestCategoryMappingBidderNameNoCategories(t *testing.T) {
 		&bid1_2,
 	}
 
-	seatBid1 := pbsOrtbSeatBid{innerBids1, "USD", nil, nil}
+	seatBid1 := pbsOrtbSeatBid{bids: innerBids1, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("bidder1")
 
-	seatBid2 := pbsOrtbSeatBid{innerBids2, "USD", nil, nil}
+	seatBid2 := pbsOrtbSeatBid{bids: innerBids2, currency: "USD"}
 	bidderName2 := openrtb_ext.BidderName("bidder2")
 
 	adapterBids[bidderName1] = &seatBid1
@@ -2357,7 +2384,7 @@ func TestBidRejectionErrors(t *testing.T) {
 			innerBids = append(innerBids, &currentBid)
 		}
 
-		seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+		seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 
 		adapterBids[bidderName] = &seatBid
 
@@ -2415,10 +2442,10 @@ func TestCategoryMappingTwoBiddersOneBidEachNoCategorySamePrice(t *testing.T) {
 	for i := 1; i < 10; i++ {
 		adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
 
-		seatBidApn1 := pbsOrtbSeatBid{innerBidsApn1, "USD", nil, nil}
+		seatBidApn1 := pbsOrtbSeatBid{bids: innerBidsApn1, currency: "USD"}
 		bidderNameApn1 := openrtb_ext.BidderName("appnexus1")
 
-		seatBidApn2 := pbsOrtbSeatBid{innerBidsApn2, "USD", nil, nil}
+		seatBidApn2 := pbsOrtbSeatBid{bids: innerBidsApn2, currency: "USD"}
 		bidderNameApn2 := openrtb_ext.BidderName("appnexus2")
 
 		adapterBids[bidderNameApn1] = &seatBidApn1

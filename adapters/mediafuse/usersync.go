@@ -8,5 +8,5 @@ import (
 )
 
 func NewMediafuseSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("mediafuse", 411, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("mediafuse", temp, adapters.SyncTypeRedirect)
 }

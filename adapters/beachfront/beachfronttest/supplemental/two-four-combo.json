@@ -109,7 +109,7 @@
 
           },
           "adapterName":"BF_PREBID_S2S",
-          "adapterVersion":"0.9.1",
+          "adapterVersion":"0.9.2",
           "ip":"255.255.255.255",
           "requestId":"two-four-combo"
 

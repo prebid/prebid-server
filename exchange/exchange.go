@@ -51,7 +51,7 @@ type IdFetcher interface {
 
 type exchange struct {
 	adapterMap          map[openrtb_ext.BidderName]adaptedBidder
-	bidderInfo          adapters.BidderInfos
+	bidderInfo          config.BidderInfos
 	me                  metrics.MetricsEngine
 	cache               prebid_cache_client.Client
 	cacheTime           time.Duration
@@ -78,7 +78,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
 	return &exchange{
 		adapterMap:          adapters,
 		bidderInfo:          infos,
@@ -788,25 +788,9 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 // Return an openrtb seatBid for a bidder
 // BuildBidResponse is responsible for ensuring nil bid seatbids are not included
 func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, returnCreative bool) *openrtb.SeatBid {
-	seatBid := new(openrtb.SeatBid)
-	seatBid.Seat = adapter.String()
-	// Prebid cannot support roadblocking
-	seatBid.Group = 0
-
-	if len(adapterBid.ext) > 0 {
-		sbExt := ExtSeatBid{
-			Bidder: adapterBid.ext,
-		}
-
-		ext, err := json.Marshal(sbExt)
-		if err != nil {
-			extError := openrtb_ext.ExtBidderError{
-				Code:    errortypes.ReadCode(err),
-				Message: fmt.Sprintf("Error writing SeatBid.Ext: %s", err.Error()),
-			}
-			adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, extError)
-		}
-		seatBid.Ext = ext
+	seatBid := &openrtb.SeatBid{
+		Seat:  adapter.String(),
+		Group: 0, // Prebid cannot support roadblocking
 	}
 
 	var errList []error
@@ -818,39 +802,54 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	return seatBid
 }
 
-// Create the Bid array inside of SeatBid
-func (e *exchange) makeBid(Bids []*pbsOrtbBid, auc *auction, returnCreative bool) ([]openrtb.Bid, []error) {
-	bids := make([]openrtb.Bid, 0, len(Bids))
-	errList := make([]error, 0, 1)
-	for _, thisBid := range Bids {
-		bidExt := &openrtb_ext.ExtBid{
-			Bidder: thisBid.bid.Ext,
-			Prebid: &openrtb_ext.ExtBidPrebid{
-				Targeting:         thisBid.bidTargets,
-				Type:              thisBid.bidType,
-				Video:             thisBid.bidVideo,
-				Events:            thisBid.bidEvents,
-				DealPriority:      thisBid.dealPriority,
-				DealTierSatisfied: thisBid.dealTierSatisfied,
-			},
+func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool) ([]openrtb.Bid, []error) {
+	result := make([]openrtb.Bid, 0, len(bids))
+	errs := make([]error, 0, 1)
+
+	for _, bid := range bids {
+		bidExtPrebid := &openrtb_ext.ExtBidPrebid{
+			DealPriority:      bid.dealPriority,
+			DealTierSatisfied: bid.dealTierSatisfied,
+			Events:            bid.bidEvents,
+			Targeting:         bid.bidTargets,
+			Type:              bid.bidType,
+			Video:             bid.bidVideo,
 		}
-		if cacheInfo, found := e.getBidCacheInfo(thisBid, auc); found {
-			bidExt.Prebid.Cache = &openrtb_ext.ExtBidPrebidCache{
+
+		if cacheInfo, found := e.getBidCacheInfo(bid, auc); found {
+			bidExtPrebid.Cache = &openrtb_ext.ExtBidPrebidCache{
 				Bids: &cacheInfo,
 			}
 		}
-		ext, err := json.Marshal(bidExt)
-		if err != nil {
-			errList = append(errList, err)
+
+		if bidExtJSON, err := makeBidExtJSON(bid.bid.Ext, bidExtPrebid); err != nil {
+			errs = append(errs, err)
 		} else {
-			bids = append(bids, *thisBid.bid)
-			bids[len(bids)-1].Ext = ext
+			result = append(result, *bid.bid)
+			resultBid := &result[len(result)-1]
+			resultBid.Ext = bidExtJSON
 			if !returnCreative {
-				bids[len(bids)-1].AdM = ""
+				resultBid.AdM = ""
 			}
 		}
 	}
-	return bids, errList
+	return result, errs
+}
+
+func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid) (json.RawMessage, error) {
+	// no existing bid.ext. generate a bid.ext with just our prebid section populated.
+	if len(ext) == 0 {
+		bidExt := &openrtb_ext.ExtBid{Prebid: prebid}
+		return json.Marshal(bidExt)
+	}
+
+	// update existing bid.ext with our prebid section. if bid.ext.prebid already exists, it will be overwritten.
+	var extMap map[string]interface{}
+	if err := json.Unmarshal(ext, &extMap); err != nil {
+		return nil, err
+	}
+	extMap[openrtb_ext.PrebidExtKey] = prebid
+	return json.Marshal(extMap)
 }
 
 // If bid got cached inside `(a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string)`,

@@ -17,7 +17,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/buger/jsonparser"
@@ -942,6 +941,7 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 		assert.Equal(t, test.expectedDNT, result.Device.DNT, test.description+":dnt")
 	}
 }
+
 func TestImplicitSecure(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set(http.CanonicalHeaderKey("X-Forwarded-Proto"), "https")
@@ -2076,6 +2076,34 @@ func TestValidateBidders(t *testing.T) {
 	}
 }
 
+func TestIOS14EndToEnd(t *testing.T) {
+	exchange := &nobidExchange{}
+
+	endpoint, _ := NewEndpoint(
+		exchange,
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		newTestMetrics(),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap())
+
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "app-ios140-no-ifa.json")))
+
+	endpoint(httptest.NewRecorder(), httpReq, nil)
+
+	result := exchange.gotRequest
+	if !assert.NotEmpty(t, result, "request received by the exchange.") {
+		t.FailNow()
+	}
+
+	var lmtOne int8 = 1
+	assert.Equal(t, &lmtOne, result.Device.Lmt)
+}
+
 // nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
@@ -2520,8 +2548,8 @@ func (m *mockExchange) HoldAuction(ctx context.Context, r exchange.AuctionReques
 	}, nil
 }
 
-func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.BidderName) adapters.BidderInfos {
-	biddersInfos := make(adapters.BidderInfos)
+func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.BidderName) config.BidderInfos {
+	biddersInfos := make(config.BidderInfos)
 	for _, name := range biddersNames {
 		adapterConfig, ok := cfg[string(name)]
 		if !ok {
@@ -2532,14 +2560,9 @@ func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.Bi
 	return biddersInfos
 }
 
-func newBidderInfo(cfg config.Adapter) adapters.BidderInfo {
-	status := adapters.StatusActive
-	if cfg.Disabled == true {
-		status = adapters.StatusDisabled
-	}
-
-	return adapters.BidderInfo{
-		Status: status,
+func newBidderInfo(cfg config.Adapter) config.BidderInfo {
+	return config.BidderInfo{
+		Enabled: !cfg.Disabled,
 	}
 }
 

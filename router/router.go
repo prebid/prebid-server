@@ -217,7 +217,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	// Metrics engine
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
 	db, shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
-
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
 	if err := loadDataCache(cfg, db); err != nil {
@@ -232,22 +231,29 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	p, _ := filepath.Abs(infoDirectory)
-	bidderInfos := adapters.ParseBidderInfos(cfg.Adapters, p, openrtb_ext.CoreBidderNames())
+	bidderInfos, err := config.LoadBidderInfoFromDisk(p, cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	if err != nil {
+		glog.Fatal(err)
+	}
 
 	activeBidders := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
+	if err := validateDefaultAliases(defaultAliases); err != nil {
+		glog.Fatal(err)
+	}
 
 	syncers := usersyncers.NewSyncerMap(cfg)
-	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, adapters.GDPRAwareSyncerIDs(syncers), generalHttpClient)
+	gvlVendorIDs := bidderInfos.ToGVLVendorIDMap()
+	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, gvlVendorIDs, generalHttpClient)
 
 	exchanges = newExchangeMap(cfg)
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
 
 	adapters, adaptersErrs := exchange.BuildAdapters(generalHttpClient, cfg, bidderInfos, r.MetricsEngine)
 	if len(adaptersErrs) > 0 {
-		errs := errortypes.NewAggregateErrors("Failed to initialize adapters", adaptersErrs)
+		errs := errortypes.NewAggregateError("Failed to initialize adapters", adaptersErrs)
 		glog.Fatalf("%v", errs)
 	}
 
@@ -259,7 +265,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders)
-
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
@@ -278,8 +283,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.POST("/openrtb2/video", videoEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
-	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(defaultAliases))
-	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos, defaultAliases))
+	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(bidderInfos, defaultAliases))
+	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(bidderInfos, cfg.Adapters, defaultAliases))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
 	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics, activeBidders))
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
@@ -373,4 +378,20 @@ func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []
 		return aliases, defReqJSON
 	}
 	return aliases, []byte{}
+}
+
+func validateDefaultAliases(aliases map[string]string) error {
+	var errs []error
+
+	for alias := range aliases {
+		if openrtb_ext.IsBidderNameReserved(alias) {
+			errs = append(errs, fmt.Errorf("alias %s is a reserved bidder name and cannot be used", alias))
+		}
+	}
+
+	if len(errs) > 0 {
+		return errortypes.NewAggregateError("default request alias errors", errs)
+	}
+
+	return nil
 }

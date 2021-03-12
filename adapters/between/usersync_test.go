@@ -1,10 +1,11 @@
 package between
 
 import (
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"text/template"
+
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewBetweenSyncerSyncer(t *testing.T) {
@@ -19,6 +20,5 @@ func TestNewBetweenSyncerSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://ads.betweendigital.com/match?bidder_id=pbs&gdpr=&gdpr_consent=&us_privacy=&callback_url=localhost:8080%2Fsetuid%3Fbidder%3Dbetween%26gdpr%3D0%26gdpr_consent%3D%26uid%3D%24%7BUSER_ID%7D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 724, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }
