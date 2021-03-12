@@ -9,6 +9,33 @@
       "id": "1",
       "bundle": "com.wls.testwlsapplication"
     },
+    "user": {
+      "data": [
+        {
+          "ext": {
+            "taxonomyname": "Iab"
+          },
+          "segment": [
+            {
+              "id": "segmentId1"
+            },
+            {
+              "id": "segmentId2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "taxonomyname": "not i-a-b"
+          },
+          "segment": [
+            {
+              "id": "segmentId3"
+            }
+          ]
+        }
+      ]
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -30,8 +57,8 @@
             "video": {
             },
             "accountId": 1001,
-            "siteId":113932,
-            "zoneId":535510
+            "siteId": 113932,
+            "zoneId": 535510
           }
         }
       }
@@ -51,6 +78,44 @@
             },
             "ip": "123.123.123.123",
             "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+          },
+          "user": {
+            "data": [
+              {
+                "ext": {
+                  "taxonomyname": "Iab"
+                },
+                "segment": [
+                  {
+                    "id": "segmentId1"
+                  },
+                  {
+                    "id": "segmentId2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "taxonomyname": "not i-a-b"
+                },
+                "segment": [
+                  {
+                    "id": "segmentId3"
+                  }
+                ]
+              }
+            ],
+            "ext": {
+              "digitrust": null,
+              "rp": {
+                "target": {
+                  "iab": [
+                    "segmentId1",
+                    "segmentId2"
+                  ]
+                }
+              }
+            }
           },
           "app": {
             "id": "1",
@@ -91,7 +156,7 @@
               },
               "ext": {
                 "rp": {
-                  "track":{
+                  "track": {
                     "mint": "",
                     "mint_version": ""
                   },

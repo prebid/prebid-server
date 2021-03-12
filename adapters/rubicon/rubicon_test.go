@@ -1320,6 +1320,79 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 	assert.Contains(t, userExtRPTarget["LIseg"], "999", "No segment with 999 as expected!")
 }
 
+func TestOpenRTBRequestWithTaxonomynameAttribute(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
+			},
+			Ext: json.RawMessage(`{"bidder": {
+				"zoneId": 8394,
+				"siteId": 283282,
+				"accountId": 7891
+			}}`),
+		}},
+		User: &openrtb.User{
+			Data: []openrtb.Data{{
+				Ext: json.RawMessage(`{"taxonomyname": "iab"}`),
+				Segment: []openrtb.Segment{{
+					ID: "idToCopy",
+				}},
+			}, {
+				Ext: json.RawMessage(`{"taxonomyname": "someValue"}`),
+				Segment: []openrtb.Segment{{
+					ID: "shouldNotBeCopied",
+				}},
+			},
+				{
+					Ext: json.RawMessage(`{"taxonomyname": "IaB"}`),
+					Segment: []openrtb.Segment{{
+						ID: "idToCopy2",
+					}},
+				}, {
+					Ext: json.RawMessage(`{"taxonomyname": ["wrong iab type"]}`),
+					Segment: []openrtb.Segment{{
+						ID: "shouldNotBeCopied2",
+					}},
+				},
+			},
+		},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Fatalf("Unexpected error while decoding request: %s", err)
+	}
+
+	assert.NotNil(t, rubiconReq.User.Ext, "User.Ext object should not be nil.")
+
+	var userExt rubiconUserExt
+	if err := json.Unmarshal(rubiconReq.User.Ext, &userExt); err != nil {
+		t.Fatal("Error unmarshalling request.user.ext object.")
+	}
+
+	userExtRPTarget := make(map[string]interface{})
+	if err := json.Unmarshal(userExt.RP.Target, &userExtRPTarget); err != nil {
+		t.Fatal("Error unmarshalling request.user.ext.rp.target object.")
+	}
+
+	assert.Contains(t, userExtRPTarget, "iab", "request.user.ext.rp.target value is not as expected!")
+	assert.Contains(t, userExtRPTarget["iab"], "idToCopy", "No segment id idToCopy as expected!")
+	assert.Contains(t, userExtRPTarget["iab"], "idToCopy2", "No segment id idToCopy2 as expected!")
+	assert.NotContains(t, userExtRPTarget["iab"], "shouldNotBeCopied", "No segment id shouldNotBeCopied as expected!")
+	assert.NotContains(t, userExtRPTarget["iab"], "shouldNotBeCopied2", "No segment id shouldNotBeCopied2 as expected!")
+}
+
 func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t *testing.T) {
 	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
