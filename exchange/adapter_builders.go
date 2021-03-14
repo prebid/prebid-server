@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adtarget"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/advangelists"
+	"github.com/prebid/prebid-server/adapters/adyoulike"
 	"github.com/prebid/prebid-server/adapters/aja"
 	"github.com/prebid/prebid-server/adapters/amx"
 	"github.com/prebid/prebid-server/adapters/applogy"
@@ -90,6 +91,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/triplelift"
 	"github.com/prebid/prebid-server/adapters/triplelift_native"
 	"github.com/prebid/prebid-server/adapters/ucfunnel"
+	"github.com/prebid/prebid-server/adapters/unicorn"
 	"github.com/prebid/prebid-server/adapters/unruly"
 	"github.com/prebid/prebid-server/adapters/valueimpression"
 	"github.com/prebid/prebid-server/adapters/verizonmedia"
@@ -125,6 +127,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdtarget:         adtarget.Builder,
 		openrtb_ext.BidderAdtelligent:      adtelligent.Builder,
 		openrtb_ext.BidderAdvangelists:     advangelists.Builder,
+		openrtb_ext.BidderAdyoulike:        adyoulike.Builder,
 		openrtb_ext.BidderAJA:              aja.Builder,
 		openrtb_ext.BidderAMX:              amx.Builder,
 		openrtb_ext.BidderApplogy:          applogy.Builder,
@@ -196,7 +199,9 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTelaria:          telaria.Builder,
 		openrtb_ext.BidderTriplelift:       triplelift.Builder,
 		openrtb_ext.BidderTripleliftNative: triplelift_native.Builder,
+		openrtb_ext.BidderTrustX:           grid.Builder,
 		openrtb_ext.BidderUcfunnel:         ucfunnel.Builder,
+		openrtb_ext.BidderUnicorn:          unicorn.Builder,
 		openrtb_ext.BidderUnruly:           unruly.Builder,
 		openrtb_ext.BidderValueImpression:  valueimpression.Builder,
 		openrtb_ext.BidderVerizonMedia:     verizonmedia.Builder,

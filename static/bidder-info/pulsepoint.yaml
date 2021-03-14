@@ -1,5 +1,6 @@
 maintainer:
   email: "ExchangeTeam@pulsepoint.com"
+gvlVendorID: 81
 capabilities:
   app:
     mediaTypes:

@@ -29,6 +29,5 @@ func TestSmartyAdsSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://as.ck-ie.com/prebid.gif?gdpr=0&gdpr_consent=ANDFJDS&us_privacy=1-YY&redir=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dsmartyads%26uid%3D%5BUID%5D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

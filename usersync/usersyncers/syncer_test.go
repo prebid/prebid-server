@@ -26,6 +26,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderAdtarget):         syncConfig,
 			string(openrtb_ext.BidderAdtelligent):      syncConfig,
 			string(openrtb_ext.BidderAdvangelists):     syncConfig,
+			string(openrtb_ext.BidderAdyoulike):        syncConfig,
 			string(openrtb_ext.BidderAJA):              syncConfig,
 			string(openrtb_ext.BidderAMX):              syncConfig,
 			string(openrtb_ext.BidderAppnexus):         syncConfig,
@@ -84,6 +85,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderTelaria):          syncConfig,
 			string(openrtb_ext.BidderTriplelift):       syncConfig,
 			string(openrtb_ext.BidderTripleliftNative): syncConfig,
+			string(openrtb_ext.BidderTrustX):           syncConfig,
 			string(openrtb_ext.BidderUcfunnel):         syncConfig,
 			string(openrtb_ext.BidderUnruly):           syncConfig,
 			string(openrtb_ext.BidderValueImpression):  syncConfig,
@@ -117,6 +119,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderRevcontent:   true,
 		openrtb_ext.BidderSilverMob:    true,
 		openrtb_ext.BidderSmaato:       true,
+		openrtb_ext.BidderUnicorn:      true,
 		openrtb_ext.BidderYeahmobi:     true,
 	}
 
@@ -131,33 +134,5 @@ func TestNewSyncerMap(t *testing.T) {
 		if _, ok := syncers[bidderName]; !ok && !adapterWithoutSyncer {
 			t.Errorf("No syncer exists for adapter: %s", bidderName)
 		}
-	}
-}
-
-// Bidders may have an ID on the IAB-maintained global vendor list.
-// This makes sure that we don't have conflicting IDs among Bidders in our project,
-// since that's almost certainly a bug.
-func TestVendorIDUniqueness(t *testing.T) {
-	cfg := &config.Configuration{}
-	syncers := NewSyncerMap(cfg)
-
-	idMap := make(map[uint16]openrtb_ext.BidderName, len(syncers))
-	for name, syncer := range syncers {
-		id := syncer.GDPRVendorID()
-		if id == 0 {
-			continue
-		}
-
-		if oldName, ok := idMap[id]; ok {
-			t.Errorf("GDPR VendorList ID %d used by both %s and %s. These must be unique.", id, oldName, name)
-		}
-		idMap[id] = name
-	}
-}
-
-func assertStringsMatch(t *testing.T, expected string, actual string) {
-	t.Helper()
-	if expected != actual {
-		t.Errorf("Expected %s, got %s", expected, actual)
 	}
 }

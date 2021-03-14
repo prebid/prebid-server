@@ -13,6 +13,7 @@ const testInfoFilesPath = "./test/bidder-info"
 const testYAML = `
 maintainer:
   email: "some-email@domain.com"
+gvlVendorID: 42
 capabilities:
   app:
     mediaTypes:
@@ -36,12 +37,13 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := map[string]BidderInfo{
+	expected := BidderInfos{
 		bidder: {
 			Enabled: true,
 			Maintainer: &MaintainerInfo{
 				Email: "some-email@domain.com",
 			},
+			GVLVendorID: 42,
 			Capabilities: &CapabilitiesInfo{
 				App: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
@@ -63,7 +65,7 @@ func TestLoadBidderInfo(t *testing.T) {
 		givenConfigs  map[string]Adapter
 		givenContent  string
 		givenError    error
-		expectedInfo  map[string]BidderInfo
+		expectedInfo  BidderInfos
 		expectedError string
 	}{
 		{
@@ -76,6 +78,7 @@ func TestLoadBidderInfo(t *testing.T) {
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
+					GVLVendorID: 42,
 					Capabilities: &CapabilitiesInfo{
 						App: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
@@ -97,6 +100,7 @@ func TestLoadBidderInfo(t *testing.T) {
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
+					GVLVendorID: 42,
 					Capabilities: &CapabilitiesInfo{
 						App: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
@@ -118,6 +122,7 @@ func TestLoadBidderInfo(t *testing.T) {
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
+					GVLVendorID: 42,
 					Capabilities: &CapabilitiesInfo{
 						App: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
@@ -139,6 +144,7 @@ func TestLoadBidderInfo(t *testing.T) {
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
+					GVLVendorID: 42,
 					Capabilities: &CapabilitiesInfo{
 						App: &PlatformInfo{
 							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
@@ -185,4 +191,20 @@ type fakeInfoReader struct {
 
 func (r fakeInfoReader) Read(bidder string) ([]byte, error) {
 	return []byte(r.content), r.err
+}
+
+func TestToGVLVendorIDMap(t *testing.T) {
+	givenBidderInfos := BidderInfos{
+		"bidderA": BidderInfo{Enabled: true, GVLVendorID: 0},
+		"bidderB": BidderInfo{Enabled: true, GVLVendorID: 100},
+		"bidderC": BidderInfo{Enabled: false, GVLVendorID: 0},
+		"bidderD": BidderInfo{Enabled: false, GVLVendorID: 200},
+	}
+
+	expectedGVLVendorIDMap := map[openrtb_ext.BidderName]uint16{
+		"bidderB": 100,
+	}
+
+	result := givenBidderInfos.ToGVLVendorIDMap()
+	assert.Equal(t, expectedGVLVendorIDMap, result)
 }

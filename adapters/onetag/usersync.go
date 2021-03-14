@@ -8,5 +8,5 @@ import (
 )
 
 func NewSyncer(template *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("onetag", 241, template, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("onetag", template, adapters.SyncTypeIframe)
 }

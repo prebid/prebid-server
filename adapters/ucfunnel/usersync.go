@@ -8,5 +8,5 @@ import (
 )
 
 func NewUcfunnelSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("ucfunnel", 607, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("ucfunnel", temp, adapters.SyncTypeRedirect)
 }

@@ -30,6 +30,6 @@ func TestAdmixerSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "http://anyHost/anyPath", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 511, syncer.GDPRVendorID())
+
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

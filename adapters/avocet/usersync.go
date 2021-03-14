@@ -8,5 +8,5 @@ import (
 )
 
 func NewAvocetSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("avocet", 63, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("avocet", temp, adapters.SyncTypeRedirect)
 }

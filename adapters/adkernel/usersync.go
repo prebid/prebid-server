@@ -7,8 +7,6 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-const adkernelGDPRVendorID = uint16(14)
-
 func NewAdkernelSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("adkernel", 14, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("adkernel", temp, adapters.SyncTypeRedirect)
 }

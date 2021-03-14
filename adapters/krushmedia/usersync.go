@@ -8,5 +8,5 @@ import (
 )
 
 func NewKrushmediaSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("krushmedia", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("krushmedia", temp, adapters.SyncTypeRedirect)
 }

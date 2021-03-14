@@ -8,5 +8,5 @@ import (
 )
 
 func NewJixieSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("jixie", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("jixie", temp, adapters.SyncTypeRedirect)
 }

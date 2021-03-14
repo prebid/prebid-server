@@ -1823,7 +1823,7 @@ func TestCategoryMapping(t *testing.T) {
 		&bid1_4,
 	}
 
-	seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+	seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("appnexus")
 
 	adapterBids[bidderName1] = &seatBid
@@ -1878,7 +1878,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 		&bid1_4,
 	}
 
-	seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+	seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("appnexus")
 
 	adapterBids[bidderName1] = &seatBid
@@ -1930,7 +1930,7 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 		&bid1_3,
 	}
 
-	seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+	seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("appnexus")
 
 	adapterBids[bidderName1] = &seatBid
@@ -2012,7 +2012,7 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 		&bid1_3,
 	}
 
-	seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+	seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("appnexus")
 
 	adapterBids[bidderName1] = &seatBid
@@ -2082,7 +2082,7 @@ func TestCategoryDedupe(t *testing.T) {
 			&bid1_5,
 		}
 
-		seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+		seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 		bidderName1 := openrtb_ext.BidderName("appnexus")
 
 		adapterBids[bidderName1] = &seatBid
@@ -2162,7 +2162,7 @@ func TestNoCategoryDedupe(t *testing.T) {
 			&bid1_5,
 		}
 
-		seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+		seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 		bidderName1 := openrtb_ext.BidderName("appnexus")
 
 		adapterBids[bidderName1] = &seatBid
@@ -2223,10 +2223,10 @@ func TestCategoryMappingBidderName(t *testing.T) {
 		&bid1_2,
 	}
 
-	seatBid1 := pbsOrtbSeatBid{innerBids1, "USD", nil, nil}
+	seatBid1 := pbsOrtbSeatBid{bids: innerBids1, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("bidder1")
 
-	seatBid2 := pbsOrtbSeatBid{innerBids2, "USD", nil, nil}
+	seatBid2 := pbsOrtbSeatBid{bids: innerBids2, currency: "USD"}
 	bidderName2 := openrtb_ext.BidderName("bidder2")
 
 	adapterBids[bidderName1] = &seatBid1
@@ -2277,10 +2277,10 @@ func TestCategoryMappingBidderNameNoCategories(t *testing.T) {
 		&bid1_2,
 	}
 
-	seatBid1 := pbsOrtbSeatBid{innerBids1, "USD", nil, nil}
+	seatBid1 := pbsOrtbSeatBid{bids: innerBids1, currency: "USD"}
 	bidderName1 := openrtb_ext.BidderName("bidder1")
 
-	seatBid2 := pbsOrtbSeatBid{innerBids2, "USD", nil, nil}
+	seatBid2 := pbsOrtbSeatBid{bids: innerBids2, currency: "USD"}
 	bidderName2 := openrtb_ext.BidderName("bidder2")
 
 	adapterBids[bidderName1] = &seatBid1
@@ -2384,7 +2384,7 @@ func TestBidRejectionErrors(t *testing.T) {
 			innerBids = append(innerBids, &currentBid)
 		}
 
-		seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+		seatBid := pbsOrtbSeatBid{bids: innerBids, currency: "USD"}
 
 		adapterBids[bidderName] = &seatBid
 
@@ -2442,10 +2442,10 @@ func TestCategoryMappingTwoBiddersOneBidEachNoCategorySamePrice(t *testing.T) {
 	for i := 1; i < 10; i++ {
 		adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
 
-		seatBidApn1 := pbsOrtbSeatBid{innerBidsApn1, "USD", nil, nil}
+		seatBidApn1 := pbsOrtbSeatBid{bids: innerBidsApn1, currency: "USD"}
 		bidderNameApn1 := openrtb_ext.BidderName("appnexus1")
 
-		seatBidApn2 := pbsOrtbSeatBid{innerBidsApn2, "USD", nil, nil}
+		seatBidApn2 := pbsOrtbSeatBid{bids: innerBidsApn2, currency: "USD"}
 		bidderNameApn2 := openrtb_ext.BidderName("appnexus2")
 
 		adapterBids[bidderNameApn1] = &seatBidApn1

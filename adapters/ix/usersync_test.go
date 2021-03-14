@@ -20,6 +20,5 @@ func TestIxSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3Dix%26gdpr%3D%26gdpr_consent%3D%26uid%3D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 10, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

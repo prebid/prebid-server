@@ -8,5 +8,5 @@ import (
 )
 
 func NewGammaSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("gamma", 0, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("gamma", temp, adapters.SyncTypeIframe)
 }

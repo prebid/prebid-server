@@ -8,5 +8,5 @@ import (
 )
 
 func NewConnectAdSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("connectad", 138, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("connectad", temp, adapters.SyncTypeIframe)
 }
