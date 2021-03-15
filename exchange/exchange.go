@@ -168,9 +168,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	defer cancel()
 
 	// Get currency rates conversions for the auction
-	conversions := e.currencyConverter.Rates()
-	// If the BidRequest extension defines its own rates, use them
-	conversions.UpdateRates(requestExt.Prebid.BidReqConversions)
+	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.BidReqConversions)
 
 	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow)
 
@@ -866,6 +864,59 @@ func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auction *auction) (cacheInfo
 	}
 
 	return
+}
+
+// getAuctionCurrencyRates returns the constant currency conversion rates that will be used to process this
+// auction. Parameter customRates contains, if any, the bidRequest custom currency conversion rates
+// defined in bidRequest.Ext.  If usePbsRates flag is set to false, all previous Conversions values are discarded
+// and this function merely substitutes Conversions with customRates. But if usePbsRates was ommitted or set to
+// true, customRates' values update or add to the Conversions map
+func (e *exchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
+	pbsConversions := e.currencyConverter.Rates()
+
+	if customRates == nil || len(customRates.ConversionRates) == 0 {
+		return pbsConversions
+	}
+
+	var usePbsRates bool = true
+	if customRates.UsePBSRates != nil {
+		usePbsRates = *customRates.UsePBSRates
+	}
+
+	serverRates := pbsConversions.GetRates()
+	if !usePbsRates || serverRates == nil {
+		// Either we shouldn't use PBS rates or PBS couldn't fetch rates to begin with
+		// create a fresh Conversions map
+		return currency.NewRates(time.Now(), customRates.ConversionRates)
+	}
+
+	auctionRates := make(map[string]map[string]float64, len(*serverRates))
+
+	// Copy custom rates first because they get priority
+	for fromCurrency, rates := range customRates.ConversionRates {
+		auctionRates[fromCurrency] = make(map[string]float64, len(rates))
+
+		for toCurrency, rate := range rates {
+			auctionRates[fromCurrency][toCurrency] = rate
+		}
+	}
+
+	// Now copy pbs rates
+	for fromCurrency, rates := range *serverRates {
+
+		if _, defined := auctionRates[fromCurrency]; !defined {
+			auctionRates[fromCurrency] = make(map[string]float64, len(rates))
+		}
+
+		for toCurrency, rate := range rates {
+			// If it was found in the custom conversions, don't modify because custom rates take precedence
+			if _, customRateFound := auctionRates[fromCurrency][toCurrency]; !customRateFound {
+				auctionRates[fromCurrency][toCurrency] = rate
+			}
+		}
+	}
+
+	return currency.NewRates(time.Now(), auctionRates)
 }
 
 func findCacheID(bid *pbsOrtbBid, auction *auction) (string, bool) {

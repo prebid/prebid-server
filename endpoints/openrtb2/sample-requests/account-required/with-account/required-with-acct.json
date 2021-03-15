@@ -75,7 +75,7 @@
             {
               "id": "appnexus-bid",
               "impid": "",
-              "price": 0
+              "price": 1
             }
           ],
           "seat": "appnexus-bids"

@@ -1,0 +1,54 @@
+{
+  "description": "BidRequest required to use custom currency rates but comes all invalid currency codes",
+  "config": {
+    "currencyRates":{
+      "USD": {
+        "MXN": 5.09
+      }
+    },
+    "mockBidder": {
+      "currency": "USD",
+	  "price": 1.00
+    }
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "cur": ["MXN"],
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "unknown": "appnexus"
+        },
+        "currency": {
+          "rates": {
+            "USD": {
+              "FOO": 10.0,
+              "BAR": 10.95
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: Required custom currency rates are all invalid. FOO,BAR"
+}
