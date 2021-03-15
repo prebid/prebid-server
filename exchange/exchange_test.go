@@ -85,8 +85,8 @@ func TestNewExchange(t *testing.T) {
 // 	4) Build a BidResponse struct using exchange.buildBidResponse(ctx.Background(), liveA... )
 // 	5) Assert we have no '&' characters in the response that exchange.buildBidResponse returns
 func TestCharacterEscape(t *testing.T) {
-	/* 1) Adapter with a '& char in its endpoint property 		*/
-	/*    https://github.com/prebid/prebid-server/issues/465	*/
+	// 1) Adapter with a '& char in its endpoint property
+	//    https://github.com/prebid/prebid-server/issues/465
 	cfg := &config.Configuration{
 		Adapters: make(map[string]config.Adapter, 1),
 	}
@@ -94,7 +94,7 @@ func TestCharacterEscape(t *testing.T) {
 		Endpoint: "http://ib.adnxs.com/openrtb2?query1&query2", //Note the '&' character in there
 	}
 
-	/* 	2) Init new exchange with said configuration			*/
+	// 	2) Init new exchange with said configuration
 	//Other parameters also needed to create exchange
 	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
@@ -113,7 +113,7 @@ func TestCharacterEscape(t *testing.T) {
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
-	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
+	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	//liveAdapters []openrtb_ext.BidderName,
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -146,10 +146,10 @@ func TestCharacterEscape(t *testing.T) {
 
 	var errList []error
 
-	/* 	4) Build bid response 									*/
+	// 	4) Build bid response
 	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, errList)
 
-	/* 	5) Assert we have no errors and one '&' character as we are supposed to 	*/
+	// 	5) Assert we have no errors and one '&' character as we are supposed to
 	if err != nil {
 		t.Errorf("exchange.buildBidResponse returned unexpected error: %v", err)
 	}
@@ -461,6 +461,446 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 
 }
 
+func TestOverrideWithCustomCurrency(t *testing.T) {
+
+	mockCurrencyClient := &mockCurrencyRatesClient{
+		responseBody: `{"dataAsOf":"2018-09-12","conversions":{"USD":{"MXN":10.00}}}`,
+	}
+	mockCurrencyConverter := currency.NewRateConverter(
+		mockCurrencyClient,
+		"currency.fake.com",
+		24*time.Hour,
+	)
+
+	type testIn struct {
+		customCurrencyRates json.RawMessage
+		bidRequestCurrency  string
+	}
+	type testResults struct {
+		numBids         int
+		bidRespPrice    float64
+		bidRespCurrency string
+	}
+	type aTest struct {
+		desc     string
+		in       testIn
+		expected testResults
+	}
+
+	testGroups := []struct {
+		groupDesc string
+		testCases []aTest
+	}{
+		{
+			groupDesc: "missing request.ext.prebid.currency, use currency rate service rates",
+			testCases: []aTest{
+				{
+					desc: "Blank currency field in ext. bidRequest comes with a valid currency but conversion rate was not found in currency rate service. Return no bids",
+					in: testIn{
+						customCurrencyRates: json.RawMessage(`{ "prebid": { "currency": {} } } `),
+						bidRequestCurrency:  "GBP",
+					},
+					expected: testResults{},
+				},
+				{
+					desc: "Blank currency field in ext. bidRequest comes with a currency listed in our currency rate server, use pbs rate",
+					in: testIn{
+						customCurrencyRates: json.RawMessage(`{ "prebid": { "currency": {} } } `),
+						bidRequestCurrency:  "MXN",
+					},
+					expected: testResults{
+						numBids:         1,
+						bidRespPrice:    10.00,
+						bidRespCurrency: "MXN",
+					},
+				},
+			},
+		},
+		{
+			groupDesc: "valid request.ext.prebid.currency, expect custom rates to override those of the currency rate server",
+			testCases: []aTest{
+				{
+					desc: "undefined usepbsrates defaults to true, response price corresponds to custom rate",
+					in: testIn{
+						customCurrencyRates: json.RawMessage(`{
+					  "prebid": {
+					    "currency": {
+					      "rates": {
+					        "USD": {
+					          "MXN": 20.00,
+					          "EUR": 10.95
+					        }
+					      }
+					    }
+					  }
+					}`),
+						bidRequestCurrency: "MXN",
+					},
+					expected: testResults{
+						numBids:         1,
+						bidRespPrice:    20.00,
+						bidRespCurrency: "MXN",
+					},
+				},
+				{
+					desc: "undefined usepbsrates defaults to true, bidRequest comes with unknown currency not found in either pbs rates nor custom rates",
+					in: testIn{
+						customCurrencyRates: json.RawMessage(`{
+						  "prebid": {
+						    "currency": {
+						      "rates": {
+						        "USD": {
+						          "MXN": 20.00,
+						          "EUR": 10.95
+						        }
+						      }
+						    }
+						  }
+						}`),
+						bidRequestCurrency: "GBP",
+					},
+					expected: testResults{},
+				},
+				{
+					desc: "usepbsrates set to true, response price corresponds to custom rate",
+					in: testIn{
+						customCurrencyRates: json.RawMessage(`{
+					          "prebid": {
+					            "currency": {
+					              "rates": {
+					                "USD": {
+					                  "MXN": 20.00,
+					                  "EUR": 10.95
+					                }
+					              },
+					              "usepbsrates": true
+					            }
+					          }
+					        }`),
+						bidRequestCurrency: "MXN",
+					},
+					expected: testResults{
+						numBids:         1,
+						bidRespPrice:    20.00,
+						bidRespCurrency: "MXN",
+					},
+				},
+				{
+					desc: "usepbsrates set to true, response price corresponds to pbrebid server-wide conversion rates",
+					in: testIn{
+						customCurrencyRates: json.RawMessage(`{
+					          "prebid": {
+					            "currency": {
+					              "rates": {
+					                "USD": {
+					                  "EUR": 10.95
+					                }
+					              },
+					              "usepbsrates": true
+					            }
+					          }
+					        }`),
+						bidRequestCurrency: "MXN",
+					},
+					expected: testResults{
+						numBids:         1,
+						bidRespPrice:    10.00,
+						bidRespCurrency: "MXN",
+					},
+				},
+				{
+					desc: "usepbsrates set to false, response price corresponds to custom rate",
+					in: testIn{
+						customCurrencyRates: json.RawMessage(`{
+							  "prebid": {
+								"currency": {
+								  "rates": {
+									"USD": {
+									  "MXN": 20.00,
+									  "EUR": 10.95
+									}
+								  },
+								  "usepbsrates": true
+								}
+							  }
+							}`),
+						bidRequestCurrency: "MXN",
+					},
+					expected: testResults{
+						numBids:         1,
+						bidRespPrice:    20.00,
+						bidRespCurrency: "MXN",
+					},
+				},
+				{
+					desc: "usepbsrates set to false, bidRequest comes with a currency not found in custom rates, return no bids",
+					in: testIn{
+						customCurrencyRates: json.RawMessage(`{
+							  "prebid": {
+								"currency": {
+								  "rates": {
+									"USD": {
+									  "EUR": 10.95
+									}
+								  },
+								  "usepbsrates": false
+								}
+							  }
+							}`),
+						bidRequestCurrency: "MXN",
+					},
+					expected: testResults{},
+				},
+			},
+		},
+	}
+
+	// Init mock currency conversion service
+	mockCurrencyConverter.Run()
+
+	// Init an exchange to run an auction from
+	noBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
+	mockAppnexusBidService := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer mockAppnexusBidService.Close()
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	oneDollarBidBidder := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     mockAppnexusBidService.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+	}
+
+	e := new(exchange)
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.DummyMetricsEngine{}
+	e.gDPR = gdpr.AlwaysAllow{}
+	e.currencyConverter = mockCurrencyConverter
+	e.categoriesFetcher = categoriesFetcher
+
+	// Define mock incoming bid requeset
+	mockBidRequest := &openrtb.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb.Imp{{
+			ID:     "some-impression-id",
+			Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+		}},
+		Site: &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+	}
+
+	// Run tests
+	for i, testGroup := range testGroups {
+		for j, test := range testGroup.testCases {
+
+			oneDollarBidBidder.bidResponse = &adapters.BidderResponse{
+				Bids: []*adapters.TypedBid{
+					{
+						Bid: &openrtb.Bid{Price: 1.00},
+					},
+				},
+				Currency: "USD",
+			}
+
+			e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
+				openrtb_ext.BidderAppnexus: adaptBidder(oneDollarBidBidder, mockAppnexusBidService.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
+			}
+
+			// Set custom rates in extension
+			mockBidRequest.Ext = test.in.customCurrencyRates
+
+			// Set bidRequest currency list
+			mockBidRequest.Cur = []string{test.in.bidRequestCurrency}
+
+			auctionRequest := AuctionRequest{
+				BidRequest: mockBidRequest,
+				Account:    config.Account{},
+				UserSyncs:  &emptyUsersync{},
+			}
+
+			// Run test
+			outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+
+			// Assertions
+			assert.NoErrorf(t, err, "%s: %s. HoldAuction error: %v \n", testGroup.groupDesc, test.desc, err)
+
+			if test.expected.numBids > 0 {
+				// Assert out currency
+				assert.Equal(t, test.expected.bidRespCurrency, outBidResponse.Cur, "Bid response currency is wrong: %s - %s \n", testGroup.groupDesc, test.desc)
+
+				// Assert returned bid
+				if !assert.NotNil(t, outBidResponse, "%s: %s. outBidResponse is nil \n", testGroup.groupDesc, test.desc) {
+					return
+				}
+				if !assert.NotEmpty(t, outBidResponse.SeatBid, "%s: %s. outBidResponse.SeatBid is empty \n", testGroup.groupDesc, test.desc) {
+					return
+				}
+				if !assert.NotEmpty(t, outBidResponse.SeatBid[0].Bid, "%s: %s. outBidResponse.SeatBid[0].Bid is empty \n", testGroup.groupDesc, test.desc) {
+					return
+				}
+
+				// Assert returned bid price matches the currency conversion
+				assert.Equal(t, test.expected.bidRespPrice, outBidResponse.SeatBid[0].Bid[0].Price, "Bid response seatBid price is wrong: %s - %s. Test i=%d, j=%d \n", testGroup.groupDesc, test.desc, i, j)
+			} else {
+				assert.Len(t, outBidResponse.SeatBid, 0, "%s: %s. outBidResponse.SeatBid should be empty \n", testGroup.groupDesc, test.desc)
+			}
+		}
+	}
+}
+
+func TestGetAuctionCurrencyRates(t *testing.T) {
+
+	pbsRates := map[string]map[string]float64{
+		"MXN": {
+			"USD": 20.13,
+			"EUR": 27.82,
+			"JPY": 5.09, // "MXN" to "JPY" rate not found in customRates
+		},
+		// Euro exchange rates not found in customRates
+		"EUR": {
+			"JPY": 0.05,
+			"MXN": 0.05,
+			"USD": 0.92,
+		},
+	}
+
+	customRates := map[string]map[string]float64{
+		// "MXN" can also be found in pbsRates but maps to different rate values.
+		// This map also includes some currencies not found in pbsRates
+		"MXN": {
+			"USD": 25.00, // different rate than in pbsRates
+			"EUR": 27.82, // same as in pbsRates
+			"GBP": 31.12, // not found in pbsRates at all
+		},
+		// Currency can not be found in pbsRates add this entry as is
+		"USD": {
+			"GBP": 1.2,
+			"MXN": 0.05,
+			"CAN": 0.95,
+		},
+	}
+
+	boolTrue, boolFalse := true, false
+
+	testCases := []struct {
+		desc              string
+		inPbsRates        map[string]map[string]float64
+		inBidExtCurrency  *openrtb_ext.ExtRequestCurrency
+		outResultingRates map[string]map[string]float64
+	}{
+		{
+			desc:       "Valid Conversions objects, UsePBSRates set to false. Resulting rates will be identical to customRates",
+			inPbsRates: pbsRates,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: customRates,
+				UsePBSRates:     &boolFalse,
+			},
+			outResultingRates: customRates,
+		},
+		{
+			desc:       "Valid Conversions objects, UsePBSRates set to true. Resulting rates will keep field values found in pbsRates but not found in customRates and the rest will be added or overwritten with customRates' values",
+			inPbsRates: pbsRates,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: customRates,
+				UsePBSRates:     &boolTrue,
+			},
+			outResultingRates: map[string]map[string]float64{
+				// Currency was found in both pbsRates and customRates and got updated
+				"MXN": {
+					"USD": 25.00, //updated with customRates' value
+					"EUR": 27.82, //same in pbsRates than in customRates, no update
+					"GBP": 31.12, //added because it was found in customRates and not in pbsRates
+					"JPY": 5.09,  //kept from pbsRates as it wasn't found in customRates
+				},
+				// Currency added as is because it wasn't found in pbsRates
+				"USD": {
+					"GBP": 1.2,
+					"MXN": 0.05,
+					"CAN": 0.95,
+				},
+				// customRates didn't have exchange rates for this currency, entry
+				// kept from pbsRates
+				"EUR": {
+					"JPY": 0.05,
+					"MXN": 0.05,
+					"USD": 0.92,
+				},
+			},
+		},
+		{
+			desc:       "pbsRates are nil, UsePBSRates set to false. Resulting rates will be identical to customRates",
+			inPbsRates: nil,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: customRates,
+				UsePBSRates:     &boolFalse,
+			},
+			outResultingRates: customRates,
+		},
+		{
+			desc:       "pbsRates are nil, UsePBSRates set to true. Resulting rates will be identical to customRates",
+			inPbsRates: nil,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: customRates,
+				UsePBSRates:     &boolTrue,
+			},
+			outResultingRates: customRates,
+		},
+		{
+			desc:       "customRates empty, UsePBSRates set to false. Resulting rates will be identical to pbsRates",
+			inPbsRates: pbsRates,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				// ConversionRates inCustomRates not initialized makes for a zero-length map
+				UsePBSRates: &boolFalse,
+			},
+			outResultingRates: pbsRates,
+		},
+		{
+			desc:       "customRates empty, UsePBSRates set to true. Resulting rates will be identical to pbsRates",
+			inPbsRates: pbsRates,
+			inBidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+				// ConversionRates inCustomRates not initialized makes for a zero-length map
+				UsePBSRates: &boolTrue,
+			},
+			outResultingRates: pbsRates,
+		},
+	}
+
+	for _, tc := range testCases {
+
+		// Test setup:
+		jsonPbsRates, err := json.Marshal(tc.inPbsRates)
+		if err != nil {
+			t.Fatalf("Failed to marshal PBS rates: %v", err)
+		}
+
+		// Init mock currency conversion service
+		mockCurrencyClient := &mockCurrencyRatesClient{
+			responseBody: `{"dataAsOf":"2018-09-12","conversions":` + string(jsonPbsRates) + `}`,
+		}
+		mockCurrencyConverter := currency.NewRateConverter(
+			mockCurrencyClient,
+			"currency.fake.com",
+			24*time.Hour,
+		)
+		mockCurrencyConverter.Run()
+
+		e := new(exchange)
+		e.currencyConverter = mockCurrencyConverter
+
+		// Run test
+		auctionRates := e.getAuctionCurrencyRates(tc.inBidExtCurrency)
+
+		// Assertions
+		assert.Equal(t, tc.outResultingRates, *auctionRates.GetRates(), tc.desc)
+	}
+}
+
 func TestReturnCreativeEndToEnd(t *testing.T) {
 	sampleAd := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST ...></VAST>"
 
@@ -662,7 +1102,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	testExternalCacheHost := "www.externalprebidcache.net"
 	testExternalCachePath := "endpoints/cache"
 
-	/* 1) An adapter 											*/
+	// 1) An adapter
 	bidderName := openrtb_ext.BidderName("appnexus")
 
 	cfg := &config.Configuration{
@@ -683,7 +1123,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	testEngine := metricsConf.NewMetricsEngine(cfg, adapterList)
-	/* 	2) Init new exchange with said configuration			*/
+	// 	2) Init new exchange with said configuration
 	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
@@ -700,7 +1140,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	pbc := pbc.NewClient(&http.Client{}, &cfg.CacheURL, &cfg.ExtCacheURL, testEngine)
 	e := NewExchange(adapters, pbc, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
-	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
+	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	liveAdapters := []openrtb_ext.BidderName{bidderName}
 
 	//adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
@@ -802,10 +1242,10 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 
 	var errList []error
 
-	/* 	4) Build bid response 									*/
+	// 	4) Build bid response
 	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, errList)
 
-	/* 	5) Assert we have no errors and the bid response we expected*/
+	// 	5) Assert we have no errors and the bid response we expected
 	assert.NoError(t, err, "[TestGetBidCacheInfo] buildBidResponse() threw an error")
 
 	expectedBidResponse := &openrtb.BidResponse{
@@ -3010,4 +3450,17 @@ type nilCategoryFetcher struct{}
 
 func (nilCategoryFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
+}
+
+// mockCurrencyRatesClient is a simple http client mock returning a constant response body
+type mockCurrencyRatesClient struct {
+	responseBody string
+}
+
+func (m *mockCurrencyRatesClient) Do(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		Status:     "200 OK",
+		StatusCode: http.StatusOK,
+		Body:       ioutil.NopCloser(strings.NewReader(m.responseBody)),
+	}, nil
 }

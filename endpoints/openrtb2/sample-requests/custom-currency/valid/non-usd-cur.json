@@ -1,0 +1,62 @@
+{
+  "description": "BidRequest comes with a non-empty currency list that contains a valid 3-digt currency code found in our mock currency converter",
+  "config": {
+    "currencyRates":{
+      "USD": {
+        "MXN": 5.09
+      }
+    },
+    "mockBidder": {
+      "currency": "USD",
+	  "price": 1.00
+    }
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "cur": ["MXN"],
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "unknown": "appnexus"
+        }
+      }
+    }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0,
+      "nbr":0,
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "",
+              "price": 5.09
+            }
+          ],
+          "seat": "appnexus-bids"
+        }
+      ]
+  },
+  "expectedReturnCode": 200
+}

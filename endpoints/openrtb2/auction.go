@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -37,6 +38,7 @@ import (
 	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/iputil"
 	"golang.org/x/net/publicsuffix"
+	"golang.org/x/text/currency"
 )
 
 const storedRequestTimeoutMillis = 50
@@ -338,6 +340,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		if err := deps.validateEidPermissions(bidExt, aliases); err != nil {
 			return []error{err}
 		}
+
+		if err := validateCustomRates(bidExt.Prebid.BidReqConversions); err != nil {
+			return []error{err}
+		}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -424,6 +430,53 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 func validateSChains(req *openrtb_ext.ExtRequest) error {
 	_, err := exchange.BidderToPrebidSChains(req)
 	return err
+}
+
+// validateCustomRates discards invalid 3-digit currency codes found in the bidRequest.ext.prebid.currency
+// field. If all of them where discarded and bidRequest.ext.prebid.currency was set to false, it means
+// we have no currencies to work with and this function returns a fatal BadInput error
+func validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) error {
+
+	if bidReqCurrencyRates == nil {
+		return nil
+	}
+
+	var badCurrencyCodes []string
+
+	for fromCurrency, rates := range bidReqCurrencyRates.ConversionRates {
+
+		// Check if fromCurrency is a valid 3-letter currency code
+		_, err := currency.ParseISO(fromCurrency)
+		if err != nil {
+			badCurrencyCodes = append(badCurrencyCodes, fromCurrency)
+			delete(bidReqCurrencyRates.ConversionRates, fromCurrency)
+		}
+
+		// Check if currencies mapped to fromCurrency are valid 3-letter currency codes
+		for toCurrency := range rates {
+			_, err := currency.ParseISO(toCurrency)
+			if err != nil {
+				badCurrencyCodes = append(badCurrencyCodes, toCurrency)
+				delete(rates, toCurrency)
+			}
+		}
+
+		// If all of fromCurrency's mapped currencies were invalid, remove fromCurrency map entry
+		if len(rates) == 0 {
+			delete(bidReqCurrencyRates.ConversionRates, fromCurrency)
+		}
+	}
+
+	// If we are retricted to only use custom currency rates but the currency rate map is empty, return error
+	customRatesOnly := bidReqCurrencyRates.UsePBSRates != nil && !(*bidReqCurrencyRates.UsePBSRates)
+	if customRatesOnly && len(bidReqCurrencyRates.ConversionRates) == 0 {
+		if len(badCurrencyCodes) > 0 {
+			return &errortypes.BadInput{Message: fmt.Sprintf("Required custom currency rates are all invalid. %s", strings.Join(badCurrencyCodes, ","))}
+		} else {
+			return &errortypes.BadInput{Message: "Required custom currency rates field is empty"}
+		}
+	}
+	return nil
 }
 
 func (deps *endpointDeps) validateEidPermissions(req *openrtb_ext.ExtRequest, aliases map[string]string) error {

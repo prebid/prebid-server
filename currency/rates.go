@@ -63,10 +63,10 @@ func (r *Rates) GetRate(from string, to string) (float64, error) {
 	if r.Conversions != nil {
 		if conversion, present := r.Conversions[fromUnit.String()][toUnit.String()]; present {
 			// In case we have an entry FROM -> TO
-			return conversion, err
+			return conversion, nil
 		} else if conversion, present := r.Conversions[toUnit.String()][fromUnit.String()]; present {
 			// In case we have an entry TO -> FROM
-			return 1 / conversion, err
+			return 1 / conversion, nil
 		}
 		return 0, fmt.Errorf("Currency conversion rate not found: '%s' => '%s'", fromUnit.String(), toUnit.String())
 	}
