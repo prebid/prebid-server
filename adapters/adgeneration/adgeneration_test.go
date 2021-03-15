@@ -7,15 +7,32 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "adgenerationtest", NewAdgenerationAdapter("https://d.socdm.com/adsv/v1"))
+	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
+		Endpoint: "https://d.socdm.com/adsv/v1"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "adgenerationtest", bidder)
 }
 
 func TestgetRequestUri(t *testing.T) {
-	bidder := NewAdgenerationAdapter("https://d.socdm.com/adsv/v1")
+	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
+		Endpoint: "https://d.socdm.com/adsv/v1"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)
+
 	// Test items
 	failedRequest := &openrtb.BidRequest{
 		ID: "test-failed-bid-request",
@@ -24,6 +41,7 @@ func TestgetRequestUri(t *testing.T) {
 			{ID: "extImpBidder-failed-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"_bidder": { "id": "58278" }}`)},
 			{ID: "extImpAdgeneration-failed-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "_id": "58278" }}`)},
 		},
+		Source: &openrtb.Source{TID: "SourceTID"},
 		Device: &openrtb.Device{UA: "testUA", IP: "testIP"},
 		Site:   &openrtb.Site{Page: "https://supership.com"},
 		User:   &openrtb.User{BuyerUID: "buyerID"},
@@ -33,6 +51,7 @@ func TestgetRequestUri(t *testing.T) {
 		Imp: []openrtb.Imp{
 			{ID: "bidRequest-success-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "id": "58278" }}`)},
 		},
+		Source: &openrtb.Source{TID: "SourceTID"},
 		Device: &openrtb.Device{UA: "testUA", IP: "testIP"},
 		Site:   &openrtb.Site{Page: "https://supership.com"},
 		User:   &openrtb.User{BuyerUID: "buyerID"},
@@ -40,7 +59,7 @@ func TestgetRequestUri(t *testing.T) {
 
 	numRequests := len(failedRequest.Imp)
 	for index := 0; index < numRequests; index++ {
-		httpRequests, err := bidder.getRequestUri(failedRequest, index)
+		httpRequests, err := bidderAdgeneration.getRequestUri(failedRequest, index)
 		if err == nil {
 			t.Errorf("getRequestUri: %v did not throw an error", failedRequest.Imp[index])
 		}
@@ -50,41 +69,39 @@ func TestgetRequestUri(t *testing.T) {
 	}
 	numRequests = len(successRequest.Imp)
 	for index := 0; index < numRequests; index++ {
-		// RequestUri Test.
-		httpRequests, err := bidder.getRequestUri(successRequest, index)
-		if err != nil {
-			t.Errorf("getRequestUri: %v did throw an error: %v", successRequest.Imp[index], err)
-		}
-		if httpRequests == "adapterver="+bidder.version+"&currency=JPY&hb=true&id=58278&posall=SSPLOC&sdkname=prebidserver&sdktype=0&size=300%C3%97250&t=json3&tp=http%3A%2F%2Fexample.com%2Ftest.html" {
-			t.Errorf("getRequestUri: %v did return Request: %s", successRequest.Imp[index], httpRequests)
-		}
 		// getRawQuery Test.
 		adgExt, err := unmarshalExtImpAdgeneration(&successRequest.Imp[index])
 		if err != nil {
 			t.Errorf("unmarshalExtImpAdgeneration: %v did throw an error: %v", successRequest.Imp[index], err)
 		}
-		rawQuery := bidder.getRawQuery(adgExt.Id, successRequest, &successRequest.Imp[index])
+		rawQuery := bidderAdgeneration.getRawQuery(adgExt.Id, successRequest, &successRequest.Imp[index])
 		expectQueries := map[string]string{
-			"posall":     "SSPLOC",
-			"id":         adgExt.Id,
-			"sdktype":    "0",
-			"hb":         "true",
-			"currency":   bidder.getCurrency(successRequest),
-			"sdkname":    "prebidserver",
-			"adapterver": bidder.version,
-			"size":       getSizes(&successRequest.Imp[index]),
-			"tp":         successRequest.Site.Name,
+			"posall":        "SSPLOC",
+			"id":            adgExt.Id,
+			"sdktype":       "0",
+			"hb":            "true",
+			"currency":      bidderAdgeneration.getCurrency(successRequest),
+			"sdkname":       "prebidserver",
+			"adapterver":    bidderAdgeneration.version,
+			"sizes":         getSizes(&successRequest.Imp[index]),
+			"tp":            successRequest.Site.Page,
+			"transactionid": successRequest.Source.TID,
 		}
 		for key, expectedValue := range expectQueries {
 			actualValue := rawQuery.Get(key)
-			if actualValue == "" {
-				if !(key == "size" || key == "tp") {
-					t.Errorf("getRawQuery: key %s is required value.", key)
-				}
-			}
 			if actualValue != expectedValue {
 				t.Errorf("getRawQuery: %s value does not match expected %s, actual %s", key, expectedValue, actualValue)
 			}
+		}
+
+		// RequestUri Test.
+		actualUri, err := bidderAdgeneration.getRequestUri(successRequest, index)
+		if err != nil {
+			t.Errorf("getRequestUri: %v did throw an error: %v", successRequest.Imp[index], err)
+		}
+		expectedUri := "https://d.socdm.com/adsv/v1?adapterver=" + bidderAdgeneration.version + "&currency=JPY&hb=true&id=58278&posall=SSPLOC&sdkname=prebidserver&sdktype=0&sizes=300x250&t=json3&tp=https%3A%2F%2Fsupership.com&transactionid=SourceTID"
+		if actualUri != expectedUri {
+			t.Errorf("getRequestUri: does not match expected %s, actual %s", expectedUri, actualUri)
 		}
 	}
 }
@@ -115,7 +132,15 @@ func TestGetSizes(t *testing.T) {
 }
 
 func TestGetCurrency(t *testing.T) {
-	bidder := NewAdgenerationAdapter("https://d.socdm.com/adsv/v1")
+	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
+		Endpoint: "https://d.socdm.com/adsv/v1"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)
+
 	// Test items
 	var request *openrtb.BidRequest
 	var currency string
@@ -123,12 +148,12 @@ func TestGetCurrency(t *testing.T) {
 	usdCur := []string{"USD", "EUR"}
 
 	request = &openrtb.BidRequest{Cur: innerDefaultCur}
-	currency = bidder.getCurrency(request)
+	currency = bidderAdgeneration.getCurrency(request)
 	if currency != "JPY" {
 		t.Errorf("%v does not match currency.", innerDefaultCur)
 	}
 	request = &openrtb.BidRequest{Cur: usdCur}
-	currency = bidder.getCurrency(request)
+	currency = bidderAdgeneration.getCurrency(request)
 	if currency != "USD" {
 		t.Errorf("%v does not match currency.", usdCur)
 	}
@@ -178,7 +203,15 @@ func TestCreateAd(t *testing.T) {
 }
 
 func TestMakeBids(t *testing.T) {
-	bidder := NewAdgenerationAdapter("https://d.socdm.com/adsv/v1")
+	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
+		Endpoint: "https://d.socdm.com/adsv/v1"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)
+
 	internalRequest := &openrtb.BidRequest{
 		ID: "test-success-bid-request",
 		Imp: []openrtb.Imp{
@@ -198,7 +231,7 @@ func TestMakeBids(t *testing.T) {
 	if len(errs) > 0 {
 		t.Errorf("MakeBids return errors. errors: %v", errs)
 	}
-	checkBidResponse(t, defaultCurBidderResponse, bidder.defaultCurrency)
+	checkBidResponse(t, defaultCurBidderResponse, bidderAdgeneration.defaultCurrency)
 
 	// Specified Currency InternalRequest
 	usdCur := "USD"

@@ -26,6 +26,5 @@ func TestLunaMediaSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://api.lunamedia.io/xp/user-sync?acctid={aid}&&redirect=localhost/setuid?bidder=lunamedia&gdpr=1&gdpr_consent=A&uid=$UID", syncInfo.URL)
 	assert.Equal(t, "iframe", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
@@ -41,13 +41,17 @@ const (
 )
 
 type Cacheable struct {
-	Type       PayloadType
-	Data       json.RawMessage
-	TTLSeconds int64
-	Key        string
+	Type       PayloadType     `json:"type,omitempty"`
+	Data       json.RawMessage `json:"value,omitempty"`
+	TTLSeconds int64           `json:"ttlseconds,omitempty"`
+	Key        string          `json:"key,omitempty"`
+
+	BidID     string `json:"bidid,omitempty"`     // this is "/vtrack" specific
+	Bidder    string `json:"bidder,omitempty"`    // this is "/vtrack" specific
+	Timestamp int64  `json:"timestamp,omitempty"` // this is "/vtrack" specific
 }
 
-func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
+func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics metrics.MetricsEngine) Client {
 	return &clientImpl{
 		httpClient:          httpClient,
 		putUrl:              conf.GetBaseURL() + "/cache",
@@ -64,7 +68,7 @@ type clientImpl struct {
 	externalCacheScheme string
 	externalCacheHost   string
 	externalCachePath   string
-	metrics             pbsmetrics.MetricsEngine
+	metrics             metrics.MetricsEngine
 }
 
 func (c *clientImpl) GetExtCacheData() (string, string, string) {
@@ -181,6 +185,25 @@ func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffe
 		buffer.WriteString(string(value.Key))
 		buffer.WriteString(`"`)
 	}
+
+	//vtrack specific
+	if len(value.BidID) > 0 {
+		buffer.WriteString(`,"bidid":"`)
+		buffer.WriteString(string(value.BidID))
+		buffer.WriteString(`"`)
+	}
+
+	if len(value.Bidder) > 0 {
+		buffer.WriteString(`,"bidder":"`)
+		buffer.WriteString(string(value.Bidder))
+		buffer.WriteString(`"`)
+	}
+
+	if value.Timestamp > 0 {
+		buffer.WriteString(`,"timestamp":`)
+		buffer.WriteString(strconv.FormatInt(value.Timestamp, 10))
+	}
+
 	buffer.WriteByte('}')
 	return nil
 }

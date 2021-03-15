@@ -18,7 +18,7 @@ For more information, see:
 
 ## Installation
 
-First install [Go](https://golang.org/doc/install) version 1.13 or newer.
+First install [Go](https://golang.org/doc/install) version 1.14 or newer.
 
 Note that prebid-server is using [Go modules](https://blog.golang.org/using-go-modules).
 We officially support the most recent two major versions of the Go runtime. However, if you'd like to use a version <1.13 and are inside GOPATH `GO111MODULE` needs to be set to `GO111MODULE=on`.
@@ -55,3 +55,8 @@ Want to [add an adapter](https://docs.prebid.org/prebid-server/developers/add-ne
 Report bugs, request features, and suggest improvements [on Github](https://github.com/prebid/prebid-server/issues).
 
 Or better yet, [open a pull request](https://github.com/prebid/prebid-server/compare) with the changes you'd like to see.
+
+## IDE Setup for PBS-Go development
+
+The quickest way to start developing PBS-Go in a reproducible environment isolated from your host OS
+is by using this [VScode Remote Container Setup](devcontainer.md)

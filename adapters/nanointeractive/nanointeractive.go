@@ -3,23 +3,17 @@ package nanointeractive
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type NanoInteractiveAdapter struct {
 	endpoint string
-}
-
-func (a *NanoInteractiveAdapter) Name() string {
-	return "Nano"
-}
-
-func (a *NanoInteractiveAdapter) SkipNoCookies() bool {
-	return false
 }
 
 func (a *NanoInteractiveAdapter) MakeRequests(bidRequest *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -101,7 +95,9 @@ func (a *NanoInteractiveAdapter) MakeBids(
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	} else if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{adapters.BadInput("Invalid request.")}
+		return nil, []error{&errortypes.BadInput{
+			Message: "Invalid request.",
+		}}
 	} else if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unexpected HTTP status %d.", response.StatusCode),
@@ -159,14 +155,10 @@ func checkImp(imp *openrtb.Imp) (string, error) {
 	return "", nil
 }
 
-func NewNanoIneractiveBidder(endpoint string) *NanoInteractiveAdapter {
-	return &NanoInteractiveAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the NanoInteractive adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &NanoInteractiveAdapter{
+		endpoint: config.Endpoint,
 	}
-}
-
-func NewNanoInteractiveAdapter(uri string) *NanoInteractiveAdapter {
-	return &NanoInteractiveAdapter{
-		endpoint: uri,
-	}
+	return bidder, nil
 }

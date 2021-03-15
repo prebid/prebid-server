@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 )
 
 // Fetcher knows how to fetch Stored Request data by id.
@@ -65,6 +65,7 @@ func (e NotFoundError) Error() string {
 type Cache struct {
 	Requests CacheJSON
 	Imps     CacheJSON
+	Accounts CacheJSON
 }
 type CacheJSON interface {
 	// Get works much like Fetcher.FetchRequests, with a few exceptions:
@@ -145,14 +146,14 @@ func (c ComposedCache) Save(ctx context.Context, data map[string]json.RawMessage
 type fetcherWithCache struct {
 	fetcher       AllFetcher
 	cache         Cache
-	metricsEngine pbsmetrics.MetricsEngine
+	metricsEngine metrics.MetricsEngine
 }
 
 // WithCache returns a Fetcher which uses the given Caches before delegating to the original.
 // This can be called multiple times to compose Cache layers onto the backing Fetcher, though
 // it is usually more desirable to first compose caches with Compose, ensuring propagation of updates
 // and invalidations through all cache layers.
-func WithCache(fetcher AllFetcher, cache Cache, metricsEngine pbsmetrics.MetricsEngine) AllFetcher {
+func WithCache(fetcher AllFetcher, cache Cache, metricsEngine metrics.MetricsEngine) AllFetcher {
 	return &fetcherWithCache{
 		cache:         cache,
 		fetcher:       fetcher,
@@ -170,11 +171,11 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	leftoverReqs := findLeftovers(requestIDs, requestData)
 
 	// Record cache hits for stored requests and stored imps
-	f.metricsEngine.RecordStoredReqCacheResult(pbsmetrics.CacheHit, len(requestIDs)-len(leftoverReqs))
-	f.metricsEngine.RecordStoredImpCacheResult(pbsmetrics.CacheHit, len(impIDs)-len(leftoverImps))
+	f.metricsEngine.RecordStoredReqCacheResult(metrics.CacheHit, len(requestIDs)-len(leftoverReqs))
+	f.metricsEngine.RecordStoredImpCacheResult(metrics.CacheHit, len(impIDs)-len(leftoverImps))
 	// Record cache misses for stored requests and stored imps
-	f.metricsEngine.RecordStoredReqCacheResult(pbsmetrics.CacheMiss, len(leftoverReqs))
-	f.metricsEngine.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, len(leftoverImps))
+	f.metricsEngine.RecordStoredReqCacheResult(metrics.CacheMiss, len(leftoverReqs))
+	f.metricsEngine.RecordStoredImpCacheResult(metrics.CacheMiss, len(leftoverImps))
 
 	if len(leftoverReqs) > 0 || len(leftoverImps) > 0 {
 		fetcherReqData, fetcherImpData, fetcherErrs := f.fetcher.FetchRequests(ctx, leftoverReqs, leftoverImps)
@@ -190,8 +191,20 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	return
 }
 
-func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
-	return f.fetcher.FetchAccount(ctx, accountID)
+func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (account json.RawMessage, errs []error) {
+	accountData := f.cache.Accounts.Get(ctx, []string{accountID})
+	// TODO: add metrics
+	if account, ok := accountData[accountID]; ok {
+		f.metricsEngine.RecordAccountCacheResult(metrics.CacheHit, 1)
+		return account, errs
+	} else {
+		f.metricsEngine.RecordAccountCacheResult(metrics.CacheMiss, 1)
+	}
+	account, errs = f.fetcher.FetchAccount(ctx, accountID)
+	if len(errs) == 0 {
+		f.cache.Accounts.Save(ctx, map[string]json.RawMessage{accountID: account})
+	}
+	return account, errs
 }
 
 func (f *fetcherWithCache) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {

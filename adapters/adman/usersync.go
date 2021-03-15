@@ -9,5 +9,5 @@ import (
 
 // NewAdmanSyncer returns adman syncer
 func NewAdmanSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("adman", 149, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("adman", temp, adapters.SyncTypeRedirect)
 }

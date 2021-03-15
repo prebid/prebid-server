@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -147,8 +148,10 @@ func (a *ValueImpressionAdapter) MakeBids(bidRequest *openrtb.BidRequest, unused
 	return rv, errors
 }
 
-func NewValueImpressionBidder(endpoint string) *ValueImpressionAdapter {
-	return &ValueImpressionAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Valueimpression adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &ValueImpressionAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

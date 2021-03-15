@@ -1,4 +1,0 @@
-{
-  "message": "Invalid request: json: cannot unmarshal number into Go value of type openrtb.BidRequest\n",
-  "requestPayload": 5
-}

@@ -1,5 +1,6 @@
 maintainer:
   email: "dev@gamoshi.com"
+gvlVendorID: 644
 capabilities:
   app:
     mediaTypes:

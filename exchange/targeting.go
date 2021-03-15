@@ -23,6 +23,7 @@ type targetData struct {
 	includeCacheBids  bool
 	includeCacheVast  bool
 	includeFormat     bool
+	preferDeals       bool
 	// cacheHost and cachePath exist to supply cache host and path as targeting parameters
 	cacheHost string
 	cachePath string

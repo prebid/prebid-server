@@ -1,41 +1,50 @@
 {
-  "id": "request-with-valid-digitrust-obj",
-  "site": {
-    "page": "test.somepage.com"
-  },
-  "imp": [
-    {
-      "id": "my-imp-id",
-      "banner": {
-        "format": [
-          {
-            "w": 300,
-            "h": 600
+  "description": "Well formed amp request with digitrust extension that should run properly",
+  "mockBidRequest": {
+    "id": "request-with-valid-digitrust-obj",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
           }
-        ]
-      },
-      "pmp": {
-        "deals": [
-          {
-            "id": "some-deal-id"
-          }
-        ]
-      },
+        }
+      }
+    ],
+    "user": {
+      "yob": 1989,
       "ext": {
-        "appnexus": {
-          "placementId": 12883451
+        "digitrust": {
+          "id": "sample-digitrust-id",
+          "keyv": 1,
+          "pref": 0
         }
       }
     }
-  ],
-  "user": {
-    "yob": 1989,
-    "ext": {
-      "digitrust": {
-        "id": "sample-digitrust-id",
-        "keyv": 1,
-        "pref": 0
-      }
-    }
-  }
+  },
+  "expectedBidResponse": {
+      "id":"request-with-valid-digitrust-obj",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 200
 }
