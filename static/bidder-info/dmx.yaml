@@ -1,0 +1,12 @@
+maintainer:
+  email: "prebid@districtm.net"
+gvlVendorID: 144
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video

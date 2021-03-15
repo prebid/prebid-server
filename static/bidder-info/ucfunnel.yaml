@@ -1,0 +1,12 @@
+maintainer:
+  email: "support@ucfunnel.com"
+gvlVendorID: 607
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

@@ -1,15 +1,17 @@
 {
-  "message": "Invalid request: request.imp[0].metric is not yet supported by prebid-server. Support may be added in the future\n",
-  "requestPayload": {
-    "id":"req-id",
-    "imp":[
-      {
-        "id":"imp-id",
-        "metric": [{}]
+  "description": "Bid request's imp comes with elements in unsupported metric array",
+  "mockBidRequest": {
+      "id":"req-id",
+      "imp":[
+        {
+          "id":"imp-id",
+          "metric": [{}]
+        }
+      ],
+      "app": {
+        "id": "app_001"
       }
-    ],
-    "app": {
-      "id": "app_001"
-    }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].metric is not yet supported by prebid-server. Support may be added in the future\n"
 }

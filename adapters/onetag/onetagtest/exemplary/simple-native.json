@@ -1,0 +1,121 @@
+{
+    "mockBidRequest": {
+      "id": "some-request-id",
+      "device": {
+        "ua": "test-user-agent",
+        "ip": "123.123.123.123",
+        "language": "en",
+        "dnt": 0
+      },
+      "tmax": 1000,
+      "user": {
+        "buyeruid": "0000-000-000-0000"
+      },
+      "site": {
+        "page": "test.com",
+        "publisher": {
+          "id": "123456789"
+        }
+      },
+      "imp": [
+        {
+          "id": "some-impression-id",
+          "native": {
+            "ver":"1.1",
+            "request":"{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+          },
+          "ext": {
+            "bidder": {
+                "pubId": "386276e072",
+                "ext": {
+                  "key1": "value1"
+                }
+            }
+          }
+        }
+      ]
+    },
+    "httpCalls": [
+        {
+          "expectedRequest": {
+            "uri": "https://example.com/prebid-server/386276e072",
+            "headers": {},
+            "body": {
+              "id": "some-request-id",
+              "device": {
+                  "ua": "test-user-agent",
+                  "ip": "123.123.123.123",
+                  "language": "en",
+                  "dnt": 0
+              },
+              "imp": [
+                {
+                  "id": "some-impression-id",
+                  "native": {
+                      "ver":"1.1",
+                      "request":"{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+                  },
+                  "ext": {
+                    "key1": "value1"
+                  }
+                }
+              ],
+              "site": {
+                  "page": "test.com",
+                  "publisher": {
+                  "id": "123456789"
+                  }
+              },
+              "user": {
+                  "buyeruid": "0000-000-000-0000"
+              },
+              "tmax": 1000
+              }
+          },
+          "mockResponse": {
+            "status": 200,
+            "body": {
+              "id": "awesome-resp-id",
+              "seatbid": [
+                {
+                  "bid": [
+                    {
+                      "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                      "impid": "some-impression-id",
+                      "price": 3.5,
+                      "adm": "awesome-markup",
+                      "adomain": [
+                        "awesome.com"
+                      ],
+                      "crid": "20"
+                    }
+                  ],
+                  "seat": "onetag"
+                }
+              ],
+              "cur": "USD"
+            }
+          }
+        }
+      ],
+      "expectedBidResponses": [
+        {
+          "currency": "USD",
+          "bids":[
+            {
+              "type": "native",
+              "bid":  {
+                "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                "impid": "some-impression-id",
+                "price": 3.5,
+                "adm": "awesome-markup",
+                "crid": "20",
+                "adomain": [
+                  "awesome.com"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }

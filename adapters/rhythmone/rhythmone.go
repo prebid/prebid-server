@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"net/http"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type RhythmoneAdapter struct {
@@ -93,10 +95,12 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewRhythmoneBidder(endpoint string) *RhythmoneAdapter {
-	return &RhythmoneAdapter{
-		endPoint: endpoint,
+// Builder builds a new instance of the Rythomone adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &RhythmoneAdapter{
+		endPoint: config.Endpoint,
 	}
+	return bidder, nil
 }
 
 func (a *RhythmoneAdapter) preProcess(req *openrtb.BidRequest, errors []error) (*openrtb.BidRequest, string, []error) {
@@ -128,9 +132,9 @@ func (a *RhythmoneAdapter) preProcess(req *openrtb.BidRequest, errors []error) (
 			errors = append(errors, err)
 			return nil, "", errors
 		}
-		bidderExtCopy := openrtb_ext.ExtBid{
-			Bidder: rhythmoneExtCopy,
-		}
+		bidderExtCopy := struct {
+			Bidder json.RawMessage `json:"bidder,omitempty"`
+		}{rhythmoneExtCopy}
 		impExtCopy, err := json.Marshal(&bidderExtCopy)
 		if err != nil {
 			errors = append(errors, err)

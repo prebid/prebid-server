@@ -3,15 +3,17 @@ package sharethrough
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy/ccpa"
 )
 
 const defaultTmax = 10000 // 10 sec
@@ -21,6 +23,7 @@ type StrAdSeverParams struct {
 	BidID              string
 	ConsentRequired    bool
 	ConsentString      string
+	USPrivacySignal    string
 	InstantPlayCapable bool
 	Iframe             bool
 	Height             uint64
@@ -94,6 +97,11 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 		return nil, err
 	}
 
+	usPolicySignal := ""
+	if usPolicy, err := ccpa.ReadFromRequest(request); err == nil {
+		usPolicySignal = usPolicy.Consent
+	}
+
 	return &adapters.RequestData{
 		Method: "POST",
 		Uri: s.UriHelper.buildUri(StrAdSeverParams{
@@ -101,6 +109,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			BidID:              imp.ID,
 			ConsentRequired:    s.Util.gdprApplies(request),
 			ConsentString:      userInfo.Consent,
+			USPrivacySignal:    usPolicySignal,
 			Iframe:             strImpParams.Iframe,
 			Height:             height,
 			Width:              width,
@@ -184,6 +193,9 @@ func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	v.Set("bidId", params.BidID)
 	v.Set("consent_required", fmt.Sprintf("%t", params.ConsentRequired))
 	v.Set("consent_string", params.ConsentString)
+	if params.USPrivacySignal != "" {
+		v.Set("us_privacy", params.USPrivacySignal)
+	}
 	if params.TheTradeDeskUserId != "" {
 		v.Set("ttduid", params.TheTradeDeskUserId)
 	}

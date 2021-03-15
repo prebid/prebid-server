@@ -54,25 +54,25 @@
     ],
     "expectedCacheables": [
         {
-            "Type": "json",
-            "TTLSeconds": 360,
-            "Data":"{ \"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64, \"exp\":   600 }"
+            "type": "json",
+            "ttlseconds": 360,
+            "value":"{ \"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64, \"exp\":   600 }"
         }, {
-            "Type": "json",
-            "TTLSeconds": 260,
-            "Data": "{ \"id\": \"bidTwo\", \"impid\": \"oneImp\", \"price\": 5.64, \"exp\":   200 }"
+            "type": "json",
+            "ttlseconds": 260,
+            "value": "{ \"id\": \"bidTwo\", \"impid\": \"oneImp\", \"price\": 5.64, \"exp\":   200 }"
         }, {
-            "Type": "json",
-            "TTLSeconds": 360,
-            "Data": "{ \"id\": \"bidThree\", \"impid\": \"oneImp\", \"price\": 2.3 }"
+            "type": "json",
+            "ttlseconds": 360,
+            "value": "{ \"id\": \"bidThree\", \"impid\": \"oneImp\", \"price\": 2.3 }"
         }, {
-            "Type": "json",
-            "TTLSeconds": 0,
-            "Data": "{ \"id\": \"bidFour\", \"impid\": \"twoImp\", \"price\": 1.64 }"
+            "type": "json",
+            "ttlseconds": 0,
+            "value": "{ \"id\": \"bidFour\", \"impid\": \"twoImp\", \"price\": 1.64 }"
         }, {
-            "Type": "json",
-            "TTLSeconds": 960,
-            "Data": "{ \"id\": \"bidFive\", \"impid\": \"twoImp\", \"price\": 7.64, \"exp\":   900 }"
+            "type": "json",
+            "ttlseconds": 960,
+            "value": "{ \"id\": \"bidFive\", \"impid\": \"twoImp\", \"price\": 7.64, \"exp\":   900 }"
         }
     ],
     "targetDataIncludeWinners":false,

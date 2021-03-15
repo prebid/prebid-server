@@ -1,0 +1,11 @@
+maintainer:
+  email: prebid-support@kidoz.net
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

@@ -1,0 +1,94 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-banner-id",
+    "imp": [
+      {
+        "id": "test-imp-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 250
+            }
+          ],
+          "w": 320,
+          "h": 250
+        },
+        "ext": {
+          "adot": {}
+        }
+      }
+    ]
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://dsp.adotmob.com/headerbidding/bidrequest",
+      "body": {
+        "id": "test-request-banner-id",
+        "imp": [
+          {
+            "id": "test-imp-banner-id",
+            "banner": {
+              "format": [
+                {
+                  "w": 320,
+                  "h": 250
+                }
+              ],
+              "w": 320,
+              "h": 250
+            },
+            "ext": {
+              "adot": {}
+            }
+          }
+        ]
+      }
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-request-banner-id",
+        "seatbid": [{
+          "seat": "adot",
+          "bid": [{
+            "id": "test-request-banner-id",
+            "impid": "test-imp-banner-id",
+            "price": 1.16346,
+            "adm": "some-test-ad",
+            "w": 320,
+            "h": 50,
+            "ext": {
+              "adot": {
+                "media_type": "banner"
+              }
+            }
+          }]
+        }
+        ],
+        "cur": "USD"
+      }
+    }
+  }],
+
+  "expectedBidResponses": [{
+      "currency": "USD",
+      "bids": [{
+          "bid": {
+            "id": "test-request-banner-id",
+            "impid": "test-imp-banner-id",
+            "price": 1.16346,
+            "adm": "some-test-ad",
+            "w": 320,
+            "h": 50,
+            "ext": {
+              "adot": {
+                "media_type": "banner"
+              }
+            }
+          },
+        "type": "banner"
+        }]
+    }]
+}
+

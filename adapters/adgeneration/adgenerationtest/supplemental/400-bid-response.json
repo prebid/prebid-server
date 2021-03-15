@@ -1,0 +1,83 @@
+{
+    "mockBidRequest":{
+        "id": "some-request-id",
+        "site": {
+            "page": "http://example.com/test.html"
+        },
+        "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+        },
+        "imp": [
+            {
+                "id": "some-impression-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "id": "58278"
+                    }
+                }
+            }
+        ],
+        "tmax": 500
+    },
+    "httpCalls": [
+        {
+            "internalRequest": {
+                "id": "some-request-id",
+                "site": {
+                    "page": "http://example.com/test.html"
+                },
+                "imp": [
+                    {
+                        "id": "some-impression-id",
+                        "banner": {
+                            "format": [
+                                {
+                                    "w": 300,
+                                    "h": 250
+                                }
+                            ]
+                        },
+                        "ext": {
+                            "bidder": {
+                                "id": "58278"
+                            }
+                        }
+                    }
+                ],
+                "tmax": 500
+            },
+            "expectedRequest":{
+                "uri": "https://d.socdm.com/adsv/v1?adapterver=1.0.2&currency=JPY&hb=true&id=58278&posall=SSPLOC&sdkname=prebidserver&sdktype=0&sizes=300x250&t=json3&tp=http%3A%2F%2Fexample.com%2Ftest.html",
+                "headers": {
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Content-Type": [
+                        "application/json;charset=utf-8"
+                    ],
+                    "User-Agent": [
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+                    ]
+                }
+            },
+            "mockResponse": {
+                "status": 400,
+                "body": {}
+            }
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+          "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+          "comparison": "literal"
+        }
+    ]
+}

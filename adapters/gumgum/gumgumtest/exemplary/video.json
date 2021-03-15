@@ -1,0 +1,106 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "minduration": 1,
+                    "maxduration": 2,
+                    "protocols": [
+                        1,
+                        2
+                    ],
+                    "w": 640,
+                    "h": 480,
+                    "startdelay": 1,
+                    "placement": 1,
+                    "linearity": 1
+                },
+                "ext": {
+                    "bidder": {
+                        "zone": "ggumtest"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://g2.gumgum.com/providers/prbds2s/bid",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "minduration": 1,
+                                "maxduration": 2,
+                                "protocols": [
+                                    1,
+                                    2
+                                ],
+                                "w": 640,
+                                "h": 480,
+                                "startdelay": 1,
+                                "placement": 1,
+                                "linearity": 1
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "zone": "ggumtest"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "15da721e-940a-4db6-8621-a1f93140b21b",
+                                    "impid": "video1",
+                                    "price": 15,
+                                    "adid": "59082",
+                                    "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\">\n    <Ad id=\"59082\">\n        <InLine>\n            <AdSystem>GumGum Video</AdSystem>\n            <AdTitle>\n                <![CDATA[\n                Pre-Roll Preview - Olay - Linear (:15)\n                ]]>\n            </AdTitle>\n            <Impression>\n                <![CDATA[ \n                http://or-g2.gumgum.com/ad/apvideo/impression?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                ]]>\n            </Impression>\n            <Creatives>\n                <Creative>\n                    <Linear>\n                        <Duration>00:00:15</Duration>\n                        <TrackingEvents>\n                            <Tracking event=\"start\">\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/apvideo/play?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                                ]]>\n                            </Tracking>\n                            <Tracking event=\"firstQuartile\">\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/apvideo/completed25?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                                ]]>\n                            </Tracking>\n                            <Tracking event=\"midpoint\">\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/apvideo/completed50?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                                ]]>\n                            </Tracking>\n                            <Tracking event=\"thirdQuartile\">\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/apvideo/completed75?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                                ]]>\n                            </Tracking>\n                            <Tracking event=\"complete\">\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/apvideo/completed100?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                                ]]>\n                            </Tracking>\n                        </TrackingEvents>\n                        <VideoClicks>\n                            <ClickThrough>\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/click/enc/_EFZ4AbNn_bHPd6fKLhwJUB_IyBmxpaj9eCAt4yjP8Lh-lInPc1v8-nOmpntWjYalCcBciU4c_QPQhN9g9uzF2lz0QBdNTDxiK5Q18wC0JZkSvT0xe4L6_C9mgmmP8BOUWcDV6bbhrCPr6OF6AHLlzcp2MaV4IJ-c6wh2MPyRbRvy5pxSHf-KbYM172krOmxW-37VSxq2yPDjQxDuUwd9XqxKUTXIYzDW_5VTwCzYCyus5vyPMNGQICKHpXkDscfR2EadcO2qRKhqC65pegIsnUg-Eq0Ey4rp7RLiPFjl0WjXO88KlRIgHMgd2-JYcHIumNnuYcy-hpr787Sk_Ejp_tMVujc6b4Cg634_YR52qWEwNqd4GFjWm0S6Hmy18v7I3SrGJPg7FzC1iGGOSMjfe1DJDplloE0qQcxKI9gI1aTJqG_G7PY6QP1Gz87Ojj7mLf40udAlRofZaq1FRdFXXgo0XIeg3J7o07-2TGPvBfdg0hIpis6TOWo-gcqbOKWOP24eiroudFCTDNH9QAi9dXKor0jUMLhKmvY6kvmNl8?du=\n                                ]]>\n                            </ClickThrough>\n                        </VideoClicks>\n                        <MediaFiles>\n                            <MediaFile bitrate=\"800\" delivery=\"progressive\" height=\"9\" type=\"video/mp4\" width=\"16\">\n                                <![CDATA[ https://c.gumgum.com/ads/com/procter_gamble/olay_daily_facials_q2_2017/pre_roll_demo/5_source_41397_100091.mp4\n                                ]]>\n                            </MediaFile>\n                        </MediaFiles>\n                    </Linear>\n                </Creative>\n            </Creatives>\n        <Impression><![CDATA[http://or-g2.gumgum.com/ad/view/enc/_EFZ4AbNn_bHPd6fKLhwJUB_IyBmxpaj9eCAt4yjP8Lh-lInPc1v8-nOmpntWjYalCcBciU4c_QPQhN9g9uzF2lz0QBdNTDxiK5Q18wC0JZkSvT0xe4L6_C9mgmmP8BOUWcDV6bbhrCPr6OF6AHLlzcp2MaV4IJ-c6wh2MPyRbRvy5pxSHf-KbYM172krOmxW-37VSxq2yPDjQxDuUwd9XqxKUTXIYzDW_5VTwCzYCyus5vyPMNGQJ8jwoXY9Y_XR2EadcO2qRKhqC65pegIsnUg-Eq0Ey4rp7RLiPFjl0WjXO88KlRIgHMgd2-JYcHIumNnuYcy-hpr787Sk_Ejp_tMVujc6b4Cg634_YR52qXaMMkNa6YwX71oVLIAHL6p6DL-8M2FwYgSPFHW1P72slMYnDS0_PfnysQjnRJ2eQXGmpiIEg0seK48nGbq14RwpQtD8WOwrIySXeuk0TqdyUQE2RMlq2dV?c=15]]></Impression><Error><![CDATA[http://or-g2.gumgum.com/video/error?code=[ERRORCODE]&adid=59082&t=ggumtest]]></Error></InLine>\n    </Ad>\n</VAST>",
+                                    "cid": "3579",
+                                    "crid": "59082"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "15da721e-940a-4db6-8621-a1f93140b21b",
+                        "impid": "video1",
+                        "price": 15,
+                        "adid": "59082",
+                        "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\">\n    <Ad id=\"59082\">\n        <InLine>\n            <AdSystem>GumGum Video</AdSystem>\n            <AdTitle>\n                <![CDATA[\n                Pre-Roll Preview - Olay - Linear (:15)\n                ]]>\n            </AdTitle>\n            <Impression>\n                <![CDATA[ \n                http://or-g2.gumgum.com/ad/apvideo/impression?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                ]]>\n            </Impression>\n            <Creatives>\n                <Creative>\n                    <Linear>\n                        <Duration>00:00:15</Duration>\n                        <TrackingEvents>\n                            <Tracking event=\"start\">\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/apvideo/play?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                                ]]>\n                            </Tracking>\n                            <Tracking event=\"firstQuartile\">\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/apvideo/completed25?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                                ]]>\n                            </Tracking>\n                            <Tracking event=\"midpoint\">\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/apvideo/completed50?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                                ]]>\n                            </Tracking>\n                            <Tracking event=\"thirdQuartile\">\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/apvideo/completed75?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                                ]]>\n                            </Tracking>\n                            <Tracking event=\"complete\">\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/apvideo/completed100?vpi=1&t=ggumtest&ab=59082&pv=44df4775-15b1-4162-9970-43d06a519e34&pu=https%3A%2F%2Fwww.100daysofrealfood.com%2F&zdp=*&iimpid=16ddc020-1705-4351-9951-467474c8f385&lt=&to=&ts=1594835221365&er=0&pspc=prbds2s&jcsi=%7B%22t%22%3A1%2C%22rq%22%3A12%2C%22pbv%22%3A%220.0.0%22%7D&pbf=0.0\n                                ]]>\n                            </Tracking>\n                        </TrackingEvents>\n                        <VideoClicks>\n                            <ClickThrough>\n                                <![CDATA[\n                                http://or-g2.gumgum.com/ad/click/enc/_EFZ4AbNn_bHPd6fKLhwJUB_IyBmxpaj9eCAt4yjP8Lh-lInPc1v8-nOmpntWjYalCcBciU4c_QPQhN9g9uzF2lz0QBdNTDxiK5Q18wC0JZkSvT0xe4L6_C9mgmmP8BOUWcDV6bbhrCPr6OF6AHLlzcp2MaV4IJ-c6wh2MPyRbRvy5pxSHf-KbYM172krOmxW-37VSxq2yPDjQxDuUwd9XqxKUTXIYzDW_5VTwCzYCyus5vyPMNGQICKHpXkDscfR2EadcO2qRKhqC65pegIsnUg-Eq0Ey4rp7RLiPFjl0WjXO88KlRIgHMgd2-JYcHIumNnuYcy-hpr787Sk_Ejp_tMVujc6b4Cg634_YR52qWEwNqd4GFjWm0S6Hmy18v7I3SrGJPg7FzC1iGGOSMjfe1DJDplloE0qQcxKI9gI1aTJqG_G7PY6QP1Gz87Ojj7mLf40udAlRofZaq1FRdFXXgo0XIeg3J7o07-2TGPvBfdg0hIpis6TOWo-gcqbOKWOP24eiroudFCTDNH9QAi9dXKor0jUMLhKmvY6kvmNl8?du=\n                                ]]>\n                            </ClickThrough>\n                        </VideoClicks>\n                        <MediaFiles>\n                            <MediaFile bitrate=\"800\" delivery=\"progressive\" height=\"9\" type=\"video/mp4\" width=\"16\">\n                                <![CDATA[ https://c.gumgum.com/ads/com/procter_gamble/olay_daily_facials_q2_2017/pre_roll_demo/5_source_41397_100091.mp4\n                                ]]>\n                            </MediaFile>\n                        </MediaFiles>\n                    </Linear>\n                </Creative>\n            </Creatives>\n        <Impression><![CDATA[http://or-g2.gumgum.com/ad/view/enc/_EFZ4AbNn_bHPd6fKLhwJUB_IyBmxpaj9eCAt4yjP8Lh-lInPc1v8-nOmpntWjYalCcBciU4c_QPQhN9g9uzF2lz0QBdNTDxiK5Q18wC0JZkSvT0xe4L6_C9mgmmP8BOUWcDV6bbhrCPr6OF6AHLlzcp2MaV4IJ-c6wh2MPyRbRvy5pxSHf-KbYM172krOmxW-37VSxq2yPDjQxDuUwd9XqxKUTXIYzDW_5VTwCzYCyus5vyPMNGQJ8jwoXY9Y_XR2EadcO2qRKhqC65pegIsnUg-Eq0Ey4rp7RLiPFjl0WjXO88KlRIgHMgd2-JYcHIumNnuYcy-hpr787Sk_Ejp_tMVujc6b4Cg634_YR52qXaMMkNa6YwX71oVLIAHL6p6DL-8M2FwYgSPFHW1P72slMYnDS0_PfnysQjnRJ2eQXGmpiIEg0seK48nGbq14RwpQtD8WOwrIySXeuk0TqdyUQE2RMlq2dV?c=15]]></Impression><Error><![CDATA[http://or-g2.gumgum.com/video/error?code=[ERRORCODE]&adid=59082&t=ggumtest]]></Error></InLine>\n    </Ad>\n</VAST>",
+                        "cid": "3579",
+                        "crid": "59082"
+                    },
+                    "type": "video"
+                }
+            ]
+        }
+    ]
+}

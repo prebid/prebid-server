@@ -1,0 +1,32 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480
+        },
+        "ext": 111
+      }
+    ],
+    "user": {
+      "buyeruid": "test-uid"
+    },
+    "tmax": 500
+  },
+
+  "httpCalls": [],
+
+  "expectedBidResponses": [],
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Failed to unmarshal ext impID: test-imp-id err: json: cannot unmarshal number into Go value of type adapters.ExtImpBidder",
+      "comparison": "literal"
+    }
+
+  ]
+}

@@ -1,0 +1,14 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Adprime Adapter Params",
+    "description": "A schema which validates params accepted by the Adprime adapter",
+
+    "type": "object",
+    "properties": {
+      "TagID": {
+        "type": "string",
+        "description": "An ID which identifies the adprime ad tag"
+      }
+    },
+    "required" : [ "TagID" ]
+  }

@@ -43,6 +43,7 @@ type ExtUserEid struct {
 
 // ExtUserEidUid defines the contract for bidrequest.user.ext.eids[i].uids[j]
 type ExtUserEidUid struct {
-	ID  string          `json:"id"`
-	Ext json.RawMessage `json:"ext,omitempty"`
+	ID    string          `json:"id"`
+	Atype int             `json:"atype,omitempty"`
+	Ext   json.RawMessage `json:"ext,omitempty"`
 }

@@ -1,0 +1,13 @@
+maintainer:
+  email: "some-email@domain.com"
+gvlVendorID: 42
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
