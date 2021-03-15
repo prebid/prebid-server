@@ -517,8 +517,17 @@ func validateBanner(banner *openrtb2.Banner, impIndex int) error {
 		return nil
 	}
 
-	// Although these are only deprecated in the spec... since this is a new endpoint, we know nobody uses them yet.
-	// Let's start things off by pointing callers in the right direction.
+	// The following fields were previously uints in the OpenRTB library we use, but have
+	// since been changed to ints. We decided to maintain the non-negative check.
+	if banner.W != nil && *banner.W < 0 {
+		return fmt.Errorf("request.imp[%d].banner.w must be a positive number", impIndex)
+	}
+	if banner.H != nil && *banner.H < 0 {
+		return fmt.Errorf("request.imp[%d].banner.h must be a positive number", impIndex)
+	}
+
+	// The following fields are deprecated in the OpenRTB 2.5 spec but are still present
+	// in the OpenRTB library we use. Enforce they are not specified.
 	if banner.WMin != 0 {
 		return fmt.Errorf("request.imp[%d].banner uses unsupported property: \"wmin\". Use the \"format\" array instead.", impIndex)
 	}
@@ -537,11 +546,12 @@ func validateBanner(banner *openrtb2.Banner, impIndex int) error {
 		return fmt.Errorf("request.imp[%d].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.", impIndex)
 	}
 
-	for fmtIndex, format := range banner.Format {
-		if err := validateFormat(&format, impIndex, fmtIndex); err != nil {
+	for i, format := range banner.Format {
+		if err := validateFormat(&format, impIndex, i); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -725,7 +735,7 @@ func validateNativeEventTrackers(trackers []nativeRequests.EventTracker, impInde
 
 func validateNativeAssetTitle(title *nativeRequests.Title, impIndex int, assetIndex int) error {
 	if title.Len < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].title.len must be a positive integer", impIndex, assetIndex)
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].title.len must be a positive number", impIndex, assetIndex)
 	}
 	return nil
 }
