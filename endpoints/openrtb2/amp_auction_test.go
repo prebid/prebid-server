@@ -478,7 +478,7 @@ func TestInvalidConsent(t *testing.T) {
 	}
 
 	// Assert Result
-	expectedWarnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError{
+	expectedWarnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
 		openrtb_ext.BidderReservedGeneral: {
 			{
 				Code:    10001,
@@ -929,7 +929,7 @@ type mockAmpExchange struct {
 	lastRequest *openrtb.BidRequest
 }
 
-var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError = map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError{
+var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage = map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
 	openrtb_ext.BidderName("openx"): {
 		{
 			Code:    1,
