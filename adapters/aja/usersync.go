@@ -8,5 +8,5 @@ import (
 )
 
 func NewAJASyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("aja", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("aja", temp, adapters.SyncTypeRedirect)
 }

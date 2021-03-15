@@ -8,5 +8,5 @@ import (
 )
 
 func NewBeintooSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("Beintoo", 618, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("Beintoo", temp, adapters.SyncTypeIframe)
 }

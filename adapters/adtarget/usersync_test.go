@@ -33,6 +33,5 @@ func TestAdtargetSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "//sync.console.adtarget.com.tr/csync?t=p&ep=0&gdpr=0&gdpr_consent=123&us_privacy=1-YY&redir=localhost%2Fsetuid%3Fbidder%3Dadtarget%26gdpr%3D0%26gdpr_consent%3D123%26uid%3D%7Buid%7D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

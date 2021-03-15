@@ -135,10 +135,6 @@ func TestSingleBidder(t *testing.T) {
 		if len(seatBid.httpCalls) != test.httpCallsLen {
 			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
 		}
-
-		if len(seatBid.ext) != 0 {
-			t.Errorf("The bidder shouldn't define any seatBid.ext. Got %s", string(seatBid.ext))
-		}
 	}
 }
 

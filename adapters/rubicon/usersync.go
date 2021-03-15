@@ -8,5 +8,5 @@ import (
 )
 
 func NewRubiconSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("rubicon", 52, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("rubicon", temp, adapters.SyncTypeRedirect)
 }

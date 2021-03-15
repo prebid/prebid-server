@@ -61,7 +61,6 @@
                             "bidder": {
                                 "placementId": 1
                             },
-                            "prebid": {},
                             "context": {
                                 "data": {
                                     "keywords": "prebid server example"
@@ -112,7 +111,6 @@
                                 "siteId": 2,
                                 "zoneId": 3
                             },
-                            "prebid": {},
                             "context": {
                                 "data": {
                                     "keywords": "prebid server example"

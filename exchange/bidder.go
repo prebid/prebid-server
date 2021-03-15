@@ -83,10 +83,6 @@ type pbsOrtbSeatBid struct {
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
 	httpCalls []*openrtb_ext.ExtHttpCall
-	// ext contains the extension for this seatbid.
-	// if len(bids) > 0, this will become response.seatbid[i].ext.{bidder} on the final OpenRTB response.
-	// if len(bids) == 0, this will be ignored because the OpenRTB spec doesn't allow a SeatBid with 0 Bids.
-	ext json.RawMessage
 }
 
 // adaptBidder converts an adapters.Bidder into an exchange.adaptedBidder.

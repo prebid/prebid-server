@@ -8,5 +8,5 @@ import (
 )
 
 func NewAdtargetSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("adtarget", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("adtarget", temp, adapters.SyncTypeRedirect)
 }
