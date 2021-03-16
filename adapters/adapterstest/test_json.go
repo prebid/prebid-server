@@ -230,12 +230,12 @@ func diffErrorLists(t *testing.T, description string, actual []error, expected [
 func diffBidLists(t *testing.T, filename string, response *adapters.BidderResponse, expected []expectedBid) {
 	t.Helper()
 
-	if (response == nil || len(response.Bids) == 0) && (len(expected) != 0) {
+	if (response == nil || len(response.Bids) == 0) != (len(expected) == 0) {
 		if len(expected) == 0 {
-			t.Fatalf("%s: Makebids expected a nil response, but got a non-nil response", filename)
+			t.Fatalf("%s: expectedBidResponses indicated a nil response, but got a non-nil response", filename)
 		}
 
-		t.Fatalf("%s: MakeBids received unexpected nil or empty response", filename)
+		t.Fatalf("%s: mock responses included unexpected nil or empty response", filename)
 	}
 
 	// Expected nil response - give diffBids something to work with.
