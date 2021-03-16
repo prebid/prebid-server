@@ -483,8 +483,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
-
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -522,6 +520,8 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	}
 
 	var dur beachfrontVideoBidExtension
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
+
 	for i := 0; i < len(bids); i++ {
 
 		// If we unmarshal without an error, this is an AdM video
