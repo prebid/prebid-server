@@ -539,7 +539,7 @@ func validateAdSlot(adslot string, imp *openrtb.Imp) error {
 		}
 
 		//In case of video, size could be derived from the player size
-		if imp.Banner != nil {
+		if imp.Banner != nil && height != 0 && width != 0 {
 			imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
 			imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
 		}
