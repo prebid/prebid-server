@@ -395,103 +395,107 @@ func TestCCPAConsent(t *testing.T) {
 	}
 }
 
-func TestNoConsent(t *testing.T) {
-	// Build Request
-	bid, err := getTestBidRequest(true, nil, true, nil)
-	if err != nil {
-		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+func TestConsentWarnings(t *testing.T) {
+	type inputTest struct {
+		nilRegs           bool
+		regs              string
+		invalidConsentURL bool
+		bidderWarnings    bool
+	}
+	testData := []inputTest{
+		{true, "", false, false},
+		{true, "", true, false},
+		{false, "invalid", true, true},
+		{false, "1NYN", false, true},
 	}
 
-	// Simulated Stored Request Backend
-	stored := map[string]json.RawMessage{"1": json.RawMessage(bid)}
+	for _, testCase := range testData {
 
-	// Build Exchange Endpoint
-	mockExchange := &mockAmpExchange{}
-	endpoint, _ := NewAmpEndpoint(
-		mockExchange,
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{stored},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-	)
+		// Build Request
+		var regs *openrtb_ext.ExtRegs
+		if !testCase.nilRegs {
+			regs = &openrtb_ext.ExtRegs{USPrivacy: testCase.regs}
+		}
 
-	// Invoke Endpoint
-	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
-	responseRecorder := httptest.NewRecorder()
-	endpoint(responseRecorder, request, nil)
+		bid, err := getTestBidRequest(true, nil, testCase.nilRegs, regs)
+		if err != nil {
+			t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+		}
 
-	// Parse Response
-	var response AmpResponse
-	if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
-		t.Fatalf("Error unmarshalling response: %s", err.Error())
+		// Simulated Stored Request Backend
+		stored := map[string]json.RawMessage{"1": json.RawMessage(bid)}
+
+		// Build Exchange Endpoint
+		var mockExchange exchange.Exchange
+		if testCase.bidderWarnings {
+			mockExchange = &mockAmpExchangeWarnings{}
+		} else {
+			mockExchange = &mockAmpExchange{}
+		}
+		endpoint, _ := NewAmpEndpoint(
+			mockExchange,
+			newParamsValidator(t),
+			&mockAmpStoredReqFetcher{stored},
+			empty_fetcher.EmptyFetcher{},
+			&config.Configuration{MaxRequestSize: maxSize},
+			newTestMetrics(),
+			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			map[string]string{},
+			[]byte{},
+			openrtb_ext.BuildBidderMap(),
+		)
+
+		// Invoke Endpoint
+		var request *http.Request
+		invalidConsent := "invalid"
+		if testCase.invalidConsentURL {
+			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&consent_string="+invalidConsent, nil)
+
+		} else {
+			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
+		}
+
+		responseRecorder := httptest.NewRecorder()
+		endpoint(responseRecorder, request, nil)
+
+		// Parse Response
+		var response AmpResponse
+		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
+
+		// Assert Result
+		if !testCase.bidderWarnings {
+			result := mockExchange.(*mockAmpExchange).lastRequest
+			assert.NotNil(t, result, "lastRequest")
+			assert.Nil(t, result.User, "lastRequest.User")
+			assert.Nil(t, result.Regs, "lastRequest.Regs")
+			assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors)
+			if testCase.invalidConsentURL {
+				expectedWarnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+					openrtb_ext.BidderReservedGeneral: {
+						{
+							Code:    10001,
+							Message: "Consent '" + invalidConsent + "' is not recognized as either CCPA or GDPR TCF.",
+						},
+					},
+				}
+				assert.Equal(t, expectedWarnings, response.Warnings)
+			} else {
+				assert.Empty(t, response.Warnings)
+			}
+
+		} else {
+			if !testCase.invalidConsentURL {
+				assert.Len(t, response.Warnings["appnexus"], 1, "1 bidder warning should be present")
+				assert.Len(t, response.Warnings["general"], 0, "General warnings should not be present")
+
+			} else {
+				assert.Len(t, response.Warnings["appnexus"], 1, "1 bidder warning should be present")
+				assert.Len(t, response.Warnings["general"], 2, "2 General warnings should be present")
+			}
+		}
 	}
-
-	// Assert Result
-	result := mockExchange.lastRequest
-	assert.NotNil(t, result, "lastRequest")
-	assert.Nil(t, result.User, "lastRequest.User")
-	assert.Nil(t, result.Regs, "lastRequest.Regs")
-	assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors)
-	assert.Empty(t, response.Warnings)
-}
-
-func TestInvalidConsent(t *testing.T) {
-	// Build Request
-	bid, err := getTestBidRequest(true, nil, true, nil)
-	if err != nil {
-		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
-	}
-
-	// Simulated Stored Request Backend
-	stored := map[string]json.RawMessage{"1": json.RawMessage(bid)}
-
-	// Build Exchange Endpoint
-	mockExchange := &mockAmpExchange{}
-	endpoint, _ := NewAmpEndpoint(
-		mockExchange,
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{stored},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-	)
-
-	// Invoke Endpoint
-	invalidConsent := "invalid"
-	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&consent_string="+invalidConsent, nil)
-	responseRecorder := httptest.NewRecorder()
-	endpoint(responseRecorder, request, nil)
-
-	// Parse Response
-	var response AmpResponse
-	if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
-		t.Fatalf("Error unmarshalling response: %s", err.Error())
-	}
-
-	// Assert Result
-	expectedWarnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
-		openrtb_ext.BidderReservedGeneral: {
-			{
-				Code:    10001,
-				Message: "Consent '" + invalidConsent + "' is not recognized as either CCPA or GDPR TCF.",
-			},
-		},
-	}
-	result := mockExchange.lastRequest
-	assert.NotNil(t, result, "lastRequest")
-	assert.Nil(t, result.User, "lastRequest.User")
-	assert.Nil(t, result.Regs, "lastRequest.Regs")
-	assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors)
-	assert.Equal(t, expectedWarnings, response.Warnings)
 }
 
 func TestNewAndLegacyConsentBothProvided(t *testing.T) {
@@ -962,6 +966,24 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 	return response, nil
 }
 
+type mockAmpExchangeWarnings struct {
+	//lastRequest *openrtb.BidRequest
+}
+
+func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+	//m.lastRequest = r.BidRequest
+	response := &openrtb.BidResponse{
+		SeatBid: []openrtb.SeatBid{{
+			Bid: []openrtb.Bid{{
+				AdM: "<script></script>",
+				Ext: json.RawMessage(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
+			}},
+		}},
+		Ext: json.RawMessage(`{ "warnings": {"appnexus": [{"code": 10003, "message": "debug turned off for bidder"}] }}`),
+	}
+	return response, nil
+}
+
 func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool, regsExt *openrtb_ext.ExtRegs) ([]byte, error) {
 	var width uint64 = 300
 	var height uint64 = 300
@@ -1025,7 +1047,6 @@ func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool,
 			Ext:   regsExtData,
 		}
 	}
-
 	return json.Marshal(bidRequest)
 }
 
