@@ -232,7 +232,7 @@ func diffBidLists(t *testing.T, filename string, response *adapters.BidderRespon
 
 	if (response == nil || len(response.Bids) == 0) != (len(expected) == 0) {
 		if len(expected) == 0 {
-			t.Fatalf("%s: expectedBidResponses indicated a nil response, but mockResponses indicated a non-nil response", filename)
+			t.Fatalf("%s: expectedBidResponses indicated a nil response, but mockResponses supplied a non-nil response", filename)
 		}
 
 		t.Fatalf("%s: mockResponses included unexpected nil or empty response", filename)
