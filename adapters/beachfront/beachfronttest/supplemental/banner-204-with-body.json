@@ -65,12 +65,15 @@
       },
       "mockResponse": {
         "status": 204,
-        "body": ""
+        "body": [
+          {
+            "something": "where nothing should be"
+          }
+        ]
       }
     }
   ],
 
-  "expectedBidResponses": [
-
-  ]
+  "expectedBidResponses": []
 }
+
