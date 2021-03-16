@@ -7,11 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/cache/dummycache"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
@@ -57,7 +54,8 @@ func TestMemberQueryParam(t *testing.T) {
 	}
 }
 
-func TestVideoSinglePod(t *testing.T) {
+// Commenting out the test cases around populating adpod_id in the Appnexus request (ref: https://inside.pubmatic.com:9443/jira/browse/UOE-6196)
+/*func TestVideoSinglePod(t *testing.T) {
 	var a AppNexusAdapter
 	a.URI = "http://test.com/openrtb2"
 	a.hbSource = 5
@@ -282,7 +280,7 @@ func TestVideoTwoPodsManyImps(t *testing.T) {
 	podIds[adPodId3] = podIds[adPodId3] + 1
 
 	assert.Len(t, podIds, 2, "Incorrect number of unique pod ids")
-}
+}*/
 
 // ----------------------------------------------------------------------------
 // Code below this line tests the legacy, non-openrtb code flow. It can be deleted after we
