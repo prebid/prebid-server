@@ -51,7 +51,8 @@
                         "wrapper": {
                             "version": 1,
                             "profile": 5123
-                        }
+                        },
+                        "reward": 0
                     }
                 }
             }

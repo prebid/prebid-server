@@ -95,6 +95,10 @@ data:
   PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_EU:      "http://localhost:4646/moloco_givemeads"
   PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_APAC:    "http://localhost:4646/moloco_givemeads"
 
+  # pubmatic values
+  PBS_ADAPTERS_PUBMATIC_DISABLED: "false"
+  PBS_ADAPTERS_PUBMATIC_ENDPOINT: "http://localhost:4646/pubmatic_givemeads"
+
   # rubicon values
   PBS_ADAPTERS_RUBICON_DISABLED:              "false"
   PBS_ADAPTERS_RUBICON_XAPI_USERNAME:         "username"

@@ -51,6 +51,17 @@
                         "wrapper": {
                             "version": 1,
                             "profile": 5123
+                        },
+                        "reward": 1,
+                        "skadn_supported": true
+                    },
+                    "prebid": {
+                        "skadn": {
+                            "version": "",
+                            "sourceapp": "",
+                            "skadnetids": [
+                                "k674qkevps.skadnetwork"
+                            ]
                         }
                     }
                 }
@@ -107,7 +118,14 @@
                                 "minbitrate": 10,
                                 "maxbitrate": 10
                             },
-                            "ext": {}
+                            "ext": {
+                                "reward": 1,
+                                "skadn": {
+                                    "skadnetids": [
+                                        "k674qkevps.skadnetwork"
+                                    ]
+                                }
+                            }
                         }
                     ],
                     "device": {

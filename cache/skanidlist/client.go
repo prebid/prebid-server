@@ -40,13 +40,11 @@ func cacheClient(bidder openrtb_ext.BidderName) (*cache, error) {
 		}
 		return skanIDListClient.caches[bidder], nil
 
-		/*
-			case openrtb_ext.BidderPubmatic:
-				if skanIDListClient.caches[bidder] == nil {
-					skanIDListClient.makeCache(cfg.Pubmatic)
-				}
-				return skanIDListClient.caches[bidder], nil
-		*/
+	case openrtb_ext.BidderPubmatic:
+		if skanIDListClient.caches[bidder] == nil {
+			skanIDListClient.makeCache(cfg.Pubmatic)
+		}
+		return skanIDListClient.caches[bidder], nil
 	}
 
 	return nil, errors.New(fmt.Sprintf("bidder (%s) does not support SKAN ID List", bidder))
