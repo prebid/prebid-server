@@ -2307,10 +2307,6 @@ func newMockBidExchange(bidder mockBidExchangeBidder, mockCurrencyConversionRate
 		bidder.BidCurrency = "USD"
 	}
 
-	if bidder.BidPrice == 0.00 {
-		bidder.BidPrice = 1.00
-	}
-
 	return &mockBidExchange{
 		mockBidder: bidder,
 		pbsRates:   mockCurrencyConversionRates,

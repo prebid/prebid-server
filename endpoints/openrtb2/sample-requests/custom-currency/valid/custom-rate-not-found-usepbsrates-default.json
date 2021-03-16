@@ -1,9 +1,9 @@
 {
-  "description": "BidRequest defines its own custom rates in the root.ext and sets the usepbsrates to false, not allowing for PBS to use its default converter and defaulting to a price of 0",
+  "description": "BidRequest defines its own custom rates but the bid request currency is only found in the currency conversion server rates. Error wasn't thrown because usepbsrates defaults to true",
   "config": {
     "currencyRates":{
       "USD": {
-        "MXN": 5.09
+        "MXN": 2.00
       }
     },
     "mockBidder": {
@@ -40,14 +40,30 @@
         "currency": {
           "rates": {
             "USD": {
-              "JPY": 2.00
+              "JPY": 15.00,
+              "EUR": 0.85
             }
-          },
-          "usepbsrates": false
+          }
         }
       }
     }
   },
-  "expectedReturnCode": 500,
-  "expectedErrorMessage": "Critical error while running the auction: Can't produce bid with no valid currency to use or currency conversion to convert to."
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0,
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "",
+              "price": 2.00
+            }
+          ],
+          "seat": "appnexus-bids"
+        }
+      ]
+  },
+  "expectedReturnCode": 200
 }

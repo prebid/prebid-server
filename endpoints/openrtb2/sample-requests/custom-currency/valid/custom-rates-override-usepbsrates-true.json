@@ -1,9 +1,9 @@
 {
-  "description": "BidRequest comes with a non-empty currency list that contains a valid 3-digt currency code found in our mock currency converter",
+  "description": "Despite being more expensive, custom conversion rate overrides that of the currency conversion service. usepbsrates was true",
   "config": {
     "currencyRates":{
       "USD": {
-        "MXN": 5.09
+        "MXN": 2.00
       }
     },
     "mockBidder": {
@@ -36,6 +36,14 @@
       "prebid": {
         "aliases": {
           "unknown": "appnexus"
+        },
+        "currency": {
+          "rates": {
+            "USD": {
+              "MXN": 5.00
+            }
+          },
+          "usepbsrates": true
         }
       }
     }
@@ -44,14 +52,13 @@
       "id":"some-request-id",
       "bidid":"test bid id",
       "nbr":0,
-      "nbr":0,
       "seatbid": [
         {
           "bid": [
             {
               "id": "appnexus-bid",
               "impid": "",
-              "price": 5.09
+              "price": 5.00
             }
           ],
           "seat": "appnexus-bids"

@@ -88,7 +88,7 @@
             {
               "id": "appnexus-bid",
               "impid": "",
-              "price": 1
+              "price": 0
             }
           ],
           "seat": "appnexus-bids"
@@ -98,7 +98,7 @@
             {
               "id": "districtm-bid",
               "impid": "",
-              "price": 1
+              "price": 0
             }
           ],
           "seat": "districtm-bids"
@@ -108,7 +108,7 @@
             {
               "id": "rubicon-bid",
               "impid": "",
-              "price": 1
+              "price": 0
             }
           ],
           "seat": "rubicon-bids"

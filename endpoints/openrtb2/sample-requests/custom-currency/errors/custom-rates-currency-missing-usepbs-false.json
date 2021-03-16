@@ -1,5 +1,6 @@
 {
-  "description": "False usepbsrates forces BidRequest use custom currency rates but bidRequest.ext.prebid.currency.rates field comes with invalid currency codes",
+  "description": "False usepbsrates forces BidRequest use custom currency rates but bidRequest currency is not found in bidRequest.ext.prebid.currency.rates field",
+  "description": "BidRequest defines its own custom rates in the root.ext and sets the usepbsrates to false, not allowing for PBS to use its default converter and defaulting to a price of 0",
   "config": {
     "currencyRates":{
       "USD": {
@@ -40,8 +41,7 @@
         "currency": {
           "rates": {
             "USD": {
-              "FOO": 10.0,
-              "BAR": 10.95
+              "JPY": 2.00
             }
           },
           "usepbsrates": false
@@ -49,6 +49,6 @@
       }
     }
   },
-  "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: Required custom currency rates are all invalid."
+  "expectedReturnCode": 500,
+  "expectedErrorMessage": "Critical error while running the auction: Can't produce bid with no valid currency to use or currency conversion to convert to."
 }

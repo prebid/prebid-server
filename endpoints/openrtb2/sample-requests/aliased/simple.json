@@ -34,7 +34,7 @@
            {
              "id": "alias1-bid",
              "impid": "",
-             "price": 1
+             "price": 0
            }
          ],
         "seat": "alias1-bids"

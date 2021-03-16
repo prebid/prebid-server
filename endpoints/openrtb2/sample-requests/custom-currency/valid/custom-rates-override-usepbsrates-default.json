@@ -1,9 +1,9 @@
 {
-  "description": "False usepbsrates forces BidRequest use custom currency rates but bidRequest.ext.prebid.currency.rates field comes with invalid currency codes",
+  "description": "Despite being more expensive, custom conversion rate overrides that of the currency conversion service. usepbsrates defaults to true",
   "config": {
     "currencyRates":{
       "USD": {
-        "MXN": 5.09
+        "MXN": 2.00
       }
     },
     "mockBidder": {
@@ -40,15 +40,29 @@
         "currency": {
           "rates": {
             "USD": {
-              "FOO": 10.0,
-              "BAR": 10.95
+              "MXN": 5.00
             }
-          },
-          "usepbsrates": false
+          }
         }
       }
     }
   },
-  "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: Required custom currency rates are all invalid."
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0,
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "",
+              "price": 5.00
+            }
+          ],
+          "seat": "appnexus-bids"
+        }
+      ]
+  },
+  "expectedReturnCode": 200
 }

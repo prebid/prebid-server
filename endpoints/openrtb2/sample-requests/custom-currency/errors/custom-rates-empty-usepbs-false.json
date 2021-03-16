@@ -1,5 +1,5 @@
 {
-  "description": "BidRequest required to use custom currency rates but comes all invalid currency codes",
+  "description": "usepbsrates set to false forces BidRequest to use custom currency rates but empty bidRequest.ext.prebid.currency.rates field is found",
   "config": {
     "currencyRates":{
       "USD": {

@@ -65,7 +65,7 @@
             {
               "id": "openx-bid",
               "impid": "",
-              "price": 1
+              "price": 0
             }
           ],
           "seat": "openx-bids"

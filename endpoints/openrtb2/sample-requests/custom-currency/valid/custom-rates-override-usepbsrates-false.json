@@ -1,9 +1,9 @@
 {
-  "description": "BidRequest defines its own custom rates in the root.ext but PBS responds by using its default currency conversions anyway.",
+  "description": "BidRequest defines its own custom rates that completely substitute those of the currency conversion server because usepbsrates is false",
   "config": {
     "currencyRates":{
       "USD": {
-        "MXN": 5.09
+        "MXN": 2.00
       }
     },
     "mockBidder": {
@@ -40,10 +40,10 @@
         "currency": {
           "rates": {
             "USD": {
-              "JPY": 2.00
+              "MXN": 5.00
             }
           },
-          "usepbsrates": true
+          "usepbsrates": false
         }
       }
     }
@@ -58,7 +58,7 @@
             {
               "id": "appnexus-bid",
               "impid": "",
-              "price": 5.09
+              "price": 5.00
             }
           ],
           "seat": "appnexus-bids"

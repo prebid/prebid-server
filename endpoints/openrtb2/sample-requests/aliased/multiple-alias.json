@@ -60,7 +60,7 @@
           {
             "id": "alias1-bid",
             "impid": "",
-            "price": 1
+            "price": 0
           }
         ],
         "seat": "alias1-bids"
@@ -70,7 +70,7 @@
           {
             "id": "alias2-bid",
             "impid": "",
-            "price": 1
+            "price": 0
           }
         ],
         "seat": "alias2-bids"
@@ -80,7 +80,7 @@
           {
             "id": "appnexus-bid",
             "impid": "",
-            "price": 1
+            "price": 0
           }
         ],
         "seat": "appnexus-bids"
