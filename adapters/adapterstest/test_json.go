@@ -126,28 +126,6 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 		diffBidLists(t, filename, bidResponses[i], spec.BidResponses[i].Bids)
 	}
 }
-func diffBidLists(t *testing.T, filename string, response *adapters.BidderResponse, expected []expectedBid) {
-	t.Helper()
-
-	// We either received a nil response unexpectedly, or a non-nil response expecting nil
-	if (response == nil || len(response.Bids) == 0) != (len(expected) == 0) {
-		return
-	}
-
-	// Received an expected nil response, so give diffBids something to work with
-	if response == nil {
-		response = new(adapters.BidderResponse)
-	}
-
-	actual := response.Bids
-
-	if len(actual) != len(expected) {
-		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(actual))
-	}
-	for i := 0; i < len(actual); i++ {
-		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), actual[i], &(expected[i]))
-	}
-}
 
 type testSpec struct {
 	BidRequest        openrtb.BidRequest      `json:"mockBidRequest"`
@@ -249,7 +227,31 @@ func diffErrorLists(t *testing.T, description string, actual []error, expected [
 	}
 }
 
-// ORIGINAL LOCATION
+func diffBidLists(t *testing.T, filename string, response *adapters.BidderResponse, expected []expectedBid) {
+	t.Helper()
+
+	if (response == nil || len(response.Bids) == 0) && (len(expected) != 0) {
+		if len(expected) == 0 {
+			t.Fatalf("%s: Makebids expected a nil response, but got a non-nil response", filename)
+		}
+
+		t.Fatalf("%s: MakeBids received unexpected nil or empty response", filename)
+	}
+
+	// Expected nil response - give diffBids something to work with.
+	if response == nil {
+		response = new(adapters.BidderResponse)
+	}
+
+	actual := response.Bids
+
+	if len(actual) != len(expected) {
+		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(actual))
+	}
+	for i := 0; i < len(actual); i++ {
+		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), actual[i], &(expected[i]))
+	}
+}
 
 // diffHttpRequests compares the actual HTTP request data to the expected one.
 // It assumes that the request bodies are JSON
