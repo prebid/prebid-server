@@ -48,7 +48,7 @@ type testConfigValues struct {
 	AliasJSON           string   `json:"aliases"`
 	BlacklistedAccounts []string `json:"blacklistedAccts"`
 	BlacklistedApps     []string `json:"blacklistedApps"`
-	AdapterList         []string `json:"disabledAdapters"`
+	DisabledAdapters    []string `json:"disabledAdapters"`
 }
 
 func TestJsonSampleRequests(t *testing.T) {
@@ -229,9 +229,9 @@ func (tc *testConfigValues) getBlackListedAccountMap() map[string]bool {
 func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 	var adaptersConfig map[string]config.Adapter
 
-	if len(tc.AdapterList) > 0 {
-		adaptersConfig = make(map[string]config.Adapter, len(tc.AdapterList))
-		for _, adapterName := range tc.AdapterList {
+	if len(tc.DisabledAdapters) > 0 {
+		adaptersConfig = make(map[string]config.Adapter, len(tc.DisabledAdapters))
+		for _, adapterName := range tc.DisabledAdapters {
 			adaptersConfig[adapterName] = config.Adapter{Disabled: true}
 		}
 	}
