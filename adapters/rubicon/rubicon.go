@@ -94,7 +94,7 @@ type rubiconExtUserTpID struct {
 }
 
 type rubiconUserDataExt struct {
-	Taxonomyname string `json:"taxonomyname"`
+	TaxonomyName string `json:"taxonomyname"`
 }
 
 type rubiconUserExt struct {
@@ -905,7 +905,7 @@ func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb.Dat
 			if err != nil {
 				continue
 			}
-			if strings.EqualFold(dataExtObject.Taxonomyname, "iab") {
+			if strings.EqualFold(dataExtObject.TaxonomyName, "iab") {
 				for _, segment := range dataRecord.Segment {
 					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
 				}
