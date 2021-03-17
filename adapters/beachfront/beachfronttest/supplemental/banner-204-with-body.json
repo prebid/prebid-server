@@ -6,6 +6,7 @@
     },
     "imp": [
       {
+        "id": "dudImp",
         "bidfloor": 0.02,
         "banner": {
           "format": [
@@ -18,7 +19,7 @@
         "ext": {
           "bidder": {
             "bidfloor": 0.02,
-            "appId": "bannerAppId1"
+            "appId": "dudAppId1"
           }
         }
       }
@@ -32,8 +33,8 @@
         "body": {
           "slots": [
             {
-              "slot": "",
-              "id": "bannerAppId1",
+              "slot": "dudImp",
+              "id": "dudAppId1",
               "bidfloor": 0.02,
               "sizes": [
                 {
@@ -58,40 +59,21 @@
           "ua": "",
           "adapterName": "BF_PREBID_S2S",
           "adapterVersion": "0.9.2",
-          "user": {}
+          "user": {
+          }
         }
       },
       "mockResponse": {
-        "status": 200,
+        "status": 204,
         "body": [
           {
-            "crid": "crid_1",
-            "price": 2.942808,
-            "w": 300,
-            "h": 250,
-            "slot": "div-gpt-ad-1460505748561-0",
-            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
+            "something": "where nothing should be"
           }
         ]
       }
     }
   ],
-  "expectedBidResponses": [
-    {
-      "bids": [
-        {
-          "bid": {
-            "id": "div-gpt-ad-1460505748561-0Banner",
-            "impid": "div-gpt-ad-1460505748561-0",
-            "price": 2.942808,
-            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>",
-            "crid": "crid_1",
-            "w": 300,
-            "h": 250
-          },
-          "type": "banner"
-        }
-      ]
-    }
-  ]
+
+  "expectedBidResponses": []
 }
+

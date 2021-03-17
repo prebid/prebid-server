@@ -46,6 +46,7 @@
           ],
           "domain": "some.domain.us",
           "page": "https://some.domain.us/some/page.html",
+          "real204": true,
           "referrer": "",
           "search": "",
           "secure": 1,
@@ -63,18 +64,13 @@
         }
       },
       "mockResponse": {
-        "status": 200,
-        "body": []
+        "status": 204,
+        "body": ""
       }
     }
   ],
 
-  "expectedBidResponses": [],
+  "expectedBidResponses": [
 
-  "expectedMakeBidsErrors": [
-    {
-      "value": "no content or truncated content received from server. status code 200 from https://qa.beachrtb.com/prebid_display. Run with request.debug = 1 for more info",
-      "comparison": "literal"
-    }
   ]
 }

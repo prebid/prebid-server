@@ -45,6 +45,7 @@
           ],
           "domain": "some.domain.us",
           "page": "https://some.domain.us/some/page.html",
+          "real204": true,
           "referrer": "",
           "search": "",
           "secure": 1,

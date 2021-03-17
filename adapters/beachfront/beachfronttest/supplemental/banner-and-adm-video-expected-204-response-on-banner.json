@@ -13,14 +13,6 @@
             }
           }
         },
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
-        },
         "video": {
           "mimes": [
             "video/mp4"
@@ -28,14 +20,22 @@
           "context": "instream",
           "w": 300,
           "h": 250
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
         }
       }
     ],
     "site": {
       "page": "https://some.domain.us/some/page.html"
     },
-    "device": {
-      "ip": "255.255.255.255"
+    "device":{
+      "ip":"255.255.255.255"
     }
   },
 
@@ -76,17 +76,8 @@
         }
       },
       "mockResponse": {
-        "status": 200,
-        "body": [
-          {
-            "crid": "crid_1",
-            "price": 9.5019655,
-            "w": 300,
-            "h": 250,
-            "slot": "mix1",
-            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
-          }
-        ]
+        "status": 204,
+        "body": ""
       }
     },
     {
@@ -154,22 +145,7 @@
   ],
 
   "expectedBidResponses": [
-    {
-      "bids": [
-        {
-          "bid": {
-            "id": "mix1Banner",
-            "impid": "mix1",
-            "price": 9.5019655,
-            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>",
-            "crid": "crid_1",
-            "w": 300,
-            "h": 250
-          },
-          "type": "banner"
-        }
-      ]
-    },
+    {"bids":[]},
     {
       "bids": [
         {
