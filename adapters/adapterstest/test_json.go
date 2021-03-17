@@ -7,8 +7,10 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/jinzhu/copier"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
 
@@ -107,23 +109,67 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 	} else if isVideoTest {
 		reqInfo.PbsEntryPoint = "video"
 	}
-	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest, &reqInfo)
-	diffErrorLists(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
-	diffHttpRequestLists(t, filename, actualReqs, spec.HttpCalls)
+
+	actualReqs := testMakeRequestsImpl(t, filename, spec, bidder, &reqInfo)
+
+	testMakeBidsImpl(t, filename, spec, bidder, actualReqs)
+}
+
+func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, reqInfo *adapters.ExtraRequestInfo) []*adapters.RequestData {
+	t.Helper()
+
+	// Save original bidRequest values to assert no data races occur inside MakeRequests latter
+	deepBidReqCopy := openrtb.BidRequest{}
+	copier.Copy(&deepBidReqCopy, &spec.BidRequest)
+	shallowBidReqCopy := spec.BidRequest
+
+	// Save original []Imp elements to assert no data races occur inside MakeRequests latter
+	deepImpCopies := make([]openrtb.Imp, len(spec.BidRequest.Imp))
+	shallowImpCopies := make([]openrtb.Imp, len(spec.BidRequest.Imp))
+	for i := 0; i < len(spec.BidRequest.Imp); i++ {
+		deepImpCopy := openrtb.Imp{}
+		copier.Copy(&deepImpCopy, &spec.BidRequest.Imp[i])
+		deepImpCopies = append(deepImpCopies, deepImpCopy)
+
+		shallowImpCopy := spec.BidRequest.Imp[i]
+		shallowImpCopies = append(shallowImpCopies, shallowImpCopy)
+	}
+
+	// Run MakeRequests
+	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest, reqInfo)
+
+	// Compare MakeRequests actual output versus expected values found in JSON file
+	assertErrorList(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
+	assertMakeRequestsOutput(t, filename, actualReqs, spec.HttpCalls)
+
+	// Assert no data races occur using original bidRequest copies of references and values
+	assertNoDataRace(t, &deepBidReqCopy, &shallowBidReqCopy, deepImpCopies, shallowImpCopies)
+
+	return actualReqs
+}
+
+func testMakeBidsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, makeRequestsOut []*adapters.RequestData) {
+	t.Helper()
 
 	bidResponses := make([]*adapters.BidderResponse, 0)
-
 	var bidsErrs = make([]error, 0, len(spec.MakeBidsErrors))
-	for i := 0; i < len(actualReqs); i++ {
+
+	// We should have as many bids as number of adapters.RequestData found in MakeRequests output
+	for i := 0; i < len(makeRequestsOut); i++ {
+		// Run MakeBids with JSON refined spec.HttpCalls info that was asserted to match MakeRequests
+		// output inside testMakeRequestsImpl
 		thisBidResponse, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
+
 		bidsErrs = append(bidsErrs, theseErrs...)
 		bidResponses = append(bidResponses, thisBidResponse)
 	}
 
-	diffErrorLists(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
+	// Assert actual errors thrown by MakeBids implementation versus expected JSON-defined spec.MakeBidsErrors
+	assertErrorList(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
 
+	// Assert MakeBids implementation BidResponses with expected JSON-defined spec.BidResponses[i].Bids
 	for i := 0; i < len(spec.BidResponses); i++ {
-		diffBidLists(t, filename, bidResponses[i].Bids, spec.BidResponses[i].Bids)
+		assertMakeBidsOutput(t, filename, bidResponses[i].Bids, spec.BidResponses[i].Bids)
 	}
 }
 
@@ -194,8 +240,8 @@ type expectedBid struct {
 //
 // Marshalling the structs and then using a JSON-diff library isn't great either, since
 
-// diffHttpRequests compares the actual http requests to the expected ones.
-func diffHttpRequestLists(t *testing.T, filename string, actual []*adapters.RequestData, expected []httpCall) {
+// assertMakeRequestsOutput compares the actual http requests to the expected ones.
+func assertMakeRequestsOutput(t *testing.T, filename string, actual []*adapters.RequestData, expected []httpCall) {
 	t.Helper()
 
 	if len(expected) != len(actual) {
@@ -206,7 +252,7 @@ func diffHttpRequestLists(t *testing.T, filename string, actual []*adapters.Requ
 	}
 }
 
-func diffErrorLists(t *testing.T, description string, actual []error, expected []testSpecExpectedError) {
+func assertErrorList(t *testing.T, description string, actual []error, expected []testSpecExpectedError) {
 	t.Helper()
 
 	if len(expected) != len(actual) {
@@ -227,7 +273,7 @@ func diffErrorLists(t *testing.T, description string, actual []error, expected [
 	}
 }
 
-func diffBidLists(t *testing.T, filename string, actual []*adapters.TypedBid, expected []expectedBid) {
+func assertMakeBidsOutput(t *testing.T, filename string, actual []*adapters.TypedBid, expected []expectedBid) {
 	t.Helper()
 
 	if len(actual) != len(expected) {
@@ -314,5 +360,54 @@ func diffJson(t *testing.T, description string, actual []byte, expected []byte) 
 		} else {
 			t.Errorf("%s json did not match expected.\n\n%s", description, output)
 		}
+	}
+}
+
+// assertNoDataRace compares the contents of the reference fields found in the original openrtb.BidRequest to their
+// original values to make sure they were not modified and we are not incurring indata races. In order to assert
+// no data races occur in the []Imp array, we call assertNoImpsDataRace()
+func assertNoDataRace(t *testing.T, bidRequestBefore *openrtb.BidRequest, bidRequestAfter *openrtb.BidRequest, impsBefore []openrtb.Imp, impsAfter []openrtb.Imp) {
+	t.Helper()
+
+	// Assert reference fields were not modified by bidder adapter MakeRequests implementation
+	assert.Equal(t, bidRequestBefore.Site, bidRequestAfter.Site, "Data race in BidRequest.Site field")
+	assert.Equal(t, bidRequestBefore.App, bidRequestAfter.App, "Data race in BidRequest.App field")
+	assert.Equal(t, bidRequestBefore.Device, bidRequestAfter.Device, "Data race in BidRequest.Device field")
+	assert.Equal(t, bidRequestBefore.User, bidRequestAfter.User, "Data race in BidRequest.User field")
+	assert.Equal(t, bidRequestBefore.Source, bidRequestAfter.Source, "Data race in BidRequest.Source field")
+	assert.Equal(t, bidRequestBefore.Regs, bidRequestAfter.Regs, "Data race in BidRequest.Regs field")
+
+	// Assert slice fields were not modified by bidder adapter MakeRequests implementation
+	assert.ElementsMatch(t, bidRequestBefore.WSeat, bidRequestAfter.WSeat, "Data race in BidRequest.[]WSeat array")
+	assert.ElementsMatch(t, bidRequestBefore.BSeat, bidRequestAfter.BSeat, "Data race in BidRequest.[]BSeat array")
+	assert.ElementsMatch(t, bidRequestBefore.Cur, bidRequestAfter.Cur, "Data race in BidRequest.[]Cur array")
+	assert.ElementsMatch(t, bidRequestBefore.WLang, bidRequestAfter.WLang, "Data race in BidRequest.[]WLang array")
+	assert.ElementsMatch(t, bidRequestBefore.BCat, bidRequestAfter.BCat, "Data race in BidRequest.[]BCat array")
+	assert.ElementsMatch(t, bidRequestBefore.BAdv, bidRequestAfter.BAdv, "Data race in BidRequest.[]BAdv array")
+	assert.ElementsMatch(t, bidRequestBefore.BApp, bidRequestAfter.BApp, "Data race in BidRequest.[]BApp array")
+	assert.ElementsMatch(t, bidRequestBefore.Ext, bidRequestAfter.Ext, "Data race in BidRequest.[]Ext array")
+
+	// Assert Imps separately
+	assertNoImpsDataRace(t, impsBefore, impsAfter)
+}
+
+// assertNoImpsDataRace compares the contents of the reference fields found in the original openrtb.Imp objects to
+// their original values to make sure they were not modified and we are not incurring in data races.
+func assertNoImpsDataRace(t *testing.T, impsBefore []openrtb.Imp, impsAfter []openrtb.Imp) {
+	t.Helper()
+
+	assert.Len(t, impsAfter, len(impsBefore), "Original []Imp array was modified and length is not equal to original after MakeRequests was called")
+
+	// Assert no data races occured in individual Imp elements
+	for i := 0; i < len(impsBefore); i++ {
+		assert.Equal(t, impsBefore[i].Banner, impsAfter[i].Banner, "Data race in bidRequest.Imp[%d].Banner field", i)
+		assert.Equal(t, impsBefore[i].Video, impsAfter[i].Video, "Data race in bidRequest.Imp[%d].Video field", i)
+		assert.Equal(t, impsBefore[i].Audio, impsAfter[i].Audio, "Data race in bidRequest.Imp[%d].Audio field", i)
+		assert.Equal(t, impsBefore[i].Native, impsAfter[i].Native, "Data race in bidRequest.Imp[%d].Native field", i)
+		assert.Equal(t, impsBefore[i].PMP, impsAfter[i].PMP, "Data race in bidRequest.Imp[%d].PMP field", i)
+		assert.Equal(t, impsBefore[i].Secure, impsAfter[i].Secure, "Data race in bidRequest.Imp[%d].Secure field", i)
+
+		assert.ElementsMatch(t, impsBefore[i].Metric, impsAfter[i].Metric, "Data race in bidRequest.Imp[%d].[]Metric array", i)
+		assert.ElementsMatch(t, impsBefore[i].IframeBuster, impsAfter[i].IframeBuster, "Data race in bidRequest.Imp[%d].[]IframeBuster array", i)
 	}
 }
