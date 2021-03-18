@@ -228,7 +228,7 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 }
 
 func validateVideoParams(video *openrtb.Video, prod string) (*openrtb.Video, error) {
-	videoCopy := *video
+	videoCopy := video
 	if videoCopy.W == 0 ||
 		videoCopy.H == 0 ||
 		videoCopy.Protocols == nil ||
@@ -252,7 +252,7 @@ func validateVideoParams(video *openrtb.Video, prod string) (*openrtb.Video, err
 		}
 	}
 
-	return &videoCopy, nil
+	return videoCopy, nil
 }
 
 func getBidType(ext bidExt) openrtb_ext.BidType {
