@@ -13,24 +13,43 @@
       "data": [
         {
           "ext": {
-            "taxonomyname": "Iab"
+            "taxonomyname": "iab"
           },
           "segment": [
             {
-              "id": "segmentId1"
-            },
-            {
-              "id": "segmentId2"
+              "id": "idToCopy"
             }
           ]
         },
         {
           "ext": {
-            "taxonomyname": "not i-a-b"
+            "taxonomyname": "someValue"
           },
           "segment": [
             {
-              "id": "segmentId3"
+              "id": "shouldNotBeCopied"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "taxonomyname": "IaB"
+          },
+          "segment": [
+            {
+              "id": "idToCopy2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "taxonomyname": [
+              "wrong iab type"
+            ]
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied2"
             }
           ]
         }
@@ -83,24 +102,43 @@
             "data": [
               {
                 "ext": {
-                  "taxonomyname": "Iab"
+                  "taxonomyname": "iab"
                 },
                 "segment": [
                   {
-                    "id": "segmentId1"
-                  },
-                  {
-                    "id": "segmentId2"
+                    "id": "idToCopy"
                   }
                 ]
               },
               {
                 "ext": {
-                  "taxonomyname": "not i-a-b"
+                  "taxonomyname": "someValue"
                 },
                 "segment": [
                   {
-                    "id": "segmentId3"
+                    "id": "shouldNotBeCopied"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "taxonomyname": "IaB"
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "taxonomyname": [
+                    "wrong iab type"
+                  ]
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied2"
                   }
                 ]
               }
@@ -110,8 +148,8 @@
               "rp": {
                 "target": {
                   "iab": [
-                    "segmentId1",
-                    "segmentId2"
+                    "idToCopy",
+                    "idToCopy2"
                   ]
                 }
               }
