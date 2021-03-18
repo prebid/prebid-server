@@ -384,6 +384,10 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 		}
 	}
 
+	if v, exists := impExt[openrtb_ext.FirstPartyDataExtKey]; exists {
+		sanitizedImpExt[openrtb_ext.FirstPartyDataExtKey] = v
+	}
+
 	if v, exists := impExt[openrtb_ext.FirstPartyDataContextExtKey]; exists {
 		sanitizedImpExt[openrtb_ext.FirstPartyDataContextExtKey] = v
 	}
