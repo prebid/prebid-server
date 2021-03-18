@@ -966,7 +966,6 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 }
 
 type mockAmpExchangeWarnings struct {
-	//lastRequest *openrtb.BidRequest
 }
 
 func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
