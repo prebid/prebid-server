@@ -120,8 +120,8 @@ func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder 
 
 	// Save original bidRequest values to assert no data races occur inside MakeRequests latter
 	deepBidReqCopy := openrtb.BidRequest{}
-	copier.CopyWithOption(&deepBidReqCopy, &spec.BidRequest, copier.Option{DeepCopy: true})
-	//copier.Copy(&deepBidReqCopy, &spec.BidRequest)
+	//copier.CopyWithOption(&deepBidReqCopy, &spec.BidRequest, copier.Option{DeepCopy: true})
+	copier.Copy(&deepBidReqCopy, &spec.BidRequest)
 	shallowBidReqCopy := spec.BidRequest
 
 	// Save original []Imp elements to assert no data races occur inside MakeRequests latter
@@ -389,8 +389,8 @@ func assertNoDataRace(t *testing.T, bidRequestBefore *openrtb.BidRequest, bidReq
 	assert.ElementsMatch(t, bidRequestBefore.Ext, bidRequestAfter.Ext, "Data race in BidRequest.[]Ext array")
 
 	// Assert Imps separately
-	assertNoImpsDataRace(t, bidRequestBefore.Imp, impsAfter)
-	//assertNoImpsDataRace(t, impsBefore, impsAfter)
+	//assertNoImpsDataRace(t, bidRequestBefore.Imp, impsAfter)
+	assertNoImpsDataRace(t, impsBefore, impsAfter)
 }
 
 // assertNoImpsDataRace compares the contents of the reference fields found in the original openrtb.Imp objects to
@@ -414,31 +414,31 @@ func assertNoImpsDataRace(t *testing.T, impsBefore []openrtb.Imp, impsAfter []op
 	}
 }
 
-func TestACopy() {
-	app := openrtb.App{
-		ID:            "anyID",
-		Name:          "anyName",
-		Bundle:        "anyBundle",
-		Domain:        "anyDomain",
-		StoreURL:      "anyUrl.com",
-		Cat:           []string{"AAA", "BBB"},
-		SectionCat:    []string{"aaa", "bbb"},
-		PageCat:       []string{"CCC", "DDD"},
-		Ver:           "VER",
-		PrivacyPolicy: 1,
-		Paid:          2,
-		Publisher: &openrtb.Publisher{
-			ID:     "anyPublisherID",
-			Name:   "anyPublisherName",
-			Cat:    []string{"pubAAA", "pubBBB"},
-			Domain: "anyPublisherDomain",
-			Ext:    json.RawMessage(`{"appPublisherExtField":"value"}`),
-		},
-		Content: &openrtb.Content{
-			ID:      "anyAppContentID",
-			Episode: 1,
-		},
-		Keywords: "AnyKeyword",
-		Ext:      json.RawMessage(`{"appExtField":"value"}`),
-	}
-}
+// func TestACopy() {
+// 	app := openrtb.App{
+// 		ID:            "anyID",
+// 		Name:          "anyName",
+// 		Bundle:        "anyBundle",
+// 		Domain:        "anyDomain",
+// 		StoreURL:      "anyUrl.com",
+// 		Cat:           []string{"AAA", "BBB"},
+// 		SectionCat:    []string{"aaa", "bbb"},
+// 		PageCat:       []string{"CCC", "DDD"},
+// 		Ver:           "VER",
+// 		PrivacyPolicy: 1,
+// 		Paid:          2,
+// 		Publisher: &openrtb.Publisher{
+// 			ID:     "anyPublisherID",
+// 			Name:   "anyPublisherName",
+// 			Cat:    []string{"pubAAA", "pubBBB"},
+// 			Domain: "anyPublisherDomain",
+// 			Ext:    json.RawMessage(`{"appPublisherExtField":"value"}`),
+// 		},
+// 		Content: &openrtb.Content{
+// 			ID:      "anyAppContentID",
+// 			Episode: 1,
+// 		},
+// 		Keywords: "AnyKeyword",
+// 		Ext:      json.RawMessage(`{"appExtField":"value"}`),
+// 	}
+// }
