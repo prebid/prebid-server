@@ -66,7 +66,8 @@ type exchange struct {
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
 type seatResponseExtra struct {
 	ResponseTimeMillis int
-	Errors             []openrtb_ext.ExtBidderError
+	Errors             []openrtb_ext.ExtBidderMessage
+	Warnings           []openrtb_ext.ExtBidderMessage
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
 	HttpCalls []*openrtb_ext.ExtHttpCall
@@ -106,6 +107,7 @@ type AuctionRequest struct {
 	UserSyncs   IdFetcher
 	RequestType metrics.RequestType
 	StartTime   time.Time
+	Warnings    []error
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -138,9 +140,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		debugLog = &DebugLog{Enabled: false}
 	}
 
-	debugInfo := getDebugInfo(r.BidRequest, requestExt)
+	requestDebugInfo := getDebugInfo(r.BidRequest, requestExt)
 
-	debugInfo = debugInfo && r.Account.DebugAllow
+	debugInfo := requestDebugInfo && r.Account.DebugAllow
 	debugLog.Enabled = debugLog.Enabled && r.Account.DebugAllow
 
 	if debugInfo {
@@ -234,6 +236,22 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, err)
 			}
 		}
+	}
+
+	if !r.Account.DebugAllow && requestDebugInfo {
+		accountDebugDisabledWarning := openrtb_ext.ExtBidderMessage{
+			Code:    errortypes.AccountLevelDebugDisabledWarningCode,
+			Message: "debug turned off for account",
+		}
+		bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral] = append(bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], accountDebugDisabledWarning)
+	}
+
+	for _, warning := range r.Warnings {
+		generalWarning := openrtb_ext.ExtBidderMessage{
+			Code:    errortypes.ReadCode(warning),
+			Message: warning.Error(),
+		}
+		bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral] = append(bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], generalWarning)
 	}
 
 	// Build the response
@@ -397,11 +415,11 @@ func (e *exchange) getAllBids(
 
 			// Timing statistics
 			e.me.RecordAdapterTime(bidderRequest.BidderLabels, time.Since(start))
-			serr := errsToBidderErrors(err)
 			bidderRequest.BidderLabels.AdapterBids = bidsToMetric(brw.adapterBids)
 			bidderRequest.BidderLabels.AdapterErrors = errorsToMetric(err)
 			// Append any bid validation errors to the error list
-			ae.Errors = serr
+			ae.Errors = errsToBidderErrors(err)
+			ae.Warnings = errsToBidderWarnings(err)
 			brw.adapterExtra = ae
 			if bids != nil {
 				for _, bid := range bids.bids {
@@ -494,13 +512,29 @@ func errorsToMetric(errs []error) map[metrics.AdapterError]struct{} {
 	return ret
 }
 
-func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderError {
-	serr := make([]openrtb_ext.ExtBidderError, len(errs))
-	for i := 0; i < len(errs); i++ {
-		serr[i].Code = errortypes.ReadCode(errs[i])
-		serr[i].Message = errs[i].Error()
+func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderMessage {
+	sErr := make([]openrtb_ext.ExtBidderMessage, 0)
+	for _, err := range errortypes.FatalOnly(errs) {
+		newErr := openrtb_ext.ExtBidderMessage{
+			Code:    errortypes.ReadCode(err),
+			Message: err.Error(),
+		}
+		sErr = append(sErr, newErr)
 	}
-	return serr
+
+	return sErr
+}
+
+func errsToBidderWarnings(errs []error) []openrtb_ext.ExtBidderMessage {
+	sWarn := make([]openrtb_ext.ExtBidderMessage, 0)
+	for _, warn := range errortypes.WarningOnly(errs) {
+		newErr := openrtb_ext.ExtBidderMessage{
+			Code:    errortypes.ReadCode(warn),
+			Message: warn.Error(),
+		}
+		sWarn = append(sWarn, newErr)
+	}
+	return sWarn
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
@@ -749,7 +783,8 @@ func getPrimaryAdServer(adServerId int) (string, error) {
 func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, r AuctionRequest, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse {
 	req := r.BidRequest
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
-		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError, len(adapterBids)),
+		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage, len(adapterBids)),
+		Warnings:             make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage, len(adapterBids)),
 		ResponseTimeMillis:   make(map[openrtb_ext.BidderName]int, len(adapterBids)),
 		RequestTimeoutMillis: req.TMax,
 	}
@@ -770,6 +805,9 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 
 		if debugInfo && len(responseExtra.HttpCalls) > 0 {
 			bidResponseExt.Debug.HttpCalls[bidderName] = responseExtra.HttpCalls
+		}
+		if len(responseExtra.Warnings) > 0 {
+			bidResponseExt.Warnings[bidderName] = responseExtra.Warnings
 		}
 		// Only make an entry for bidder errors if the bidder reported any.
 		if len(responseExtra.Errors) > 0 {

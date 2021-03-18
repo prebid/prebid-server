@@ -1505,7 +1505,9 @@ func TestCCPAInvalid(t *testing.T) {
 
 	errL := deps.validateRequest(&req)
 
-	expectedWarning := errortypes.InvalidPrivacyConsent{Message: "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)"}
+	expectedWarning := errortypes.Warning{
+		Message:     "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
+		WarningCode: errortypes.InvalidPrivacyConsentWarningCode}
 	assert.ElementsMatch(t, errL, []error{&expectedWarning})
 
 	assert.Empty(t, req.Regs.Ext, "Invalid Consent Removed From Request")
@@ -2102,6 +2104,55 @@ func TestIOS14EndToEnd(t *testing.T) {
 
 	var lmtOne int8 = 1
 	assert.Equal(t, &lmtOne, result.Device.Lmt)
+}
+
+func TestAuctionWarnings(t *testing.T) {
+	reqBody := validRequest(t, "us-privacy-invalid.json")
+	deps := &endpointDeps{
+		&warningsCheckExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
+		newTestMetrics(),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps.Auction(recorder, req, nil)
+
+	if recorder.Code != http.StatusOK {
+		t.Errorf("Endpoint should return a 200")
+	}
+	warnings := deps.ex.(*warningsCheckExchange).auctionRequest.Warnings
+	if !assert.Len(t, warnings, 1, "One warning should be returned from exchange") {
+		t.FailNow()
+	}
+	actualWarning := warnings[0].(*errortypes.Warning)
+	expectedMessage := "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)"
+	assert.Equal(t, expectedMessage, actualWarning.Message, "Warning message is incorrect")
+
+	assert.Equal(t, errortypes.InvalidPrivacyConsentWarningCode, actualWarning.WarningCode, "Warning code is incorrect")
+}
+
+// warningsCheckExchange is a well-behaved exchange which stores all incoming warnings.
+type warningsCheckExchange struct {
+	auctionRequest exchange.AuctionRequest
+}
+
+func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+	e.auctionRequest = r
+	return nil, nil
 }
 
 // nobidExchange is a well-behaved exchange which always bids "no bid".
