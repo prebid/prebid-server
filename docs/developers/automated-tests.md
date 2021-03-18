@@ -1,6 +1,6 @@
 # Automated Tests
 
-This project uses [TravisCI](https://travis-ci.org/) to make sure that every PR passes automated tests.
+This project uses GitHub Actions to make sure that every PR passes automated tests.
 To reproduce these tests locally, use:
 
 ```
