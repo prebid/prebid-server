@@ -415,18 +415,31 @@ func TestConsentWarnings(t *testing.T) {
 		Code:    10001,
 		Message: "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
 	}
-	tc2Wrnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{openrtb_ext.BidderReservedGeneral: {invalidCCPAWarning}}
-	tc3Wrnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
-		openrtb_ext.BidderReservedGeneral:  {invalidCCPAWarning, invalidConsentWarning},
-		openrtb_ext.BidderName("appnexus"): {bidderWarning},
-	}
-	tc4Wrnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{openrtb_ext.BidderName("appnexus"): {bidderWarning}}
 
 	testData := []inputTest{
-		{nil, false, nil},
-		{nil, true, tc2Wrnings},
-		{&openrtb_ext.ExtRegs{USPrivacy: "invalid"}, true, tc3Wrnings},
-		{&openrtb_ext.ExtRegs{USPrivacy: "1NYN"}, false, tc4Wrnings},
+		{
+			regs:              nil,
+			invalidConsentURL: false,
+			expectedWarnings:  nil,
+		},
+		{
+			regs:              nil,
+			invalidConsentURL: true,
+			expectedWarnings:  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{openrtb_ext.BidderReservedGeneral: {invalidCCPAWarning}},
+		},
+		{
+			regs:              &openrtb_ext.ExtRegs{USPrivacy: "invalid"},
+			invalidConsentURL: true,
+			expectedWarnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+				openrtb_ext.BidderReservedGeneral:  {invalidCCPAWarning, invalidConsentWarning},
+				openrtb_ext.BidderName("appnexus"): {bidderWarning},
+			},
+		},
+		{
+			regs:              &openrtb_ext.ExtRegs{USPrivacy: "1NYN"},
+			invalidConsentURL: false,
+			expectedWarnings:  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{openrtb_ext.BidderName("appnexus"): {bidderWarning}},
+		},
 	}
 
 	for _, testCase := range testData {
@@ -968,7 +981,6 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 type mockAmpExchangeWarnings struct{}
 
 func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
-	//m.lastRequest = r.BidRequest
 	response := &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{
 			Bid: []openrtb.Bid{{
