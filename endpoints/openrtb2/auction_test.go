@@ -2135,8 +2135,9 @@ func TestAuctionWarnings(t *testing.T) {
 		t.Errorf("Endpoint should return a 200")
 	}
 	warnings := deps.ex.(*warningsCheckExchange).auctionRequest.Warnings
-	assert.Len(t, warnings, 1, "One warning should be returned from exchange")
-
+	if !assert.Len(t, warnings, 1, "One warning should be returned from exchange") {
+		t.FailNow()
+	}
 	actualWarning := warnings[0].(*errortypes.Warning)
 	expectedMessage := "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)"
 	assert.Equal(t, expectedMessage, actualWarning.Message, "Warning message is incorrect")

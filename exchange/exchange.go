@@ -238,25 +238,21 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 	}
 
-	generalWarningKey := openrtb_ext.BidderName(openrtb_ext.BidderReservedGeneral)
-
 	if !r.Account.DebugAllow && requestDebugInfo {
 		accountDebugDisabledWarning := openrtb_ext.ExtBidderMessage{
 			Code:    errortypes.AccountLevelDebugDisabledWarningCode,
 			Message: "debug turned off for account",
 		}
-		bidResponseExt.Warnings[generalWarningKey] = append(bidResponseExt.Warnings[generalWarningKey], accountDebugDisabledWarning)
+		bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral] = append(bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], accountDebugDisabledWarning)
 	}
 
-	if len(r.Warnings) != 0 {
-		for _, warning := range r.Warnings {
-			typedWarning := warning.(*errortypes.Warning)
-			generalWarning := openrtb_ext.ExtBidderMessage{
-				Code:    typedWarning.WarningCode,
-				Message: typedWarning.Message,
-			}
-			bidResponseExt.Warnings[generalWarningKey] = append(bidResponseExt.Warnings[generalWarningKey], generalWarning)
+	for _, warning := range r.Warnings {
+		//typedWarning := warning.(*errortypes.Warning)
+		generalWarning := openrtb_ext.ExtBidderMessage{
+			Code:    errortypes.ReadCode(warning),
+			Message: warning.Error(),
 		}
+		bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral] = append(bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], generalWarning)
 	}
 
 	// Build the response

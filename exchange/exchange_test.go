@@ -181,68 +181,68 @@ func TestDebugBehaviour(t *testing.T) {
 	}
 
 	type aTest struct {
-		desc            string
-		in              inTest
-		out             outTest
-		debugData       debugData
-		generalWarnings bool
+		desc             string
+		in               inTest
+		out              outTest
+		debugData        debugData
+		generateWarnings bool
 	}
 	testCases := []aTest{
 		{
-			desc:            "test flag equals zero, ext debug flag false, no debug info expected",
-			in:              inTest{test: 0, debug: false},
-			out:             outTest{debugInfoIncluded: false},
-			debugData:       debugData{true, true},
-			generalWarnings: false,
+			desc:             "test flag equals zero, ext debug flag false, no debug info expected",
+			in:               inTest{test: 0, debug: false},
+			out:              outTest{debugInfoIncluded: false},
+			debugData:        debugData{true, true},
+			generateWarnings: false,
 		},
 		{
-			desc:            "test flag equals zero, ext debug flag true, debug info expected",
-			in:              inTest{test: 0, debug: true},
-			out:             outTest{debugInfoIncluded: true},
-			debugData:       debugData{true, true},
-			generalWarnings: false,
+			desc:             "test flag equals zero, ext debug flag true, debug info expected",
+			in:               inTest{test: 0, debug: true},
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{true, true},
+			generateWarnings: false,
 		},
 		{
-			desc:            "test flag equals 1, ext debug flag false, debug info expected",
-			in:              inTest{test: 1, debug: false},
-			out:             outTest{debugInfoIncluded: true},
-			debugData:       debugData{true, true},
-			generalWarnings: false,
+			desc:             "test flag equals 1, ext debug flag false, debug info expected",
+			in:               inTest{test: 1, debug: false},
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{true, true},
+			generateWarnings: false,
 		},
 		{
-			desc:            "test flag equals 1, ext debug flag true, debug info expected",
-			in:              inTest{test: 1, debug: true},
-			out:             outTest{debugInfoIncluded: true},
-			debugData:       debugData{true, true},
-			generalWarnings: false,
+			desc:             "test flag equals 1, ext debug flag true, debug info expected",
+			in:               inTest{test: 1, debug: true},
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{true, true},
+			generateWarnings: false,
 		},
 		{
-			desc:            "test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
-			in:              inTest{test: 2, debug: false},
-			out:             outTest{debugInfoIncluded: false},
-			debugData:       debugData{true, true},
-			generalWarnings: false,
+			desc:             "test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
+			in:               inTest{test: 2, debug: false},
+			out:              outTest{debugInfoIncluded: false},
+			debugData:        debugData{true, true},
+			generateWarnings: false,
 		},
 		{
-			desc:            "test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
-			in:              inTest{test: -1, debug: true},
-			out:             outTest{debugInfoIncluded: true},
-			debugData:       debugData{true, true},
-			generalWarnings: true,
+			desc:             "test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
+			in:               inTest{test: -1, debug: true},
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{true, true},
+			generateWarnings: true,
 		},
 		{
-			desc:            "test account level debug disabled",
-			in:              inTest{test: -1, debug: true},
-			out:             outTest{debugInfoIncluded: false},
-			debugData:       debugData{true, false},
-			generalWarnings: true,
+			desc:             "test account level debug disabled",
+			in:               inTest{test: -1, debug: true},
+			out:              outTest{debugInfoIncluded: false},
+			debugData:        debugData{true, false},
+			generateWarnings: true,
 		},
 		{
-			desc:            "test bidder level debug disabled",
-			in:              inTest{test: -1, debug: true},
-			out:             outTest{debugInfoIncluded: false},
-			debugData:       debugData{false, true},
-			generalWarnings: true,
+			desc:             "test bidder level debug disabled",
+			in:               inTest{test: -1, debug: true},
+			out:              outTest{debugInfoIncluded: false},
+			debugData:        debugData{false, true},
+			generateWarnings: true,
 		},
 	}
 
@@ -315,10 +315,10 @@ func TestDebugBehaviour(t *testing.T) {
 			UserSyncs:  &emptyUsersync{},
 			StartTime:  time.Now(),
 		}
-		if test.generalWarnings {
+		if test.generateWarnings {
 			var errL []error
 			errL = append(errL, &errortypes.Warning{
-				Message:     fmt.Sprintf("CCPA consent is invalid and will be ignored."),
+				Message:     fmt.Sprintf("CCPA consent test warning."),
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 			auctionRequest.Warnings = errL
 		}
@@ -364,7 +364,7 @@ func TestDebugBehaviour(t *testing.T) {
 		}
 
 		if !test.out.debugInfoIncluded && test.in.debug && test.debugData.accountLevelDebugAllowed {
-			if test.generalWarnings {
+			if test.generateWarnings {
 				assert.Len(t, actualExt.Warnings, 2, "warnings should have one warning")
 			} else {
 				assert.Len(t, actualExt.Warnings, 1, "warnings should have one warning")
@@ -373,7 +373,7 @@ func TestDebugBehaviour(t *testing.T) {
 			assert.Equal(t, "debug turned off for bidder", actualExt.Warnings["appnexus"][0].Message, "account debug disabled message should be present")
 		}
 
-		if test.generalWarnings {
+		if test.generateWarnings {
 			assert.NotNil(t, actualExt.Warnings["general"], "general warning should be present")
 			CCPAWarningPresent := false
 			for _, warn := range actualExt.Warnings["general"] {

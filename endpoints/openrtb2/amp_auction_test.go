@@ -397,27 +397,41 @@ func TestCCPAConsent(t *testing.T) {
 
 func TestConsentWarnings(t *testing.T) {
 	type inputTest struct {
-		nilRegs           bool
-		regs              string
+		regs              *openrtb_ext.ExtRegs
 		invalidConsentURL bool
-		bidderWarnings    bool
+		expectedWarnings  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage
 	}
+	invalidConsent := "invalid"
+
+	bidderWarning := openrtb_ext.ExtBidderMessage{
+		Code:    10003,
+		Message: "debug turned off for bidder",
+	}
+	invalidCCPAWarning := openrtb_ext.ExtBidderMessage{
+		Code:    10001,
+		Message: "Consent '" + invalidConsent + "' is not recognized as either CCPA or GDPR TCF.",
+	}
+	invalidConsentWarning := openrtb_ext.ExtBidderMessage{
+		Code:    10001,
+		Message: "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
+	}
+	tc2Wrnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{openrtb_ext.BidderReservedGeneral: {invalidCCPAWarning}}
+	tc3Wrnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+		openrtb_ext.BidderReservedGeneral:  {invalidCCPAWarning, invalidConsentWarning},
+		openrtb_ext.BidderName("appnexus"): {bidderWarning},
+	}
+	tc4Wrnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{openrtb_ext.BidderName("appnexus"): {bidderWarning}}
+
 	testData := []inputTest{
-		{true, "", false, false},
-		{true, "", true, false},
-		{false, "invalid", true, true},
-		{false, "1NYN", false, true},
+		{nil, false, nil},
+		{nil, true, tc2Wrnings},
+		{&openrtb_ext.ExtRegs{USPrivacy: "invalid"}, true, tc3Wrnings},
+		{&openrtb_ext.ExtRegs{USPrivacy: "1NYN"}, false, tc4Wrnings},
 	}
 
 	for _, testCase := range testData {
 
-		// Build Request
-		var regs *openrtb_ext.ExtRegs
-		if !testCase.nilRegs {
-			regs = &openrtb_ext.ExtRegs{USPrivacy: testCase.regs}
-		}
-
-		bid, err := getTestBidRequest(true, nil, testCase.nilRegs, regs)
+		bid, err := getTestBidRequest(true, nil, testCase.regs == nil, testCase.regs)
 		if err != nil {
 			t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
 		}
@@ -427,7 +441,7 @@ func TestConsentWarnings(t *testing.T) {
 
 		// Build Exchange Endpoint
 		var mockExchange exchange.Exchange
-		if testCase.bidderWarnings {
+		if testCase.regs != nil {
 			mockExchange = &mockAmpExchangeWarnings{}
 		} else {
 			mockExchange = &mockAmpExchange{}
@@ -447,7 +461,7 @@ func TestConsentWarnings(t *testing.T) {
 
 		// Invoke Endpoint
 		var request *http.Request
-		invalidConsent := "invalid"
+
 		if testCase.invalidConsentURL {
 			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&consent_string="+invalidConsent, nil)
 
@@ -465,35 +479,20 @@ func TestConsentWarnings(t *testing.T) {
 		}
 
 		// Assert Result
-		if !testCase.bidderWarnings {
+		if testCase.regs == nil {
 			result := mockExchange.(*mockAmpExchange).lastRequest
 			assert.NotNil(t, result, "lastRequest")
 			assert.Nil(t, result.User, "lastRequest.User")
 			assert.Nil(t, result.Regs, "lastRequest.Regs")
 			assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors)
 			if testCase.invalidConsentURL {
-				expectedWarnings := map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
-					openrtb_ext.BidderReservedGeneral: {
-						{
-							Code:    10001,
-							Message: "Consent '" + invalidConsent + "' is not recognized as either CCPA or GDPR TCF.",
-						},
-					},
-				}
-				assert.Equal(t, expectedWarnings, response.Warnings)
+				assert.Equal(t, testCase.expectedWarnings, response.Warnings)
 			} else {
 				assert.Empty(t, response.Warnings)
 			}
 
 		} else {
-			if !testCase.invalidConsentURL {
-				assert.Len(t, response.Warnings["appnexus"], 1, "1 bidder warning should be present")
-				assert.Len(t, response.Warnings["general"], 0, "General warnings should not be present")
-
-			} else {
-				assert.Len(t, response.Warnings["appnexus"], 1, "1 bidder warning should be present")
-				assert.Len(t, response.Warnings["general"], 2, "2 General warnings should be present")
-			}
+			assert.Equal(t, testCase.expectedWarnings, response.Warnings)
 		}
 	}
 }
