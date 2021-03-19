@@ -521,7 +521,7 @@ func validateBanner(banner *openrtb2.Banner, impIndex int) error {
 		return nil
 	}
 
-	// The following fields were previously uints in our OpenRTB library, but have
+	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
 	if banner.W != nil && *banner.W < 0 {
 		return fmt.Errorf("request.imp[%d].banner.w must be a positive number", impIndex)
@@ -568,7 +568,7 @@ func validateVideo(video *openrtb2.Video, impIndex int) error {
 		return fmt.Errorf("request.imp[%d].video.mimes must contain at least one supported MIME type", impIndex)
 	}
 
-	// The following fields were previously uints in our OpenRTB library, but have
+	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
 	if video.W < 0 {
 		return fmt.Errorf("request.imp[%d].video.w must be a positive number", impIndex)
@@ -595,7 +595,7 @@ func validateAudio(audio *openrtb2.Audio, impIndex int) error {
 		return fmt.Errorf("request.imp[%d].audio.mimes must contain at least one supported MIME type", impIndex)
 	}
 
-	// The following fields were previously uints in our OpenRTB library, but have
+	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
 	if audio.Sequence < 0 {
 		return fmt.Errorf("request.imp[%d].audio.sequence must be a positive number", impIndex)
@@ -1130,7 +1130,7 @@ func validateDevice(device *openrtb2.Device) error {
 		return nil
 	}
 
-	// The following fields were previously uints in our OpenRTB library, but have
+	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
 	if device.W < 0 {
 		return errors.New("request.device.w must be a positive number")
