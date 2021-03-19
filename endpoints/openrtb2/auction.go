@@ -1052,8 +1052,17 @@ func (deps *endpointDeps) validateApp(app *openrtb2.App) error {
 }
 
 func (deps *endpointDeps) validateUser(user *openrtb2.User, aliases map[string]string) error {
-	// DigiTrust support
-	if user != nil && user.Ext != nil {
+	if user == nil {
+		return nil
+	}
+
+	// The following fields were previously uints in the OpenRTB library we use, but have
+	// since been changed to ints. We decided to maintain the non-negative check.
+	if user.Geo != nil && user.Geo.Accuracy < 0 {
+		return errors.New("request.user.geo.accuracy must be a positive number")
+	}
+
+	if user.Ext != nil {
 		// Creating ExtUser object to check if DigiTrust is valid
 		var userExt openrtb_ext.ExtUser
 		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
@@ -1140,6 +1149,9 @@ func validateDevice(device *openrtb2.Device) error {
 	}
 	if device.PPI < 0 {
 		return errors.New("request.device.ppi must be a positive number")
+	}
+	if device.Geo != nil && device.Geo.Accuracy < 0 {
+		return errors.New("request.device.geo.accuracy must be a positive number")
 	}
 
 	return nil
