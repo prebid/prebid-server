@@ -1,5 +1,5 @@
 {
-    "description": "Request has a negative device height.",
+    "description": "Request has a negative PPI height.",
     "mockBidRequest": {
         "id": "req-id",
         "site": {
