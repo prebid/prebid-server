@@ -158,7 +158,8 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					}
 
 					pbReq.Imp[i].TagID = strings.TrimSpace(adSlot[0])
-					pbReq.Imp[i].Banner = assignBannerHeightAndWidth(pbReq.Imp[i].Banner, uint64(height), uint64(width))
+					pbReq.Imp[i].Banner.H = openrtb.Uint64Ptr(uint64(height))
+					pbReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
 
 					if len(params.Keywords) != 0 {
 						kvstr := prepareImpressionExt(params.Keywords)
@@ -426,17 +427,6 @@ func validateAdSlot(adslot string, imp *openrtb.Imp) error {
 	return nil
 }
 
-func assignBannerHeightAndWidth(banner *openrtb.Banner, h uint64, w uint64) *openrtb.Banner {
-	bannerCopy := *banner
-
-	bannerCopy.W = new(uint64)
-	*bannerCopy.W = w
-	bannerCopy.H = new(uint64)
-	*bannerCopy.H = h
-
-	return &bannerCopy
-}
-
 func assignBannerSize(banner *openrtb.Banner) (*openrtb.Banner, error) {
 	if banner.W != nil && banner.H != nil {
 		return banner, nil
@@ -447,6 +437,15 @@ func assignBannerSize(banner *openrtb.Banner) (*openrtb.Banner, error) {
 	}
 
 	return assignBannerHeightAndWidth(banner, banner.Format[0].H, banner.Format[0].H), nil
+}
+
+func assignBannerHeightAndWidth(banner *openrtb.Banner, h uint64, w uint64) *openrtb.Banner {
+	bannerCopy := *banner
+
+	bannerCopy.W = openrtb.Uint64Ptr(w)
+	bannerCopy.H = openrtb.Uint64Ptr(h)
+
+	return &bannerCopy
 }
 
 // parseImpressionObject parse the imp to get it ready to send to pubmatic
