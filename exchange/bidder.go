@@ -17,7 +17,6 @@ import (
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	nativeResponse "github.com/mxmCherry/openrtb/native/response"
-	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
@@ -50,6 +49,8 @@ type adaptedBidder interface {
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
 	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error)
+
+	client() *http.Client
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -343,11 +344,6 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		ctx = bidder.addClientTrace(ctx)
 	}
 
-	// get newrelic transaction from context
-	txn := newrelic.FromContext(ctx)
-	// put newrelic transaction into http request
-	httpReq = newrelic.RequestWithTransactionContext(httpReq, txn)
-
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {
@@ -475,4 +471,8 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		},
 	}
 	return httptrace.WithClientTrace(ctx, trace)
+}
+
+func (bidder *bidderAdapter) client() *http.Client {
+	return bidder.Client
 }

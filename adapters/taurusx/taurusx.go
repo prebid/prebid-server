@@ -8,6 +8,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/cache/skanidlist"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
@@ -154,7 +155,10 @@ func (adapter *TaurusXAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 
 		impExt := taurusxImpExt{}
 		if taurusxExt.SKADNSupported {
-			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, taurusxExtSKADNetIDs)
+			skanIDList := skanidlist.Get(openrtb_ext.BidderTaurusX)
+
+			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, skanIDList)
+
 			// only add if present
 			if len(skadn.SKADNetIDs) > 0 {
 				impExt.SKADN = &skadn

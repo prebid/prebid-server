@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -259,4 +260,8 @@ type mockAdaptedBidder struct {
 
 func (b *mockAdaptedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
 	return b.bidResponse, b.errorResponse
+}
+
+func (m *mockAdaptedBidder) client() *http.Client {
+	return http.DefaultClient
 }
