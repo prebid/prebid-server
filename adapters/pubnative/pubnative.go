@@ -111,10 +111,9 @@ func convertBanner(banner *openrtb.Banner) (*openrtb.Banner, error) {
 			f := banner.Format[0]
 
 			bannerCopy := *banner
-			bannerCopy.W = new(uint64)
-			*bannerCopy.W = f.W
-			bannerCopy.H = new(uint64)
-			*bannerCopy.H = f.H
+
+			bannerCopy.W = openrtb.Uint64Ptr(f.W)
+			bannerCopy.H = openrtb.Uint64Ptr(f.H)
 
 			return &bannerCopy, nil
 		} else {
