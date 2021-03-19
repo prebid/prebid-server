@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const clientVersion = "prebid_server_0.1"
+const clientVersion = "prebid_server_0.2"
 
 type adMarkupType string
 
