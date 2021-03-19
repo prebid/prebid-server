@@ -139,6 +139,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
+	warnings := errortypes.WarningOnly(errL)
 
 	ctx := context.Background()
 
@@ -179,6 +180,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		RequestType:  labels.RType,
 		StartTime:    start,
 		LegacyLabels: labels,
+		Warnings:     warnings,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -367,8 +369,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb2.BidRequest) []error {
 	if ccpaPolicy, err := ccpa.ReadFromRequest(req); err != nil {
 		return append(errL, err)
 	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
-		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
-			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
+		if _, invalidConsent := err.(*errortypes.Warning); invalidConsent {
+			errL = append(errL, &errortypes.Warning{
+				Message:     fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err),
+				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 			consentWriter := ccpa.ConsentWriter{Consent: ""}
 			if err := consentWriter.Write(req); err != nil {
 				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
@@ -1020,12 +1024,17 @@ func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequ
 }
 
 func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
-	for thisAlias, coreBidder := range aliases {
-		if _, isCoreBidder := deps.bidderMap[coreBidder]; !isCoreBidder {
-			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", thisAlias, coreBidder)
+	for alias, coreBidder := range aliases {
+		if _, isCoreBidderDisabled := deps.disabledBidders[coreBidder]; isCoreBidderDisabled {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to disabled bidder: %s", alias, coreBidder)
 		}
-		if thisAlias == coreBidder {
-			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", thisAlias)
+
+		if _, isCoreBidder := deps.bidderMap[coreBidder]; !isCoreBidder {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", alias, coreBidder)
+		}
+
+		if alias == coreBidder {
+			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", alias)
 		}
 	}
 	return nil

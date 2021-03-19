@@ -637,7 +637,10 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 			description: "Invalid Consent",
 			reqExt:      json.RawMessage(`{"prebid":{"nosale":["*"]}}`),
 			reqRegsExt:  json.RawMessage(`{"us_privacy":"malformed"}`),
-			expectError: &errortypes.InvalidPrivacyConsent{"request.regs.ext.us_privacy must contain 4 characters"},
+			expectError: &errortypes.Warning{
+				Message:     "request.regs.ext.us_privacy must contain 4 characters",
+				WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
+			},
 		},
 		{
 			description: "Invalid No Sale Bidders",

@@ -123,7 +123,7 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 	diffErrorLists(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
 
 	for i := 0; i < len(spec.BidResponses); i++ {
-		diffBidLists(t, filename, bidResponses[i].Bids, spec.BidResponses[i].Bids)
+		diffBidLists(t, filename, bidResponses[i], spec.BidResponses[i].Bids)
 	}
 }
 
@@ -227,8 +227,23 @@ func diffErrorLists(t *testing.T, description string, actual []error, expected [
 	}
 }
 
-func diffBidLists(t *testing.T, filename string, actual []*adapters.TypedBid, expected []expectedBid) {
+func diffBidLists(t *testing.T, filename string, response *adapters.BidderResponse, expected []expectedBid) {
 	t.Helper()
+
+	if (response == nil || len(response.Bids) == 0) != (len(expected) == 0) {
+		if len(expected) == 0 {
+			t.Fatalf("%s: expectedBidResponses indicated a nil response, but mockResponses supplied a non-nil response", filename)
+		}
+
+		t.Fatalf("%s: mockResponses included unexpected nil or empty response", filename)
+	}
+
+	// Expected nil response - give diffBids something to work with.
+	if response == nil {
+		response = new(adapters.BidderResponse)
+	}
+
+	actual := response.Bids
 
 	if len(actual) != len(expected) {
 		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(actual))
