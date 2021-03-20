@@ -433,7 +433,7 @@ func assignBannerSize(banner *openrtb.Banner) (*openrtb.Banner, error) {
 	}
 
 	if len(banner.Format) == 0 {
-		return banner, errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
+		return nil, errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
 	}
 
 	return assignBannerHeightAndWidth(banner, banner.Format[0].H, banner.Format[0].H), nil
