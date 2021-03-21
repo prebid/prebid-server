@@ -1,5 +1,6 @@
 maintainer:
   email: "prebid@gumgum.com"
+gvlVendorID: 61
 capabilities:
   site:
     mediaTypes:

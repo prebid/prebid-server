@@ -8,5 +8,5 @@ import (
 )
 
 func NewNanoInteractiveSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("nanointeractive", 72, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("nanointeractive", temp, adapters.SyncTypeRedirect)
 }

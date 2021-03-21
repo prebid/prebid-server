@@ -1,5 +1,6 @@
 maintainer:
   email: "support@rhythmone.com"
+gvlVendorID: 36
 capabilities:
   app:
     mediaTypes:

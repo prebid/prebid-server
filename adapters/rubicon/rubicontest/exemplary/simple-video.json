@@ -9,6 +9,52 @@
       "id": "1",
       "bundle": "com.wls.testwlsapplication"
     },
+    "user": {
+      "data": [
+        {
+          "ext": {
+            "taxonomyname": "iab"
+          },
+          "segment": [
+            {
+              "id": "idToCopy"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "taxonomyname": "someValue"
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "taxonomyname": "IaB"
+          },
+          "segment": [
+            {
+              "id": "idToCopy2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "taxonomyname": [
+              "wrong iab type"
+            ]
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied2"
+            }
+          ]
+        }
+      ]
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -30,8 +76,8 @@
             "video": {
             },
             "accountId": 1001,
-            "siteId":113932,
-            "zoneId":535510
+            "siteId": 113932,
+            "zoneId": 535510
           }
         }
       }
@@ -51,6 +97,63 @@
             },
             "ip": "123.123.123.123",
             "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+          },
+          "user": {
+            "data": [
+              {
+                "ext": {
+                  "taxonomyname": "iab"
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "taxonomyname": "someValue"
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "taxonomyname": "IaB"
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "taxonomyname": [
+                    "wrong iab type"
+                  ]
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied2"
+                  }
+                ]
+              }
+            ],
+            "ext": {
+              "digitrust": null,
+              "rp": {
+                "target": {
+                  "iab": [
+                    "idToCopy",
+                    "idToCopy2"
+                  ]
+                }
+              }
+            }
           },
           "app": {
             "id": "1",
@@ -91,7 +194,7 @@
               },
               "ext": {
                 "rp": {
-                  "track":{
+                  "track": {
                     "mint": "",
                     "mint_version": ""
                   },

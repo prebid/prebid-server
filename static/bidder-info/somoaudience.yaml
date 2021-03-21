@@ -1,5 +1,6 @@
 maintainer:
   email: "publishers@somoaudience.com"
+gvlVendorID: 341
 capabilities:
   app:
     mediaTypes:

@@ -8,5 +8,5 @@ import (
 )
 
 func NewTripleliftSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("triplelift", 28, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("triplelift", temp, adapters.SyncTypeRedirect)
 }

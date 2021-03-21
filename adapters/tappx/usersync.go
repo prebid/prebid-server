@@ -8,5 +8,5 @@ import (
 )
 
 func NewTappxSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("tappx", 628, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("tappx", temp, adapters.SyncTypeIframe)
 }

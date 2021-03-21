@@ -30,6 +30,5 @@ func TestSmartadserverSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "//ssbsync.smartadserver.com/getuid?gdpr=1&gdpr_consent=COyASAoOyASAoAfAAAENAfCAAAAAAAAAAAAAAAAAAAAA&us_privacy=1YNN&url=localhost%2Fsetuid%3Fbidder%3Dsmartadserver%26gdpr%3D1%26gdpr_consent%3DCOyASAoOyASAoAfAAAENAfCAAAAAAAAAAAAAAAAAAAAA%26uid%3D%5Bsas_uid%5D%22", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 45, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

@@ -35,7 +35,7 @@ const (
 	BidderReservedData    BidderName = "data"    // Reserved for first party data.
 	BidderReservedGeneral BidderName = "general" // Reserved for non-bidder specific messages when using a map keyed on the bidder name.
 	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
-	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for SKAdNetwork OpenRTB extension.
+	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
 )
 
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
@@ -90,6 +90,7 @@ const (
 	BidderAdtarget         BidderName = "adtarget"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
+	BidderAdyoulike        BidderName = "adyoulike"
 	BidderAJA              BidderName = "aja"
 	BidderAMX              BidderName = "amx"
 	BidderApplogy          BidderName = "applogy"
@@ -198,6 +199,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdtarget,
 		BidderAdtelligent,
 		BidderAdvangelists,
+		BidderAdyoulike,
 		BidderAJA,
 		BidderAMX,
 		BidderApplogy,

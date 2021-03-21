@@ -76,6 +76,7 @@ type beachfrontBannerRequest struct {
 	AdapterVersion string           `json:"adapterVersion"`
 	IP             string           `json:"ip"`
 	RequestID      string           `json:"requestId"`
+	Real204        bool             `json:"real204"`
 }
 
 type beachfrontSlot struct {
@@ -367,6 +368,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	if request.Imp[0].Secure != nil {
 		bfr.Secure = *request.Imp[0].Secure
 	}
+	bfr.Real204 = true
 
 	return bfr, errs
 }
@@ -465,7 +467,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		}
 
 		bfReqs[i].Request.Imp = nil
-		bfReqs[i].Request.Imp = make([]openrtb.Imp, 1, 1)
+		bfReqs[i].Request.Imp = make([]openrtb.Imp, 1)
 		bfReqs[i].Request.Imp[0] = imp
 
 	}
@@ -481,18 +483,12 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var bids []openrtb.Bid
-
-	// The case of response status == 200 and response body length == 2 below covers the case of the banner endpoint returning
-	// an empty JSON array ('[]'), which is functionally no content.
-	if response.StatusCode == http.StatusNoContent || (response.StatusCode == http.StatusOK && len(response.Body) <= 2) {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("no content or truncated content received from server. status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
-		}}
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
 	}
 
 	if response.StatusCode >= http.StatusInternalServerError {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("server error status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
 		}}
 	}
@@ -507,8 +503,9 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		return nil, []error{fmt.Errorf("unexpected status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri)}
 	}
 
-	var xtrnal openrtb.BidRequest
+	var bids []openrtb.Bid
 	var errs = make([]error, 0)
+	var xtrnal openrtb.BidRequest
 
 	// For video, which uses RTB for the external request, this will unmarshal as expected. For banner, it will
 	// only get the User struct and everything else will be nil
@@ -524,6 +521,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 	var dur beachfrontVideoBidExtension
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
+
 	for i := 0; i < len(bids); i++ {
 
 		// If we unmarshal without an error, this is an AdM video

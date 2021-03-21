@@ -30,6 +30,5 @@ func TestBeintooSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://ib.beintoo.com/um?ssp=pbs&gdpr=1&gdpr_consent=BOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA&us_privacy=1NYN&redirect=localhost%2Fsetuid%3Fbidder%3Dbeintoo%26uid%3D%24UID", syncInfo.URL)
 	assert.Equal(t, "iframe", syncInfo.Type)
-	assert.EqualValues(t, 618, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

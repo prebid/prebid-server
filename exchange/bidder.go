@@ -83,10 +83,6 @@ type pbsOrtbSeatBid struct {
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
 	httpCalls []*openrtb_ext.ExtHttpCall
-	// ext contains the extension for this seatbid.
-	// if len(bids) > 0, this will become response.seatbid[i].ext.{bidder} on the final OpenRTB response.
-	// if len(bids) == 0, this will be ignored because the OpenRTB spec doesn't allow a SeatBid with 0 Bids.
-	ext json.RawMessage
 }
 
 // adaptBidder converts an adapters.Bidder into an exchange.adaptedBidder.
@@ -168,9 +164,17 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		// - debugContextKey (url param) in true
 		// - account debug is allowed
 		// - bidder debug is allowed
-		if accountDebugAllowed && bidder.config.DebugInfo.Allow {
-			if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
-				seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+		if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
+			if accountDebugAllowed {
+				if bidder.config.DebugInfo.Allow {
+					seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+				} else {
+					debugDisabledWarning := errortypes.Warning{
+						WarningCode: errortypes.BidderLevelDebugDisabledWarningCode,
+						Message:     "debug turned off for bidder",
+					}
+					errs = append(errs, &debugDisabledWarning)
+				}
 			}
 		}
 

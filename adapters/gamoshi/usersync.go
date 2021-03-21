@@ -8,5 +8,5 @@ import (
 )
 
 func NewGamoshiSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("gamoshi", 644, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("gamoshi", temp, adapters.SyncTypeRedirect)
 }

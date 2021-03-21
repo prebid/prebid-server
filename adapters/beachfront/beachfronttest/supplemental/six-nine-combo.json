@@ -189,6 +189,7 @@
           ],
           "domain": "example.com",
           "page": "http://example.com/whatever/something.html",
+          "real204": true,
           "referrer": "",
           "search": "",
           "secure": 0,

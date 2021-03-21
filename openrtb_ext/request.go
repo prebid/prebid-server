@@ -5,9 +5,12 @@ import (
 	"errors"
 )
 
-// FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
-// for first party data support.
-const FirstPartyDataContextExtKey string = "context"
+// FirstPartyDataContextExtKey defines the field name within request.ext reserved for first party data.
+const FirstPartyDataContextExtKey = "context"
+
+// SKAdNExtKey defines the field name within request.ext reserved for Apple's SKAdNetwork.
+const SKAdNExtKey = "skadn"
+
 const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
