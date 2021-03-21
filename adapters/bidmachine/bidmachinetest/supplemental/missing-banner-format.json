@@ -1,0 +1,27 @@
+{
+    "mockBidRequest":
+    {
+        "id": "test-request-id",
+        "imp": [
+        {
+            "id": "test-impression-id-1",
+            "banner":
+            {},
+            "ext":
+            {
+                "bidder":
+                {
+                    "seller_id": "1",
+                    "host": "api-eu",
+                    "path": "auction/rtb/v2"
+
+                }
+            }
+        }]
+    },
+    "expectedMakeRequestsErrors": [
+    {
+        "value": "banner format required",
+        "comparison": "literal"
+    }]
+}

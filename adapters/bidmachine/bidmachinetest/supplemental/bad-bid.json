@@ -1,0 +1,101 @@
+{
+    "mockBidRequest":
+    {
+        "id": "test-request-id",
+        "imp": [
+        {
+            "id": "test-impression-id-0",
+            "banner":
+            {
+                "format": [
+                {
+                    "w": 320,
+                    "h": 50
+                }]
+            },
+            "ext":
+            {
+                "bidder":
+                {
+                    "seller_id": "1",
+                    "host": "api-eu",
+                    "path": "auction/rtb/v2"
+
+                }
+            }
+        }]
+    },
+    "httpCalls": [
+    {
+        "expectedRequest":
+        {
+            "uri": "http://api-eu.example.com/prebid/auction/rtb/v2/1",
+            "body":
+            {
+                "id": "test-request-id",
+                "imp": [
+                {
+                    "id": "test-impression-id-0",
+                    "banner":
+                    {
+                        "format": [
+                        {
+                            "w": 320,
+                            "h": 50
+                        }]
+                    },
+                    "ext":
+                    {
+                        "bidder":
+                        {
+                            "seller_id": "1",
+                            "host": "api-eu",
+                            "path": "auction/rtb/v2"
+                        }
+                    }
+                }]
+            }
+        },
+        "mockResponse":
+        {
+            "status": 200,
+            "body":
+            {
+                "id": "test-response-id",
+                "seatbid": [
+                {
+                    "bid": [
+                    {
+                        "id": "test-bid-id-0",
+                        "impid": "test-impression-id-0",
+                        "price": 10
+                    },
+                    {
+                        "id": "test-bid-id-bogus",
+                        "impid": "test-impression-id-bogus",
+                        "price": 11
+                    }]
+                }]
+            }
+        }
+    }],
+    "expectedBidResponses": [
+    {
+        "bids": [
+        {
+            "bid":
+            {
+                "id": "test-bid-id-0",
+                "impid": "test-impression-id-0",
+                "price": 10
+            },
+            "type": "banner"
+        }]
+    }],
+    "expectedMakeRequestsErrors": [],
+    "expectedMakeBidsErrors": [
+    {
+        "value": "ignoring bid id=test-bid-id-bogus, request doesn't contain any valid impression with id=test-impression-id-bogus",
+        "comparison": "literal"
+    }]
+}

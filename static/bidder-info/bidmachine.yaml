@@ -1,0 +1,7 @@
+maintainer:
+  email: hi@bidmachine.io
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video

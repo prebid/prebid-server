@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Kidoz Adapter Params",
+    "description": "A schema which validates params accepted by the Kidoz adapter",
+    "type": "object",
+    "properties": {
+        "seller_id": {
+            "$ref": "#/definitions/non-empty-string",
+            "description": "Bidmachine seller_id"
+        }
+    },
+    "definitions": {
+        "non-empty-string": {
+            "type": "string",
+            "minLength": 1
+        }
+    },
+    "required": [
+        "seller_id"
+    ]
+}
