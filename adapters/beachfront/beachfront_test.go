@@ -11,8 +11,8 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
-		Endpoint:         `https://display.bfmio.com/prebid_display`,
-		ExtraAdapterInfo: `{"video_endpoint":"https://reachms.bfmio.com/bid.json?exchange_id"}`,
+		Endpoint:         `https://qa.beachrtb.com/prebid_display`,
+		ExtraAdapterInfo: `{"video_endpoint":"https://qa.beachrtb.com/bid.json?exchange_id"}`,
 	})
 
 	if buildErr != nil {
@@ -24,7 +24,7 @@ func TestJsonSamples(t *testing.T) {
 
 func TestExtraInfoDefaultWhenEmpty(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
-		Endpoint:         `https://display.bfmio.com/prebid_display`,
+		Endpoint:         `https://qa.beachrtb.com/prebid_display`,
 		ExtraAdapterInfo: ``,
 	})
 
@@ -39,7 +39,7 @@ func TestExtraInfoDefaultWhenEmpty(t *testing.T) {
 
 func TestExtraInfoDefaultWhenNotSpecified(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
-		Endpoint:         `https://display.bfmio.com/prebid_display`,
+		Endpoint:         `https://qa.beachrtb.com/prebid_display`,
 		ExtraAdapterInfo: `{"video_endpoint":""}`,
 	})
 
@@ -54,7 +54,7 @@ func TestExtraInfoDefaultWhenNotSpecified(t *testing.T) {
 
 func TestExtraInfoMalformed(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderBeachfront, config.Adapter{
-		Endpoint:         `https://display.bfmio.com/prebid_display`,
+		Endpoint:         `https://qa.beachrtb.com/prebid_display`,
 		ExtraAdapterInfo: `malformed`,
 	})
 

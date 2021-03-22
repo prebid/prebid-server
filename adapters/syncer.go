@@ -4,34 +4,21 @@ import (
 	"text/template"
 
 	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/usersync"
 )
 
-func GDPRAwareSyncerIDs(syncers map[openrtb_ext.BidderName]usersync.Usersyncer) map[openrtb_ext.BidderName]uint16 {
-	gdprAwareSyncers := make(map[openrtb_ext.BidderName]uint16, len(syncers))
-	for bidderName, syncer := range syncers {
-		if syncer.GDPRVendorID() != 0 {
-			gdprAwareSyncers[bidderName] = syncer.GDPRVendorID()
-		}
-	}
-	return gdprAwareSyncers
-}
-
 type Syncer struct {
-	familyName   string
-	gdprVendorID uint16
-	urlTemplate  *template.Template
-	syncType     SyncType
+	familyName  string
+	syncType    SyncType
+	urlTemplate *template.Template
 }
 
-func NewSyncer(familyName string, vendorID uint16, urlTemplate *template.Template, syncType SyncType) *Syncer {
+func NewSyncer(familyName string, urlTemplate *template.Template, syncType SyncType) *Syncer {
 	return &Syncer{
-		familyName:   familyName,
-		gdprVendorID: vendorID,
-		urlTemplate:  urlTemplate,
-		syncType:     syncType,
+		familyName:  familyName,
+		urlTemplate: urlTemplate,
+		syncType:    syncType,
 	}
 }
 
@@ -61,8 +48,4 @@ func (s *Syncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.Us
 
 func (s *Syncer) FamilyName() string {
 	return s.familyName
-}
-
-func (s *Syncer) GDPRVendorID() uint16 {
-	return s.gdprVendorID
 }

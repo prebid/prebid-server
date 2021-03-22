@@ -8,5 +8,5 @@ import (
 )
 
 func NewPubmaticSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("pubmatic", 76, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("pubmatic", temp, adapters.SyncTypeIframe)
 }

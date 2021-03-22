@@ -30,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/lmt"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -138,6 +139,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
+	warnings := errortypes.WarningOnly(errL)
 
 	ctx := context.Background()
 
@@ -178,6 +180,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		RequestType:  labels.RType,
 		StartTime:    start,
 		LegacyLabels: labels,
+		Warnings:     warnings,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -264,6 +267,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
+	lmt.ModifyForIOS(req)
+
 	errL := deps.validateRequest(req)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
@@ -331,6 +336,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		if err := validateSChains(bidExt); err != nil {
 			return []error{err}
 		}
+
+		if err := deps.validateEidPermissions(bidExt, aliases); err != nil {
+			return []error{err}
+		}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -356,8 +365,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	if ccpaPolicy, err := ccpa.ReadFromRequest(req); err != nil {
 		return append(errL, err)
 	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
-		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
-			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
+		if _, invalidConsent := err.(*errortypes.Warning); invalidConsent {
+			errL = append(errL, &errortypes.Warning{
+				Message:     fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err),
+				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 			consentWriter := ccpa.ConsentWriter{Consent: ""}
 			if err := consentWriter.Write(req); err != nil {
 				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
@@ -417,6 +428,51 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 func validateSChains(req *openrtb_ext.ExtRequest) error {
 	_, err := exchange.BidderToPrebidSChains(req)
 	return err
+}
+
+func (deps *endpointDeps) validateEidPermissions(req *openrtb_ext.ExtRequest, aliases map[string]string) error {
+	if req == nil || req.Prebid.Data == nil {
+		return nil
+	}
+
+	uniqueSources := make(map[string]struct{}, len(req.Prebid.Data.EidPermissions))
+	for i, eid := range req.Prebid.Data.EidPermissions {
+		if len(eid.Source) == 0 {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i)
+		}
+
+		if _, exists := uniqueSources[eid.Source]; exists {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] duplicate entry with field: "source"`, i)
+		}
+		uniqueSources[eid.Source] = struct{}{}
+
+		if len(eid.Bidders) == 0 {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i)
+		}
+
+		if err := validateBidders(eid.Bidders, deps.bidderMap, aliases); err != nil {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
+		}
+	}
+
+	return nil
+}
+
+func validateBidders(bidders []string, knownBidders map[string]openrtb_ext.BidderName, knownAliases map[string]string) error {
+	for _, bidder := range bidders {
+		if bidder == "*" {
+			if len(bidders) > 1 {
+				return errors.New(`bidder wildcard "*" mixed with specific bidders`)
+			}
+		} else {
+			_, isCoreBidder := knownBidders[bidder]
+			_, isAlias := knownAliases[bidder]
+			if !isCoreBidder && !isAlias {
+				return fmt.Errorf(`unrecognized bidder "%v"`, bidder)
+			}
+		}
+	}
+	return nil
 }
 
 func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]string, index int) []error {
@@ -778,19 +834,15 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 		return []error{err}
 	}
 
-	// Also accept bidder exts within imp[...].ext.prebid.bidder
-	// NOTE: This is not part of the official API yet, so we are not expecting clients
-	// to migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
-	// at this time
-	// https://github.com/prebid/prebid-server/pull/846#issuecomment-476352224
-	if rawPrebidExt, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
-		var prebidExt openrtb_ext.ExtImpPrebid
-		if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil && prebidExt.Bidder != nil {
-			for bidder, ext := range prebidExt.Bidder {
+	// Prefer bidder params from request.imp.ext.prebid.bidder.BIDDER over request.imp.ext.BIDDER
+	// to avoid confusion beteween prebid specific adapter config and other ext protocols.
+	if extPrebidJSON, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
+		var extPrebid openrtb_ext.ExtImpPrebid
+		if err := json.Unmarshal(extPrebidJSON, &extPrebid); err == nil && extPrebid.Bidder != nil {
+			for bidder, ext := range extPrebid.Bidder {
 				if ext == nil {
 					continue
 				}
-
 				bidderExts[bidder] = ext
 			}
 		}
@@ -841,13 +893,18 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	return errL
 }
 
+// isBidderToValidate determines if the bidder name in request.imp[].prebid should be validated.
 func isBidderToValidate(bidder string) bool {
-	// PrebidExtKey is a special case for the prebid config section and is not considered a bidder.
-
-	// FirstPartyDataContextExtKey is a special case for the first party data context section
-	// and is not considered a bidder.
-
-	return bidder != openrtb_ext.PrebidExtKey && bidder != openrtb_ext.FirstPartyDataContextExtKey
+	switch openrtb_ext.BidderName(bidder) {
+	case openrtb_ext.BidderReservedContext:
+		return false
+	case openrtb_ext.BidderReservedPrebid:
+		return false
+	case openrtb_ext.BidderReservedSKAdN:
+		return false
+	default:
+		return true
+	}
 }
 
 func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequest, error) {
@@ -862,12 +919,17 @@ func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequ
 }
 
 func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
-	for thisAlias, coreBidder := range aliases {
-		if _, isCoreBidder := deps.bidderMap[coreBidder]; !isCoreBidder {
-			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", thisAlias, coreBidder)
+	for alias, coreBidder := range aliases {
+		if _, isCoreBidderDisabled := deps.disabledBidders[coreBidder]; isCoreBidderDisabled {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to disabled bidder: %s", alias, coreBidder)
 		}
-		if thisAlias == coreBidder {
-			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", thisAlias)
+
+		if _, isCoreBidder := deps.bidderMap[coreBidder]; !isCoreBidder {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", alias, coreBidder)
+		}
+
+		if alias == coreBidder {
+			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", alias)
 		}
 	}
 	return nil

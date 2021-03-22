@@ -114,6 +114,10 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, 
 				return openrtb_ext.BidTypeVideo, nil
 			}
 
+			if imp.Native != nil {
+				return openrtb_ext.BidTypeNative, nil
+			}
+
 			return "", &errortypes.BadServerResponse{
 				Message: fmt.Sprintf("Unknown impression type for ID: \"%s\"", impID),
 			}

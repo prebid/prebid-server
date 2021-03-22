@@ -1,0 +1,12 @@
+maintainer:
+  email: "support@mediafuse.com"
+gvlVendorID: 411
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

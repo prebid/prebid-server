@@ -8,5 +8,5 @@ import (
 )
 
 func NewAdOceanSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("adocean", 328, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("adocean", temp, adapters.SyncTypeRedirect)
 }

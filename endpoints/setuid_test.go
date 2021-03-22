@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/usersync"
@@ -100,12 +101,13 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:           "Add the uid for the requested bidder to the list of existing syncs",
 		},
 		{
-			uri:                  "/setuid?bidder=pubmatic&uid=123&gdpr=0",
-			validFamilyNames:     []string{"pubmatic"},
-			existingSyncs:        nil,
-			expectedSyncs:        map[string]string{"pubmatic": "123"},
-			expectedResponseCode: http.StatusOK,
-			description:          "Don't care about GDPR consent if GDPR is set to 0",
+			uri:                   "/setuid?bidder=pubmatic&uid=123&gdpr=0",
+			validFamilyNames:      []string{"pubmatic"},
+			existingSyncs:         nil,
+			gdprAllowsHostCookies: true,
+			expectedSyncs:         map[string]string{"pubmatic": "123"},
+			expectedResponseCode:  http.StatusOK,
+			description:           "Don't care about GDPR consent if GDPR is set to 0",
 		},
 		{
 			uri:                  "/setuid?bidder=pubmatic&uid=123",
@@ -425,7 +427,7 @@ type mockPermsSetUID struct {
 	allowPI   bool
 }
 
-func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	var err error
 	if g.errorHost {
 		err = errors.New("something went wrong")
@@ -433,16 +435,12 @@ func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, consent string
 	return g.allowHost, err
 }
 
-func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	return false, nil
 }
 
-func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
+func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string) (bool, bool, bool, error) {
 	return g.allowPI, g.allowPI, g.allowPI, nil
-}
-
-func (g *mockPermsSetUID) AMPException() bool {
-	return false
 }
 
 func newFakeSyncer(familyName string) usersync.Usersyncer {
@@ -463,9 +461,4 @@ func (s fakeSyncer) FamilyName() string {
 // GetUsersyncInfo implements the Usersyncer interface with a no-op.
 func (s fakeSyncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.UsersyncInfo, error) {
 	return nil, nil
-}
-
-// GDPRVendorID implements the Usersyncer interface with a no-op.
-func (s fakeSyncer) GDPRVendorID() uint16 {
-	return 0
 }

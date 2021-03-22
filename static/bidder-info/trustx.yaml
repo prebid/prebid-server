@@ -1,0 +1,12 @@
+maintainer:
+  email: "grid-tech@themediagrid.com"
+gvlVendorID: 686
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

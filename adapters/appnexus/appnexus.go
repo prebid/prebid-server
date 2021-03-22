@@ -604,6 +604,9 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			}
 		}
 	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, errs
 }
 

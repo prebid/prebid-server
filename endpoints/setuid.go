@@ -143,32 +143,38 @@ func checkChromeBrowserVersion(ua string, index int, chromeStrLength int) bool {
 	return result
 }
 
-func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permissions) (bool, int, string) {
-	switch gdprEnabled {
-	case "0":
-		return false, 0, ""
-	case "1":
-		if gdprConsent == "" {
-			return true, http.StatusBadRequest, "gdpr_consent is required when gdpr=1"
-		}
-		fallthrough
-	case "":
-		if allowed, err := perms.HostCookiesAllowed(context.Background(), gdprConsent); err != nil {
-			if _, ok := err.(*gdpr.ErrorMalformedConsent); ok {
-				return true, http.StatusBadRequest, "gdpr_consent was invalid. " + err.Error()
-			} else {
-				// We can't really distinguish between requests that are for a new version of the global vendor list, and
-				// ones which are simply malformed (version number is much too large).
-				// Since we try to fetch new versions as requests come in for them, PBS *should* self-correct
-				// rather quickly, meaning that most of these will be malformed strings.
-				return true, http.StatusBadRequest, "No global vendor list was available to interpret this consent string. If this is a new, valid version, it should become available soon."
-			}
-		} else if !allowed {
-			return true, http.StatusOK, "The gdpr_consent string prevents cookies from being saved"
-		} else {
-			return false, 0, ""
-		}
-	default:
+func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permissions) (shouldReturn bool, status int, body string) {
+
+	if gdprEnabled != "" && gdprEnabled != "0" && gdprEnabled != "1" {
 		return true, http.StatusBadRequest, "the gdpr query param must be either 0 or 1. You gave " + gdprEnabled
 	}
+
+	if gdprEnabled == "1" && gdprConsent == "" {
+		return true, http.StatusBadRequest, "gdpr_consent is required when gdpr=1"
+	}
+
+	gdprSignal := gdpr.SignalAmbiguous
+
+	if i, err := strconv.Atoi(gdprEnabled); err == nil {
+		gdprSignal = gdpr.Signal(i)
+	}
+
+	allowed, err := perms.HostCookiesAllowed(context.Background(), gdprSignal, gdprConsent)
+	if err != nil {
+		if _, ok := err.(*gdpr.ErrorMalformedConsent); ok {
+			return true, http.StatusBadRequest, "gdpr_consent was invalid. " + err.Error()
+		}
+
+		// We can't really distinguish between requests that are for a new version of the global vendor list, and
+		// ones which are simply malformed (version number is much too large).
+		// Since we try to fetch new versions as requests come in for them, PBS *should* self-correct
+		// rather quickly, meaning that most of these will be malformed strings.
+		return true, http.StatusBadRequest, "No global vendor list was available to interpret this consent string. If this is a new, valid version, it should become available soon."
+	}
+
+	if allowed {
+		return false, 0, ""
+	}
+
+	return true, http.StatusOK, "The gdpr_consent string prevents cookies from being saved"
 }
