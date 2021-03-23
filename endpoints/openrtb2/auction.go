@@ -898,6 +898,8 @@ func isBidderToValidate(bidder string) bool {
 	switch openrtb_ext.BidderName(bidder) {
 	case openrtb_ext.BidderReservedContext:
 		return false
+	case openrtb_ext.BidderReservedData:
+		return false
 	case openrtb_ext.BidderReservedPrebid:
 		return false
 	case openrtb_ext.BidderReservedSKAdN:
