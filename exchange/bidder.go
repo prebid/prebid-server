@@ -164,9 +164,17 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		// - debugContextKey (url param) in true
 		// - account debug is allowed
 		// - bidder debug is allowed
-		if accountDebugAllowed && bidder.config.DebugInfo.Allow {
-			if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
-				seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+		if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
+			if accountDebugAllowed {
+				if bidder.config.DebugInfo.Allow {
+					seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+				} else {
+					debugDisabledWarning := errortypes.Warning{
+						WarningCode: errortypes.BidderLevelDebugDisabledWarningCode,
+						Message:     "debug turned off for bidder",
+					}
+					errs = append(errs, &debugDisabledWarning)
+				}
 			}
 		}
 

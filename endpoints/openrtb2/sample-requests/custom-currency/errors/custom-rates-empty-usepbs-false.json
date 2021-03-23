@@ -1,5 +1,5 @@
 {
-  "description": "usepbsrates set to false forces BidRequest to use custom currency rates but empty bidRequest.ext.prebid.currency.rates field is found",
+  "description": "usepbsrates set to false forces BidRequest to use custom currency rates but bidRequest.ext.prebid.currency.rates field is empty",
   "config": {
     "currencyRates":{
       "USD": {

@@ -5,7 +5,10 @@ import (
 	"errors"
 )
 
-// FirstPartyDataContextExtKey defines the field name within request.ext reserved for first party data.
+// FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
+const FirstPartyDataExtKey = "data"
+
+// FirstPartyDataContextExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
 const FirstPartyDataContextExtKey = "context"
 
 // SKAdNExtKey defines the field name within request.ext reserved for Apple's SKAdNetwork.

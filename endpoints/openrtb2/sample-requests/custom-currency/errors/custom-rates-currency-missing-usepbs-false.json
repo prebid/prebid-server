@@ -1,6 +1,5 @@
 {
-  "description": "False usepbsrates forces BidRequest use custom currency rates but bidRequest currency is not found in bidRequest.ext.prebid.currency.rates field",
-  "description": "BidRequest defines its own custom rates in the root.ext and sets the usepbsrates to false, not allowing for PBS to use its default converter and defaulting to a price of 0",
+  "description": "BidRequest defines its own custom rates in the root.ext and sets the usepbsrates to false not allowing for PBS to use its default converter. We expect to default to a price of 0 because bid request currency is not found in custom currency map.",
   "config": {
     "currencyRates":{
       "USD": {
