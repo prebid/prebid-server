@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
@@ -34,6 +35,10 @@ func (v *validatedBidder) requestBid(ctx context.Context, request *openrtb.BidRe
 		errs = append(errs, validationErrors...)
 	}
 	return seatBid, errs
+}
+
+func (v *validatedBidder) client() *http.Client {
+	return v.bidder.client()
 }
 
 // validateBids will run some validation checks on the returned bids and excise any invalid bids

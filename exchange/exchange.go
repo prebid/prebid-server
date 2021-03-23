@@ -22,6 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/cache/skanidlist"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/errortypes"
@@ -351,6 +352,8 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 		coreBidder := resolveBidder(string(bidderName), aliases)
 		bidderRunner := e.recoverSafely(cleanRequests, func(ctx context.Context, txn *newrelic.Transaction, aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 			ctx = newrelic.NewContext(ctx, txn)
+
+			skanidlist.Update(ctx, e.adapterMap[coreBidder].client(), coreBidder)
 
 			// Passing in aName so a doesn't change out from under the go routine
 			if bidlabels.Adapter == "" {

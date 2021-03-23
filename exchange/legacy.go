@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
@@ -135,6 +136,10 @@ func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBS
 		// Start is excluded because no legacy adapters read from it
 		Regs: req.Regs,
 	}, nil
+}
+
+func (bidder *adaptedAdapter) client() *http.Client {
+	return http.DefaultClient
 }
 
 func toAccountId(req *openrtb.BidRequest) (string, error) {

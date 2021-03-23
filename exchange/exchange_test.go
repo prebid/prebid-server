@@ -2455,6 +2455,10 @@ func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidR
 	return
 }
 
+func (b *validatingBidder) client() *http.Client {
+	return http.DefaultClient
+}
+
 func diffOrtbRequests(t *testing.T, description string, expected *openrtb.BidRequest, actual *openrtb.BidRequest) {
 	t.Helper()
 	actualJSON, err := json.Marshal(actual)
@@ -2585,4 +2589,8 @@ type panicingAdapter struct{}
 
 func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (posb *pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
+}
+
+func (p panicingAdapter) client() *http.Client {
+	return http.DefaultClient
 }
