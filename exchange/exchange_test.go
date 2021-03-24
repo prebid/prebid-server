@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/errortypes"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -141,7 +142,7 @@ func TestCharacterEscape(t *testing.T) {
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, 1)
 	adapterExtra["appnexus"] = &seatResponseExtra{
 		ResponseTimeMillis: 5,
-		Errors:             []openrtb_ext.ExtBidderError{{Code: 999, Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\""}},
+		Errors:             []openrtb_ext.ExtBidderMessage{{Code: 999, Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\""}},
 	}
 
 	var errList []error
@@ -180,59 +181,68 @@ func TestDebugBehaviour(t *testing.T) {
 	}
 
 	type aTest struct {
-		desc      string
-		in        inTest
-		out       outTest
-		debugData debugData
+		desc             string
+		in               inTest
+		out              outTest
+		debugData        debugData
+		generateWarnings bool
 	}
 	testCases := []aTest{
 		{
-			desc:      "test flag equals zero, ext debug flag false, no debug info expected",
-			in:        inTest{test: 0, debug: false},
-			out:       outTest{debugInfoIncluded: false},
-			debugData: debugData{true, true},
+			desc:             "test flag equals zero, ext debug flag false, no debug info expected",
+			in:               inTest{test: 0, debug: false},
+			out:              outTest{debugInfoIncluded: false},
+			debugData:        debugData{true, true},
+			generateWarnings: false,
 		},
 		{
-			desc:      "test flag equals zero, ext debug flag true, debug info expected",
-			in:        inTest{test: 0, debug: true},
-			out:       outTest{debugInfoIncluded: true},
-			debugData: debugData{true, true},
+			desc:             "test flag equals zero, ext debug flag true, debug info expected",
+			in:               inTest{test: 0, debug: true},
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{true, true},
+			generateWarnings: false,
 		},
 		{
-			desc:      "test flag equals 1, ext debug flag false, debug info expected",
-			in:        inTest{test: 1, debug: false},
-			out:       outTest{debugInfoIncluded: true},
-			debugData: debugData{true, true},
+			desc:             "test flag equals 1, ext debug flag false, debug info expected",
+			in:               inTest{test: 1, debug: false},
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{true, true},
+			generateWarnings: false,
 		},
 		{
-			desc:      "test flag equals 1, ext debug flag true, debug info expected",
-			in:        inTest{test: 1, debug: true},
-			out:       outTest{debugInfoIncluded: true},
-			debugData: debugData{true, true},
+			desc:             "test flag equals 1, ext debug flag true, debug info expected",
+			in:               inTest{test: 1, debug: true},
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{true, true},
+			generateWarnings: false,
 		},
 		{
-			desc:      "test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
-			in:        inTest{test: 2, debug: false},
-			out:       outTest{debugInfoIncluded: false},
-			debugData: debugData{true, true},
+			desc:             "test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
+			in:               inTest{test: 2, debug: false},
+			out:              outTest{debugInfoIncluded: false},
+			debugData:        debugData{true, true},
+			generateWarnings: false,
 		},
 		{
-			desc:      "test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
-			in:        inTest{test: -1, debug: true},
-			out:       outTest{debugInfoIncluded: true},
-			debugData: debugData{true, true},
+			desc:             "test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
+			in:               inTest{test: -1, debug: true},
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{true, true},
+			generateWarnings: true,
 		},
 		{
-			desc:      "test account level debug disabled",
-			in:        inTest{test: -1, debug: true},
-			out:       outTest{debugInfoIncluded: false},
-			debugData: debugData{true, false},
+			desc:             "test account level debug disabled",
+			in:               inTest{test: -1, debug: true},
+			out:              outTest{debugInfoIncluded: false},
+			debugData:        debugData{true, false},
+			generateWarnings: true,
 		},
 		{
-			desc:      "test bidder level debug disabled",
-			in:        inTest{test: -1, debug: true},
-			out:       outTest{debugInfoIncluded: false},
-			debugData: debugData{false, true},
+			desc:             "test bidder level debug disabled",
+			in:               inTest{test: -1, debug: true},
+			out:              outTest{debugInfoIncluded: false},
+			debugData:        debugData{false, true},
+			generateWarnings: true,
 		},
 	}
 
@@ -243,9 +253,9 @@ func TestDebugBehaviour(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(noBidServer))
 	defer server.Close()
 
-	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
-	if error != nil {
-		t.Errorf("Failed to create a category Fetcher: %v", error)
+	categoriesFetcher, err := newCategoryFetcher("./test/category-mapping")
+	if err != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
 
 	bidRequest := &openrtb.BidRequest{
@@ -305,6 +315,13 @@ func TestDebugBehaviour(t *testing.T) {
 			UserSyncs:  &emptyUsersync{},
 			StartTime:  time.Now(),
 		}
+		if test.generateWarnings {
+			var errL []error
+			errL = append(errL, &errortypes.Warning{
+				Message:     fmt.Sprintf("CCPA consent test warning."),
+				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
+			auctionRequest.Warnings = errL
+		}
 
 		// Run test
 		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, nil)
@@ -339,6 +356,35 @@ func TestDebugBehaviour(t *testing.T) {
 		} else {
 			assert.Nil(t, actualExt.Debug, "%s. ext.debug.httpcalls array should not be empty", "With bidder level debug disable option http calls should be empty")
 		}
+
+		if test.out.debugInfoIncluded && !test.debugData.accountLevelDebugAllowed {
+			assert.Len(t, actualExt.Warnings, 1, "warnings should have one warning")
+			assert.NotNil(t, actualExt.Warnings["general"], "general warning should be present")
+			assert.Equal(t, "debug turned off for account", actualExt.Warnings["general"][0].Message, "account debug disabled message should be present")
+		}
+
+		if !test.out.debugInfoIncluded && test.in.debug && test.debugData.accountLevelDebugAllowed {
+			if test.generateWarnings {
+				assert.Len(t, actualExt.Warnings, 2, "warnings should have one warning")
+			} else {
+				assert.Len(t, actualExt.Warnings, 1, "warnings should have one warning")
+			}
+			assert.NotNil(t, actualExt.Warnings["appnexus"], "bidder warning should be present")
+			assert.Equal(t, "debug turned off for bidder", actualExt.Warnings["appnexus"][0].Message, "account debug disabled message should be present")
+		}
+
+		if test.generateWarnings {
+			assert.NotNil(t, actualExt.Warnings["general"], "general warning should be present")
+			CCPAWarningPresent := false
+			for _, warn := range actualExt.Warnings["general"] {
+				if warn.Code == errortypes.InvalidPrivacyConsentWarningCode {
+					CCPAWarningPresent = true
+					break
+				}
+			}
+			assert.True(t, CCPAWarningPresent, "CCPA Warning should be present")
+		}
+
 	}
 }
 
@@ -393,7 +439,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 
-	debugLog := DebugLog{}
+	debugLog := DebugLog{Enabled: true}
 
 	for _, testCase := range testCases {
 		bidRequest := &openrtb.BidRequest{
@@ -762,7 +808,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
 		bidderName: {
 			ResponseTimeMillis: 5,
-			Errors: []openrtb_ext.ExtBidderError{
+			Errors: []openrtb_ext.ExtBidderMessage{
 				{
 					Code:    999,
 					Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\"",

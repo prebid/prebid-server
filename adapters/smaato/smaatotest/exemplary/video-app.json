@@ -37,14 +37,32 @@
                 }
             }
         ],
-        "site": {
-            "publisher": {
-                "id": "1100042525"
+        "app": {
+            "id": "app-id",
+            "name": "app-name",
+            "bundle": "app-bundle",
+            "storeurl": "app-storeurl",
+            "cat": [
+                "IAB3-1"
+            ],
+            "ver": "app-version",
+            "paid": 1,
+            "content": {
+                "id": "content-id",
+                "title": "content-title",
+                "series": "content-series",
+                "genre": "content-genre",
+                "producer": {
+                    "id": "producer-id",
+                    "name": "producer-name"
+                },
+                "cat": [
+                    "IAB8-6"
+                ],
+                "livestream": 1,
+                "language": "en"
             },
-            "ext": {
-                "data": {},
-                "amp": 0
-            }
+            "keywords": "keywords"
         },
         "device": {
             "ua": "test-user-agent"
@@ -116,10 +134,35 @@
                     "device": {
                         "ua": "test-user-agent"
                     },
-                    "site": {
+                    "app": {
                         "publisher": {
                             "id": "1100042525"
-                        }
+                        },
+                        "id": "app-id",
+                        "name": "app-name",
+                        "bundle": "app-bundle",
+                        "storeurl": "app-storeurl",
+                        "cat": [
+                            "IAB3-1"
+                        ],
+                        "ver": "app-version",
+                        "paid": 1,
+                        "content": {
+                            "id": "content-id",
+                            "title": "content-title",
+                            "series": "content-series",
+                            "genre": "content-genre",
+                            "producer": {
+                                "id": "producer-id",
+                                "name": "producer-name"
+                            },
+                            "cat": [
+                                "IAB8-6"
+                            ],
+                            "livestream": 1,
+                            "language": "en"
+                        },
+                        "keywords": "keywords"
                     },
                     "ext": {
                         "client": "prebid_server_0.2"
