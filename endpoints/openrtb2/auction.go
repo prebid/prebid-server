@@ -171,8 +171,15 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
+	// rebuild/resync the request in the request wrapper.
+	if err := req.Sync(); err != nil {
+		errL = append(errL, err)
+		writeError(errL, w, &labels)
+		return
+	}
+
 	auctionRequest := exchange.AuctionRequest{
-		BidRequest:   req,
+		BidRequest:   req.Request,
 		Account:      *account,
 		UserSyncs:    usersyncs,
 		RequestType:  labels.RType,
@@ -181,7 +188,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
-	ao.Request = req
+	ao.Request = req.Request
 	ao.Response = response
 	ao.Account = account
 	if err != nil {
@@ -221,6 +228,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
 func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, errs []error) {
+	req = &openrtb_ext.RequestWrapper{}
 	req.Request = &openrtb.BidRequest{}
 	errs = nil
 
@@ -925,6 +933,14 @@ func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
 	if req.Request.Site.ID == "" && req.Request.Site.Page == "" {
 		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
 	}
+	err := req.ExtractSiteExt()
+	if err != nil {
+		return err
+	}
+	_, hasAmp := req.SiteExt.Ext["amp"]
+	if hasAmp && (req.SiteExt.Amp < 0 || req.SiteExt.Amp > 1) {
+		return errors.New(`request.site.ext.amp must be either 1, 0, or undefined`)
+	}
 
 	return nil
 }
@@ -974,10 +990,11 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 		}
 	}
 	// Check Universal User ID
-	if req.UserExt.Eids != nil {
-		if len(*req.UserExt.Eids) == 0 {
-			return fmt.Errorf("request.user.ext.eids must contain at least one element or be undefined")
-		}
+	_, hasEIDs := req.UserExt.Ext["eids"]
+	if hasEIDs && len(*req.UserExt.Eids) == 0 {
+		return fmt.Errorf("request.user.ext.eids must contain at least one element or be undefined")
+	}
+	if len(*req.UserExt.Eids) > 0 {
 		uniqueSources := make(map[string]struct{}, len(*req.UserExt.Eids))
 		for eidIndex, eid := range *req.UserExt.Eids {
 			if eid.Source == "" {
@@ -1013,7 +1030,7 @@ func validateRegs(req *openrtb_ext.RequestWrapper) error {
 		return fmt.Errorf("request.regs.ext is invalid: %v", err)
 	}
 	gdprJSON, hasGDPR := req.RegExt.Ext["gdpr"]
-	if hasGDPR && (string(gdprJSON) != "\"0\"" && string(gdprJSON) != "\"1\"") {
+	if hasGDPR && (string(gdprJSON) != "0" && string(gdprJSON) != "1") {
 		return errors.New("request.regs.ext.gdpr must be either 0 or 1.")
 	}
 	return nil

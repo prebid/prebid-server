@@ -304,7 +304,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 
 	// At this point, we should have a valid request that definitely has Targeting and Cache turned on
 
-	e = deps.validateRequest(req)
+	e = deps.validateRequest(&openrtb_ext.RequestWrapper{Request: req})
 	errs = append(errs, e...)
 	return
 }
@@ -525,7 +525,7 @@ func readPolicy(consent string) (privacy.PolicyWriter, error) {
 	}
 
 	if ccpa.ValidateConsent(consent) {
-		return ccpa.ConsentWriter{consent}, nil
+		return ccpa.ConsentWriterLegacy{consent}, nil
 	}
 
 	return privacy.NilPolicyWriter{}, &errortypes.InvalidPrivacyConsent{

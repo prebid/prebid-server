@@ -1,7 +1,6 @@
 package ccpa
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -23,17 +22,18 @@ func ReadFromRequest(req *openrtb_ext.RequestWrapper) (Policy, error) {
 	}
 
 	// Read consent from request.regs.ext
-	req.ExtractRegExt()
+	err := req.ExtractRegExt()
+	if err != nil {
+		return Policy{}, fmt.Errorf("error reading request.regs.ext: %s", err)
+	}
 	if req.RegExt != nil {
-		usPrivacyJSON, hasUSPrivacy := req.RegExt.Ext["us_privacy"]
-		if hasUSPrivacy {
-			if err := json.Unmarshal(usPrivacyJSON, &consent); err != nil {
-				return Policy{}, fmt.Errorf("error reading request.regs.ext: %s", err)
-			}
-		}
+		consent = req.RegExt.USPrivacy
 	}
 	// Read no sale bidders from request.ext.prebid
-	req.ExtractRequestExt()
+	err = req.ExtractRequestExt()
+	if err != nil {
+		return Policy{}, fmt.Errorf("error reading request.ext: %s", err)
+	}
 	if req.RequestExt != nil && req.RequestExt.Prebid != nil {
 		noSaleBidders = req.RequestExt.Prebid.NoSale
 	}
@@ -47,10 +47,16 @@ func (p Policy) Write(req *openrtb_ext.RequestWrapper) error {
 		return nil
 	}
 
-	req.ExtractRegExt()
-	req.ExtractRequestExt()
+	err := req.ExtractRegExt()
+	if err != nil {
+		return err
+	}
 	buildRegs(p.Consent, req.RegExt)
 
+	err = req.ExtractRequestExt()
+	if err != nil {
+		return err
+	}
 	buildExt(p.NoSaleBidders, req.RequestExt)
 	return nil
 }
@@ -68,13 +74,13 @@ func buildRegs(consent string, regs *openrtb_ext.RegExt) {
 }
 
 func buildRegsClear(regs *openrtb_ext.RegExt) {
-	if regs == nil || len(regs.Ext) == 0 {
+	if regs == nil {
 		return
 	}
 
-	if _, hasUSPrivacy := regs.Ext["us_privacy"]; hasUSPrivacy {
-		delete(regs.Ext, "us_privacy")
-		regs.Dirty = true
+	if len(regs.USPrivacy) > 0 {
+		regs.USPrivacy = ""
+		regs.USPrivacyDirty = true
 	}
 }
 

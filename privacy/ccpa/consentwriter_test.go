@@ -46,9 +46,14 @@ func TestConsentWriter(t *testing.T) {
 
 		reqWrapper := &openrtb_ext.RequestWrapper{Request: test.request}
 		var err error
-		writer.Write(reqWrapper)
-
+		err1 := reqWrapper.ExtractRegExt()
+		if err1 == nil {
+			writer.Write(reqWrapper)
+			if reqWrapper.Request != nil {
+				err = reqWrapper.Sync()
+			}
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, test.request, test.description)
+		assert.Equal(t, test.expected, reqWrapper.Request, test.description)
 	}
 }
