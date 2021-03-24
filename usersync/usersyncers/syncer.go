@@ -86,6 +86,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/yieldlab"
 	"github.com/prebid/prebid-server/adapters/yieldmo"
 	"github.com/prebid/prebid-server/adapters/yieldone"
+	"github.com/prebid/prebid-server/adapters/zemanta"
 	"github.com/prebid/prebid-server/adapters/zeroclickfraud"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -178,6 +179,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderYieldlab, yieldlab.NewYieldlabSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderYieldmo, yieldmo.NewYieldmoSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderYieldone, yieldone.NewYieldoneSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderZemanta, zemanta.NewZemantaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderZeroClickFraud, zeroclickfraud.NewZeroClickFraudSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderBetween, between.NewBetweenSyncer)
 
