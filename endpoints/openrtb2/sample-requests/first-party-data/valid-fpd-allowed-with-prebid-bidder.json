@@ -25,30 +25,29 @@
             }
           }
         },
+        "data": {
+          "keywords": "prebid server example"
+        },
         "context": {
           "data": {
-            "keywords": "prebid server example"
+            "keywords": "another prebid server example"
           }
         }
       }
     }]
   },
   "expectedBidResponse": {
-    "id":"some-request-id",
-    "seatbid": [
-      {
-        "bid": [
-          {
-            "id": "appnexus-bid",
-            "impid": "",
-            "price": 0
-          }
-        ],
-        "seat": "appnexus-bids"
-      }
-    ],
-    "bidid":"test bid id",
-    "nbr":0
+    "id": "some-request-id",
+    "seatbid": [{
+      "bid": [{
+        "id": "appnexus-bid",
+        "impid": "",
+        "price": 0
+      }],
+      "seat": "appnexus-bids"
+    }],
+    "bidid": "test bid id",
+    "nbr": 0
   },
   "expectedReturnCode": 200
 }

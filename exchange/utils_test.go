@@ -233,6 +233,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			description: "imp.ext.prebid - Bidders Only",
 			givenImpExt: map[string]json.RawMessage{
 				"prebid":  json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
+				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 			},
@@ -240,6 +241,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"bidder": json.RawMessage(`"anyBidder"`),
 			},
 			expected: map[string]json.RawMessage{
+				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 			},
@@ -249,6 +251,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			description: "imp.ext.prebid - Bidders + Other Values",
 			givenImpExt: map[string]json.RawMessage{
 				"prebid":  json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
+				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 			},
@@ -258,6 +261,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			},
 			expected: map[string]json.RawMessage{
 				"prebid":  json.RawMessage(`{"someOther":"value"}`),
+				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 			},
@@ -267,11 +271,13 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			description: "imp.ext",
 			givenImpExt: map[string]json.RawMessage{
 				"anyBidder": json.RawMessage(`"anyBidderValues"`),
+				"data":      json.RawMessage(`"anyData"`),
 				"context":   json.RawMessage(`"anyContext"`),
 				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{},
 			expected: map[string]json.RawMessage{
+				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 			},
@@ -282,6 +288,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			givenImpExt: map[string]json.RawMessage{
 				"anyBidder": json.RawMessage(`"anyBidderValues"`),
 				"prebid":    json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
+				"data":      json.RawMessage(`"anyData"`),
 				"context":   json.RawMessage(`"anyContext"`),
 				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
 			},
@@ -289,6 +296,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"bidder": json.RawMessage(`"anyBidder"`),
 			},
 			expected: map[string]json.RawMessage{
+				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 			},
@@ -299,6 +307,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			givenImpExt: map[string]json.RawMessage{
 				"anyBidder": json.RawMessage(`"anyBidderValues"`),
 				"prebid":    json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
+				"data":      json.RawMessage(`"anyData"`),
 				"context":   json.RawMessage(`"anyContext"`),
 				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
 			},
@@ -308,6 +317,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			},
 			expected: map[string]json.RawMessage{
 				"prebid":  json.RawMessage(`{"someOther":"value"}`),
+				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 			},
@@ -317,6 +327,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			description: "Marshal Error - imp.ext.prebid",
 			givenImpExt: map[string]json.RawMessage{
 				"prebid":  json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
+				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 			},

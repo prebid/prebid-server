@@ -12,14 +12,12 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb/v14/openrtb2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbs"
-
-	"golang.org/x/net/context/ctxhttp"
-
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
+	"golang.org/x/net/context/ctxhttp"
 )
 
 const badvLimitSize = 50
@@ -91,6 +89,10 @@ type rubiconUserExtRP struct {
 type rubiconExtUserTpID struct {
 	Source string `json:"source"`
 	UID    string `json:"uid"`
+}
+
+type rubiconUserDataExt struct {
+	TaxonomyName string `json:"taxonomyname"`
 }
 
 type rubiconUserExt struct {
@@ -752,6 +754,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			userCopy := *request.User
 			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
 
+			if err := updateUserExtWithIabAttribute(&userExtRP, userCopy.Data); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
 			if request.User.Ext != nil {
 				var userExt *openrtb_ext.ExtUser
 				if err = json.Unmarshal(userCopy.Ext, &userExt); err != nil {
@@ -884,6 +891,43 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	}
 
 	return requestData, errs
+}
+
+func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Data) error {
+	var segmentIdsToCopy = make([]string, 0)
+
+	for _, dataRecord := range data {
+		if dataRecord.Ext != nil {
+			var dataExtObject rubiconUserDataExt
+			err := json.Unmarshal(dataRecord.Ext, &dataExtObject)
+			if err != nil {
+				continue
+			}
+			if strings.EqualFold(dataExtObject.TaxonomyName, "iab") {
+				for _, segment := range dataRecord.Segment {
+					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
+				}
+			}
+		}
+	}
+
+	userExtRPTarget := make(map[string]interface{})
+
+	if userExtRP.RP.Target != nil {
+		if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
+			return &errortypes.BadInput{Message: err.Error()}
+		}
+	}
+
+	userExtRPTarget["iab"] = segmentIdsToCopy
+
+	if target, err := json.Marshal(&userExtRPTarget); err != nil {
+		return &errortypes.BadInput{Message: err.Error()}
+	} else {
+		userExtRP.RP.Target = target
+	}
+
+	return nil
 }
 
 func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) (mappedRubiconUidsParam, []error) {

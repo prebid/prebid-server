@@ -384,6 +384,10 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 		}
 	}
 
+	if v, exists := impExt[openrtb_ext.FirstPartyDataExtKey]; exists {
+		sanitizedImpExt[openrtb_ext.FirstPartyDataExtKey] = v
+	}
+
 	if v, exists := impExt[openrtb_ext.FirstPartyDataContextExtKey]; exists {
 		sanitizedImpExt[openrtb_ext.FirstPartyDataContextExtKey] = v
 	}
@@ -419,6 +423,7 @@ func extractBidderExts(impExt, impExtPrebidBidders map[string]json.RawMessage) m
 
 func isSpecialField(bidder string) bool {
 	return bidder == openrtb_ext.FirstPartyDataContextExtKey ||
+		bidder == openrtb_ext.FirstPartyDataExtKey ||
 		bidder == openrtb_ext.SKAdNExtKey ||
 		bidder == openrtb_ext.PrebidExtKey
 }
