@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/jinzhu/copier"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/stretchr/testify/assert"
@@ -113,65 +112,6 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 	actualReqs := testMakeRequestsImpl(t, filename, spec, bidder, &reqInfo)
 
 	testMakeBidsImpl(t, filename, spec, bidder, actualReqs)
-}
-
-func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, reqInfo *adapters.ExtraRequestInfo) []*adapters.RequestData {
-	t.Helper()
-
-	// Save original bidRequest values to assert no data races occur inside MakeRequests latter
-	deepBidReqCopy := openrtb.BidRequest{}
-	//copier.CopyWithOption(&deepBidReqCopy, &spec.BidRequest, copier.Option{DeepCopy: true})
-	copier.Copy(&deepBidReqCopy, &spec.BidRequest)
-	shallowBidReqCopy := spec.BidRequest
-
-	// Save original []Imp elements to assert no data races occur inside MakeRequests latter
-	deepImpCopies := make([]openrtb.Imp, len(spec.BidRequest.Imp))
-	shallowImpCopies := make([]openrtb.Imp, len(spec.BidRequest.Imp))
-	for i := 0; i < len(spec.BidRequest.Imp); i++ {
-		deepImpCopy := openrtb.Imp{}
-		copier.Copy(&deepImpCopy, &spec.BidRequest.Imp[i])
-		deepImpCopies = append(deepImpCopies, deepImpCopy)
-
-		shallowImpCopy := spec.BidRequest.Imp[i]
-		shallowImpCopies = append(shallowImpCopies, shallowImpCopy)
-	}
-
-	// Run MakeRequests
-	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest, reqInfo)
-
-	// Compare MakeRequests actual output versus expected values found in JSON file
-	assertErrorList(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
-	assertMakeRequestsOutput(t, filename, actualReqs, spec.HttpCalls)
-
-	// Assert no data races occur using original bidRequest copies of references and values
-	assertNoDataRace(t, &deepBidReqCopy, &shallowBidReqCopy, deepImpCopies, shallowImpCopies)
-
-	return actualReqs
-}
-
-func testMakeBidsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, makeRequestsOut []*adapters.RequestData) {
-	t.Helper()
-
-	bidResponses := make([]*adapters.BidderResponse, 0)
-	var bidsErrs = make([]error, 0, len(spec.MakeBidsErrors))
-
-	// We should have as many bids as number of adapters.RequestData found in MakeRequests output
-	for i := 0; i < len(makeRequestsOut); i++ {
-		// Run MakeBids with JSON refined spec.HttpCalls info that was asserted to match MakeRequests
-		// output inside testMakeRequestsImpl
-		thisBidResponse, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
-
-		bidsErrs = append(bidsErrs, theseErrs...)
-		bidResponses = append(bidResponses, thisBidResponse)
-	}
-
-	// Assert actual errors thrown by MakeBids implementation versus expected JSON-defined spec.MakeBidsErrors
-	assertErrorList(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
-
-	// Assert MakeBids implementation BidResponses with expected JSON-defined spec.BidResponses[i].Bids
-	for i := 0; i < len(spec.BidResponses); i++ {
-		assertMakeBidsOutput(t, filename, bidResponses[i].Bids, spec.BidResponses[i].Bids)
-	}
 }
 
 type testSpec struct {
@@ -364,81 +304,312 @@ func diffJson(t *testing.T, description string, actual []byte, expected []byte) 
 	}
 }
 
+// testMakeBidsImpl asserts the results of the bidder MakeRequests implementation against the expected JSON-defined results
+// and makes sure no data races occur
+func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, reqInfo *adapters.ExtraRequestInfo) []*adapters.RequestData {
+	t.Helper()
+
+	deepBidReqCopy, shallowBidReqCopy, err := prepareDataRaceCopies(&spec.BidRequest)
+	if err != nil {
+		t.Errorf("Could not create data race test objects. File: %s Error: %v", filename, err)
+		return nil
+	}
+
+	// Run MakeRequests
+	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest, reqInfo)
+
+	// Compare MakeRequests actual output versus expected values found in JSON file
+	assertErrorList(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
+	assertMakeRequestsOutput(t, filename, actualReqs, spec.HttpCalls)
+
+	// Assert no data races occur using original bidRequest copies of references and values
+	assertNoDataRace(t, deepBidReqCopy, shallowBidReqCopy, filename)
+
+	return actualReqs
+}
+
+func prepareDataRaceCopies(original *openrtb.BidRequest) (*openrtb.BidRequest, *openrtb.BidRequest, error) {
+
+	// Save original bidRequest values to assert no data races occur inside MakeRequests latter
+	deepReqCopy, err := deepCopyBidRequest(original)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Mocks the shallow copy PBS core provides to adapters
+	shallowReqCopy := *original
+
+	// PBS core provides adapters a shallow copy of []Imp elements
+	shallowReqCopy.Imp = nil
+	for i := 0; i < len(original.Imp); i++ {
+		shallowImpCopy := original.Imp[i]
+		shallowReqCopy.Imp = append(shallowReqCopy.Imp, shallowImpCopy)
+	}
+
+	return deepReqCopy, &shallowReqCopy, nil
+}
+
+// deepCopyBidRequest is our own implementation of a deep copy function custom made for an openrtb.BidRequest object
+func deepCopyBidRequest(original *openrtb.BidRequest) (*openrtb.BidRequest, error) {
+	bytes, err := json.Marshal(original)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to marshal original bid request: %v", err)
+	}
+
+	deepCopy := &openrtb.BidRequest{}
+	err = json.Unmarshal(bytes, deepCopy)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to unmarshal original bid request: %v", err)
+	}
+
+	// Make sure all Ext fields remain perfectly equal after the Marshal and unmarshal calls
+	deepCopy = deepCopySliceAndExtAdjustments(deepCopy, original)
+
+	return deepCopy, nil
+}
+
+// deepCopySliceAndExtAdjustments is necessary in order to not get false positives when a json
+// entry initializes an empty array (such as "format": []) or the shallow copy `Ext` fields differ
+// in line breaks or tabs with the deepCopy ones
+func deepCopySliceAndExtAdjustments(deepCopy *openrtb.BidRequest, original *openrtb.BidRequest) *openrtb.BidRequest {
+	if len(deepCopy.Ext) > 0 {
+		deepCopy.Ext = make([]byte, len(original.Ext))
+		copy(deepCopy.Ext, original.Ext)
+	}
+
+	if deepCopy.Site != nil {
+		if len(deepCopy.Site.Ext) > 0 {
+			deepCopy.Site.Ext = make([]byte, len(original.Site.Ext))
+			copy(deepCopy.Site.Ext, original.Site.Ext)
+		}
+		if original.Site.Cat != nil && len(original.Site.Cat) == 0 {
+			deepCopy.Site.Cat = []string{}
+		}
+		if original.Site.SectionCat != nil && len(original.Site.SectionCat) == 0 {
+			deepCopy.Site.SectionCat = []string{}
+		}
+		if original.Site.PageCat != nil && len(original.Site.PageCat) == 0 {
+			deepCopy.Site.PageCat = []string{}
+		}
+	}
+
+	if deepCopy.App != nil {
+		if len(deepCopy.App.Ext) > 0 {
+			deepCopy.App.Ext = make([]byte, len(original.App.Ext))
+			copy(deepCopy.App.Ext, original.App.Ext)
+		}
+		if original.App.Cat != nil && len(original.App.Cat) == 0 {
+			deepCopy.App.Cat = []string{}
+		}
+		if original.App.SectionCat != nil && len(original.App.SectionCat) == 0 {
+			deepCopy.App.SectionCat = []string{}
+		}
+		if original.App.PageCat != nil && len(original.App.PageCat) == 0 {
+			deepCopy.App.PageCat = []string{}
+		}
+	}
+
+	if deepCopy.Device != nil && len(deepCopy.Device.Ext) > 0 {
+		deepCopy.Device.Ext = make([]byte, len(original.Device.Ext))
+		copy(deepCopy.Device.Ext, original.Device.Ext)
+	}
+
+	if deepCopy.User != nil {
+		if len(deepCopy.User.Ext) > 0 {
+			deepCopy.User.Ext = make([]byte, len(original.User.Ext))
+			copy(deepCopy.User.Ext, original.User.Ext)
+		}
+		if original.User.Data != nil && len(original.User.Data) == 0 {
+			original.User.Data = []openrtb.Data{}
+		}
+	}
+
+	if deepCopy.Source != nil && len(deepCopy.Source.Ext) > 0 {
+		deepCopy.Source.Ext = make([]byte, len(original.Source.Ext))
+		copy(deepCopy.Source.Ext, original.Source.Ext)
+	}
+
+	if deepCopy.Regs != nil && len(deepCopy.Regs.Ext) > 0 {
+		deepCopy.Regs.Ext = make([]byte, len(original.Regs.Ext))
+		copy(deepCopy.Regs.Ext, original.Regs.Ext)
+	}
+
+	for i, imp := range deepCopy.Imp {
+		if len(imp.Ext) > 0 {
+			imp.Ext = make([]byte, len(original.Imp[i].Ext))
+			copy(imp.Ext, original.Imp[i].Ext)
+		}
+		if imp.Banner != nil {
+			if len(imp.Banner.Ext) > 0 {
+				imp.Banner.Ext = make([]byte, len(original.Imp[i].Banner.Ext))
+				copy(imp.Banner.Ext, original.Imp[i].Banner.Ext)
+			}
+			if original.Imp[i].Banner.Format != nil && len(original.Imp[i].Banner.Format) == 0 {
+				imp.Banner.Format = []openrtb.Format{}
+			}
+			if original.Imp[i].Banner.BType != nil && len(original.Imp[i].Banner.BType) == 0 {
+				imp.Banner.BType = []openrtb.BannerAdType{}
+			}
+			if original.Imp[i].Banner.BAttr != nil && len(original.Imp[i].Banner.BAttr) == 0 {
+				imp.Banner.BAttr = []openrtb.CreativeAttribute{}
+			}
+			if original.Imp[i].Banner.ExpDir != nil && len(original.Imp[i].Banner.ExpDir) == 0 {
+				imp.Banner.ExpDir = []openrtb.ExpandableDirection{}
+			}
+			if original.Imp[i].Banner.API != nil && len(original.Imp[i].Banner.API) == 0 {
+				imp.Banner.API = []openrtb.APIFramework{}
+			}
+		}
+		if imp.Video != nil {
+			if len(imp.Video.Ext) > 0 {
+				imp.Video.Ext = make([]byte, len(original.Imp[i].Video.Ext))
+				copy(imp.Video.Ext, original.Imp[i].Video.Ext)
+			}
+			if original.Imp[i].Video.MIMEs != nil && len(original.Imp[i].Video.MIMEs) == 0 {
+				imp.Video.MIMEs = []string{}
+			}
+			if original.Imp[i].Video.Protocols != nil && len(original.Imp[i].Video.Protocols) == 0 {
+				imp.Video.Protocols = []openrtb.Protocol{}
+			}
+			if original.Imp[i].Video.BAttr != nil && len(original.Imp[i].Video.BAttr) == 0 {
+				imp.Video.BAttr = []openrtb.CreativeAttribute{}
+			}
+			if original.Imp[i].Video.PlaybackMethod != nil && len(original.Imp[i].Video.PlaybackMethod) == 0 {
+				imp.Video.PlaybackMethod = []openrtb.PlaybackMethod{}
+			}
+			if original.Imp[i].Video.Delivery != nil && len(original.Imp[i].Video.Delivery) == 0 {
+				imp.Video.Delivery = []openrtb.ContentDeliveryMethod{}
+			}
+			if original.Imp[i].Video.CompanionAd != nil && len(original.Imp[i].Video.CompanionAd) == 0 {
+				imp.Video.CompanionAd = []openrtb.Banner{}
+			}
+			if original.Imp[i].Video.API != nil && len(original.Imp[i].Video.API) == 0 {
+				imp.Video.API = []openrtb.APIFramework{}
+			}
+			if original.Imp[i].Video.CompanionType != nil && len(original.Imp[i].Video.CompanionType) == 0 {
+				imp.Video.CompanionType = []openrtb.CompanionType{}
+			}
+		}
+		if imp.Audio != nil {
+			if len(imp.Audio.Ext) > 0 {
+				imp.Audio.Ext = make([]byte, len(original.Imp[i].Audio.Ext))
+				copy(imp.Audio.Ext, original.Imp[i].Audio.Ext)
+			}
+			if original.Imp[i].Audio.MIMEs != nil && len(original.Imp[i].Audio.MIMEs) == 0 {
+				imp.Audio.MIMEs = []string{}
+			}
+			if original.Imp[i].Audio.Protocols != nil && len(original.Imp[i].Audio.Protocols) == 0 {
+				imp.Audio.Protocols = []openrtb.Protocol{}
+			}
+			if original.Imp[i].Audio.BAttr != nil && len(original.Imp[i].Audio.BAttr) == 0 {
+				imp.Audio.BAttr = []openrtb.CreativeAttribute{}
+			}
+			if original.Imp[i].Audio.Delivery != nil && len(original.Imp[i].Audio.Delivery) == 0 {
+				imp.Audio.Delivery = []openrtb.ContentDeliveryMethod{}
+			}
+			if original.Imp[i].Audio.CompanionAd != nil && len(original.Imp[i].Audio.CompanionAd) == 0 {
+				imp.Audio.CompanionAd = []openrtb.Banner{}
+			}
+			if original.Imp[i].Audio.API != nil && len(original.Imp[i].Audio.API) == 0 {
+				imp.Audio.API = []openrtb.APIFramework{}
+			}
+			if original.Imp[i].Audio.CompanionType != nil && len(original.Imp[i].Audio.CompanionType) == 0 {
+				imp.Audio.CompanionType = []openrtb.CompanionType{}
+			}
+		}
+		if imp.Native != nil {
+			if len(imp.Native.Ext) > 0 {
+				imp.Native.Ext = make([]byte, len(original.Imp[i].Native.Ext))
+				copy(imp.Native.Ext, original.Imp[i].Native.Ext)
+			}
+			if original.Imp[i].Native.API != nil && len(original.Imp[i].Native.API) == 0 {
+				imp.Native.API = []openrtb.APIFramework{}
+			}
+			if original.Imp[i].Native.BAttr != nil && len(original.Imp[i].Native.BAttr) == 0 {
+				imp.Native.BAttr = []openrtb.CreativeAttribute{}
+			}
+		}
+		if imp.PMP != nil {
+			if len(imp.PMP.Ext) > 0 {
+				imp.PMP.Ext = make([]byte, len(original.Imp[i].PMP.Ext))
+				copy(imp.PMP.Ext, original.Imp[i].PMP.Ext)
+			}
+			if original.Imp[i].PMP.Deals != nil && len(original.Imp[i].PMP.Deals) == 0 {
+				imp.PMP.Deals = []openrtb.Deal{}
+			}
+		}
+
+		if len(imp.Metric) > 0 {
+			for j, metric := range imp.Metric {
+				if len(metric.Ext) > 0 {
+					metric.Ext = make([]byte, len(original.Imp[i].Metric[j].Ext))
+					copy(metric.Ext, original.Imp[i].Metric[j].Ext)
+				}
+			}
+		}
+	}
+	return deepCopy
+}
+
 // assertNoDataRace compares the contents of the reference fields found in the original openrtb.BidRequest to their
 // original values to make sure they were not modified and we are not incurring indata races. In order to assert
 // no data races occur in the []Imp array, we call assertNoImpsDataRace()
-func assertNoDataRace(t *testing.T, bidRequestBefore *openrtb.BidRequest, bidRequestAfter *openrtb.BidRequest, impsBefore []openrtb.Imp, impsAfter []openrtb.Imp) {
+func assertNoDataRace(t *testing.T, bidRequestBefore *openrtb.BidRequest, bidRequestAfter *openrtb.BidRequest, filename string) {
 	t.Helper()
 
 	// Assert reference fields were not modified by bidder adapter MakeRequests implementation
-	assert.Equal(t, bidRequestBefore.Site, bidRequestAfter.Site, "Data race in BidRequest.Site field")
-	assert.Equal(t, bidRequestBefore.App, bidRequestAfter.App, "Data race in BidRequest.App field")
-	assert.Equal(t, bidRequestBefore.Device, bidRequestAfter.Device, "Data race in BidRequest.Device field")
-	assert.Equal(t, bidRequestBefore.User, bidRequestAfter.User, "Data race in BidRequest.User field")
-	assert.Equal(t, bidRequestBefore.Source, bidRequestAfter.Source, "Data race in BidRequest.Source field")
-	assert.Equal(t, bidRequestBefore.Regs, bidRequestAfter.Regs, "Data race in BidRequest.Regs field")
-
-	// Assert slice fields were not modified by bidder adapter MakeRequests implementation
-	assert.ElementsMatch(t, bidRequestBefore.WSeat, bidRequestAfter.WSeat, "Data race in BidRequest.[]WSeat array")
-	assert.ElementsMatch(t, bidRequestBefore.BSeat, bidRequestAfter.BSeat, "Data race in BidRequest.[]BSeat array")
-	assert.ElementsMatch(t, bidRequestBefore.Cur, bidRequestAfter.Cur, "Data race in BidRequest.[]Cur array")
-	assert.ElementsMatch(t, bidRequestBefore.WLang, bidRequestAfter.WLang, "Data race in BidRequest.[]WLang array")
-	assert.ElementsMatch(t, bidRequestBefore.BCat, bidRequestAfter.BCat, "Data race in BidRequest.[]BCat array")
-	assert.ElementsMatch(t, bidRequestBefore.BAdv, bidRequestAfter.BAdv, "Data race in BidRequest.[]BAdv array")
-	assert.ElementsMatch(t, bidRequestBefore.BApp, bidRequestAfter.BApp, "Data race in BidRequest.[]BApp array")
-	assert.ElementsMatch(t, bidRequestBefore.Ext, bidRequestAfter.Ext, "Data race in BidRequest.[]Ext array")
+	assert.Equal(t, bidRequestBefore.Site, bidRequestAfter.Site, "Data race in BidRequest.Site field in file %s", filename)
+	assert.Equal(t, bidRequestBefore.App, bidRequestAfter.App, "Data race in BidRequest.App field in file %s", filename)
+	assert.Equal(t, bidRequestBefore.Device, bidRequestAfter.Device, "Data race in BidRequest.Device field in file %s", filename)
+	assert.Equal(t, bidRequestBefore.User, bidRequestAfter.User, "Data race in BidRequest.User field in file %s", filename)
+	assert.Equal(t, bidRequestBefore.Source, bidRequestAfter.Source, "Data race in BidRequest.Source field in file %s", filename)
+	assert.Equal(t, bidRequestBefore.Regs, bidRequestAfter.Regs, "Data race in BidRequest.Regs field in file %s", filename)
 
 	// Assert Imps separately
-	//assertNoImpsDataRace(t, bidRequestBefore.Imp, impsAfter)
-	assertNoImpsDataRace(t, impsBefore, impsAfter)
+	assertNoImpsDataRace(t, bidRequestBefore.Imp, bidRequestAfter.Imp, filename)
 }
 
 // assertNoImpsDataRace compares the contents of the reference fields found in the original openrtb.Imp objects to
 // their original values to make sure they were not modified and we are not incurring in data races.
-func assertNoImpsDataRace(t *testing.T, impsBefore []openrtb.Imp, impsAfter []openrtb.Imp) {
+func assertNoImpsDataRace(t *testing.T, impsBefore []openrtb.Imp, impsAfter []openrtb.Imp, filename string) {
 	t.Helper()
 
-	assert.Len(t, impsAfter, len(impsBefore), "Original []Imp array was modified and length is not equal to original after MakeRequests was called")
-
-	// Assert no data races occured in individual Imp elements
-	for i := 0; i < len(impsBefore); i++ {
-		assert.Equal(t, impsBefore[i].Banner, impsAfter[i].Banner, "Data race in bidRequest.Imp[%d].Banner field", i)
-		assert.Equal(t, impsBefore[i].Video, impsAfter[i].Video, "Data race in bidRequest.Imp[%d].Video field", i)
-		assert.Equal(t, impsBefore[i].Audio, impsAfter[i].Audio, "Data race in bidRequest.Imp[%d].Audio field", i)
-		assert.Equal(t, impsBefore[i].Native, impsAfter[i].Native, "Data race in bidRequest.Imp[%d].Native field", i)
-		assert.Equal(t, impsBefore[i].PMP, impsAfter[i].PMP, "Data race in bidRequest.Imp[%d].PMP field", i)
-		assert.Equal(t, impsBefore[i].Secure, impsAfter[i].Secure, "Data race in bidRequest.Imp[%d].Secure field", i)
-
-		assert.ElementsMatch(t, impsBefore[i].Metric, impsAfter[i].Metric, "Data race in bidRequest.Imp[%d].[]Metric array", i)
-		assert.ElementsMatch(t, impsBefore[i].IframeBuster, impsAfter[i].IframeBuster, "Data race in bidRequest.Imp[%d].[]IframeBuster array", i)
+	if assert.Len(t, impsAfter, len(impsBefore), "Original []Imp array was modified and length is not equal to original after MakeRequests was called. File:%s", filename) {
+		// Assert no data races occured in individual Imp elements
+		for i := 0; i < len(impsBefore); i++ {
+			assert.Equal(t, impsBefore[i].Banner, impsAfter[i].Banner, "Data race in bidRequest.Imp[%d].Banner field. File:%s", i, filename)
+			assert.Equal(t, impsBefore[i].Video, impsAfter[i].Video, "Data race in bidRequest.Imp[%d].Video field. File:%s", i, filename)
+			assert.Equal(t, impsBefore[i].Audio, impsAfter[i].Audio, "Data race in bidRequest.Imp[%d].Audio field. File:%s", i, filename)
+			assert.Equal(t, impsBefore[i].Native, impsAfter[i].Native, "Data race in bidRequest.Imp[%d].Native field. File:%s", i, filename)
+			assert.Equal(t, impsBefore[i].PMP, impsAfter[i].PMP, "Data race in bidRequest.Imp[%d].PMP field. File:%s", i, filename)
+			assert.Equal(t, impsBefore[i].Secure, impsAfter[i].Secure, "Data race in bidRequest.Imp[%d].Secure field. File:%s", i, filename)
+			assert.ElementsMatch(t, impsBefore[i].Metric, impsAfter[i].Metric, "Data race in bidRequest.Imp[%d].[]Metric array. File:%s", i)
+		}
 	}
 }
 
-// func TestACopy() {
-// 	app := openrtb.App{
-// 		ID:            "anyID",
-// 		Name:          "anyName",
-// 		Bundle:        "anyBundle",
-// 		Domain:        "anyDomain",
-// 		StoreURL:      "anyUrl.com",
-// 		Cat:           []string{"AAA", "BBB"},
-// 		SectionCat:    []string{"aaa", "bbb"},
-// 		PageCat:       []string{"CCC", "DDD"},
-// 		Ver:           "VER",
-// 		PrivacyPolicy: 1,
-// 		Paid:          2,
-// 		Publisher: &openrtb.Publisher{
-// 			ID:     "anyPublisherID",
-// 			Name:   "anyPublisherName",
-// 			Cat:    []string{"pubAAA", "pubBBB"},
-// 			Domain: "anyPublisherDomain",
-// 			Ext:    json.RawMessage(`{"appPublisherExtField":"value"}`),
-// 		},
-// 		Content: &openrtb.Content{
-// 			ID:      "anyAppContentID",
-// 			Episode: 1,
-// 		},
-// 		Keywords: "AnyKeyword",
-// 		Ext:      json.RawMessage(`{"appExtField":"value"}`),
-// 	}
-// }
+// testMakeBidsImpl asserts the results of the bidder MakeBids implementation against the expected JSON-defined results
+func testMakeBidsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, makeRequestsOut []*adapters.RequestData) {
+	t.Helper()
+
+	bidResponses := make([]*adapters.BidderResponse, 0)
+	var bidsErrs = make([]error, 0, len(spec.MakeBidsErrors))
+
+	// We should have as many bids as number of adapters.RequestData found in MakeRequests output
+	for i := 0; i < len(makeRequestsOut); i++ {
+		// Run MakeBids with JSON refined spec.HttpCalls info that was asserted to match MakeRequests
+		// output inside testMakeRequestsImpl
+		thisBidResponse, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
+
+		bidsErrs = append(bidsErrs, theseErrs...)
+		bidResponses = append(bidResponses, thisBidResponse)
+	}
+
+	// Assert actual errors thrown by MakeBids implementation versus expected JSON-defined spec.MakeBidsErrors
+	assertErrorList(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
+
+	// Assert MakeBids implementation BidResponses with expected JSON-defined spec.BidResponses[i].Bids
+	for i := 0; i < len(spec.BidResponses); i++ {
+		assertMakeBidsOutput(t, filename, bidResponses[i].Bids, spec.BidResponses[i].Bids)
+	}
+}
