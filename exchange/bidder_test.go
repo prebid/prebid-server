@@ -1022,6 +1022,11 @@ func TestMakeExtHeaders(t *testing.T) {
 			expected:    nil,
 		},
 		{
+			description: "Empty",
+			given:       http.Header{},
+			expected:    map[string][]string{},
+		},
+		{
 			description: "One",
 			given:       http.Header{"key1": {"value1"}},
 			expected:    map[string][]string{"key1": {"value1"}},
