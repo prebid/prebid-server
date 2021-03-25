@@ -17,6 +17,8 @@ For more information, see:
 - [Prebid Server Overview](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
 - [Current Bidders](http://prebid.org/dev-docs/pbs-bidders.html)
 
+Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to get on the mailing list for updates, etc.
+
 ## Installation
 
 First install [Go](https://golang.org/doc/install) version 1.14 or newer.
