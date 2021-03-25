@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"path"
 	"strconv"
 	"text/template"
 
@@ -16,11 +18,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type BidmachineAdapter struct {
+type adapter struct {
 	endpoint template.Template
 }
 
-func (a *BidmachineAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -30,44 +32,30 @@ func (a *BidmachineAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapter
 	result := make([]*adapters.RequestData, 0, len(impressions))
 	errs := make([]error, 0, len(impressions))
 
-	for i, impression := range impressions {
-		if impression.Banner == nil && impression.Video == nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: "Bidmachine supports only banner or video ads",
-			})
-			continue
-		}
-
+	for _, impression := range impressions {
 		if impression.Banner != nil {
 			banner := impression.Banner
 			if banner.Format == nil {
 				errs = append(errs, &errortypes.BadInput{
-					Message: "banner format required",
+					Message: "Impression with id: " + impression.ID + " has following error: Banner format required",
 				})
 				continue
 			}
 			if len(banner.Format) == 0 {
 				errs = append(errs, &errortypes.BadInput{
-					Message: "banner format array is empty",
+					Message: "Impression with id: " + impression.ID + " has following error: Banner format array is empty",
 				})
 				continue
 			}
 		}
 
-		if len(impression.Ext) == 0 {
-			errs = append(errs, errors.New("impression extensions required"))
-			continue
-		}
 		var bidderExt adapters.ExtImpBidder
 		err := json.Unmarshal(impression.Ext, &bidderExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		if len(bidderExt.Bidder) == 0 {
-			errs = append(errs, errors.New("bidder required"))
-			continue
-		}
+
 		var impressionExt openrtb_ext.ExtImpBidmachine
 		err = json.Unmarshal(bidderExt.Bidder, &impressionExt)
 		if err != nil {
@@ -80,23 +68,26 @@ func (a *BidmachineAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapter
 			continue
 		}
 		if impressionExt.SellerID == "" {
-			errs = append(errs, errors.New("Bidmachine seller_id is required"))
+			errs = append(errs, errors.New("Impression with id: "+impression.ID+" has following error: Bidmachine seller_id is required"))
 			continue
 		}
 		if impressionExt.Path == "" {
-			errs = append(errs, errors.New("Bidmachine path is required"))
+			errs = append(errs, errors.New("Impression with id: "+impression.ID+" has following error: Bidmachine path is required"))
 			continue
 		}
 		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
 			if impression.Banner != nil && !hasRewardedBattr(impression.Banner.BAttr) {
-				impression.Banner.BAttr = append(impression.Banner.BAttr, openrtb.CreativeAttribute(16))
-
+				bannerCopy := *impression.Banner
+				bannerCopy.BAttr = append(bannerCopy.BAttr, openrtb.CreativeAttribute(16))
+				impression.Banner = &bannerCopy
 			}
 			if impression.Video != nil && !hasRewardedBattr(impression.Video.BAttr) {
-				impression.Video.BAttr = append(impression.Video.BAttr, openrtb.CreativeAttribute(16))
+				videoCopy := *impression.Video
+				videoCopy.BAttr = append(videoCopy.BAttr, openrtb.CreativeAttribute(16))
+				impression.Video = &videoCopy
 			}
 		}
-		request.Imp = impressions[i : i+1]
+		request.Imp = []openrtb.Imp{impression}
 		body, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
@@ -104,7 +95,7 @@ func (a *BidmachineAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapter
 		}
 		result = append(result, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     url + "/" + impressionExt.Path + "/" + impressionExt.SellerID,
+			Uri:     url,
 			Body:    body,
 			Headers: headers,
 		})
@@ -112,9 +103,6 @@ func (a *BidmachineAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapter
 
 	request.Imp = impressions
 
-	if len(result) == 0 {
-		return nil, errs
-	}
 	return result, errs
 }
 
@@ -127,14 +115,14 @@ func hasRewardedBattr(attr []openrtb.CreativeAttribute) bool {
 	return false
 }
 
-func (a *BidmachineAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	switch responseData.StatusCode {
 	case http.StatusNoContent:
-		fallthrough
-	case http.StatusServiceUnavailable:
 		return nil, nil
+	case http.StatusServiceUnavailable:
+		fallthrough
 
 	case http.StatusBadRequest:
 		fallthrough
@@ -191,7 +179,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &BidmachineAdapter{
+	bidder := &adapter{
 		endpoint: *template,
 	}
 
@@ -200,24 +188,34 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 
 const UndefinedMediaType = openrtb_ext.BidType("")
 
-func (a *BidmachineAdapter) buildEndpointURL(params openrtb_ext.ExtImpBidmachine) (string, error) {
+func (a *adapter) buildEndpointURL(params openrtb_ext.ExtImpBidmachine) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{Host: params.Host}
-	return macros.ResolveMacros(a.endpoint, endpointParams)
+	uriString, errMacros := macros.ResolveMacros(a.endpoint, endpointParams)
+	if errMacros != nil {
+		return "", &errortypes.BadInput{
+			Message: "Failed to resolve host macros",
+		}
+	}
+	uri, errUrl := url.Parse(uriString)
+	if errUrl != nil || uri.Scheme == "" || uri.Host == "" {
+		return "", &errortypes.BadInput{
+			Message: "Failed to create final URL with provided host",
+		}
+	}
+	uri.Path = path.Join(uri.Path, params.Path)
+	uri.Path = path.Join(uri.Path, params.SellerID)
+	return uri.String(), nil
 }
 
 func GetMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
-	var bidType openrtb_ext.BidType = UndefinedMediaType
-	for _, impression := range imps {
-		if impression.ID != impID {
-			continue
+	mediaType := openrtb_ext.BidTypeBanner
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner == nil && imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
+			}
+			return mediaType
 		}
-		switch {
-		case impression.Banner != nil:
-			bidType = openrtb_ext.BidTypeBanner
-		case impression.Video != nil:
-			bidType = openrtb_ext.BidTypeVideo
-		}
-		break
 	}
-	return bidType
+	return UndefinedMediaType
 }

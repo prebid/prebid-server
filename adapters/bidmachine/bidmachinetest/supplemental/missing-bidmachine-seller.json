@@ -3,7 +3,7 @@
 		"id": "test-request-id",
 		"imp": [
 			{
-				"id": "test-impression-id-7",
+				"id": "test-impression-id-1",
 				"banner": {
 					"format": [
 						{
@@ -13,7 +13,10 @@
 					]
 				},
 				"ext": {
-					"bidder": "invalid bidder"
+					"bidder": {
+						"host": "api-eu",
+						"path": "auction/rtb/v2"
+					}
 				}
 			}
 		]
@@ -22,9 +25,10 @@
 	"expectedBidResponses": [],
 	"expectedMakeRequestsErrors": [
 		{
-			"value": "json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpBidmachine",
+			"value": "Impression with id: test-impression-id-1 has following error: Bidmachine seller_id is required",
 			"comparison": "literal"
 		}
 	],
 	"expectedMakeBidsErrors": []
 }
+

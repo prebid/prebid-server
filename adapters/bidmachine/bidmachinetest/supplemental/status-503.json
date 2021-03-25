@@ -61,5 +61,9 @@
             "body": "server text here"
         }
     }],
-    "expectedMakeBidsErrors": []
+    "expectedMakeBidsErrors": [
+    {
+        "value": "unexpected status code: 503 \"server text here\"",
+        "comparison": "literal"
+    }]
 }

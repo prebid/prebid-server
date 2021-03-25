@@ -12,7 +12,7 @@
 	},
 	"expectedMakeRequestsErrors": [
 		{
-			"value": "banner format array is empty",
+			"value": "Impression with id: test-impression-id-1 has following error: Banner format array is empty",
 			"comparison": "literal"
 		}
 	]

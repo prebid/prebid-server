@@ -14,14 +14,13 @@
                     "seller_id": "1",
                     "host": "api-eu",
                     "path": "auction/rtb/v2"
-
                 }
             }
         }]
     },
     "expectedMakeRequestsErrors": [
     {
-        "value": "banner format required",
+        "value": "Impression with id: test-impression-id-1 has following error: Banner format required",
         "comparison": "literal"
     }]
 }

@@ -3,7 +3,7 @@
 		"id": "test-request-id",
 		"imp": [
 			{
-				"id": "test-impression-id-5",
+				"id": "test-impression-id-1",
 				"banner": {
 					"format": [
 						{
@@ -14,6 +14,8 @@
 				},
 				"ext": {
 					"bidder": {
+						"host": "api-eu",
+						"seller_id": "1"
 					}
 				}
 			}
@@ -23,9 +25,10 @@
 	"expectedBidResponses": [],
 	"expectedMakeRequestsErrors": [
 		{
-			"value": "Bidmachine seller_id is required",
+			"value": "Impression with id: test-impression-id-1 has following error: Bidmachine path is required",
 			"comparison": "literal"
 		}
 	],
 	"expectedMakeBidsErrors": []
 }
+
