@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -327,23 +328,45 @@ func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset
 
 // makeExt transforms information about the HTTP call into the contract class for the PBS response.
 func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
-	if httpInfo.err == nil {
-		return &openrtb_ext.ExtHttpCall{
-			Uri:            httpInfo.request.Uri,
-			RequestBody:    string(httpInfo.request.Body),
-			ResponseBody:   string(httpInfo.response.Body),
-			Status:         httpInfo.response.StatusCode,
-			RequestHeaders: httpInfo.request.Headers,
-		}
-	} else if httpInfo.request == nil {
+	if httpInfo == nil {
 		return &openrtb_ext.ExtHttpCall{}
+	}
+
+	if httpInfo.err == nil {
+		if httpInfo.request != nil && httpInfo.response != nil {
+			return &openrtb_ext.ExtHttpCall{
+				Uri:            httpInfo.request.Uri,
+				RequestBody:    string(httpInfo.request.Body),
+				ResponseBody:   string(httpInfo.response.Body),
+				Status:         httpInfo.response.StatusCode,
+				RequestHeaders: makeExtHeaders(httpInfo.request.Headers),
+			}
+		}
 	} else {
-		return &openrtb_ext.ExtHttpCall{
-			Uri:            httpInfo.request.Uri,
-			RequestBody:    string(httpInfo.request.Body),
-			RequestHeaders: httpInfo.request.Headers,
+		if httpInfo.request != nil {
+			return &openrtb_ext.ExtHttpCall{
+				Uri:            httpInfo.request.Uri,
+				RequestBody:    string(httpInfo.request.Body),
+				RequestHeaders: makeExtHeaders(httpInfo.request.Headers),
+			}
 		}
 	}
+
+	return &openrtb_ext.ExtHttpCall{}
+}
+
+func makeExtHeaders(h http.Header) map[string][]string {
+	if h == nil {
+		return nil
+	}
+
+	result := make(map[string][]string)
+	for k, v := range h {
+		if !strings.EqualFold(k, "authorization") {
+			result[k] = v
+		}
+	}
+	return result
 }
 
 // doRequest makes a request, handles the response, and returns the data needed by the

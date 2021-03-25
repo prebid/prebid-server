@@ -892,86 +892,122 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 	}
 }
 
-// TestBadResponseLogging makes sure that openrtb_ext works properly on malformed HTTP requests.
-func TestBadRequestLogging(t *testing.T) {
-	info := &httpCallInfo{
-		err: errors.New("Bad request"),
-	}
-	ext := makeExt(info)
-	if ext.Uri != "" {
-		t.Errorf("The URI should be empty. Got %s", ext.Uri)
-	}
-	if ext.RequestBody != "" {
-		t.Errorf("The request body should be empty. Got %s", ext.RequestBody)
-	}
-	if ext.ResponseBody != "" {
-		t.Errorf("The response body should be empty. Got %s", ext.ResponseBody)
-	}
-	if ext.Status != 0 {
-		t.Errorf("The Status code should be 0. Got %d", ext.Status)
-	}
-	if len(ext.RequestHeaders) > 0 {
-		t.Errorf("The request headers should be empty. Got %s", ext.RequestHeaders)
-	}
-}
-
-// TestBadResponseLogging makes sure that openrtb_ext works properly if we don't get a sensible HTTP response.
-func TestBadResponseLogging(t *testing.T) {
-	info := &httpCallInfo{
-		request: &adapters.RequestData{
-			Uri:  "test.com",
-			Body: []byte("request body"),
-			Headers: http.Header{
-				"header-1": []string{"value-1"},
+func TestMakeExt(t *testing.T) {
+	testCases := []struct {
+		description string
+		given       *httpCallInfo
+		expected    *openrtb_ext.ExtHttpCall
+	}{
+		{
+			description: "Nil",
+			given:       nil,
+			expected:    &openrtb_ext.ExtHttpCall{},
+		},
+		{
+			description: "Success",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: http.Header{"key1": {"value1", "value2"}},
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"key1": {"value1", "value2"}},
+				ResponseBody:   "responseBody",
+				Status:         999,
 			},
 		},
-		err: errors.New("Bad response"),
-	}
-	ext := makeExt(info)
-	if ext.Uri != info.request.Uri {
-		t.Errorf("The URI should be test.com. Got %s", ext.Uri)
-	}
-	if ext.RequestBody != string(info.request.Body) {
-		t.Errorf("The request body should be empty. Got %s", ext.RequestBody)
-	}
-	if ext.ResponseBody != "" {
-		t.Errorf("The response body should be empty. Got %s", ext.ResponseBody)
-	}
-	if ext.Status != 0 {
-		t.Errorf("The Status code should be 0. Got %d", ext.Status)
-	}
-	assert.Equal(t, info.request.Headers, http.Header(ext.RequestHeaders), "The request headers should be \"header-1:value-1\"")
-}
-
-// TestSuccessfulResponseLogging makes sure that openrtb_ext works properly if the HTTP request is successful.
-func TestSuccessfulResponseLogging(t *testing.T) {
-	info := &httpCallInfo{
-		request: &adapters.RequestData{
-			Uri:  "test.com",
-			Body: []byte("request body"),
-			Headers: http.Header{
-				"header-1": []string{"value-1", "value-2"},
+		{
+			description: "Success - Authorization Header Removal",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: http.Header{"key1": {"value1", "value2"}, "Authorization": {"secret"}},
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"key1": {"value1", "value2"}},
+				ResponseBody:   "responseBody",
+				Status:         999,
 			},
 		},
-		response: &adapters.ResponseData{
-			StatusCode: 200,
-			Body:       []byte("response body"),
+		{
+			description: "Success - Nil Request & Nil Response ",
+			given: &httpCallInfo{
+				err:      nil,
+				request:  nil,
+				response: nil,
+			},
+			expected: &openrtb_ext.ExtHttpCall{},
+		},
+		{
+			description: "Error",
+			given: &httpCallInfo{
+				err: errors.New("error"),
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: http.Header{"key1": {"value1", "value2"}},
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"key1": {"value1", "value2"}},
+			},
+		},
+		{
+			description: "Error - Nil Response",
+			given: &httpCallInfo{
+				err: errors.New("error"),
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: http.Header{"key1": {"value1", "value2"}},
+				},
+				response: nil,
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"key1": {"value1", "value2"}},
+			},
+		},
+		{
+			description: "Error - Nil Request & Response",
+			given: &httpCallInfo{
+				err:      errors.New("error"),
+				request:  nil,
+				response: nil,
+			},
+			expected: &openrtb_ext.ExtHttpCall{},
 		},
 	}
-	ext := makeExt(info)
-	if ext.Uri != info.request.Uri {
-		t.Errorf("The URI should be test.com. Got %s", ext.Uri)
+
+	for _, test := range testCases {
+		result := makeExt(test.given)
+		assert.Equal(t, test.expected, result, test.description)
 	}
-	if ext.RequestBody != string(info.request.Body) {
-		t.Errorf("The request body should be \"request body\". Got %s", ext.RequestBody)
-	}
-	if ext.ResponseBody != string(info.response.Body) {
-		t.Errorf("The response body should be \"response body\". Got %s", ext.ResponseBody)
-	}
-	if ext.Status != info.response.StatusCode {
-		t.Errorf("The Status code should be 0. Got %d", ext.Status)
-	}
-	assert.Equal(t, info.request.Headers, http.Header(ext.RequestHeaders), "The request headers should be \"%s\". Got %s", info.request.Headers, ext.RequestHeaders)
 }
 
 func TestMobileNativeTypes(t *testing.T) {
