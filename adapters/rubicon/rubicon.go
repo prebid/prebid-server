@@ -93,6 +93,10 @@ type rubiconExtUserTpID struct {
 	UID    string `json:"uid"`
 }
 
+type rubiconUserDataExt struct {
+	TaxonomyName string `json:"taxonomyname"`
+}
+
 type rubiconUserExt struct {
 	Consent     string                        `json:"consent,omitempty"`
 	DigiTrust   *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
@@ -752,6 +756,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			userCopy := *request.User
 			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
 
+			if err := updateUserExtWithIabAttribute(&userExtRP, userCopy.Data); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
 			if request.User.Ext != nil {
 				var userExt *openrtb_ext.ExtUser
 				if err = json.Unmarshal(userCopy.Ext, &userExt); err != nil {
@@ -884,6 +893,43 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	}
 
 	return requestData, errs
+}
+
+func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb.Data) error {
+	var segmentIdsToCopy = make([]string, 0)
+
+	for _, dataRecord := range data {
+		if dataRecord.Ext != nil {
+			var dataExtObject rubiconUserDataExt
+			err := json.Unmarshal(dataRecord.Ext, &dataExtObject)
+			if err != nil {
+				continue
+			}
+			if strings.EqualFold(dataExtObject.TaxonomyName, "iab") {
+				for _, segment := range dataRecord.Segment {
+					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
+				}
+			}
+		}
+	}
+
+	userExtRPTarget := make(map[string]interface{})
+
+	if userExtRP.RP.Target != nil {
+		if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
+			return &errortypes.BadInput{Message: err.Error()}
+		}
+	}
+
+	userExtRPTarget["iab"] = segmentIdsToCopy
+
+	if target, err := json.Marshal(&userExtRPTarget); err != nil {
+		return &errortypes.BadInput{Message: err.Error()}
+	} else {
+		userExtRP.RP.Target = target
+	}
+
+	return nil
 }
 
 func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) (mappedRubiconUidsParam, []error) {

@@ -35,10 +35,10 @@ import (
 const defaultAmpRequestTimeoutMillis = 900
 
 type AmpResponse struct {
-	Targeting map[string]string                                       `json:"targeting"`
-	Debug     *openrtb_ext.ExtResponseDebug                           `json:"debug,omitempty"`
-	Errors    map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError `json:"errors,omitempty"`
-	Warnings  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError `json:"warnings,omitempty"`
+	Targeting map[string]string                                         `json:"targeting"`
+	Debug     *openrtb_ext.ExtResponseDebug                             `json:"debug,omitempty"`
+	Errors    map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"errors,omitempty"`
+	Warnings  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"warnings,omitempty"`
 }
 
 // NewAmpEndpoint modifies the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
@@ -239,9 +239,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
 	}
 
-	warnings := make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError)
+	warnings := extResponse.Warnings
+	if warnings == nil {
+		warnings = make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)
+	}
 	for _, v := range errortypes.WarningOnly(errL) {
-		bidderErr := openrtb_ext.ExtBidderError{
+		bidderErr := openrtb_ext.ExtBidderMessage{
 			Code:    errortypes.ReadCode(v),
 			Message: v.Error(),
 		}
@@ -528,8 +531,9 @@ func readPolicy(consent string) (privacy.PolicyWriter, error) {
 		return ccpa.ConsentWriter{consent}, nil
 	}
 
-	return privacy.NilPolicyWriter{}, &errortypes.InvalidPrivacyConsent{
-		Message: fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF.", consent),
+	return privacy.NilPolicyWriter{}, &errortypes.Warning{
+		Message:     fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF.", consent),
+		WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 	}
 }
 
