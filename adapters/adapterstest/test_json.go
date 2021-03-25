@@ -230,13 +230,11 @@ func assertMakeBidsOutput(t *testing.T, filename string, actualBidderResp *adapt
 		actualBidderResp = new(adapters.BidderResponse)
 	}
 
-	actualBids := actualBidderResp.Bids
-
-	if len(actualBids) != len(expected) {
-		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(actualBids))
+	if len(actualBidderResp.Bids) != len(expected) {
+		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(actualBidderResp.Bids))
 	}
-	for i := 0; i < len(actualBids); i++ {
-		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), actualBids[i], &(expected[i]))
+	for i := 0; i < len(actualBidderResp.Bids); i++ {
+		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), actualBidderResp.Bids[i], &(expected[i]))
 	}
 }
 
@@ -377,7 +375,8 @@ func deepCopyBidRequest(original *openrtb.BidRequest) (*openrtb.BidRequest, erro
 		return nil, fmt.Errorf("Unable to unmarshal original bid request: %v", err)
 	}
 
-	// Make sure all Ext fields remain perfectly equal after the Marshal and unmarshal calls
+	// Make sure all Ext fields don't differ in blank spaces, line brakes or tabs
+	// and slices don't get differentiated for being empty versus being nil
 	deepCopy = deepCopySliceAndExtAdjustments(deepCopy, original)
 
 	return deepCopy, nil
