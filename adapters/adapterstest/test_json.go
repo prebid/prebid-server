@@ -214,14 +214,29 @@ func assertErrorList(t *testing.T, description string, actual []error, expected 
 	}
 }
 
-func assertMakeBidsOutput(t *testing.T, filename string, actual []*adapters.TypedBid, expected []expectedBid) {
+func assertMakeBidsOutput(t *testing.T, filename string, actualBidderResp *adapters.BidderResponse, expected []expectedBid) {
 	t.Helper()
 
-	if len(actual) != len(expected) {
-		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(actual))
+	if (actualBidderResp == nil || len(actualBidderResp.Bids) == 0) != (len(expected) == 0) {
+		if len(expected) == 0 {
+			t.Fatalf("%s: expectedBidResponses indicated a nil response, but mockResponses supplied a non-nil response", filename)
+		}
+
+		t.Fatalf("%s: mockResponses included unexpected nil or empty response", filename)
 	}
-	for i := 0; i < len(actual); i++ {
-		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), actual[i], &(expected[i]))
+
+	// Expected nil response - give diffBids something to work with.
+	if actualBidderResp == nil {
+		actualBidderResp = new(adapters.BidderResponse)
+	}
+
+	actualBids := actualBidderResp.Bids
+
+	if len(actualBids) != len(expected) {
+		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(actualBids))
+	}
+	for i := 0; i < len(actualBids); i++ {
+		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), actualBids[i], &(expected[i]))
 	}
 }
 
@@ -610,6 +625,6 @@ func testMakeBidsImpl(t *testing.T, filename string, spec *testSpec, bidder adap
 
 	// Assert MakeBids implementation BidResponses with expected JSON-defined spec.BidResponses[i].Bids
 	for i := 0; i < len(spec.BidResponses); i++ {
-		assertMakeBidsOutput(t, filename, bidResponses[i].Bids, spec.BidResponses[i].Bids)
+		assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i].Bids)
 	}
 }
