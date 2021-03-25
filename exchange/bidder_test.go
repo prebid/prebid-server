@@ -1010,6 +1010,50 @@ func TestMakeExt(t *testing.T) {
 	}
 }
 
+func TestMakeExtHeaders(t *testing.T) {
+	testCases := []struct {
+		description string
+		given       http.Header
+		expected    map[string][]string
+	}{
+		{
+			description: "Nil",
+			given:       nil,
+			expected:    nil,
+		},
+		{
+			description: "One",
+			given:       http.Header{"key1": {"value1"}},
+			expected:    map[string][]string{"key1": {"value1"}},
+		},
+		{
+			description: "Many",
+			given:       http.Header{"key1": {"value1"}, "key2": {"value2a", "value2b"}},
+			expected:    map[string][]string{"key1": {"value1"}, "key2": {"value2a", "value2b"}},
+		},
+		{
+			description: "Authorization Header Omitted",
+			given:       http.Header{"authorization": {"secret"}},
+			expected:    map[string][]string{},
+		},
+		{
+			description: "Authorization Header Omitted - Case Insensitive",
+			given:       http.Header{"AuThOrIzAtIoN": {"secret"}},
+			expected:    map[string][]string{},
+		},
+		{
+			description: "Authorization Header Omitted + Other Keys",
+			given:       http.Header{"authorization": {"secret"}, "key1": {"value1"}},
+			expected:    map[string][]string{"key1": {"value1"}},
+		},
+	}
+
+	for _, test := range testCases {
+		result := makeExtHeaders(test.given)
+		assert.Equal(t, test.expected, result, test.description)
+	}
+}
+
 func TestMobileNativeTypes(t *testing.T) {
 	respBody := "{\"bid\":false}"
 	respStatus := 200
