@@ -95,7 +95,9 @@ func transform(request *openrtb.BidRequest) {
 					continue
 				}
 
-				request.Imp[i].Native.Request = string(nativeReqByte)
+				nativeCopy := *request.Imp[i].Native
+				nativeCopy.Request = string(nativeReqByte)
+				request.Imp[i].Native = &nativeCopy
 			}
 		}
 	}
