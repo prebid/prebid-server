@@ -94,29 +94,35 @@ func convertImpression(imp *openrtb.Imp) error {
 		}
 	}
 	if imp.Banner != nil {
-		err := convertBanner(imp.Banner)
+		bannerCopy, err := convertBanner(imp.Banner)
 		if err != nil {
 			return err
 		}
+		imp.Banner = bannerCopy
 	}
 
 	return nil
 }
 
 // make sure that banner has openrtb 2.3-compatible size information
-func convertBanner(banner *openrtb.Banner) error {
+func convertBanner(banner *openrtb.Banner) (*openrtb.Banner, error) {
 	if banner.W == nil || banner.H == nil || *banner.W == 0 || *banner.H == 0 {
 		if len(banner.Format) > 0 {
 			f := banner.Format[0]
-			banner.W = &f.W
-			banner.H = &f.H
+
+			bannerCopy := *banner
+
+			bannerCopy.W = openrtb.Uint64Ptr(f.W)
+			bannerCopy.H = openrtb.Uint64Ptr(f.H)
+
+			return &bannerCopy, nil
 		} else {
-			return &errortypes.BadInput{
+			return nil, &errortypes.BadInput{
 				Message: "Size information missing for banner",
 			}
 		}
 	}
-	return nil
+	return banner, nil
 }
 
 func (a *PubnativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
