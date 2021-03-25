@@ -336,8 +336,8 @@ func (this *FacebookAdapter) MakeBids(request *openrtb2.BidRequest, adapterReque
 	var errs []error
 
 	for _, seatbid := range bidResp.SeatBid {
-		for _, bid := range seatbid.Bid {
-			bid := bid
+		for i := range seatbid.Bid {
+			bid := seatbid.Bid[i]
 
 			if bid.AdM == "" {
 				errs = append(errs, &errortypes.BadServerResponse{
