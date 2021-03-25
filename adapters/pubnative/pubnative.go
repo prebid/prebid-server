@@ -117,7 +117,7 @@ func convertBanner(banner *openrtb.Banner) (*openrtb.Banner, error) {
 
 			return &bannerCopy, nil
 		} else {
-			return banner, &errortypes.BadInput{
+			return nil, &errortypes.BadInput{
 				Message: "Size information missing for banner",
 			}
 		}
