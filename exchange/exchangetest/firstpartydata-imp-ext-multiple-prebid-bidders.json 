@@ -29,9 +29,12 @@
                             }
                         }
                     },
+                    "data": {
+                        "keywords": "prebid server example"
+                    },
                     "context": {
                         "data": {
-                            "keywords": "prebid server example"
+                            "keywords": "another prebid server example"
                         }
                     }
                 }
@@ -61,9 +64,12 @@
                             "bidder": {
                                 "placementId": 1
                             },
+                            "data": {
+                                "keywords": "prebid server example"
+                            },
                             "context": {
                                 "data": {
-                                    "keywords": "prebid server example"
+                                    "keywords": "another prebid server example"
                                 }
                             }
                         }
@@ -111,9 +117,12 @@
                                 "siteId": 2,
                                 "zoneId": 3
                             },
+                            "data": {
+                                "keywords": "prebid server example"
+                            },
                             "context": {
                                 "data": {
-                                    "keywords": "prebid server example"
+                                    "keywords": "another prebid server example"
                                 }
                             }
                         }

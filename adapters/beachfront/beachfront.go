@@ -409,8 +409,11 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		bfReqs[i].Request = *request
 		var secure int8
 
+		var deviceCopy openrtb.Device
 		if bfReqs[i].Request.Device == nil {
-			bfReqs[i].Request.Device = &openrtb.Device{}
+			deviceCopy = openrtb.Device{}
+		} else {
+			deviceCopy = *bfReqs[i].Request.Device
 		}
 
 		if beachfrontExt.VideoResponseType == "nurl" {
@@ -418,13 +421,15 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		} else {
 			bfReqs[i].VideoResponseType = "adm"
 
-			if bfReqs[i].Request.Device.IP == "" {
-				bfReqs[i].Request.Device.IP = fakeIP
+			if deviceCopy.IP == "" {
+				deviceCopy.IP = fakeIP
 			}
 		}
 
 		if bfReqs[i].Request.Site != nil && bfReqs[i].Request.Site.Domain == "" && bfReqs[i].Request.Site.Page != "" {
-			bfReqs[i].Request.Site.Domain = getDomain(bfReqs[i].Request.Site.Page)
+			siteCopy := *bfReqs[i].Request.Site
+			siteCopy.Domain = getDomain(bfReqs[i].Request.Site.Page)
+			bfReqs[i].Request.Site = &siteCopy
 			secure = isSecure(bfReqs[i].Request.Site.Page)
 		}
 
@@ -439,10 +444,11 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			}
 		}
 
-		if bfReqs[i].Request.Device != nil && bfReqs[i].Request.Device.DeviceType == 0 {
+		if deviceCopy.DeviceType == 0 {
 			// More fine graned deviceType methods will be added in the future
-			bfReqs[i].Request.Device.DeviceType = fallBackDeviceType(request)
+			deviceCopy.DeviceType = fallBackDeviceType(request)
 		}
+		bfReqs[i].Request.Device = &deviceCopy
 
 		imp := request.Imp[i]
 

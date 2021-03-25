@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const clientVersion = "prebid_server_0.1"
+const clientVersion = "prebid_server_0.2"
 
 type adMarkupType string
 
@@ -81,6 +81,7 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 			i--
 		}
 	}
+
 	if request.Site != nil {
 		siteCopy := *request.Site
 		siteCopy.Publisher = &openrtb.Publisher{ID: publisherID}
@@ -96,6 +97,13 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 			siteCopy.Ext = nil
 		}
 		request.Site = &siteCopy
+	}
+
+	if request.App != nil {
+		appCopy := *request.App
+		appCopy.Publisher = &openrtb.Publisher{ID: publisherID}
+
+		request.App = &appCopy
 	}
 
 	if request.User != nil && request.User.Ext != nil {

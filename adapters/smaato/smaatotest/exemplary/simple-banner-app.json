@@ -1,20 +1,32 @@
 {
   "mockBidRequest": {
     "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
-    "site": {
-      "publisher": {
-        "id": "1100042525"
+    "app": {
+      "id": "app-id",
+      "name": "app-name",
+      "bundle": "app-bundle",
+      "storeurl": "app-storeurl",
+      "cat": [
+        "IAB3-1"
+      ],
+      "ver": "app-version",
+      "paid": 1,
+      "content": {
+        "id": "content-id",
+        "title": "content-title",
+        "series": "content-series",
+        "genre": "content-genre",
+        "producer": {
+          "id": "producer-id",
+          "name": "producer-name"
+        },
+        "cat": [
+              "IAB8-6"
+              ],
+        "livestream": 1,
+        "language": "en"
       },
-      "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
-      "ext": {
-        "data": {
-          "keywords": "power tools",
-          "search": "drill",
-          "content": {
-            "userrating": 4
-          }
-        }
-      }
+      "keywords": "keywords"
     },
     "imp": [
       {
@@ -117,12 +129,35 @@
               "us_privacy": "uspConsentString"
             }
           },
-          "site": {
+          "app": {
             "publisher": {
               "id": "1100042525"
             },
-            "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
-            "keywords": "power tools"
+            "id": "app-id",
+            "name": "app-name",
+            "bundle": "app-bundle",
+            "storeurl": "app-storeurl",
+            "cat": [
+              "IAB3-1"
+            ],
+            "ver": "app-version",
+            "paid": 1,
+            "content": {
+              "id": "content-id",
+              "title": "content-title",
+              "series": "content-series",
+              "genre": "content-genre",
+              "producer": {
+                "id": "producer-id",
+                "name": "producer-name"
+              },
+              "cat": [
+                "IAB8-6"
+              ],
+              "livestream": 1,
+              "language": "en"
+            },
+            "keywords": "keywords"
           },
           "ext": {
             "client": "prebid_server_0.2"
