@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/newrelic/go-agent/v3/newrelic"
+	"github.com/prebid/prebid-server/cache/skanidlist/cfg"
 	"github.com/prebid/prebid-server/cache/skanidlist/model"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/net/context/ctxhttp"
@@ -29,12 +30,12 @@ type cache struct {
 	updateRequested bool
 }
 
-func newCache(url string, bidder openrtb_ext.BidderName) *cache {
-	return &cache{
-		url:        url,
+func newCache(cfg cfg.Cache) *cache {
+	c := cache{
+		url:        cfg.Url,
 		successTTL: time.Duration(1 * time.Hour),
 		missTTL:    time.Duration(5 * time.Minute),
-		bidder:     bidder,
+		bidder:     cfg.Bidder,
 
 		ids: map[string]bool{},
 
@@ -42,6 +43,14 @@ func newCache(url string, bidder openrtb_ext.BidderName) *cache {
 		expiration:      time.Now().UnixNano(),
 		updateRequested: false,
 	}
+
+	if cfg.BidderSKANID != "" {
+		c.ids = map[string]bool{
+			cfg.BidderSKANID: true,
+		}
+	}
+
+	return &c
 }
 
 func (c *cache) get() map[string]bool {
