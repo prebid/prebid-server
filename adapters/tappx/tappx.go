@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
-	"strings"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
