@@ -100,6 +100,7 @@
               "cat": ["IAB1-1"],
               "ext": {
                 "prebid": {
+                  "bidid": "mock_uuid",
                   "type": "video",
                   "targeting": {
                      "hb_bidder": "appnexus",
@@ -123,6 +124,7 @@
               "crid": "creative-3",
               "ext": {
                 "prebid": {
+                  "bidid": "mock_uuid",
                   "targeting": {
                       "hb_bidder": "appnexus",
                       "hb_bidder_appnexus": "appnexus",

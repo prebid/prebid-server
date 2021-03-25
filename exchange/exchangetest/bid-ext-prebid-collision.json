@@ -80,6 +80,7 @@
                     "ext": {
                         "someField": "someValue",
                         "prebid": {
+                            "bidid": "mock_uuid",
                             "type": "video"
                         }
                     }

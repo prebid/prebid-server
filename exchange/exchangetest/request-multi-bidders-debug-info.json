@@ -122,6 +122,7 @@
               ],
               "ext": {
                 "prebid": {
+                  "bidid": "mock_uuid",
                   "type": "",
                   "targeting": {
                     "hb_bidder": "appnexus",

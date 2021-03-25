@@ -64,6 +64,7 @@
             "crid": "creative-1",
             "ext": {
               "prebid": {
+                "bidid": "mock_uuid",
                 "cache": {
                   "bids": {
                     "cacheId": "0",
