@@ -100,6 +100,13 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		if dmxReq.App.ID != "" {
 			anyHasId = true
 		}
+		if anyHasId == false {
+			idfa, valid := getIdfa(request)
+			if valid {
+				dmxReq.App.ID = idfa
+				anyHasId = true
+			}
+		}
 	} else {
 		dmxReq.App = nil
 	}
@@ -147,10 +154,6 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 		}
 	}
 
-	if anyHasId == false {
-		return nil, []error{errors.New("This request contained no identifier")}
-	}
-
 	for _, inst := range dmxReq.Imp {
 		var banner *openrtb.Banner
 		var video *openrtb.Video
@@ -186,6 +189,9 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	}
 
 	dmxReq.Imp = imps
+	if anyHasId == false {
+		return nil, []error{errors.New("This request contained no identifier")}
+	}
 
 	oJson, err := json.Marshal(dmxReq)
 
@@ -257,6 +263,7 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 
 func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner *openrtb.Banner, video *openrtb.Video, intVal int8) []openrtb.Imp {
 	var tempimp openrtb.Imp
+	var checkValue *uint64
 	tempimp = inst
 	if params.Bidder.Bidfloor != 0 {
 		tempimp.BidFloor = params.Bidder.Bidfloor
@@ -271,10 +278,15 @@ func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrt
 		tempimp.Secure = &intVal
 	}
 	if banner != nil {
+		if banner.H == checkValue || banner.W == checkValue {
+			banner.H = &banner.Format[0].H
+			banner.W = &banner.Format[0].W
+		}
 		tempimp.Banner = banner
 	}
 
 	if video != nil {
+		video.Protocols = checkProtocols(video)
 		tempimp.Video = video
 	}
 
@@ -326,4 +338,18 @@ func isDmxParams(t interface{}) bool {
 	default:
 		return false
 	}
+}
+
+func getIdfa(request *openrtb.BidRequest) (string, bool) {
+	device := request.Device
+	if device.IFA != "" {
+		return device.IFA, true
+	}
+	return "empty", false
+}
+func checkProtocols(imp *openrtb.Video) []openrtb.Protocol {
+	if len(imp.Protocols) > 0 {
+		return imp.Protocols
+	}
+	return []openrtb.Protocol{2, 3, 5, 6, 7, 8}
 }
