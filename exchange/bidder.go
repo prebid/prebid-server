@@ -16,9 +16,9 @@ import (
 	"github.com/prebid/prebid-server/config/util"
 	"github.com/prebid/prebid-server/currency"
 
-	"github.com/mxmCherry/openrtb"
-	nativeRequests "github.com/mxmCherry/openrtb/native/request"
-	nativeResponse "github.com/mxmCherry/openrtb/native/response"
+	nativeRequests "github.com/mxmCherry/openrtb/v14/native1/request"
+	nativeResponse "github.com/mxmCherry/openrtb/v14/native1/response"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -49,7 +49,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -62,7 +62,7 @@ type adaptedBidder interface {
 // pbsOrtbBid.dealPriority is optionally provided by adapters and used internally by the exchange to support deal targeted campaigns.
 // pbsOrtbBid.dealTierSatisfied is set to true by exchange.updateHbPbCatDur if deal tier satisfied otherwise it will be set to false
 type pbsOrtbBid struct {
-	bid               *openrtb.Bid
+	bid               *openrtb2.Bid
 	bidType           openrtb_ext.BidType
 	bidTargets        map[string]string
 	bidVideo          *openrtb_ext.ExtBidPrebidVideo
@@ -73,7 +73,7 @@ type pbsOrtbBid struct {
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
 //
-// This is distinct from the openrtb.SeatBid so that the prebid-server ext can be passed back with typesafety.
+// This is distinct from the openrtb2.SeatBid so that the prebid-server ext can be passed back with typesafety.
 type pbsOrtbSeatBid struct {
 	// bids is the list of bids which this adaptedBidder wishes to make.
 	bids []*pbsOrtbBid
@@ -124,7 +124,7 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -248,7 +248,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	return seatBid, errs
 }
 
-func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest) (*nativeResponse.Response, []error) {
+func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeResponse.Response, []error) {
 	var errs []error
 	var nativeMarkup *nativeResponse.Response
 	if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
@@ -307,7 +307,7 @@ func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Requ
 	return nil
 }
 
-func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Native, error) {
+func getNativeImpByImpID(impID string, request *openrtb2.BidRequest) (*openrtb2.Native, error) {
 	for _, impInRequest := range request.Imp {
 		if impInRequest.ID == impID && impInRequest.Native != nil {
 			return impInRequest.Native, nil
