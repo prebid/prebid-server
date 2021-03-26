@@ -39,7 +39,7 @@ type extCacheInstructions struct {
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb.BidResponse, error)
+	HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog, account *config.Account) (*openrtb.BidResponse, error)
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -123,7 +123,7 @@ type BidderRequest struct {
 	BidderLabels   metrics.AdapterLabels
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog, account *config.Account) (*openrtb.BidResponse, error) {
 	var err error
 	requestExt, err := extractBidRequestExt(r.BidRequest)
 	if err != nil {
@@ -157,7 +157,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	usersyncIfAmbiguous := e.parseUsersyncIfAmbiguous(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.gDPR, usersyncIfAmbiguous, e.privacyConfig)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.gDPR, usersyncIfAmbiguous, e.privacyConfig, account)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 

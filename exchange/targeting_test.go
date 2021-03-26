@@ -116,7 +116,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	}
 
 	debugLog := DebugLog{}
-	bidResp, err := ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
+	bidResp, err := ex.HoldAuction(context.Background(), auctionRequest, &debugLog, nil)
 
 	if err != nil {
 		t.Fatalf("Unexpected errors running auction: %v", err)

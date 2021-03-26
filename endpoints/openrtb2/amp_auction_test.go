@@ -954,7 +954,7 @@ var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBi
 	},
 }
 
-func (m *mockAmpExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+func (m *mockAmpExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog, account *config.Account) (*openrtb.BidResponse, error) {
 	m.lastRequest = r.BidRequest
 
 	response := &openrtb.BidResponse{
@@ -980,7 +980,7 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 
 type mockAmpExchangeWarnings struct{}
 
-func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog, account *config.Account) (*openrtb.BidResponse, error) {
 	response := &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{
 			Bid: []openrtb.Bid{{

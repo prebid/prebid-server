@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/errortypes"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/errortypes"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -324,7 +325,7 @@ func TestDebugBehaviour(t *testing.T) {
 		}
 
 		// Run test
-		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, nil)
+		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, nil, nil)
 
 		// Assert no HoldAuction error
 		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
@@ -469,7 +470,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 			openrtb_ext.BidderTelaria:  adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder2DebugEnabled}),
 		}
 		// Run test
-		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog, nil)
 		// Assert no HoldAuction err
 		assert.NoErrorf(t, err, "ex.HoldAuction returned an err")
 		assert.NotNilf(t, outBidResponse.Ext, "outBidResponse.Ext should not be nil")
@@ -677,7 +678,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 
 			// Run test
 			debugLog := DebugLog{}
-			outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
+			outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog, nil)
 
 			// Assert return error, if any
 			if testGroup.expectError {
@@ -1285,7 +1286,7 @@ func TestRaceIntegration(t *testing.T) {
 
 	debugLog := DebugLog{}
 	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, &nilCategoryFetcher{}).(*exchange)
-	_, err = ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
+	_, err = ex.HoldAuction(context.Background(), auctionRequest, &debugLog, nil)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -1513,7 +1514,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		UserSyncs:  &emptyUsersync{},
 	}
 	debugLog := DebugLog{}
-	_, err = e.HoldAuction(context.Background(), auctionRequest, &debugLog)
+	_, err = e.HoldAuction(context.Background(), auctionRequest, &debugLog, nil)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -1649,7 +1650,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, DebugContextKey, true)
 
-	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
+	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog, nil)
 	responseTimes := extractResponseTimes(t, filename, bid)
 	for _, bidderName := range biddersInAuction {
 		if _, ok := responseTimes[bidderName]; !ok {
