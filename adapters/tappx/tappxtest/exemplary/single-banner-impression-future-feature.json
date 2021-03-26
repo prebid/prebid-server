@@ -48,7 +48,7 @@
                 "bidder": {
                   "tappxkey": "pub-12345-android-9876",
                   "endpoint": "ZZ123456PS",
-                 "host": "testing.ssp.tappx.com/rtb/v2/"
+                 "host": "ZZ123456PS.ssp.tappx.com/rtb/"
                 }
               }
             }
