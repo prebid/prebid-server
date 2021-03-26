@@ -84,7 +84,14 @@ func loadFile(filename string) (*testSpec, error) {
 		return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
 	}
 
+	//var buf bytes.Buffer
+
+	//if err := json.Compact(&buf, specData); err != nil {
+	//	return nil, fmt.Errorf("Unable to compact JSON string found in file %s: %v", filename, err)
+	//}
+
 	var spec testSpec
+	//if err := json.Unmarshal(buf.Bytes(), &spec); err != nil {
 	if err := json.Unmarshal(specData, &spec); err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal JSON from file: %v", err)
 	}
@@ -341,7 +348,7 @@ func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder 
 	return actualReqs
 }
 
-func prepareDataRaceCopies(original *openrtb.BidRequest) (*openrtb.BidRequest, *openrtb.BidRequest, error) {
+func prepareDataRaceCopies(original *openrtb2.BidRequest) (*openrtb2.BidRequest, *openrtb2.BidRequest, error) {
 
 	// Save original bidRequest values to assert no data races occur inside MakeRequests latter
 	deepReqCopy, err := deepCopyBidRequest(original)
@@ -362,14 +369,14 @@ func prepareDataRaceCopies(original *openrtb.BidRequest) (*openrtb.BidRequest, *
 	return deepReqCopy, &shallowReqCopy, nil
 }
 
-// deepCopyBidRequest is our own implementation of a deep copy function custom made for an openrtb.BidRequest object
-func deepCopyBidRequest(original *openrtb.BidRequest) (*openrtb.BidRequest, error) {
+// deepCopyBidRequest is our own implementation of a deep copy function custom made for an openrtb2.BidRequest object
+func deepCopyBidRequest(original *openrtb2.BidRequest) (*openrtb2.BidRequest, error) {
 	bytes, err := json.Marshal(original)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to marshal original bid request: %v", err)
 	}
 
-	deepCopy := &openrtb.BidRequest{}
+	deepCopy := &openrtb2.BidRequest{}
 	err = json.Unmarshal(bytes, deepCopy)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to unmarshal original bid request: %v", err)
@@ -385,7 +392,7 @@ func deepCopyBidRequest(original *openrtb.BidRequest) (*openrtb.BidRequest, erro
 // deepCopySliceAndExtAdjustments is necessary in order to not get false positives when a json
 // entry initializes an empty array (such as "format": []) or the shallow copy `Ext` fields differ
 // in line breaks or tabs with the deepCopy ones
-func deepCopySliceAndExtAdjustments(deepCopy *openrtb.BidRequest, original *openrtb.BidRequest) *openrtb.BidRequest {
+func deepCopySliceAndExtAdjustments(deepCopy *openrtb2.BidRequest, original *openrtb2.BidRequest) *openrtb2.BidRequest {
 	if len(deepCopy.Ext) > 0 {
 		deepCopy.Ext = make([]byte, len(original.Ext))
 		copy(deepCopy.Ext, original.Ext)
@@ -433,8 +440,16 @@ func deepCopySliceAndExtAdjustments(deepCopy *openrtb.BidRequest, original *open
 			deepCopy.User.Ext = make([]byte, len(original.User.Ext))
 			copy(deepCopy.User.Ext, original.User.Ext)
 		}
-		if original.User.Data != nil && len(original.User.Data) == 0 {
-			original.User.Data = []openrtb.Data{}
+		if original.User.Data != nil {
+			if len(original.User.Data) == 0 {
+				original.User.Data = []openrtb2.Data{}
+			}
+			for i := 0; i < len(deepCopy.User.Data); i++ {
+				if len(deepCopy.User.Data[i].Ext) > 0 {
+					deepCopy.User.Data[i].Ext = make([]byte, len(original.User.Data[i].Ext))
+					copy(deepCopy.User.Data[i].Ext, original.User.Data[i].Ext)
+				}
+			}
 		}
 	}
 
@@ -459,19 +474,19 @@ func deepCopySliceAndExtAdjustments(deepCopy *openrtb.BidRequest, original *open
 				copy(imp.Banner.Ext, original.Imp[i].Banner.Ext)
 			}
 			if original.Imp[i].Banner.Format != nil && len(original.Imp[i].Banner.Format) == 0 {
-				imp.Banner.Format = []openrtb.Format{}
+				imp.Banner.Format = []openrtb2.Format{}
 			}
 			if original.Imp[i].Banner.BType != nil && len(original.Imp[i].Banner.BType) == 0 {
-				imp.Banner.BType = []openrtb.BannerAdType{}
+				imp.Banner.BType = []openrtb2.BannerAdType{}
 			}
 			if original.Imp[i].Banner.BAttr != nil && len(original.Imp[i].Banner.BAttr) == 0 {
-				imp.Banner.BAttr = []openrtb.CreativeAttribute{}
+				imp.Banner.BAttr = []openrtb2.CreativeAttribute{}
 			}
 			if original.Imp[i].Banner.ExpDir != nil && len(original.Imp[i].Banner.ExpDir) == 0 {
-				imp.Banner.ExpDir = []openrtb.ExpandableDirection{}
+				imp.Banner.ExpDir = []openrtb2.ExpandableDirection{}
 			}
 			if original.Imp[i].Banner.API != nil && len(original.Imp[i].Banner.API) == 0 {
-				imp.Banner.API = []openrtb.APIFramework{}
+				imp.Banner.API = []openrtb2.APIFramework{}
 			}
 		}
 		if imp.Video != nil {
@@ -483,25 +498,25 @@ func deepCopySliceAndExtAdjustments(deepCopy *openrtb.BidRequest, original *open
 				imp.Video.MIMEs = []string{}
 			}
 			if original.Imp[i].Video.Protocols != nil && len(original.Imp[i].Video.Protocols) == 0 {
-				imp.Video.Protocols = []openrtb.Protocol{}
+				imp.Video.Protocols = []openrtb2.Protocol{}
 			}
 			if original.Imp[i].Video.BAttr != nil && len(original.Imp[i].Video.BAttr) == 0 {
-				imp.Video.BAttr = []openrtb.CreativeAttribute{}
+				imp.Video.BAttr = []openrtb2.CreativeAttribute{}
 			}
 			if original.Imp[i].Video.PlaybackMethod != nil && len(original.Imp[i].Video.PlaybackMethod) == 0 {
-				imp.Video.PlaybackMethod = []openrtb.PlaybackMethod{}
+				imp.Video.PlaybackMethod = []openrtb2.PlaybackMethod{}
 			}
 			if original.Imp[i].Video.Delivery != nil && len(original.Imp[i].Video.Delivery) == 0 {
-				imp.Video.Delivery = []openrtb.ContentDeliveryMethod{}
+				imp.Video.Delivery = []openrtb2.ContentDeliveryMethod{}
 			}
 			if original.Imp[i].Video.CompanionAd != nil && len(original.Imp[i].Video.CompanionAd) == 0 {
-				imp.Video.CompanionAd = []openrtb.Banner{}
+				imp.Video.CompanionAd = []openrtb2.Banner{}
 			}
 			if original.Imp[i].Video.API != nil && len(original.Imp[i].Video.API) == 0 {
-				imp.Video.API = []openrtb.APIFramework{}
+				imp.Video.API = []openrtb2.APIFramework{}
 			}
 			if original.Imp[i].Video.CompanionType != nil && len(original.Imp[i].Video.CompanionType) == 0 {
-				imp.Video.CompanionType = []openrtb.CompanionType{}
+				imp.Video.CompanionType = []openrtb2.CompanionType{}
 			}
 		}
 		if imp.Audio != nil {
@@ -513,22 +528,22 @@ func deepCopySliceAndExtAdjustments(deepCopy *openrtb.BidRequest, original *open
 				imp.Audio.MIMEs = []string{}
 			}
 			if original.Imp[i].Audio.Protocols != nil && len(original.Imp[i].Audio.Protocols) == 0 {
-				imp.Audio.Protocols = []openrtb.Protocol{}
+				imp.Audio.Protocols = []openrtb2.Protocol{}
 			}
 			if original.Imp[i].Audio.BAttr != nil && len(original.Imp[i].Audio.BAttr) == 0 {
-				imp.Audio.BAttr = []openrtb.CreativeAttribute{}
+				imp.Audio.BAttr = []openrtb2.CreativeAttribute{}
 			}
 			if original.Imp[i].Audio.Delivery != nil && len(original.Imp[i].Audio.Delivery) == 0 {
-				imp.Audio.Delivery = []openrtb.ContentDeliveryMethod{}
+				imp.Audio.Delivery = []openrtb2.ContentDeliveryMethod{}
 			}
 			if original.Imp[i].Audio.CompanionAd != nil && len(original.Imp[i].Audio.CompanionAd) == 0 {
-				imp.Audio.CompanionAd = []openrtb.Banner{}
+				imp.Audio.CompanionAd = []openrtb2.Banner{}
 			}
 			if original.Imp[i].Audio.API != nil && len(original.Imp[i].Audio.API) == 0 {
-				imp.Audio.API = []openrtb.APIFramework{}
+				imp.Audio.API = []openrtb2.APIFramework{}
 			}
 			if original.Imp[i].Audio.CompanionType != nil && len(original.Imp[i].Audio.CompanionType) == 0 {
-				imp.Audio.CompanionType = []openrtb.CompanionType{}
+				imp.Audio.CompanionType = []openrtb2.CompanionType{}
 			}
 		}
 		if imp.Native != nil {
@@ -537,10 +552,10 @@ func deepCopySliceAndExtAdjustments(deepCopy *openrtb.BidRequest, original *open
 				copy(imp.Native.Ext, original.Imp[i].Native.Ext)
 			}
 			if original.Imp[i].Native.API != nil && len(original.Imp[i].Native.API) == 0 {
-				imp.Native.API = []openrtb.APIFramework{}
+				imp.Native.API = []openrtb2.APIFramework{}
 			}
 			if original.Imp[i].Native.BAttr != nil && len(original.Imp[i].Native.BAttr) == 0 {
-				imp.Native.BAttr = []openrtb.CreativeAttribute{}
+				imp.Native.BAttr = []openrtb2.CreativeAttribute{}
 			}
 		}
 		if imp.PMP != nil {
@@ -549,7 +564,7 @@ func deepCopySliceAndExtAdjustments(deepCopy *openrtb.BidRequest, original *open
 				copy(imp.PMP.Ext, original.Imp[i].PMP.Ext)
 			}
 			if original.Imp[i].PMP.Deals != nil && len(original.Imp[i].PMP.Deals) == 0 {
-				imp.PMP.Deals = []openrtb.Deal{}
+				imp.PMP.Deals = []openrtb2.Deal{}
 			}
 		}
 
@@ -565,10 +580,10 @@ func deepCopySliceAndExtAdjustments(deepCopy *openrtb.BidRequest, original *open
 	return deepCopy
 }
 
-// assertNoDataRace compares the contents of the reference fields found in the original openrtb.BidRequest to their
+// assertNoDataRace compares the contents of the reference fields found in the original openrtb2.BidRequest to their
 // original values to make sure they were not modified and we are not incurring indata races. In order to assert
 // no data races occur in the []Imp array, we call assertNoImpsDataRace()
-func assertNoDataRace(t *testing.T, bidRequestBefore *openrtb.BidRequest, bidRequestAfter *openrtb.BidRequest, filename string) {
+func assertNoDataRace(t *testing.T, bidRequestBefore *openrtb2.BidRequest, bidRequestAfter *openrtb2.BidRequest, filename string) {
 	t.Helper()
 
 	// Assert reference fields were not modified by bidder adapter MakeRequests implementation
@@ -583,9 +598,9 @@ func assertNoDataRace(t *testing.T, bidRequestBefore *openrtb.BidRequest, bidReq
 	assertNoImpsDataRace(t, bidRequestBefore.Imp, bidRequestAfter.Imp, filename)
 }
 
-// assertNoImpsDataRace compares the contents of the reference fields found in the original openrtb.Imp objects to
+// assertNoImpsDataRace compares the contents of the reference fields found in the original openrtb2.Imp objects to
 // their original values to make sure they were not modified and we are not incurring in data races.
-func assertNoImpsDataRace(t *testing.T, impsBefore []openrtb.Imp, impsAfter []openrtb.Imp, filename string) {
+func assertNoImpsDataRace(t *testing.T, impsBefore []openrtb2.Imp, impsAfter []openrtb2.Imp, filename string) {
 	t.Helper()
 
 	if assert.Len(t, impsAfter, len(impsBefore), "Original []Imp array was modified and length is not equal to original after MakeRequests was called. File:%s", filename) {
