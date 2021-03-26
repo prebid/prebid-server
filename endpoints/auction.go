@@ -307,8 +307,8 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 
 			hbSize := ""
 			if bid.Width != 0 && bid.Height != 0 {
-				width := strconv.FormatUint(bid.Width, 10)
-				height := strconv.FormatUint(bid.Height, 10)
+				width := strconv.FormatInt(bid.Width, 10)
+				height := strconv.FormatInt(bid.Height, 10)
 				hbSize = width + "x" + height
 			}
 

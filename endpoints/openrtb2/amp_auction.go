@@ -14,7 +14,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
@@ -289,7 +289,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb.BidRequest, errs []error) {
+func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb2.BidRequest, errs []error) {
 	// Load the stored request for the AMP ID.
 	req, e := deps.loadRequestJSONForAmp(httpRequest)
 	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
@@ -313,8 +313,8 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 }
 
 // Load the stored OpenRTB request for an incoming AMP request, or return the errors found.
-func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req *openrtb.BidRequest, errs []error) {
-	req = &openrtb.BidRequest{}
+func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req *openrtb2.BidRequest, errs []error) {
+	req = &openrtb2.BidRequest{}
 	errs = nil
 
 	ampParams, err := amp.ParseParams(httpRequest)
@@ -372,9 +372,9 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	return
 }
 
-func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb.BidRequest) []error {
+func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2.BidRequest) []error {
 	if req.Site == nil {
-		req.Site = &openrtb.Site{}
+		req.Site = &openrtb2.Site{}
 	}
 
 	// Override the stored request sizes with AMP ones, if they exist.
@@ -423,25 +423,25 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb.
 	return nil
 }
 
-func makeFormatReplacement(size amp.Size) []openrtb.Format {
-	var formats []openrtb.Format
+func makeFormatReplacement(size amp.Size) []openrtb2.Format {
+	var formats []openrtb2.Format
 	if size.OverrideWidth != 0 && size.OverrideHeight != 0 {
-		formats = []openrtb.Format{{
+		formats = []openrtb2.Format{{
 			W: size.OverrideWidth,
 			H: size.OverrideHeight,
 		}}
 	} else if size.OverrideWidth != 0 && size.Height != 0 {
-		formats = []openrtb.Format{{
+		formats = []openrtb2.Format{{
 			W: size.OverrideWidth,
 			H: size.Height,
 		}}
 	} else if size.Width != 0 && size.OverrideHeight != 0 {
-		formats = []openrtb.Format{{
+		formats = []openrtb2.Format{{
 			W: size.Width,
 			H: size.OverrideHeight,
 		}}
 	} else if size.Width != 0 && size.Height != 0 {
-		formats = []openrtb.Format{{
+		formats = []openrtb2.Format{{
 			W: size.Width,
 			H: size.Height,
 		}}
@@ -450,13 +450,13 @@ func makeFormatReplacement(size amp.Size) []openrtb.Format {
 	return append(formats, size.Multisize...)
 }
 
-func setWidths(formats []openrtb.Format, width uint64) {
+func setWidths(formats []openrtb2.Format, width int64) {
 	for i := 0; i < len(formats); i++ {
 		formats[i].W = width
 	}
 }
 
-func setHeights(formats []openrtb.Format, height uint64) {
+func setHeights(formats []openrtb2.Format, height int64) {
 	for i := 0; i < len(formats); i++ {
 		formats[i].H = height
 	}
@@ -464,7 +464,7 @@ func setHeights(formats []openrtb.Format, height uint64) {
 
 // AMP won't function unless ext.prebid.targeting and ext.prebid.cache.bids are defined.
 // If the user didn't include them, default those here.
-func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
+func defaultRequestExt(req *openrtb2.BidRequest) (errs []error) {
 	errs = nil
 	extRequest := &openrtb_ext.ExtRequest{}
 	if req.Ext != nil && len(req.Ext) > 0 {
@@ -506,7 +506,7 @@ func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
 	return
 }
 
-func setAmpExt(site *openrtb.Site, value string) {
+func setAmpExt(site *openrtb2.Site, value string) {
 	if len(site.Ext) > 0 {
 		if _, dataType, _, _ := jsonparser.Get(site.Ext, "amp"); dataType == jsonparser.NotExist {
 			if val, err := jsonparser.Set(site.Ext, []byte(value), "amp"); err == nil {
@@ -538,16 +538,16 @@ func readPolicy(consent string) (privacy.PolicyWriter, error) {
 }
 
 // Sets the effective publisher ID for amp request
-func setEffectiveAmpPubID(req *openrtb.BidRequest, account string) {
-	var pub *openrtb.Publisher
+func setEffectiveAmpPubID(req *openrtb2.BidRequest, account string) {
+	var pub *openrtb2.Publisher
 	if req.App != nil {
 		if req.App.Publisher == nil {
-			req.App.Publisher = new(openrtb.Publisher)
+			req.App.Publisher = new(openrtb2.Publisher)
 		}
 		pub = req.App.Publisher
 	} else if req.Site != nil {
 		if req.Site.Publisher == nil {
-			req.Site.Publisher = new(openrtb.Publisher)
+			req.Site.Publisher = new(openrtb2.Publisher)
 		}
 		pub = req.Site.Publisher
 	}
