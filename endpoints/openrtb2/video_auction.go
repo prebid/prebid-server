@@ -283,7 +283,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		LegacyLabels: labels,
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog, account)
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
 	vo.Request = bidReq
 	vo.Response = response
 	if err != nil {

@@ -1335,7 +1335,7 @@ type mockExchangeVideo struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog, account *config.Account) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	m.lastRequest = r.BidRequest
 	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
@@ -1371,7 +1371,7 @@ type mockExchangeAppendBidderNames struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog, account *config.Account) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	m.lastRequest = r.BidRequest
 	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
@@ -1407,7 +1407,7 @@ type mockExchangeVideoNoBids struct {
 	cache       *mockCacheClient
 }
 
-func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog, account *config.Account) (*openrtb2.BidResponse, error) {
+func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	m.lastRequest = r.BidRequest
 	return &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{}},

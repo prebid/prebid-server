@@ -63,7 +63,7 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context,
 	PublisherID string,
 	gdprSignal Signal,
 	consent string,
-	account *config.Account) (allowPI bool, allowGeo bool, allowID bool, err error) {
+	basicEnforce bool) (allowPI bool, allowGeo bool, allowID bool, err error) {
 	if _, ok := p.cfg.NonStandardPublisherMap[PublisherID]; ok {
 		return true, true, true, nil
 	}
@@ -79,15 +79,6 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context,
 	}
 
 	if id, ok := p.vendorIDs[bidder]; ok {
-		basicEnforce := false
-		if account != nil {
-			for _, vendor := range account.GDPR.BasicEnforcementVendors {
-				if vendor == string(bidder) {
-					basicEnforce = true
-					break
-				}
-			}
-		}
 		return p.allowPI(ctx, id, consent, basicEnforce)
 	}
 
@@ -274,7 +265,7 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 	return true, nil
 }
 
-func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, account *config.Account) (bool, bool, bool, error) {
+func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, basicEnforce bool) (bool, bool, bool, error) {
 	return true, true, true, nil
 }
 
@@ -289,6 +280,6 @@ func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 	return false, nil
 }
 
-func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, account *config.Account) (bool, bool, bool, error) {
+func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, basicEnforce bool) (bool, bool, bool, error) {
 	return false, false, false, nil
 }

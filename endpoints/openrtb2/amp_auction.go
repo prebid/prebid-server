@@ -191,7 +191,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		LegacyLabels: labels,
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil, account)
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.AuctionResponse = response
 
 	if err != nil {

@@ -183,7 +183,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Warnings:     warnings,
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil, account)
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req
 	ao.Response = response
 	ao.Account = account
