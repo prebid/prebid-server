@@ -83,7 +83,7 @@
     }],
     "expectedBidResponses": [],
     "expectedMakeBidsErrors": [{
-          "value": "json: cannot unmarshal string into Go struct field Bid.seatbid.bid.w of type uint64",
+          "value": "json: cannot unmarshal string into Go struct field Bid.seatbid.bid.w of type int64",
           "comparison": "literal"
         }
     ]
