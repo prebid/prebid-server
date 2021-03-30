@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const TAPPX_BIDDER_VERSION = "1.1"
+const TAPPX_BIDDER_VERSION = "1.2"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
@@ -126,7 +127,9 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 		}
 	}
 
-	thisURI.Path += params.Endpoint
+	if !(strings.Contains(strings.ToLower(thisURI.Host), strings.ToLower(params.Endpoint))) {
+		thisURI.Path += params.Endpoint //Now version is backward compatible. In future, this condition and content will be delete
+	}
 
 	queryParams := url.Values{}
 
