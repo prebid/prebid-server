@@ -17,11 +17,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/mxmCherry/openrtb"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -152,8 +152,8 @@ func runTestCase(t *testing.T, fileData []byte, testFile string) {
 	}
 
 	if len(test.ExpectedBidResponse) > 0 {
-		var expectedBidResponse openrtb.BidResponse
-		var actualBidResponse openrtb.BidResponse
+		var expectedBidResponse openrtb2.BidResponse
+		var actualBidResponse openrtb2.BidResponse
 		var err error
 
 		err = json.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse)
@@ -241,7 +241,7 @@ func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 // Once unmarshalled, bidResponse objects can't simply be compared with an `assert.Equalf()` call
 // because tests fail if the elements inside the `bidResponse.SeatBid` and `bidResponse.SeatBid.Bid`
 // arrays, if any, are not listed in the exact same order in the actual version and in the expected version.
-func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse openrtb.BidResponse, actualBidResponse openrtb.BidResponse) {
+func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse openrtb2.BidResponse, actualBidResponse openrtb2.BidResponse) {
 
 	//Assert non-array BidResponse fields
 	assert.Equalf(t, expectedBidResponse.ID, actualBidResponse.ID, "BidResponse.ID doesn't match expected. Test: %s\n", testFile)
@@ -252,12 +252,12 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
 
 	//Given that bidResponses have the same length, compare them in an order-independent way using maps
-	var actualSeatBidsMap map[string]openrtb.SeatBid = make(map[string]openrtb.SeatBid, 0)
+	var actualSeatBidsMap map[string]openrtb2.SeatBid = make(map[string]openrtb2.SeatBid, 0)
 	for _, seatBid := range actualBidResponse.SeatBid {
 		actualSeatBidsMap[seatBid.Seat] = seatBid
 	}
 
-	var expectedSeatBidsMap map[string]openrtb.SeatBid = make(map[string]openrtb.SeatBid, 0)
+	var expectedSeatBidsMap map[string]openrtb2.SeatBid = make(map[string]openrtb2.SeatBid, 0)
 	for _, seatBid := range expectedBidResponse.SeatBid {
 		expectedSeatBidsMap[seatBid.Seat] = seatBid
 	}
@@ -275,76 +275,76 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 }
 
 func TestBidRequestAssert(t *testing.T) {
-	appnexusB1 := openrtb.Bid{ID: "appnexus-bid-1", Price: 5.00}
-	appnexusB2 := openrtb.Bid{ID: "appnexus-bid-2", Price: 7.00}
-	rubiconB1 := openrtb.Bid{ID: "rubicon-bid-1", Price: 1.50}
-	rubiconB2 := openrtb.Bid{ID: "rubicon-bid-2", Price: 4.00}
+	appnexusB1 := openrtb2.Bid{ID: "appnexus-bid-1", Price: 5.00}
+	appnexusB2 := openrtb2.Bid{ID: "appnexus-bid-2", Price: 7.00}
+	rubiconB1 := openrtb2.Bid{ID: "rubicon-bid-1", Price: 1.50}
+	rubiconB2 := openrtb2.Bid{ID: "rubicon-bid-2", Price: 4.00}
 
-	sampleSeatBids := []openrtb.SeatBid{
+	sampleSeatBids := []openrtb2.SeatBid{
 		{
 			Seat: "appnexus-bids",
-			Bid:  []openrtb.Bid{appnexusB1, appnexusB2},
+			Bid:  []openrtb2.Bid{appnexusB1, appnexusB2},
 		},
 		{
 			Seat: "rubicon-bids",
-			Bid:  []openrtb.Bid{rubiconB1, rubiconB2},
+			Bid:  []openrtb2.Bid{rubiconB1, rubiconB2},
 		},
 	}
 
 	testSuites := []struct {
 		description         string
-		expectedBidResponse openrtb.BidResponse
-		actualBidResponse   openrtb.BidResponse
+		expectedBidResponse openrtb2.BidResponse
+		actualBidResponse   openrtb2.BidResponse
 	}{
 		{
 			"identical SeatBids, exact same SeatBid and Bid arrays order",
-			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
-			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
+			openrtb2.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
+			openrtb2.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
 		},
 		{
 			"identical SeatBids but Seatbid array elements come in different order",
-			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
-			openrtb.BidResponse{ID: "anId", BidID: "bidId",
-				SeatBid: []openrtb.SeatBid{
+			openrtb2.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
+			openrtb2.BidResponse{ID: "anId", BidID: "bidId",
+				SeatBid: []openrtb2.SeatBid{
 					{
 						Seat: "rubicon-bids",
-						Bid:  []openrtb.Bid{rubiconB1, rubiconB2},
+						Bid:  []openrtb2.Bid{rubiconB1, rubiconB2},
 					},
 					{
 						Seat: "appnexus-bids",
-						Bid:  []openrtb.Bid{appnexusB1, appnexusB2},
+						Bid:  []openrtb2.Bid{appnexusB1, appnexusB2},
 					},
 				},
 			},
 		},
 		{
 			"SeatBids seem to be identical except for the different order of Bid array elements in one of them",
-			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
-			openrtb.BidResponse{ID: "anId", BidID: "bidId",
-				SeatBid: []openrtb.SeatBid{
+			openrtb2.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
+			openrtb2.BidResponse{ID: "anId", BidID: "bidId",
+				SeatBid: []openrtb2.SeatBid{
 					{
 						Seat: "appnexus-bids",
-						Bid:  []openrtb.Bid{appnexusB2, appnexusB1},
+						Bid:  []openrtb2.Bid{appnexusB2, appnexusB1},
 					},
 					{
 						Seat: "rubicon-bids",
-						Bid:  []openrtb.Bid{rubiconB1, rubiconB2},
+						Bid:  []openrtb2.Bid{rubiconB1, rubiconB2},
 					},
 				},
 			},
 		},
 		{
 			"Both SeatBid elements and bid elements come in different order",
-			openrtb.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
-			openrtb.BidResponse{ID: "anId", BidID: "bidId",
-				SeatBid: []openrtb.SeatBid{
+			openrtb2.BidResponse{ID: "anId", BidID: "bidId", SeatBid: sampleSeatBids},
+			openrtb2.BidResponse{ID: "anId", BidID: "bidId",
+				SeatBid: []openrtb2.SeatBid{
 					{
 						Seat: "rubicon-bids",
-						Bid:  []openrtb.Bid{rubiconB2, rubiconB1},
+						Bid:  []openrtb2.Bid{rubiconB2, rubiconB1},
 					},
 					{
 						Seat: "appnexus-bids",
-						Bid:  []openrtb.Bid{appnexusB2, appnexusB1},
+						Bid:  []openrtb2.Bid{appnexusB2, appnexusB1},
 					},
 				},
 			},
@@ -626,7 +626,7 @@ func TestExchangeError(t *testing.T) {
 func TestUserAgentSetting(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("User-Agent", "foo")
-	bidReq := &openrtb.BidRequest{}
+	bidReq := &openrtb2.BidRequest{}
 
 	setUAImplicitly(httpReq, bidReq)
 
@@ -642,8 +642,8 @@ func TestUserAgentSetting(t *testing.T) {
 func TestUserAgentOverride(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("User-Agent", "foo")
-	bidReq := &openrtb.BidRequest{
-		Device: &openrtb.Device{
+	bidReq := &openrtb2.BidRequest{
+		Device: &openrtb2.Device{
 			UA: "bar",
 		},
 	}
@@ -656,7 +656,7 @@ func TestUserAgentOverride(t *testing.T) {
 }
 
 func TestAuctionTypeDefault(t *testing.T) {
-	bidReq := &openrtb.BidRequest{}
+	bidReq := &openrtb2.BidRequest{}
 	setAuctionTypeImplicitly(bidReq)
 
 	if bidReq.AT != 1 {
@@ -757,21 +757,21 @@ func TestImplicitDNT(t *testing.T) {
 	testCases := []struct {
 		description     string
 		dntHeader       string
-		request         openrtb.BidRequest
-		expectedRequest openrtb.BidRequest
+		request         openrtb2.BidRequest
+		expectedRequest openrtb2.BidRequest
 	}{
 		{
 			description:     "Device Missing - Not Set In Header",
 			dntHeader:       "",
-			request:         openrtb.BidRequest{},
-			expectedRequest: openrtb.BidRequest{},
+			request:         openrtb2.BidRequest{},
+			expectedRequest: openrtb2.BidRequest{},
 		},
 		{
 			description: "Device Missing - Set To 0 In Header",
 			dntHeader:   "0",
-			request:     openrtb.BidRequest{},
-			expectedRequest: openrtb.BidRequest{
-				Device: &openrtb.Device{
+			request:     openrtb2.BidRequest{},
+			expectedRequest: openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					DNT: &disabled,
 				},
 			},
@@ -779,9 +779,9 @@ func TestImplicitDNT(t *testing.T) {
 		{
 			description: "Device Missing - Set To 1 In Header",
 			dntHeader:   "1",
-			request:     openrtb.BidRequest{},
-			expectedRequest: openrtb.BidRequest{
-				Device: &openrtb.Device{
+			request:     openrtb2.BidRequest{},
+			expectedRequest: openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					DNT: &enabled,
 				},
 			},
@@ -789,21 +789,21 @@ func TestImplicitDNT(t *testing.T) {
 		{
 			description: "Not Set In Request - Not Set In Header",
 			dntHeader:   "",
-			request: openrtb.BidRequest{
-				Device: &openrtb.Device{},
+			request: openrtb2.BidRequest{
+				Device: &openrtb2.Device{},
 			},
-			expectedRequest: openrtb.BidRequest{
-				Device: &openrtb.Device{},
+			expectedRequest: openrtb2.BidRequest{
+				Device: &openrtb2.Device{},
 			},
 		},
 		{
 			description: "Not Set In Request - Set To 0 In Header",
 			dntHeader:   "0",
-			request: openrtb.BidRequest{
-				Device: &openrtb.Device{},
+			request: openrtb2.BidRequest{
+				Device: &openrtb2.Device{},
 			},
-			expectedRequest: openrtb.BidRequest{
-				Device: &openrtb.Device{
+			expectedRequest: openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					DNT: &disabled,
 				},
 			},
@@ -811,11 +811,11 @@ func TestImplicitDNT(t *testing.T) {
 		{
 			description: "Not Set In Request - Set To 1 In Header",
 			dntHeader:   "1",
-			request: openrtb.BidRequest{
-				Device: &openrtb.Device{},
+			request: openrtb2.BidRequest{
+				Device: &openrtb2.Device{},
 			},
-			expectedRequest: openrtb.BidRequest{
-				Device: &openrtb.Device{
+			expectedRequest: openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					DNT: &enabled,
 				},
 			},
@@ -823,13 +823,13 @@ func TestImplicitDNT(t *testing.T) {
 		{
 			description: "Set In Request - Not Set In Header",
 			dntHeader:   "",
-			request: openrtb.BidRequest{
-				Device: &openrtb.Device{
+			request: openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					DNT: &enabled,
 				},
 			},
-			expectedRequest: openrtb.BidRequest{
-				Device: &openrtb.Device{
+			expectedRequest: openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					DNT: &enabled,
 				},
 			},
@@ -837,13 +837,13 @@ func TestImplicitDNT(t *testing.T) {
 		{
 			description: "Set In Request - Set To 0 In Header",
 			dntHeader:   "0",
-			request: openrtb.BidRequest{
-				Device: &openrtb.Device{
+			request: openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					DNT: &enabled,
 				},
 			},
-			expectedRequest: openrtb.BidRequest{
-				Device: &openrtb.Device{
+			expectedRequest: openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					DNT: &enabled,
 				},
 			},
@@ -851,13 +851,13 @@ func TestImplicitDNT(t *testing.T) {
 		{
 			description: "Set In Request - Set To 1 In Header",
 			dntHeader:   "1",
-			request: openrtb.BidRequest{
-				Device: &openrtb.Device{
+			request: openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					DNT: &enabled,
 				},
 			},
-			expectedRequest: openrtb.BidRequest{
-				Device: &openrtb.Device{
+			expectedRequest: openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					DNT: &enabled,
 				},
 			},
@@ -946,7 +946,7 @@ func TestImplicitSecure(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set(http.CanonicalHeaderKey("X-Forwarded-Proto"), "https")
 
-	imps := []openrtb.Imp{
+	imps := []openrtb2.Imp{
 		{},
 		{},
 	}
@@ -961,7 +961,7 @@ func TestImplicitSecure(t *testing.T) {
 func TestRefererParsing(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("Referer", "http://test.mysite.com")
-	bidReq := &openrtb.BidRequest{}
+	bidReq := &openrtb2.BidRequest{}
 
 	setSiteImplicitly(httpReq, bidReq)
 
@@ -1123,8 +1123,8 @@ func TestImplicitAMPNoExt(t *testing.T) {
 		return
 	}
 
-	bidReq := openrtb.BidRequest{
-		Site: &openrtb.Site{},
+	bidReq := openrtb2.BidRequest{
+		Site: &openrtb2.Site{},
 	}
 	setSiteImplicitly(httpReq, &bidReq)
 	assert.JSONEq(t, `{"amp":0}`, string(bidReq.Site.Ext))
@@ -1136,8 +1136,8 @@ func TestImplicitAMPOtherExt(t *testing.T) {
 		return
 	}
 
-	bidReq := openrtb.BidRequest{
-		Site: &openrtb.Site{
+	bidReq := openrtb2.BidRequest{
+		Site: &openrtb2.Site{
 			Ext: json.RawMessage(`{"other":true}`),
 		},
 	}
@@ -1151,8 +1151,8 @@ func TestExplicitAMP(t *testing.T) {
 		return
 	}
 
-	bidReq := openrtb.BidRequest{
-		Site: &openrtb.Site{
+	bidReq := openrtb2.BidRequest{
+		Site: &openrtb2.Site{
 			Ext: json.RawMessage(`{"amp":1}`),
 		},
 	}
@@ -1394,7 +1394,7 @@ func TestValidateImpExt(t *testing.T) {
 
 	for _, group := range testGroups {
 		for _, test := range group.testCases {
-			imp := &openrtb.Imp{Ext: test.impExt}
+			imp := &openrtb2.Imp{Ext: test.impExt}
 
 			errs := deps.validateImpExt(imp, nil, 0)
 
@@ -1438,20 +1438,20 @@ func TestCurrencyTrunc(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	ui := uint64(1)
-	req := openrtb.BidRequest{
+	ui := int64(1)
+	req := openrtb2.BidRequest{
 		ID: "anyRequestID",
-		Imp: []openrtb.Imp{
+		Imp: []openrtb2.Imp{
 			{
 				ID: "anyImpID",
-				Banner: &openrtb.Banner{
+				Banner: &openrtb2.Banner{
 					W: &ui,
 					H: &ui,
 				},
 				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
 			},
 		},
-		Site: &openrtb.Site{
+		Site: &openrtb2.Site{
 			ID: "anySiteID",
 		},
 		Cur: []string{"USD", "EUR"},
@@ -1482,23 +1482,23 @@ func TestCCPAInvalid(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	ui := uint64(1)
-	req := openrtb.BidRequest{
+	ui := int64(1)
+	req := openrtb2.BidRequest{
 		ID: "anyRequestID",
-		Imp: []openrtb.Imp{
+		Imp: []openrtb2.Imp{
 			{
 				ID: "anyImpID",
-				Banner: &openrtb.Banner{
+				Banner: &openrtb2.Banner{
 					W: &ui,
 					H: &ui,
 				},
 				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
 			},
 		},
-		Site: &openrtb.Site{
+		Site: &openrtb2.Site{
 			ID: "anySiteID",
 		},
-		Regs: &openrtb.Regs{
+		Regs: &openrtb2.Regs{
 			Ext: json.RawMessage(`{"us_privacy": "invalid by length"}`),
 		},
 	}
@@ -1532,23 +1532,23 @@ func TestNoSaleInvalid(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	ui := uint64(1)
-	req := openrtb.BidRequest{
+	ui := int64(1)
+	req := openrtb2.BidRequest{
 		ID: "anyRequestID",
-		Imp: []openrtb.Imp{
+		Imp: []openrtb2.Imp{
 			{
 				ID: "anyImpID",
-				Banner: &openrtb.Banner{
+				Banner: &openrtb2.Banner{
 					W: &ui,
 					H: &ui,
 				},
 				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
 			},
 		},
-		Site: &openrtb.Site{
+		Site: &openrtb2.Site{
 			ID: "anySiteID",
 		},
-		Regs: &openrtb.Regs{
+		Regs: &openrtb2.Regs{
 			Ext: json.RawMessage(`{"us_privacy": "1NYN"}`),
 		},
 		Ext: json.RawMessage(`{"prebid": {"nosale": ["*", "appnexus"]} }`),
@@ -1583,20 +1583,20 @@ func TestValidateSourceTID(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	ui := uint64(1)
-	req := openrtb.BidRequest{
+	ui := int64(1)
+	req := openrtb2.BidRequest{
 		ID: "anyRequestID",
-		Imp: []openrtb.Imp{
+		Imp: []openrtb2.Imp{
 			{
 				ID: "anyImpID",
-				Banner: &openrtb.Banner{
+				Banner: &openrtb2.Banner{
 					W: &ui,
 					H: &ui,
 				},
 				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
 			},
 		},
-		Site: &openrtb.Site{
+		Site: &openrtb2.Site{
 			ID: "anySiteID",
 		},
 	}
@@ -1624,20 +1624,20 @@ func TestSChainInvalid(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	ui := uint64(1)
-	req := openrtb.BidRequest{
+	ui := int64(1)
+	req := openrtb2.BidRequest{
 		ID: "anyRequestID",
-		Imp: []openrtb.Imp{
+		Imp: []openrtb2.Imp{
 			{
 				ID: "anyImpID",
-				Banner: &openrtb.Banner{
+				Banner: &openrtb2.Banner{
 					W: &ui,
 					H: &ui,
 				},
 				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
 			},
 		},
-		Site: &openrtb.Site{
+		Site: &openrtb2.Site{
 			ID: "anySiteID",
 		},
 		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
@@ -1662,12 +1662,12 @@ func TestGetAccountID(t *testing.T) {
 
 	testCases := []struct {
 		description   string
-		pub           *openrtb.Publisher
+		pub           *openrtb2.Publisher
 		expectedAccID string
 	}{
 		{
 			description: "Publisher.ID and Publisher.Ext.Prebid.ParentAccount both present",
-			pub: &openrtb.Publisher{
+			pub: &openrtb2.Publisher{
 				ID:  testPubID,
 				Ext: testPubExtJSON,
 			},
@@ -1675,7 +1675,7 @@ func TestGetAccountID(t *testing.T) {
 		},
 		{
 			description: "Only Publisher.Ext.Prebid.ParentAccount present",
-			pub: &openrtb.Publisher{
+			pub: &openrtb2.Publisher{
 				ID:  "",
 				Ext: testPubExtJSON,
 			},
@@ -1683,14 +1683,14 @@ func TestGetAccountID(t *testing.T) {
 		},
 		{
 			description: "Only Publisher.ID present",
-			pub: &openrtb.Publisher{
+			pub: &openrtb2.Publisher{
 				ID: testPubID,
 			},
 			expectedAccID: testPubID,
 		},
 		{
 			description:   "Neither Publisher.ID or Publisher.Ext.Prebid.ParentAccount present",
-			pub:           &openrtb.Publisher{},
+			pub:           &openrtb2.Publisher{},
 			expectedAccID: metrics.PublisherUnknown,
 		},
 		{
@@ -1709,15 +1709,15 @@ func TestGetAccountID(t *testing.T) {
 func TestSanitizeRequest(t *testing.T) {
 	testCases := []struct {
 		description  string
-		req          *openrtb.BidRequest
+		req          *openrtb2.BidRequest
 		ipValidator  iputil.IPValidator
 		expectedIPv4 string
 		expectedIPv6 string
 	}{
 		{
 			description: "Empty",
-			req: &openrtb.BidRequest{
-				Device: &openrtb.Device{
+			req: &openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					IP:   "",
 					IPv6: "",
 				},
@@ -1727,8 +1727,8 @@ func TestSanitizeRequest(t *testing.T) {
 		},
 		{
 			description: "Valid",
-			req: &openrtb.BidRequest{
-				Device: &openrtb.Device{
+			req: &openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					IP:   "1.1.1.1",
 					IPv6: "1111::",
 				},
@@ -1739,8 +1739,8 @@ func TestSanitizeRequest(t *testing.T) {
 		},
 		{
 			description: "Invalid",
-			req: &openrtb.BidRequest{
-				Device: &openrtb.Device{
+			req: &openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					IP:   "1.1.1.1",
 					IPv6: "1111::",
 				},
@@ -1751,8 +1751,8 @@ func TestSanitizeRequest(t *testing.T) {
 		},
 		{
 			description: "Invalid - Wrong IP Types",
-			req: &openrtb.BidRequest{
-				Device: &openrtb.Device{
+			req: &openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					IP:   "1111::",
 					IPv6: "1.1.1.1",
 				},
@@ -1763,8 +1763,8 @@ func TestSanitizeRequest(t *testing.T) {
 		},
 		{
 			description: "Malformed",
-			req: &openrtb.BidRequest{
-				Device: &openrtb.Device{
+			req: &openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					IP:   "malformed",
 					IPv6: "malformed",
 				},
@@ -1785,26 +1785,26 @@ func TestValidateAndFillSourceTID(t *testing.T) {
 	testTID := "some-tid"
 	testCases := []struct {
 		description   string
-		req           *openrtb.BidRequest
+		req           *openrtb2.BidRequest
 		expectRandTID bool
 		expectedTID   string
 	}{
 		{
 			description:   "req.Source not present. Expecting a randomly generated TID value",
-			req:           &openrtb.BidRequest{},
+			req:           &openrtb2.BidRequest{},
 			expectRandTID: true,
 		},
 		{
 			description: "req.Source.TID not present. Expecting a randomly generated TID value",
-			req: &openrtb.BidRequest{
-				Source: &openrtb.Source{},
+			req: &openrtb2.BidRequest{
+				Source: &openrtb2.Source{},
 			},
 			expectRandTID: true,
 		},
 		{
 			description: "req.Source.TID present. Expecting no change",
-			req: &openrtb.BidRequest{
-				Source: &openrtb.Source{
+			req: &openrtb2.BidRequest{
+				Source: &openrtb2.Source{
 					TID: testTID,
 				},
 			},
@@ -1843,20 +1843,20 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	ui := uint64(1)
-	req := openrtb.BidRequest{
+	ui := int64(1)
+	req := openrtb2.BidRequest{
 		ID: "anyRequestID",
-		Imp: []openrtb.Imp{
+		Imp: []openrtb2.Imp{
 			{
 				ID: "anyImpID",
-				Banner: &openrtb.Banner{
+				Banner: &openrtb2.Banner{
 					W: &ui,
 					H: &ui,
 				},
 				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
 			},
 		},
-		Site: &openrtb.Site{
+		Site: &openrtb2.Site{
 			ID: "anySiteID",
 		},
 		Ext: json.RawMessage(`{"prebid": {"data": {"eidpermissions": [{"source":"a", "bidders":[]}]} } }`),
@@ -2150,39 +2150,39 @@ type warningsCheckExchange struct {
 	auctionRequest exchange.AuctionRequest
 }
 
-func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	e.auctionRequest = r
 	return nil, nil
 }
 
 // nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {
-	gotRequest *openrtb.BidRequest
+	gotRequest *openrtb2.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	e.gotRequest = r.BidRequest
-	return &openrtb.BidResponse{
+	return &openrtb2.BidResponse{
 		ID:    r.BidRequest.ID,
 		BidID: "test bid id",
-		NBR:   openrtb.NoBidReasonCodeUnknownError.Ptr(),
+		NBR:   openrtb2.NoBidReasonCodeUnknownError.Ptr(),
 	}, nil
 }
 
 type mockBidExchange struct {
-	gotRequest *openrtb.BidRequest
+	gotRequest *openrtb2.BidRequest
 }
 
 // mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext
 // into the bidResponse.Ext to assert the bidder adapters that were not filtered out in the validation process
-func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
-	bidResponse := &openrtb.BidResponse{
+func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+	bidResponse := &openrtb2.BidResponse{
 		ID:    r.BidRequest.ID,
 		BidID: "test bid id",
-		NBR:   openrtb.NoBidReasonCodeUnknownError.Ptr(),
+		NBR:   openrtb2.NoBidReasonCodeUnknownError.Ptr(),
 	}
 	if len(r.BidRequest.Imp) > 0 {
-		var SeatBidMap = make(map[string]openrtb.SeatBid, 0)
+		var SeatBidMap = make(map[string]openrtb2.SeatBid, 0)
 		for _, imp := range r.BidRequest.Imp {
 			var bidderExts map[string]json.RawMessage
 			if err := json.Unmarshal(imp.Ext, &bidderExts); err != nil {
@@ -2205,9 +2205,9 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 			for bidderNameOrAlias := range bidderExts {
 				if isBidderToValidate(bidderNameOrAlias) {
 					if val, ok := SeatBidMap[bidderNameOrAlias]; ok {
-						val.Bid = append(val.Bid, openrtb.Bid{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)})
+						val.Bid = append(val.Bid, openrtb2.Bid{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)})
 					} else {
-						SeatBidMap[bidderNameOrAlias] = openrtb.SeatBid{Seat: fmt.Sprintf("%s-bids", bidderNameOrAlias), Bid: []openrtb.Bid{{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)}}}
+						SeatBidMap[bidderNameOrAlias] = openrtb2.SeatBid{Seat: fmt.Sprintf("%s-bids", bidderNameOrAlias), Bid: []openrtb2.Bid{{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)}}}
 					}
 				}
 			}
@@ -2222,7 +2222,7 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 
 type brokenExchange struct{}
 
-func (e *brokenExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+func (e *brokenExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	return nil, errors.New("Critical, unrecoverable error.")
 }
 
@@ -2585,14 +2585,14 @@ func (af mockAccountFetcher) FetchAccount(ctx context.Context, accountID string)
 }
 
 type mockExchange struct {
-	lastRequest *openrtb.BidRequest
+	lastRequest *openrtb2.BidRequest
 }
 
-func (m *mockExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb.BidResponse, error) {
+func (m *mockExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	m.lastRequest = r.BidRequest
-	return &openrtb.BidResponse{
-		SeatBid: []openrtb.SeatBid{{
-			Bid: []openrtb.Bid{{
+	return &openrtb2.BidResponse{
+		SeatBid: []openrtb2.SeatBid{{
+			Bid: []openrtb2.Bid{{
 				AdM: "<script></script>",
 			}},
 		}},
