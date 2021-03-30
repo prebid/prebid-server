@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -55,15 +55,15 @@ func UserSellerOrPubId(str1, str2 string) string {
 	return str2
 }
 
-func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
-	var imps []openrtb.Imp
+func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
+	var imps []openrtb2.Imp
 	var rootExtInfo dmxExt
 	var publisherId string
 	var sellerId string
 	var userExt openrtb_ext.ExtUser
 	var anyHasId = false
-	var reqCopy openrtb.BidRequest = *request
-	var dmxReq *openrtb.BidRequest = &reqCopy
+	var reqCopy openrtb2.BidRequest = *request
+	var dmxReq *openrtb2.BidRequest = &reqCopy
 	var dmxRawPubId dmxPubExt
 
 	if request.User == nil {
@@ -121,7 +121,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 			}
 			dmxReq.Site.Publisher.Ext = ext
 		} else {
-			dmxReq.Site.Publisher = &openrtb.Publisher{ID: publisherId}
+			dmxReq.Site.Publisher = &openrtb2.Publisher{ID: publisherId}
 		}
 	} else {
 		dmxReq.Site = nil
@@ -152,9 +152,9 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	}
 
 	for _, inst := range dmxReq.Imp {
-		var banner *openrtb.Banner
-		var video *openrtb.Video
-		var ins openrtb.Imp
+		var banner *openrtb2.Banner
+		var video *openrtb2.Video
+		var ins openrtb2.Imp
 		var params dmxExt
 		const intVal int8 = 1
 		source := (*json.RawMessage)(&inst.Ext)
@@ -207,7 +207,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb.BidRequest, req *adapte
 	return
 }
 
-func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *DmxAdapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if http.StatusNoContent == response.StatusCode {
@@ -226,7 +226,7 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -255,8 +255,8 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 
 }
 
-func fetchParams(params dmxExt, inst openrtb.Imp, ins openrtb.Imp, imps []openrtb.Imp, banner *openrtb.Banner, video *openrtb.Video, intVal int8) []openrtb.Imp {
-	var tempimp openrtb.Imp
+func fetchParams(params dmxExt, inst openrtb2.Imp, ins openrtb2.Imp, imps []openrtb2.Imp, banner *openrtb2.Banner, video *openrtb2.Video, intVal int8) []openrtb2.Imp {
+	var tempimp openrtb2.Imp
 	tempimp = inst
 	if params.Bidder.Bidfloor != 0 {
 		tempimp.BidFloor = params.Bidder.Bidfloor
@@ -292,7 +292,7 @@ func addParams(str string) string {
 	return ""
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {
@@ -309,7 +309,7 @@ func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, 
 	}
 }
 
-func videoImpInsertion(bid *openrtb.Bid) string {
+func videoImpInsertion(bid *openrtb2.Bid) string {
 	adm := bid.AdM
 	nurl := bid.NURL
 	search := "</Impression>"

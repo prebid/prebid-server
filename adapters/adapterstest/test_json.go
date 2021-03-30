@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
@@ -128,7 +128,7 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 }
 
 type testSpec struct {
-	BidRequest        openrtb.BidRequest      `json:"mockBidRequest"`
+	BidRequest        openrtb2.BidRequest     `json:"mockBidRequest"`
 	HttpCalls         []httpCall              `json:"httpCalls"`
 	BidResponses      []expectedBidResponse   `json:"expectedBidResponses"`
 	MakeRequestErrors []testSpecExpectedError `json:"expectedMakeRequestsErrors"`
@@ -281,7 +281,7 @@ func diffBids(t *testing.T, description string, actual *adapters.TypedBid, expec
 }
 
 // diffOrtbBids compares the actual Bid made by the adapter to the expectation from the JSON file.
-func diffOrtbBids(t *testing.T, description string, actual *openrtb.Bid, expected json.RawMessage) {
+func diffOrtbBids(t *testing.T, description string, actual *openrtb2.Bid, expected json.RawMessage) {
 	if actual == nil {
 		t.Errorf("Bidders cannot return nil Bids. %s was nil.", description)
 		return
