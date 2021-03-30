@@ -1,0 +1,30 @@
+{
+    "description": "Request has a negative device geography accuracy.",
+    "mockBidRequest": {
+        "id": "req-id",
+        "site": {
+            "id": "some-site"
+        },
+        "device": {
+            "w": 50,
+            "h": 50,
+            "geo": {
+                "accuracy": -1
+            }
+        },
+        "imp": [{
+            "id": "imp-id",
+            "banner": {
+                "w": 50,
+                "h": 50
+            },
+            "ext": {
+                "appnexus": {
+                    "placementId": 12883451
+                }
+            }
+        }]
+    },
+    "expectedReturnCode": 400,
+    "expectedErrorMessage": "Invalid request: request.device.geo.accuracy must be a positive number"
+}

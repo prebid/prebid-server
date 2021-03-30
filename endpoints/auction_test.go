@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
@@ -518,7 +518,7 @@ func TestBidSizeValidate(t *testing.T) {
 		AdUnits: []pbs.PBSAdUnit{
 			{
 				BidID: "test_bidid1",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 350,
 						H: 250,
@@ -535,7 +535,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid2",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 100,
 						H: 100,
@@ -548,7 +548,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid3",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 200,
 						H: 200,
@@ -561,7 +561,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid_video",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 400,
 						H: 400,
@@ -574,7 +574,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid3",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 150,
 						H: 150,
@@ -587,7 +587,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid_y",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 150,
 						H: 150,

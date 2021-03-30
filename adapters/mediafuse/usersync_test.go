@@ -24,6 +24,6 @@ func TestMediafuseSyncer(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "//sync.hbmp.mediafuse.com/csync?t=p&ep=0&redir=localhost%2Fsetuid%3Fbidder%3Dmediafuse%26gdpr%3D0%26gdpr_consent%3D%26uid%3D%7Buid%7D", syncInfo.URL)
-	assert.Equal(t, "redirect", syncInfo.Type)
+	assert.Equal(t, "iframe", syncInfo.Type)
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

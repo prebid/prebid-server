@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -17,7 +17,7 @@ type ApplogyAdapter struct {
 	endpoint string
 }
 
-func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *ApplogyAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -41,8 +41,8 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 					continue
 				}
 				banner := *impression.Banner
-				banner.W = openrtb.Uint64Ptr(banner.Format[0].W)
-				banner.H = openrtb.Uint64Ptr(banner.Format[0].H)
+				banner.W = openrtb2.Int64Ptr(banner.Format[0].W)
+				banner.H = openrtb2.Int64Ptr(banner.Format[0].H)
 				impression.Banner = &banner
 			}
 		}
@@ -70,7 +70,7 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 			errs = append(errs, errors.New("Applogy token required"))
 			continue
 		}
-		request.Imp = []openrtb.Imp{impression}
+		request.Imp = []openrtb2.Imp{impression}
 		body, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
@@ -92,7 +92,7 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 	return result, errs
 }
 
-func (a *ApplogyAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *ApplogyAdapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	switch responseData.StatusCode {
@@ -110,7 +110,7 @@ func (a *ApplogyAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.Reque
 		}}
 	}
 
-	var bidResponse openrtb.BidResponse
+	var bidResponse openrtb2.BidResponse
 	err := json.Unmarshal(responseData.Body, &bidResponse)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
