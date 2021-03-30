@@ -111,7 +111,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	var errs []error
 	for _, seatBid := range response.SeatBid {
-		for _, bid := range seatBid.Bid {
+		for i := range seatBid.Bid {
+			bid := seatBid.Bid[i]
 			bidType, err := getMediaTypeForImp(bid.ImpID, request.Imp)
 			if err != nil {
 				errs = append(errs, err)
