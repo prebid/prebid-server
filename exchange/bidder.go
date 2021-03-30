@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -339,7 +338,7 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 				RequestBody:    string(httpInfo.request.Body),
 				ResponseBody:   string(httpInfo.response.Body),
 				Status:         httpInfo.response.StatusCode,
-				RequestHeaders: makeExtHeaders(httpInfo.request.Headers),
+				RequestHeaders: filterHeader(httpInfo.request.Headers),
 			}
 		}
 	} else {
@@ -347,7 +346,7 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 			return &openrtb_ext.ExtHttpCall{
 				Uri:            httpInfo.request.Uri,
 				RequestBody:    string(httpInfo.request.Body),
-				RequestHeaders: makeExtHeaders(httpInfo.request.Headers),
+				RequestHeaders: filterHeader(httpInfo.request.Headers),
 			}
 		}
 	}
@@ -355,18 +354,12 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 	return &openrtb_ext.ExtHttpCall{}
 }
 
-func makeExtHeaders(h http.Header) map[string][]string {
-	if h == nil {
-		return nil
-	}
+var authorizationHeader = http.CanonicalHeaderKey("authorization")
 
-	result := make(map[string][]string)
-	for k, v := range h {
-		if !strings.EqualFold(k, "authorization") {
-			result[k] = v
-		}
-	}
-	return result
+func filterHeader(h http.Header) map[string][]string {
+	clone := h.Clone()
+	clone.Del(authorizationHeader)
+	return clone
 }
 
 // doRequest makes a request, handles the response, and returns the data needed by the

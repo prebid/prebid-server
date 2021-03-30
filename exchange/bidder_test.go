@@ -910,7 +910,7 @@ func TestMakeExt(t *testing.T) {
 				request: &adapters.RequestData{
 					Uri:     "requestUri",
 					Body:    []byte("requestBody"),
-					Headers: http.Header{"key1": {"value1", "value2"}},
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
 				},
 				response: &adapters.ResponseData{
 					Body:       []byte("responseBody"),
@@ -920,7 +920,7 @@ func TestMakeExt(t *testing.T) {
 			expected: &openrtb_ext.ExtHttpCall{
 				Uri:            "requestUri",
 				RequestBody:    "requestBody",
-				RequestHeaders: map[string][]string{"key1": {"value1", "value2"}},
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
 				ResponseBody:   "responseBody",
 				Status:         999,
 			},
@@ -932,7 +932,7 @@ func TestMakeExt(t *testing.T) {
 				request: &adapters.RequestData{
 					Uri:     "requestUri",
 					Body:    []byte("requestBody"),
-					Headers: http.Header{"key1": {"value1", "value2"}, "Authorization": {"secret"}},
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}, "Authorization": {"secret"}}),
 				},
 				response: &adapters.ResponseData{
 					Body:       []byte("responseBody"),
@@ -942,7 +942,7 @@ func TestMakeExt(t *testing.T) {
 			expected: &openrtb_ext.ExtHttpCall{
 				Uri:            "requestUri",
 				RequestBody:    "requestBody",
-				RequestHeaders: map[string][]string{"key1": {"value1", "value2"}},
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
 				ResponseBody:   "responseBody",
 				Status:         999,
 			},
@@ -963,7 +963,7 @@ func TestMakeExt(t *testing.T) {
 				request: &adapters.RequestData{
 					Uri:     "requestUri",
 					Body:    []byte("requestBody"),
-					Headers: http.Header{"key1": {"value1", "value2"}},
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
 				},
 				response: &adapters.ResponseData{
 					Body:       []byte("responseBody"),
@@ -973,7 +973,7 @@ func TestMakeExt(t *testing.T) {
 			expected: &openrtb_ext.ExtHttpCall{
 				Uri:            "requestUri",
 				RequestBody:    "requestBody",
-				RequestHeaders: map[string][]string{"key1": {"value1", "value2"}},
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
 			},
 		},
 		{
@@ -983,14 +983,14 @@ func TestMakeExt(t *testing.T) {
 				request: &adapters.RequestData{
 					Uri:     "requestUri",
 					Body:    []byte("requestBody"),
-					Headers: http.Header{"key1": {"value1", "value2"}},
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
 				},
 				response: nil,
 			},
 			expected: &openrtb_ext.ExtHttpCall{
 				Uri:            "requestUri",
 				RequestBody:    "requestBody",
-				RequestHeaders: map[string][]string{"key1": {"value1", "value2"}},
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
 			},
 		},
 		{
@@ -1010,7 +1010,7 @@ func TestMakeExt(t *testing.T) {
 	}
 }
 
-func TestMakeExtHeaders(t *testing.T) {
+func TestFilterHeader(t *testing.T) {
 	testCases := []struct {
 		description string
 		given       http.Header
@@ -1028,35 +1028,45 @@ func TestMakeExtHeaders(t *testing.T) {
 		},
 		{
 			description: "One",
-			given:       http.Header{"key1": {"value1"}},
-			expected:    map[string][]string{"key1": {"value1"}},
+			given:       makeHeader(map[string][]string{"Key1": {"value1"}}),
+			expected:    map[string][]string{"Key1": {"value1"}},
 		},
 		{
 			description: "Many",
-			given:       http.Header{"key1": {"value1"}, "key2": {"value2a", "value2b"}},
-			expected:    map[string][]string{"key1": {"value1"}, "key2": {"value2a", "value2b"}},
+			given:       makeHeader(map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}}),
+			expected:    map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}},
 		},
 		{
 			description: "Authorization Header Omitted",
-			given:       http.Header{"authorization": {"secret"}},
+			given:       makeHeader(map[string][]string{"authorization": {"secret"}}),
 			expected:    map[string][]string{},
 		},
 		{
 			description: "Authorization Header Omitted - Case Insensitive",
-			given:       http.Header{"AuThOrIzAtIoN": {"secret"}},
+			given:       makeHeader(map[string][]string{"AuThOrIzAtIoN": {"secret"}}),
 			expected:    map[string][]string{},
 		},
 		{
 			description: "Authorization Header Omitted + Other Keys",
-			given:       http.Header{"authorization": {"secret"}, "key1": {"value1"}},
-			expected:    map[string][]string{"key1": {"value1"}},
+			given:       makeHeader(map[string][]string{"authorization": {"secret"}, "Key1": {"value1"}}),
+			expected:    map[string][]string{"Key1": {"value1"}},
 		},
 	}
 
 	for _, test := range testCases {
-		result := makeExtHeaders(test.given)
+		result := filterHeader(test.given)
 		assert.Equal(t, test.expected, result, test.description)
 	}
+}
+
+func makeHeader(v map[string][]string) http.Header {
+	h := http.Header{}
+	for key, values := range v {
+		for _, value := range values {
+			h.Add(key, value)
+		}
+	}
+	return h
 }
 
 func TestMobileNativeTypes(t *testing.T) {
