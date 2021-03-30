@@ -28,7 +28,7 @@
     {
         "expectedRequest":
         {
-            "uri": "http://api-eu.example.com/prebid/auction/rtb/v2/1",
+            "uri": "https://api-eu.bidmachine.io/auction/rtb/v2/1",
             "body":
             {
                 "id": "test-request-id",

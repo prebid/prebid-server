@@ -4,6 +4,14 @@
     "description": "A schema which validates params accepted by the Kidoz adapter",
     "type": "object",
     "properties": {
+        "host": {
+            "$ref": "#/definitions/non-empty-string",
+            "description": "Bidmachine host"
+        },
+        "path": {
+            "$ref": "#/definitions/non-empty-string",
+            "description": "Bidmachine URL path"
+        },
         "seller_id": {
             "$ref": "#/definitions/non-empty-string",
             "description": "Bidmachine seller_id"
@@ -16,6 +24,8 @@
         }
     },
     "required": [
+        "host",
+        "path",
         "seller_id"
     ]
 }

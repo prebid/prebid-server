@@ -2,7 +2,6 @@ package bidmachine
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,7 +9,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -22,11 +21,11 @@ type adapter struct {
 	endpoint template.Template
 }
 
-func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Content-Type", "application/json")
 	headers.Add("Accept", "application/json")
-	headers.Add("x-openrtb-version", "2.5")
+	headers.Add("X-Openrtb-Version", "2.5")
 
 	impressions := request.Imp
 	result := make([]*adapters.RequestData, 0, len(impressions))
@@ -35,18 +34,21 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 	for _, impression := range impressions {
 		if impression.Banner != nil {
 			banner := impression.Banner
-			if banner.Format == nil {
-				errs = append(errs, &errortypes.BadInput{
-					Message: "Impression with id: " + impression.ID + " has following error: Banner format required",
-				})
-				continue
+			if banner.W == nil && banner.H == nil {
+				if banner.Format == nil {
+					errs = append(errs, &errortypes.BadInput{
+						Message: "Impression with id: " + impression.ID + " has following error: Banner width and height is not provided and banner format is missing. At least one is required",
+					})
+					continue
+				}
+				if len(banner.Format) == 0 {
+					errs = append(errs, &errortypes.BadInput{
+						Message: "Impression with id: " + impression.ID + " has following error: Banner width and height is not provided and banner format array is empty. At least one is required",
+					})
+					continue
+				}
 			}
-			if len(banner.Format) == 0 {
-				errs = append(errs, &errortypes.BadInput{
-					Message: "Impression with id: " + impression.ID + " has following error: Banner format array is empty",
-				})
-				continue
-			}
+
 		}
 
 		var bidderExt adapters.ExtImpBidder
@@ -67,27 +69,19 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			errs = append(errs, err)
 			continue
 		}
-		if impressionExt.SellerID == "" {
-			errs = append(errs, errors.New("Impression with id: "+impression.ID+" has following error: Bidmachine seller_id is required"))
-			continue
-		}
-		if impressionExt.Path == "" {
-			errs = append(errs, errors.New("Impression with id: "+impression.ID+" has following error: Bidmachine path is required"))
-			continue
-		}
 		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
 			if impression.Banner != nil && !hasRewardedBattr(impression.Banner.BAttr) {
 				bannerCopy := *impression.Banner
-				bannerCopy.BAttr = append(bannerCopy.BAttr, openrtb.CreativeAttribute(16))
+				bannerCopy.BAttr = copyBAttrWithRewardedInventory(bannerCopy.BAttr)
 				impression.Banner = &bannerCopy
 			}
 			if impression.Video != nil && !hasRewardedBattr(impression.Video.BAttr) {
 				videoCopy := *impression.Video
-				videoCopy.BAttr = append(videoCopy.BAttr, openrtb.CreativeAttribute(16))
+				videoCopy.BAttr = copyBAttrWithRewardedInventory(videoCopy.BAttr)
 				impression.Video = &videoCopy
 			}
 		}
-		request.Imp = []openrtb.Imp{impression}
+		request.Imp = []openrtb2.Imp{impression}
 		body, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
@@ -106,16 +100,16 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 	return result, errs
 }
 
-func hasRewardedBattr(attr []openrtb.CreativeAttribute) bool {
+func hasRewardedBattr(attr []openrtb2.CreativeAttribute) bool {
 	for i := 0; i < len(attr); i++ {
-		if attr[i] == openrtb.CreativeAttribute(16) {
+		if attr[i] == openrtb2.CreativeAttribute(16) {
 			return true
 		}
 	}
 	return false
 }
 
-func (a *adapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	switch responseData.StatusCode {
@@ -123,7 +117,6 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData,
 		return nil, nil
 	case http.StatusServiceUnavailable:
 		fallthrough
-
 	case http.StatusBadRequest:
 		fallthrough
 	case http.StatusUnauthorized:
@@ -132,17 +125,15 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData,
 		return nil, []error{&errortypes.BadInput{
 			Message: "unexpected status code: " + strconv.Itoa(responseData.StatusCode) + " " + string(responseData.Body),
 		}}
-
 	case http.StatusOK:
 		break
-
 	default:
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "unexpected status code: " + strconv.Itoa(responseData.StatusCode) + " " + string(responseData.Body),
 		}}
 	}
 
-	var bidResponse openrtb.BidResponse
+	var bidResponse openrtb2.BidResponse
 	err := json.Unmarshal(responseData.Body, &bidResponse)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -207,7 +198,14 @@ func (a *adapter) buildEndpointURL(params openrtb_ext.ExtImpBidmachine) (string,
 	return uri.String(), nil
 }
 
-func GetMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+func copyBAttrWithRewardedInventory(src []openrtb2.CreativeAttribute) []openrtb2.CreativeAttribute {
+	dst := make([]openrtb2.CreativeAttribute, len(src))
+	copy(dst, src)
+	dst = append(dst, openrtb2.CreativeAttribute(16))
+	return dst
+}
+
+func GetMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {
