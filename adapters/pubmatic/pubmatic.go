@@ -14,6 +14,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/cache/skanidlist"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
@@ -67,6 +68,11 @@ const (
 	INVALID_MEDIATYPE = "Invalid MediaType"
 	INVALID_ADSLOT    = "Invalid AdSlot"
 )
+
+type pubmaticImpExt struct {
+	Reward int                `json:"reward,omitempty"`
+	SKADN  *openrtb_ext.SKADN `json:"skadn,omitempty"`
+}
 
 func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...interface{}) string {
 	return fmt.Sprintf("[PUBMATIC] ReqID [%s] PubID [%s] AdUnit [%s] BidID [%s] %s \n",
@@ -487,10 +493,12 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 		return err
 	}
 
-	if imp.Banner != nil {
+	if pubmaticExt.MRAIDSupported && imp.Banner != nil {
 		if err := assignBannerSize(imp.Banner); err != nil {
 			return err
 		}
+	} else {
+		imp.Banner = nil
 	}
 
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
@@ -498,6 +506,10 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 		imp.Ext = json.RawMessage([]byte(kvstr))
 	} else {
 		imp.Ext = nil
+	}
+
+	if err := populateImpressionExtensionObject(imp, bidderExt, pubmaticExt); err != nil {
+		return err
 	}
 
 	return nil
@@ -627,4 +639,32 @@ func NewPubmaticBidder(client *http.Client, uri string) *PubmaticAdapter {
 		http: a,
 		URI:  uri,
 	}
+}
+
+func populateImpressionExtensionObject(imp *openrtb.Imp, bidderExt adapters.ExtImpBidder, pubmaticExt openrtb_ext.ExtImpPubmatic) error {
+	var err error
+
+	impExt := pubmaticImpExt{}
+
+	if pubmaticExt.Reward == 1 {
+		impExt.Reward = 1
+	}
+
+	if pubmaticExt.SKADNSupported {
+		skanIDList := skanidlist.Get(openrtb_ext.BidderPubmatic)
+
+		skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, skanIDList)
+
+		// only add if present
+		if len(skadn.SKADNetIDs) > 0 {
+			impExt.SKADN = &skadn
+		}
+	}
+
+	imp.Ext, err = json.Marshal(&impExt)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
