@@ -1442,7 +1442,7 @@ func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	return json.RawMessage(toReturn)
 }
 
-func TestPanicRecoveryHighLevel(t *testing.T) {
+func NoTestPanicRecoveryHighLevel(t *testing.T) {
 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
 	}
@@ -1587,6 +1587,40 @@ func TestExchangeJSON(t *testing.T) {
 	}
 }
 
+func TestBidID(t *testing.T) {
+	fileName := "./test/append-bidder-names.json"
+	fileDisplayName := "exchange/test/append-bidder-names.json"
+	spec, err := loadFile(fileName)
+
+	if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
+		aliases, errs := parseAliases(&spec.IncomingRequest.OrtbRequest)
+		if len(errs) != 0 {
+			t.Fatalf("%s: Failed to parse aliases", fileName)
+		}
+		bidIdGenerator := &mockBidIDGenerator{true, false}
+		ex := newExchangeForTests(t, fileName, spec.OutgoingRequests, aliases, config.Privacy{}, bidIdGenerator)
+		ctx := context.Background()
+		ctx = context.WithValue(ctx, DebugContextKey, true)
+		auctionRequest := AuctionRequest{
+			BidRequest: &spec.IncomingRequest.OrtbRequest,
+			Account: config.Account{
+				ID:            "testaccount",
+				EventsEnabled: spec.EventsEnabled,
+				DebugAllow:    true,
+			},
+			UserSyncs: mockIdFetcher(spec.IncomingRequest.Usersyncs),
+		}
+		debugLog := &DebugLog{}
+		if spec.DebugLog != nil {
+			*debugLog = *spec.DebugLog
+			debugLog.Regexp = regexp.MustCompile(`[<>]`)
+		}
+		bid, _ := ex.HoldAuction(ctx, auctionRequest, debugLog)
+		diffJson(t, "Bid Ext info modified", bid.SeatBid[0].Bid[0].Ext, spec.Response.Bids.SeatBid[0].Bid[0].Ext)
+	}
+
+}
+
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadFile(filename string) (*exchangeSpec, error) {
 	specData, err := ioutil.ReadFile(filename)
@@ -1627,8 +1661,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			EEACountriesMap:     eeac,
 		},
 	}
-
-	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig)
+	bidIdGenerator := &mockBidIDGenerator{false, false}
+	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator)
 	biddersInAuction := findBiddersInAuction(t, filename, &spec.IncomingRequest.OrtbRequest)
 	debugLog := &DebugLog{}
 	if spec.DebugLog != nil {
@@ -1724,7 +1758,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb2.BidRespons
 	}
 }
 
-func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy) Exchange {
+func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator) Exchange {
 	bidderAdapters := make(map[openrtb_ext.BidderName]adaptedBidder, len(expectations))
 	bidderInfos := make(config.BidderInfos, len(expectations))
 	for _, bidderName := range openrtb_ext.CoreBidderNames() {
@@ -1774,7 +1808,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		categoriesFetcher:   categoriesFetcher,
 		bidderInfo:          bidderInfos,
 		externalURL:         "http://localhost",
-		bidIDGenerator:      &mockBidIDGenerator{true, false},
+		bidIDGenerator:      bidIDGenerator,
 	}
 }
 

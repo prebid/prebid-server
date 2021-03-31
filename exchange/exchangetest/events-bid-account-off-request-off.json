@@ -72,7 +72,6 @@
               "crid": "creative-1",
               "ext": {
                 "prebid": {
-                  "bidid": "mock_uuid",
                   "type": "banner"
                 }
               }
@@ -86,7 +85,6 @@
               "crid": "creative-2",
               "ext": {
                 "prebid": {
-                  "bidid": "mock_uuid",
                   "type": "banner"
                 }
               }

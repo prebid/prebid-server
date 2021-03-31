@@ -111,8 +111,7 @@
             "crid": "creative-2",
             "ext": {
               "prebid": {
-                "type": "video",
-                "bidid": "mock_uuid"
+                "type": "video"
               }
             }
           }]
@@ -128,8 +127,7 @@
             "crid": "creative-1",
             "ext": {
               "prebid": {
-                "type": "video",
-                "bidid": "mock_uuid"
+                "type": "video"
               }
             }
           },
@@ -142,7 +140,6 @@
             "crid": "creative-3",
             "ext": {
               "prebid": {
-                "bidid": "mock_uuid",
                 "type": "video"
               }
             }

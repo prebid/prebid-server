@@ -73,11 +73,10 @@
               "crid": "creative-1",
               "ext": {
                 "prebid": {
-                  "bidid": "mock_uuid",
                   "type": "banner",
                   "events": {
-                    "imp": "http://localhost/event?t=imp&b=mock_uuid&a=testaccount&bidder=appnexus&ts=1234567890",
-                    "win": "http://localhost/event?t=win&b=mock_uuid&a=testaccount&bidder=appnexus&ts=1234567890"
+                    "imp": "http://localhost/event?t=imp&b=winning-bid&a=testaccount&bidder=appnexus&ts=1234567890",
+                    "win": "http://localhost/event?t=win&b=winning-bid&a=testaccount&bidder=appnexus&ts=1234567890"
                   }
                 }
               }
@@ -91,11 +90,10 @@
               "crid": "creative-2",
               "ext": {
                 "prebid": {
-                  "bidid": "mock_uuid",
                   "type": "banner",
                   "events": {
-                    "imp": "http://localhost/event?t=imp&b=mock_uuid&a=testaccount&bidder=appnexus&ts=1234567890",
-                    "win": "http://localhost/event?t=win&b=mock_uuid&a=testaccount&bidder=appnexus&ts=1234567890"
+                    "imp": "http://localhost/event?t=imp&b=losing-bid&a=testaccount&bidder=appnexus&ts=1234567890",
+                    "win": "http://localhost/event?t=win&b=losing-bid&a=testaccount&bidder=appnexus&ts=1234567890"
                   }
                 }
               }

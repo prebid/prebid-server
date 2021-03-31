@@ -121,7 +121,6 @@
             "crid": "creative-4",
             "ext": {
               "prebid": {
-                "bidid": "mock_uuid",
                 "type": "video",
                 "targeting": {
                   "hb_bidder_audienceNe": "audienceNetwork",
@@ -145,7 +144,6 @@
             "crid": "creative-1",
             "ext": {
               "prebid": {
-                "bidid": "mock_uuid",
                 "type": "video",
                 "targeting": {
                   "hb_bidder_appnexus": "appnexus",
@@ -166,7 +164,6 @@
             "crid": "creative-2",
             "ext": {
               "prebid": {
-                "bidid": "mock_uuid",
                 "type": "video"
               }
             }
@@ -180,7 +177,6 @@
             "crid": "creative-3",
             "ext": {
               "prebid": {
-                "bidid": "mock_uuid",
                 "type": "video",
                 "targeting": {
                   "hb_bidder_appnexus": "appnexus",

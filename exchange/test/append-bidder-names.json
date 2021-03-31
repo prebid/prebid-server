@@ -18,19 +18,6 @@
               "placementId": 1
             }
           }
-        },
-        {
-          "id": "imp-id-2",
-          "video": {
-            "mimes": [
-              "video/mp4"
-            ]
-          },
-          "ext": {
-            "appnexus": {
-              "placementId": 1
-            }
-          }
         }
       ],
       "test": 1,
@@ -73,20 +60,6 @@
                 "duration": 30,
                 "PrimaryCategory": ""
               }
-            },
-            {
-              "ortbBid": {
-                "id": "apn-other-bid",
-                "impid": "imp-id-2",
-                "price": 0.6,
-                "w": 300,
-                "h": 500,
-                "crid": "creative-3",
-                "cat": [
-                  "IAB1-2"
-                ]
-              },
-              "bidType": "video"
             }
           ]
         }
@@ -112,6 +85,7 @@
               ],
               "ext": {
                 "prebid": {
+                  "bidid": "mock_uuid",
                   "type": "video",
                   "targeting": {
                     "hb_bidder": "appnexus",
@@ -129,36 +103,6 @@
                   }
                 }
               }
-            },
-            {
-              "cat": [
-                "IAB1-2"
-              ],
-              "crid": "creative-3",
-              "ext": {
-                "prebid": {
-                  "targeting": {
-                    "hb_bidder": "appnexus",
-                    "hb_bidder_appnexus": "appnexus",
-                    "hb_cache_host": "www.pbcserver.com",
-                    "hb_cache_host_appnex": "www.pbcserver.com",
-                    "hb_cache_path": "/pbcache/endpoint",
-                    "hb_cache_path_appnex": "/pbcache/endpoint",
-                    "hb_pb": "0.50",
-                    "hb_pb_appnexus": "0.50",
-                    "hb_pb_cat_dur": "0.50_HomeDecor_0s_appnexus",
-                    "hb_pb_cat_dur_appnex": "0.50_HomeDecor_0s_appnexus",
-                    "hb_size": "300x500",
-                    "hb_size_appnexus": "300x500"
-                  },
-                  "type": "video"
-                }
-              },
-              "h": 500,
-              "id": "apn-other-bid",
-              "impid": "imp-id-2",
-              "price": 0.6,
-              "w": 300
             }
           ]
         }
@@ -171,19 +115,6 @@
           "imp": [
             {
               "id": "my-imp-id",
-              "video": {
-                "mimes": [
-                  "video/mp4"
-                ]
-              },
-              "ext": {
-                "appnexus": {
-                  "placementId": 1
-                }
-              }
-            },
-            {
-              "id": "imp-id-2",
               "video": {
                 "mimes": [
                   "video/mp4"
@@ -213,6 +144,9 @@
             }
           }
         }
+      },
+      "responsetimemillis": {
+        "appnexus": 0
       }
     }
   }
