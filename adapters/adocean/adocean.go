@@ -13,7 +13,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -80,7 +80,7 @@ type AdOceanAdapter struct {
 	measurementCode  string
 }
 
-func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *AdOceanAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
 			Message: "No impression in the bid request",
@@ -119,8 +119,8 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 func (a *AdOceanAdapter) addNewBid(
 	requestsData []*requestData,
-	imp *openrtb.Imp,
-	request *openrtb.BidRequest,
+	imp *openrtb2.Imp,
+	request *openrtb2.BidRequest,
 	consentString string,
 ) ([]*requestData, error) {
 	var bidderExt adapters.ExtImpBidder
@@ -177,7 +177,7 @@ func (a *AdOceanAdapter) addNewBid(
 	return requestsData, nil
 }
 
-func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.ExtImpAdOcean, imp *openrtb.Imp, testImp bool) bool {
+func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.ExtImpAdOcean, imp *openrtb2.Imp, testImp bool) bool {
 	auctionID := imp.ID
 
 	for _, requestData := range requestsData {
@@ -209,8 +209,8 @@ func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.Ex
 
 func (a *AdOceanAdapter) makeURL(
 	params *openrtb_ext.ExtImpAdOcean,
-	imp *openrtb.Imp,
-	request *openrtb.BidRequest,
+	imp *openrtb2.Imp,
+	request *openrtb2.BidRequest,
 	slaveSizes map[string]string,
 	consentString string,
 ) (*url.URL, error) {
@@ -256,7 +256,7 @@ func (a *AdOceanAdapter) makeURL(
 	return endpointURL, nil
 }
 
-func getImpSizes(imp *openrtb.Imp) string {
+func getImpSizes(imp *openrtb2.Imp) string {
 	if imp.Banner == nil {
 		return ""
 	}
@@ -264,14 +264,14 @@ func getImpSizes(imp *openrtb.Imp) string {
 	if len(imp.Banner.Format) > 0 {
 		sizes := make([]string, len(imp.Banner.Format))
 		for i, format := range imp.Banner.Format {
-			sizes[i] = strconv.FormatUint(format.W, 10) + "x" + strconv.FormatUint(format.H, 10)
+			sizes[i] = strconv.FormatInt(format.W, 10) + "x" + strconv.FormatInt(format.H, 10)
 		}
 
 		return strings.Join(sizes, "_")
 	}
 
 	if imp.Banner.W != nil && imp.Banner.H != nil {
-		return strconv.FormatUint(*imp.Banner.W, 10) + "x" + strconv.FormatUint(*imp.Banner.H, 10)
+		return strconv.FormatInt(*imp.Banner.W, 10) + "x" + strconv.FormatInt(*imp.Banner.H, 10)
 	}
 
 	return ""
@@ -304,7 +304,7 @@ func setSlaveSizesParam(queryParams *url.Values, slaveSizes map[string]string, o
 }
 
 func (a *AdOceanAdapter) MakeBids(
-	internalRequest *openrtb.BidRequest,
+	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
@@ -337,8 +337,8 @@ func (a *AdOceanAdapter) MakeBids(
 			}
 
 			price, _ := strconv.ParseFloat(bid.Price, 64)
-			width, _ := strconv.ParseUint(bid.Width, 10, 64)
-			height, _ := strconv.ParseUint(bid.Height, 10, 64)
+			width, _ := strconv.ParseInt(bid.Width, 10, 64)
+			height, _ := strconv.ParseInt(bid.Height, 10, 64)
 			adCode, err := a.prepareAdCodeForBid(bid)
 			if err != nil {
 				errors = append(errors, err)
@@ -346,7 +346,7 @@ func (a *AdOceanAdapter) MakeBids(
 			}
 
 			parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
-				Bid: &openrtb.Bid{
+				Bid: &openrtb2.Bid{
 					ID:    bid.ID,
 					ImpID: auctionID,
 					Price: price,

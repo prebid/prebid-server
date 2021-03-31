@@ -20,5 +20,4 @@ func TestAdponeSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://usersync.adpone.com/csync?t=p&ep=0&redir=localhost%2Fsetuid%3Fbidder%3Dadtelligent%26gdpr%3D%26gdpr_consent%3D%26uid%3D%7Buid%7D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, adponeGDPRVendorID, syncer.GDPRVendorID())
 }

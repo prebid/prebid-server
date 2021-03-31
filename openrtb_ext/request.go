@@ -4,12 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 )
 
-// FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
-// for first party data support.
-const FirstPartyDataContextExtKey string = "context"
+// FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
+const FirstPartyDataExtKey = "data"
+
+// FirstPartyDataContextExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
+const FirstPartyDataContextExtKey = "context"
+
+// SKAdNExtKey defines the field name within request.ext reserved for Apple's SKAdNetwork.
+const SKAdNExtKey = "skadn"
+
 const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
@@ -309,7 +315,7 @@ type ExtRequestPrebidDataEidPermission struct {
 // will not need to be unmarshalled multiple times.
 type RequestWrapper struct {
 	// json json.RawMessage
-	Request *openrtb.BidRequest
+	Request *openrtb2.BidRequest
 	// Dirty bool // Probably don't care
 	UserExt    *UserExt
 	DeviceExt  *DeviceExt
@@ -498,6 +504,9 @@ func (re *RequestExt) Dirty() bool {
 	return re.PrebidDirty
 }
 
+// NOTE: openrtb_ext/device.go:ParseDeviceExtATTS() uses ext.atts, as read only, via jsonparser, only for IOS.
+// Doesn't seem like we will see any performance savings by parsing atts at this point, and as it is read only,
+// we don't need to worry about write conflicts. Note here in case additional uses of atts evolve as things progress.
 type DeviceExt struct {
 	Ext         map[string]json.RawMessage
 	Prebid      *ExtDevicePrebid
@@ -740,7 +749,7 @@ func (rw *RequestWrapper) ExtractUserExt() error {
 
 func (rw *RequestWrapper) ExtractDeviceExt() error {
 	if rw.Request == nil {
-		rw.Request = &openrtb.BidRequest{}
+		rw.Request = &openrtb2.BidRequest{}
 	}
 	if rw.DeviceExt != nil {
 		return nil
@@ -813,10 +822,10 @@ func (rw *RequestWrapper) ExtractSiteExt() error {
 
 func (rw *RequestWrapper) Sync() error {
 	if rw.Request == nil {
-		rw.Request = &openrtb.BidRequest{}
+		rw.Request = &openrtb2.BidRequest{}
 	}
 	if rw.Request.User == nil && rw.UserExt != nil && rw.UserExt.Dirty() {
-		rw.Request.User = &openrtb.User{}
+		rw.Request.User = &openrtb2.User{}
 	}
 	if rw.UserExt != nil && rw.UserExt.Dirty() {
 		userJson, err := rw.UserExt.Marshal()
@@ -826,7 +835,7 @@ func (rw *RequestWrapper) Sync() error {
 		rw.Request.User.Ext = userJson
 	}
 	if rw.Request.Device == nil && rw.DeviceExt != nil && rw.DeviceExt.Dirty() {
-		rw.Request.Device = &openrtb.Device{}
+		rw.Request.Device = &openrtb2.Device{}
 	}
 	if rw.DeviceExt != nil && rw.DeviceExt.Dirty() {
 		deviceJson, err := rw.DeviceExt.Marshal()
@@ -843,7 +852,7 @@ func (rw *RequestWrapper) Sync() error {
 		rw.Request.Ext = requestJson
 	}
 	if rw.Request.App == nil && rw.AppExt != nil && rw.AppExt.Dirty() {
-		rw.Request.App = &openrtb.App{}
+		rw.Request.App = &openrtb2.App{}
 	}
 	if rw.AppExt != nil && rw.AppExt.Dirty() {
 		appJson, err := rw.AppExt.Marshal()
@@ -853,7 +862,7 @@ func (rw *RequestWrapper) Sync() error {
 		rw.Request.App.Ext = appJson
 	}
 	if rw.Request.Regs == nil && rw.RegExt != nil && rw.RegExt.Dirty() {
-		rw.Request.Regs = &openrtb.Regs{}
+		rw.Request.Regs = &openrtb2.Regs{}
 	}
 	if rw.RegExt != nil && rw.RegExt.Dirty() {
 		regsJson, err := rw.RegExt.Marshal()
@@ -863,7 +872,7 @@ func (rw *RequestWrapper) Sync() error {
 		rw.Request.Regs.Ext = regsJson
 	}
 	if rw.Request.Site == nil && rw.SiteExt != nil && rw.SiteExt.Dirty() {
-		rw.Request.Site = &openrtb.Site{}
+		rw.Request.Site = &openrtb2.Site{}
 	}
 	if rw.SiteExt != nil && rw.SiteExt.Dirty() {
 		siteJson, err := rw.SiteExt.Marshal()

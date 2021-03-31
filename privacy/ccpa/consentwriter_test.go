@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,8 +13,8 @@ func TestConsentWriter(t *testing.T) {
 	consent := "anyConsent"
 	testCases := []struct {
 		description   string
-		request       *openrtb.BidRequest
-		expected      *openrtb.BidRequest
+		request       *openrtb2.BidRequest
+		expected      *openrtb2.BidRequest
 		expectedError bool
 	}{
 		{
@@ -24,19 +24,19 @@ func TestConsentWriter(t *testing.T) {
 		},
 		{
 			description: "Success",
-			request:     &openrtb.BidRequest{},
-			expected: &openrtb.BidRequest{
-				Regs: &openrtb.Regs{Ext: json.RawMessage(`{"us_privacy":"anyConsent"}`)},
+			request:     &openrtb2.BidRequest{},
+			expected: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"anyConsent"}`)},
 			},
 		},
 		{
 			description: "Error With Regs.Ext - Does Not Mutate",
-			request: &openrtb.BidRequest{
-				Regs: &openrtb.Regs{Ext: json.RawMessage(`malformed}`)},
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{Ext: json.RawMessage(`malformed}`)},
 			},
 			expectedError: false,
-			expected: &openrtb.BidRequest{
-				Regs: &openrtb.Regs{Ext: json.RawMessage(`malformed}`)},
+			expected: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{Ext: json.RawMessage(`malformed}`)},
 			},
 		},
 	}

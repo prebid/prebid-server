@@ -20,6 +20,5 @@ func TestFacebookSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26gdpr%3D%26gdpr_consent%3D%26uid%3D%24UID", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

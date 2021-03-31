@@ -3,7 +3,7 @@ package exchange
 import (
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -60,7 +60,7 @@ func Test_eventsData_makeBidExtEvents(t *testing.T) {
 				auctionTimestampMs: 1234567890,
 				externalURL:        "http://localhost",
 			}
-			bid := &pbsOrtbBid{bid: &openrtb.Bid{ID: "BID-1"}, bidType: tt.args.bidType}
+			bid := &pbsOrtbBid{bid: &openrtb2.Bid{ID: "BID-1"}, bidType: tt.args.bidType}
 			assert.Equal(t, tt.want, evData.makeBidExtEvents(bid, openrtb_ext.BidderOpenx))
 		})
 	}
@@ -124,7 +124,7 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 				auctionTimestampMs: 1234567890,
 				externalURL:        "http://localhost",
 			}
-			bid := &pbsOrtbBid{bid: &openrtb.Bid{ID: "BID-1"}, bidType: tt.args.bidType}
+			bid := &pbsOrtbBid{bid: &openrtb2.Bid{ID: "BID-1"}, bidType: tt.args.bidType}
 			modifiedJSON, err := evData.modifyBidJSON(bid, openrtb_ext.BidderOpenx, tt.jsonBytes)
 			if tt.want != nil {
 				assert.NoError(t, err, "Unexpected error")

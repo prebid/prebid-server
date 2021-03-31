@@ -1,7 +1,7 @@
 package ccpa
 
 import (
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -25,7 +25,7 @@ type ConsentWriterLegacy struct {
 }
 
 // Write mutates an OpenRTB bid request with the CCPA consent string.
-func (c ConsentWriterLegacy) Write(req *openrtb.BidRequest) error {
+func (c ConsentWriterLegacy) Write(req *openrtb2.BidRequest) error {
 	if req == nil {
 		return nil
 	}

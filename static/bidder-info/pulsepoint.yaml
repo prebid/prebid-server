@@ -1,9 +1,16 @@
 maintainer:
   email: "ExchangeTeam@pulsepoint.com"
+gvlVendorID: 81
 capabilities:
   app:
     mediaTypes:
       - banner
+      - video
+      - audio
+      - native
   site:
     mediaTypes:
       - banner
+      - video
+      - audio
+      - native

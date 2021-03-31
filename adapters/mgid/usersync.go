@@ -8,5 +8,5 @@ import (
 )
 
 func NewMgidSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("mgid", 358, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("mgid", temp, adapters.SyncTypeRedirect)
 }

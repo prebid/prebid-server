@@ -30,6 +30,5 @@ func TestDeepintentSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://match.deepintent.com/usersync/136?id=unk&gdpr=A&us_privacy=C&url=https%3A%2F%2Flocalhost%3A8888%2Fsetuid%3Fbidder%3Ddeepintent%26gdpr%3DA%26gdpr_consent%3DB%26uid%3D%5Bio_cid%5D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, uint16(541), syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

@@ -8,5 +8,5 @@ import (
 )
 
 func NewLockerDomeSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("lockerdome", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("lockerdome", temp, adapters.SyncTypeRedirect)
 }
