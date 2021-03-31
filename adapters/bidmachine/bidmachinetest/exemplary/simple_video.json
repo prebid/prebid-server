@@ -89,7 +89,6 @@
                 "id": "test-request-id",
                 "seatbid": [
                 {
-                    "seat": "seat-id",
                     "bid": [
                     {
                         "id": "test-bid-id",

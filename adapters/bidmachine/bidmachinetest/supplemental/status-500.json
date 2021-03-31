@@ -1,69 +1,69 @@
 {
-    "mockBidRequest":
+  "mockBidRequest":
+  {
+    "id": "test-request-id",
+    "imp": [
     {
+      "id": "test-impression-id-1",
+      "banner":
+      {
+        "format": [
+        {
+          "h": 250,
+          "w": 300
+        }]
+      },
+      "ext":
+      {
+        "bidder":
+        {
+          "seller_id": "1",
+          "host": "api-eu",
+          "path": "auction/rtb/v2"
+        }
+      }
+    }]
+  },
+  "httpCalls": [
+  {
+    "expectedRequest":
+    {
+      "uri": "https://api-eu.bidmachine.io/auction/rtb/v2/1",
+      "body":
+      {
         "id": "test-request-id",
         "imp": [
         {
-            "id": "test-impression-id-1",
-            "banner":
+          "id": "test-impression-id-1",
+          "banner":
+          {
+            "format": [
             {
-                "format": [
-                {
-                    "h": 250,
-                    "w": 300
-                }]
-            },
-            "ext":
+              "h": 250,
+              "w": 300
+            }]
+          },
+          "ext":
+          {
+            "bidder":
             {
-                "bidder":
-                {
-                    "seller_id": "1",
-                    "host": "api-eu",
-                    "path": "auction/rtb/v2"
-                }
+              "seller_id": "1",
+              "host": "api-eu",
+              "path": "auction/rtb/v2"
             }
+          }
         }]
+      }
     },
-    "httpCalls": [
+    "mockResponse":
     {
-        "expectedRequest":
-        {
-            "uri": "https://api-eu.bidmachine.io/auction/rtb/v2/1",
-            "body":
-            {
-                "id": "test-request-id",
-                "imp": [
-                {
-                    "id": "test-impression-id-1",
-                    "banner":
-                    {
-                        "format": [
-                        {
-                            "h": 250,
-                            "w": 300
-                        }]
-                    },
-                    "ext":
-                    {
-                        "bidder":
-                        {
-                            "seller_id": "1",
-                            "host": "api-eu",
-                            "path": "auction/rtb/v2"
-                        }
-                    }
-                }]
-            }
-        },
-        "mockResponse":
-        {
-            "status": 500,
-            "body": "server text here"
-        }
-    }],
-    "expectedMakeBidsErrors": [
-    {
-        "value": "unexpected status code: 500 \"server text here\"",
-        "comparison": "literal"
-    }]
+      "status": 500,
+      "body": "server text here"
+    }
+  }],
+  "expectedMakeBidsErrors": [
+  {
+    "value": "unexpected status code: 500 \"server text here\"",
+    "comparison": "literal"
+  }]
 }

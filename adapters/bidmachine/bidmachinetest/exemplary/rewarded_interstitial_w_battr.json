@@ -5,17 +5,15 @@
         "imp": [
         {
             "id": "test-imp-id",
-            "video":
+            "instl": 1,
+            "banner":
             {
-                "battr": [1],
+                "battr": [1, 16],
                 "mimes": [
-                    "video/mp4",
-                    "video/3gpp"
-                ],
-                "protocols": [
-                    1,
-                    2,
-                    3
+                    "image/jpeg",
+                    "image/jpg",
+                    "image/gif",
+                    "image/png"
                 ],
                 "w": 320,
                 "h": 480
@@ -58,17 +56,15 @@
                 "imp": [
                 {
                     "id": "test-imp-id",
-                    "video":
+                    "instl": 1,
+                    "banner":
                     {
                         "battr": [1, 16],
                         "mimes": [
-                            "video/mp4",
-                            "video/3gpp"
-                        ],
-                        "protocols": [
-                            1,
-                            2,
-                            3
+                            "image/jpeg",
+                            "image/jpg",
+                            "image/gif",
+                            "image/png"
                         ],
                         "w": 320,
                         "h": 480
@@ -97,7 +93,6 @@
                 "id": "test-request-id",
                 "seatbid": [
                 {
-                    "seat": "seat-id",
                     "bid": [
                     {
                         "id": "test-bid-id",
@@ -127,7 +122,7 @@
                 "cid": "test-cid",
                 "crid": "test-crid"
             },
-            "type": "video"
+            "type": "banner"
         }]
     }]
 }

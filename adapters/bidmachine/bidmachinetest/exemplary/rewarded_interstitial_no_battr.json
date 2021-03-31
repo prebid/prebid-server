@@ -20,6 +20,10 @@
             },
             "ext":
             {
+                "prebid":
+                {
+                    "is_rewarded_inventory": 1
+                },
                 "bidder":
                 {
                     "host": "api-us",
@@ -55,7 +59,7 @@
                     "instl": 1,
                     "banner":
                     {
-                        "battr": [1],
+                        "battr": [1, 16],
                         "mimes": [
                             "image/jpeg",
                             "image/jpg",
@@ -67,6 +71,10 @@
                     },
                     "ext":
                     {
+                        "prebid":
+                        {
+                            "is_rewarded_inventory": 1
+                        },
                         "bidder":
                         {
                             "host": "api-us",
