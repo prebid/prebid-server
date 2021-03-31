@@ -1588,8 +1588,8 @@ func TestExchangeJSON(t *testing.T) {
 }
 
 func TestBidID(t *testing.T) {
-	fileName := "./test/append-bidder-names.json"
-	fileDisplayName := "exchange/test/append-bidder-names.json"
+	fileName := "./test/bidid/valid-bid-id.json"
+	fileDisplayName := "exchange/test/bidid/valid-bid-id.json"
 	spec, err := loadFile(fileName)
 
 	if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
@@ -1822,11 +1822,12 @@ func (big *mockBidIDGenerator) Enabled() bool {
 }
 
 func (big *mockBidIDGenerator) New() (string, error) {
-	var err error
+
 	if big.returnError {
-		err = errors.New("Test error generating bid.ext.prebid.bidid")
+		err := errors.New("Test error generating bid.ext.prebid.bidid")
+		return "", err
 	}
-	return "mock_uuid", err
+	return "mock_uuid", nil
 
 }
 
