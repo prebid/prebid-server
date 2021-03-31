@@ -4,12 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-<<<<<<< HEAD
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
-=======
 	"github.com/mxmCherry/openrtb/v14/openrtb2"
->>>>>>> 690fe2d5c2391b1617ec6d85fb2c15b090c3dd9f
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
