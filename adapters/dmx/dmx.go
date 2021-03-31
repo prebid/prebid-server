@@ -48,6 +48,8 @@ type dmxParams struct {
 	Bidfloor    float64 `json:"bidfloor,omitempty"`
 }
 
+var protocols = []openrtb2.Protocol{2, 3, 5, 6, 7, 8}
+
 func UserSellerOrPubId(str1, str2 string) string {
 	if str1 != "" {
 		return str1
@@ -100,6 +102,12 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		if dmxReq.App.ID != "" {
 			anyHasId = true
 		}
+		if anyHasId == false {
+			if idfa, valid := getIdfa(request); valid {
+				dmxReq.App.ID = idfa
+				anyHasId = true
+			}
+		}
 	} else {
 		dmxReq.App = nil
 	}
@@ -147,13 +155,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		}
 	}
 
-	if anyHasId == false {
-		return nil, []error{errors.New("This request contained no identifier")}
-	}
-
 	for _, inst := range dmxReq.Imp {
-		var banner *openrtb2.Banner
-		var video *openrtb2.Video
 		var ins openrtb2.Imp
 		var params dmxExt
 		const intVal int8 = 1
@@ -164,9 +166,9 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		if isDmxParams(params.Bidder) {
 			if inst.Banner != nil {
 				if len(inst.Banner.Format) != 0 {
-					banner = inst.Banner
+					bannerCopy := *inst.Banner
 					if params.Bidder.PublisherId != "" || params.Bidder.MemberId != "" {
-						imps = fetchParams(params, inst, ins, imps, banner, nil, intVal)
+						imps = fetchParams(params, inst, ins, imps, &bannerCopy, nil, intVal)
 					} else {
 						return nil, []error{errors.New("Missing Params for auction to be send")}
 					}
@@ -174,9 +176,9 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 			}
 
 			if inst.Video != nil {
-				video = inst.Video
+				videoCopy := *inst.Video
 				if params.Bidder.PublisherId != "" || params.Bidder.MemberId != "" {
-					imps = fetchParams(params, inst, ins, imps, nil, video, intVal)
+					imps = fetchParams(params, inst, ins, imps, nil, &videoCopy, intVal)
 				} else {
 					return nil, []error{errors.New("Missing Params for auction to be send")}
 				}
@@ -186,6 +188,10 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 	}
 
 	dmxReq.Imp = imps
+
+	if anyHasId == false {
+		return nil, []error{errors.New("This request contained no identifier")}
+	}
 
 	oJson, err := json.Marshal(dmxReq)
 
@@ -271,10 +277,15 @@ func fetchParams(params dmxExt, inst openrtb2.Imp, ins openrtb2.Imp, imps []open
 		tempimp.Secure = &intVal
 	}
 	if banner != nil {
+		if banner.H == nil || banner.W == nil {
+			banner.H = &banner.Format[0].H
+			banner.W = &banner.Format[0].W
+		}
 		tempimp.Banner = banner
 	}
 
 	if video != nil {
+		video.Protocols = checkProtocols(video)
 		tempimp.Video = video
 	}
 
@@ -326,4 +337,23 @@ func isDmxParams(t interface{}) bool {
 	default:
 		return false
 	}
+}
+
+func getIdfa(request *openrtb2.BidRequest) (string, bool) {
+	if request.Device == nil {
+		return "", false
+	}
+
+	device := request.Device
+
+	if device.IFA != "" {
+		return device.IFA, true
+	}
+	return "", false
+}
+func checkProtocols(imp *openrtb2.Video) []openrtb2.Protocol {
+	if len(imp.Protocols) > 0 {
+		return imp.Protocols
+	}
+	return protocols
 }
