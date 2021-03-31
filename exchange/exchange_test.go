@@ -652,7 +652,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 	e.gDPR = gdpr.AlwaysAllow{}
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
-	e.bidIDGenerator = &mockBidIDGenerator{false}
+	e.bidIDGenerator = &mockBidIDGenerator{false, false}
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -914,7 +914,7 @@ func TestBidReturnsCreative(t *testing.T) {
 			bid:            sampleOpenrtbBid,
 			bidType:        openrtb_ext.BidTypeBanner,
 			bidTargets:     map[string]string{},
-			generatedBidId: "randomId",
+			generatedBidID: "randomId",
 		},
 	}
 	sampleAuction := &auction{cacheIds: map[*openrtb2.Bid]string{sampleOpenrtbBid: "CACHE_UUID_1234"}}
@@ -1774,20 +1774,26 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		categoriesFetcher:   categoriesFetcher,
 		bidderInfo:          bidderInfos,
 		externalURL:         "http://localhost",
-		bidIDGenerator:      &mockBidIDGenerator{true},
+		bidIDGenerator:      &mockBidIDGenerator{true, false},
 	}
 }
 
 type mockBidIDGenerator struct {
-	enabled bool
+	enabled     bool
+	returnError bool
 }
 
 func (big *mockBidIDGenerator) Enabled() bool {
 	return big.enabled
 }
 
-func (big *mockBidIDGenerator) NewUUID() string {
-	return "mock_uuid"
+func (big *mockBidIDGenerator) New() (string, error) {
+	var err error
+	if big.returnError {
+		err = errors.New("Test error generating bid.ext.prebid.bidid")
+	}
+	return "mock_uuid", err
+
 }
 
 func newExtRequest() openrtb_ext.ExtRequest {

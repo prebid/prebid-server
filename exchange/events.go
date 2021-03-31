@@ -63,8 +63,8 @@ func (ev *eventTracking) modifyBidVAST(pbsBid *pbsOrtbBid, bidderName openrtb_ex
 	}
 	vastXML := makeVAST(bid)
 	bidID := bid.ID
-	if len(pbsBid.generatedBidId) > 0 {
-		bidID = pbsBid.generatedBidId
+	if len(pbsBid.generatedBidID) > 0 {
+		bidID = pbsBid.generatedBidID
 	}
 	if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, vastXML, bidID, bidderName.String(), ev.accountID, ev.auctionTimestampMs); ok {
 		bid.AdM = newVastXML
@@ -108,8 +108,8 @@ func (ev *eventTracking) makeBidExtEvents(pbsBid *pbsOrtbBid, bidderName openrtb
 // makeEventURL returns an analytics event url for the requested type (win or imp)
 func (ev *eventTracking) makeEventURL(evType analytics.EventType, pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName) string {
 	bidId := pbsBid.bid.ID
-	if len(pbsBid.generatedBidId) > 0 {
-		bidId = pbsBid.generatedBidId
+	if len(pbsBid.generatedBidID) > 0 {
+		bidId = pbsBid.generatedBidID
 	}
 	return events.EventRequestToUrl(ev.externalURL,
 		&analytics.EventRequest{

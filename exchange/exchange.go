@@ -62,7 +62,7 @@ type exchange struct {
 	UsersyncIfAmbiguous bool
 	privacyConfig       config.Privacy
 	categoriesFetcher   stored_requests.CategoryFetcher
-	bidIDGenerator      UUIDGenerator
+	bidIDGenerator      BidIDGenerator
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -81,8 +81,8 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-type UUIDGenerator interface {
-	NewUUID() string
+type BidIDGenerator interface {
+	New() (string, error)
 	Enabled() bool
 }
 
@@ -94,9 +94,9 @@ func (big *bidIDGenerator) Enabled() bool {
 	return big.enabled
 }
 
-func (big *bidIDGenerator) NewUUID() string {
-	rawUuid, _ := uuid.NewV4()
-	return rawUuid.String()
+func (big *bidIDGenerator) New() (string, error) {
+	rawUuid, err := uuid.NewV4()
+	return rawUuid.String(), err
 }
 
 func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
@@ -216,7 +216,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		if e.bidIDGenerator.Enabled() {
 			for _, seatBid := range adapterBids {
 				for _, pbsBid := range seatBid.bids {
-					pbsBid.generatedBidId = e.bidIDGenerator.NewUUID()
+					pbsBid.generatedBidID, err = e.bidIDGenerator.New()
+					if err != nil {
+						errs = append(errs, errors.New("Error generating bid.ext.prebid.bidid"))
+					}
 				}
 			}
 		}
@@ -881,7 +884,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 			Targeting:         bid.bidTargets,
 			Type:              bid.bidType,
 			Video:             bid.bidVideo,
-			BidId:             bid.generatedBidId,
+			BidId:             bid.generatedBidID,
 		}
 
 		if cacheInfo, found := e.getBidCacheInfo(bid, auc); found {
