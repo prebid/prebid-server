@@ -1587,38 +1587,51 @@ func TestExchangeJSON(t *testing.T) {
 	}
 }
 
-func TestBidID(t *testing.T) {
+func TestValidBidID(t *testing.T) {
 	fileName := "./test/bidid/valid-bid-id.json"
-	fileDisplayName := "exchange/test/bidid/valid-bid-id.json"
+	bid, spec := testBidIdHelper(t, fileName, false)
+	diffJson(t, "Bid Ext info modified", bid.SeatBid[0].Bid[0].Ext, spec.Response.Bids.SeatBid[0].Bid[0].Ext)
+}
+
+func TestInvalidBidID(t *testing.T) {
+	fileName := "./test/bidid/invalid-bid-id.json"
+	bid, spec := testBidIdHelper(t, fileName, true)
+	diffJson(t, "bid.SeatBid[0].Bid[0].Ext modified", bid.SeatBid[0].Bid[0].Ext, spec.Response.Bids.SeatBid[0].Bid[0].Ext)
+	diffJson(t, "bid.Ext info modified", bid.Ext, spec.Response.Ext)
+}
+
+func testBidIdHelper(t *testing.T, fileName string, bidIDError bool) (*openrtb2.BidResponse, *exchangeSpec) {
 	spec, err := loadFile(fileName)
-
-	if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
-		aliases, errs := parseAliases(&spec.IncomingRequest.OrtbRequest)
-		if len(errs) != 0 {
-			t.Fatalf("%s: Failed to parse aliases", fileName)
-		}
-		bidIdGenerator := &mockBidIDGenerator{true, false}
-		ex := newExchangeForTests(t, fileName, spec.OutgoingRequests, aliases, config.Privacy{}, bidIdGenerator)
-		ctx := context.Background()
-		ctx = context.WithValue(ctx, DebugContextKey, true)
-		auctionRequest := AuctionRequest{
-			BidRequest: &spec.IncomingRequest.OrtbRequest,
-			Account: config.Account{
-				ID:            "testaccount",
-				EventsEnabled: spec.EventsEnabled,
-				DebugAllow:    true,
-			},
-			UserSyncs: mockIdFetcher(spec.IncomingRequest.Usersyncs),
-		}
-		debugLog := &DebugLog{}
-		if spec.DebugLog != nil {
-			*debugLog = *spec.DebugLog
-			debugLog.Regexp = regexp.MustCompile(`[<>]`)
-		}
-		bid, _ := ex.HoldAuction(ctx, auctionRequest, debugLog)
-		diffJson(t, "Bid Ext info modified", bid.SeatBid[0].Bid[0].Ext, spec.Response.Bids.SeatBid[0].Bid[0].Ext)
+	if err != nil {
+		t.Fatalf("%s: Failed to load file ", fileName)
 	}
-
+	aliases, errs := parseAliases(&spec.IncomingRequest.OrtbRequest)
+	if len(errs) != 0 {
+		t.Fatalf("%s: Failed to parse aliases", fileName)
+	}
+	bidIdGenerator := &mockBidIDGenerator{true, bidIDError}
+	ex := newExchangeForTests(t, fileName, spec.OutgoingRequests, aliases, config.Privacy{}, bidIdGenerator)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugContextKey, true)
+	auctionRequest := AuctionRequest{
+		BidRequest: &spec.IncomingRequest.OrtbRequest,
+		Account: config.Account{
+			ID:            "testaccount",
+			EventsEnabled: spec.EventsEnabled,
+			DebugAllow:    true,
+		},
+		UserSyncs: mockIdFetcher(spec.IncomingRequest.Usersyncs),
+	}
+	debugLog := &DebugLog{}
+	if spec.DebugLog != nil {
+		*debugLog = *spec.DebugLog
+		debugLog.Regexp = regexp.MustCompile(`[<>]`)
+	}
+	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
+	if err != nil {
+		t.Fatalf("%s: Failed to execute HoldAuction for file ", fileName)
+	}
+	return bid, spec
 }
 
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.

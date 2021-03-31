@@ -85,7 +85,6 @@
               ],
               "ext": {
                 "prebid": {
-                  "bidid": "mock_uuid",
                   "type": "video",
                   "targeting": {
                     "hb_bidder": "appnexus",
@@ -145,9 +144,18 @@
           }
         }
       },
+      "errors": {
+        "prebid": [
+          {
+            "code": 999,
+            "message": "Error generating bid.ext.prebid.bidid"
+          }
+        ]
+      },
       "responsetimemillis": {
         "appnexus": 0
       }
+
     }
   }
 }
