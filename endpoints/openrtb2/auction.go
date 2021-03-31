@@ -1086,6 +1086,12 @@ func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 }
 
 func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases map[string]string) error {
+	// The following fields were previously uints in the OpenRTB library we use, but have
+	// since been changed to ints. We decided to maintain the non-negative check.
+	if req != nil && req.Request != nil && req.Request.User != nil && req.Request.User.Geo != nil && req.Request.User.Geo.Accuracy < 0 {
+		return errors.New("request.user.geo.accuracy must be a positive number")
+	}
+
 	err := req.ExtractUserExt()
 	if err != nil {
 		// Return error.
