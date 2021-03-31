@@ -4,8 +4,8 @@
     "description": "A schema which validates params accepted by the RTB House adapter",
     "type": "object",
     "properties": {
-		"publisherId": {
-			"type": "string",
+        "publisherId": {
+            "type": "string",
             "description": "The publisher’s ID provided by RTB House"
         }
     },
