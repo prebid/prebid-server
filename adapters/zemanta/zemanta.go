@@ -131,18 +131,17 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {
-			if imp.Banner == nil {
-				mediaType = openrtb_ext.BidTypeNative
+			if imp.Native != nil {
+				return openrtb_ext.BidTypeNative, nil
+			} else if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
 			}
-			return mediaType, nil
 		}
 	}
 
-	// This shouldn't happen. Let's handle it just in case by returning an error.
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find native/banner impression \"%s\" ", impID),
 	}
 }
