@@ -32,9 +32,9 @@ type PBSBid struct {
 	// If NURL and Adm are both defined, then Adm takes precedence.
 	Adm string `json:"adm,omitempty"`
 	// Width is the intended width which Adm should be shown, in pixels.
-	Width uint64 `json:"width,omitempty"`
+	Width int64 `json:"width,omitempty"`
 	// Height is the intended width which Adm should be shown, in pixels.
-	Height uint64 `json:"height,omitempty"`
+	Height int64 `json:"height,omitempty"`
 	// DealId is not used by prebid-server, but may be used by buyers and sellers who make special
 	// deals with each other. We simply pass this information along with the bid.
 	DealId string `json:"deal_id,omitempty"`

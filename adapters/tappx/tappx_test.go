@@ -47,7 +47,7 @@ func TestTsValue(t *testing.T) {
 
 	url, err := bidderTappx.buildEndpointURL(&tappxExt, test)
 
-	match, err := regexp.MatchString(`http://example\.host\.tappx\.com/DUMMYENDPOINT\?tappxkey=dummy-tappx-key&ts=[0-9]{13}&type_cnn=prebid&v=1\.1`, url)
+	match, err := regexp.MatchString(`http://example\.host\.tappx\.com/DUMMYENDPOINT\?tappxkey=dummy-tappx-key&ts=[0-9]{13}&type_cnn=prebid&v=1\.2`, url)
 	if err != nil {
 		t.Errorf("Error while running regex validation: %s", err.Error())
 		return
