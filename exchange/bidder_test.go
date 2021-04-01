@@ -71,7 +71,6 @@ func TestSingleBidder(t *testing.T) {
 	ctx = context.WithValue(ctx, DebugContextKey, true)
 
 	for _, test := range testCases {
-
 		mockBidderResponse := &adapters.BidderResponse{
 			Bids: []*adapters.TypedBid{
 				{
@@ -140,6 +139,48 @@ func TestSingleBidder(t *testing.T) {
 			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
 		}
 	}
+}
+
+func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
+	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+	requestHeaders.Add("Authorization", "anySecret")
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("requestJson"),
+			Headers: requestHeaders,
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{},
+		},
+	}
+
+	debugInfo := &config.DebugInfo{Allow: true}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugContextKey, true)
+
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true)
+
+	expectedHttpCalls := []*openrtb_ext.ExtHttpCall{
+		{
+			Uri:            server.URL,
+			RequestBody:    "requestJson",
+			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}},
+			ResponseBody:   "responseJson",
+			Status:         200,
+		},
+	}
+
+	assert.Empty(t, errs)
+	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCalls)
 }
 
 // TestMultiBidder makes sure all the requests get sent, and the responses processed.
@@ -891,86 +932,160 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 	}
 }
 
-// TestBadResponseLogging makes sure that openrtb_ext works properly on malformed HTTP requests.
-func TestBadRequestLogging(t *testing.T) {
-	info := &httpCallInfo{
-		err: errors.New("Bad request"),
+func TestMakeExt(t *testing.T) {
+	testCases := []struct {
+		description string
+		given       *httpCallInfo
+		expected    *openrtb_ext.ExtHttpCall
+	}{
+		{
+			description: "Nil",
+			given:       nil,
+			expected:    &openrtb_ext.ExtHttpCall{},
+		},
+		{
+			description: "Empty",
+			given: &httpCallInfo{
+				err:      nil,
+				response: nil,
+				request:  nil,
+			},
+			expected: &openrtb_ext.ExtHttpCall{},
+		},
+		{
+			description: "Request & Response - No Error",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
+				ResponseBody:   "responseBody",
+				Status:         999,
+			},
+		},
+		{
+			description: "Request & Response - Error",
+			given: &httpCallInfo{
+				err: errors.New("error"),
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
+			},
+		},
+		{
+			description: "Request Only",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
+				},
+				response: nil,
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
+			},
+		}, {
+			description: "Response Only",
+			given: &httpCallInfo{
+				err: nil,
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{},
+		},
 	}
-	ext := makeExt(info)
-	if ext.Uri != "" {
-		t.Errorf("The URI should be empty. Got %s", ext.Uri)
-	}
-	if ext.RequestBody != "" {
-		t.Errorf("The request body should be empty. Got %s", ext.RequestBody)
-	}
-	if ext.ResponseBody != "" {
-		t.Errorf("The response body should be empty. Got %s", ext.ResponseBody)
-	}
-	if ext.Status != 0 {
-		t.Errorf("The Status code should be 0. Got %d", ext.Status)
-	}
-	if len(ext.RequestHeaders) > 0 {
-		t.Errorf("The request headers should be empty. Got %s", ext.RequestHeaders)
+
+	for _, test := range testCases {
+		result := makeExt(test.given)
+		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
-// TestBadResponseLogging makes sure that openrtb_ext works properly if we don't get a sensible HTTP response.
-func TestBadResponseLogging(t *testing.T) {
-	info := &httpCallInfo{
-		request: &adapters.RequestData{
-			Uri:  "test.com",
-			Body: []byte("request body"),
-			Headers: http.Header{
-				"header-1": []string{"value-1"},
-			},
+func TestRemoveSensitiveHeaders(t *testing.T) {
+	testCases := []struct {
+		description string
+		given       http.Header
+		expected    http.Header
+	}{
+		{
+			description: "Nil",
+			given:       nil,
+			expected:    nil,
 		},
-		err: errors.New("Bad response"),
+		{
+			description: "Empty",
+			given:       http.Header{},
+			expected:    map[string][]string{},
+		},
+		{
+			description: "One",
+			given:       makeHeader(map[string][]string{"Key1": {"value1"}}),
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}}),
+		},
+		{
+			description: "Many",
+			given:       makeHeader(map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}}),
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}}),
+		},
+		{
+			description: "Authorization Header Omitted",
+			given:       makeHeader(map[string][]string{"authorization": {"secret"}}),
+			expected:    http.Header{},
+		},
+		{
+			description: "Authorization Header Omitted - Case Insensitive",
+			given:       makeHeader(map[string][]string{"AuThOrIzAtIoN": {"secret"}}),
+			expected:    http.Header{},
+		},
+		{
+			description: "Authorization Header Omitted + Other Keys",
+			given:       makeHeader(map[string][]string{"authorization": {"secret"}, "Key1": {"value1"}}),
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}}),
+		},
 	}
-	ext := makeExt(info)
-	if ext.Uri != info.request.Uri {
-		t.Errorf("The URI should be test.com. Got %s", ext.Uri)
+
+	for _, test := range testCases {
+		removeSensitiveHeaders(test.given)
+		assert.Equal(t, test.expected, test.given, test.description)
 	}
-	if ext.RequestBody != string(info.request.Body) {
-		t.Errorf("The request body should be empty. Got %s", ext.RequestBody)
-	}
-	if ext.ResponseBody != "" {
-		t.Errorf("The response body should be empty. Got %s", ext.ResponseBody)
-	}
-	if ext.Status != 0 {
-		t.Errorf("The Status code should be 0. Got %d", ext.Status)
-	}
-	assert.Equal(t, info.request.Headers, http.Header(ext.RequestHeaders), "The request headers should be \"header-1:value-1\"")
 }
 
-// TestSuccessfulResponseLogging makes sure that openrtb_ext works properly if the HTTP request is successful.
-func TestSuccessfulResponseLogging(t *testing.T) {
-	info := &httpCallInfo{
-		request: &adapters.RequestData{
-			Uri:  "test.com",
-			Body: []byte("request body"),
-			Headers: http.Header{
-				"header-1": []string{"value-1", "value-2"},
-			},
-		},
-		response: &adapters.ResponseData{
-			StatusCode: 200,
-			Body:       []byte("response body"),
-		},
+func makeHeader(v map[string][]string) http.Header {
+	h := http.Header{}
+	for key, values := range v {
+		for _, value := range values {
+			h.Add(key, value)
+		}
 	}
-	ext := makeExt(info)
-	if ext.Uri != info.request.Uri {
-		t.Errorf("The URI should be test.com. Got %s", ext.Uri)
-	}
-	if ext.RequestBody != string(info.request.Body) {
-		t.Errorf("The request body should be \"request body\". Got %s", ext.RequestBody)
-	}
-	if ext.ResponseBody != string(info.response.Body) {
-		t.Errorf("The response body should be \"response body\". Got %s", ext.ResponseBody)
-	}
-	if ext.Status != info.response.StatusCode {
-		t.Errorf("The Status code should be 0. Got %d", ext.Status)
-	}
-	assert.Equal(t, info.request.Headers, http.Header(ext.RequestHeaders), "The request headers should be \"%s\". Got %s", info.request.Headers, ext.RequestHeaders)
+	return h
 }
 
 func TestMobileNativeTypes(t *testing.T) {
