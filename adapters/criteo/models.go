@@ -178,12 +178,11 @@ func newCriteoGdprConsent(user *openrtb2.User, regsExt *openrtb_ext.ExtRegs) (cr
 }
 
 type criteoRequestSlot struct {
-	SlotID      string              `json:"slotid,omitempty"`
-	ImpID       string              `json:"impid,omitempty"`
-	ZoneID      *int64              `json:"zoneid,omitempty"`
-	NetworkID   *int64              `json:"networkid,omitempty"`
-	PlacementID string              `json:"placement,omitempty"`
-	Sizes       []criteoRequestSize `json:"sizes,omitempty"`
+	SlotID    string              `json:"slotid,omitempty"`
+	ImpID     string              `json:"impid,omitempty"`
+	ZoneID    *int64              `json:"zoneid,omitempty"`
+	NetworkID *int64              `json:"networkid,omitempty"`
+	Sizes     []criteoRequestSize `json:"sizes,omitempty"`
 }
 
 func newCriteoRequestSlots(slotIDGenerator slotIDGenerator, impressions []openrtb2.Imp) ([]criteoRequestSlot, []error) {
