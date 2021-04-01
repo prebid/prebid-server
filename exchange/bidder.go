@@ -167,6 +167,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
 			if accountDebugAllowed {
 				if bidder.config.DebugInfo.Allow {
+					// it's safe to mutate the request headers since from this point on the
+					// information is only used for debugging.
+					removeSensitiveHeaders(httpInfo.request.Headers)
+
 					seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
 				} else {
 					debugDisabledWarning := errortypes.Warning{
@@ -325,41 +329,29 @@ func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset
 	return nativeRequests.Asset{}, fmt.Errorf("Unable to find asset with ID:%d in the request", id)
 }
 
-// makeExt transforms information about the HTTP call into the contract class for the PBS response.
-func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
-	if httpInfo == nil {
-		return &openrtb_ext.ExtHttpCall{}
-	}
-
-	if httpInfo.err == nil {
-		if httpInfo.request != nil && httpInfo.response != nil {
-			return &openrtb_ext.ExtHttpCall{
-				Uri:            httpInfo.request.Uri,
-				RequestBody:    string(httpInfo.request.Body),
-				ResponseBody:   string(httpInfo.response.Body),
-				Status:         httpInfo.response.StatusCode,
-				RequestHeaders: filterHeader(httpInfo.request.Headers),
-			}
-		}
-	} else {
-		if httpInfo.request != nil {
-			return &openrtb_ext.ExtHttpCall{
-				Uri:            httpInfo.request.Uri,
-				RequestBody:    string(httpInfo.request.Body),
-				RequestHeaders: filterHeader(httpInfo.request.Headers),
-			}
-		}
-	}
-
-	return &openrtb_ext.ExtHttpCall{}
-}
-
 var authorizationHeader = http.CanonicalHeaderKey("authorization")
 
-func filterHeader(h http.Header) map[string][]string {
-	clone := h.Clone()
-	clone.Del(authorizationHeader)
-	return clone
+// removeSensitiveHeaders mutates the http header object to remove sensitive information.
+func removeSensitiveHeaders(h http.Header) {
+	h.Del(authorizationHeader)
+}
+
+// makeExt transforms information about the HTTP call into the contract class for the PBS response.
+func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
+	ext := &openrtb_ext.ExtHttpCall{}
+
+	if httpInfo != nil && httpInfo.request != nil {
+		ext.Uri = httpInfo.request.Uri
+		ext.RequestBody = string(httpInfo.request.Body)
+		ext.RequestHeaders = httpInfo.request.Headers
+
+		if httpInfo.err == nil && httpInfo.response != nil {
+			ext.ResponseBody = string(httpInfo.response.Body)
+			ext.Status = httpInfo.response.StatusCode
+		}
+	}
+
+	return ext
 }
 
 // doRequest makes a request, handles the response, and returns the data needed by the

@@ -72,7 +72,6 @@ func TestSingleBidder(t *testing.T) {
 	ctx = context.WithValue(ctx, DebugContextKey, true)
 
 	for _, test := range testCases {
-
 		mockBidderResponse := &adapters.BidderResponse{
 			Bids: []*adapters.TypedBid{
 				{
@@ -141,6 +140,48 @@ func TestSingleBidder(t *testing.T) {
 			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
 		}
 	}
+}
+
+func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
+	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+	requestHeaders.Add("Authorization", "anySecret")
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("requestJson"),
+			Headers: requestHeaders,
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{},
+		},
+	}
+
+	debugInfo := &config.DebugInfo{Allow: true}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugContextKey, true)
+
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	seatBid, errs := bidder.requestBid(ctx, &openrtb.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true)
+
+	expectedHttpCalls := []*openrtb_ext.ExtHttpCall{
+		{
+			Uri:            server.URL,
+			RequestBody:    "requestJson",
+			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}},
+			ResponseBody:   "responseJson",
+			Status:         200,
+		},
+	}
+
+	assert.Empty(t, errs)
+	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCalls)
 }
 
 // TestMultiBidder makes sure all the requests get sent, and the responses processed.
@@ -904,60 +945,38 @@ func TestMakeExt(t *testing.T) {
 			expected:    &openrtb_ext.ExtHttpCall{},
 		},
 		{
-			description: "Success",
-			given: &httpCallInfo{
-				err: nil,
-				request: &adapters.RequestData{
-					Uri:     "requestUri",
-					Body:    []byte("requestBody"),
-					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
-				},
-				response: &adapters.ResponseData{
-					Body:       []byte("responseBody"),
-					StatusCode: 999,
-				},
-			},
-			expected: &openrtb_ext.ExtHttpCall{
-				Uri:            "requestUri",
-				RequestBody:    "requestBody",
-				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
-				ResponseBody:   "responseBody",
-				Status:         999,
-			},
-		},
-		{
-			description: "Success - Authorization Header Removal",
-			given: &httpCallInfo{
-				err: nil,
-				request: &adapters.RequestData{
-					Uri:     "requestUri",
-					Body:    []byte("requestBody"),
-					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}, "Authorization": {"secret"}}),
-				},
-				response: &adapters.ResponseData{
-					Body:       []byte("responseBody"),
-					StatusCode: 999,
-				},
-			},
-			expected: &openrtb_ext.ExtHttpCall{
-				Uri:            "requestUri",
-				RequestBody:    "requestBody",
-				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
-				ResponseBody:   "responseBody",
-				Status:         999,
-			},
-		},
-		{
-			description: "Success - Nil Request & Nil Response ",
+			description: "Empty",
 			given: &httpCallInfo{
 				err:      nil,
-				request:  nil,
 				response: nil,
+				request:  nil,
 			},
 			expected: &openrtb_ext.ExtHttpCall{},
 		},
 		{
-			description: "Error",
+			description: "Request & Response - No Error",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
+				ResponseBody:   "responseBody",
+				Status:         999,
+			},
+		},
+		{
+			description: "Request & Response - Error",
 			given: &httpCallInfo{
 				err: errors.New("error"),
 				request: &adapters.RequestData{
@@ -977,9 +996,9 @@ func TestMakeExt(t *testing.T) {
 			},
 		},
 		{
-			description: "Error - Nil Response",
+			description: "Request Only",
 			given: &httpCallInfo{
-				err: errors.New("error"),
+				err: nil,
 				request: &adapters.RequestData{
 					Uri:     "requestUri",
 					Body:    []byte("requestBody"),
@@ -992,13 +1011,14 @@ func TestMakeExt(t *testing.T) {
 				RequestBody:    "requestBody",
 				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
 			},
-		},
-		{
-			description: "Error - Nil Request & Response",
+		}, {
+			description: "Response Only",
 			given: &httpCallInfo{
-				err:      errors.New("error"),
-				request:  nil,
-				response: nil,
+				err: nil,
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
 			},
 			expected: &openrtb_ext.ExtHttpCall{},
 		},
@@ -1010,11 +1030,11 @@ func TestMakeExt(t *testing.T) {
 	}
 }
 
-func TestFilterHeader(t *testing.T) {
+func TestRemoveSensitiveHeaders(t *testing.T) {
 	testCases := []struct {
 		description string
 		given       http.Header
-		expected    map[string][]string
+		expected    http.Header
 	}{
 		{
 			description: "Nil",
@@ -1029,33 +1049,33 @@ func TestFilterHeader(t *testing.T) {
 		{
 			description: "One",
 			given:       makeHeader(map[string][]string{"Key1": {"value1"}}),
-			expected:    map[string][]string{"Key1": {"value1"}},
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}}),
 		},
 		{
 			description: "Many",
 			given:       makeHeader(map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}}),
-			expected:    map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}},
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}}),
 		},
 		{
 			description: "Authorization Header Omitted",
 			given:       makeHeader(map[string][]string{"authorization": {"secret"}}),
-			expected:    map[string][]string{},
+			expected:    http.Header{},
 		},
 		{
 			description: "Authorization Header Omitted - Case Insensitive",
 			given:       makeHeader(map[string][]string{"AuThOrIzAtIoN": {"secret"}}),
-			expected:    map[string][]string{},
+			expected:    http.Header{},
 		},
 		{
 			description: "Authorization Header Omitted + Other Keys",
 			given:       makeHeader(map[string][]string{"authorization": {"secret"}, "Key1": {"value1"}}),
-			expected:    map[string][]string{"Key1": {"value1"}},
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}}),
 		},
 	}
 
 	for _, test := range testCases {
-		result := filterHeader(test.given)
-		assert.Equal(t, test.expected, result, test.description)
+		removeSensitiveHeaders(test.given)
+		assert.Equal(t, test.expected, test.given, test.description)
 	}
 }
 
