@@ -1,4 +1,8 @@
 {
+  "bidIDGenerator": {
+    "GenerateBidID": true,
+    "ReturnError": true
+  },
   "incomingRequest": {
     "ortbRequest": {
       "id": "some-request-id",
@@ -151,11 +155,7 @@
             "message": "Error generating bid.ext.prebid.bidid"
           }
         ]
-      },
-      "responsetimemillis": {
-        "appnexus": 0
       }
-
     }
   }
 }

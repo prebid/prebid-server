@@ -1,4 +1,8 @@
 {
+  "bidIDGenerator": {
+    "GenerateBidID": true,
+    "ReturnError": false
+  },
   "incomingRequest": {
     "ortbRequest": {
       "id": "some-request-id",
@@ -144,9 +148,6 @@
             }
           }
         }
-      },
-      "responsetimemillis": {
-        "appnexus": 0
       }
     }
   }

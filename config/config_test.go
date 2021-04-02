@@ -231,6 +231,7 @@ certificates_file: /etc/ssl/cert.pem
 request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
     ipv6_private_networks: ["1111::/16", "2222::/16"]
+generate_bid_id: true
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -416,7 +417,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "request_validation.ipv4_private_networks", cfg.RequestValidation.IPv4PrivateNetworks[0], "1.1.1.0/24")
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[0], "1111::/16")
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
-	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
+	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {

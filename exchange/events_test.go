@@ -80,7 +80,7 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 		enabledForAccount bool
 		enabledForRequest bool
 		bidType           openrtb_ext.BidType
-		generateBidId     string
+		generatedBidId    string
 	}
 	tests := []struct {
 		name      string
@@ -90,43 +90,43 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 	}{
 		{
 			name:      "banner: events enabled for request, disabled for account",
-			args:      args{enabledForAccount: false, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner, generateBidId: ""},
+			args:      args{enabledForAccount: false, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner, generatedBidId: ""},
 			jsonBytes: []byte(`{"ID": "something"}`),
 			want:      []byte(`{"ID": "something", "wurl": "http://localhost/event?t=win&b=BID-1&a=123456&bidder=openx&ts=1234567890"}`),
 		},
 		{
 			name:      "banner: events enabled for account, disabled for request",
-			args:      args{enabledForAccount: true, enabledForRequest: false, bidType: openrtb_ext.BidTypeBanner, generateBidId: ""},
+			args:      args{enabledForAccount: true, enabledForRequest: false, bidType: openrtb_ext.BidTypeBanner, generatedBidId: ""},
 			jsonBytes: []byte(`{"ID": "something"}`),
 			want:      []byte(`{"ID": "something", "wurl": "http://localhost/event?t=win&b=BID-1&a=123456&bidder=openx&ts=1234567890"}`),
 		},
 		{
 			name:      "banner: events disabled for account and request",
-			args:      args{enabledForAccount: false, enabledForRequest: false, bidType: openrtb_ext.BidTypeBanner, generateBidId: ""},
+			args:      args{enabledForAccount: false, enabledForRequest: false, bidType: openrtb_ext.BidTypeBanner, generatedBidId: ""},
 			jsonBytes: []byte(`{"ID": "something"}`),
 			want:      []byte(`{"ID": "something"}`),
 		},
 		{
 			name:      "video: events disabled for account and request",
-			args:      args{enabledForAccount: false, enabledForRequest: false, bidType: openrtb_ext.BidTypeVideo, generateBidId: ""},
+			args:      args{enabledForAccount: false, enabledForRequest: false, bidType: openrtb_ext.BidTypeVideo, generatedBidId: ""},
 			jsonBytes: []byte(`{"ID": "something"}`),
 			want:      []byte(`{"ID": "something"}`),
 		},
 		{
 			name:      "video: events enabled for account and request",
-			args:      args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeVideo, generateBidId: ""},
+			args:      args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeVideo, generatedBidId: ""},
 			jsonBytes: []byte(`{"ID": "something"}`),
 			want:      []byte(`{"ID": "something"}`),
 		},
 		{
 			name:      "banner: broken json expected to fail patching",
-			args:      args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner, generateBidId: ""},
+			args:      args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner, generatedBidId: ""},
 			jsonBytes: []byte(`broken json`),
 			want:      nil,
 		},
 		{
 			name:      "banner: generate bid id enabled",
-			args:      args{enabledForAccount: false, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner, generateBidId: "randomID"},
+			args:      args{enabledForAccount: false, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner, generatedBidId: "randomID"},
 			jsonBytes: []byte(`{"ID": "something"}`),
 			want:      []byte(`{"ID": "something", "wurl":"http://localhost/event?t=win&b=randomID&a=123456&bidder=openx&ts=1234567890"}`),
 		},
@@ -140,7 +140,7 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 				auctionTimestampMs: 1234567890,
 				externalURL:        "http://localhost",
 			}
-			bid := &pbsOrtbBid{bid: &openrtb2.Bid{ID: "BID-1"}, bidType: tt.args.bidType, generatedBidID: tt.args.generateBidId}
+			bid := &pbsOrtbBid{bid: &openrtb2.Bid{ID: "BID-1"}, bidType: tt.args.bidType, generatedBidID: tt.args.generatedBidId}
 			modifiedJSON, err := evData.modifyBidJSON(bid, openrtb_ext.BidderOpenx, tt.jsonBytes)
 			if tt.want != nil {
 				assert.NoError(t, err, "Unexpected error")

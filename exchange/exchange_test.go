@@ -1442,7 +1442,7 @@ func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	return json.RawMessage(toReturn)
 }
 
-func NoTestPanicRecoveryHighLevel(t *testing.T) {
+func TestPanicRecoveryHighLevel(t *testing.T) {
 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
 	}
@@ -1587,53 +1587,6 @@ func TestExchangeJSON(t *testing.T) {
 	}
 }
 
-func TestValidBidID(t *testing.T) {
-	fileName := "./test/bidid/valid-bid-id.json"
-	bid, spec := testBidIdHelper(t, fileName, false)
-	diffJson(t, "Bid Ext info modified", bid.SeatBid[0].Bid[0].Ext, spec.Response.Bids.SeatBid[0].Bid[0].Ext)
-}
-
-func TestInvalidBidID(t *testing.T) {
-	fileName := "./test/bidid/invalid-bid-id.json"
-	bid, spec := testBidIdHelper(t, fileName, true)
-	diffJson(t, "bid.SeatBid[0].Bid[0].Ext modified", bid.SeatBid[0].Bid[0].Ext, spec.Response.Bids.SeatBid[0].Bid[0].Ext)
-	diffJson(t, "bid.Ext info modified", bid.Ext, spec.Response.Ext)
-}
-
-func testBidIdHelper(t *testing.T, fileName string, bidIDError bool) (*openrtb2.BidResponse, *exchangeSpec) {
-	spec, err := loadFile(fileName)
-	if err != nil {
-		t.Fatalf("%s: Failed to load file ", fileName)
-	}
-	aliases, errs := parseAliases(&spec.IncomingRequest.OrtbRequest)
-	if len(errs) != 0 {
-		t.Fatalf("%s: Failed to parse aliases", fileName)
-	}
-	bidIdGenerator := &mockBidIDGenerator{true, bidIDError}
-	ex := newExchangeForTests(t, fileName, spec.OutgoingRequests, aliases, config.Privacy{}, bidIdGenerator)
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugContextKey, true)
-	auctionRequest := AuctionRequest{
-		BidRequest: &spec.IncomingRequest.OrtbRequest,
-		Account: config.Account{
-			ID:            "testaccount",
-			EventsEnabled: spec.EventsEnabled,
-			DebugAllow:    true,
-		},
-		UserSyncs: mockIdFetcher(spec.IncomingRequest.Usersyncs),
-	}
-	debugLog := &DebugLog{}
-	if spec.DebugLog != nil {
-		*debugLog = *spec.DebugLog
-		debugLog.Regexp = regexp.MustCompile(`[<>]`)
-	}
-	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
-	if err != nil {
-		t.Fatalf("%s: Failed to execute HoldAuction for file ", fileName)
-	}
-	return bid, spec
-}
-
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadFile(filename string) (*exchangeSpec, error) {
 	specData, err := ioutil.ReadFile(filename)
@@ -1674,7 +1627,10 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			EEACountriesMap:     eeac,
 		},
 	}
-	bidIdGenerator := &mockBidIDGenerator{false, false}
+	bidIdGenerator := &mockBidIDGenerator{}
+	if spec.BidIDGenerator != nil {
+		*bidIdGenerator = *spec.BidIDGenerator
+	}
 	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator)
 	biddersInAuction := findBiddersInAuction(t, filename, &spec.IncomingRequest.OrtbRequest)
 	debugLog := &DebugLog{}
@@ -1826,17 +1782,17 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 }
 
 type mockBidIDGenerator struct {
-	enabled     bool
-	returnError bool
+	GenerateBidID bool
+	ReturnError   bool
 }
 
 func (big *mockBidIDGenerator) Enabled() bool {
-	return big.enabled
+	return big.GenerateBidID
 }
 
 func (big *mockBidIDGenerator) New() (string, error) {
 
-	if big.returnError {
+	if big.ReturnError {
 		err := errors.New("Test error generating bid.ext.prebid.bidid")
 		return "", err
 	}
@@ -2860,6 +2816,7 @@ type exchangeSpec struct {
 	DebugLog          *DebugLog              `json:"debuglog,omitempty"`
 	EventsEnabled     bool                   `json:"events_enabled,omitempty"`
 	StartTime         int64                  `json:"start_time_ms,omitempty"`
+	BidIDGenerator    *mockBidIDGenerator    `json:"bidIDGenerator,omitempty"`
 }
 
 type exchangeRequest struct {
