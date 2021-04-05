@@ -136,7 +136,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 	}
 
 	// #1712 add Sec-GPC to the headers if set in original request
-	if (reqInfo.SecGPCFlag == "1") {
+	if reqInfo.SecGPCFlag == "1" {
 		for i := 0; i < len(reqData); i++ {
 			reqData[i].Headers.Add("Sec-GPC", reqInfo.SecGPCFlag)
 		}		
