@@ -1029,11 +1029,11 @@ func TestMakeExt(t *testing.T) {
 	}
 }
 
-func TestRemoveSensitiveHeaders(t *testing.T) {
+func TestFilterHeader(t *testing.T) {
 	testCases := []struct {
 		description string
 		given       http.Header
-		expected    http.Header
+		expected    map[string][]string
 	}{
 		{
 			description: "Nil",
@@ -1048,33 +1048,33 @@ func TestRemoveSensitiveHeaders(t *testing.T) {
 		{
 			description: "One",
 			given:       makeHeader(map[string][]string{"Key1": {"value1"}}),
-			expected:    makeHeader(map[string][]string{"Key1": {"value1"}}),
+			expected:    map[string][]string{"Key1": {"value1"}},
 		},
 		{
 			description: "Many",
 			given:       makeHeader(map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}}),
-			expected:    makeHeader(map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}}),
+			expected:    map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}},
 		},
 		{
 			description: "Authorization Header Omitted",
 			given:       makeHeader(map[string][]string{"authorization": {"secret"}}),
-			expected:    http.Header{},
+			expected:    map[string][]string{},
 		},
 		{
 			description: "Authorization Header Omitted - Case Insensitive",
 			given:       makeHeader(map[string][]string{"AuThOrIzAtIoN": {"secret"}}),
-			expected:    http.Header{},
+			expected:    map[string][]string{},
 		},
 		{
 			description: "Authorization Header Omitted + Other Keys",
 			given:       makeHeader(map[string][]string{"authorization": {"secret"}, "Key1": {"value1"}}),
-			expected:    makeHeader(map[string][]string{"Key1": {"value1"}}),
+			expected:    map[string][]string{"Key1": {"value1"}},
 		},
 	}
 
 	for _, test := range testCases {
-		removeSensitiveHeaders(test.given)
-		assert.Equal(t, test.expected, test.given, test.description)
+		result := filterHeader(test.given)
+		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
