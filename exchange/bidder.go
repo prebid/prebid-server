@@ -139,7 +139,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 	if reqInfo.SecGPCFlag == "1" {
 		for i := 0; i < len(reqData); i++ {
 			reqData[i].Headers.Add("Sec-GPC", reqInfo.SecGPCFlag)
-		}		
+		}
 	}
 
 	// Make any HTTP requests in parallel.

@@ -183,7 +183,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	// #1712
-	secgpc := r.Header.Get("Sec-GPC");
+	secgpc := r.Header.Get("Sec-GPC")
 
 	auctionRequest := exchange.AuctionRequest{
 		BidRequest:   req,

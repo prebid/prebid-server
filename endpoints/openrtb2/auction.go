@@ -174,8 +174,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	// #1712
-	secgpc := r.Header.Get("Sec-GPC");
-		
+	secgpc := r.Header.Get("Sec-GPC")
+
 	auctionRequest := exchange.AuctionRequest{
 		BidRequest:   req,
 		Account:      *account,
