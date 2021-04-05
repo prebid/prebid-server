@@ -135,6 +135,13 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		return nil, errs
 	}
 
+	// #1712 add Sec-GPC to the headers if set in original request
+	if (len(reqInfo.SecGPCFlag) > 0) {
+		for i := 0; i < len(reqData); i++ {
+			reqData[i].Headers.Add("Sec-GPC", reqInfo.SecGPCFlag)
+		}		
+	}
+
 	// Make any HTTP requests in parallel.
 	// If the bidder only needs to make one, save some cycles by just using the current one.
 	responseChannel := make(chan *httpCallInfo, len(reqData))

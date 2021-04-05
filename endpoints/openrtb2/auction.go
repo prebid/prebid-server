@@ -173,6 +173,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
+	// #1712
+	secgpc := r.Header.Get("Sec-GPC");
+		
 	auctionRequest := exchange.AuctionRequest{
 		BidRequest:   req,
 		Account:      *account,
@@ -181,6 +184,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		StartTime:    start,
 		LegacyLabels: labels,
 		Warnings:     warnings,
+		SecGPCFlag:   secgpc,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

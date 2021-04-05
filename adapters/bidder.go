@@ -137,6 +137,7 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 
 type ExtraRequestInfo struct {
 	PbsEntryPoint metrics.RequestType
+	SecGPCFlag    string
 }
 
 type Builder func(openrtb_ext.BidderName, config.Adapter) (Bidder, error)

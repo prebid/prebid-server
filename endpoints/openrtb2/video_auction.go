@@ -274,6 +274,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// #1712
+	secgpc := r.Header.Get("Sec-GPC");	
+
 	auctionRequest := exchange.AuctionRequest{
 		BidRequest:   bidReq,
 		Account:      *account,
@@ -281,6 +284,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		RequestType:  labels.RType,
 		StartTime:    start,
 		LegacyLabels: labels,
+		SecGPCFlag:   secgpc,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
