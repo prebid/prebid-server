@@ -953,13 +953,13 @@ func TestMakeExt(t *testing.T) {
 			expected: &openrtb_ext.ExtHttpCall{},
 		},
 		{
-			description: "Request & Response - No Error",
+			description: "Request & Response - No Error with Authorization removal",
 			given: &httpCallInfo{
 				err: nil,
 				request: &adapters.RequestData{
 					Uri:     "requestUri",
 					Body:    []byte("requestBody"),
-					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}, "Authorization": {"secret"}}),
 				},
 				response: &adapters.ResponseData{
 					Body:       []byte("responseBody"),
@@ -970,6 +970,28 @@ func TestMakeExt(t *testing.T) {
 				Uri:            "requestUri",
 				RequestBody:    "requestBody",
 				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
+				ResponseBody:   "responseBody",
+				Status:         999,
+			},
+		},
+		{
+			description: "Request & Response - No Error with nil header",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: nil,
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: nil,
 				ResponseBody:   "responseBody",
 				Status:         999,
 			},
