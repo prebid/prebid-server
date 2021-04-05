@@ -102,13 +102,13 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 // AuctionRequest holds the bid request for the auction
 // and all other information needed to process that request
 type AuctionRequest struct {
-	BidRequest  *openrtb2.BidRequest
-	Account     config.Account
-	UserSyncs   IdFetcher
-	RequestType metrics.RequestType
-	StartTime   time.Time
-	Warnings    []error
-	SecGPCFlag  string
+	BidRequest                 *openrtb2.BidRequest
+	Account                    config.Account
+	UserSyncs                  IdFetcher
+	RequestType                metrics.RequestType
+	StartTime                  time.Time
+	Warnings                   []error
+	GlobalPrivacyControlHeader string
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -173,7 +173,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.currencyConverter.Rates()
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.SecGPCFlag)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader)
 
 	var auc *auction
 	var cacheErrs []error
@@ -371,7 +371,8 @@ func (e *exchange) getAllBids(
 	bidderRequests []BidderRequest,
 	bidAdjustments map[string]float64,
 	conversions currency.Conversions,
-	accountDebugAllowed bool, secGPCFlag string) (
+	accountDebugAllowed bool,
+	globalPrivacyControlHeader string) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -402,7 +403,7 @@ func (e *exchange) getAllBids(
 			}
 			var reqInfo adapters.ExtraRequestInfo
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
-			reqInfo.SecGPCFlag = secGPCFlag
+			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed)
 
 			// Add in time reporting
