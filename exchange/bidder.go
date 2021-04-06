@@ -327,7 +327,7 @@ func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset
 
 var authorizationHeader = http.CanonicalHeaderKey("authorization")
 
-func filterHeader(h http.Header) map[string][]string {
+func filterHeader(h http.Header) http.Header {
 	clone := h.Clone()
 	clone.Del(authorizationHeader)
 	return clone

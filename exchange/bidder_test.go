@@ -1077,7 +1077,7 @@ func TestFilterHeader(t *testing.T) {
 	testCases := []struct {
 		description string
 		given       http.Header
-		expected    map[string][]string
+		expected    http.Header
 	}{
 		{
 			description: "Nil",
@@ -1087,32 +1087,32 @@ func TestFilterHeader(t *testing.T) {
 		{
 			description: "Empty",
 			given:       http.Header{},
-			expected:    map[string][]string{},
+			expected:    http.Header{},
 		},
 		{
 			description: "One",
 			given:       makeHeader(map[string][]string{"Key1": {"value1"}}),
-			expected:    map[string][]string{"Key1": {"value1"}},
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}}),
 		},
 		{
 			description: "Many",
 			given:       makeHeader(map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}}),
-			expected:    map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}},
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}}),
 		},
 		{
 			description: "Authorization Header Omitted",
 			given:       makeHeader(map[string][]string{"authorization": {"secret"}}),
-			expected:    map[string][]string{},
+			expected:    http.Header{},
 		},
 		{
 			description: "Authorization Header Omitted - Case Insensitive",
 			given:       makeHeader(map[string][]string{"AuThOrIzAtIoN": {"secret"}}),
-			expected:    map[string][]string{},
+			expected:    http.Header{},
 		},
 		{
 			description: "Authorization Header Omitted + Other Keys",
 			given:       makeHeader(map[string][]string{"authorization": {"secret"}, "Key1": {"value1"}}),
-			expected:    map[string][]string{"Key1": {"value1"}},
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}}),
 		},
 	}
 
