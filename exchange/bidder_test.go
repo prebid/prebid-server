@@ -975,6 +975,50 @@ func TestMakeExt(t *testing.T) {
 			},
 		},
 		{
+			description: "Request & Response - No Error with Authorization removal",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}, "Authorization": {"secret"}}),
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
+				ResponseBody:   "responseBody",
+				Status:         999,
+			},
+		},
+		{
+			description: "Request & Response - No Error with nil header",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: nil,
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: nil,
+				ResponseBody:   "responseBody",
+				Status:         999,
+			},
+		},
+		{
 			description: "Request & Response - Error",
 			given: &httpCallInfo{
 				err: errors.New("error"),
@@ -1029,7 +1073,7 @@ func TestMakeExt(t *testing.T) {
 	}
 }
 
-func TestRemoveSensitiveHeaders(t *testing.T) {
+func TestFilterHeader(t *testing.T) {
 	testCases := []struct {
 		description string
 		given       http.Header
@@ -1043,7 +1087,7 @@ func TestRemoveSensitiveHeaders(t *testing.T) {
 		{
 			description: "Empty",
 			given:       http.Header{},
-			expected:    map[string][]string{},
+			expected:    http.Header{},
 		},
 		{
 			description: "One",
@@ -1073,8 +1117,8 @@ func TestRemoveSensitiveHeaders(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		removeSensitiveHeaders(test.given)
-		assert.Equal(t, test.expected, test.given, test.description)
+		result := filterHeader(test.given)
+		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 

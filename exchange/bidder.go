@@ -167,10 +167,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
 			if accountDebugAllowed {
 				if bidder.config.DebugInfo.Allow {
-					// it's safe to mutate the request headers since from this point on the
-					// information is only used for debugging.
-					removeSensitiveHeaders(httpInfo.request.Headers)
-
 					seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
 				} else {
 					debugDisabledWarning := errortypes.Warning{
@@ -331,9 +327,10 @@ func getAssetByID(id int64, assets []nativeRequests.Asset) (nativeRequests.Asset
 
 var authorizationHeader = http.CanonicalHeaderKey("authorization")
 
-// removeSensitiveHeaders mutates the http header object to remove sensitive information.
-func removeSensitiveHeaders(h http.Header) {
-	h.Del(authorizationHeader)
+func filterHeader(h http.Header) http.Header {
+	clone := h.Clone()
+	clone.Del(authorizationHeader)
+	return clone
 }
 
 // makeExt transforms information about the HTTP call into the contract class for the PBS response.
@@ -343,7 +340,7 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 	if httpInfo != nil && httpInfo.request != nil {
 		ext.Uri = httpInfo.request.Uri
 		ext.RequestBody = string(httpInfo.request.Body)
-		ext.RequestHeaders = httpInfo.request.Headers
+		ext.RequestHeaders = filterHeader(httpInfo.request.Headers)
 
 		if httpInfo.err == nil && httpInfo.response != nil {
 			ext.ResponseBody = string(httpInfo.response.Body)
