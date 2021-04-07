@@ -17,17 +17,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
-	"github.com/prebid/prebid-server/stored_requests"
-
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/mxmCherry/openrtb/v14/native1"
+	nativeRequests "github.com/mxmCherry/openrtb/v14/native1/request"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/stretchr/testify/assert"
@@ -2143,6 +2144,123 @@ func TestAuctionWarnings(t *testing.T) {
 	assert.Equal(t, expectedMessage, actualWarning.Message, "Warning message is incorrect")
 
 	assert.Equal(t, errortypes.InvalidPrivacyConsentWarningCode, actualWarning.WarningCode, "Warning code is incorrect")
+}
+
+func TestValidateNativeEventTracker(t *testing.T) {
+	impIndex := 4
+	eventIndex := 8
+
+	testCases := []struct {
+		description   string
+		givenEvent    nativeRequests.EventTracker
+		expectedError string
+	}{
+		{
+			description: "Valid",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   native1.EventTypeImpression,
+				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Event - Valid - Exchange Specific - Boundary",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   500,
+				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Event - Valid - Exchange Specific - Boundary + 1",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   501,
+				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Event - Invalid - Negative",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   -1,
+				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage},
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+		{
+			description: "Event - Invalid - Boundary + 1",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   5, // Known values are currently 1-4
+				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage},
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+		{
+			description: "Methods - Valid - Many",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   native1.EventTypeImpression,
+				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage, native1.EventTrackingMethodJS},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Methods - Invalid - Empty",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   native1.EventTypeImpression,
+				Methods: []native1.EventTrackingMethod{},
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].method is required. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+		{
+			description: "Methods - Valid - Exchange Specific - Boundary",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   native1.EventTypeImpression,
+				Methods: []native1.EventTrackingMethod{500},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Methods - Valid - Exchange Specific - Boundary + 1",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   native1.EventTypeImpression,
+				Methods: []native1.EventTrackingMethod{501},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Methods - Invalid - Negative",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   native1.EventTypeImpression,
+				Methods: []native1.EventTrackingMethod{-1},
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[0] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+		{
+			description: "Methods - Invalid - Boundary + 1",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   native1.EventTypeImpression,
+				Methods: []native1.EventTrackingMethod{3}, // Known values are currently 1-2
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[0] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+		{
+			description: "Methods - Mixed",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   native1.EventTypeImpression,
+				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage, -1},
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[1] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+	}
+
+	for _, test := range testCases {
+		err := validateNativeEventTracker(test.givenEvent, impIndex, eventIndex)
+		if test.expectedError == "" {
+			assert.NoError(t, err, test.description)
+		} else {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		}
+	}
 }
 
 // warningsCheckExchange is a well-behaved exchange which stores all incoming warnings.
