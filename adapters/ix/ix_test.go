@@ -723,7 +723,7 @@ func TestIxMaxRequests(t *testing.T) {
 	}
 }
 
-func TestIxMakeBidsWithCategory(t *testing.T) {
+func TestIxMakeBidsWithCategoryDuration(t *testing.T) {
 	bidder := &IxAdapter{}
 
 	mockedReq := &openrtb2.BidRequest{
@@ -760,8 +760,8 @@ func TestIxMakeBidsWithCategory(t *testing.T) {
 					`{
 						"prebid": {
 							"video": {
-							"duration": 60,
-							"primary_category": "IAB18-1"
+								"duration": 60,
+								"primary_category": "IAB18-1"
 							}
 						}
 					}`,
