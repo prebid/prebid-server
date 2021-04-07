@@ -2146,6 +2146,56 @@ func TestAuctionWarnings(t *testing.T) {
 	assert.Equal(t, errortypes.InvalidPrivacyConsentWarningCode, actualWarning.WarningCode, "Warning code is incorrect")
 }
 
+func TestValidateNativePlacementType(t *testing.T) {
+	impIndex := 4
+
+	testCases := []struct {
+		description        string
+		givenPlacementType native1.PlacementType
+		expectedError      string
+	}{
+		{
+			description:        "Valid - Not Specified",
+			givenPlacementType: 0,
+			expectedError:      "",
+		},
+		{
+			description:        "Valid - Known Value",
+			givenPlacementType: native1.PlacementTypeFeed,
+			expectedError:      "",
+		},
+		{
+			description:        "Valid - Exchange Specific - Boundary",
+			givenPlacementType: 500,
+			expectedError:      "",
+		},
+		{
+			description:        "Valid - Exchange Specific - Boundary + 1",
+			givenPlacementType: 501,
+			expectedError:      "",
+		},
+		{
+			description:        "Invalid - Negative",
+			givenPlacementType: -1,
+			expectedError:      "request.imp[4].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
+		},
+		{
+			description:        "Invalid - Boundary + 1",
+			givenPlacementType: 5, // Known values are currently 1-4
+			expectedError:      "request.imp[4].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
+		},
+	}
+
+	for _, test := range testCases {
+		err := validateNativePlacementType(test.givenPlacementType, impIndex)
+		if test.expectedError == "" {
+			assert.NoError(t, err, test.description)
+		} else {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		}
+	}
+}
+
 func TestValidateNativeEventTracker(t *testing.T) {
 	impIndex := 4
 	eventIndex := 8

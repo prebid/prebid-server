@@ -697,7 +697,7 @@ func validateNativePlacementType(pt native1.PlacementType, impIndex int) error {
 		// Placement Type is only reccomended, not required.
 		return nil
 	}
-	if pt < native1.PlacementTypeFeed || pt > native1.PlacementTypeRecommendationWidget {
+	if pt < native1.PlacementTypeFeed || (pt > native1.PlacementTypeRecommendationWidget && pt < 500) {
 		return fmt.Errorf("request.imp[%d].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40", impIndex)
 	}
 	return nil
