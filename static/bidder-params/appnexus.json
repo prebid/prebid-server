@@ -69,7 +69,7 @@
     },
     "adPodId": {
       "type": "boolean",
-      "description": "Boolean to signal AppNexus add ad pod id to each request"
+      "description": "Boolean to signal AppNexus to add ad pod id to each request"
     },
     "private_sizes" :{
       "type": "array",
