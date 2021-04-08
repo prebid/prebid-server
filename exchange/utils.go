@@ -125,7 +125,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		if gdprEnforced {
 			weakVendorEnforcement := false
 			if account != nil {
-				for _, vendor := range account.GDPR.WeakEnforcementVendors {
+				for _, vendor := range account.GDPR.BasicEnforcementVendors {
 					if vendor == string(bidderRequest.BidderCoreName) {
 						weakVendorEnforcement = true
 						break
