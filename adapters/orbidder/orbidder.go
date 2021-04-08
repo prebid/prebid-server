@@ -110,7 +110,6 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
-
 	for _, seatBid := range bidResp.SeatBid {
 		for _, bid := range seatBid.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -119,6 +118,8 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 			})
 		}
 	}
+	// orbidder only supports EUR
+	bidResponse.Currency = "EUR"
 	return bidResponse, nil
 }
 
