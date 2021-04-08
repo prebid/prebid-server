@@ -1782,8 +1782,8 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 }
 
 type mockBidIDGenerator struct {
-	GenerateBidID bool `json:"GenerateBidID"`
-	ReturnError   bool `json:"ReturnError"`
+	GenerateBidID bool `json:"generateBidID"`
+	ReturnError   bool `json:"returnError"`
 }
 
 func (big *mockBidIDGenerator) Enabled() bool {

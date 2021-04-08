@@ -2,8 +2,8 @@
   "events_enabled": false,
   "start_time_ms": 1234567890,
   "bidIDGenerator": {
-    "GenerateBidID": true,
-    "ReturnError": false
+    "generateBidID": true,
+    "returnError": false
   },
   "incomingRequest": {
     "ortbRequest": {

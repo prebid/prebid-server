@@ -1,7 +1,7 @@
 {
   "bidIDGenerator": {
-    "GenerateBidID": true,
-    "ReturnError": true
+    "generateBidID": true,
+    "returnError": true
   },
   "incomingRequest": {
     "ortbRequest": {
