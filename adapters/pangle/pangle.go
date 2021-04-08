@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -41,7 +41,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 
 /* MakeRequests */
 
-func getAdType(imp openrtb.Imp, parsedImpExt *wrappedExtImpBidder) int {
+func getAdType(imp openrtb2.Imp, parsedImpExt *wrappedExtImpBidder) int {
 	// video
 	if imp.Video != nil {
 		if parsedImpExt != nil && parsedImpExt.Prebid != nil && parsedImpExt.Prebid.IsRewardedInventory == 1 {
@@ -67,7 +67,7 @@ func getAdType(imp openrtb.Imp, parsedImpExt *wrappedExtImpBidder) int {
 	return -1
 }
 
-func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errs []error
 
@@ -98,7 +98,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 			continue
 		}
 
-		requestCopy.Imp = []openrtb.Imp{imp}
+		requestCopy.Imp = []openrtb2.Imp{imp}
 		requestJSON, err := json.Marshal(requestCopy)
 		if err != nil {
 			errs = append(errs, err)
@@ -122,7 +122,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 
 /* MakeBids */
 
-func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid == nil {
 		return "", fmt.Errorf("the bid request object is nil")
 	}
@@ -150,7 +150,7 @@ func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
 	return "", fmt.Errorf("unrecognized adtype in response")
 }
 
-func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -169,7 +169,7 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.Re
 		return nil, []error{err}
 	}
 
-	var response openrtb.BidResponse
+	var response openrtb2.BidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}

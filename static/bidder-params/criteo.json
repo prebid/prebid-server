@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Criteo adapter params",
+    "description": "The schema to validate Criteo specific params accepted by Criteo adapter",
+    "type": "object",
+    "properties": {
+        "zoneid": {
+            "type": "number",
+            "description": "Impression's zone ID.",
+            "minimum": 0
+        },
+        "networkid": {
+            "type": "number",
+            "description": "Impression's network ID.",
+            "minimum": 0
+        }
+    },
+    "anyOf": [
+        {
+            "required": [
+                "zoneid"
+            ]
+        },
+        {
+            "required": [
+                "networkid"
+            ]
+        }
+    ]
+}

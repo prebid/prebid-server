@@ -29,12 +29,14 @@ import (
 	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/beintoo"
 	"github.com/prebid/prebid-server/adapters/between"
+	"github.com/prebid/prebid-server/adapters/bidmachine"
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/colossus"
 	"github.com/prebid/prebid-server/adapters/connectad"
 	"github.com/prebid/prebid-server/adapters/consumable"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/cpmstar"
+	"github.com/prebid/prebid-server/adapters/criteo"
 	"github.com/prebid/prebid-server/adapters/datablocks"
 	"github.com/prebid/prebid-server/adapters/decenterads"
 	"github.com/prebid/prebid-server/adapters/deepintent"
@@ -137,12 +139,14 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBeachfront:       beachfront.Builder,
 		openrtb_ext.BidderBeintoo:          beintoo.Builder,
 		openrtb_ext.BidderBetween:          between.Builder,
+		openrtb_ext.BidderBidmachine:       bidmachine.Builder,
 		openrtb_ext.BidderBrightroll:       brightroll.Builder,
 		openrtb_ext.BidderColossus:         colossus.Builder,
 		openrtb_ext.BidderConnectAd:        connectad.Builder,
 		openrtb_ext.BidderConsumable:       consumable.Builder,
 		openrtb_ext.BidderConversant:       conversant.Builder,
 		openrtb_ext.BidderCpmstar:          cpmstar.Builder,
+		openrtb_ext.BidderCriteo:           criteo.Builder,
 		openrtb_ext.BidderDatablocks:       datablocks.Builder,
 		openrtb_ext.BidderDecenterAds:      decenterads.Builder,
 		openrtb_ext.BidderDeepintent:       deepintent.Builder,

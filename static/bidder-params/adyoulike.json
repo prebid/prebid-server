@@ -26,7 +26,7 @@
     },
     "debug": {
       "type": "string",
-      "description": "Abitrary id used for debug purpose"
+      "description": "Arbitrary id used for debug purpose"
     }
   },
   "required": ["placement"]

@@ -100,12 +100,14 @@ const (
 	BidderBeachfront       BidderName = "beachfront"
 	BidderBeintoo          BidderName = "beintoo"
 	BidderBetween          BidderName = "between"
+	BidderBidmachine       BidderName = "bidmachine"
 	BidderBrightroll       BidderName = "brightroll"
 	BidderColossus         BidderName = "colossus"
 	BidderConnectAd        BidderName = "connectad"
 	BidderConsumable       BidderName = "consumable"
 	BidderConversant       BidderName = "conversant"
 	BidderCpmstar          BidderName = "cpmstar"
+	BidderCriteo           BidderName = "criteo"
 	BidderDatablocks       BidderName = "datablocks"
 	BidderDmx              BidderName = "dmx"
 	BidderDecenterAds      BidderName = "decenterads"
@@ -208,12 +210,14 @@ func CoreBidderNames() []BidderName {
 		BidderBeachfront,
 		BidderBeintoo,
 		BidderBetween,
+		BidderBidmachine,
 		BidderBrightroll,
 		BidderColossus,
 		BidderConnectAd,
 		BidderConsumable,
 		BidderConversant,
 		BidderCpmstar,
+		BidderCriteo,
 		BidderDatablocks,
 		BidderDecenterAds,
 		BidderDeepintent,
