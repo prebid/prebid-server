@@ -3,6 +3,7 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/mxmCherry/openrtb/v14/openrtb2"
 )
@@ -748,9 +749,6 @@ func (rw *RequestWrapper) ExtractUserExt() error {
 }
 
 func (rw *RequestWrapper) ExtractDeviceExt() error {
-	if rw.Request == nil {
-		rw.Request = &openrtb2.BidRequest{}
-	}
 	if rw.DeviceExt != nil {
 		return nil
 	}
@@ -822,8 +820,34 @@ func (rw *RequestWrapper) ExtractSiteExt() error {
 
 func (rw *RequestWrapper) Sync() error {
 	if rw.Request == nil {
-		rw.Request = &openrtb2.BidRequest{}
+		return fmt.Errorf("Requestwrapper Sync called on a nil Request")
 	}
+
+	if err := rw.syncUserExt(); err != nil {
+		return err
+	}
+
+	if err := rw.syncDeviceExt(); err != nil {
+		return err
+	}
+
+	if err := rw.syncRequestExt(); err != nil {
+		return err
+	}
+	if err := rw.syncAppExt(); err != nil {
+		return err
+	}
+	if err := rw.syncRegExt(); err != nil {
+		return err
+	}
+	if err := rw.syncSiteExt(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (rw *RequestWrapper) syncUserExt() error {
 	if rw.Request.User == nil && rw.UserExt != nil && rw.UserExt.Dirty() {
 		rw.Request.User = &openrtb2.User{}
 	}
@@ -834,6 +858,10 @@ func (rw *RequestWrapper) Sync() error {
 		}
 		rw.Request.User.Ext = userJson
 	}
+	return nil
+}
+
+func (rw *RequestWrapper) syncDeviceExt() error {
 	if rw.Request.Device == nil && rw.DeviceExt != nil && rw.DeviceExt.Dirty() {
 		rw.Request.Device = &openrtb2.Device{}
 	}
@@ -844,6 +872,10 @@ func (rw *RequestWrapper) Sync() error {
 		}
 		rw.Request.Device.Ext = deviceJson
 	}
+	return nil
+}
+
+func (rw *RequestWrapper) syncRequestExt() error {
 	if rw.RequestExt != nil && rw.RequestExt.Dirty() {
 		requestJson, err := rw.RequestExt.Marshal()
 		if err != nil {
@@ -851,6 +883,10 @@ func (rw *RequestWrapper) Sync() error {
 		}
 		rw.Request.Ext = requestJson
 	}
+	return nil
+}
+
+func (rw *RequestWrapper) syncAppExt() error {
 	if rw.Request.App == nil && rw.AppExt != nil && rw.AppExt.Dirty() {
 		rw.Request.App = &openrtb2.App{}
 	}
@@ -861,6 +897,10 @@ func (rw *RequestWrapper) Sync() error {
 		}
 		rw.Request.App.Ext = appJson
 	}
+	return nil
+}
+
+func (rw *RequestWrapper) syncRegExt() error {
 	if rw.Request.Regs == nil && rw.RegExt != nil && rw.RegExt.Dirty() {
 		rw.Request.Regs = &openrtb2.Regs{}
 	}
@@ -871,6 +911,10 @@ func (rw *RequestWrapper) Sync() error {
 		}
 		rw.Request.Regs.Ext = regsJson
 	}
+	return nil
+}
+
+func (rw *RequestWrapper) syncSiteExt() error {
 	if rw.Request.Site == nil && rw.SiteExt != nil && rw.SiteExt.Dirty() {
 		rw.Request.Site = &openrtb2.Site{}
 	}
