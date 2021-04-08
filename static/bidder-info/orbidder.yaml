@@ -1,5 +1,6 @@
 maintainer:
   email: "realtime-siggi@otto.de"
+gvlVendorID: 559
 capabilities:
   app:
     mediaTypes:
