@@ -17,6 +17,7 @@ import (
 	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/stored_requests"
 
+	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -61,6 +62,7 @@ type exchange struct {
 	UsersyncIfAmbiguous bool
 	privacyConfig       config.Privacy
 	categoriesFetcher   stored_requests.CategoryFetcher
+	bidIDGenerator      BidIDGenerator
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -77,6 +79,24 @@ type bidResponseWrapper struct {
 	adapterBids  *pbsOrtbSeatBid
 	adapterExtra *seatResponseExtra
 	bidder       openrtb_ext.BidderName
+}
+
+type BidIDGenerator interface {
+	New() (string, error)
+	Enabled() bool
+}
+
+type bidIDGenerator struct {
+	enabled bool
+}
+
+func (big *bidIDGenerator) Enabled() bool {
+	return big.enabled
+}
+
+func (big *bidIDGenerator) New() (string, error) {
+	rawUuid, err := uuid.NewV4()
+	return rawUuid.String(), err
 }
 
 func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
@@ -96,6 +116,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 			GDPR: cfg.GDPR,
 			LMT:  cfg.LMT,
 		},
+		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
 	}
 }
 
@@ -189,6 +210,17 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			}
 			for _, message := range rejections {
 				errs = append(errs, errors.New(message))
+			}
+		}
+
+		if e.bidIDGenerator.Enabled() {
+			for _, seatBid := range adapterBids {
+				for _, pbsBid := range seatBid.bids {
+					pbsBid.generatedBidID, err = e.bidIDGenerator.New()
+					if err != nil {
+						errs = append(errs, errors.New("Error generating bid.ext.prebid.bidid"))
+					}
+				}
 			}
 		}
 
@@ -852,6 +884,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 			Targeting:         bid.bidTargets,
 			Type:              bid.bidType,
 			Video:             bid.bidVideo,
+			BidId:             bid.generatedBidID,
 		}
 
 		if cacheInfo, found := e.getBidCacheInfo(bid, auc); found {
