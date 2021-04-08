@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/jinzhu/copier"
 	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/stretchr/testify/assert"
@@ -329,11 +330,7 @@ func diffJson(t *testing.T, description string, actual []byte, expected []byte) 
 func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, reqInfo *adapters.ExtraRequestInfo) []*adapters.RequestData {
 	t.Helper()
 
-	deepBidReqCopy, shallowBidReqCopy, err := prepareDataRaceCopies(&spec.BidRequest)
-	if err != nil {
-		t.Errorf("Could not create data race test objects. File: %s Error: %v", filename, err)
-		return nil
-	}
+	deepBidReqCopy, shallowBidReqCopy := getDataRaceTestCopies(&spec.BidRequest)
 
 	// Run MakeRequests
 	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest, reqInfo)
@@ -348,236 +345,28 @@ func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder 
 	return actualReqs
 }
 
-func prepareDataRaceCopies(original *openrtb2.BidRequest) (*openrtb2.BidRequest, *openrtb2.BidRequest, error) {
+func getDataRaceTestCopies(original *openrtb2.BidRequest) (*openrtb2.BidRequest, *openrtb2.BidRequest) {
 
 	// Save original bidRequest values to assert no data races occur inside MakeRequests latter
-	deepReqCopy, err := deepCopyBidRequest(original)
-	if err != nil {
-		return nil, nil, err
-	}
+	deepReqCopy := openrtb2.BidRequest{}
+	copier.Copy(&deepReqCopy, original)
 
-	// Mocks the shallow copy PBS core provides to adapters
+	// Shallow copy PBS core provides to adapters
 	shallowReqCopy := *original
 
-	// PBS core provides adapters a shallow copy of []Imp elements
-	shallowReqCopy.Imp = nil
+	// Save original []Imp elements to assert no data races occur inside MakeRequests latter
+	deepReqCopy.Imp = make([]openrtb2.Imp, len(original.Imp))
+	shallowReqCopy.Imp = make([]openrtb2.Imp, len(original.Imp))
 	for i := 0; i < len(original.Imp); i++ {
+		deepImpCopy := openrtb2.Imp{}
+		copier.Copy(&deepImpCopy, original.Imp[i])
+		deepReqCopy.Imp = append(deepReqCopy.Imp, deepImpCopy)
+
 		shallowImpCopy := original.Imp[i]
 		shallowReqCopy.Imp = append(shallowReqCopy.Imp, shallowImpCopy)
 	}
 
-	return deepReqCopy, &shallowReqCopy, nil
-}
-
-// deepCopyBidRequest is our own implementation of a deep copy function custom made for an openrtb2.BidRequest object
-func deepCopyBidRequest(original *openrtb2.BidRequest) (*openrtb2.BidRequest, error) {
-	bytes, err := json.Marshal(original)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to marshal original bid request: %v", err)
-	}
-
-	deepCopy := &openrtb2.BidRequest{}
-	err = json.Unmarshal(bytes, deepCopy)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal original bid request: %v", err)
-	}
-
-	// Make sure all Ext fields don't differ in blank spaces, line brakes or tabs
-	// and slices don't get differentiated for being empty versus being nil
-	deepCopy = deepCopySliceAndExtAdjustments(deepCopy, original)
-
-	return deepCopy, nil
-}
-
-// deepCopySliceAndExtAdjustments is necessary in order to not get false positives when a json
-// entry initializes an empty array (such as "format": []) or the shallow copy `Ext` fields differ
-// in line breaks or tabs with the deepCopy ones
-func deepCopySliceAndExtAdjustments(deepCopy *openrtb2.BidRequest, original *openrtb2.BidRequest) *openrtb2.BidRequest {
-	if len(deepCopy.Ext) > 0 {
-		deepCopy.Ext = make([]byte, len(original.Ext))
-		copy(deepCopy.Ext, original.Ext)
-	}
-
-	if deepCopy.Site != nil {
-		if len(deepCopy.Site.Ext) > 0 {
-			deepCopy.Site.Ext = make([]byte, len(original.Site.Ext))
-			copy(deepCopy.Site.Ext, original.Site.Ext)
-		}
-		if original.Site.Cat != nil && len(original.Site.Cat) == 0 {
-			deepCopy.Site.Cat = []string{}
-		}
-		if original.Site.SectionCat != nil && len(original.Site.SectionCat) == 0 {
-			deepCopy.Site.SectionCat = []string{}
-		}
-		if original.Site.PageCat != nil && len(original.Site.PageCat) == 0 {
-			deepCopy.Site.PageCat = []string{}
-		}
-	}
-
-	if deepCopy.App != nil {
-		if len(deepCopy.App.Ext) > 0 {
-			deepCopy.App.Ext = make([]byte, len(original.App.Ext))
-			copy(deepCopy.App.Ext, original.App.Ext)
-		}
-		if original.App.Cat != nil && len(original.App.Cat) == 0 {
-			deepCopy.App.Cat = []string{}
-		}
-		if original.App.SectionCat != nil && len(original.App.SectionCat) == 0 {
-			deepCopy.App.SectionCat = []string{}
-		}
-		if original.App.PageCat != nil && len(original.App.PageCat) == 0 {
-			deepCopy.App.PageCat = []string{}
-		}
-	}
-
-	if deepCopy.Device != nil && len(deepCopy.Device.Ext) > 0 {
-		deepCopy.Device.Ext = make([]byte, len(original.Device.Ext))
-		copy(deepCopy.Device.Ext, original.Device.Ext)
-	}
-
-	if deepCopy.User != nil {
-		if len(deepCopy.User.Ext) > 0 {
-			deepCopy.User.Ext = make([]byte, len(original.User.Ext))
-			copy(deepCopy.User.Ext, original.User.Ext)
-		}
-		if original.User.Data != nil {
-			if len(original.User.Data) == 0 {
-				original.User.Data = []openrtb2.Data{}
-			}
-			for i := 0; i < len(deepCopy.User.Data); i++ {
-				if len(deepCopy.User.Data[i].Ext) > 0 {
-					deepCopy.User.Data[i].Ext = make([]byte, len(original.User.Data[i].Ext))
-					copy(deepCopy.User.Data[i].Ext, original.User.Data[i].Ext)
-				}
-			}
-		}
-	}
-
-	if deepCopy.Source != nil && len(deepCopy.Source.Ext) > 0 {
-		deepCopy.Source.Ext = make([]byte, len(original.Source.Ext))
-		copy(deepCopy.Source.Ext, original.Source.Ext)
-	}
-
-	if deepCopy.Regs != nil && len(deepCopy.Regs.Ext) > 0 {
-		deepCopy.Regs.Ext = make([]byte, len(original.Regs.Ext))
-		copy(deepCopy.Regs.Ext, original.Regs.Ext)
-	}
-
-	for i, imp := range deepCopy.Imp {
-		if len(imp.Ext) > 0 {
-			imp.Ext = make([]byte, len(original.Imp[i].Ext))
-			copy(imp.Ext, original.Imp[i].Ext)
-		}
-		if imp.Banner != nil {
-			if len(imp.Banner.Ext) > 0 {
-				imp.Banner.Ext = make([]byte, len(original.Imp[i].Banner.Ext))
-				copy(imp.Banner.Ext, original.Imp[i].Banner.Ext)
-			}
-			if original.Imp[i].Banner.Format != nil && len(original.Imp[i].Banner.Format) == 0 {
-				imp.Banner.Format = []openrtb2.Format{}
-			}
-			if original.Imp[i].Banner.BType != nil && len(original.Imp[i].Banner.BType) == 0 {
-				imp.Banner.BType = []openrtb2.BannerAdType{}
-			}
-			if original.Imp[i].Banner.BAttr != nil && len(original.Imp[i].Banner.BAttr) == 0 {
-				imp.Banner.BAttr = []openrtb2.CreativeAttribute{}
-			}
-			if original.Imp[i].Banner.ExpDir != nil && len(original.Imp[i].Banner.ExpDir) == 0 {
-				imp.Banner.ExpDir = []openrtb2.ExpandableDirection{}
-			}
-			if original.Imp[i].Banner.API != nil && len(original.Imp[i].Banner.API) == 0 {
-				imp.Banner.API = []openrtb2.APIFramework{}
-			}
-		}
-		if imp.Video != nil {
-			if len(imp.Video.Ext) > 0 {
-				imp.Video.Ext = make([]byte, len(original.Imp[i].Video.Ext))
-				copy(imp.Video.Ext, original.Imp[i].Video.Ext)
-			}
-			if original.Imp[i].Video.MIMEs != nil && len(original.Imp[i].Video.MIMEs) == 0 {
-				imp.Video.MIMEs = []string{}
-			}
-			if original.Imp[i].Video.Protocols != nil && len(original.Imp[i].Video.Protocols) == 0 {
-				imp.Video.Protocols = []openrtb2.Protocol{}
-			}
-			if original.Imp[i].Video.BAttr != nil && len(original.Imp[i].Video.BAttr) == 0 {
-				imp.Video.BAttr = []openrtb2.CreativeAttribute{}
-			}
-			if original.Imp[i].Video.PlaybackMethod != nil && len(original.Imp[i].Video.PlaybackMethod) == 0 {
-				imp.Video.PlaybackMethod = []openrtb2.PlaybackMethod{}
-			}
-			if original.Imp[i].Video.Delivery != nil && len(original.Imp[i].Video.Delivery) == 0 {
-				imp.Video.Delivery = []openrtb2.ContentDeliveryMethod{}
-			}
-			if original.Imp[i].Video.CompanionAd != nil && len(original.Imp[i].Video.CompanionAd) == 0 {
-				imp.Video.CompanionAd = []openrtb2.Banner{}
-			}
-			if original.Imp[i].Video.API != nil && len(original.Imp[i].Video.API) == 0 {
-				imp.Video.API = []openrtb2.APIFramework{}
-			}
-			if original.Imp[i].Video.CompanionType != nil && len(original.Imp[i].Video.CompanionType) == 0 {
-				imp.Video.CompanionType = []openrtb2.CompanionType{}
-			}
-		}
-		if imp.Audio != nil {
-			if len(imp.Audio.Ext) > 0 {
-				imp.Audio.Ext = make([]byte, len(original.Imp[i].Audio.Ext))
-				copy(imp.Audio.Ext, original.Imp[i].Audio.Ext)
-			}
-			if original.Imp[i].Audio.MIMEs != nil && len(original.Imp[i].Audio.MIMEs) == 0 {
-				imp.Audio.MIMEs = []string{}
-			}
-			if original.Imp[i].Audio.Protocols != nil && len(original.Imp[i].Audio.Protocols) == 0 {
-				imp.Audio.Protocols = []openrtb2.Protocol{}
-			}
-			if original.Imp[i].Audio.BAttr != nil && len(original.Imp[i].Audio.BAttr) == 0 {
-				imp.Audio.BAttr = []openrtb2.CreativeAttribute{}
-			}
-			if original.Imp[i].Audio.Delivery != nil && len(original.Imp[i].Audio.Delivery) == 0 {
-				imp.Audio.Delivery = []openrtb2.ContentDeliveryMethod{}
-			}
-			if original.Imp[i].Audio.CompanionAd != nil && len(original.Imp[i].Audio.CompanionAd) == 0 {
-				imp.Audio.CompanionAd = []openrtb2.Banner{}
-			}
-			if original.Imp[i].Audio.API != nil && len(original.Imp[i].Audio.API) == 0 {
-				imp.Audio.API = []openrtb2.APIFramework{}
-			}
-			if original.Imp[i].Audio.CompanionType != nil && len(original.Imp[i].Audio.CompanionType) == 0 {
-				imp.Audio.CompanionType = []openrtb2.CompanionType{}
-			}
-		}
-		if imp.Native != nil {
-			if len(imp.Native.Ext) > 0 {
-				imp.Native.Ext = make([]byte, len(original.Imp[i].Native.Ext))
-				copy(imp.Native.Ext, original.Imp[i].Native.Ext)
-			}
-			if original.Imp[i].Native.API != nil && len(original.Imp[i].Native.API) == 0 {
-				imp.Native.API = []openrtb2.APIFramework{}
-			}
-			if original.Imp[i].Native.BAttr != nil && len(original.Imp[i].Native.BAttr) == 0 {
-				imp.Native.BAttr = []openrtb2.CreativeAttribute{}
-			}
-		}
-		if imp.PMP != nil {
-			if len(imp.PMP.Ext) > 0 {
-				imp.PMP.Ext = make([]byte, len(original.Imp[i].PMP.Ext))
-				copy(imp.PMP.Ext, original.Imp[i].PMP.Ext)
-			}
-			if original.Imp[i].PMP.Deals != nil && len(original.Imp[i].PMP.Deals) == 0 {
-				imp.PMP.Deals = []openrtb2.Deal{}
-			}
-		}
-
-		if len(imp.Metric) > 0 {
-			for j, metric := range imp.Metric {
-				if len(metric.Ext) > 0 {
-					metric.Ext = make([]byte, len(original.Imp[i].Metric[j].Ext))
-					copy(metric.Ext, original.Imp[i].Metric[j].Ext)
-				}
-			}
-		}
-	}
-	return deepCopy
+	return &deepReqCopy, &shallowReqCopy
 }
 
 // assertNoDataRace compares the contents of the reference fields found in the original openrtb2.BidRequest to their
