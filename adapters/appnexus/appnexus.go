@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -291,7 +292,6 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 func (a *AppNexusAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	memberIds := make(map[string]bool)
 	errs := make([]error, 0, len(request.Imp))
-	adPodId := false
 
 	// AppNexus openrtb2 endpoint expects imp.displaymanagerver to be populated, but some SDKs will put it in imp.ext.prebid instead
 	var defaultDisplayManagerVer string
@@ -302,12 +302,20 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 			defaultDisplayManagerVer = fmt.Sprintf("%s-%s", source, version)
 		}
 	}
+	var adPodId *bool
+
 	for i := 0; i < len(request.Imp); i++ {
 		memberId, impAdPodId, err := preprocess(&request.Imp[i], defaultDisplayManagerVer)
 		if memberId != "" {
 			memberIds[memberId] = true
 		}
-		adPodId = adPodId || impAdPodId
+		if adPodId == nil {
+			adPodId = &impAdPodId
+		} else if *adPodId != impAdPodId {
+			errs = append(errs, errors.New("generate ad pod option should be same for all pods in request"))
+			return nil, errs
+		}
+
 		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
 		if err != nil {
 			errs = append(errs, err)
@@ -370,7 +378,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	// For this all impressions in  request should belong to the same pod
 	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
 	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
-	if isVIDEO == 1 && adPodId {
+	if isVIDEO == 1 && *adPodId {
 		podImps := groupByPods(imps)
 
 		requests := make([]*adapters.RequestData, 0, len(podImps))

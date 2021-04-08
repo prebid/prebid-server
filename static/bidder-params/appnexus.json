@@ -67,7 +67,7 @@
       "type": "boolean",
       "description": "Boolean to signal AppNexus to apply the relevant payment rule"
     },
-    "adPodId": {
+    "generate_ad_pod_id": {
       "type": "boolean",
       "description": "Boolean to signal AppNexus to add ad pod id to each request"
     },
