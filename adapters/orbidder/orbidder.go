@@ -118,8 +118,9 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 			})
 		}
 	}
-	// orbidder only supports EUR
-	bidResponse.Currency = "EUR"
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, nil
 }
 
