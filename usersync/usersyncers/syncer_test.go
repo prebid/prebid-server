@@ -69,6 +69,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderNoBid):            syncConfig,
 			string(openrtb_ext.BidderOneTag):           syncConfig,
 			string(openrtb_ext.BidderOpenx):            syncConfig,
+			string(openrtb_ext.BidderOutbrain):         syncConfig,
 			string(openrtb_ext.BidderPubmatic):         syncConfig,
 			string(openrtb_ext.BidderPulsepoint):       syncConfig,
 			string(openrtb_ext.BidderRhythmone):        syncConfig,
@@ -96,7 +97,6 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderYieldlab):         syncConfig,
 			string(openrtb_ext.BidderYieldmo):          syncConfig,
 			string(openrtb_ext.BidderYieldone):         syncConfig,
-			string(openrtb_ext.BidderZemanta):          syncConfig,
 			string(openrtb_ext.BidderZeroClickFraud):   syncConfig,
 		},
 	}
