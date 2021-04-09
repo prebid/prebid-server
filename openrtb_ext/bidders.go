@@ -143,6 +143,7 @@ const (
 	BidderOneTag           BidderName = "onetag"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
+	BidderOutbrain         BidderName = "outbrain"
 	BidderPangle           BidderName = "pangle"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
@@ -177,7 +178,6 @@ const (
 	BidderYieldlab         BidderName = "yieldlab"
 	BidderYieldmo          BidderName = "yieldmo"
 	BidderYieldone         BidderName = "yieldone"
-	BidderZemanta          BidderName = "zemanta"
 	BidderZeroClickFraud   BidderName = "zeroclickfraud"
 )
 
@@ -254,6 +254,7 @@ func CoreBidderNames() []BidderName {
 		BidderOneTag,
 		BidderOpenx,
 		BidderOrbidder,
+		BidderOutbrain,
 		BidderPangle,
 		BidderPubmatic,
 		BidderPubnative,
@@ -288,7 +289,6 @@ func CoreBidderNames() []BidderName {
 		BidderYieldlab,
 		BidderYieldmo,
 		BidderYieldone,
-		BidderZemanta,
 		BidderZeroClickFraud,
 	}
 }

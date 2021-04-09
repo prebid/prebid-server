@@ -1,4 +1,4 @@
-package zemanta
+package outbrain
 
 import (
 	"testing"
@@ -9,12 +9,12 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderZemanta, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderOutbrain, config.Adapter{
 		Endpoint: "http://example.com/bid"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "zemantatest", bidder)
+	adapterstest.RunJSONBidderTest(t, "outbraintest", bidder)
 }

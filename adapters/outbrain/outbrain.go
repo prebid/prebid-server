@@ -1,4 +1,4 @@
-package zemanta
+package outbrain
 
 import (
 	"encoding/json"
@@ -16,7 +16,7 @@ type adapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the Zemanta adapter for the given bidder with the given config.
+// Builder builds a new instance of the Outbrain adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -28,7 +28,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	reqCopy := *request
 
 	var errs []error
-	var zemantaExt openrtb_ext.ExtImpZemanta
+	var outbrainExt openrtb_ext.ExtImpOutbrain
 	for i := 0; i < len(reqCopy.Imp); i++ {
 		imp := reqCopy.Imp[i]
 
@@ -37,18 +37,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, err)
 			continue
 		}
-		if err := json.Unmarshal(bidderExt.Bidder, &zemantaExt); err != nil {
+		if err := json.Unmarshal(bidderExt.Bidder, &outbrainExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		imp.TagID = zemantaExt.TagId
+		imp.TagID = outbrainExt.TagId
 		reqCopy.Imp[i] = imp
 	}
 
 	publisher := &openrtb2.Publisher{
-		ID:     zemantaExt.Publisher.Id,
-		Name:   zemantaExt.Publisher.Name,
-		Domain: zemantaExt.Publisher.Domain,
+		ID:     outbrainExt.Publisher.Id,
+		Name:   outbrainExt.Publisher.Name,
+		Domain: outbrainExt.Publisher.Domain,
 	}
 	if reqCopy.Site != nil {
 		siteCopy := *reqCopy.Site
@@ -60,11 +60,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		reqCopy.App = &appCopy
 	}
 
-	if zemantaExt.BCat != nil {
-		reqCopy.BCat = zemantaExt.BCat
+	if outbrainExt.BCat != nil {
+		reqCopy.BCat = outbrainExt.BCat
 	}
-	if zemantaExt.BAdv != nil {
-		reqCopy.BAdv = zemantaExt.BAdv
+	if outbrainExt.BAdv != nil {
+		reqCopy.BAdv = outbrainExt.BAdv
 	}
 
 	requestJSON, err := json.Marshal(reqCopy)

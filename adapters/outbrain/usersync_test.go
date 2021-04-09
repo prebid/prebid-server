@@ -1,4 +1,4 @@
-package zemanta
+package outbrain
 
 import (
 	"testing"
@@ -16,7 +16,7 @@ func TestSyncer(t *testing.T) {
 		template.New("sync-template").Parse(syncURL),
 	)
 
-	syncer := NewZemantaSyncer(syncURLTemplate)
+	syncer := NewOutbrainSyncer(syncURLTemplate)
 	syncInfo, err := syncer.GetUsersyncInfo(privacy.Policies{
 		GDPR: gdpr.Policy{
 			Signal:  "A",
