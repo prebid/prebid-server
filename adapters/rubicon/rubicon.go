@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/jinzhu/copier"
 	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -670,9 +671,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	headers.Add("Accept", "application/json")
 	headers.Add("User-Agent", "prebid-server/1.0")
 
-	requestImpCopy := request.Imp
+	rubiconRequest := openrtb.BidRequest{}
+	copier.CopyWithOption(&rubiconRequest, &request, copier.Option{IgnoreEmpty: false, DeepCopy: true})
 
-	rubiconRequest := *request
+	requestImpCopy := rubiconRequest.Imp
 	for i := 0; i < numRequests; i++ {
 		thisImp := requestImpCopy[i]
 

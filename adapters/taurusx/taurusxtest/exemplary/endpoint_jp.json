@@ -79,6 +79,7 @@
                   4
                 ],
                 "ext": {
+                  "allowscustomclosebutton": false,
                   "rewarded": 1
                 }
               }
