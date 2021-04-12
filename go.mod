@@ -28,9 +28,7 @@ require (
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.0.0 // indirect
-	github.com/mxmCherry/openrtb/v14 v14.0.0
-	github.com/onsi/ginkgo v1.10.1 // indirect
-	github.com/onsi/gomega v1.7.0 // indirect
+	github.com/mxmCherry/openrtb/v15 v15.0.0
 	github.com/pelletier/go-toml v1.2.0 // indirect
 	github.com/prebid/go-gdpr v0.8.3
 	github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed
@@ -55,9 +53,7 @@ require (
 	github.com/yudai/gojsondiff v0.0.0-20170107030110-7b1b7adf999d
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
-	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20190422165155-953cdadca894 // indirect
-	golang.org/x/text v0.3.0
-	gopkg.in/yaml.v2 v2.2.2
+	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb
+	golang.org/x/text v0.3.3
+	gopkg.in/yaml.v2 v2.4.0
 )

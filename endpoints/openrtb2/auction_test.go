@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/buger/jsonparser"
