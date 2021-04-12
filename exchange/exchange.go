@@ -914,53 +914,71 @@ func (e *exchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCu
 		return e.currencyConverter.Rates()
 	}
 
-	var usePbsRates bool = true
-	if customRates.UsePBSRates != nil {
-		usePbsRates = *customRates.UsePBSRates
-	}
-
-	// when usePbsRates is false, only use bidRequest.ext-defined rates
-	if !usePbsRates {
-		return currency.NewRates(time.Now(), customRates.ConversionRates)
-	}
-
-	// Because usePbsRates is true, we should use a mix of bidRequest.ext-defined rates with PBS rates. But, if
-	// e.currencyConverter didn't find rates to fetch, use all custom rates.
+	// CHANGE Because usePbsRates is true, we should use a mix of bidRequest.ext-defined rates with PBS rates. But, if
+	// CHANGE e.currencyConverter didn't find rates to fetch, use all custom rates.
 	pbsConversions := e.currencyConverter.Rates()
 	serverRates := pbsConversions.GetRates()
-	if serverRates == nil || len(*serverRates) == 0 {
-		return currency.NewRates(time.Now(), customRates.ConversionRates)
-	}
 
-	// Given that usePbsRates is true and the serverRates map not empty, mix bidRequest.ext-defined rates
-	// with PBS rates for this bidRequest to use
+	// CHANGE Given that usePbsRates is true and the serverRates map not empty, mix bidRequest.ext-defined rates
+	// CHANGE with PBS rates for this bidRequest to use
 	auctionRates := make(map[string]map[string]float64, len(*serverRates))
 
 	// Copy custom rates first because they get priority
 	for fromCurrency, rates := range customRates.ConversionRates {
-		auctionRates[fromCurrency] = make(map[string]float64, len(rates))
-
-		for toCurrency, rate := range rates {
-			auctionRates[fromCurrency][toCurrency] = rate
-		}
-	}
-
-	// Now copy pbs rates
-	for fromCurrency, rates := range *serverRates {
+		//addCurrencyRates(auctionRates, rates, fromCurrency)
 
 		if _, defined := auctionRates[fromCurrency]; !defined {
 			auctionRates[fromCurrency] = make(map[string]float64, len(rates))
 		}
 
 		for toCurrency, rate := range rates {
-			// If it was found in the custom conversions, don't modify because custom rates take precedence
-			if _, customRateFound := auctionRates[fromCurrency][toCurrency]; !customRateFound {
-				auctionRates[fromCurrency][toCurrency] = rate
+			auctionRates[fromCurrency][toCurrency] = rate
+
+			// Write entries to inverse of conversion rates if needed
+			if _, inverseIncluded := customRates.ConversionRates[toCurrency][fromCurrency]; !inverseIncluded {
+				if _, defined := auctionRates[toCurrency]; !defined {
+					auctionRates[toCurrency] = map[string]float64{fromCurrency: 1.00 / rate}
+				} else {
+					auctionRates[toCurrency][fromCurrency] = 1.00 / rate
+				}
+			}
+		}
+	}
+
+	// Now copy pbs rates if needed
+	if customRates.UsePBSRates == nil || *customRates.UsePBSRates {
+		//if usePbsRates {
+		for fromCurrency, rates := range *serverRates {
+			if _, defined := auctionRates[fromCurrency]; !defined {
+				auctionRates[fromCurrency] = make(map[string]float64, len(rates))
+			}
+
+			for toCurrency, rate := range rates {
+				// If it was found in the custom conversions, don't modify because custom rates take precedence
+				if _, customRateFound := auctionRates[fromCurrency][toCurrency]; !customRateFound {
+					auctionRates[fromCurrency][toCurrency] = rate
+				}
 			}
 		}
 	}
 
 	return currency.NewRates(time.Now(), auctionRates)
+}
+
+func addCurrencyRates(ratesSoFar map[string]map[string]float64, fromCurrencyRates map[string]float64, fromCurrency string) {
+	if _, defined := ratesSoFar[fromCurrency]; !defined {
+		ratesSoFar[fromCurrency] = make(map[string]float64, len(fromCurrencyRates))
+	}
+
+	for toCurrency, rate := range fromCurrencyRates {
+		// If it was already added, don't add again
+		if _, customRateFound := ratesSoFar[fromCurrency][toCurrency]; !customRateFound {
+			ratesSoFar[fromCurrency][toCurrency] = rate
+		}
+
+		// Add toCurrency -> fromCurrency entry if needed
+		addCurrencyRates(ratesSoFar, map[string]float64{toCurrency: 1.00 / rate}, toCurrency)
+	}
 }
 
 func findCacheID(bid *pbsOrtbBid, auction *auction) (string, bool) {

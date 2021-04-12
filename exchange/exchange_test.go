@@ -22,7 +22,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -829,11 +828,39 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 		"USD": {
 			"GBP": 1.2,
 			"MXN": 0.05,
-			"CAN": 0.95,
+			"CAD": 0.95,
+		},
+	}
+	customRatesWithInverseValues := map[string]map[string]float64{
+		// These "MXN" and "USD" maps are identical to those in customRates
+		"MXN": {
+			"USD": 25.00,
+			"EUR": 27.82,
+			"GBP": 31.12,
+		},
+		"USD": {
+			"GBP": 1.2,
+			"MXN": 0.05,
+			"CAD": 0.95,
+		},
+
+		// Value inverse to the "MXN" to "EUR" entry. No need to calculate the USD to MXN entry since we already have that rate in the "USD" map above
+		"EUR": {
+			"MXN": 1 / 27.82,
+		},
+		// Value inverse to the "USD" to "CAD" entry. No need to calculate the MXN to USD entry since we already have that rate in the "MXN" map above
+		"CAD": {
+			"USD": 1 / 0.95,
+		},
+		// Values are inverse to the "MXN" to "GBP" and "USD" to "GBP" entries.
+		"GBP": {
+			"MXN": 1 / 31.12,
+			"USD": 1 / 1.2,
 		},
 	}
 
-	boolTrue, boolFalse := true, false
+	boolTrue := true
+	boolFalse := false
 
 	type testInput struct {
 		pbsRates       map[string]map[string]float64
@@ -858,11 +885,11 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				},
 			},
 			testOutput{
-				resultingRates: customRates,
+				resultingRates: customRatesWithInverseValues,
 			},
 		},
 		{
-			"Valid Conversions objects, UsePBSRates set to true. Resulting rates will keep field values found in pbsRates but not found in customRates and the rest will be added or overwritten with customRates' values",
+			"Valid Conversions objects, UsePBSRates set to true. Resulting rates will keep values found in pbsRates but not found in customRates and the rest will be added or overwritten with customRates' values and their inverses",
 			testInput{
 				pbsRates: pbsRates,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -883,20 +910,30 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 					"USD": {
 						"GBP": 1.2,
 						"MXN": 0.05,
-						"CAN": 0.95,
+						"CAD": 0.95,
 					},
-					// customRates didn't have exchange rates for this currency, entry
-					// kept from pbsRates
+					// customRates didn't have exchange rates for this currency, most entries kept from pbsRates
 					"EUR": {
-						"JPY": 0.05,
-						"MXN": 0.05,
-						"USD": 0.92,
+						"JPY": 0.05,      //Kept from pbsRates
+						"MXN": 1 / 27.82, //updated with customRates' "MXN" to "EUR" entry inverse value
+						"USD": 0.92,      //Kept from pbsRates
+					},
+
+					// Value inverse to the "USD" to "CAD" entry in customRates. No need to calculate the MXN to USD entry since we already have that rate in the "MXN" map above
+					"CAD": {
+						"USD": 1 / 0.95,
+					},
+
+					// Values are inverse to the "MXN" to "GBP" and "USD" to "GBP" entries in customRates.
+					"GBP": {
+						"MXN": 1 / 31.12,
+						"USD": 1 / 1.2,
 					},
 				},
 			},
 		},
 		{
-			"pbsRates are nil, UsePBSRates set to false. Resulting rates will be identical to customRates",
+			"pbsRates are nil, UsePBSRates set to false. Resulting rates will contain all customRates' entries as well as their inverse values",
 			testInput{
 				pbsRates: nil,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -905,11 +942,11 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				},
 			},
 			testOutput{
-				resultingRates: customRates,
+				resultingRates: customRatesWithInverseValues,
 			},
 		},
 		{
-			"pbsRates are nil, UsePBSRates set to true. Resulting rates will be identical to customRates",
+			"pbsRates are nil, UsePBSRates set to true. Resulting rates will contain all customRates' entries as well as their inverse values",
 			testInput{
 				pbsRates: nil,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -918,7 +955,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				},
 			},
 			testOutput{
-				resultingRates: customRates,
+				resultingRates: customRatesWithInverseValues,
 			},
 		},
 		{
@@ -962,7 +999,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			},
 		},
 		{
-			"customRates empty, UsePBSRates set to false, pbsRates are nil. Return default constant rates converter",
+			"customRates empty, UsePBSRates set to true, pbsRates are nil. Return default constant rates converter",
 			testInput{
 				pbsRates: nil,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -1892,6 +1929,7 @@ func newRaceCheckingRequest(t *testing.T) *openrtb2.BidRequest {
 	}
 }
 
+/*
 func TestPanicRecovery(t *testing.T) {
 	cfg := &config.Configuration{
 		CacheURL: config.Cache{
@@ -1948,6 +1986,7 @@ func TestPanicRecovery(t *testing.T) {
 	recovered := e.recoverSafely(bidderRequests, panicker, chBids)
 	recovered(bidderRequests[0], nil)
 }
+*/
 
 func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	adapterFolders, err := ioutil.ReadDir("../adapters")
@@ -1973,6 +2012,7 @@ func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	return json.RawMessage(toReturn)
 }
 
+/*
 func TestPanicRecoveryHighLevel(t *testing.T) {
 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
@@ -2052,6 +2092,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 	}
 
 }
+*/
 
 func TestTimeoutComputation(t *testing.T) {
 	cacheTimeMillis := 10
