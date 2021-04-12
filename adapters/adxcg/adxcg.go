@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/mxmCherry/openrtb/v14/openrtb2"
-	//"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -15,19 +14,18 @@ import (
 
 // Builder builds a new instance of the Adxcg adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &AdxcgAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-// MediaOptiAdapter implements the Bidder interface.
-type AdxcgAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
 // MakeRequests prepares the HTTP requests which should be made to fetch bids.
-func (adapter *AdxcgAdapter) MakeRequests(
+func (adapter *adapter) MakeRequests(
 	openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
@@ -53,11 +51,10 @@ func (adapter *AdxcgAdapter) MakeRequests(
 	return requestsToBidder, errs
 }
 
-const unexpectedStatusCodeFormat = "" +
-	"Unexpected status code: %d. Run with request.debug = 1 for more info"
+const unexpectedStatusCodeFormat = "Unexpected status code: %d. Run with request.debug = 1 for more info"
 
 // MakeBids unpacks the server's response into Bids.
-func (adapter *AdxcgAdapter) MakeBids(
+func (adapter *adapter) MakeBids(
 	openRTBRequest *openrtb2.BidRequest,
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
@@ -93,8 +90,6 @@ func (adapter *AdxcgAdapter) MakeBids(
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
 			bid := bid // pin! -> https://github.com/kyoh86/scopelint#whats-this
-			//TODO this must return data from extension
-
 			bidType, err := getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp)
 			if err != nil {
 				errs = append(errs, err)
