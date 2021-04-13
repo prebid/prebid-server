@@ -8,7 +8,7 @@ import (
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
@@ -20,7 +20,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 			Message: fmt.Sprintf("Prebid-server has disabled Account ID: %s, please reach out to the prebid server host.", accountID),
 		}}
 	}
-	if cfg.AccountRequired && accountID == pbsmetrics.PublisherUnknown {
+	if cfg.AccountRequired && accountID == metrics.PublisherUnknown {
 		return nil, []error{&errortypes.AcctRequired{
 			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
 		}}

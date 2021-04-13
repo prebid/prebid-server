@@ -44,11 +44,12 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://adx.adform.net/adx?CC=1&fd=1&gdpr=1&gdpr_consent=abc2&ip=&pt=gross&rp=4&stid=&bWlkPTEmcmN1cj1VU0Q"
+        "uri": "https://adx.adform.net/adx?CC=1&fd=1&gdpr=1&gdpr_consent=abc2&ip=&pt=gross&rp=4&stid=&bWlkPTEmcmN1cj1VU0Q"
       },
       "mockResponse": {
         "status": 204
       }
     }
-  ]
+  ],
+  "expectedBidResponses": []
 }

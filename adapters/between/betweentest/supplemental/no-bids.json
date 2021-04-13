@@ -20,7 +20,8 @@
         },
         "ext": {
           "bidder": {
-            "host": "127.0.0.1"
+            "host": "127.0.0.1",
+            "publisher_id": "1"
           }
         }
       }
@@ -29,7 +30,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://127.0.0.1/",
+        "uri": "http://127.0.0.1/1",
         "body": {
           "id": "test-request-id",
           "site": {
@@ -42,18 +43,15 @@
             {
               "id": "test-imp-id",
               "banner": {
-                "format": [
-                  {
-                    "w": 728,
-                    "h": 90
-                  }
-                ]
+                "w": 728,
+                "h": 90
               },
-              "ext":
-              {
-                "bidder":
-                {
-                  "host": "127.0.0.1"
+              "bidfloor": 1e-05,
+              "secure": 0,
+              "ext": {
+                "bidder": {
+                  "host": "127.0.0.1",
+                  "publisher_id": "1"
                 }
               }
             }
@@ -65,5 +63,6 @@
         "body": {}
       }
     }
-  ]
+  ],
+  "expectedBidResponses": []
 }

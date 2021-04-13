@@ -30,6 +30,5 @@ func TestValueImpressionSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://rtb.valueimpression.com/usersync?gdpr=1&gdpr_consent=BOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA&redirectUri=http%3A%2F%2Flocalhost:8000%2Fsetuid%3Fbidder%3Dvalueimpression%26gdpr%3D1%26gdpr_consent%3DBOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA%26uid%3D%24UID", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.False(t, syncInfo.SupportCORS)
 }

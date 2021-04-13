@@ -8,5 +8,5 @@ import (
 )
 
 func NewOpenxSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("openx", 69, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("openx", temp, adapters.SyncTypeRedirect)
 }

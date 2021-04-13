@@ -136,7 +136,7 @@ func resolvedStoredRequestsConfig(cfg *Configuration) {
 	return
 }
 
-func (cfg *StoredRequests) validate(errs configErrors) configErrors {
+func (cfg *StoredRequests) validate(errs []error) []error {
 	if cfg.DataType() == AccountDataType && cfg.Postgres.ConnectionInfo.Database != "" {
 		errs = append(errs, fmt.Errorf("%s.postgres: retrieving accounts via postgres not available, use accounts.files", cfg.Section()))
 	} else {
@@ -177,7 +177,7 @@ type PostgresConfig struct {
 	PollUpdates         PostgresUpdatePolling    `mapstructure:"poll_for_updates"`
 }
 
-func (cfg *PostgresConfig) validate(dataType DataType, errs configErrors) configErrors {
+func (cfg *PostgresConfig) validate(dataType DataType, errs []error) []error {
 	if cfg.ConnectionInfo.Database == "" {
 		return errs
 	}
@@ -279,7 +279,7 @@ type PostgresCacheInitializer struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *PostgresCacheInitializer) validate(dataType DataType, errs configErrors) configErrors {
+func (cfg *PostgresCacheInitializer) validate(dataType DataType, errs []error) []error {
 	section := dataType.Section()
 	if cfg.Query == "" {
 		return errs
@@ -316,7 +316,7 @@ type PostgresUpdatePolling struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *PostgresUpdatePolling) validate(dataType DataType, errs configErrors) configErrors {
+func (cfg *PostgresUpdatePolling) validate(dataType DataType, errs []error) []error {
 	section := dataType.Section()
 	if cfg.Query == "" {
 		return errs
@@ -404,7 +404,7 @@ type InMemoryCache struct {
 	ImpCacheSize int `mapstructure:"imp_cache_size_bytes"`
 }
 
-func (cfg *InMemoryCache) validate(dataType DataType, errs configErrors) configErrors {
+func (cfg *InMemoryCache) validate(dataType DataType, errs []error) []error {
 	section := dataType.Section()
 	switch cfg.Type {
 	case "none":

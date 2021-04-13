@@ -11,7 +11,7 @@
         "ext": {
           "bidder": {
             "tappxkey": "pub-12345-android-9876",
-            "host": "test.tappx.com"
+            "host": "testing.ssp.tappx.com/rtb/v2/"
           }
         }
       }

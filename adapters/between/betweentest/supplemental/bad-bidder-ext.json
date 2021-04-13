@@ -1,43 +1,35 @@
 {
-  "mockBidRequest":
-  {
+  "mockBidRequest": {
     "id": "some-request-id",
     "imp": [
       {
         "id": "some-impression-id",
-        "banner":
-        {
+        "banner": {
           "format": [
             {
               "w": 300,
               "h": 250
-            }]
+            }
+          ]
         },
-        "ext":
-        {
-          "bidder":
-          []
-          
+        "ext": {
+          "bidder": []
         }
-      }],
-    "site":
-    {
+      }
+    ],
+    "site": {
       "page": "prebid.org"
     },
-    "device":
-    {
+    "device": {
       "ip": "8.8.8.8"
     },
     "at": 1,
     "tmax": 500
   },
-
   "expectedMakeRequestsErrors": [
     {
-      "value": "No valid Imps in Bid Request",
+      "value": "ignoring imp id=some-impression-id, invalid ImpExt",
       "comparison": "literal"
-    } 
+    }
   ]
-
-  
 }

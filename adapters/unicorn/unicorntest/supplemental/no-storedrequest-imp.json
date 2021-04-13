@@ -1,0 +1,69 @@
+{
+  "mockBidRequest": {
+    "at": 1,
+    "imp": [
+      {
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "api": [5]
+        },
+        "id": "29D2F33E-F865-40DA-9320-16EF77935254",
+        "secure": 1,
+        "ext": {
+          "prebid": {
+          },
+          "bidder": {
+            "accountId": 199578,
+            "publisherId": 123456,
+            "mediaId": "test_media"
+          }
+        }
+      }
+    ],
+    "cur": ["JPY"],
+    "app": {
+      "publisher": {
+        "id": "test"
+      },
+      "ext": {
+        "prebid": {
+          "source": "prebid-mobile",
+          "version": "1.9.0"
+        }
+      },
+      "bundle": "net.ada.test",
+      "ver": "1.9.0"
+    },
+    "id": "CFD24FB1-916F-467D-8825-34892B315DB7",
+    "source": {
+      "tid": "A4B3EA9F-FF57-4716-AC85-6CBF6A46CFBD"
+    },
+    "device": {
+      "make": "Apple",
+      "osv": "14.4",
+      "connectiontype": 1,
+      "os": "iOS",
+      "w": 320,
+      "model": "Simulator",
+      "ifa": "00000000-0000-0000-0000-000000000000",
+      "devtime": 1612413327,
+      "h": 568,
+      "pxratio": 2,
+      "ext": {
+        "atts": 0
+      }
+    },
+    "user": {
+      "gender": "O"
+    }
+  },
+  "expectedMakeRequestsErrors" : [{
+    "value": "Error get StoredRequestImpID from imp[0]: stored request id not found: Key path not found",
+    "comparison": "literal"
+  }]
+}

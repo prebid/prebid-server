@@ -1,0 +1,20 @@
+{
+    "description": "Request has a negative banner format width.",
+    "mockBidRequest": {
+        "id": "req-id",
+        "imp": [{
+            "id": "imp-id",
+            "banner": {
+                "format": [{
+                    "w": -1,
+                    "h": 50
+                }]
+            }
+        }],
+        "app": {
+            "id": "app_001"
+        }
+    },
+    "expectedReturnCode": 400,
+    "expectedErrorMessage": "Invalid request: request.imp[0].banner.format[0].w must be a positive number"
+}

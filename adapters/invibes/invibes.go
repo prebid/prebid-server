@@ -9,13 +9,13 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 const adapterVersion = "prebid_1.0.0"
@@ -42,8 +42,8 @@ type InvibesBidParams struct {
 	Properties   map[string]InvibesPlacementProperty `json:"Properties"`
 }
 type InvibesPlacementProperty struct {
-	Formats []openrtb.Format `json:"Formats"`
-	ImpID   string           `json:"ImpId"`
+	Formats []openrtb2.Format `json:"Formats"`
+	ImpID   string            `json:"ImpId"`
 }
 type InvibesInternalParams struct {
 	BidParams   InvibesBidParams
@@ -61,8 +61,8 @@ type BidServerBidderResponse struct {
 	Error     string              `json:"error"`
 }
 type BidServerTypedBid struct {
-	Bid          openrtb.Bid `json:"bid"`
-	DealPriority int         `json:"dealPriority"`
+	Bid          openrtb2.Bid `json:"bid"`
+	DealPriority int          `json:"dealPriority"`
 }
 
 func (a *InvibesInternalParams) IsTestRequest() bool {
@@ -73,16 +73,20 @@ type InvibesAdapter struct {
 	EndpointTemplate template.Template
 }
 
-func NewInvibesBidder(endpointTemplate string) *InvibesAdapter {
-	urlTemplate, err := template.New("endpointTemplate").Parse(endpointTemplate)
+// Builder builds a new instance of the Invibes adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &InvibesAdapter{EndpointTemplate: *urlTemplate}
+
+	bidder := InvibesAdapter{
+		EndpointTemplate: *template,
+	}
+	return &bidder, nil
 }
 
-func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *InvibesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var httpRequests []*adapters.RequestData
 	var tempErrors []error
 	gdprApplies, consentString := readGDPR(request)
@@ -129,7 +133,7 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		}
 		invibesInternalParams.TestLog = invibesExt.Debug.TestLog
 	}
-	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
+	if reqInfo.PbsEntryPoint == metrics.ReqTypeAMP {
 		invibesInternalParams.IsAMP = true
 	}
 
@@ -151,7 +155,7 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	return httpRequests, finalErrors
 }
 
-func readGDPR(request *openrtb.BidRequest) (bool, string) {
+func readGDPR(request *openrtb2.BidRequest) (bool, string) {
 	consentString := ""
 	if request.User != nil {
 		var extUser openrtb_ext.ExtUser
@@ -171,12 +175,12 @@ func readGDPR(request *openrtb.BidRequest) (bool, string) {
 	return gdprApplies, consentString
 }
 
-func readAdFormats(currentBanner openrtb.Banner) []openrtb.Format {
-	var adFormats []openrtb.Format
+func readAdFormats(currentBanner openrtb2.Banner) []openrtb2.Format {
+	var adFormats []openrtb2.Format
 	if currentBanner.Format != nil {
 		adFormats = currentBanner.Format
 	} else if currentBanner.W != nil && currentBanner.H != nil {
-		adFormats = []openrtb.Format{
+		adFormats = []openrtb2.Format{
 			{
 				W: *currentBanner.W,
 				H: *currentBanner.H,
@@ -186,7 +190,7 @@ func readAdFormats(currentBanner openrtb.Banner) []openrtb.Format {
 	return adFormats
 }
 
-func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInfo *adapters.ExtraRequestInfo, existingRequests []*adapters.RequestData, request *openrtb.BidRequest) (*adapters.RequestData, error) {
+func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInfo *adapters.ExtraRequestInfo, existingRequests []*adapters.RequestData, request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 
 	url, err := a.makeURL(request, invibesParams.DomainID)
 	if err != nil {
@@ -229,7 +233,7 @@ func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInf
 	}, nil
 }
 
-func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, request *openrtb.BidRequest) (*InvibesAdRequest, error) {
+func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, request *openrtb2.BidRequest) (*InvibesAdRequest, error) {
 	var lid string = ""
 	if request.User != nil && request.User.BuyerUID != "" {
 		lid = request.User.BuyerUID
@@ -243,11 +247,11 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 	var width, height string
 	if request.Device != nil {
 		if request.Device.W > 0 {
-			width = strconv.FormatUint(request.Device.W, 10)
+			width = strconv.FormatInt(request.Device.W, 10)
 		}
 
 		if request.Device.H > 0 {
-			height = strconv.FormatUint(request.Device.H, 10)
+			height = strconv.FormatInt(request.Device.H, 10)
 		}
 	}
 
@@ -274,7 +278,7 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 	return &invRequest, err
 }
 
-func (a *InvibesAdapter) makeURL(request *openrtb.BidRequest, domainID int) (string, error) {
+func (a *InvibesAdapter) makeURL(request *openrtb2.BidRequest, domainID int) (string, error) {
 	host := "bid.videostep.com"
 	if domainID == 1 {
 		host = "adweb.videostepstage.com"
@@ -303,7 +307,7 @@ func (a *InvibesAdapter) makeURL(request *openrtb.BidRequest, domainID int) (str
 }
 
 func (a *InvibesAdapter) MakeBids(
-	internalRequest *openrtb.BidRequest,
+	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {

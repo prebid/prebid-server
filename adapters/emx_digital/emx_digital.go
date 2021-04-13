@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -31,7 +32,7 @@ func buildEndpoint(endpoint string, testing bool, timeout int64) string {
 	return endpoint + "?t=" + strconv.FormatInt(timeout, 10) + "&ts=" + strconv.FormatInt(time.Now().Unix(), 10) + "&src=pbserver"
 }
 
-func (a *EmxDigitalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *EmxDigitalAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
 	if len(request.Imp) == 0 {
@@ -79,7 +80,7 @@ func (a *EmxDigitalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}}, errs
 }
 
-func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpEmxDigital, error) {
+func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpEmxDigital, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -110,7 +111,7 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpEmxDigital, error) {
 	return &emxExt, nil
 }
 
-func buildImpBanner(imp *openrtb.Imp) error {
+func buildImpBanner(imp *openrtb2.Imp) error {
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
@@ -137,7 +138,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 	return nil
 }
 
-func buildImpVideo(imp *openrtb.Imp) error {
+func buildImpVideo(imp *openrtb2.Imp) error {
 
 	if len(imp.Video.MIMEs) == 0 {
 		return &errortypes.BadInput{
@@ -151,19 +152,21 @@ func buildImpVideo(imp *openrtb.Imp) error {
 		}
 	}
 
-	if imp.Video.Protocols != nil {
-		imp.Video.Protocols = cleanProtocol(imp.Video.Protocols)
+	if len(imp.Video.Protocols) > 0 {
+		videoCopy := *imp.Video
+		videoCopy.Protocols = cleanProtocol(imp.Video.Protocols)
+		imp.Video = &videoCopy
 	}
 
 	return nil
 }
 
 // not supporting VAST protocol 7 (VAST 4.0);
-func cleanProtocol(protocols []openrtb.Protocol) []openrtb.Protocol {
-	newitems := make([]openrtb.Protocol, 0, len(protocols))
+func cleanProtocol(protocols []openrtb2.Protocol) []openrtb2.Protocol {
+	newitems := make([]openrtb2.Protocol, 0, len(protocols))
 
 	for _, i := range protocols {
-		if i != openrtb.ProtocolVAST40 {
+		if i != openrtb2.ProtocolVAST40 {
 			newitems = append(newitems, i)
 		}
 	}
@@ -172,7 +175,7 @@ func cleanProtocol(protocols []openrtb.Protocol) []openrtb.Protocol {
 }
 
 // Add EMX required properties to Imp object
-func addImpProps(imp *openrtb.Imp, secure *int8, emxExt *openrtb_ext.ExtImpEmxDigital) {
+func addImpProps(imp *openrtb2.Imp, secure *int8, emxExt *openrtb_ext.ExtImpEmxDigital) {
 	imp.TagID = emxExt.TagID
 	imp.Secure = secure
 
@@ -199,10 +202,10 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 }
 
 // Handle request errors and formatting to be sent to EMX
-func preprocess(request *openrtb.BidRequest) []error {
+func preprocess(request *openrtb2.BidRequest) []error {
 	impsCount := len(request.Imp)
 	errors := make([]error, 0, impsCount)
-	resImps := make([]openrtb.Imp, 0, impsCount)
+	resImps := make([]openrtb2.Imp, 0, impsCount)
 	secure := int8(0)
 	domain := ""
 	if request.Site != nil && request.Site.Page != "" {
@@ -249,7 +252,7 @@ func preprocess(request *openrtb.BidRequest) []error {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *EmxDigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *EmxDigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		// no bid response
@@ -262,7 +265,7 @@ func (a *EmxDigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -305,9 +308,11 @@ func ContainsAny(raw string, keys []string) bool {
 
 }
 
-func NewEmxDigitalBidder(endpoint string) *EmxDigitalAdapter {
-	return &EmxDigitalAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the EmxDigital adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &EmxDigitalAdapter{
+		endpoint: config.Endpoint,
 		testing:  false,
 	}
+	return bidder, nil
 }
