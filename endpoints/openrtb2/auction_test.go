@@ -1294,7 +1294,7 @@ func TestValidateCustomRates(t *testing.T) {
 				UsePBSRates: &boolFalse,
 			},
 			outFilteredCurrencies: map[string]map[string]float64{},
-			outCurrencyError:      &errortypes.BadInput{Message: "Required custom currency rates are all invalid. FOO,BAR"},
+			outCurrencyError:      &errortypes.BadInput{Message: "Required custom currency rates are all invalid."},
 		},
 		{
 			desc: "Some fromCurrency and toCurrency 3-digit codes don't exist, keep the valid ones",
@@ -1354,7 +1354,12 @@ func TestValidateCustomRates(t *testing.T) {
 		// Assertions
 		if tc.inBidReqCurrencies != nil {
 			assert.Equal(t, tc.outFilteredCurrencies, tc.inBidReqCurrencies.ConversionRates, tc.desc)
-			assert.Equal(t, tc.outCurrencyError, actualErr, tc.desc)
+			if tc.outCurrencyError == nil {
+				assert.Nil(t, actualErr, tc.desc)
+			} else {
+				assert.Error(t, actualErr, tc.desc)
+				assert.True(t, strings.HasPrefix(actualErr.Error(), tc.outCurrencyError.Error()), tc.desc)
+			}
 		} else {
 			// If tc.inBidReqCurrencies nil, no error should have been thrown
 			assert.NoError(t, actualErr, tc.desc)
