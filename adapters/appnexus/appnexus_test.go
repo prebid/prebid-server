@@ -205,37 +205,6 @@ func TestVideoTwoPods(t *testing.T) {
 	assert.NotEqual(t, adPodId1, adPodId2, "AdPod id should be different for different pods")
 }
 
-func TestVideoTwoPodsDifferentAdPodId(t *testing.T) {
-	var a AppNexusAdapter
-	a.URI = "http://test.com/openrtb2"
-	a.hbSource = 5
-
-	var reqInfo adapters.ExtraRequestInfo
-	reqInfo.PbsEntryPoint = "video"
-
-	var req openrtb2.BidRequest
-	req.ID = "test_id"
-
-	reqExt := `{"prebid":{}}`
-	impExtPod1 := `{"bidder":{"placementId":123, "generate_ad_pod_id": true}}`
-	impExtPod2 := `{"bidder":{"placementId":123, "generate_ad_pod_id": false}}`
-	req.Ext = []byte(reqExt)
-
-	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_0", Ext: []byte(impExtPod1)})
-	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_1", Ext: []byte(impExtPod1)})
-	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_2", Ext: []byte(impExtPod1)})
-
-	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_0", Ext: []byte(impExtPod2)})
-	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_1", Ext: []byte(impExtPod2)})
-	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_2", Ext: []byte(impExtPod2)})
-
-	res, err := a.MakeRequests(&req, &reqInfo)
-
-	assert.Len(t, err, 1, "Errors array should not be empty")
-	assert.Equal(t, "generate ad pod option should be same for all pods in request", err[0].Error(), "Error is incorrect")
-	assert.Nil(t, res, "Result should be nil")
-}
-
 func TestVideoTwoPodsManyImps(t *testing.T) {
 	var a AppNexusAdapter
 	a.URI = "http://test.com/openrtb2"
