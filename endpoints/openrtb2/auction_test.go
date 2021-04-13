@@ -1222,7 +1222,7 @@ func TestValidateCustomRates(t *testing.T) {
 			outCurrencyError:      &errortypes.BadInput{Message: "Required custom currency rates field is empty"},
 		},
 		{
-			desc: "bidExt fromCurrency is fake, expect no errors because UsePBSRates is nil and defaults to true",
+			desc: "bidExt fromCurrency is invalid, expect no errors because UsePBSRates is nil and defaults to true",
 			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
 				ConversionRates: map[string]map[string]float64{
 					"FOO": {
@@ -1236,7 +1236,7 @@ func TestValidateCustomRates(t *testing.T) {
 			outCurrencyError:      nil,
 		},
 		{
-			desc: "bidExt fromCurrency is fake, expect errors because UsePBSRates is set to false and we are left with no currencies to use",
+			desc: "bidExt fromCurrency is invalid, expect errors because UsePBSRates is set to false and we are left with no currencies to use",
 			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
 				ConversionRates: map[string]map[string]float64{
 					"FOO": {

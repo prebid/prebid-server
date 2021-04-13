@@ -876,7 +876,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 		expected testOutput
 	}{
 		{
-			"Valid Conversions objects, UsePBSRates set to false. Resulting rates will be identical to customRates",
+			"Both pbsRates and ConversionRates are valid but UsePBSRates is set to false. Resulting rates will be identical to customRates with their corresponding inverse values",
 			testInput{
 				pbsRates: pbsRates,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -889,7 +889,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			},
 		},
 		{
-			"Valid Conversions objects, UsePBSRates set to true. Resulting rates will keep values found in pbsRates but not found in customRates and the rest will be added or overwritten with customRates' values and their inverses",
+			"Both pbsRates and ConversionRates are valid but UsePBSRates is set to false. Resulting rates will keep values found in pbsRates but not found in customRates and the rest will be added or overwritten with customRates' values and their inverses",
 			testInput{
 				pbsRates: pbsRates,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -1023,7 +1023,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			},
 		},
 		{
-			"customRates is nil, pbsRates are not nil. Resulting rates will be identical to pbsRates",
+			"customRates is nil, pbsRates are nil. Return default constant rates converter",
 			testInput{
 				pbsRates:       nil,
 				bidExtCurrency: nil,

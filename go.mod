@@ -58,6 +58,6 @@ require (
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/sys v0.0.0-20190422165155-953cdadca894 // indirect
-	golang.org/x/text v0.3.0
+	golang.org/x/text v0.3.6
 	gopkg.in/yaml.v2 v2.2.2
 )

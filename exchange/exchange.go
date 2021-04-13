@@ -909,75 +909,79 @@ func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auction *auction) (cacheInfo
 // and this function merely substitutes Conversions with customRates. But if usePbsRates was ommitted or set to
 // true, customRates' values update or add to the Conversions map
 func (e *exchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
-	// No bidRequest.ext-defined, use PBS rates
+	// No bidRequest.ext custom rates defined, use PBS rates as usual
 	if customRates == nil || len(customRates.ConversionRates) == 0 {
 		return e.currencyConverter.Rates()
 	}
 
-	// CHANGE Because usePbsRates is true, we should use a mix of bidRequest.ext-defined rates with PBS rates. But, if
-	// CHANGE e.currencyConverter didn't find rates to fetch, use all custom rates.
-	pbsConversions := e.currencyConverter.Rates()
-	serverRates := pbsConversions.GetRates()
+	// bidRequest.ext defines custom rates of its own, figure out whether to use a mix of
+	// Pbs rates and custom rates or custom rates only
+	if customRates.UsePBSRates != nil && !(*customRates.UsePBSRates) {
+		// Use custom rates only
+		includeInverseRates(customRates.ConversionRates)
 
-	// CHANGE Given that usePbsRates is true and the serverRates map not empty, mix bidRequest.ext-defined rates
-	// CHANGE with PBS rates for this bidRequest to use
-	auctionRates := make(map[string]map[string]float64, len(*serverRates))
+		return currency.NewRates(time.Time{}, customRates.ConversionRates)
+	} else {
+		// Use both custom and PBS rates
+		pbsConversions := e.currencyConverter.Rates()
+		serverRates := pbsConversions.GetRates()
+		auctionRates := make(map[string]map[string]float64, len(*serverRates))
 
-	// Copy custom rates first because they get priority
-	for fromCurrency, rates := range customRates.ConversionRates {
-		//addCurrencyRates(auctionRates, rates, fromCurrency)
+		copyCustomRates(auctionRates, customRates.ConversionRates)
+		copyPBSRates(auctionRates, *serverRates)
 
-		if _, defined := auctionRates[fromCurrency]; !defined {
-			auctionRates[fromCurrency] = make(map[string]float64, len(rates))
+		return currency.NewRates(time.Time{}, auctionRates)
+	}
+}
+
+func copyCustomRates(destMap map[string]map[string]float64, customRates map[string]map[string]float64) {
+	for fromCurrency, rates := range customRates {
+		if _, defined := destMap[fromCurrency]; !defined {
+			destMap[fromCurrency] = make(map[string]float64, len(rates))
 		}
 
 		for toCurrency, rate := range rates {
-			auctionRates[fromCurrency][toCurrency] = rate
+			destMap[fromCurrency][toCurrency] = rate
 
 			// Write entries to inverse of conversion rates if needed
-			if _, inverseIncluded := customRates.ConversionRates[toCurrency][fromCurrency]; !inverseIncluded {
-				if _, defined := auctionRates[toCurrency]; !defined {
-					auctionRates[toCurrency] = map[string]float64{fromCurrency: 1.00 / rate}
+			if _, inverseIncluded := customRates[toCurrency][fromCurrency]; !inverseIncluded {
+				if _, defined := destMap[toCurrency]; !defined {
+					destMap[toCurrency] = map[string]float64{fromCurrency: 1.00 / rate}
 				} else {
-					auctionRates[toCurrency][fromCurrency] = 1.00 / rate
+					destMap[toCurrency][fromCurrency] = 1.00 / rate
 				}
 			}
 		}
 	}
-
-	// Now copy pbs rates if needed
-	if customRates.UsePBSRates == nil || *customRates.UsePBSRates {
-		//if usePbsRates {
-		for fromCurrency, rates := range *serverRates {
-			if _, defined := auctionRates[fromCurrency]; !defined {
-				auctionRates[fromCurrency] = make(map[string]float64, len(rates))
-			}
-
-			for toCurrency, rate := range rates {
-				// If it was found in the custom conversions, don't modify because custom rates take precedence
-				if _, customRateFound := auctionRates[fromCurrency][toCurrency]; !customRateFound {
-					auctionRates[fromCurrency][toCurrency] = rate
-				}
-			}
-		}
-	}
-
-	return currency.NewRates(time.Now(), auctionRates)
 }
 
-func addCurrencyRates(ratesSoFar map[string]map[string]float64, fromCurrencyRates map[string]float64, fromCurrency string) {
-	if _, defined := ratesSoFar[fromCurrency]; !defined {
-		ratesSoFar[fromCurrency] = make(map[string]float64, len(fromCurrencyRates))
-	}
-
-	for toCurrency, rate := range fromCurrencyRates {
-		// If it was already added, don't add again
-		if _, customRateFound := ratesSoFar[fromCurrency][toCurrency]; !customRateFound {
-			ratesSoFar[fromCurrency][toCurrency] = rate
+func copyPBSRates(destMap map[string]map[string]float64, serverRates map[string]map[string]float64) {
+	for fromCurrency, rates := range serverRates {
+		if _, defined := destMap[fromCurrency]; !defined {
+			destMap[fromCurrency] = make(map[string]float64, len(rates))
 		}
 
-		// Add toCurrency -> fromCurrency entry if needed
-		addCurrencyRates(ratesSoFar, map[string]float64{toCurrency: 1.00 / rate}, toCurrency)
+		for toCurrency, rate := range rates {
+			// If it was found in the custom conversions, don't modify because custom rates take precedence
+			if _, customRateFound := destMap[fromCurrency][toCurrency]; !customRateFound {
+				destMap[fromCurrency][toCurrency] = rate
+			}
+		}
+	}
+}
+
+func includeInverseRates(destMap map[string]map[string]float64) {
+	for fromCurrency, rates := range destMap {
+		for toCurrency, rate := range rates {
+			// Write entries to inverse of conversion rates if needed
+			if _, inverseIncluded := destMap[toCurrency][fromCurrency]; !inverseIncluded {
+				if _, defined := destMap[toCurrency]; !defined {
+					destMap[toCurrency] = map[string]float64{fromCurrency: 1.00 / rate}
+				} else {
+					destMap[toCurrency][fromCurrency] = 1.00 / rate
+				}
+			}
+		}
 	}
 }
 

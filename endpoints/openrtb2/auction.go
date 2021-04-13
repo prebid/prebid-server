@@ -444,7 +444,6 @@ func validateSChains(req *openrtb_ext.ExtRequest) error {
 // field. If all of them were discarded and bidRequest.ext.prebid.currency was set to false, it means
 // we have no currencies to work with and this function returns a fatal BadInput error
 func validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) error {
-
 	if bidReqCurrencyRates == nil {
 		return nil
 	}
@@ -454,16 +453,14 @@ func validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) er
 	for fromCurrency, rates := range bidReqCurrencyRates.ConversionRates {
 
 		// Check if fromCurrency is a valid 3-letter currency code
-		_, err := currency.ParseISO(fromCurrency)
-		if err != nil {
+		if _, err := currency.ParseISO(fromCurrency); err != nil {
 			badCurrencyCodes = append(badCurrencyCodes, fromCurrency)
 			delete(bidReqCurrencyRates.ConversionRates, fromCurrency)
 		}
 
 		// Check if currencies mapped to fromCurrency are valid 3-letter currency codes
 		for toCurrency := range rates {
-			_, err := currency.ParseISO(toCurrency)
-			if err != nil {
+			if _, err := currency.ParseISO(toCurrency); err != nil {
 				badCurrencyCodes = append(badCurrencyCodes, toCurrency)
 				delete(rates, toCurrency)
 			}
