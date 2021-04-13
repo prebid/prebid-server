@@ -95,6 +95,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		currencyConverter:   currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		UsersyncIfAmbiguous: false,
 		categoriesFetcher:   categoriesFetcher,
+		bidIDGenerator:      &mockBidIDGenerator{false, false},
 	}
 
 	imps := buildImps(t, mockBids)

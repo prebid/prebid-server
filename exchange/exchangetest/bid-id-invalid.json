@@ -1,0 +1,161 @@
+{
+  "bidIDGenerator": {
+    "generateBidID": true,
+    "returnError": true
+  },
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 1
+            }
+          }
+        }
+      ],
+      "test": 1,
+      "ext": {
+        "prebid": {
+          "targeting": {
+            "includebrandcategory": {
+              "primaryadserver": 1,
+              "publisher": "",
+              "withcategory": true
+            },
+            "appendbiddernames": true
+          }
+        }
+      }
+    },
+    "usersyncs": {
+      "appnexus": "123"
+    }
+  },
+  "outgoingRequests": {
+    "appnexus": {
+      "mockResponse": {
+        "pbsSeatBid": {
+          "pbsBids": [
+            {
+              "ortbBid": {
+                "id": "apn-bid",
+                "impid": "my-imp-id",
+                "price": 0.3,
+                "w": 200,
+                "h": 250,
+                "crid": "creative-1",
+                "cat": [
+                  "IAB1-1"
+                ]
+              },
+              "bidType": "video",
+              "bidVideo": {
+                "duration": 30,
+                "PrimaryCategory": ""
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "response": {
+    "bids": {
+      "id": "some-request-id",
+      "seatbid": [
+        {
+          "seat": "appnexus",
+          "bid": [
+            {
+              "id": "apn-bid",
+              "impid": "my-imp-id",
+              "price": 0.3,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-1",
+              "cat": [
+                "IAB1-1"
+              ],
+              "ext": {
+                "prebid": {
+                  "type": "video",
+                  "targeting": {
+                    "hb_bidder": "appnexus",
+                    "hb_bidder_appnexus": "appnexus",
+                    "hb_cache_host": "www.pbcserver.com",
+                    "hb_cache_host_appnex": "www.pbcserver.com",
+                    "hb_cache_path": "/pbcache/endpoint",
+                    "hb_cache_path_appnex": "/pbcache/endpoint",
+                    "hb_pb": "0.20",
+                    "hb_pb_appnexus": "0.20",
+                    "hb_pb_cat_dur": "0.20_VideoGames_0s_appnexus",
+                    "hb_pb_cat_dur_appnex": "0.20_VideoGames_0s_appnexus",
+                    "hb_size": "200x250",
+                    "hb_size_appnexus": "200x250"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "ext": {
+      "debug": {
+        "resolvedrequest": {
+          "id": "some-request-id",
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "test": 1,
+          "ext": {
+            "prebid": {
+              "targeting": {
+                "includebrandcategory": {
+                  "primaryadserver": 1,
+                  "publisher": "",
+                  "withcategory": true
+                },
+                "appendbiddernames": true
+              }
+            }
+          }
+        }
+      },
+      "errors": {
+        "prebid": [
+          {
+            "code": 999,
+            "message": "Error generating bid.ext.prebid.bidid"
+          }
+        ]
+      }
+    }
+  }
+}
