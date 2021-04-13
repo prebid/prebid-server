@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/mxmCherry/openrtb/v15/native1"
+	nativeResponse "github.com/mxmCherry/openrtb/v15/native1/response"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -118,6 +120,20 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				errs = append(errs, err)
 				continue
 			}
+			if bidType == openrtb_ext.BidTypeNative {
+				var nativePayload nativeResponse.Response
+				if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativePayload); err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				transformEventTrackers(&nativePayload)
+				nativePayloadJson, err := json.Marshal(nativePayload)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				bid.AdM = string(nativePayloadJson)
+			}
 
 			b := &adapters.TypedBid{
 				Bid:     &bid,
@@ -144,4 +160,21 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find native/banner impression \"%s\" ", impID),
 	}
+}
+
+func transformEventTrackers(nativePayload *nativeResponse.Response) {
+	// the native-trk.js library used to trigger the trackers currently doesn't support the native 1.2 eventtrackers,
+	// so transform them to the deprecated imptrackers and jstracker
+	for _, eventTracker := range nativePayload.EventTrackers {
+		if eventTracker.Event != native1.EventTypeImpression {
+			continue
+		}
+		switch eventTracker.Method {
+		case native1.EventTrackingMethodImage:
+			nativePayload.ImpTrackers = append(nativePayload.ImpTrackers, eventTracker.URL)
+		case native1.EventTrackingMethodJS:
+			nativePayload.JSTracker = fmt.Sprintf("<script src=\"%s\"></script>", eventTracker.URL)
+		}
+	}
+	nativePayload.EventTrackers = nil
 }

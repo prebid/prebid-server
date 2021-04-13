@@ -73,7 +73,7 @@
                   "impid": "test-imp-id",
                   "price": 1000,
                   "nurl": "http://example.com/win/1000",
-                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":3,\"required\":1,\"img\":{\"url\":\"http://example.com/img/url\",\"w\":120,\"h\":100}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Test title\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://example.com/click/url\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://example.com/impression\"}]}",
+                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":3,\"required\":1,\"img\":{\"url\":\"http://example.com/img/url\",\"w\":120,\"h\":100}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Test title\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://example.com/click/url\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://example.com/impression\"},{\"event\":1,\"method\":2,\"url\":\"http://example.com/impression\"}]}",
                   "adomain": [
                     "example.com"
                   ],
@@ -81,9 +81,7 @@
                   "crid": "test-crid",
                   "cat": [
                     "IAB13-4"
-                  ],
-                  "w": 300,
-                  "h": 250
+                  ]
                 }
               ],
               "seat": "acc-1876"
@@ -105,7 +103,7 @@
             "impid": "test-imp-id",
             "price": 1000,
             "nurl": "http://example.com/win/1000",
-            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":3,\"required\":1,\"img\":{\"url\":\"http://example.com/img/url\",\"w\":120,\"h\":100}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Test title\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://example.com/click/url\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://example.com/impression\"}]}",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":3,\"required\":1,\"img\":{\"url\":\"http://example.com/img/url\",\"w\":120,\"h\":100}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Test title\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://example.com/click/url\"},\"imptrackers\":[\"http://example.com/impression\"],\"jstracker\":\"\\u003cscript src=\\\"http://example.com/impression\\\"\\u003e\\u003c/script\\u003e\"}",
             "adomain": [
               "example.com"
             ],
@@ -113,9 +111,7 @@
             "crid": "test-crid",
             "cat": [
               "IAB13-4"
-            ],
-            "w": 300,
-            "h": 250
+            ]
           },
           "type": "native"
         }
