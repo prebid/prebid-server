@@ -280,6 +280,9 @@ func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeRes
 
 func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Request) error {
 	if asset.Img != nil {
+		if asset.ID == nil {
+			return fmt.Errorf("Response Image asset doesn't have an ID")
+		}
 		if tempAsset, err := getAssetByID(*asset.ID, nativePayload.Assets); err == nil {
 			if tempAsset.Img != nil {
 				if tempAsset.Img.Type != 0 {
@@ -294,6 +297,9 @@ func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Requ
 	}
 
 	if asset.Data != nil {
+		if asset.ID == nil {
+			return fmt.Errorf("Response Data asset doesn't have an ID")
+		}
 		if tempAsset, err := getAssetByID(*asset.ID, nativePayload.Assets); err == nil {
 			if tempAsset.Data != nil {
 				if tempAsset.Data.Type != 0 {
