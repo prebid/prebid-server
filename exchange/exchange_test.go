@@ -728,6 +728,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 	e.gDPR = gdpr.AlwaysAllow{}
 	e.currencyConverter = mockCurrencyConverter
 	e.categoriesFetcher = categoriesFetcher
+	e.bidIDGenerator = &mockBidIDGenerator{false, false}
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
