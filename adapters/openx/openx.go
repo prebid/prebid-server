@@ -130,7 +130,9 @@ func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 	reqExt.Platform = openxExt.Platform
 
 	imp.TagID = openxExt.Unit
-	imp.BidFloor = openxExt.CustomFloor
+	if imp.BidFloor == 0 && openxExt.CustomFloor > 0 {
+		imp.BidFloor = openxExt.CustomFloor
+	}
 	imp.Ext = nil
 
 	if openxExt.CustomParams != nil {
