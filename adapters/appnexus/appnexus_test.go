@@ -90,7 +90,7 @@ func TestVideoSinglePod(t *testing.T) {
 	error = json.Unmarshal(reqData.Ext, &reqDataExt)
 	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
-	regMatch, matchErr := regexp.Match(`[0-9]{19}`, []byte(reqDataExt.Appnexus.AdPodId))
+	regMatch, matchErr := regexp.Match(`^[0-9]+$`, []byte(reqDataExt.Appnexus.AdPodId))
 	assert.NoError(t, matchErr, "Regex match error should be nil")
 	assert.True(t, regMatch, "AdPod id doesn't present in Appnexus extension or has incorrect format")
 }
