@@ -402,9 +402,23 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 			if !ok {
 				errs = append(errs, fmt.Errorf("Unmatched impression id: %s.", bid.ImpID))
 			}
+
+			var bidExtVideo *openrtb_ext.ExtBidPrebidVideo
+			var bidExt openrtb_ext.ExtBid
+			if bidType == openrtb_ext.BidTypeVideo {
+				unmarshalExtErr := json.Unmarshal(bid.Ext, &bidExt)
+				if unmarshalExtErr == nil && bidExt.Prebid != nil && bidExt.Prebid.Video != nil {
+					bidExtVideo = &openrtb_ext.ExtBidPrebidVideo{
+						Duration:        bidExt.Prebid.Video.Duration,
+						PrimaryCategory: bidExt.Prebid.Video.PrimaryCategory,
+					}
+				}
+			}
+
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: bidType,
+				Bid:      &bid,
+				BidType:  bidType,
+				BidVideo: bidExtVideo,
 			})
 		}
 	}
