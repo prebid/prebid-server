@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -17,7 +17,7 @@ type VerizonMediaAdapter struct {
 	URI string
 }
 
-func (a *VerizonMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *VerizonMediaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errors := make([]error, 0, 1)
 
 	if len(request.Imp) == 0 {
@@ -79,7 +79,7 @@ func (a *VerizonMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo 
 		// Split up multi-impression requests into multiple requests so that
 		// each split request is only associated to a single impression
 		reqCopy := *request
-		reqCopy.Imp = []openrtb.Imp{imp}
+		reqCopy.Imp = []openrtb2.Imp{imp}
 
 		if request.Site != nil {
 			siteCopy := *request.Site
@@ -111,7 +111,7 @@ func (a *VerizonMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo 
 	return reqs, errors
 }
 
-func (a *VerizonMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *VerizonMediaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -123,7 +123,7 @@ func (a *VerizonMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, exte
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad server response: %d.", err),
@@ -156,7 +156,7 @@ func (a *VerizonMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, exte
 	return bidResponse, nil
 }
 
-func getImpInfo(impId string, imps []openrtb.Imp) (bool, openrtb_ext.BidType) {
+func getImpInfo(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
 	var mediaType openrtb_ext.BidType
 	var exists bool
 	for _, imp := range imps {
@@ -171,7 +171,7 @@ func getImpInfo(impId string, imps []openrtb.Imp) (bool, openrtb_ext.BidType) {
 	return exists, mediaType
 }
 
-func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_ext.ExtImpVerizonMedia) error {
+func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb_ext.ExtImpVerizonMedia) error {
 	/* Always override the tag ID and (site ID or app ID) of the request */
 	request.Imp[0].TagID = extension.Pos
 	if request.Site != nil {
@@ -198,10 +198,8 @@ func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_
 		return errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
 	}
 
-	banner.W = new(uint64)
-	*banner.W = banner.Format[0].W
-	banner.H = new(uint64)
-	*banner.H = banner.Format[0].H
+	banner.W = openrtb2.Int64Ptr(banner.Format[0].W)
+	banner.H = openrtb2.Int64Ptr(banner.Format[0].H)
 
 	return nil
 }

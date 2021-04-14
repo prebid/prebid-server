@@ -2,13 +2,14 @@ package adot
 
 import (
 	"encoding/json"
-	"github.com/mxmCherry/openrtb"
+	"testing"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 const testsBidderEndpoint = "https://dsp.adotmob.com/headerbidding/bidrequest"
@@ -31,7 +32,7 @@ func TestMediaTypeError(t *testing.T) {
 	assert.Error(t, err)
 
 	byteInvalid, _ := json.Marshal(&adotBidExt{Adot: bidExt{"invalid"}})
-	_, err = getMediaTypeForBid(&openrtb.Bid{Ext: json.RawMessage(byteInvalid)})
+	_, err = getMediaTypeForBid(&openrtb2.Bid{Ext: json.RawMessage(byteInvalid)})
 
 	assert.Error(t, err)
 }
@@ -59,17 +60,17 @@ func TestMediaTypeForBid(t *testing.T) {
 	byteVideo, _ := json.Marshal(&adotBidExt{Adot: bidExt{"video"}})
 	byteNative, _ := json.Marshal(&adotBidExt{Adot: bidExt{"native"}})
 
-	bidTypeBanner, _ := getMediaTypeForBid(&openrtb.Bid{Ext: json.RawMessage(byteBanner)})
+	bidTypeBanner, _ := getMediaTypeForBid(&openrtb2.Bid{Ext: json.RawMessage(byteBanner)})
 	if bidTypeBanner != openrtb_ext.BidTypeBanner {
 		t.Errorf("the type is not the valid one. actual: %v, expected: %v", bidTypeBanner, openrtb_ext.BidTypeBanner)
 	}
 
-	bidTypeVideo, _ := getMediaTypeForBid(&openrtb.Bid{Ext: json.RawMessage(byteVideo)})
+	bidTypeVideo, _ := getMediaTypeForBid(&openrtb2.Bid{Ext: json.RawMessage(byteVideo)})
 	if bidTypeVideo != openrtb_ext.BidTypeVideo {
 		t.Errorf("the type is not the valid one. actual: %v, expected: %v", bidTypeVideo, openrtb_ext.BidTypeVideo)
 	}
 
-	bidTypeNative, _ := getMediaTypeForBid(&openrtb.Bid{Ext: json.RawMessage(byteNative)})
+	bidTypeNative, _ := getMediaTypeForBid(&openrtb2.Bid{Ext: json.RawMessage(byteNative)})
 	if bidTypeNative != openrtb_ext.BidTypeNative {
 		t.Errorf("the type is not the valid one. actual: %v, expected: %v", bidTypeNative, openrtb_ext.BidTypeVideo)
 	}

@@ -3,7 +3,7 @@ package lmt
 import (
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/iosutil"
 )
@@ -14,7 +14,7 @@ var (
 )
 
 // ModifyForIOS modifies the request's LMT flag based on iOS version and identity.
-func ModifyForIOS(req *openrtb.BidRequest) {
+func ModifyForIOS(req *openrtb2.BidRequest) {
 	modifiers := map[iosutil.VersionClassification]modifier{
 		iosutil.Version140:          modifyForIOS14X,
 		iosutil.Version141:          modifyForIOS14X,
@@ -23,7 +23,7 @@ func ModifyForIOS(req *openrtb.BidRequest) {
 	modifyForIOS(req, modifiers)
 }
 
-func modifyForIOS(req *openrtb.BidRequest, modifiers map[iosutil.VersionClassification]modifier) {
+func modifyForIOS(req *openrtb2.BidRequest, modifiers map[iosutil.VersionClassification]modifier) {
 	if !isRequestForIOS(req) {
 		return
 	}
@@ -34,13 +34,13 @@ func modifyForIOS(req *openrtb.BidRequest, modifiers map[iosutil.VersionClassifi
 	}
 }
 
-func isRequestForIOS(req *openrtb.BidRequest) bool {
+func isRequestForIOS(req *openrtb2.BidRequest) bool {
 	return req != nil && req.App != nil && req.Device != nil && strings.EqualFold(req.Device.OS, "ios")
 }
 
-type modifier func(req *openrtb.BidRequest)
+type modifier func(req *openrtb2.BidRequest)
 
-func modifyForIOS14X(req *openrtb.BidRequest) {
+func modifyForIOS14X(req *openrtb2.BidRequest) {
 	if req.Device.IFA == "" || req.Device.IFA == "00000000-0000-0000-0000-000000000000" {
 		req.Device.Lmt = &int8One
 	} else {
@@ -48,7 +48,7 @@ func modifyForIOS14X(req *openrtb.BidRequest) {
 	}
 }
 
-func modifyForIOS142OrGreater(req *openrtb.BidRequest) {
+func modifyForIOS142OrGreater(req *openrtb2.BidRequest) {
 	atts, err := openrtb_ext.ParseDeviceExtATTS(req.Device.Ext)
 	if err != nil || atts == nil {
 		return

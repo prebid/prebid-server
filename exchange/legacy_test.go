@@ -11,7 +11,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -20,35 +20,35 @@ import (
 )
 
 func TestSiteVideo(t *testing.T) {
-	ortbRequest := &openrtb.BidRequest{
+	ortbRequest := &openrtb2.BidRequest{
 		ID:   "request-id",
 		TMax: 1000,
-		Site: &openrtb.Site{
+		Site: &openrtb2.Site{
 			Page:   "http://www.site.com",
 			Domain: "site.com",
-			Publisher: &openrtb.Publisher{
+			Publisher: &openrtb2.Publisher{
 				ID: "b1c81a38-1415-42b7-8238-0d2d64016c27",
 			},
 		},
-		Source: &openrtb.Source{
+		Source: &openrtb2.Source{
 			TID: "transaction-id",
 		},
-		User: &openrtb.User{
+		User: &openrtb2.User{
 			ID:       "host-id",
 			BuyerUID: "bidder-id",
 		},
 		Test: 1,
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "imp-id",
-			Video: &openrtb.Video{
+			Video: &openrtb2.Video{
 				MIMEs:       []string{"video/mp4"},
 				MinDuration: 20,
 				MaxDuration: 40,
-				Protocols:   []openrtb.Protocol{openrtb.ProtocolVAST10},
-				StartDelay:  openrtb.StartDelayGenericMidRoll.Ptr(),
+				Protocols:   []openrtb2.Protocol{openrtb2.ProtocolVAST10},
+				StartDelay:  openrtb2.StartDelayGenericMidRoll.Ptr(),
 			},
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{
 					W: 300,
 					H: 250,
 				}},
@@ -85,7 +85,7 @@ func TestSiteVideo(t *testing.T) {
 func TestAppBanner(t *testing.T) {
 	ortbRequest := newAppOrtbRequest()
 	ortbRequest.TMax = 1000
-	ortbRequest.User = &openrtb.User{
+	ortbRequest.User = &openrtb2.User{
 		ID:       "host-id",
 		BuyerUID: "bidder-id",
 	}
@@ -187,8 +187,8 @@ func TestBidTransforms(t *testing.T) {
 
 func TestInsecureImps(t *testing.T) {
 	insecure := int8(0)
-	bidReq := &openrtb.BidRequest{
-		Imp: []openrtb.Imp{{
+	bidReq := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{
 			Secure: &insecure,
 		}, {
 			Secure: &insecure,
@@ -205,8 +205,8 @@ func TestInsecureImps(t *testing.T) {
 
 func TestSecureImps(t *testing.T) {
 	secure := int8(1)
-	bidReq := &openrtb.BidRequest{
-		Imp: []openrtb.Imp{{
+	bidReq := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{
 			Secure: &secure,
 		}, {
 			Secure: &secure,
@@ -224,8 +224,8 @@ func TestSecureImps(t *testing.T) {
 func TestMixedSecureImps(t *testing.T) {
 	insecure := int8(0)
 	secure := int8(1)
-	bidReq := &openrtb.BidRequest{
-		Imp: []openrtb.Imp{{
+	bidReq := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{
 			Secure: &insecure,
 		}, {
 			Secure: &secure,
@@ -237,21 +237,21 @@ func TestMixedSecureImps(t *testing.T) {
 	}
 }
 
-func newAppOrtbRequest() *openrtb.BidRequest {
-	return &openrtb.BidRequest{
+func newAppOrtbRequest() *openrtb2.BidRequest {
+	return &openrtb2.BidRequest{
 		ID: "request-id",
-		App: &openrtb.App{
-			Publisher: &openrtb.Publisher{
+		App: &openrtb2.App{
+			Publisher: &openrtb2.Publisher{
 				ID: "b1c81a38-1415-42b7-8238-0d2d64016c27",
 			},
 		},
-		Source: &openrtb.Source{
+		Source: &openrtb2.Source{
 			TID: "transaction-id",
 		},
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{
 					W: 300,
 					H: 250,
 				}},
@@ -262,20 +262,20 @@ func newAppOrtbRequest() *openrtb.BidRequest {
 }
 
 func TestErrorResponse(t *testing.T) {
-	ortbRequest := &openrtb.BidRequest{
+	ortbRequest := &openrtb2.BidRequest{
 		ID: "request-id",
-		App: &openrtb.App{
-			Publisher: &openrtb.Publisher{
+		App: &openrtb2.App{
+			Publisher: &openrtb2.Publisher{
 				ID: "b1c81a38-1415-42b7-8238-0d2d64016c27",
 			},
 		},
-		Source: &openrtb.Source{
+		Source: &openrtb2.Source{
 			TID: "transaction-id",
 		},
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{
 					W: 300,
 					H: 250,
 				}},
@@ -300,20 +300,20 @@ func TestErrorResponse(t *testing.T) {
 }
 
 func TestWithTargeting(t *testing.T) {
-	ortbRequest := &openrtb.BidRequest{
+	ortbRequest := &openrtb2.BidRequest{
 		ID: "request-id",
-		App: &openrtb.App{
-			Publisher: &openrtb.Publisher{
+		App: &openrtb2.App{
+			Publisher: &openrtb2.Publisher{
 				ID: "b1c81a38-1415-42b7-8238-0d2d64016c27",
 			},
 		},
-		Source: &openrtb.Source{
+		Source: &openrtb2.Source{
 			TID: "transaction-id",
 		},
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{
 					W: 300,
 					H: 250,
 				}},
@@ -343,7 +343,7 @@ func TestWithTargeting(t *testing.T) {
 
 // assertEquivalentFields compares the OpenRTB request with the legacy request, using the mappings defined here:
 // https://gist.github.com/dbemiller/68aa3387189fa17d3addfb9818dd4d97
-func assertEquivalentRequests(t *testing.T, req *openrtb.BidRequest, legacy *pbs.PBSRequest) {
+func assertEquivalentRequests(t *testing.T, req *openrtb2.BidRequest, legacy *pbs.PBSRequest) {
 	if req.Site != nil {
 		if req.Site.Publisher.ID != legacy.AccountID {
 			t.Errorf("Account ID did not translate. OpenRTB: %s, Legacy: %s.", req.Site.Publisher.ID, legacy.AccountID)
@@ -399,7 +399,7 @@ func assertEquivalentRequests(t *testing.T, req *openrtb.BidRequest, legacy *pbs
 	}
 }
 
-func assertEquivalentBidder(t *testing.T, req *openrtb.BidRequest, legacy *pbs.PBSBidder) {
+func assertEquivalentBidder(t *testing.T, req *openrtb2.BidRequest, legacy *pbs.PBSBidder) {
 	if len(req.Imp) != len(legacy.AdUnits) {
 		t.Errorf("Wrong number of Imps. Expected %d, got %d", len(req.Imp), len(legacy.AdUnits))
 		return
@@ -409,7 +409,7 @@ func assertEquivalentBidder(t *testing.T, req *openrtb.BidRequest, legacy *pbs.P
 	}
 }
 
-func assertEquivalentImp(t *testing.T, index int, imp *openrtb.Imp, legacy *pbs.PBSAdUnit) {
+func assertEquivalentImp(t *testing.T, index int, imp *openrtb2.Imp, legacy *pbs.PBSAdUnit) {
 	if imp.ID != legacy.BidID {
 		t.Errorf("imp[%d].id did not translate. OpenRTB %s, legacy %s", index, imp.ID, legacy.BidID)
 	}

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -41,10 +41,10 @@ func assertCurrencyInBidResponse(t *testing.T, expectedCurrency string, currency
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	prebidRequest := &openrtb.BidRequest{
-		Imp: []openrtb.Imp{},
+	prebidRequest := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{},
 	}
-	mockedBidResponse := &openrtb.BidResponse{}
+	mockedBidResponse := &openrtb2.BidResponse{}
 	if currency != nil {
 		mockedBidResponse.Cur = *currency
 	}

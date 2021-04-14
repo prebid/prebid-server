@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -33,7 +33,7 @@ type adaptedAdapter struct {
 //
 // This is not ideal. OpenRTB provides a superset of the legacy data structures.
 // For requests which use those features, the best we can do is respond with "no bid".
-func (bidder *adaptedAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+func (bidder *adaptedAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	legacyRequest, legacyBidder, errs := bidder.toLegacyAdapterInputs(request, name)
 	if legacyRequest == nil || legacyBidder == nil {
 		return nil, errs
@@ -58,7 +58,7 @@ func (bidder *adaptedAdapter) requestBid(ctx context.Context, request *openrtb.B
 // toLegacyAdapterInputs is a best-effort transformation of an OpenRTB BidRequest into the args needed to run a legacy Adapter.
 // If the OpenRTB request is too complex, it fails with an error.
 // If the error is nil, then the PBSRequest and PBSBidder are valid.
-func (bidder *adaptedAdapter) toLegacyAdapterInputs(req *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbs.PBSRequest, *pbs.PBSBidder, []error) {
+func (bidder *adaptedAdapter) toLegacyAdapterInputs(req *openrtb2.BidRequest, name openrtb_ext.BidderName) (*pbs.PBSRequest, *pbs.PBSBidder, []error) {
 	legacyReq, err := bidder.toLegacyRequest(req)
 	if err != nil {
 		return nil, nil, []error{err}
@@ -72,7 +72,7 @@ func (bidder *adaptedAdapter) toLegacyAdapterInputs(req *openrtb.BidRequest, nam
 	return legacyReq, legacyBidder, errs
 }
 
-func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBSRequest, error) {
+func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb2.BidRequest) (*pbs.PBSRequest, error) {
 	acctId, err := toAccountId(req)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBS
 		App:     req.App,
 		Device:  req.Device,
 		// PBSUser is excluded because rubicon is the only adapter which reads from it, and they're supporting OpenRTB directly
-		// SDK is excluded because that information doesn't exist in OpenRTB.
+		// SDK is excluded because that information doesn't exist in openrtb2.
 		// Bidders is excluded because no legacy adapters read from it
 		User:   req.User,
 		Cookie: cookie,
@@ -137,7 +137,7 @@ func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBS
 	}, nil
 }
 
-func toAccountId(req *openrtb.BidRequest) (string, error) {
+func toAccountId(req *openrtb2.BidRequest) (string, error) {
 	if req.Site != nil && req.Site.Publisher != nil {
 		return req.Site.Publisher.ID, nil
 	}
@@ -147,14 +147,14 @@ func toAccountId(req *openrtb.BidRequest) (string, error) {
 	return "", errors.New("bidrequest.site.publisher.id or bidrequest.app.publisher.id required for legacy bidders.")
 }
 
-func toTransactionId(req *openrtb.BidRequest) (string, error) {
+func toTransactionId(req *openrtb2.BidRequest) (string, error) {
 	if req.Source != nil {
 		return req.Source.TID, nil
 	}
 	return "", errors.New("bidrequest.source.tid required for legacy bidders.")
 }
 
-func toSecure(req *openrtb.BidRequest) (secure int8, err error) {
+func toSecure(req *openrtb2.BidRequest) (secure int8, err error) {
 	secure = -1
 	for _, imp := range req.Imp {
 		if imp.Secure != nil {
@@ -181,7 +181,7 @@ func toSecure(req *openrtb.BidRequest) (secure int8, err error) {
 	return
 }
 
-func toLegacyBidder(req *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbs.PBSBidder, []error) {
+func toLegacyBidder(req *openrtb2.BidRequest, name openrtb_ext.BidderName) (*pbs.PBSBidder, []error) {
 	adUnits, errs := toPBSAdUnits(req)
 	if len(adUnits) > 0 {
 		return &pbs.PBSBidder{
@@ -202,7 +202,7 @@ func toLegacyBidder(req *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbs.
 	}
 }
 
-func toPBSAdUnits(req *openrtb.BidRequest) ([]pbs.PBSAdUnit, []error) {
+func toPBSAdUnits(req *openrtb2.BidRequest) ([]pbs.PBSAdUnit, []error) {
 	adUnits := make([]pbs.PBSAdUnit, len(req.Imp))
 	var errs []error = nil
 	nextAdUnit := 0
@@ -217,8 +217,8 @@ func toPBSAdUnits(req *openrtb.BidRequest) ([]pbs.PBSAdUnit, []error) {
 	return adUnits[:nextAdUnit], errs
 }
 
-func initPBSAdUnit(imp *openrtb.Imp, adUnit *pbs.PBSAdUnit) error {
-	var sizes []openrtb.Format = nil
+func initPBSAdUnit(imp *openrtb2.Imp, adUnit *pbs.PBSAdUnit) error {
+	var sizes []openrtb2.Format = nil
 
 	video := pbs.PBSVideo{}
 	if imp.Video != nil {
@@ -242,7 +242,7 @@ func initPBSAdUnit(imp *openrtb.Imp, adUnit *pbs.PBSAdUnit) error {
 		}
 		// Fixes #360
 		if imp.Video.W != 0 && imp.Video.H != 0 {
-			sizes = append(sizes, openrtb.Format{
+			sizes = append(sizes, openrtb2.Format{
 				W: imp.Video.W,
 				H: imp.Video.H,
 			})
@@ -324,12 +324,12 @@ func transformBid(legacyBid *pbs.PBSBid) (*pbsOrtbBid, error) {
 	}, nil
 }
 
-func transformBidToOrtb(legacyBid *pbs.PBSBid) *openrtb.Bid {
-	return &openrtb.Bid{
+func transformBidToOrtb(legacyBid *pbs.PBSBid) *openrtb2.Bid {
+	return &openrtb2.Bid{
 		ID:    legacyBid.BidID,
 		ImpID: legacyBid.AdUnitCode,
 		CrID:  legacyBid.Creative_id,
-		// legacyBid.CreativeMediaType is handled by transformBid(), because it doesn't exist on the openrtb.Bid
+		// legacyBid.CreativeMediaType is handled by transformBid(), because it doesn't exist on the openrtb2.Bid
 		// legacyBid.BidderCode is handled by the exchange, which already knows which bidder we are.
 		// legacyBid.BidHash is ignored, because it doesn't get sent in the response anyway
 		Price:  legacyBid.Price,

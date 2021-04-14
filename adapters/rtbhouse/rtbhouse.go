@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -27,7 +27,7 @@ type RTBHouseAdapter struct {
 
 // MakeRequests prepares the HTTP requests which should be made to fetch bids.
 func (adapter *RTBHouseAdapter) MakeRequests(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
 	requestsToBidder []*adapters.RequestData,
@@ -57,7 +57,7 @@ const unexpectedStatusCodeFormat = "" +
 
 // MakeBids unpacks the server's response into Bids.
 func (adapter *RTBHouseAdapter) MakeBids(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
 ) (
@@ -81,7 +81,7 @@ func (adapter *RTBHouseAdapter) MakeBids(
 		return nil, []error{err}
 	}
 
-	var openRTBBidderResponse openrtb.BidResponse
+	var openRTBBidderResponse openrtb2.BidResponse
 	if err := json.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
 		return nil, []error{err}
 	}

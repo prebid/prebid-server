@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -24,7 +24,7 @@ type BetweenAdapter struct {
 // If BidFloor of openrtb_ext.ExtImpBetween is zero, set it to defaultBidFloor value, see addImpProps
 const defaultBidfloor = 0.00001
 
-func (a *BetweenAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *BetweenAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
@@ -70,7 +70,7 @@ func (a *BetweenAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	}}, errors
 }
 
-func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpBetween, error) {
+func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBetween, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -103,7 +103,7 @@ func (a *BetweenAdapter) buildEndpointURL(e *openrtb_ext.ExtImpBetween) (string,
 	return macros.ResolveMacros(a.EndpointTemplate, macros.EndpointTemplateParams{Host: e.Host, PublisherID: e.PublisherID})
 }
 
-func buildImpBanner(imp *openrtb.Imp) error {
+func buildImpBanner(imp *openrtb2.Imp) error {
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
 			Message: fmt.Sprintf("Request needs to include a Banner object"),
@@ -127,7 +127,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 }
 
 // Add Between required properties to Imp object
-func addImpProps(imp *openrtb.Imp, secure *int8, betweenExt *openrtb_ext.ExtImpBetween) {
+func addImpProps(imp *openrtb2.Imp, secure *int8, betweenExt *openrtb_ext.ExtImpBetween) {
 	imp.Secure = secure
 	if betweenExt.BidFloor <= 0 {
 		imp.BidFloor = defaultBidfloor
@@ -147,9 +147,9 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 }
 
 // Handle request errors and formatting to be sent to Between
-func preprocess(request *openrtb.BidRequest) (*openrtb_ext.ExtImpBetween, []error) {
+func preprocess(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpBetween, []error) {
 	errors := make([]error, 0, len(request.Imp))
-	resImps := make([]openrtb.Imp, 0, len(request.Imp))
+	resImps := make([]openrtb2.Imp, 0, len(request.Imp))
 	secure := int8(0)
 
 	if request.Site != nil && request.Site.Page != "" {
@@ -181,7 +181,7 @@ func preprocess(request *openrtb.BidRequest) (*openrtb_ext.ExtImpBetween, []erro
 	return betweenExt, errors
 }
 
-func (a *BetweenAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *BetweenAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		// no bid response
@@ -193,7 +193,7 @@ func (a *BetweenAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 			Message: fmt.Sprintf("Invalid Status Returned: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unable to unpackage bid response. Error %s", err.Error()),

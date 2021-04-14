@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,7 +18,7 @@ type adapter struct {
 	endpoint string
 }
 
-func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -40,7 +40,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 		}
 
 		impression.Ext = bidderExt
-		request.Imp = []openrtb.Imp{impression}
+		request.Imp = []openrtb2.Imp{impression}
 		body, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
@@ -58,7 +58,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 	return result, errs
 }
 
-func (a *adapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	switch responseData.StatusCode {
@@ -76,7 +76,7 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData,
 		}}
 	}
 
-	var bidResponse openrtb.BidResponse
+	var bidResponse openrtb2.BidResponse
 	err := json.Unmarshal(responseData.Body, &bidResponse)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -98,7 +98,7 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData,
 	return response, errs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner != nil {

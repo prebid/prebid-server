@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 // Params defines the paramters of an AMP request.
@@ -24,11 +24,11 @@ type Params struct {
 
 // Size defines size information of an AMP request.
 type Size struct {
-	Height         uint64
-	Multisize      []openrtb.Format
-	OverrideHeight uint64
-	OverrideWidth  uint64
-	Width          uint64
+	Height         int64
+	Multisize      []openrtb2.Format
+	OverrideHeight int64
+	OverrideWidth  int64
+	Width          int64
 }
 
 // ParseParams parses the AMP paramters from a HTTP request.
@@ -67,26 +67,26 @@ func parseIntPtr(value string) *uint64 {
 	return nil
 }
 
-func parseInt(value string) uint64 {
-	if parsed, err := strconv.ParseUint(value, 10, 64); err == nil {
+func parseInt(value string) int64 {
+	if parsed, err := strconv.ParseInt(value, 10, 64); err == nil {
 		return parsed
 	}
 	return 0
 }
 
-func parseMultisize(multisize string) []openrtb.Format {
+func parseMultisize(multisize string) []openrtb2.Format {
 	if multisize == "" {
 		return nil
 	}
 
 	sizeStrings := strings.Split(multisize, ",")
-	sizes := make([]openrtb.Format, 0, len(sizeStrings))
+	sizes := make([]openrtb2.Format, 0, len(sizeStrings))
 	for _, sizeString := range sizeStrings {
 		wh := strings.Split(sizeString, "x")
 		if len(wh) != 2 {
 			return nil
 		}
-		f := openrtb.Format{
+		f := openrtb2.Format{
 			W: parseInt(wh[0]),
 			H: parseInt(wh[1]),
 		}

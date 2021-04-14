@@ -5,7 +5,7 @@ import (
 
 	"encoding/json"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
@@ -42,7 +42,7 @@ func TestOpenRTB(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 10,
 						H: 12,
@@ -73,7 +73,7 @@ func TestOpenRTBVideo(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 10,
 						H: 12,
@@ -96,8 +96,8 @@ func TestOpenRTBVideo(t *testing.T) {
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Video.MaxDuration, 30)
 	assert.EqualValues(t, resp.Imp[0].Video.MinDuration, 15)
-	assert.EqualValues(t, *resp.Imp[0].Video.StartDelay, openrtb.StartDelay(5))
-	assert.EqualValues(t, resp.Imp[0].Video.PlaybackMethod, []openrtb.PlaybackMethod{openrtb.PlaybackMethod(1)})
+	assert.EqualValues(t, *resp.Imp[0].Video.StartDelay, openrtb2.StartDelay(5))
+	assert.EqualValues(t, resp.Imp[0].Video.PlaybackMethod, []openrtb2.PlaybackMethod{openrtb2.PlaybackMethod(1)})
 	assert.EqualValues(t, resp.Imp[0].Video.MIMEs, []string{"video/mp4"})
 }
 
@@ -110,7 +110,7 @@ func TestOpenRTBVideoNoVideoData(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 10,
 						H: 12,
@@ -134,7 +134,7 @@ func TestOpenRTBVideoFilteredOut(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 10,
 						H: 12,
@@ -152,7 +152,7 @@ func TestOpenRTBVideoFilteredOut(t *testing.T) {
 			{
 				Code:       "unitCode2",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 10,
 						H: 12,
@@ -179,7 +179,7 @@ func TestOpenRTBMultiMediaImp(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO, pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 10,
 						H: 12,
@@ -215,7 +215,7 @@ func TestOpenRTBMultiMediaImpFiltered(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO, pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 10,
 						H: 12,
@@ -237,7 +237,7 @@ func TestOpenRTBMultiMediaImpFiltered(t *testing.T) {
 	assert.Equal(t, len(resp.Imp), 1)
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, *resp.Imp[0].Banner.W, 10)
-	assert.EqualValues(t, resp.Imp[0].Video, (*openrtb.Video)(nil))
+	assert.EqualValues(t, resp.Imp[0].Video, (*openrtb2.Video)(nil))
 }
 
 func TestOpenRTBNoSize(t *testing.T) {
@@ -267,20 +267,20 @@ func TestOpenRTBMobile(t *testing.T) {
 		MaxKeyLength:  20,
 		Secure:        1,
 		TimeoutMillis: 1000,
-		App: &openrtb.App{
+		App: &openrtb2.App{
 			Bundle: "AppNexus.PrebidMobileDemo",
-			Publisher: &openrtb.Publisher{
+			Publisher: &openrtb2.Publisher{
 				ID: "1995257847363113",
 			},
 		},
-		Device: &openrtb.Device{
+		Device: &openrtb2.Device{
 			UA:    "test_ua",
 			IP:    "test_ip",
 			Make:  "test_make",
 			Model: "test_model",
 			IFA:   "test_ifa",
 		},
-		User: &openrtb.User{
+		User: &openrtb2.User{
 			BuyerUID: "test_buyeruid",
 		},
 	}
@@ -290,7 +290,7 @@ func TestOpenRTBMobile(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 300,
 						H: 250,
@@ -318,7 +318,7 @@ func TestOpenRTBMobile(t *testing.T) {
 
 func TestOpenRTBEmptyUser(t *testing.T) {
 	pbReq := pbs.PBSRequest{
-		User: &openrtb.User{},
+		User: &openrtb2.User{},
 	}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
@@ -326,7 +326,7 @@ func TestOpenRTBEmptyUser(t *testing.T) {
 			{
 				Code:       "unitCode2",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 10,
 						H: 12,
@@ -337,14 +337,14 @@ func TestOpenRTBEmptyUser(t *testing.T) {
 	}
 	resp, err := MakeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER})
 	assert.Equal(t, err, nil)
-	assert.EqualValues(t, resp.User, &openrtb.User{})
+	assert.EqualValues(t, resp.User, &openrtb2.User{})
 }
 
 func TestOpenRTBUserWithCookie(t *testing.T) {
 	pbsCookie := usersync.NewPBSCookie()
 	pbsCookie.TrySync("test", "abcde")
 	pbReq := pbs.PBSRequest{
-		User: &openrtb.User{},
+		User: &openrtb2.User{},
 	}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
@@ -352,7 +352,7 @@ func TestOpenRTBUserWithCookie(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 300,
 						H: 250,
@@ -368,7 +368,7 @@ func TestOpenRTBUserWithCookie(t *testing.T) {
 }
 
 func TestSizesCopy(t *testing.T) {
-	formats := []openrtb.Format{
+	formats := []openrtb2.Format{
 		{
 			W: 10,
 		},
@@ -402,7 +402,7 @@ func TestMakeVideo(t *testing.T) {
 	adUnit := pbs.PBSAdUnit{
 		Code:       "unitCode",
 		MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO},
-		Sizes: []openrtb.Format{
+		Sizes: []openrtb2.Format{
 			{
 				W: 10,
 				H: 12,
@@ -421,7 +421,7 @@ func TestMakeVideo(t *testing.T) {
 	video := makeVideo(adUnit)
 	assert.EqualValues(t, video.MinDuration, 15)
 	assert.EqualValues(t, video.MaxDuration, 30)
-	assert.EqualValues(t, *video.StartDelay, openrtb.StartDelay(5))
+	assert.EqualValues(t, *video.StartDelay, openrtb2.StartDelay(5))
 	assert.EqualValues(t, len(video.PlaybackMethod), 1)
 	assert.EqualValues(t, len(video.Protocols), 4)
 }
@@ -435,10 +435,10 @@ func TestGDPR(t *testing.T) {
 	regsExt, _ := json.Marshal(rawRegsExt)
 
 	pbReq := pbs.PBSRequest{
-		User: &openrtb.User{
+		User: &openrtb2.User{
 			Ext: userExt,
 		},
-		Regs: &openrtb.Regs{
+		Regs: &openrtb2.Regs{
 			Ext: regsExt,
 		},
 	}
@@ -449,7 +449,7 @@ func TestGDPR(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 10,
 						H: 12,
@@ -486,24 +486,24 @@ func TestGDPRMobile(t *testing.T) {
 		MaxKeyLength:  20,
 		Secure:        1,
 		TimeoutMillis: 1000,
-		App: &openrtb.App{
+		App: &openrtb2.App{
 			Bundle: "AppNexus.PrebidMobileDemo",
-			Publisher: &openrtb.Publisher{
+			Publisher: &openrtb2.Publisher{
 				ID: "1995257847363113",
 			},
 		},
-		Device: &openrtb.Device{
+		Device: &openrtb2.Device{
 			UA:    "test_ua",
 			IP:    "test_ip",
 			Make:  "test_make",
 			Model: "test_model",
 			IFA:   "test_ifa",
 		},
-		User: &openrtb.User{
+		User: &openrtb2.User{
 			BuyerUID: "test_buyeruid",
 			Ext:      userExt,
 		},
-		Regs: &openrtb.Regs{
+		Regs: &openrtb2.Regs{
 			Ext: regsExt,
 		},
 	}
@@ -513,7 +513,7 @@ func TestGDPRMobile(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 300,
 						H: 250,

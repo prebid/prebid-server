@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -20,7 +20,7 @@ type adtargetImpExt struct {
 	Adtarget openrtb_ext.ExtImpAdtarget `json:"adtarget"`
 }
 
-func (a *AdtargetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *AdtargetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	totalImps := len(request.Imp)
 	errors := make([]error, 0, totalImps)
@@ -55,7 +55,7 @@ func (a *AdtargetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	reqs := make([]*adapters.RequestData, 0, totalReqs)
 
 	imps := request.Imp
-	request.Imp = make([]openrtb.Imp, 0, len(imps))
+	request.Imp = make([]openrtb2.Imp, 0, len(imps))
 	for sourceId, impIndexes := range imp2source {
 		request.Imp = request.Imp[:0]
 
@@ -80,7 +80,7 @@ func (a *AdtargetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	return reqs, errors
 }
 
-func (a *AdtargetAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *AdtargetAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -90,7 +90,7 @@ func (a *AdtargetAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", httpRes.StatusCode),
 		}}
 	}
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("error while decoding response, err: %s", err),
@@ -137,7 +137,7 @@ func (a *AdtargetAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.
 	return bidResponse, errors
 }
 
-func validateImpressionAndSetExt(imp *openrtb.Imp) (int, error) {
+func validateImpressionAndSetExt(imp *openrtb2.Imp) (int, error) {
 
 	if imp.Banner == nil && imp.Video == nil {
 		return 0, &errortypes.BadInput{

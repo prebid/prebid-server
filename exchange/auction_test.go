@@ -11,17 +11,17 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMakeVASTGiven(t *testing.T) {
 	const expect = `<VAST version="3.0"></VAST>`
-	bid := &openrtb.Bid{
+	bid := &openrtb2.Bid{
 		AdM: expect,
 	}
 	vast := makeVAST(bid)
@@ -35,7 +35,7 @@ func TestMakeVASTNurl(t *testing.T) {
 		`<VASTAdTagURI><![CDATA[` + url + `]]></VASTAdTagURI>` +
 		`<Impression></Impression><Creatives></Creatives>` +
 		`</Wrapper></Ad></VAST>`
-	bid := &openrtb.Bid{
+	bid := &openrtb2.Bid{
 		NURL: url,
 	}
 	vast := makeVAST(bid)
@@ -268,45 +268,45 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 
 func TestNewAuction(t *testing.T) {
 	bid1p077 := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID: "imp1",
 			Price: 0.77,
 		},
 	}
 	bid1p123 := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID: "imp1",
 			Price: 1.23,
 		},
 	}
 	bid1p230 := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID: "imp1",
 			Price: 2.30,
 		},
 	}
 	bid1p088d := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID:  "imp1",
 			Price:  0.88,
 			DealID: "SpecialDeal",
 		},
 	}
 	bid1p166d := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID:  "imp1",
 			Price:  1.66,
 			DealID: "BigDeal",
 		},
 	}
 	bid2p123 := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID: "imp2",
 			Price: 1.23,
 		},
 	}
 	bid2p144 := pbsOrtbBid{
-		bid: &openrtb.Bid{
+		bid: &openrtb2.Bid{
 			ImpID: "imp2",
 			Price: 1.44,
 		},
@@ -486,7 +486,7 @@ func TestNewAuction(t *testing.T) {
 }
 
 type cacheSpec struct {
-	BidRequest                  openrtb.BidRequest              `json:"bidRequest"`
+	BidRequest                  openrtb2.BidRequest             `json:"bidRequest"`
 	PbsBids                     []pbsBid                        `json:"pbsBids"`
 	ExpectedCacheables          []prebid_cache_client.Cacheable `json:"expectedCacheables"`
 	DefaultTTLs                 config.DefaultTTLs              `json:"defaultTTLs"`
@@ -500,7 +500,7 @@ type cacheSpec struct {
 }
 
 type pbsBid struct {
-	Bid     *openrtb.Bid           `json:"bid"`
+	Bid     *openrtb2.Bid          `json:"bid"`
 	BidType openrtb_ext.BidType    `json:"bidType"`
 	Bidder  openrtb_ext.BidderName `json:"bidder"`
 }

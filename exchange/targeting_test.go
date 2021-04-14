@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 
@@ -16,14 +17,13 @@ import (
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
 // Using this set of bids in more than one test
-var mockBids = map[openrtb_ext.BidderName][]*openrtb.Bid{
+var mockBids = map[openrtb_ext.BidderName][]*openrtb2.Bid{
 	openrtb_ext.BidderAppnexus: {{
 		ID:    "losing-bid",
 		ImpID: "some-imp",
@@ -67,7 +67,7 @@ func TestTargetingCache(t *testing.T) {
 
 }
 
-func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) {
+func assertKeyExists(t *testing.T, bid *openrtb2.Bid, key string, expected bool) {
 	t.Helper()
 	targets := parseTargets(t, bid)
 	if _, ok := targets[key]; ok != expected {
@@ -77,7 +77,7 @@ func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) 
 
 // runAuction takes a bunch of mock bids by Bidder and runs an auction. It returns a map of Bids indexed by their ImpID.
 // If includeCache is true, the auction will be run with cacheing as well, so the cache targeting keys should exist.
-func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid, includeCache bool, includeWinners bool, includeBidderKeys bool, isApp bool) map[string]*openrtb.Bid {
+func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb2.Bid, includeCache bool, includeWinners bool, includeBidderKeys bool, isApp bool) map[string]*openrtb2.Bid {
 	server := httptest.NewServer(http.HandlerFunc(mockServer))
 	defer server.Close()
 
@@ -95,18 +95,19 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		currencyConverter:   currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		UsersyncIfAmbiguous: false,
 		categoriesFetcher:   categoriesFetcher,
+		bidIDGenerator:      &mockBidIDGenerator{false, false},
 	}
 
 	imps := buildImps(t, mockBids)
 
-	req := &openrtb.BidRequest{
+	req := &openrtb2.BidRequest{
 		Imp: imps,
 		Ext: buildTargetingExt(includeCache, includeWinners, includeBidderKeys),
 	}
 	if isApp {
-		req.App = &openrtb.App{}
+		req.App = &openrtb2.App{}
 	} else {
-		req.Site = &openrtb.Site{}
+		req.Site = &openrtb2.Site{}
 	}
 
 	auctionRequest := AuctionRequest{
@@ -128,7 +129,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	return buildBidMap(bidResp.SeatBid, len(mockBids))
 }
 
-func buildBidderList(bids map[openrtb_ext.BidderName][]*openrtb.Bid) []openrtb_ext.BidderName {
+func buildBidderList(bids map[openrtb_ext.BidderName][]*openrtb2.Bid) []openrtb_ext.BidderName {
 	bidders := make([]openrtb_ext.BidderName, 0, len(bids))
 	for name := range bids {
 		bidders = append(bidders, name)
@@ -136,7 +137,7 @@ func buildBidderList(bids map[openrtb_ext.BidderName][]*openrtb.Bid) []openrtb_e
 	return bidders
 }
 
-func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb.Bid, mockServerURL string, client *http.Client) map[openrtb_ext.BidderName]adaptedBidder {
+func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb2.Bid, mockServerURL string, client *http.Client) map[openrtb_ext.BidderName]adaptedBidder {
 	adapterMap := make(map[openrtb_ext.BidderName]adaptedBidder, len(bids))
 	for bidder, bids := range bids {
 		adapterMap[bidder] = adaptBidder(&mockTargetingBidder{
@@ -166,7 +167,7 @@ func buildTargetingExt(includeCache bool, includeWinners bool, includeBidderKeys
 	return json.RawMessage(`{"prebid":{"targeting":` + targeting + `}}`)
 }
 
-func buildParams(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid) json.RawMessage {
+func buildParams(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb2.Bid) json.RawMessage {
 	params := make(map[string]json.RawMessage)
 	for bidder := range mockBids {
 		params[string(bidder)] = json.RawMessage(`{"whatever":true}`)
@@ -178,7 +179,7 @@ func buildParams(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bi
 	return ext
 }
 
-func buildImps(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid) []openrtb.Imp {
+func buildImps(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb2.Bid) []openrtb2.Imp {
 	impExt := buildParams(t, mockBids)
 
 	var s struct{}
@@ -189,9 +190,9 @@ func buildImps(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid)
 		}
 	}
 
-	imps := make([]openrtb.Imp, 0, len(impIds))
+	imps := make([]openrtb2.Imp, 0, len(impIds))
 	for impId := range impIds {
-		imps = append(imps, openrtb.Imp{
+		imps = append(imps, openrtb2.Imp{
 			ID:  impId,
 			Ext: impExt,
 		})
@@ -199,8 +200,8 @@ func buildImps(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid)
 	return imps
 }
 
-func buildBidMap(seatBids []openrtb.SeatBid, numBids int) map[string]*openrtb.Bid {
-	bids := make(map[string]*openrtb.Bid, numBids)
+func buildBidMap(seatBids []openrtb2.SeatBid, numBids int) map[string]*openrtb2.Bid {
+	bids := make(map[string]*openrtb2.Bid, numBids)
 	for _, seatBid := range seatBids {
 		for i := 0; i < len(seatBid.Bid); i++ {
 			bid := seatBid.Bid[i]
@@ -210,7 +211,7 @@ func buildBidMap(seatBids []openrtb.SeatBid, numBids int) map[string]*openrtb.Bi
 	return bids
 }
 
-func parseTargets(t *testing.T, bid *openrtb.Bid) map[string]string {
+func parseTargets(t *testing.T, bid *openrtb2.Bid) map[string]string {
 	t.Helper()
 	var parsed openrtb_ext.ExtBid
 	if err := json.Unmarshal(bid.Ext, &parsed); err != nil {
@@ -221,10 +222,10 @@ func parseTargets(t *testing.T, bid *openrtb.Bid) map[string]string {
 
 type mockTargetingBidder struct {
 	mockServerURL string
-	bids          []*openrtb.Bid
+	bids          []*openrtb2.Bid
 }
 
-func (m *mockTargetingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (m *mockTargetingBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     m.mockServerURL,
@@ -233,7 +234,7 @@ func (m *mockTargetingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo 
 	}}, nil
 }
 
-func (m *mockTargetingBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (m *mockTargetingBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidResponse := &adapters.BidderResponse{
 		Bids: make([]*adapters.TypedBid, len(m.bids)),
 	}
@@ -259,15 +260,15 @@ type TargetingTestData struct {
 	ExpectedBidTargetsByBidder map[string]map[openrtb_ext.BidderName]map[string]string
 }
 
-var bid123 *openrtb.Bid = &openrtb.Bid{
+var bid123 *openrtb2.Bid = &openrtb2.Bid{
 	Price: 1.23,
 }
 
-var bid111 *openrtb.Bid = &openrtb.Bid{
+var bid111 *openrtb2.Bid = &openrtb2.Bid{
 	Price:  1.11,
 	DealID: "mydeal",
 }
-var bid084 *openrtb.Bid = &openrtb.Bid{
+var bid084 *openrtb2.Bid = &openrtb2.Bid{
 	Price: 0.84,
 }
 
@@ -396,7 +397,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 					},
 				},
 			},
-			cacheIds: map[*openrtb.Bid]string{
+			cacheIds: map[*openrtb2.Bid]string{
 				bid123: "55555",
 				bid111: "cacheme",
 			},
