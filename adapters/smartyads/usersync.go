@@ -8,5 +8,5 @@ import (
 )
 
 func NewSmartyAdsSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("smartyads", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("smartyads", temp, adapters.SyncTypeRedirect)
 }

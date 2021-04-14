@@ -1,10 +1,11 @@
 package jixie
 
 import (
+	"testing"
+
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"testing"
 )
 
 func TestJsonSamples(t *testing.T) {

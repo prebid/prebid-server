@@ -17,6 +17,8 @@ const (
 const (
 	UnknownWarningCode               = 10999
 	InvalidPrivacyConsentWarningCode = iota + 10000
+	AccountLevelDebugDisabledWarningCode
+	BidderLevelDebugDisabledWarningCode
 )
 
 // Coder provides an error or warning code with severity.

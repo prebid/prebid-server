@@ -8,5 +8,5 @@ import (
 )
 
 func NewLifestreetSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("lifestreet", 67, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("lifestreet", temp, adapters.SyncTypeRedirect)
 }

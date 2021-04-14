@@ -25,6 +25,5 @@ func TestConversantSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "usersync?rurl=localhost%2Fsetuid%3Fbidder%3Dconversant%26gdpr%3D0%26gdpr_consent%3D%26uid%3D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 24, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

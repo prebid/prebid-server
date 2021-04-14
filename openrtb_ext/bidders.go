@@ -35,7 +35,7 @@ const (
 	BidderReservedData    BidderName = "data"    // Reserved for first party data.
 	BidderReservedGeneral BidderName = "general" // Reserved for non-bidder specific messages when using a map keyed on the bidder name.
 	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
-	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for SKAdNetwork OpenRTB extension.
+	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
 )
 
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
@@ -90,6 +90,7 @@ const (
 	BidderAdtarget         BidderName = "adtarget"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
+	BidderAdyoulike        BidderName = "adyoulike"
 	BidderAJA              BidderName = "aja"
 	BidderAMX              BidderName = "amx"
 	BidderApplogy          BidderName = "applogy"
@@ -99,12 +100,14 @@ const (
 	BidderBeachfront       BidderName = "beachfront"
 	BidderBeintoo          BidderName = "beintoo"
 	BidderBetween          BidderName = "between"
+	BidderBidmachine       BidderName = "bidmachine"
 	BidderBrightroll       BidderName = "brightroll"
 	BidderColossus         BidderName = "colossus"
 	BidderConnectAd        BidderName = "connectad"
 	BidderConsumable       BidderName = "consumable"
 	BidderConversant       BidderName = "conversant"
 	BidderCpmstar          BidderName = "cpmstar"
+	BidderCriteo           BidderName = "criteo"
 	BidderDatablocks       BidderName = "datablocks"
 	BidderDmx              BidderName = "dmx"
 	BidderDecenterAds      BidderName = "decenterads"
@@ -140,6 +143,7 @@ const (
 	BidderOneTag           BidderName = "onetag"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
+	BidderOutbrain         BidderName = "outbrain"
 	BidderPangle           BidderName = "pangle"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
@@ -164,6 +168,7 @@ const (
 	BidderTripleliftNative BidderName = "triplelift_native"
 	BidderTrustX           BidderName = "trustx"
 	BidderUcfunnel         BidderName = "ucfunnel"
+	BidderUnicorn          BidderName = "unicorn"
 	BidderUnruly           BidderName = "unruly"
 	BidderValueImpression  BidderName = "valueimpression"
 	BidderVerizonMedia     BidderName = "verizonmedia"
@@ -196,6 +201,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdtarget,
 		BidderAdtelligent,
 		BidderAdvangelists,
+		BidderAdyoulike,
 		BidderAJA,
 		BidderAMX,
 		BidderApplogy,
@@ -205,12 +211,14 @@ func CoreBidderNames() []BidderName {
 		BidderBeachfront,
 		BidderBeintoo,
 		BidderBetween,
+		BidderBidmachine,
 		BidderBrightroll,
 		BidderColossus,
 		BidderConnectAd,
 		BidderConsumable,
 		BidderConversant,
 		BidderCpmstar,
+		BidderCriteo,
 		BidderDatablocks,
 		BidderDecenterAds,
 		BidderDeepintent,
@@ -246,6 +254,7 @@ func CoreBidderNames() []BidderName {
 		BidderOneTag,
 		BidderOpenx,
 		BidderOrbidder,
+		BidderOutbrain,
 		BidderPangle,
 		BidderPubmatic,
 		BidderPubnative,
@@ -270,6 +279,7 @@ func CoreBidderNames() []BidderName {
 		BidderTripleliftNative,
 		BidderTrustX,
 		BidderUcfunnel,
+		BidderUnicorn,
 		BidderUnruly,
 		BidderValueImpression,
 		BidderVerizonMedia,

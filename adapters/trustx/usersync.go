@@ -8,5 +8,5 @@ import (
 )
 
 func NewTrustXSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("trustx", 686, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("trustx", temp, adapters.SyncTypeRedirect)
 }

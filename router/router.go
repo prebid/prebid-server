@@ -217,7 +217,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	// Metrics engine
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
 	db, shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
-
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
 	if err := loadDataCache(cfg, db); err != nil {
@@ -246,7 +245,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	syncers := usersyncers.NewSyncerMap(cfg)
-	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, adapters.GDPRAwareSyncerIDs(syncers), generalHttpClient)
+	gvlVendorIDs := bidderInfos.ToGVLVendorIDMap()
+	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, gvlVendorIDs, generalHttpClient)
 
 	exchanges = newExchangeMap(cfg)
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
@@ -261,7 +261,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders)
 	if err != nil {
-		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
+		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
 	}
 
 	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders)

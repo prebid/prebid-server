@@ -175,13 +175,14 @@ func TestAllowPersonalInfo(t *testing.T) {
 	consent := "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA"
 
 	tests := []struct {
-		description         string
-		bidderName          openrtb_ext.BidderName
-		publisherID         string
-		userSyncIfAmbiguous bool
-		gdpr                Signal
-		consent             string
-		allowPI             bool
+		description           string
+		bidderName            openrtb_ext.BidderName
+		publisherID           string
+		userSyncIfAmbiguous   bool
+		gdpr                  Signal
+		consent               string
+		allowPI               bool
+		weakVendorEnforcement bool
 	}{
 		{
 			description:         "Allow PI - Non standard publisher",
@@ -285,7 +286,7 @@ func TestAllowPersonalInfo(t *testing.T) {
 	for _, tt := range tests {
 		perms.cfg.UsersyncIfAmbiguous = tt.userSyncIfAmbiguous
 
-		allowPI, _, _, err := perms.PersonalInfoAllowed(context.Background(), tt.bidderName, tt.publisherID, tt.gdpr, tt.consent)
+		allowPI, _, _, err := perms.PersonalInfoAllowed(context.Background(), tt.bidderName, tt.publisherID, tt.gdpr, tt.consent, tt.weakVendorEnforcement)
 
 		assert.Nil(t, err, tt.description)
 		assert.Equal(t, tt.allowPI, allowPI, tt.description)
@@ -317,6 +318,12 @@ func buildTCF2VendorList34() tcf2VendorList {
 				Purposes:        []int{2, 4, 7},
 				SpecialPurposes: []int{1},
 			},
+			"20": {
+				ID:               20,
+				Purposes:         []int{1},
+				LegIntPurposes:   []int{2, 7},
+				FlexiblePurposes: []int{2, 7},
+			},
 			"32": {
 				ID:       32,
 				Purposes: []int{1, 2, 4, 7},
@@ -337,12 +344,13 @@ var tcf2Config = config.GDPR{
 }
 
 type tcf2TestDef struct {
-	description string
-	bidder      openrtb_ext.BidderName
-	consent     string
-	allowPI     bool
-	allowGeo    bool
-	allowID     bool
+	description           string
+	bidder                openrtb_ext.BidderName
+	consent               string
+	allowPI               bool
+	allowGeo              bool
+	allowID               bool
+	weakVendorEnforcement bool
 }
 
 func TestAllowPersonalInfoTCF2(t *testing.T) {
@@ -353,11 +361,13 @@ func TestAllowPersonalInfoTCF2(t *testing.T) {
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 6,
 			openrtb_ext.BidderRubicon:  8,
+			openrtb_ext.BidderOpenx:    20,
 		},
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
 			tcf1SpecVersion: nil,
 			tcf2SpecVersion: listFetcher(map[uint16]vendorlist.VendorList{
 				34: parseVendorListDataV2(t, vendorListData),
+				74: parseVendorListDataV2(t, vendorListData),
 			}),
 		},
 	}
@@ -372,6 +382,15 @@ func TestAllowPersonalInfoTCF2(t *testing.T) {
 			allowPI:     false,
 			allowGeo:    false,
 			allowID:     false,
+		},
+		{
+			description:           "Appnexus vendor test, insufficient purposes claimed, basic enforcement",
+			bidder:                openrtb_ext.BidderAppnexus,
+			consent:               "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			allowPI:               true,
+			allowGeo:              true,
+			allowID:               true,
+			weakVendorEnforcement: true,
 		},
 		{
 			description: "Pubmatic vendor test, flex purposes claimed",
@@ -389,10 +408,21 @@ func TestAllowPersonalInfoTCF2(t *testing.T) {
 			allowGeo:    false,
 			allowID:     true,
 		},
+		{
+			// This requires publisher restrictions on any claimed purposes, 2-10. Vendor must declare all claimed purposes
+			// as flex with legit interest as primary.
+			// Using vendor 20 for this.
+			description: "OpenX vendor test, Specific purposes/LIs claimed, no geo claimed, Publisher restrictions apply",
+			bidder:      openrtb_ext.BidderOpenx,
+			consent:     "CPAavcCPAavcCAGABCFRBKCsAP_AAH_AAAqIHFNf_X_fb3_j-_59_9t0eY1f9_7_v-0zjgeds-8Nyd_X_L8X5mM7vB36pq4KuR4Eu3LBAQdlHOHcTUmw6IkVqTPsbk2Mr7NKJ7PEinMbe2dYGH9_n9XT_ZKY79_____7__-_____7_f__-__3_vp9V---wOJAIMBAUAgAEMAAQIFCIQAAQhiQAAAABBCIBQJIAEqgAWVwEdoIEACAxAQgQAgBBQgwCAAQAAJKAgBACwQCAAiAQAAgAEAIAAEIAILACQEAAAEAJCAAiACECAgiAAg5DAgIgCCAFABAAAuJDACAMooASBAPGQGAAKAAqACGAEwALgAjgBlgDUAHZAPsA_ACMAFLAK2AbwBMQCbAFogLYAYEAw8BkQDOQGeAM-EQHwAVABWAC4AIYAZAAywBqADZAHYAPwAgABGAClgFPANYAdUA-QCGwEOgIvASIAmwBOwCkQFyAMCAYSAw8Bk4DOQGfCQAYADgBzgN_CQTgAEAALgAoACoAGQAOAAeABAACIAFQAMIAaABqADyAIYAigBMgCqAKwAWAAuABvADmAHoAQ0AiACJgEsAS4AmgBSgC3AGGAMgAZcA1ADVAGyAO8AewA-IB9gH6AQAAjABQQClgFPAL8AYoA1gBtADcAG8AOIAegA-QCGwEOgIqAReAkQBMQCZQE2AJ2AUOApEBYoC2AFyALvAYEAwYBhIDDQGHgMiAZIAycBlwDOQGfANIAadA1gDWQoAEAYQaBIACoAKwAXABDADIAGWANQAbIA7AB-AEAAIKARgApYBT4C0ALSAawA3gB1QD5AIbAQ6Ai8BIgCbAE7AKRAXIAwIBhIDDwGMAMnAZyAzwBnwcAEAA4Bv4qA2ABQAFQAQwAmABcAEcAMsAagA7AB-AEYAKXAWgBaQDeAJBATEAmwBTYC2AFyAMCAYeAyIBnIDPAGfANyHQWQAFwAUABUADIAHAAQAAiABdADAAMYAaABqADwAH0AQwBFACZAFUAVgAsABcADEAGYAN4AcwA9ACGAERAJYAmABNACjAFKALEAW4AwwBkADKAGiANQAbIA3wB3gD2gH2AfoBGACVAFBAKeAWKAtAC0gFzALyAX4AxQBuADiQHTAdQA9ACGwEOgIiAReAkEBIgCbAE7AKHAU0AqwBYsC2ALZAXAAuQBdoC7wGEgMNAYeAxIBjADHgGSAMnAZUAywBlwDOQGfANEgaQBpIDSwGnANYAbGPABAIqAb-QgZgALAAoABkAEQALgAYgBDACYAFUALgAYgAzABvAD0AI4AWIAygBqADfAHfAPsA_ACMAFBAKGAU-AtAC0gF-AMUAdQA9ACQQEiAJsAU0AsUBaMC2ALaAXAAuQBdoDDwGJAMiAZOAzkBngDPgGiANJAaWA4AlAyAAQAAsACgAGQAOAAigBgAGIAPAAiABMACqAFwAMQAZgA2gCGgEQARIAowBSgC3AGEAMoAaoA2QB3gD8AIwAU-AtAC0gGKANwAcQA6gCHQEXgJEATYAsUBbAC7QGHgMiAZOAywBnIDPAGfANIAawA4AmACARUA38pBBAAXABQAFQAMgAcABAACKAGAAYwA0ADUAHkAQwBFACYAFIAKoAWAAuABiADMAHMAQwAiABRgClAFiALcAZQA0QBqgDZAHfAPsA_ACMAFBAKGAVsAuYBeQDaAG4APQAh0BF4CRAE2AJ2AUOApoBWwCxQFsALgAXIAu0BhoDDwGMAMiAZIAycBlwDOQGeAM-gaQBpMDWANZAbGVABAA-Ab-A.YAAAAAAAAAAA",
+			allowPI:     true,
+			allowGeo:    false,
+			allowID:     true,
+		},
 	}
 
 	for _, td := range testDefs {
-		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent)
+		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent, td.weakVendorEnforcement)
 		assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowPI, allowPI, "AllowPI failure on %s", td.description)
 		assert.EqualValuesf(t, td.allowGeo, allowGeo, "AllowGeo failure on %s", td.description)
@@ -418,7 +448,7 @@ func TestAllowPersonalInfoWhitelistTCF2(t *testing.T) {
 	}
 	// Assert that an item that otherwise would not be allowed PI access, gets approved because it is found in the GDPR.NonStandardPublishers array
 	perms.cfg.NonStandardPublisherMap = map[string]struct{}{"appNexusAppID": {}}
-	allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "appNexusAppID", SignalYes, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA")
+	allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "appNexusAppID", SignalYes, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA", false)
 	assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed")
 	assert.EqualValuesf(t, true, allowPI, "AllowPI failure")
 	assert.EqualValuesf(t, true, allowGeo, "AllowGeo failure")
@@ -472,7 +502,7 @@ func TestAllowPersonalInfoTCF2PubRestrict(t *testing.T) {
 	}
 
 	for _, td := range testDefs {
-		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent)
+		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent, td.weakVendorEnforcement)
 		assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowPI, allowPI, "AllowPI failure on %s", td.description)
 		assert.EqualValuesf(t, td.allowGeo, allowGeo, "AllowGeo failure on %s", td.description)
@@ -528,7 +558,7 @@ func TestAllowPersonalInfoTCF2PurposeOneTrue(t *testing.T) {
 	}
 
 	for _, td := range testDefs {
-		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent)
+		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent, td.weakVendorEnforcement)
 		assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowPI, allowPI, "AllowPI failure on %s", td.description)
 		assert.EqualValuesf(t, td.allowGeo, allowGeo, "AllowGeo failure on %s", td.description)
@@ -585,7 +615,7 @@ func TestAllowPersonalInfoTCF2PurposeOneFalse(t *testing.T) {
 	}
 
 	for _, td := range testDefs {
-		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent)
+		allowPI, allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent, td.weakVendorEnforcement)
 		assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowPI, allowPI, "AllowPI failure on %s", td.description)
 		assert.EqualValuesf(t, td.allowGeo, allowGeo, "AllowGeo failure on %s", td.description)

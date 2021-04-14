@@ -8,5 +8,5 @@ import (
 )
 
 func NewBrightrollSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("brightroll", 25, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("brightroll", temp, adapters.SyncTypeRedirect)
 }

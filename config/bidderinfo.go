@@ -19,6 +19,7 @@ type BidderInfo struct {
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities"`
 	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed"`
 	Debug                   *DebugInfo        `yaml:"debug,omitempty"`
+	GVLVendorID             uint16            `yaml:"gvlVendorID,omitempty"`
 }
 
 // MaintainerInfo is the support email address for a bidder.
@@ -43,13 +44,13 @@ type DebugInfo struct {
 }
 
 // LoadBidderInfoFromDisk parses all static/bidder-info/{bidder}.yaml files from the file system.
-func LoadBidderInfoFromDisk(path string, adapterConfigs map[string]Adapter, bidders []string) (map[string]BidderInfo, error) {
+func LoadBidderInfoFromDisk(path string, adapterConfigs map[string]Adapter, bidders []string) (BidderInfos, error) {
 	reader := infoReaderFromDisk{path}
 	return loadBidderInfo(reader, adapterConfigs, bidders)
 }
 
-func loadBidderInfo(r infoReader, adapterConfigs map[string]Adapter, bidders []string) (map[string]BidderInfo, error) {
-	infos := map[string]BidderInfo{}
+func loadBidderInfo(r infoReader, adapterConfigs map[string]Adapter, bidders []string) (BidderInfos, error) {
+	infos := BidderInfos{}
 
 	for _, bidder := range bidders {
 		data, err := r.Read(bidder)
@@ -85,4 +86,16 @@ type infoReaderFromDisk struct {
 func (r infoReaderFromDisk) Read(bidder string) ([]byte, error) {
 	path := fmt.Sprintf("%v/%v.yaml", r.path, bidder)
 	return ioutil.ReadFile(path)
+}
+
+// ToGVLVendorIDMap transforms a BidderInfos object to a map of bidder names to GVL id. Disabled
+// bidders are omitted from the result.
+func (infos BidderInfos) ToGVLVendorIDMap() map[openrtb_ext.BidderName]uint16 {
+	m := make(map[openrtb_ext.BidderName]uint16, len(infos))
+	for name, info := range infos {
+		if info.Enabled && info.GVLVendorID != 0 {
+			m[openrtb_ext.BidderName(name)] = info.GVLVendorID
+		}
+	}
+	return m
 }

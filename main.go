@@ -20,7 +20,7 @@ import (
 // Rev holds binary revision string
 // Set manually at build time using:
 //    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
-// Populated automatically at build / release time via .travis.yml
+// Populated automatically at build / releases
 //   `gox -os="linux" -arch="386" -output="{{.Dir}}_{{.OS}}_{{.Arch}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...;`
 // See issue #559
 var Rev string

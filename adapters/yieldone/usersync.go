@@ -8,5 +8,5 @@ import (
 )
 
 func NewYieldoneSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("yieldone", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("yieldone", temp, adapters.SyncTypeRedirect)
 }

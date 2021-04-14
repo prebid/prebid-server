@@ -1,5 +1,6 @@
 maintainer:
   email: "scope.sspp@adform.com"
+gvlVendorID: 50
 capabilities:
   app:
     mediaTypes:

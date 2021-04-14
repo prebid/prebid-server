@@ -26,6 +26,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderAdtarget):         syncConfig,
 			string(openrtb_ext.BidderAdtelligent):      syncConfig,
 			string(openrtb_ext.BidderAdvangelists):     syncConfig,
+			string(openrtb_ext.BidderAdyoulike):        syncConfig,
 			string(openrtb_ext.BidderAJA):              syncConfig,
 			string(openrtb_ext.BidderAMX):              syncConfig,
 			string(openrtb_ext.BidderAppnexus):         syncConfig,
@@ -40,6 +41,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderConsumable):       syncConfig,
 			string(openrtb_ext.BidderConversant):       syncConfig,
 			string(openrtb_ext.BidderCpmstar):          syncConfig,
+			string(openrtb_ext.BidderCriteo):           syncConfig,
 			string(openrtb_ext.BidderDatablocks):       syncConfig,
 			string(openrtb_ext.BidderDmx):              syncConfig,
 			string(openrtb_ext.BidderDeepintent):       syncConfig,
@@ -67,6 +69,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderNoBid):            syncConfig,
 			string(openrtb_ext.BidderOneTag):           syncConfig,
 			string(openrtb_ext.BidderOpenx):            syncConfig,
+			string(openrtb_ext.BidderOutbrain):         syncConfig,
 			string(openrtb_ext.BidderPubmatic):         syncConfig,
 			string(openrtb_ext.BidderPulsepoint):       syncConfig,
 			string(openrtb_ext.BidderRhythmone):        syncConfig,
@@ -105,6 +108,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderAdot:         true,
 		openrtb_ext.BidderAdprime:      true,
 		openrtb_ext.BidderApplogy:      true,
+		openrtb_ext.BidderBidmachine:   true,
 		openrtb_ext.BidderEpom:         true,
 		openrtb_ext.BidderDecenterAds:  true,
 		openrtb_ext.BidderInMobi:       true,
@@ -118,6 +122,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderRevcontent:   true,
 		openrtb_ext.BidderSilverMob:    true,
 		openrtb_ext.BidderSmaato:       true,
+		openrtb_ext.BidderUnicorn:      true,
 		openrtb_ext.BidderYeahmobi:     true,
 	}
 
@@ -132,33 +137,5 @@ func TestNewSyncerMap(t *testing.T) {
 		if _, ok := syncers[bidderName]; !ok && !adapterWithoutSyncer {
 			t.Errorf("No syncer exists for adapter: %s", bidderName)
 		}
-	}
-}
-
-// Bidders may have an ID on the IAB-maintained global vendor list.
-// This makes sure that we don't have conflicting IDs among Bidders in our project,
-// since that's almost certainly a bug.
-func TestVendorIDUniqueness(t *testing.T) {
-	cfg := &config.Configuration{}
-	syncers := NewSyncerMap(cfg)
-
-	idMap := make(map[uint16]openrtb_ext.BidderName, len(syncers))
-	for name, syncer := range syncers {
-		id := syncer.GDPRVendorID()
-		if id == 0 {
-			continue
-		}
-
-		if oldName, ok := idMap[id]; ok {
-			t.Errorf("GDPR VendorList ID %d used by both %s and %s. These must be unique.", id, oldName, name)
-		}
-		idMap[id] = name
-	}
-}
-
-func assertStringsMatch(t *testing.T, expected string, actual string) {
-	t.Helper()
-	if expected != actual {
-		t.Errorf("Expected %s, got %s", expected, actual)
 	}
 }

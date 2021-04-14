@@ -439,7 +439,7 @@ func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string) (bool, bool, bool, error) {
+func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
 	return g.allowPI, g.allowPI, g.allowPI, nil
 }
 
@@ -461,9 +461,4 @@ func (s fakeSyncer) FamilyName() string {
 // GetUsersyncInfo implements the Usersyncer interface with a no-op.
 func (s fakeSyncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.UsersyncInfo, error) {
 	return nil, nil
-}
-
-// GDPRVendorID implements the Usersyncer interface with a no-op.
-func (s fakeSyncer) GDPRVendorID() uint16 {
-	return 0
 }

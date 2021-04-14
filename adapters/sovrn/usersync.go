@@ -8,5 +8,5 @@ import (
 )
 
 func NewSovrnSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("sovrn", 13, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("sovrn", temp, adapters.SyncTypeRedirect)
 }

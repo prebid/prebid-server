@@ -25,7 +25,6 @@ func TestVrtcalSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "http://usync-prebid.vrtcal.com/s?gdpr=0&gdpr_consent=", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 	assert.Equal(t, "vrtcal", syncer.FamilyName())
 }
