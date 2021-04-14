@@ -89,14 +89,14 @@ func (adapter *adapter) MakeBids(
 	var typedBid *adapters.TypedBid
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
-			bid := bid // pin! -> https://github.com/kyoh86/scopelint#whats-this
-			bidType, err := getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp)
+			activeBid := bid
+			bidType, err := getMediaTypeForImp(activeBid.ImpID, openRTBRequest.Imp)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 
-			typedBid = &adapters.TypedBid{Bid: &bid, BidType: bidType}
+			typedBid = &adapters.TypedBid{Bid: &activeBid, BidType: bidType}
 			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
 		}
 	}
