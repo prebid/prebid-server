@@ -16,9 +16,9 @@ import (
 	"github.com/prebid/prebid-server/config/util"
 	"github.com/prebid/prebid-server/currency"
 
-	nativeRequests "github.com/mxmCherry/openrtb/v14/native1/request"
-	nativeResponse "github.com/mxmCherry/openrtb/v14/native1/response"
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
+	nativeResponse "github.com/mxmCherry/openrtb/v15/native1/response"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -280,13 +280,16 @@ func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeRes
 
 func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Request) error {
 	if asset.Img != nil {
-		if tempAsset, err := getAssetByID(asset.ID, nativePayload.Assets); err == nil {
+		if asset.ID == nil {
+			return errors.New("Response Image asset doesn't have an ID")
+		}
+		if tempAsset, err := getAssetByID(*asset.ID, nativePayload.Assets); err == nil {
 			if tempAsset.Img != nil {
 				if tempAsset.Img.Type != 0 {
 					asset.Img.Type = tempAsset.Img.Type
 				}
 			} else {
-				return fmt.Errorf("Response has an Image asset with ID:%d present that doesn't exist in the request", asset.ID)
+				return fmt.Errorf("Response has an Image asset with ID:%d present that doesn't exist in the request", *asset.ID)
 			}
 		} else {
 			return err
@@ -294,13 +297,16 @@ func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Requ
 	}
 
 	if asset.Data != nil {
-		if tempAsset, err := getAssetByID(asset.ID, nativePayload.Assets); err == nil {
+		if asset.ID == nil {
+			return errors.New("Response Data asset doesn't have an ID")
+		}
+		if tempAsset, err := getAssetByID(*asset.ID, nativePayload.Assets); err == nil {
 			if tempAsset.Data != nil {
 				if tempAsset.Data.Type != 0 {
 					asset.Data.Type = tempAsset.Data.Type
 				}
 			} else {
-				return fmt.Errorf("Response has a Data asset with ID:%d present that doesn't exist in the request", asset.ID)
+				return fmt.Errorf("Response has a Data asset with ID:%d present that doesn't exist in the request", *asset.ID)
 			}
 		} else {
 			return err

@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 

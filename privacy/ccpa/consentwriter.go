@@ -1,6 +1,6 @@
 package ccpa
 
-import "github.com/mxmCherry/openrtb/v14/openrtb2"
+import "github.com/mxmCherry/openrtb/v15/openrtb2"
 
 // ConsentWriter implements the PolicyWriter interface for CCPA.
 type ConsentWriter struct {
