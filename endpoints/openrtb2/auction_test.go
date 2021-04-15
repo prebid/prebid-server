@@ -2193,13 +2193,13 @@ func TestValidateNativeContextTypes(t *testing.T) {
 		},
 		{
 			description:      "Content - Sub Type Just Below Range",
-			givenContextType: 1,
+			givenContextType: 1, // Content constant
 			givenSubType:     9, // Content range is currently 10-15
 			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
 		},
 		{
 			description:      "Content - Sub Type In Range",
-			givenContextType: 1,
+			givenContextType: 1,  // Content constant
 			givenSubType:     10, // Content range is currently 10-15
 			expectedError:    "",
 		},
@@ -2217,37 +2217,37 @@ func TestValidateNativeContextTypes(t *testing.T) {
 		},
 		{
 			description:      "Content - Sub Type Just Above Range",
-			givenContextType: 1,
+			givenContextType: 1,  // Content constant
 			givenSubType:     16, // Content range is currently 10-15
 			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
 		},
 		{
 			description:      "Content - Sub Type Exchange Specific Boundary",
-			givenContextType: 1,
+			givenContextType: 1, // Content constant
 			givenSubType:     500,
 			expectedError:    "",
 		},
 		{
 			description:      "Content - Sub Type Exchange Specific Boundary + 1",
-			givenContextType: 1,
+			givenContextType: 1, // Content constant
 			givenSubType:     501,
 			expectedError:    "",
 		},
 		{
 			description:      "Content - Invalid Context Type",
-			givenContextType: 2,
+			givenContextType: 2,  // Not content constant
 			givenSubType:     10, // Content range is currently 10-15
 			expectedError:    "request.imp[4].native.request.context is 2, but contextsubtype is 10. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
 		},
 		{
 			description:      "Social - Sub Type Just Below Range",
-			givenContextType: 2,
+			givenContextType: 2,  // Social constant
 			givenSubType:     19, // Social range is currently 20-22
 			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
 		},
 		{
 			description:      "Social - Sub Type In Range",
-			givenContextType: 2,
+			givenContextType: 2,  // Social constant
 			givenSubType:     20, // Social range is currently 20-22
 			expectedError:    "",
 		},
@@ -2265,37 +2265,37 @@ func TestValidateNativeContextTypes(t *testing.T) {
 		},
 		{
 			description:      "Social - Sub Type Just Above Range",
-			givenContextType: 2,
+			givenContextType: 2,  // Social constant
 			givenSubType:     23, // Social range is currently 20-22
 			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
 		},
 		{
-			description:      "Social - Invalid Context Type",
-			givenContextType: 3,
-			givenSubType:     20, // Social range is currently 20-22
-			expectedError:    "request.imp[4].native.request.context is 3, but contextsubtype is 20. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
 			description:      "Social - Sub Type Exchange Specific Boundary",
-			givenContextType: 2,
+			givenContextType: 2, // Social constant
 			givenSubType:     500,
 			expectedError:    "",
 		},
 		{
 			description:      "Social - Sub Type Exchange Specific Boundary + 1",
-			givenContextType: 2,
+			givenContextType: 2, // Social constant
 			givenSubType:     501,
 			expectedError:    "",
 		},
 		{
+			description:      "Social - Invalid Context Type",
+			givenContextType: 3,  // Not social constant
+			givenSubType:     20, // Social range is currently 20-22
+			expectedError:    "request.imp[4].native.request.context is 3, but contextsubtype is 20. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
 			description:      "Product - Sub Type Just Below Range",
-			givenContextType: 3,
+			givenContextType: 3,  // Product constant
 			givenSubType:     29, // Product range is currently 30-32
 			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
 		},
 		{
 			description:      "Product - Sub Type In Range",
-			givenContextType: 3,
+			givenContextType: 3,  // Product constant
 			givenSubType:     30, // Product range is currently 30-32
 			expectedError:    "",
 		},
@@ -2313,27 +2313,27 @@ func TestValidateNativeContextTypes(t *testing.T) {
 		},
 		{
 			description:      "Product - Sub Type Just Above Range",
-			givenContextType: 3,
+			givenContextType: 3,  // Product constant
 			givenSubType:     33, // Product range is currently 30-32
 			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
 		},
 		{
-			description:      "Product - Invalid Context Type",
-			givenContextType: 1,
-			givenSubType:     30, // Product range is currently 30-32
-			expectedError:    "request.imp[4].native.request.context is 1, but contextsubtype is 30. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
 			description:      "Product - Sub Type Exchange Specific Boundary",
-			givenContextType: 3,
+			givenContextType: 3, // Product constant
 			givenSubType:     500,
 			expectedError:    "",
 		},
 		{
 			description:      "Product - Sub Type Exchange Specific Boundary + 1",
-			givenContextType: 3,
+			givenContextType: 3, // Product constant
 			givenSubType:     501,
 			expectedError:    "",
+		},
+		{
+			description:      "Product - Invalid Context Type",
+			givenContextType: 1,  // Not product constant
+			givenSubType:     30, // Product range is currently 30-32
+			expectedError:    "request.imp[4].native.request.context is 1, but contextsubtype is 30. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
 		},
 	}
 
@@ -2356,33 +2356,33 @@ func TestValidateNativePlacementType(t *testing.T) {
 		expectedError      string
 	}{
 		{
-			description:        "Valid - Not Specified",
+			description:        "Not Specified",
 			givenPlacementType: 0,
 			expectedError:      "",
 		},
 		{
-			description:        "Valid - Known Value",
-			givenPlacementType: native1.PlacementTypeFeed,
+			description:        "Known Value",
+			givenPlacementType: 1, // Range is currently 1-4
 			expectedError:      "",
 		},
 		{
-			description:        "Valid - Exchange Specific - Boundary",
+			description:        "Exchange Specific - Boundary",
 			givenPlacementType: 500,
 			expectedError:      "",
 		},
 		{
-			description:        "Valid - Exchange Specific - Boundary + 1",
+			description:        "Exchange Specific - Boundary + 1",
 			givenPlacementType: 501,
 			expectedError:      "",
 		},
 		{
-			description:        "Invalid - Negative",
+			description:        "Negative",
 			givenPlacementType: -1,
 			expectedError:      "request.imp[4].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
 		},
 		{
-			description:        "Invalid - Boundary + 1",
-			givenPlacementType: 5, // Known values are currently 1-4
+			description:        "Just Above Range",
+			givenPlacementType: 5, // Range is currently 1-4
 			expectedError:      "request.imp[4].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
 		},
 	}
@@ -2409,96 +2409,96 @@ func TestValidateNativeEventTracker(t *testing.T) {
 		{
 			description: "Valid",
 			givenEvent: nativeRequests.EventTracker{
-				Event:   native1.EventTypeImpression,
-				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage},
+				Event:   1,
+				Methods: []native1.EventTrackingMethod{1},
 			},
 			expectedError: "",
 		},
 		{
-			description: "Event - Valid - Exchange Specific - Boundary",
+			description: "Event - Exchange Specific - Boundary",
 			givenEvent: nativeRequests.EventTracker{
 				Event:   500,
-				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage},
+				Methods: []native1.EventTrackingMethod{1},
 			},
 			expectedError: "",
 		},
 		{
-			description: "Event - Valid - Exchange Specific - Boundary + 1",
+			description: "Event - Exchange Specific - Boundary + 1",
 			givenEvent: nativeRequests.EventTracker{
 				Event:   501,
-				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage},
+				Methods: []native1.EventTrackingMethod{1},
 			},
 			expectedError: "",
 		},
 		{
-			description: "Event - Invalid - Negative",
+			description: "Event - Negative",
 			givenEvent: nativeRequests.EventTracker{
 				Event:   -1,
-				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage},
+				Methods: []native1.EventTrackingMethod{1},
 			},
 			expectedError: "request.imp[4].native.request.eventtrackers[8].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
 		},
 		{
-			description: "Event - Invalid - Boundary + 1",
+			description: "Event - Just Above Range",
 			givenEvent: nativeRequests.EventTracker{
-				Event:   5, // Known values are currently 1-4
-				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage},
+				Event:   5, // Range is currently 1-4
+				Methods: []native1.EventTrackingMethod{1},
 			},
 			expectedError: "request.imp[4].native.request.eventtrackers[8].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
 		},
 		{
-			description: "Methods - Valid - Many",
+			description: "Methods - Many Valid",
 			givenEvent: nativeRequests.EventTracker{
-				Event:   native1.EventTypeImpression,
-				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage, native1.EventTrackingMethodJS},
+				Event:   1,
+				Methods: []native1.EventTrackingMethod{1, 2},
 			},
 			expectedError: "",
 		},
 		{
-			description: "Methods - Invalid - Empty",
+			description: "Methods - Empty",
 			givenEvent: nativeRequests.EventTracker{
-				Event:   native1.EventTypeImpression,
+				Event:   1,
 				Methods: []native1.EventTrackingMethod{},
 			},
 			expectedError: "request.imp[4].native.request.eventtrackers[8].method is required. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
 		},
 		{
-			description: "Methods - Valid - Exchange Specific - Boundary",
+			description: "Methods - Exchange Specific - Boundary",
 			givenEvent: nativeRequests.EventTracker{
-				Event:   native1.EventTypeImpression,
+				Event:   1,
 				Methods: []native1.EventTrackingMethod{500},
 			},
 			expectedError: "",
 		},
 		{
-			description: "Methods - Valid - Exchange Specific - Boundary + 1",
+			description: "Methods - Exchange Specific - Boundary + 1",
 			givenEvent: nativeRequests.EventTracker{
-				Event:   native1.EventTypeImpression,
+				Event:   1,
 				Methods: []native1.EventTrackingMethod{501},
 			},
 			expectedError: "",
 		},
 		{
-			description: "Methods - Invalid - Negative",
+			description: "Methods - Negative",
 			givenEvent: nativeRequests.EventTracker{
-				Event:   native1.EventTypeImpression,
+				Event:   1,
 				Methods: []native1.EventTrackingMethod{-1},
 			},
 			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[0] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
 		},
 		{
-			description: "Methods - Invalid - Boundary + 1",
+			description: "Methods - Just Above Range",
 			givenEvent: nativeRequests.EventTracker{
-				Event:   native1.EventTypeImpression,
+				Event:   1,
 				Methods: []native1.EventTrackingMethod{3}, // Known values are currently 1-2
 			},
 			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[0] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
 		},
 		{
-			description: "Methods - Mixed",
+			description: "Methods - Mixed Valid + Invalid",
 			givenEvent: nativeRequests.EventTracker{
-				Event:   native1.EventTypeImpression,
-				Methods: []native1.EventTrackingMethod{native1.EventTrackingMethodImage, -1},
+				Event:   1,
+				Methods: []native1.EventTrackingMethod{1, -1},
 			},
 			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[1] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
 		},
@@ -2524,33 +2524,33 @@ func TestValidateNativeAssetData(t *testing.T) {
 		expectedError string
 	}{
 		{
-			description:   "Valid - Known Value",
-			givenData:     nativeRequests.Data{Type: native1.DataAssetTypeSponsored},
+			description:   "Valid",
+			givenData:     nativeRequests.Data{Type: 1},
 			expectedError: "",
 		},
 		{
-			description:   "Valid - Exchange Specific - Boundary",
+			description:   "Exchange Specific - Boundary",
 			givenData:     nativeRequests.Data{Type: 500},
 			expectedError: "",
 		},
 		{
-			description:   "Valid - Exchange Specific - Boundary + 1",
+			description:   "Exchange Specific - Boundary + 1",
 			givenData:     nativeRequests.Data{Type: 501},
 			expectedError: "",
 		},
 		{
-			description:   "Invalid - Not Specified",
+			description:   "Not Specified",
 			givenData:     nativeRequests.Data{},
 			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
 		},
 		{
-			description:   "Invalid - Negative",
+			description:   "Negative",
 			givenData:     nativeRequests.Data{Type: -1},
 			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
 		},
 		{
-			description:   "Invalid - Boundary + 1",
-			givenData:     nativeRequests.Data{Type: 13}, // Known values are currently 1-12
+			description:   "Just Above Range",
+			givenData:     nativeRequests.Data{Type: 13}, // Range is currently 1-12
 			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
 		},
 	}
