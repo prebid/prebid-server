@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adtarget"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/advangelists"
+	"github.com/prebid/prebid-server/adapters/adxcg"
 	"github.com/prebid/prebid-server/adapters/adyoulike"
 	"github.com/prebid/prebid-server/adapters/aja"
 	"github.com/prebid/prebid-server/adapters/amx"
@@ -70,6 +71,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/onetag"
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/orbidder"
+	"github.com/prebid/prebid-server/adapters/outbrain"
 	"github.com/prebid/prebid-server/adapters/pangle"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pubnative"
@@ -129,6 +131,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdtarget:         adtarget.Builder,
 		openrtb_ext.BidderAdtelligent:      adtelligent.Builder,
 		openrtb_ext.BidderAdvangelists:     advangelists.Builder,
+		openrtb_ext.BidderAdxcg:            adxcg.Builder,
 		openrtb_ext.BidderAdyoulike:        adyoulike.Builder,
 		openrtb_ext.BidderAJA:              aja.Builder,
 		openrtb_ext.BidderAMX:              amx.Builder,
@@ -181,6 +184,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderOneTag:           onetag.Builder,
 		openrtb_ext.BidderOpenx:            openx.Builder,
 		openrtb_ext.BidderOrbidder:         orbidder.Builder,
+		openrtb_ext.BidderOutbrain:         outbrain.Builder,
 		openrtb_ext.BidderPangle:           pangle.Builder,
 		openrtb_ext.BidderPubmatic:         pubmatic.Builder,
 		openrtb_ext.BidderPubnative:        pubnative.Builder,
