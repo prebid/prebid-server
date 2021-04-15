@@ -657,7 +657,7 @@ func validateNativeContextTypes(cType native1.ContextType, cSubtype native1.Cont
 		// Context is only recommended, so none is a valid type.
 		return nil
 	}
-	if cType < native1.ContextTypeContent || cType > native1.ContextTypeProduct {
+	if cType < native1.ContextTypeContent || (cType > native1.ContextTypeProduct && cType < 500) {
 		return fmt.Errorf("request.imp[%d].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
 	if cSubtype < 0 {
@@ -666,26 +666,25 @@ func validateNativeContextTypes(cType native1.ContextType, cSubtype native1.Cont
 	if cSubtype == 0 {
 		return nil
 	}
-
-	if cSubtype >= 500 {
-		return fmt.Errorf("request.imp[%d].native.request.contextsubtype can't be greater than or equal to 500. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
-	}
 	if cSubtype >= native1.ContextSubTypeGeneral && cSubtype <= native1.ContextSubTypeUserGenerated {
-		if cType != native1.ContextTypeContent {
+		if cType != native1.ContextTypeContent && cType != 500 {
 			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
 		}
 		return nil
 	}
 	if cSubtype >= native1.ContextSubTypeSocial && cSubtype <= native1.ContextSubTypeChat {
-		if cType != native1.ContextTypeSocial {
+		if cType != native1.ContextTypeSocial && cType != 500 {
 			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
 		}
 		return nil
 	}
 	if cSubtype >= native1.ContextSubTypeSelling && cSubtype <= native1.ContextSubTypeProductReview {
-		if cType != native1.ContextTypeProduct {
+		if cType != native1.ContextTypeProduct && cType != 500 {
 			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
 		}
+		return nil
+	}
+	if cSubtype >= 500 {
 		return nil
 	}
 

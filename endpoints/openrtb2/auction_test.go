@@ -2146,6 +2146,189 @@ func TestAuctionWarnings(t *testing.T) {
 	assert.Equal(t, errortypes.InvalidPrivacyConsentWarningCode, actualWarning.WarningCode, "Warning code is incorrect")
 }
 
+func TestValidateNativeContextTypes(t *testing.T) {
+	impIndex := 4
+
+	testCases := []struct {
+		description      string
+		givenContextType native1.ContextType
+		givenSubType     native1.ContextSubType
+		expectedError    string
+	}{
+		{
+			description:      "No Types Specified",
+			givenContextType: 0,
+			givenSubType:     0,
+			expectedError:    "",
+		},
+		{
+			description:      "All Types Vendor Specific",
+			givenContextType: 500,
+			givenSubType:     500,
+			expectedError:    "",
+		},
+		{
+			description:      "Context Type Known Value - Sub Type Unspecified",
+			givenContextType: 1,
+			givenSubType:     0,
+			expectedError:    "",
+		},
+		{
+			description:      "Context Type Negative",
+			givenContextType: -1,
+			givenSubType:     0,
+			expectedError:    "request.imp[4].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Context Type Just Above Range",
+			givenContextType: 4, // Range is currently 1-3
+			givenSubType:     0,
+			expectedError:    "request.imp[4].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Sub Type Negative",
+			givenContextType: 1,
+			givenSubType:     -1,
+			expectedError:    "request.imp[4].native.request.contextsubtype value can't be less than 0. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Content - Sub Type Just Below Range",
+			givenContextType: 1,
+			givenSubType:     9, // Content range is currently 10-15
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Content - Sub Type In Range",
+			givenContextType: 1,
+			givenSubType:     10, // Content range is currently 10-15
+			expectedError:    "",
+		},
+		{
+			description:      "Content - Sub Type In Range - Context Type Vendor Specific",
+			givenContextType: 500,
+			givenSubType:     10, // Content range is currently 10-15
+			expectedError:    "",
+		},
+		{
+			description:      "Content - Sub Type Just Above Range",
+			givenContextType: 1,
+			givenSubType:     16, // Content range is currently 10-15
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Content - Sub Type Vendor Specific Boundary",
+			givenContextType: 1,
+			givenSubType:     500,
+			expectedError:    "",
+		},
+		{
+			description:      "Content - Sub Type Vendor Specific Boundary + 1",
+			givenContextType: 1,
+			givenSubType:     501,
+			expectedError:    "",
+		},
+		{
+			description:      "Content - Invalid Context Type",
+			givenContextType: 2,
+			givenSubType:     10, // Content range is currently 10-15
+			expectedError:    "request.imp[4].native.request.context is 2, but contextsubtype is 10. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Social - Sub Type Just Below Range",
+			givenContextType: 2,
+			givenSubType:     19, // Social range is currently 20-22
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Social - Sub Type In Range",
+			givenContextType: 2,
+			givenSubType:     20, // Social range is currently 20-22
+			expectedError:    "",
+		},
+		{
+			description:      "Social - Sub Type In Range - Context Type Vendor Specific",
+			givenContextType: 500,
+			givenSubType:     20, // Social range is currently 20-22
+			expectedError:    "",
+		},
+		{
+			description:      "Social - Sub Type Just Above Range",
+			givenContextType: 2,
+			givenSubType:     23, // Social range is currently 20-22
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Social - Invalid Context Type",
+			givenContextType: 3,
+			givenSubType:     20, // Social range is currently 20-22
+			expectedError:    "request.imp[4].native.request.context is 3, but contextsubtype is 20. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Social - Sub Type Vendor Specific Boundary",
+			givenContextType: 2,
+			givenSubType:     500,
+			expectedError:    "",
+		},
+		{
+			description:      "Social - Sub Type Vendor Specific Boundary + 1",
+			givenContextType: 2,
+			givenSubType:     501,
+			expectedError:    "",
+		},
+		{
+			description:      "Product - Sub Type Just Below Range",
+			givenContextType: 3,
+			givenSubType:     29, // Product range is currently 30-32
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Product - Sub Type In Range",
+			givenContextType: 3,
+			givenSubType:     30, // Product range is currently 30-32
+			expectedError:    "",
+		},
+		{
+			description:      "Product - Sub Type In Range - Context Type Vendor Specific",
+			givenContextType: 500,
+			givenSubType:     30, // Product range is currently 30-32
+			expectedError:    "",
+		},
+		{
+			description:      "Product - Sub Type Just Above Range",
+			givenContextType: 3,
+			givenSubType:     33, // Product range is currently 30-32
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Product - Invalid Context Type",
+			givenContextType: 1,
+			givenSubType:     30, // Product range is currently 30-32
+			expectedError:    "request.imp[4].native.request.context is 1, but contextsubtype is 30. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Product - Sub Type Vendor Specific Boundary",
+			givenContextType: 3,
+			givenSubType:     500,
+			expectedError:    "",
+		},
+		{
+			description:      "Product - Sub Type Vendor Specific Boundary + 1",
+			givenContextType: 3,
+			givenSubType:     501,
+			expectedError:    "",
+		},
+	}
+
+	for _, test := range testCases {
+		err := validateNativeContextTypes(test.givenContextType, test.givenSubType, impIndex)
+		if test.expectedError == "" {
+			assert.NoError(t, err, test.description)
+		} else {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		}
+	}
+}
+
 func TestValidateNativePlacementType(t *testing.T) {
 	impIndex := 4
 
