@@ -14,6 +14,9 @@ const FirstPartyDataContextExtKey = "context"
 // SKAdNExtKey defines the field name within request.ext reserved for Apple's SKAdNetwork.
 const SKAdNExtKey = "skadn"
 
+// NativeExchangeSpecificLowerBound defines the lower threshold of exchange specific types for native ads. There is no upper bound.
+const NativeExchangeSpecificLowerBound = 500
+
 const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext

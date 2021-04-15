@@ -2162,7 +2162,7 @@ func TestValidateNativeContextTypes(t *testing.T) {
 			expectedError:    "",
 		},
 		{
-			description:      "All Types Vendor Specific",
+			description:      "All Types Exchange Specific",
 			givenContextType: 500,
 			givenSubType:     500,
 			expectedError:    "",
@@ -2204,8 +2204,14 @@ func TestValidateNativeContextTypes(t *testing.T) {
 			expectedError:    "",
 		},
 		{
-			description:      "Content - Sub Type In Range - Context Type Vendor Specific",
+			description:      "Content - Sub Type In Range - Context Type Exchange Specific Boundary",
 			givenContextType: 500,
+			givenSubType:     10, // Content range is currently 10-15
+			expectedError:    "",
+		},
+		{
+			description:      "Content - Sub Type In Range - Context Type Exchange Specific Boundary + 1",
+			givenContextType: 501,
 			givenSubType:     10, // Content range is currently 10-15
 			expectedError:    "",
 		},
@@ -2216,13 +2222,13 @@ func TestValidateNativeContextTypes(t *testing.T) {
 			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
 		},
 		{
-			description:      "Content - Sub Type Vendor Specific Boundary",
+			description:      "Content - Sub Type Exchange Specific Boundary",
 			givenContextType: 1,
 			givenSubType:     500,
 			expectedError:    "",
 		},
 		{
-			description:      "Content - Sub Type Vendor Specific Boundary + 1",
+			description:      "Content - Sub Type Exchange Specific Boundary + 1",
 			givenContextType: 1,
 			givenSubType:     501,
 			expectedError:    "",
@@ -2246,8 +2252,14 @@ func TestValidateNativeContextTypes(t *testing.T) {
 			expectedError:    "",
 		},
 		{
-			description:      "Social - Sub Type In Range - Context Type Vendor Specific",
+			description:      "Social - Sub Type In Range - Context Type Exchange Specific Boundary",
 			givenContextType: 500,
+			givenSubType:     20, // Social range is currently 20-22
+			expectedError:    "",
+		},
+		{
+			description:      "Social - Sub Type In Range - Context Type Exchange Specific Boundary + 1",
+			givenContextType: 501,
 			givenSubType:     20, // Social range is currently 20-22
 			expectedError:    "",
 		},
@@ -2264,13 +2276,13 @@ func TestValidateNativeContextTypes(t *testing.T) {
 			expectedError:    "request.imp[4].native.request.context is 3, but contextsubtype is 20. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
 		},
 		{
-			description:      "Social - Sub Type Vendor Specific Boundary",
+			description:      "Social - Sub Type Exchange Specific Boundary",
 			givenContextType: 2,
 			givenSubType:     500,
 			expectedError:    "",
 		},
 		{
-			description:      "Social - Sub Type Vendor Specific Boundary + 1",
+			description:      "Social - Sub Type Exchange Specific Boundary + 1",
 			givenContextType: 2,
 			givenSubType:     501,
 			expectedError:    "",
@@ -2288,8 +2300,14 @@ func TestValidateNativeContextTypes(t *testing.T) {
 			expectedError:    "",
 		},
 		{
-			description:      "Product - Sub Type In Range - Context Type Vendor Specific",
+			description:      "Product - Sub Type In Range - Context Type Exchange Specific Boundary",
 			givenContextType: 500,
+			givenSubType:     30, // Product range is currently 30-32
+			expectedError:    "",
+		},
+		{
+			description:      "Product - Sub Type In Range - Context Type Exchange Specific Boundary + 1",
+			givenContextType: 501,
 			givenSubType:     30, // Product range is currently 30-32
 			expectedError:    "",
 		},
@@ -2306,13 +2324,13 @@ func TestValidateNativeContextTypes(t *testing.T) {
 			expectedError:    "request.imp[4].native.request.context is 1, but contextsubtype is 30. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
 		},
 		{
-			description:      "Product - Sub Type Vendor Specific Boundary",
+			description:      "Product - Sub Type Exchange Specific Boundary",
 			givenContextType: 3,
 			givenSubType:     500,
 			expectedError:    "",
 		},
 		{
-			description:      "Product - Sub Type Vendor Specific Boundary + 1",
+			description:      "Product - Sub Type Exchange Specific Boundary + 1",
 			givenContextType: 3,
 			givenSubType:     501,
 			expectedError:    "",
