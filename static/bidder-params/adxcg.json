@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adxcg Adapter Params",
+  "description": "A schema which validates params accepted by the Adxcg adapter",
+  "type": "object",
+  "properties": {
+    "adzoneid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An ID which identifies the placement selling the impression"
+    }
+  },
+  "required": ["adzoneid"]
+}
