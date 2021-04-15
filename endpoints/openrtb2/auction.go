@@ -852,7 +852,7 @@ func validateNativeAssetVideo(video *nativeRequests.Video, impIndex int, assetIn
 }
 
 func validateNativeAssetData(data *nativeRequests.Data, impIndex int, assetIndex int) error {
-	if data.Type < native1.DataAssetTypeSponsored || data.Type > native1.DataAssetTypeCTAText {
+	if data.Type < native1.DataAssetTypeSponsored || (data.Type > native1.DataAssetTypeCTAText && data.Type < 500) {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40", impIndex, assetIndex)
 	}
 

@@ -2313,6 +2313,57 @@ func TestValidateNativeEventTracker(t *testing.T) {
 	}
 }
 
+func TestValidateNativeAssetData(t *testing.T) {
+	impIndex := 4
+	assetIndex := 8
+
+	testCases := []struct {
+		description   string
+		givenData     nativeRequests.Data
+		expectedError string
+	}{
+		{
+			description:   "Valid - Known Value",
+			givenData:     nativeRequests.Data{Type: native1.DataAssetTypeSponsored},
+			expectedError: "",
+		},
+		{
+			description:   "Valid - Exchange Specific - Boundary",
+			givenData:     nativeRequests.Data{Type: 500},
+			expectedError: "",
+		},
+		{
+			description:   "Valid - Exchange Specific - Boundary + 1",
+			givenData:     nativeRequests.Data{Type: 501},
+			expectedError: "",
+		},
+		{
+			description:   "Invalid - Not Specified",
+			givenData:     nativeRequests.Data{},
+			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
+		},
+		{
+			description:   "Invalid - Negative",
+			givenData:     nativeRequests.Data{Type: -1},
+			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
+		},
+		{
+			description:   "Invalid - Boundary + 1",
+			givenData:     nativeRequests.Data{Type: 13}, // Known values are currently 1-12
+			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
+		},
+	}
+
+	for _, test := range testCases {
+		err := validateNativeAssetData(&test.givenData, impIndex, assetIndex)
+		if test.expectedError == "" {
+			assert.NoError(t, err, test.description)
+		} else {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		}
+	}
+}
+
 // warningsCheckExchange is a well-behaved exchange which stores all incoming warnings.
 type warningsCheckExchange struct {
 	auctionRequest exchange.AuctionRequest
