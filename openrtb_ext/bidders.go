@@ -79,6 +79,7 @@ const (
 	BidderMgid             BidderName = "mgid"
 	BidderMobileFuse       BidderName = "mobilefuse"
 	BidderMoloco           BidderName = "moloco"
+	BidderMolocoCloud      BidderName = "molococloud"
 	BidderNanoInteractive  BidderName = "nanointeractive"
 	BidderNinthDecimal     BidderName = "ninthdecimal"
 	BidderOpenx            BidderName = "openx"
@@ -171,6 +172,7 @@ var BidderMap = map[string]BidderName{
 	"mgid":              BidderMgid,
 	"mobilefuse":        BidderMobileFuse,
 	"moloco":            BidderMoloco,
+	"molococloud":       BidderMolocoCloud,
 	"nanointeractive":   BidderNanoInteractive,
 	"ninthdecimal":      BidderNinthDecimal,
 	"openx":             BidderOpenx,
