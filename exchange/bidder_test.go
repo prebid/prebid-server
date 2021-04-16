@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	nativeRequests "github.com/mxmCherry/openrtb/v14/native1/request"
-	nativeResponse "github.com/mxmCherry/openrtb/v14/native1/response"
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
+	nativeResponse "github.com/mxmCherry/openrtb/v15/native1/response"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -1258,7 +1258,7 @@ func TestSetAssetTypes(t *testing.T) {
 	}{
 		{
 			respAsset: nativeResponse.Asset{
-				ID: 1,
+				ID: openrtb2.Int64Ptr(1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},
@@ -1284,7 +1284,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: 2,
+				ID: openrtb2.Int64Ptr(2),
 				Data: &nativeResponse.Data{
 					Label: "some label",
 				},
@@ -1310,7 +1310,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: 1,
+				ID: openrtb2.Int64Ptr(1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},
@@ -1330,7 +1330,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: 2,
+				ID: openrtb2.Int64Ptr(2),
 				Data: &nativeResponse.Data{
 					Label: "some label",
 				},
@@ -1350,7 +1350,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: 1,
+				ID: openrtb2.Int64Ptr(1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},
@@ -1367,6 +1367,44 @@ func TestSetAssetTypes(t *testing.T) {
 			},
 			expectedErr: "Response has an Image asset with ID:1 present that doesn't exist in the request",
 			desc:        "Assets with same ID in the req and resp are of different types",
+		},
+		{
+			respAsset: nativeResponse.Asset{
+				Img: &nativeResponse.Image{
+					URL: "http://some-url",
+				},
+			},
+			nativeReq: nativeRequests.Request{
+				Assets: []nativeRequests.Asset{
+					{
+						ID: 1,
+						Img: &nativeRequests.Image{
+							Type: 2,
+						},
+					},
+				},
+			},
+			expectedErr: "Response Image asset doesn't have an ID",
+			desc:        "Response Image without an ID",
+		},
+		{
+			respAsset: nativeResponse.Asset{
+				Data: &nativeResponse.Data{
+					Label: "some label",
+				},
+			},
+			nativeReq: nativeRequests.Request{
+				Assets: []nativeRequests.Asset{
+					{
+						ID: 1,
+						Data: &nativeRequests.Data{
+							Type: 2,
+						},
+					},
+				},
+			},
+			expectedErr: "Response Data asset doesn't have an ID",
+			desc:        "Response Data asset without an ID",
 		},
 	}
 

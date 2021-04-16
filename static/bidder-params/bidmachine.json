@@ -5,22 +5,19 @@
     "type": "object",
     "properties": {
         "host": {
-            "$ref": "#/definitions/non-empty-string",
+            "type": "string",
+            "minLength": 1,
             "description": "Host"
         },
         "path": {
-            "$ref": "#/definitions/non-empty-string",
+            "type": "string",
+            "minLength": 1,
             "description": "URL path"
         },
         "seller_id": {
-            "$ref": "#/definitions/non-empty-string",
-            "description": "Seller Identifier"
-        }
-    },
-    "definitions": {
-        "non-empty-string": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "Seller Identifier"
         }
     },
     "required": [
