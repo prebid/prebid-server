@@ -76,6 +76,7 @@ const (
 	Bidder33Across         BidderName = "33across"
 	BidderAcuityAds        BidderName = "acuityads"
 	BidderAdform           BidderName = "adform"
+	BidderAdformOpenRTB    BidderName = "adformOpenRTB"
 	BidderAdgeneration     BidderName = "adgeneration"
 	BidderAdhese           BidderName = "adhese"
 	BidderAdkernel         BidderName = "adkernel"
@@ -188,6 +189,7 @@ func CoreBidderNames() []BidderName {
 		Bidder33Across,
 		BidderAcuityAds,
 		BidderAdform,
+		BidderAdformOpenRTB,
 		BidderAdgeneration,
 		BidderAdhese,
 		BidderAdkernel,
