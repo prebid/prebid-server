@@ -495,7 +495,7 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, err
 	if appnexusExt.InvCode != "" {
 		imp.TagID = appnexusExt.InvCode
 	}
-	if appnexusExt.Reserve > 0 {
+	if imp.BidFloor <= 0 && appnexusExt.Reserve > 0 {
 		imp.BidFloor = appnexusExt.Reserve // This will be broken for non-USD currency.
 	}
 	if imp.Banner != nil {
