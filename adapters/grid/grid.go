@@ -61,10 +61,10 @@ func setImpExtData(imp openrtb2.Imp) openrtb2.Imp {
 	}
 	if ext.Data != nil && ext.Data.AdServer != nil && ext.Data.AdServer.AdSlot != "" {
 		ext.Gpid = ext.Data.AdServer.AdSlot
-	}
-	extJSON, err := json.Marshal(ext)
-	if err == nil {
-		imp.Ext = extJSON
+		extJSON, err := json.Marshal(ext)
+		if err == nil {
+			imp.Ext = extJSON
+		}
 	}
 	return imp
 }
