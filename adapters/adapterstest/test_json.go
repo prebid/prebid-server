@@ -85,14 +85,7 @@ func loadFile(filename string) (*testSpec, error) {
 		return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
 	}
 
-	//var buf bytes.Buffer
-
-	//if err := json.Compact(&buf, specData); err != nil {
-	//	return nil, fmt.Errorf("Unable to compact JSON string found in file %s: %v", filename, err)
-	//}
-
 	var spec testSpec
-	//if err := json.Unmarshal(buf.Bytes(), &spec); err != nil {
 	if err := json.Unmarshal(specData, &spec); err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal JSON from file: %v", err)
 	}
