@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	openrtb "github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -70,7 +69,7 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.Re
 			bid := bid // pin https://github.com/kyoh86/scopelint#whats-this
 			b := &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: "banner",
+				BidType: getMediaTypeForBid(bid),
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}

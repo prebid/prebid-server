@@ -1,43 +1,46 @@
 package interactiveOffers
 
 import (
-  "encoding/json"
-  "testing"
-
-  "github.com/prebid/prebid-server/openrtb_ext"
+	"encoding/json"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"testing"
 )
 
 func TestValidParams(t *testing.T) {
-  validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
-  if err != nil {
-    t.Fatalf("Failed to fetch the json schema. %v", err)
-  }
+	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
+	if err != nil {
+		t.Fatalf("Failed to fetch the json-schemas. %v", err)
+	}
 
-  for _, p := range validParams {
-    if err := validator.Validate(openrtb_ext.BidderInteractiveOffers, json.RawMessage(p)); err != nil {
-      t.Errorf("Schema rejected valid params: %s", p)
-    }
-  }
+	for _, validParam := range validParams {
+		if err := validator.Validate(openrtb_ext.BidderInteractiveOffers, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected interactiveOffers params: %s", validParam)
+		}
+	}
 }
 
 func TestInvalidParams(t *testing.T) {
-  validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
-  if err != nil {
-    t.Fatalf("Failed to fetch the json schema. %v", err)
-  }
+	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
+	if err != nil {
+		t.Fatalf("Failed to fetch the json-schemas. %v", err)
+	}
 
-  for _, p := range invalidParams {
-    if err := validator.Validate(openrtb_ext.BidderInteractiveOffers, json.RawMessage(p)); err == nil {
-      t.Errorf("Schema allowed invalid params: %s", p)
-    }
-  }
+	for _, invalidParam := range invalidParams {
+		if err := validator.Validate(openrtb_ext.BidderInteractiveOffers, json.RawMessage(invalidParam)); err == nil {
+			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
+		}
+	}
 }
 
 var validParams = []string{
-  `{"pubid": 35}`,
-  `{"tmax": 250}`,
+	`{"pubid":35}`,
 }
 
 var invalidParams = []string{
-  `{"pubid": "35"}`,
+	`null`,
+	`nil`,
+	``,
+	`[]`,
+	`{"pubid":-35}`,
+	`{"pubid":"35"}`,
 }
