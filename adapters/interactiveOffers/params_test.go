@@ -37,10 +37,5 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
-	`null`,
-	`nil`,
-	``,
-	`[]`,
-	`{"pubid":-35}`,
 	`{"pubid":"35"}`,
 }

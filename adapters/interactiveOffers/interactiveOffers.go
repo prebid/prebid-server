@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -15,15 +16,7 @@ type adapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the Interactive Offers adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &adapter{
-		endpoint: config.Endpoint,
-	}
-	return bidder, nil
-}
-
-func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
@@ -38,7 +31,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -57,7 +50,7 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.Re
 		return nil, []error{err}
 	}
 
-	var response openrtb.BidResponse
+	var response openrtb2.BidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
@@ -69,10 +62,18 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.Re
 			bid := bid // pin https://github.com/kyoh86/scopelint#whats-this
 			b := &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: getMediaTypeForBid(bid),
+				BidType: openrtb_ext.BidTypeBanner,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
 	return bidResponse, nil
+}
+
+// Builder builds a new instance of the InteractiveOffers adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &adapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }
