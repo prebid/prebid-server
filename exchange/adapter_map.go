@@ -60,6 +60,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/mgid"
 	"github.com/prebid/prebid-server/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/adapters/moloco"
+	"github.com/prebid/prebid-server/adapters/molococloud"
 	"github.com/prebid/prebid-server/adapters/nanointeractive"
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
 	"github.com/prebid/prebid-server/adapters/openx"
@@ -170,6 +171,12 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointAPAC),
+		openrtb_ext.BidderMolocoCloud: molococloud.NewMolocoCloudBidder(
+			client,
+			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].Endpoint,
+			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointUSEast,
+			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointEU,
+			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointAPAC),
 		openrtb_ext.BidderNanoInteractive: nanointeractive.NewNanoIneractiveBidder(cfg.Adapters[string(openrtb_ext.BidderNanoInteractive)].Endpoint),
 		openrtb_ext.BidderNinthDecimal:    ninthdecimal.NewNinthDecimalBidder(cfg.Adapters[string(openrtb_ext.BidderNinthDecimal)].Endpoint),
 		openrtb_ext.BidderOrbidder:        orbidder.NewOrbidderBidder(cfg.Adapters[string(openrtb_ext.BidderOrbidder)].Endpoint),
