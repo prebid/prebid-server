@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -110,7 +110,6 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
-
 	for _, seatBid := range bidResp.SeatBid {
 		for _, bid := range seatBid.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -118,6 +117,9 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
+	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
 	}
 	return bidResponse, nil
 }
