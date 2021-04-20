@@ -249,6 +249,22 @@ func (a *AdOceanAdapter) makeURL(
 	if request.User != nil && request.User.BuyerUID != "" {
 		queryParams.Add("hcuserid", request.User.BuyerUID)
 	}
+	if request.App != nil {
+		queryParams.Add("app", "1")
+		queryParams.Add("appname", request.App.Name)
+		queryParams.Add("appbundle", request.App.Bundle)
+		queryParams.Add("appdomain", request.App.Domain)
+	}
+	if request.Device != nil {
+		if request.Device.IFA != "" {
+			queryParams.Add("ifa", request.Device.IFA)
+		} else {
+			queryParams.Add("dpidmd5", request.Device.DPIDMD5)
+		}
+
+		queryParams.Add("devtype", strconv.Itoa(int(request.Device.DeviceType)))
+		queryParams.Add("devos", request.Device.OS)
+	}
 
 	setSlaveSizesParam(&queryParams, slaveSizes, (request.Test == 1))
 	endpointURL.RawQuery = queryParams.Encode()
