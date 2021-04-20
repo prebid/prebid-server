@@ -72,7 +72,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	defer deps.pbsAnalytics.LogCookieSyncObject(&co)
 
 	deps.metrics.RecordCookieSync()
-	userSyncCookie := usersync.ParsePBSCookieFromRequest(r, deps.hostCookie)
+	userSyncCookie := usersync.ParseCookieFromRequest(r, deps.hostCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		co.Status = http.StatusUnauthorized
@@ -233,7 +233,7 @@ type cookieSyncRequest struct {
 	Limit     int      `json:"limit"`
 }
 
-func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie, needSyncupForSameSite bool) {
+func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.Cookie, needSyncupForSameSite bool) {
 	for i := 0; i < len(req.Bidders); i++ {
 		thisBidder := req.Bidders[i]
 		if syncer, isValid := valid[openrtb_ext.BidderName(thisBidder)]; !isValid || (cookie.HasLiveSync(syncer.FamilyName()) && !needSyncupForSameSite) {

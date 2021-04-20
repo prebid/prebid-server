@@ -661,7 +661,7 @@ func TestPubmaticSampleRequest(t *testing.T) {
 
 	httpReq := httptest.NewRequest("POST", server.URL, body)
 	httpReq.Header.Add("Referer", "http://test.com/sports")
-	pc := usersync.ParsePBSCookieFromRequest(httpReq, &config.HostCookie{})
+	pc := usersync.ParseCookieFromRequest(httpReq, &config.HostCookie{})
 	pc.TrySync("pubmatic", "12345")
 	fakewriter := httptest.NewRecorder()
 

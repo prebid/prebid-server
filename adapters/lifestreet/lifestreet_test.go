@@ -225,7 +225,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 	req.Header.Add("Referer", lsdata.referrer)
 	req.Header.Add("X-Real-IP", lsdata.deviceIP)
 
-	pc := usersync.ParsePBSCookieFromRequest(req, &config.HostCookie{})
+	pc := usersync.ParseCookieFromRequest(req, &config.HostCookie{})
 	fakewriter := httptest.NewRecorder()
 
 	pc.SetCookieOnResponse(fakewriter, false, &config.HostCookie{Domain: ""}, 90*24*time.Hour)

@@ -4,28 +4,24 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/errortypes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"github.com/prebid/prebid-server/cache/dummycache"
-	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/usersync"
-
-	"fmt"
-
-	"strings"
-
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-
+	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -905,7 +901,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	req.Header.Add("User-Agent", rubidata.deviceUA)
 	req.Header.Add("X-Real-IP", rubidata.deviceIP)
 
-	pc := usersync.ParsePBSCookieFromRequest(req, &config.HostCookie{})
+	pc := usersync.ParseCookieFromRequest(req, &config.HostCookie{})
 	pc.TrySync("rubicon", rubidata.buyerUID)
 	fakewriter := httptest.NewRecorder()
 

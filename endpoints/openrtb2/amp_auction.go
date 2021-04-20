@@ -152,7 +152,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	defer cancel()
 
-	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
+	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if usersyncs.LiveSyncCount() == 0 {
 		labels.CookieFlag = metrics.CookieFlagNo
 	} else {

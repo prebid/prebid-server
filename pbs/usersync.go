@@ -92,7 +92,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 
-	pc := usersync.ParsePBSCookieFromRequest(r, deps.HostCookieConfig)
+	pc := usersync.ParseCookieFromRequest(r, deps.HostCookieConfig)
 	pc.SetPreference(optout == "")
 
 	pc.SetCookieOnResponse(w, false, deps.HostCookieConfig, deps.HostCookieConfig.TTLDuration())

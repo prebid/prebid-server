@@ -203,7 +203,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 func TestSetUIDEndpointMetrics(t *testing.T) {
 	testCases := []struct {
 		uri                   string
-		cookies               []*usersync.PBSCookie
+		cookies               []*usersync.Cookie
 		validFamilyNames      []string
 		gdprAllowsHostCookies bool
 		expectedMetricAction  metrics.RequestAction
@@ -213,7 +213,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 	}{
 		{
 			uri:                   "/setuid?bidder=pubmatic&uid=123",
-			cookies:               []*usersync.PBSCookie{},
+			cookies:               []*usersync.Cookie{},
 			validFamilyNames:      []string{"pubmatic"},
 			gdprAllowsHostCookies: true,
 			expectedMetricAction:  metrics.RequestActionSet,
@@ -223,7 +223,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		},
 		{
 			uri:                   "/setuid?bidder=pubmatic&uid=",
-			cookies:               []*usersync.PBSCookie{},
+			cookies:               []*usersync.Cookie{},
 			validFamilyNames:      []string{"pubmatic"},
 			gdprAllowsHostCookies: true,
 			expectedMetricAction:  metrics.RequestActionSet,
@@ -233,7 +233,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		},
 		{
 			uri:                   "/setuid?bidder=pubmatic&uid=123",
-			cookies:               []*usersync.PBSCookie{usersync.NewPBSCookieWithOptOut()},
+			cookies:               []*usersync.Cookie{usersync.NewPBSCookieWithOptOut()},
 			validFamilyNames:      []string{"pubmatic"},
 			gdprAllowsHostCookies: true,
 			expectedMetricAction:  metrics.RequestActionOptOut,
@@ -242,7 +242,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		},
 		{
 			uri:                   "/setuid?bidder=pubmatic&uid=123",
-			cookies:               []*usersync.PBSCookie{},
+			cookies:               []*usersync.Cookie{},
 			validFamilyNames:      []string{},
 			gdprAllowsHostCookies: true,
 			expectedMetricAction:  metrics.RequestActionErr,
@@ -251,7 +251,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		},
 		{
 			uri:                   "/setuid?bidder=pubmatic&uid=123&gdpr=1",
-			cookies:               []*usersync.PBSCookie{},
+			cookies:               []*usersync.Cookie{},
 			validFamilyNames:      []string{"pubmatic"},
 			gdprAllowsHostCookies: false,
 			expectedMetricAction:  metrics.RequestActionGDPR,
@@ -282,7 +282,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 
 func TestOptedOut(t *testing.T) {
 	request := httptest.NewRequest("GET", "/setuid?bidder=pubmatic&uid=123", nil)
-	cookie := usersync.NewPBSCookie()
+	cookie := usersync.NewCookie()
 	cookie.SetPreference(false)
 	addCookie(request, cookie)
 	validFamilyNames := []string{"pubmatic"}
@@ -377,7 +377,7 @@ func assertHasSyncs(t *testing.T, testCase string, resp *httptest.ResponseRecord
 func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	request := httptest.NewRequest("GET", uri, nil)
 	if len(existingSyncs) > 0 {
-		pbsCookie := usersync.NewPBSCookie()
+		pbsCookie := usersync.NewCookie()
 		for family, value := range existingSyncs {
 			pbsCookie.TrySync(family, value)
 		}
@@ -405,11 +405,11 @@ func doRequest(req *http.Request, metrics metrics.MetricsEngine, validFamilyName
 	return response
 }
 
-func addCookie(req *http.Request, cookie *usersync.PBSCookie) {
+func addCookie(req *http.Request, cookie *usersync.Cookie) {
 	req.AddCookie(cookie.ToHTTPCookie(time.Duration(1) * time.Hour))
 }
 
-func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *usersync.PBSCookie {
+func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *usersync.Cookie {
 	cookieString := response.Header().Get("Set-Cookie")
 	parser := regexp.MustCompile("uids=(.*?);")
 	res := parser.FindStringSubmatch(cookieString)
@@ -418,7 +418,7 @@ func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *users
 		Name:  "uids",
 		Value: res[1],
 	}
-	return usersync.ParsePBSCookie(&httpCookie)
+	return usersync.ParseCookie(&httpCookie)
 }
 
 type mockPermsSetUID struct {

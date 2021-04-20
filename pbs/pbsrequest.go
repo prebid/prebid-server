@@ -168,12 +168,12 @@ type PBSRequest struct {
 	SDK           *SDK            `json:"sdk"`
 
 	// internal
-	Bidders []*PBSBidder        `json:"-"`
-	User    *openrtb.User       `json:"-"`
-	Cookie  *usersync.PBSCookie `json:"-"`
-	Url     string              `json:"-"`
-	Domain  string              `json:"-"`
-	Regs    *openrtb.Regs       `json:"-"`
+	Bidders []*PBSBidder     `json:"-"`
+	User    *openrtb.User    `json:"-"`
+	Cookie  *usersync.Cookie `json:"-"`
+	Url     string           `json:"-"`
+	Domain  string           `json:"-"`
+	Regs    *openrtb.Regs    `json:"-"`
 	Start   time.Time
 }
 
@@ -264,7 +264,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pbsReq.Cookie = usersync.ParsePBSCookieFromRequest(r, hostCookieConfig)
+		pbsReq.Cookie = usersync.ParseCookieFromRequest(r, hostCookieConfig)
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
 

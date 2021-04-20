@@ -42,7 +42,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 
 		defer pbsanalytics.LogSetUIDObject(&so)
 
-		pc := usersync.ParsePBSCookieFromRequest(r, &cfg)
+		pc := usersync.ParseCookieFromRequest(r, &cfg)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
 			metricsEngine.RecordUserIDSet(metrics.UserLabels{

@@ -140,15 +140,6 @@ func TestCookieSyncEmptyBidders(t *testing.T) {
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
-// Make sure that all syncs are returned if "bidders" isn't a key
-func TestCookieSyncNoBidders(t *testing.T) {
-	rr := doPost("{}", nil, true, syncersForTest())
-	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
-	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork", "lifestreet", "pubmatic"}, parseSyncs(t, rr.Body.Bytes()))
-	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
-}
-
 func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
 	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{}, config.GDPR{UsersyncIfAmbiguous: true}, config.CCPA{})
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
@@ -183,7 +174,7 @@ func doConfigurablePost(body string, existingSyncs map[string]string, gdprHostCo
 	req, _ := http.NewRequest("POST", "/cookie_sync", strings.NewReader(body))
 	if len(existingSyncs) > 0 {
 
-		pcs := usersync.NewPBSCookie()
+		pcs := usersync.NewCookie()
 		for bidder, uid := range existingSyncs {
 			pcs.TrySync(bidder, uid)
 		}

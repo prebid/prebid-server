@@ -15,7 +15,7 @@ import (
 )
 
 func TestOptOutCookie(t *testing.T) {
-	cookie := &PBSCookie{
+	cookie := &Cookie{
 		uids:     make(map[string]uidWithExpiry),
 		optOut:   true,
 		birthday: timestamp(),
@@ -24,7 +24,7 @@ func TestOptOutCookie(t *testing.T) {
 }
 
 func TestEmptyOptOutCookie(t *testing.T) {
-	cookie := &PBSCookie{
+	cookie := &Cookie{
 		uids:     make(map[string]uidWithExpiry),
 		optOut:   true,
 		birthday: timestamp(),
@@ -33,7 +33,7 @@ func TestEmptyOptOutCookie(t *testing.T) {
 }
 
 func TestEmptyCookie(t *testing.T) {
-	cookie := &PBSCookie{
+	cookie := &Cookie{
 		uids:     make(map[string]uidWithExpiry, 0),
 		optOut:   false,
 		birthday: timestamp(),
@@ -66,14 +66,14 @@ func TestBidderNameGets(t *testing.T) {
 }
 
 func TestRejectAudienceNetworkCookie(t *testing.T) {
-	raw := &PBSCookie{
+	raw := &Cookie{
 		uids: map[string]uidWithExpiry{
 			"audienceNetwork": newTempId("0", 10),
 		},
 		optOut:   false,
 		birthday: timestamp(),
 	}
-	parsed := ParsePBSCookie(raw.ToHTTPCookie(90 * 24 * time.Hour))
+	parsed := ParseCookie(raw.ToHTTPCookie(90 * 24 * time.Hour))
 	if parsed.HasLiveSync("audienceNetwork") {
 		t.Errorf("Cookie serializing and deserializing should delete audienceNetwork values of 0")
 	}
@@ -98,7 +98,7 @@ func TestOptOutReset(t *testing.T) {
 }
 
 func TestOptIn(t *testing.T) {
-	cookie := &PBSCookie{
+	cookie := &Cookie{
 		uids:     make(map[string]uidWithExpiry),
 		optOut:   true,
 		birthday: timestamp(),
@@ -116,7 +116,7 @@ func TestParseCorruptedCookie(t *testing.T) {
 		Name:  "uids",
 		Value: "bad base64 encoding",
 	}
-	parsed := ParsePBSCookie(&raw)
+	parsed := ParseCookie(&raw)
 	ensureEmptyMap(t, parsed)
 }
 
@@ -126,7 +126,7 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 		Name:  "uids",
 		Value: cookieData,
 	}
-	parsed := ParsePBSCookie(&raw)
+	parsed := ParseCookie(&raw)
 	ensureEmptyMap(t, parsed)
 }
 
@@ -137,7 +137,7 @@ func TestParseNilSyncMap(t *testing.T) {
 		Name:  UID_COOKIE_NAME,
 		Value: cookieData,
 	}
-	parsed := ParsePBSCookie(&raw)
+	parsed := ParseCookie(&raw)
 	ensureEmptyMap(t, parsed)
 	ensureConsistency(t, parsed)
 }
@@ -150,7 +150,7 @@ func TestParseOtherCookie(t *testing.T) {
 		Name:  otherCookieName,
 		Value: id,
 	})
-	parsed := ParsePBSCookieFromRequest(req, &config.HostCookie{
+	parsed := ParseCookieFromRequest(req, &config.HostCookie{
 		Family:     "adnxs",
 		CookieName: otherCookieName,
 	})
@@ -179,7 +179,7 @@ func TestCookieReadWrite(t *testing.T) {
 
 func TestPopulatedLegacyCookieRead(t *testing.T) {
 	legacyJson := `{"uids":{"adnxs":"123","audienceNetwork":"456"},"bday":"2017-08-03T21:04:52.629198911Z"}`
-	var cookie PBSCookie
+	var cookie Cookie
 	json.Unmarshal([]byte(legacyJson), &cookie)
 
 	if cookie.LiveSyncCount() != 0 {
@@ -195,7 +195,7 @@ func TestPopulatedLegacyCookieRead(t *testing.T) {
 
 func TestEmptyLegacyCookieRead(t *testing.T) {
 	legacyJson := `{"bday":"2017-08-29T18:54:18.393925772Z"}`
-	var cookie PBSCookie
+	var cookie Cookie
 	json.Unmarshal([]byte(legacyJson), &cookie)
 
 	if cookie.LiveSyncCount() != 0 {
@@ -204,7 +204,7 @@ func TestEmptyLegacyCookieRead(t *testing.T) {
 }
 
 func TestNilCookie(t *testing.T) {
-	var nilCookie *PBSCookie
+	var nilCookie *Cookie
 
 	if nilCookie.HasLiveSync("anything") {
 		t.Error("nil cookies should respond with false when asked if they have a sync")
@@ -250,14 +250,14 @@ func TestGetUIDs(t *testing.T) {
 }
 
 func TestGetUIDsWithEmptyCookie(t *testing.T) {
-	cookie := &PBSCookie{}
+	cookie := &Cookie{}
 	uids := cookie.GetUIDs()
 
 	assert.Len(t, uids, 0, "GetUIDs shouldn't return any user syncs for an empty cookie")
 }
 
 func TestGetUIDsWithNilCookie(t *testing.T) {
-	var cookie *PBSCookie
+	var cookie *Cookie
 	uids := cookie.GetUIDs()
 
 	assert.Len(t, uids, 0, "GetUIDs shouldn't return any user syncs for a nil cookie")
@@ -294,7 +294,7 @@ func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 	}
 }
 
-func ensureEmptyMap(t *testing.T, cookie *PBSCookie) {
+func ensureEmptyMap(t *testing.T, cookie *Cookie) {
 	if !cookie.AllowSyncs() {
 		t.Error("Empty cookies should allow user syncs.")
 	}
@@ -303,7 +303,7 @@ func ensureEmptyMap(t *testing.T, cookie *PBSCookie) {
 	}
 }
 
-func ensureConsistency(t *testing.T, cookie *PBSCookie) {
+func ensureConsistency(t *testing.T, cookie *Cookie) {
 	if cookie.AllowSyncs() {
 		err := cookie.TrySync("pulsepoint", "1")
 		if err != nil {
@@ -340,7 +340,7 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 		}
 	}
 
-	copiedCookie := ParsePBSCookie(cookie.ToHTTPCookie(90 * 24 * time.Hour))
+	copiedCookie := ParseCookie(cookie.ToHTTPCookie(90 * 24 * time.Hour))
 	if copiedCookie.AllowSyncs() != cookie.AllowSyncs() {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
@@ -372,8 +372,8 @@ func newTempId(uid string, offset int) uidWithExpiry {
 	}
 }
 
-func newSampleCookie() *PBSCookie {
-	return &PBSCookie{
+func newSampleCookie() *Cookie {
+	return &Cookie{
 		uids: map[string]uidWithExpiry{
 			"adnxs":   newTempId("123", 10),
 			"rubicon": newTempId("456", 10),
@@ -383,8 +383,8 @@ func newSampleCookie() *PBSCookie {
 	}
 }
 
-func newTestCookie() (*PBSCookie, int) {
-	var mediumSizeCookie *PBSCookie = &PBSCookie{
+func newTestCookie() (*Cookie, int) {
+	var mediumSizeCookie *Cookie = &Cookie{
 		uids: map[string]uidWithExpiry{
 			"key1": newTempId("12345678901234567890123456789012345678901234567890", 7),
 			"key2": newTempId("abcdefghijklmnopqrstuvwxyz", 6),
@@ -400,7 +400,7 @@ func newTestCookie() (*PBSCookie, int) {
 	return mediumSizeCookie, len(mediumSizeCookie.uids)
 }
 
-func writeThenRead(cookie *PBSCookie, maxCookieSize int) *PBSCookie {
+func writeThenRead(cookie *Cookie, maxCookieSize int) *Cookie {
 	w := httptest.NewRecorder()
 	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: maxCookieSize}
 	cookie.SetCookieOnResponse(w, false, hostCookie, 90*24*time.Hour)
@@ -409,7 +409,7 @@ func writeThenRead(cookie *PBSCookie, maxCookieSize int) *PBSCookie {
 	header := http.Header{}
 	header.Add("Cookie", writtenCookie)
 	request := http.Request{Header: header}
-	return ParsePBSCookieFromRequest(&request, hostCookie)
+	return ParseCookieFromRequest(&request, hostCookie)
 }
 
 func TestSetCookieOnResponseForSameSiteNone(t *testing.T) {

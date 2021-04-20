@@ -691,7 +691,7 @@ func ParseRequest(req *pbs.PBSRequest) (*pbs.PBSRequest, error) {
 	// Need to pass the conversant user id thru uid cookie
 
 	httpReq := httptest.NewRequest("POST", "/foo", body)
-	cookie := usersync.NewPBSCookie()
+	cookie := usersync.NewCookie()
 	_ = cookie.TrySync("conversant", ExpectedBuyerUID)
 	httpReq.Header.Set("Cookie", cookie.ToHTTPCookie(90*24*time.Hour).String())
 	httpReq.Header.Add("Referer", "http://example.com")
