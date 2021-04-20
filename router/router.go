@@ -26,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/liftoff"
 	"github.com/prebid/prebid-server/adapters/moloco"
 	"github.com/prebid/prebid-server/adapters/molococloud"
+	"github.com/prebid/prebid-server/adapters/pangle"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
@@ -183,6 +184,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointAPAC),
+		"pangle":     pangle.NewPangleAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPangle)].Endpoint),
 		"pubmatic":   pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
 		"pulsepoint": pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
 		"rubicon": rubicon.NewRubiconAdapter(

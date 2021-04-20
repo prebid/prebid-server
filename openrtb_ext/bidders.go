@@ -84,6 +84,7 @@ const (
 	BidderNinthDecimal     BidderName = "ninthdecimal"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
+	BidderPangle           BidderName = "pangle"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
 	BidderPulsepoint       BidderName = "pulsepoint"
@@ -177,6 +178,7 @@ var BidderMap = map[string]BidderName{
 	"ninthdecimal":      BidderNinthDecimal,
 	"openx":             BidderOpenx,
 	"orbidder":          BidderOrbidder,
+	"pangle":            BidderPangle,
 	"pubmatic":          BidderPubmatic,
 	"pubnative":         BidderPubnative,
 	"pulsepoint":        BidderPulsepoint,
