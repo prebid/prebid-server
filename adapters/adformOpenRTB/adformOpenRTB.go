@@ -26,10 +26,9 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
-	requestCopy := *request
-	var validImps = make([]openrtb2.Imp, 0, len(requestCopy.Imp))
+	var validImps = make([]openrtb2.Imp, 0, len(request.Imp))
 
-	for _, imp := range requestCopy.Imp {
+	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errors = append(errors, &errortypes.BadInput{
@@ -50,9 +49,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		validImps = append(validImps, imp)
 	}
 
-	requestCopy.Imp = validImps
+	request.Imp = validImps
 
-	requestJSON, err := json.Marshal(requestCopy)
+	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
