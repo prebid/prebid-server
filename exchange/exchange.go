@@ -200,7 +200,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	var bidResponseExt *openrtb_ext.ExtBidResponse
 	if anyBidsReturned {
 
-		var bidCategory map[string]string
+		var bidCategory map[string]BidTargetingInfo
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
 			var rejections []string
@@ -326,7 +326,7 @@ func recordImpMetrics(bidRequest *openrtb2.BidRequest, metricsEngine metrics.Met
 }
 
 // applyDealSupport updates targeting keys with deal prefixes if minimum deal tier exceeded
-func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory map[string]string) []error {
+func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory map[string]BidTargetingInfo) []error {
 	errs := []error{}
 	impDealMap := getDealTiers(bidRequest)
 
@@ -365,17 +365,18 @@ func validateDealTier(dealTier openrtb_ext.DealTier) bool {
 	return len(dealTier.Prefix) > 0 && dealTier.MinDealTier > 0
 }
 
-func updateHbPbCatDur(bid *pbsOrtbBid, dealTier openrtb_ext.DealTier, bidCategory map[string]string) {
+func updateHbPbCatDur(bid *pbsOrtbBid, dealTier openrtb_ext.DealTier, bidCategory map[string]BidTargetingInfo) {
 	if bid.dealPriority >= dealTier.MinDealTier {
 		prefixTier := fmt.Sprintf("%s%d_", dealTier.Prefix, bid.dealPriority)
 		bid.dealTierSatisfied = true
 
 		if oldCatDur, ok := bidCategory[bid.bid.ID]; ok {
-			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
+			oldCatDurSplit := strings.SplitAfterN(oldCatDur.HbPbCatDur, "_", 2)
 			oldCatDurSplit[0] = prefixTier
 
 			newCatDur := strings.Join(oldCatDurSplit, "")
-			bidCategory[bid.bid.ID] = newCatDur
+			newTargetingInfo := BidTargetingInfo{HbPbCatDur: newCatDur}
+			bidCategory[bid.bid.ID] = newTargetingInfo
 		}
 	}
 }
@@ -609,8 +610,13 @@ func encodeBidResponseExt(bidResponseExt *openrtb_ext.ExtBidResponse) ([]byte, e
 	return buffer.Bytes(), err
 }
 
-func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
-	res := make(map[string]string)
+type BidTargetingInfo struct {
+	HbPbCatDur string
+	HbDealId   string
+}
+
+func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]BidTargetingInfo, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
+	res := make(map[string]BidTargetingInfo)
 
 	type bidDedupe struct {
 		bidderName openrtb_ext.BidderName
@@ -657,119 +663,127 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 		for bidInd := range seatBid.bids {
 			bid := seatBid.bids[bidInd]
 			bidID := bid.bid.ID
-			var duration int
-			var category string
-			var pb string
+			targetingInfo := BidTargetingInfo{}
 
-			if bid.bidVideo != nil {
-				duration = bid.bidVideo.Duration
-				category = bid.bidVideo.PrimaryCategory
-			}
-			if brandCatExt.WithCategory && category == "" {
-				bidIabCat := bid.bid.Cat
-				if len(bidIabCat) != 1 {
-					//TODO: add metrics
-					//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
-					bidsToRemove = append(bidsToRemove, bidInd)
-					rejections = updateRejections(rejections, bidID, "Bid did not contain a category")
-					continue
+			if bid.dealId != "" {
+				targetingInfo.HbDealId = bid.dealId
+			} else {
+				var duration int
+				var category string
+				var pb string
+
+				if bid.bidVideo != nil {
+					duration = bid.bidVideo.Duration
+					category = bid.bidVideo.PrimaryCategory
 				}
-				if translateCategories {
-					//if unique IAB category is present then translate it to the adserver category based on mapping file
-					category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
-					if err != nil || category == "" {
+				if brandCatExt.WithCategory && category == "" {
+					bidIabCat := bid.bid.Cat
+					if len(bidIabCat) != 1 {
 						//TODO: add metrics
-						//if mapping required but no mapping file is found then discard the bid
+						//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
 						bidsToRemove = append(bidsToRemove, bidInd)
-						reason := fmt.Sprintf("Category mapping file for primary ad server: '%s', publisher: '%s' not found", primaryAdServer, publisher)
-						rejections = updateRejections(rejections, bidID, reason)
+						rejections = updateRejections(rejections, bidID, "Bid did not contain a category")
 						continue
 					}
-				} else {
-					//category translation is disabled, continue with IAB category
-					category = bidIabCat[0]
-				}
-			}
-
-			// TODO: consider should we remove bids with zero duration here?
-
-			pb = GetPriceBucket(bid.bid.Price, targData.priceGranularity)
-
-			newDur := duration
-			if len(requestExt.Prebid.Targeting.DurationRangeSec) > 0 {
-				durationRange := requestExt.Prebid.Targeting.DurationRangeSec
-				sort.Ints(durationRange)
-				//if the bid is above the range of the listed durations (and outside the buffer), reject the bid
-				if duration > durationRange[len(durationRange)-1] {
-					bidsToRemove = append(bidsToRemove, bidInd)
-					rejections = updateRejections(rejections, bidID, "Bid duration exceeds maximum allowed")
-					continue
-				}
-				for _, dur := range durationRange {
-					if duration <= dur {
-						newDur = dur
-						break
-					}
-				}
-			}
-
-			var categoryDuration string
-			var dupeKey string
-			if brandCatExt.WithCategory {
-				categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
-				dupeKey = category
-			} else {
-				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
-				dupeKey = categoryDuration
-			}
-
-			if appendBidderNames {
-				categoryDuration = fmt.Sprintf("%s_%s", categoryDuration, bidderName.String())
-			}
-
-			if dupe, ok := dedupe[dupeKey]; ok {
-
-				dupeBidPrice, err := strconv.ParseFloat(dupe.bidPrice, 64)
-				if err != nil {
-					dupeBidPrice = 0
-				}
-				currBidPrice, err := strconv.ParseFloat(pb, 64)
-				if err != nil {
-					currBidPrice = 0
-				}
-				if dupeBidPrice == currBidPrice {
-					if rand.Intn(100) < 50 {
-						dupeBidPrice = -1
+					if translateCategories {
+						//if unique IAB category is present then translate it to the adserver category based on mapping file
+						category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
+						if err != nil || category == "" {
+							//TODO: add metrics
+							//if mapping required but no mapping file is found then discard the bid
+							bidsToRemove = append(bidsToRemove, bidInd)
+							reason := fmt.Sprintf("Category mapping file for primary ad server: '%s', publisher: '%s' not found", primaryAdServer, publisher)
+							rejections = updateRejections(rejections, bidID, reason)
+							continue
+						}
 					} else {
-						currBidPrice = -1
+						//category translation is disabled, continue with IAB category
+						category = bidIabCat[0]
 					}
 				}
 
-				if dupeBidPrice < currBidPrice {
-					if dupe.bidderName == bidderName {
-						// An older bid from the current bidder
-						bidsToRemove = append(bidsToRemove, dupe.bidIndex)
-						rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
-					} else {
-						// An older bid from a different seatBid we've already finished with
-						oldSeatBid := (seatBids)[dupe.bidderName]
-						if len(oldSeatBid.bids) == 1 {
-							seatBidsToRemove = append(seatBidsToRemove, dupe.bidderName)
-							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
-						} else {
-							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
+				// TODO: consider should we remove bids with zero duration here?
+
+				pb = GetPriceBucket(bid.bid.Price, targData.priceGranularity)
+
+				newDur := duration
+				if len(requestExt.Prebid.Targeting.DurationRangeSec) > 0 {
+					durationRange := requestExt.Prebid.Targeting.DurationRangeSec
+					sort.Ints(durationRange)
+					//if the bid is above the range of the listed durations (and outside the buffer), reject the bid
+					if duration > durationRange[len(durationRange)-1] {
+						bidsToRemove = append(bidsToRemove, bidInd)
+						rejections = updateRejections(rejections, bidID, "Bid duration exceeds maximum allowed")
+						continue
+					}
+					for _, dur := range durationRange {
+						if duration <= dur {
+							newDur = dur
+							break
 						}
 					}
-					delete(res, dupe.bidID)
-				} else {
-					// Remove this bid
-					bidsToRemove = append(bidsToRemove, bidInd)
-					rejections = updateRejections(rejections, bidID, "Bid was deduplicated")
-					continue
 				}
+
+				var categoryDuration string
+				var dupeKey string
+				if brandCatExt.WithCategory {
+					categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+					dupeKey = category
+				} else {
+					categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
+					dupeKey = categoryDuration
+				}
+
+				if appendBidderNames {
+					categoryDuration = fmt.Sprintf("%s_%s", categoryDuration, bidderName.String())
+				}
+
+				if dupe, ok := dedupe[dupeKey]; ok {
+
+					dupeBidPrice, err := strconv.ParseFloat(dupe.bidPrice, 64)
+					if err != nil {
+						dupeBidPrice = 0
+					}
+					currBidPrice, err := strconv.ParseFloat(pb, 64)
+					if err != nil {
+						currBidPrice = 0
+					}
+					if dupeBidPrice == currBidPrice {
+						if rand.Intn(100) < 50 {
+							dupeBidPrice = -1
+						} else {
+							currBidPrice = -1
+						}
+					}
+
+					if dupeBidPrice < currBidPrice {
+						if dupe.bidderName == bidderName {
+							// An older bid from the current bidder
+							bidsToRemove = append(bidsToRemove, dupe.bidIndex)
+							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
+						} else {
+							// An older bid from a different seatBid we've already finished with
+							oldSeatBid := (seatBids)[dupe.bidderName]
+							if len(oldSeatBid.bids) == 1 {
+								seatBidsToRemove = append(seatBidsToRemove, dupe.bidderName)
+								rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
+							} else {
+								oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
+							}
+						}
+						delete(res, dupe.bidID)
+					} else {
+						// Remove this bid
+						bidsToRemove = append(bidsToRemove, bidInd)
+						rejections = updateRejections(rejections, bidID, "Bid was deduplicated")
+						continue
+					}
+				}
+				targetingInfo.HbPbCatDur = categoryDuration
+				dedupe[dupeKey] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID, bidPrice: pb}
 			}
-			res[bidID] = categoryDuration
-			dedupe[dupeKey] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID, bidPrice: pb}
+
+			res[bidID] = targetingInfo
 		}
 
 		if len(bidsToRemove) > 0 {

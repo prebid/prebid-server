@@ -147,7 +147,7 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, evTracking *eventTracking, bidRequest *openrtb2.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string, debugLog *DebugLog) []error {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, evTracking *eventTracking, bidRequest *openrtb2.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]BidTargetingInfo, debugLog *DebugLog) []error {
 	var bids, vast, includeBidderKeys, includeWinners bool = targData.includeCacheBids, targData.includeCacheVast, targData.includeBidderKeys, targData.includeWinners
 	if !((bids || vast) && (includeBidderKeys || includeWinners)) {
 		return nil
@@ -183,13 +183,16 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 				continue
 			}
 			var customCacheKey string
-			var catDur string
+			var bidTargeting string
 			useCustomCacheKey := false
 			if competitiveExclusion && isOverallWinner || includeBidderKeys {
 				// set custom cache key for winning bid when competitive exclusion applies
-				catDur = bidCategory[topBidPerBidder.bid.ID]
-				if len(catDur) > 0 {
-					customCacheKey = fmt.Sprintf("%s_%s", catDur, hbCacheID)
+				bidTargeting = bidCategory[topBidPerBidder.bid.ID].HbPbCatDur
+				if len(bidTargeting) == 0 {
+					bidTargeting = bidCategory[topBidPerBidder.bid.ID].HbDealId
+				}
+				if len(bidTargeting) > 0 {
+					customCacheKey = fmt.Sprintf("%s_%s", bidTargeting, hbCacheID)
 					useCustomCacheKey = true
 				}
 			}

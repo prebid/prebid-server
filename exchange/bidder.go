@@ -71,6 +71,7 @@ type pbsOrtbBid struct {
 	dealPriority      int
 	dealTierSatisfied bool
 	generatedBidID    string
+	dealId            string
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -235,6 +236,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 							bidType:      bidResponse.Bids[i].BidType,
 							bidVideo:     bidResponse.Bids[i].BidVideo,
 							dealPriority: bidResponse.Bids[i].DealPriority,
+							dealId:       bidResponse.Bids[i].DealId,
 						})
 					}
 				} else {

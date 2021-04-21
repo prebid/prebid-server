@@ -96,6 +96,7 @@ type TypedBid struct {
 	BidType      openrtb_ext.BidType
 	BidVideo     *openrtb_ext.ExtBidPrebidVideo
 	DealPriority int
+	DealId       string
 }
 
 // RequestData and ResponseData exist so that prebid-server core code can implement its "debug" functionality

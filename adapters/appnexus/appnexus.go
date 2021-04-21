@@ -92,6 +92,7 @@ type appnexusBidExtAppnexus struct {
 	BrandCategory int                    `json:"brand_category_id"`
 	CreativeInfo  appnexusBidExtCreative `json:"creative_info"`
 	DealPriority  int                    `json:"deal_priority"`
+	DealId        string                 `json:"deal_id"`
 }
 
 type appnexusBidExt struct {
@@ -592,11 +593,22 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 						Duration: bidExt.Appnexus.CreativeInfo.Video.Duration,
 					}
 
+					// !!!! Deal tiers support
+					//bidExt.Appnexus.DealPriority = 5
+
+					// !!!! PG deal stub
+					randNum := rand.Intn(100)
+					if randNum%2 == 1 {
+						bidExt.Appnexus.DealId = "dealid_" + fmt.Sprint(randNum)
+					}
+					//-------------------
+
 					bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 						Bid:          &bid,
 						BidType:      bidType,
 						BidVideo:     impVideo,
 						DealPriority: bidExt.Appnexus.DealPriority,
+						DealId:       bidExt.Appnexus.DealId,
 					})
 				} else {
 					errs = append(errs, err)
