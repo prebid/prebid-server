@@ -1,4 +1,4 @@
-package interactiveOffers
+package interactiveoffers
 
 import (
 	"encoding/json"
@@ -70,7 +70,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-// Builder builds a new instance of the InteractiveOffers adapter for the given bidder with the given config.
+// Builder builds a new instance of the Interactiveoffers adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,

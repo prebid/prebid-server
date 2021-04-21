@@ -7,10 +7,6 @@
     "pubid": {
       "type": "integer",
       "description": "The publisher id"
-    },
-    "tmax": {
-      "type": "integer",
-      "description": "The maximum amount of time allowed (ms)"
     }
   },
   "required": ["pubid"]

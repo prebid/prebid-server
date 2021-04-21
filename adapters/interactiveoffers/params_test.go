@@ -1,4 +1,4 @@
-package interactiveOffers
+package interactiveoffers
 
 import (
 	"encoding/json"
@@ -13,8 +13,8 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderInteractiveOffers, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected interactiveOffers params: %s", validParam)
+		if err := validator.Validate(openrtb_ext.BidderInteractiveoffers, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected interactiveoffers params: %s", validParam)
 		}
 	}
 }
@@ -26,7 +26,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderInteractiveOffers, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderInteractiveoffers, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
@@ -38,4 +38,7 @@ var validParams = []string{
 
 var invalidParams = []string{
 	`{"pubid":"35"}`,
+	`{"pubId":35}`,
+	`{"PubId":35}`,
+	`{}`,
 }
