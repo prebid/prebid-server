@@ -4,6 +4,6 @@ import (
 	"encoding/json"
 )
 
-type ExtImpAdformOpenRTB struct {
+type ExtImpAdf struct {
 	MasterTagID json.Number `json:"mid"`
 }

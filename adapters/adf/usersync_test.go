@@ -1,4 +1,4 @@
-package adformOpenRTB
+package adf
 
 import (
 	"testing"
@@ -11,13 +11,13 @@ import (
 	"github.com/prebid/prebid-server/privacy/gdpr"
 )
 
-func TestAdformOpenRTBSyncer(t *testing.T) {
+func TestAdfSyncer(t *testing.T) {
 	syncURL := "https://cm.adform.net?return_url=localhost%2Fsetuid%3Fbidder%3Dadform%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26us_privacy%3D{{.USPrivacy}}%26uid%3D%24UID"
 	syncURLTemplate := template.Must(
 		template.New("sync-template").Parse(syncURL),
 	)
 
-	syncer := NewAdformOpenRTBSyncer(syncURLTemplate)
+	syncer := NewAdfSyncer(syncURLTemplate)
 	syncInfo, err := syncer.GetUsersyncInfo(privacy.Policies{
 		GDPR: gdpr.Policy{
 			Signal:  "A",

@@ -1,4 +1,4 @@
-package adformOpenRTB
+package adf
 
 import (
 	"encoding/json"
@@ -16,7 +16,7 @@ type adapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the AdformOpenRTB adapter for the given bidder with the given config.
+// Builder builds a new instance of the Adf adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -37,15 +37,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		var adformOpenRTBImpExt openrtb_ext.ExtImpAdformOpenRTB
-		if err := json.Unmarshal(bidderExt.Bidder, &adformOpenRTBImpExt); err != nil {
+		var adfImpExt openrtb_ext.ExtImpAdf
+		if err := json.Unmarshal(bidderExt.Bidder, &adfImpExt); err != nil {
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
 
-		imp.TagID = adformOpenRTBImpExt.MasterTagID.String()
+		imp.TagID = adfImpExt.MasterTagID.String()
 		validImps = append(validImps, imp)
 	}
 

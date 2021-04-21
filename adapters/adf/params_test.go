@@ -1,4 +1,4 @@
-package adformOpenRTB
+package adf
 
 import (
 	"encoding/json"
@@ -7,9 +7,9 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// This file actually intends to test static/bidder-params/adformOpenRTB.json
+// This file actually intends to test static/bidder-params/adf.json
 //
-// These also validate the format of the external API: request.imp[i].ext.adformOpenRTB
+// These also validate the format of the external API: request.imp[i].ext.adf
 
 // TestValidParams makes sure that the adform schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
@@ -19,7 +19,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderAdformOpenRTB, json.RawMessage(validParam)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderAdf, json.RawMessage(validParam)); err != nil {
 			t.Errorf("Schema rejected adform params: %s", validParam)
 		}
 	}
@@ -33,7 +33,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderAdformOpenRTB, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderAdf, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
