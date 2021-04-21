@@ -150,27 +150,9 @@ func (a *AdOceanAdapter) addNewBid(
 		return requestsData, err
 	}
 
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-
-	if request.Device != nil {
-		headers.Add("User-Agent", request.Device.UA)
-
-		if request.Device.IP != "" {
-			headers.Add("X-Forwarded-For", request.Device.IP)
-		} else if request.Device.IPv6 != "" {
-			headers.Add("X-Forwarded-For", request.Device.IPv6)
-		}
-	}
-
-	if request.Site != nil {
-		headers.Add("Referer", request.Site.Page)
-	}
-
 	requestsData = append(requestsData, &requestData{
 		Url:        url,
-		Headers:    &headers,
+		Headers:    a.formHeaders(request),
 		SlaveSizes: slaveSizes,
 	})
 
@@ -270,6 +252,28 @@ func (a *AdOceanAdapter) makeURL(
 	endpointURL.RawQuery = queryParams.Encode()
 
 	return endpointURL, nil
+}
+
+func (a *AdOceanAdapter) formHeaders(req *openrtb2.BidRequest) *http.Header {
+	headers := make(http.Header)
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	if req.Device != nil {
+		headers.Add("User-Agent", req.Device.UA)
+
+		if req.Device.IP != "" {
+			headers.Add("X-Forwarded-For", req.Device.IP)
+		} else if req.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", req.Device.IPv6)
+		}
+	}
+
+	if req.Site != nil {
+		headers.Add("Referer", req.Site.Page)
+	}
+
+	return &headers
 }
 
 func getImpSizes(imp *openrtb2.Imp) string {
