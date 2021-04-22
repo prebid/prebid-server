@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/errortypes"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/errortypes"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -2843,8 +2844,8 @@ func (f mockIdFetcher) GetId(bidder openrtb_ext.BidderName) (id string, ok bool)
 	return
 }
 
-func (f mockIdFetcher) LiveSyncCount() int {
-	return len(f)
+func (f mockIdFetcher) HasAnyLiveSyncs() bool {
+	return len(f) > 0
 }
 
 type validatingBidder struct {
@@ -3017,8 +3018,8 @@ func (e *emptyUsersync) GetId(bidder openrtb_ext.BidderName) (string, bool) {
 	return "", false
 }
 
-func (e *emptyUsersync) LiveSyncCount() int {
-	return 0
+func (e *emptyUsersync) HasAnyLiveSyncs() bool {
+	return false
 }
 
 type mockUsersync struct {
@@ -3030,8 +3031,8 @@ func (e *mockUsersync) GetId(bidder openrtb_ext.BidderName) (id string, exists b
 	return
 }
 
-func (e *mockUsersync) LiveSyncCount() int {
-	return len(e.syncs)
+func (e *mockUsersync) HasAnyLiveSyncs() bool {
+	return len(e.syncs) > 0
 }
 
 type panicingAdapter struct{}

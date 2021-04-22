@@ -372,11 +372,11 @@ func setLabelSource(labels *metrics.Labels, req *pbs.PBSRequest, status *string)
 		labels.Source = metrics.DemandApp
 	} else {
 		labels.Source = metrics.DemandWeb
-		if req.Cookie.LiveSyncCount() == 0 {
+		if req.Cookie.HasAnyLiveSyncs() {
+			labels.CookieFlag = metrics.CookieFlagYes
+		} else {
 			labels.CookieFlag = metrics.CookieFlagNo
 			*status = "no_cookie"
-		} else {
-			labels.CookieFlag = metrics.CookieFlagYes
 		}
 	}
 }

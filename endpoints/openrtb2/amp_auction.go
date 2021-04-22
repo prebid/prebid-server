@@ -153,10 +153,10 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	defer cancel()
 
 	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if usersyncs.LiveSyncCount() == 0 {
-		labels.CookieFlag = metrics.CookieFlagNo
-	} else {
+	if usersyncs.HasAnyLiveSyncs() {
 		labels.CookieFlag = metrics.CookieFlagYes
+	} else {
+		labels.CookieFlag = metrics.CookieFlagNo
 	}
 	labels.PubID = getAccountID(req.Site.Publisher)
 	// Look up account now that we have resolved the pubID value

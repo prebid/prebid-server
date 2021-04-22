@@ -201,6 +201,9 @@ func TestSetUIDEndpoint(t *testing.T) {
 }
 
 func TestSetUIDEndpointMetrics(t *testing.T) {
+	cookieWithOptOut := usersync.NewCookie()
+	cookieWithOptOut.SetOptOut(true)
+
 	testCases := []struct {
 		uri                   string
 		cookies               []*usersync.Cookie
@@ -233,7 +236,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		},
 		{
 			uri:                   "/setuid?bidder=pubmatic&uid=123",
-			cookies:               []*usersync.Cookie{usersync.NewPBSCookieWithOptOut()},
+			cookies:               []*usersync.Cookie{cookieWithOptOut},
 			validFamilyNames:      []string{"pubmatic"},
 			gdprAllowsHostCookies: true,
 			expectedMetricAction:  metrics.RequestActionOptOut,
@@ -283,7 +286,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 func TestOptedOut(t *testing.T) {
 	request := httptest.NewRequest("GET", "/setuid?bidder=pubmatic&uid=123", nil)
 	cookie := usersync.NewCookie()
-	cookie.SetPreference(false)
+	cookie.SetOptOut(true)
 	addCookie(request, cookie)
 	validFamilyNames := []string{"pubmatic"}
 	metrics := &metricsConf.DummyMetricsEngine{}
@@ -366,7 +369,9 @@ func TestGetFamilyName(t *testing.T) {
 func assertHasSyncs(t *testing.T, testCase string, resp *httptest.ResponseRecorder, syncs map[string]string) {
 	t.Helper()
 	cookie := parseCookieString(t, resp)
-	assert.Equal(t, len(syncs), cookie.LiveSyncCount(), "Test Case: %s. /setuid response doesn't contain expected number of syncs", testCase)
+
+	assert.Equal(t, len(syncs), len(cookie.GetUIDs()), "Test Case: %s. /setuid response doesn't contain expected number of syncs", testCase)
+
 	for bidder, uid := range syncs {
 		assert.True(t, cookie.HasLiveSync(bidder), "Test Case: %s. /setuid response cookie doesn't contain uid for bidder: %s", testCase, bidder)
 		actualUID, _, _ := cookie.GetUID(bidder)

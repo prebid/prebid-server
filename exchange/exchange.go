@@ -46,7 +46,7 @@ type Exchange interface {
 type IdFetcher interface {
 	// GetId returns the ID for the bidder. The boolean will be true if the ID exists, and false otherwise.
 	GetId(bidder openrtb_ext.BidderName) (string, bool)
-	LiveSyncCount() int
+	HasAnyLiveSyncs() bool
 }
 
 type exchange struct {

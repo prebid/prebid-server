@@ -429,7 +429,7 @@ func isSpecialField(bidder string) bool {
 // In this function, "givenBidder" may or may not be an alias. "coreBidder" must *not* be an alias.
 // It returns true if a Cookie User Sync existed, and false otherwise.
 func prepareUser(req *openrtb.BidRequest, givenBidder string, coreBidder openrtb_ext.BidderName, explicitBuyerUIDs map[string]string, usersyncs IdFetcher) bool {
-	cookieId, hadCookie := usersyncs.GetId(coreBidder)
+	cookieId, hadCookie := usersyncs.GetId(coreBidder) // TODO: this will need to have a lookup from bidder name to cookie key
 
 	if id, ok := explicitBuyerUIDs[givenBidder]; ok {
 		req.User = copyWithBuyerUID(req.User, id)

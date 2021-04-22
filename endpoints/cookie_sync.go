@@ -150,7 +150,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	parsedReq.filterToLimit()
 
 	csResp := cookieSyncResponse{
-		Status:       cookieSyncStatus(userSyncCookie.LiveSyncCount()),
+		Status:       cookieSyncStatus(userSyncCookie.HasAnyLiveSyncs()),
 		BidderStatus: make([]*usersync.CookieSyncBidders, 0, len(parsedReq.Bidders)),
 	}
 	for i := 0; i < len(parsedReq.Bidders); i++ {
@@ -215,11 +215,11 @@ func parseBidders(request []byte) ([]byte, error) {
 	return nil, nil
 }
 
-func cookieSyncStatus(syncCount int) string {
-	if syncCount == 0 {
-		return "no_cookie"
+func cookieSyncStatus(hasSyncs bool) string {
+	if hasSyncs {
+		return "ok"
 	}
-	return "ok"
+	return "no_cookie"
 }
 
 type cookieSyncRequest struct {

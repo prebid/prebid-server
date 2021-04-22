@@ -12,10 +12,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// defaultTTL is the default amount of time a cookie is considered valid.
-const defaultTTL = 14 * 24 * time.Hour
-
 const uidCookieName = "uids"
+
+// uidTTL is the default amount of time a uid stored within a cookie is considered valid. This is
+// separate from the cookie ttl.
+const uidTTL = 14 * 24 * time.Hour
 
 // bidderToFamilyNames maps the BidderName to Adapter.Name() for the early adapters.
 // If a mapping isn't listed here, then we assume that the two are the same.
@@ -48,7 +49,7 @@ func ParseCookieFromRequest(r *http.Request, cookie *config.HostCookie) *Cookie 
 		optOutCookie, err1 := r.Cookie(cookie.OptOutCookie.Name)
 		if err1 == nil && optOutCookie.Value == cookie.OptOutCookie.Value {
 			pc := NewCookie()
-			pc.SetPreference(false)
+			pc.SetOptOut(true)
 			return pc
 		}
 	}
@@ -69,19 +70,20 @@ func ParseCookieFromRequest(r *http.Request, cookie *config.HostCookie) *Cookie 
 }
 
 // ParseCookie parses the UserSync cookie from a raw HTTP cookie.
-func ParseCookie(uidCookie *http.Cookie) *Cookie {
-	pc := NewCookie()
-
-	j, err := base64.URLEncoding.DecodeString(uidCookie.Value)
+func ParseCookie(httpCookie *http.Cookie) *Cookie {
+	jsonValue, err := base64.URLEncoding.DecodeString(httpCookie.Value)
 	if err != nil {
 		// corrupted cookie; we should reset
-		return pc
+		return NewCookie()
 	}
-	err = json.Unmarshal(j, pc)
 
-	// The error on Unmarshal here isn't terribly important.
-	// If the cookie has been corrupted, we should reset to an empty one anyway.
-	return pc
+	var cookie Cookie
+	if err = json.Unmarshal(jsonValue, &cookie); err != nil {
+		// corrupted cookie; we should reset
+		return NewCookie()
+	}
+
+	return &cookie
 }
 
 // NewCookie returns an empty PBSCookie
@@ -92,26 +94,16 @@ func NewCookie() *Cookie {
 	}
 }
 
-// NewPBSCookie returns an empty PBSCookie with optOut enabled
-func NewPBSCookieWithOptOut() *Cookie {
-	return &Cookie{
-		uids:     make(map[string]uidWithExpiry),
-		optOut:   true,
-		birthday: timestamp(),
-	}
-}
-
 // AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
 func (cookie *Cookie) AllowSyncs() bool {
 	return cookie != nil && !cookie.optOut
 }
 
-// SetPreference is used to change whether or not we're allowed to sync cookies for this user.
-func (cookie *Cookie) SetPreference(allow bool) {
-	if allow {
-		cookie.optOut = false
-	} else {
-		cookie.optOut = true
+// SetOptOut is used to change whether or not we're allowed to sync cookies for this user.
+func (cookie *Cookie) SetOptOut(optOut bool) {
+	cookie.optOut = optOut
+
+	if optOut {
 		cookie.uids = make(map[string]uidWithExpiry)
 	}
 }
@@ -198,7 +190,6 @@ func (cookie *Cookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie b
 	if setSiteCookie {
 		httpCookie.Secure = true
 		httpCookie.SameSite = http.SameSiteNoneMode
-
 	} else {
 		uidsCookieStr = httpCookie.String()
 	}
@@ -216,18 +207,17 @@ func (cookie *Cookie) HasLiveSync(familyName string) bool {
 	return isLive
 }
 
-// LiveSyncCount returns the number of families which have active UIDs for this user.
-func (cookie *Cookie) LiveSyncCount() int {
+// HasAnyLiveSyncs returns true if this cookie has at least one active sync.
+func (cookie *Cookie) HasAnyLiveSyncs() bool {
 	now := time.Now()
-	numSyncs := 0
 	if cookie != nil {
 		for _, value := range cookie.uids {
 			if now.Before(value.Expires) {
-				numSyncs++
+				return true
 			}
 		}
 	}
-	return numSyncs
+	return false
 }
 
 // TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
@@ -244,17 +234,17 @@ func (cookie *Cookie) TrySync(familyName string, uid string) error {
 
 	cookie.uids[familyName] = uidWithExpiry{
 		UID:     uid,
-		Expires: getExpiry(familyName),
+		Expires: time.Now().Add(uidTTL),
 	}
 
 	return nil
 }
 
-// pbsCookieJson defines the JSON contract for the cookie data's storage format.
+// cookieJson defines the JSON contract for the cookie data's storage format.
 //
 // This exists so that PBSCookie (which is public) can have private fields, and the rest of
 // PBS doesn't have to worry about the cookie data storage format.
-type pbsCookieJson struct {
+type cookieJson struct {
 	LegacyUIDs map[string]string        `json:"uids,omitempty"`
 	UIDs       map[string]uidWithExpiry `json:"tempUIDs,omitempty"`
 	OptOut     bool                     `json:"optout,omitempty"`
@@ -262,7 +252,7 @@ type pbsCookieJson struct {
 }
 
 func (cookie *Cookie) MarshalJSON() ([]byte, error) {
-	return json.Marshal(pbsCookieJson{
+	return json.Marshal(cookieJson{
 		UIDs:     cookie.uids,
 		OptOut:   cookie.optOut,
 		Birthday: cookie.birthday,
@@ -278,7 +268,7 @@ func (cookie *Cookie) MarshalJSON() ([]byte, error) {
 // If you're seeing this message after March 2018, it's safe to assume that all the legacy cookies have been
 // updated and remove the legacy logic.
 func (cookie *Cookie) UnmarshalJSON(b []byte) error {
-	var cookieContract pbsCookieJson
+	var cookieContract cookieJson
 	err := json.Unmarshal(b, &cookieContract)
 	if err == nil {
 		cookie.optOut = cookieContract.OptOut
@@ -316,12 +306,6 @@ func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 		}
 	}
 	return err
-}
-
-// getExpiry gets an expiry date for the cookie, assuming it was generated right now.
-func getExpiry(familyName string) time.Time {
-	ttl := defaultTTL
-	return time.Now().Add(ttl)
 }
 
 func timestamp() *time.Time {
