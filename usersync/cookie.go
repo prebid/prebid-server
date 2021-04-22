@@ -17,10 +17,6 @@ const defaultTTL = 14 * 24 * time.Hour
 
 const uidCookieName = "uids"
 
-// customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
-// If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
-var customBidderTTLs = map[string]time.Duration{}
-
 // bidderToFamilyNames maps the BidderName to Adapter.Name() for the early adapters.
 // If a mapping isn't listed here, then we assume that the two are the same.
 var bidderToFamilyNames = map[openrtb_ext.BidderName]string{
@@ -325,9 +321,6 @@ func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 // getExpiry gets an expiry date for the cookie, assuming it was generated right now.
 func getExpiry(familyName string) time.Time {
 	ttl := defaultTTL
-	if customTTL, ok := customBidderTTLs[familyName]; ok {
-		ttl = customTTL
-	}
 	return time.Now().Add(ttl)
 }
 
