@@ -21,7 +21,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const adapterVersion = "1.1.0"
+const adapterVersion = "1.2.0"
 const maxUriLength = 8000
 const measurementCode = `
 	<script>
