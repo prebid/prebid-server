@@ -7,12 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// These tests use a deterministic test version of the shuffler, where the order
-// is reversed rather than randomized.
+// These tests use a deterministic version of the shuffler, where the order
+// is reversed rather than randomized. Most tests specify at least 2 elements
+// to implicitly verify the shuffler is invoked (or not invoked).
 
-func TestChoose(t *testing.T) {
+func TestBidderChooserChoose(t *testing.T) {
 	shuffler := reverseShuffler{}
-	available := []string{"a", "b"}
+	available := []string{"a1", "a2"}
 
 	testCases := []struct {
 		description      string
@@ -24,7 +25,7 @@ func TestChoose(t *testing.T) {
 			description:      "No Coop - Nil",
 			givenRequested:   nil,
 			givenCooperative: config.UserSyncCooperative{Enabled: false},
-			expected:         []string{"b", "a"},
+			expected:         []string{"a2", "a1"},
 		},
 		{
 			description:      "No Coop - Empty",
@@ -34,35 +35,35 @@ func TestChoose(t *testing.T) {
 		},
 		{
 			description:      "No Coop - One",
-			givenRequested:   []string{"c"},
+			givenRequested:   []string{"r"},
 			givenCooperative: config.UserSyncCooperative{Enabled: false},
-			expected:         []string{"c"},
+			expected:         []string{"r"},
 		},
 		{
 			description:      "No Coop - Many",
-			givenRequested:   []string{"c", "d"},
+			givenRequested:   []string{"r1", "r2"},
 			givenCooperative: config.UserSyncCooperative{Enabled: false},
-			expected:         []string{"d", "c"},
+			expected:         []string{"r2", "r1"},
 		},
 		{
-			description:      "Coop - Integration",
-			givenRequested:   []string{"c", "d"},
-			givenCooperative: config.UserSyncCooperative{Enabled: true, PriorityGroups: [][]string{{"1", "2"}, {"3", "4"}}},
-			expected:         []string{"d", "c", "2", "1", "4", "3", "b", "a"},
+			description:      "Coop - Integration Test",
+			givenRequested:   []string{"r1", "r2"},
+			givenCooperative: config.UserSyncCooperative{Enabled: true, PriorityGroups: [][]string{{"pr1A", "pr1B"}, {"pr2A", "pr2B"}}},
+			expected:         []string{"r2", "r1", "pr1B", "pr1A", "pr2B", "pr2A", "a2", "a1"},
 		},
 	}
 
 	for _, test := range testCases {
-		chooser := randomBidderChooser{shuffler: shuffler}
+		chooser := standardBidderChooser{shuffler: shuffler}
 		chosen := chooser.choose(test.givenRequested, available, test.givenCooperative)
 
 		assert.Equal(t, test.expected, chosen, test.description)
 	}
 }
 
-func TestChooseCooperative(t *testing.T) {
+func TestBidderChooserCooperative(t *testing.T) {
 	shuffler := reverseShuffler{}
-	available := []string{"a", "b"}
+	available := []string{"a1", "a2"}
 
 	testCases := []struct {
 		description         string
@@ -74,49 +75,49 @@ func TestChooseCooperative(t *testing.T) {
 			description:         "Nil",
 			givenRequested:      nil,
 			givenPriorityGroups: nil,
-			expected:            []string{"b", "a"},
+			expected:            []string{"a2", "a1"},
 		},
 		{
 			description:         "Empty",
 			givenRequested:      []string{},
 			givenPriorityGroups: [][]string{},
-			expected:            []string{"b", "a"},
+			expected:            []string{"a2", "a1"},
 		},
 		{
 			description:         "Requested",
-			givenRequested:      []string{"c", "d"},
+			givenRequested:      []string{"r1", "r2"},
 			givenPriorityGroups: nil,
-			expected:            []string{"d", "c", "b", "a"},
+			expected:            []string{"r2", "r1", "a2", "a1"},
 		},
 		{
 			description:         "Priority Groups - One",
 			givenRequested:      nil,
-			givenPriorityGroups: [][]string{{"c", "d"}},
-			expected:            []string{"d", "c", "b", "a"},
+			givenPriorityGroups: [][]string{{"pr1A", "pr1B"}},
+			expected:            []string{"pr1B", "pr1A", "a2", "a1"},
 		},
 		{
 			description:         "Priority Groups - Many",
 			givenRequested:      nil,
-			givenPriorityGroups: [][]string{{"c", "d"}, {"e", "f", "g"}},
-			expected:            []string{"d", "c", "g", "f", "e", "b", "a"},
+			givenPriorityGroups: [][]string{{"pr1A", "pr1B"}, {"pr2A", "pr2B"}},
+			expected:            []string{"pr1B", "pr1A", "pr2B", "pr2A", "a2", "a1"},
 		},
 		{
 			description:         "Requested + Priority Groups",
-			givenRequested:      []string{"c", "d"},
-			givenPriorityGroups: [][]string{{"e", "f"}, {"g", "h", "i"}},
-			expected:            []string{"d", "c", "f", "e", "i", "h", "g", "b", "a"},
+			givenRequested:      []string{"r1", "r2"},
+			givenPriorityGroups: [][]string{{"pr1A", "pr1B"}, {"pr2A", "pr2B"}},
+			expected:            []string{"r2", "r1", "pr1B", "pr1A", "pr2B", "pr2A", "a2", "a1"},
 		},
 	}
 
 	for _, test := range testCases {
-		chooser := randomBidderChooser{shuffler: shuffler}
+		chooser := standardBidderChooser{shuffler: shuffler}
 		chosen := chooser.chooseCooperative(test.givenRequested, available, test.givenPriorityGroups)
 
 		assert.Equal(t, test.expected, chosen, test.description)
 	}
 }
 
-func TestShuffledCopy(t *testing.T) {
+func TestBidderChooserShuffledCopy(t *testing.T) {
 	shuffler := reverseShuffler{}
 
 	testCases := []struct {
@@ -124,11 +125,6 @@ func TestShuffledCopy(t *testing.T) {
 		given       []string
 		expected    []string
 	}{
-		{
-			description: "Nil",
-			given:       nil,
-			expected:    nil,
-		},
 		{
 			description: "Empty",
 			given:       []string{},
@@ -149,7 +145,7 @@ func TestShuffledCopy(t *testing.T) {
 	for _, test := range testCases {
 		givenCopy := copySlice(test.given)
 
-		chooser := randomBidderChooser{shuffler: shuffler}
+		chooser := standardBidderChooser{shuffler: shuffler}
 		shuffled := chooser.shuffledCopy(test.given)
 
 		assert.Equal(t, givenCopy, test.given, test.description+":input unchanged")
@@ -157,7 +153,7 @@ func TestShuffledCopy(t *testing.T) {
 	}
 }
 
-func TestShuffledAppend(t *testing.T) {
+func TestBidderChooserShuffledAppend(t *testing.T) {
 	shuffler := reverseShuffler{}
 
 	testCases := []struct {
@@ -181,14 +177,14 @@ func TestShuffledAppend(t *testing.T) {
 		{
 			description: "Empty - Append One",
 			givenA:      []string{},
-			givenB:      []string{"1"},
-			expected:    []string{"1"},
+			givenB:      []string{"b"},
+			expected:    []string{"b"},
 		},
 		{
 			description: "Empty - Append Many",
 			givenA:      []string{},
-			givenB:      []string{"1", "2"},
-			expected:    []string{"2", "1"},
+			givenB:      []string{"b1", "b2"},
+			expected:    []string{"b2", "b1"},
 		},
 		{
 			description: "One - Append Nil",
@@ -204,46 +200,46 @@ func TestShuffledAppend(t *testing.T) {
 		},
 		{
 			description: "One - Append One",
-			givenA:      []string{"a"},
-			givenB:      []string{"1"},
-			expected:    []string{"a", "1"},
+			givenA:      []string{"a1"},
+			givenB:      []string{"b1"},
+			expected:    []string{"a1", "b1"},
 		},
 		{
 			description: "One - Append Many",
-			givenA:      []string{"a"},
-			givenB:      []string{"1", "2"},
-			expected:    []string{"a", "2", "1"},
+			givenA:      []string{"a1"},
+			givenB:      []string{"b1", "b2"},
+			expected:    []string{"a1", "b2", "b1"},
 		},
 		{
 			description: "Many - Append Nil",
-			givenA:      []string{"a", "b"},
+			givenA:      []string{"a1", "a2"},
 			givenB:      nil,
-			expected:    []string{"a", "b"},
+			expected:    []string{"a1", "a2"},
 		},
 		{
 			description: "Many - Append Empty",
-			givenA:      []string{"a", "b"},
+			givenA:      []string{"a1", "a2"},
 			givenB:      []string{},
-			expected:    []string{"a", "b"},
+			expected:    []string{"a1", "a2"},
 		},
 		{
 			description: "Many - Append One",
-			givenA:      []string{"a", "b"},
-			givenB:      []string{"1"},
-			expected:    []string{"a", "b", "1"},
+			givenA:      []string{"a1", "a2"},
+			givenB:      []string{"b"},
+			expected:    []string{"a1", "a2", "b"},
 		},
 		{
 			description: "Many - Append Many",
-			givenA:      []string{"a", "b"},
-			givenB:      []string{"1", "2"},
-			expected:    []string{"a", "b", "2", "1"},
+			givenA:      []string{"a1", "a2"},
+			givenB:      []string{"b1", "b2"},
+			expected:    []string{"a1", "a2", "b2", "b1"},
 		},
 	}
 
 	for _, test := range testCases {
 		givenBCopy := copySlice(test.givenB)
 
-		chooser := randomBidderChooser{shuffler: shuffler}
+		chooser := standardBidderChooser{shuffler: shuffler}
 		shuffled := chooser.shuffledAppend(test.givenA, test.givenB)
 
 		assert.Equal(t, givenBCopy, test.givenB, test.description+":append input unchanged")

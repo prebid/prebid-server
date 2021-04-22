@@ -12,14 +12,10 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const (
-	// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
-	DEFAULT_TTL         = 14 * 24 * time.Hour
-	UID_COOKIE_NAME     = "uids"
-	SameSiteCookieName  = "SSCookie"
-	SameSiteCookieValue = "1"
-	SameSiteAttribute   = "; SameSite=None"
-)
+// defaultTTL is the default amount of time a cookie is considered valid.
+const defaultTTL = 14 * 24 * time.Hour
+
+const uidCookieName = "uids"
 
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
 // If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
@@ -61,7 +57,7 @@ func ParseCookieFromRequest(r *http.Request, cookie *config.HostCookie) *Cookie 
 		}
 	}
 	var parsed *Cookie
-	uidCookie, err2 := r.Cookie(UID_COOKIE_NAME)
+	uidCookie, err2 := r.Cookie(uidCookieName)
 	if err2 == nil {
 		parsed = ParseCookie(uidCookie)
 	} else {
@@ -130,7 +126,7 @@ func (cookie *Cookie) ToHTTPCookie(ttl time.Duration) *http.Cookie {
 	b64 := base64.URLEncoding.EncodeToString(j)
 
 	return &http.Cookie{
-		Name:    UID_COOKIE_NAME,
+		Name:    uidCookieName,
 		Value:   b64,
 		Expires: time.Now().Add(ttl),
 		Path:    "/",
@@ -203,21 +199,10 @@ func (cookie *Cookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie b
 	}
 
 	var uidsCookieStr string
-	var sameSiteCookie *http.Cookie
 	if setSiteCookie {
 		httpCookie.Secure = true
-		uidsCookieStr = httpCookie.String()
-		uidsCookieStr += SameSiteAttribute
-		sameSiteCookie = &http.Cookie{
-			Name:    SameSiteCookieName,
-			Value:   SameSiteCookieValue,
-			Expires: time.Now().Add(ttl),
-			Path:    "/",
-			Secure:  true,
-		}
-		sameSiteCookieStr := sameSiteCookie.String()
-		sameSiteCookieStr += SameSiteAttribute
-		w.Header().Add("Set-Cookie", sameSiteCookieStr)
+		httpCookie.SameSite = http.SameSiteNoneMode
+
 	} else {
 		uidsCookieStr = httpCookie.String()
 	}
@@ -339,7 +324,7 @@ func (cookie *Cookie) UnmarshalJSON(b []byte) error {
 
 // getExpiry gets an expiry date for the cookie, assuming it was generated right now.
 func getExpiry(familyName string) time.Time {
-	ttl := DEFAULT_TTL
+	ttl := defaultTTL
 	if customTTL, ok := customBidderTTLs[familyName]; ok {
 		ttl = customTTL
 	}

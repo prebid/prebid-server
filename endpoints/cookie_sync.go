@@ -24,6 +24,11 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
+// todo
+// - update to use chooser
+// - handle metrics and analytics from chooser result
+// - respond from chooser result
+
 func NewCookieSyncEndpoint(
 	syncers map[openrtb_ext.BidderName]usersync.Usersyncer,
 	cfg *config.Configuration,
@@ -110,16 +115,8 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 			parsedReq.Bidders = append(parsedReq.Bidders, string(bidder))
 		}
 	}
-	setSiteCookie := siteCookieCheck(r.UserAgent())
-	needSyncupForSameSite := false
-	if setSiteCookie {
-		_, err1 := r.Cookie(usersync.SameSiteCookieName)
-		if err1 == http.ErrNoCookie {
-			needSyncupForSameSite = true
-		}
-	}
 
-	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie, needSyncupForSameSite)
+	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie, false)
 
 	adapterSyncs := make(map[openrtb_ext.BidderName]bool)
 	// assume all bidders will be privacy blocked
@@ -148,7 +145,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		adapterSyncs[openrtb_ext.BidderName(b)] = false
 	}
 	for b, g := range adapterSyncs {
-		deps.metrics.RecordAdapterCookieSync(b, g)
+		deps.metrics.RecordAdapterCookieSync(b, g) // how to record now that 1:many mapping for keys? multiple bidders benefit from the same sync.
 	}
 	parsedReq.filterToLimit()
 

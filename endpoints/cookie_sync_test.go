@@ -131,35 +131,11 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	assert.Equal(t, "ok", parseStatus(t, rr.Body.Bytes()))
 }
 
-// Make sure that an empty bidders array returns no syncs
-func TestCookieSyncEmptyBidders(t *testing.T) {
-	rr := doPost(`{"bidders": []}`, nil, true, syncersForTest())
-	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
-	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Empty(t, parseSyncs(t, rr.Body.Bytes()))
-	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
-}
-
 func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
 	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{}, config.GDPR{UsersyncIfAmbiguous: true}, config.CCPA{})
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork"}, parseSyncs(t, rr.Body.Bytes()))
-	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
-}
-
-func TestCookieSyncWithLimit(t *testing.T) {
-	rr := doPost(`{"limit":2}`, nil, true, syncersForTest())
-	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Len(t, parseSyncs(t, rr.Body.Bytes()), 2, "usersyncs")
-	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
-}
-
-func TestCookieSyncWithLargeLimit(t *testing.T) {
-	syncers := syncersForTest()
-	rr := doPost(`{"limit":1000}`, nil, true, syncers)
-	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Len(t, parseSyncs(t, rr.Body.Bytes()), len(syncers), "usersyncs")
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
