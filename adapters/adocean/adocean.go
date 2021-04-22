@@ -244,8 +244,10 @@ func (a *AdOceanAdapter) makeURL(
 			queryParams.Add("dpidmd5", request.Device.DPIDMD5)
 		}
 
-		queryParams.Add("devtype", strconv.Itoa(int(request.Device.DeviceType)))
 		queryParams.Add("devos", request.Device.OS)
+		queryParams.Add("devosv", request.Device.OSV)
+		queryParams.Add("devmodel", request.Device.Model)
+		queryParams.Add("devmake", request.Device.Make)
 	}
 
 	setSlaveSizesParam(&queryParams, slaveSizes, (request.Test == 1))
