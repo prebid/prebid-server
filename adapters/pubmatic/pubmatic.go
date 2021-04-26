@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -402,18 +401,18 @@ func validateAdSlot(adslot string, imp *openrtb2.Imp) error {
 
 		adSize := strings.Split(strings.ToLower(adSlot[1]), "x")
 		if len(adSize) != 2 {
-			return errors.New(fmt.Sprintf("Invalid size provided in adSlot %v", adSlotStr))
+			return fmt.Errorf("Invalid size provided in adSlot %v", adSlotStr)
 		}
 
 		width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
 		if err != nil {
-			return errors.New(fmt.Sprintf("Invalid width provided in adSlot %v", adSlotStr))
+			return fmt.Errorf("Invalid width provided in adSlot %v", adSlotStr)
 		}
 
 		heightStr := strings.Split(adSize[1], ":")
 		height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
 		if err != nil {
-			return errors.New(fmt.Sprintf("Invalid height provided in adSlot %v", adSlotStr))
+			return fmt.Errorf("Invalid height provided in adSlot %v", adSlotStr)
 		}
 
 		//In case of video, size could be derived from the player size
@@ -421,7 +420,7 @@ func validateAdSlot(adslot string, imp *openrtb2.Imp) error {
 			imp.Banner = assignBannerWidthAndHeight(imp.Banner, int64(width), int64(height))
 		}
 	} else {
-		return errors.New(fmt.Sprintf("Invalid adSlot %v", adSlotStr))
+		return fmt.Errorf("Invalid adSlot %v", adSlotStr)
 	}
 
 	return nil
@@ -433,7 +432,7 @@ func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 	}
 
 	if len(banner.Format) == 0 {
-		return nil, errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
+		return nil, fmt.Errorf("No sizes provided for Banner %v", banner.Format)
 	}
 
 	return assignBannerWidthAndHeight(banner, banner.Format[0].W, banner.Format[0].H), nil
