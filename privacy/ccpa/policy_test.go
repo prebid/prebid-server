@@ -278,11 +278,12 @@ func TestBuildRegs(t *testing.T) {
 
 	for _, test := range testCases {
 		regsExt := &openrtb_ext.RegExt{}
+		regsExt.Ext = make(map[string]json.RawMessage)
 		var err error
 		if test.regs != nil {
-			regsExt, err = regsExt.Extract(test.regs.Ext)
+			err = regsExt.Unmarshal(test.regs.Ext)
 		} else {
-			regsExt, err = regsExt.Extract(json.RawMessage{})
+			err = regsExt.Unmarshal(json.RawMessage{})
 		}
 		if err == nil {
 			buildRegs(test.consent, regsExt)
@@ -346,11 +347,12 @@ func TestBuildRegsClear(t *testing.T) {
 
 	for _, test := range testCases {
 		regsExt := &openrtb_ext.RegExt{}
+		regsExt.Ext = make(map[string]json.RawMessage)
 		var err error
 		if test.regs != nil {
-			regsExt, err = regsExt.Extract(test.regs.Ext)
+			err = regsExt.Unmarshal(test.regs.Ext)
 		} else {
-			regsExt, err = regsExt.Extract(json.RawMessage{})
+			err = regsExt.Unmarshal(json.RawMessage{})
 		}
 		if err == nil {
 			buildRegsClear(regsExt)
@@ -425,11 +427,12 @@ func TestBuildRegsWrite(t *testing.T) {
 
 	for _, test := range testCases {
 		regsExt := &openrtb_ext.RegExt{}
+		regsExt.Ext = make(map[string]json.RawMessage)
 		var err error
 		if test.regs != nil {
-			regsExt, err = regsExt.Extract(test.regs.Ext)
+			err = regsExt.Unmarshal(test.regs.Ext)
 		} else {
-			regsExt, err = regsExt.Extract(json.RawMessage{})
+			err = regsExt.Unmarshal(json.RawMessage{})
 		}
 		if err == nil {
 			buildRegsWrite(test.consent, regsExt)
@@ -486,8 +489,8 @@ func TestBuildExt(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqDummy := &openrtb_ext.RequestExt{}
-		reqExt, err := reqDummy.Extract(test.ext)
+		reqExt := &openrtb_ext.RequestExt{}
+		err := reqExt.Unmarshal(test.ext)
 		var result json.RawMessage
 		if err == nil {
 			buildExt(test.noSaleBidders, reqExt)
@@ -563,8 +566,8 @@ func TestBuildExtClear(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqDummy := &openrtb_ext.RequestExt{}
-		reqExt, err := reqDummy.Extract(test.ext)
+		reqExt := &openrtb_ext.RequestExt{}
+		err := reqExt.Unmarshal(test.ext)
 		var result json.RawMessage
 		if err == nil {
 			buildExtClear(reqExt)
@@ -662,8 +665,8 @@ func TestBuildExtWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqDummy := &openrtb_ext.RequestExt{}
-		reqExt, err := reqDummy.Extract(test.ext)
+		reqExt := &openrtb_ext.RequestExt{}
+		err := reqExt.Unmarshal(test.ext)
 		var result json.RawMessage
 		if err == nil {
 			buildExtWrite(test.noSaleBidders, reqExt)
