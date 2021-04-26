@@ -316,12 +316,11 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
-	var err error
 	wrapExt := ""
 	pubID := ""
 
 	for i := 0; i < len(request.Imp); i++ {
-		err = parseImpressionObject(&request.Imp[i], &wrapExt, &pubID)
+		err := parseImpressionObject(&request.Imp[i], &wrapExt, &pubID)
 		// If the parsing is failed, remove imp and add the error.
 		if err != nil {
 			errs = append(errs, err)
@@ -436,10 +435,8 @@ func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 
 func assignBannerWidthAndHeight(banner *openrtb2.Banner, w, h int64) *openrtb2.Banner {
 	bannerCopy := *banner
-
 	bannerCopy.W = openrtb2.Int64Ptr(w)
 	bannerCopy.H = openrtb2.Int64Ptr(h)
-
 	return &bannerCopy
 }
 
