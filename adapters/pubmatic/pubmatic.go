@@ -158,8 +158,8 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					}
 
 					pbReq.Imp[i].TagID = strings.TrimSpace(adSlot[0])
-					pbReq.Imp[i].Banner.H = openrtb2.Int64Ptr(int64(height))
 					pbReq.Imp[i].Banner.W = openrtb2.Int64Ptr(int64(width))
+					pbReq.Imp[i].Banner.H = openrtb2.Int64Ptr(int64(height))
 
 					if len(params.Keywords) != 0 {
 						kvstr := prepareImpressionExt(params.Keywords)
@@ -418,7 +418,7 @@ func validateAdSlot(adslot string, imp *openrtb2.Imp) error {
 
 		//In case of video, size could be derived from the player size
 		if imp.Banner != nil {
-			imp.Banner = assignBannerHeightAndWidth(imp.Banner, int64(height), int64(width))
+			imp.Banner = assignBannerWidthAndHeight(imp.Banner, int64(width), int64(height))
 		}
 	} else {
 		return errors.New(fmt.Sprintf("Invalid adSlot %v", adSlotStr))
@@ -436,10 +436,10 @@ func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 		return nil, errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
 	}
 
-	return assignBannerHeightAndWidth(banner, banner.Format[0].H, banner.Format[0].H), nil
+	return assignBannerWidthAndHeight(banner, banner.Format[0].W, banner.Format[0].H), nil
 }
 
-func assignBannerHeightAndWidth(banner *openrtb2.Banner, h, w int64) *openrtb2.Banner {
+func assignBannerWidthAndHeight(banner *openrtb2.Banner, w, h int64) *openrtb2.Banner {
 	bannerCopy := *banner
 
 	bannerCopy.W = openrtb2.Int64Ptr(w)
