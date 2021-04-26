@@ -329,6 +329,11 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		}
 	}
 
+	// If all the requests are invalid, Call to adaptor is skipped
+	if len(request.Imp) == 0 {
+		return nil, errs
+	}
+
 	if wrapExt != "" {
 		rawExt := fmt.Sprintf("{\"wrapper\": %s}", wrapExt)
 		request.Ext = json.RawMessage(rawExt)
@@ -357,11 +362,6 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	}
 
 	thisURI := a.URI
-
-	// If all the requests are invalid, Call to adaptor is skipped
-	if len(request.Imp) == 0 {
-		return nil, errs
-	}
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
