@@ -14,7 +14,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"

@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
@@ -454,7 +454,7 @@ func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder o
 	return m.allowBidderSync, nil
 }
 
-func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string) (bool, bool, bool, error) {
+func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
 	return m.allowPI, m.allowGeo, m.allowID, nil
 }
 

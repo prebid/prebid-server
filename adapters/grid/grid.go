@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -14,6 +14,23 @@ import (
 
 type GridAdapter struct {
 	endpoint string
+}
+
+type ExtImpDataAdServer struct {
+	Name   string `json:"name"`
+	AdSlot string `json:"adslot"`
+}
+
+type ExtImpData struct {
+	PbAdslot string              `json:"pbadslot,omitempty"`
+	AdServer *ExtImpDataAdServer `json:"adserver,omitempty"`
+}
+
+type ExtImp struct {
+	Prebid *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
+	Bidder json.RawMessage           `json:"bidder"`
+	Data   *ExtImpData               `json:"data,omitempty"`
+	Gpid   string                    `json:"gpid,omitempty"`
 }
 
 func processImp(imp *openrtb2.Imp) error {
@@ -37,6 +54,21 @@ func processImp(imp *openrtb2.Imp) error {
 	return nil
 }
 
+func setImpExtData(imp openrtb2.Imp) openrtb2.Imp {
+	var ext ExtImp
+	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+		return imp
+	}
+	if ext.Data != nil && ext.Data.AdServer != nil && ext.Data.AdServer.AdSlot != "" {
+		ext.Gpid = ext.Data.AdServer.AdSlot
+		extJSON, err := json.Marshal(ext)
+		if err == nil {
+			imp.Ext = extJSON
+		}
+	}
+	return imp
+}
+
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
 func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors = make([]error, 0)
@@ -48,7 +80,7 @@ func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 	// pre-process the imps
 	for _, imp := range requestCopy.Imp {
 		if err := processImp(&imp); err == nil {
-			validImps = append(validImps, imp)
+			validImps = append(validImps, setImpExtData(imp))
 		} else {
 			errors = append(errors, err)
 		}
