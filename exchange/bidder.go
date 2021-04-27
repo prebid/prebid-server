@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
+	"net/http/httputil"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -344,6 +346,22 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		ctx = bidder.addClientTrace(ctx)
 	}
 
+	printCond := false
+	var tempReq openrtb.BidRequest
+	err = json.Unmarshal(req.Body, &tempReq)
+	if err == nil && tempReq.Device != nil && strings.ToLower(tempReq.Device.IFA) == strings.ToLower("A9688F3E-FCBD-4F26-9E97-1A1D137AF047") {
+		printCond = true
+	}
+
+	if printCond {
+		// Save a copy of this request for debugging.
+		requestDump, err := httputil.DumpRequest(httpReq, true)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Printf("prebid request:\n%s\n\n", string(requestDump))
+	}
+
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		if err == context.DeadlineExceeded {
@@ -367,6 +385,15 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 			request: req,
 			err:     err,
 		}
+	}
+
+	if printCond {
+		// Save a copy of this response for debugging.
+		responseDump, err := httputil.DumpResponse(httpResp, true)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Printf("prebid response:\n%s\n\n", string(responseDump))
 	}
 
 	respBody, err := ioutil.ReadAll(httpResp.Body)

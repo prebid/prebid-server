@@ -193,6 +193,7 @@ func FilterPrebidSKADNExt(prebidExt *openrtb_ext.ExtImpPrebid, filterMap map[str
 
 	return openrtb_ext.SKADN{
 		Version:    prebidExt.SKADN.Version,
+		Versions:   prebidExt.SKADN.Versions,
 		SourceApp:  prebidExt.SKADN.SourceApp,
 		SKADNetIDs: filterArrayWithMap(prebidExt.SKADN.SKADNetIDs, filterMap),
 	}

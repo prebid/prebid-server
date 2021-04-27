@@ -34,8 +34,8 @@
             "skadn": {
               "version": "2.2",
               "network": "7ug5zh24hu.skadnetwork",
-              "campaign": "some_liftoff_campaign_id",
-              "itunesitem": "com.should.match",
+              "campaign": "123",
+              "itunesitem": "14522332",
               "sourceapp": "691244553",
               "fidelities": [
                 {
