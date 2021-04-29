@@ -75,6 +75,7 @@ func IsBidderNameReserved(name string) bool {
 const (
 	Bidder33Across         BidderName = "33across"
 	BidderAcuityAds        BidderName = "acuityads"
+	BidderAdf              BidderName = "adf"
 	BidderAdform           BidderName = "adform"
 	BidderAdgeneration     BidderName = "adgeneration"
 	BidderAdhese           BidderName = "adhese"
@@ -90,6 +91,7 @@ const (
 	BidderAdtarget         BidderName = "adtarget"
 	BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdvangelists     BidderName = "advangelists"
+	BidderAdxcg            BidderName = "adxcg"
 	BidderAdyoulike        BidderName = "adyoulike"
 	BidderAJA              BidderName = "aja"
 	BidderAMX              BidderName = "amx"
@@ -100,12 +102,14 @@ const (
 	BidderBeachfront       BidderName = "beachfront"
 	BidderBeintoo          BidderName = "beintoo"
 	BidderBetween          BidderName = "between"
+	BidderBidmachine       BidderName = "bidmachine"
 	BidderBrightroll       BidderName = "brightroll"
 	BidderColossus         BidderName = "colossus"
 	BidderConnectAd        BidderName = "connectad"
 	BidderConsumable       BidderName = "consumable"
 	BidderConversant       BidderName = "conversant"
 	BidderCpmstar          BidderName = "cpmstar"
+	BidderCriteo           BidderName = "criteo"
 	BidderDatablocks       BidderName = "datablocks"
 	BidderDmx              BidderName = "dmx"
 	BidderDecenterAds      BidderName = "decenterads"
@@ -141,6 +145,7 @@ const (
 	BidderOneTag           BidderName = "onetag"
 	BidderOpenx            BidderName = "openx"
 	BidderOrbidder         BidderName = "orbidder"
+	BidderOutbrain         BidderName = "outbrain"
 	BidderPangle           BidderName = "pangle"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
@@ -183,6 +188,7 @@ func CoreBidderNames() []BidderName {
 	return []BidderName{
 		Bidder33Across,
 		BidderAcuityAds,
+		BidderAdf,
 		BidderAdform,
 		BidderAdgeneration,
 		BidderAdhese,
@@ -198,6 +204,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdtarget,
 		BidderAdtelligent,
 		BidderAdvangelists,
+		BidderAdxcg,
 		BidderAdyoulike,
 		BidderAJA,
 		BidderAMX,
@@ -208,12 +215,14 @@ func CoreBidderNames() []BidderName {
 		BidderBeachfront,
 		BidderBeintoo,
 		BidderBetween,
+		BidderBidmachine,
 		BidderBrightroll,
 		BidderColossus,
 		BidderConnectAd,
 		BidderConsumable,
 		BidderConversant,
 		BidderCpmstar,
+		BidderCriteo,
 		BidderDatablocks,
 		BidderDecenterAds,
 		BidderDeepintent,
@@ -249,6 +258,7 @@ func CoreBidderNames() []BidderName {
 		BidderOneTag,
 		BidderOpenx,
 		BidderOrbidder,
+		BidderOutbrain,
 		BidderPangle,
 		BidderPubmatic,
 		BidderPubnative,

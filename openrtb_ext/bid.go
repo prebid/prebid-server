@@ -21,6 +21,7 @@ type ExtBidPrebid struct {
 	Type              BidType             `json:"type"`
 	Video             *ExtBidPrebidVideo  `json:"video,omitempty"`
 	Events            *ExtBidPrebidEvents `json:"events,omitempty"`
+	BidId             string              `json:"bidid,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache

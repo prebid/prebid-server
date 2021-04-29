@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
 
@@ -495,7 +495,7 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, err
 	if appnexusExt.InvCode != "" {
 		imp.TagID = appnexusExt.InvCode
 	}
-	if appnexusExt.Reserve > 0 {
+	if imp.BidFloor <= 0 && appnexusExt.Reserve > 0 {
 		imp.BidFloor = appnexusExt.Reserve // This will be broken for non-USD currency.
 	}
 	if imp.Banner != nil {

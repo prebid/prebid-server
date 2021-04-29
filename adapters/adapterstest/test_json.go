@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/mohae/deepcopy"
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
