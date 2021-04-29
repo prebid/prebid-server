@@ -21,7 +21,6 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/influxdata/influxdb v1.6.1
-	github.com/jinzhu/copier v0.2.8
 	github.com/julienschmidt/httprouter v1.1.0
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/lib/pq v1.0.0
@@ -29,6 +28,7 @@ require (
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.0.0 // indirect
+	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/mxmCherry/openrtb/v14 v14.0.0
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect

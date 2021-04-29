@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/jinzhu/copier"
+	"github.com/mohae/deepcopy"
 	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/stretchr/testify/assert"
@@ -110,9 +110,9 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 		reqInfo.PbsEntryPoint = "video"
 	}
 
-	actualReqs := testMakeRequestsImpl(t, filename, spec, bidder, &reqInfo)
+	requests := testMakeRequestsImpl(t, filename, spec, bidder, &reqInfo)
 
-	testMakeBidsImpl(t, filename, spec, bidder, actualReqs)
+	testMakeBidsImpl(t, filename, spec, bidder, requests)
 }
 
 type testSpec struct {
@@ -215,10 +215,10 @@ func assertErrorList(t *testing.T, description string, actual []error, expected 
 	}
 }
 
-func assertMakeBidsOutput(t *testing.T, filename string, actualBidderResp *adapters.BidderResponse, expected []expectedBid) {
+func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapters.BidderResponse, expected []expectedBid) {
 	t.Helper()
 
-	if (actualBidderResp == nil || len(actualBidderResp.Bids) == 0) != (len(expected) == 0) {
+	if (bidderResponse == nil || len(bidderResponse.Bids) == 0) != (len(expected) == 0) {
 		if len(expected) == 0 {
 			t.Fatalf("%s: expectedBidResponses indicated a nil response, but mockResponses supplied a non-nil response", filename)
 		}
@@ -227,15 +227,15 @@ func assertMakeBidsOutput(t *testing.T, filename string, actualBidderResp *adapt
 	}
 
 	// Expected nil response - give diffBids something to work with.
-	if actualBidderResp == nil {
-		actualBidderResp = new(adapters.BidderResponse)
+	if bidderResponse == nil {
+		bidderResponse = new(adapters.BidderResponse)
 	}
 
-	if len(actualBidderResp.Bids) != len(expected) {
-		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(actualBidderResp.Bids))
+	if len(bidderResponse.Bids) != len(expected) {
+		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(bidderResponse.Bids))
 	}
-	for i := 0; i < len(actualBidderResp.Bids); i++ {
-		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), actualBidderResp.Bids[i], &(expected[i]))
+	for i := 0; i < len(bidderResponse.Bids); i++ {
+		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), bidderResponse.Bids[i], &(expected[i]))
 	}
 }
 
@@ -318,53 +318,52 @@ func diffJson(t *testing.T, description string, actual []byte, expected []byte) 
 	}
 }
 
-// testMakeBidsImpl asserts the results of the bidder MakeRequests implementation against the expected JSON-defined results
-// and makes sure no data races occur
+// testMakeBidsImpl asserts the results of the bidder MakeRequests implementation against the
+// expected JSON-defined results and makes sure the adapter's implementations of MakeRequests do
+// not incurr in data races
 func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, reqInfo *adapters.ExtraRequestInfo) []*adapters.RequestData {
 	t.Helper()
 
 	deepBidReqCopy, shallowBidReqCopy := getDataRaceTestCopies(&spec.BidRequest)
 
 	// Run MakeRequests
-	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest, reqInfo)
+	requests, errs := bidder.MakeRequests(&spec.BidRequest, reqInfo)
 
 	// Compare MakeRequests actual output versus expected values found in JSON file
 	assertErrorList(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
-	assertMakeRequestsOutput(t, filename, actualReqs, spec.HttpCalls)
+	assertMakeRequestsOutput(t, filename, requests, spec.HttpCalls)
 
 	// Assert no data races occur using original bidRequest copies of references and values
 	assertNoDataRace(t, deepBidReqCopy, shallowBidReqCopy, filename)
 
-	return actualReqs
+	return requests
 }
 
+// getDataRaceTestCopies returns a deep copy and a shallow copy of the original bidRequest that will get
+// compared inside assertNoDataRace() to verify no data races occur.
+//  - The shallow copy is helpful because it provides reference values to shared memory that we don't want
+//    adapters to modify.
+//  - The deep copy will help us preserve all the original values, even those of the shared memory fields, that
+//    will remain untouched by the adapter tests so we can compare the real shared memory fields (that can
+//    be accessed via the shallow copy) to their original values
 func getDataRaceTestCopies(original *openrtb2.BidRequest) (*openrtb2.BidRequest, *openrtb2.BidRequest) {
+	deepReqCopy := deepcopy.Copy(original).(*openrtb2.BidRequest)
 
-	// Save original bidRequest values to assert no data races occur inside MakeRequests latter
-	deepReqCopy := openrtb2.BidRequest{}
-	copier.Copy(&deepReqCopy, original)
-
-	// Shallow copy PBS core provides to adapters
 	shallowReqCopy := *original
-
-	// Save original []Imp elements to assert no data races occur inside MakeRequests latter
-	deepReqCopy.Imp = make([]openrtb2.Imp, len(original.Imp))
-	shallowReqCopy.Imp = make([]openrtb2.Imp, len(original.Imp))
+	shallowReqCopy.Imp = make([]openrtb2.Imp, 0, len(original.Imp))
 	for i := 0; i < len(original.Imp); i++ {
-		deepImpCopy := openrtb2.Imp{}
-		copier.Copy(&deepImpCopy, original.Imp[i])
-		deepReqCopy.Imp = append(deepReqCopy.Imp, deepImpCopy)
-
 		shallowImpCopy := original.Imp[i]
 		shallowReqCopy.Imp = append(shallowReqCopy.Imp, shallowImpCopy)
 	}
 
-	return &deepReqCopy, &shallowReqCopy
+	return deepReqCopy, &shallowReqCopy
 }
 
-// assertNoDataRace compares the contents of the reference fields found in the original openrtb2.BidRequest to their
-// original values to make sure they were not modified and we are not incurring indata races. In order to assert
-// no data races occur in the []Imp array, we call assertNoImpsDataRace()
+// assertNoDataRace compares the contents of the reference fields found in the original openrtb2.BidRequest such as Site,
+// App, Device and so on, to their original shared-memory values to make sure they were not modified and we are not incurring
+// in data races. Because some adapters modify the lenght of the []Imp array, we call assertNoImpsDataRace() to assert we are
+// data-race free there. This function is necessary because a simple `assert.Equalf()` call would also compare non shared
+// memory fields that adapters are free to modify, therefore leading us to false positives in terms of data-race detection.
 func assertNoDataRace(t *testing.T, bidRequestBefore *openrtb2.BidRequest, bidRequestAfter *openrtb2.BidRequest, filename string) {
 	t.Helper()
 

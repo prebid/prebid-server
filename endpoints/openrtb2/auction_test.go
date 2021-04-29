@@ -20,8 +20,6 @@ import (
 	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/stored_requests"
 
-	"github.com/jinzhu/copier"
-
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -51,89 +49,6 @@ type testConfigValues struct {
 	BlacklistedAccounts []string `json:"blacklistedAccts"`
 	BlacklistedApps     []string `json:"blacklistedApps"`
 	DisabledAdapters    []string `json:"disabledAdapters"`
-}
-
-func TestDeepVsRegCopy(t *testing.T) {
-	bidRequest := &openrtb2.BidRequest{
-		ID: "some-request-id",
-		Imp: []openrtb2.Imp{
-			{
-				ID:     "impression-1",
-				Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-				Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
-			},
-			{
-				ID:     "impression-2",
-				Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 1080, H: 780}, {W: 300, H: 600}}},
-				Ext:    json.RawMessage(`{"appnexus": {"placementId": 2}}`),
-			},
-		},
-		Site:   &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
-		Device: &openrtb2.Device{UA: "curl/7.54.0", IP: "::1"},
-		AT:     1,
-		TMax:   500,
-		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`),
-	}
-
-	deepBidReqCopy, shallowBidReqCopy := getDataRaceTestCopies(bidRequest)
-
-	assertNoDataRace(t, deepBidReqCopy, shallowBidReqCopy, "none")
-}
-
-func getDataRaceTestCopies(original *openrtb2.BidRequest) (*openrtb2.BidRequest, *openrtb2.BidRequest) {
-
-	// Save original bidRequest values to assert no data races occur inside MakeRequests latter
-	deepReqCopy := openrtb2.BidRequest{}
-	copier.Copy(&deepReqCopy, original)
-
-	// Shallow copy PBS core provides to adapters
-	shallowReqCopy := *original
-
-	// Save original []Imp elements to assert no data races occur inside MakeRequests latter
-	deepReqCopy.Imp = make([]openrtb2.Imp, 0, len(original.Imp))
-	shallowReqCopy.Imp = make([]openrtb2.Imp, 0, len(original.Imp))
-	for i := 0; i < len(original.Imp); i++ {
-		deepImpCopy := openrtb2.Imp{}
-		copier.Copy(&deepImpCopy, original.Imp[i])
-		deepReqCopy.Imp = append(deepReqCopy.Imp, deepImpCopy)
-
-		shallowImpCopy := original.Imp[i]
-		shallowReqCopy.Imp = append(shallowReqCopy.Imp, shallowImpCopy)
-	}
-
-	return &deepReqCopy, &shallowReqCopy
-}
-
-func assertNoDataRace(t *testing.T, bidRequestBefore *openrtb2.BidRequest, bidRequestAfter *openrtb2.BidRequest, filename string) {
-	t.Helper()
-
-	// Assert reference fields were not modified by bidder adapter MakeRequests implementation
-	assert.Equal(t, bidRequestBefore.Site, bidRequestAfter.Site, "Data race in BidRequest.Site field in file %s", filename)
-	assert.Equal(t, bidRequestBefore.App, bidRequestAfter.App, "Data race in BidRequest.App field in file %s", filename)
-	assert.Equal(t, bidRequestBefore.Device, bidRequestAfter.Device, "Data race in BidRequest.Device field in file %s", filename)
-	assert.Equal(t, bidRequestBefore.User, bidRequestAfter.User, "Data race in BidRequest.User field in file %s", filename)
-	assert.Equal(t, bidRequestBefore.Source, bidRequestAfter.Source, "Data race in BidRequest.Source field in file %s", filename)
-	assert.Equal(t, bidRequestBefore.Regs, bidRequestAfter.Regs, "Data race in BidRequest.Regs field in file %s", filename)
-
-	// Assert Imps separately
-	assertNoImpsDataRace(t, bidRequestBefore.Imp, bidRequestAfter.Imp, filename)
-}
-
-func assertNoImpsDataRace(t *testing.T, impsBefore []openrtb2.Imp, impsAfter []openrtb2.Imp, filename string) {
-	t.Helper()
-
-	if assert.Len(t, impsAfter, len(impsBefore), "Original []Imp array was modified and length is not equal to original after MakeRequests was called. File:%s", filename) {
-		// Assert no data races occured in individual Imp elements
-		for i := 0; i < len(impsBefore); i++ {
-			assert.Equal(t, impsBefore[i].Banner, impsAfter[i].Banner, "Data race in bidRequest.Imp[%d].Banner field. File:%s", i, filename)
-			assert.Equal(t, impsBefore[i].Video, impsAfter[i].Video, "Data race in bidRequest.Imp[%d].Video field. File:%s", i, filename)
-			assert.Equal(t, impsBefore[i].Audio, impsAfter[i].Audio, "Data race in bidRequest.Imp[%d].Audio field. File:%s", i, filename)
-			assert.Equal(t, impsBefore[i].Native, impsAfter[i].Native, "Data race in bidRequest.Imp[%d].Native field. File:%s", i, filename)
-			assert.Equal(t, impsBefore[i].PMP, impsAfter[i].PMP, "Data race in bidRequest.Imp[%d].PMP field. File:%s", i, filename)
-			assert.Equal(t, impsBefore[i].Secure, impsAfter[i].Secure, "Data race in bidRequest.Imp[%d].Secure field. File:%s", i, filename)
-			assert.ElementsMatch(t, impsBefore[i].Metric, impsAfter[i].Metric, "Data race in bidRequest.Imp[%d].[]Metric array. File:%s", i)
-		}
-	}
 }
 
 func TestJsonSampleRequests(t *testing.T) {
