@@ -27,15 +27,16 @@ func ReadFromRequest(req *openrtb_ext.RequestWrapper) (Policy, error) {
 		return Policy{}, fmt.Errorf("error reading request.regs.ext: %s", err)
 	}
 	if req.RegExt != nil {
-		consent = req.RegExt.USPrivacy
+		consent = req.RegExt.GetUSPrivacy()
 	}
 	// Read no sale bidders from request.ext.prebid
 	err = req.ExtractRequestExt()
 	if err != nil {
 		return Policy{}, fmt.Errorf("error reading request.ext: %s", err)
 	}
-	if req.RequestExt != nil && req.RequestExt.Prebid != nil {
-		noSaleBidders = req.RequestExt.Prebid.NoSale
+	reqPrebid := req.RequestExt.GetPrebid()
+	if reqPrebid != nil {
+		noSaleBidders = reqPrebid.NoSale
 	}
 
 	return Policy{consent, noSaleBidders}, nil
@@ -78,16 +79,14 @@ func buildRegsClear(regs *openrtb_ext.RegExt) {
 		return
 	}
 
-	if len(regs.USPrivacy) > 0 {
-		regs.USPrivacy = ""
-		regs.USPrivacyDirty = true
+	if len(regs.GetUSPrivacy()) > 0 {
+		regs.SetUSPrivacy("")
 	}
 }
 
 // buildRegsWrite becomes an almost a one liner
 func buildRegsWrite(consent string, regs *openrtb_ext.RegExt) {
-	regs.USPrivacy = consent
-	regs.USPrivacyDirty = true
+	regs.SetUSPrivacy(consent)
 }
 
 func buildExt(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
@@ -99,13 +98,14 @@ func buildExt(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
 }
 
 func buildExtClear(ext *openrtb_ext.RequestExt) {
-	if ext.Prebid == nil {
+	prebid := ext.GetPrebid()
+	if prebid == nil {
 		return
 	}
 
 	// Remove no sale member
-	ext.Prebid.NoSale = []string{}
-	ext.PrebidDirty = true
+	prebid.NoSale = []string{}
+	ext.SetPrebid(prebid)
 }
 
 func buildExtWrite(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
@@ -114,10 +114,11 @@ func buildExtWrite(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
 		return
 	}
 
-	if ext.Prebid == nil {
-		ext.Prebid = &openrtb_ext.ExtRequestPrebid{}
+	prebid := ext.GetPrebid()
+	if prebid == nil {
+		prebid = &openrtb_ext.ExtRequestPrebid{}
 	}
-	ext.Prebid.NoSale = noSaleBidders
-	ext.PrebidDirty = true
+	prebid.NoSale = noSaleBidders
+	ext.SetPrebid(prebid)
 	return
 }

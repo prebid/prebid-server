@@ -278,7 +278,7 @@ func TestBuildRegs(t *testing.T) {
 
 	for _, test := range testCases {
 		regsExt := &openrtb_ext.RegExt{}
-		regsExt.Ext = make(map[string]json.RawMessage)
+		regsExt.Unmarshal(nil)
 		var err error
 		if test.regs != nil {
 			err = regsExt.Unmarshal(test.regs.Ext)
@@ -347,7 +347,7 @@ func TestBuildRegsClear(t *testing.T) {
 
 	for _, test := range testCases {
 		regsExt := &openrtb_ext.RegExt{}
-		regsExt.Ext = make(map[string]json.RawMessage)
+		regsExt.Unmarshal(nil)
 		var err error
 		if test.regs != nil {
 			err = regsExt.Unmarshal(test.regs.Ext)
@@ -427,7 +427,7 @@ func TestBuildRegsWrite(t *testing.T) {
 
 	for _, test := range testCases {
 		regsExt := &openrtb_ext.RegExt{}
-		regsExt.Ext = make(map[string]json.RawMessage)
+		regsExt.Unmarshal(nil)
 		var err error
 		if test.regs != nil {
 			err = regsExt.Unmarshal(test.regs.Ext)

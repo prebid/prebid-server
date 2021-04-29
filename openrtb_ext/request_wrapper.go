@@ -206,58 +206,58 @@ func (rw *RequestWrapper) syncSiteExt() error {
 // ---------------------------------------------------------------
 
 type UserExt struct {
-	Ext            map[string]json.RawMessage
-	Consent        *string
-	ConsentDirty   bool
-	Prebid         *ExtUserPrebid
-	PrebidDirty    bool
-	DigiTrust      *ExtUserDigiTrust
-	DigiTrustDirty bool
-	Eids           *[]ExtUserEid
-	EidsDirty      bool
+	ext            map[string]json.RawMessage
+	extDirty       bool
+	consent        *string
+	consentDirty   bool
+	prebid         *ExtUserPrebid
+	prebidDirty    bool
+	digiTrust      *ExtUserDigiTrust
+	digiTrustDirty bool
+	eids           *[]ExtUserEid
+	eidsDirty      bool
 }
 
 func (ue *UserExt) Unmarshal(extJson json.RawMessage) error {
-	ue.Ext = make(map[string]json.RawMessage)
-	ue.Eids = &[]ExtUserEid{}
-	if len(extJson) == 0 || len(ue.Ext) != 0 {
+	ue.ext = make(map[string]json.RawMessage)
+	ue.eids = &[]ExtUserEid{}
+	if len(extJson) == 0 || len(ue.ext) != 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &ue.Ext)
+	err := json.Unmarshal(extJson, &ue.ext)
 	if err != nil {
 		return err
 	}
 
-	consentJson, hasConsent := ue.Ext["consent"]
+	consentJson, hasConsent := ue.ext["consent"]
 	if hasConsent {
-		err = json.Unmarshal(consentJson, &ue.Consent)
+		err = json.Unmarshal(consentJson, &ue.consent)
 		if err != nil {
 			return err
 		}
 	}
 
-	prebidJson, hasPrebid := ue.Ext["prebid"]
+	prebidJson, hasPrebid := ue.ext["prebid"]
 	if hasPrebid {
-		ue.Prebid = &ExtUserPrebid{}
-		err = json.Unmarshal(prebidJson, ue.Prebid)
+		ue.prebid = &ExtUserPrebid{}
+		err = json.Unmarshal(prebidJson, ue.prebid)
 		if err != nil {
 			return err
 		}
 	}
 
-	digiTrustJson, hasDigiTrust := ue.Ext["digitrust"]
+	digiTrustJson, hasDigiTrust := ue.ext["digitrust"]
 	if hasDigiTrust {
-		ue.DigiTrust = &ExtUserDigiTrust{}
-		err = json.Unmarshal(digiTrustJson, ue.DigiTrust)
+		ue.digiTrust = &ExtUserDigiTrust{}
+		err = json.Unmarshal(digiTrustJson, ue.digiTrust)
 		if err != nil {
 			return err
 		}
 	}
 
-	eidsJson, hasEids := ue.Ext["eids"]
-	ue.Eids = &[]ExtUserEid{}
+	eidsJson, hasEids := ue.ext["eids"]
 	if hasEids {
-		err = json.Unmarshal(eidsJson, ue.Eids)
+		err = json.Unmarshal(eidsJson, ue.eids)
 		if err != nil {
 			return err
 		}
@@ -267,64 +267,127 @@ func (ue *UserExt) Unmarshal(extJson json.RawMessage) error {
 }
 
 func (ue *UserExt) Marshal() (json.RawMessage, error) {
-	if ue.ConsentDirty {
-		consentJson, err := json.Marshal(ue.Consent)
+	if ue.consentDirty {
+		consentJson, err := json.Marshal(ue.consent)
 		if err != nil {
 			return nil, err
 		}
 		if len(consentJson) > 0 {
-			ue.Ext["consent"] = json.RawMessage(consentJson)
+			ue.ext["consent"] = json.RawMessage(consentJson)
 		} else {
-			delete(ue.Ext, "consent")
+			delete(ue.ext, "consent")
 		}
-		ue.ConsentDirty = false
+		ue.consentDirty = false
 	}
 
-	if ue.PrebidDirty {
-		prebidJson, err := json.Marshal(ue.Prebid)
+	if ue.prebidDirty {
+		prebidJson, err := json.Marshal(ue.prebid)
 		if err != nil {
 			return nil, err
 		}
 		if len(prebidJson) > 0 {
-			ue.Ext["prebid"] = json.RawMessage(prebidJson)
+			ue.ext["prebid"] = json.RawMessage(prebidJson)
 		} else {
-			delete(ue.Ext, "prebid")
+			delete(ue.ext, "prebid")
 		}
-		ue.PrebidDirty = false
+		ue.prebidDirty = false
 	}
 
-	if ue.DigiTrustDirty {
-		digiTrustJson, err := json.Marshal(ue.DigiTrust)
+	if ue.digiTrustDirty {
+		digiTrustJson, err := json.Marshal(ue.digiTrust)
 		if err != nil {
 			return nil, err
 		}
 		if len(digiTrustJson) > 0 {
-			ue.Ext["digitrust"] = json.RawMessage(digiTrustJson)
+			ue.ext["digitrust"] = json.RawMessage(digiTrustJson)
 		} else {
-			delete(ue.Ext, "digitrust")
+			delete(ue.ext, "digitrust")
 		}
-		ue.DigiTrustDirty = false
+		ue.digiTrustDirty = false
 	}
 
-	if ue.EidsDirty {
-		if len(*ue.Eids) > 0 {
-			eidsJson, err := json.Marshal(ue.Eids)
+	if ue.eidsDirty {
+		if len(*ue.eids) > 0 {
+			eidsJson, err := json.Marshal(ue.eids)
 			if err != nil {
 				return nil, err
 			}
-			ue.Ext["eids"] = json.RawMessage(eidsJson)
+			ue.ext["eids"] = json.RawMessage(eidsJson)
 		} else {
-			delete(ue.Ext, "eids")
+			delete(ue.ext, "eids")
 		}
-		ue.EidsDirty = false
+		ue.eidsDirty = false
 	}
+	ue.extDirty = false
 
-	return json.Marshal(ue.Ext)
+	return json.Marshal(ue.ext)
 
 }
 
 func (ue *UserExt) Dirty() bool {
-	return ue.DigiTrustDirty || ue.EidsDirty || ue.PrebidDirty || ue.ConsentDirty
+	return ue.extDirty || ue.digiTrustDirty || ue.eidsDirty || ue.prebidDirty || ue.consentDirty
+}
+
+func (ue *UserExt) GetExt() map[string]json.RawMessage {
+	ext := ue.ext
+	return ext
+}
+
+func (ue *UserExt) SetExt(ext map[string]json.RawMessage) {
+	ue.ext = ext
+	ue.extDirty = true
+}
+
+func (ue *UserExt) GetConsent() *string {
+	if ue.consent == nil {
+		return nil
+	}
+	consent := *ue.consent
+	return &consent
+}
+
+func (ue *UserExt) SetConsent(consent *string) {
+	ue.consent = consent
+	ue.consentDirty = true
+}
+
+func (ue *UserExt) GetPrebid() *ExtUserPrebid {
+	if ue.prebid == nil {
+		return nil
+	}
+	prebid := *ue.prebid
+	return &prebid
+}
+
+func (ue *UserExt) SetPrebid(prebid *ExtUserPrebid) {
+	ue.prebid = prebid
+	ue.prebidDirty = true
+}
+
+func (ue *UserExt) GetDigiTrust() *ExtUserDigiTrust {
+	if ue.digiTrust == nil {
+		return nil
+	}
+	digiTrust := *ue.digiTrust
+	return &digiTrust
+}
+
+func (ue *UserExt) SetDigiTrust(digiTrust *ExtUserDigiTrust) {
+	ue.digiTrust = digiTrust
+	ue.digiTrustDirty = true
+}
+
+func (ue *UserExt) GetEid() *[]ExtUserEid {
+	if ue.eids == nil {
+		return nil
+	}
+	eids := *ue.eids
+	return &eids
+}
+
+func (ue *UserExt) SetEid(eid *[]ExtUserEid) {
+	ue.eids = eid
+	ue.eidsDirty = true
 }
 
 // ---------------------------------------------------------------
@@ -332,48 +395,73 @@ func (ue *UserExt) Dirty() bool {
 // ---------------------------------------------------------------
 
 type RequestExt struct {
-	Ext         map[string]json.RawMessage
-	Prebid      *ExtRequestPrebid
-	PrebidDirty bool
+	ext         map[string]json.RawMessage
+	extDirty    bool
+	prebid      *ExtRequestPrebid
+	prebidDirty bool
 }
 
 func (re *RequestExt) Unmarshal(extJson json.RawMessage) error {
-	re.Ext = make(map[string]json.RawMessage)
-	if len(extJson) == 0 || len(re.Ext) != 0 {
+	re.ext = make(map[string]json.RawMessage)
+	if len(extJson) == 0 || len(re.ext) != 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &re.Ext)
+	err := json.Unmarshal(extJson, &re.ext)
 	if err != nil {
 		return err
 	}
-	prebidJson, hasPrebid := re.Ext["prebid"]
+	prebidJson, hasPrebid := re.ext["prebid"]
 	if hasPrebid {
-		re.Prebid = &ExtRequestPrebid{}
-		err = json.Unmarshal(prebidJson, re.Prebid)
+		re.prebid = &ExtRequestPrebid{}
+		err = json.Unmarshal(prebidJson, re.prebid)
 	}
 
 	return err
 }
 
 func (re *RequestExt) Marshal() (json.RawMessage, error) {
-	if re.PrebidDirty {
-		prebidJson, err := json.Marshal(re.Prebid)
+	if re.prebidDirty {
+		prebidJson, err := json.Marshal(re.prebid)
 		if err != nil {
 			return nil, err
 		}
 		if len(prebidJson) > 2 {
-			re.Ext["prebid"] = json.RawMessage(prebidJson)
+			re.ext["prebid"] = json.RawMessage(prebidJson)
 		} else {
-			delete(re.Ext, "prebid")
+			delete(re.ext, "prebid")
 		}
-		re.PrebidDirty = false
+		re.extDirty = false
+		re.prebidDirty = false
 	}
 
-	return json.Marshal(re.Ext)
+	return json.Marshal(re.ext)
 }
 
 func (re *RequestExt) Dirty() bool {
-	return re.PrebidDirty
+	return re.extDirty || re.prebidDirty
+}
+
+func (re *RequestExt) GetExt() map[string]json.RawMessage {
+	ext := re.ext
+	return ext
+}
+
+func (re *RequestExt) SetExt(ext map[string]json.RawMessage) {
+	re.ext = ext
+	re.extDirty = true
+}
+
+func (re *RequestExt) GetPrebid() *ExtRequestPrebid {
+	if re.prebid == nil {
+		return nil
+	}
+	prebid := *re.prebid
+	return &prebid
+}
+
+func (re *RequestExt) SetPrebid(prebid *ExtRequestPrebid) {
+	re.prebid = prebid
+	re.prebidDirty = true
 }
 
 // ---------------------------------------------------------------
@@ -385,52 +473,78 @@ func (re *RequestExt) Dirty() bool {
 // ---------------------------------------------------------------
 
 type DeviceExt struct {
-	Ext         map[string]json.RawMessage
-	Prebid      *ExtDevicePrebid
-	PrebidDirty bool
+	ext         map[string]json.RawMessage
+	extDirty    bool
+	prebid      *ExtDevicePrebid
+	prebidDirty bool
 }
 
 func (de *DeviceExt) Unmarshal(extJson json.RawMessage) error {
-	de.Ext = make(map[string]json.RawMessage)
-	if len(extJson) == 0 || len(de.Ext) != 0 {
+	de.ext = make(map[string]json.RawMessage)
+	if len(extJson) == 0 || len(de.ext) != 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &de.Ext)
+	err := json.Unmarshal(extJson, &de.ext)
 	if err != nil {
 		return err
 	}
-	prebidJson, hasPrebid := de.Ext["prebid"]
+	prebidJson, hasPrebid := de.ext["prebid"]
 	if hasPrebid {
-		de.Prebid = &ExtDevicePrebid{}
-		err = json.Unmarshal(prebidJson, de.Prebid)
+		de.prebid = &ExtDevicePrebid{}
+		err = json.Unmarshal(prebidJson, de.prebid)
 	}
 
 	return err
 }
 
 func (de *DeviceExt) Marshal() (json.RawMessage, error) {
-	if de.PrebidDirty {
-		prebidJson, err := json.Marshal(de.Prebid)
+	if de.prebidDirty {
+		prebidJson, err := json.Marshal(de.prebid)
 		if err != nil {
 			return nil, err
 		}
 		if len(prebidJson) > 0 {
-			de.Ext["prebid"] = json.RawMessage(prebidJson)
+			de.ext["prebid"] = json.RawMessage(prebidJson)
 		} else {
-			delete(de.Ext, "prebid")
+			delete(de.ext, "prebid")
 		}
-		de.PrebidDirty = false
+		de.extDirty = false
+		de.prebidDirty = false
 	}
 
-	rawJson, err := json.Marshal(de.Ext)
+	rawJson, err := json.Marshal(de.ext)
 	if err == nil {
-		de.PrebidDirty = false
+		de.prebidDirty = false
 	}
+
 	return rawJson, err
 }
 
 func (de *DeviceExt) Dirty() bool {
-	return de.PrebidDirty
+	return de.extDirty || de.prebidDirty
+}
+
+func (de *DeviceExt) GetExt() map[string]json.RawMessage {
+	ext := de.ext
+	return ext
+}
+
+func (de *DeviceExt) SetExt(ext map[string]json.RawMessage) {
+	de.ext = ext
+	de.extDirty = true
+}
+
+func (de *DeviceExt) GetPrebid() *ExtDevicePrebid {
+	if de.prebid == nil {
+		return nil
+	}
+	prebid := *de.prebid
+	return &prebid
+}
+
+func (de *DeviceExt) SetPrebid(prebid *ExtDevicePrebid) {
+	de.prebid = prebid
+	de.prebidDirty = true
 }
 
 // ---------------------------------------------------------------
@@ -438,51 +552,76 @@ func (de *DeviceExt) Dirty() bool {
 // ---------------------------------------------------------------
 
 type AppExt struct {
-	Ext         map[string]json.RawMessage
-	Prebid      *ExtAppPrebid
-	PrebidDirty bool
+	ext         map[string]json.RawMessage
+	extDirty    bool
+	prebid      *ExtAppPrebid
+	prebidDirty bool
 }
 
 func (ae *AppExt) Unmarshal(extJson json.RawMessage) error {
-	ae.Ext = make(map[string]json.RawMessage)
-	if len(extJson) == 0 || len(ae.Ext) != 0 {
+	ae.ext = make(map[string]json.RawMessage)
+	if len(extJson) == 0 || len(ae.ext) != 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &ae.Ext)
+	err := json.Unmarshal(extJson, &ae.ext)
 	if err != nil {
 		return err
 	}
-	prebidJson, hasPrebid := ae.Ext["prebid"]
+	prebidJson, hasPrebid := ae.ext["prebid"]
 	if hasPrebid {
-		ae.Prebid = &ExtAppPrebid{}
-		err = json.Unmarshal(prebidJson, ae.Prebid)
+		ae.prebid = &ExtAppPrebid{}
+		err = json.Unmarshal(prebidJson, ae.prebid)
 	}
 
 	return err
 }
 
 func (ae *AppExt) Marshal() (json.RawMessage, error) {
-	if ae.PrebidDirty {
-		prebidJson, err := json.Marshal(ae.Prebid)
+	if ae.prebidDirty {
+		prebidJson, err := json.Marshal(ae.prebid)
 		if err != nil {
 			return nil, err
 		}
 		if len(prebidJson) > 0 {
-			ae.Ext["prebid"] = json.RawMessage(prebidJson)
+			ae.ext["prebid"] = json.RawMessage(prebidJson)
 		} else {
-			delete(ae.Ext, "prebid")
+			delete(ae.ext, "prebid")
 		}
 	}
 
-	rawJson, err := json.Marshal(ae.Ext)
+	rawJson, err := json.Marshal(ae.ext)
 	if err == nil {
-		ae.PrebidDirty = false
+		ae.prebidDirty = false
 	}
+	ae.extDirty = false
 	return rawJson, err
 }
 
 func (ae *AppExt) Dirty() bool {
-	return ae.PrebidDirty
+	return ae.extDirty || ae.prebidDirty
+}
+
+func (ae *AppExt) GetExt() map[string]json.RawMessage {
+	ext := ae.ext
+	return ext
+}
+
+func (ae *AppExt) SetExt(ext map[string]json.RawMessage) {
+	ae.ext = ext
+	ae.extDirty = true
+}
+
+func (ae *AppExt) GetPrebid() *ExtAppPrebid {
+	if ae.prebid == nil {
+		return nil
+	}
+	prebid := *ae.prebid
+	return &prebid
+}
+
+func (ae *AppExt) SetPrebid(prebid *ExtAppPrebid) {
+	ae.prebid = prebid
+	ae.prebidDirty = true
 }
 
 // ---------------------------------------------------------------
@@ -490,54 +629,75 @@ func (ae *AppExt) Dirty() bool {
 // ---------------------------------------------------------------
 
 type RegExt struct {
-	Ext            map[string]json.RawMessage
-	USPrivacy      string
-	USPrivacyDirty bool
+	ext            map[string]json.RawMessage
+	extDirty       bool
+	uSPrivacy      string
+	uSPrivacyDirty bool
 }
 
 func (re *RegExt) Unmarshal(extJson json.RawMessage) error {
-	re.Ext = make(map[string]json.RawMessage)
-	if len(extJson) == 0 || len(re.Ext) != 0 {
+	re.ext = make(map[string]json.RawMessage)
+	if len(extJson) == 0 || len(re.ext) != 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &re.Ext)
+	err := json.Unmarshal(extJson, &re.ext)
 	if err != nil {
 		return err
 	}
-	uspJson, hasUsp := re.Ext["us_privacy"]
+	uspJson, hasUsp := re.ext["us_privacy"]
 	if hasUsp {
-		err = json.Unmarshal(uspJson, &re.USPrivacy)
+		err = json.Unmarshal(uspJson, &re.uSPrivacy)
 	}
 
 	return err
 }
 
 func (re *RegExt) Marshal() (json.RawMessage, error) {
-	if re.USPrivacyDirty {
-		if len(re.USPrivacy) > 0 {
-			rawjson, err := json.Marshal(re.USPrivacy)
+	if re.uSPrivacyDirty {
+		if len(re.uSPrivacy) > 0 {
+			rawjson, err := json.Marshal(re.uSPrivacy)
 			if err != nil {
 				return nil, err
 			}
-			re.Ext["us_privacy"] = rawjson
+			re.ext["us_privacy"] = rawjson
 		} else {
-			delete(re.Ext, "us_privacy")
+			delete(re.ext, "us_privacy")
 		}
 	}
-	if len(re.Ext) == 0 {
-		re.USPrivacyDirty = false
+	if len(re.ext) == 0 {
+		re.uSPrivacyDirty = false
 		return nil, nil
 	}
 
-	rawJson, err := json.Marshal(re.Ext)
+	rawJson, err := json.Marshal(re.ext)
 	if err == nil {
-		re.USPrivacyDirty = false
+		re.uSPrivacyDirty = false
 	}
 	return rawJson, err
 }
 
 func (re *RegExt) Dirty() bool {
-	return re.USPrivacyDirty
+	return re.uSPrivacyDirty
+}
+
+func (re *RegExt) GetExt() map[string]json.RawMessage {
+	ext := re.ext
+	return ext
+}
+
+func (re *RegExt) SetExt(ext map[string]json.RawMessage) {
+	re.ext = ext
+	re.extDirty = true
+}
+
+func (re *RegExt) GetUSPrivacy() string {
+	uSPrivacy := re.uSPrivacy
+	return uSPrivacy
+}
+
+func (re *RegExt) SetUSPrivacy(uSPrivacy string) {
+	re.uSPrivacy = uSPrivacy
+	re.uSPrivacyDirty = true
 }
 
 // ---------------------------------------------------------------

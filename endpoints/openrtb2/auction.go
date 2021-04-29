@@ -328,24 +328,28 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 	}
 
 	var aliases map[string]string
+	if err := req.ExtractRequestExt(); err != nil {
+		return []error{fmt.Errorf("request.ext is invalid: %v", err)}
+	}
+	reqPrebid := req.RequestExt.GetPrebid()
 	if err := deps.parseBidExt(req); err != nil {
 		return []error{err}
-	} else if req.RequestExt.Prebid != nil {
-		aliases = req.RequestExt.Prebid.Aliases
+	} else if reqPrebid != nil {
+		aliases = reqPrebid.Aliases
 
 		if err := deps.validateAliases(aliases); err != nil {
 			return []error{err}
 		}
 
-		if err := deps.validateBidAdjustmentFactors(req.RequestExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
+		if err := deps.validateBidAdjustmentFactors(reqPrebid.BidAdjustmentFactors, aliases); err != nil {
 			return []error{err}
 		}
 
-		if err := validateSChains(req.RequestExt.Prebid); err != nil {
+		if err := validateSChains(reqPrebid); err != nil {
 			return []error{err}
 		}
 
-		if err := deps.validateEidPermissions(req.RequestExt.Prebid, aliases); err != nil {
+		if err := deps.validateEidPermissions(reqPrebid, aliases); err != nil {
 			return []error{err}
 		}
 	}
@@ -1098,16 +1102,18 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 		return fmt.Errorf("request.user.ext object is not valid: %v", err)
 	}
 	// DigiTrust support
-	if req.UserExt.DigiTrust != nil && req.UserExt.DigiTrust.Pref != 0 {
+	digiTrust := req.UserExt.GetDigiTrust()
+	if digiTrust != nil && digiTrust.Pref != 0 {
 		// DigiTrust is not valid. Return error.
 		return errors.New("request.user contains a digitrust object that is not valid.")
 	}
 	// Check if the buyeruids are valid
-	if req.UserExt.Prebid != nil {
-		if len(req.UserExt.Prebid.BuyerUIDs) < 1 {
+	prebid := req.UserExt.GetPrebid()
+	if prebid != nil {
+		if len(prebid.BuyerUIDs) < 1 {
 			return errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)
 		}
-		for bidderName := range req.UserExt.Prebid.BuyerUIDs {
+		for bidderName := range prebid.BuyerUIDs {
 			if _, ok := deps.bidderMap[bidderName]; !ok {
 				if _, ok := aliases[bidderName]; !ok {
 					return fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases.", bidderName)
@@ -1116,13 +1122,14 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 		}
 	}
 	// Check Universal User ID
-	_, hasEIDs := req.UserExt.Ext["eids"]
-	if hasEIDs && len(*req.UserExt.Eids) == 0 {
+	_, hasEIDs := req.UserExt.GetExt()["eids"]
+	eids := req.UserExt.GetEid()
+	if hasEIDs && len(*eids) == 0 {
 		return fmt.Errorf("request.user.ext.eids must contain at least one element or be undefined")
 	}
-	if len(*req.UserExt.Eids) > 0 {
-		uniqueSources := make(map[string]struct{}, len(*req.UserExt.Eids))
-		for eidIndex, eid := range *req.UserExt.Eids {
+	if len(*eids) > 0 {
+		uniqueSources := make(map[string]struct{}, len(*eids))
+		for eidIndex, eid := range *eids {
 			if eid.Source == "" {
 				return fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex)
 			}
@@ -1155,7 +1162,8 @@ func validateRegs(req *openrtb_ext.RequestWrapper) error {
 	if err != nil {
 		return fmt.Errorf("request.regs.ext is invalid: %v", err)
 	}
-	gdprJSON, hasGDPR := req.RegExt.Ext["gdpr"]
+	regExt := req.RegExt.GetExt()
+	gdprJSON, hasGDPR := regExt["gdpr"]
 	if hasGDPR && (string(gdprJSON) != "0" && string(gdprJSON) != "1") {
 		return errors.New("request.regs.ext.gdpr must be either 0 or 1.")
 	}
