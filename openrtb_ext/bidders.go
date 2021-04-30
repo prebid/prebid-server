@@ -181,6 +181,7 @@ const (
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
+
 )
 
 // CoreBidderNames returns a slice of all core bidders.
@@ -188,6 +189,7 @@ func CoreBidderNames() []BidderName {
 	return []BidderName{
 		Bidder33Across,
 		BidderAcuityAds,
+		BidderAdf,
 		BidderAdform,
 		BidderAdgeneration,
 		BidderAdhese,

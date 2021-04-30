@@ -4,6 +4,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/acuityads"
+	"github.com/prebid/prebid-server/adapters/adf"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/adgeneration"
 	"github.com/prebid/prebid-server/adapters/adhese"
