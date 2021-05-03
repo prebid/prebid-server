@@ -55,7 +55,11 @@
                 },
                 "ext": {
                     "bidder": {
+<<<<<<< HEAD
                         "zoneId": "/1111111/banner"
+=======
+                        "placementId": "/1111111/banner"
+>>>>>>> 785e9ef7 (Add Madvertise Adapter)
                     }
                 }
             }
@@ -64,7 +68,11 @@
     "httpCalls": [
         {
             "expectedRequest": {
+<<<<<<< HEAD
                 "uri": "https://mobile.mng-ads.com/bidrequest/1111111/banner",
+=======
+                "uri": "https://mobile-mng-ads.com/bidrequest/1111111/banner",
+>>>>>>> 785e9ef7 (Add Madvertise Adapter)
                 "headers": {
                     "Content-Type": [
                         "application/json;charset=utf-8"
@@ -137,7 +145,11 @@
                             },
                             "ext": {
                                 "bidder": {
+<<<<<<< HEAD
                                     "zoneId": "/1111111/banner"
+=======
+                                    "placementId": "/1111111/banner"
+>>>>>>> 785e9ef7 (Add Madvertise Adapter)
                                 }
                             }
                         }

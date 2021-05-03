@@ -51,4 +51,5 @@ var invalidParams = []string{
 	`{}`,
 	`{"zoneId":""}`,
 	`{"zoneId":/1111111}`,
+	`{"zoneId":"11111"}`,
 }
