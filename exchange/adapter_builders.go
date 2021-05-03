@@ -2,7 +2,7 @@ package exchange
 
 import (
 	"github.com/prebid/prebid-server/adapters"
-	ttx "github.com/prebid/prebid-server/adapters/33across"
+	"github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/acuityads"
 	"github.com/prebid/prebid-server/adapters/adf"
 	"github.com/prebid/prebid-server/adapters/adform"
@@ -62,6 +62,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/lockerdome"
 	"github.com/prebid/prebid-server/adapters/logicad"
 	"github.com/prebid/prebid-server/adapters/lunamedia"
+	"github.com/prebid/prebid-server/adapters/madvertise"
 	"github.com/prebid/prebid-server/adapters/marsmedia"
 	"github.com/prebid/prebid-server/adapters/mgid"
 	"github.com/prebid/prebid-server/adapters/mobfoxpb"
@@ -175,6 +176,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderLockerDome:       lockerdome.Builder,
 		openrtb_ext.BidderLogicad:          logicad.Builder,
 		openrtb_ext.BidderLunaMedia:        lunamedia.Builder,
+		openrtb_ext.BidderMadvertise:       madvertise.Builder,
 		openrtb_ext.BidderMarsmedia:        marsmedia.Builder,
 		openrtb_ext.BidderMediafuse:        adtelligent.Builder,
 		openrtb_ext.BidderMgid:             mgid.Builder,

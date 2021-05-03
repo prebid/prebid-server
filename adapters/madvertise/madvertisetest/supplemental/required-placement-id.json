@@ -1,0 +1,27 @@
+{
+    "mockBidRequest": {
+        "id": "test-no-placement-id",
+        "imp": [
+            {
+                "id": "test-imp-id-no-placement-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 728,
+                            "h": 90
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {}
+                }
+            }
+        ]
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "The placement ID must not be empty",
+            "comparison": "literal"
+        }
+    ]
+}
