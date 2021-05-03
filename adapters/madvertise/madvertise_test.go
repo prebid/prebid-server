@@ -18,7 +18,7 @@ func TestEndpointTemplateMalformed(t *testing.T) {
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderMadvertise, config.Adapter{
-		Endpoint: "https://mobile-mng-ads.com/bidrequest{{.ZoneID}}"})
+		Endpoint: "https://mobile.mng-ads.com/bidrequest{{.ZoneID}}"})
 
 	assert.NoError(t, buildErr, "Builder returned unexpected error %v", buildErr)
 
