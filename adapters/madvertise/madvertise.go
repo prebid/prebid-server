@@ -31,7 +31,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func getHeaders(request *openrtb2.BidRequest) *http.Header {
+func getHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -47,7 +47,7 @@ func getHeaders(request *openrtb2.BidRequest) *http.Header {
 		}
 	}
 
-	return &headers
+	return headers
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -87,7 +87,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Method:  "POST",
 		Uri:     url,
 		Body:    requestJSON,
-		Headers: *getHeaders(request),
+		Headers: getHeaders(request),
 	}
 
 	return []*adapters.RequestData{requestData}, nil
