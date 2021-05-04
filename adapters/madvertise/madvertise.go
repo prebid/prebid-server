@@ -99,14 +99,14 @@ func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpMadvertise, error) {
 		}
 	}
 
-	var onetagExt openrtb_ext.ExtImpMadvertise
-	if err := json.Unmarshal(bidderExt.Bidder, &onetagExt); err != nil {
+	var madvertiseExt openrtb_ext.ExtImpMadvertise
+	if err := json.Unmarshal(bidderExt.Bidder, &madvertiseExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Error while unmarshaling bidder extension",
 		}
 	}
 
-	return &onetagExt, nil
+	return &madvertiseExt, nil
 }
 
 func (a *adapter) buildEndpointURL(zoneID string) (string, error) {
@@ -134,7 +134,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
-		for _, bid := range seatBid.Bid {
+		for i := range seatBid.Bid {
+			bid := seatBid.Bid[i]
 			bidMediaType, err := getMediaTypeForBid(request.Imp, bid)
 			if err != nil {
 				return nil, []error{err}
