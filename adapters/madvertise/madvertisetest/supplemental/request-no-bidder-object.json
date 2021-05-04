@@ -14,7 +14,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error while unmarshaling bidder extension",
+      "value": "unexpected end of JSON input",
       "comparison": "literal"
     }
   ]

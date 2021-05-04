@@ -95,14 +95,14 @@ func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpMadvertise, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "Bidder extension not provided or can't be unmarshalled",
+			Message: err.Error(),
 		}
 	}
 
 	var madvertiseExt openrtb_ext.ExtImpMadvertise
 	if err := json.Unmarshal(bidderExt.Bidder, &madvertiseExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "Error while unmarshaling bidder extension",
+			Message: err.Error(),
 		}
 	}
 
