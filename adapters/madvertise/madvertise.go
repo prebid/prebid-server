@@ -57,10 +57,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		if err != nil {
 			return nil, []error{err}
 		}
-		if madvertiseExt.ZoneId != "" {
+		if madvertiseExt.ZoneID != "" {
 			if zoneID == "" {
-				zoneID = madvertiseExt.ZoneId
-			} else if zoneID != madvertiseExt.ZoneId {
+				zoneID = madvertiseExt.ZoneID
+			} else if zoneID != madvertiseExt.ZoneID {
 				return nil, []error{&errortypes.BadInput{
 					Message: "There must be only one zone ID",
 				}}
