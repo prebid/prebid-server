@@ -51,29 +51,28 @@ func getHeaders(request *openrtb2.BidRequest) *http.Header {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	placementID := ""
+	zoneID := ""
 	for _, imp := range request.Imp {
 		madvertiseExt, err := getImpressionExt(imp)
 		if err != nil {
 			return nil, []error{err}
 		}
-		if madvertiseExt.PlacementId != "" {
-			if placementID == "" {
-				placementID = madvertiseExt.PlacementId
-			} else if placementID != madvertiseExt.PlacementId {
+		if madvertiseExt.ZoneId != "" {
+			if zoneID == "" {
+				zoneID = madvertiseExt.ZoneId
+			} else if zoneID != madvertiseExt.ZoneId {
 				return nil, []error{&errortypes.BadInput{
-					Message: "There must be only one placement ID",
+					Message: "There must be only one zone ID",
 				}}
 			}
 		} else {
 			return nil, []error{&errortypes.BadInput{
-				Message: "The placement ID must not be empty",
+				Message: "The zone ID must not be empty",
 			}}
 		}
-		// request.Imp[idx].TagID = madvertiseExt.PlacementId
 	}
 
-	url, err := a.buildEndpointURL(placementID)
+	url, err := a.buildEndpointURL(zoneID)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -112,8 +111,8 @@ func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpMadvertise, error) {
 	return &onetagExt, nil
 }
 
-func (a *adapter) buildEndpointURL(placementID string) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{ZoneID: placementID}
+func (a *adapter) buildEndpointURL(zoneID string) (string, error) {
+	endpointParams := macros.EndpointTemplateParams{ZoneID: zoneID}
 	return macros.ResolveMacros(a.endpointTemplate, endpointParams)
 }
 

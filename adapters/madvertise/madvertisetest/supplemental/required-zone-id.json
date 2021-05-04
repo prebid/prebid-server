@@ -13,16 +13,14 @@
                     ]
                 },
                 "ext": {
-                    "bidder": {
-                        "publisherId": "1"
-                    }
+                    "bidder": {}
                 }
             }
         ]
     },
     "expectedMakeRequestsErrors": [
         {
-            "value": "The placement ID must not be empty",
+            "value": "The zone ID must not be empty",
             "comparison": "literal"
         }
     ]

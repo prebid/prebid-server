@@ -4,13 +4,13 @@
     "description": "A schema which validates params accepted by the Madvertise adapter",
     "type": "object",
     "properties": {
-        "placementId": {
+        "zoneId": {
             "type": "string",
             "minLength": 7,
-            "description": "The placement’s ID provided by Madvertise"
+            "description": "The zone ID provided by Madvertise"
         }
     },
     "required": [
-        "placementId"
+        "zoneId"
     ]
 }

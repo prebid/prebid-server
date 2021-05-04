@@ -2,5 +2,5 @@ package openrtb_ext
 
 // ExtImpMadvertise defines the contract for bidrequest.imp[i].ext.madvertise
 type ExtImpMadvertise struct {
-	PlacementId string `json:"placementId"`
+	ZoneId string `json:"zoneId"`
 }
