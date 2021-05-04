@@ -58,6 +58,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			return nil, []error{err}
 		}
 		if madvertiseExt.ZoneID != "" {
+			if len(madvertiseExt.ZoneID) < 7 {
+				return nil, []error{&errortypes.BadInput{
+					Message: "The minLength of zone ID is 7",
+				}}
+			}
 			if zoneID == "" {
 				zoneID = madvertiseExt.ZoneID
 			} else if zoneID != madvertiseExt.ZoneID {
