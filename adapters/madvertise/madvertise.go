@@ -55,12 +55,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	for _, imp := range request.Imp {
 		madvertiseExt, err := getImpressionExt(imp)
 		if err != nil {
+			fmt.Println(err)
 			return nil, []error{err}
 		}
 		if madvertiseExt.ZoneID != "" {
 			if len(madvertiseExt.ZoneID) < 7 {
 				return nil, []error{&errortypes.BadInput{
-					Message: "The minLength of zone ID is 7",
+					Message: fmt.Sprintf("The minLength of zone ID is 7; ImpID=%s", imp.ID),
 				}}
 			}
 			if zoneID == "" {
@@ -72,7 +73,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			}
 		} else {
 			return nil, []error{&errortypes.BadInput{
-				Message: "The zone ID must not be empty",
+				Message: fmt.Sprintf("ZoneId is empty; ImpID=%s", imp.ID),
 			}}
 		}
 	}
@@ -100,14 +101,18 @@ func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpMadvertise, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: err.Error(),
+			Message: fmt.Sprintf("ext not provided; ImpID=%s", imp.ID),
 		}
 	}
-
 	var madvertiseExt openrtb_ext.ExtImpMadvertise
 	if err := json.Unmarshal(bidderExt.Bidder, &madvertiseExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: err.Error(),
+			Message: fmt.Sprintf("ext.bidder not provided; ImpID=%s", imp.ID),
+		}
+	}
+	if madvertiseExt.ZoneID == "" {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("ext.bidder.zoneId not provided; ImpID=%s", imp.ID),
 		}
 	}
 

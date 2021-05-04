@@ -1,20 +1,20 @@
 {
     "mockBidRequest": {
-        "id": "test-no-placement-id",
+        "id": "test-request-id",
         "imp": [
             {
-                "id": "test-imp-id-no-placement-id",
+                "id": "test-imp-id-1",
                 "banner": {
                     "format": [
                         {
-                            "w": 728,
-                            "h": 90
+                            "w": 300,
+                            "h": 250
                         }
                     ]
                 },
                 "ext": {
                     "bidder": {
-                        "placementId": "1"
+                        "zoneId": "/22222"
                     }
                 }
             }
@@ -22,7 +22,7 @@
     },
     "expectedMakeRequestsErrors": [
         {
-            "value": "The zone ID must not be empty",
+            "value": "The minLength of zone ID is 7; ImpID=test-imp-id-1",
             "comparison": "literal"
         }
     ]

@@ -1,20 +1,21 @@
 {
   "mockBidRequest": {
-    "id": "test-no-bidder",
+    "id": "test-request-id",
     "imp": [
       {
-        "id": "test-imp-id-no-bidder",
+        "id": "test-imp-id-1",
         "banner": {
-          "format": [{"w": 728, "h": 90}]
+          "format": [{"w": 300, "h": 250}]
         },
         "ext": {
+
         }
       }
     ]
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "unexpected end of JSON input",
+      "value": "ext.bidder not provided; ImpID=test-imp-id-1",
       "comparison": "literal"
     }
   ]
