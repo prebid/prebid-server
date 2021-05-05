@@ -238,6 +238,7 @@ func CoreBidderNames() []BidderName {
 		BidderGumGum,
 		BidderImprovedigital,
 		BidderInMobi,
+		BidderInteractiveoffers,
 		BidderInvibes,
 		BidderIx,
 		BidderJixie,
