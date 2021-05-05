@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -440,45 +439,31 @@ func validateSChains(req *openrtb_ext.ExtRequest) error {
 	return err
 }
 
-// validateCustomRates discards invalid 3-digit currency codes found in the bidRequest.ext.prebid.currency
-// field. If all of them were discarded and bidRequest.ext.prebid.currency was set to false, it means
-// we have no currencies to work with and this function returns a fatal BadInput error
+// validateCustomRates throws a bad input error if any of the 3-digit currency codes found in
+// the bidRequest.ext.prebid.currency field is invalid, malfomed or does not represent any actual
+// currency. No error is thrown if bidRequest.ext.prebid.currency is invalid or empty.
 func validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) error {
 	if bidReqCurrencyRates == nil {
 		return nil
 	}
 
-	var badCurrencyCodes []string
+	customRatesOnly := bidReqCurrencyRates.UsePBSRates != nil && !(*bidReqCurrencyRates.UsePBSRates)
+	if customRatesOnly && len(bidReqCurrencyRates.ConversionRates) == 0 {
+		return &errortypes.BadInput{Message: "Required custom currency rates field is empty"}
+	}
 
 	for fromCurrency, rates := range bidReqCurrencyRates.ConversionRates {
 
 		// Check if fromCurrency is a valid 3-letter currency code
 		if _, err := currency.ParseISO(fromCurrency); err != nil {
-			badCurrencyCodes = append(badCurrencyCodes, fromCurrency)
-			delete(bidReqCurrencyRates.ConversionRates, fromCurrency)
+			return &errortypes.BadInput{Message: fmt.Sprintf("Three-digit code %s is not a recognized currency code or is malformed", fromCurrency)}
 		}
 
 		// Check if currencies mapped to fromCurrency are valid 3-letter currency codes
 		for toCurrency := range rates {
 			if _, err := currency.ParseISO(toCurrency); err != nil {
-				badCurrencyCodes = append(badCurrencyCodes, toCurrency)
-				delete(rates, toCurrency)
+				return &errortypes.BadInput{Message: fmt.Sprintf("Three-digit code %s is not a recognized currency code or is malformed", toCurrency)}
 			}
-		}
-
-		// If all of fromCurrency's mapped currencies were invalid, remove fromCurrency map entry
-		if len(rates) == 0 {
-			delete(bidReqCurrencyRates.ConversionRates, fromCurrency)
-		}
-	}
-
-	// If we are retricted to only use custom currency rates but the currency rate map is empty, return error
-	customRatesOnly := bidReqCurrencyRates.UsePBSRates != nil && !(*bidReqCurrencyRates.UsePBSRates)
-	if customRatesOnly && len(bidReqCurrencyRates.ConversionRates) == 0 {
-		if len(badCurrencyCodes) > 0 {
-			return &errortypes.BadInput{Message: fmt.Sprintf("Required custom currency rates are all invalid. %s", strings.Join(badCurrencyCodes, ","))}
-		} else {
-			return &errortypes.BadInput{Message: "Required custom currency rates field is empty"}
 		}
 	}
 	return nil

@@ -50,5 +50,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: Required custom currency rates are all invalid."
+  "expectedErrorMessage": "Invalid request: Three-digit code FOO is not a recognized currency code or is malformed"
 }

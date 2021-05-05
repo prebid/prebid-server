@@ -1198,19 +1198,18 @@ func TestContentType(t *testing.T) {
 }
 
 func TestValidateCustomRates(t *testing.T) {
+	boolTrue := true
 	boolFalse := false
 
 	testCases := []struct {
-		desc                  string
-		inBidReqCurrencies    *openrtb_ext.ExtRequestCurrency
-		outFilteredCurrencies map[string]map[string]float64
-		outCurrencyError      error
+		desc               string
+		inBidReqCurrencies *openrtb_ext.ExtRequestCurrency
+		outCurrencyError   error
 	}{
 		{
-			desc:                  "nil input, no errors expected",
-			inBidReqCurrencies:    nil,
-			outFilteredCurrencies: nil,
-			outCurrencyError:      nil,
+			desc:               "nil input, no errors expected",
+			inBidReqCurrencies: nil,
+			outCurrencyError:   nil,
 		},
 		{
 			desc: "empty custom currency rates but UsePBSRates is set to false, return error",
@@ -1218,91 +1217,69 @@ func TestValidateCustomRates(t *testing.T) {
 				ConversionRates: map[string]map[string]float64{},
 				UsePBSRates:     &boolFalse,
 			},
-			outFilteredCurrencies: map[string]map[string]float64{},
-			outCurrencyError:      &errortypes.BadInput{Message: "Required custom currency rates field is empty"},
+			outCurrencyError: &errortypes.BadInput{Message: "Required custom currency rates field is empty"},
 		},
 		{
-			desc: "bidExt fromCurrency is invalid, expect no errors because UsePBSRates is nil and defaults to true",
+			desc: "empty custom currency rates but UsePBSRates is set to true, no need to return error because we can use PBS rates",
 			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
-				ConversionRates: map[string]map[string]float64{
-					"FOO": {
-						"GBP": 1.2,
-						"MXN": 0.05,
-						"JPY": 0.95,
-					},
-				},
-			},
-			outFilteredCurrencies: map[string]map[string]float64{},
-			outCurrencyError:      nil,
-		},
-		{
-			desc: "bidExt fromCurrency is invalid, expect errors because UsePBSRates is set to false and we are left with no currencies to use",
-			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
-				ConversionRates: map[string]map[string]float64{
-					"FOO": {
-						"GBP": 1.2,
-						"MXN": 0.05,
-						"JPY": 0.95,
-					},
-				},
-				UsePBSRates: &boolFalse,
-			},
-			outFilteredCurrencies: map[string]map[string]float64{},
-			outCurrencyError:      &errortypes.BadInput{Message: "Required custom currency rates are all invalid. FOO"},
-		},
-		{
-			desc: "some bidExt toCurrencies do not exist. Expect output that maps to only real currencies and no errors even though UsePBSRates is false",
-			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
-				ConversionRates: map[string]map[string]float64{
-					"USD": {
-						"FOO": 10.0,
-						"MXN": 0.05,
-						"BAR": 10.95,
-					},
-				},
-				UsePBSRates: &boolFalse,
-			},
-			outFilteredCurrencies: map[string]map[string]float64{
-				"USD": {
-					"MXN": 0.05,
-				},
+				ConversionRates: map[string]map[string]float64{},
+				UsePBSRates:     &boolTrue,
 			},
 			outCurrencyError: nil,
 		},
 		{
-			desc: "bidExt fromCurrency exists but all of its mapped currencies do not, expect empty output and no errors because nil UsePBSRates defaults to true",
+			desc: "UsePBSRates is nil and defaults to true, bidExt fromCurrency is invalid, expect bad input error",
 			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
 				ConversionRates: map[string]map[string]float64{
-					"USD": {
-						"FOO": 10.0,
-						"BAR": 10.95,
+					"FOO": {
+						"GBP": 1.2,
+						"MXN": 0.05,
+						"JPY": 0.95,
 					},
 				},
 			},
-			outFilteredCurrencies: map[string]map[string]float64{},
-			outCurrencyError:      nil,
+			outCurrencyError: &errortypes.BadInput{Message: "Three-digit code FOO is not a recognized currency code or is malformed"},
 		},
 		{
-			desc: "bidExt fromCurrency exists but all of its mapped currencies do not, expect errors because UsePBSRates is false and we are left with no currencies to use",
+			desc: "UsePBSRates set to false, bidExt fromCurrency is invalid, expect bad input error",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"FOO": {
+						"GBP": 1.2,
+						"MXN": 0.05,
+						"JPY": 0.95,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "Three-digit code FOO is not a recognized currency code or is malformed"},
+		},
+		{
+			desc: "UsePBSRates set to false, some of the bidExt 'to' Currencies are invalid, expect bad input error when parsing the first invalid currency code",
 			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
 				ConversionRates: map[string]map[string]float64{
 					"USD": {
 						"FOO": 10.0,
+						"MXN": 0.05,
 						"BAR": 10.95,
 					},
 				},
 				UsePBSRates: &boolFalse,
 			},
-			outFilteredCurrencies: map[string]map[string]float64{},
-			outCurrencyError:      &errortypes.BadInput{Message: "Required custom currency rates are all invalid."},
+			outCurrencyError: &errortypes.BadInput{Message: "Three-digit code FOO is not a recognized currency code or is malformed"},
 		},
 		{
-			desc: "Some fromCurrency and toCurrency 3-digit codes don't exist, keep the valid ones",
+			desc: "UsePBSRates set to false, some of the bidExt 'from' and 'to' currencies are invalid, expect bad input error when parsing the first invalid currency code",
 			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
 				ConversionRates: map[string]map[string]float64{
 					"FOO": {
 						"MXN": 0.05,
 						"CAN": 0.95,
+					},
+					"BAR": {
+						"JPY": 0.10,
+						"USD": 0.10,
+						"MXN": 0.02,
 					},
 					"USD": {
 						"FOO": 10.0,
@@ -1316,14 +1293,10 @@ func TestValidateCustomRates(t *testing.T) {
 				},
 				UsePBSRates: &boolFalse,
 			},
-			outFilteredCurrencies: map[string]map[string]float64{
-				"USD": {
-					"MXN": 0.05,
-				},
-			},
+			outCurrencyError: &errortypes.BadInput{Message: "Three-digit code FOO is not a recognized currency code or is malformed"},
 		},
 		{
-			desc: "All 3-digit currency codes exist, output identical to input",
+			desc: "All 3-digit currency codes exist, expect no error",
 			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
 				ConversionRates: map[string]map[string]float64{
 					"USD": {
@@ -1336,15 +1309,6 @@ func TestValidateCustomRates(t *testing.T) {
 				},
 				UsePBSRates: &boolFalse,
 			},
-			outFilteredCurrencies: map[string]map[string]float64{
-				"USD": {
-					"MXN": 0.05,
-				},
-				"MXN": {
-					"JPY": 10.0,
-					"EUR": 10.95,
-				},
-			},
 		},
 	}
 
@@ -1352,19 +1316,11 @@ func TestValidateCustomRates(t *testing.T) {
 		actualErr := validateCustomRates(tc.inBidReqCurrencies)
 
 		// Assertions
-		if tc.inBidReqCurrencies != nil {
-			assert.Equal(t, tc.outFilteredCurrencies, tc.inBidReqCurrencies.ConversionRates, tc.desc)
-			if tc.outCurrencyError == nil {
-				assert.Nil(t, actualErr, tc.desc)
-			} else {
-				assert.Error(t, actualErr, tc.desc)
-				assert.True(t, strings.HasPrefix(actualErr.Error(), tc.outCurrencyError.Error()), tc.desc)
-			}
-		} else {
-			// If tc.inBidReqCurrencies nil, no error should have been thrown
+		if tc.outCurrencyError == nil {
 			assert.NoError(t, actualErr, tc.desc)
+		} else {
+			assert.Error(t, actualErr, tc.desc)
 		}
-
 	}
 }
 

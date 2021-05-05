@@ -938,84 +938,34 @@ func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auction *auction) (cacheInfo
 
 // getAuctionCurrencyRates returns the constant currency conversion rates that will be used to process this
 // auction. Parameter customRates contains, if any, the bidRequest custom currency conversion rates
-// defined in bidRequest.Ext.  If usePbsRates flag is set to false, all previous Conversions values are discarded
+// defined in bidRequest.Ext. If usePbsRates flag is set to false, all previous Conversions values are discarded
 // and this function merely substitutes Conversions with customRates. But if usePbsRates was ommitted or set to
 // true, customRates' values update or add to the Conversions map
 func (e *exchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
-	// No bidRequest.ext custom rates defined, use PBS rates as usual
-	if customRates == nil || len(customRates.ConversionRates) == 0 {
+	if customRates == nil {
+		// No bidRequest.ext.currency field was found, use PBS rates as usual
 		return e.currencyConverter.Rates()
 	}
 
-	// bidRequest.ext defines custom rates of its own, figure out whether to use a mix of
-	// Pbs rates and custom rates or custom rates only
-	if customRates.UsePBSRates != nil && !(*customRates.UsePBSRates) {
-		// Use custom rates only
-		includeInverseRates(customRates.ConversionRates)
+	// If bidRequest.ext.currency.usepbsrates is nil, we understand its value as true. It will be false
+	// only if it's explicitly set to false
+	usePbsRates := customRates.UsePBSRates == nil || *customRates.UsePBSRates
 
-		return currency.NewRates(time.Time{}, customRates.ConversionRates)
-	} else {
-		// Use both custom and PBS rates
-		pbsConversions := e.currencyConverter.Rates()
-		serverRates := pbsConversions.GetRates()
-		auctionRates := make(map[string]map[string]float64, len(*serverRates))
-
-		copyCustomRates(auctionRates, customRates.ConversionRates)
-		copyPBSRates(auctionRates, *serverRates)
-
-		return currency.NewRates(time.Time{}, auctionRates)
-	}
-}
-
-func copyCustomRates(destMap map[string]map[string]float64, customRates map[string]map[string]float64) {
-	for fromCurrency, rates := range customRates {
-		if _, defined := destMap[fromCurrency]; !defined {
-			destMap[fromCurrency] = make(map[string]float64, len(rates))
-		}
-
-		for toCurrency, rate := range rates {
-			destMap[fromCurrency][toCurrency] = rate
-
-			// Write entries to inverse of conversion rates if needed
-			if _, inverseIncluded := customRates[toCurrency][fromCurrency]; !inverseIncluded {
-				if _, defined := destMap[toCurrency]; !defined {
-					destMap[toCurrency] = map[string]float64{fromCurrency: 1.00 / rate}
-				} else {
-					destMap[toCurrency][fromCurrency] = 1.00 / rate
-				}
-			}
+	// Function validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency)
+	// discards requests where: usePbsRates && len(customRates.ConversionRates) == 0
+	// evaluates to true. No need to check that again. If PBS Rates cannot be used, use
+	// either constant rates or custom rates only
+	if !usePbsRates {
+		if len(customRates.ConversionRates) > 0 {
+			return currency.NewRates(time.Time{}, customRates.ConversionRates)
+		} else {
+			return currency.NewConstantRates()
 		}
 	}
-}
 
-func copyPBSRates(destMap map[string]map[string]float64, serverRates map[string]map[string]float64) {
-	for fromCurrency, rates := range serverRates {
-		if _, defined := destMap[fromCurrency]; !defined {
-			destMap[fromCurrency] = make(map[string]float64, len(rates))
-		}
-
-		for toCurrency, rate := range rates {
-			// If it was found in the custom conversions, don't modify because custom rates take precedence
-			if _, customRateFound := destMap[fromCurrency][toCurrency]; !customRateFound {
-				destMap[fromCurrency][toCurrency] = rate
-			}
-		}
-	}
-}
-
-func includeInverseRates(destMap map[string]map[string]float64) {
-	for fromCurrency, rates := range destMap {
-		for toCurrency, rate := range rates {
-			// Write entries to inverse of conversion rates if needed
-			if _, inverseIncluded := destMap[toCurrency][fromCurrency]; !inverseIncluded {
-				if _, defined := destMap[toCurrency]; !defined {
-					destMap[toCurrency] = map[string]float64{fromCurrency: 1.00 / rate}
-				} else {
-					destMap[toCurrency][fromCurrency] = 1.00 / rate
-				}
-			}
-		}
-	}
+	// Return a RateEngines object that includes both custom and PBS currency rates but will
+	// prioritize custom rates over PBS rates whenever a currency rate is found in both
+	return currency.NewRateEngines(currency.NewRates(time.Time{}, customRates.ConversionRates), e.currencyConverter.Rates())
 }
 
 func findCacheID(bid *pbsOrtbBid, auction *auction) (string, bool) {

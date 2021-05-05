@@ -808,54 +808,22 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			"EUR": 27.82,
 			"JPY": 5.09, // "MXN" to "JPY" rate not found in customRates
 		},
-		// Euro exchange rates not found in customRates
-		"EUR": {
-			"JPY": 0.05,
-			"MXN": 0.05,
-			"USD": 0.92,
-		},
 	}
 
 	customRates := map[string]map[string]float64{
-		// "MXN" can also be found in pbsRates but maps to different rate values.
-		// This map also includes some currencies not found in pbsRates
 		"MXN": {
 			"USD": 25.00, // different rate than in pbsRates
 			"EUR": 27.82, // same as in pbsRates
 			"GBP": 31.12, // not found in pbsRates at all
 		},
-		// Currency can not be found in pbsRates add this entry as is
-		"USD": {
-			"GBP": 1.2,
-			"MXN": 0.05,
-			"CAD": 0.95,
-		},
 	}
-	customRatesWithInverseValues := map[string]map[string]float64{
-		// These "MXN" and "USD" maps are identical to those in customRates
-		"MXN": {
-			"USD": 25.00,
-			"EUR": 27.82,
-			"GBP": 31.12,
-		},
-		"USD": {
-			"GBP": 1.2,
-			"MXN": 0.05,
-			"CAD": 0.95,
-		},
 
-		// Value inverse to the "MXN" to "EUR" entry. No need to calculate the USD to MXN entry since we already have that rate in the "USD" map above
-		"EUR": {
-			"MXN": 1 / 27.82,
-		},
-		// Value inverse to the "USD" to "CAD" entry. No need to calculate the MXN to USD entry since we already have that rate in the "MXN" map above
-		"CAD": {
-			"USD": 1 / 0.95,
-		},
-		// Values are inverse to the "MXN" to "GBP" and "USD" to "GBP" entries.
-		"GBP": {
-			"MXN": 1 / 31.12,
-			"USD": 1 / 1.2,
+	mixed := map[string]map[string]float64{
+		"MXN": {
+			"USD": 25.00, // rates engine will prioritize the value found in custom rates
+			"EUR": 27.82, // same value in both the engine reads the custom entry first
+			"JPY": 5.09,  // the engine will find it in the pbsRates conversions
+			"GBP": 31.12, // the engine will find it in the custom conversions
 		},
 	}
 
@@ -876,7 +844,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 		expected testOutput
 	}{
 		{
-			"Both pbsRates and ConversionRates are valid but UsePBSRates is set to false. Resulting rates will be identical to customRates with their corresponding inverse values",
+			"Both pbsRates and ConversionRates are valid but UsePBSRates is set to false. Resulting rates will be identical to customRates",
 			testInput{
 				pbsRates: pbsRates,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -885,11 +853,11 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				},
 			},
 			testOutput{
-				resultingRates: customRatesWithInverseValues,
+				resultingRates: customRates,
 			},
 		},
 		{
-			"Both pbsRates and ConversionRates are valid but UsePBSRates is set to false. Resulting rates will keep values found in pbsRates but not found in customRates and the rest will be added or overwritten with customRates' values and their inverses",
+			"Both pbsRates and ConversionRates are valid, UsePBSRates is set to true. Resulting rates will keep values found in pbsRates but not found in customRates and the rest will be added or overwritten with customRates' values and their inverses",
 			testInput{
 				pbsRates: pbsRates,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -898,42 +866,11 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				},
 			},
 			testOutput{
-				resultingRates: map[string]map[string]float64{
-					// Currency was found in both pbsRates and customRates and got updated
-					"MXN": {
-						"USD": 25.00, //updated with customRates' value
-						"EUR": 27.82, //same in pbsRates than in customRates, no update
-						"GBP": 31.12, //added because it was found in customRates and not in pbsRates
-						"JPY": 5.09,  //kept from pbsRates as it wasn't found in customRates
-					},
-					// Currency added as is because it wasn't found in pbsRates
-					"USD": {
-						"GBP": 1.2,
-						"MXN": 0.05,
-						"CAD": 0.95,
-					},
-					// customRates didn't have exchange rates for this currency, most entries kept from pbsRates
-					"EUR": {
-						"JPY": 0.05,      //Kept from pbsRates
-						"MXN": 1 / 27.82, //updated with customRates' "MXN" to "EUR" entry inverse value
-						"USD": 0.92,      //Kept from pbsRates
-					},
-
-					// Value inverse to the "USD" to "CAD" entry in customRates. No need to calculate the MXN to USD entry since we already have that rate in the "MXN" map above
-					"CAD": {
-						"USD": 1 / 0.95,
-					},
-
-					// Values are inverse to the "MXN" to "GBP" and "USD" to "GBP" entries in customRates.
-					"GBP": {
-						"MXN": 1 / 31.12,
-						"USD": 1 / 1.2,
-					},
-				},
+				resultingRates: mixed,
 			},
 		},
 		{
-			"pbsRates are nil, UsePBSRates set to false. Resulting rates will contain all customRates' entries as well as their inverse values",
+			"pbsRates are nil, UsePBSRates set to false. Resulting rates will be identical to customRates",
 			testInput{
 				pbsRates: nil,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -942,11 +879,11 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				},
 			},
 			testOutput{
-				resultingRates: customRatesWithInverseValues,
+				resultingRates: customRates,
 			},
 		},
 		{
-			"pbsRates are nil, UsePBSRates set to true. Resulting rates will contain all customRates' entries as well as their inverse values",
+			"pbsRates are nil, UsePBSRates set to true. Resulting rates will be identical to customRates",
 			testInput{
 				pbsRates: nil,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -955,11 +892,11 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				},
 			},
 			testOutput{
-				resultingRates: customRatesWithInverseValues,
+				resultingRates: customRates,
 			},
 		},
 		{
-			"customRates empty, UsePBSRates set to false. Resulting rates will be identical to pbsRates",
+			"customRates empty, UsePBSRates set to false. Because pbsRates cannot be used, we return constant rates",
 			testInput{
 				pbsRates: pbsRates,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -968,17 +905,14 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				},
 			},
 			testOutput{
-				resultingRates: pbsRates,
+				constantRates: true,
 			},
 		},
 		{
-			"customRates empty, UsePBSRates set to true. Resulting rates will be identical to pbsRates",
+			"customRates is nil, pbsRates are not nil. Resulting rates will be identical to pbsRates",
 			testInput{
-				pbsRates: pbsRates,
-				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
-					// ConversionRates inCustomRates not initialized makes for a zero-length map
-					UsePBSRates: &boolTrue,
-				},
+				pbsRates:       pbsRates,
+				bidExtCurrency: nil,
 			},
 			testOutput{
 				resultingRates: pbsRates,
@@ -994,8 +928,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				},
 			},
 			testOutput{
-				resultingRates: nil,
-				constantRates:  true,
+				constantRates: true,
 			},
 		},
 		{
@@ -1008,18 +941,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				},
 			},
 			testOutput{
-				resultingRates: nil,
-				constantRates:  true,
-			},
-		},
-		{
-			"customRates is nil, pbsRates are not nil. Resulting rates will be identical to pbsRates",
-			testInput{
-				pbsRates:       pbsRates,
-				bidExtCurrency: nil,
-			},
-			testOutput{
-				resultingRates: pbsRates,
+				constantRates: true,
 			},
 		},
 		{
@@ -1029,8 +951,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				bidExtCurrency: nil,
 			},
 			testOutput{
-				resultingRates: nil,
-				constantRates:  true,
+				constantRates: true,
 			},
 		},
 	}
@@ -1060,19 +981,24 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 		// Run test
 		auctionRates := e.getAuctionCurrencyRates(tc.given.bidExtCurrency)
 
-		// Assertions
-		if tc.expected.constantRates {
-			// Assert constant rates were effectively returned
-			conversionRateUSDtoUSD, err := auctionRates.GetRate("USD", "USD")
-			assert.NoError(t, err, tc.desc)
-			assert.Equal(t, float64(1), conversionRateUSDtoUSD, tc.desc)
+		// When fromCurrency and toCurrency are the same, a rate of 1.00 is always expected
+		rate, err := auctionRates.GetRate("USD", "USD")
+		assert.NoError(t, err, tc.desc)
+		assert.Equal(t, rate, rate, tc.desc)
 
-			conversionRateUSDtoMXN, err := auctionRates.GetRate("USD", "MXN")
+		// If we expect an error, assert we have one along with a conversion rate of zero
+		if tc.expected.constantRates {
+			rate, err := auctionRates.GetRate("USD", "MXN")
 			assert.Error(t, err, tc.desc)
-			assert.Equal(t, float64(0), conversionRateUSDtoMXN, tc.desc)
+			assert.Equal(t, float64(0), rate, tc.desc)
 		} else {
-			// Assert either custom_rates, pbsRates or a mix of both where returned.
-			assert.Equal(t, tc.expected.resultingRates, *auctionRates.GetRates(), tc.desc)
+			for fromCurrency, rates := range tc.expected.resultingRates {
+				for toCurrency := range rates {
+					rate, err := auctionRates.GetRate(fromCurrency, toCurrency)
+					assert.NoError(t, err, tc.desc)
+					assert.Equal(t, rate, rate, tc.desc)
+				}
+			}
 		}
 	}
 }
