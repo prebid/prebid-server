@@ -79,7 +79,8 @@ type Configuration struct {
 	// RequestValidation specifies the request validation options.
 	RequestValidation RequestValidation `mapstructure:"request_validation"`
 	// When true, PBS will assign a randomly generated UUID to req.Source.TID if it is empty
-	AutoGenSourceTID bool `mapstructure:"auto_gen_source_tid"`
+	AutoGenSourceTID bool   `mapstructure:"auto_gen_source_tid"`
+	TrackerURL       string `mapstructure:"tracker_url"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500

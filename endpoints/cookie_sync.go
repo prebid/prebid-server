@@ -5,11 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"strconv"
+
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
 	gdprPrivacy "github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
@@ -17,10 +22,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
-	"strconv"
 )
 
 func NewCookieSyncEndpoint(

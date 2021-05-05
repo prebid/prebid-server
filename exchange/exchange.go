@@ -61,6 +61,7 @@ type exchange struct {
 	UsersyncIfAmbiguous bool
 	privacyConfig       config.Privacy
 	categoriesFetcher   stored_requests.CategoryFetcher
+	trakerURL           string
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -95,6 +96,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 			GDPR: cfg.GDPR,
 			LMT:  cfg.LMT,
 		},
+		trakerURL: cfg.TrackerURL,
 	}
 }
 
@@ -191,7 +193,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 
 		evTracking := getEventTracking(&requestExt.Prebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL)
-		adapterBids = evTracking.modifyBidsForEvents(adapterBids)
+		adapterBids = evTracking.modifyBidsForEvents(adapterBids, r.BidRequest, e.trakerURL)
 
 		if targData != nil {
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
