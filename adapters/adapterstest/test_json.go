@@ -318,7 +318,7 @@ func diffJson(t *testing.T, description string, actual []byte, expected []byte) 
 	}
 }
 
-// testMakeBidsImpl asserts the results of the bidder MakeRequests implementation against the
+// testMakeRequestsImpl asserts the results of the bidder MakeRequests implementation against the
 // expected JSON-defined results and makes sure the adapter's implementations of MakeRequests do
 // not incurr in data races
 func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, reqInfo *adapters.ExtraRequestInfo) []*adapters.RequestData {
@@ -343,9 +343,9 @@ func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder 
 // compared inside assertNoDataRace() to verify no data races occur.
 //  - The shallow copy is helpful because it provides reference values to shared memory that we don't want
 //    adapters to modify.
-//  - The deep copy will help us preserve all the original values, even those of the shared memory fields, that
-//    will remain untouched by the adapter tests so we can compare the real shared memory fields (that can
-//    be accessed via the shallow copy) to their original values
+//  - The deep copy will help us preserve all the original values, even those of the shared memory fields that
+//    will remain untouched by the adapter tests so we can compare the real shared memory (that can
+//    be accessed via the shallow copy) to its original values
 func getDataRaceTestCopies(original *openrtb2.BidRequest) (*openrtb2.BidRequest, *openrtb2.BidRequest) {
 	deepReqCopy := deepcopy.Copy(original).(*openrtb2.BidRequest)
 
@@ -375,6 +375,16 @@ func assertNoDataRace(t *testing.T, bidRequestBefore *openrtb2.BidRequest, bidRe
 	assert.Equal(t, bidRequestBefore.Source, bidRequestAfter.Source, "Data race in BidRequest.Source field in file %s", filename)
 	assert.Equal(t, bidRequestBefore.Regs, bidRequestAfter.Regs, "Data race in BidRequest.Regs field in file %s", filename)
 
+	// Assert slice fields were not modified by bidder adapter MakeRequests implementation
+	assert.Equal(t, bidRequestBefore.WSeat, bidRequestAfter.WSeat, "Data race in BidRequest.[]WSeat array")
+	assert.Equal(t, bidRequestBefore.BSeat, bidRequestAfter.BSeat, "Data race in BidRequest.[]BSeat array")
+	assert.Equal(t, bidRequestBefore.Cur, bidRequestAfter.Cur, "Data race in BidRequest.[]Cur array")
+	assert.Equal(t, bidRequestBefore.WLang, bidRequestAfter.WLang, "Data race in BidRequest.[]WLang array")
+	assert.Equal(t, bidRequestBefore.BCat, bidRequestAfter.BCat, "Data race in BidRequest.[]BCat array")
+	assert.Equal(t, bidRequestBefore.BAdv, bidRequestAfter.BAdv, "Data race in BidRequest.[]BAdv array")
+	assert.Equal(t, bidRequestBefore.BApp, bidRequestAfter.BApp, "Data race in BidRequest.[]BApp array")
+	assert.Equal(t, bidRequestBefore.Ext, bidRequestAfter.Ext, "Data race in BidRequest.[]Ext array")
+
 	// Assert Imps separately
 	assertNoImpsDataRace(t, bidRequestBefore.Imp, bidRequestAfter.Imp, filename)
 }
@@ -393,7 +403,8 @@ func assertNoImpsDataRace(t *testing.T, impsBefore []openrtb2.Imp, impsAfter []o
 			assert.Equal(t, impsBefore[i].Native, impsAfter[i].Native, "Data race in bidRequest.Imp[%d].Native field. File:%s", i, filename)
 			assert.Equal(t, impsBefore[i].PMP, impsAfter[i].PMP, "Data race in bidRequest.Imp[%d].PMP field. File:%s", i, filename)
 			assert.Equal(t, impsBefore[i].Secure, impsAfter[i].Secure, "Data race in bidRequest.Imp[%d].Secure field. File:%s", i, filename)
-			assert.ElementsMatch(t, impsBefore[i].Metric, impsAfter[i].Metric, "Data race in bidRequest.Imp[%d].[]Metric array. File:%s", i)
+			assert.Equal(t, impsBefore[i].Metric, impsAfter[i].Metric, "Data race in bidRequest.Imp[%d].[]Metric array. File:%s", i)
+			assert.Equal(t, impsBefore[i].IframeBuster, impsAfter[i].IframeBuster, "Data race in bidRequest.Imp[%d].[]IframeBuster array", i)
 		}
 	}
 }
