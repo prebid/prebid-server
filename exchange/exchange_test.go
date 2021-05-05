@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -568,17 +569,17 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 					desc: "undefined usepbsrates defaults to true, response price corresponds to custom rate",
 					in: testIn{
 						customCurrencyRates: json.RawMessage(`{
-					  "prebid": {
-					    "currency": {
-					      "rates": {
-					        "USD": {
-					          "MXN": 20.00,
-					          "EUR": 10.95
-					        }
-					      }
-					    }
-					  }
-					}`),
+						  "prebid": {
+						    "currency": {
+						      "rates": {
+						        "USD": {
+						          "MXN": 20.00,
+						          "EUR": 10.95
+						        }
+						      }
+						    }
+						  }
+						}`),
 						bidRequestCurrency: "MXN",
 					},
 					expected: testResults{
@@ -591,17 +592,17 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 					desc: "undefined usepbsrates defaults to true, bidRequest comes with unknown currency not found in either pbs rates nor custom rates",
 					in: testIn{
 						customCurrencyRates: json.RawMessage(`{
-						  "prebid": {
-						    "currency": {
-						      "rates": {
-						        "USD": {
-						          "MXN": 20.00,
-						          "EUR": 10.95
-						        }
-						      }
-						    }
-						  }
-						}`),
+							  "prebid": {
+							    "currency": {
+							      "rates": {
+							        "USD": {
+							          "MXN": 20.00,
+							          "EUR": 10.95
+							        }
+							      }
+							    }
+							  }
+							}`),
 						bidRequestCurrency: "GBP",
 					},
 					expected: testResults{},
@@ -610,18 +611,18 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 					desc: "usepbsrates set to true, response price corresponds to custom rate",
 					in: testIn{
 						customCurrencyRates: json.RawMessage(`{
-					          "prebid": {
-					            "currency": {
-					              "rates": {
-					                "USD": {
-					                  "MXN": 20.00,
-					                  "EUR": 10.95
-					                }
-					              },
-					              "usepbsrates": true
-					            }
-					          }
-					        }`),
+						          "prebid": {
+						            "currency": {
+						              "rates": {
+						                "USD": {
+						                  "MXN": 20.00,
+						                  "EUR": 10.95
+						                }
+						              },
+						              "usepbsrates": true
+						            }
+						          }
+						        }`),
 						bidRequestCurrency: "MXN",
 					},
 					expected: testResults{
@@ -634,17 +635,17 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 					desc: "usepbsrates set to true, response price corresponds to prebid server-wide conversion rates",
 					in: testIn{
 						customCurrencyRates: json.RawMessage(`{
-					          "prebid": {
-					            "currency": {
-					              "rates": {
-					                "USD": {
-					                  "EUR": 10.95
-					                }
-					              },
-					              "usepbsrates": true
-					            }
-					          }
-					        }`),
+						          "prebid": {
+						            "currency": {
+						              "rates": {
+						                "USD": {
+						                  "EUR": 10.95
+						                }
+						              },
+						              "usepbsrates": true
+						            }
+						          }
+						        }`),
 						bidRequestCurrency: "MXN",
 					},
 					expected: testResults{
@@ -657,18 +658,18 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 					desc: "usepbsrates set to false, response price corresponds to custom rate",
 					in: testIn{
 						customCurrencyRates: json.RawMessage(`{
-							  "prebid": {
-								"currency": {
-								  "rates": {
-									"USD": {
-									  "MXN": 20.00,
-									  "EUR": 10.95
+								  "prebid": {
+									"currency": {
+									  "rates": {
+										"USD": {
+										  "MXN": 20.00,
+										  "EUR": 10.95
+										}
+									  },
+									  "usepbsrates": false
 									}
-								  },
-								  "usepbsrates": false
-								}
-							  }
-							}`),
+								  }
+								}`),
 						bidRequestCurrency: "MXN",
 					},
 					expected: testResults{
@@ -681,17 +682,17 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 					desc: "usepbsrates set to false, bidRequest comes with a currency not found in custom rates, return no bids",
 					in: testIn{
 						customCurrencyRates: json.RawMessage(`{
-							  "prebid": {
-								"currency": {
-								  "rates": {
-									"USD": {
-									  "EUR": 10.95
+								  "prebid": {
+									"currency": {
+									  "rates": {
+										"USD": {
+										  "EUR": 10.95
+										}
+									  },
+									  "usepbsrates": false
 									}
-								  },
-								  "usepbsrates": false
-								}
-							  }
-							}`),
+								  }
+								}`),
 						bidRequestCurrency: "MXN",
 					},
 					expected: testResults{},
@@ -818,7 +819,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 		},
 	}
 
-	mixed := map[string]map[string]float64{
+	expectedRateEngineRates := map[string]map[string]float64{
 		"MXN": {
 			"USD": 25.00, // rates engine will prioritize the value found in custom rates
 			"EUR": 27.82, // same value in both the engine reads the custom entry first
@@ -866,7 +867,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 				},
 			},
 			testOutput{
-				resultingRates: mixed,
+				resultingRates: expectedRateEngineRates,
 			},
 		},
 		{
@@ -920,6 +921,19 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 		},
 		{
 			"customRates empty, UsePBSRates set to false, pbsRates are nil. Return default currency converter where we only have USDs",
+			testInput{
+				pbsRates: nil,
+				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
+					// ConversionRates inCustomRates not initialized makes for a zero-length map
+					UsePBSRates: &boolFalse,
+				},
+			},
+			testOutput{
+				constantRates: true,
+			},
+		},
+		{
+			"customRates empty, UsePBSRates set to true, pbsRates are nil. Return default currency converter where we only have USDs",
 			testInput{
 				pbsRates: nil,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -1857,7 +1871,6 @@ func newRaceCheckingRequest(t *testing.T) *openrtb2.BidRequest {
 	}
 }
 
-/*
 func TestPanicRecovery(t *testing.T) {
 	cfg := &config.Configuration{
 		CacheURL: config.Cache{
@@ -1914,7 +1927,6 @@ func TestPanicRecovery(t *testing.T) {
 	recovered := e.recoverSafely(bidderRequests, panicker, chBids)
 	recovered(bidderRequests[0], nil)
 }
-*/
 
 func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	adapterFolders, err := ioutil.ReadDir("../adapters")
@@ -1940,7 +1952,6 @@ func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	return json.RawMessage(toReturn)
 }
 
-/*
 func TestPanicRecoveryHighLevel(t *testing.T) {
 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
@@ -2020,7 +2031,6 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 	}
 
 }
-*/
 
 func TestTimeoutComputation(t *testing.T) {
 	cacheTimeMillis := 10

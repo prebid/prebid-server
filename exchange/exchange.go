@@ -936,11 +936,10 @@ func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auction *auction) (cacheInfo
 	return
 }
 
-// getAuctionCurrencyRates returns the constant currency conversion rates that will be used to process this
+// getAuctionCurrencyRates returns the a currency conversions implementation that will be used in the rest of this
 // auction. Parameter customRates contains, if any, the bidRequest custom currency conversion rates
-// defined in bidRequest.Ext. If usePbsRates flag is set to false, all previous Conversions values are discarded
-// and this function merely substitutes Conversions with customRates. But if usePbsRates was ommitted or set to
-// true, customRates' values update or add to the Conversions map
+// defined in bidRequest.Ext. If usePbsRates flag is set to false, the currency conversions provided by Prebid Server's
+// currency conversion service get discarded in favor of the bidRequest.ext.currency-defined conversion rates.
 func (e *exchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
 	if customRates == nil {
 		// No bidRequest.ext.currency field was found, use PBS rates as usual
@@ -951,21 +950,24 @@ func (e *exchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCu
 	// only if it's explicitly set to false
 	usePbsRates := customRates.UsePBSRates == nil || *customRates.UsePBSRates
 
-	// Function validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency)
-	// discards requests where: usePbsRates && len(customRates.ConversionRates) == 0
-	// evaluates to true. No need to check that again. If PBS Rates cannot be used, use
-	// either constant rates or custom rates only
 	if !usePbsRates {
-		if len(customRates.ConversionRates) > 0 {
-			return currency.NewRates(time.Time{}, customRates.ConversionRates)
-		} else {
+		// If PBS Rates cannot be used, use either constant rates or custom rates only
+		if len(customRates.ConversionRates) == 0 {
 			return currency.NewConstantRates()
+		} else {
+			return currency.NewRates(time.Time{}, customRates.ConversionRates)
+		}
+	} else {
+		// PBS rates can be used
+		if len(customRates.ConversionRates) == 0 {
+			// Custom rates map is empty, use PBS rates only
+			return e.currencyConverter.Rates()
+		} else {
+			// Return a RateEngines object that includes both custom and PBS currency rates but will
+			// prioritize custom rates over PBS rates whenever a currency rate is found in both
+			return currency.NewRateEngines(currency.NewRates(time.Time{}, customRates.ConversionRates), e.currencyConverter.Rates())
 		}
 	}
-
-	// Return a RateEngines object that includes both custom and PBS currency rates but will
-	// prioritize custom rates over PBS rates whenever a currency rate is found in both
-	return currency.NewRateEngines(currency.NewRates(time.Time{}, customRates.ConversionRates), e.currencyConverter.Rates())
 }
 
 func findCacheID(bid *pbsOrtbBid, auction *auction) (string, bool) {

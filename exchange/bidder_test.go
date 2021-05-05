@@ -345,6 +345,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "USD", price: 1.3},
 			},
 			rates: currency.Rates{
+				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -369,6 +370,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "", price: 1.3},
 			},
 			rates: currency.Rates{
+				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -393,6 +395,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "EUR", price: 1.3},
 			},
 			rates: currency.Rates{
+				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -417,6 +420,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "GBP", price: 1.3},
 			},
 			rates: currency.Rates{
+				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -441,6 +445,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "GBP", price: 1.3},
 			},
 			rates: currency.Rates{
+				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -465,6 +470,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "GBP", price: 1.3},
 			},
 			rates: currency.Rates{
+				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -490,6 +496,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "DKK", price: 1.3},
 			},
 			rates: currency.Rates{
+				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -514,6 +521,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "CCC", price: 1.3},
 			},
 			rates: currency.Rates{
+				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -769,6 +777,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "EUR",
 			expectedError:          false,
 			rates: currency.Rates{
+				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
 						"USD": 0.0089,
@@ -789,6 +798,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "JPY",
 			expectedError:          false,
 			rates: currency.Rates{
+				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
 						"USD": 0.0089,
@@ -803,6 +813,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
 			rates: currency.Rates{
+				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
 						"USD": 0.0089,
@@ -823,6 +834,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "",
 			expectedError:          true,
 			rates: currency.Rates{
+				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
 			description: "Case 4 - None allowed currencies in bid request are known, an error is returned",
@@ -833,6 +845,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
 			rates: currency.Rates{
+				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
 			description: "Case 5 - None allowed currencies in bid request are known but the default one (`USD`), no rates are set but default currency will be picked",
@@ -843,6 +856,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
 			rates: currency.Rates{
+				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
 			description: "Case 6 - No allowed currencies specified in bid request, default one is picked: `USD`",
