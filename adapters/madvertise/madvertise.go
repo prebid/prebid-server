@@ -146,10 +146,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			bid := seatBid.Bid[i]
-			bidMediaType, err := getMediaTypeForBid(request.Imp, bid)
-			if err != nil {
-				return nil, []error{err}
-			}
+			bidMediaType := getMediaTypeForBid(bid.Attr)
 			b := &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: bidMediaType,
@@ -160,19 +157,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getMediaTypeForBid(impressions []openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	for _, impression := range impressions {
-		if impression.ID == bid.ImpID {
-			if impression.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
-			if impression.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
+func getMediaTypeForBid(attr []openrtb2.CreativeAttribute) openrtb_ext.BidType {
+	for i := 0; i < len(attr); i++ {
+		if attr[i] == openrtb2.CreativeAttribute(16) {
+			return openrtb_ext.BidTypeVideo
+		} else if attr[i] == openrtb2.CreativeAttribute(6) {
+			return openrtb_ext.BidTypeVideo
+		} else if attr[i] == openrtb2.CreativeAttribute(7) {
+			return openrtb_ext.BidTypeVideo
 		}
 	}
-
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("The impression with ID %s is not present into the request", bid.ImpID),
-	}
+	return openrtb_ext.BidTypeBanner
 }

@@ -211,6 +211,7 @@
                                     "crid": "test_crid",
                                     "dealid": "test_dealid",
                                     "burl": "https://burl.com",
+                                    "attr": [6],
                                     "adomain": [
                                         "madvertise.com"
                                     ],
@@ -240,6 +241,7 @@
                         "crid": "test_crid",
                         "dealid": "test_dealid",
                         "burl": "https://burl.com",
+                        "attr": [6],
                         "adomain": [
                             "madvertise.com"
                         ],
