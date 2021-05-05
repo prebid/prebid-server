@@ -241,10 +241,7 @@
                         "crid": "test_crid",
                         "dealid": "test_dealid",
                         "burl": "https://burl.com",
-<<<<<<< HEAD
                         "attr": [6],
-=======
->>>>>>> 785e9ef7 (Add Madvertise Adapter)
                         "adomain": [
                             "madvertise.com"
                         ],
