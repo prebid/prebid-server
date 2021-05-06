@@ -411,7 +411,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 					bidExtVideo = &openrtb_ext.ExtBidPrebidVideo{
 						Duration: bidExt.Prebid.Video.Duration,
 					}
-					if bid.Cat == nil || len(bid.Cat) == 0 {
+					if len(bid.Cat) == 0 {
 						bid.Cat = []string{bidExt.Prebid.Video.PrimaryCategory}
 					}
 				}
