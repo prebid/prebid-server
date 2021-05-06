@@ -422,8 +422,8 @@ func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *users
 }
 
 type mockPermsSetUID struct {
-	allowHost bool
-	errorHost bool
+	allowHost           bool
+	errorHost           bool
 	personalInfoAllowed bool
 }
 
