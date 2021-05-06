@@ -289,7 +289,6 @@ func TestAllowPersonalInfo(t *testing.T) {
 		_, allowID, err := perms.PersonalInfoAllowed(context.Background(), tt.bidderName, tt.publisherID, tt.gdpr, tt.consent, tt.weakVendorEnforcement)
 
 		assert.Nil(t, err, tt.description)
-		// assert.Equal(t, tt.allowPI, allowPI, tt.description)
 		assert.Equal(t, tt.allowID, allowID, tt.description)
 	}
 }

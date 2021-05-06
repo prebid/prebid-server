@@ -453,7 +453,7 @@ func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder o
 	return m.allowBidderSync, nil
 }
 
-func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, error) {
+func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (allowGeo bool, allowID bool, err error) {
 	return m.allowGeo, m.allowID, nil
 }
 

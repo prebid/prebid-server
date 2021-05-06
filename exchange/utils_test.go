@@ -32,7 +32,7 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, error) {
+func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr gdpr.Signal, consent string, weakVendorEnforcement bool) (allowGeo bool, allowID bool, err error) {
 	return p.personalInfoAllowed, p.personalInfoAllowed, p.personalInfoAllowedError
 }
 

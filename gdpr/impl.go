@@ -254,7 +254,7 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 	return true, nil
 }
 
-func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (bool, bool, error) {
+func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (allowGeo bool, allowID bool, err error) {
 	return true, true, nil
 }
 
@@ -269,6 +269,6 @@ func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 	return false, nil
 }
 
-func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (bool, bool, error) {
+func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (allowGeo bool, allowID bool, err error) {
 	return false, false, nil
 }

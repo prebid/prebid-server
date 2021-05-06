@@ -439,7 +439,7 @@ func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, error) {
+func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (allowGeo bool, allowID bool, err error) {
 	return g.allowPI, g.allowPI, nil
 }
 
