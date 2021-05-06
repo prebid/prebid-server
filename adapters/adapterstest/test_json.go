@@ -319,25 +319,18 @@ func diffJson(t *testing.T, description string, actual []byte, expected []byte) 
 }
 
 // testMakeRequestsImpl asserts the resulting values of the bidder's `MakeRequests()` implementation
-// against the expected JSON-defined results and makes sure we do not incurr in data races in the
-// process. To verify no data races occur this function creates:
+// against the expected JSON-defined results and ensures we do not encounter data races in the process.
+// To assert no data races happen we make use of:
 //  1) A shallow copy of the unmarshalled openrtb2.BidRequest that will provide reference values to
 //     shared memory that we don't want the adapters' implementation of `MakeRequests()` to modify.
 //  2) A deep copy that will preserve the original values of all the fields. This copy remains untouched
 //     by the adapters' processes and serves as reference of what the shared memory values should still
 //     be after the `MakeRequests()` call.
-//
-// The original values stored in the deep copy will be compared against the shared memory values and
-// discrepancies will point to data race conditions in an adapter's `MakeRequests()` implementation.
-//
-// Because neither the shallow nor the deep copies are passed to `MakeRequests()` we know static fields
-// in openrtb2.BidRequest nor openrtb2.Imp elements will change, therefore, we can reliably compare
-// reference values using the `assert.Equal()` method.
 func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, reqInfo *adapters.ExtraRequestInfo) []*adapters.RequestData {
 	t.Helper()
 
 	deepBidReqCopy, shallowBidReqCopy, err := getDataRaceTestCopies(&spec.BidRequest)
-	assert.NoError(t, err, "Could not create deep copy for data race assertions. %s\n", filename)
+	assert.NoError(t, err, "Could not create request copies. %s", filename)
 
 	// Run MakeRequests
 	requests, errs := bidder.MakeRequests(&spec.BidRequest, reqInfo)
@@ -347,7 +340,7 @@ func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder 
 	assertMakeRequestsOutput(t, filename, requests, spec.HttpCalls)
 
 	// Assert no data races occur using original bidRequest copies of references and values
-	assert.Equal(t, deepBidReqCopy, shallowBidReqCopy, "Data race found. Test: %s \n", filename)
+	assert.Equal(t, deepBidReqCopy, shallowBidReqCopy, "Data race found. Test: %s", filename)
 
 	return requests
 }
