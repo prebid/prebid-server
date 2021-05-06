@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/mohae/deepcopy"
+	"github.com/mitchellh/copystructure"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/stretchr/testify/assert"
@@ -318,13 +318,26 @@ func diffJson(t *testing.T, description string, actual []byte, expected []byte) 
 	}
 }
 
-// testMakeRequestsImpl asserts the results of the bidder MakeRequests implementation against the
-// expected JSON-defined results and makes sure the adapter's implementations of MakeRequests do
-// not incurr in data races
+// testMakeRequestsImpl asserts the resulting values of the bidder's `MakeRequests()` implementation
+// against the expected JSON-defined results and makes sure we do not incurr in data races in the
+// process. To verify no data races occur this function creates:
+//  1) A shallow copy of the unmarshalled openrtb2.BidRequest that will provide reference values to
+//     shared memory that we don't want the adapters' implementation of `MakeRequests()` to modify.
+//  2) A deep copy that will preserve the original values of all the fields. This copy remains untouched
+//     by the adapters' processes and serves as reference of what the shared memory values should still
+//     be after the `MakeRequests()` call.
+//
+// The original values stored in the deep copy will be compared against the shared memory values and
+// discrepancies will point to data race conditions in an adapter's `MakeRequests()` implementation.
+//
+// Because neither the shallow nor the deep copies are passed to `MakeRequests()` we know static fields
+// in openrtb2.BidRequest nor openrtb2.Imp elements will change, therefore, we can reliably compare
+// reference values using the `assert.Equal()` method.
 func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, reqInfo *adapters.ExtraRequestInfo) []*adapters.RequestData {
 	t.Helper()
 
-	deepBidReqCopy, shallowBidReqCopy := getDataRaceTestCopies(&spec.BidRequest)
+	deepBidReqCopy, shallowBidReqCopy, err := getDataRaceTestCopies(&spec.BidRequest)
+	assert.NoError(t, err, "Could not create deep copy for data race assertions. %s\n", filename)
 
 	// Run MakeRequests
 	requests, errs := bidder.MakeRequests(&spec.BidRequest, reqInfo)
@@ -334,79 +347,30 @@ func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder 
 	assertMakeRequestsOutput(t, filename, requests, spec.HttpCalls)
 
 	// Assert no data races occur using original bidRequest copies of references and values
-	assertNoDataRace(t, deepBidReqCopy, shallowBidReqCopy, filename)
+	assert.Equal(t, deepBidReqCopy, shallowBidReqCopy, "Data race found. Test: %s \n", filename)
 
 	return requests
 }
 
 // getDataRaceTestCopies returns a deep copy and a shallow copy of the original bidRequest that will get
-// compared inside assertNoDataRace() to verify no data races occur.
-//  - The shallow copy is helpful because it provides reference values to shared memory that we don't want
-//    adapters to modify.
-//  - The deep copy will help us preserve all the original values, even those of the shared memory fields that
-//    will remain untouched by the adapter tests so we can compare the real shared memory (that can
-//    be accessed via the shallow copy) to its original values
-func getDataRaceTestCopies(original *openrtb2.BidRequest) (*openrtb2.BidRequest, *openrtb2.BidRequest) {
-	deepReqCopy := deepcopy.Copy(original).(*openrtb2.BidRequest)
+// compared to verify no data races occur.
+func getDataRaceTestCopies(original *openrtb2.BidRequest) (*openrtb2.BidRequest, *openrtb2.BidRequest, error) {
+	cpy, err := copystructure.Copy(original)
+	if err != nil {
+		return nil, nil, err
+	}
+	deepReqCopy := cpy.(*openrtb2.BidRequest)
 
 	shallowReqCopy := *original
-	shallowReqCopy.Imp = make([]openrtb2.Imp, 0, len(original.Imp))
-	for i := 0; i < len(original.Imp); i++ {
-		shallowImpCopy := original.Imp[i]
-		shallowReqCopy.Imp = append(shallowReqCopy.Imp, shallowImpCopy)
+
+	// If we call `copy` on a nil []Imp, the shallowReqCopy.Imp slice will initialize to openrtb2.Imp{}
+	// and not nil, which will lead to false positives.
+	if original.Imp != nil {
+		shallowReqCopy.Imp = make([]openrtb2.Imp, len(original.Imp))
+		copy(shallowReqCopy.Imp, original.Imp)
 	}
 
-	return deepReqCopy, &shallowReqCopy
-}
-
-// assertNoDataRace compares the contents of the reference fields found in the original openrtb2.BidRequest such as Site,
-// App, Device and so on, to their original shared-memory values to make sure they were not modified and we are not incurring
-// in data races. Because some adapters modify the lenght of the []Imp array, we call assertNoImpsDataRace() to assert we are
-// data-race free there. This function is necessary because a simple `assert.Equalf()` call would also compare non shared
-// memory fields that adapters are free to modify, therefore leading us to false positives in terms of data-race detection.
-func assertNoDataRace(t *testing.T, bidRequestBefore *openrtb2.BidRequest, bidRequestAfter *openrtb2.BidRequest, filename string) {
-	t.Helper()
-
-	// Assert reference fields were not modified by bidder adapter MakeRequests implementation
-	assert.Equal(t, bidRequestBefore.Site, bidRequestAfter.Site, "Data race in BidRequest.Site field in file %s", filename)
-	assert.Equal(t, bidRequestBefore.App, bidRequestAfter.App, "Data race in BidRequest.App field in file %s", filename)
-	assert.Equal(t, bidRequestBefore.Device, bidRequestAfter.Device, "Data race in BidRequest.Device field in file %s", filename)
-	assert.Equal(t, bidRequestBefore.User, bidRequestAfter.User, "Data race in BidRequest.User field in file %s", filename)
-	assert.Equal(t, bidRequestBefore.Source, bidRequestAfter.Source, "Data race in BidRequest.Source field in file %s", filename)
-	assert.Equal(t, bidRequestBefore.Regs, bidRequestAfter.Regs, "Data race in BidRequest.Regs field in file %s", filename)
-
-	// Assert slice fields were not modified by bidder adapter MakeRequests implementation
-	assert.Equal(t, bidRequestBefore.WSeat, bidRequestAfter.WSeat, "Data race in BidRequest.[]WSeat array")
-	assert.Equal(t, bidRequestBefore.BSeat, bidRequestAfter.BSeat, "Data race in BidRequest.[]BSeat array")
-	assert.Equal(t, bidRequestBefore.Cur, bidRequestAfter.Cur, "Data race in BidRequest.[]Cur array")
-	assert.Equal(t, bidRequestBefore.WLang, bidRequestAfter.WLang, "Data race in BidRequest.[]WLang array")
-	assert.Equal(t, bidRequestBefore.BCat, bidRequestAfter.BCat, "Data race in BidRequest.[]BCat array")
-	assert.Equal(t, bidRequestBefore.BAdv, bidRequestAfter.BAdv, "Data race in BidRequest.[]BAdv array")
-	assert.Equal(t, bidRequestBefore.BApp, bidRequestAfter.BApp, "Data race in BidRequest.[]BApp array")
-	assert.Equal(t, bidRequestBefore.Ext, bidRequestAfter.Ext, "Data race in BidRequest.[]Ext array")
-
-	// Assert Imps separately
-	assertNoImpsDataRace(t, bidRequestBefore.Imp, bidRequestAfter.Imp, filename)
-}
-
-// assertNoImpsDataRace compares the contents of the reference fields found in the original openrtb2.Imp objects to
-// their original values to make sure they were not modified and we are not incurring in data races.
-func assertNoImpsDataRace(t *testing.T, impsBefore []openrtb2.Imp, impsAfter []openrtb2.Imp, filename string) {
-	t.Helper()
-
-	if assert.Len(t, impsAfter, len(impsBefore), "Original []Imp array was modified and length is not equal to original after MakeRequests was called. File:%s", filename) {
-		// Assert no data races occured in individual Imp elements
-		for i := 0; i < len(impsBefore); i++ {
-			assert.Equal(t, impsBefore[i].Banner, impsAfter[i].Banner, "Data race in bidRequest.Imp[%d].Banner field. File:%s", i, filename)
-			assert.Equal(t, impsBefore[i].Video, impsAfter[i].Video, "Data race in bidRequest.Imp[%d].Video field. File:%s", i, filename)
-			assert.Equal(t, impsBefore[i].Audio, impsAfter[i].Audio, "Data race in bidRequest.Imp[%d].Audio field. File:%s", i, filename)
-			assert.Equal(t, impsBefore[i].Native, impsAfter[i].Native, "Data race in bidRequest.Imp[%d].Native field. File:%s", i, filename)
-			assert.Equal(t, impsBefore[i].PMP, impsAfter[i].PMP, "Data race in bidRequest.Imp[%d].PMP field. File:%s", i, filename)
-			assert.Equal(t, impsBefore[i].Secure, impsAfter[i].Secure, "Data race in bidRequest.Imp[%d].Secure field. File:%s", i, filename)
-			assert.Equal(t, impsBefore[i].Metric, impsAfter[i].Metric, "Data race in bidRequest.Imp[%d].[]Metric array. File:%s", i)
-			assert.Equal(t, impsBefore[i].IframeBuster, impsAfter[i].IframeBuster, "Data race in bidRequest.Imp[%d].[]IframeBuster array", i)
-		}
-	}
+	return deepReqCopy, &shallowReqCopy, nil
 }
 
 // testMakeBidsImpl asserts the results of the bidder MakeBids implementation against the expected JSON-defined results
