@@ -347,7 +347,6 @@ type tcf2TestDef struct {
 	description           string
 	bidder                openrtb_ext.BidderName
 	consent               string
-	allowPI               bool
 	allowGeo              bool
 	allowID               bool
 	weakVendorEnforcement bool
@@ -495,7 +494,7 @@ func TestAllowPersonalInfoTCF2PubRestrict(t *testing.T) {
 		allowGeo, allowID, err := perms.PersonalInfoAllowed(context.Background(), td.bidder, "", SignalYes, td.consent, td.weakVendorEnforcement)
 		assert.NoErrorf(t, err, "Error processing PersonalInfoAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowGeo, allowGeo, "AllowGeo failure on %s", td.description)
-		assert.EqualValuesf(t, td.allowID, allowID, "AllowPI failure on %s", td.description)
+		assert.EqualValuesf(t, td.allowID, allowID, "AllowID failure on %s", td.description)
 	}
 }
 
