@@ -936,36 +936,32 @@ func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auction *auction) (cacheInfo
 	return
 }
 
-// getAuctionCurrencyRates returns the a currency conversions implementation that will be used in the rest of this
-// auction. Parameter customRates contains, if any, the bidRequest custom currency conversion rates
-// defined in bidRequest.Ext. If usePbsRates flag is set to false, the currency conversions provided by Prebid Server's
-// currency conversion service get discarded in favor of the bidRequest.ext.currency-defined conversion rates.
-func (e *exchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
-	if customRates == nil {
+func (e *exchange) getAuctionCurrencyRates(requestRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
+	if requestRates == nil {
 		// No bidRequest.ext.currency field was found, use PBS rates as usual
 		return e.currencyConverter.Rates()
 	}
 
 	// If bidRequest.ext.currency.usepbsrates is nil, we understand its value as true. It will be false
 	// only if it's explicitly set to false
-	usePbsRates := customRates.UsePBSRates == nil || *customRates.UsePBSRates
+	usePbsRates := requestRates.UsePBSRates == nil || *requestRates.UsePBSRates
 
 	if !usePbsRates {
 		// If PBS Rates cannot be used, use either constant rates or custom rates only
-		if len(customRates.ConversionRates) == 0 {
+		if len(requestRates.ConversionRates) == 0 {
 			return currency.NewConstantRates()
 		} else {
-			return currency.NewRates(time.Time{}, customRates.ConversionRates)
+			return currency.NewRates(time.Time{}, requestRates.ConversionRates)
 		}
 	} else {
 		// PBS rates can be used
-		if len(customRates.ConversionRates) == 0 {
+		if len(requestRates.ConversionRates) == 0 {
 			// Custom rates map is empty, use PBS rates only
 			return e.currencyConverter.Rates()
 		} else {
 			// Return a RateEngines object that includes both custom and PBS currency rates but will
 			// prioritize custom rates over PBS rates whenever a currency rate is found in both
-			return currency.NewRateEngines(currency.NewRates(time.Time{}, customRates.ConversionRates), e.currencyConverter.Rates())
+			return currency.NewRateEngines(currency.NewRates(time.Time{}, requestRates.ConversionRates), e.currencyConverter.Rates())
 		}
 	}
 }

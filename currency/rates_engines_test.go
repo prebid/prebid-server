@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRateEnginesGetRate(t *testing.T) {
+func TestGroupedGetRate(t *testing.T) {
 
 	// Setup:
 	customRates := NewRates(time.Now(), map[string]map[string]float64{
