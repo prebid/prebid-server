@@ -93,7 +93,7 @@ func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpMadvertise, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("ext not provided; ImpID=%s", imp.ID),
+			Message: fmt.Sprintf("%s; ImpID=%s", err.Error(), imp.ID),
 		}
 	}
 	var madvertiseExt openrtb_ext.ExtImpMadvertise

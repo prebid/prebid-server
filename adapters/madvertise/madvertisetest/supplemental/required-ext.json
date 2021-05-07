@@ -12,7 +12,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "ext not provided; ImpID=test-imp-id-1",
+      "value": "unexpected end of JSON input; ImpID=test-imp-id-1",
       "comparison": "literal"
     }
   ]
