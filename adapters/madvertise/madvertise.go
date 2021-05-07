@@ -55,7 +55,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	for _, imp := range request.Imp {
 		madvertiseExt, err := getImpressionExt(imp)
 		if err != nil {
-			fmt.Println(err)
 			return nil, []error{err}
 		}
 		if len(madvertiseExt.ZoneID) < 7 {
