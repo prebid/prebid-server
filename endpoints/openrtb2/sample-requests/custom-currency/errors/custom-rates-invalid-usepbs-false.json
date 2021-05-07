@@ -50,5 +50,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: Three-digit code FOO is not a recognized currency code or is malformed"
+  "expectedErrorMessage": "Invalid request: Three-digit code"
 }
