@@ -1,0 +1,9 @@
+maintainer:
+  email: "dev@interactiveoffers.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

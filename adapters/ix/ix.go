@@ -409,8 +409,10 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 				unmarshalExtErr := json.Unmarshal(bid.Ext, &bidExt)
 				if unmarshalExtErr == nil && bidExt.Prebid != nil && bidExt.Prebid.Video != nil {
 					bidExtVideo = &openrtb_ext.ExtBidPrebidVideo{
-						Duration:        bidExt.Prebid.Video.Duration,
-						PrimaryCategory: bidExt.Prebid.Video.PrimaryCategory,
+						Duration: bidExt.Prebid.Video.Duration,
+					}
+					if len(bid.Cat) == 0 {
+						bid.Cat = []string{bidExt.Prebid.Video.PrimaryCategory}
 					}
 				}
 			}
