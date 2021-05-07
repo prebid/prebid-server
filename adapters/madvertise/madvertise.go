@@ -58,26 +58,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			fmt.Println(err)
 			return nil, []error{err}
 		}
-		if madvertiseExt.ZoneID != "" {
-			if len(madvertiseExt.ZoneID) < 7 {
-				return nil, []error{&errortypes.BadInput{
-					Message: fmt.Sprintf("The minLength of zone ID is 7; ImpID=%s", imp.ID),
-				}}
-			}
-			if zoneID == "" {
-				zoneID = madvertiseExt.ZoneID
-			} else if zoneID != madvertiseExt.ZoneID {
-				return nil, []error{&errortypes.BadInput{
-					Message: "There must be only one zone ID",
-				}}
-			}
-		} else {
+		if len(madvertiseExt.ZoneID) < 7 {
 			return nil, []error{&errortypes.BadInput{
-				Message: fmt.Sprintf("ZoneId is empty; ImpID=%s", imp.ID),
+				Message: fmt.Sprintf("The minLength of zone ID is 7; ImpID=%s", imp.ID),
+			}}
+		}
+		if zoneID == "" {
+			zoneID = madvertiseExt.ZoneID
+		} else if zoneID != madvertiseExt.ZoneID {
+			return nil, []error{&errortypes.BadInput{
+				Message: "There must be only one zone ID",
 			}}
 		}
 	}
-
 	url, err := a.buildEndpointURL(zoneID)
 	if err != nil {
 		return nil, []error{err}
