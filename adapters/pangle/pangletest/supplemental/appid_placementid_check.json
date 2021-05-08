@@ -10,18 +10,28 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
+          "w": 1024,
+          "h": 576,
+          "ext": {
+            "foo": "bar"
+          }
         },
-        "instl": 1,
         "ext": {
+          "prebid": {
+            "is_rewarded_inventory": 1
+          },
           "bidder": {
-            "token": "123"
+            "token": "123",
+            "appid": "123456",
+            "placementid": "78910"
           }
         }
       }
@@ -50,22 +60,37 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  }
-                ]
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  5
+                ],
+                "w": 1024,
+                "h": 576,
+                "ext": {
+                  "foo": "bar"
+                }
               },
-              "instl": 1,
               "ext": {
-                "adtype": 2,
-                "bidder": {
-                  "token": "123"
+                "adtype": 7,
+                "prebid": {
+                  "bidder": null,
+                  "is_rewarded_inventory": 1,
+                  "storedrequest": null
                 },
                 "is_prebid": true,
-                "prebid": null
+                "networkids": {
+                  "appid": "123456",
+                  "placementid": "78910"
+                },
+                "bidder": {
+                  "token": "123",
+                  "appid": "123456",
+                  "placementid": "78910"
+                }
               }
             }
           ]
@@ -90,7 +115,7 @@
                   "w": 300,
                   "ext": {
                     "pangle": {
-                      "adtype": 2
+                      "adtype": 7
                     }
                   }
                 }
@@ -118,11 +143,11 @@
             "h": 250,
             "ext": {
               "pangle": {
-                "adtype": 2
+                "adtype": 7
               }
             }
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     }
