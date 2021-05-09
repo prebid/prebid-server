@@ -21,7 +21,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const adapterVersion = "1.1.0"
+const adapterVersion = "1.2.0"
 const maxUriLength = 8000
 const measurementCode = `
 	<script>
@@ -150,27 +150,9 @@ func (a *AdOceanAdapter) addNewBid(
 		return requestsData, err
 	}
 
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-
-	if request.Device != nil {
-		headers.Add("User-Agent", request.Device.UA)
-
-		if request.Device.IP != "" {
-			headers.Add("X-Forwarded-For", request.Device.IP)
-		} else if request.Device.IPv6 != "" {
-			headers.Add("X-Forwarded-For", request.Device.IPv6)
-		}
-	}
-
-	if request.Site != nil {
-		headers.Add("Referer", request.Site.Page)
-	}
-
 	requestsData = append(requestsData, &requestData{
 		Url:        url,
-		Headers:    &headers,
+		Headers:    a.formHeaders(request),
 		SlaveSizes: slaveSizes,
 	})
 
@@ -249,11 +231,51 @@ func (a *AdOceanAdapter) makeURL(
 	if request.User != nil && request.User.BuyerUID != "" {
 		queryParams.Add("hcuserid", request.User.BuyerUID)
 	}
+	if request.App != nil {
+		queryParams.Add("app", "1")
+		queryParams.Add("appname", request.App.Name)
+		queryParams.Add("appbundle", request.App.Bundle)
+		queryParams.Add("appdomain", request.App.Domain)
+	}
+	if request.Device != nil {
+		if request.Device.IFA != "" {
+			queryParams.Add("ifa", request.Device.IFA)
+		} else {
+			queryParams.Add("dpidmd5", request.Device.DPIDMD5)
+		}
+
+		queryParams.Add("devos", request.Device.OS)
+		queryParams.Add("devosv", request.Device.OSV)
+		queryParams.Add("devmodel", request.Device.Model)
+		queryParams.Add("devmake", request.Device.Make)
+	}
 
 	setSlaveSizesParam(&queryParams, slaveSizes, (request.Test == 1))
 	endpointURL.RawQuery = queryParams.Encode()
 
 	return endpointURL, nil
+}
+
+func (a *AdOceanAdapter) formHeaders(req *openrtb2.BidRequest) *http.Header {
+	headers := make(http.Header)
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	if req.Device != nil {
+		headers.Add("User-Agent", req.Device.UA)
+
+		if req.Device.IP != "" {
+			headers.Add("X-Forwarded-For", req.Device.IP)
+		} else if req.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", req.Device.IPv6)
+		}
+	}
+
+	if req.Site != nil {
+		headers.Add("Referer", req.Site.Page)
+	}
+
+	return &headers
 }
 
 func getImpSizes(imp *openrtb2.Imp) string {
