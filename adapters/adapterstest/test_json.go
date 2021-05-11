@@ -356,8 +356,9 @@ func getDataRaceTestCopies(original *openrtb2.BidRequest) (*openrtb2.BidRequest,
 
 	shallowReqCopy := *original
 
-	// If we call `copy` on a nil []Imp, the shallowReqCopy.Imp slice will initialize to openrtb2.Imp{}
-	// and not nil, which will lead to false positives.
+	// Prebid Server core makes shallow copies of imp elements and adapters are allowed to make changes
+	// to them. Therefore, we need shallow copies of Imp elements here so our test replicates that
+	// functionality and only fail when actual shared momory gets modified.
 	if original.Imp != nil {
 		shallowReqCopy.Imp = make([]openrtb2.Imp, len(original.Imp))
 		copy(shallowReqCopy.Imp, original.Imp)
