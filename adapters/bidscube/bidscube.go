@@ -3,7 +3,6 @@ package bidscube
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -24,12 +23,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	headers.Add("Accept", "application/json")
 	impressions := request.Imp
 	result := make([]*adapters.RequestData, 0, len(impressions))
-	errs := make([]error, 0, len(impressions))
+	var errs []error
 
 	for _, impression := range impressions {
 		var impExt map[string]json.RawMessage
 		if err := json.Unmarshal(impression.Ext, &impExt); err != nil {
-			errs = append(errs, fmt.Errorf("unable to parse bidder parameers: %s", err))
+			errs = append(errs, err)
 			continue
 		}
 
@@ -107,8 +106,6 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 				return openrtb_ext.BidTypeVideo
 			} else if imp.Native != nil {
 				return openrtb_ext.BidTypeNative
-			} else if imp.Audio != nil {
-				return openrtb_ext.BidTypeAudio
 			}
 		}
 	}
