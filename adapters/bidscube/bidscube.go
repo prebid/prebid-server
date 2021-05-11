@@ -87,9 +87,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 
 	for _, seatBid := range bidResponse.SeatBid {
 		for i := range seatBid.Bid {
+			var bidExt map[string]interface{}
+			if err := json.Unmarshal(seatBid.Bid[i].Ext, &bidExt); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			bidType := bidExt["prebid"].(map[string]interface{})["type"].(string)
 			response.Bids = append(response.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
-				BidType: getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp),
+				BidType: getMediaTypeForImp(bidType),
 			})
 		}
 	}
@@ -97,17 +103,14 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	return response, errs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
-			}
-		}
+func getMediaTypeForImp(bidType string) openrtb_ext.BidType {
+	switch bidType {
+	case "banner":
+		return openrtb_ext.BidTypeBanner
+	case "video":
+		return openrtb_ext.BidTypeVideo
+	case "native":
+		return openrtb_ext.BidTypeNative
 	}
 	return openrtb_ext.BidTypeBanner
 }
