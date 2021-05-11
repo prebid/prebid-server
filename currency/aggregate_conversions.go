@@ -2,13 +2,13 @@ package currency
 
 import "strings"
 
-type GroupedConversions struct {
+type AggregateConversions struct {
 	serverRates, customRates Conversions
 }
 
 // NewRates creates a new Rates object holding currencies rates
-func NewRateEngines(customRates, pbsRates Conversions) *GroupedConversions {
-	return &GroupedConversions{
+func NewAggregateConversions(customRates, pbsRates Conversions) *AggregateConversions {
+	return &AggregateConversions{
 		serverRates: pbsRates,
 		customRates: customRates,
 	}
@@ -17,7 +17,7 @@ func NewRateEngines(customRates, pbsRates Conversions) *GroupedConversions {
 // GetRate returns the conversion rate between two currencies prioritizing
 // the customRates currency rate over that of the PBS currency rate service
 // returns an error if both Conversions objects return error.
-func (re *GroupedConversions) GetRate(from string, to string) (float64, error) {
+func (re *AggregateConversions) GetRate(from string, to string) (float64, error) {
 
 	rate, err := re.customRates.GetRate(from, to)
 	if err == nil || !strings.HasPrefix(err.Error(), `Currency conversion rate not found`) {
@@ -33,6 +33,6 @@ func (re *GroupedConversions) GetRate(from string, to string) (float64, error) {
 }
 
 // No need to call GetRates on RateEngines
-func (r *GroupedConversions) GetRates() *map[string]map[string]float64 {
+func (r *AggregateConversions) GetRates() *map[string]map[string]float64 {
 	return nil
 }

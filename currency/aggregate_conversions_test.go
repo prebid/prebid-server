@@ -23,7 +23,7 @@ func TestGroupedGetRate(t *testing.T) {
 			"MXN": 10.31,
 		},
 	})
-	rateEngines := NewRateEngines(customRates, pbsRates)
+	rateEngines := NewAggregateConversions(customRates, pbsRates)
 
 	// Test cases:
 	type aTest struct {
