@@ -22,7 +22,24 @@
           }
         }
       }
-    ]
+    ],
+    "source": {
+      "fd": 1,
+      "ext": {
+        "schain": {
+          "complete": 1,
+          "ver": "1.0",
+          "nodes": [
+            {
+              "asi": "aralego.com",
+              "sid": "par-7E6D2DB9A8922AB07B44A444D2BA67",
+              "rid": "c8f800c2-d285-4cb9-8fc9-f95df52f6e0c",
+              "hp": 1
+            }
+          ]
+        }
+      }
+    }
   },
 
   "httpCalls": [
@@ -60,9 +77,16 @@
           "adapterVersion": "0.9.2",
           "user": {},
           "schain": {
-            "complete": 0,
-            "nodes": null,
-            "ver": ""
+            "complete": 1,
+            "ver": "1.0",
+            "nodes": [
+              {
+                  "asi": "aralego.com",
+                  "sid": "par-7E6D2DB9A8922AB07B44A444D2BA67",
+                  "rid": "c8f800c2-d285-4cb9-8fc9-f95df52f6e0c",
+                  "hp": 1
+              }
+            ]
           }
         }
       },
