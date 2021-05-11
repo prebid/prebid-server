@@ -66,6 +66,26 @@
             "maxduration": 60
           }
         }
+      },
+      {
+        "id": "4",
+	"bidfloor": -3,
+        "video": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "site_id": "108060",
+            "bidfloor": 0,
+            "tag_id": "mytag",
+            "secure": 1,
+            "position": 1,
+            "mimes": ["video/mp4"],
+            "api": [1,2],
+            "protocols": [2],
+            "maxduration": 60
+          }
+        }
       }
     ],
     "site": {
@@ -147,6 +167,34 @@
               "bidder": {
                 "site_id": "108060",
                 "bidfloor": 7,
+                "tag_id": "mytag",
+                "secure": 1,
+                "position": 1,
+                "mimes": ["video/mp4"],
+                "api": [1,2],
+                "protocols": [2],
+                "maxduration": 60
+              }
+            }
+          },
+          {
+            "id": "4",
+            "bidfloor": -3,
+            "secure": 1,
+            "tagid": "mytag",
+            "displaymanager": "prebid-s2s",
+            "displaymanagerver": "2.0.0",
+            "video": {
+              "api": [1,2],
+              "maxduration": 60,
+              "mimes": ["video/mp4"],
+              "protocols": [2],
+              "pos": 1
+            },
+            "ext": {
+              "bidder": {
+                "site_id": "108060",
+                "bidfloor": 0,
                 "tag_id": "mytag",
                 "secure": 1,
                 "position": 1,
