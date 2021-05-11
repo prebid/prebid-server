@@ -217,4 +217,20 @@ var Scenario = map[string]eout{
 		MaximizeForDuration: [][2]int64{{12, 12}, {12, 12}, {12, 12}, {12, 12}, {12, 12}, {12, 12}},
 		MinMaxAlgorithm:     [][2]int64{{12, 12}, {12, 12}, {12, 12}, {12, 12}, {12, 12}, {12, 12}},
 	},
+	"TC56": {
+		MaximizeForDuration: [][2]int64{{126, 126}},
+		MinMaxAlgorithm:     [][2]int64{{126, 126}},
+	},
+	"TC57": {
+		MaximizeForDuration: [][2]int64{{126, 126}},
+		MinMaxAlgorithm:     [][2]int64{{126, 126}},
+	},
+	"TC58": {
+		MaximizeForDuration: [][2]int64{{25, 25}, {25, 25}, {20, 20}, {20, 20}},
+		MinMaxAlgorithm:     [][2]int64{{15, 15}, {15, 15}, {15, 20}, {15, 20}, {15, 25}, {15, 25}, {15, 45}, {15, 45}},
+	},
+	"TC59": {
+		MaximizeForDuration: [][2]int64{{45, 45}},
+		MinMaxAlgorithm:     [][2]int64{{30, 30}, {30, 45}},
+	},
 }
