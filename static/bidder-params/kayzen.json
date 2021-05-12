@@ -7,10 +7,12 @@
   "properties": {
     "zone": {
       "type": "string",
+      "minLength": 1,
       "description": "Zone ID"
     },
     "exchange": {
       "type": "string",
+      "minLength": 1,
       "description": "Exchange/Publisher Name"
     }
   },

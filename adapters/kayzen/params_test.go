@@ -36,6 +36,9 @@ var invalidParams = []string{
 	`{ "anyparam": "anyvalue" }`,
 	`{ "zone": "dc" }`,
 	`{ "exchange": "ex" }`,
+	`{ "exchange": "", "zone" : "" }`,
+	`{ "exchange": "ex", "zone" : "" }`,
+	`{ "exchange": "", "zone" : "dc" }`,
 }
 
 func TestInvalidParams(t *testing.T) {
