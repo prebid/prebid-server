@@ -27,6 +27,7 @@ require (
 	github.com/magiconair/properties v1.8.0
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/mitchellh/copystructure v1.1.2
 	github.com/mitchellh/mapstructure v1.0.0 // indirect
 	github.com/mxmCherry/openrtb/v15 v15.0.0
 	github.com/pelletier/go-toml v1.2.0 // indirect

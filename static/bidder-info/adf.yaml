@@ -4,7 +4,11 @@ gvlVendorID: 50
 capabilities:
   app:
     mediaTypes:
+      - banner
       - native
+      - video
   site:
     mediaTypes:
+      - banner
       - native
+      - video

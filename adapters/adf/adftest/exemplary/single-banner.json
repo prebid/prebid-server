@@ -1,0 +1,95 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+      "id": "test-imp-id",
+      "ext": {
+        "bidder": {
+          "mid": "828782"
+        }
+      },
+      "banner": {
+        "format": [{
+          "w": 300,
+          "h": 250
+        }]
+      }
+    }],
+    "site": {
+      "publisher": {
+        "id": "1"
+      },
+      "page": "some-page-url"
+    },
+    "device": {
+      "w": 1920,
+      "h": 800
+    }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://adx.adform.net/adx/openrtb",
+      "body": {
+        "id": "test-request-id",
+        "imp": [{
+          "id": "test-imp-id",
+          "ext": {
+            "bidder": {
+              "mid": "828782"
+            }
+          },
+          "banner": {
+            "format": [{
+              "w": 300,
+              "h": 250
+            }]
+          },
+          "tagid": "828782"
+        }],
+        "site": {
+          "publisher": {
+            "id": "1"
+          },
+          "page": "some-page-url"
+        },
+        "device": {
+          "w": 1920,
+          "h": 800
+        }
+      }
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-request-id",
+        "seatbid": [{
+          "bid": [{
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 10,
+            "adm": "{banner html}",
+            "adomain": [ "test.com" ],
+            "crid": "test-creative-id"
+          }]
+        }],
+        "cur": "USD"
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [
+      {
+        "bid": {
+          "id": "test-bid-id",
+          "impid": "test-imp-id",
+          "price": 10,
+          "adm": "{banner html}",
+          "crid": "test-creative-id",
+          "adomain": [ "test.com" ]
+        },
+        "type": "banner"
+      }
+    ]
+  }]
+}
