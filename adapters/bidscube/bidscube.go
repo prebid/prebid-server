@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -87,12 +88,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 
 	for _, seatBid := range bidResponse.SeatBid {
 		for i := range seatBid.Bid {
-			var bidExt map[string]interface{}
-			if err := json.Unmarshal(seatBid.Bid[i].Ext, &bidExt); err != nil {
+			bidType, err := jsonparser.GetString(seatBid.Bid[i].Ext, "prebid", "type")
+			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
-			bidType := bidExt["prebid"].(map[string]interface{})["type"].(string)
 			response.Bids = append(response.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: getMediaTypeForImp(bidType),
