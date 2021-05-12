@@ -529,19 +529,17 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 
 	var bids []openrtb2.Bid
 	var errs = make([]error, 0)
-	var pperrs = make([]error, 0)
 	var xtrnal openrtb2.BidRequest
 
 	// For video, which uses RTB for the external request, this will unmarshal as expected. For banner, it will
 	// only get the User struct and everything else will be nil
 	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
 		errs = append(errs, err)
+	} else {
+		bids, errs = postprocess(response, xtrnal, externalRequest.Uri, internalRequest.ID)
 	}
 
-	bids, pperrs = postprocess(response, xtrnal, externalRequest.Uri, internalRequest.ID)
-
-	if len(errs) != 0 || len(pperrs) != 0 {
-		errs = append(errs, pperrs...)
+	if len(errs) != 0 {
 		return nil, errs
 	}
 
