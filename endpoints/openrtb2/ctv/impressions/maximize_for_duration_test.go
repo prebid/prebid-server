@@ -384,31 +384,6 @@ var impressionsTests = []struct {
 		closedMaxDuration:     74,
 		closedSlotMinDuration: 12,
 		closedSlotMaxDuration: 12,
-	}}, {scenario: "TC56", out: expected{
-		impressionCount: 1,
-		freeTime:        0, closedMinDuration: 126,
-		closedMaxDuration:     126,
-		closedSlotMinDuration: 126,
-		closedSlotMaxDuration: 126,
-	}}, {scenario: "TC57", out: expected{
-		impressionCount: 1,
-		freeTime:        0, closedMinDuration: 126,
-		closedMaxDuration:     126,
-		closedSlotMinDuration: 126,
-		closedSlotMaxDuration: 126,
-	}}, {scenario: "TC58", out: expected{
-		impressionCount: 4,
-		freeTime:        0, closedMinDuration: 30,
-		closedMaxDuration:     90,
-		closedSlotMinDuration: 15,
-		closedSlotMaxDuration: 45,
-	}},
-	{scenario: "TC59", out: expected{
-		impressionCount: 1,
-		freeTime:        45, closedMinDuration: 30,
-		closedMaxDuration:     90,
-		closedSlotMinDuration: 15,
-		closedSlotMaxDuration: 45,
 	}},
 }
 

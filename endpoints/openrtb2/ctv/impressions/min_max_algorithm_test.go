@@ -423,34 +423,7 @@ var impressionsTestsA2 = []struct {
 		step4: [][2]int64{},
 		step5: [][2]int64{},
 	}},
-	{scenario: "TC56", out: expectedOutputA2{
-		step1: [][2]int64{{126, 126}},
-		step2: [][2]int64{{126, 126}},
-		step3: [][2]int64{{126, 126}},
-		step4: [][2]int64{{126, 126}},
-		step5: [][2]int64{{126, 126}},
-	}},
-	{scenario: "TC57", out: expectedOutputA2{
-		step1: [][2]int64{{126, 126}},
-		step2: [][2]int64{},
-		step3: [][2]int64{{126, 126}},
-		step4: [][2]int64{},
-		step5: [][2]int64{{126, 126}},
-	}},
-	{scenario: "TC58", out: expectedOutputA2{
-		step1: [][2]int64{{25, 25}, {25, 25}, {20, 20}, {20, 20}},
-		step2: [][2]int64{{25, 25}, {25, 25}, {20, 20}, {20, 20}},
-		step3: [][2]int64{{45, 45}, {45, 45}},
-		step4: [][2]int64{},
-		step5: [][2]int64{{15, 15}, {15, 15}},
-	}},
-	{scenario: "TC59", out: expectedOutputA2{
-		step1: [][2]int64{{45, 45}},
-		step2: [][2]int64{},
-		step3: [][2]int64{},
-		step4: [][2]int64{{30, 30}},
-		step5: [][2]int64{{30, 30}},
-	}},
+
 	// {scenario: "TC1" , out: expectedOutputA2{
 	// 	step1: [][2]int64{},
 	// 	step2: [][2]int64{},
@@ -497,6 +470,7 @@ var impressionsTestsA2 = []struct {
 	// 	// 60, 60, 15, 45, 2, 2
 	// 	step5: [][2]int64{{30, 30}, {30, 30}},
 	// }},
+
 }
 
 func TestGetImpressionsA2(t *testing.T) {
@@ -512,23 +486,23 @@ func TestGetImpressionsA2(t *testing.T) {
 				case 0: // algo1 equaivalent
 					assert.Equal(t, impTest.out.step1, gen.Get())
 					expectedMergedOutput = appendOptimized(expectedMergedOutput, impTest.out.step1)
-
+					break
 				case 1: // pod duration = pod max duration, no of ads = maxads
 					assert.Equal(t, impTest.out.step2, gen.Get())
 					expectedMergedOutput = appendOptimized(expectedMergedOutput, impTest.out.step2)
-
+					break
 				case 2: // pod duration = pod max duration, no of ads = minads
 					assert.Equal(t, impTest.out.step3, gen.Get())
 					expectedMergedOutput = appendOptimized(expectedMergedOutput, impTest.out.step3)
-
+					break
 				case 3: // pod duration = pod min duration, no of ads = maxads
 					assert.Equal(t, impTest.out.step4, gen.Get())
 					expectedMergedOutput = appendOptimized(expectedMergedOutput, impTest.out.step4)
-
+					break
 				case 4: // pod duration = pod min duration, no of ads = minads
 					assert.Equal(t, impTest.out.step5, gen.Get())
 					expectedMergedOutput = appendOptimized(expectedMergedOutput, impTest.out.step5)
-
+					break
 				}
 
 			}

@@ -147,7 +147,7 @@ func computeTimeForEachAdSlot(cfg generator, totalAds int64) int64 {
 	// of given number. Prefer to return computed timeForEachSlot
 	// In such case timeForEachSlot no necessarily to be multiples of given number
 	if cfg.requested.slotMinDuration == cfg.requested.slotMaxDuration {
-		util.Logf("requested.slotMinDuration = requested.slotMaxDuration = %v. Hence, not computing multiples of %v value.", cfg.requested.slotMaxDuration, multipleOf)
+		util.Logf("requested.slotMinDuration = requested.slotMinDuration = %v. Hence, not computing multiples of %v value.", cfg.requested.slotMaxDuration, multipleOf)
 		return timeForEachSlot
 	}
 
