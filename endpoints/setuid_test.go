@@ -389,9 +389,9 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 func doRequest(req *http.Request, metrics metrics.MetricsEngine, validFamilyNames []string, gdprAllowsHostCookies bool, gdprReturnsError bool) *httptest.ResponseRecorder {
 	cfg := config.Configuration{}
 	perms := &mockPermsSetUID{
-		allowHost: gdprAllowsHostCookies,
-		errorHost: gdprReturnsError,
-		allowPI:   true,
+		allowHost:           gdprAllowsHostCookies,
+		errorHost:           gdprReturnsError,
+		personalInfoAllowed: true,
 	}
 	analytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
 	syncers := make(map[openrtb_ext.BidderName]usersync.Usersyncer)
@@ -422,9 +422,9 @@ func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *users
 }
 
 type mockPermsSetUID struct {
-	allowHost bool
-	errorHost bool
-	allowPI   bool
+	allowHost           bool
+	errorHost           bool
+	personalInfoAllowed bool
 }
 
 func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
@@ -439,8 +439,8 @@ func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
-	return g.allowPI, g.allowPI, g.allowPI, nil
+func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (allowGeo bool, allowID bool, err error) {
+	return g.personalInfoAllowed, g.personalInfoAllowed, nil
 }
 
 func newFakeSyncer(familyName string) usersync.Usersyncer {
