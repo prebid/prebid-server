@@ -3,6 +3,7 @@ package bidscube
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -90,7 +91,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 		for i := range seatBid.Bid {
 			bidType, err := jsonparser.GetString(seatBid.Bid[i].Ext, "prebid", "type")
 			if err != nil {
-				errs = append(errs, err)
+				errs = append(errs, fmt.Errorf("unable to read bid.ext.prebid.type: %v", err))
 				continue
 			}
 			response.Bids = append(response.Bids, &adapters.TypedBid{
