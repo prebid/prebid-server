@@ -266,8 +266,7 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 
 func getSchain(request *openrtb2.BidRequest) (openrtb_ext.ExtRequestPrebidSChain, error) {
 	var schain openrtb_ext.ExtRequestPrebidSChain
-	var err error = json.Unmarshal(request.Source.Ext, &schain)
-	return schain, err
+	return schain, json.Unmarshal(request.Source.Ext, &schain)
 }
 
 /*
