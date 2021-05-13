@@ -22,7 +22,24 @@
           }
         }
       }
-    ]
+    ],
+    "source": {
+      "fd": 1,
+      "ext": {
+        "schain": {
+          "complete": 1,
+          "ver": "1.0",
+          "nodes": [
+            {
+              "asi": "somenode.com",
+              "sid": "some-sid",
+              "rid": "some-rid",
+              "hp": 1
+            }
+          ]
+        }
+      }
+    }
   },
 
   "httpCalls": [
@@ -60,9 +77,16 @@
           "adapterVersion": "0.9.2",
           "user": {},
           "schain": {
-            "complete": 0,
-            "nodes": null,
-            "ver": ""
+            "complete": 1,
+            "ver": "1.0",
+            "nodes": [
+              {
+                  "asi": "somenode.com",
+                  "sid": "some-sid",
+                  "rid": "some-rid",
+                  "hp": 1
+              }
+            ]
           }
         }
       },
