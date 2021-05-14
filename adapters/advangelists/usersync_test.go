@@ -4,8 +4,8 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,6 +26,5 @@ func TestAdvangelistsSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://nep.advangelists.com/xp/user-sync?acctid={aid}&&redirect=localhost/setuid?bidder=advangelists&gdpr=1&gdpr_consent=BOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA&uid=$UID", syncInfo.URL)
 	assert.Equal(t, "iframe", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

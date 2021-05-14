@@ -4,18 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/prebid/go-gdpr/api"
 	tcf1constants "github.com/prebid/go-gdpr/consentconstants"
 	consentconstants "github.com/prebid/go-gdpr/consentconstants/tcf2"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
 	"github.com/prebid/go-gdpr/vendorlist"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // This file implements GDPR permissions for the app.
-// For more info, see https://github.com/PubMatic-OpenWrap/prebid-server/issues/501
+// For more info, see https://github.com/prebid/prebid-server/issues/501
 //
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
@@ -58,7 +58,12 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string) (allowPI bool, allowGeo bool, allowID bool, err error) {
+func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context,
+	bidder openrtb_ext.BidderName,
+	PublisherID string,
+	gdprSignal Signal,
+	consent string,
+	weakVendorEnforcement bool) (allowPI bool, allowGeo bool, allowID bool, err error) {
 	if _, ok := p.cfg.NonStandardPublisherMap[PublisherID]; ok {
 		return true, true, true, nil
 	}
@@ -74,7 +79,7 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 	}
 
 	if id, ok := p.vendorIDs[bidder]; ok {
-		return p.allowPI(ctx, id, consent)
+		return p.allowPI(ctx, id, consent, weakVendorEnforcement)
 	}
 
 	return p.defaultVendorPermissions()
@@ -122,7 +127,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 			err := fmt.Errorf("Unable to access TCF2 parsed consent")
 			return false, err
 		}
-		return p.checkPurpose(consent, vendor, vendorID, consentconstants.InfoStorageAccess), nil
+		return p.checkPurpose(consent, vendor, vendorID, consentconstants.InfoStorageAccess, false), nil
 	}
 	if vendor.Purpose(consentconstants.InfoStorageAccess) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && parsedConsent.VendorConsent(vendorID) {
 		return true, nil
@@ -130,7 +135,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 	return false, nil
 }
 
-func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent string) (bool, bool, bool, error) {
+func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
 		return false, false, false, err
@@ -142,9 +147,9 @@ func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent 
 
 	if parsedConsent.Version() == 2 {
 		if p.cfg.TCF2.Enabled {
-			return p.allowPITCF2(parsedConsent, vendor, vendorID)
+			return p.allowPITCF2(parsedConsent, vendor, vendorID, weakVendorEnforcement)
 		}
-		if (vendor.Purpose(consentconstants.InfoStorageAccess) || vendor.LegitimateInterest(consentconstants.InfoStorageAccess)) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && (vendor.Purpose(consentconstants.PersonalizationProfile) || vendor.LegitimateInterest(consentconstants.PersonalizationProfile)) && parsedConsent.PurposeAllowed(consentconstants.PersonalizationProfile) && parsedConsent.VendorConsent(vendorID) {
+		if (vendor.Purpose(consentconstants.InfoStorageAccess) || vendor.LegitimateInterest(consentconstants.InfoStorageAccess) || weakVendorEnforcement) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && (vendor.Purpose(consentconstants.PersonalizationProfile) || vendor.LegitimateInterest(consentconstants.PersonalizationProfile) || weakVendorEnforcement) && parsedConsent.PurposeAllowed(consentconstants.PersonalizationProfile) && (parsedConsent.VendorConsent(vendorID) || weakVendorEnforcement) {
 			return true, true, true, nil
 		}
 	} else {
@@ -155,7 +160,7 @@ func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent 
 	return false, false, false, nil
 }
 
-func (p *permissionsImpl) allowPITCF2(parsedConsent api.VendorConsents, vendor api.Vendor, vendorID uint16) (allowPI bool, allowGeo bool, allowID bool, err error) {
+func (p *permissionsImpl) allowPITCF2(parsedConsent api.VendorConsents, vendor api.Vendor, vendorID uint16, weakVendorEnforcement bool) (allowPI bool, allowGeo bool, allowID bool, err error) {
 	consent, ok := parsedConsent.(tcf2.ConsentMetadata)
 	err = nil
 	allowPI = false
@@ -166,12 +171,12 @@ func (p *permissionsImpl) allowPITCF2(parsedConsent api.VendorConsents, vendor a
 		return
 	}
 	if p.cfg.TCF2.SpecialPurpose1.Enabled {
-		allowGeo = consent.SpecialFeatureOptIn(1) && vendor.SpecialPurpose(1)
+		allowGeo = consent.SpecialFeatureOptIn(1) && (vendor.SpecialPurpose(1) || weakVendorEnforcement)
 	} else {
 		allowGeo = true
 	}
 	for i := 2; i <= 10; i++ {
-		if p.checkPurpose(consent, vendor, vendorID, tcf1constants.Purpose(i)) {
+		if p.checkPurpose(consent, vendor, vendorID, tcf1constants.Purpose(i), weakVendorEnforcement) {
 			allowID = true
 			break
 		}
@@ -179,13 +184,13 @@ func (p *permissionsImpl) allowPITCF2(parsedConsent api.VendorConsents, vendor a
 	// Set to true so any purpose check can flip it to false
 	allowPI = true
 	if p.cfg.TCF2.Purpose1.Enabled {
-		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.InfoStorageAccess)
+		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.InfoStorageAccess, weakVendorEnforcement)
 	}
 	if p.cfg.TCF2.Purpose2.Enabled {
-		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.BasicAdserving)
+		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.BasicAdserving, weakVendorEnforcement)
 	}
 	if p.cfg.TCF2.Purpose7.Enabled {
-		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.AdPerformance)
+		allowPI = allowPI && p.checkPurpose(consent, vendor, vendorID, consentconstants.AdPerformance, weakVendorEnforcement)
 	}
 	return
 }
@@ -194,22 +199,24 @@ const pubRestrictNotAllowed = 0
 const pubRestrictRequireConsent = 1
 const pubRestrictRequireLegitInterest = 2
 
-func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose tcf1constants.Purpose) bool {
+func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose tcf1constants.Purpose, weakVendorEnforcement bool) bool {
 	if purpose == consentconstants.InfoStorageAccess && p.cfg.TCF2.PurposeOneTreatment.Enabled && consent.PurposeOneTreatment() {
 		return p.cfg.TCF2.PurposeOneTreatment.AccessAllowed
 	}
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictNotAllowed, vendorID) {
 		return false
 	}
+
+	purposeAllowed := consent.PurposeAllowed(purpose) && (weakVendorEnforcement || (vendor.Purpose(purpose) && consent.VendorConsent(vendorID)))
+	legitInterest := consent.PurposeLITransparency(purpose) && (weakVendorEnforcement || (vendor.LegitimateInterest(purpose) && consent.VendorLegitInterest(vendorID)))
+
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictRequireConsent, vendorID) {
-		return vendor.PurposeStrict(purpose) && consent.PurposeAllowed(purpose) && consent.VendorConsent(vendorID)
+		return purposeAllowed
 	}
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictRequireLegitInterest, vendorID) {
 		// Need LITransparency here
-		return vendor.LegitimateInterestStrict(purpose) && consent.PurposeLITransparency(purpose) && consent.VendorLegitInterest(vendorID)
+		return legitInterest
 	}
-	purposeAllowed := vendor.Purpose(purpose) && consent.PurposeAllowed(purpose) && consent.VendorConsent(vendorID)
-	legitInterest := vendor.LegitimateInterest(purpose) && consent.PurposeLITransparency(purpose) && consent.VendorLegitInterest(vendorID)
 
 	return purposeAllowed || legitInterest
 }
@@ -258,7 +265,7 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 	return true, nil
 }
 
-func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string) (bool, bool, bool, error) {
+func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
 	return true, true, true, nil
 }
 
@@ -273,6 +280,6 @@ func (a AlwaysFail) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 	return false, nil
 }
 
-func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string) (bool, bool, bool, error) {
+func (a AlwaysFail) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
 	return false, false, false, nil
 }

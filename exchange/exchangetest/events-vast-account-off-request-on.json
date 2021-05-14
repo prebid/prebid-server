@@ -1,6 +1,10 @@
 {
   "events_enabled": false,
   "start_time_ms": 1234567890,
+  "bidIDGenerator": {
+    "generateBidID": true,
+    "returnError": false
+  },
   "incomingRequest": {
     "ortbRequest": {
       "id": "some-request-id",
@@ -105,6 +109,7 @@
               "crid": "creative-4",
               "ext": {
                 "prebid": {
+                  "bidid": "mock_uuid",
                   "type": "video"
                 }
               }
@@ -116,7 +121,7 @@
           "bid": [
             {
               "id": "winning-bid",
-              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/winning-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=winning-bid&a=testaccount&bidder=appnexus&f=b&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/winning-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=mock_uuid&a=testaccount&bidder=appnexus&f=b&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
               "nurl": "http://domain.com/winning-bid",
               "impid": "my-imp-id",
               "price": 0.71,
@@ -125,6 +130,7 @@
               "crid": "creative-1",
               "ext": {
                 "prebid": {
+                  "bidid": "mock_uuid",
                   "type": "video",
                   "targeting": {
                       "hb_bidder": "appnexus",
@@ -139,7 +145,7 @@
             },
             {
               "id": "losing-bid",
-              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/losing-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=losing-bid&a=testaccount&bidder=appnexus&f=b&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/losing-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=mock_uuid&a=testaccount&bidder=appnexus&f=b&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
               "nurl": "http://domain.com/losing-bid",
               "impid": "my-imp-id",
               "price": 0.21,
@@ -148,6 +154,7 @@
               "crid": "creative-2",
               "ext": {
                 "prebid": {
+                  "bidid": "mock_uuid",
                   "type": "video"
                 }
               }

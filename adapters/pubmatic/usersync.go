@@ -3,10 +3,10 @@ package pubmatic
 import (
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewPubmaticSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("pubmatic", 76, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("pubmatic", temp, adapters.SyncTypeIframe)
 }

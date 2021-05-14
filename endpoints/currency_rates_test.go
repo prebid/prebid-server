@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/currency"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/stretchr/testify/assert"
 )
 

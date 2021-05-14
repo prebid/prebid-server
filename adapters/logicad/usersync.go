@@ -3,10 +3,10 @@ package logicad
 import (
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewLogicadSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("logicad", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("logicad", temp, adapters.SyncTypeRedirect)
 }

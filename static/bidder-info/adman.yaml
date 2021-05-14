@@ -1,5 +1,6 @@
 maintainer:
   email: "prebid@admanmedia.com"
+gvlVendorID: 149
 capabilities:
   app:
     mediaTypes:

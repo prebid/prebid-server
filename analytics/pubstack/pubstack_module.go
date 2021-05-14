@@ -2,7 +2,7 @@ package pubstack
 
 import (
 	"fmt"
-	"github.com/PubMatic-OpenWrap/prebid-server/analytics/pubstack/eventchannel"
+	"github.com/prebid/prebid-server/analytics/pubstack/eventchannel"
 	"net/http"
 	"net/url"
 	"os"
@@ -11,10 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/analytics/pubstack/helpers"
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/analytics/pubstack/helpers"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
+	"github.com/prebid/prebid-server/analytics"
 )
 
 type Configuration struct {

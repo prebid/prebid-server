@@ -8,11 +8,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
-	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/events"
-	"github.com/PubMatic-OpenWrap/prebid-server/util/timeutil"
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/stored_requests/events"
+	"github.com/prebid/prebid-server/util/timeutil"
 )
 
 func bytesNull() []byte {

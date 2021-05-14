@@ -10,21 +10,21 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/cache"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
-	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
-	pbc "github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
-	gdprPrivacy "github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
+	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/privacy"
+	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 type bidResult struct {
@@ -307,8 +307,8 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 
 			hbSize := ""
 			if bid.Width != 0 && bid.Height != 0 {
-				width := strconv.FormatUint(bid.Width, 10)
-				height := strconv.FormatUint(bid.Height, 10)
+				width := strconv.FormatInt(bid.Width, 10)
+				height := strconv.FormatInt(bid.Height, 10)
 				hbSize = width + "x" + height
 			}
 

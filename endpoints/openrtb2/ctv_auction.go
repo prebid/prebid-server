@@ -7,44 +7,42 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/PubMatic-OpenWrap/etree"
-	"github.com/PubMatic-OpenWrap/openrtb"
-	accountService "github.com/PubMatic-OpenWrap/prebid-server/account"
-	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/events"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/combination"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/constant"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/impressions"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/response"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/types"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/util"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
-	"github.com/PubMatic-OpenWrap/prebid-server/util/iputil"
 	"github.com/buger/jsonparser"
 	uuid "github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	accountService "github.com/prebid/prebid-server/account"
+	"github.com/prebid/prebid-server/analytics"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/combination"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/constant"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/impressions"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/response"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/types"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/util"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/iputil"
 )
 
 //CTV Specific Endpoint
 type ctvEndpointDeps struct {
 	endpointDeps
-	request        *openrtb.BidRequest
+	request        *openrtb2.BidRequest
 	reqExt         *openrtb_ext.ExtRequestAdPod
 	impData        []*types.ImpData
-	videoSeats     []*openrtb.SeatBid //stores pure video impression bids
+	videoSeats     []*openrtb2.SeatBid //stores pure video impression bids
 	impIndices     map[string]int
 	isAdPodRequest bool
 
@@ -102,8 +100,8 @@ func NewCTVEndpoint(
 func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	defer util.TimeTrack(time.Now(), "CTVAuctionEndpoint")
 
-	var request *openrtb.BidRequest
-	var response *openrtb.BidResponse
+	var request *openrtb2.BidRequest
+	var response *openrtb2.BidResponse
 	var err error
 	var errL []error
 
@@ -246,13 +244,13 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	}
 }
 
-func (deps *ctvEndpointDeps) holdAuction(request *openrtb.BidRequest, usersyncs *usersync.PBSCookie, account *config.Account, startTime time.Time) (*openrtb.BidResponse, error) {
+func (deps *ctvEndpointDeps) holdAuction(request *openrtb2.BidRequest, usersyncs *usersync.PBSCookie, account *config.Account, startTime time.Time) (*openrtb2.BidResponse, error) {
 	defer util.TimeTrack(time.Now(), fmt.Sprintf("Tid:%v CTVHoldAuction", deps.request.ID))
 
 	//Hold OpenRTB Standard Auction
 	if len(request.Imp) == 0 {
 		//Dummy Response Object
-		return &openrtb.BidResponse{ID: request.ID}, nil
+		return &openrtb2.BidResponse{ID: request.ID}, nil
 	}
 
 	auctionRequest := exchange.AuctionRequest{
@@ -269,7 +267,7 @@ func (deps *ctvEndpointDeps) holdAuction(request *openrtb.BidRequest, usersyncs 
 
 /********************* BidRequest Processing *********************/
 
-func (deps *ctvEndpointDeps) init(req *openrtb.BidRequest) {
+func (deps *ctvEndpointDeps) init(req *openrtb2.BidRequest) {
 	deps.request = req
 	deps.impData = make([]*types.ImpData, len(req.Imp))
 	deps.impIndices = make(map[string]int, len(req.Imp))
@@ -412,7 +410,7 @@ func (deps *ctvEndpointDeps) validateBidRequest() (err []error) {
 /********************* Creating CTV BidRequest *********************/
 
 //createBidRequest will return new bid request with all things copy from bid request except impression objects
-func (deps *ctvEndpointDeps) createBidRequest(req *openrtb.BidRequest) *openrtb.BidRequest {
+func (deps *ctvEndpointDeps) createBidRequest(req *openrtb2.BidRequest) *openrtb2.BidRequest {
 	ctvRequest := *req
 
 	//get configurations for all impressions
@@ -441,7 +439,7 @@ func (deps *ctvEndpointDeps) getAllAdPodImpsConfigs() {
 }
 
 //getAdPodImpsConfigs will return number of impressions configurations within adpod
-func (deps *ctvEndpointDeps) getAdPodImpsConfigs(imp *openrtb.Imp, adpod *openrtb_ext.VideoAdPod) []*types.ImpAdPodConfig {
+func (deps *ctvEndpointDeps) getAdPodImpsConfigs(imp *openrtb2.Imp, adpod *openrtb_ext.VideoAdPod) []*types.ImpAdPodConfig {
 	selectedAlgorithm := impressions.MinMaxAlgorithm
 	labels := metrics.PodLabels{AlgorithmName: impressions.MonitorKey[selectedAlgorithm], NoOfImpressions: new(int)}
 
@@ -465,7 +463,7 @@ func (deps *ctvEndpointDeps) getAdPodImpsConfigs(imp *openrtb.Imp, adpod *openrt
 }
 
 //createImpressions will create multiple impressions based on adpod configurations
-func (deps *ctvEndpointDeps) createImpressions() []openrtb.Imp {
+func (deps *ctvEndpointDeps) createImpressions() []openrtb2.Imp {
 	impCount := 0
 	for _, imp := range deps.impData {
 		if nil == imp.ErrorCode {
@@ -478,7 +476,7 @@ func (deps *ctvEndpointDeps) createImpressions() []openrtb.Imp {
 	}
 
 	count := 0
-	imps := make([]openrtb.Imp, impCount)
+	imps := make([]openrtb2.Imp, impCount)
 	for index, imp := range deps.request.Imp {
 		if nil == deps.impData[index].ErrorCode {
 			adPodConfig := deps.impData[index].Config
@@ -499,7 +497,7 @@ func (deps *ctvEndpointDeps) createImpressions() []openrtb.Imp {
 }
 
 //newImpression will clone existing impression object and create video object with ImpAdPodConfig.
-func newImpression(imp *openrtb.Imp, config *types.ImpAdPodConfig) *openrtb.Imp {
+func newImpression(imp *openrtb2.Imp, config *types.ImpAdPodConfig) *openrtb2.Imp {
 	video := *imp.Video
 	video.MinDuration = config.MinDuration
 	video.MaxDuration = config.MaxDuration
@@ -517,15 +515,15 @@ func newImpression(imp *openrtb.Imp, config *types.ImpAdPodConfig) *openrtb.Imp 
 /********************* Prebid BidResponse Processing *********************/
 
 //validateBidResponse
-func (deps *ctvEndpointDeps) validateBidResponse(req *openrtb.BidRequest, resp *openrtb.BidResponse) error {
+func (deps *ctvEndpointDeps) validateBidResponse(req *openrtb2.BidRequest, resp *openrtb2.BidResponse) error {
 	//remove bids withoug cat and adomain
 
 	return nil
 }
 
 //getBids reads bids from bidresponse object
-func (deps *ctvEndpointDeps) getBids(resp *openrtb.BidResponse) {
-	var vseat *openrtb.SeatBid
+func (deps *ctvEndpointDeps) getBids(resp *openrtb2.BidResponse) {
+	var vseat *openrtb2.SeatBid
 	result := make(map[string]*types.AdPodBid)
 
 	for i := range resp.SeatBid {
@@ -569,7 +567,7 @@ func (deps *ctvEndpointDeps) getBids(resp *openrtb.BidResponse) {
 			if len(deps.impData[index].Config) == 0 {
 				//adding pure video bids
 				if vseat == nil {
-					vseat = &openrtb.SeatBid{
+					vseat = &openrtb2.SeatBid{
 						Seat:  seat.Seat,
 						Group: seat.Group,
 						Ext:   seat.Ext,
@@ -677,10 +675,10 @@ func (deps *ctvEndpointDeps) doAdPodExclusions() types.AdPodBids {
 /********************* Creating CTV BidResponse *********************/
 
 //createBidResponse
-func (deps *ctvEndpointDeps) createBidResponse(resp *openrtb.BidResponse, adpods types.AdPodBids) *openrtb.BidResponse {
+func (deps *ctvEndpointDeps) createBidResponse(resp *openrtb2.BidResponse, adpods types.AdPodBids) *openrtb2.BidResponse {
 	defer util.TimeTrack(time.Now(), fmt.Sprintf("Tid:%v createBidResponse", deps.request.ID))
 
-	bidResp := &openrtb.BidResponse{
+	bidResp := &openrtb2.BidResponse{
 		ID:         resp.ID,
 		Cur:        resp.Cur,
 		CustomData: resp.CustomData,
@@ -692,15 +690,15 @@ func (deps *ctvEndpointDeps) createBidResponse(resp *openrtb.BidResponse, adpods
 	return bidResp
 }
 
-func (deps *ctvEndpointDeps) getBidResponseSeatBids(adpods types.AdPodBids) []openrtb.SeatBid {
-	seats := []openrtb.SeatBid{}
+func (deps *ctvEndpointDeps) getBidResponseSeatBids(adpods types.AdPodBids) []openrtb2.SeatBid {
+	seats := []openrtb2.SeatBid{}
 
 	//append pure video request seats
 	for _, seat := range deps.videoSeats {
 		seats = append(seats, *seat)
 	}
 
-	var adpodSeat *openrtb.SeatBid
+	var adpodSeat *openrtb2.SeatBid
 	for _, adpod := range adpods {
 		if len(adpod.Bids) == 0 {
 			continue
@@ -709,7 +707,7 @@ func (deps *ctvEndpointDeps) getBidResponseSeatBids(adpods types.AdPodBids) []op
 		bid := deps.getAdPodBid(adpod)
 		if bid != nil {
 			if nil == adpodSeat {
-				adpodSeat = &openrtb.SeatBid{
+				adpodSeat = &openrtb2.SeatBid{
 					Seat: adpod.SeatName,
 				}
 			}
@@ -723,7 +721,7 @@ func (deps *ctvEndpointDeps) getBidResponseSeatBids(adpods types.AdPodBids) []op
 }
 
 //getBidResponseExt will return extension object
-func (deps *ctvEndpointDeps) getBidResponseExt(resp *openrtb.BidResponse) (data json.RawMessage) {
+func (deps *ctvEndpointDeps) getBidResponseExt(resp *openrtb2.BidResponse) (data json.RawMessage) {
 	var err error
 
 	adpodExt := types.BidResponseAdPodExt{
@@ -789,7 +787,7 @@ func (deps *ctvEndpointDeps) getBidResponseExt(resp *openrtb.BidResponse) (data 
 //getAdPodBid
 func (deps *ctvEndpointDeps) getAdPodBid(adpod *types.AdPodBid) *types.Bid {
 	bid := types.Bid{
-		Bid: &openrtb.Bid{},
+		Bid: &openrtb2.Bid{},
 	}
 
 	//TODO: Write single for loop to get all details
@@ -810,7 +808,7 @@ func (deps *ctvEndpointDeps) getAdPodBid(adpod *types.AdPodBid) *types.Bid {
 }
 
 //getAdPodBidCreative get commulative adpod bid details
-func getAdPodBidCreative(video *openrtb.Video, adpod *types.AdPodBid) *string {
+func getAdPodBidCreative(video *openrtb2.Video, adpod *types.AdPodBid) *string {
 	doc := etree.NewDocument()
 	vast := doc.CreateElement(constant.VASTElement)
 	sequenceNumber := 1
@@ -828,15 +826,6 @@ func getAdPodBidCreative(video *openrtb.Video, adpod *types.AdPodBid) *string {
 			adDoc := etree.NewDocument()
 			if err := adDoc.ReadFromString(bid.AdM); err != nil {
 				continue
-			}
-
-			// adjust bidid in video event trackers and update
-			adjustBidIDInVideoEventTrackers(adDoc, bid.Bid)
-			adm, err := adDoc.WriteToString()
-			if nil != err {
-				util.JLogf("ERROR, %v", err.Error())
-			} else {
-				bid.AdM = adm
 			}
 
 			vastTag := adDoc.SelectElement(constant.VASTElement)
@@ -864,7 +853,6 @@ func getAdPodBidCreative(video *openrtb.Video, adpod *types.AdPodBid) *string {
 	}
 
 	vast.CreateAttr(constant.VASTVersionAttribute, constant.VASTVersionsStr[int(version)])
-
 	bidAdM, err := doc.WriteToString()
 	if nil != err {
 		fmt.Printf("ERROR, %v", err.Error())
@@ -900,7 +888,7 @@ func getAdPodBidExtension(adpod *types.AdPodBid) json.RawMessage {
 //it will try to get the actual ad duration returned by the bidder using prebid.video.duration
 //if prebid.video.duration = 0 or there is error occured in determing it then
 //impress
-func getAdDuration(bid openrtb.Bid, defaultDuration int64) int {
+func getAdDuration(bid openrtb2.Bid, defaultDuration int64) int {
 	duration, err := jsonparser.GetInt(bid.Ext, "prebid", "video", "duration")
 	if nil != err || duration <= 0 {
 		duration = defaultDuration
@@ -908,7 +896,7 @@ func getAdDuration(bid openrtb.Bid, defaultDuration int64) int {
 	return int(duration)
 }
 
-func addTargetingKey(bid *openrtb.Bid, key openrtb_ext.TargetingKey, value string) error {
+func addTargetingKey(bid *openrtb2.Bid, key openrtb_ext.TargetingKey, value string) error {
 	if nil == bid {
 		return errors.New("Invalid bid")
 	}
@@ -918,39 +906,4 @@ func addTargetingKey(bid *openrtb.Bid, key openrtb_ext.TargetingKey, value strin
 		bid.Ext = raw
 	}
 	return err
-}
-
-func adjustBidIDInVideoEventTrackers(doc *etree.Document, bid *openrtb.Bid) {
-	// adjusment: update bid.id with ctv module generated bid.id
-	creatives := events.FindCreatives(doc)
-	for _, creative := range creatives {
-		trackingEvents := creative.FindElements("TrackingEvents/Tracking")
-		if nil != trackingEvents {
-			// update bidid= value with ctv generated bid id for this bid
-			for _, trackingEvent := range trackingEvents {
-				u, e := url.Parse(trackingEvent.Text())
-				if nil == e {
-					values, e := url.ParseQuery(u.RawQuery)
-					// only do replacment if operId=8
-					if nil == e && nil != values["bidid"] && nil != values["operId"] && values["operId"][0] == "8" {
-						values.Set("bidid", bid.ID)
-					} else {
-						continue
-					}
-
-					//OTT-183: Fix
-					if nil != values["operId"] && values["operId"][0] == "8" {
-						operID := values.Get("operId")
-						values.Del("operId")
-						values.Add("_operId", operID) // _ (underscore) will keep it as first key
-					}
-
-					u.RawQuery = values.Encode() // encode sorts query params by key. _ must be first (assuing no other query param with _)
-					// replace _operId with operId
-					u.RawQuery = strings.ReplaceAll(u.RawQuery, "_operId", "operId")
-					trackingEvent.SetText(u.String())
-				}
-			}
-		}
-	}
 }

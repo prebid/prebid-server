@@ -3,12 +3,10 @@ package adkernelAdn
 import (
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
-const adkernelGDPRVendorID = uint16(14)
-
 func NewAdkernelAdnSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("adkernelAdn", 14, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("adkernelAdn", temp, adapters.SyncTypeRedirect)
 }

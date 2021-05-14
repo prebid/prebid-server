@@ -3,10 +3,10 @@ package brightroll
 import (
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewBrightrollSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("brightroll", 25, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("brightroll", temp, adapters.SyncTypeRedirect)
 }

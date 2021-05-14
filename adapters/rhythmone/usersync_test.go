@@ -4,9 +4,9 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,6 +30,5 @@ func TestRhythmoneSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://sync.1rx.io/usersync2/rmphb?gdpr=1&gdpr_consent=BOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA&us_privacy=1NYN&redir=localhost%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D1%26gdpr_consent%3DBOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA%26uid%3D%5BRX_UUID%5D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 36, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

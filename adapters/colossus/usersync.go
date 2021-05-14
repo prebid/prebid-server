@@ -3,11 +3,11 @@ package colossus
 import (
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 // NewColossusSyncer returns colossus syncer
 func NewColossusSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("colossus", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("colossus", temp, adapters.SyncTypeRedirect)
 }

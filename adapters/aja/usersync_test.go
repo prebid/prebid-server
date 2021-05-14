@@ -4,10 +4,10 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/ccpa"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,6 +31,5 @@ func TestAJASyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://ad.as.amanad.adtdp.com/v1/sync/ssp?ssp=4&gdpr=1&us_privacy=C&redir=localhost/setuid?bidder=aja&gdpr=1&gdpr_consent=BOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA&uid=%s", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

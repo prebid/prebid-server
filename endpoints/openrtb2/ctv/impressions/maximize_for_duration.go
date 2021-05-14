@@ -1,8 +1,8 @@
 package impressions
 
 import (
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/util"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/util"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // newMaximizeForDuration Constucts the generator object from openrtb_ext.VideoAdPod

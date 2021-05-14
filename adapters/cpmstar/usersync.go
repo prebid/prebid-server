@@ -3,11 +3,11 @@ package cpmstar
 import (
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 //NewCpmstarSyncer :
 func NewCpmstarSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("cpmstar", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("cpmstar", temp, adapters.SyncTypeRedirect)
 }

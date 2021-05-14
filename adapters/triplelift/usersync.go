@@ -3,10 +3,10 @@ package triplelift
 import (
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewTripleliftSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("triplelift", 28, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("triplelift", temp, adapters.SyncTypeRedirect)
 }

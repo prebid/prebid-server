@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
-	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/caches/nil_cache"
+	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/stored_requests/caches/nil_cache"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

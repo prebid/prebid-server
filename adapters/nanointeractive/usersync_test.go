@@ -4,10 +4,10 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,6 +31,5 @@ func TestNewNanoInteractiveSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://ad.audiencemanager.de/hbs/cookie_sync?gdpr=1&consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw&us_privacy=1NYN&redirectUri=http%3A%2F%2Flocalhost%2Fsetuid%3Fbidder%3Dnanointeractive%26gdpr%3D1%26gdpr_consent%3DBONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw%26uid%3D%24UID", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 72, userSync.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

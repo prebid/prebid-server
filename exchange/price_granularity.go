@@ -4,7 +4,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // GetPriceBucket is the externally facing function for computing CPM buckets

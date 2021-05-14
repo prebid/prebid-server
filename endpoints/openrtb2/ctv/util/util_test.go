@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/PubMatic-OpenWrap/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/types"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -144,7 +144,7 @@ func TestSortByDealPriority(t *testing.T) {
 
 	newBid := func(bid testbid) *types.Bid {
 		return &types.Bid{
-			Bid: &openrtb.Bid{
+			Bid: &openrtb2.Bid{
 				ID:    bid.id,
 				Price: bid.price,
 				//Ext:   json.RawMessage(`{"prebid":{ "dealTierSatisfied" : ` + bid.isDealBid + ` }}`),
@@ -193,7 +193,7 @@ func TestGetTargeting(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.scenario, func(t *testing.T) {
-			bid := new(openrtb.Bid)
+			bid := new(openrtb2.Bid)
 			bid.Ext = []byte(`{"prebid" : { "targeting" : ` + test.targeting + `}}`)
 			value, err := GetTargeting(test.key, openrtb_ext.BidderName(test.bidder), *bid)
 			if test.expectError {

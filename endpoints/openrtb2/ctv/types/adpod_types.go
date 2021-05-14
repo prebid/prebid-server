@@ -1,14 +1,14 @@
 package types
 
 import (
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/constant"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/constant"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 //Bid openrtb bid object with extra parameters
 type Bid struct {
-	*openrtb.Bid
+	*openrtb2.Bid
 	Duration          int
 	FilterReasonCode  constant.FilterReasonCode
 	DealTierSatisfied bool
@@ -22,8 +22,8 @@ type ExtCTVBidResponse struct {
 
 //BidResponseAdPodExt object for ctv bidresponse adpod object
 type BidResponseAdPodExt struct {
-	Response openrtb.BidResponse `json:"bidresponse,omitempty"`
-	Config   map[string]*ImpData `json:"config,omitempty"`
+	Response openrtb2.BidResponse `json:"bidresponse,omitempty"`
+	Config   map[string]*ImpData  `json:"config,omitempty"`
 }
 
 //AdPodBid combination contains ImpBid

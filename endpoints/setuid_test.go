@@ -10,17 +10,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/openrtb_ext"
 
-	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
-	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/metrics/config"
+	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
 )
 
 func TestSetUIDEndpoint(t *testing.T) {
@@ -439,7 +439,7 @@ func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string) (bool, bool, bool, error) {
+func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
 	return g.allowPI, g.allowPI, g.allowPI, nil
 }
 
@@ -461,9 +461,4 @@ func (s fakeSyncer) FamilyName() string {
 // GetUsersyncInfo implements the Usersyncer interface with a no-op.
 func (s fakeSyncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.UsersyncInfo, error) {
 	return nil, nil
-}
-
-// GDPRVendorID implements the Usersyncer interface with a no-op.
-func (s fakeSyncer) GDPRVendorID() uint16 {
-	return 0
 }

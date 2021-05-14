@@ -1,11 +1,12 @@
 package verizonmedia
 
 import (
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"text/template"
+
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewVerizonMediaSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("verizonmedia", 25, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("verizonmedia", temp, adapters.SyncTypeRedirect)
 }

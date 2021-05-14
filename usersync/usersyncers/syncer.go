@@ -4,87 +4,95 @@ import (
 	"strings"
 	"text/template"
 
-	ttx "github.com/PubMatic-OpenWrap/prebid-server/adapters/33across"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/acuityads"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adform"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adkernel"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adkernelAdn"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adman"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/admixer"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adocean"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adpone"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adtarget"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adtelligent"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/advangelists"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/aja"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/amx"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/appnexus"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/audienceNetwork"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/avocet"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/beachfront"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/beintoo"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/between"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/brightroll"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/colossus"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/connectad"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/consumable"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/conversant"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/cpmstar"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/datablocks"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/deepintent"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/dmx"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/emx_digital"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/engagebdr"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/eplanning"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/gamma"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/gamoshi"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/grid"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/gumgum"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/improvedigital"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/invibes"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/ix"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/krushmedia"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/lifestreet"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/lockerdome"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/logicad"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/lunamedia"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/marsmedia"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/mediafuse"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/mgid"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/nanointeractive"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/ninthdecimal"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/nobid"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/openx"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/pubmatic"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/pulsepoint"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/rhythmone"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/rtbhouse"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/rubicon"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/sharethrough"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/smartadserver"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/smartrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/smartyads"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/somoaudience"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/sonobi"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/sovrn"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/synacormedia"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/telaria"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/triplelift"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/triplelift_native"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/ucfunnel"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/unruly"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/valueimpression"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/verizonmedia"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/visx"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/vrtcal"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/yieldlab"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/yieldmo"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/yieldone"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/zeroclickfraud"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/golang/glog"
+	ttx "github.com/prebid/prebid-server/adapters/33across"
+	"github.com/prebid/prebid-server/adapters/acuityads"
+	"github.com/prebid/prebid-server/adapters/adform"
+	"github.com/prebid/prebid-server/adapters/adkernel"
+	"github.com/prebid/prebid-server/adapters/adkernelAdn"
+	"github.com/prebid/prebid-server/adapters/adman"
+	"github.com/prebid/prebid-server/adapters/admixer"
+	"github.com/prebid/prebid-server/adapters/adocean"
+	"github.com/prebid/prebid-server/adapters/adpone"
+	"github.com/prebid/prebid-server/adapters/adtarget"
+	"github.com/prebid/prebid-server/adapters/adtelligent"
+	"github.com/prebid/prebid-server/adapters/advangelists"
+	"github.com/prebid/prebid-server/adapters/adxcg"
+	"github.com/prebid/prebid-server/adapters/adyoulike"
+	"github.com/prebid/prebid-server/adapters/aja"
+	"github.com/prebid/prebid-server/adapters/amx"
+	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/audienceNetwork"
+	"github.com/prebid/prebid-server/adapters/avocet"
+	"github.com/prebid/prebid-server/adapters/beachfront"
+	"github.com/prebid/prebid-server/adapters/beintoo"
+	"github.com/prebid/prebid-server/adapters/between"
+	"github.com/prebid/prebid-server/adapters/brightroll"
+	"github.com/prebid/prebid-server/adapters/colossus"
+	"github.com/prebid/prebid-server/adapters/connectad"
+	"github.com/prebid/prebid-server/adapters/consumable"
+	"github.com/prebid/prebid-server/adapters/conversant"
+	"github.com/prebid/prebid-server/adapters/cpmstar"
+	"github.com/prebid/prebid-server/adapters/criteo"
+	"github.com/prebid/prebid-server/adapters/datablocks"
+	"github.com/prebid/prebid-server/adapters/deepintent"
+	"github.com/prebid/prebid-server/adapters/dmx"
+	"github.com/prebid/prebid-server/adapters/emx_digital"
+	"github.com/prebid/prebid-server/adapters/engagebdr"
+	"github.com/prebid/prebid-server/adapters/eplanning"
+	"github.com/prebid/prebid-server/adapters/gamma"
+	"github.com/prebid/prebid-server/adapters/gamoshi"
+	"github.com/prebid/prebid-server/adapters/grid"
+	"github.com/prebid/prebid-server/adapters/gumgum"
+	"github.com/prebid/prebid-server/adapters/improvedigital"
+	"github.com/prebid/prebid-server/adapters/invibes"
+	"github.com/prebid/prebid-server/adapters/ix"
+	"github.com/prebid/prebid-server/adapters/jixie"
+	"github.com/prebid/prebid-server/adapters/krushmedia"
+	"github.com/prebid/prebid-server/adapters/lifestreet"
+	"github.com/prebid/prebid-server/adapters/lockerdome"
+	"github.com/prebid/prebid-server/adapters/logicad"
+	"github.com/prebid/prebid-server/adapters/lunamedia"
+	"github.com/prebid/prebid-server/adapters/marsmedia"
+	"github.com/prebid/prebid-server/adapters/mediafuse"
+	"github.com/prebid/prebid-server/adapters/mgid"
+	"github.com/prebid/prebid-server/adapters/nanointeractive"
+	"github.com/prebid/prebid-server/adapters/ninthdecimal"
+	"github.com/prebid/prebid-server/adapters/nobid"
+	"github.com/prebid/prebid-server/adapters/onetag"
+	"github.com/prebid/prebid-server/adapters/openx"
+	"github.com/prebid/prebid-server/adapters/outbrain"
+	"github.com/prebid/prebid-server/adapters/pubmatic"
+	"github.com/prebid/prebid-server/adapters/pulsepoint"
+	"github.com/prebid/prebid-server/adapters/rhythmone"
+	"github.com/prebid/prebid-server/adapters/rtbhouse"
+	"github.com/prebid/prebid-server/adapters/rubicon"
+	"github.com/prebid/prebid-server/adapters/sharethrough"
+	"github.com/prebid/prebid-server/adapters/smartadserver"
+	"github.com/prebid/prebid-server/adapters/smartrtb"
+	"github.com/prebid/prebid-server/adapters/smartyads"
+	"github.com/prebid/prebid-server/adapters/somoaudience"
+	"github.com/prebid/prebid-server/adapters/sonobi"
+	"github.com/prebid/prebid-server/adapters/sovrn"
+	"github.com/prebid/prebid-server/adapters/synacormedia"
+	"github.com/prebid/prebid-server/adapters/tappx"
+	"github.com/prebid/prebid-server/adapters/telaria"
+	"github.com/prebid/prebid-server/adapters/triplelift"
+	"github.com/prebid/prebid-server/adapters/triplelift_native"
+	"github.com/prebid/prebid-server/adapters/trustx"
+	"github.com/prebid/prebid-server/adapters/ucfunnel"
+	"github.com/prebid/prebid-server/adapters/unruly"
+	"github.com/prebid/prebid-server/adapters/valueimpression"
+	"github.com/prebid/prebid-server/adapters/verizonmedia"
+	"github.com/prebid/prebid-server/adapters/visx"
+	"github.com/prebid/prebid-server/adapters/vrtcal"
+	"github.com/prebid/prebid-server/adapters/yieldlab"
+	"github.com/prebid/prebid-server/adapters/yieldmo"
+	"github.com/prebid/prebid-server/adapters/yieldone"
+	"github.com/prebid/prebid-server/adapters/zeroclickfraud"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 // NewSyncerMap returns a map of all the usersyncer objects.
@@ -105,6 +113,8 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdtarget, adtarget.NewAdtargetSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdtelligent, adtelligent.NewAdtelligentSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdvangelists, advangelists.NewAdvangelistsSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdxcg, adxcg.NewAdxcgSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdyoulike, adyoulike.NewAdyoulikeSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAJA, aja.NewAJASyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAMX, amx.NewAMXSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAppnexus, appnexus.NewAppnexusSyncer)
@@ -116,6 +126,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderConnectAd, connectad.NewConnectAdSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderConsumable, consumable.NewConsumableSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderConversant, conversant.NewConversantSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderCriteo, criteo.NewCriteoSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderCpmstar, cpmstar.NewCpmstarSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderDatablocks, datablocks.NewDatablocksSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderDeepintent, deepintent.NewDeepintentSyncer)
@@ -131,6 +142,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderImprovedigital, improvedigital.NewImprovedigitalSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderInvibes, invibes.NewInvibesSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderIx, ix.NewIxSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderJixie, jixie.NewJixieSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderKrushmedia, krushmedia.NewKrushmediaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLifestreet, lifestreet.NewLifestreetSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLockerDome, lockerdome.NewLockerDomeSyncer)
@@ -142,6 +154,8 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderNanoInteractive, nanointeractive.NewNanoInteractiveSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderNinthDecimal, ninthdecimal.NewNinthDecimalSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderNoBid, nobid.NewNoBidSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderOneTag, onetag.NewSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderOutbrain, outbrain.NewOutbrainSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderOpenx, openx.NewOpenxSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderPubmatic, pubmatic.NewPubmaticSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderPulsepoint, pulsepoint.NewPulsepointSyncer)
@@ -156,9 +170,11 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartRTB, smartrtb.NewSmartRTBSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartyAds, smartyads.NewSmartyAdsSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSynacormedia, synacormedia.NewSynacorMediaSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderTappx, tappx.NewTappxSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTelaria, telaria.NewTelariaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTriplelift, triplelift.NewTripleliftSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTripleliftNative, triplelift_native.NewTripleliftSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderTrustX, trustx.NewTrustXSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderUcfunnel, ucfunnel.NewUcfunnelSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderUnruly, unruly.NewUnrulySyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderValueImpression, valueimpression.NewValueImpressionSyncer)

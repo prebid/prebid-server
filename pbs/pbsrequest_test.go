@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/cache/dummycache"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/magiconair/properties/assert"
+	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/config"
 )
 
 const mimeVideoMp4 = "video/mp4"

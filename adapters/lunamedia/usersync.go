@@ -3,10 +3,10 @@ package lunamedia
 import (
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewLunaMediaSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("lunamedia", 0, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("lunamedia", temp, adapters.SyncTypeIframe)
 }

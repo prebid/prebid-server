@@ -12,10 +12,10 @@ import (
 	"time"
 
 	"github.com/NYTimes/gziphandler"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
-	metricsconfig "github.com/PubMatic-OpenWrap/prebid-server/metrics/config"
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/metrics"
+	metricsconfig "github.com/prebid/prebid-server/metrics/config"
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.

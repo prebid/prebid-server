@@ -3,10 +3,10 @@ package audienceNetwork
 import (
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewFacebookSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("audienceNetwork", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("audienceNetwork", temp, adapters.SyncTypeRedirect)
 }

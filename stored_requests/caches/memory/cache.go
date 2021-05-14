@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/coocood/freecache"
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/stored_requests"
 )
 
 // NewCache returns an in-memory Cache which evicts items if:

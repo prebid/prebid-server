@@ -3,10 +3,10 @@ package pulsepoint
 import (
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewPulsepointSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("pulsepoint", 81, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("pulsepoint", temp, adapters.SyncTypeRedirect)
 }

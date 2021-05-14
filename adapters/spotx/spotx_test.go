@@ -2,9 +2,9 @@ package spotx
 
 import (
 	"encoding/json"
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/magiconair/properties/assert"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
 	"testing"
 )
 
@@ -23,12 +23,12 @@ func TestSpotxMakeBid(t *testing.T) {
         }
       }`)
 
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID: "1559039248176",
-		Imp: []openrtb.Imp{
+		Imp: []openrtb2.Imp{
 			{
 				ID: "28635736ddc2bb",
-				Video: &openrtb.Video{
+				Video: &openrtb2.Video{
 					MIMEs: []string{"video/3gpp"},
 				},
 				Secure: &secure,

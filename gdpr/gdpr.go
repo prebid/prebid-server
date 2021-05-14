@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/prebid/go-gdpr/vendorlist"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type Permissions interface {
@@ -25,7 +25,7 @@ type Permissions interface {
 	// Determines whether or not to send PI information to a bidder, or mask it out.
 	//
 	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
-	PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string) (bool, bool, bool, error)
+	PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error)
 }
 
 // Versions of the GDPR TCF technical specification.
@@ -44,8 +44,8 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 		cfg:       cfg,
 		vendorIDs: vendorIDs,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			tcf1SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf1SpecVersion),
-			tcf2SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker, tcf2SpecVersion)},
+			tcf1SpecVersion: newVendorListFetcherTCF1(cfg),
+			tcf2SpecVersion: newVendorListFetcherTCF2(ctx, cfg, client, vendorListURLMaker)},
 	}
 
 	if cfg.HostVendorID == 0 {

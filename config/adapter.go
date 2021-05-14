@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/macros"
 	validator "github.com/asaskevich/govalidator"
+	"github.com/prebid/prebid-server/macros"
 )
 
 type Adapter struct {

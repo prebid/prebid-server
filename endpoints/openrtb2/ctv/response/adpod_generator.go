@@ -5,13 +5,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/combination"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/constant"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/types"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/util"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/combination"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/constant"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/types"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/util"
+	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 /********************* AdPodGenerator Functions *********************/
@@ -40,7 +40,7 @@ type highestCombination struct {
 //AdPodGenerator AdPodGenerator
 type AdPodGenerator struct {
 	IAdPodGenerator
-	request  *openrtb.BidRequest
+	request  *openrtb2.BidRequest
 	impIndex int
 	buckets  types.BidsBuckets
 	comb     combination.ICombination
@@ -49,7 +49,7 @@ type AdPodGenerator struct {
 }
 
 //NewAdPodGenerator will generate adpod based on configuration
-func NewAdPodGenerator(request *openrtb.BidRequest, impIndex int, buckets types.BidsBuckets, comb combination.ICombination, adpod *openrtb_ext.VideoAdPod, met metrics.MetricsEngine) *AdPodGenerator {
+func NewAdPodGenerator(request *openrtb2.BidRequest, impIndex int, buckets types.BidsBuckets, comb combination.ICombination, adpod *openrtb_ext.VideoAdPod, met metrics.MetricsEngine) *AdPodGenerator {
 	return &AdPodGenerator{
 		request:  request,
 		impIndex: impIndex,

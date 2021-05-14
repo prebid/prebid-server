@@ -3,10 +3,10 @@ package ninthdecimal
 import (
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewNinthDecimalSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("ninthdecimal", 0, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("ninthdecimal", temp, adapters.SyncTypeIframe)
 }

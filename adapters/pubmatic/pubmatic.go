@@ -11,13 +11,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -171,8 +171,8 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					}
 
 					pbReq.Imp[i].TagID = strings.TrimSpace(adSlot[0])
-					pbReq.Imp[i].Banner.H = openrtb.Uint64Ptr(uint64(height))
-					pbReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
+					pbReq.Imp[i].Banner.H = openrtb2.Int64Ptr(int64(height))
+					pbReq.Imp[i].Banner.W = openrtb2.Int64Ptr(int64(width))
 
 					if len(params.Keywords) != 0 {
 						kvstr := prepareImpressionExt(params.Keywords)
@@ -203,12 +203,12 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 		if pbReq.Site != nil {
 			siteCopy := *pbReq.Site
-			siteCopy.Publisher = &openrtb.Publisher{ID: params.PublisherId, Domain: req.Domain}
+			siteCopy.Publisher = &openrtb2.Publisher{ID: params.PublisherId, Domain: req.Domain}
 			pbReq.Site = &siteCopy
 		}
 		if pbReq.App != nil {
 			appCopy := *pbReq.App
-			appCopy.Publisher = &openrtb.Publisher{ID: params.PublisherId, Domain: req.Domain}
+			appCopy.Publisher = &openrtb2.Publisher{ID: params.PublisherId, Domain: req.Domain}
 			pbReq.App = &appCopy
 		}
 	}
@@ -277,7 +277,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		debug.ResponseBody = string(body)
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
 		return nil, &errortypes.BadServerResponse{
@@ -326,7 +326,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func getBidderParam(request *openrtb.BidRequest, key string) ([]byte, error) {
+func getBidderParam(request *openrtb2.BidRequest, key string) ([]byte, error) {
 	var reqExt openrtb_ext.ExtRequest
 	if len(request.Ext) <= 0 {
 		return nil, nil
@@ -361,7 +361,7 @@ func getBidderParam(request *openrtb.BidRequest, key string) ([]byte, error) {
 	return bytes, nil
 }
 
-func getCookiesFromRequest(request *openrtb.BidRequest) ([]string, error) {
+func getCookiesFromRequest(request *openrtb2.BidRequest) ([]string, error) {
 	cbytes, err := getBidderParam(request, "Cookie")
 	if err != nil {
 		return nil, err
@@ -381,7 +381,7 @@ func getCookiesFromRequest(request *openrtb.BidRequest) ([]string, error) {
 	return cookies, nil
 }
 
-func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var err error
@@ -422,7 +422,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 			publisherCopy.ID = pubID
 			siteCopy.Publisher = &publisherCopy
 		} else {
-			siteCopy.Publisher = &openrtb.Publisher{ID: pubID}
+			siteCopy.Publisher = &openrtb2.Publisher{ID: pubID}
 		}
 		request.Site = &siteCopy
 	} else if request.App != nil {
@@ -432,7 +432,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 			publisherCopy.ID = pubID
 			appCopy.Publisher = &publisherCopy
 		} else {
-			appCopy.Publisher = &openrtb.Publisher{ID: pubID}
+			appCopy.Publisher = &openrtb2.Publisher{ID: pubID}
 		}
 		request.App = &appCopy
 	}
@@ -442,17 +442,17 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 		var userExt *openrtb_ext.ExtUser
 		if err = json.Unmarshal(request.User.Ext, &userExt); err == nil {
 			if userExt != nil && userExt.Eids != nil {
-				var eidArr []openrtb.Eid
+				var eidArr []openrtb2.Eid
 				for _, eid := range userExt.Eids {
-					//var newEid openrtb.Eid
-					newEid := &openrtb.Eid{
+					//var newEid openrtb2.Eid
+					newEid := &openrtb2.Eid{
 						ID:     eid.ID,
 						Source: eid.Source,
 						Ext:    eid.Ext,
 					}
-					var uidArr []openrtb.Uid
+					var uidArr []openrtb2.Uid
 					for _, uid := range eid.Uids {
-						newUID := &openrtb.Uid{
+						newUID := &openrtb2.Uid{
 							ID:    uid.ID,
 							AType: uid.Atype,
 							Ext:   uid.Ext,
@@ -506,7 +506,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 
 // validateAdslot validate the optional adslot string
 // valid formats are 'adslot@WxH', 'adslot' and no adslot
-func validateAdSlot(adslot string, imp *openrtb.Imp) error {
+func validateAdSlot(adslot string, imp *openrtb2.Imp) error {
 	adSlotStr := strings.TrimSpace(adslot)
 
 	if len(adSlotStr) == 0 {
@@ -540,8 +540,8 @@ func validateAdSlot(adslot string, imp *openrtb.Imp) error {
 
 		//In case of video, size could be derived from the player size
 		if imp.Banner != nil && height != 0 && width != 0 {
-			imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
-			imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
+			imp.Banner.H = openrtb2.Int64Ptr(int64(height))
+			imp.Banner.W = openrtb2.Int64Ptr(int64(width))
 		}
 	} else {
 		return errors.New(fmt.Sprintf("Invalid adSlot %v", adSlotStr))
@@ -550,7 +550,7 @@ func validateAdSlot(adslot string, imp *openrtb.Imp) error {
 	return nil
 }
 
-func assignBannerSize(banner *openrtb.Banner) error {
+func assignBannerSize(banner *openrtb2.Banner) error {
 	if banner == nil {
 		return nil
 	}
@@ -563,16 +563,16 @@ func assignBannerSize(banner *openrtb.Banner) error {
 		return errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
 	}
 
-	banner.W = new(uint64)
+	banner.W = new(int64)
 	*banner.W = banner.Format[0].W
-	banner.H = new(uint64)
+	banner.H = new(int64)
 	*banner.H = banner.Format[0].H
 
 	return nil
 }
 
 // parseImpressionObject parse the imp to get it ready to send to pubmatic
-func parseImpressionObject(imp *openrtb.Imp, wrapExt *pubmaticWrapperExt, pubID *string, wrapperExtSet *bool) error {
+func parseImpressionObject(imp *openrtb2.Imp, wrapExt *pubmaticWrapperExt, pubID *string, wrapperExtSet *bool) error {
 	// PubMatic supports banner and video impressions.
 	if imp.Banner == nil && imp.Video == nil {
 		return fmt.Errorf("Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=%s", imp.ID)
@@ -668,7 +668,7 @@ func prepareImpressionExt(keywords map[string]string) string {
 	return kvStr
 }
 
-func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -683,7 +683,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}

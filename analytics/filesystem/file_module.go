@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/chasex/glog"
+	"github.com/prebid/prebid-server/analytics"
 )
 
 type RequestType string

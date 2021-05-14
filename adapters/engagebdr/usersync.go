@@ -1,11 +1,12 @@
 package engagebdr
 
 import (
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"text/template"
+
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewEngageBDRSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("engagebdr", 62, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("engagebdr", temp, adapters.SyncTypeIframe)
 }

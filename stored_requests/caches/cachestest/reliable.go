@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests"
 )
 
 const (

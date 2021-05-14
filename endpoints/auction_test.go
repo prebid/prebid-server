@@ -10,17 +10,17 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/cache/dummycache"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
-	"github.com/PubMatic-OpenWrap/prebid-server/metrics"
-	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/metrics/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
-	"github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
-	gdprPolicy "github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync/usersyncers"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/prebid_cache_client"
+	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/usersync/usersyncers"
 	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/assert"
@@ -454,7 +454,7 @@ func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder o
 	return m.allowBidderSync, nil
 }
 
-func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string) (bool, bool, bool, error) {
+func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
 	return m.allowPI, m.allowGeo, m.allowID, nil
 }
 
@@ -518,7 +518,7 @@ func TestBidSizeValidate(t *testing.T) {
 		AdUnits: []pbs.PBSAdUnit{
 			{
 				BidID: "test_bidid1",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 350,
 						H: 250,
@@ -535,7 +535,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid2",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 100,
 						H: 100,
@@ -548,7 +548,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid3",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 200,
 						H: 200,
@@ -561,7 +561,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid_video",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 400,
 						H: 400,
@@ -574,7 +574,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid3",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 150,
 						H: 150,
@@ -587,7 +587,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid_y",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 150,
 						H: 150,

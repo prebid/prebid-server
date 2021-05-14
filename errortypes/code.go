@@ -11,13 +11,14 @@ const (
 	BidderTemporarilyDisabledErrorCode
 	BlacklistedAcctErrorCode
 	AcctRequiredErrorCode
-	BidderFailedSchemaValidationErrorCode
 )
 
 // Defines numeric codes for well-known warnings.
 const (
 	UnknownWarningCode               = 10999
 	InvalidPrivacyConsentWarningCode = iota + 10000
+	AccountLevelDebugDisabledWarningCode
+	BidderLevelDebugDisabledWarningCode
 )
 
 // Coder provides an error or warning code with severity.

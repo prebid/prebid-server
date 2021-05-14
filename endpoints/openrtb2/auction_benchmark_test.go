@@ -7,15 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/currency"
+	"github.com/prebid/prebid-server/currency"
 
-	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
-	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/backends/empty_fetcher"
+	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 )
 
 // dummyServer returns the header bidding test ad. This response was scraped from a real appnexus server response.
@@ -60,8 +59,8 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(dummyServer))
 	defer server.Close()
 
-	var infos adapters.BidderInfos
-	infos["appnexus"] = adapters.BidderInfo{Capabilities: &adapters.CapabilitiesInfo{Site: &adapters.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}}}
+	var infos config.BidderInfos
+	infos["appnexus"] = config.BidderInfo{Capabilities: &config.CapabilitiesInfo{Site: &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}}}
 	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
 		return

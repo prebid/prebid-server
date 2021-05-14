@@ -1,11 +1,12 @@
 package sharethrough
 
 import (
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"text/template"
+
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewSharethroughSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("sharethrough", 80, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("sharethrough", temp, adapters.SyncTypeRedirect)
 }

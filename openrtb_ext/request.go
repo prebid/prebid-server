@@ -5,9 +5,15 @@ import (
 	"errors"
 )
 
-// FirstPartyDataContextExtKey defines the field name within bidrequest.ext reserved
-// for first party data support.
-const FirstPartyDataContextExtKey string = "context"
+// FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
+const FirstPartyDataExtKey = "data"
+
+// FirstPartyDataContextExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
+const FirstPartyDataContextExtKey = "context"
+
+// SKAdNExtKey defines the field name within request.ext reserved for Apple's SKAdNetwork.
+const SKAdNExtKey = "skadn"
+
 const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
@@ -33,10 +39,6 @@ type ExtRequestPrebid struct {
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
 	// The array may contain a single sstar ('*') entry to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
-
-	// Macros specifies list of custom macros along with the values. This is used while forming
-	// the tracker URLs, where PBS will replace the Custom Macro with its value with url-encoding
-	Macros map[string]string `json:"macros,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains

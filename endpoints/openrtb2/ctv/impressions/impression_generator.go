@@ -1,7 +1,7 @@
 package impressions
 
 import (
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2/ctv/util"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/util"
 )
 
 // generator contains Pod Minimum Duration, Pod Maximum Duration, Slot Minimum Duration and Slot Maximum Duration

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/iputil"
 )
 
 var (

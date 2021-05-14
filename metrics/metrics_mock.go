@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/mock"
 )
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
+	"github.com/prebid/prebid-server/analytics"
 )
 
 func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, error) {

@@ -6,18 +6,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/PubMatic-OpenWrap/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type Adapter struct {
 	url string
 }
 
-func (a *Adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
@@ -42,7 +42,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 	return adapterRequests, errs
 }
 
-func makeRequest(a *Adapter, originalReq *openrtb.BidRequest, imp openrtb.Imp) (*adapters.RequestData, []error) {
+func makeRequest(a *Adapter, originalReq *openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, []error) {
 	var errs []error
 
 	var bidderExt adapters.ExtImpBidder
@@ -113,12 +113,12 @@ func makeRequest(a *Adapter, originalReq *openrtb.BidRequest, imp openrtb.Imp) (
 	return &adapters.RequestData{
 		Method:  "POST",
 		Uri:     fmt.Sprintf("%s/%s", a.url, spotxExt.ChannelID),
-		Body:    reqJSON, //TODO: This is a custom request struct, other adapters are sending this openrtb.BidRequest
+		Body:    reqJSON, //TODO: This is a custom request struct, other adapters are sending this openrtb2.BidRequest
 		Headers: headers,
 	}, errs
 }
 
-func (a *Adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *Adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -135,7 +135,7 @@ func (a *Adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -155,7 +155,7 @@ func (a *Adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impID && imp.Video != nil {
 			return openrtb_ext.BidTypeVideo, nil

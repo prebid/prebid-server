@@ -1,4 +1,4 @@
-module github.com/PubMatic-OpenWrap/prebid-server
+module github.com/prebid/prebid-server
 
 go 1.14
 
@@ -7,8 +7,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.3.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
-	github.com/PubMatic-OpenWrap/etree v1.0.2-0.20210129100623-8f30cfecf9f4
-	github.com/PubMatic-OpenWrap/openrtb v11.0.1-0.20200228131822-5216ebe65c0c+incompatible
+	github.com/PubMatic-OpenWrap/etree v1.0.1
 	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/blang/semver v3.5.1+incompatible
@@ -30,8 +29,7 @@ require (
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.0.0 // indirect
-	github.com/onsi/ginkgo v1.10.1 // indirect
-	github.com/onsi/gomega v1.7.0 // indirect
+	github.com/mxmCherry/openrtb/v15 v15.0.0
 	github.com/pelletier/go-toml v1.2.0 // indirect
 	github.com/prebid/go-gdpr v0.8.3
 	github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed
@@ -56,9 +54,9 @@ require (
 	github.com/yudai/gojsondiff v0.0.0-20170107030110-7b1b7adf999d
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
-	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20190422165155-953cdadca894 // indirect
-	golang.org/x/text v0.3.0
-	gopkg.in/yaml.v2 v2.2.2
+	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb
+	golang.org/x/text v0.3.3
+	gopkg.in/yaml.v2 v2.4.0
 )
+
+replace github.com/mxmCherry/openrtb/v15 v15.0.0 => github.com/PubMatic-OpenWrap/openrtb/v15 v15.0.0-20210425134848-adbedb6f42c6

@@ -167,7 +167,8 @@ func (err *BidderTemporarilyDisabled) Severity() Severity {
 
 // Warning is a generic non-fatal error.
 type Warning struct {
-	Message string
+	Message     string
+	WarningCode int
 }
 
 func (err *Warning) Error() string {
@@ -175,45 +176,9 @@ func (err *Warning) Error() string {
 }
 
 func (err *Warning) Code() int {
-	return UnknownWarningCode
+	return err.WarningCode
 }
 
 func (err *Warning) Severity() Severity {
-	return SeverityWarning
-}
-
-// InvalidPrivacyConsent is a warning for when the privacy consent string is invalid and is ignored.
-type InvalidPrivacyConsent struct {
-	Message string
-}
-
-func (err *InvalidPrivacyConsent) Error() string {
-	return err.Message
-}
-
-func (err *InvalidPrivacyConsent) Code() int {
-	return InvalidPrivacyConsentWarningCode
-}
-
-func (err *InvalidPrivacyConsent) Severity() Severity {
-	return SeverityWarning
-}
-
-// BidderFailedSchemaValidation is used at the request validation step,
-// when the bidder parameters fail the schema validation, we want to
-// continue processing the request and still return an error message.
-type BidderFailedSchemaValidation struct {
-	Message string
-}
-
-func (err *BidderFailedSchemaValidation) Error() string {
-	return err.Message
-}
-
-func (err *BidderFailedSchemaValidation) Code() int {
-	return BidderFailedSchemaValidationErrorCode
-}
-
-func (err *BidderFailedSchemaValidation) Severity() Severity {
 	return SeverityWarning
 }

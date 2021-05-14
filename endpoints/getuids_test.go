@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/prebid/prebid-server/config"
 	"github.com/stretchr/testify/assert"
 )
 

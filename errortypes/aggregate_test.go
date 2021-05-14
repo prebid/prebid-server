@@ -7,7 +7,7 @@ import (
 	"github.com/influxdata/influxdb/pkg/testing/assert"
 )
 
-func TestAggregateErrors(t *testing.T) {
+func TestAggregateError(t *testing.T) {
 	var testCases = []struct {
 		description string
 		message     string
@@ -35,7 +35,7 @@ func TestAggregateErrors(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		err := NewAggregateErrors(test.message, test.errors)
+		err := NewAggregateError(test.message, test.errors)
 		assert.Equal(t, test.expected, err.Error(), test.description)
 	}
 }

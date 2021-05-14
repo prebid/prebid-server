@@ -9,18 +9,18 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/appnexus"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/audienceNetwork"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/lifestreet"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/pubmatic"
-	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
-	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/metrics/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/audienceNetwork"
+	"github.com/prebid/prebid-server/adapters/lifestreet"
+	"github.com/prebid/prebid-server/adapters/pubmatic"
+	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/gdpr"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,9 +28,7 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	rr := doPost(`{"bidders":["appnexus", "audienceNetwork", "random"]}`, nil, true, syncersForTest())
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncs(t, rr.Body.Bytes())
-	assert.Contains(t, syncs, "appnexus")
-	assert.Contains(t, syncs, "audienceNetwork")
+	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork"}, parseSyncs(t, rr.Body.Bytes()))
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
@@ -48,8 +46,7 @@ func TestGDPRPreventsBidders(t *testing.T) {
 	})
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncs(t, rr.Body.Bytes())
-	assert.Contains(t, syncs, "lifestreet")
+	assert.ElementsMatch(t, []string{"lifestreet"}, parseSyncs(t, rr.Body.Bytes()))
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
@@ -57,9 +54,7 @@ func TestGDPRIgnoredIfZero(t *testing.T) {
 	rr := doPost(`{"gdpr":0,"bidders":["appnexus", "pubmatic"]}`, nil, false, nil)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncs(t, rr.Body.Bytes())
-	assert.Contains(t, syncs, "appnexus")
-	assert.Contains(t, syncs, "pubmatic")
+	assert.ElementsMatch(t, []string{"appnexus", "pubmatic"}, parseSyncs(t, rr.Body.Bytes()))
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
@@ -150,11 +145,7 @@ func TestCookieSyncNoBidders(t *testing.T) {
 	rr := doPost("{}", nil, true, syncersForTest())
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncs(t, rr.Body.Bytes())
-	assert.Contains(t, syncs, "appnexus")
-	assert.Contains(t, syncs, "audienceNetwork")
-	assert.Contains(t, syncs, "lifestreet")
-	assert.Contains(t, syncs, "pubmatic")
+	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork", "lifestreet", "pubmatic"}, parseSyncs(t, rr.Body.Bytes()))
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
@@ -162,9 +153,7 @@ func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
 	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{}, config.GDPR{UsersyncIfAmbiguous: true}, config.CCPA{})
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncs(t, rr.Body.Bytes())
-	assert.Contains(t, syncs, "appnexus")
-	assert.Contains(t, syncs, "audienceNetwork")
+	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork"}, parseSyncs(t, rr.Body.Bytes()))
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
@@ -265,6 +254,6 @@ func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 	return ok, nil
 }
 
-func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string) (bool, bool, bool, error) {
+func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
 	return true, true, true, nil
 }

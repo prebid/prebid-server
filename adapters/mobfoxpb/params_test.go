@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // TestValidParams makes sure that the mobfoxpb schema accepts all imp.ext fields which we intend to support.
@@ -37,6 +37,7 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"TagID": "6"}`,
+	`{"key": "1"}`,
 }
 
 var invalidParams = []string{
@@ -44,4 +45,7 @@ var invalidParams = []string{
 	`{"tagid": "123"}`,
 	`{"TagID": 16}`,
 	`{"TagID": ""}`,
+	`{"Key": "1"}`,
+	`{"key": 1}`,
+	`{"key":""}`,
 }

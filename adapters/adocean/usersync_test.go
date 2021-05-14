@@ -4,8 +4,8 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
-	"github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,5 +30,4 @@ func TestAdOceanSyncer(t *testing.T) {
 		syncInfo.URL,
 	)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 328, syncer.GDPRVendorID())
 }

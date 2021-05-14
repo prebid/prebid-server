@@ -2,7 +2,7 @@ package adot
 
 import (
 	"encoding/json"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
 )
 
