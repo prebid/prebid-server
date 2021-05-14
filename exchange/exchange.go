@@ -63,6 +63,7 @@ type exchange struct {
 	privacyConfig       config.Privacy
 	categoriesFetcher   stored_requests.CategoryFetcher
 	bidIDGenerator      BidIDGenerator
+	trakerURL           string
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -117,6 +118,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 			LMT:  cfg.LMT,
 		},
 		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
+		trakerURL: cfg.TrackerURL,
 	}
 }
 
@@ -204,7 +206,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
 			var rejections []string
-			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, requestExt, adapterBids, e.categoriesFetcher, targData)
+			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, r.BidRequest, requestExt, adapterBids, e.categoriesFetcher, targData)
 			if err != nil {
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 			}
@@ -225,7 +227,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 
 		evTracking := getEventTracking(&requestExt.Prebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL)
-		adapterBids = evTracking.modifyBidsForEvents(adapterBids)
+		adapterBids = evTracking.modifyBidsForEvents(adapterBids, r.BidRequest, e.trakerURL)
 
 		if targData != nil {
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
@@ -410,6 +412,7 @@ func (e *exchange) getAllBids(
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(bidderRequests))
 	chBids := make(chan *bidResponseWrapper, len(bidderRequests))
 	bidsFound := false
+	bidIDsCollision := false
 
 	for _, bidder := range bidderRequests {
 		// Here we actually call the adapters and collect the bids.
@@ -458,6 +461,9 @@ func (e *exchange) getAllBids(
 					var cpm = float64(bid.bid.Price * 1000)
 					e.me.RecordAdapterPrice(bidderRequest.BidderLabels, cpm)
 					e.me.RecordAdapterBidReceived(bidderRequest.BidderLabels, bid.bidType, bid.bid.AdM != "")
+					if bid.bidType == openrtb_ext.BidTypeVideo && bid.bidVideo != nil && bid.bidVideo.Duration > 0 {
+						e.me.RecordAdapterVideoBidDuration(bidderRequest.BidderLabels, bid.bidVideo.Duration)
+					}
 				}
 			}
 			chBids <- brw
@@ -477,9 +483,14 @@ func (e *exchange) getAllBids(
 
 		if !bidsFound && adapterBids[brw.bidder] != nil && len(adapterBids[brw.bidder].bids) > 0 {
 			bidsFound = true
+			bidIDsCollision = recordAdaptorDuplicateBidIDs(e.me, adapterBids)
 		}
-	}
 
+	}
+	if bidIDsCollision {
+		// record this request count this request if bid collision is detected
+		e.me.RecordRequestHavingDuplicateBidID()
+	}
 	return adapterBids, adapterExtra, bidsFound
 }
 
@@ -609,7 +620,7 @@ func encodeBidResponseExt(bidResponseExt *openrtb_ext.ExtBidResponse) ([]byte, e
 	return buffer.Bytes(), err
 }
 
-func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
+func applyCategoryMapping(ctx context.Context, bidRequest *openrtb2.BidRequest, requestExt *openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -620,6 +631,8 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 	}
 
 	dedupe := make(map[string]bidDedupe)
+
+	impMap := make(map[string]*openrtb2.Imp)
 
 	// applyCategoryMapping doesn't get called unless
 	// requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil
@@ -634,6 +647,11 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 	var err error
 	var rejections []string
 	var translateCategories = true
+
+	//Maintaining BidRequest Impression Map
+	for i := range bidRequest.Imp {
+		impMap[bidRequest.Imp[i].ID] = &bidRequest.Imp[i]
+	}
 
 	if includeBrandCategory && brandCatExt.WithCategory {
 		if brandCatExt.TranslateCategories != nil {
@@ -709,6 +727,12 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 					if duration <= dur {
 						newDur = dur
 						break
+					}
+				}
+			} else if newDur == 0 {
+				if imp, ok := impMap[bid.bid.ImpID]; ok {
+					if nil != imp.Video && imp.Video.MaxDuration > 0 {
+						newDur = int(imp.Video.MaxDuration)
 					}
 				}
 			}
@@ -982,4 +1006,27 @@ func listBiddersWithRequests(bidderRequests []BidderRequest) []openrtb_ext.Bidde
 	randomizeList(liveAdapters)
 
 	return liveAdapters
+}
+
+// recordAdaptorDuplicateBidIDs finds the bid.id collisions for each bidder and records them with metrics engine
+// it returns true if collosion(s) is/are detected in any of the bidder's bids
+func recordAdaptorDuplicateBidIDs(metricsEngine metrics.MetricsEngine, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid) bool {
+	bidIDCollisionFound := false
+	if nil == adapterBids {
+		return false
+	}
+	for bidder, bid := range adapterBids {
+		bidIDColisionMap := make(map[string]int, len(adapterBids[bidder].bids))
+		for _, thisBid := range bid.bids {
+			if collisions, ok := bidIDColisionMap[thisBid.bid.ID]; ok {
+				bidIDCollisionFound = true
+				bidIDColisionMap[thisBid.bid.ID]++
+				glog.Warningf("Bid.id %v :: %v collision(s) [imp.id = %v] for bidder '%v'", thisBid.bid.ID, collisions, thisBid.bid.ImpID, string(bidder))
+				metricsEngine.RecordAdapterDuplicateBidID(string(bidder), 1)
+			} else {
+				bidIDColisionMap[thisBid.bid.ID] = 1
+			}
+		}
+	}
+	return bidIDCollisionFound
 }

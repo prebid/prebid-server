@@ -8,6 +8,10 @@ github.com/OneOfOne/xxhash v1.2.5 h1:zl/OfRA6nftbBK9qTohYBJ5xvw6C/oNKizR7cZGl3cI
 github.com/OneOfOne/xxhash v1.2.5/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdIIOT9Um7Q=
 github.com/PubMatic-OpenWrap/etree v1.0.1 h1:Q8sZ99MuXKmAx2v4XThKjwlstgadZffiRbNwUG0Ey1U=
 github.com/PubMatic-OpenWrap/etree v1.0.1/go.mod h1:5Y8qgcuDoy3XXG907UXkGnVTwihF16rXyJa4zRT7hOE=
+github.com/PubMatic-OpenWrap/etree v1.0.2-0.20210129100623-8f30cfecf9f4 h1:EhiijwjoKTx7FVP8p2wwC/z4n5l4c8l2CGmsrFv2uhI=
+github.com/PubMatic-OpenWrap/etree v1.0.2-0.20210129100623-8f30cfecf9f4/go.mod h1:5Y8qgcuDoy3XXG907UXkGnVTwihF16rXyJa4zRT7hOE=
+github.com/PubMatic-OpenWrap/openrtb/v15 v15.0.0-20210425063110-b01110089669 h1:oEMhzdbL9IwS7wJCQfx9qpRZSHryTy8mv9Gx/8BY8eA=
+github.com/PubMatic-OpenWrap/openrtb/v15 v15.0.0-20210425063110-b01110089669/go.mod h1:TVgncsz6MOzbL7lhun1lNuUBzVBlVDbxf9Fyy1TyhZA=
 github.com/PubMatic-OpenWrap/openrtb/v15 v15.0.0-20210425134848-adbedb6f42c6 h1:HYFXG8R1mtbDYpwWPxtBXuQ8pfgndMlQd7opo+wSAbk=
 github.com/PubMatic-OpenWrap/openrtb/v15 v15.0.0-20210425134848-adbedb6f42c6/go.mod h1:XMFHmDvfVyIhz5JGzvNXVt0afDLN2mrdYviUOKIYqAo=
 github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf h1:eg0MeVzsP1G42dRafH3vf+al2vQIJU0YHX+1Tw87oco=

@@ -42,6 +42,20 @@ func TestMakeVASTNurl(t *testing.T) {
 	assert.Equal(t, expect, vast)
 }
 
+func TestMakeVASTAdmContainsURI(t *testing.T) {
+	const url = "http://myvast.com/1.xml"
+	const expect = `<VAST version="3.0"><Ad><Wrapper>` +
+		`<AdSystem>prebid.org wrapper</AdSystem>` +
+		`<VASTAdTagURI><![CDATA[` + url + `]]></VASTAdTagURI>` +
+		`<Impression></Impression><Creatives></Creatives>` +
+		`</Wrapper></Ad></VAST>`
+	bid := &openrtb2.Bid{
+		AdM: url,
+	}
+	vast := makeVAST(bid)
+	assert.Equal(t, expect, vast)
+}
+
 func TestBuildCacheString(t *testing.T) {
 	testCases := []struct {
 		description      string

@@ -283,12 +283,19 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 // makeVAST returns some VAST XML for the given bid. If AdM is defined,
 // it takes precedence. Otherwise the Nurl will be wrapped in a redirect tag.
 func makeVAST(bid *openrtb2.Bid) string {
-	if bid.AdM == "" {
-		return `<VAST version="3.0"><Ad><Wrapper>` +
-			`<AdSystem>prebid.org wrapper</AdSystem>` +
-			`<VASTAdTagURI><![CDATA[` + bid.NURL + `]]></VASTAdTagURI>` +
-			`<Impression></Impression><Creatives></Creatives>` +
-			`</Wrapper></Ad></VAST>`
+	wrapperVASTTemplate := `<VAST version="3.0"><Ad><Wrapper>` +
+		`<AdSystem>prebid.org wrapper</AdSystem>` +
+		`<VASTAdTagURI><![CDATA[%v]]></VASTAdTagURI>` +
+		`<Impression></Impression><Creatives></Creatives>` +
+		`</Wrapper></Ad></VAST>`
+	adm := bid.AdM
+
+	if adm == "" {
+		return fmt.Sprintf(wrapperVASTTemplate, bid.NURL) // set nurl as VASTAdTagURI
+	}
+
+	if strings.HasPrefix(adm, "http") { // check if it contains URL
+		return fmt.Sprintf(wrapperVASTTemplate, adm) // set adm as VASTAdTagURI
 	}
 	return bid.AdM
 }

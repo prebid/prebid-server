@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/endpoints/events"
 	"math"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -58,7 +60,7 @@ func NewCTVEndpoint(
 	requestsByID stored_requests.Fetcher,
 	videoFetcher stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
-	//categories stored_requests.CategoryFetcher,
+//categories stored_requests.CategoryFetcher,
 	cfg *config.Configuration,
 	met metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
@@ -828,6 +830,15 @@ func getAdPodBidCreative(video *openrtb2.Video, adpod *types.AdPodBid) *string {
 				continue
 			}
 
+			// adjust bidid in video event trackers and update
+			adjustBidIDInVideoEventTrackers(adDoc, bid.Bid)
+			adm, err := adDoc.WriteToString()
+			if nil != err {
+				util.JLogf("ERROR, %v", err.Error())
+			} else {
+				bid.AdM = adm
+			}
+
 			vastTag := adDoc.SelectElement(constant.VASTElement)
 
 			//Get Actual VAST Version
@@ -906,4 +917,39 @@ func addTargetingKey(bid *openrtb2.Bid, key openrtb_ext.TargetingKey, value stri
 		bid.Ext = raw
 	}
 	return err
+}
+
+func adjustBidIDInVideoEventTrackers(doc *etree.Document, bid *openrtb2.Bid) {
+	// adjusment: update bid.id with ctv module generated bid.id
+	creatives := events.FindCreatives(doc)
+	for _, creative := range creatives {
+		trackingEvents := creative.FindElements("TrackingEvents/Tracking")
+		if nil != trackingEvents {
+			// update bidid= value with ctv generated bid id for this bid
+			for _, trackingEvent := range trackingEvents {
+				u, e := url.Parse(trackingEvent.Text())
+				if nil == e {
+					values, e := url.ParseQuery(u.RawQuery)
+					// only do replacment if operId=8
+					if nil == e && nil != values["bidid"] && nil != values["operId"] && values["operId"][0] == "8" {
+						values.Set("bidid", bid.ID)
+					} else {
+						continue
+					}
+
+					//OTT-183: Fix
+					if nil != values["operId"] && values["operId"][0] == "8" {
+						operID := values.Get("operId")
+						values.Del("operId")
+						values.Add("_operId", operID) // _ (underscore) will keep it as first key
+					}
+
+					u.RawQuery = values.Encode() // encode sorts query params by key. _ must be first (assuing no other query param with _)
+					// replace _operId with operId
+					u.RawQuery = strings.ReplaceAll(u.RawQuery, "_operId", "operId")
+					trackingEvent.SetText(u.String())
+				}
+			}
+		}
+	}
 }
