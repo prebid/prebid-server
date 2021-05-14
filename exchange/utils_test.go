@@ -20,8 +20,10 @@ import (
 //
 // It only allows appnexus for GDPR consent
 type permissionsMock struct {
-	personalInfoAllowed      bool
-	personalInfoAllowedError error
+	allowBidRequest bool
+	passGeo         bool
+	passID          bool
+	activitiesError error
 }
 
 func (p *permissionsMock) HostCookiesAllowed(ctx context.Context, gdpr gdpr.Signal, consent string) (bool, error) {
@@ -32,8 +34,8 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr gdpr.Signal, consent string, weakVendorEnforcement bool) (allowGeo bool, allowID bool, err error) {
-	return p.personalInfoAllowed, p.personalInfoAllowed, p.personalInfoAllowedError
+func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr gdpr.Signal, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
+	return p.allowBidRequest, p.passGeo, p.passID, p.activitiesError
 }
 
 func assertReq(t *testing.T, bidderRequests []BidderRequest,
@@ -465,7 +467,8 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig, nil)
+		permissions := permissionsMock{allowBidRequest: true, passGeo: true, passID: true}
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, &permissions, true, privacyConfig, nil)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -620,7 +623,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			context.Background(),
 			auctionReq,
 			nil,
-			&permissionsMock{personalInfoAllowed: true},
+			&permissionsMock{allowBidRequest: true, passGeo: true, passID: true},
 			true,
 			privacyConfig,
 			nil)
@@ -681,7 +684,8 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 				Enforce: true,
 			},
 		}
-		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig, nil)
+		permissions := permissionsMock{allowBidRequest: true, passGeo: true, passID: true}
+		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, &permissions, true, privacyConfig, nil)
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
@@ -721,7 +725,8 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 			UserSyncs:  &emptyUsersync{},
 		}
 
-		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, &permissionsMock{personalInfoAllowed: true}, true, config.Privacy{}, nil)
+		permissions := permissionsMock{allowBidRequest: true, passGeo: true, passID: true}
+		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, &permissions, true, config.Privacy{}, nil)
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -828,7 +833,8 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 			UserSyncs:  &emptyUsersync{},
 		}
 
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, &permissionsMock{}, true, config.Privacy{}, nil)
+		permissions := permissionsMock{allowBidRequest: true, passGeo: true, passID: true}
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, &permissions, true, config.Privacy{}, nil)
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -1409,7 +1415,8 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 			},
 		}
 
-		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig, nil)
+		permissions := permissionsMock{allowBidRequest: true, passGeo: true, passID: true}
+		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, &permissions, true, privacyConfig, nil)
 		result := results[0]
 
 		assert.Nil(t, errs)
@@ -1424,7 +1431,7 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 	}
 }
 
-func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
+func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 	tcf1Consent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
 	tcf2Consent := "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA"
 	trueValue, falseValue := true, false
@@ -1624,7 +1631,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			context.Background(),
 			auctionReq,
 			nil,
-			&permissionsMock{personalInfoAllowed: !test.gdprScrub, personalInfoAllowedError: test.permissionsError},
+			&permissionsMock{allowBidRequest: true, passGeo: !test.gdprScrub, passID: !test.gdprScrub, activitiesError: test.permissionsError},
 			test.userSyncIfAmbiguous,
 			privacyConfig,
 			nil)
@@ -1644,6 +1651,66 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			assert.NotEqual(t, result.BidRequest.Device.DIDMD5, "", test.description+":Device.DIDMD5")
 		}
 		assert.Equal(t, test.expectPrivacyLabels, privacyLabels, test.description+":PrivacyLabels")
+	}
+}
+
+func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
+	testCases := []struct {
+		description         string
+		gdprBlockBidRequest bool
+		expectRequestsCount int
+	}{
+		{
+			description:         "GDPR allows bid request",
+			gdprBlockBidRequest: false,
+			expectRequestsCount: 1,
+		},
+		{
+			description:         "GDPR blocks bid request",
+			gdprBlockBidRequest: true,
+			expectRequestsCount: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		req := newBidRequest(t)
+		req.Regs = &openrtb2.Regs{
+			Ext: json.RawMessage(`{"gdpr":1}`),
+		}
+
+		privacyConfig := config.Privacy{
+			GDPR: config.GDPR{
+				Enabled:             true,
+				UsersyncIfAmbiguous: true,
+				TCF2: config.TCF2{
+					Enabled: true,
+				},
+			},
+		}
+
+		accountConfig := config.Account{
+			GDPR: config.AccountGDPR{
+				Enabled: nil,
+			},
+		}
+
+		auctionReq := AuctionRequest{
+			BidRequest: req,
+			UserSyncs:  &emptyUsersync{},
+			Account:    accountConfig,
+		}
+
+		results, _, errs := cleanOpenRTBRequests(
+			context.Background(),
+			auctionReq,
+			nil,
+			&permissionsMock{allowBidRequest: !test.gdprBlockBidRequest, passGeo: true, passID: true, activitiesError: nil},
+			true,
+			privacyConfig,
+			nil)
+
+		assert.Equal(t, test.expectRequestsCount, len(results), test.description)
+		assert.Equal(t, 0, len(errs), test.description)
 	}
 }
 
@@ -2098,5 +2165,79 @@ func TestRemoveUnpermissionedEidsEmptyValidations(t *testing.T) {
 		resultErr := removeUnpermissionedEids(test.request, "bidderA", test.requestExt)
 		assert.NoError(t, resultErr, test.description+":err")
 		assert.Equal(t, &requestExpected, test.request, test.description+":request")
+	}
+}
+
+func TestFilterBidRequests(t *testing.T) {
+	tests := []struct {
+		description        string
+		allBidRequests     []BidderRequest
+		blockedBids        []int
+		allowedBidRequests []BidderRequest
+	}{
+		{
+			description: "No blocked bids",
+			allBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+			},
+			blockedBids: []int{},
+			allowedBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+			},
+		},
+		{
+			description: "Block first bid",
+			allBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderPubmatic},
+				{BidderName: openrtb_ext.BidderRubicon},
+			},
+			blockedBids: []int{0},
+			allowedBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderPubmatic},
+				{BidderName: openrtb_ext.BidderRubicon},
+			},
+		},
+		{
+			description: "Block middle bid",
+			allBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderPubmatic},
+				{BidderName: openrtb_ext.BidderRubicon},
+			},
+			blockedBids: []int{1},
+			allowedBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderRubicon},
+			},
+		},
+		{
+			description: "Block last bid",
+			allBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderPubmatic},
+				{BidderName: openrtb_ext.BidderRubicon},
+			},
+			blockedBids: []int{2},
+			allowedBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderPubmatic},
+			},
+		},
+		{
+			description: "Block all bids",
+			allBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderPubmatic},
+				{BidderName: openrtb_ext.BidderRubicon},
+			},
+			blockedBids:        []int{0, 1, 2},
+			allowedBidRequests: []BidderRequest{},
+		},
+	}
+
+	for _, tt := range tests {
+		result := filterBidRequests(tt.allBidRequests, tt.blockedBids)
+		assert.Equal(t, tt.allowedBidRequests, result, tt.description)
 	}
 }

@@ -117,7 +117,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	// bidder level privacy policies
-	for _, bidderRequest := range bidderRequests {
+	blockedBidderRequests := make([]int, 0, len(bidderRequests))
+	for idx, bidderRequest := range bidderRequests {
 		// CCPA
 		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
 
@@ -133,7 +134,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 				}
 			}
 			var publisherID = req.LegacyLabels.PubID
-			geo, id, err := gDPR.PersonalInfoAllowed(ctx, bidderRequest.BidderCoreName, publisherID, gdprSignal, consent, weakVendorEnforcement)
+			bidReq, geo, id, err := gDPR.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, publisherID, gdprSignal, consent, weakVendorEnforcement)
 			if err == nil {
 				privacyEnforcement.GDPRGeo = !geo
 				privacyEnforcement.GDPRID = !id
@@ -141,12 +142,42 @@ func cleanOpenRTBRequests(ctx context.Context,
 				privacyEnforcement.GDPRGeo = true
 				privacyEnforcement.GDPRID = true
 			}
+
+			if !bidReq {
+				blockedBidderRequests = append(blockedBidderRequests, idx)
+			}
 		}
 
 		privacyEnforcement.Apply(bidderRequest.BidRequest)
 	}
 
+	bidderRequests = filterBidRequests(bidderRequests, blockedBidderRequests)
+
 	return
+}
+
+func filterBidRequests(bidRequests []BidderRequest, blockedRequests []int) []BidderRequest {
+	if len(blockedRequests) == 0 {
+		return bidRequests
+	}
+
+	allowedBidRequests := make([]BidderRequest, 0, len(bidRequests))
+
+	for i, req := range bidRequests {
+		blocked := false
+		for _, j := range blockedRequests {
+			if i == j {
+				blocked = true
+				break
+			}
+		}
+
+		if !blocked {
+			allowedBidRequests = append(allowedBidRequests, req)
+		}
+	}
+
+	return allowedBidRequests
 }
 
 func gdprEnabled(account *config.Account, privacyConfig config.Privacy, integrationType config.IntegrationType) bool {
