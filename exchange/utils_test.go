@@ -2179,21 +2179,29 @@ func TestFilterBidRequests(t *testing.T) {
 			description: "No blocked bids",
 			allBidRequests: []BidderRequest{
 				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderOpenx},
+				{BidderName: openrtb_ext.BidderPubmatic},
+				{BidderName: openrtb_ext.BidderRubicon},
 			},
 			blockedBids: []int{},
 			allowedBidRequests: []BidderRequest{
 				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderOpenx},
+				{BidderName: openrtb_ext.BidderPubmatic},
+				{BidderName: openrtb_ext.BidderRubicon},
 			},
 		},
 		{
 			description: "Block first bid",
 			allBidRequests: []BidderRequest{
 				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderOpenx},
 				{BidderName: openrtb_ext.BidderPubmatic},
 				{BidderName: openrtb_ext.BidderRubicon},
 			},
 			blockedBids: []int{0},
 			allowedBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderOpenx},
 				{BidderName: openrtb_ext.BidderPubmatic},
 				{BidderName: openrtb_ext.BidderRubicon},
 			},
@@ -2202,12 +2210,14 @@ func TestFilterBidRequests(t *testing.T) {
 			description: "Block middle bid",
 			allBidRequests: []BidderRequest{
 				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderOpenx},
 				{BidderName: openrtb_ext.BidderPubmatic},
 				{BidderName: openrtb_ext.BidderRubicon},
 			},
 			blockedBids: []int{1},
 			allowedBidRequests: []BidderRequest{
 				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderPubmatic},
 				{BidderName: openrtb_ext.BidderRubicon},
 			},
 		},
@@ -2215,12 +2225,14 @@ func TestFilterBidRequests(t *testing.T) {
 			description: "Block last bid",
 			allBidRequests: []BidderRequest{
 				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderOpenx},
 				{BidderName: openrtb_ext.BidderPubmatic},
 				{BidderName: openrtb_ext.BidderRubicon},
 			},
-			blockedBids: []int{2},
+			blockedBids: []int{3},
 			allowedBidRequests: []BidderRequest{
 				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderOpenx},
 				{BidderName: openrtb_ext.BidderPubmatic},
 			},
 		},
@@ -2228,11 +2240,54 @@ func TestFilterBidRequests(t *testing.T) {
 			description: "Block all bids",
 			allBidRequests: []BidderRequest{
 				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderOpenx},
 				{BidderName: openrtb_ext.BidderPubmatic},
 				{BidderName: openrtb_ext.BidderRubicon},
 			},
-			blockedBids:        []int{0, 1, 2},
+			blockedBids:        []int{0, 1, 2, 3},
 			allowedBidRequests: []BidderRequest{},
+		},
+		{
+			description: "Block first two bids",
+			allBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderOpenx},
+				{BidderName: openrtb_ext.BidderPubmatic},
+				{BidderName: openrtb_ext.BidderRubicon},
+			},
+			blockedBids: []int{0, 1},
+			allowedBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderPubmatic},
+				{BidderName: openrtb_ext.BidderRubicon},
+			},
+		},
+		{
+			description: "Block middle two bids",
+			allBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderOpenx},
+				{BidderName: openrtb_ext.BidderPubmatic},
+				{BidderName: openrtb_ext.BidderRubicon},
+			},
+			blockedBids: []int{1, 2},
+			allowedBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderRubicon},
+			},
+		},
+		{
+			description: "Block last two bids",
+			allBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderOpenx},
+				{BidderName: openrtb_ext.BidderPubmatic},
+				{BidderName: openrtb_ext.BidderRubicon},
+			},
+			blockedBids: []int{2, 3},
+			allowedBidRequests: []BidderRequest{
+				{BidderName: openrtb_ext.BidderAppnexus},
+				{BidderName: openrtb_ext.BidderOpenx},
+			},
 		},
 	}
 

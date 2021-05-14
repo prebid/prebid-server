@@ -156,6 +156,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	return
 }
 
+// This function requires blockedRequests be in ascending order and that the values correspond to valid indices in bidRequests
 func filterBidRequests(bidRequests []BidderRequest, blockedRequests []int) []BidderRequest {
 	if len(blockedRequests) == 0 {
 		return bidRequests
@@ -163,19 +164,12 @@ func filterBidRequests(bidRequests []BidderRequest, blockedRequests []int) []Bid
 
 	allowedBidRequests := make([]BidderRequest, 0, len(bidRequests))
 
-	for i, req := range bidRequests {
-		blocked := false
-		for _, j := range blockedRequests {
-			if i == j {
-				blocked = true
-				break
-			}
-		}
-
-		if !blocked {
-			allowedBidRequests = append(allowedBidRequests, req)
-		}
+	lowerBound := 0
+	for _, idx := range blockedRequests {
+		allowedBidRequests = append(allowedBidRequests, bidRequests[lowerBound:idx]...)
+		lowerBound = idx + 1
 	}
+	allowedBidRequests = append(allowedBidRequests, bidRequests[lowerBound:]...)
 
 	return allowedBidRequests
 }
