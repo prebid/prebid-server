@@ -28,11 +28,16 @@ If PBS_METRICS_DISABLED_METRICS_ADAPTER_CONNECTIONS_METRICS is true your [Prebid
 
 #### Finally, when you fill in your credentials of metrics, please, run:
 
+ - build your app 
 ```bash
-./validate.sh
+go build .
+```
+ - run the server
+```bash
+./prebid-server
 ```
 
-#### Make sure that an application returns any metrics - `http://localhost:9100/metrics`, if not, please check your names of environment and recompile again.
+#### Make sure that an application returns any metrics - `http://localhost:9100/`, if not, please check your names of environment and recompile again.
 
 #### Add your host and port into prometheus.yml file on the instance of your [Prometheus](https://prometheus.io/).
 
