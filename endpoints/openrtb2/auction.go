@@ -1127,7 +1127,7 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	if hasEIDs && len(*eids) == 0 {
 		return fmt.Errorf("request.user.ext.eids must contain at least one element or be undefined")
 	}
-	if len(*eids) > 0 {
+	if hasEIDs && len(*eids) > 0 {
 		uniqueSources := make(map[string]struct{}, len(*eids))
 		for eidIndex, eid := range *eids {
 			if eid.Source == "" {

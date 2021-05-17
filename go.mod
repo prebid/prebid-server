@@ -28,7 +28,6 @@ require (
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.0.0 // indirect
-	github.com/mxmCherry/openrtb/v14 v14.0.0
 	github.com/mxmCherry/openrtb/v15 v15.0.0
 	github.com/pelletier/go-toml v1.2.0 // indirect
 	github.com/prebid/go-gdpr v0.8.3

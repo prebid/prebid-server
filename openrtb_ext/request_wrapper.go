@@ -75,7 +75,6 @@ func (rw *RequestWrapper) ExtractRegExt() error {
 	if rw.Request == nil || rw.Request.Regs == nil || rw.Request.Regs.Ext == nil {
 		return rw.RegExt.Unmarshal(json.RawMessage{})
 	}
-	rw.RegExt = &RegExt{}
 	return rw.RegExt.Unmarshal(rw.Request.Regs.Ext)
 }
 
@@ -87,7 +86,6 @@ func (rw *RequestWrapper) ExtractSiteExt() error {
 	if rw.Request == nil || rw.Request.Site == nil || rw.Request.Site.Ext == nil {
 		return rw.SiteExt.Unmarshal(json.RawMessage{})
 	}
-	rw.SiteExt = &SiteExt{}
 	return rw.SiteExt.Unmarshal(rw.Request.Site.Ext)
 }
 
@@ -219,9 +217,12 @@ type UserExt struct {
 }
 
 func (ue *UserExt) Unmarshal(extJson json.RawMessage) error {
+	if len(ue.ext) != 0 || ue.Dirty() {
+		return nil
+	}
 	ue.ext = make(map[string]json.RawMessage)
 	ue.eids = &[]ExtUserEid{}
-	if len(extJson) == 0 || len(ue.ext) != 0 {
+	if len(extJson) == 0 {
 		return nil
 	}
 	err := json.Unmarshal(extJson, &ue.ext)
@@ -402,8 +403,11 @@ type RequestExt struct {
 }
 
 func (re *RequestExt) Unmarshal(extJson json.RawMessage) error {
+	if len(re.ext) != 0 || re.Dirty() {
+		return nil
+	}
 	re.ext = make(map[string]json.RawMessage)
-	if len(extJson) == 0 || len(re.ext) != 0 {
+	if len(extJson) == 0 {
 		return nil
 	}
 	err := json.Unmarshal(extJson, &re.ext)
@@ -480,8 +484,11 @@ type DeviceExt struct {
 }
 
 func (de *DeviceExt) Unmarshal(extJson json.RawMessage) error {
+	if len(de.ext) != 0 || de.Dirty() {
+		return nil
+	}
 	de.ext = make(map[string]json.RawMessage)
-	if len(extJson) == 0 || len(de.ext) != 0 {
+	if len(extJson) == 0 {
 		return nil
 	}
 	err := json.Unmarshal(extJson, &de.ext)
@@ -559,8 +566,11 @@ type AppExt struct {
 }
 
 func (ae *AppExt) Unmarshal(extJson json.RawMessage) error {
+	if len(ae.ext) != 0 || ae.Dirty() {
+		return nil
+	}
 	ae.ext = make(map[string]json.RawMessage)
-	if len(extJson) == 0 || len(ae.ext) != 0 {
+	if len(extJson) == 0 {
 		return nil
 	}
 	err := json.Unmarshal(extJson, &ae.ext)
@@ -636,8 +646,11 @@ type RegExt struct {
 }
 
 func (re *RegExt) Unmarshal(extJson json.RawMessage) error {
+	if len(re.ext) != 0 || re.Dirty() {
+		return nil
+	}
 	re.ext = make(map[string]json.RawMessage)
-	if len(extJson) == 0 || len(re.ext) != 0 {
+	if len(extJson) == 0 {
 		return nil
 	}
 	err := json.Unmarshal(extJson, &re.ext)
@@ -711,8 +724,11 @@ type SiteExt struct {
 }
 
 func (se *SiteExt) Unmarshal(extJson json.RawMessage) error {
+	if len(se.Ext) != 0 || se.Dirty() {
+		return nil
+	}
 	se.Ext = make(map[string]json.RawMessage)
-	if len(extJson) == 0 || len(se.Ext) != 0 {
+	if len(extJson) == 0 {
 		return nil
 	}
 	err := json.Unmarshal(extJson, &se.Ext)

@@ -30,7 +30,10 @@ func (c ConsentWriterLegacy) Write(req *openrtb2.BidRequest) error {
 		return nil
 	}
 	reqWrap := &openrtb_ext.RequestWrapper{Request: req}
-	reqWrap.ExtractRegExt()
-	buildRegs(c.Consent, reqWrap.RegExt)
+	if err := reqWrap.ExtractRegExt(); err == nil {
+		buildRegs(c.Consent, reqWrap.RegExt)
+	} else {
+		return err
+	}
 	return reqWrap.Sync()
 }
