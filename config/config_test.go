@@ -568,12 +568,6 @@ func TestInvalidHostVendorID(t *testing.T) {
 	}
 }
 
-func TestInvalidFetchGVL(t *testing.T) {
-	cfg := newDefaultConfig(t)
-	cfg.GDPR.TCF1.FetchGVL = true
-	assertOneError(t, cfg.validate(), "gdpr.tcf1.fetch_gvl has been discontinued and must be removed from your config. TCF1 will always use the fallback GVL going forward")
-}
-
 func TestInvalidAMPException(t *testing.T) {
 	cfg := newDefaultConfig(t)
 	cfg.GDPR.AMPException = true
