@@ -97,6 +97,8 @@ func (adapter *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 	var err error
 
 	for i := 0; i < numRequests; i++ {
+		skanSent := false
+
 		// clone current imp
 		thisImp := requestImpCopy[i]
 
@@ -161,6 +163,7 @@ func (adapter *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 			// only add if present
 			if len(skadn.SKADNetIDs) > 0 {
 				impExt.SKADN = &skadn
+				skanSent = true
 			}
 		}
 
@@ -188,12 +191,31 @@ func (adapter *UnicornAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 			uri = endpoint
 		}
 
+		// Tapjoy Record placement type
+		placementType := adapters.Interstitial
+		if unicornExt.Reward == 1 {
+			placementType = adapters.Rewarded
+		}
+
 		// build request data object
 		reqData := &adapters.RequestData{
 			Method:  "POST",
 			Uri:     uri,
 			Body:    reqJSON,
 			Headers: headers,
+
+			TapjoyData: adapters.TapjoyData{
+				Bidder:        adapter.Name(),
+				PlacementType: placementType,
+				Region:        unicornExt.Region,
+				SKAN: adapters.SKAN{
+					Supported: unicornExt.SKADNSupported,
+					Sent:      skanSent,
+				},
+				MRAID: adapters.MRAID{
+					Supported: unicornExt.MRAIDSupported,
+				},
+			},
 		}
 
 		// append to request data array

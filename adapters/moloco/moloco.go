@@ -101,6 +101,8 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 	var err error
 
 	for i := 0; i < numRequests; i++ {
+		skanSent := false
+
 		// clone current imp
 		thisImp := requestImpCopy[i]
 
@@ -171,11 +173,12 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 		// Add impression extensions
 		impExt := molocoImpExt{}
 
-		// Add SKADN if supported and present=
+		// Add SKADN if supported and present
 		if molocoExt.SKADNSupported {
 			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, molocoSKADNetIDs)
 			if len(skadn.SKADNetIDs) > 0 {
 				impExt.SKADN = &skadn
+				skanSent = true
 			}
 		}
 
@@ -211,6 +214,19 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 			Uri:     uri,
 			Body:    reqJSON,
 			Headers: headers,
+
+			TapjoyData: adapters.TapjoyData{
+				Bidder:        adapter.Name(),
+				PlacementType: placementType,
+				Region:        molocoExt.Region,
+				SKAN: adapters.SKAN{
+					Supported: molocoExt.SKADNSupported,
+					Sent:      skanSent,
+				},
+				MRAID: adapters.MRAID{
+					Supported: molocoExt.MRAIDSupported,
+				},
+			},
 		}
 
 		// append to request data array

@@ -70,7 +70,7 @@ dev-clean: dev-deps
 ## ARTIFACT RELATED TARGETS
 ########################################################################################################################
 
-GO_IMAGE := golang:1.13
+GO_IMAGE := golang:1.14
 REGISTRY := localhost:5000/tapjoy
 IMAGE_NAME := ${REGISTRY}/${PROJECT_NAME}
 

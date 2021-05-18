@@ -676,6 +676,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 	requestImpCopy := rubiconRequest.Imp
 	for i := 0; i < numRequests; i++ {
+		skanSent := false
+		placementType := adapters.Interstitial
+
 		thisImp := requestImpCopy[i]
 
 		var bidderExt adapters.ExtImpBidder
@@ -739,6 +742,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, rubiconSKADNetIDs)
 			// only add if present
 			if len(skadn.SKADNetIDs) > 0 {
+				skanSent = true
 				impExt.SKADN = &skadn
 			}
 		}
@@ -811,6 +815,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			var videoType = ""
 			if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
 				videoType = "rewarded"
+				placementType = adapters.Rewarded
 			}
 
 			videoCopy := *thisImp.Video
@@ -901,6 +906,19 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			Uri:     uri,
 			Body:    reqJSON,
 			Headers: headers,
+
+			TapjoyData: adapters.TapjoyData{
+				Bidder:        a.Name(),
+				PlacementType: placementType,
+				Region:        rubiconExt.Region,
+				SKAN: adapters.SKAN{
+					Supported: rubiconExt.SKADNSupported,
+					Sent:      skanSent,
+				},
+				MRAID: adapters.MRAID{
+					Supported: rubiconExt.MRAIDSupported,
+				},
+			},
 		}
 		reqData.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
 		requestData = append(requestData, reqData)

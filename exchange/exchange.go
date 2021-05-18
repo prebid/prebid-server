@@ -18,6 +18,7 @@ import (
 	uuid "github.com/gofrs/uuid"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/prebid/prebid-server/stored_requests"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
@@ -352,6 +353,8 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 		coreBidder := resolveBidder(string(bidderName), aliases)
 		bidderRunner := e.recoverSafely(cleanRequests, func(ctx context.Context, txn *newrelic.Transaction, aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 			ctx = newrelic.NewContext(ctx, txn)
+			ctx, span := trace.SpanFromContext(ctx).Tracer().Start(ctx, string(aName))
+			defer span.End()
 
 			skanidlist.Update(ctx, e.adapterMap[coreBidder].client(), coreBidder)
 

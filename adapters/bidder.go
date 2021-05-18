@@ -133,6 +133,27 @@ type RequestData struct {
 	Uri     string
 	Body    []byte
 	Headers http.Header
+
+	// Tapjoy Opentelemetry
+	TapjoyData TapjoyData
+}
+
+type TapjoyData struct {
+	Bidder        string        `json:"bidder"`
+	PlacementType PlacementType `json:"placement"`
+	Region        string        `json:"region"`
+
+	SKAN  SKAN
+	MRAID MRAID
+}
+
+type SKAN struct {
+	Supported bool `json:"supported"` // SKAN supported by bidder
+	Sent      bool `json:"sent"`      // SKAN data was sent to bidder
+}
+
+type MRAID struct {
+	Supported bool `json:"supported"` // MRAID data was sent to bidder
 }
 
 // ExtImpBidder can be used by Bidders to unmarshal any request.imp[i].ext.

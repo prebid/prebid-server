@@ -101,6 +101,8 @@ func (adapter *MolocoCloudAdapter) MakeRequests(request *openrtb.BidRequest, _ *
 	var err error
 
 	for i := 0; i < numRequests; i++ {
+		skanSent := false
+
 		// clone current imp
 		thisImp := requestImpCopy[i]
 
@@ -211,6 +213,19 @@ func (adapter *MolocoCloudAdapter) MakeRequests(request *openrtb.BidRequest, _ *
 			Uri:     uri,
 			Body:    reqJSON,
 			Headers: headers,
+
+			TapjoyData: adapters.TapjoyData{
+				Bidder:        adapter.Name(),
+				PlacementType: placementType,
+				Region:        molocoCloudExt.Region,
+				SKAN: adapters.SKAN{
+					Supported: molocoCloudExt.SKADNSupported,
+					Sent:      skanSent,
+				},
+				MRAID: adapters.MRAID{
+					Supported: molocoCloudExt.MRAIDSupported,
+				},
+			},
 		}
 
 		// append to request data array
