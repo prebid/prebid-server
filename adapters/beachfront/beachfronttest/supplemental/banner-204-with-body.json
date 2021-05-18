@@ -60,6 +60,11 @@
           "adapterName": "BF_PREBID_S2S",
           "adapterVersion": "0.9.2",
           "user": {
+          },
+          "schain": {
+            "complete": 0,
+            "nodes": null,
+            "ver": ""
           }
         }
       },

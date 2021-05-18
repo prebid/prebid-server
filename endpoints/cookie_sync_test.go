@@ -254,6 +254,6 @@ func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 	return ok, nil
 }
 
-func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
-	return true, true, true, nil
+func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (allowGeo bool, allowID bool, err error) {
+	return true, true, nil
 }

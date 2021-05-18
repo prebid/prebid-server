@@ -441,7 +441,6 @@ func TestShouldUsersync(t *testing.T) {
 type auctionMockPermissions struct {
 	allowBidderSync  bool
 	allowHostCookies bool
-	allowPI          bool
 	allowGeo         bool
 	allowID          bool
 }
@@ -454,8 +453,8 @@ func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder o
 	return m.allowBidderSync, nil
 }
 
-func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
-	return m.allowPI, m.allowGeo, m.allowID, nil
+func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (allowGeo bool, allowID bool, err error) {
+	return m.allowGeo, m.allowID, nil
 }
 
 func TestBidSizeValidate(t *testing.T) {

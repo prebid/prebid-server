@@ -85,6 +85,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/unruly"
 	"github.com/prebid/prebid-server/adapters/valueimpression"
 	"github.com/prebid/prebid-server/adapters/verizonmedia"
+	"github.com/prebid/prebid-server/adapters/viewdeos"
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
 	"github.com/prebid/prebid-server/adapters/yieldlab"
@@ -181,6 +182,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderUnruly, unruly.NewUnrulySyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderValueImpression, valueimpression.NewValueImpressionSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderVerizonMedia, verizonmedia.NewVerizonMediaSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderViewdeos, viewdeos.NewViewdeosSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderVisx, visx.NewVisxSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderVrtcal, vrtcal.NewVrtcalSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderYieldlab, yieldlab.NewYieldlabSyncer)
