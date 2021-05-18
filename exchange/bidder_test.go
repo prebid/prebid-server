@@ -224,7 +224,7 @@ func TestSetGPCHeader(t *testing.T) {
 	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCall)
 }
 
-func TestSetHeaderNil(t *testing.T) {
+func TestSetGPCHeaderNil(t *testing.T) {
 	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
 	defer server.Close()
 
@@ -246,7 +246,7 @@ func TestSetHeaderNil(t *testing.T) {
 
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true)
+	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
