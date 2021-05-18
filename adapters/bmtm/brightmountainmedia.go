@@ -1,0 +1,160 @@
+package bmtm
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
+)
+
+type BrightMountainMediaAdapter struct {
+	endpoint string
+}
+
+// Builder builds a new instance of the BrightMountainMedia adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &BrightMountainMediaAdapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
+}
+
+func (a *BrightMountainMediaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var extRequests []*adapters.RequestData
+	var errs []error
+
+	for _, imp := range request.Imp {
+		extRequest, err := a.makeRequest(*request, imp)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			extRequests = append(extRequests, extRequest)
+		}
+	}
+	return extRequests, errs
+}
+
+func (a *BrightMountainMediaAdapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.Imp) (*adapters.RequestData, error) {
+	copiedImp, err := processImp(ortbImp)
+	if err != nil {
+		return nil, err
+	}
+
+	ortbRequest.Imp = []openrtb2.Imp{*copiedImp}
+
+	requestJSON, err := json.Marshal(ortbRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	requestData := &adapters.RequestData{
+		Method:  http.MethodPost,
+		Uri:     a.endpoint,
+		Body:    requestJSON,
+		Headers: setHeaders(ortbRequest),
+	}
+	return requestData, nil
+}
+
+func (a *BrightMountainMediaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unknown status code: %d.", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unknown status code: %d.", response.StatusCode),
+		}}
+	}
+
+	var bidResp openrtb2.BidResponse
+
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+
+	for _, sb := range bidResp.SeatBid {
+		for i := range sb.Bid {
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &sb.Bid[i],
+				BidType: getMediaTypeForBid(sb.Bid[i].ImpID, internalRequest.Imp),
+			})
+		}
+	}
+	return bidResponse, nil
+}
+
+func setHeaders(request openrtb2.BidRequest) http.Header {
+	headers := http.Header{}
+
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	if request.Device != nil {
+		headers.Add("User-Agent", request.Device.UA)
+
+		if request.Device.IP != "" {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		} else if request.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+	}
+
+	if request.Site != nil {
+		headers.Add("Referer", request.Site.Page)
+	}
+	return headers
+}
+
+func processImp(imp openrtb2.Imp) (*openrtb2.Imp, error) {
+	if imp.Banner == nil && imp.Video == nil && imp.Native == nil {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("For Imp ID %s Banner or Video is undefined", imp.ID),
+		}
+	}
+
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: "Unknown BrightMountainMedia ExtImpBidder",
+		}
+	}
+
+	var bmtmExt openrtb_ext.ImpExtBmtm
+	if err := json.Unmarshal(bidderExt.Bidder, &bmtmExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: "Unknown BrightMountainMedia bidder ext",
+		}
+	}
+
+	imp.TagID = strconv.Itoa(bmtmExt.PlacementID)
+	imp.Ext = nil
+	return &imp, nil
+}
+
+func getMediaTypeForBid(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner
+			} else if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo
+			}
+		}
+	}
+	return openrtb_ext.BidTypeBanner
+}

@@ -1,0 +1,8 @@
+maintainer:
+  email: dev@brightmountainmedia.com
+modifyingVastXmlAllowed: false
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
