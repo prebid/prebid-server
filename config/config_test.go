@@ -146,7 +146,7 @@ func TestDefaults(t *testing.T) {
 var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
-  usersync_if_ambiguous: true
+  default_value: true
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
 ccpa:
   enforce: true
@@ -350,7 +350,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.max_idle_connections_per_host", cfg.CacheClient.MaxIdleConnsPerHost, 2)
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
-	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
+	cmpBools(t, "gdpr.default_value", cfg.GDPR.DefaultValue, true)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[0], "siteID")

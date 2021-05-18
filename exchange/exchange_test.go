@@ -1622,9 +1622,9 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			Enforce: spec.EnforceLMT,
 		},
 		GDPR: config.GDPR{
-			Enabled:             spec.GDPREnabled,
-			UsersyncIfAmbiguous: !spec.AssumeGDPRApplies,
-			EEACountriesMap:     eeac,
+			Enabled:         spec.GDPREnabled,
+			DefaultValue:    !spec.AssumeGDPRApplies,
+			EEACountriesMap: eeac,
 		},
 	}
 	bidIdGenerator := &mockBidIDGenerator{}
@@ -1766,18 +1766,18 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 	}
 
 	return &exchange{
-		adapterMap:          bidderAdapters,
-		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames()),
-		cache:               &wellBehavedCache{},
-		cacheTime:           0,
-		gDPR:                &permissionsMock{allowAllBidders: true},
-		currencyConverter:   currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
-		UsersyncIfAmbiguous: privacyConfig.GDPR.UsersyncIfAmbiguous,
-		privacyConfig:       privacyConfig,
-		categoriesFetcher:   categoriesFetcher,
-		bidderInfo:          bidderInfos,
-		externalURL:         "http://localhost",
-		bidIDGenerator:      bidIDGenerator,
+		adapterMap:        bidderAdapters,
+		me:                metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames()),
+		cache:             &wellBehavedCache{},
+		cacheTime:         0,
+		gDPR:              &permissionsMock{allowAllBidders: true},
+		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		GDPRDefaultValue:  privacyConfig.GDPR.DefaultValue,
+		privacyConfig:     privacyConfig,
+		categoriesFetcher: categoriesFetcher,
+		bidderInfo:        bidderInfos,
+		externalURL:       "http://localhost",
+		bidIDGenerator:    bidIDGenerator,
 	}
 }
 

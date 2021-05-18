@@ -1460,7 +1460,7 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 		gdprConsent         string
 		gdprScrub           bool
 		permissionsError    error
-		userSyncIfAmbiguous bool
+		gdprDefaultValue    bool
 		expectPrivacyLabels metrics.PrivacyLabels
 		expectError         bool
 	}{
@@ -1574,26 +1574,26 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 			},
 		},
 		{
-			description:         "Enforce - Ambiguous signal, don't sync user if ambiguous",
-			gdprAccountEnabled:  nil,
-			gdprHostEnabled:     true,
-			gdpr:                "null",
-			gdprConsent:         tcf1Consent,
-			gdprScrub:           true,
-			userSyncIfAmbiguous: false,
+			description:        "Enforce - Ambiguous signal, don't sync user if ambiguous",
+			gdprAccountEnabled: nil,
+			gdprHostEnabled:    true,
+			gdpr:               "null",
+			gdprConsent:        tcf1Consent,
+			gdprScrub:          true,
+			gdprDefaultValue:   false,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
 				GDPRTCFVersion: metrics.TCFVersionV1,
 			},
 		},
 		{
-			description:         "Not Enforce - Ambiguous signal, sync user if ambiguous",
-			gdprAccountEnabled:  nil,
-			gdprHostEnabled:     true,
-			gdpr:                "null",
-			gdprConsent:         tcf1Consent,
-			gdprScrub:           false,
-			userSyncIfAmbiguous: true,
+			description:        "Not Enforce - Ambiguous signal, sync user if ambiguous",
+			gdprAccountEnabled: nil,
+			gdprHostEnabled:    true,
+			gdpr:               "null",
+			gdprConsent:        tcf1Consent,
+			gdprScrub:          false,
+			gdprDefaultValue:   true,
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
 				GDPRTCFVersion: "",
@@ -1623,8 +1623,8 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 
 		privacyConfig := config.Privacy{
 			GDPR: config.GDPR{
-				Enabled:             test.gdprHostEnabled,
-				UsersyncIfAmbiguous: test.userSyncIfAmbiguous,
+				Enabled:      test.gdprHostEnabled,
+				DefaultValue: test.gdprDefaultValue,
 				TCF2: config.TCF2{
 					Enabled: true,
 				},
@@ -1649,7 +1649,7 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 			nil,
 			&permissionsMock{allowAllBidders: true, passGeo: !test.gdprScrub, passID: !test.gdprScrub, activitiesError: test.permissionsError},
 			&metrics.MetricsEngineMock{},
-			test.userSyncIfAmbiguous,
+			test.gdprDefaultValue,
 			privacyConfig,
 			nil)
 		result := results[0]
@@ -1711,8 +1711,8 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 
 		privacyConfig := config.Privacy{
 			GDPR: config.GDPR{
-				Enabled:             test.gdprEnforced,
-				UsersyncIfAmbiguous: true,
+				Enabled:      test.gdprEnforced,
+				DefaultValue: true,
 				TCF2: config.TCF2{
 					Enabled: true,
 				},
