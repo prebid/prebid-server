@@ -449,6 +449,7 @@ type DefReqFiles struct {
 
 type Debug struct {
 	TimeoutNotification TimeoutNotification `mapstructure:"timeout_notification"`
+	OverrideToken       string              `mapstructure:"override_token"`
 }
 
 func (cfg *Debug) validate(errs []error) []error {
@@ -988,6 +989,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("debug.timeout_notification.log", false)
 	v.SetDefault("debug.timeout_notification.sampling_rate", 0.0)
 	v.SetDefault("debug.timeout_notification.fail_only", false)
+	v.SetDefault("debug.override_token", "")
 
 	/* IPv4
 	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
