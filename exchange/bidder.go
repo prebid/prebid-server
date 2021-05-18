@@ -141,6 +141,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 				reqHeader := reqData[i].Headers.Clone()
 				reqHeader.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 				reqData[i].Headers = reqHeader
+			} else {
+				reqData[i].Headers = http.Header{}
+				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 			}
 		}
 	}

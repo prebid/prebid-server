@@ -250,10 +250,11 @@ func TestSetGPCHeaderNil(t *testing.T) {
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
-			Uri:          server.URL,
-			RequestBody:  "requestJson",
-			ResponseBody: "responseJson",
-			Status:       200,
+			Uri:            server.URL,
+			RequestBody:    "requestJson",
+			RequestHeaders: map[string][]string{"Sec-Gpc": {"1"}},
+			ResponseBody:   "responseJson",
+			Status:         200,
 		},
 	}
 
