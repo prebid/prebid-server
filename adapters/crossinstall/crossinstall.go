@@ -96,6 +96,8 @@ func (adapter *CrossInstallAdapter) MakeRequests(request *openrtb.BidRequest, _ 
 	var err error
 
 	for i := 0; i < numRequests; i++ {
+		skanSent := false
+
 		// clone current imp
 		thisImp := requestImpCopy[i]
 
@@ -150,6 +152,7 @@ func (adapter *CrossInstallAdapter) MakeRequests(request *openrtb.BidRequest, _ 
 		if crossinstallExt.SKADNSupported {
 			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, crossinstallSKADNetIDs)
 			if len(skadn.SKADNetIDs) > 0 {
+				skanSent = true
 				impExt.SKADN = &skadn
 			}
 		}
@@ -184,6 +187,19 @@ func (adapter *CrossInstallAdapter) MakeRequests(request *openrtb.BidRequest, _ 
 			Uri:     uri,
 			Body:    reqJSON,
 			Headers: headers,
+
+			TapjoyData: adapters.TapjoyData{
+				Bidder:        adapter.Name(),
+				PlacementType: placementType,
+				Region:        crossinstallExt.Region,
+				SKAN: adapters.SKAN{
+					Supported: crossinstallExt.SKADNSupported,
+					Sent:      skanSent,
+				},
+				MRAID: adapters.MRAID{
+					Supported: crossinstallExt.MRAIDSupported,
+				},
+			},
 		}
 
 		// append to request data array

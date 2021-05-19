@@ -13,6 +13,8 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config/util"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
@@ -24,6 +26,20 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"golang.org/x/net/context/ctxhttp"
+)
+
+var (
+	prebidDSPKey      = attribute.Key("app.prebid.dsp")
+	placementTypeKey  = attribute.Key("app.bidder.placement_type")
+	regionKey         = attribute.Key("app.bidder.region")
+	skanSupportedKey  = attribute.Key("app.bidder.skan.supported")
+	skanSentKey       = attribute.Key("app.bidder.skan.sent")
+	mraidSupportedKey = attribute.Key("app.bidder.mraid.supported")
+
+	debugVerboseState = "verbose"
+	debugEventName    = "verbose.http.request_body"
+	debugStateKey     = attribute.Key("debug_state")
+	debugReqBodyKey   = attribute.Key("http.request_body")
 )
 
 // adaptedBidder defines the contract needed to participate in an Auction within an Exchange.
@@ -342,6 +358,34 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	// to get complete connection info into our metrics
 	if !bidder.config.DisableConnMetrics {
 		ctx = bidder.addClientTrace(ctx)
+	}
+
+	// read and close body
+	bodyBytes, _ := ioutil.ReadAll(httpReq.Body)
+	httpReq.Body.Close()
+
+	// reset body to be able to be read by other middleware
+	httpReq.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	// Tapjoy open telemetry
+	span := trace.SpanFromContext(ctx)
+	tjData := req.TapjoyData
+	attrs := []attribute.KeyValue{
+		prebidDSPKey.String(tjData.Bidder),
+		regionKey.String(tjData.Region),
+		skanSupportedKey.Bool(tjData.SKAN.Supported),
+		skanSentKey.Bool(tjData.SKAN.Sent),
+		mraidSupportedKey.Bool(tjData.MRAID.Supported),
+		placementTypeKey.String(string(tjData.PlacementType)),
+	}
+	span.SetAttributes(attrs...)
+
+	// Only print verbose debug logs if calling service added value in span context
+	if span.SpanContext().TraceState().Get(debugStateKey).AsString() == debugVerboseState {
+		attrs = append(attrs, debugReqBodyKey.String(string(bodyBytes)))
+		span.AddEvent(debugEventName, trace.WithAttributes(
+			attrs...,
+		))
 	}
 
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)

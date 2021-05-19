@@ -1,7 +1,6 @@
 language: go
 
 go:
-  - '1.13'
   - '1.14.2'
 
 go_import_path: github.com/prebid/prebid-server
@@ -10,7 +9,7 @@ env:
 - GO111MODULE=on
 
 script:
-  - "./validate.sh --nofmt --cov --race 10"
+  - "./validate.sh --nofmt --race 10"
 
 before_deploy:
   - go get github.com/mitchellh/gox

@@ -1,9 +1,8 @@
 module github.com/prebid/prebid-server
 
-go 1.13
+go 1.14
 
 require (
-	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/DATA-DOG/go-sqlmock v1.3.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
@@ -39,7 +38,7 @@ require (
 	github.com/pelletier/go-toml v1.2.0 // indirect
 	github.com/prebid/go-gdpr v0.8.3
 	github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed
-	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
+	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
 	github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e // indirect
 	github.com/prometheus/procfs v0.0.0-20180725123919-05ee40e3a273 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20180503174638-e2704e165165
@@ -53,7 +52,7 @@ require (
 	github.com/spf13/pflag v1.0.2 // indirect
 	github.com/spf13/viper v1.1.0
 	github.com/stretchr/objx v0.1.1 // indirect
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.7.0
 	github.com/vrischmann/go-metrics-influxdb v0.0.0-20160917065939-43af8332c303
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
@@ -61,8 +60,14 @@ require (
 	github.com/yudai/gojsondiff v0.0.0-20170107030110-7b1b7adf999d
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
-	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.20.0
+	go.opentelemetry.io/otel v0.20.0
+	go.opentelemetry.io/otel/exporters/otlp v0.20.0
+	go.opentelemetry.io/otel/metric v0.20.0
+	go.opentelemetry.io/otel/sdk v0.20.0
+	go.opentelemetry.io/otel/sdk/metric v0.20.0
+	go.opentelemetry.io/otel/trace v0.20.0
+	golang.org/x/net v0.0.0-20200822124328-c89045814202
 	golang.org/x/text v0.3.0
-	gopkg.in/yaml.v2 v2.2.2
+	gopkg.in/yaml.v2 v2.2.3
 )

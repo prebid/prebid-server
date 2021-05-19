@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/router"
 	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/util/task"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
@@ -63,7 +64,7 @@ func serve(revision string, cfg *config.Configuration) error {
 	fetchingInterval := time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds) * time.Second
 	staleRatesThreshold := time.Duration(cfg.CurrencyConverter.StaleRatesSeconds) * time.Second
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, staleRatesThreshold)
-	
+
 	currencyConverterTickerTask := task.NewTickerTask(fetchingInterval, currencyConverter)
 	currencyConverterTickerTask.Start()
 
@@ -72,11 +73,29 @@ func serve(revision string, cfg *config.Configuration) error {
 		return err
 	}
 
+	// setup tapjoy opentelemtry
+	doneCB, err := initProvider(cfg.Monitoring.OpenTelemetry)
+	if err != nil {
+		return err
+	}
+
 	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
 	corsRouter := router.SupportCORS(r)
-	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(revision, currencyConverter, fetchingInterval), r.MetricsEngine)
+	// wrap corsRouter in otel handler
+	otelHandler := otelhttp.NewHandler(corsRouter, "prebid/openrtb",
+		// only wrap for "/openrtb2/auction" endpoint
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			if r.RequestURI == "/openrtb2/auction" {
+				return true
+			}
+			return false
+		}),
+	)
 
+	server.Listen(cfg, router.NoCache{Handler: otelHandler}, router.Admin(revision, currencyConverter, fetchingInterval), r.MetricsEngine)
+
+	doneCB()
 	r.Shutdown()
 	return nil
 }
