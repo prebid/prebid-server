@@ -48,17 +48,18 @@ type Metrics struct {
 	privacyTCF                   *prometheus.CounterVec
 
 	// Adapter Metrics
-	adapterBids               *prometheus.CounterVec
-	adapterCookieSync         *prometheus.CounterVec
-	adapterErrors             *prometheus.CounterVec
-	adapterPanics             *prometheus.CounterVec
-	adapterPrices             *prometheus.HistogramVec
-	adapterRequests           *prometheus.CounterVec
-	adapterRequestsTimer      *prometheus.HistogramVec
-	adapterUserSync           *prometheus.CounterVec
-	adapterReusedConnections  *prometheus.CounterVec
-	adapterCreatedConnections *prometheus.CounterVec
-	adapterConnectionWaitTime *prometheus.HistogramVec
+	adapterBids                *prometheus.CounterVec
+	adapterCookieSync          *prometheus.CounterVec
+	adapterErrors              *prometheus.CounterVec
+	adapterPanics              *prometheus.CounterVec
+	adapterPrices              *prometheus.HistogramVec
+	adapterRequests            *prometheus.CounterVec
+	adapterRequestsTimer       *prometheus.HistogramVec
+	adapterUserSync            *prometheus.CounterVec
+	adapterReusedConnections   *prometheus.CounterVec
+	adapterCreatedConnections  *prometheus.CounterVec
+	adapterConnectionWaitTime  *prometheus.HistogramVec
+	adapterGDPRBlockedRequests *prometheus.CounterVec
 
 	// Account Metrics
 	accountRequests *prometheus.CounterVec
@@ -282,6 +283,13 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"privacy_lmt",
 		"Count of total requests to Prebid Server where the LMT flag was set by source",
 		[]string{sourceLabel})
+
+	if !metrics.metricsDisabled.AdapterGDPRRequestBlocked {
+		metrics.adapterGDPRBlockedRequests = newCounter(cfg, metrics.Registry,
+			"adapter_gdpr_requests_blocked",
+			"Count of total bidder requests blocked due to unsatisfied GDPR purpose 2 legal basis",
+			[]string{adapterLabel})
+	}
 
 	metrics.adapterBids = newCounter(cfg, metrics.Registry,
 		"adapter_bids",
@@ -690,4 +698,14 @@ func (m *Metrics) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
 			sourceLabel: sourceRequest,
 		}).Inc()
 	}
+}
+
+func (m *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
+	if m.metricsDisabled.AdapterGDPRRequestBlocked {
+		return
+	}
+
+	m.adapterGDPRBlockedRequests.With(prometheus.Labels{
+		adapterLabel: string(adapterName),
+	}).Inc()
 }
