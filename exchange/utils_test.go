@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // permissionsMock mocks the Permissions interface for tests
@@ -476,8 +477,9 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 	for _, test := range testCases {
+		metricsMock := metrics.MetricsEngineMock{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, &permissions, true, privacyConfig, nil)
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, &permissions, &metricsMock, true, privacyConfig, nil)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -633,6 +635,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			auctionReq,
 			nil,
 			&permissionsMock{allowAllBidders: true, passGeo: true, passID: true},
+			&metrics.MetricsEngineMock{},
 			true,
 			privacyConfig,
 			nil)
@@ -694,7 +697,8 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 			},
 		}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
-		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, &permissions, true, privacyConfig, nil)
+		metrics := metrics.MetricsEngineMock{}
+		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, &permissions, &metrics, true, privacyConfig, nil)
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
@@ -735,7 +739,8 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 		}
 
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
-		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, &permissions, true, config.Privacy{}, nil)
+		metrics := metrics.MetricsEngineMock{}
+		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, &permissions, &metrics, true, config.Privacy{}, nil)
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -843,7 +848,8 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		}
 
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, &permissions, true, config.Privacy{}, nil)
+		metrics := metrics.MetricsEngineMock{}
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, &permissions, &metrics, true, config.Privacy{}, nil)
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -1425,7 +1431,8 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 		}
 
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
-		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, &permissions, true, privacyConfig, nil)
+		metrics := metrics.MetricsEngineMock{}
+		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, &permissions, &metrics, true, privacyConfig, nil)
 		result := results[0]
 
 		assert.Nil(t, errs)
@@ -1641,6 +1648,7 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 			auctionReq,
 			nil,
 			&permissionsMock{allowAllBidders: true, passGeo: !test.gdprScrub, passID: !test.gdprScrub, activitiesError: test.permissionsError},
+			&metrics.MetricsEngineMock{},
 			test.userSyncIfAmbiguous,
 			privacyConfig,
 			nil)
@@ -1665,28 +1673,32 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 
 func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 	testCases := []struct {
-		description        string
-		gdprEnforced       bool
-		gdprAllowedBidders []openrtb_ext.BidderName
-		expectedBidders    []openrtb_ext.BidderName
+		description            string
+		gdprEnforced           bool
+		gdprAllowedBidders     []openrtb_ext.BidderName
+		expectedBidders        []openrtb_ext.BidderName
+		expectedBlockedBidders []openrtb_ext.BidderName
 	}{
 		{
-			description:        "gdpr enforced, one request allowed and one request blocked",
-			gdprEnforced:       true,
-			gdprAllowedBidders: []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
-			expectedBidders:    []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
+			description:            "gdpr enforced, one request allowed and one request blocked",
+			gdprEnforced:           true,
+			gdprAllowedBidders:     []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
+			expectedBidders:        []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
+			expectedBlockedBidders: []openrtb_ext.BidderName{openrtb_ext.BidderRubicon},
 		},
 		{
-			description:        "gdpr enforced, two requests allowed and no requests blocked",
-			gdprEnforced:       true,
-			gdprAllowedBidders: []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon},
-			expectedBidders:    []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon},
+			description:            "gdpr enforced, two requests allowed and no requests blocked",
+			gdprEnforced:           true,
+			gdprAllowedBidders:     []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon},
+			expectedBidders:        []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon},
+			expectedBlockedBidders: []openrtb_ext.BidderName{},
 		},
 		{
-			description:        "gdpr not enforced, two requests allowed and no requests blocked",
-			gdprEnforced:       false,
-			gdprAllowedBidders: []openrtb_ext.BidderName{},
-			expectedBidders:    []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon},
+			description:            "gdpr not enforced, two requests allowed and no requests blocked",
+			gdprEnforced:           false,
+			gdprAllowedBidders:     []openrtb_ext.BidderName{},
+			expectedBidders:        []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon},
+			expectedBlockedBidders: []openrtb_ext.BidderName{},
 		},
 	}
 
@@ -1719,11 +1731,15 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			Account:    accountConfig,
 		}
 
+		metricsMock := metrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordAdapterGDPRRequestBlocked", mock.Anything).Return()
+
 		results, _, errs := cleanOpenRTBRequests(
 			context.Background(),
 			auctionReq,
 			nil,
 			&permissionsMock{allowedBidders: test.gdprAllowedBidders, passGeo: true, passID: true, activitiesError: nil},
+			&metricsMock,
 			true,
 			privacyConfig,
 			nil)
@@ -1736,6 +1752,13 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 
 		assert.Empty(t, errs, test.description)
 		assert.ElementsMatch(t, bidders, test.expectedBidders, test.description)
+
+		for _, blockedBidder := range test.expectedBlockedBidders {
+			metricsMock.AssertCalled(t, "RecordAdapterGDPRRequestBlocked", blockedBidder)
+		}
+		for _, allowedBidder := range test.expectedBidders {
+			metricsMock.AssertNotCalled(t, "RecordAdapterGDPRRequestBlocked", allowedBidder)
+		}
 	}
 }
 

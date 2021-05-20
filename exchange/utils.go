@@ -56,6 +56,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	gDPR gdpr.Permissions,
+	metricsEngine metrics.MetricsEngine,
 	usersyncIfAmbiguous bool,
 	privacyConfig config.Privacy,
 	account *config.Account) (bidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
@@ -145,6 +146,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 			if !bidReq {
 				blockedBidderRequests = append(blockedBidderRequests, idx)
+				metricsEngine.RecordAdapterGDPRRequestBlocked(bidderRequest.BidderCoreName)
 			}
 		}
 
