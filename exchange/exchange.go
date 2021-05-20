@@ -174,7 +174,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	requestDebugInfo := getDebugInfo(r.BidRequest, requestExt)
 
-	debugInfo := debugLog.DebugOverride || requestDebugInfo && r.Account.DebugAllow
+	debugInfo := debugLog.DebugOverride || (requestDebugInfo && r.Account.DebugAllow)
 	debugLog.Enabled = debugLog.DebugOverride || (debugLog.Enabled && r.Account.DebugAllow)
 
 	if debugInfo {

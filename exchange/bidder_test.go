@@ -208,7 +208,7 @@ func TestSetGPCHeader(t *testing.T) {
 
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true)
+	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
@@ -246,7 +246,7 @@ func TestSetGPCHeaderNil(t *testing.T) {
 
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true)
+	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
