@@ -67,8 +67,9 @@ const (
 	INVALID_MEDIATYPE = "Invalid MediaType"
 	INVALID_ADSLOT    = "Invalid AdSlot"
 
-	dctrKeyName     = "key_val"
-	pmZoneIDKeyName = "pmZoneID"
+	dctrKeyName        = "key_val"
+	pmZoneIDKeyName    = "pmZoneId"
+	pmZoneIDKeyNameOld = "pmZoneID"
 )
 
 func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...interface{}) string {
@@ -517,12 +518,16 @@ func addKeywordsToExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, extMap map[s
 			logf("No values present for key = %s", keyVal.Key)
 			continue
 		} else {
-			_, present := extMap[keyVal.Key]
+			key := keyVal.Key
+			if keyVal.Key == pmZoneIDKeyNameOld {
+				key = pmZoneIDKeyName
+			}
+			_, present := extMap[key]
 			if present {
 				logf("Value for key '%s' already present. Ignoring value passed in keywords.", keyVal.Key)
 				continue
 			}
-			extMap[keyVal.Key] = strings.Join(keyVal.Values[:], ",")
+			extMap[key] = strings.Join(keyVal.Values[:], ",")
 		}
 	}
 }
