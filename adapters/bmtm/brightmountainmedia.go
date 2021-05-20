@@ -13,19 +13,19 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type BrightMountainMediaAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
 // Builder builds a new instance of the BrightMountainMedia adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &BrightMountainMediaAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *BrightMountainMediaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var extRequests []*adapters.RequestData
 	var errs []error
 
@@ -40,7 +40,7 @@ func (a *BrightMountainMediaAdapter) MakeRequests(request *openrtb2.BidRequest, 
 	return extRequests, errs
 }
 
-func (a *BrightMountainMediaAdapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.Imp) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.Imp) (*adapters.RequestData, error) {
 	copiedImp, err := processImp(ortbImp)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (a *BrightMountainMediaAdapter) makeRequest(ortbRequest openrtb2.BidRequest
 	return requestData, nil
 }
 
-func (a *BrightMountainMediaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
