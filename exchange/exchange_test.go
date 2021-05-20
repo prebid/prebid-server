@@ -1770,7 +1770,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames()),
 		cache:               &wellBehavedCache{},
 		cacheTime:           0,
-		gDPR:                gdpr.AlwaysFail{},
+		gDPR:                &permissionsMock{allowAllBidders: true},
 		currencyConverter:   currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		UsersyncIfAmbiguous: privacyConfig.GDPR.UsersyncIfAmbiguous,
 		privacyConfig:       privacyConfig,

@@ -140,3 +140,8 @@ func (me *MetricsEngineMock) RecordTimeoutNotice(success bool) {
 func (me *MetricsEngineMock) RecordRequestPrivacy(privacy PrivacyLabels) {
 	me.Called(privacy)
 }
+
+// RecordAdapterGDPRRequestBlocked mock
+func (me *MetricsEngineMock) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
+	me.Called(adapterName)
+}
