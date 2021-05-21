@@ -118,6 +118,7 @@ func TestExternalCacheURLValidate(t *testing.T) {
 func TestDefaults(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", false)
 	cfg, err := New(v)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 
@@ -429,6 +430,7 @@ func TestFullConfig(t *testing.T) {
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", false)
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(adapterExtraInfoConfig))
 	cfg, err := New(v)
@@ -492,6 +494,7 @@ func TestValidConfig(t *testing.T) {
 func TestMigrateConfig(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", false)
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(oldStoredRequestsConfig))
 	migrateConfig(v)
@@ -510,6 +513,7 @@ func TestMigrateConfigFromEnv(t *testing.T) {
 	os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", "true")
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", false)
 	cfg, err := New(v)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
@@ -591,6 +595,7 @@ func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
 func TestInvalidAdapterEndpointConfig(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", false)
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(invalidAdapterEndpointConfig))
 	_, err := New(v)
@@ -600,6 +605,7 @@ func TestInvalidAdapterEndpointConfig(t *testing.T) {
 func TestInvalidAdapterUserSyncURLConfig(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", false)
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(invalidUserSyncURLConfig))
 	_, err := New(v)
@@ -657,6 +663,15 @@ func TestInvalidGDPRDefaultValue(t *testing.T) {
 	cfg := newDefaultConfig(t)
 	cfg.GDPR.DefaultValue = "2"
 	assertOneError(t, cfg.validate(), "gdpr.default_value must be 0 or 1")
+}
+
+func TestMissingGDPRDefaultValue(t *testing.T) {
+	v := viper.New()
+	SetupViper(v, "")
+	cfg, err := New(v)
+	assert.Nil(t, cfg, "cfg is nil when gdpr.default_value is not specified")
+	assert.Error(t, err, "err is set when gdpr.default_value is not specified")
+	assert.Contains(t, err.Error(), "Required config flag gdpr.default_value not specified", "err msg indicates gdpr.default_value is required")
 }
 
 func TestNegativeCurrencyConverterFetchInterval(t *testing.T) {
@@ -733,6 +748,7 @@ func TestNewCallsRequestValidation(t *testing.T) {
 	for _, test := range testCases {
 		v := viper.New()
 		SetupViper(v, "")
+		v.Set("gdpr.default_value", false)
 		v.SetConfigType("yaml")
 		v.ReadConfig(bytes.NewBuffer([]byte(
 			`request_validation:
@@ -771,6 +787,7 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 func newDefaultConfig(t *testing.T) *Configuration {
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", false)
 	v.SetConfigType("yaml")
 	cfg, err := New(v)
 	assert.NoError(t, err)
