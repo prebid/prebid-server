@@ -2547,6 +2547,108 @@ func TestCategoryMappingTwoBiddersOneBidEachNoCategorySamePrice(t *testing.T) {
 
 }
 
+func TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice(t *testing.T) {
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	requestExt := newExtRequestTranslateCategories(nil)
+
+	targData := &targetData{
+		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		includeWinners:   true,
+	}
+
+	requestExt.Prebid.Targeting.DurationRangeSec = []int{30}
+	requestExt.Prebid.Targeting.IncludeBrandCategory.WithCategory = false
+
+	cats1 := []string{"IAB1-3"}
+	cats2 := []string{"IAB1-4"}
+
+	bidApn1_1 := openrtb2.Bid{ID: "bid_idApn1_1", ImpID: "imp_idApn1_1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bidApn1_2 := openrtb2.Bid{ID: "bid_idApn1_2", ImpID: "imp_idApn1_2", Price: 20.0000, Cat: cats1, W: 1, H: 1}
+	bidApn1_3 := openrtb2.Bid{ID: "bid_idApn1_3", ImpID: "imp_idApn1_3", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bidApn1_4 := openrtb2.Bid{ID: "bid_idApn1_4", ImpID: "imp_idApn1_4", Price: 20.0000, Cat: cats1, W: 1, H: 1}
+	bidApn1_5 := openrtb2.Bid{ID: "bid_idApn1_5", ImpID: "imp_idApn1_5", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bidApn1_6 := openrtb2.Bid{ID: "bid_idApn1_6", ImpID: "imp_idApn1_6", Price: 20.0000, Cat: cats1, W: 1, H: 1}
+
+	bidApn2_1 := openrtb2.Bid{ID: "bid_idApn2_1", ImpID: "imp_idApn2_1", Price: 10.0000, Cat: cats2, W: 1, H: 1}
+	bidApn2_2 := openrtb2.Bid{ID: "bid_idApn2_2", ImpID: "imp_idApn2_2", Price: 20.0000, Cat: cats2, W: 1, H: 1}
+	bidApn2_3 := openrtb2.Bid{ID: "bid_idApn2_3", ImpID: "imp_idApn2_3", Price: 10.0000, Cat: cats2, W: 1, H: 1}
+	bidApn2_4 := openrtb2.Bid{ID: "bid_idApn2_4", ImpID: "imp_idApn2_4", Price: 20.0000, Cat: cats2, W: 1, H: 1}
+	bidApn2_5 := openrtb2.Bid{ID: "bid_idApn2_5", ImpID: "imp_idApn2_5", Price: 10.0000, Cat: cats2, W: 1, H: 1}
+	bidApn2_6 := openrtb2.Bid{ID: "bid_idApn2_6", ImpID: "imp_idApn2_6", Price: 20.0000, Cat: cats2, W: 1, H: 1}
+
+	bid1_Apn1_1 := pbsOrtbBid{&bidApn1_1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn1_2 := pbsOrtbBid{&bidApn1_2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn1_3 := pbsOrtbBid{&bidApn1_3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn1_4 := pbsOrtbBid{&bidApn1_4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn1_5 := pbsOrtbBid{&bidApn1_5, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn1_6 := pbsOrtbBid{&bidApn1_6, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+
+	bid1_Apn2_1 := pbsOrtbBid{&bidApn2_1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn2_2 := pbsOrtbBid{&bidApn2_2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn2_3 := pbsOrtbBid{&bidApn2_3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn2_4 := pbsOrtbBid{&bidApn2_4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn2_5 := pbsOrtbBid{&bidApn2_5, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn2_6 := pbsOrtbBid{&bidApn2_6, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+
+	innerBidsApn1 := []*pbsOrtbBid{
+		&bid1_Apn1_1,
+		&bid1_Apn1_2,
+		&bid1_Apn1_3,
+		&bid1_Apn1_4,
+		&bid1_Apn1_5,
+		&bid1_Apn1_6,
+	}
+
+	innerBidsApn2 := []*pbsOrtbBid{
+		&bid1_Apn2_1,
+		&bid1_Apn2_2,
+		&bid1_Apn2_3,
+		&bid1_Apn2_4,
+		&bid1_Apn2_5,
+		&bid1_Apn2_6,
+	}
+
+	for i := 1; i < 100; i++ { //run it for more iterations to get more cases that depend on random selection
+		adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
+
+		seatBidApn1 := pbsOrtbSeatBid{bids: innerBidsApn1, currency: "USD"}
+		bidderNameApn1 := openrtb_ext.BidderName("appnexus1")
+
+		seatBidApn2 := pbsOrtbSeatBid{bids: innerBidsApn2, currency: "USD"}
+		bidderNameApn2 := openrtb_ext.BidderName("appnexus2")
+
+		adapterBids[bidderNameApn1] = &seatBidApn1
+		adapterBids[bidderNameApn2] = &seatBidApn2
+
+		_, adapterBids, rejections, err := applyCategoryMapping(nil, &requestExt, adapterBids, categoriesFetcher, targData)
+
+		assert.NoError(t, err, "Category mapping error should be empty")
+
+		//Total number of bids from all bidders in this case should be 2
+		bidsFromFirstBidder := adapterBids[bidderNameApn1]
+		bidsFromSecondBidder := adapterBids[bidderNameApn2]
+
+		totalNumberOfbids := 0
+
+		if bidsFromFirstBidder.bids != nil {
+			totalNumberOfbids += len(bidsFromFirstBidder.bids)
+		}
+
+		if bidsFromSecondBidder.bids != nil {
+			totalNumberOfbids += len(bidsFromSecondBidder.bids)
+		}
+
+		assert.Equal(t, 2, totalNumberOfbids, "2 bids total should be returned")
+		assert.Len(t, rejections, 10, "10 bids should be deduplicated")
+
+	}
+}
+
 func TestUpdateRejections(t *testing.T) {
 	rejections := []string{}
 

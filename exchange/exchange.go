@@ -756,11 +756,31 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 					} else {
 						// An older bid from a different seatBid we've already finished with
 						oldSeatBid := (seatBids)[dupe.bidderName]
+						rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						if len(oldSeatBid.bids) == 1 {
 							seatBidsToRemove = append(seatBidsToRemove, dupe.bidderName)
-							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						} else {
-							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
+							// This is a very unique, but still possible case where bid needs to be removed from already processed bidder
+							// This happens when current processing bidder has a bid that has same deduplication key as a bid from already processed bidder
+							// and already processed bid was selected to be removed
+							// See example of input data in unit test `TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice`
+							// Need to remove bid by name, not index in this case
+
+							//Find index of bid to remove
+							dupeBidIndex := -1
+							for i, bid := range oldSeatBid.bids {
+								if bid.bid.ID == dupe.bidID {
+									dupeBidIndex = i
+									break
+								}
+							}
+							if dupeBidIndex != -1 {
+								if dupeBidIndex < len(oldSeatBid.bids)-1 {
+									oldSeatBid.bids = append(oldSeatBid.bids[:dupeBidIndex], oldSeatBid.bids[dupeBidIndex+1:]...)
+								} else if dupeBidIndex == len(oldSeatBid.bids)-1 {
+									oldSeatBid.bids = oldSeatBid.bids[:len(oldSeatBid.bids)-1]
+								}
+							}
 						}
 					}
 					delete(res, dupe.bidID)
