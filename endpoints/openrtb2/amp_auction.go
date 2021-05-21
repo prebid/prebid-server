@@ -182,13 +182,16 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	secGPC := r.Header.Get("Sec-GPC")
+
 	auctionRequest := exchange.AuctionRequest{
-		BidRequest:   req,
-		Account:      *account,
-		UserSyncs:    usersyncs,
-		RequestType:  labels.RType,
-		StartTime:    start,
-		LegacyLabels: labels,
+		BidRequest:                 req,
+		Account:                    *account,
+		UserSyncs:                  usersyncs,
+		RequestType:                labels.RType,
+		StartTime:                  start,
+		LegacyLabels:               labels,
+		GlobalPrivacyControlHeader: secGPC,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

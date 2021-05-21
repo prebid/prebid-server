@@ -32,6 +32,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/beintoo"
 	"github.com/prebid/prebid-server/adapters/between"
 	"github.com/prebid/prebid-server/adapters/bidmachine"
+	"github.com/prebid/prebid-server/adapters/bidscube"
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/colossus"
 	"github.com/prebid/prebid-server/adapters/connectad"
@@ -57,12 +58,14 @@ import (
 	"github.com/prebid/prebid-server/adapters/invibes"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/jixie"
+	"github.com/prebid/prebid-server/adapters/kayzen"
 	"github.com/prebid/prebid-server/adapters/kidoz"
 	"github.com/prebid/prebid-server/adapters/krushmedia"
 	"github.com/prebid/prebid-server/adapters/kubient"
 	"github.com/prebid/prebid-server/adapters/lockerdome"
 	"github.com/prebid/prebid-server/adapters/logicad"
 	"github.com/prebid/prebid-server/adapters/lunamedia"
+	"github.com/prebid/prebid-server/adapters/madvertise"
 	"github.com/prebid/prebid-server/adapters/marsmedia"
 	"github.com/prebid/prebid-server/adapters/mgid"
 	"github.com/prebid/prebid-server/adapters/mobfoxpb"
@@ -146,6 +149,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBeintoo:           beintoo.Builder,
 		openrtb_ext.BidderBetween:           between.Builder,
 		openrtb_ext.BidderBidmachine:        bidmachine.Builder,
+		openrtb_ext.BidderBidsCube:          bidscube.Builder,
 		openrtb_ext.BidderBrightroll:        brightroll.Builder,
 		openrtb_ext.BidderColossus:          colossus.Builder,
 		openrtb_ext.BidderConnectAd:         connectad.Builder,
@@ -171,12 +175,14 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderInvibes:           invibes.Builder,
 		openrtb_ext.BidderIx:                ix.Builder,
 		openrtb_ext.BidderJixie:             jixie.Builder,
+		openrtb_ext.BidderKayzen:            kayzen.Builder,
 		openrtb_ext.BidderKidoz:             kidoz.Builder,
 		openrtb_ext.BidderKrushmedia:        krushmedia.Builder,
 		openrtb_ext.BidderKubient:           kubient.Builder,
 		openrtb_ext.BidderLockerDome:        lockerdome.Builder,
 		openrtb_ext.BidderLogicad:           logicad.Builder,
 		openrtb_ext.BidderLunaMedia:         lunamedia.Builder,
+		openrtb_ext.BidderMadvertise:        madvertise.Builder,
 		openrtb_ext.BidderMarsmedia:         marsmedia.Builder,
 		openrtb_ext.BidderMediafuse:         adtelligent.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
@@ -217,6 +223,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderUnruly:            unruly.Builder,
 		openrtb_ext.BidderValueImpression:   valueimpression.Builder,
 		openrtb_ext.BidderVerizonMedia:      verizonmedia.Builder,
+		openrtb_ext.BidderViewdeos:          adtelligent.Builder,
 		openrtb_ext.BidderVisx:              visx.Builder,
 		openrtb_ext.BidderVrtcal:            vrtcal.Builder,
 		openrtb_ext.BidderYeahmobi:          yeahmobi.Builder,

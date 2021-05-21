@@ -60,23 +60,24 @@ type beachfrontVideoRequest struct {
 //              Banner
 // ---------------------------------------------------
 type beachfrontBannerRequest struct {
-	Slots          []beachfrontSlot `json:"slots"`
-	Domain         string           `json:"domain"`
-	Page           string           `json:"page"`
-	Referrer       string           `json:"referrer"`
-	Search         string           `json:"search"`
-	Secure         int8             `json:"secure"`
-	DeviceOs       string           `json:"deviceOs"`
-	DeviceModel    string           `json:"deviceModel"`
-	IsMobile       int8             `json:"isMobile"`
-	UA             string           `json:"ua"`
-	Dnt            int8             `json:"dnt"`
-	User           openrtb2.User    `json:"user"`
-	AdapterName    string           `json:"adapterName"`
-	AdapterVersion string           `json:"adapterVersion"`
-	IP             string           `json:"ip"`
-	RequestID      string           `json:"requestId"`
-	Real204        bool             `json:"real204"`
+	Slots          []beachfrontSlot                         `json:"slots"`
+	Domain         string                                   `json:"domain"`
+	Page           string                                   `json:"page"`
+	Referrer       string                                   `json:"referrer"`
+	Search         string                                   `json:"search"`
+	Secure         int8                                     `json:"secure"`
+	DeviceOs       string                                   `json:"deviceOs"`
+	DeviceModel    string                                   `json:"deviceModel"`
+	IsMobile       int8                                     `json:"isMobile"`
+	UA             string                                   `json:"ua"`
+	Dnt            int8                                     `json:"dnt"`
+	User           openrtb2.User                            `json:"user"`
+	AdapterName    string                                   `json:"adapterName"`
+	AdapterVersion string                                   `json:"adapterVersion"`
+	IP             string                                   `json:"ip"`
+	RequestID      string                                   `json:"requestId"`
+	Real204        bool                                     `json:"real204"`
+	SChain         openrtb_ext.ExtRequestPrebidSChainSChain `json:"schain,omitempty"`
 }
 
 type beachfrontSlot struct {
@@ -263,6 +264,11 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 	return appid, error
 }
 
+func getSchain(request *openrtb2.BidRequest) (openrtb_ext.ExtRequestPrebidSChain, error) {
+	var schain openrtb_ext.ExtRequestPrebidSChain
+	return schain, json.Unmarshal(request.Source.Ext, &schain)
+}
+
 /*
 getBannerRequest, singular. A "Slot" is an "imp," and each Slot can have an AppId, so just one
 request to the beachfront banner endpoint gets all banner Imps.
@@ -369,6 +375,13 @@ func getBannerRequest(request *openrtb2.BidRequest) (beachfrontBannerRequest, []
 		bfr.Secure = *request.Imp[0].Secure
 	}
 	bfr.Real204 = true
+
+	if request.Source != nil && request.Source.Ext != nil {
+		schain, err := getSchain(request)
+		if err == nil {
+			bfr.SChain = schain.SChain
+		}
+	}
 
 	return bfr, errs
 }
@@ -517,9 +530,9 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	// only get the User struct and everything else will be nil
 	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
 		errs = append(errs, err)
+	} else {
+		bids, errs = postprocess(response, xtrnal, externalRequest.Uri, internalRequest.ID)
 	}
-
-	bids, errs = postprocess(response, xtrnal, externalRequest.Uri, internalRequest.ID)
 
 	if len(errs) != 0 {
 		return nil, errs
@@ -569,7 +582,7 @@ func postprocess(response *adapters.ResponseData, xtrnal openrtb2.BidRequest, ur
 
 		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
 			return nil, []error{&errortypes.BadServerResponse{
-				Message: fmt.Sprint("server response failed to unmarshal as valid rtb. Run with request.debug = 1 for more info"),
+				Message: "server response failed to unmarshal as valid rtb. Run with request.debug = 1 for more info",
 			}}
 		} else {
 			return postprocessBanner(beachfrontResp, id)

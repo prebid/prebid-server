@@ -137,6 +137,19 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		return nil, errs
 	}
 
+	if reqInfo.GlobalPrivacyControlHeader == "1" {
+		for i := 0; i < len(reqData); i++ {
+			if reqData[i].Headers != nil {
+				reqHeader := reqData[i].Headers.Clone()
+				reqHeader.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
+				reqData[i].Headers = reqHeader
+			} else {
+				reqData[i].Headers = http.Header{}
+				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
+			}
+		}
+	}
+
 	// Make any HTTP requests in parallel.
 	// If the bidder only needs to make one, save some cycles by just using the current one.
 	responseChannel := make(chan *httpCallInfo, len(reqData))
