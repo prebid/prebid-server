@@ -467,8 +467,8 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 
 // New uses viper to get our server configurations.
 func New(v *viper.Viper) (*Configuration, error) {
-	if errs := validateRequired(v); len(errs) > 0 {
-		return nil, errortypes.NewAggregateError("validation errors", errs)
+	if !v.IsSet("gdpr.default_value") {
+		return nil, fmt.Errorf("Required config flag gdpr.default_value not specified")
 	}
 
 	var c Configuration
@@ -1059,12 +1059,4 @@ func isValidCookieSize(maxCookieSize int) error {
 		return fmt.Errorf("Configured cookie size is less than allowed minimum size of %d \n", MIN_COOKIE_SIZE_BYTES)
 	}
 	return nil
-}
-
-func validateRequired(v *viper.Viper) []error {
-	errs := make([]error, 0)
-	if !v.IsSet("gdpr.default_value") {
-		errs = append(errs, fmt.Errorf("Required config flag gdpr.default_value not specified"))
-	}
-	return errs
 }
