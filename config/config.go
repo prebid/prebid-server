@@ -93,7 +93,7 @@ type HTTPClient struct {
 	IdleConnTimeout     int `mapstructure:"idle_connection_timeout_seconds"`
 }
 
-func (cfg *Configuration) validate() []error {
+func (cfg *Configuration) validate(v *viper.Viper) []error {
 	var errs []error
 	errs = cfg.AuctionTimeouts.validate(errs)
 	errs = cfg.StoredRequests.validate(errs)
@@ -105,7 +105,7 @@ func (cfg *Configuration) validate() []error {
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
 	}
-	errs = cfg.GDPR.validate(errs)
+	errs = cfg.GDPR.validate(v, errs)
 	errs = cfg.CurrencyConverter.validate(errs)
 	errs = validateAdapters(cfg.Adapters, errs)
 	errs = cfg.Debug.validate(errs)
@@ -207,8 +207,10 @@ type GDPR struct {
 	EEACountriesMap map[string]struct{}
 }
 
-func (cfg *GDPR) validate(errs []error) []error {
-	if cfg.DefaultValue != "0" && cfg.DefaultValue != "1" {
+func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
+	if !v.IsSet("gdpr.default_value") {
+		errs = append(errs, fmt.Errorf("gdpr.default_value is required and must be specified"))
+	} else if cfg.DefaultValue != "0" && cfg.DefaultValue != "1" {
 		errs = append(errs, fmt.Errorf("gdpr.default_value must be 0 or 1"))
 	}
 	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
@@ -467,10 +469,6 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 
 // New uses viper to get our server configurations.
 func New(v *viper.Viper) (*Configuration, error) {
-	if !v.IsSet("gdpr.default_value") {
-		return nil, fmt.Errorf("Required config flag gdpr.default_value not specified")
-	}
-
 	var c Configuration
 	if err := v.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
@@ -524,7 +522,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
-	if errs := c.validate(); len(errs) > 0 {
+	if errs := c.validate(v); len(errs) > 0 {
 		return &c, errortypes.NewAggregateError("validation errors", errs)
 	}
 
