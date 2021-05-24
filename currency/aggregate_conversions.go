@@ -1,16 +1,20 @@
 package currency
 
-import "strings"
+import "github.com/prebid/prebid-server/errortypes"
 
+// AggregateConversions contains both the request-defined currency rate
+// map found in request.ext.prebid.currency and the currencies conversion
+// rates fetched with the RateConverter object defined in rate_converter.go
+// It implements the Conversions interface.
 type AggregateConversions struct {
-	serverRates, customRates Conversions
+	customRates, serverRates Conversions
 }
 
-// NewRates creates a new Rates object holding currencies rates
+// NewAggregateConversions expects both customRates and pbsRates to not be nil
 func NewAggregateConversions(customRates, pbsRates Conversions) *AggregateConversions {
 	return &AggregateConversions{
-		serverRates: pbsRates,
 		customRates: customRates,
+		serverRates: pbsRates,
 	}
 }
 
@@ -18,12 +22,14 @@ func NewAggregateConversions(customRates, pbsRates Conversions) *AggregateConver
 // the customRates currency rate over that of the PBS currency rate service
 // returns an error if both Conversions objects return error.
 func (re *AggregateConversions) GetRate(from string, to string) (float64, error) {
-
 	rate, err := re.customRates.GetRate(from, to)
-	if err == nil || !strings.HasPrefix(err.Error(), `Currency conversion rate not found`) {
-		// valid custom conversion rate was found, return this
-		// value because custom rates take priority over PBS rates
-		return rate, err
+
+	if err == nil {
+		if _, isMissingRateErr := err.(*errortypes.NoConversionRate); !isMissingRateErr {
+			// valid custom conversion rate was found, return this
+			// value because custom rates take priority over PBS rates
+			return rate, err
+		}
 	}
 
 	// because the custom rates' GetRate() call returned an error other than "conversion
@@ -32,7 +38,8 @@ func (re *AggregateConversions) GetRate(from string, to string) (float64, error)
 	return re.serverRates.GetRate(from, to)
 }
 
-// No need to call GetRates on RateEngines
+// GetRates is not implemented for AggregateConversions . There is no need to call
+// this function for this scenario.
 func (r *AggregateConversions) GetRates() *map[string]map[string]float64 {
 	return nil
 }

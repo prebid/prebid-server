@@ -50,5 +50,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: Three-digit code"
+  "expectedErrorMessage": "Invalid request: currency code "
 }

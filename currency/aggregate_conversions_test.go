@@ -12,18 +12,18 @@ func TestGroupedGetRate(t *testing.T) {
 	// Setup:
 	customRates := NewRates(time.Now(), map[string]map[string]float64{
 		"USD": {
-			"GBP": 0.77208,
-			"EUR": 0.80,
+			"GBP": 3.00,
+			"EUR": 2.00,
 		},
 	})
 
 	pbsRates := NewRates(time.Now(), map[string]map[string]float64{
 		"USD": {
-			"GBP": 0.50,
-			"MXN": 10.31,
+			"GBP": 4.00,
+			"MXN": 10.00,
 		},
 	})
-	rateEngines := NewAggregateConversions(customRates, pbsRates)
+	aggregateConversions := NewAggregateConversions(customRates, pbsRates)
 
 	// Test cases:
 	type aTest struct {
@@ -40,11 +40,11 @@ func TestGroupedGetRate(t *testing.T) {
 		{
 			expectError: false,
 			testCases: []aTest{
-				{"Found in both, return custom rate", "USD", "GBP", 0.77208},
-				{"Found in both, return inverse custom rate", "GBP", "USD", 1 / 0.77208},
-				{"Found in custom rates only", "USD", "EUR", 0.80},
-				{"Found in PBS rates only", "USD", "MXN", 10.31},
-				{"Found in PBS rates only, return inverse", "MXN", "USD", 1 / 10.31},
+				{"Found in both, return custom rate", "USD", "GBP", 3.00},
+				{"Found in both, return inverse custom rate", "GBP", "USD", 1 / 3.00},
+				{"Found in custom rates only", "USD", "EUR", 2.00},
+				{"Found in PBS rates only", "USD", "MXN", 10.00},
+				{"Found in PBS rates only, return inverse", "MXN", "USD", 1 / 10.00},
 				{"Same currency, return unitary rate", "USD", "USD", 1},
 			},
 		},
@@ -64,7 +64,7 @@ func TestGroupedGetRate(t *testing.T) {
 	for _, group := range testGroups {
 		for _, tc := range group.testCases {
 			// Execute:
-			rate, err := rateEngines.GetRate(tc.from, tc.to)
+			rate, err := aggregateConversions.GetRate(tc.from, tc.to)
 
 			// Verify:
 			if group.expectError {

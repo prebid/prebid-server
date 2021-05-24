@@ -456,16 +456,15 @@ func validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) er
 	}
 
 	for fromCurrency, rates := range bidReqCurrencyRates.ConversionRates {
-
 		// Check if fromCurrency is a valid 3-letter currency code
 		if _, err := currency.ParseISO(fromCurrency); err != nil {
-			return &errortypes.BadInput{Message: fmt.Sprintf("Three-digit code %s is not a recognized currency code or is malformed", fromCurrency)}
+			return &errortypes.BadInput{Message: fmt.Sprintf("currency code %s is not recognized or malformed", fromCurrency)}
 		}
 
 		// Check if currencies mapped to fromCurrency are valid 3-letter currency codes
 		for toCurrency := range rates {
 			if _, err := currency.ParseISO(toCurrency); err != nil {
-				return &errortypes.BadInput{Message: fmt.Sprintf("Three-digit code %s is not a recognized currency code or is malformed", toCurrency)}
+				return &errortypes.BadInput{Message: fmt.Sprintf("currency code %s is not recognized or malformed", toCurrency)}
 			}
 		}
 	}

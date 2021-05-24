@@ -962,7 +962,7 @@ func (e *exchange) getAuctionCurrencyRates(requestRates *openrtb_ext.ExtRequestC
 		return e.currencyConverter.Rates()
 	}
 
-	// Return a RateEngines object that includes both custom and PBS currency rates but will
+	// Return an AggregateConversions object that includes both custom and PBS currency rates but will
 	// prioritize custom rates over PBS rates whenever a currency rate is found in both
 	return currency.NewAggregateConversions(currency.NewRates(time.Time{}, requestRates.ConversionRates), e.currencyConverter.Rates())
 }

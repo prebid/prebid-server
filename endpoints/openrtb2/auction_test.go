@@ -2748,7 +2748,7 @@ func newMockBidExchange(bidder mockBidExchangeBidder, mockCurrencyConversionRate
 
 // getAuctionCurrencyRates copies the logic of the exchange package for testing purposes
 func (e *mockBidExchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
-	if customRates == nil || len(customRates.ConversionRates) == 0 {
+	if customRates == nil {
 		return currency.NewRates(time.Now(), e.pbsRates)
 	}
 
@@ -2761,33 +2761,15 @@ func (e *mockBidExchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRe
 		return currency.NewRates(time.Now(), customRates.ConversionRates)
 	}
 
-	auctionRates := make(map[string]map[string]float64, len(customRates.ConversionRates)+len(e.pbsRates))
-
-	// Copy custom rates first because they get priority
-	for fromCurrency, rates := range customRates.ConversionRates {
-		auctionRates[fromCurrency] = make(map[string]float64, len(rates))
-
-		for toCurrency, rate := range rates {
-			auctionRates[fromCurrency][toCurrency] = rate
-		}
+	// Both PBS and custom rates can be used, check if ConversionRates is not empty
+	if len(customRates.ConversionRates) == 0 {
+		// Custom rates map is empty, use PBS rates only
+		return currency.NewRates(time.Now(), e.pbsRates)
 	}
 
-	// Now copy pbs rates
-	for fromCurrency, rates := range e.pbsRates {
-
-		if _, defined := auctionRates[fromCurrency]; !defined {
-			auctionRates[fromCurrency] = make(map[string]float64, len(rates))
-		}
-
-		for toCurrency, rate := range rates {
-			// If it was found in the custom conversions, don't modify because custom rates take precedence
-			if _, customRateFound := auctionRates[fromCurrency][toCurrency]; !customRateFound {
-				auctionRates[fromCurrency][toCurrency] = rate
-			}
-		}
-	}
-
-	return currency.NewRates(time.Now(), auctionRates)
+	// Return an AggregateConversions object that includes both custom and PBS currency rates but will
+	// prioritize custom rates over PBS rates whenever a currency rate is found in both
+	return currency.NewAggregateConversions(currency.NewRates(time.Time{}, customRates.ConversionRates), currency.NewRates(time.Now(), e.pbsRates))
 }
 
 // mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext

@@ -11,6 +11,7 @@ const (
 	BidderTemporarilyDisabledErrorCode
 	BlacklistedAcctErrorCode
 	AcctRequiredErrorCode
+	NoConversionRateErrorCode
 )
 
 // Defines numeric codes for well-known warnings.

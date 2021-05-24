@@ -1,8 +1,7 @@
 package currency
 
 import (
-	"fmt"
-
+	"github.com/prebid/prebid-server/errortypes"
 	"golang.org/x/text/currency"
 )
 
@@ -29,7 +28,7 @@ func (r *ConstantRates) GetRate(from string, to string) (float64, error) {
 	}
 
 	if fromUnit.String() != toUnit.String() {
-		return 0, fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert '%s' => '%s'", fromUnit.String(), toUnit.String())
+		return 0, errortypes.NewNoConversionRateError(fromUnit.String(), toUnit.String())
 	}
 
 	return 1, nil
