@@ -30,6 +30,8 @@ type DebugLog struct {
 	CacheString   string
 	Regexp        *regexp.Regexp
 	DebugOverride bool
+	//little optimization, it stores value of debugLog.Enabled || debugLog.DebugOverride
+	DebugConsolidated bool
 }
 
 type DebugData struct {
@@ -250,7 +252,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 
-	if len(toCache) > 0 && debugLog != nil && (debugLog.Enabled || debugLog.DebugOverride) {
+	if len(toCache) > 0 && debugLog != nil && debugLog.DebugConsolidated {
 		debugLog.CacheKey = hbCacheID
 		debugLog.BuildCacheString()
 		if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {
