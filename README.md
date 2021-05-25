@@ -50,6 +50,11 @@ go build .
 Load the landing page in your browser at `http://localhost:8000/`.
 For the full API reference, see [the endpoint documentation](https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html)
 
+## Go Modules
+
+The packages within this repository are intended to be used as part of the Prebid Server compiled binary. If you
+choose to import Prebid Server packages in other projects, please understand we make no promises on the stability
+of exported types.
 
 ## Contributing
 
