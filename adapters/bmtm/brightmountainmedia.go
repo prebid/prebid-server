@@ -121,7 +121,7 @@ func setHeaders(request openrtb2.BidRequest) http.Header {
 }
 
 func processImp(imp openrtb2.Imp) (*openrtb2.Imp, error) {
-	if imp.Banner == nil && imp.Video == nil && imp.Native == nil {
+	if imp.Banner == nil && imp.Video == nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("For Imp ID %s Banner or Video is undefined", imp.ID),
 		}
