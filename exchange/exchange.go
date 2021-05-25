@@ -118,7 +118,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 			LMT:  cfg.LMT,
 		},
 		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
-		trakerURL: cfg.TrackerURL,
+		trakerURL:      cfg.TrackerURL,
 	}
 }
 

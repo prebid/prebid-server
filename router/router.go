@@ -263,7 +263,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	if err := validateDefaultAliases(defaultAliases); err != nil {
 		glog.Fatal(err)
 	}
-	
+
 	g_defReqJSON = defReqJSON
 
 	g_syncers = usersyncers.NewSyncerMap(cfg)

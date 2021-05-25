@@ -60,7 +60,7 @@ func NewCTVEndpoint(
 	requestsByID stored_requests.Fetcher,
 	videoFetcher stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
-//categories stored_requests.CategoryFetcher,
+	//categories stored_requests.CategoryFetcher,
 	cfg *config.Configuration,
 	met metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
