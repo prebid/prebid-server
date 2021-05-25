@@ -490,14 +490,15 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) er
 	}
 
 	extMap := make(map[string]interface{}, 0)
+	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
+		addKeywordsToExt(pubmaticExt.Keywords, extMap)
+	}
+	//Give preference to direct values of 'dctr' & 'pmZoneId' params in extension
 	if pubmaticExt.Dctr != "" {
 		extMap[dctrKeyName] = pubmaticExt.Dctr
 	}
 	if pubmaticExt.PmZoneID != "" {
 		extMap[pmZoneIDKeyName] = pubmaticExt.PmZoneID
-	}
-	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
-		addKeywordsToExt(pubmaticExt.Keywords, extMap)
 	}
 
 	imp.Ext = nil
@@ -521,11 +522,6 @@ func addKeywordsToExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, extMap map[s
 			key := keyVal.Key
 			if keyVal.Key == pmZoneIDKeyNameOld {
 				key = pmZoneIDKeyName
-			}
-			_, present := extMap[key]
-			if present {
-				logf("Value for key '%s' already present. Ignoring value passed in keywords.", keyVal.Key)
-				continue
 			}
 			extMap[key] = strings.Join(keyVal.Values[:], ",")
 		}
