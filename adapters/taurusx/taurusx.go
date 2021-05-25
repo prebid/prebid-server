@@ -29,8 +29,7 @@ var taurusxExtSKADNetIDs = map[string]bool{
 }
 
 type taurusxVideoExt struct {
-	Rewarded                int  `json:"rewarded"`
-	AllowsCustomCloseButton bool `json:"allowscustomclosebutton"`
+	Rewarded int `json:"rewarded"`
 }
 
 type taurusxBannerExt struct {
@@ -126,40 +125,33 @@ func (adapter *TaurusXAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 			continue
 		}
 
-		videoCopy := *thisImp.Video
-		if taurusxExt.MRAIDSupported {
-			if thisImp.Banner != nil {
-				mraidAPIs := thisImp.Banner.API
-
-				if videoCopy.API == nil {
-					videoCopy.API = []openrtb.APIFramework{}
-				}
-
-				// merge Banner's APIs with Video's APIs, we know that Banner object has MRAID related APIs (3, 5)
-				for _, api := range mraidAPIs {
-					videoCopy.API = append(videoCopy.API, api)
-				}
-			}
-		}
-
 		impVideoExt := taurusxVideoExt{
-			Rewarded:                taurusxExt.Reward,
-			AllowsCustomCloseButton: false,
+			Rewarded: taurusxExt.Reward,
 		}
 
-		videoCopy.Ext, err = json.Marshal(&impVideoExt)
+		thisImp.Video.Ext, err = json.Marshal(&impVideoExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		thisImp.Video = &videoCopy
-
 		if thisImp.Banner != nil {
-			// currently Banner is used to request only for playable and video MRAID
-			// and we know that TaurusX is looking for a Video object rather than Banner
-			// therefore, do not send Banner object to TaurusX for MRAID
-			thisImp.Banner = nil
+			if taurusxExt.MRAIDSupported {
+				bannerCopy := *thisImp.Banner
+				bannerExt := taurusxBannerExt{
+					Rewarded:                taurusxExt.Reward,
+					AllowsCustomCloseButton: false,
+				}
+				bannerCopy.Ext, err = json.Marshal(&bannerExt)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				thisImp.Banner = &bannerCopy
+			} else {
+				thisImp.Banner = nil
+			}
 		}
 
 		impExt := taurusxImpExt{}
