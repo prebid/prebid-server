@@ -59,7 +59,7 @@ Report bugs, request features, and suggest improvements [on Github](https://gith
 
 Or better yet, [open a pull request](https://github.com/prebid/prebid-server/compare) with the changes you'd like to see.
 
-## IDE Setup for PBS-Go development
+## IDE Recommendations
 
-The quickest way to start developing PBS-Go in a reproducible environment isolated from your host OS
-is by using this [VScode Remote Container Setup](devcontainer.md)
+The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS
+is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).
