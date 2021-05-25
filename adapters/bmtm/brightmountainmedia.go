@@ -130,14 +130,14 @@ func processImp(imp openrtb2.Imp) (*openrtb2.Imp, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "Unknown BrightMountainMedia ExtImpBidder",
+			Message: "Error unmarshalling ExtImpBidder",
 		}
 	}
 
 	var bmtmExt openrtb_ext.ImpExtBmtm
 	if err := json.Unmarshal(bidderExt.Bidder, &bmtmExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "Unknown BrightMountainMedia bidder ext",
+			Message: "Error unmarshalling ExtImpBmtm",
 		}
 	}
 
