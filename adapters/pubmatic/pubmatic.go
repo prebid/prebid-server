@@ -28,6 +28,8 @@ const (
 	buyIdTargetingKey        = "hb_buyid_pubmatic"
 	skAdnetworkKey           = "skadn"
 	rewardKey                = "reward"
+	ImpExtAdUnitKey          = "dfp_ad_unit_code"
+	AdServerGAM              = "gam"
 )
 
 type PubmaticAdapter struct {
@@ -629,6 +631,11 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *pubmaticWrapperExt, pubID
 		if bidderExt.Prebid.IsRewardedInventory == 1 {
 			impExtMap[rewardKey] = bidderExt.Prebid.IsRewardedInventory
 		}
+	}
+
+	if bidderExt.Data != nil && bidderExt.Data.AdServer != nil &&
+		bidderExt.Data.AdServer.Name == AdServerGAM && bidderExt.Data.AdServer.AdSlot != "" {
+		impExtMap[ImpExtAdUnitKey] = bidderExt.Data.AdServer.AdSlot
 	}
 
 	if len(impExtMap) != 0 {
