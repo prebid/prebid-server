@@ -23,13 +23,11 @@ func NewAggregateConversions(customRates, pbsRates Conversions) *AggregateConver
 // returns an error if both Conversions objects return error.
 func (re *AggregateConversions) GetRate(from string, to string) (float64, error) {
 	rate, err := re.customRates.GetRate(from, to)
-
 	if err == nil {
-		if _, isMissingRateErr := err.(*errortypes.NoConversionRate); !isMissingRateErr {
-			// valid custom conversion rate was found, return this
-			// value because custom rates take priority over PBS rates
-			return rate, err
-		}
+		return rate, nil
+	} else if _, isMissingRateErr := err.(*errortypes.NoConversionRate); !isMissingRateErr {
+		// other error, return the error
+		return 0, err
 	}
 
 	// because the custom rates' GetRate() call returned an error other than "conversion

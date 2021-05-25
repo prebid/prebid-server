@@ -1,9 +1,9 @@
 {
-  "description": "usepbsrates set to false forces BidRequest to use custom currency rates but bidRequest.ext.prebid.currency.rates field is empty",
+  "description": "request.ext.prebid.currency.rates empty, usepbsrates is false, a conversion is needed but conversions are disabled",
   "config": {
     "currencyRates":{
       "USD": {
-        "MXN": 5.09
+        "MXN": 2.00
       }
     },
     "mockBidder": {
@@ -34,9 +34,6 @@
     "cur": ["MXN"],
     "ext": {
       "prebid": {
-        "aliases": {
-          "unknown": "appnexus"
-        },
         "currency": {
           "rates": {},
           "usepbsrates": false

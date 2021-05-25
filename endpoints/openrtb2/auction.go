@@ -452,7 +452,10 @@ func validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) er
 
 	customRatesOnly := bidReqCurrencyRates.UsePBSRates != nil && !(*bidReqCurrencyRates.UsePBSRates)
 	if customRatesOnly && len(bidReqCurrencyRates.ConversionRates) == 0 {
-		return &errortypes.BadInput{Message: "Required custom currency rates field is empty"}
+		return &errortypes.Warning{
+			Message:     "currency conversion disabled. cannot use pbs rates and custom currency rates map is empty",
+			WarningCode: errortypes.DisabledCurrencyConversionWarningCode,
+		}
 	}
 
 	for fromCurrency, rates := range bidReqCurrencyRates.ConversionRates {

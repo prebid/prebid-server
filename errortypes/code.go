@@ -20,6 +20,7 @@ const (
 	InvalidPrivacyConsentWarningCode = iota + 10000
 	AccountLevelDebugDisabledWarningCode
 	BidderLevelDebugDisabledWarningCode
+	DisabledCurrencyConversionWarningCode
 )
 
 // Coder provides an error or warning code with severity.

@@ -1,5 +1,5 @@
 {
-  "description": "request.ext.prebid.currency substitutes those of the currency conversion server because usepbsrates is false",
+  "description": "request.ext.prebid.currency.rates empty, usepbsrates set to false, request succeeded because no conversion was needed",
   "config": {
     "currencyRates":{
       "USD": {
@@ -31,18 +31,10 @@
         }
       }
     ],
-    "cur": ["MXN"],
     "ext": {
       "prebid": {
-        "aliases": {
-          "unknown": "appnexus"
-        },
         "currency": {
-          "rates": {
-            "USD": {
-              "MXN": 5.00
-            }
-          },
+          "rates": {},
           "usepbsrates": false
         }
       }
@@ -51,7 +43,7 @@
   "expectedBidResponse": {
       "id":"some-request-id",
       "bidid":"test bid id",
-      "cur": "MXN",
+      "cur": "USD",
       "nbr":0,
       "seatbid": [
         {
@@ -59,7 +51,7 @@
             {
               "id": "appnexus-bid",
               "impid": "",
-              "price": 5.00
+              "price": 1.00
             }
           ],
           "seat": "appnexus-bids"

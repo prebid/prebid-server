@@ -1,5 +1,5 @@
 {
-  "description": "BidRequest defines its own custom rates but the bid request currency is only found in the currency conversion server rates. Error wasn't thrown because usepbsrates defaults to true",
+  "description": "request comes with custom rates but request.cur currency is only found in the server rates. Error wasn't thrown because usepbsrates defaults to true",
   "config": {
     "currencyRates":{
       "USD": {

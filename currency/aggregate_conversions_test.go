@@ -1,9 +1,11 @@
 package currency
 
 import (
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,11 +36,11 @@ func TestGroupedGetRate(t *testing.T) {
 	}
 
 	testGroups := []struct {
-		expectError bool
-		testCases   []aTest
+		expectedError error
+		testCases     []aTest
 	}{
 		{
-			expectError: false,
+			expectedError: nil,
 			testCases: []aTest{
 				{"Found in both, return custom rate", "USD", "GBP", 3.00},
 				{"Found in both, return inverse custom rate", "GBP", "USD", 1 / 3.00},
@@ -49,13 +51,23 @@ func TestGroupedGetRate(t *testing.T) {
 			},
 		},
 		{
-			expectError: true,
+			expectedError: errors.New("currency: tag is not well-formed"),
 			testCases: []aTest{
-				{"From-currency three-digit code not found", "FOO", "EUR", 0},
 				{"From-currency three-digit code malformed", "XX", "EUR", 0},
-				{"To-currency three-digit code not found", "GBP", "BAR", 0},
 				{"To-currency three-digit code malformed", "GBP", "", 0},
 				{"Both currencies malformed", "", "", 0},
+			},
+		},
+		{
+			expectedError: errors.New("currency: tag is not a recognized currency"),
+			testCases: []aTest{
+				{"From-currency three-digit code not found", "FOO", "EUR", 0},
+				{"To-currency three-digit code not found", "GBP", "BAR", 0},
+			},
+		},
+		{
+			expectedError: errortypes.NewNoConversionRateError("GBP", "EUR"),
+			testCases: []aTest{
 				{"Valid three-digit currency codes, but conversion rate not found", "GBP", "EUR", 0},
 			},
 		},
@@ -67,13 +79,8 @@ func TestGroupedGetRate(t *testing.T) {
 			rate, err := aggregateConversions.GetRate(tc.from, tc.to)
 
 			// Verify:
-			if group.expectError {
-				assert.NotNilf(t, err, "err shouldn't be nil: %s\n", tc.desc)
-				assert.Equal(t, float64(0), rate, "rate should be 0: %s\n", tc.desc)
-			} else {
-				assert.Nil(t, err, "err should be nil: %s\n", tc.desc)
-				assert.Equal(t, tc.expectedRate, rate, "rate doesn't match the expected: %s\n", tc.desc)
-			}
+			assert.Equal(t, tc.expectedRate, rate, "rate should be 0: %s\n", tc.desc)
+			assert.Equal(t, group.expectedError, err, "err shouldn't be nil: %s\n", tc.desc)
 		}
 	}
 }
