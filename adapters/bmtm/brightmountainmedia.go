@@ -122,7 +122,9 @@ func setHeaders(request openrtb2.BidRequest) http.Header {
 	headers.Add("Accept", "application/json")
 
 	if request.Device != nil {
-		headers.Add("User-Agent", request.Device.UA)
+		if request.Device.UA != "" {
+			headers.Add("User-Agent", request.Device.UA)
+		}
 
 		if request.Device.IP != "" {
 			headers.Add("X-Forwarded-For", request.Device.IP)
@@ -131,7 +133,7 @@ func setHeaders(request openrtb2.BidRequest) http.Header {
 		}
 	}
 
-	if request.Site != nil {
+	if request.Site != nil && request.Site.Page != "" {
 		headers.Add("Referer", request.Site.Page)
 	}
 	return headers
