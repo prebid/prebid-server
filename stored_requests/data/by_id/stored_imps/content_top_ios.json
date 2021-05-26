@@ -20,10 +20,11 @@
             "delDomain": "playwire-d.openx.net"
           },
           "pubmatic": {
-            "publisherId": "158326"
+            "publisherId": "158326",
+            "adSlot": "1957464"
           },
           "rhythmone": {
-            "placementId": "213224",
+            "placementId": "213696",
             "zone": "1r",
             "path": "mvo"
           },
@@ -34,6 +35,9 @@
           },
           "sonobi": {
               "TagID": "12eb86143abb80d6a9c6"
+          },
+          "oftmedia": {
+              "placementId": "19606578"
           }
       }
 }
