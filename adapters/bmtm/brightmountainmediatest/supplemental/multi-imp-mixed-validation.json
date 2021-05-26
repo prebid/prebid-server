@@ -4,6 +4,10 @@
     "site": {
       "page": "prebid.org"
     },
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.101 Safari/537.36",
+      "ip": "73.55.27.72"
+    },
     "imp": [
       {
         "id": "test-imp-id1",
@@ -39,6 +43,10 @@
           "id": "test-request-id",
           "site": {
             "page": "prebid.org"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.101 Safari/537.36",
+            "ip": "73.55.27.72"
           },
           "imp": [
             {
