@@ -570,6 +570,45 @@ func TestRecordRequestPrivacy(t *testing.T) {
 	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionV2].Count(), int64(1), "TCF V2")
 }
 
+func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
+	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
+
+	tests := []struct {
+		description     string
+		metricsDisabled bool
+		adapterName     openrtb_ext.BidderName
+		expectedCount   int64
+	}{
+		{
+			description:     "",
+			metricsDisabled: false,
+			adapterName:     openrtb_ext.BidderAppnexus,
+			expectedCount:   1,
+		},
+		{
+			description:     "",
+			metricsDisabled: false,
+			adapterName:     fakeBidder,
+			expectedCount:   0,
+		},
+		{
+			description:     "",
+			metricsDisabled: true,
+			adapterName:     openrtb_ext.BidderAppnexus,
+			expectedCount:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterGDPRRequestBlocked: tt.metricsDisabled})
+
+		m.RecordAdapterGDPRRequestBlocked(tt.adapterName)
+
+		assert.Equal(t, tt.expectedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].GDPRRequestBlocked.Count(), tt.description)
+	}
+}
+
 func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefix string, mdm map[openrtb_ext.BidType]*MarkupDeliveryMetrics) {
 	ensureContains(t, registry, prefix+".banner.adm_bids_received", mdm[openrtb_ext.BidTypeBanner].AdmMeter)
 	ensureContains(t, registry, prefix+".banner.nurl_bids_received", mdm[openrtb_ext.BidTypeBanner].NurlMeter)
