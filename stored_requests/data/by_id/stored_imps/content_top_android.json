@@ -1,23 +1,19 @@
 {
-    "id": "in_article_ios",
+    "id": "content_top_ios",
     "banner": {
         "format": [
           {
             "w": 320,
             "h": 50
-          },
-          {
-            "w": 300,
-            "h": 250
           }
         ]
       },
       "ext": {
           "appnexus": {
-            "placement_id": 19689654
+            "placement_id": 19689655
           },
           "emx_digital": {
-              "tagid": "105251"
+              "tagid": "107133"
           },
           "openx": {
             "unit": "541169197",
@@ -25,7 +21,7 @@
           },
           "pubmatic": {
             "publisherId": "158326",
-            "adSlot": "1957464"
+            "adSlot": "1957467"
           },
           "rhythmone": {
             "placementId": "213696",
