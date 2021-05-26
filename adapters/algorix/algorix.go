@@ -14,24 +14,24 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type AlgoriXAdapter struct {
+type Adapter struct {
 	EndpointTemplate template.Template
 }
 
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	bidder := &AlgoriXAdapter{
-		EndpointTemplate: *template,
+	bidder := &Adapter{
+		EndpointTemplate: *endpoint,
 	}
 	return bidder, nil
 }
 
 // MakeRequests Make Requests
-func (adapter *AlgoriXAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *Adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var adapterRequests []*adapters.RequestData
 	var errs []error
 
@@ -44,7 +44,7 @@ func (adapter *AlgoriXAdapter) MakeRequests(request *openrtb2.BidRequest, reques
 	return adapterRequests, errs
 }
 
-func (adapter *AlgoriXAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
+func (adapter *Adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 	if len(request.Imp) == 0 {
 		return nil, &errortypes.BadInput{Message: "No impression in the request"}
 	}
@@ -97,12 +97,13 @@ func parseAlgoriXExt(request *openrtb2.BidRequest) *openrtb_ext.ExtImpAlgorix {
 	return nil
 }
 
-// getEndPoint get Endpoint
-func (adapter *AlgoriXAdapter) getEndPoint(ext *openrtb_ext.ExtImpAlgorix) (string, error) {
+// getEndPoint get Endpoint Target
+func (adapter *Adapter) getEndPoint(ext *openrtb_ext.ExtImpAlgorix) (string, error) {
 	endPointParams := macros.EndpointTemplateParams{SourceId: ext.Sid, AccountID: ext.Token}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endPointParams)
 }
 
+// preProcess process Request check and modify banner imp
 func preProcess(request *openrtb2.BidRequest) {
 	for i := range request.Imp {
 		if request.Imp[i].Banner != nil {
@@ -118,7 +119,7 @@ func preProcess(request *openrtb2.BidRequest) {
 	}
 }
 
-func (adapter *AlgoriXAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *Adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -154,7 +155,7 @@ func (adapter *AlgoriXAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 	return bidResponse, nil
 }
 
-// getBidType get Bid Type
+// getBidType get Bid Type default: BannerType
 func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	for _, imp := range imps {
 		if imp.ID == impId {
