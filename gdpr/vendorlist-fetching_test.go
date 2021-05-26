@@ -21,8 +21,8 @@ func TestFetcherDynamicLoadListExists(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mockServer(serverSettings{
 		vendorListLatestVersion: 1,
 		vendorLists: map[int]string{
-			1: tcf2VendorList1,
-			2: tcf2VendorList2,
+			1: vendorList1,
+			2: vendorList2,
 		},
 	})))
 	defer server.Close()
@@ -45,7 +45,7 @@ func TestFetcherDynamicLoadListDoesntExist(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mockServer(serverSettings{
 		vendorListLatestVersion: 1,
 		vendorLists: map[int]string{
-			1: tcf2VendorList1,
+			1: vendorList1,
 		},
 	})))
 	defer server.Close()
@@ -67,17 +67,17 @@ func TestFetcherThrottling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mockServer(serverSettings{
 		vendorListLatestVersion: 1,
 		vendorLists: map[int]string{
-			1: tcf2MarshalVendorList(tcf2VendorList{
+			1: MarshalVendorList(vendorList{
 				VendorListVersion: 1,
-				Vendors:           map[string]*tcf2Vendor{"12": {ID: 12, Purposes: []int{1}}},
+				Vendors:           map[string]*vendor{"12": {ID: 12, Purposes: []int{1}}},
 			}),
-			2: tcf2MarshalVendorList(tcf2VendorList{
+			2: MarshalVendorList(vendorList{
 				VendorListVersion: 2,
-				Vendors:           map[string]*tcf2Vendor{"12": {ID: 12, Purposes: []int{1, 2}}},
+				Vendors:           map[string]*vendor{"12": {ID: 12, Purposes: []int{1, 2}}},
 			}),
-			3: tcf2MarshalVendorList(tcf2VendorList{
+			3: MarshalVendorList(vendorList{
 				VendorListVersion: 3,
-				Vendors:           map[string]*tcf2Vendor{"12": {ID: 12, Purposes: []int{1, 2, 3}}},
+				Vendors:           map[string]*vendor{"12": {ID: 12, Purposes: []int{1, 2, 3}}},
 			}),
 		},
 	})))
@@ -157,14 +157,14 @@ func TestVendorListURLMaker(t *testing.T) {
 	}
 }
 
-var tcf2VendorList1 = tcf2MarshalVendorList(tcf2VendorList{
+var vendorList1 = MarshalVendorList(vendorList{
 	VendorListVersion: 1,
-	Vendors:           map[string]*tcf2Vendor{"12": {ID: 12, Purposes: []int{2}}},
+	Vendors:           map[string]*vendor{"12": {ID: 12, Purposes: []int{2}}},
 })
 
-var tcf2VendorList2 = tcf2MarshalVendorList(tcf2VendorList{
+var vendorList2 = MarshalVendorList(vendorList{
 	VendorListVersion: 2,
-	Vendors:           map[string]*tcf2Vendor{"12": {ID: 12, Purposes: []int{2, 3}}},
+	Vendors:           map[string]*vendor{"12": {ID: 12, Purposes: []int{2, 3}}},
 })
 
 var vendorList2Expected = testExpected{
@@ -179,12 +179,12 @@ var vendorListFallbackExpected = testExpected{
 	vendorPurposes:    map[int]bool{1: true, 2: false, 3: true},
 }
 
-type tcf2VendorList struct {
-	VendorListVersion uint16                 `json:"vendorListVersion"`
-	Vendors           map[string]*tcf2Vendor `json:"vendors"`
+type vendorList struct {
+	VendorListVersion uint16             `json:"vendorListVersion"`
+	Vendors           map[string]*vendor `json:"vendors"`
 }
 
-type tcf2Vendor struct {
+type vendor struct {
 	ID               uint16 `json:"id"`
 	Purposes         []int  `json:"purposes"`
 	LegIntPurposes   []int  `json:"legIntPurposes"`
@@ -192,7 +192,7 @@ type tcf2Vendor struct {
 	SpecialPurposes  []int  `json:"specialPurposes"`
 }
 
-func tcf2MarshalVendorList(vendorList tcf2VendorList) string {
+func MarshalVendorList(vendorList vendorList) string {
 	json, _ := json.Marshal(vendorList)
 	return string(json)
 }

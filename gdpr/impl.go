@@ -121,7 +121,6 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 	}
 
 	if !p.cfg.TCF2.Purpose1.Enabled {
-		// We are not enforcing purpose 1
 		return true, nil
 	}
 	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
