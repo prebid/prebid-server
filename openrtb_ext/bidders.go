@@ -57,6 +57,7 @@ const (
 	BidderCrossInstall     BidderName = "crossinstall"
 	BidderDatablocks       BidderName = "datablocks"
 	BidderDmx              BidderName = "dmx"
+	BidderDV360            BidderName = "dv360"
 	BidderEmxDigital       BidderName = "emx_digital"
 	BidderEngageBDR        BidderName = "engagebdr"
 	BidderEPlanning        BidderName = "eplanning"
@@ -151,6 +152,7 @@ var BidderMap = map[string]BidderName{
 	"crossinstall":      BidderCrossInstall,
 	"datablocks":        BidderDatablocks,
 	"dmx":               BidderDmx,
+	"dv360":             BidderDV360,
 	"emx_digital":       BidderEmxDigital,
 	"engagebdr":         BidderEngageBDR,
 	"eplanning":         BidderEPlanning,

@@ -1,0 +1,24 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "DV360 Adapter Params",
+    "description": "A schema which validates params accepted by the DV360 adapter",
+    "type": "object",
+    "properties": {
+        "reward": {
+            "type": "integer",
+            "description": "An integer defining the reward (skip) from DV360"
+        },
+        "region": {
+            "type": "string",
+            "description": "A string defining region for choosing the closest DV360 endpoint"
+        },
+        "mraid_supported": {
+            "type": "boolean",
+            "description": "A bool config to determine if MRAID is supported by DV360"
+        },
+        "skadn_supported": {
+            "type": "boolean",
+            "description": "A bool config to determine if SKADN is supported by DV360"
+        }
+    }
+}

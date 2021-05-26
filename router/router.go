@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/crossinstall"
+	"github.com/prebid/prebid-server/adapters/dv360"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/liftoff"
@@ -166,6 +167,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			cfg.Adapters[string(openrtb_ext.BidderCrossInstall)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderCrossInstall)].XAPI.EndpointUSWest),
 		"districtm": appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
+		"dv360":     dv360.NewDV360Adapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderDV360)].Endpoint),
 		"ix":        ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
 		"liftoff": liftoff.NewLiftoffAdapter(
 			adapters.DefaultHTTPAdapterConfig,
