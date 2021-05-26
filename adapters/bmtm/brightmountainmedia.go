@@ -41,12 +41,29 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func (a *adapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.Imp) (*adapters.RequestData, error) {
-	copiedImp, err := processImp(ortbImp)
-	if err != nil {
-		return nil, err
+	if ortbImp.Banner == nil && ortbImp.Video == nil {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("For Imp ID %s Banner or Video is undefined", ortbImp.ID),
+		}
 	}
 
-	ortbRequest.Imp = []openrtb2.Imp{*copiedImp}
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(ortbImp.Ext, &bidderExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: "Error unmarshalling ExtImpBidder",
+		}
+	}
+
+	var bmtmExt openrtb_ext.ImpExtBmtm
+	if err := json.Unmarshal(bidderExt.Bidder, &bmtmExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: "Error unmarshalling ExtImpBmtm",
+		}
+	}
+
+	ortbImp.TagID = strconv.Itoa(bmtmExt.PlacementID)
+	ortbImp.Ext = nil
+	ortbRequest.Imp = []openrtb2.Imp{ortbImp}
 
 	requestJSON, err := json.Marshal(ortbRequest)
 	if err != nil {
@@ -118,32 +135,6 @@ func setHeaders(request openrtb2.BidRequest) http.Header {
 		headers.Add("Referer", request.Site.Page)
 	}
 	return headers
-}
-
-func processImp(imp openrtb2.Imp) (*openrtb2.Imp, error) {
-	if imp.Banner == nil && imp.Video == nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("For Imp ID %s Banner or Video is undefined", imp.ID),
-		}
-	}
-
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: "Error unmarshalling ExtImpBidder",
-		}
-	}
-
-	var bmtmExt openrtb_ext.ImpExtBmtm
-	if err := json.Unmarshal(bidderExt.Bidder, &bmtmExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: "Error unmarshalling ExtImpBmtm",
-		}
-	}
-
-	imp.TagID = strconv.Itoa(bmtmExt.PlacementID)
-	imp.Ext = nil
-	return &imp, nil
 }
 
 func getMediaTypeForBid(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
