@@ -12,12 +12,12 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
@@ -163,9 +163,9 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 		if anReq.Imp[i].Banner != nil && params.Position != "" {
 			if params.Position == "above" {
-				anReq.Imp[i].Banner.Pos = openrtb.AdPositionAboveTheFold.Ptr()
+				anReq.Imp[i].Banner.Pos = openrtb2.AdPositionAboveTheFold.Ptr()
 			} else if params.Position == "below" {
-				anReq.Imp[i].Banner.Pos = openrtb.AdPositionBelowTheFold.Ptr()
+				anReq.Imp[i].Banner.Pos = openrtb2.AdPositionBelowTheFold.Ptr()
 			}
 		}
 
@@ -245,7 +245,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		debug.ResponseBody = responseBody
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
 		return nil, err
@@ -288,7 +288,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *AppNexusAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	memberIds := make(map[string]bool)
 	errs := make([]error, 0, len(request.Imp))
 
@@ -389,9 +389,9 @@ func generatePodId() string {
 	return fmt.Sprint(val)
 }
 
-func groupByPods(imps []openrtb.Imp) map[string]([]openrtb.Imp) {
+func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
 	// find number of pods in response
-	podImps := make(map[string][]openrtb.Imp)
+	podImps := make(map[string][]openrtb2.Imp)
 	for _, imp := range imps {
 		pod := strings.Split(imp.ID, "_")[0]
 		podImps[pod] = append(podImps[pod], imp)
@@ -399,7 +399,7 @@ func groupByPods(imps []openrtb.Imp) map[string]([]openrtb.Imp) {
 	return podImps
 }
 
-func marshalAndSetRequestExt(request *openrtb.BidRequest, requestExtension appnexusReqExt, errs []error) {
+func marshalAndSetRequestExt(request *openrtb2.BidRequest, requestExtension appnexusReqExt, errs []error) {
 	var err error
 	request.Ext, err = json.Marshal(requestExtension)
 	if err != nil {
@@ -407,7 +407,7 @@ func marshalAndSetRequestExt(request *openrtb.BidRequest, requestExtension appne
 	}
 }
 
-func splitRequests(imps []openrtb.Imp, request *openrtb.BidRequest, requestExtension appnexusReqExt, uri string, errs []error) ([]*adapters.RequestData, []error) {
+func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExtension appnexusReqExt, uri string, errs []error) ([]*adapters.RequestData, []error) {
 
 	// Initial capacity for future array of requests, memory optimization.
 	// Let's say there are 35 impressions and limit impressions per request equals to 10.
@@ -463,7 +463,7 @@ func keys(m map[string]bool) []string {
 // preprocess mutates the imp to get it ready to send to appnexus.
 //
 // It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
-func preprocess(imp *openrtb.Imp, defaultDisplayManagerVer string) (string, error) {
+func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return "", err
@@ -495,15 +495,15 @@ func preprocess(imp *openrtb.Imp, defaultDisplayManagerVer string) (string, erro
 	if appnexusExt.InvCode != "" {
 		imp.TagID = appnexusExt.InvCode
 	}
-	if appnexusExt.Reserve > 0 {
+	if imp.BidFloor <= 0 && appnexusExt.Reserve > 0 {
 		imp.BidFloor = appnexusExt.Reserve // This will be broken for non-USD currency.
 	}
 	if imp.Banner != nil {
 		bannerCopy := *imp.Banner
 		if appnexusExt.Position == "above" {
-			bannerCopy.Pos = openrtb.AdPositionAboveTheFold.Ptr()
+			bannerCopy.Pos = openrtb2.AdPositionAboveTheFold.Ptr()
 		} else if appnexusExt.Position == "below" {
-			bannerCopy.Pos = openrtb.AdPositionBelowTheFold.Ptr()
+			bannerCopy.Pos = openrtb2.AdPositionBelowTheFold.Ptr()
 		}
 
 		// Fixes #307
@@ -550,7 +550,7 @@ func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
 	return strings.Join(kvs, ",")
 }
 
-func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -565,7 +565,7 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}

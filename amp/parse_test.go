@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,7 +40,7 @@ func TestParseParams(t *testing.T) {
 					OverrideHeight: 3,
 					OverrideWidth:  4,
 					Width:          2,
-					Multisize: []openrtb.Format{
+					Multisize: []openrtb2.Format{
 						{W: 10, H: 11}, {W: 12, H: 13},
 					},
 				},
@@ -96,7 +96,7 @@ func TestParseMultisize(t *testing.T) {
 	testCases := []struct {
 		description     string
 		multisize       string
-		expectedFormats []openrtb.Format
+		expectedFormats []openrtb2.Format
 	}{
 		{
 			description:     "Empty",
@@ -106,18 +106,18 @@ func TestParseMultisize(t *testing.T) {
 		{
 			description:     "One",
 			multisize:       "1x2",
-			expectedFormats: []openrtb.Format{{W: 1, H: 2}},
+			expectedFormats: []openrtb2.Format{{W: 1, H: 2}},
 		},
 		{
 			description:     "Many",
 			multisize:       "1x2,3x4",
-			expectedFormats: []openrtb.Format{{W: 1, H: 2}, {W: 3, H: 4}},
+			expectedFormats: []openrtb2.Format{{W: 1, H: 2}, {W: 3, H: 4}},
 		},
 		{
 			// Existing Behavior: The " 3" token in the second size is parsed as 0.
 			description:     "Many With Space - Quirky Result",
 			multisize:       "1x2, 3x4",
-			expectedFormats: []openrtb.Format{{W: 1, H: 2}, {W: 0, H: 4}},
+			expectedFormats: []openrtb2.Format{{W: 1, H: 2}, {W: 0, H: 4}},
 		},
 		{
 			description:     "One - Zero Size - Ignored",

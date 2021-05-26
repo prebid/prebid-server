@@ -3,7 +3,7 @@ package lmt
 import (
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +12,7 @@ func TestReadFromRequest(t *testing.T) {
 
 	testCases := []struct {
 		description    string
-		request        *openrtb.BidRequest
+		request        *openrtb2.BidRequest
 		expectedPolicy Policy
 	}{
 		{
@@ -25,7 +25,7 @@ func TestReadFromRequest(t *testing.T) {
 		},
 		{
 			description: "Nil Device",
-			request: &openrtb.BidRequest{
+			request: &openrtb2.BidRequest{
 				Device: nil,
 			},
 			expectedPolicy: Policy{
@@ -35,8 +35,8 @@ func TestReadFromRequest(t *testing.T) {
 		},
 		{
 			description: "Nil Device.Lmt",
-			request: &openrtb.BidRequest{
-				Device: &openrtb.Device{
+			request: &openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					Lmt: nil,
 				},
 			},
@@ -47,8 +47,8 @@ func TestReadFromRequest(t *testing.T) {
 		},
 		{
 			description: "Enabled",
-			request: &openrtb.BidRequest{
-				Device: &openrtb.Device{
+			request: &openrtb2.BidRequest{
+				Device: &openrtb2.Device{
 					Lmt: &one,
 				},
 			},

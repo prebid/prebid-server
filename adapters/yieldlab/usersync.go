@@ -8,5 +8,5 @@ import (
 )
 
 func NewYieldlabSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("yieldlab", 70, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("yieldlab", temp, adapters.SyncTypeRedirect)
 }

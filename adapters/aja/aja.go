@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,10 +16,10 @@ type AJAAdapter struct {
 	endpoint string
 }
 
-func (a *AJAAdapter) MakeRequests(bidReq *openrtb.BidRequest, extraInfo *adapters.ExtraRequestInfo) (adapterReqs []*adapters.RequestData, errs []error) {
+func (a *AJAAdapter) MakeRequests(bidReq *openrtb2.BidRequest, extraInfo *adapters.ExtraRequestInfo) (adapterReqs []*adapters.RequestData, errs []error) {
 	// split imps by tagid
 	tagIDs := []string{}
-	impsByTagID := map[string][]openrtb.Imp{}
+	impsByTagID := map[string][]openrtb2.Imp{}
 	for _, imp := range bidReq.Imp {
 		extAJA, err := parseExtAJA(imp)
 		if err != nil {
@@ -54,7 +54,7 @@ func (a *AJAAdapter) MakeRequests(bidReq *openrtb.BidRequest, extraInfo *adapter
 	return
 }
 
-func parseExtAJA(imp openrtb.Imp) (openrtb_ext.ExtImpAJA, error) {
+func parseExtAJA(imp openrtb2.Imp) (openrtb_ext.ExtImpAJA, error) {
 	var (
 		extImp adapters.ExtImpBidder
 		extAJA openrtb_ext.ExtImpAJA
@@ -75,7 +75,7 @@ func parseExtAJA(imp openrtb.Imp) (openrtb_ext.ExtImpAJA, error) {
 	return extAJA, nil
 }
 
-func (a *AJAAdapter) MakeBids(bidReq *openrtb.BidRequest, adapterReq *adapters.RequestData, adapterResp *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *AJAAdapter) MakeBids(bidReq *openrtb2.BidRequest, adapterReq *adapters.RequestData, adapterResp *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapterResp.StatusCode != http.StatusOK {
 		if adapterResp.StatusCode == http.StatusNoContent {
 			return nil, nil
@@ -90,7 +90,7 @@ func (a *AJAAdapter) MakeBids(bidReq *openrtb.BidRequest, adapterReq *adapters.R
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(adapterResp.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Failed to unmarshal bid response: %s", err.Error()),

@@ -1,14 +1,13 @@
 package openrtb_ext
 
-import (
-	"github.com/mxmCherry/openrtb"
-)
+import "github.com/mxmCherry/openrtb/v15/openrtb2"
 
 // ExtBidResponse defines the contract for bidresponse.ext
 type ExtBidResponse struct {
 	Debug *ExtResponseDebug `json:"debug,omitempty"`
 	// Errors defines the contract for bidresponse.ext.errors
-	Errors map[BidderName][]ExtBidderError `json:"errors,omitempty"`
+	Errors   map[BidderName][]ExtBidderMessage `json:"errors,omitempty"`
+	Warnings map[BidderName][]ExtBidderMessage `json:"warnings,omitempty"`
 	// ResponseTimeMillis defines the contract for bidresponse.ext.responsetimemillis
 	ResponseTimeMillis map[BidderName]int `json:"responsetimemillis,omitempty"`
 	// RequestTimeoutMillis returns the timeout used in the auction.
@@ -26,7 +25,7 @@ type ExtResponseDebug struct {
 	// HttpCalls defines the contract for bidresponse.ext.debug.httpcalls
 	HttpCalls map[BidderName][]*ExtHttpCall `json:"httpcalls,omitempty"`
 	// Request after resolution of stored requests and debug overrides
-	ResolvedRequest *openrtb.BidRequest `json:"resolvedrequest,omitempty"`
+	ResolvedRequest *openrtb2.BidRequest `json:"resolvedrequest,omitempty"`
 }
 
 // ExtResponseSyncData defines the contract for bidresponse.ext.usersync.{bidder}
@@ -47,8 +46,8 @@ type ExtUserSync struct {
 	Type UserSyncType `json:"type"`
 }
 
-// ExtBidderError defines an error object to be returned, consiting of a machine readable error code, and a human readable error message string.
-type ExtBidderError struct {
+// ExtBidderMessage defines an error object to be returned, consiting of a machine readable error code, and a human readable error message string.
+type ExtBidderMessage struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }

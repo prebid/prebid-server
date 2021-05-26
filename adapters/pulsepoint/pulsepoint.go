@@ -1,17 +1,16 @@
 package pulsepoint
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"strconv"
-
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"net/http"
+	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -33,12 +32,12 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func (a *PulsePointAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *PulsePointAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var err error
 	pubID := ""
-	imps := make([]openrtb.Imp, 0, len(request.Imp))
+	imps := make([]openrtb2.Imp, 0, len(request.Imp))
 	for i := 0; i < len(request.Imp); i++ {
 		imp := request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
@@ -77,7 +76,7 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 			publisher.ID = pubID
 			site.Publisher = &publisher
 		} else {
-			site.Publisher = &openrtb.Publisher{ID: pubID}
+			site.Publisher = &openrtb2.Publisher{ID: pubID}
 		}
 		request.Site = &site
 	} else if request.App != nil {
@@ -87,7 +86,7 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 			publisher.ID = pubID
 			app.Publisher = &publisher
 		} else {
-			app.Publisher = &openrtb.Publisher{ID: pubID}
+			app.Publisher = &openrtb2.Publisher{ID: pubID}
 		}
 		request.App = &app
 	}
@@ -109,7 +108,7 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}}, errs
 }
 
-func (a *PulsePointAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *PulsePointAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	// passback
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -127,14 +126,14 @@ func (a *PulsePointAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		}}
 	}
 	// parse response
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 	// map imps by id
-	impsByID := make(map[string]openrtb.Imp)
+	impsByID := make(map[string]openrtb2.Imp)
 	for i := 0; i < len(internalRequest.Imp); i++ {
 		impsByID[internalRequest.Imp[i].ID] = internalRequest.Imp[i]
 	}
@@ -156,7 +155,7 @@ func (a *PulsePointAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	return bidResponse, errs
 }
 
-func getBidType(imp openrtb.Imp) openrtb_ext.BidType {
+func getBidType(imp openrtb2.Imp) openrtb_ext.BidType {
 	// derive the bidtype purely from the impression itself
 	if imp.Banner != nil {
 		return openrtb_ext.BidTypeBanner
@@ -235,7 +234,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 			break
 		}
 		ppReq.Imp[i].TagID = strconv.Itoa(params.TagId)
-		publisher := &openrtb.Publisher{ID: strconv.Itoa(params.PublisherId)}
+		publisher := &openrtb2.Publisher{ID: strconv.Itoa(params.PublisherId)}
 		if ppReq.Site != nil {
 			siteCopy := *ppReq.Site
 			siteCopy.Publisher = publisher
@@ -250,7 +249,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 			if len(size) == 2 {
 				width, err := strconv.Atoi(size[0])
 				if err == nil {
-					ppReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
+					ppReq.Imp[i].Banner.W = openrtb2.Int64Ptr(int64(width))
 				} else {
 					return nil, &errortypes.BadInput{
 						Message: fmt.Sprintf("Invalid Width param %s", size[0]),
@@ -258,7 +257,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 				}
 				height, err := strconv.Atoi(size[1])
 				if err == nil {
-					ppReq.Imp[i].Banner.H = openrtb.Uint64Ptr(uint64(height))
+					ppReq.Imp[i].Banner.H = openrtb2.Int64Ptr(int64(height))
 				} else {
 					return nil, &errortypes.BadInput{
 						Message: fmt.Sprintf("Invalid Height param %s", size[1]),
@@ -318,7 +317,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		debug.ResponseBody = string(body)
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
 		return nil, &errortypes.BadServerResponse{

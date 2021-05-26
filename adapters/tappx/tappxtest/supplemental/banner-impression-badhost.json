@@ -11,7 +11,7 @@
         "ext": {
           "bidder": {
             "host": "example.ho%st.tappx.com",
-            "endpoint": "PREBIDTEMPLATE",
+            "endpoint": "ZZ123456PS",
             "tappxkey": "pub-12345-android-9876"
           }
         }
@@ -31,7 +31,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Malformed URL: parse (\\\")?https://example\\.ho%st\\.tappx.com(\\\")?: invalid URL escape \\\"%st\\\"",
+      "value": "Malformed URL: parse (\\\")?http://example\\.ho%st\\.tappx.com(\\\")?: invalid URL escape \\\"%st\\\"",
       "comparison": "regex"
     }
   ]

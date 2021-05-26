@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -20,7 +20,7 @@ type adtelligentImpExt struct {
 	Adtelligent openrtb_ext.ExtImpAdtelligent `json:"adtelligent"`
 }
 
-func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *AdtelligentAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	totalImps := len(request.Imp)
 	errors := make([]error, 0, totalImps)
@@ -55,7 +55,7 @@ func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *
 	reqs := make([]*adapters.RequestData, 0, totalReqs)
 
 	imps := request.Imp
-	request.Imp = make([]openrtb.Imp, 0, len(imps))
+	request.Imp = make([]openrtb2.Imp, 0, len(imps))
 	for sourceId, impIds := range imp2source {
 		request.Imp = request.Imp[:0]
 
@@ -85,13 +85,13 @@ func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *
 
 }
 
-func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("error while decoding response, err: %s", err),
@@ -138,7 +138,7 @@ func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapte
 	return bidResponse, errors
 }
 
-func validateImpression(imp *openrtb.Imp) (int, error) {
+func validateImpression(imp *openrtb2.Imp) (int, error) {
 
 	if imp.Banner == nil && imp.Video == nil {
 		return 0, &errortypes.BadInput{

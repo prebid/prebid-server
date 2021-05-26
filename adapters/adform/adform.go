@@ -13,14 +13,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/buger/jsonparser"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
-
-	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -44,21 +43,9 @@ type adformRequest struct {
 	adUnits       []*adformAdUnit
 	gdprApplies   string
 	consent       string
-	digitrust     *adformDigitrust
 	currency      string
 	eids          string
 	url           string
-}
-
-type adformDigitrust struct {
-	Id      string                 `json:"id"`
-	Version int                    `json:"version"`
-	Keyv    int                    `json:"keyv"`
-	Privacy adformDigitrustPrivacy `json:"privacy"`
-}
-
-type adformDigitrustPrivacy struct {
-	Optout bool `json:"optout"`
 }
 
 type adformAdUnit struct {
@@ -216,24 +203,6 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		gdprApplies = ""
 	}
 	consent := request.ParseConsent()
-	var digitrustData *openrtb_ext.ExtUserDigiTrust
-	if request.User != nil {
-		var extUser *openrtb_ext.ExtUser
-		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
-			digitrustData = extUser.DigiTrust
-		}
-	}
-
-	var digitrust *adformDigitrust = nil
-	if digitrustData != nil {
-		digitrust = new(adformDigitrust)
-		digitrust.Id = digitrustData.ID
-		digitrust.Keyv = digitrustData.KeyV
-		digitrust.Version = 1
-		digitrust.Privacy = adformDigitrustPrivacy{
-			Optout: digitrustData.Pref != 0,
-		}
-	}
 
 	return &adformRequest{
 		adUnits:       adUnits,
@@ -247,7 +216,6 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		tid:           request.Tid,
 		gdprApplies:   gdprApplies,
 		consent:       consent,
-		digitrust:     digitrust,
 		currency:      defaultCurrency,
 	}, nil
 }
@@ -266,8 +234,8 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 			BidderCode:        r.bidderCode,
 			Price:             bid.Price,
 			Adm:               adm,
-			Width:             bid.Width,
-			Height:            bid.Height,
+			Width:             int64(bid.Width),
+			Height:            int64(bid.Height),
 			DealId:            bid.DealId,
 			Creative_id:       bid.CreativeId,
 			CreativeMediaType: string(bidType),
@@ -371,18 +339,9 @@ func (r *adformRequest) buildAdformHeaders(a *AdformAdapter) http.Header {
 		header.Set("Referer", r.referer)
 	}
 
-	cookie := make([]string, 0, 2)
 	if r.userId != "" {
-		cookie = append(cookie, fmt.Sprintf("uid=%s", r.userId))
+		header.Set("Cookie", fmt.Sprintf("uid=%s;", r.userId))
 	}
-	if r.digitrust != nil {
-		if digitrustBytes, err := json.Marshal(r.digitrust); err == nil {
-			digitrust := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digitrustBytes)
-			// Cookie name and structure are described here: https://github.com/digi-trust/dt-cdn/wiki/Cookies-for-Platforms
-			cookie = append(cookie, fmt.Sprintf("DigiTrust.v1.identity=%s", digitrust))
-		}
-	}
-	header.Set("Cookie", strings.Join(cookie, ";"))
 
 	return header
 }
@@ -414,7 +373,7 @@ func NewAdformLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, endpointURL 
 	}
 }
 
-func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *AdformAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	adformRequest, errors := openRtbToAdformRequest(request)
 	if len(adformRequest.adUnits) == 0 {
 		return nil, errors
@@ -432,7 +391,7 @@ func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	return requests, errors
 }
 
-func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []error) {
+func openRtbToAdformRequest(request *openrtb2.BidRequest) (*adformRequest, []error) {
 	adUnits := make([]*adformAdUnit, 0, len(request.Imp))
 	errors := make([]error, 0, len(request.Imp))
 	secure := false
@@ -493,7 +452,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 
 	gdprApplies := ""
 	var extRegs openrtb_ext.ExtRegs
-	if request.Regs != nil {
+	if request.Regs != nil && request.Regs.Ext != nil {
 		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
@@ -506,24 +465,11 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 
 	eids := ""
 	consent := ""
-	var digitrustData *openrtb_ext.ExtUserDigiTrust
-	if request.User != nil {
+	if request.User != nil && request.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
 		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
 			consent = extUser.Consent
-			digitrustData = extUser.DigiTrust
 			eids = encodeEids(extUser.Eids)
-		}
-	}
-
-	var digitrust *adformDigitrust = nil
-	if digitrustData != nil {
-		digitrust = new(adformDigitrust)
-		digitrust.Id = digitrustData.ID
-		digitrust.Keyv = digitrustData.KeyV
-		digitrust.Version = 1
-		digitrust.Privacy = adformDigitrustPrivacy{
-			Optout: digitrustData.Pref != 0,
 		}
 	}
 
@@ -552,7 +498,6 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		tid:           tid,
 		gdprApplies:   gdprApplies,
 		consent:       consent,
-		digitrust:     digitrust,
 		currency:      requestCurrency,
 		eids:          eids,
 		url:           url,
@@ -583,35 +528,35 @@ func encodeEids(eids []openrtb_ext.ExtUserEid) string {
 	return encodedEids
 }
 
-func getIPSafely(device *openrtb.Device) string {
+func getIPSafely(device *openrtb2.Device) string {
 	if device == nil {
 		return ""
 	}
 	return device.IP
 }
 
-func getIFASafely(device *openrtb.Device) string {
+func getIFASafely(device *openrtb2.Device) string {
 	if device == nil {
 		return ""
 	}
 	return device.IFA
 }
 
-func getUASafely(device *openrtb.Device) string {
+func getUASafely(device *openrtb2.Device) string {
 	if device == nil {
 		return ""
 	}
 	return device.UA
 }
 
-func getBuyerUIDSafely(user *openrtb.User) string {
+func getBuyerUIDSafely(user *openrtb2.User) string {
 	if user == nil {
 		return ""
 	}
 	return user.BuyerUID
 }
 
-func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *AdformAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -638,7 +583,7 @@ func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	return bidResponse, nil
 }
 
-func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapters.BidderResponse {
+func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb2.BidRequest) *adapters.BidderResponse {
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adformBids))
 	currency := bidResponse.Currency
 
@@ -652,13 +597,13 @@ func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapt
 			continue
 		}
 
-		openRtbBid := openrtb.Bid{
+		openRtbBid := openrtb2.Bid{
 			ID:     r.Imp[i].ID,
 			ImpID:  r.Imp[i].ID,
 			Price:  bid.Price,
 			AdM:    adm,
-			W:      bid.Width,
-			H:      bid.Height,
+			W:      int64(bid.Width),
+			H:      int64(bid.Height),
 			DealID: bid.DealId,
 			CrID:   bid.CreativeId,
 		}

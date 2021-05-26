@@ -1,5 +1,6 @@
 maintainer:
   email: "prebiddev@deepintent.com"
+gvlVendorID: 541
 capabilities:
   app:
     mediaTypes:

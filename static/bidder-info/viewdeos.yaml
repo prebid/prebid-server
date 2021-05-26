@@ -1,0 +1,12 @@
+maintainer:
+  email: "contact@viewdeos.com"
+gvlVendorID: 924
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

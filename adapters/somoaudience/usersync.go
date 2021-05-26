@@ -8,5 +8,5 @@ import (
 )
 
 func NewSomoaudienceSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("somoaudience", 341, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("somoaudience", temp, adapters.SyncTypeRedirect)
 }

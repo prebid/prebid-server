@@ -1,5 +1,6 @@
 maintainer:
   email: "adspaces@unrulygroup.com"
+gvlVendorID: 162
 capabilities:
   site:
     mediaTypes:

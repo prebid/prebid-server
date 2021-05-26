@@ -1,9 +1,10 @@
 package dmx
 
 import (
-	"github.com/prebid/prebid-server/privacy"
 	"testing"
 	"text/template"
+
+	"github.com/prebid/prebid-server/privacy"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -15,6 +16,5 @@ func TestDmxSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://dmx.districtm.io/s/v1/img/s/10007", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 144, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

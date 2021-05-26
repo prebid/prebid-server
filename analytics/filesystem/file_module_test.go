@@ -1,13 +1,14 @@
 package filesystem
 
 import (
-	"github.com/prebid/prebid-server/config"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/config"
+
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -18,7 +19,7 @@ func TestAmpObject_ToJson(t *testing.T) {
 	ao := &analytics.AmpObject{
 		Status:             http.StatusOK,
 		Errors:             make([]error, 0),
-		AuctionResponse:    &openrtb.BidResponse{},
+		AuctionResponse:    &openrtb2.BidResponse{},
 		AmpTargetingValues: map[string]string{},
 	}
 	if aoJson := jsonifyAmpObject(ao); strings.Contains(aoJson, "Transactional Logs Error") {

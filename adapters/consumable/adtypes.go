@@ -1,16 +1,17 @@
 package consumable
 
 import (
-	"github.com/mxmCherry/openrtb"
 	"strconv"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 /* Turn array of openrtb formats into consumable's code*/
-func getSizeCodes(Formats []openrtb.Format) []int {
+func getSizeCodes(Formats []openrtb2.Format) []int {
 
 	codes := make([]int, 0)
 	for _, format := range Formats {
-		str := strconv.FormatUint(format.W, 10) + "x" + strconv.FormatUint(format.H, 10)
+		str := strconv.FormatInt(format.W, 10) + "x" + strconv.FormatInt(format.H, 10)
 		if code, ok := sizeMap[str]; ok {
 			codes = append(codes, code)
 		}

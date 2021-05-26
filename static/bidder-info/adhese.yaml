@@ -1,5 +1,7 @@
 maintainer:
   email: info@adhese.com
+gvlVendorID: 553
+modifyingVastXmlAllowed: true
 capabilities:
   app:
     mediaTypes:

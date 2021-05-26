@@ -1,5 +1,6 @@
 maintainer:
   email: "pubgrowth.engineering@sharethrough.com"
+gvlVendorID: 80
 capabilities:
   app:
     mediaTypes:

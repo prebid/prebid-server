@@ -25,6 +25,5 @@ func TestUcfunnelSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "//sync.aralego.com/idsync?gdpr=0&redirect=externalURL.com%2Fsetuid%3Fbidder%3Ducfunnel%26uid%3DSspCookieUserId", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 607, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

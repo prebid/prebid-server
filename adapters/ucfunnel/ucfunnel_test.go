@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -13,32 +13,32 @@ import (
 
 func TestMakeRequests(t *testing.T) {
 
-	imp := openrtb.Imp{
+	imp := openrtb2.Imp{
 		ID:     "1234",
-		Banner: &openrtb.Banner{},
+		Banner: &openrtb2.Banner{},
 	}
-	imp2 := openrtb.Imp{
+	imp2 := openrtb2.Imp{
 		ID:    "1235",
-		Video: &openrtb.Video{},
+		Video: &openrtb2.Video{},
 	}
 
-	imp3 := openrtb.Imp{
+	imp3 := openrtb2.Imp{
 		ID:    "1236",
-		Audio: &openrtb.Audio{},
+		Audio: &openrtb2.Audio{},
 	}
 
-	imp4 := openrtb.Imp{
+	imp4 := openrtb2.Imp{
 		ID:     "1237",
-		Native: &openrtb.Native{},
+		Native: &openrtb2.Native{},
 	}
-	imp5 := openrtb.Imp{
+	imp5 := openrtb2.Imp{
 		ID:     "1237",
-		Native: &openrtb.Native{},
+		Native: &openrtb2.Native{},
 	}
 
-	internalRequest01 := openrtb.BidRequest{Imp: []openrtb.Imp{}}
-	internalRequest02 := openrtb.BidRequest{Imp: []openrtb.Imp{imp, imp2, imp3, imp4, imp5}}
-	internalRequest03 := openrtb.BidRequest{Imp: []openrtb.Imp{imp, imp2, imp3, imp4, imp5}}
+	internalRequest01 := openrtb2.BidRequest{Imp: []openrtb2.Imp{}}
+	internalRequest02 := openrtb2.BidRequest{Imp: []openrtb2.Imp{imp, imp2, imp3, imp4, imp5}}
+	internalRequest03 := openrtb2.BidRequest{Imp: []openrtb2.Imp{imp, imp2, imp3, imp4, imp5}}
 
 	internalRequest03.Imp[0].Ext = []byte(`{"bidder": {"adunitid": "ad-488663D474E44841E8A293379892348","partnerid": "par-7E6D2DB9A8922AB07B44A444D2BA67"}}`)
 	internalRequest03.Imp[1].Ext = []byte(`{"bidder": {"adunitid": "ad-488663D474E44841E8A293379892348","partnerid": "par-7E6D2DB9A8922AB07B44A444D2BA67"}}`)
@@ -54,12 +54,12 @@ func TestMakeRequests(t *testing.T) {
 	}
 
 	var testCases = []struct {
-		in   []openrtb.BidRequest
+		in   []openrtb2.BidRequest
 		out1 [](int)
 		out2 [](bool)
 	}{
 		{
-			in:   []openrtb.BidRequest{internalRequest01, internalRequest02, internalRequest03},
+			in:   []openrtb2.BidRequest{internalRequest01, internalRequest02, internalRequest03},
 			out1: [](int){1, 1, 0},
 			out2: [](bool){false, false, true},
 		},
@@ -76,31 +76,31 @@ func TestMakeRequests(t *testing.T) {
 }
 
 func TestMakeBids(t *testing.T) {
-	imp := openrtb.Imp{
+	imp := openrtb2.Imp{
 		ID:     "1234",
-		Banner: &openrtb.Banner{},
+		Banner: &openrtb2.Banner{},
 	}
-	imp2 := openrtb.Imp{
+	imp2 := openrtb2.Imp{
 		ID:    "1235",
-		Video: &openrtb.Video{},
+		Video: &openrtb2.Video{},
 	}
 
-	imp3 := openrtb.Imp{
+	imp3 := openrtb2.Imp{
 		ID:    "1236",
-		Audio: &openrtb.Audio{},
+		Audio: &openrtb2.Audio{},
 	}
 
-	imp4 := openrtb.Imp{
+	imp4 := openrtb2.Imp{
 		ID:     "1237",
-		Native: &openrtb.Native{},
+		Native: &openrtb2.Native{},
 	}
-	imp5 := openrtb.Imp{
+	imp5 := openrtb2.Imp{
 		ID:     "1237",
-		Native: &openrtb.Native{},
+		Native: &openrtb2.Native{},
 	}
 
-	internalRequest03 := openrtb.BidRequest{Imp: []openrtb.Imp{imp, imp2, imp3, imp4, imp5}}
-	internalRequest04 := openrtb.BidRequest{Imp: []openrtb.Imp{imp}}
+	internalRequest03 := openrtb2.BidRequest{Imp: []openrtb2.Imp{imp, imp2, imp3, imp4, imp5}}
+	internalRequest04 := openrtb2.BidRequest{Imp: []openrtb2.Imp{imp}}
 
 	internalRequest03.Imp[0].Ext = []byte(`{"bidder": {"adunitid": "ad-488663D474E44841E8A293379892348","partnerid": "par-7E6D2DB9A8922AB07B44A444D2BA67"}}`)
 	internalRequest03.Imp[1].Ext = []byte(`{"bidder": {"adunitid": "ad-488663D474E44841E8A293379892348","partnerid": "par-7E6D2DB9A8922AB07B44A444D2BA67"}}`)
@@ -126,14 +126,14 @@ func TestMakeBids(t *testing.T) {
 	}
 
 	var testCases = []struct {
-		in1  []openrtb.BidRequest
+		in1  []openrtb2.BidRequest
 		in2  []adapters.RequestData
 		in3  []adapters.ResponseData
 		out1 [](bool)
 		out2 [](bool)
 	}{
 		{
-			in1:  []openrtb.BidRequest{internalRequest03, internalRequest03, internalRequest03, internalRequest03, internalRequest03, internalRequest04},
+			in1:  []openrtb2.BidRequest{internalRequest03, internalRequest03, internalRequest03, internalRequest03, internalRequest03, internalRequest04},
 			in2:  []adapters.RequestData{RequestData01, RequestData01, RequestData01, RequestData01, RequestData01, RequestData02},
 			in3:  []adapters.ResponseData{mockResponse200, mockResponse203, mockResponse204, mockResponse400, mockResponseError, mockResponse200},
 			out1: [](bool){true, false, false, false, false, false},

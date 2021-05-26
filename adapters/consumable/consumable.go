@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -83,7 +83,7 @@ type pricing struct {
 	ClearPrice *float64 `json:"clearPrice"`
 }
 
-func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{
 		"Content-Type": {"application/json"},
 		"Accept":       {"application/json"},
@@ -211,7 +211,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 internal original request in OpenRTB, external = result of us having converted it (what comes out of MakeRequests)
 */
 func (a *ConsumableAdapter) MakeBids(
-	internalRequest *openrtb.BidRequest,
+	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
@@ -245,13 +245,13 @@ func (a *ConsumableAdapter) MakeBids(
 	for impID, decision := range serverResponse.Decisions {
 
 		if decision.Pricing != nil && decision.Pricing.ClearPrice != nil {
-			bid := openrtb.Bid{}
+			bid := openrtb2.Bid{}
 			bid.ID = internalRequest.ID
 			bid.ImpID = impID
 			bid.Price = *decision.Pricing.ClearPrice
 			bid.AdM = retrieveAd(decision)
-			bid.W = decision.Width
-			bid.H = decision.Height
+			bid.W = int64(decision.Width)
+			bid.H = int64(decision.Height)
 			bid.CrID = strconv.FormatInt(decision.AdID, 10)
 			bid.Exp = 30 // TODO: Check this is intention of TTL
 
@@ -273,7 +273,7 @@ func (a *ConsumableAdapter) MakeBids(
 	return bidderResponse, errors
 }
 
-func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb_ext.ExtImpConsumable, []error) {
+func extractExtensions(impression openrtb2.Imp) (*adapters.ExtImpBidder, *openrtb_ext.ExtImpConsumable, []error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(impression.Ext, &bidderExt); err != nil {
 		return nil, nil, []error{&errortypes.BadInput{

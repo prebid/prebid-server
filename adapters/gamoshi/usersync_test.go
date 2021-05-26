@@ -25,6 +25,5 @@ func TestGamoshiSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://rtb.gamoshi.io/user_sync_prebid?gdpr=&consent=&us_privacy=anyValue&rurl=https%3A%2F%2Flocalhost%2Fsetuid%3Fbidder%3Dgamoshi%26gdpr%3D%7B%7B.GDPR%7D%7D%26gdpr_consent%3D%7B%7B.GDPRConsent%7D%7D%26uid%3D%5Bgusr%5D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 644, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

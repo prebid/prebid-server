@@ -3,7 +3,7 @@ package openrtb_ext
 import (
 	"encoding/json"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 // DealTier defines the configuration of a deal tier.
@@ -20,7 +20,7 @@ type DealTier struct {
 type DealTierBidderMap map[BidderName]DealTier
 
 // ReadDealTiersFromImp returns a map of bidder deal tiers read from the impression of an original request (not split / cleaned).
-func ReadDealTiersFromImp(imp openrtb.Imp) (DealTierBidderMap, error) {
+func ReadDealTiersFromImp(imp openrtb2.Imp) (DealTierBidderMap, error) {
 	dealTiers := make(DealTierBidderMap)
 
 	if len(imp.Ext) == 0 {

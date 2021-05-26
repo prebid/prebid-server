@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -19,7 +19,7 @@ import (
 type MockUtil struct {
 	mockCanAutoPlayVideo func() bool
 	mockGdprApplies      func() bool
-	mockGetPlacementSize func() (uint64, uint64)
+	mockGetPlacementSize func() (int64, int64)
 	mockParseUserInfo    func() userInfo
 	UtilityInterface
 }
@@ -28,15 +28,15 @@ func (m MockUtil) canAutoPlayVideo(userAgent string, parsers UserAgentParsers) b
 	return m.mockCanAutoPlayVideo()
 }
 
-func (m MockUtil) gdprApplies(request *openrtb.BidRequest) bool {
+func (m MockUtil) gdprApplies(request *openrtb2.BidRequest) bool {
 	return m.mockGdprApplies()
 }
 
-func (m MockUtil) getPlacementSize(imp openrtb.Imp, strImpParams openrtb_ext.ExtImpSharethrough) (height uint64, width uint64) {
+func (m MockUtil) getPlacementSize(imp openrtb2.Imp, strImpParams openrtb_ext.ExtImpSharethrough) (height, width int64) {
 	return m.mockGetPlacementSize()
 }
 
-func (m MockUtil) parseUserInfo(user *openrtb.User) (ui userInfo) {
+func (m MockUtil) parseUserInfo(user *openrtb2.User) (ui userInfo) {
 	return m.mockParseUserInfo()
 }
 
@@ -75,26 +75,26 @@ func assertRequestDataEquals(t *testing.T, testName string, expected *adapters.R
 
 func TestSuccessRequestFromOpenRTB(t *testing.T) {
 	tests := map[string]struct {
-		inputImp openrtb.Imp
-		inputReq *openrtb.BidRequest
+		inputImp openrtb2.Imp
+		inputReq *openrtb2.BidRequest
 		inputDom string
 		expected *adapters.RequestData
 	}{
 		"Generates the correct AdServer request from Imp (no user provided)": {
-			inputImp: openrtb.Imp{
+			inputImp: openrtb2.Imp{
 				ID:  "abc",
 				Ext: []byte(`{ "bidder": {"pkey": "pkey", "iframe": true, "iframeSize": [10, 20], "bidfloor": 1.0} }`),
-				Banner: &openrtb.Banner{
-					Format: []openrtb.Format{{H: 30, W: 40}},
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{{H: 30, W: 40}},
 				},
 			},
-			inputReq: &openrtb.BidRequest{
-				App: &openrtb.App{Ext: []byte(`{}`)},
-				Device: &openrtb.Device{
+			inputReq: &openrtb2.BidRequest{
+				App: &openrtb2.App{Ext: []byte(`{}`)},
+				Device: &openrtb2.Device{
 					UA: "Android Chome/60",
 					IP: "127.0.0.1",
 				},
-				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
+				Site: &openrtb2.Site{Page: "http://a.domain.com/page"},
 				BAdv: []string{"domain1.com", "domain2.com"},
 				TMax: 700,
 			},
@@ -114,20 +114,20 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 			},
 		},
 		"Generates width/height if not provided": {
-			inputImp: openrtb.Imp{
+			inputImp: openrtb2.Imp{
 				ID:  "abc",
 				Ext: []byte(`{ "bidder": {"pkey": "pkey", "iframe": true} }`),
-				Banner: &openrtb.Banner{
-					Format: []openrtb.Format{{H: 30, W: 40}},
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{{H: 30, W: 40}},
 				},
 			},
-			inputReq: &openrtb.BidRequest{
-				App: &openrtb.App{Ext: []byte(`{}`)},
-				Device: &openrtb.Device{
+			inputReq: &openrtb2.BidRequest{
+				App: &openrtb2.App{Ext: []byte(`{}`)},
+				Device: &openrtb2.Device{
 					UA: "Android Chome/60",
 					IP: "127.0.0.1",
 				},
-				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
+				Site: &openrtb2.Site{Page: "http://a.domain.com/page"},
 				BAdv: []string{"domain1.com", "domain2.com"},
 				TMax: 700,
 			},
@@ -157,7 +157,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 	mockUtil := MockUtil{
 		mockCanAutoPlayVideo: func() bool { return true },
 		mockGdprApplies:      func() bool { return true },
-		mockGetPlacementSize: func() (uint64, uint64) { return 100, 200 },
+		mockGetPlacementSize: func() (int64, int64) { return 100, 200 },
 		mockParseUserInfo:    func() userInfo { return userInfo{Consent: "ok", TtdUid: "ttduid", StxUid: "stxuid"} },
 	}
 
@@ -177,27 +177,27 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 
 func TestFailureRequestFromOpenRTB(t *testing.T) {
 	tests := map[string]struct {
-		inputImp      openrtb.Imp
-		inputReq      *openrtb.BidRequest
+		inputImp      openrtb2.Imp
+		inputReq      *openrtb2.BidRequest
 		expectedError string
 	}{
 		"Fails when unable to parse imp.Ext": {
-			inputImp: openrtb.Imp{
+			inputImp: openrtb2.Imp{
 				Ext: []byte(`{"abc`),
 			},
-			inputReq: &openrtb.BidRequest{
-				Device: &openrtb.Device{UA: "A", IP: "ip"},
-				Site:   &openrtb.Site{Page: "page"},
+			inputReq: &openrtb2.BidRequest{
+				Device: &openrtb2.Device{UA: "A", IP: "ip"},
+				Site:   &openrtb2.Site{Page: "page"},
 			},
 			expectedError: `unexpected end of JSON input`,
 		},
 		"Fails when unable to parse imp.Ext.Bidder": {
-			inputImp: openrtb.Imp{
+			inputImp: openrtb2.Imp{
 				Ext: []byte(`{ "bidder": "{ abc" }`),
 			},
-			inputReq: &openrtb.BidRequest{
-				Device: &openrtb.Device{UA: "A", IP: "ip"},
-				Site:   &openrtb.Site{Page: "page"},
+			inputReq: &openrtb2.BidRequest{
+				Device: &openrtb2.Device{UA: "A", IP: "ip"},
+				Site:   &openrtb2.Site{Page: "page"},
 			},
 			expectedError: `json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpSharethrough`,
 		},
@@ -212,7 +212,7 @@ func TestFailureRequestFromOpenRTB(t *testing.T) {
 	mockUtil := MockUtil{
 		mockCanAutoPlayVideo: func() bool { return true },
 		mockGdprApplies:      func() bool { return true },
-		mockGetPlacementSize: func() (uint64, uint64) { return 100, 200 },
+		mockGetPlacementSize: func() (int64, int64) { return 100, 200 },
 		mockParseUserInfo:    func() userInfo { return userInfo{Consent: "ok", TtdUid: "ttduid", StxUid: "stxuid"} },
 	}
 
@@ -288,7 +288,7 @@ func TestSuccessResponseToOpenRTB(t *testing.T) {
 			expectedSuccess: &adapters.BidderResponse{
 				Bids: []*adapters.TypedBid{{
 					BidType: openrtb_ext.BidTypeBanner,
-					Bid: &openrtb.Bid{
+					Bid: &openrtb2.Bid{
 						AdID:   "arid",
 						ID:     "bid",
 						ImpID:  "bidid",
@@ -376,19 +376,19 @@ func TestFailResponseToOpenRTB(t *testing.T) {
 
 func TestBuildBody(t *testing.T) {
 	tests := map[string]struct {
-		inputRequest  *openrtb.BidRequest
+		inputRequest  *openrtb2.BidRequest
 		inputImp      openrtb_ext.ExtImpSharethrough
 		expectedJson  []byte
 		expectedError error
 	}{
 		"Empty input: skips badomains, tmax default to 10 sec and sets deadline accordingly": {
-			inputRequest:  &openrtb.BidRequest{},
+			inputRequest:  &openrtb2.BidRequest{},
 			inputImp:      openrtb_ext.ExtImpSharethrough{},
 			expectedJson:  []byte(`{"tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z"}`),
 			expectedError: nil,
 		},
 		"Sets badv as list of domains according to Badv (tmax default to 10 sec and sets deadline accordingly)": {
-			inputRequest: &openrtb.BidRequest{
+			inputRequest: &openrtb2.BidRequest{
 				BAdv: []string{"dom1.com", "dom2.com"},
 			},
 			inputImp:      openrtb_ext.ExtImpSharethrough{},
@@ -396,7 +396,7 @@ func TestBuildBody(t *testing.T) {
 			expectedError: nil,
 		},
 		"Sets tmax and deadline according to Tmax": {
-			inputRequest: &openrtb.BidRequest{
+			inputRequest: &openrtb2.BidRequest{
 				TMax: 500,
 			},
 			inputImp:      openrtb_ext.ExtImpSharethrough{},
@@ -404,7 +404,7 @@ func TestBuildBody(t *testing.T) {
 			expectedError: nil,
 		},
 		"Sets bidfloor according to the Imp object": {
-			inputRequest: &openrtb.BidRequest{},
+			inputRequest: &openrtb2.BidRequest{},
 			inputImp: openrtb_ext.ExtImpSharethrough{
 				BidFloor: 1.23,
 			},
@@ -428,7 +428,7 @@ func TestBuildBody(t *testing.T) {
 func TestBuildUri(t *testing.T) {
 	tests := map[string]struct {
 		inputParams StrAdSeverParams
-		inputApp    *openrtb.App
+		inputApp    *openrtb2.App
 		expected    []string
 	}{
 		"Generates expected URL, appending all params": {

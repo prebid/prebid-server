@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -34,27 +34,27 @@ func TestgetRequestUri(t *testing.T) {
 	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)
 
 	// Test items
-	failedRequest := &openrtb.BidRequest{
+	failedRequest := &openrtb2.BidRequest{
 		ID: "test-failed-bid-request",
-		Imp: []openrtb.Imp{
-			{ID: "extImpBidder-failed-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{{ "id": "58278" }}`)},
-			{ID: "extImpBidder-failed-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"_bidder": { "id": "58278" }}`)},
-			{ID: "extImpAdgeneration-failed-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "_id": "58278" }}`)},
+		Imp: []openrtb2.Imp{
+			{ID: "extImpBidder-failed-test", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{{ "id": "58278" }}`)},
+			{ID: "extImpBidder-failed-test", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"_bidder": { "id": "58278" }}`)},
+			{ID: "extImpAdgeneration-failed-test", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "_id": "58278" }}`)},
 		},
-		Source: &openrtb.Source{TID: "SourceTID"},
-		Device: &openrtb.Device{UA: "testUA", IP: "testIP"},
-		Site:   &openrtb.Site{Page: "https://supership.com"},
-		User:   &openrtb.User{BuyerUID: "buyerID"},
+		Source: &openrtb2.Source{TID: "SourceTID"},
+		Device: &openrtb2.Device{UA: "testUA", IP: "testIP"},
+		Site:   &openrtb2.Site{Page: "https://supership.com"},
+		User:   &openrtb2.User{BuyerUID: "buyerID"},
 	}
-	successRequest := &openrtb.BidRequest{
+	successRequest := &openrtb2.BidRequest{
 		ID: "test-success-bid-request",
-		Imp: []openrtb.Imp{
-			{ID: "bidRequest-success-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "id": "58278" }}`)},
+		Imp: []openrtb2.Imp{
+			{ID: "bidRequest-success-test", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "id": "58278" }}`)},
 		},
-		Source: &openrtb.Source{TID: "SourceTID"},
-		Device: &openrtb.Device{UA: "testUA", IP: "testIP"},
-		Site:   &openrtb.Site{Page: "https://supership.com"},
-		User:   &openrtb.User{BuyerUID: "buyerID"},
+		Source: &openrtb2.Source{TID: "SourceTID"},
+		Device: &openrtb2.Device{UA: "testUA", IP: "testIP"},
+		Site:   &openrtb2.Site{Page: "https://supership.com"},
+		User:   &openrtb2.User{BuyerUID: "buyerID"},
 	}
 
 	numRequests := len(failedRequest.Imp)
@@ -108,23 +108,23 @@ func TestgetRequestUri(t *testing.T) {
 
 func TestGetSizes(t *testing.T) {
 	// Test items
-	var request *openrtb.Imp
+	var request *openrtb2.Imp
 	var size string
-	multiFormatBanner := &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 320, H: 50}}}
-	noFormatBanner := &openrtb.Banner{Format: []openrtb.Format{}}
-	nativeFormat := &openrtb.Native{}
+	multiFormatBanner := &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 320, H: 50}}}
+	noFormatBanner := &openrtb2.Banner{Format: []openrtb2.Format{}}
+	nativeFormat := &openrtb2.Native{}
 
-	request = &openrtb.Imp{Banner: multiFormatBanner}
+	request = &openrtb2.Imp{Banner: multiFormatBanner}
 	size = getSizes(request)
 	if size != "300x250,320x50" {
 		t.Errorf("%v does not match size.", multiFormatBanner)
 	}
-	request = &openrtb.Imp{Banner: noFormatBanner}
+	request = &openrtb2.Imp{Banner: noFormatBanner}
 	size = getSizes(request)
 	if size != "" {
 		t.Errorf("%v does not match size.", noFormatBanner)
 	}
-	request = &openrtb.Imp{Native: nativeFormat}
+	request = &openrtb2.Imp{Native: nativeFormat}
 	size = getSizes(request)
 	if size != "" {
 		t.Errorf("%v does not match size.", nativeFormat)
@@ -142,17 +142,17 @@ func TestGetCurrency(t *testing.T) {
 	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)
 
 	// Test items
-	var request *openrtb.BidRequest
+	var request *openrtb2.BidRequest
 	var currency string
 	innerDefaultCur := []string{"USD", "JPY"}
 	usdCur := []string{"USD", "EUR"}
 
-	request = &openrtb.BidRequest{Cur: innerDefaultCur}
+	request = &openrtb2.BidRequest{Cur: innerDefaultCur}
 	currency = bidderAdgeneration.getCurrency(request)
 	if currency != "JPY" {
 		t.Errorf("%v does not match currency.", innerDefaultCur)
 	}
-	request = &openrtb.BidRequest{Cur: usdCur}
+	request = &openrtb2.BidRequest{Cur: usdCur}
 	currency = bidderAdgeneration.getCurrency(request)
 	if currency != "USD" {
 		t.Errorf("%v does not match currency.", usdCur)
@@ -212,14 +212,14 @@ func TestMakeBids(t *testing.T) {
 
 	bidderAdgeneration, _ := bidder.(*AdgenerationAdapter)
 
-	internalRequest := &openrtb.BidRequest{
+	internalRequest := &openrtb2.BidRequest{
 		ID: "test-success-bid-request",
-		Imp: []openrtb.Imp{
-			{ID: "bidRequest-success-test", Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "id": "58278" }}`)},
+		Imp: []openrtb2.Imp{
+			{ID: "bidRequest-success-test", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}, Ext: json.RawMessage(`{"bidder": { "id": "58278" }}`)},
 		},
-		Device: &openrtb.Device{UA: "testUA", IP: "testIP"},
-		Site:   &openrtb.Site{Page: "https://supership.com"},
-		User:   &openrtb.User{BuyerUID: "buyerID"},
+		Device: &openrtb2.Device{UA: "testUA", IP: "testIP"},
+		Site:   &openrtb2.Site{Page: "https://supership.com"},
+		User:   &openrtb2.User{BuyerUID: "buyerID"},
 	}
 	externalRequest := adapters.RequestData{}
 	response := adapters.ResponseData{
@@ -254,8 +254,8 @@ func checkBidResponse(t *testing.T, bidderResponse *adapters.BidderResponse, exp
 	var expectedID string = "58278"
 	var expectedImpID = "bidRequest-success-test"
 	var expectedPrice float64 = 30.0
-	var expectedW uint64 = 300
-	var expectedH uint64 = 250
+	var expectedW int64 = 300
+	var expectedH int64 = 250
 	var expectedCrID string = "Dummy_supership.jp"
 	var extectedDealID string = "test-deal-id"
 
