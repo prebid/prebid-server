@@ -37,9 +37,9 @@ var (
 	mraidSupportedKey = attribute.Key("app.bidder.mraid.supported")
 
 	debugVerboseState = "verbose"
-	debugEventName    = "verbose.http.request_body"
 	debugStateKey     = attribute.Key("debug_state")
 	debugReqBodyKey   = attribute.Key("http.request_body")
+	debugRespBodyKey  = attribute.Key("http.response_body")
 )
 
 // adaptedBidder defines the contract needed to participate in an Auction within an Exchange.
@@ -360,13 +360,6 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		ctx = bidder.addClientTrace(ctx)
 	}
 
-	// read and close body
-	bodyBytes, _ := ioutil.ReadAll(httpReq.Body)
-	httpReq.Body.Close()
-
-	// reset body to be able to be read by other middleware
-	httpReq.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-
 	// Tapjoy open telemetry
 	span := trace.SpanFromContext(ctx)
 	tjData := req.TapjoyData
@@ -382,8 +375,15 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 
 	// Only print verbose debug logs if calling service added value in span context
 	if span.SpanContext().TraceState().Get(debugStateKey).AsString() == debugVerboseState {
+		// read and close body
+		bodyBytes, _ := ioutil.ReadAll(httpReq.Body)
+		httpReq.Body.Close()
+
+		// reset body to be able to be read by other middleware
+		httpReq.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
 		attrs = append(attrs, debugReqBodyKey.String(string(bodyBytes)))
-		span.AddEvent(debugEventName, trace.WithAttributes(
+		span.AddEvent(fmt.Sprintf("%s.%s", debugVerboseState, debugReqBodyKey), trace.WithAttributes(
 			attrs...,
 		))
 	}
@@ -421,6 +421,14 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		}
 	}
 	defer httpResp.Body.Close()
+
+	// Only print verbose response logs if calling service added value in span context
+	if span.SpanContext().TraceState().Get(debugStateKey).AsString() == debugVerboseState {
+		verboseAttrs := append(attrs, debugRespBodyKey.String(string(respBody)))
+		span.AddEvent(fmt.Sprintf("%s.%s", debugVerboseState, debugRespBodyKey), trace.WithAttributes(
+			verboseAttrs...,
+		))
+	}
 
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 400 {
 		err = &errortypes.BadServerResponse{
