@@ -1,3 +1,27 @@
 {
-    "tmax": 1000
+    "tmax": 1000,
+    "ext": {
+        "prebid": {
+            "targeting": {
+                "includewinners": true,
+                "includebidderkeys": false,
+                "mediatypepricegranularity": {
+                    "banner": {
+                        "ranges": [
+                            {
+                                "max": 50,
+                                "min": 0,
+                                "increment": 0.01
+                            }
+                        ],
+                        "precision": 3
+                    }
+                }
+            },
+            "cache": {
+                "bids": {}
+            },
+            "aliases": { "oftmedia": "appnexus" }
+        }
+    }
 }
