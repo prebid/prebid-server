@@ -1,12 +1,14 @@
 package audienceNetwork
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -38,6 +40,10 @@ type facebookReqExt struct {
 	PlatformID string `json:"platformid"`
 	AuthID     string `json:"authentication_id"`
 }
+
+const (
+	consentedProviders = "consented_providers"
+)
 
 func (this *FacebookAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
@@ -95,6 +101,13 @@ func (this *FacebookAdapter) buildRequests(request *openrtb2.BidRequest) ([]*ada
 			continue
 		}
 
+		var t []int //type of element to delete
+		body, err = dropSingleElement(body, consentedProviders, t)
+		if err != nil {
+			errs = append(errs, err)
+			return reqs, errs
+		}
+
 		reqs = append(reqs, &adapters.RequestData{
 			Method:  "POST",
 			Uri:     this.URI,
@@ -113,6 +126,50 @@ func (this *FacebookAdapter) makeAuthID(req *openrtb2.BidRequest) string {
 	h.Write([]byte(req.ID))
 
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func dropSingleElement(extension []byte, elementName string, i interface{}) ([]byte, error) {
+	buf := bytes.NewBuffer(extension)
+	dec := json.NewDecoder(buf)
+	var startIndex int64
+	for {
+		token, err := dec.Token()
+		if err == io.EOF {
+			// io.EOF is a successful end
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if token == elementName {
+			if dec.More() {
+				err := dec.Decode(&i)
+				if err != nil {
+					return nil, err
+				}
+			}
+			endIndex := dec.InputOffset()
+
+			if dec.More() {
+				for {
+					//structure has more elements, need to find index of comma
+					if extension[endIndex] == []byte(",")[0] {
+						endIndex++
+						break
+					}
+					endIndex++
+				}
+			}
+
+			extension = append(extension[:startIndex], extension[endIndex:]...)
+			break
+		} else {
+			startIndex = dec.InputOffset()
+		}
+
+	}
+	return extension, nil
 }
 
 func (this *FacebookAdapter) modifyRequest(out *openrtb2.BidRequest) error {
