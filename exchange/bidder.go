@@ -382,9 +382,9 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		// reset body to be able to be read by other middleware
 		httpReq.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
-		attrs = append(attrs, debugReqBodyKey.String(string(bodyBytes)))
+		reqAttrs := append(attrs, debugReqBodyKey.String(string(bodyBytes)))
 		span.AddEvent(fmt.Sprintf("%s.%s", debugVerboseState, debugReqBodyKey), trace.WithAttributes(
-			attrs...,
+			reqAttrs...,
 		))
 	}
 
@@ -424,9 +424,9 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 
 	// Only print verbose response logs if calling service added value in span context
 	if span.SpanContext().TraceState().Get(debugStateKey).AsString() == debugVerboseState {
-		verboseAttrs := append(attrs, debugRespBodyKey.String(string(respBody)))
+		respAttrs := append(attrs, debugRespBodyKey.String(string(respBody)))
 		span.AddEvent(fmt.Sprintf("%s.%s", debugVerboseState, debugRespBodyKey), trace.WithAttributes(
-			verboseAttrs...,
+			respAttrs...,
 		))
 	}
 
