@@ -16,8 +16,8 @@
           "bidder": {
             "adSlot": "AdTag_Div1@300x250",
             "publisherId": "  999  ",
-            "pmzoneid": "a1,b2",
-            "dctr": "abcd",
+            "pmzoneid": "drama,sport",
+            "dctr": "abBucket=4|adType=page|entity=|paidByCategory=|sku=|userLevel=free|platform=android|majorVersion=3.54|version=3.54.0|mobileApplication=true|showId=20166|show=Kisah Untuk Geri|genre=Drama|contentUrl=https://www.iflix.com/title/show/20166|rating=TV-MA|contentLanguage=id",
             "keywords": [
               {
                 "key": "pmZoneID",
@@ -73,8 +73,8 @@
                 "w": 300
               },
               "ext": {
-                "key_val": "abcd",
-                "pmZoneId": "a1,b2",
+                "key_val": "abBucket=4|adType=page|entity=|paidByCategory=|sku=|userLevel=free|platform=android|majorVersion=3.54|version=3.54.0|mobileApplication=true|showId=20166|show=Kisah Untuk Geri|genre=Drama|contentUrl=https://www.iflix.com/title/show/20166|rating=TV-MA|contentLanguage=id",
+                "pmZoneId": "drama,sport",
                 "preference": "sports,movies"
               }
             }
