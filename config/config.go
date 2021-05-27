@@ -943,8 +943,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose4.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose7.enabled", true)
 	v.SetDefault("gdpr.tcf2.special_purpose1.enabled", true)
-	v.SetDefault("gdpr.tcf2.purpose_one_treatment.enabled", true)
-	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
 	v.SetDefault("gdpr.amp_exception", false)
 	v.SetDefault("gdpr.eea_countries", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
@@ -998,6 +996,10 @@ func SetupViper(v *viper.Viper, filename string) {
 
 	// Migrate config settings to maintain compatibility with old configs
 	migrateConfig(v)
+	migrateConfigPurposeOneTreatment(v)
+
+	v.SetDefault("gdpr.tcf2.purpose_one_treatment.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
 }
 
 func migrateConfig(v *viper.Viper) {
@@ -1010,6 +1012,18 @@ func migrateConfig(v *viper.Viper) {
 		m["enabled"] = v.GetBool("stored_requests.filesystem")
 		m["directorypath"] = v.GetString("stored_requests.directorypath")
 		v.Set("stored_requests.filesystem", m)
+	}
+}
+
+func migrateConfigPurposeOneTreatment(v *viper.Viper) {
+	if oldConfig, ok := v.Get("gdpr.tcf2.purpose_one_treatement").(map[string]interface{}); ok {
+		if v.IsSet("gdpr.tcf2.purpose_one_treatment") {
+			glog.Warning("using gdpr.tcf2.purpose_one_treatment and ignoring deprecated gdpr.tcf2.purpose_one_treatement")
+		} else {
+			glog.Warning("gdpr.tcf2.purpose_one_treatement.enabled should be changed to gdpr.tcf2.purpose_one_treatment.enabled")
+			glog.Warning("gdpr.tcf2.purpose_one_treatement.access_allowed should be changed to gdpr.tcf2.purpose_one_treatment.access_allowed")
+			v.Set("gdpr.tcf2.purpose_one_treatment", oldConfig)
+		}
 	}
 }
 
