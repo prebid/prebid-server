@@ -8,10 +8,7 @@
           "format": [{"w": 320, "h": 50}]
         },
         "ext": {
-          "bidder": {
-            "test1": 123,
-            "test2": 234
-          }
+          "bidder": "badBidder"
         }
       }
     ]

@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type Adapter struct {
+type adapter struct {
 	EndpointTemplate template.Template
 }
 
@@ -24,18 +24,18 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	bidder := &Adapter{
+	bidder := &adapter{
 		EndpointTemplate: *endpoint,
 	}
 	return bidder, nil
 }
 
 // MakeRequests Make Requests
-func (adapter *Adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var adapterRequests []*adapters.RequestData
 	var errs []error
 
-	adapterRequest, err := adapter.makeRequest(request)
+	adapterRequest, err := a.makeRequest(request)
 	if err == nil {
 		adapterRequests = append(adapterRequests, adapterRequest)
 	} else {
@@ -44,18 +44,14 @@ func (adapter *Adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 	return adapterRequests, errs
 }
 
-func (adapter *Adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
-	if len(request.Imp) == 0 {
-		return nil, &errortypes.BadInput{Message: "No impression in the request"}
-	}
-
+func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 	algorixExt := parseAlgoriXExt(request)
 
 	if algorixExt == nil {
 		return nil, &errortypes.BadInput{Message: "Invalid ExtImpAlgoriX value"}
 	}
 
-	endPoint, err := adapter.getEndPoint(algorixExt)
+	endPoint, err := a.getEndPoint(algorixExt)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +85,7 @@ func parseAlgoriXExt(request *openrtb2.BidRequest) *openrtb_ext.ExtImpAlgorix {
 			continue
 		}
 		err = json.Unmarshal(extBidder.Bidder, &extImpAlgoriX)
-		if err != nil || len(extImpAlgoriX.Sid) == 0 || len(extImpAlgoriX.Token) == 0 {
+		if err != nil {
 			continue
 		}
 		return &extImpAlgoriX
@@ -98,9 +94,9 @@ func parseAlgoriXExt(request *openrtb2.BidRequest) *openrtb_ext.ExtImpAlgorix {
 }
 
 // getEndPoint get Endpoint Target
-func (adapter *Adapter) getEndPoint(ext *openrtb_ext.ExtImpAlgorix) (string, error) {
+func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpAlgorix) (string, error) {
 	endPointParams := macros.EndpointTemplateParams{SourceId: ext.Sid, AccountID: ext.Token}
-	return macros.ResolveMacros(adapter.EndpointTemplate, endPointParams)
+	return macros.ResolveMacros(a.EndpointTemplate, endPointParams)
 }
 
 // preProcess process Request check and modify banner imp
@@ -119,7 +115,7 @@ func preProcess(request *openrtb2.BidRequest) {
 	}
 }
 
-func (adapter *Adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
