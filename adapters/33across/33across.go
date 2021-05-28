@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -17,13 +17,30 @@ type TtxAdapter struct {
 }
 
 type Ext struct {
-	Ttx ext `json:"ttx"`
+	Ttx impTtxExt `json:"ttx"`
 }
 
-type ext struct {
+type impTtxExt struct {
 	Prod   string `json:"prod"`
 	Zoneid string `json:"zoneid,omitempty"`
 }
+
+type reqExt struct {
+	Ttx *reqTtxExt `json:"ttx,omitempty"`
+}
+
+type reqTtxExt struct {
+	Caller []TtxCaller `json:"caller,omitempty"`
+}
+
+type TtxCaller struct {
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
+}
+
+// CALLER Info used to track Prebid Server
+// as one of the hops in the request to exchange
+var CALLER = TtxCaller{"Prebid-Server", "n/a"}
 
 type bidExt struct {
 	Ttx bidTtxExt `json:"ttx,omitempty"`
@@ -34,43 +51,45 @@ type bidTtxExt struct {
 }
 
 // MakeRequests create the object for TTX Reqeust.
-func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *TtxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
-	adapterReq, errors := a.makeRequest(request)
-	if adapterReq != nil {
-		adapterRequests = append(adapterRequests, adapterReq)
-	}
-	errs = append(errs, errors...)
-
-	return adapterRequests, errors
-}
-
-// Update the request object to include custom value
-// site.id
-func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
-	var errs []error
-
-	// Make a copy as we don't want to change the original request
-	reqCopy := *request
-	if err := preprocess(&reqCopy); err != nil {
-		errs = append(errs, err)
-	}
-
-	if reqCopy.Imp[0].Banner == nil && reqCopy.Imp[0].Video == nil {
-		errs = append(errs, &errortypes.BadInput{
-			Message: "At least one of [banner, video] formats must be defined in Imp. None found",
-		})
-
-		return nil, errs
-	}
-
-	// Last Step
-	reqJSON, err := json.Marshal(reqCopy)
+	// Construct request extension common to all imps
+	// NOTE: not blocking adapter requests on errors
+	// since request extension is optional.
+	reqExt, err := makeReqExt(request)
 	if err != nil {
 		errs = append(errs, err)
-		return nil, errs
+	}
+	request.Ext = reqExt
+
+	// Break up multi-imp request into multiple external requests since we don't
+	// support SRA in our exchange server
+	for i := 0; i < len(request.Imp); i++ {
+		if adapterReq, err := a.makeRequest(*request, request.Imp[i]); err == nil {
+			adapterRequests = append(adapterRequests, adapterReq)
+		} else {
+			errs = append(errs, err)
+		}
+	}
+
+	return adapterRequests, errs
+}
+
+func (a *TtxAdapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
+	impCopy, err := makeImps(imp)
+
+	if err != nil {
+		return nil, err
+	}
+
+	request.Imp = []openrtb2.Imp{*impCopy}
+
+	// Last Step
+	reqJSON, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
 	}
 
 	headers := http.Header{}
@@ -81,22 +100,26 @@ func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Request
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-	}, errs
+	}, nil
 }
 
-// Mutate the request to get it ready to send to ttx.
-func preprocess(request *openrtb.BidRequest) error {
-	var imp = &request.Imp[0]
+func makeImps(imp openrtb2.Imp) (*openrtb2.Imp, error) {
+	if imp.Banner == nil && imp.Video == nil {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("Imp ID %s must have at least one of [Banner, Video] defined", imp.ID),
+		}
+	}
+
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return &errortypes.BadInput{
+		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var ttxExt openrtb_ext.ExtImp33across
 	if err := json.Unmarshal(bidderExt.Bidder, &ttxExt); err != nil {
-		return &errortypes.BadInput{
+		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
@@ -104,22 +127,20 @@ func preprocess(request *openrtb.BidRequest) error {
 	var impExt Ext
 	impExt.Ttx.Prod = ttxExt.ProductId
 
-	// Add zoneid if it's defined
+	impExt.Ttx.Zoneid = ttxExt.SiteId
+
 	if len(ttxExt.ZoneId) > 0 {
 		impExt.Ttx.Zoneid = ttxExt.ZoneId
 	}
 
 	impExtJSON, err := json.Marshal(impExt)
 	if err != nil {
-		return &errortypes.BadInput{
+		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	imp.Ext = impExtJSON
-	siteCopy := *request.Site
-	siteCopy.ID = ttxExt.SiteId
-	request.Site = &siteCopy
 
 	// Validate Video if it exists
 	if imp.Video != nil {
@@ -128,17 +149,39 @@ func preprocess(request *openrtb.BidRequest) error {
 		imp.Video = videoCopy
 
 		if err != nil {
-			return &errortypes.BadInput{
+			return nil, &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 	}
 
-	return nil
+	return &imp, nil
+}
+
+func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {
+	var reqExt reqExt
+
+	if len(request.Ext) > 0 {
+		if err := json.Unmarshal(request.Ext, &reqExt); err != nil {
+			return nil, err
+		}
+	}
+
+	if reqExt.Ttx == nil {
+		reqExt.Ttx = &reqTtxExt{}
+	}
+
+	if reqExt.Ttx.Caller == nil {
+		reqExt.Ttx.Caller = make([]TtxCaller, 0)
+	}
+
+	reqExt.Ttx.Caller = append(reqExt.Ttx.Caller, CALLER)
+
+	return json.Marshal(reqExt)
 }
 
 // MakeBids make the bids for the bid response.
-func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *TtxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -155,7 +198,7 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -184,8 +227,8 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 
 }
 
-func validateVideoParams(video *openrtb.Video, prod string) (*openrtb.Video, error) {
-	videoCopy := video
+func validateVideoParams(video *openrtb2.Video, prod string) (*openrtb2.Video, error) {
+	videoCopy := *video
 	if videoCopy.W == 0 ||
 		videoCopy.H == 0 ||
 		videoCopy.Protocols == nil ||
@@ -205,11 +248,11 @@ func validateVideoParams(video *openrtb.Video, prod string) (*openrtb.Video, err
 		videoCopy.Placement = 1
 
 		if videoCopy.StartDelay == nil {
-			videoCopy.StartDelay = openrtb.StartDelay.Ptr(0)
+			videoCopy.StartDelay = openrtb2.StartDelay.Ptr(0)
 		}
 	}
 
-	return videoCopy, nil
+	return &videoCopy, nil
 }
 
 func getBidType(ext bidExt) openrtb_ext.BidType {

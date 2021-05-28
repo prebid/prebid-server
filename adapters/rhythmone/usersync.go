@@ -8,5 +8,5 @@ import (
 )
 
 func NewRhythmoneSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("rhythmone", 36, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("rhythmone", temp, adapters.SyncTypeRedirect)
 }

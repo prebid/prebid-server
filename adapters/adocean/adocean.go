@@ -13,7 +13,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -21,7 +21,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const adapterVersion = "1.1.0"
+const adapterVersion = "1.2.0"
 const maxUriLength = 8000
 const measurementCode = `
 	<script>
@@ -80,7 +80,7 @@ type AdOceanAdapter struct {
 	measurementCode  string
 }
 
-func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *AdOceanAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
 			Message: "No impression in the bid request",
@@ -119,8 +119,8 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 func (a *AdOceanAdapter) addNewBid(
 	requestsData []*requestData,
-	imp *openrtb.Imp,
-	request *openrtb.BidRequest,
+	imp *openrtb2.Imp,
+	request *openrtb2.BidRequest,
 	consentString string,
 ) ([]*requestData, error) {
 	var bidderExt adapters.ExtImpBidder
@@ -150,34 +150,16 @@ func (a *AdOceanAdapter) addNewBid(
 		return requestsData, err
 	}
 
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-
-	if request.Device != nil {
-		headers.Add("User-Agent", request.Device.UA)
-
-		if request.Device.IP != "" {
-			headers.Add("X-Forwarded-For", request.Device.IP)
-		} else if request.Device.IPv6 != "" {
-			headers.Add("X-Forwarded-For", request.Device.IPv6)
-		}
-	}
-
-	if request.Site != nil {
-		headers.Add("Referer", request.Site.Page)
-	}
-
 	requestsData = append(requestsData, &requestData{
 		Url:        url,
-		Headers:    &headers,
+		Headers:    a.formHeaders(request),
 		SlaveSizes: slaveSizes,
 	})
 
 	return requestsData, nil
 }
 
-func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.ExtImpAdOcean, imp *openrtb.Imp, testImp bool) bool {
+func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.ExtImpAdOcean, imp *openrtb2.Imp, testImp bool) bool {
 	auctionID := imp.ID
 
 	for _, requestData := range requestsData {
@@ -209,8 +191,8 @@ func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.Ex
 
 func (a *AdOceanAdapter) makeURL(
 	params *openrtb_ext.ExtImpAdOcean,
-	imp *openrtb.Imp,
-	request *openrtb.BidRequest,
+	imp *openrtb2.Imp,
+	request *openrtb2.BidRequest,
 	slaveSizes map[string]string,
 	consentString string,
 ) (*url.URL, error) {
@@ -249,6 +231,24 @@ func (a *AdOceanAdapter) makeURL(
 	if request.User != nil && request.User.BuyerUID != "" {
 		queryParams.Add("hcuserid", request.User.BuyerUID)
 	}
+	if request.App != nil {
+		queryParams.Add("app", "1")
+		queryParams.Add("appname", request.App.Name)
+		queryParams.Add("appbundle", request.App.Bundle)
+		queryParams.Add("appdomain", request.App.Domain)
+	}
+	if request.Device != nil {
+		if request.Device.IFA != "" {
+			queryParams.Add("ifa", request.Device.IFA)
+		} else {
+			queryParams.Add("dpidmd5", request.Device.DPIDMD5)
+		}
+
+		queryParams.Add("devos", request.Device.OS)
+		queryParams.Add("devosv", request.Device.OSV)
+		queryParams.Add("devmodel", request.Device.Model)
+		queryParams.Add("devmake", request.Device.Make)
+	}
 
 	setSlaveSizesParam(&queryParams, slaveSizes, (request.Test == 1))
 	endpointURL.RawQuery = queryParams.Encode()
@@ -256,7 +256,29 @@ func (a *AdOceanAdapter) makeURL(
 	return endpointURL, nil
 }
 
-func getImpSizes(imp *openrtb.Imp) string {
+func (a *AdOceanAdapter) formHeaders(req *openrtb2.BidRequest) *http.Header {
+	headers := make(http.Header)
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	if req.Device != nil {
+		headers.Add("User-Agent", req.Device.UA)
+
+		if req.Device.IP != "" {
+			headers.Add("X-Forwarded-For", req.Device.IP)
+		} else if req.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", req.Device.IPv6)
+		}
+	}
+
+	if req.Site != nil {
+		headers.Add("Referer", req.Site.Page)
+	}
+
+	return &headers
+}
+
+func getImpSizes(imp *openrtb2.Imp) string {
 	if imp.Banner == nil {
 		return ""
 	}
@@ -264,14 +286,14 @@ func getImpSizes(imp *openrtb.Imp) string {
 	if len(imp.Banner.Format) > 0 {
 		sizes := make([]string, len(imp.Banner.Format))
 		for i, format := range imp.Banner.Format {
-			sizes[i] = strconv.FormatUint(format.W, 10) + "x" + strconv.FormatUint(format.H, 10)
+			sizes[i] = strconv.FormatInt(format.W, 10) + "x" + strconv.FormatInt(format.H, 10)
 		}
 
 		return strings.Join(sizes, "_")
 	}
 
 	if imp.Banner.W != nil && imp.Banner.H != nil {
-		return strconv.FormatUint(*imp.Banner.W, 10) + "x" + strconv.FormatUint(*imp.Banner.H, 10)
+		return strconv.FormatInt(*imp.Banner.W, 10) + "x" + strconv.FormatInt(*imp.Banner.H, 10)
 	}
 
 	return ""
@@ -304,7 +326,7 @@ func setSlaveSizesParam(queryParams *url.Values, slaveSizes map[string]string, o
 }
 
 func (a *AdOceanAdapter) MakeBids(
-	internalRequest *openrtb.BidRequest,
+	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
@@ -337,8 +359,8 @@ func (a *AdOceanAdapter) MakeBids(
 			}
 
 			price, _ := strconv.ParseFloat(bid.Price, 64)
-			width, _ := strconv.ParseUint(bid.Width, 10, 64)
-			height, _ := strconv.ParseUint(bid.Height, 10, 64)
+			width, _ := strconv.ParseInt(bid.Width, 10, 64)
+			height, _ := strconv.ParseInt(bid.Height, 10, 64)
 			adCode, err := a.prepareAdCodeForBid(bid)
 			if err != nil {
 				errors = append(errors, err)
@@ -346,7 +368,7 @@ func (a *AdOceanAdapter) MakeBids(
 			}
 
 			parsedResponses.Bids = append(parsedResponses.Bids, &adapters.TypedBid{
-				Bid: &openrtb.Bid{
+				Bid: &openrtb2.Bid{
 					ID:    bid.ID,
 					ImpID: auctionID,
 					Price: price,

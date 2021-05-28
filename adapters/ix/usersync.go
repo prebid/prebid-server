@@ -8,5 +8,5 @@ import (
 )
 
 func NewIxSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("ix", 10, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("ix", temp, adapters.SyncTypeRedirect)
 }

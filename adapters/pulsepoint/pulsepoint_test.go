@@ -1,25 +1,42 @@
 package pulsepoint
 
 import (
+	"encoding/json"
+	"net/http"
+	"testing"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
+
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"net/http/httptest"
-	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
 )
+
+func TestJsonSamples(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderPulsepoint, config.Adapter{
+		Endpoint: "http://bidder.pulsepoint.com"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "pulsepointtest", bidder)
+}
+
+/////////////////////////////////
+// Legacy implementation: Start
+/////////////////////////////////
 
 /**
  * Verify adapter names are setup correctly.
@@ -75,7 +92,6 @@ func TestPulsePointOpenRTBRequest(t *testing.T) {
 	bidder := req.Bidders[0]
 	adapter := NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	adapter.Call(ctx, req, bidder)
-	fmt.Println(service.LastBidRequest)
 	adapterstest.VerifyIntValue(len(service.LastBidRequest.Imp), 1, t)
 	adapterstest.VerifyStringValue(service.LastBidRequest.Imp[0].TagID, "1001", t)
 	adapterstest.VerifyStringValue(service.LastBidRequest.Site.Publisher.ID, "2001", t)
@@ -171,7 +187,7 @@ func TestMobileAppRequest(t *testing.T) {
 	server := service.Server
 	ctx := context.TODO()
 	req := SampleRequest(1, t)
-	req.App = &openrtb.App{
+	req.App = &openrtb2.App{
 		ID:   "com.facebook.katana",
 		Name: "facebook",
 	}
@@ -199,7 +215,7 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	for i := 0; i < numberOfImpressions; i++ {
 		req.AdUnits[i] = pbs.AdUnit{
 			Code: fmt.Sprintf("div-adunit-%d", i+1),
-			Sizes: []openrtb.Format{
+			Sizes: []openrtb2.Format{
 				{
 					W: 10,
 					H: 12,
@@ -249,7 +265,7 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
  */
 func CreateService(tagsToBid map[string]bool) adapterstest.OrtbMockService {
 	service := adapterstest.OrtbMockService{}
-	var lastBidRequest openrtb.BidRequest
+	var lastBidRequest openrtb2.BidRequest
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		body, err := ioutil.ReadAll(r.Body)
@@ -257,14 +273,14 @@ func CreateService(tagsToBid map[string]bool) adapterstest.OrtbMockService {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		var breq openrtb.BidRequest
+		var breq openrtb2.BidRequest
 		err = json.Unmarshal(body, &breq)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		lastBidRequest = breq
-		var bids []openrtb.Bid
+		var bids []openrtb2.Bid
 		for i, imp := range breq.Imp {
 			if tagsToBid[imp.TagID] {
 				bids = append(bids, adapterstest.SampleBid(imp.Banner.W, imp.Banner.H, imp.ID, i+1))
@@ -274,9 +290,9 @@ func CreateService(tagsToBid map[string]bool) adapterstest.OrtbMockService {
 		if len(bids) == 0 {
 			w.WriteHeader(204)
 		} else {
-			// serialize the bids to openrtb.BidResponse
-			js, _ := json.Marshal(openrtb.BidResponse{
-				SeatBid: []openrtb.SeatBid{
+			// serialize the bids to openrtb2.BidResponse
+			js, _ := json.Marshal(openrtb2.BidResponse{
+				SeatBid: []openrtb2.SeatBid{
 					{
 						Bid: bids,
 					},
@@ -290,3 +306,7 @@ func CreateService(tagsToBid map[string]bool) adapterstest.OrtbMockService {
 	service.LastBidRequest = &lastBidRequest
 	return service
 }
+
+/////////////////////////////////
+// Legacy implementation: End
+/////////////////////////////////

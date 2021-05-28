@@ -8,5 +8,5 @@ import (
 )
 
 func NewZeroClickFraudSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("zeroclickfraud", 0, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("zeroclickfraud", temp, adapters.SyncTypeIframe)
 }

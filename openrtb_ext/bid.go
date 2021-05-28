@@ -1,27 +1,27 @@
 package openrtb_ext
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
 // ExtBid defines the contract for bidresponse.seatbid.bid[i].ext
 type ExtBid struct {
-	Prebid *ExtBidPrebid   `json:"prebid,omitempty"`
-	Bidder json.RawMessage `json:"bidder,omitempty"`
+	Prebid *ExtBidPrebid `json:"prebid,omitempty"`
 }
 
 // ExtBidPrebid defines the contract for bidresponse.seatbid.bid[i].ext.prebid
 // DealPriority represents priority of deal bid. If its non deal bid then value will be 0
 // DealTierSatisfied true represents corresponding bid has satisfied the deal tier
 type ExtBidPrebid struct {
-	Cache             *ExtBidPrebidCache `json:"cache,omitempty"`
-	DealPriority      int                `json:"dealpriority,omitempty"`
-	DealTierSatisfied bool               `json:"dealtiersatisfied,omitempty"`
-	Meta              *ExtBidPrebidMeta  `json:"meta,omitempty"`
-	Targeting         map[string]string  `json:"targeting,omitempty"`
-	Type              BidType            `json:"type"`
-	Video             *ExtBidPrebidVideo `json:"video,omitempty"`
+	Cache             *ExtBidPrebidCache  `json:"cache,omitempty"`
+	DealPriority      int                 `json:"dealpriority,omitempty"`
+	DealTierSatisfied bool                `json:"dealtiersatisfied,omitempty"`
+	Meta              *ExtBidPrebidMeta   `json:"meta,omitempty"`
+	Targeting         map[string]string   `json:"targeting,omitempty"`
+	Type              BidType             `json:"type"`
+	Video             *ExtBidPrebidVideo  `json:"video,omitempty"`
+	Events            *ExtBidPrebidEvents `json:"events,omitempty"`
+	BidId             string              `json:"bidid,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
@@ -56,6 +56,12 @@ type ExtBidPrebidMeta struct {
 type ExtBidPrebidVideo struct {
 	Duration        int    `json:"duration"`
 	PrimaryCategory string `json:"primary_category"`
+}
+
+// ExtBidPrebidEvents defines the contract for bidresponse.seatbid.bid[i].ext.prebid.events
+type ExtBidPrebidEvents struct {
+	Win string `json:"win,omitempty"`
+	Imp string `json:"imp,omitempty"`
 }
 
 // BidType describes the allowed values for bidresponse.seatbid.bid[i].ext.prebid.type

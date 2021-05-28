@@ -19,6 +19,7 @@ type Account struct {
 	EventsEnabled bool        `mapstructure:"events_enabled" json:"events_enabled"`
 	CCPA          AccountCCPA `mapstructure:"ccpa" json:"ccpa"`
 	GDPR          AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
+	DebugAllow    bool        `mapstructure:"debug_allow" json:"debug_allow"`
 }
 
 // AccountCCPA represents account-specific CCPA configuration
@@ -38,8 +39,9 @@ func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType)
 
 // AccountGDPR represents account-specific GDPR configuration
 type AccountGDPR struct {
-	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+	Enabled                 *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
+	IntegrationEnabled      AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+	BasicEnforcementVendors []string           `mapstructure:"basic_enforcement_vendors" json:"basic_enforcement_vendors"`
 }
 
 // EnabledForIntegrationType indicates whether GDPR is turned on at the account level for the specified integration type

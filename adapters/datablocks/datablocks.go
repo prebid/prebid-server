@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -19,7 +19,7 @@ type DatablocksAdapter struct {
 	EndpointTemplate template.Template
 }
 
-func (a *DatablocksAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *DatablocksAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	errs := make([]error, 0, len(request.Imp))
 	headers := http.Header{
@@ -69,7 +69,7 @@ func (a *DatablocksAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 internal original request in OpenRTB, external = result of us having converted it (what comes out of MakeRequests)
 */
 func (a *DatablocksAdapter) MakeBids(
-	internalRequest *openrtb.BidRequest,
+	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
@@ -84,7 +84,7 @@ func (a *DatablocksAdapter) MakeBids(
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -106,9 +106,9 @@ func (a *DatablocksAdapter) MakeBids(
 	return bidResponse, nil
 }
 
-func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpDatablocks][]openrtb.Imp, error) {
+func splitImpressions(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpDatablocks][]openrtb2.Imp, error) {
 
-	var m = make(map[openrtb_ext.ExtImpDatablocks][]openrtb.Imp)
+	var m = make(map[openrtb_ext.ExtImpDatablocks][]openrtb2.Imp)
 
 	for _, imp := range imps {
 		bidderParams, err := getBidderParams(&imp)
@@ -120,14 +120,14 @@ func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpDatablocks][]op
 		if ok {
 			m[*bidderParams] = append(v, imp)
 		} else {
-			m[*bidderParams] = []openrtb.Imp{imp}
+			m[*bidderParams] = []openrtb2.Imp{imp}
 		}
 	}
 
 	return m, nil
 }
 
-func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpDatablocks, error) {
+func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpDatablocks, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -156,7 +156,7 @@ func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpDatablocks, error) {
 	return &datablocksExt, nil
 }
 
-func getMediaType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaType(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 
 	bidType := openrtb_ext.BidTypeBanner
 

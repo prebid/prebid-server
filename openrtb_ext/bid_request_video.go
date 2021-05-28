@@ -1,8 +1,6 @@
 package openrtb_ext
 
-import (
-	"github.com/mxmCherry/openrtb"
-)
+import "github.com/mxmCherry/openrtb/v15/openrtb2"
 
 type BidRequestVideo struct {
 	// Attribute:
@@ -27,7 +25,7 @@ type BidRequestVideo struct {
 	//   object; App or Site required
 	// Description:
 	//   Application where the impression will be shown
-	App *openrtb.App `json:"app"`
+	App *openrtb2.App `json:"app"`
 
 	// Attribute:
 	//   site
@@ -35,7 +33,7 @@ type BidRequestVideo struct {
 	//   object; App or Site required
 	// Description:
 	//   Site where the impression will be shown
-	Site *openrtb.Site `json:"site"`
+	Site *openrtb2.Site `json:"site"`
 
 	// Attribute:
 	//   user
@@ -43,7 +41,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//   Container object for the user of of the actual device
-	User *openrtb.User `json:"user,omitempty"`
+	User *openrtb2.User `json:"user,omitempty"`
 
 	// Attribute:
 	//   device
@@ -51,7 +49,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//   Device specific data
-	Device openrtb.Device `json:"device,omitempty"`
+	Device openrtb2.Device `json:"device,omitempty"`
 
 	// Attribute:
 	//   includebrandcategory
@@ -67,7 +65,7 @@ type BidRequestVideo struct {
 	//   object; required
 	// Description:
 	//   Player container object
-	Video *openrtb.Video `json:"video,omitempty"`
+	Video *openrtb2.Video `json:"video,omitempty"`
 
 	// Attribute:
 	//   content
@@ -75,7 +73,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//  Misc content meta data that can be used for targeting the adPod(s)
-	Content openrtb.Content `json:"content,omitempty"`
+	Content openrtb2.Content `json:"content,omitempty"`
 
 	// Attribute:
 	//   cacheconfig
@@ -135,7 +133,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//   Contains the OpenRTB Regs object to be passed to OpenRTB request
-	Regs *openrtb.Regs `json:"regs,omitempty"`
+	Regs *openrtb2.Regs `json:"regs,omitempty"`
 
 	// Attribute:
 	//   supportdeals

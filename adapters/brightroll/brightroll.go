@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -30,7 +30,7 @@ type Account struct {
 	BidFloor float64  `json:"bidfloor"`
 }
 
-func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	request := *requestIn
 	errs := make([]error, 0, len(request.Imp))
@@ -162,7 +162,7 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo 
 	}}, errors
 }
 
-func (a *BrightrollAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *BrightrollAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -180,7 +180,7 @@ func (a *BrightrollAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %d. ", err),
@@ -199,10 +199,10 @@ func (a *BrightrollAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	return bidResponse, nil
 }
 
-func getBlockedCreativetypes(attr []int8) []openrtb.CreativeAttribute {
-	var creativeAttr []openrtb.CreativeAttribute
+func getBlockedCreativetypes(attr []int8) []openrtb2.CreativeAttribute {
+	var creativeAttr []openrtb2.CreativeAttribute
 	for i := 0; i < len(attr); i++ {
-		creativeAttr = append(creativeAttr, openrtb.CreativeAttribute(attr[i]))
+		creativeAttr = append(creativeAttr, openrtb2.CreativeAttribute(attr[i]))
 	}
 	return creativeAttr
 }
@@ -215,7 +215,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 }
 
 // getMediaTypeForImp figures out which media type this bid is for.
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner //default type
 	for _, imp := range imps {
 		if imp.ID == impId {

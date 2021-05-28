@@ -8,5 +8,5 @@ import (
 )
 
 func NewAppnexusSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("adnxs", 32, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("adnxs", temp, adapters.SyncTypeRedirect)
 }

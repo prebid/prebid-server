@@ -7,8 +7,10 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mitchellh/copystructure"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
 
@@ -107,28 +109,14 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 	} else if isVideoTest {
 		reqInfo.PbsEntryPoint = "video"
 	}
-	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest, &reqInfo)
-	diffErrorLists(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
-	diffHttpRequestLists(t, filename, actualReqs, spec.HttpCalls)
 
-	bidResponses := make([]*adapters.BidderResponse, 0)
+	requests := testMakeRequestsImpl(t, filename, spec, bidder, &reqInfo)
 
-	var bidsErrs = make([]error, 0, len(spec.MakeBidsErrors))
-	for i := 0; i < len(actualReqs); i++ {
-		thisBidResponse, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
-		bidsErrs = append(bidsErrs, theseErrs...)
-		bidResponses = append(bidResponses, thisBidResponse)
-	}
-
-	diffErrorLists(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
-
-	for i := 0; i < len(spec.BidResponses); i++ {
-		diffBidLists(t, filename, bidResponses[i].Bids, spec.BidResponses[i].Bids)
-	}
+	testMakeBidsImpl(t, filename, spec, bidder, requests)
 }
 
 type testSpec struct {
-	BidRequest        openrtb.BidRequest      `json:"mockBidRequest"`
+	BidRequest        openrtb2.BidRequest     `json:"mockBidRequest"`
 	HttpCalls         []httpCall              `json:"httpCalls"`
 	BidResponses      []expectedBidResponse   `json:"expectedBidResponses"`
 	MakeRequestErrors []testSpecExpectedError `json:"expectedMakeRequestsErrors"`
@@ -194,8 +182,8 @@ type expectedBid struct {
 //
 // Marshalling the structs and then using a JSON-diff library isn't great either, since
 
-// diffHttpRequests compares the actual http requests to the expected ones.
-func diffHttpRequestLists(t *testing.T, filename string, actual []*adapters.RequestData, expected []httpCall) {
+// assertMakeRequestsOutput compares the actual http requests to the expected ones.
+func assertMakeRequestsOutput(t *testing.T, filename string, actual []*adapters.RequestData, expected []httpCall) {
 	t.Helper()
 
 	if len(expected) != len(actual) {
@@ -206,7 +194,7 @@ func diffHttpRequestLists(t *testing.T, filename string, actual []*adapters.Requ
 	}
 }
 
-func diffErrorLists(t *testing.T, description string, actual []error, expected []testSpecExpectedError) {
+func assertErrorList(t *testing.T, description string, actual []error, expected []testSpecExpectedError) {
 	t.Helper()
 
 	if len(expected) != len(actual) {
@@ -227,14 +215,27 @@ func diffErrorLists(t *testing.T, description string, actual []error, expected [
 	}
 }
 
-func diffBidLists(t *testing.T, filename string, actual []*adapters.TypedBid, expected []expectedBid) {
+func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapters.BidderResponse, expected []expectedBid) {
 	t.Helper()
 
-	if len(actual) != len(expected) {
-		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(actual))
+	if (bidderResponse == nil || len(bidderResponse.Bids) == 0) != (len(expected) == 0) {
+		if len(expected) == 0 {
+			t.Fatalf("%s: expectedBidResponses indicated a nil response, but mockResponses supplied a non-nil response", filename)
+		}
+
+		t.Fatalf("%s: mockResponses included unexpected nil or empty response", filename)
 	}
-	for i := 0; i < len(actual); i++ {
-		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), actual[i], &(expected[i]))
+
+	// Expected nil response - give diffBids something to work with.
+	if bidderResponse == nil {
+		bidderResponse = new(adapters.BidderResponse)
+	}
+
+	if len(bidderResponse.Bids) != len(expected) {
+		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(bidderResponse.Bids))
+	}
+	for i := 0; i < len(bidderResponse.Bids); i++ {
+		diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), bidderResponse.Bids[i], &(expected[i]))
 	}
 }
 
@@ -266,7 +267,7 @@ func diffBids(t *testing.T, description string, actual *adapters.TypedBid, expec
 }
 
 // diffOrtbBids compares the actual Bid made by the adapter to the expectation from the JSON file.
-func diffOrtbBids(t *testing.T, description string, actual *openrtb.Bid, expected json.RawMessage) {
+func diffOrtbBids(t *testing.T, description string, actual *openrtb2.Bid, expected json.RawMessage) {
 	if actual == nil {
 		t.Errorf("Bidders cannot return nil Bids. %s was nil.", description)
 		return
@@ -314,5 +315,80 @@ func diffJson(t *testing.T, description string, actual []byte, expected []byte) 
 		} else {
 			t.Errorf("%s json did not match expected.\n\n%s", description, output)
 		}
+	}
+}
+
+// testMakeRequestsImpl asserts the resulting values of the bidder's `MakeRequests()` implementation
+// against the expected JSON-defined results and ensures we do not encounter data races in the process.
+// To assert no data races happen we make use of:
+//  1) A shallow copy of the unmarshalled openrtb2.BidRequest that will provide reference values to
+//     shared memory that we don't want the adapters' implementation of `MakeRequests()` to modify.
+//  2) A deep copy that will preserve the original values of all the fields. This copy remains untouched
+//     by the adapters' processes and serves as reference of what the shared memory values should still
+//     be after the `MakeRequests()` call.
+func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, reqInfo *adapters.ExtraRequestInfo) []*adapters.RequestData {
+	t.Helper()
+
+	deepBidReqCopy, shallowBidReqCopy, err := getDataRaceTestCopies(&spec.BidRequest)
+	assert.NoError(t, err, "Could not create request copies. %s", filename)
+
+	// Run MakeRequests
+	requests, errs := bidder.MakeRequests(&spec.BidRequest, reqInfo)
+
+	// Compare MakeRequests actual output versus expected values found in JSON file
+	assertErrorList(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
+	assertMakeRequestsOutput(t, filename, requests, spec.HttpCalls)
+
+	// Assert no data races occur using original bidRequest copies of references and values
+	assert.Equal(t, deepBidReqCopy, shallowBidReqCopy, "Data race found. Test: %s", filename)
+
+	return requests
+}
+
+// getDataRaceTestCopies returns a deep copy and a shallow copy of the original bidRequest that will get
+// compared to verify no data races occur.
+func getDataRaceTestCopies(original *openrtb2.BidRequest) (*openrtb2.BidRequest, *openrtb2.BidRequest, error) {
+	cpy, err := copystructure.Copy(original)
+	if err != nil {
+		return nil, nil, err
+	}
+	deepReqCopy := cpy.(*openrtb2.BidRequest)
+
+	shallowReqCopy := *original
+
+	// Prebid Server core makes shallow copies of imp elements and adapters are allowed to make changes
+	// to them. Therefore, we need shallow copies of Imp elements here so our test replicates that
+	// functionality and only fail when actual shared momory gets modified.
+	if original.Imp != nil {
+		shallowReqCopy.Imp = make([]openrtb2.Imp, len(original.Imp))
+		copy(shallowReqCopy.Imp, original.Imp)
+	}
+
+	return deepReqCopy, &shallowReqCopy, nil
+}
+
+// testMakeBidsImpl asserts the results of the bidder MakeBids implementation against the expected JSON-defined results
+func testMakeBidsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, makeRequestsOut []*adapters.RequestData) {
+	t.Helper()
+
+	bidResponses := make([]*adapters.BidderResponse, 0)
+	var bidsErrs = make([]error, 0, len(spec.MakeBidsErrors))
+
+	// We should have as many bids as number of adapters.RequestData found in MakeRequests output
+	for i := 0; i < len(makeRequestsOut); i++ {
+		// Run MakeBids with JSON refined spec.HttpCalls info that was asserted to match MakeRequests
+		// output inside testMakeRequestsImpl
+		thisBidResponse, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
+
+		bidsErrs = append(bidsErrs, theseErrs...)
+		bidResponses = append(bidResponses, thisBidResponse)
+	}
+
+	// Assert actual errors thrown by MakeBids implementation versus expected JSON-defined spec.MakeBidsErrors
+	assertErrorList(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
+
+	// Assert MakeBids implementation BidResponses with expected JSON-defined spec.BidResponses[i].Bids
+	for i := 0; i < len(spec.BidResponses); i++ {
+		assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i].Bids)
 	}
 }

@@ -1,8 +1,6 @@
 package ccpa
 
-import (
-	"github.com/mxmCherry/openrtb"
-)
+import "github.com/mxmCherry/openrtb/v15/openrtb2"
 
 // ConsentWriter implements the PolicyWriter interface for CCPA.
 type ConsentWriter struct {
@@ -10,7 +8,7 @@ type ConsentWriter struct {
 }
 
 // Write mutates an OpenRTB bid request with the CCPA consent string.
-func (c ConsentWriter) Write(req *openrtb.BidRequest) error {
+func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 	if req == nil {
 		return nil
 	}

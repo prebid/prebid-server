@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -20,7 +21,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -84,18 +84,18 @@ type PBSVideo struct {
 }
 
 type AdUnit struct {
-	Code       string           `json:"code"`
-	TopFrame   int8             `json:"is_top_frame"`
-	Sizes      []openrtb.Format `json:"sizes"`
-	Bids       []Bids           `json:"bids"`
-	ConfigID   string           `json:"config_id"`
-	MediaTypes []string         `json:"media_types"`
-	Instl      int8             `json:"instl"`
-	Video      PBSVideo         `json:"video"`
+	Code       string            `json:"code"`
+	TopFrame   int8              `json:"is_top_frame"`
+	Sizes      []openrtb2.Format `json:"sizes"`
+	Bids       []Bids            `json:"bids"`
+	ConfigID   string            `json:"config_id"`
+	MediaTypes []string          `json:"media_types"`
+	Instl      int8              `json:"instl"`
+	Video      PBSVideo          `json:"video"`
 }
 
 type PBSAdUnit struct {
-	Sizes      []openrtb.Format
+	Sizes      []openrtb2.Format
 	TopFrame   int8
 	Code       string
 	BidID      string
@@ -153,27 +153,27 @@ func (bidder *PBSBidder) LookupAdUnit(Code string) (unit *PBSAdUnit) {
 }
 
 type PBSRequest struct {
-	AccountID     string          `json:"account_id"`
-	Tid           string          `json:"tid"`
-	CacheMarkup   int8            `json:"cache_markup"`
-	SortBids      int8            `json:"sort_bids"`
-	MaxKeyLength  int8            `json:"max_key_length"`
-	Secure        int8            `json:"secure"`
-	TimeoutMillis int64           `json:"timeout_millis"`
-	AdUnits       []AdUnit        `json:"ad_units"`
-	IsDebug       bool            `json:"is_debug"`
-	App           *openrtb.App    `json:"app"`
-	Device        *openrtb.Device `json:"device"`
-	PBSUser       json.RawMessage `json:"user"`
-	SDK           *SDK            `json:"sdk"`
+	AccountID     string           `json:"account_id"`
+	Tid           string           `json:"tid"`
+	CacheMarkup   int8             `json:"cache_markup"`
+	SortBids      int8             `json:"sort_bids"`
+	MaxKeyLength  int8             `json:"max_key_length"`
+	Secure        int8             `json:"secure"`
+	TimeoutMillis int64            `json:"timeout_millis"`
+	AdUnits       []AdUnit         `json:"ad_units"`
+	IsDebug       bool             `json:"is_debug"`
+	App           *openrtb2.App    `json:"app"`
+	Device        *openrtb2.Device `json:"device"`
+	PBSUser       json.RawMessage  `json:"user"`
+	SDK           *SDK             `json:"sdk"`
 
 	// internal
 	Bidders []*PBSBidder        `json:"-"`
-	User    *openrtb.User       `json:"-"`
+	User    *openrtb2.User      `json:"-"`
 	Cookie  *usersync.PBSCookie `json:"-"`
 	Url     string              `json:"-"`
 	Domain  string              `json:"-"`
-	Regs    *openrtb.Regs       `json:"-"`
+	Regs    *openrtb2.Regs      `json:"-"`
 	Start   time.Time
 }
 
@@ -236,7 +236,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 	pbsReq.TimeoutMillis = int64(cfg.LimitAuctionTimeout(time.Duration(pbsReq.TimeoutMillis)*time.Millisecond) / time.Millisecond)
 
 	if pbsReq.Device == nil {
-		pbsReq.Device = &openrtb.Device{}
+		pbsReq.Device = &openrtb2.Device{}
 	}
 	if ip, _ := httputil.FindIP(r, ipv4Validator); ip != nil {
 		pbsReq.Device.IP = ip.String()
@@ -259,7 +259,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 	}
 
 	if pbsReq.User == nil {
-		pbsReq.User = &openrtb.User{}
+		pbsReq.User = &openrtb2.User{}
 	}
 
 	// use client-side data for web requests

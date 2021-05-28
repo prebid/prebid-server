@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -50,7 +50,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 func (ads *AdopplerAdapter) MakeRequests(
-	req *openrtb.BidRequest,
+	req *openrtb2.BidRequest,
 	info *adapters.ExtraRequestInfo,
 ) (
 	[]*adapters.RequestData,
@@ -69,9 +69,9 @@ func (ads *AdopplerAdapter) MakeRequests(
 			continue
 		}
 
-		var r openrtb.BidRequest = *req
+		var r openrtb2.BidRequest = *req
 		r.ID = req.ID + "-" + ext.AdUnit
-		r.Imp = []openrtb.Imp{imp}
+		r.Imp = []openrtb2.Imp{imp}
 
 		body, err := json.Marshal(r)
 		if err != nil {
@@ -99,7 +99,7 @@ func (ads *AdopplerAdapter) MakeRequests(
 }
 
 func (ads *AdopplerAdapter) MakeBids(
-	intReq *openrtb.BidRequest,
+	intReq *openrtb2.BidRequest,
 	extReq *adapters.RequestData,
 	resp *adapters.ResponseData,
 ) (
@@ -119,7 +119,7 @@ func (ads *AdopplerAdapter) MakeBids(
 		return nil, []error{err}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	err := json.Unmarshal(resp.Body, &bidResp)
 	if err != nil {
 		err := &errortypes.BadServerResponse{

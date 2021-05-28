@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 )
@@ -28,7 +28,7 @@ type KubientAdapter struct {
 
 // MakeRequests prepares the HTTP requests which should be made to fetch bids.
 func (adapter *KubientAdapter) MakeRequests(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) ([]*adapters.RequestData, []error) {
 	if len(openRTBRequest.Imp) == 0 {
@@ -65,7 +65,7 @@ func (adapter *KubientAdapter) MakeRequests(
 	return requestsToBidder, errs
 }
 
-func checkImpExt(impObj openrtb.Imp) error {
+func checkImpExt(impObj openrtb2.Imp) error {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(impObj.Ext, &bidderExt); err != nil {
 		return &errortypes.BadInput{
@@ -87,7 +87,7 @@ func checkImpExt(impObj openrtb.Imp) error {
 }
 
 // MakeBids makes the bids
-func (adapter *KubientAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *KubientAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if response.StatusCode == http.StatusNoContent {
@@ -106,7 +106,7 @@ func (adapter *KubientAdapter) MakeBids(internalRequest *openrtb.BidRequest, ext
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -131,7 +131,7 @@ func (adapter *KubientAdapter) MakeBids(internalRequest *openrtb.BidRequest, ext
 	return bidResponse, errs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {

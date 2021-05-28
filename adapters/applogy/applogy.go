@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -17,7 +17,7 @@ type ApplogyAdapter struct {
 	endpoint string
 }
 
-func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *ApplogyAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -25,7 +25,7 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 	result := make([]*adapters.RequestData, 0, len(impressions))
 	errs := make([]error, 0, len(impressions))
 
-	for i, impression := range impressions {
+	for _, impression := range impressions {
 		if impression.Banner == nil && impression.Video == nil && impression.Native == nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "Applogy only supports banner, video or native ads",
@@ -33,17 +33,17 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 			continue
 		}
 		if impression.Banner != nil {
-			banner := impression.Banner
-			if banner.W == nil || banner.H == nil || *banner.W == 0 || *banner.H == 0 {
-				if len(banner.Format) == 0 {
+			if impression.Banner.W == nil || impression.Banner.H == nil || *impression.Banner.W == 0 || *impression.Banner.H == 0 {
+				if len(impression.Banner.Format) == 0 {
 					errs = append(errs, &errortypes.BadInput{
 						Message: "banner size information missing",
 					})
 					continue
 				}
-				format := banner.Format[0]
-				banner.W = &format.W
-				banner.H = &format.H
+				banner := *impression.Banner
+				banner.W = openrtb2.Int64Ptr(banner.Format[0].W)
+				banner.H = openrtb2.Int64Ptr(banner.Format[0].H)
+				impression.Banner = &banner
 			}
 		}
 		if len(impression.Ext) == 0 {
@@ -70,7 +70,7 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 			errs = append(errs, errors.New("Applogy token required"))
 			continue
 		}
-		request.Imp = impressions[i : i+1]
+		request.Imp = []openrtb2.Imp{impression}
 		body, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
@@ -92,7 +92,7 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 	return result, errs
 }
 
-func (a *ApplogyAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *ApplogyAdapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	switch responseData.StatusCode {
@@ -110,7 +110,7 @@ func (a *ApplogyAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.Reque
 		}}
 	}
 
-	var bidResponse openrtb.BidResponse
+	var bidResponse openrtb2.BidResponse
 	err := json.Unmarshal(responseData.Body, &bidResponse)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{

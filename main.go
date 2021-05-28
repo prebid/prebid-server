@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/router"
 	"github.com/prebid/prebid-server/server"
@@ -20,7 +20,7 @@ import (
 // Rev holds binary revision string
 // Set manually at build time using:
 //    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
-// Populated automatically at build / release time via .travis.yml
+// Populated automatically at build / releases
 //   `gox -os="linux" -arch="386" -output="{{.Dir}}_{{.OS}}_{{.Arch}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...;`
 // See issue #559
 var Rev string
@@ -54,8 +54,8 @@ func loadConfig() (*config.Configuration, error) {
 func serve(revision string, cfg *config.Configuration) error {
 	fetchingInterval := time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds) * time.Second
 	staleRatesThreshold := time.Duration(cfg.CurrencyConverter.StaleRatesSeconds) * time.Second
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, staleRatesThreshold)
-	
+	currencyConverter := currency.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, staleRatesThreshold)
+
 	currencyConverterTickerTask := task.NewTickerTask(fetchingInterval, currencyConverter)
 	currencyConverterTickerTask.Start()
 

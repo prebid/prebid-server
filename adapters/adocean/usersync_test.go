@@ -30,5 +30,4 @@ func TestAdOceanSyncer(t *testing.T) {
 		syncInfo.URL,
 	)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 328, syncer.GDPRVendorID())
 }

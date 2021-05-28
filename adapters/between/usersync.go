@@ -9,5 +9,5 @@ import (
 
 // NewBetweenSyncer returns "between" syncer
 func NewBetweenSyncer(template *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("between", 724, template, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("between", template, adapters.SyncTypeRedirect)
 }

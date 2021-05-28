@@ -8,5 +8,5 @@ import (
 )
 
 func New33AcrossSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("33across", 58, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("33across", temp, adapters.SyncTypeIframe)
 }
