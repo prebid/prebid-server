@@ -280,7 +280,7 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 			UsersyncInfo: cookieSyncResponseSync{
 				URL:         sync.URL,
 				Type:        sync.Type.String(),
-				SupportCORS: sync.SupportsCORS,
+				SupportCORS: sync.SupportCORS,
 			},
 		})
 	}

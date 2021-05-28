@@ -30,9 +30,9 @@ type Syncer interface {
 
 // Sync represents a user sync for the user's device to perform.
 type Sync struct {
-	URL          string
-	Type         SyncType
-	SupportsCORS bool
+	URL         string
+	Type        SyncType
+	SupportCORS bool
 }
 
 type standardSyncer struct {
@@ -51,15 +51,32 @@ const (
 // NewSyncer creates a new Syncer instance from the provided configuration, or an error if macro
 // substition fails or the url specified is invalid.
 func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, error) {
-	syncer := standardSyncer{
-		key: syncerConfig.Key,
+	if syncerConfig.IFrame == nil && syncerConfig.Redirect == nil {
+		return nil, errors.New("at least one iframe or redirect is required")
 	}
+
+	// var defaultSyncType SyncType
+	// if syncerConfig.Default == "" {
+	// 	// error if more than 1 defined, otherwise choose that one
+	// } else {
+	// 	// parse. verify it's defined
+	// }
+
+	syncer := standardSyncer{
+		key:         syncerConfig.Key,
+		supportCORS: syncerConfig.SupportCORS,
+	}
+
+	// todo: default sync
 
 	if syncerConfig.IFrame != nil {
 		var err error
 		syncer.iframe, err = composeTemplate(syncerConfig.Key, setuidSyncTypeIFrame, hostConfig, *syncerConfig.IFrame)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("iframe: %v", err)
+		}
+		if err := validateTemplate(syncer.iframe); err != nil {
+			return nil, fmt.Errorf("iframe: %v", err)
 		}
 	}
 
@@ -67,18 +84,24 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 		var err error
 		syncer.redirect, err = composeTemplate(syncerConfig.Key, setuidSyncTypeRedirect, hostConfig, *syncerConfig.Redirect)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("redirect: %v", err)
+		}
+		if err := validateTemplate(syncer.redirect); err != nil {
+			return nil, fmt.Errorf("redirect: %v", err)
 		}
 	}
 
 	return syncer, nil
 }
 
-var externalHostRegex = regexp.MustCompile(`{{\s*.ExternalURL\s*}}`)
-var syncerKeyRegex = regexp.MustCompile(`{{\s*.SyncerKey\s*}}`)
-var syncTypeRegex = regexp.MustCompile(`{{\s*.SyncType\s*}}`)
-var userMacroRegex = regexp.MustCompile(`{{\s*.UserMacro\s*}}`)
-var redirectRegex = regexp.MustCompile(`{{\s*.RedirectURL\s*}}`)
+var (
+	externalHostRegex = regexp.MustCompile(`{{\s*.ExternalURL\s*}}`)
+	syncerKeyRegex    = regexp.MustCompile(`{{\s*.SyncerKey\s*}}`)
+	syncTypeRegex     = regexp.MustCompile(`{{\s*.SyncType\s*}}`)
+	userMacroRegex    = regexp.MustCompile(`{{\s*.UserMacro\s*}}`)
+	redirectRegex     = regexp.MustCompile(`{{\s*.RedirectURL\s*}}`)
+	macroRegex        = regexp.MustCompile(`{{.*?}}`)
+)
 
 func composeTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncerEndpoint config.SyncerEndpoint) (*template.Template, error) {
 	redirectTemplate := syncerEndpoint.RedirectURL
@@ -91,25 +114,30 @@ func composeTemplate(key, syncTypeValue string, hostConfig config.UserSync, sync
 		externalURL = hostConfig.ExternalURL
 	}
 
-	redirectURL := externalHostRegex.ReplaceAllString(redirectTemplate, externalURL)
-	redirectURL = syncerKeyRegex.ReplaceAllString(redirectURL, key)
-	redirectURL = syncTypeRegex.ReplaceAllString(redirectURL, syncTypeValue)
-	redirectURL = userMacroRegex.ReplaceAllString(redirectURL, syncerEndpoint.UserMacro)
-	redirectURL = url.PathEscape(redirectURL)
+	redirectURL := externalHostRegex.ReplaceAllLiteralString(redirectTemplate, externalURL)
+	redirectURL = syncerKeyRegex.ReplaceAllLiteralString(redirectURL, key)
+	redirectURL = syncTypeRegex.ReplaceAllLiteralString(redirectURL, syncTypeValue)
+	redirectURL = userMacroRegex.ReplaceAllLiteralString(redirectURL, syncerEndpoint.UserMacro)
+	redirectURL = escapeTemplate(redirectURL)
 
-	url := redirectRegex.ReplaceAllString(externalURL, redirectURL)
+	url := redirectRegex.ReplaceAllString(syncerEndpoint.URL, redirectURL)
 
 	templateName := strings.ToLower(key) + "_usersync_url"
-	template, err := template.New(templateName).Parse(url)
-	if err != nil {
-		return nil, err
-	}
+	return template.New(templateName).Parse(url)
+}
 
-	if err := validateTemplate(template); err != nil {
-		return nil, err
-	}
+func escapeTemplate(x string) string {
+	escaped := strings.Builder{}
 
-	return template, nil
+	i := 0
+	for _, m := range macroRegex.FindAllStringIndex(x, -1) {
+		escaped.WriteString(url.QueryEscape(x[i:m[0]]))
+		escaped.WriteString(x[m[0]:m[1]])
+		i = m[1]
+	}
+	escaped.WriteString(url.QueryEscape(x[i:]))
+
+	return escaped.String()
 }
 
 func validateTemplate(template *template.Template) error {
@@ -125,7 +153,7 @@ func validateTemplate(template *template.Template) error {
 	}
 
 	if !validator.IsURL(url) || !validator.IsRequestURL(url) {
-		return fmt.Errorf("composed url %s is invalid", url)
+		return fmt.Errorf("composed url \"%s\" is invalid", url)
 	}
 
 	return nil
@@ -136,19 +164,25 @@ func (s standardSyncer) Key() string {
 }
 
 func (s standardSyncer) SupportsType(syncTypes []SyncType) bool {
+	supported := s.filterSupportedSyncTypes(syncTypes)
+	return len(supported) > 0
+}
+
+func (s standardSyncer) filterSupportedSyncTypes(syncTypes []SyncType) []SyncType {
+	supported := make([]SyncType, 0, len(syncTypes))
 	for _, syncType := range syncTypes {
 		switch syncType {
 		case SyncTypeIFrame:
 			if s.iframe != nil {
-				return true
+				supported = append(supported, SyncTypeIFrame)
 			}
 		case SyncTypeRedirect:
 			if s.redirect != nil {
-				return true
+				supported = append(supported, SyncTypeRedirect)
 			}
 		}
 	}
-	return false
+	return supported
 }
 
 func (s standardSyncer) GetSync(syncTypes []SyncType, privacyPolicies privacy.Policies) (Sync, error) {
@@ -169,9 +203,9 @@ func (s standardSyncer) GetSync(syncTypes []SyncType, privacyPolicies privacy.Po
 	}
 
 	sync := Sync{
-		URL:          url,
-		Type:         syncType,
-		SupportsCORS: s.supportCORS,
+		URL:         url,
+		Type:        syncType,
+		SupportCORS: s.supportCORS,
 	}
 	return sync, nil
 }
@@ -181,7 +215,13 @@ func (s standardSyncer) chooseSyncType(syncTypes []SyncType) (SyncType, error) {
 		return SyncTypeUnknown, errors.New("no sync types provided")
 	}
 
-	for _, syncType := range syncTypes {
+	supported := s.filterSupportedSyncTypes(syncTypes)
+	if len(supported) == 0 {
+		return SyncTypeUnknown, errors.New("no sync types supported")
+	}
+
+	// prefer default type
+	for _, syncType := range supported {
 		if syncType == s.defaultSyncType {
 			return syncType, nil
 		}

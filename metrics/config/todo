@@ -1,6 +1,7 @@
 todo
+ - finish syncer test cases
+ - load syncer from configs / handle parsing errors
  - add proper samesite behavior - cookie should just know what to do
  - add new cookiesync metrics to go metrics
- - load syncer from configs / handle parsing errors
  - /setuid endpoint changes
  - migrate all adapter user sync configs

@@ -62,6 +62,9 @@ type Syncer struct {
 	// Redirect configures an redirect endpoint for user syncing. This is also known as an image
 	// endpoint in the Prebid.js project.
 	Redirect *SyncerEndpoint `yaml:"redirect"`
+
+	// SupportCORS identifies if CORS is supported for user syncing.
+	SupportCORS bool
 }
 
 // SyncerEndpoint specifies the configuration of the URL returned by the /cookie_sync endpoint

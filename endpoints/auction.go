@@ -496,7 +496,7 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 				bidder.UsersyncInfo = &pbs.UsersyncInfo{
 					URL:         sync.URL,
 					Type:        sync.Type.String(),
-					SupportCORS: sync.SupportsCORS,
+					SupportCORS: sync.SupportCORS,
 				}
 			} else {
 				glog.Errorf("Failed to get usersync info for %s: %v", syncerCode, err)
