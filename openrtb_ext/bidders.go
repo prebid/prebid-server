@@ -53,6 +53,7 @@ const (
 	BidderMarsmedia        BidderName = "marsmedia"
 	BidderMgid             BidderName = "mgid"
 	BidderOpenx            BidderName = "openx"
+	BidderPlaywire         BidderName = "playwire"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPubnative        BidderName = "pubnative"
 	BidderPulsepoint       BidderName = "pulsepoint"
@@ -111,6 +112,7 @@ var BidderMap = map[string]BidderName{
 	"marsmedia":         BidderMarsmedia,
 	"mgid":              BidderMgid,
 	"openx":             BidderOpenx,
+	"playwire":          BidderPlaywire,
 	"pubmatic":          BidderPubmatic,
 	"pubnative":         BidderPubnative,
 	"pulsepoint":        BidderPulsepoint,
