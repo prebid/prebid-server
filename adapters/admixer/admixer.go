@@ -107,7 +107,10 @@ func preprocess(imp *openrtb2.Imp) error {
 	}
 
 	imp.TagID = admixerExt.ZoneId
-	imp.BidFloor = admixerExt.CustomBidFloor
+
+	if imp.BidFloor == 0 && admixerExt.CustomBidFloor > 0 {
+		imp.BidFloor = admixerExt.CustomBidFloor
+	}
 
 	imp.Ext = nil
 
