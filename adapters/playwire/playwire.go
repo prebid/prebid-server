@@ -37,7 +37,7 @@ func (a *PlaywireAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo * ad
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (a *PlaywireAdapter) MakeBids(internalRequest * openrtb.BidRequest, externalRequest, *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *PlaywireAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -54,12 +54,12 @@ func (a *PlaywireAdapter) MakeBids(internalRequest * openrtb.BidRequest, externa
 		}}
 	}
 
-	var bidResp openrtb.BidderResponse
-	if err := json.UnMarshal(response.Body, &bidResp); err != nil {
+	var bidResp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
-	bidResposne := adapters.NewBidderResponseWithBidsCapacity(1)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
@@ -69,8 +69,8 @@ func (a *PlaywireAdapter) MakeBids(internalRequest * openrtb.BidRequest, externa
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:		&sb.Bid[1],
-				BidType:	bidType
+				Bid:     &sb.Bid[i],
+				BidType: bidType,
 			})
 		}
 	}
