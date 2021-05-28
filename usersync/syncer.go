@@ -126,6 +126,7 @@ func composeTemplate(key, syncTypeValue string, hostConfig config.UserSync, sync
 	return template.New(templateName).Parse(url)
 }
 
+// escapeTemplate url encodes a string template leaving the macro tags unaffected.
 func escapeTemplate(x string) string {
 	escaped := strings.Builder{}
 
@@ -140,14 +141,14 @@ func escapeTemplate(x string) string {
 	return escaped.String()
 }
 
-func validateTemplate(template *template.Template) error {
-	testValues := macros.UserSyncTemplateParams{
-		GDPR:        "anyGDPR",
-		GDPRConsent: "anyGDPRConsent",
-		USPrivacy:   "anyCCPAConsent",
-	}
+var templateTestValues = macros.UserSyncTemplateParams{
+	GDPR:        "anyGDPR",
+	GDPRConsent: "anyGDPRConsent",
+	USPrivacy:   "anyCCPAConsent",
+}
 
-	url, err := macros.ResolveMacros(template, testValues)
+func validateTemplate(template *template.Template) error {
+	url, err := macros.ResolveMacros(template, templateTestValues)
 	if err != nil {
 		return err
 	}

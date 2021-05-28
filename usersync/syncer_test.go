@@ -12,13 +12,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// NewSyncer
+func TestNewSyncer(t *testing.T) {
+}
 
 func TestComposeTemplate(t *testing.T) {
 	var (
 		key           = "anyKey"
 		syncTypeValue = "x"
 		macroValues   = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
+		hostConfig    = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
 	)
 
 	testCases := []struct {
@@ -29,28 +31,56 @@ func TestComposeTemplate(t *testing.T) {
 		expectedRendered    string
 	}{
 		{
-			description:     "No Composed Macros - Validated Legacy Overrides",
-			givenHostConfig: config.UserSync{ExternalURL: "externalURL", RedirectURL: "redirectURL"},
+			description: "No Composed Macros",
 			givenSyncerEndpoint: config.SyncerEndpoint{
-				URL: "hasNoMacros,gdpr={{.GDPR}}",
+				URL: "hasNoComposedMacros,gdpr={{.GDPR}}",
 			},
-			expectedRendered: "hasNoMacros,gdpr=A",
+			expectedRendered: "hasNoComposedMacros,gdpr=A",
 		},
 		{
-			description:     "All Composed Macros",
-			givenHostConfig: config.UserSync{ExternalURL: "externalURL", RedirectURL: "redirectURL"},
+			description: "All Composed Macros",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
 				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&gdpr={{.GDPR}}&uid={{.UserMacro}}",
-				ExternalURL: "http://host.com",
+				ExternalURL: "http://syncer.com",
 				UserMacro:   "$UID$",
 			},
-			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fhost.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26uid%3D%24UID%24",
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26uid%3D%24UID%24",
+		},
+		{
+			description: "Redirect URL + External URL From Host",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL: "https://bidder.com/sync?redirect={{.RedirectURL}}",
+			},
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fhost.com%2Fhost",
+		},
+		{
+			description: "Redirect URL From Syncer",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
+				RedirectURL: "{{.ExternalURL}}/syncer",
+			},
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fhost.com%2Fsyncer",
+		},
+		{
+			description: "External URL From Syncer",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
+				ExternalURL: "http://syncer.com",
+			},
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fhost",
+		},
+		{
+			description: "Template Parse Error",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL: "{{malformed}}",
+			},
+			expectedError: "template: anykey_usersync_url:1: function \"malformed\" not defined",
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := composeTemplate(key, syncTypeValue, test.givenHostConfig, test.givenSyncerEndpoint)
+		result, err := composeTemplate(key, syncTypeValue, hostConfig, test.givenSyncerEndpoint)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
@@ -104,6 +134,11 @@ func TestEscapeTemplate(t *testing.T) {
 			description: "Characters In Macros Not Escaped",
 			given:       "{{.Macro&}}",
 			expected:    "{{.Macro&}}",
+		},
+		{
+			description: "Whitespace",
+			given:       " &a {{ .Macro1  }} /b ",
+			expected:    "+%26a+{{ .Macro1  }}+%2Fb+",
 		},
 	}
 
