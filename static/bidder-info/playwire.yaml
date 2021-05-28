@@ -1,0 +1,7 @@
+maintainer:
+  email: "na@playwire.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
