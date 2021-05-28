@@ -160,6 +160,89 @@ func TestParseOtherCookie(t *testing.T) {
 	}
 }
 
+func TestParseCookieFromRequestOptOut(t *testing.T) {
+	optOutCookieName := "optOutCookieName"
+	optOutCookieValue := "optOutCookieValue"
+
+	existingCookie := *(&Cookie{
+		uids: map[string]uidWithExpiry{
+			"foo": newTempId("fooID", 1),
+			"bar": newTempId("barID", 2),
+		},
+		optOut:   false,
+		birthday: timestamp(),
+	}).ToHTTPCookie(24 * time.Hour)
+
+	testCases := []struct {
+		description          string
+		givenExistingCookies []http.Cookie
+		expectedEmpty        bool
+		expectedSetOptOut    bool
+	}{
+		{
+			description: "Opt Out Cookie",
+			givenExistingCookies: []http.Cookie{
+				existingCookie,
+				{Name: optOutCookieName, Value: optOutCookieValue}},
+			expectedEmpty:     true,
+			expectedSetOptOut: true,
+		},
+		{
+			description: "No Opt Out Cookie",
+			givenExistingCookies: []http.Cookie{
+				existingCookie},
+			expectedEmpty:     false,
+			expectedSetOptOut: false,
+		},
+		{
+			description: "Opt Out Cookie - Wrong Value",
+			givenExistingCookies: []http.Cookie{
+				existingCookie,
+				{Name: optOutCookieName, Value: "wrong"}},
+			expectedEmpty:     false,
+			expectedSetOptOut: false,
+		},
+		{
+			description: "Opt Out Cookie - Wrong Name",
+			givenExistingCookies: []http.Cookie{
+				existingCookie,
+				{Name: "wrong", Value: optOutCookieValue}},
+			expectedEmpty:     false,
+			expectedSetOptOut: false,
+		},
+		{
+			description: "Opt Out Cookie - No Host Cookies",
+			givenExistingCookies: []http.Cookie{
+				{Name: optOutCookieName, Value: optOutCookieValue}},
+			expectedEmpty:     true,
+			expectedSetOptOut: true,
+		},
+	}
+
+	for _, test := range testCases {
+		req := httptest.NewRequest("POST", "http://www.prebid.com", nil)
+
+		for _, c := range test.givenExistingCookies {
+			req.AddCookie(&c)
+		}
+
+		parsed := ParseCookieFromRequest(req, &config.HostCookie{
+			Family: "foo",
+			OptOutCookie: config.Cookie{
+				Name:  optOutCookieName,
+				Value: optOutCookieValue,
+			},
+		})
+
+		if test.expectedEmpty {
+			assert.Empty(t, parsed.uids, test.description+":empty")
+		} else {
+			assert.NotEmpty(t, parsed.uids, test.description+":not-empty")
+		}
+		assert.Equal(t, parsed.optOut, test.expectedSetOptOut, test.description+":opt-out")
+	}
+}
+
 func TestCookieReadWrite(t *testing.T) {
 	cookie := newSampleCookie()
 
@@ -265,33 +348,41 @@ func TestGetUIDsWithNilCookie(t *testing.T) {
 }
 
 func TestTrimCookiesClosestExpirationDates(t *testing.T) {
-	cookieToSend, cookieToSendLen := newTestCookie()
-	closestToExpirationDate := "key7"
+	cookieToSend := &Cookie{
+		uids: map[string]uidWithExpiry{
+			"k1": newTempId("12345678901234567890123456789012345678901234567890", 7),
+			"k2": newTempId("abcdefghijklmnopqrstuvwxyz", 6),
+			"k3": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
+			"k4": newTempId("12345678901234567890123456789612345678901234567890", 5),
+			"k5": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
+			"k6": newTempId("12345678901234567890123456789012345678901234567890", 3),
+			"k7": newTempId("abcdefghijklmnopqrstuvwxyz", 2),
+		},
+		optOut:   false,
+		birthday: timestamp(),
+	}
 
 	type aTest struct {
 		maxCookieSize int
-		expAction     string
+		expKeys       []string
 	}
 	testCases := []aTest{
-		{maxCookieSize: 2000, expAction: "equal"}, //1 don't trim, set
-		{maxCookieSize: 0, expAction: "equal"},    //2 unlimited size: don't trim, set
-		{maxCookieSize: 800, expAction: "trim"},   //3 trim to size and set
-		{maxCookieSize: 500, expAction: "trim"},   //4 trim to size and set
-		{maxCookieSize: 200, expAction: "empty"},  //5 insufficient size, trim to zero length and set
-		{maxCookieSize: -100, expAction: "empty"}, //6 invalid size, trim to zero length and set
+		{maxCookieSize: 2000, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}}, //1 don't trim, set
+		{maxCookieSize: 0, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}},    //2 unlimited size: don't trim, set
+		{maxCookieSize: 800, expKeys: []string{"k1", "k2", "k3", "k4"}},                    //3 trim to size and set
+		{maxCookieSize: 500, expKeys: []string{"k1", "k3"}},                                //4 trim to size and set
+		{maxCookieSize: 200, expKeys: []string{}},                                          //5 insufficient size, trim to zero length and set
+		{maxCookieSize: -100, expKeys: []string{}},                                         //6 invalid size, trim to zero length and set
 	}
 	for i := range testCases {
 		processedCookie := writeThenRead(cookieToSend, testCases[i].maxCookieSize)
-		switch testCases[i].expAction {
-		case "equal":
-			assert.Equal(t, cookieToSendLen, len(processedCookie.uids), "[Test %d] MaxCookieSizeBytes equal to zero or bigger than %d bytes should be enough to set and remain cookie unchanged \n", i+1, len(processedCookie.uids))
-			assert.Containsf(t, processedCookie.uids, closestToExpirationDate, "[Test %d] Oldest entry in cookie should not have been eliminated", i+1)
-		case "trim":
-			assert.Equal(t, cookieToSendLen > len(processedCookie.uids), true, "[Test %d] MaxCookieSizeBytes of %d is smaller than %d bytes and cookie entries should have been removed\n", i+1, testCases[i].maxCookieSize, cookieToSendLen)
-			assert.NotContainsf(t, processedCookie.uids, closestToExpirationDate, "[Test %d] Oldest entry in cookie should not have been eliminated", i+1)
-		case "empty":
-			assert.Equal(t, len(processedCookie.uids), 0, "[Test %d] MaxCookieSizeBytes of %d is too small, processedCookie.uids should be empty\n", i+1)
+
+		actualKeys := make([]string, 0, 7)
+		for key, _ := range processedCookie.uids {
+			actualKeys = append(actualKeys, key)
 		}
+
+		assert.ElementsMatch(t, testCases[i].expKeys, actualKeys, "[Test %d]", i+1)
 	}
 }
 
@@ -383,23 +474,6 @@ func newSampleCookie() *Cookie {
 	}
 }
 
-func newTestCookie() (*Cookie, int) {
-	var mediumSizeCookie *Cookie = &Cookie{
-		uids: map[string]uidWithExpiry{
-			"key1": newTempId("12345678901234567890123456789012345678901234567890", 7),
-			"key2": newTempId("abcdefghijklmnopqrstuvwxyz", 6),
-			"key3": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
-			"key4": newTempId("12345678901234567890123456789612345678901234567890", 5),
-			"key5": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
-			"key6": newTempId("12345678901234567890123456789012345678901234567890", 3),
-			"key7": newTempId("abcdefghijklmnopqrstuvwxyz", 2),
-		},
-		optOut:   false,
-		birthday: timestamp(),
-	}
-	return mediumSizeCookie, len(mediumSizeCookie.uids)
-}
-
 func writeThenRead(cookie *Cookie, maxCookieSize int) *Cookie {
 	w := httptest.NewRecorder()
 	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: maxCookieSize}
@@ -412,23 +486,20 @@ func writeThenRead(cookie *Cookie, maxCookieSize int) *Cookie {
 	return ParseCookieFromRequest(&request, hostCookie)
 }
 
-// func TestSetCookieOnResponseForSameSiteNone(t *testing.T) {
-// 	cookie := newSampleCookie()
-// 	w := httptest.NewRecorder()
-// 	req := httptest.NewRequest("GET", "http://www.prebid.com", nil)
-// 	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
-// 	req.Header.Set("User-Agent", ua)
-// 	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: 0}
-// 	cookie.SetCookieOnResponse(w, true, hostCookie, 90*24*time.Hour)
-// 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
-// 	t.Log("Set-Cookie is: ", writtenCookie)
-// 	if !strings.Contains(writtenCookie, "SSCookie=1") {
-// 		t.Error("Set-Cookie should contain SSCookie=1")
-// 	}
-// 	if !strings.Contains(writtenCookie, "; Secure;") {
-// 		t.Error("Set-Cookie should contain Secure")
-// 	}
-// }
+func TestSetCookieOnResponseForSameSiteNone(t *testing.T) {
+	cookie := newSampleCookie()
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "http://www.prebid.com", nil)
+	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
+	req.Header.Set("User-Agent", ua)
+	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: 0}
+	cookie.SetCookieOnResponse(w, true, hostCookie, 90*24*time.Hour)
+	writtenCookie := w.HeaderMap.Get("Set-Cookie")
+	t.Log("Set-Cookie is: ", writtenCookie)
+	if !strings.Contains(writtenCookie, "; Secure;") {
+		t.Error("Set-Cookie should contain Secure")
+	}
+}
 
 func TestSetCookieOnResponseForOlderChromeVersion(t *testing.T) {
 	cookie := newSampleCookie()

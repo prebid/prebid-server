@@ -13,7 +13,7 @@ import (
 
 // NewMetricsEngine reads the configuration and returns the appropriate metrics engine
 // for this instance.
-func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.BidderName) *DetailedMetricsEngine {
+func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.BidderName, syncerKeys []string) *DetailedMetricsEngine {
 	// Create a list of metrics engines to use.
 	// Capacity of 2, as unlikely to have more than 2 metrics backends, and in the case
 	// of 1 we won't use the list so it will be garbage collected.
@@ -37,7 +37,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	}
 	if cfg.Metrics.Prometheus.Port != 0 {
 		// Set up the Prometheus metrics.
-		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus, cfg.Metrics.Disabled)
+		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus, cfg.Metrics.Disabled, syncerKeys)
 		engineList = append(engineList, returnEngine.PrometheusMetrics)
 	}
 
@@ -175,9 +175,9 @@ func (me *MultiMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, le
 }
 
 // RecordCookieSync across all engines
-func (me *MultiMetricsEngine) RecordCookieSync() {
+func (me *MultiMetricsEngine) RecordCookieSync(status metrics.CookieSyncStatus) {
 	for _, thisME := range *me {
-		thisME.RecordCookieSync()
+		thisME.RecordCookieSync(status)
 	}
 }
 
@@ -202,10 +202,10 @@ func (me *MultiMetricsEngine) RecordAccountCacheResult(cacheResult metrics.Cache
 	}
 }
 
-// RecordAdapterCookieSync across all engines
-func (me *MultiMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
+// RecordSyncerRequest across all engines
+func (me *MultiMetricsEngine) RecordSyncerRequest(key string, status metrics.SyncerStatus) {
 	for _, thisME := range *me {
-		thisME.RecordAdapterCookieSync(adapter, gdprBlocked)
+		thisME.RecordSyncerRequest(key, status)
 	}
 }
 
@@ -312,11 +312,11 @@ func (me *DummyMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, le
 }
 
 // RecordCookieSync as a noop
-func (me *DummyMetricsEngine) RecordCookieSync() {
+func (me *DummyMetricsEngine) RecordCookieSync(status metrics.CookieSyncStatus) {
 }
 
-// RecordAdapterCookieSync as a noop
-func (me *DummyMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
+// RecordSyncerCRecordSyncerRequestookieSync as a noop
+func (me *DummyMetricsEngine) RecordSyncerRequest(key string, status metrics.SyncerStatus) {
 }
 
 // RecordUserIDSet as a noop

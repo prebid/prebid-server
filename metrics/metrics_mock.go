@@ -92,13 +92,13 @@ func (me *MetricsEngineMock) RecordAdapterTime(labels AdapterLabels, length time
 }
 
 // RecordCookieSync mock
-func (me *MetricsEngineMock) RecordCookieSync() {
-	me.Called()
+func (me *MetricsEngineMock) RecordCookieSync(status CookieSyncStatus) {
+	me.Called(status)
 }
 
-// RecordAdapterCookieSync mock
-func (me *MetricsEngineMock) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
-	me.Called(adapter, gdprBlocked)
+// RecordSyncerRequest mock
+func (me *MetricsEngineMock) RecordSyncerRequest(key string, status SyncerStatus) {
+	me.Called(key, status)
 }
 
 // RecordUserIDSet mock

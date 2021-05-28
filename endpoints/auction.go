@@ -27,6 +27,8 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
+var allSyncTypes []usersync.SyncType = []usersync.SyncType{usersync.SyncTypeIFrame, usersync.SyncTypeRedirect}
+
 type bidResult struct {
 	bidder  *pbs.PBSBidder
 	bidList pbs.PBSBidSlice
@@ -58,14 +60,14 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 
 type auction struct {
 	cfg           *config.Configuration
-	syncers       map[openrtb_ext.BidderName]usersync.Usersyncer
+	syncers       map[string]usersync.Syncer
 	gdprPerms     gdpr.Permissions
 	metricsEngine metrics.MetricsEngine
 	dataCache     cache.Cache
 	exchanges     map[string]adapters.Adapter
 }
 
-func Auction(cfg *config.Configuration, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, gdprPerms gdpr.Permissions, metricsEngine metrics.MetricsEngine, dataCache cache.Cache, exchanges map[string]adapters.Adapter) httprouter.Handle {
+func Auction(cfg *config.Configuration, syncers map[string]usersync.Syncer, gdprPerms gdpr.Permissions, metricsEngine metrics.MetricsEngine, dataCache cache.Cache, exchanges map[string]adapters.Adapter) httprouter.Handle {
 	a := &auction{
 		cfg:           cfg,
 		syncers:       syncers,
@@ -478,8 +480,8 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 	if syncerCode == "districtm" {
 		syncerCode = "appnexus"
 	}
-	syncer := a.syncers[openrtb_ext.BidderName(syncerCode)]
-	uid, _, _ := req.Cookie.GetUID(syncer.FamilyName())
+	syncer := a.syncers[syncerCode]
+	uid, _, _ := req.Cookie.GetUID(syncer.Key())
 	if uid == "" {
 		bidder.NoCookie = true
 		privacyPolicies := privacy.Policies{
@@ -489,9 +491,13 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 			},
 		}
 		if a.shouldUsersync(*ctx, openrtb_ext.BidderName(syncerCode), privacyPolicies.GDPR) {
-			syncInfo, err := syncer.GetUsersyncInfo(privacyPolicies)
+			sync, err := syncer.GetSync(allSyncTypes, privacyPolicies)
 			if err == nil {
-				bidder.UsersyncInfo = syncInfo
+				bidder.UsersyncInfo = &pbs.UsersyncInfo{
+					URL:         sync.URL,
+					Type:        sync.Type.String(),
+					SupportCORS: sync.SupportsCORS,
+				}
 			} else {
 				glog.Errorf("Failed to get usersync info for %s: %v", syncerCode, err)
 			}

@@ -20,7 +20,7 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
-	"github.com/prebid/prebid-server/usersync/usersyncers"
+	"github.com/prebid/prebid-server/usersync"
 	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/assert"
@@ -350,7 +350,7 @@ func TestCacheVideoOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	syncers := usersyncers.NewSyncerMap(cfg)
+	syncers := map[string]usersync.Syncer{}
 	gdprPerms := gdpr.NewPermissions(context.Background(), config.GDPR{
 		HostVendorID: 0,
 	}, nil, nil)

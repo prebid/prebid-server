@@ -323,6 +323,44 @@ func TCFVersionToValue(version int) TCFVersionValue {
 	return TCFVersionErr
 }
 
+type CookieSyncStatus string
+
+const (
+	CookieSyncOK                    CookieSyncStatus = "ok"
+	CookieSyncBadRequest            CookieSyncStatus = "bad_request"
+	CookieSyncOptOut                CookieSyncStatus = "opt_out"
+	CookieSyncGDPRHostCookieBlocked CookieSyncStatus = "gdpr_blocked_host_cookie"
+)
+
+// CookieSyncStatuses returns possible cookie sync statuses.
+func CookieSyncStatuses() []CookieSyncStatus {
+	return []CookieSyncStatus{
+		CookieSyncOK,
+		CookieSyncBadRequest,
+		CookieSyncOptOut,
+		CookieSyncGDPRHostCookieBlocked,
+	}
+}
+
+type SyncerStatus string
+
+const (
+	SyncerOK               SyncerStatus = "ok"
+	SyncerPrivacyBlocked   SyncerStatus = "privacy_blocked"
+	SyncerAlreadySynced    SyncerStatus = "already_synced"
+	SyncerTypeNotSupported SyncerStatus = "type_not_supported"
+)
+
+// SyncerStatuses returns possible syncer statuses.
+func SyncerStatuses() []SyncerStatus {
+	return []SyncerStatus{
+		SyncerOK,
+		SyncerPrivacyBlocked,
+		SyncerAlreadySynced,
+		SyncerTypeNotSupported,
+	}
+}
+
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
 // The first three metrics function fire off once per incoming request, so total metrics
 // will equal the total number of incoming requests. The remaining 5 fire off per outgoing
@@ -346,8 +384,8 @@ type MetricsEngine interface {
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
-	RecordCookieSync()
-	RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool)
+	RecordCookieSync(status CookieSyncStatus)
+	RecordSyncerRequest(key string, status SyncerStatus)
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)

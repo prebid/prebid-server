@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -45,12 +44,17 @@ func TestNewChooser(t *testing.T) {
 }
 
 func TestChooserChoose(t *testing.T) {
-	fakeSyncerA := fakeSyncer{key: "keyA", supportsKind: true}
-	fakeSyncerB := fakeSyncer{key: "keyB", supportsKind: true}
-	fakeSyncerC := fakeSyncer{key: "keyC", supportsKind: false}
+	fakeSyncerA := fakeSyncer{key: "keyA", supportsIFrame: true}
+	fakeSyncerB := fakeSyncer{key: "keyB", supportsIFrame: true}
+	fakeSyncerC := fakeSyncer{key: "keyC", supportsIFrame: false}
 	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB, "c": fakeSyncerC}
+	syncerChoiceA := SyncerChoice{Bidder: "a", Syncer: fakeSyncerA}
+	syncerChoiceB := SyncerChoice{Bidder: "b", Syncer: fakeSyncerB}
+	syncTypeFilter := SyncTypeFilter{
+		IFrame:   NewBidderFilterForAll(BidderFilterModeInclude),
+		Redirect: NewBidderFilterForAll(BidderFilterModeExclude)}
 
-	cooperativeConfig := config.UserSyncCooperative{Enabled: true}
+	cooperativeConfig := Cooperative{Enabled: true}
 
 	testCases := []struct {
 		description        string
@@ -98,7 +102,7 @@ func TestChooserChoose(t *testing.T) {
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{},
-				SyncersChosen:    []Syncer{},
+				SyncersChosen:    []SyncerChoice{},
 			},
 		},
 		{
@@ -112,7 +116,7 @@ func TestChooserChoose(t *testing.T) {
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", Status: StatusOK}},
-				SyncersChosen:    []Syncer{fakeSyncerA},
+				SyncersChosen:    []SyncerChoice{syncerChoiceA},
 			},
 		},
 		{
@@ -125,8 +129,8 @@ func TestChooserChoose(t *testing.T) {
 			givenCookie:        Cookie{},
 			expected: Result{
 				Status:           StatusOK,
-				BiddersEvaluated: []BidderEvaluation{{Bidder: "c", Status: StatusIncompatibleKind}},
-				SyncersChosen:    []Syncer{},
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "c", Status: StatusTypeNotSupported}},
+				SyncersChosen:    []SyncerChoice{},
 			},
 		},
 		{
@@ -140,7 +144,7 @@ func TestChooserChoose(t *testing.T) {
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", Status: StatusOK}, {Bidder: "b", Status: StatusOK}},
-				SyncersChosen:    []Syncer{fakeSyncerA, fakeSyncerB},
+				SyncersChosen:    []SyncerChoice{syncerChoiceA, syncerChoiceB},
 			},
 		},
 		{
@@ -154,7 +158,7 @@ func TestChooserChoose(t *testing.T) {
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", Status: StatusOK}, {Bidder: "b", Status: StatusOK}},
-				SyncersChosen:    []Syncer{fakeSyncerA, fakeSyncerB},
+				SyncersChosen:    []SyncerChoice{syncerChoiceA, syncerChoiceB},
 			},
 		},
 		{
@@ -168,7 +172,7 @@ func TestChooserChoose(t *testing.T) {
 			expected: Result{
 				Status:           StatusOK,
 				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", Status: StatusOK}},
-				SyncersChosen:    []Syncer{fakeSyncerA},
+				SyncersChosen:    []SyncerChoice{syncerChoiceA},
 			},
 		},
 		{
@@ -181,8 +185,8 @@ func TestChooserChoose(t *testing.T) {
 			givenCookie:        Cookie{},
 			expected: Result{
 				Status:           StatusOK,
-				BiddersEvaluated: []BidderEvaluation{{Bidder: "c", Status: StatusIncompatibleKind}, {Bidder: "a", Status: StatusOK}},
-				SyncersChosen:    []Syncer{fakeSyncerA},
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "c", Status: StatusTypeNotSupported}, {Bidder: "a", Status: StatusOK}},
+				SyncersChosen:    []SyncerChoice{syncerChoiceA},
 			},
 		},
 		{
@@ -195,8 +199,8 @@ func TestChooserChoose(t *testing.T) {
 			givenCookie:        Cookie{},
 			expected: Result{
 				Status:           StatusOK,
-				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", Status: StatusOK}, {Bidder: "c", Status: StatusIncompatibleKind}},
-				SyncersChosen:    []Syncer{fakeSyncerA},
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", Status: StatusOK}, {Bidder: "c", Status: StatusTypeNotSupported}},
+				SyncersChosen:    []SyncerChoice{syncerChoiceA},
 			},
 		},
 	}
@@ -206,7 +210,7 @@ func TestChooserChoose(t *testing.T) {
 	for _, test := range testCases {
 		// set request values which don't need to be specified for each test
 		test.givenRequest.Bidders = bidders
-		test.givenRequest.Kind = KindRedirect
+		test.givenRequest.SyncTypeFilter = syncTypeFilter
 		test.givenRequest.Cooperative = cooperativeConfig
 
 		mockBidderChooser := &mockBidderChooser{}
@@ -220,18 +224,22 @@ func TestChooserChoose(t *testing.T) {
 			bidderChooser:      mockBidderChooser,
 		}
 
-		result := chooser.Choose(test.givenRequest, test.givenCookie)
+		result := chooser.Choose(test.givenRequest, &test.givenCookie)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
 func TestChooserEvaluate(t *testing.T) {
-	fakeSyncerA := fakeSyncer{key: "keyA", supportsKind: true}
-	fakeSyncerB := fakeSyncer{key: "keyB", supportsKind: false}
+	fakeSyncerA := fakeSyncer{key: "keyA", supportsIFrame: true}
+	fakeSyncerB := fakeSyncer{key: "keyB", supportsIFrame: false}
 	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB}
+	syncTypeFilter := SyncTypeFilter{
+		IFrame:   NewBidderFilterForAll(BidderFilterModeInclude),
+		Redirect: NewBidderFilterForAll(BidderFilterModeExclude)}
 
 	cookieNeedsSync := Cookie{}
-	cookieAlreadyHasSync := Cookie{uids: map[string]uidWithExpiry{"keyA": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
+	cookieAlreadyHasSyncForA := Cookie{uids: map[string]uidWithExpiry{"keyA": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
+	cookieAlreadyHasSyncForB := Cookie{uids: map[string]uidWithExpiry{"keyB": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 
 	testCases := []struct {
 		description      string
@@ -281,17 +289,27 @@ func TestChooserEvaluate(t *testing.T) {
 			givenCookie:      cookieNeedsSync,
 			expectedSyncer:   nil,
 			expectedBidder:   "b",
-			expectedStatus:   StatusIncompatibleKind,
+			expectedStatus:   StatusTypeNotSupported,
 		},
 		{
 			description:      "Already Synced",
 			givenBidder:      "a",
 			givenSyncersSeen: map[string]struct{}{},
 			givenPrivacy:     fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
-			givenCookie:      cookieAlreadyHasSync,
+			givenCookie:      cookieAlreadyHasSyncForA,
 			expectedSyncer:   nil,
 			expectedBidder:   "a",
 			expectedStatus:   StatusAlreadySynced,
+		},
+		{
+			description:      "Different Bidder Already Synced",
+			givenBidder:      "a",
+			givenSyncersSeen: map[string]struct{}{},
+			givenPrivacy:     fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true},
+			givenCookie:      cookieAlreadyHasSyncForB,
+			expectedSyncer:   fakeSyncerA,
+			expectedBidder:   "a",
+			expectedStatus:   StatusOK,
 		},
 		{
 			description:      "Blocked By GDPR",
@@ -317,7 +335,7 @@ func TestChooserEvaluate(t *testing.T) {
 
 	for _, test := range testCases {
 		chooser, _ := NewChooser(bidderSyncerLookup).(standardChooser)
-		sync, evaluation := chooser.evaluate(test.givenBidder, test.givenSyncersSeen, KindBidderPreference, test.givenPrivacy, test.givenCookie)
+		sync, evaluation := chooser.evaluate(test.givenBidder, test.givenSyncersSeen, syncTypeFilter, test.givenPrivacy, &test.givenCookie)
 
 		assert.Equal(t, test.expectedSyncer, sync, test.description+":syncer")
 
@@ -330,26 +348,35 @@ type mockBidderChooser struct {
 	mock.Mock
 }
 
-func (m *mockBidderChooser) choose(requested, available []string, cooperative config.UserSyncCooperative) []string {
+func (m *mockBidderChooser) choose(requested, available []string, cooperative Cooperative) []string {
 	args := m.Called(requested, available, cooperative)
 	return args.Get(0).([]string)
 }
 
 type fakeSyncer struct {
-	key          string
-	supportsKind bool
+	key              string
+	supportsIFrame   bool
+	supportsRedirect bool
 }
 
 func (s fakeSyncer) Key() string {
 	return s.key
 }
 
-func (s fakeSyncer) SupportsKind(kind Kind) bool {
-	return s.supportsKind
+func (s fakeSyncer) SupportsType(syncTypes []SyncType) bool {
+	for _, syncType := range syncTypes {
+		if syncType == SyncTypeIFrame && s.supportsIFrame {
+			return true
+		}
+		if syncType == SyncTypeRedirect && s.supportsRedirect {
+			return true
+		}
+	}
+	return false
 }
 
-func (fakeSyncer) GetSync(kind Kind, privacyPolicies privacy.Policies) Sync {
-	return Sync{}
+func (fakeSyncer) GetSync(syncTypes []SyncType, privacyPolicies privacy.Policies) (Sync, error) {
+	return Sync{}, nil
 }
 
 type fakePrivacy struct {

@@ -26,12 +26,12 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
-func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metricsEngine metrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.TTL) * 24 * time.Hour
 
-	validFamilyNameMap := make(map[string]struct{})
+	validKeyLookup := make(map[string]struct{})
 	for _, s := range syncers {
-		validFamilyNameMap[s.FamilyName()] = struct{}{}
+		validKeyLookup[s.Key()] = struct{}{}
 	}
 
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -54,7 +54,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 
 		query := r.URL.Query()
 
-		familyName, err := getFamilyName(query, validFamilyNameMap)
+		familyName, err := getFamilyName(query, validKeyLookup)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))

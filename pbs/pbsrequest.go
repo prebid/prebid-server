@@ -121,17 +121,23 @@ type SDK struct {
 }
 
 type PBSBidder struct {
-	BidderCode   string                 `json:"bidder"`
-	AdUnitCode   string                 `json:"ad_unit,omitempty"` // for index to dedup responses
-	ResponseTime int                    `json:"response_time_ms,omitempty"`
-	NumBids      int                    `json:"num_bids,omitempty"`
-	Error        string                 `json:"error,omitempty"`
-	NoCookie     bool                   `json:"no_cookie,omitempty"`
-	NoBid        bool                   `json:"no_bid,omitempty"`
-	UsersyncInfo *usersync.UsersyncInfo `json:"usersync,omitempty"`
-	Debug        []*BidderDebug         `json:"debug,omitempty"`
+	BidderCode   string         `json:"bidder"`
+	AdUnitCode   string         `json:"ad_unit,omitempty"` // for index to dedup responses
+	ResponseTime int            `json:"response_time_ms,omitempty"`
+	NumBids      int            `json:"num_bids,omitempty"`
+	Error        string         `json:"error,omitempty"`
+	NoCookie     bool           `json:"no_cookie,omitempty"`
+	NoBid        bool           `json:"no_bid,omitempty"`
+	UsersyncInfo *UsersyncInfo  `json:"usersync,omitempty"`
+	Debug        []*BidderDebug `json:"debug,omitempty"`
 
 	AdUnits []PBSAdUnit `json:"-"`
+}
+
+type UsersyncInfo struct {
+	URL         string `json:"url,omitempty"`
+	Type        string `json:"type,omitempty"`
+	SupportCORS bool   `json:"supportCORS,omitempty"`
 }
 
 func (bidder *PBSBidder) LookupBidID(Code string) string {
@@ -217,7 +223,7 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
-var ipv4Validator iputil.IPValidator = iputil.VersionIPValidator{iputil.IPv4}
+var ipv4Validator iputil.IPValidator = iputil.VersionIPValidator{Version: iputil.IPv4}
 
 func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.Cache, hostCookieConfig *config.HostCookie) (*PBSRequest, error) {
 	defer r.Body.Close()

@@ -1,18 +1,18 @@
 package usersync
 
-import "github.com/prebid/prebid-server/config"
-
+// bidderChooser determines which bidders to consider for user syncing.
 type bidderChooser interface {
 	// choose returns an ordered collection of potentially non-unique bidders.
-	choose(requested, available []string, cooperative config.UserSyncCooperative) []string
+	choose(requested, available []string, cooperative Cooperative) []string
 }
 
+// standardBidderChooser implements the bidder choosing algorithm per official Prebid specification.
 type standardBidderChooser struct {
 	shuffler shuffler
 }
 
-func (c standardBidderChooser) choose(requested, available []string, cooperative config.UserSyncCooperative) []string {
-	if requested == nil {
+func (c standardBidderChooser) choose(requested, available []string, cooperative Cooperative) []string {
+	if len(requested) == 0 {
 		return c.shuffledCopy(available)
 	}
 

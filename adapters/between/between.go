@@ -17,7 +17,7 @@ import (
 )
 
 type BetweenAdapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
 
 // BetweenSSP requires bidfloor > 0.
@@ -220,7 +220,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := BetweenAdapter{
-		EndpointTemplate: *template,
+		EndpointTemplate: template,
 	}
 	return &bidder, nil
 }

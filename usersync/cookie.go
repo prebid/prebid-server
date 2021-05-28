@@ -12,6 +12,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// todo: add "useSameSite" into the cookie itself, read from the request via user agent headers
+
 const uidCookieName = "uids"
 
 // uidTTL is the default amount of time a uid stored within a cookie is considered valid. This is
@@ -26,7 +28,7 @@ var bidderToFamilyNames = map[openrtb_ext.BidderName]string{
 
 // Cookie is the cookie used in Prebid Server.
 //
-// To get an instance of this from a request, use ParsePBSCookieFromRequest.
+// To get an instance of this from a request, use ParseCookieFromRequest.
 // To write an instance onto a response, use SetCookieOnResponse.
 type Cookie struct {
 	uids     map[string]uidWithExpiry
@@ -43,6 +45,7 @@ type uidWithExpiry struct {
 	Expires time.Time `json:"expires"`
 }
 
+// todo: add samesite if cookie is already same site or detect by browser version
 // ParseCookieFromRequest parses the UserSyncMap from an HTTP Request.
 func ParseCookieFromRequest(r *http.Request, cookie *config.HostCookie) *Cookie {
 	if cookie.OptOutCookie.Name != "" {
@@ -86,7 +89,7 @@ func ParseCookie(httpCookie *http.Cookie) *Cookie {
 	return &cookie
 }
 
-// NewCookie returns an empty PBSCookie
+// NewCookie returns a new empty cookie.
 func NewCookie() *Cookie {
 	return &Cookie{
 		uids:     make(map[string]uidWithExpiry),
@@ -186,14 +189,11 @@ func (cookie *Cookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie b
 		currSize = len([]byte(httpCookie.String()))
 	}
 
-	var uidsCookieStr string
 	if setSiteCookie {
 		httpCookie.Secure = true
 		httpCookie.SameSite = http.SameSiteNoneMode
-	} else {
-		uidsCookieStr = httpCookie.String()
 	}
-	w.Header().Add("Set-Cookie", uidsCookieStr)
+	w.Header().Add("Set-Cookie", httpCookie.String())
 }
 
 // Unsync removes the user's ID for the given family from this cookie.
@@ -223,7 +223,7 @@ func (cookie *Cookie) HasAnyLiveSyncs() bool {
 // TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
 func (cookie *Cookie) TrySync(familyName string, uid string) error {
 	if !cookie.AllowSyncs() {
-		return errors.New("The user has opted out of prebid server PBSCookie syncs.")
+		return errors.New("The user has opted out of prebid server cookie syncs.")
 	}
 
 	// At the moment, Facebook calls /setuid with a UID of 0 if the user isn't logged into Facebook.
@@ -242,8 +242,8 @@ func (cookie *Cookie) TrySync(familyName string, uid string) error {
 
 // cookieJson defines the JSON contract for the cookie data's storage format.
 //
-// This exists so that PBSCookie (which is public) can have private fields, and the rest of
-// PBS doesn't have to worry about the cookie data storage format.
+// This exists so that Cookie (which is public) can have private fields, and the rest of
+// the code doesn't have to worry about the cookie data storage format.
 type cookieJson struct {
 	LegacyUIDs map[string]string        `json:"uids,omitempty"`
 	UIDs       map[string]uidWithExpiry `json:"tempUIDs,omitempty"`

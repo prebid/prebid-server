@@ -14,19 +14,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// This file implements GDPR permissions for the app.
-// For more info, see https://github.com/prebid/prebid-server/issues/501
-//
-// Nothing in this file is exported. Public APIs can be found in gdpr.go
-
-type Signal int
-
-const (
-	SignalAmbiguous Signal = -1
-	SignalNo        Signal = 0
-	SignalYes       Signal = 1
-)
-
 type permissionsImpl struct {
 	cfg             config.GDPR
 	vendorIDs       map[openrtb_ext.BidderName]uint16
@@ -34,7 +21,7 @@ type permissionsImpl struct {
 }
 
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = p.normalizeGDPR(gdprSignal)
+	gdprSignal = SignalNormalize(gdprSignal, p.cfg)
 
 	if gdprSignal == SignalNo {
 		return true, nil
@@ -44,7 +31,7 @@ func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Sig
 }
 
 func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = p.normalizeGDPR(gdprSignal)
+	gdprSignal = SignalNormalize(gdprSignal, p.cfg)
 
 	if gdprSignal == SignalNo {
 		return true, nil
@@ -63,7 +50,7 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 		return true, true, true, nil
 	}
 
-	gdprSignal = p.normalizeGDPR(gdprSignal)
+	gdprSignal = SignalNormalize(gdprSignal, p.cfg)
 
 	if gdprSignal == SignalNo {
 		return true, true, true, nil
@@ -82,18 +69,6 @@ func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrt
 
 func (p *permissionsImpl) defaultVendorPermissions() (allowPI bool, allowGeo bool, allowID bool, err error) {
 	return false, false, false, nil
-}
-
-func (p *permissionsImpl) normalizeGDPR(gdprSignal Signal) Signal {
-	if gdprSignal != SignalAmbiguous {
-		return gdprSignal
-	}
-
-	if p.cfg.UsersyncIfAmbiguous {
-		return SignalNo
-	}
-
-	return SignalYes
 }
 
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string) (bool, error) {

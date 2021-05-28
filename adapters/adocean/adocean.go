@@ -69,14 +69,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	whiteSpace := regexp.MustCompile(`\s+`)
 
 	bidder := &AdOceanAdapter{
-		endpointTemplate: *endpointTemplate,
+		endpointTemplate: endpointTemplate,
 		measurementCode:  whiteSpace.ReplaceAllString(measurementCode, " "),
 	}
 	return bidder, nil
 }
 
 type AdOceanAdapter struct {
-	endpointTemplate template.Template
+	endpointTemplate *template.Template
 	measurementCode  string
 }
 

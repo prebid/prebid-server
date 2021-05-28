@@ -16,7 +16,6 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/usersync"
 )
 
 func TestSiteVideo(t *testing.T) {
@@ -492,10 +491,6 @@ func (a *mockLegacyAdapter) Name() string {
 
 func (a *mockLegacyAdapter) SkipNoCookies() bool {
 	return false
-}
-
-func (a *mockLegacyAdapter) GetUsersyncInfo() (*usersync.UsersyncInfo, error) {
-	return nil, nil
 }
 
 func (a *mockLegacyAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {

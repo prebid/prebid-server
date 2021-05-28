@@ -14,11 +14,12 @@ import (
 )
 
 func createMetricsForTesting() *Metrics {
+	syncerKeys := []string{}
 	return NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "server",
-	}, config.DisabledMetrics{})
+	}, config.DisabledMetrics{}, syncerKeys)
 }
 
 func TestMetricCountGatekeeping(t *testing.T) {
@@ -922,19 +923,18 @@ func TestAdapterTimeMetric(t *testing.T) {
 	}
 }
 
-func TestAdapterCookieSyncMetric(t *testing.T) {
+func TestSyncerRequests(t *testing.T) {
 	m := createMetricsForTesting()
-	adapterName := "anyName"
-	privacyBlocked := true
+	syncerKey := "anyKey"
+	syncerStatus := metrics.SyncerAlreadySynced
 
-	m.RecordAdapterCookieSync(openrtb_ext.BidderName(adapterName), privacyBlocked)
+	m.RecordSyncerRequest(syncerKey, syncerStatus)
 
-	expectedCount := float64(1)
-	assertCounterVecValue(t, "", "adapterCookieSync", m.adapterCookieSync,
-		expectedCount,
+	assertCounterVecValue(t, "", "syncer_requests", m.syncerRequests,
+		float64(1),
 		prometheus.Labels{
-			adapterLabel:        adapterName,
-			privacyBlockedLabel: "true",
+			syncerLabel:       syncerKey,
+			syncerStatusLabel: string(syncerStatus),
 		})
 }
 
@@ -1051,13 +1051,40 @@ func TestAccountCacheResultMetric(t *testing.T) {
 }
 
 func TestCookieMetric(t *testing.T) {
-	m := createMetricsForTesting()
+	tests := []struct {
+		status metrics.CookieSyncStatus
+		label  string
+	}{
+		{
+			status: metrics.CookieSyncOK,
+			label:  "ok",
+		},
+		{
+			status: metrics.CookieSyncBadRequest,
+			label:  "bad_request",
+		},
+		{
+			status: metrics.CookieSyncOptOut,
+			label:  "opt_out",
+		},
+		{
+			status: metrics.CookieSyncGDPRHostCookieBlocked,
+			label:  "gdpr_blocked_host_cookie",
+		},
+	}
 
-	m.RecordCookieSync()
+	for _, test := range tests {
+		m := createMetricsForTesting()
 
-	expectedCount := float64(1)
-	assertCounterValue(t, "", "cookieSync", m.cookieSync,
-		expectedCount)
+		m.RecordCookieSync(test.status)
+
+		assertCounterVecValue(t, "", "cookie_sync_requests:"+test.label, m.cookieSync,
+			float64(1),
+			prometheus.Labels{
+				cookiesyncStatusLabel: string(test.status),
+			})
+	}
+
 }
 
 func TestPrebidCacheRequestTimeMetric(t *testing.T) {
@@ -1342,11 +1369,12 @@ func TestRecordAdapterConnections(t *testing.T) {
 }
 
 func TestDisableAdapterConnections(t *testing.T) {
+	syncerKeys := []string{}
 	prometheusMetrics := NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "server",
-	}, config.DisabledMetrics{AdapterConnectionMetrics: true})
+	}, config.DisabledMetrics{AdapterConnectionMetrics: true}, syncerKeys)
 
 	// Assert counter vector was not initialized
 	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")

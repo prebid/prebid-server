@@ -2,10 +2,12 @@ package usersync
 
 import "math/rand"
 
+// shuffler changes the order of elements in the slice.
 type shuffler interface {
 	shuffle(v []string)
 }
 
+// randomShuffler randombly changes the order of elements in the slice.
 type randomShuffler struct{}
 
 func (randomShuffler) shuffle(v []string) {

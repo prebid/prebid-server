@@ -50,6 +50,24 @@ func cookieTypesAsString() []string {
 	return valuesAsString
 }
 
+func cookieSyncStatusesAsString() []string {
+	values := metrics.CookieSyncStatuses()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
+
+func syncerStatusesAsString() []string {
+	values := metrics.SyncerStatuses()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
+
 func cacheResultsAsString() []string {
 	values := metrics.CacheResults()
 	valuesAsString := make([]string, len(values))

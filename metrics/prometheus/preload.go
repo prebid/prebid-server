@@ -5,7 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func preloadLabelValues(m *Metrics) {
+func preloadLabelValues(m *Metrics, syncerKeys []string) {
 	var (
 		actionValues              = actionsAsString()
 		adapterErrorValues        = adapterErrorsAsString()
@@ -15,15 +15,21 @@ func preloadLabelValues(m *Metrics) {
 		cacheResultValues         = cacheResultsAsString()
 		connectionErrorValues     = []string{connectionAcceptError, connectionCloseError}
 		cookieValues              = cookieTypesAsString()
+		cookieSyncStatusValues    = cookieSyncStatusesAsString()
 		requestStatusValues       = requestStatusesAsString()
 		requestTypeValues         = requestTypesAsString()
 		storedDataFetchTypeValues = storedDataFetchTypesAsString()
 		storedDataErrorValues     = storedDataErrorsAsString()
+		syncerStatusValues        = syncerStatusesAsString()
 		sourceValues              = []string{sourceRequest}
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
 		connectionErrorLabel: connectionErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.cookieSync, map[string][]string{
+		cookiesyncStatusLabel: cookieSyncStatusValues,
 	})
 
 	preloadLabelValuesForCounter(m.impressions, map[string][]string{
@@ -107,11 +113,6 @@ func preloadLabelValues(m *Metrics) {
 		markupDeliveryLabel: bidTypeValues,
 	})
 
-	preloadLabelValuesForCounter(m.adapterCookieSync, map[string][]string{
-		adapterLabel:        adapterValues,
-		privacyBlockedLabel: boolValues,
-	})
-
 	preloadLabelValuesForCounter(m.adapterErrors, map[string][]string{
 		adapterLabel:      adapterValues,
 		adapterErrorLabel: adapterErrorValues,
@@ -152,6 +153,11 @@ func preloadLabelValues(m *Metrics) {
 	preloadLabelValuesForCounter(m.adapterUserSync, map[string][]string{
 		adapterLabel: adapterValues,
 		actionLabel:  actionValues,
+	})
+
+	preloadLabelValuesForCounter(m.syncerRequests, map[string][]string{
+		syncerLabel:       syncerKeys,
+		syncerStatusLabel: syncerStatusValues,
 	})
 
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only

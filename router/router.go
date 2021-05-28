@@ -12,12 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/endpoints/events"
-	"github.com/prebid/prebid-server/errortypes"
-
-	"github.com/prebid/prebid-server/metrics"
-
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/appnexus"
@@ -34,11 +28,15 @@ import (
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/endpoints"
+	"github.com/prebid/prebid-server/endpoints/events"
 	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
@@ -46,7 +44,7 @@ import (
 	"github.com/prebid/prebid-server/router/aspects"
 	"github.com/prebid/prebid-server/server/ssl"
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
-	"github.com/prebid/prebid-server/usersync/usersyncers"
+	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -215,7 +213,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
 
 	// Metrics engine
-	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList, nil) // todo: write up syncers
 	db, shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
@@ -244,7 +242,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatal(err)
 	}
 
-	syncers := usersyncers.NewSyncerMap(cfg)
+	//todo: syncers := usersyncers.NewSyncerMap(cfg)
+	syncers := make(map[string]usersync.Syncer)
 	gvlVendorIDs := bidderInfos.ToGVLVendorIDMap()
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, gvlVendorIDs, generalHttpClient)
 
@@ -286,7 +285,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(bidderInfos, defaultAliases))
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(bidderInfos, cfg.Adapters, defaultAliases))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
-	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics, activeBidders))
+	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics, activeBidders).Handle)
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
 	r.ServeFiles("/static/*filepath", http.Dir("static"))

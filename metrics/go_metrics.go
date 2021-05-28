@@ -608,16 +608,17 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 }
 
 // RecordCookieSync implements a part of the MetricsEngine interface. Records a cookie sync request
-func (me *Metrics) RecordCookieSync() {
+func (me *Metrics) RecordCookieSync(status CookieSyncStatus) {
+	// TODO: add influx db metrics
 	me.CookieSyncMeter.Mark(1)
 }
 
-// RecordAdapterCookieSync implements a part of the MetricsEngine interface. Records a cookie sync adpter sync request and gdpr status
-func (me *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
-	me.CookieSyncGen[adapter].Mark(1)
-	if gdprBlocked {
-		me.CookieSyncGDPRPrevent[adapter].Mark(1)
-	}
+// RecordSyncerRequest implements a part of the MetricsEngine interface. Records a cookie sync syncer request and status
+func (me *Metrics) RecordSyncerRequest(key string, status SyncerStatus) {
+	// me.CookieSyncGen[adapter].Mark(1)
+	// if blockedByPrivacy {
+	// 	me.CookieSyncGDPRPrevent[adapter].Mark(1)
+	// }
 }
 
 // RecordUserIDSet implements a part of the MetricsEngine interface. Records a cookie setuid request

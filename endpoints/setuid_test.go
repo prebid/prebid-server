@@ -399,9 +399,9 @@ func doRequest(req *http.Request, metrics metrics.MetricsEngine, validFamilyName
 		allowPI:   true,
 	}
 	analytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
-	syncers := make(map[openrtb_ext.BidderName]usersync.Usersyncer)
+	syncers := make(map[string]usersync.Syncer)
 	for _, name := range validFamilyNames {
-		syncers[openrtb_ext.BidderName(name)] = newFakeSyncer(name)
+		syncers[name] = newFakeSyncer(name)
 	}
 
 	endpoint := NewSetUIDEndpoint(cfg.HostCookie, syncers, perms, analytics, metrics)
@@ -448,22 +448,26 @@ func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrt
 	return g.allowPI, g.allowPI, g.allowPI, nil
 }
 
-func newFakeSyncer(familyName string) usersync.Usersyncer {
+func newFakeSyncer(key string) usersync.Syncer {
 	return fakeSyncer{
-		familyName: familyName,
+		key: key,
 	}
 }
 
 type fakeSyncer struct {
-	familyName string
+	key string
 }
 
 // FamilyNames implements the Usersyncer interface.
-func (s fakeSyncer) FamilyName() string {
-	return s.familyName
+func (s fakeSyncer) Key() string {
+	return s.key
+}
+
+func (s fakeSyncer) SupportsType(syncTypes []usersync.SyncType) bool {
+	return true
 }
 
 // GetUsersyncInfo implements the Usersyncer interface with a no-op.
-func (s fakeSyncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.UsersyncInfo, error) {
-	return nil, nil
+func (s fakeSyncer) GetSync(syncTypes []usersync.SyncType, privacyPolicies privacy.Policies) (usersync.Sync, error) {
+	return usersync.Sync{}, nil
 }

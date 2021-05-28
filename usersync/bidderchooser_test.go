@@ -3,7 +3,6 @@ package usersync
 import (
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,37 +17,37 @@ func TestBidderChooserChoose(t *testing.T) {
 	testCases := []struct {
 		description      string
 		givenRequested   []string
-		givenCooperative config.UserSyncCooperative
+		givenCooperative Cooperative
 		expected         []string
 	}{
 		{
 			description:      "No Coop - Nil",
 			givenRequested:   nil,
-			givenCooperative: config.UserSyncCooperative{Enabled: false},
+			givenCooperative: Cooperative{Enabled: false},
 			expected:         []string{"a2", "a1"},
 		},
 		{
 			description:      "No Coop - Empty",
 			givenRequested:   []string{},
-			givenCooperative: config.UserSyncCooperative{Enabled: false},
-			expected:         []string{},
+			givenCooperative: Cooperative{Enabled: false},
+			expected:         []string{"a2", "a1"},
 		},
 		{
 			description:      "No Coop - One",
 			givenRequested:   []string{"r"},
-			givenCooperative: config.UserSyncCooperative{Enabled: false},
+			givenCooperative: Cooperative{Enabled: false},
 			expected:         []string{"r"},
 		},
 		{
 			description:      "No Coop - Many",
 			givenRequested:   []string{"r1", "r2"},
-			givenCooperative: config.UserSyncCooperative{Enabled: false},
+			givenCooperative: Cooperative{Enabled: false},
 			expected:         []string{"r2", "r1"},
 		},
 		{
 			description:      "Coop - Integration Test",
 			givenRequested:   []string{"r1", "r2"},
-			givenCooperative: config.UserSyncCooperative{Enabled: true, PriorityGroups: [][]string{{"pr1A", "pr1B"}, {"pr2A", "pr2B"}}},
+			givenCooperative: Cooperative{Enabled: true, PriorityGroups: [][]string{{"pr1A", "pr1B"}, {"pr2A", "pr2B"}}},
 			expected:         []string{"r2", "r1", "pr1B", "pr1A", "pr2B", "pr2A", "a2", "a1"},
 		},
 	}
