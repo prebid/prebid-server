@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
@@ -441,9 +441,9 @@ func TestShouldUsersync(t *testing.T) {
 type auctionMockPermissions struct {
 	allowBidderSync  bool
 	allowHostCookies bool
-	allowPI          bool
-	allowGeo         bool
-	allowID          bool
+	allowBidRequest  bool
+	passGeo          bool
+	passID           bool
 }
 
 func (m *auctionMockPermissions) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
@@ -454,8 +454,8 @@ func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder o
 	return m.allowBidderSync, nil
 }
 
-func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
-	return m.allowPI, m.allowGeo, m.allowID, nil
+func (m *auctionMockPermissions) AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
+	return m.allowBidRequest, m.passGeo, m.passID, nil
 }
 
 func TestBidSizeValidate(t *testing.T) {

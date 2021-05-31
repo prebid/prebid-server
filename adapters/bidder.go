@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -136,7 +136,8 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 }
 
 type ExtraRequestInfo struct {
-	PbsEntryPoint metrics.RequestType
+	PbsEntryPoint              metrics.RequestType
+	GlobalPrivacyControlHeader string
 }
 
 type Builder func(openrtb_ext.BidderName, config.Adapter) (Bidder, error)

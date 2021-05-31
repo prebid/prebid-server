@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -1770,7 +1770,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames()),
 		cache:               &wellBehavedCache{},
 		cacheTime:           0,
-		gDPR:                gdpr.AlwaysFail{},
+		gDPR:                &permissionsMock{allowAllBidders: true},
 		currencyConverter:   currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		UsersyncIfAmbiguous: privacyConfig.GDPR.UsersyncIfAmbiguous,
 		privacyConfig:       privacyConfig,
