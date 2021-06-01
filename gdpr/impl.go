@@ -116,10 +116,6 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 		return false, nil
 	}
 
-	if parsedConsent.Version() != 2 {
-		return false, nil
-	}
-
 	if !p.cfg.TCF2.Purpose1.Enabled {
 		return true, nil
 	}
@@ -137,11 +133,12 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 		return false, false, false, err
 	}
 
+	// vendor will be nil if not a valid TCF2 consent string
 	if vendor == nil {
 		return false, false, false, nil
 	}
 
-	if parsedConsent.Version() != 2 || !p.cfg.TCF2.Enabled {
+	if !p.cfg.TCF2.Enabled {
 		return true, false, false, nil
 	}
 

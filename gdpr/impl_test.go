@@ -798,3 +798,21 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		assert.EqualValuesf(t, td.passID, passID, "PassID failure on %s", td.description)
 	}
 }
+
+func TestTCF1Consent(t *testing.T) {
+	bidderAllowedByConsent := openrtb_ext.BidderAppnexus
+	tcf1Consent := "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA"
+
+	perms := permissionsImpl{
+		vendorIDs: map[openrtb_ext.BidderName]uint16{
+			openrtb_ext.BidderAppnexus: 2,
+		},
+	}
+
+	bidReq, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), bidderAllowedByConsent, "", SignalYes, tcf1Consent, false)
+
+	assert.Nil(t, err, "TCF1 consent - no error returned")
+	assert.Equal(t, false, bidReq, "TCF1 consent - bid request not allowed")
+	assert.Equal(t, false, passGeo, "TCF1 consent - passing geo not allowed")
+	assert.Equal(t, false, passID, "TCF1 consent - passing id not allowed")
+}
