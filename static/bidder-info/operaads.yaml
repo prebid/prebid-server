@@ -1,0 +1,15 @@
+maintainer:
+  email: adx@opera.com
+#gvlVendorID: 
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

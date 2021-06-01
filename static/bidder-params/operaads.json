@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "A schema which validates params accepted by the OperaAds adapter",
+  "properties": {
+    "placementId": {
+      "description": "Placement ID",
+      "type": "string"
+    },
+    "endpointId": {
+      "description": "Endpoint ID",
+      "type": "string"
+    },
+    "publisherId": {
+      "description": "Publisher ID",
+      "type": "string"
+    }
+  },
+  "required": [
+    "placementId",
+    "endpointId",
+    "publisherId"
+  ],
+  "title": "OperaAds Adapter Params",
+  "type": "object"
+}
