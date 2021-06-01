@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAlgorix, config.Adapter{
-		Endpoint: "https://xyz.svr-algorix.com/rtb/sa?sid={{.SourceId}}&token={{.AccountID}}"})
+		Endpoint: "https://test.com?sid={{.SourceId}}&token={{.AccountID}}"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

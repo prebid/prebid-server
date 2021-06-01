@@ -20,7 +20,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://xyz.svr-algorix.com/rtb/sa?sid=testSid&token=testToken",
+        "uri": "https://test.com?sid=testSid&token=testToken",
         "body": {
           "id": "test-request-id",
           "imp": [
