@@ -2,153 +2,121 @@ package jsonutil
 
 import (
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
 )
 
-func TestDropSingleElementAfterAnotherElement(t *testing.T) {
-	inputData := []byte(`{
-                "consent": "TESTCONSENT",
-                "consented_providers_settings": {
-                    "test": 1,
-                    "consented_providers": [1608,765,492,1365,5678,1545,2563,1411]
-                }
-            }`)
-	res, err := DropElement(inputData, "consented_providers")
+func TestDropElement(t *testing.T) {
 
-	expectedRes := []byte(`{
-                "consent": "TESTCONSENT",
-                "consented_providers_settings": {
-                    "test": 1
-                }
-            }`)
+	tests := []struct {
+		description     string
+		input           []byte
+		elementToRemove string
+		output          []byte
+		errorExpected   bool
+		errorContains   string
+	}{
+		{
+			description:     "Drop Single Element After Another Element",
+			input:           []byte(`{"consent": "TESTCONSENT","consented_providers_settings": {"test": 1,"consented_providers": [1608,765,492]}}`),
+			elementToRemove: "consented_providers",
+			output:          []byte(`{"consent": "TESTCONSENT","consented_providers_settings": {"test": 1}}`),
+			errorExpected:   false,
+			errorContains:   "",
+		},
+		{
+			description:     "Drop Single Element Before Another Element",
+			input:           []byte(`{"consent": "TESTCONSENT","consented_providers_settings": {"consented_providers": [1608,765,492],"test": 1}}`),
+			elementToRemove: "consented_providers",
+			output:          []byte(`{"consent": "TESTCONSENT","consented_providers_settings": {"test": 1}}`),
+			errorExpected:   false,
+			errorContains:   "",
+		},
+		{
+			description:     "Drop Single Element",
+			input:           []byte(`{"consent": "TESTCONSENT","consented_providers_settings": {"consented_providers": [1545,2563,1411]}}`),
+			elementToRemove: "consented_providers",
+			output:          []byte(`{"consent": "TESTCONSENT","consented_providers_settings": {}}`),
+			errorExpected:   false,
+			errorContains:   "",
+		},
+		{
+			description:     "Drop Single Element string",
+			input:           []byte(`{"consent": "TESTCONSENT","consented_providers_settings": {"consented_providers": "test"}}`),
+			elementToRemove: "consented_providers",
+			output:          []byte(`{"consent": "TESTCONSENT","consented_providers_settings": {}}`),
+			errorExpected:   false,
+			errorContains:   "",
+		},
+		{
+			description:     "Drop Parent Element Between Two Elements",
+			input:           []byte(`{"consent": "TESTCONSENT","consented_providers_settings": {"consented_providers": [1608,765,492], "test": 1},"test": 123}`),
+			elementToRemove: "consented_providers_settings",
+			output:          []byte(`{"consent": "TESTCONSENT","test": 123}`),
+			errorExpected:   false,
+			errorContains:   "",
+		},
+		{
+			description:     "Drop Parent Element Before Element",
+			input:           []byte(`{"consented_providers_settings": {"consented_providers": [1608,765,492], "test": 1},"test": 123}`),
+			elementToRemove: "consented_providers_settings",
+			output:          []byte(`{"test": 123}`),
+			errorExpected:   false,
+			errorContains:   "",
+		},
+		{
+			description:     "Drop Parent Element After Element",
+			input:           []byte(`{"consent": "TESTCONSENT","consented_providers_settings": {"consented_providers": [1608,765,492], "test": 1}}`),
+			elementToRemove: "consented_providers_settings",
+			output:          []byte(`{"consent": "TESTCONSENT"}`),
+			errorExpected:   false,
+			errorContains:   "",
+		},
+		{
+			description:     "Drop Parent Element Only",
+			input:           []byte(`{"consented_providers_settings": {"consented_providers": [1608,765,492], "test": 1}}`),
+			elementToRemove: "consented_providers_settings",
+			output:          []byte(`{}`),
+			errorExpected:   false,
+			errorContains:   "",
+		},
+		{
+			description:     "Drop Element That Doesn't Exist",
+			input:           []byte(`{"consented_providers_settings": {"consented_providers": [1608,765,492], "test": 1}}`),
+			elementToRemove: "test2",
+			output:          []byte(`{"consented_providers_settings": {"consented_providers": [1608,765,492], "test": 1}}`),
+			errorExpected:   false,
+			errorContains:   "",
+		},
+		//Errors
+		{
+			description:     "Error Decode",
+			input:           []byte(`{"consented_providers_settings": {"consented_providers": ["123",1,,1365,5678,1545,2563,1411], "test": 1}}`),
+			elementToRemove: "consented_providers",
+			output:          []byte(``),
+			errorExpected:   true,
+			errorContains:   "looking for beginning of value",
+		},
+		{
+			description:     "Error Malformed",
+			input:           []byte(`{consented_providers_settings: {"consented_providers": [1365,5678,1545,2563,1411], "test": 1}}`),
+			elementToRemove: "consented_providers",
+			output:          []byte(``),
+			errorExpected:   true,
+			errorContains:   "invalid character",
+		},
+	}
 
-	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, expectedRes, res, "Result is incorrect")
+	for _, tt := range tests {
+		res, err := DropElement(tt.input, tt.elementToRemove)
 
-}
+		if !tt.errorExpected {
+			assert.NoError(t, err, "Error should be nil")
+			assert.Equal(t, tt.output, res, "Result is incorrect")
+		} else {
+			assert.Error(t, err, "Error should not be nil")
+			assert.True(t, strings.Contains(err.Error(), tt.errorContains))
+		}
 
-func TestDropSingleElementBeforeAnotherElement(t *testing.T) {
-	inputData := []byte(`{
-                "consent": "TESTCONSENT",
-                "consented_providers_settings": {
-                    "consented_providers": [1608,765,492,1365,5678,1545,2563,1411],
-                    "test": 1
-                }
-            }`)
-	res, err := DropElement(inputData, "consented_providers")
-
-	expectedRes := []byte(`{
-                "consent": "TESTCONSENT",
-                "consented_providers_settings": {
-                    "test": 1
-                }
-            }`)
-
-	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, expectedRes, res, "Result is incorrect")
-
-}
-
-func TestDropSingleElementSingleElement(t *testing.T) {
-	inputData := []byte(`{
-                "consent": "TESTCONSENT",
-                "consented_providers_settings": {
-                    "consented_providers": [1608,765,492,1365,5678,1545,2563,1411]
-                }
-            }`)
-	res, err := DropElement(inputData, "consented_providers")
-
-	expectedRes := []byte(`{
-                "consent": "TESTCONSENT",
-                "consented_providers_settings": {
-                }
-            }`)
-
-	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, expectedRes, res, "Result is incorrect")
-
-}
-
-func TestDropSingleElementSingleElementString(t *testing.T) {
-	inputData := []byte(`{
-                "consent": "TESTCONSENT",
-                "consented_providers_settings": {
-                    "consented_providers": "test"
-                }
-            }`)
-	res, err := DropElement(inputData, "consented_providers")
-
-	expectedRes := []byte(`{
-                "consent": "TESTCONSENT",
-                "consented_providers_settings": {
-                }
-            }`)
-
-	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, expectedRes, res, "Result is incorrect")
-
-}
-
-func TestDropParentElementBetweenTwoElements(t *testing.T) {
-	inputData := []byte(`{
-                "consent": "TESTCONSENT",
-                "consented_providers_settings": {"consented_providers": [1608,765,492,1365,5678,1545,2563,1411], "test": 1
-                },"test": 123
-            }`)
-	res, err := DropElement(inputData, "consented_providers_settings")
-
-	expectedRes := []byte(`{
-                "consent": "TESTCONSENT","test": 123
-            }`)
-
-	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, expectedRes, res, "Result is incorrect")
-
-}
-
-func TestDropParentElementBeforeElement(t *testing.T) {
-	inputData := []byte(`{
-                "consented_providers_settings": {"consented_providers": [1608,765,492,1365,5678,1545,2563,1411], "test": 1
-                },"test": 123
-            }`)
-	res, err := DropElement(inputData, "consented_providers_settings")
-
-	expectedRes := []byte(`{"test": 123
-            }`)
-
-	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, expectedRes, res, "Result is incorrect")
-
-}
-
-func TestDropParentElementAfterElement(t *testing.T) {
-	inputData := []byte(`{
-                "consent": "TESTCONSENT",
-                "consented_providers_settings": {"consented_providers": [1608,765,492,1365,5678,1545,2563,1411], "test": 1
-                }
-            }`)
-	res, err := DropElement(inputData, "consented_providers_settings")
-
-	expectedRes := []byte(`{
-                "consent": "TESTCONSENT"
-            }`)
-
-	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, expectedRes, res, "Result is incorrect")
-
-}
-
-func TestDropParentElementOnlyElement(t *testing.T) {
-	inputData := []byte(`{
-                "consented_providers_settings": {"consented_providers": [1608,765,492,1365,5678,1545,2563,1411], "test": 1
-                }
-            }`)
-	res, err := DropElement(inputData, "consented_providers_settings")
-
-	expectedRes := []byte(`{
-            }`)
-
-	assert.NoError(t, err, "Error should be nil")
-	assert.Equal(t, expectedRes, res, "Result is incorrect")
-
+	}
 }
