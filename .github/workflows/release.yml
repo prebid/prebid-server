@@ -14,8 +14,8 @@ jobs:
       - name: Get Version
         id: get_version
         run: |
-          echo ::set-output name=tag::${GITHUB_REF/refs\/tags\//}
-          echo ::set-output name=version::${GITHUB_REF/refs\/tags\/v/}
+          echo ::set-output name=tag::${GITHUB_REF/refs\/tags\/}
+          echo ::set-output name=version::${GITHUB_REF/refs\/tags\/v}
 
       - name: Create & Publish Release
         uses: release-drafter/release-drafter@v5.12.1
