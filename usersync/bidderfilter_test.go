@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBidderFilter(t *testing.T) {
-	bidder := "foo"
+func TestNewBidderFilter(t *testing.T) {
+	bidder := "a"
 
 	testCases := []struct {
 		description string
@@ -78,7 +78,7 @@ func TestBidderFilter(t *testing.T) {
 }
 
 func TestBidderFilterForAll(t *testing.T) {
-	bidder := "foo"
+	bidder := "a"
 
 	testCases := []struct {
 		description string

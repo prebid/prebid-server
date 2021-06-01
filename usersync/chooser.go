@@ -1,6 +1,6 @@
 package usersync
 
-// Chooser determines which user syncers are eligible for a given user sync request.
+// Chooser determines which syncers are eligible for a given request.
 type Chooser interface {
 	// Choose considers bidders to sync, filters the bidders, and returns the result of the
 	// user sync selection.
@@ -21,7 +21,7 @@ func NewChooser(bidderSyncerLookup map[string]Syncer) Chooser {
 	}
 }
 
-// Request specifies a user sync request from an end user.
+// Request specifies a user sync request.
 type Request struct {
 	Bidders        []string
 	Cooperative    Cooperative
@@ -31,33 +31,33 @@ type Request struct {
 }
 
 // Cooperative specifies the settings for cooperative syncing for a given request, where bidders
-// other than used by the publisher are considered for user syncing.
+// other than those used by the publisher are considered for syncing.
 type Cooperative struct {
 	Enabled        bool
 	PriorityGroups [][]string
 }
 
-// Result specifies which bidders were included in the evaluation and which syncers were ultimately chosen.
+// Result specifies which bidders were included in the evaluation and which syncers were chosen.
 type Result struct {
 	BiddersEvaluated []BidderEvaluation
 	Status           Status
 	SyncersChosen    []SyncerChoice
 }
 
-// BidderEvaluation specifies the result of a bidder evaluation for a user sync.
+// BidderEvaluation specifies which bidders were considered to be synced.
 type BidderEvaluation struct {
 	Bidder    string
 	SyncerKey string
 	Status    Status
 }
 
-// SyncerChoice specifies a syncer chosen for a user sync.
+// SyncerChoice specifies a syncer chosen.
 type SyncerChoice struct {
 	Bidder string
 	Syncer Syncer
 }
 
-// Status specifies the result of a user sync.
+// Status specifies the result of a sync evaluation.
 type Status int
 
 const (
@@ -71,7 +71,7 @@ const (
 	// or specific bidder syncing.
 	StatusBlockedByGDPR
 
-	// StatusBlockedByCCPA specifiers a user's CCPA consent explicitly forbids bidder syncing.
+	// StatusBlockedByCCPA specifies a user's CCPA consent explicitly forbids bidder syncing.
 	StatusBlockedByCCPA
 
 	// StatusAlreadySynced specifies a user's cookie has an existing non-expired sync for a specific bidder.
@@ -83,12 +83,11 @@ const (
 	// StatusTypeNotSupported specifies a requested sync type is not supported by a specific bidder.
 	StatusTypeNotSupported
 
-	// StatusDuplicate specifies the requested bidders included a duplicate value either explicitly
-	// or through cooperative syncing.
+	// StatusDuplicate specifies the bidder is a duplicate or shared a syncer key with another bidder choice.
 	StatusDuplicate
 )
 
-// Privacy determines which privacy policies should be enforced for a user sync request.
+// Privacy determines which privacy policies will be enforced for a user sync request.
 type Privacy interface {
 	GDPRAllowsHostCookie() bool
 	GDPRAllowsBidderSync(bidder string) bool

@@ -54,7 +54,8 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 
 		query := r.URL.Query()
 
-		familyName, err := getFamilyName(query, validKeyLookup)
+		// get key + verify we have a syncer for the key
+		syncerKey, err := getFamilyName(query, validKeyLookup)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -64,14 +65,14 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 			so.Status = http.StatusBadRequest
 			return
 		}
-		so.Bidder = familyName
+		so.Bidder = syncerKey
 
 		if shouldReturn, status, body := preventSyncsGDPR(query.Get("gdpr"), query.Get("gdpr_consent"), perms); shouldReturn {
 			w.WriteHeader(status)
 			w.Write([]byte(body))
 			metricsEngine.RecordUserIDSet(metrics.UserLabels{
 				Action: metrics.RequestActionGDPR,
-				Bidder: openrtb_ext.BidderName(familyName),
+				Bidder: openrtb_ext.BidderName(syncerKey),
 			})
 			so.Status = status
 			return
@@ -81,15 +82,15 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 		so.UID = uid
 
 		if uid == "" {
-			pc.Unsync(familyName)
+			pc.Unsync(syncerKey)
 		} else {
-			err = pc.TrySync(familyName, uid)
+			err = pc.TrySync(syncerKey, uid)
 		}
 
 		if err == nil {
 			labels := metrics.UserLabels{
 				Action: metrics.RequestActionSet,
-				Bidder: openrtb_ext.BidderName(familyName),
+				Bidder: openrtb_ext.BidderName(syncerKey),
 			}
 			metricsEngine.RecordUserIDSet(labels)
 			so.Success = true
@@ -97,6 +98,9 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 		pc.SetCookieOnResponse(w, setSiteCookie, &cfg, cookieTTL)
+
+		// special return cotnet for image and iframe
+		// for image, promote the pixel we already have to a common util value
 	})
 }
 

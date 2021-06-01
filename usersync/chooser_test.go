@@ -208,7 +208,7 @@ func TestChooserChoose(t *testing.T) {
 	bidders := []string{"anyRequested"}
 	biddersAvailable := []string{"anyAvailable"}
 	for _, test := range testCases {
-		// set request values which don't need to be specified for each test
+		// set request values which don't need to be specified for each test case
 		test.givenRequest.Bidders = bidders
 		test.givenRequest.SyncTypeFilter = syncTypeFilter
 		test.givenRequest.Cooperative = cooperativeConfig

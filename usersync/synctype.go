@@ -1,20 +1,38 @@
 package usersync
 
-// SyncType specifies the protocol used to perform a user sync.
-type SyncType int
+import (
+	"fmt"
+	"strings"
+)
+
+// SyncType specifies the mechanism used to perform a user sync.
+type SyncType string
 
 const (
 	// SyncTypeUnknown specifies the user sync type is invalid or not specified.
-	SyncTypeUnknown SyncType = -1
+	SyncTypeUnknown SyncType = ""
 
-	// SyncTypeIFrame specifies the user sync is to be performed within an HTML `iframe`
+	// SyncTypeIFrame specifies the user sync is to be performed within an HTML iframe
 	// and to expect the server to return a valid HTML page with an embedded script.
-	SyncTypeIFrame SyncType = 0
+	SyncTypeIFrame SyncType = "iframe"
 
 	// SyncTypeRedirect specifies the user sync is to be performed within an HTML image
 	// and to expect the server to return a 302 redirect.
-	SyncTypeRedirect SyncType = 1
+	SyncTypeRedirect SyncType = "redirect"
 )
+
+// SyncTypeParse returns the SyncType parsed from a string, case insensitive.
+func SyncTypeParse(v string) (SyncType, error) {
+	if strings.EqualFold(v, string(SyncTypeIFrame)) {
+		return SyncTypeIFrame, nil
+	}
+
+	if strings.EqualFold(v, string(SyncTypeRedirect)) {
+		return SyncTypeRedirect, nil
+	}
+
+	return SyncTypeUnknown, fmt.Errorf("invalid sync type `%s`", v)
+}
 
 // SyncTypeFilter determines which sync types, if any, the bidder is permitted to use.
 type SyncTypeFilter struct {
@@ -35,15 +53,4 @@ func (t SyncTypeFilter) ForBidder(bidder string) []SyncType {
 	}
 
 	return syncTypes
-}
-
-func (t SyncType) String() string {
-	switch t {
-	case SyncTypeIFrame:
-		return "iframe"
-	case SyncTypeRedirect:
-		return "redirect"
-	default:
-		return ""
-	}
 }

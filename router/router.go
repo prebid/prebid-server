@@ -242,8 +242,11 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatal(err)
 	}
 
-	//todo: syncers := usersyncers.NewSyncerMap(cfg)
-	syncers := make(map[string]usersync.Syncer)
+	syncers, err := usersync.NewSyncersFromBidderInfos(bidderInfos)
+	if err != nil {
+		glog.Fatal(err) // better error message? is this ok to be sepaerate from the validation pass?
+	}
+
 	gvlVendorIDs := bidderInfos.ToGVLVendorIDMap()
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, gvlVendorIDs, generalHttpClient)
 

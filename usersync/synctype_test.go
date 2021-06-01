@@ -51,31 +51,48 @@ func TestSyncTypeFilter(t *testing.T) {
 	}
 }
 
-func TestString(t *testing.T) {
+func TestSyncTypeParse(t *testing.T) {
 	testCases := []struct {
-		description string
-		given       SyncType
-		expected    string
+		description   string
+		given         string
+		expected      SyncType
+		expectedError string
 	}{
 		{
 			description: "IFrame",
-			given:       SyncTypeIFrame,
-			expected:    "iframe",
+			given:       "iframe",
+			expected:    SyncTypeIFrame,
+		},
+		{
+			description: "IFrame - Case Insensitive",
+			given:       "iFrAmE",
+			expected:    SyncTypeIFrame,
 		},
 		{
 			description: "Redirect",
-			given:       SyncTypeRedirect,
-			expected:    "redirect",
+			given:       "redirect",
+			expected:    SyncTypeRedirect,
 		},
 		{
-			description: "Unknown",
-			given:       SyncType(42),
-			expected:    "",
+			description: "Redirect - Case Insensitive",
+			given:       "ReDiReCt",
+			expected:    SyncTypeRedirect,
+		},
+		{
+			description:   "Invalid",
+			given:         "invalid",
+			expectedError: "invalid sync type `invalid`",
 		},
 	}
 
 	for _, test := range testCases {
-		result := test.given.String()
-		assert.Equal(t, test.expected, result)
+		result, err := SyncTypeParse(test.given)
+
+		if test.expectedError == "" {
+			assert.NoError(t, err, test.description+":err")
+			assert.Equal(t, test.expected, result, test.description+":result")
+		} else {
+			assert.EqualError(t, err, test.expectedError, test.description+":err")
+		}
 	}
 }

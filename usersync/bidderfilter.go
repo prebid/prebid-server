@@ -1,6 +1,6 @@
 package usersync
 
-// BidderFilterMode represents the comparison approach of a BidderFilter.
+// BidderFilterMode represents the inclusion mode of a BidderFilter.
 type BidderFilterMode int
 
 const (
@@ -15,8 +15,8 @@ type BidderFilter struct {
 	mode          BidderFilterMode
 }
 
-// Allowed returns true if the bidder has permission per the filter settings and returns false if either
-// the bidder is denied permission or if the BidderFilter is configured for an unsupported filter mode.
+// Allowed returns true if the filter determines the bidder has permission and false if the bidder
+// does not have permission or if the BidderFilter is set to an unsupported BidderFilterMode.
 func (t BidderFilter) Allowed(bidder string) bool {
 	switch t.mode {
 	case BidderFilterModeInclude:

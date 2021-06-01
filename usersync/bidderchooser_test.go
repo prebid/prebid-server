@@ -54,9 +54,9 @@ func TestBidderChooserChoose(t *testing.T) {
 
 	for _, test := range testCases {
 		chooser := standardBidderChooser{shuffler: shuffler}
-		chosen := chooser.choose(test.givenRequested, available, test.givenCooperative)
+		result := chooser.choose(test.givenRequested, available, test.givenCooperative)
 
-		assert.Equal(t, test.expected, chosen, test.description)
+		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
@@ -110,9 +110,9 @@ func TestBidderChooserCooperative(t *testing.T) {
 
 	for _, test := range testCases {
 		chooser := standardBidderChooser{shuffler: shuffler}
-		chosen := chooser.chooseCooperative(test.givenRequested, available, test.givenPriorityGroups)
+		result := chooser.chooseCooperative(test.givenRequested, available, test.givenPriorityGroups)
 
-		assert.Equal(t, test.expected, chosen, test.description)
+		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
@@ -145,10 +145,10 @@ func TestBidderChooserShuffledCopy(t *testing.T) {
 		givenCopy := copySlice(test.given)
 
 		chooser := standardBidderChooser{shuffler: shuffler}
-		shuffled := chooser.shuffledCopy(test.given)
+		result := chooser.shuffledCopy(test.given)
 
-		assert.Equal(t, givenCopy, test.given, test.description+":input unchanged")
-		assert.Equal(t, test.expected, shuffled, test.description+":expected")
+		assert.Equal(t, givenCopy, test.given, test.description+":input")
+		assert.Equal(t, test.expected, result, test.description+":result")
 	}
 }
 
@@ -239,14 +239,14 @@ func TestBidderChooserShuffledAppend(t *testing.T) {
 		givenBCopy := copySlice(test.givenB)
 
 		chooser := standardBidderChooser{shuffler: shuffler}
-		shuffled := chooser.shuffledAppend(test.givenA, test.givenB)
+		result := chooser.shuffledAppend(test.givenA, test.givenB)
 
-		assert.Equal(t, givenBCopy, test.givenB, test.description+":append input unchanged")
-		assert.Equal(t, test.expected, shuffled, test.description+":expected")
+		assert.Equal(t, givenBCopy, test.givenB, test.description+":input")
+		assert.Equal(t, test.expected, result, test.description+":result")
 	}
 }
 
-// copySlice clones a slice with proper nil handling.
+// copySlice returns a cloned a slice or nil.
 func copySlice(a []string) []string {
 	var aCopy []string
 	if a != nil {

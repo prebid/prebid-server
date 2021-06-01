@@ -495,7 +495,7 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 			if err == nil {
 				bidder.UsersyncInfo = &pbs.UsersyncInfo{
 					URL:         sync.URL,
-					Type:        sync.Type.String(),
+					Type:        string(sync.Type),
 					SupportCORS: sync.SupportCORS,
 				}
 			} else {
