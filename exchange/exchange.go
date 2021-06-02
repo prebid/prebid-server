@@ -169,13 +169,13 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	}
 
 	if debugLog == nil {
-		debugLog = &DebugLog{Enabled: false}
+		debugLog = &DebugLog{Enabled: false, DebugEnabledOrOverridden: false}
 	}
 
 	requestDebugInfo := getDebugInfo(r.BidRequest, requestExt)
 
-	debugInfo := debugLog.DebugOverride || (requestDebugInfo && r.Account.DebugAllow)
-	debugLog.Enabled = debugLog.DebugOverride || (debugLog.Enabled && r.Account.DebugAllow)
+	debugInfo := debugLog.DebugEnabledOrOverridden || (requestDebugInfo && r.Account.DebugAllow)
+	debugLog.Enabled = debugLog.DebugEnabledOrOverridden || r.Account.DebugAllow
 
 	if debugInfo {
 		ctx = e.makeDebugContext(ctx, debugInfo)

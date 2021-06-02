@@ -346,7 +346,7 @@ func TestDebugBehaviour(t *testing.T) {
 		}
 		debugLog := &DebugLog{}
 		if test.debugData.headerOverrideDebugAllowed {
-			debugLog = &DebugLog{DebugOverride: true}
+			debugLog = &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
 		}
 		// Run test
 		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, debugLog)
