@@ -110,12 +110,12 @@ func TestDropElement(t *testing.T) {
 	for _, tt := range tests {
 		res, err := DropElement(tt.input, tt.elementToRemove)
 
-		if !tt.errorExpected {
-			assert.NoError(t, err, "Error should be nil")
-			assert.Equal(t, tt.output, res, "Result is incorrect")
-		} else {
+		if tt.errorExpected {
 			assert.Error(t, err, "Error should not be nil")
 			assert.True(t, strings.Contains(err.Error(), tt.errorContains))
+		} else {
+			assert.NoError(t, err, "Error should be nil")
+			assert.Equal(t, tt.output, res, "Result is incorrect")
 		}
 
 	}

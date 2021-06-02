@@ -35,8 +35,7 @@
                 "consent": "TESTCONSENT",
                 "consented_providers_settings": {
                     "consented_providers": [1608,765,492,1365,5678,1545,2563,1411]
-                },
-                "test": 123
+                }
             }
         },
         "tmax": 500
@@ -87,8 +86,7 @@
                         "id": "db089de9-a62e-4861-a881-0ff15e052516",
                         "buyeruid": "v4_bidder_token",
                         "ext": {
-                            "consent": "TESTCONSENT",
-                            "test": 123
+                            "consent": "TESTCONSENT"
                         }
                     },
                     "tmax": 500,
