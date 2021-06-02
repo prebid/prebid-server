@@ -2557,6 +2557,8 @@ func TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice(t *testing.T) 
 	// This happens when current processing bidder has a bid that has same de-duplication key as a bid from already processed bidder
 	// and already processed bid was selected to be removed
 
+	//In this test case bids bid_idApn1_1 and bid_idApn1_2 will be removed due to hardcoded "fakeRandomDeduplicateBidBooleanGenerator{true}"
+
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
