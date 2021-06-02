@@ -1213,12 +1213,12 @@ func TestValidateCustomRates(t *testing.T) {
 			outCurrencyError:   nil,
 		},
 		{
-			desc: "empty custom currency rates but UsePBSRates is set to false, return error",
+			desc: "empty custom currency rates but UsePBSRates is set to false, we don't return error nor warning",
 			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
 				ConversionRates: map[string]map[string]float64{},
 				UsePBSRates:     &boolFalse,
 			},
-			outCurrencyError: &errortypes.BadInput{Message: "Required custom currency rates field is empty"},
+			outCurrencyError: nil,
 		},
 		{
 			desc: "empty custom currency rates but UsePBSRates is set to true, no need to return error because we can use PBS rates",
@@ -2797,7 +2797,7 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 		}
 	}
 
-	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.BidReqConversions)
+	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 	for _, bidReqCur := range r.BidRequest.Cur {
 		if conversionRate, err = conversions.GetRate(currencyFrom, bidReqCur); err == nil {
 			bidResponse.Cur = bidReqCur

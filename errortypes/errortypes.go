@@ -168,8 +168,7 @@ func (err *BidderTemporarilyDisabled) Severity() Severity {
 }
 
 // NoConversionRate is thrown by the currency.Conversions GetRate(from string, to string) method
-// whenever the conversion rate between the two currencies passed as arguments, nor its reciprocal, is found
-// in the currencies rates map nor its reciprocal rate.
+// when the conversion rate between the two currencies, nor its reciprocal, can be found.
 type NoConversionRate struct {
 	fromCur, toCur string
 }

@@ -345,7 +345,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb2.BidRequest) []error {
 			return []error{err}
 		}
 
-		if err := validateCustomRates(bidExt.Prebid.BidReqConversions); err != nil {
+		if err := validateCustomRates(bidExt.Prebid.CurrencyConversions); err != nil {
 			return []error{err}
 		}
 	}
@@ -448,14 +448,6 @@ func validateSChains(req *openrtb_ext.ExtRequest) error {
 func validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) error {
 	if bidReqCurrencyRates == nil {
 		return nil
-	}
-
-	customRatesOnly := bidReqCurrencyRates.UsePBSRates != nil && !(*bidReqCurrencyRates.UsePBSRates)
-	if customRatesOnly && len(bidReqCurrencyRates.ConversionRates) == 0 {
-		return &errortypes.Warning{
-			Message:     "currency conversion disabled. cannot use pbs rates and custom currency rates map is empty",
-			WarningCode: errortypes.DisabledCurrencyConversionWarningCode,
-		}
 	}
 
 	for fromCurrency, rates := range bidReqCurrencyRates.ConversionRates {

@@ -42,7 +42,7 @@ type ExtRequestPrebid struct {
 	// The array may contain a single sstar ('*') entry to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
 
-	BidReqConversions *ExtRequestCurrency `json:"currency,omitempty"`
+	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
 }
 
 type ExtRequestCurrency struct {

@@ -527,48 +527,24 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 		bidRespPrice    float64
 		bidRespCurrency string
 	}
-	type aTest struct {
+
+	testCases := []struct {
 		desc     string
 		in       testIn
 		expected testResults
-	}
-
-	testGroups := []struct {
-		groupDesc string
-		testCases []aTest
 	}{
 		{
-			groupDesc: "missing request.ext.prebid.currency, use PBS rates",
-			testCases: []aTest{
-				{
-					desc: "Blank currency field in ext. bidRequest comes with a valid currency but conversion rate was not found in PBS. Return no bids",
-					in: testIn{
-						customCurrencyRates: json.RawMessage(`{ "prebid": { "currency": {} } } `),
-						bidRequestCurrency:  "GBP",
-					},
-					expected: testResults{},
-				},
-				{
-					desc: "Blank currency field in ext. bidRequest comes with a currency listed in our currency rate server, use pbs rate",
-					in: testIn{
-						customCurrencyRates: json.RawMessage(`{ "prebid": { "currency": {} } } `),
-						bidRequestCurrency:  "MXN",
-					},
-					expected: testResults{
-						numBids:         1,
-						bidRespPrice:    10.00,
-						bidRespCurrency: "MXN",
-					},
-				},
+			desc: "Blank currency field in ext. bidRequest comes with a valid currency but conversion rate was not found in PBS. Return no bids",
+			in: testIn{
+				customCurrencyRates: json.RawMessage(`{ "prebid": { "currency": {} } } `),
+				bidRequestCurrency:  "GBP",
 			},
+			expected: testResults{},
 		},
 		{
-			groupDesc: "valid request.ext.prebid.currency, expect custom rates to override those of the currency rate server",
-			testCases: []aTest{
-				{
-					desc: "undefined usepbsrates defaults to true, response price corresponds to custom rate",
-					in: testIn{
-						customCurrencyRates: json.RawMessage(`{
+			desc: "valid request.ext.prebid.currency, expect custom rates to override those of the currency rate server",
+			in: testIn{
+				customCurrencyRates: json.RawMessage(`{
 						  "prebid": {
 						    "currency": {
 						      "rates": {
@@ -580,123 +556,12 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 						    }
 						  }
 						}`),
-						bidRequestCurrency: "MXN",
-					},
-					expected: testResults{
-						numBids:         1,
-						bidRespPrice:    20.00,
-						bidRespCurrency: "MXN",
-					},
-				},
-				{
-					desc: "undefined usepbsrates defaults to true, bidRequest comes with unknown currency not found in either pbs rates nor custom rates",
-					in: testIn{
-						customCurrencyRates: json.RawMessage(`{
-							  "prebid": {
-							    "currency": {
-							      "rates": {
-							        "USD": {
-							          "MXN": 20.00,
-							          "EUR": 10.95
-							        }
-							      }
-							    }
-							  }
-							}`),
-						bidRequestCurrency: "GBP",
-					},
-					expected: testResults{},
-				},
-				{
-					desc: "usepbsrates set to true, response price corresponds to custom rate",
-					in: testIn{
-						customCurrencyRates: json.RawMessage(`{
-						          "prebid": {
-						            "currency": {
-						              "rates": {
-						                "USD": {
-						                  "MXN": 20.00,
-						                  "EUR": 10.95
-						                }
-						              },
-						              "usepbsrates": true
-						            }
-						          }
-						        }`),
-						bidRequestCurrency: "MXN",
-					},
-					expected: testResults{
-						numBids:         1,
-						bidRespPrice:    20.00,
-						bidRespCurrency: "MXN",
-					},
-				},
-				{
-					desc: "usepbsrates set to true, response price corresponds to prebid server-wide conversion rates",
-					in: testIn{
-						customCurrencyRates: json.RawMessage(`{
-						          "prebid": {
-						            "currency": {
-						              "rates": {
-						                "USD": {
-						                  "EUR": 10.95
-						                }
-						              },
-						              "usepbsrates": true
-						            }
-						          }
-						        }`),
-						bidRequestCurrency: "MXN",
-					},
-					expected: testResults{
-						numBids:         1,
-						bidRespPrice:    10.00,
-						bidRespCurrency: "MXN",
-					},
-				},
-				{
-					desc: "usepbsrates set to false, response price corresponds to custom rate",
-					in: testIn{
-						customCurrencyRates: json.RawMessage(`{
-								  "prebid": {
-									"currency": {
-									  "rates": {
-										"USD": {
-										  "MXN": 20.00,
-										  "EUR": 10.95
-										}
-									  },
-									  "usepbsrates": false
-									}
-								  }
-								}`),
-						bidRequestCurrency: "MXN",
-					},
-					expected: testResults{
-						numBids:         1,
-						bidRespPrice:    20.00,
-						bidRespCurrency: "MXN",
-					},
-				},
-				{
-					desc: "usepbsrates set to false, bidRequest comes with a currency not found in custom rates, return no bids",
-					in: testIn{
-						customCurrencyRates: json.RawMessage(`{
-								  "prebid": {
-									"currency": {
-									  "rates": {
-										"USD": {
-										  "EUR": 10.95
-										}
-									  },
-									  "usepbsrates": false
-									}
-								  }
-								}`),
-						bidRequestCurrency: "MXN",
-					},
-					expected: testResults{},
-				},
+				bidRequestCurrency: "MXN",
+			},
+			expected: testResults{
+				numBids:         1,
+				bidRespPrice:    20.00,
+				bidRespCurrency: "MXN",
 			},
 		},
 	}
@@ -743,60 +608,58 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 	}
 
 	// Run tests
-	for i, testGroup := range testGroups {
-		for j, test := range testGroup.testCases {
+	for _, test := range testCases {
 
-			oneDollarBidBidder.bidResponse = &adapters.BidderResponse{
-				Bids: []*adapters.TypedBid{
-					{
-						Bid: &openrtb2.Bid{Price: 1.00},
-					},
+		oneDollarBidBidder.bidResponse = &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{Price: 1.00},
 				},
-				Currency: "USD",
+			},
+			Currency: "USD",
+		}
+
+		e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
+			openrtb_ext.BidderAppnexus: adaptBidder(oneDollarBidBidder, mockAppnexusBidService.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
+		}
+
+		// Set custom rates in extension
+		mockBidRequest.Ext = test.in.customCurrencyRates
+
+		// Set bidRequest currency list
+		mockBidRequest.Cur = []string{test.in.bidRequestCurrency}
+
+		auctionRequest := AuctionRequest{
+			BidRequest: mockBidRequest,
+			Account:    config.Account{},
+			UserSyncs:  &emptyUsersync{},
+		}
+
+		// Run test
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+
+		// Assertions
+		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
+
+		if test.expected.numBids > 0 {
+			// Assert out currency
+			assert.Equal(t, test.expected.bidRespCurrency, outBidResponse.Cur, "Bid response currency is wrong: %s \n", test.desc)
+
+			// Assert returned bid
+			if !assert.NotNil(t, outBidResponse, "outBidResponse is nil: %s \n", test.desc) {
+				return
+			}
+			if !assert.NotEmpty(t, outBidResponse.SeatBid, "outBidResponse.SeatBid is empty: %s", test.desc) {
+				return
+			}
+			if !assert.NotEmpty(t, outBidResponse.SeatBid[0].Bid, "outBidResponse.SeatBid[0].Bid is empty: %s", test.desc) {
+				return
 			}
 
-			e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-				openrtb_ext.BidderAppnexus: adaptBidder(oneDollarBidBidder, mockAppnexusBidService.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
-			}
-
-			// Set custom rates in extension
-			mockBidRequest.Ext = test.in.customCurrencyRates
-
-			// Set bidRequest currency list
-			mockBidRequest.Cur = []string{test.in.bidRequestCurrency}
-
-			auctionRequest := AuctionRequest{
-				BidRequest: mockBidRequest,
-				Account:    config.Account{},
-				UserSyncs:  &emptyUsersync{},
-			}
-
-			// Run test
-			outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
-
-			// Assertions
-			assert.NoErrorf(t, err, "%s: %s. HoldAuction error: %v \n", testGroup.groupDesc, test.desc, err)
-
-			if test.expected.numBids > 0 {
-				// Assert out currency
-				assert.Equal(t, test.expected.bidRespCurrency, outBidResponse.Cur, "Bid response currency is wrong: %s - %s \n", testGroup.groupDesc, test.desc)
-
-				// Assert returned bid
-				if !assert.NotNil(t, outBidResponse, "%s: %s. outBidResponse is nil \n", testGroup.groupDesc, test.desc) {
-					return
-				}
-				if !assert.NotEmpty(t, outBidResponse.SeatBid, "%s: %s. outBidResponse.SeatBid is empty \n", testGroup.groupDesc, test.desc) {
-					return
-				}
-				if !assert.NotEmpty(t, outBidResponse.SeatBid[0].Bid, "%s: %s. outBidResponse.SeatBid[0].Bid is empty \n", testGroup.groupDesc, test.desc) {
-					return
-				}
-
-				// Assert returned bid price matches the currency conversion
-				assert.Equal(t, test.expected.bidRespPrice, outBidResponse.SeatBid[0].Bid[0].Price, "Bid response seatBid price is wrong: %s - %s. Test i=%d, j=%d \n", testGroup.groupDesc, test.desc, i, j)
-			} else {
-				assert.Len(t, outBidResponse.SeatBid, 0, "%s: %s. outBidResponse.SeatBid should be empty \n", testGroup.groupDesc, test.desc)
-			}
+			// Assert returned bid price matches the currency conversion
+			assert.Equal(t, test.expected.bidRespPrice, outBidResponse.SeatBid[0].Bid[0].Price, "Bid response seatBid price is wrong: %s", test.desc)
+		} else {
+			assert.Len(t, outBidResponse.SeatBid, 0, "outBidResponse.SeatBid should be empty: %s", test.desc)
 		}
 	}
 }
@@ -845,7 +708,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 		expected testOutput
 	}{
 		{
-			"Both pbsRates and ConversionRates are valid but UsePBSRates is set to false. Resulting rates will be identical to customRates",
+			"valid pbsRates, valid ConversionRates, false UsePBSRates. Resulting rates identical to customRates",
 			testInput{
 				pbsRates: pbsRates,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -858,7 +721,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			},
 		},
 		{
-			"Both pbsRates and ConversionRates are valid, UsePBSRates is set to true. Resulting rates will keep values found in pbsRates but not found in customRates and the rest will be added or overwritten with customRates' values and their inverses",
+			"valid pbsRates, valid ConversionRates, true UsePBSRates. Resulting rates are a mix but customRates gets priority",
 			testInput{
 				pbsRates: pbsRates,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -871,7 +734,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			},
 		},
 		{
-			"pbsRates are nil, UsePBSRates set to false. Resulting rates will be identical to customRates",
+			"nil pbsRates, valid ConversionRates, false UsePBSRates. Resulting rates identical to customRates",
 			testInput{
 				pbsRates: nil,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -884,7 +747,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			},
 		},
 		{
-			"pbsRates are nil, UsePBSRates set to true. Resulting rates will be identical to customRates",
+			"nil pbsRates, valid ConversionRates, true UsePBSRates. Resulting rates identical to customRates",
 			testInput{
 				pbsRates: nil,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -897,7 +760,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			},
 		},
 		{
-			"customRates empty, UsePBSRates set to false. Because pbsRates cannot be used, we return constant rates",
+			"valid pbsRates, empty ConversionRates, false UsePBSRates. Because pbsRates cannot be used, default to constant rates",
 			testInput{
 				pbsRates: pbsRates,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -910,7 +773,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			},
 		},
 		{
-			"customRates is nil, pbsRates are not nil. Resulting rates will be identical to pbsRates",
+			"valid pbsRates, nil ConversionRates, UsePBSRates defaults to true. Resulting rates will be identical to pbsRates",
 			testInput{
 				pbsRates:       pbsRates,
 				bidExtCurrency: nil,
@@ -920,20 +783,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			},
 		},
 		{
-			"customRates empty, UsePBSRates set to false, pbsRates are nil. Return default currency converter where we only have USDs",
-			testInput{
-				pbsRates: nil,
-				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
-					// ConversionRates inCustomRates not initialized makes for a zero-length map
-					UsePBSRates: &boolFalse,
-				},
-			},
-			testOutput{
-				constantRates: true,
-			},
-		},
-		{
-			"customRates empty, UsePBSRates set to true, pbsRates are nil. Return default currency converter where we only have USDs",
+			"nil pbsRates, empty ConversionRates, false UsePBSRates. Default to constant rates",
 			testInput{
 				pbsRates: nil,
 				bidExtCurrency: &openrtb_ext.ExtRequestCurrency{
@@ -959,7 +809,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			},
 		},
 		{
-			"customRates is nil, pbsRates are nil. Return default constant rates converter",
+			"nil customRates, nil pbsRates, UsePBSRates defaults to true. Return default constant rates converter",
 			testInput{
 				pbsRates:       nil,
 				bidExtCurrency: nil,
@@ -998,7 +848,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 		// When fromCurrency and toCurrency are the same, a rate of 1.00 is always expected
 		rate, err := auctionRates.GetRate("USD", "USD")
 		assert.NoError(t, err, tc.desc)
-		assert.Equal(t, rate, rate, tc.desc)
+		assert.Equal(t, float64(1), rate, tc.desc)
 
 		// If we expect an error, assert we have one along with a conversion rate of zero
 		if tc.expected.constantRates {
@@ -1007,10 +857,10 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 			assert.Equal(t, float64(0), rate, tc.desc)
 		} else {
 			for fromCurrency, rates := range tc.expected.resultingRates {
-				for toCurrency := range rates {
-					rate, err := auctionRates.GetRate(fromCurrency, toCurrency)
+				for toCurrency, expectedRate := range rates {
+					actualRate, err := auctionRates.GetRate(fromCurrency, toCurrency)
 					assert.NoError(t, err, tc.desc)
-					assert.Equal(t, rate, rate, tc.desc)
+					assert.Equal(t, expectedRate, actualRate, tc.desc)
 				}
 			}
 		}

@@ -79,8 +79,12 @@ func TestGroupedGetRate(t *testing.T) {
 			rate, err := aggregateConversions.GetRate(tc.from, tc.to)
 
 			// Verify:
-			assert.Equal(t, tc.expectedRate, rate, "rate should be 0: %s\n", tc.desc)
-			assert.Equal(t, group.expectedError, err, "err shouldn't be nil: %s\n", tc.desc)
+			assert.Equal(t, tc.expectedRate, rate, "conversion rate doesn't match the expected rate: %s\n", tc.desc)
+			if group.expectedError != nil {
+				assert.Error(t, group.expectedError, err, "error doesn't match expected: %s\n", tc.desc)
+			} else {
+				assert.NoError(t, group.expectedError, err, "err should be nil: %s\n", tc.desc)
+			}
 		}
 	}
 }
