@@ -1,4 +1,4 @@
-package e_volution
+package evolution
 
 import (
 	"encoding/json"
@@ -13,6 +13,10 @@ import (
 
 type adapter struct {
 	URI string
+}
+
+type bidExt struct {
+	MediaType openrtb_ext.BidType `json:mediaType,omitempty`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
@@ -30,16 +34,7 @@ func (a *adapter) MakeRequests(
 	errs []error,
 ) {
 
-	request := *openRTBRequest
-	var err error
-
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Missing Imp Object",
-		}}
-	}
-
-	reqJSON, err := json.Marshal(request)
+	reqJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -70,7 +65,7 @@ func (a *adapter) MakeBids(
 
 	if bidderRawResponse.StatusCode == http.StatusBadRequest {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: [ %d ]. Response body: %s", bidderRawResponse.StatusCode, bidderRawResponse.Body),
+			Message: fmt.Sprintf("Bad Request. %s", string(bidderRawResponse.Body)),
 		}}
 	}
 
@@ -92,29 +87,26 @@ func (a *adapter) MakeBids(
 		}}
 	}
 
+	if len(bidResp.SeatBid) == 0 {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Empty seatbid"),
+		}}
+	}
+
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 	sb := bidResp.SeatBid[0]
-
-	for _, bid := range sb.Bid {
+	for i := range sb.Bid {
+		var bidType openrtb_ext.BidType
+		var bidExt bidExt
+		if err := json.Unmarshal(sb.Bid[i].Ext, &bidExt); err != nil {
+			bidType = openrtb_ext.BidTypeBanner
+		} else {
+			bidType = bidExt.MediaType
+		}
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-			Bid:     &bid,
-			BidType: getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp),
+			Bid:     &sb.Bid[i],
+			BidType: bidType,
 		})
 	}
 	return bidResponse, nil
-}
-
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
-			}
-			return mediaType
-		}
-	}
-	return mediaType
 }

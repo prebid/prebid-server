@@ -133,7 +133,10 @@
               "cid": "1IP31",
               "crid": "1KS13",
               "w": 0,
-              "h": 0
+              "h": 0,
+              "ext": {
+                "mediaType": "banner"
+              }
             }],
             "seat": "1"
           }],
@@ -158,7 +161,10 @@
             "adomain": ["test.com"],
             "cat": ["IAB24"],
             "cid": "1IP31",
-            "crid": "1KS13"
+            "crid": "1KS13",
+            "ext": {
+              "mediaType": "banner"
+            }
           },
           "type": "banner"
         }

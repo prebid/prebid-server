@@ -1,4 +1,4 @@
-package e_volution
+package evolution
 
 import (
 	"testing"
@@ -16,5 +16,5 @@ func TestJsonSamples(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "e_volutiontest", bidder)
+	adapterstest.RunJSONBidderTest(t, "evolutiontest", bidder)
 }

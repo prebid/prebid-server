@@ -1,4 +1,4 @@
-package e_volution
+package evolution
 
 import (
 	"text/template"
@@ -8,5 +8,5 @@ import (
 )
 
 func NewEvolutionSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("e_volution", temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("evolution", temp, adapters.SyncTypeRedirect)
 }

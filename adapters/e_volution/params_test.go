@@ -1,4 +1,4 @@
-package e_volution
+package evolution
 
 import (
 	"encoding/json"
@@ -19,7 +19,7 @@ func TestValidParams(t *testing.T) {
 
 	for _, validParam := range validParams {
 		if err := validator.Validate(openrtb_ext.BidderEVolution, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected e_volution params: %s", validParam)
+			t.Errorf("Schema rejected evolution params: %s", validParam)
 		}
 	}
 }
