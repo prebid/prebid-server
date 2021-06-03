@@ -560,10 +560,12 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp) {
 	var floor float64
 
-	if ext.BidFloor > imp.BidFloor {
+	if imp.BidFloor > 0 {
+		floor = imp.BidFloor
+	} else if ext.BidFloor > 0 {
 		floor = ext.BidFloor
 	} else {
-		floor = imp.BidFloor
+		floor = minBidFloor
 	}
 
 	if floor <= minBidFloor {

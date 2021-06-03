@@ -4,7 +4,6 @@
     "imp": [
       {
         "id": "video1",
-        "bidfloor": 45.21,
         "ext": {
           "bidder": {
             "bidfloor": 3.01,
@@ -44,7 +43,7 @@
                   "video/mp4"
                 ]
               },
-              "bidfloor": 45.21,
+              "bidfloor": 3.01,
               "id": "video1",
               "secure": 1
             }
@@ -72,7 +71,7 @@
                 {
                   "id": "5fd7c8a6ff2f1f0d42ee6427",
                   "impid": "video1",
-                  "price": 50,
+                  "price": 200,
                   "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "adid": "1088",
                   "adomain": [
@@ -103,7 +102,7 @@
           "bid": {
             "id": "video1AdmVideo",
             "impid": "video1",
-            "price": 50,
+            "price": 200,
             "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
             "adid": "1088",
             "adomain": [
