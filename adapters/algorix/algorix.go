@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"text/template"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -90,7 +91,10 @@ func getImpAlgoriXExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAlgorix, error) {
 }
 
 func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpAlgorix) (string, error) {
-	endPointParams := macros.EndpointTemplateParams{SourceId: ext.Sid, AccountID: ext.Token}
+	endPointParams := macros.EndpointTemplateParams{
+		SourceId: url.PathEscape(ext.Sid),
+		AccountID: url.PathEscape(ext.Token),
+	}
 	return macros.ResolveMacros(a.EndpointTemplate, endPointParams)
 }
 
@@ -145,11 +149,10 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
 			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
+				break
 			}
 			if imp.Native != nil {
 				return openrtb_ext.BidTypeNative
@@ -159,5 +162,5 @@ func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 			}
 		}
 	}
-	return mediaType
+	return openrtb_ext.BidTypeBanner
 }
