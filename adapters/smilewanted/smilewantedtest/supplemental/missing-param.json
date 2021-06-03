@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-missing-req-param-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId":""
+          }
+        }
+
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ZoneId is empty",
+      "comparison": "literal"
+    }
+  ]
+}
