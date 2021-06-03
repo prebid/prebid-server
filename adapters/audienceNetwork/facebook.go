@@ -11,11 +11,12 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/util/maputil"
 )
 
@@ -93,6 +94,12 @@ func (this *FacebookAdapter) buildRequests(request *openrtb2.BidRequest) ([]*ada
 		if err != nil {
 			errs = append(errs, err)
 			continue
+		}
+
+		body, err = jsonutil.DropElement(body, "consented_providers_settings")
+		if err != nil {
+			errs = append(errs, err)
+			return reqs, errs
 		}
 
 		reqs = append(reqs, &adapters.RequestData{

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -67,6 +66,10 @@ const (
 	INVALID_HEIGHT    = "Invalid Height"
 	INVALID_MEDIATYPE = "Invalid MediaType"
 	INVALID_ADSLOT    = "Invalid AdSlot"
+
+	dctrKeyName        = "key_val"
+	pmZoneIDKeyName    = "pmZoneId"
+	pmZoneIDKeyNameOld = "pmZoneID"
 )
 
 func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...interface{}) string {
@@ -158,8 +161,8 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					}
 
 					pbReq.Imp[i].TagID = strings.TrimSpace(adSlot[0])
-					pbReq.Imp[i].Banner.H = openrtb2.Int64Ptr(int64(height))
 					pbReq.Imp[i].Banner.W = openrtb2.Int64Ptr(int64(width))
+					pbReq.Imp[i].Banner.H = openrtb2.Int64Ptr(int64(height))
 
 					if len(params.Keywords) != 0 {
 						kvstr := prepareImpressionExt(params.Keywords)
@@ -317,18 +320,22 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
-	var err error
 	wrapExt := ""
 	pubID := ""
 
 	for i := 0; i < len(request.Imp); i++ {
-		err = parseImpressionObject(&request.Imp[i], &wrapExt, &pubID)
+		err := parseImpressionObject(&request.Imp[i], &wrapExt, &pubID)
 		// If the parsing is failed, remove imp and add the error.
 		if err != nil {
 			errs = append(errs, err)
 			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
 			i--
 		}
+	}
+
+	// If all the requests are invalid, Call to adaptor is skipped
+	if len(request.Imp) == 0 {
+		return nil, errs
 	}
 
 	if wrapExt != "" {
@@ -358,13 +365,6 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		request.App = &appCopy
 	}
 
-	thisURI := a.URI
-
-	// If all the requests are invalid, Call to adaptor is skipped
-	if len(request.Imp) == 0 {
-		return nil, errs
-	}
-
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
@@ -376,7 +376,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	headers.Add("Accept", "application/json")
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     thisURI,
+		Uri:     a.URI,
 		Body:    reqJSON,
 		Headers: headers,
 	}}, errs
@@ -402,26 +402,26 @@ func validateAdSlot(adslot string, imp *openrtb2.Imp) error {
 
 		adSize := strings.Split(strings.ToLower(adSlot[1]), "x")
 		if len(adSize) != 2 {
-			return errors.New(fmt.Sprintf("Invalid size provided in adSlot %v", adSlotStr))
+			return fmt.Errorf("Invalid size provided in adSlot %v", adSlotStr)
 		}
 
 		width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
 		if err != nil {
-			return errors.New(fmt.Sprintf("Invalid width provided in adSlot %v", adSlotStr))
+			return fmt.Errorf("Invalid width provided in adSlot %v", adSlotStr)
 		}
 
 		heightStr := strings.Split(adSize[1], ":")
 		height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
 		if err != nil {
-			return errors.New(fmt.Sprintf("Invalid height provided in adSlot %v", adSlotStr))
+			return fmt.Errorf("Invalid height provided in adSlot %v", adSlotStr)
 		}
 
 		//In case of video, size could be derived from the player size
 		if imp.Banner != nil {
-			imp.Banner = assignBannerHeightAndWidth(imp.Banner, int64(height), int64(width))
+			imp.Banner = assignBannerWidthAndHeight(imp.Banner, int64(width), int64(height))
 		}
 	} else {
-		return errors.New(fmt.Sprintf("Invalid adSlot %v", adSlotStr))
+		return fmt.Errorf("Invalid adSlot %v", adSlotStr)
 	}
 
 	return nil
@@ -432,19 +432,13 @@ func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 		return banner, nil
 	}
 
-	if len(banner.Format) == 0 {
-		return nil, errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
-	}
-
-	return assignBannerHeightAndWidth(banner, banner.Format[0].H, banner.Format[0].H), nil
+	return assignBannerWidthAndHeight(banner, banner.Format[0].W, banner.Format[0].H), nil
 }
 
-func assignBannerHeightAndWidth(banner *openrtb2.Banner, h, w int64) *openrtb2.Banner {
+func assignBannerWidthAndHeight(banner *openrtb2.Banner, w, h int64) *openrtb2.Banner {
 	bannerCopy := *banner
-
 	bannerCopy.W = openrtb2.Int64Ptr(w)
 	bannerCopy.H = openrtb2.Int64Ptr(h)
-
 	return &bannerCopy
 }
 
@@ -495,30 +489,43 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) er
 		imp.Banner = bannerCopy
 	}
 
+	extMap := make(map[string]interface{}, 0)
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
-		kvstr := makeKeywordStr(pubmaticExt.Keywords)
-		imp.Ext = json.RawMessage([]byte(kvstr))
-	} else {
-		imp.Ext = nil
+		addKeywordsToExt(pubmaticExt.Keywords, extMap)
+	}
+	//Give preference to direct values of 'dctr' & 'pmZoneId' params in extension
+	if pubmaticExt.Dctr != "" {
+		extMap[dctrKeyName] = pubmaticExt.Dctr
+	}
+	if pubmaticExt.PmZoneID != "" {
+		extMap[pmZoneIDKeyName] = pubmaticExt.PmZoneID
+	}
+
+	imp.Ext = nil
+	if len(extMap) > 0 {
+		ext, err := json.Marshal(extMap)
+		if err == nil {
+			imp.Ext = ext
+		}
 	}
 
 	return nil
 
 }
 
-func makeKeywordStr(keywords []*openrtb_ext.ExtImpPubmaticKeyVal) string {
-	eachKv := make([]string, 0, len(keywords))
+func addKeywordsToExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, extMap map[string]interface{}) {
 	for _, keyVal := range keywords {
 		if len(keyVal.Values) == 0 {
 			logf("No values present for key = %s", keyVal.Key)
 			continue
 		} else {
-			eachKv = append(eachKv, fmt.Sprintf("\"%s\":\"%s\"", keyVal.Key, strings.Join(keyVal.Values[:], ",")))
+			key := keyVal.Key
+			if keyVal.Key == pmZoneIDKeyNameOld {
+				key = pmZoneIDKeyName
+			}
+			extMap[key] = strings.Join(keyVal.Values[:], ",")
 		}
 	}
-
-	kvStr := "{" + strings.Join(eachKv, ",") + "}"
-	return kvStr
 }
 
 func prepareImpressionExt(keywords map[string]string) string {

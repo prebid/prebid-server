@@ -135,6 +135,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
+	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, false)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
 	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
@@ -197,6 +198,7 @@ metrics:
   disabled_metrics:
     account_adapter_details: true
     adapter_connections_metrics: true
+    adapter_gdpr_request_blocked: true
 datacache:
   type: postgres
   filename: /usr/db/db.db
@@ -413,6 +415,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, false)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
+	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
 	cmpStrings(t, "request_validation.ipv4_private_networks", cfg.RequestValidation.IPv4PrivateNetworks[0], "1.1.1.0/24")
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[0], "1111::/16")

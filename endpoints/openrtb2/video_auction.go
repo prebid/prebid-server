@@ -17,7 +17,7 @@ import (
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/util/iputil"
 
@@ -274,13 +274,16 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	secGPC := r.Header.Get("Sec-GPC")
+
 	auctionRequest := exchange.AuctionRequest{
-		BidRequest:   bidReq,
-		Account:      *account,
-		UserSyncs:    usersyncs,
-		RequestType:  labels.RType,
-		StartTime:    start,
-		LegacyLabels: labels,
+		BidRequest:                 bidReq,
+		Account:                    *account,
+		UserSyncs:                  usersyncs,
+		RequestType:                labels.RType,
+		StartTime:                  start,
+		LegacyLabels:               labels,
+		GlobalPrivacyControlHeader: secGPC,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
