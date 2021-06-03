@@ -69,7 +69,7 @@ func TestVideoSinglePod(t *testing.T) {
 	req.ID = "test_id"
 
 	reqExt := `{"prebid":{}}`
-	impExt := `{"bidder":{"placementId":123}}`
+	impExt := `{"bidder":{"placementId":123, "generate_ad_pod_id":true}}`
 	req.Ext = []byte(reqExt)
 
 	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_0", Ext: []byte(impExt)})
@@ -90,7 +90,7 @@ func TestVideoSinglePod(t *testing.T) {
 	error = json.Unmarshal(reqData.Ext, &reqDataExt)
 	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
-	regMatch, matchErr := regexp.Match(`[0-9]19`, []byte(reqDataExt.Appnexus.AdPodId))
+	regMatch, matchErr := regexp.Match(`^[0-9]+$`, []byte(reqDataExt.Appnexus.AdPodId))
 	assert.NoError(t, matchErr, "Regex match error should be nil")
 	assert.True(t, regMatch, "AdPod id doesn't present in Appnexus extension or has incorrect format")
 }
@@ -140,7 +140,7 @@ func TestVideoSinglePodManyImps(t *testing.T) {
 	error = json.Unmarshal(reqData1.Ext, &reqDataExt1)
 	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
-	adPodId1 := reqDataExt1.Appnexus.AdPodId
+	assert.Equal(t, "", reqDataExt1.Appnexus.AdPodId, "AdPod id should not be present in first request")
 
 	var reqData2 *openrtb2.BidRequest
 	error = json.Unmarshal(res[1].Body, &reqData2)
@@ -150,9 +150,7 @@ func TestVideoSinglePodManyImps(t *testing.T) {
 	error = json.Unmarshal(reqData2.Ext, &reqDataExt2)
 	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
 
-	adPodId2 := reqDataExt2.Appnexus.AdPodId
-
-	assert.Equal(t, adPodId1, adPodId2, "AdPod id is not the same for the same pod")
+	assert.Equal(t, "", reqDataExt2.Appnexus.AdPodId, "AdPod id should not be present in second request")
 }
 
 func TestVideoTwoPods(t *testing.T) {
@@ -167,7 +165,7 @@ func TestVideoTwoPods(t *testing.T) {
 	req.ID = "test_id"
 
 	reqExt := `{"prebid":{}}`
-	impExt := `{"bidder":{"placementId":123}}`
+	impExt := `{"bidder":{"placementId":123, "generate_ad_pod_id": true}}`
 	req.Ext = []byte(reqExt)
 
 	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_0", Ext: []byte(impExt)})
@@ -219,7 +217,7 @@ func TestVideoTwoPodsManyImps(t *testing.T) {
 	req.ID = "test_id"
 
 	reqExt := `{"prebid":{}}`
-	impExt := `{"bidder":{"placementId":123}}`
+	impExt := `{"bidder":{"placementId":123, "generate_ad_pod_id":true}}`
 	req.Ext = []byte(reqExt)
 
 	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_0", Ext: []byte(impExt)})
