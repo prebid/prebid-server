@@ -134,16 +134,17 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	for _, seatBid := range bidResp.SeatBid {
 		for idx := range seatBid.Bid {
+			mediaType := getBidType(seatBid.Bid[idx].ImpID, internalRequest.Imp)
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[idx],
-				BidType: getMediaTypeForImp(seatBid.Bid[idx].ImpID, internalRequest.Imp),
+				BidType: mediaType,
 			})
 		}
 	}
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
