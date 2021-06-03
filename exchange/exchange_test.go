@@ -1804,7 +1804,7 @@ type fakeRandomDeduplicateBidBooleanGenerator struct {
 	returnValue bool
 }
 
-func (m *fakeRandomDeduplicateBidBooleanGenerator) New() bool {
+func (m *fakeRandomDeduplicateBidBooleanGenerator) Generate() bool {
 	return m.returnValue
 }
 
@@ -2559,6 +2559,9 @@ func TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice(t *testing.T) 
 
 	//In this test case bids bid_idApn1_1 and bid_idApn1_2 will be removed due to hardcoded "fakeRandomDeduplicateBidBooleanGenerator{true}"
 
+	// Also there are should be more than one bids in bidder to test how we remove single element from bids array.
+	// In case there is just one bid to remove - we remove the entire bidder.
+
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
@@ -2642,39 +2645,42 @@ func TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice(t *testing.T) 
 
 }
 
-func TestRemoveBidByName(t *testing.T) {
+func TestRemoveBidById(t *testing.T) {
 	cats1 := []string{"IAB1-3"}
 
 	bidApn1_1 := openrtb2.Bid{ID: "bid_idApn1_1", ImpID: "imp_idApn1_1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
 	bidApn1_2 := openrtb2.Bid{ID: "bid_idApn1_2", ImpID: "imp_idApn1_2", Price: 20.0000, Cat: cats1, W: 1, H: 1}
 	bidApn1_3 := openrtb2.Bid{ID: "bid_idApn1_3", ImpID: "imp_idApn1_3", Price: 10.0000, Cat: cats1, W: 1, H: 1}
-	bidApn1_4 := openrtb2.Bid{ID: "bid_idApn1_4", ImpID: "imp_idApn1_4", Price: 20.0000, Cat: cats1, W: 1, H: 1}
-	bidApn1_5 := openrtb2.Bid{ID: "bid_idApn1_5", ImpID: "imp_idApn1_5", Price: 10.0000, Cat: cats1, W: 1, H: 1}
-	bidApn1_6 := openrtb2.Bid{ID: "bid_idApn1_6", ImpID: "imp_idApn1_6", Price: 20.0000, Cat: cats1, W: 1, H: 1}
 
 	bid1_Apn1_1 := pbsOrtbBid{&bidApn1_1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
 	bid1_Apn1_2 := pbsOrtbBid{&bidApn1_2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
 	bid1_Apn1_3 := pbsOrtbBid{&bidApn1_3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
-	bid1_Apn1_4 := pbsOrtbBid{&bidApn1_4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
-	bid1_Apn1_5 := pbsOrtbBid{&bidApn1_5, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
-	bid1_Apn1_6 := pbsOrtbBid{&bidApn1_6, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
 
 	type aTest struct {
-		desc string
-		in   string
+		desc      string
+		inBidName string
+		outBids   []*pbsOrtbBid
 	}
 	testCases := []aTest{
 		{
-			desc: "incorrect result after removing element from the middle",
-			in:   "bid_idApn1_3",
+			desc:      "remove element from the middle",
+			inBidName: "bid_idApn1_2",
+			outBids:   []*pbsOrtbBid{&bid1_Apn1_1, &bid1_Apn1_3},
 		},
 		{
-			desc: "incorrect result after removing element from the end",
-			in:   "bid_idApn1_6",
+			desc:      "remove element from the end",
+			inBidName: "bid_idApn1_3",
+			outBids:   []*pbsOrtbBid{&bid1_Apn1_1, &bid1_Apn1_2},
 		},
 		{
-			desc: "incorrect result after removing element from the beginning",
-			in:   "bid_idApn1_1",
+			desc:      "remove element from the beginning",
+			inBidName: "bid_idApn1_1",
+			outBids:   []*pbsOrtbBid{&bid1_Apn1_2, &bid1_Apn1_3},
+		},
+		{
+			desc:      "remove element that doesn't exist",
+			inBidName: "bid_idApn",
+			outBids:   []*pbsOrtbBid{&bid1_Apn1_1, &bid1_Apn1_2, &bid1_Apn1_3},
 		},
 	}
 	for _, test := range testCases {
@@ -2683,27 +2689,15 @@ func TestRemoveBidByName(t *testing.T) {
 			&bid1_Apn1_1,
 			&bid1_Apn1_2,
 			&bid1_Apn1_3,
-			&bid1_Apn1_4,
-			&bid1_Apn1_5,
-			&bid1_Apn1_6,
 		}
 
 		seatBidApn1 := &pbsOrtbSeatBid{bids: innerBidsApn1, currency: "USD"}
 
-		removeBidByName(seatBidApn1, test.in)
-		assert.Len(t, seatBidApn1.bids, 5, test.desc)
-		assert.False(t, checkBidPresentInArray(seatBidApn1.bids, test.in), "Bid should not be present in result")
+		removeBidById(seatBidApn1, test.inBidName)
+		assert.Len(t, seatBidApn1.bids, len(test.outBids), test.desc)
+		assert.ElementsMatch(t, seatBidApn1.bids, test.outBids, "Incorrect bids in response")
 	}
 
-}
-
-func checkBidPresentInArray(bids []*pbsOrtbBid, bidId string) bool {
-	for _, bid := range bids {
-		if bid.bid.ID == bidId {
-			return true
-		}
-	}
-	return false
 }
 
 func TestUpdateRejections(t *testing.T) {

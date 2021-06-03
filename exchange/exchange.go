@@ -99,13 +99,13 @@ func (big *bidIDGenerator) New() (string, error) {
 	return rawUuid.String(), err
 }
 
-type deduplicateBidBooleanGenerator interface {
-	New() bool
+type deduplicateChanceGenerator interface {
+	Generate() bool
 }
 
 type randomDeduplicateBidBooleanGenerator struct{}
 
-func (randomDeduplicateBidBooleanGenerator) New() bool {
+func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
@@ -622,7 +622,7 @@ func encodeBidResponseExt(bidResponseExt *openrtb_ext.ExtBidResponse) ([]byte, e
 	return buffer.Bytes(), err
 }
 
-func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateBidBooleanGenerator) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
+func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateChanceGenerator) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -751,7 +751,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 					currBidPrice = 0
 				}
 				if dupeBidPrice == currBidPrice {
-					if booleanGenerator.New() {
+					if booleanGenerator.Generate() {
 						dupeBidPrice = -1
 					} else {
 						currBidPrice = -1
@@ -775,7 +775,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 							// and already processed bid was selected to be removed
 							// See example of input data in unit test `TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice`
 							// Need to remove bid by name, not index in this case
-							removeBidByName(oldSeatBid, dupe.bidID)
+							removeBidById(oldSeatBid, dupe.bidID)
 						}
 					}
 					delete(res, dupe.bidID)
@@ -813,7 +813,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 	return res, seatBids, rejections, nil
 }
 
-func removeBidByName(seatBid *pbsOrtbSeatBid, bidID string) {
+func removeBidById(seatBid *pbsOrtbSeatBid, bidID string) {
 	//Find index of bid to remove
 	dupeBidIndex := -1
 	for i, bid := range seatBid.bids {
