@@ -12,6 +12,10 @@ type Adapter struct {
 	Disabled         bool   `mapstructure:"disabled"`
 	Endpoint         string `mapstructure:"endpoint"`
 	ExtraAdapterInfo string `mapstructure:"extra_info"`
+	// todo: bidder info overrides
+
+	// needed for backwards compatibility
+	UserSyncURL string `mapstructure:"usersync_url"`
 
 	// needed for Rubicon
 	XAPI AdapterXAPI `mapstructure:"xapi"`

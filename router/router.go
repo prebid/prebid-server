@@ -234,6 +234,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatal(err)
 	}
 
+	// override bidderInfos user sync with default (iframe? redirect? both? -  no, not both. error if both are defined.)
+
 	activeBidders := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
@@ -242,9 +244,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatal(err)
 	}
 
-	syncers, err := usersync.NewSyncersFromBidderInfos(bidderInfos)
+	syncers, err := usersync.BuildSyncers(cfg.UserSync, bidderInfos)
 	if err != nil {
-		glog.Fatal(err) // better error message? is this ok to be sepaerate from the validation pass?
+		glog.Fatal(err)
 	}
 
 	gvlVendorIDs := bidderInfos.ToGVLVendorIDMap()

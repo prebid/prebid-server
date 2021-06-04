@@ -363,6 +363,10 @@ func (s fakeSyncer) Key() string {
 	return s.key
 }
 
+func (s fakeSyncer) DefaultSyncType() SyncType {
+	return SyncTypeIFrame
+}
+
 func (s fakeSyncer) SupportsType(syncTypes []SyncType) bool {
 	for _, syncType := range syncTypes {
 		if syncType == SyncTypeIFrame && s.supportsIFrame {

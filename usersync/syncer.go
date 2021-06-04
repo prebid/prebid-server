@@ -27,6 +27,9 @@ type Syncer interface {
 	// necessarily, a one-to-one mapping with a bidder.
 	Key() string
 
+	// DefaultSyncType is the default SyncType for this syncer.
+	DefaultSyncType() SyncType
+
 	// SupportsType returns true if the syncer supports at least one of the specified sync types.
 	SupportsType(syncTypes []SyncType) bool
 
@@ -51,16 +54,21 @@ type standardSyncer struct {
 }
 
 const (
-	setuidSyncTypeIFrame   = "b"
-	setuidSyncTypeRedirect = "i"
+	setuidSyncTypeIFrame   = "b" // b = blank HTML response
+	setuidSyncTypeRedirect = "i" // i = image response
 )
 
-var errEndpointRequired = errors.New("at least one endpoint (iframe or redirect) is required")
+var errEndpointRequired = errors.New("at least one endpoint (iframe and/or redirect) is required")
+var errKeyRequired = errors.New("key is required")
 var errDefaultSyncTypeRequired = errors.New("default sync type is required when more then one sync endpoint is configured")
 
 // NewSyncer creates a new Syncer from the provided configuration, or an error if macro substition
 // fails or an endpoint url is invalid.
 func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, error) {
+	if syncerConfig.Key == "" {
+		return nil, errKeyRequired
+	}
+
 	if syncerConfig.IFrame == nil && syncerConfig.Redirect == nil {
 		return nil, errEndpointRequired
 	}
@@ -129,6 +137,7 @@ func resolveDefaultSyncType(syncerConfig config.Syncer) (SyncType, error) {
 	return SyncTypeUnknown, fmt.Errorf("invalid default sync type '%s'", syncerConfig.Default)
 }
 
+// macro substitution regex
 var (
 	macroRegexExternalHost = regexp.MustCompile(`{{\s*.ExternalURL\s*}}`)
 	macroRegexSyncerKey    = regexp.MustCompile(`{{\s*.SyncerKey\s*}}`)
@@ -197,6 +206,10 @@ func validateTemplate(template *template.Template) error {
 
 func (s standardSyncer) Key() string {
 	return s.key
+}
+
+func (s standardSyncer) DefaultSyncType() SyncType {
+	return s.defaultSyncType
 }
 
 func (s standardSyncer) SupportsType(syncTypes []SyncType) bool {
@@ -276,56 +289,3 @@ func (s standardSyncer) chooseTemplate(syncType SyncType) *template.Template {
 		return nil
 	}
 }
-
-type bidderInfoWithName struct {
-	bidderName string
-	bidderInfo config.BidderInfo
-}
-
-// func NewSyncersFromBidderInfos(hostConfig config.UserSync, bidderInfos config.BidderInfos) (map[string]Syncer, error) {
-// 	bidderInfosBySyncerKey := make(map[string][]bidderInfoWithName)
-// 	for bidderName, bidderInfo := range bidderInfos {
-// 		s := bidderInfo.Syncer
-// 		if s != nil && (s.IFrame != nil || s.Redirect != nil) {
-// 			bidderInfosBySyncerKey[s.Key] = append(bidderInfosBySyncerKey[s.Key], bidderInfoWithName{bidderName, bidderInfo})
-// 		}
-// 	}
-
-// 	// build syncers
-// 	syncersByBidder := map[string]Syncer{}
-// 	var errs []error
-// 	for _, bidderInfos := range bidderInfosBySyncerKey {
-// 		syncerConfig, err := getPrimarySyncerConfig(bidderInfos)
-// 		if err != nil {
-// 			errs = append(errs, err)
-// 			continue
-// 		}
-
-// 		syncer, err := NewSyncer(hostConfig, syncerConfig)
-// 		if err != nil {
-// 			errs = append(errs, err)
-// 			continue
-// 		}
-
-// 		for _, b := range bidderInfos {
-// 			syncersByBidder[b.bidderName] = syncer
-// 		}
-// 	}
-
-// 	if len(errs) > 0 {
-// 		return nil, errortypes.NewAggregateError("msg", errs)
-// 	}
-
-// 	return syncersByBidder, nil
-// }
-
-// func getPrimarySyncerConfig(bidderInfos []bidderInfoWithName) (*config.Syncer, error) {
-// 	if len(bidderInfos) == 1 {
-// 		return bidderInfos[0].bidderInfo.Syncer, nil
-// 	}
-
-// 	// if multiple, ensure just one has endpoints defined + return it
-// 	// if not just one, return error
-
-// 	return nil, nil
-// }

@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/httputil"
 )
 
 const (
@@ -28,11 +29,6 @@ const (
 
 func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.TTL) * 24 * time.Hour
-
-	validKeyLookup := make(map[string]struct{})
-	for _, s := range syncers {
-		validKeyLookup[s.Key()] = struct{}{}
-	}
 
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		so := analytics.SetUIDObject{
@@ -55,7 +51,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 		query := r.URL.Query()
 
 		// get key + verify we have a syncer for the key
-		syncerKey, err := getFamilyName(query, validKeyLookup)
+		syncerKey, err := getSyncerKey(query, syncers)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -99,24 +95,63 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 		pc.SetCookieOnResponse(w, setSiteCookie, &cfg, cookieTTL)
 
-		// special return cotnet for image and iframe
-		// for image, promote the pixel we already have to a common util value
+		responseFormat, err := getResponseFormat(query, syncers[syncerKey])
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			metricsEngine.RecordUserIDSet(metrics.UserLabels{
+				Action: metrics.RequestActionErr,
+			})
+			so.Status = http.StatusBadRequest
+			return
+		}
+
+		switch responseFormat {
+		case "i":
+			w.WriteHeader(http.StatusOK)
+			w.Header().Add("Content-Type", httputil.OneByOnePixelPNG.ContentType)
+			//w.Header().Add("Content-Length", strconv.Itoa(len(httputil.TrackingPixelPNG.Content))) - is this automatic?
+			w.Write(httputil.OneByOnePixelPNG.Content)
+		case "b":
+			w.Header().Add("Content-Type", "text/html")
+			// set content length to 0 - is this automatic?
+		}
 	})
 }
 
-func getFamilyName(query url.Values, validFamilyNameMap map[string]struct{}) (string, error) {
-	// The family name is bound to the 'bidder' query param. In most cases, these values are the same.
-	familyName := query.Get("bidder")
+func getSyncerKey(query url.Values, syncers map[string]usersync.Syncer) (string, error) {
+	key := query.Get("bidder")
 
-	if familyName == "" {
+	if key == "" {
 		return "", errors.New(`"bidder" query param is required`)
 	}
 
-	if _, ok := validFamilyNameMap[familyName]; !ok {
+	if _, ok := syncers[key]; !ok {
 		return "", errors.New("The bidder name provided is not supported by Prebid Server")
 	}
 
-	return familyName, nil
+	return key, nil
+}
+
+func getResponseFormat(query url.Values, syncer usersync.Syncer) (string, error) {
+	format := query.Get("f")
+
+	if format == "" {
+		switch syncer.DefaultSyncType() {
+		case usersync.SyncTypeIFrame:
+			return "b", nil
+		case usersync.SyncTypeRedirect:
+			return "i", nil
+		default:
+			return "", errors.New("invalid default sync type")
+		}
+	}
+
+	if !strings.EqualFold(format, "b") && !strings.EqualFold(format, "i") {
+		return "", errors.New("invalid value")
+	}
+
+	return strings.ToLower(format), nil
 }
 
 // siteCookieCheck scans the input User Agent string to check if browser is Chrome and browser version is greater than the minimum version for adding the SameSite cookie attribute
@@ -180,5 +215,5 @@ func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permiss
 		return false, 0, ""
 	}
 
-	return true, http.StatusOK, "The gdpr_consent string prevents cookies from being saved"
+	return true, http.StatusUnavailableForLegalReasons, "The gdpr_consent string prevents cookies from being saved"
 }

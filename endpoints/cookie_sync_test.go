@@ -24,8 +24,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// end to end test?
-
 func TestNewCookieSyncEndpoint(t *testing.T) {
 	var (
 		syncers           = map[string]usersync.Syncer{"a": &MockSyncer{}}
@@ -1254,6 +1252,11 @@ type MockSyncer struct {
 func (m *MockSyncer) Key() string {
 	args := m.Called()
 	return args.String(0)
+}
+
+func (m *MockSyncer) DefaultSyncType() usersync.SyncType {
+	args := m.Called()
+	return args.Get(0).(usersync.SyncType)
 }
 
 func (m *MockSyncer) SupportsType(syncTypes []usersync.SyncType) bool {

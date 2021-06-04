@@ -14,7 +14,6 @@ import (
 
 func TestNewSyncer(t *testing.T) {
 	var (
-		key              = "a"
 		supportCORS      = true
 		hostConfig       = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
 		macroValues      = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
@@ -26,6 +25,7 @@ func TestNewSyncer(t *testing.T) {
 
 	testCases := []struct {
 		description         string
+		givenKey            string
 		givenDefault        string
 		givenIFrameConfig   *config.SyncerEndpoint
 		givenRedirectConfig *config.SyncerEndpoint
@@ -35,15 +35,24 @@ func TestNewSyncer(t *testing.T) {
 		expectedRedirect    string
 	}{
 		{
-			description:         "No Endpoints",
+			description:         "Missing Key",
+			givenKey:            "",
+			givenDefault:        "iframe",
+			givenIFrameConfig:   iframeConfig,
+			givenRedirectConfig: nil,
+			expectedError:       "key is required",
+		},
+		{
+			description:         "Missing Endpoints",
+			givenKey:            "a",
 			givenDefault:        "",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: nil,
-			expectedDefault:     SyncTypeIFrame,
-			expectedError:       "at least one endpoint (iframe or redirect) is required",
+			expectedError:       "at least one endpoint (iframe and/or redirect) is required",
 		},
 		{
 			description:         "Resolve Default Sync Type Error ",
+			givenKey:            "a",
 			givenDefault:        "",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: redirectConfig,
@@ -51,6 +60,7 @@ func TestNewSyncer(t *testing.T) {
 		},
 		{
 			description:         "IFrame & Redirect Endpoints",
+			givenKey:            "a",
 			givenDefault:        "iframe",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: redirectConfig,
@@ -60,41 +70,41 @@ func TestNewSyncer(t *testing.T) {
 		},
 		{
 			description:         "IFrame - Parse Error",
+			givenKey:            "a",
 			givenDefault:        "iframe",
 			givenIFrameConfig:   errParseConfig,
 			givenRedirectConfig: nil,
-			expectedDefault:     SyncTypeIFrame,
 			expectedError:       "iframe template: a_usersync_url:1: function \"malformed\" not defined",
 		},
 		{
 			description:         "IFrame - Validation Error",
+			givenKey:            "a",
 			givenDefault:        "iframe",
 			givenIFrameConfig:   errInvalidConfig,
 			givenRedirectConfig: nil,
-			expectedDefault:     SyncTypeIFrame,
 			expectedError:       "iframe composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
 		},
 		{
 			description:         "Redirect - Parse Error",
+			givenKey:            "a",
 			givenDefault:        "redirect",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: errParseConfig,
-			expectedDefault:     SyncTypeRedirect,
 			expectedError:       "redirect template: a_usersync_url:1: function \"malformed\" not defined",
 		},
 		{
 			description:         "Redirect - Validation Error",
+			givenKey:            "a",
 			givenDefault:        "redirect",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: errInvalidConfig,
-			expectedDefault:     SyncTypeRedirect,
 			expectedError:       "redirect composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
 		},
 	}
 
 	for _, test := range testCases {
 		syncerConfig := config.Syncer{
-			Key:         key,
+			Key:         test.givenKey,
 			SupportCORS: supportCORS,
 			Default:     test.givenDefault,
 			IFrame:      test.givenIFrameConfig,
@@ -107,7 +117,7 @@ func TestNewSyncer(t *testing.T) {
 			assert.NoError(t, err, test.description+":err")
 			if assert.IsType(t, standardSyncer{}, result, test.description+":result_type") {
 				result := result.(standardSyncer)
-				assert.Equal(t, key, result.key, test.description+":key")
+				assert.Equal(t, test.givenKey, result.key, test.description+":key")
 				assert.Equal(t, supportCORS, result.supportCORS, test.description+":cors")
 				assert.Equal(t, test.expectedDefault, result.defaultSyncType, test.description+":default_sync")
 
@@ -383,6 +393,11 @@ func TestValidateTemplate(t *testing.T) {
 func TestSyncerKey(t *testing.T) {
 	syncer := standardSyncer{key: "a"}
 	assert.Equal(t, "a", syncer.Key())
+}
+
+func TestSyncerDefaultSyncType(t *testing.T) {
+	syncer := standardSyncer{defaultSyncType: SyncTypeRedirect}
+	assert.Equal(t, SyncTypeRedirect, syncer.DefaultSyncType())
 }
 
 func TestSyncerSupportsType(t *testing.T) {
