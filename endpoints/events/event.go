@@ -36,7 +36,7 @@ type eventEndpoint struct {
 	Accounts      stored_requests.AccountFetcher
 	Analytics     analytics.PBSAnalyticsModule
 	Cfg           *config.Configuration
-	TrackingPixel *httputil.OneByOnePixel
+	TrackingPixel *httputil.Pixel
 }
 
 func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.PBSAnalyticsModule) httprouter.Handle {
@@ -44,7 +44,7 @@ func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.Accoun
 		Accounts:      accounts,
 		Analytics:     analytics,
 		Cfg:           cfg,
-		TrackingPixel: &httputil.OneByOnePixelPNG,
+		TrackingPixel: &httputil.Pixel1x1PNG,
 	}
 
 	return ee.Handle

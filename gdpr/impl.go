@@ -195,8 +195,8 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 	parsedConsent, err = vendorconsent.ParseString(consent)
 	if err != nil {
 		err = &ErrorMalformedConsent{
-			consent: consent,
-			cause:   err,
+			Consent: consent,
+			Cause:   err,
 		}
 		return
 	}

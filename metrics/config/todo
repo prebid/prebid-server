@@ -1,6 +1,4 @@
 todo
- - /setuid endpoint tests
-
  - override urls from config in bidder info
  - add new cookiesync metrics to go metrics
  - add proper samesite behavior - cookie should just know what to do

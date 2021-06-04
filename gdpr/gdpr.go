@@ -58,10 +58,10 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 // An ErrorMalformedConsent will be returned by the Permissions interface if
 // the consent string argument was the reason for the failure.
 type ErrorMalformedConsent struct {
-	consent string
-	cause   error
+	Consent string
+	Cause   error
 }
 
 func (e *ErrorMalformedConsent) Error() string {
-	return "malformed consent string " + e.consent + ": " + e.cause.Error()
+	return "malformed consent string " + e.Consent + ": " + e.Cause.Error()
 }

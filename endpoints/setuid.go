@@ -50,7 +50,6 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 
 		query := r.URL.Query()
 
-		// get key + verify we have a syncer for the key
 		syncerKey, err := getSyncerKey(query, syncers)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -108,13 +107,14 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 
 		switch responseFormat {
 		case "i":
+			w.Header().Add("Content-Type", httputil.Pixel1x1PNG.ContentType)
+			w.Header().Add("Content-Length", strconv.Itoa(len(httputil.Pixel1x1PNG.Content)))
 			w.WriteHeader(http.StatusOK)
-			w.Header().Add("Content-Type", httputil.OneByOnePixelPNG.ContentType)
-			//w.Header().Add("Content-Length", strconv.Itoa(len(httputil.TrackingPixelPNG.Content))) - is this automatic?
-			w.Write(httputil.OneByOnePixelPNG.Content)
+			w.Write(httputil.Pixel1x1PNG.Content)
 		case "b":
 			w.Header().Add("Content-Type", "text/html")
-			// set content length to 0 - is this automatic?
+			w.Header().Add("Content-Length", "0")
+			w.WriteHeader(http.StatusOK)
 		}
 	})
 }
@@ -148,9 +148,8 @@ func getResponseFormat(query url.Values, syncer usersync.Syncer) (string, error)
 	}
 
 	if !strings.EqualFold(format, "b") && !strings.EqualFold(format, "i") {
-		return "", errors.New("invalid value")
+		return "", errors.New(`"f" query param is invalid. must be "b" or "i"`)
 	}
-
 	return strings.ToLower(format), nil
 }
 
