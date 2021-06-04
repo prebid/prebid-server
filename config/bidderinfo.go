@@ -44,27 +44,63 @@ type DebugInfo struct {
 	Allow bool `yaml:"allow"`
 }
 
-// Syncer specifies the user sync settings for a bidder.
+// Syncer specifies the user sync settings for a bidder. This struct is shared by the account config,
+// so it needs to have both yaml and mapstructure mappings.
 type Syncer struct {
 	// Key is used as the record key for the user sync cookie. We recommend using the bidder name
 	// as the key for consistency, but that is not enforced as a requirement. Each bidder must
 	// have a unique key.
-	Key string `yaml:"key"`
+	Key string `yaml:"key" mapstructure:"key"`
 
 	// Default identifies which endpoint is preferred if both are allowed by the publisher. This is
 	// only required if there is more than one endpoint configured for the bidder. Valid values are
 	// `iframe` and `redirect`.
-	Default string `yaml:"default"`
+	Default string `yaml:"default" mapstructure:"default"`
 
 	// IFrame configures an iframe endpoint for user syncing.
-	IFrame *SyncerEndpoint `yaml:"iframe"`
+	IFrame *SyncerEndpoint `yaml:"iframe" mapstructure:"iframe"`
 
 	// Redirect configures an redirect endpoint for user syncing. This is also known as an image
 	// endpoint in the Prebid.js project.
-	Redirect *SyncerEndpoint `yaml:"redirect"`
+	Redirect *SyncerEndpoint `yaml:"redirect" mapstructure:"redirect"`
 
 	// SupportCORS identifies if CORS is supported for user syncing.
-	SupportCORS bool
+	SupportCORS *bool `yaml:"supportcors" mapstructure:"supportcors"`
+}
+
+func (s *Syncer) ApplyTo(v *Syncer) *Syncer {
+	if s.Empty() {
+		return v
+	}
+
+	if v == nil {
+		v = &Syncer{}
+	}
+
+	if s.Key != "" {
+		v.Key = s.Key
+	}
+
+	if s.Default != "" {
+		v.Key = s.Default
+	}
+
+	v.IFrame = s.IFrame.ApplyTo(v.IFrame)
+
+	v.Redirect = s.IFrame.ApplyTo(v.Redirect)
+
+	if s.SupportCORS != nil {
+		v.SupportCORS = s.SupportCORS
+	}
+
+	return v
+}
+
+func (s *Syncer) Empty() bool {
+	if s == nil {
+		return true
+	}
+	return s.Key == "" && s.Default == "" && s.IFrame.Empty() && s.Redirect.Empty() && s.SupportCORS == nil
 }
 
 // SyncerEndpoint specifies the configuration of the URL returned by the /cookie_sync endpoint
@@ -97,7 +133,7 @@ type SyncerEndpoint struct {
 	//  {{.GDPR}}        - This will be replaced with the "gdpr" property sent to /cookie_sync.
 	//  {{.Consent}}     - This will be replaced with the "consent" property sent to /cookie_sync.
 	//  {{.USPrivacy}}   - This will be replaced with the "us_privacy" property sent to /cookie_sync.
-	URL string
+	URL string `yaml:"url" mapstructure:"url"`
 
 	// RedirectURL is an endpoint on the host server the user will be redirected to when a user sync
 	// request has been completed by the bidder server. The following macros are resolved at application
@@ -111,15 +147,50 @@ type SyncerEndpoint struct {
 	//
 	// The endpoint on the host server is usually Prebid Server's /setuid endpoint. The default value is:
 	// `{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&f={{.SyncType}}&uid={{.UserMacro}}`
-	RedirectURL string
+	RedirectURL string `yaml:"redirectUrl" mapstructure:"redirect_url"`
 
 	// ExternalURL is available as a macro to the RedirectURL template. If not specified, the host configuration
 	// value is used.
-	ExternalURL string
+	ExternalURL string `yaml:"externalUrl" mapstructure:"external_url"`
 
 	// UserMacro is available as a macro to the RedirectURL template. This value is specific to the bidder server
 	// and has no default.
-	UserMacro string
+	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
+}
+
+func (s *SyncerEndpoint) ApplyTo(v *SyncerEndpoint) *SyncerEndpoint {
+	if s.Empty() {
+		return v
+	}
+
+	if v == nil {
+		v = &SyncerEndpoint{}
+	}
+
+	if s.URL != "" {
+		v.URL = s.URL
+	}
+
+	if s.RedirectURL != "" {
+		v.RedirectURL = s.RedirectURL
+	}
+
+	if s.ExternalURL != "" {
+		v.ExternalURL = s.ExternalURL
+	}
+
+	if s.UserMacro != "" {
+		v.UserMacro = s.UserMacro
+	}
+
+	return v
+}
+
+func (s *SyncerEndpoint) Empty() bool {
+	if s == nil {
+		return true
+	}
+	return s.URL == "" && s.RedirectURL == "" && s.ExternalURL == "" && s.UserMacro == ""
 }
 
 // LoadBidderInfoFromDisk parses all static/bidder-info/{bidder}.yaml files from the file system.
