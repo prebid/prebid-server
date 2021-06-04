@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/usersync"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -75,6 +76,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		adapters,
 		nil,
 		&config.Configuration{},
+		map[string]usersync.Syncer{},
 		newTestMetrics(),
 		infos,
 		gdpr.AlwaysAllow{},

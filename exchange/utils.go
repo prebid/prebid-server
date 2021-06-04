@@ -55,6 +55,7 @@ func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext
 func cleanOpenRTBRequests(ctx context.Context,
 	req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
+	bidderToSyncerKey map[string]string,
 	gDPR gdpr.Permissions,
 	usersyncIfAmbiguous bool,
 	privacyConfig config.Privacy) (bidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
@@ -70,7 +71,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	bidderRequests, errs = getAuctionBidderRequests(req, requestExt, impsByBidder, aliases)
+	bidderRequests, errs = getAuctionBidderRequests(req, requestExt, bidderToSyncerKey, impsByBidder, aliases)
 
 	if len(bidderRequests) == 0 {
 		return
@@ -181,6 +182,7 @@ func extractLMT(orig *openrtb.BidRequest, privacyConfig config.Privacy) privacy.
 
 func getAuctionBidderRequests(req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
+	bidderToSyncerKey map[string]string,
 	impsByBidder map[string][]openrtb.Imp,
 	aliases map[string]string) ([]BidderRequest, []error) {
 
@@ -232,7 +234,8 @@ func getAuctionBidderRequests(req AuctionRequest,
 			},
 		}
 
-		if hadSync := prepareUser(&reqCopy, bidder, coreBidder, explicitBuyerUIDs, req.UserSyncs); !hadSync && req.BidRequest.App == nil {
+		syncerKey := bidderToSyncerKey[string(coreBidder)]
+		if hadSync := prepareUser(&reqCopy, bidder, syncerKey, explicitBuyerUIDs, req.UserSyncs); !hadSync && req.BidRequest.App == nil {
 			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagNo
 		} else {
 			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagYes
@@ -428,8 +431,8 @@ func isSpecialField(bidder string) bool {
 //
 // In this function, "givenBidder" may or may not be an alias. "coreBidder" must *not* be an alias.
 // It returns true if a Cookie User Sync existed, and false otherwise.
-func prepareUser(req *openrtb.BidRequest, givenBidder string, coreBidder openrtb_ext.BidderName, explicitBuyerUIDs map[string]string, usersyncs IdFetcher) bool {
-	cookieId, hadCookie := usersyncs.GetId(coreBidder) // TODO: this will need to have a lookup from bidder name to cookie key
+func prepareUser(req *openrtb.BidRequest, givenBidder, syncerKey string, explicitBuyerUIDs map[string]string, usersyncs IdFetcher) bool {
+	cookieId, hadCookie, _ := usersyncs.GetUID(syncerKey)
 
 	if id, ok := explicitBuyerUIDs[givenBidder]; ok {
 		req.User = copyWithBuyerUID(req.User, id)

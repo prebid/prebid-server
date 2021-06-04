@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -65,7 +66,7 @@ func TestNewExchange(t *testing.T) {
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
 			t.Errorf("NewExchange produced an Exchange without bidder %s", bidderName)
@@ -113,7 +114,7 @@ func TestCharacterEscape(t *testing.T) {
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
 	//liveAdapters []openrtb_ext.BidderName,
@@ -747,7 +748,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	}
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	pbc := pbc.NewClient(&http.Client{}, &cfg.CacheURL, &cfg.ExtCacheURL, testEngine)
-	e := NewExchange(adapters, pbc, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	e := NewExchange(adapters, pbc, cfg, map[string]usersync.Syncer{}, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
 	liveAdapters := []openrtb_ext.BidderName{bidderName}
 
@@ -1100,7 +1101,7 @@ func TestBidResponseCurrency(t *testing.T) {
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -1286,7 +1287,7 @@ func TestRaceIntegration(t *testing.T) {
 	}
 
 	debugLog := DebugLog{}
-	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, &nilCategoryFetcher{}).(*exchange)
+	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, &nilCategoryFetcher{}).(*exchange)
 	_, err = ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
@@ -1380,7 +1381,7 @@ func TestPanicRecovery(t *testing.T) {
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(adapters, nil, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	chBids := make(chan *bidResponseWrapper, 1)
 	panicker := func(bidderRequest BidderRequest, conversions currency.Conversions) {
@@ -1476,7 +1477,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	e := NewExchange(adapters, &mockCache{}, cfg, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, categoriesFetcher).(*exchange)
+	e := NewExchange(adapters, &mockCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.DummyMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, categoriesFetcher).(*exchange)
 
 	e.adapterMap[openrtb_ext.BidderBeachfront] = panicingAdapter{}
 	e.adapterMap[openrtb_ext.BidderAppnexus] = panicingAdapter{}
@@ -1762,6 +1763,11 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		t.Fatalf("Failed to create a category Fetcher: %v", error)
 	}
 
+	bidderToSyncerKey := map[string]string{}
+	for _, bidderName := range openrtb_ext.CoreBidderNames() {
+		bidderToSyncerKey[string(bidderName)] = string(bidderName)
+	}
+
 	return &exchange{
 		adapterMap:          bidderAdapters,
 		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), []string{}),
@@ -1773,6 +1779,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		privacyConfig:       privacyConfig,
 		categoriesFetcher:   categoriesFetcher,
 		bidderInfo:          bidderInfos,
+		bidderToSyncerKey:   bidderToSyncerKey,
 		externalURL:         "http://localhost",
 	}
 }
@@ -2840,8 +2847,8 @@ type bidderBid struct {
 
 type mockIdFetcher map[string]string
 
-func (f mockIdFetcher) GetId(bidder openrtb_ext.BidderName) (id string, ok bool) {
-	id, ok = f[string(bidder)]
+func (f mockIdFetcher) GetUID(key string) (uid string, exists bool, notExpired bool) {
+	uid, exists = f[string(key)]
 	return
 }
 
@@ -3015,8 +3022,8 @@ func (c *wellBehavedCache) PutJson(ctx context.Context, values []pbc.Cacheable) 
 
 type emptyUsersync struct{}
 
-func (e *emptyUsersync) GetId(bidder openrtb_ext.BidderName) (string, bool) {
-	return "", false
+func (e *emptyUsersync) GetUID(key string) (uid string, exists bool, notExpired bool) {
+	return "", false, false
 }
 
 func (e *emptyUsersync) HasAnyLiveSyncs() bool {

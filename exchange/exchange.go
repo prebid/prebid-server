@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
@@ -44,14 +45,14 @@ type Exchange interface {
 
 // IdFetcher can find the user's ID for a specific Bidder.
 type IdFetcher interface {
-	// GetId returns the ID for the bidder. The boolean will be true if the ID exists, and false otherwise.
-	GetId(bidder openrtb_ext.BidderName) (string, bool)
+	GetUID(key string) (uid string, exists bool, notExpired bool)
 	HasAnyLiveSyncs() bool
 }
 
 type exchange struct {
 	adapterMap          map[openrtb_ext.BidderName]adaptedBidder
 	bidderInfo          config.BidderInfos
+	bidderToSyncerKey   map[string]string
 	me                  metrics.MetricsEngine
 	cache               prebid_cache_client.Client
 	cacheTime           time.Duration
@@ -61,6 +62,7 @@ type exchange struct {
 	UsersyncIfAmbiguous bool
 	privacyConfig       config.Privacy
 	categoriesFetcher   stored_requests.CategoryFetcher
+	// should add a map of bidder to syncer key, then can eliminate the family names hack
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -79,10 +81,16 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncers map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+	bidderToSyncerKey := map[string]string{}
+	for bidder, syncer := range syncers {
+		bidderToSyncerKey[bidder] = syncer.Key()
+	}
+
 	return &exchange{
 		adapterMap:          adapters,
 		bidderInfo:          infos,
+		bidderToSyncerKey:   bidderToSyncerKey,
 		cache:               cache,
 		cacheTime:           time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
 		categoriesFetcher:   categoriesFetcher,
@@ -157,7 +165,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	usersyncIfAmbiguous := e.parseUsersyncIfAmbiguous(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.gDPR, usersyncIfAmbiguous, e.privacyConfig)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.gDPR, usersyncIfAmbiguous, e.privacyConfig)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 

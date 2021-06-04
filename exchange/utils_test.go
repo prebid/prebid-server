@@ -442,6 +442,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 			applyCOPPA:       false,
 			consentedVendors: map[string]bool{"appnexus": true, "brightroll": true},
 		},
+		// identity with user syncs
 	}
 
 	privacyConfig := config.Privacy{
@@ -454,7 +455,8 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+		bidderToSyncerKey := map[string]string{}
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -605,10 +607,12 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			Account:    accountConfig,
 		}
 
+		bidderToSyncerKey := map[string]string{}
 		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(
 			context.Background(),
 			auctionReq,
 			nil,
+			bidderToSyncerKey,
 			&permissionsMock{personalInfoAllowed: true},
 			true,
 			privacyConfig)
@@ -669,7 +673,9 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 				Enforce: true,
 			},
 		}
-		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+
+		bidderToSyncerKey := map[string]string{}
+		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
@@ -709,7 +715,8 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 			UserSyncs:  &emptyUsersync{},
 		}
 
-		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, &permissionsMock{personalInfoAllowed: true}, true, config.Privacy{})
+		bidderToSyncerKey := map[string]string{}
+		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &permissionsMock{personalInfoAllowed: true}, true, config.Privacy{})
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -816,7 +823,8 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 			UserSyncs:  &emptyUsersync{},
 		}
 
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, &permissionsMock{}, true, config.Privacy{})
+		bidderToSyncerKey := map[string]string{}
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &permissionsMock{}, true, config.Privacy{})
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -1397,7 +1405,8 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 			},
 		}
 
-		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
+		bidderToSyncerKey := map[string]string{}
+		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &permissionsMock{personalInfoAllowed: true}, true, privacyConfig)
 		result := results[0]
 
 		assert.Nil(t, errs)
@@ -1608,10 +1617,12 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			Account:    accountConfig,
 		}
 
+		bidderToSyncerKey := map[string]string{}
 		results, privacyLabels, errs := cleanOpenRTBRequests(
 			context.Background(),
 			auctionReq,
 			nil,
+			bidderToSyncerKey,
 			&permissionsMock{personalInfoAllowed: !test.gdprScrub, personalInfoAllowedError: test.permissionsError},
 			test.userSyncIfAmbiguous,
 			privacyConfig)

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,7 +47,7 @@ func TestCookieWithData(t *testing.T) {
 
 func TestBidderNameGets(t *testing.T) {
 	cookie := newSampleCookie()
-	id, exists := cookie.GetId(openrtb_ext.BidderAppnexus)
+	id, exists, _ := cookie.GetUID("adnxs")
 	if !exists {
 		t.Errorf("Cookie missing expected Appnexus ID")
 	}
@@ -56,7 +55,7 @@ func TestBidderNameGets(t *testing.T) {
 		t.Errorf("Bad appnexus id. Expected %s, got %s", "123", id)
 	}
 
-	id, exists = cookie.GetId(openrtb_ext.BidderRubicon)
+	id, exists, _ = cookie.GetUID("rubicon")
 	if !exists {
 		t.Errorf("Cookie missing expected Rubicon ID")
 	}
@@ -313,15 +312,6 @@ func TestNilCookie(t *testing.T) {
 	if isLive {
 		t.Error("nil cookies shouldn't report live UID mappings.")
 	}
-
-	uid, hadUID = nilCookie.GetId("anything")
-
-	if uid != "" {
-		t.Error("nil cookies should return empty strings for the UID.")
-	}
-	if hadUID {
-		t.Error("nil cookies shouldn't claim to have a UID mapping.")
-	}
 }
 
 func TestGetUIDs(t *testing.T) {
@@ -378,7 +368,7 @@ func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 		processedCookie := writeThenRead(cookieToSend, testCases[i].maxCookieSize)
 
 		actualKeys := make([]string, 0, 7)
-		for key, _ := range processedCookie.uids {
+		for key := range processedCookie.uids {
 			actualKeys = append(actualKeys, key)
 		}
 

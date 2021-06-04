@@ -278,20 +278,6 @@ adapters:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
 `)
 
-var invalidUserSyncURLConfig = []byte(`
-adapters:
-  appnexus:
-    endpoint: http://ib.adnxs.com/some/endpoint
-  audienceNetwork:
-    endpoint: http://facebook.com/pbs
-    usersync_url: http://facebook.com/ortb/prebid-s2s
-    platform_id: abcdefgh1234
-  brightroll:
-    usersync_url: http//test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
-  adkerneladn:
-     usersync_url: http:\\tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
-`)
-
 var oldStoredRequestsConfig = []byte(`
 stored_requests:
   filesystem: true
@@ -505,15 +491,6 @@ func TestInvalidAdapterEndpointConfig(t *testing.T) {
 	v.ReadConfig(bytes.NewBuffer(invalidAdapterEndpointConfig))
 	_, err := New(v)
 	assert.Error(t, err, "invalid endpoint in config should return an error")
-}
-
-func TestInvalidAdapterUserSyncURLConfig(t *testing.T) {
-	v := viper.New()
-	SetupViper(v, "")
-	v.SetConfigType("yaml")
-	v.ReadConfig(bytes.NewBuffer(invalidUserSyncURLConfig))
-	_, err := New(v)
-	assert.Error(t, err, "invalid user_sync URL in config should return an error")
 }
 
 func TestNegativeRequestSize(t *testing.T) {

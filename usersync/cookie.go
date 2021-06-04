@@ -20,12 +20,6 @@ const uidCookieName = "uids"
 // separate from the cookie ttl.
 const uidTTL = 14 * 24 * time.Hour
 
-// bidderToFamilyNames maps the BidderName to Adapter.Name() for the early adapters.
-// If a mapping isn't listed here, then we assume that the two are the same.
-var bidderToFamilyNames = map[openrtb_ext.BidderName]string{
-	openrtb_ext.BidderAppnexus: "adnxs",
-}
-
 // Cookie is the cookie used in Prebid Server.
 //
 // To get an instance of this from a request, use ParseCookieFromRequest.
@@ -124,15 +118,15 @@ func (cookie *Cookie) ToHTTPCookie(ttl time.Duration) *http.Cookie {
 	}
 }
 
-// GetUID Gets this user's ID for the given family.
+// GetUID Gets this user's ID for the given syncer key.
 // The first returned value is the user's ID.
 // The second returned value is true if we had a value stored, and false if we didn't.
 // The third returned value is true if that value is "active", and false if it's expired.
 //
 // If no value was stored, then the "isActive" return value will be false.
-func (cookie *Cookie) GetUID(familyName string) (string, bool, bool) {
+func (cookie *Cookie) GetUID(key string) (string, bool, bool) {
 	if cookie != nil {
-		if uid, ok := cookie.uids[familyName]; ok {
+		if uid, ok := cookie.uids[key]; ok {
 			return uid.UID, true, time.Now().Before(uid.Expires)
 		}
 	}
@@ -149,16 +143,6 @@ func (cookie *Cookie) GetUIDs() map[string]string {
 		}
 	}
 	return uids
-}
-
-// GetId wraps GetUID, letting callers fetch the ID given an OpenRTB BidderName.
-func (cookie *Cookie) GetId(bidderName openrtb_ext.BidderName) (id string, exists bool) {
-	if familyName, ok := bidderToFamilyNames[bidderName]; ok {
-		id, exists, _ = cookie.GetUID(familyName)
-	} else {
-		id, exists, _ = cookie.GetUID(string(bidderName))
-	}
-	return
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
@@ -196,14 +180,14 @@ func (cookie *Cookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie b
 	w.Header().Add("Set-Cookie", httpCookie.String())
 }
 
-// Unsync removes the user's ID for the given family from this cookie.
-func (cookie *Cookie) Unsync(familyName string) {
-	delete(cookie.uids, familyName)
+// Unsync removes the user's ID for the given syncer key from this cookie.
+func (cookie *Cookie) Unsync(key string) {
+	delete(cookie.uids, key)
 }
 
-// HasLiveSync returns true if we have an active UID for the given family, and false otherwise.
-func (cookie *Cookie) HasLiveSync(familyName string) bool {
-	_, _, isLive := cookie.GetUID(familyName)
+// HasLiveSync returns true if we have an active UID for the given syncer key, and false otherwise.
+func (cookie *Cookie) HasLiveSync(key string) bool {
+	_, _, isLive := cookie.GetUID(key)
 	return isLive
 }
 
@@ -220,19 +204,19 @@ func (cookie *Cookie) HasAnyLiveSyncs() bool {
 	return false
 }
 
-// TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
-func (cookie *Cookie) TrySync(familyName string, uid string) error {
+// TrySync tries to set the UID for some syncer key. It returns an error if the set didn't happen.
+func (cookie *Cookie) TrySync(key string, uid string) error {
 	if !cookie.AllowSyncs() {
 		return errors.New("The user has opted out of prebid server cookie syncs.")
 	}
 
 	// At the moment, Facebook calls /setuid with a UID of 0 if the user isn't logged into Facebook.
 	// They shouldn't be sending us a sentinel value... but since they are, we're refusing to save that ID.
-	if familyName == string(openrtb_ext.BidderAudienceNetwork) && uid == "0" {
+	if key == string(openrtb_ext.BidderAudienceNetwork) && uid == "0" {
 		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
 	}
 
-	cookie.uids[familyName] = uidWithExpiry{
+	cookie.uids[key] = uidWithExpiry{
 		UID:     uid,
 		Expires: time.Now().Add(uidTTL),
 	}

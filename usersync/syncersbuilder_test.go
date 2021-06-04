@@ -1,6 +1,7 @@
 package usersync
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -24,10 +25,11 @@ func TestBuildSyncers(t *testing.T) {
 	// in these tests. Look carefully at the end of the expected iframe urls to see the syncer key.
 
 	testCases := []struct {
-		description         string
-		givenBidderInfos    config.BidderInfos
-		expectedIFramesURLs map[string]string
-		expectedError       string
+		description           string
+		givenBidderInfos      config.BidderInfos
+		expectedIFramesURLs   map[string]string
+		expectedErrorHeader   string
+		expectedErrorSegments []string
 	}{
 		{
 			description:      "One",
@@ -44,9 +46,12 @@ func TestBuildSyncers(t *testing.T) {
 			},
 		},
 		{
-			description:      "One - Syncer Error",
-			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAError},
-			expectedError:    "user sync (1 error):\n  1: cannot create syncer for bidder bidder1 with key a. default is set to redirect but no redirect endpoint is configured\n",
+			description:         "One - Syncer Error",
+			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAError},
+			expectedErrorHeader: "user sync (1 error)",
+			expectedErrorSegments: []string{
+				"cannot create syncer for bidder bidder1 with key a. default is set to redirect but no redirect endpoint is configured\n",
+			},
 		},
 		{
 			description:      "Many - Different Syncers",
@@ -65,14 +70,20 @@ func TestBuildSyncers(t *testing.T) {
 			},
 		},
 		{
-			description:      "Many - Same Syncers - Many Primaries",
-			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated, "bidder2": infoKeyAPopulated},
-			expectedError:    "user sync (1 error):\n  1: bidders bidder1, bidder2 define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints\n",
+			description:         "Many - Same Syncers - Many Primaries",
+			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAPopulated, "bidder2": infoKeyAPopulated},
+			expectedErrorHeader: "user sync (1 error)",
+			expectedErrorSegments: []string{
+				"bidders bidder1, bidder2 define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints\n",
+			},
 		},
 		{
-			description:      "Many - Sync Error - Bidder Correct",
-			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAEmpty, "bidder2": infoKeyAError},
-			expectedError:    "user sync (1 error):\n  1: cannot create syncer for bidder bidder2 with key a. default is set to redirect but no redirect endpoint is configured\n",
+			description:         "Many - Sync Error - Bidder Correct",
+			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAEmpty, "bidder2": infoKeyAError},
+			expectedErrorHeader: "user sync (1 error)",
+			expectedErrorSegments: []string{
+				"cannot create syncer for bidder bidder2 with key a. default is set to redirect but no redirect endpoint is configured\n",
+			},
 		},
 		{
 			description:      "Many - Empty Syncers Ignored",
@@ -82,16 +93,20 @@ func TestBuildSyncers(t *testing.T) {
 			},
 		},
 		{
-			description:      "Many - Multiple Errors",
-			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAError, "bidder2": infoKeyBEmpty},
-			expectedError:    "user sync (2 errors):\n  1: cannot create syncer for bidder bidder1 with key a. default is set to redirect but no redirect endpoint is configured\n  2: cannot create syncer for bidder bidder2 with key b. at least one endpoint (iframe and/or redirect) is required\n",
+			description:         "Many - Multiple Errors",
+			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAError, "bidder2": infoKeyBEmpty},
+			expectedErrorHeader: "user sync (2 errors)",
+			expectedErrorSegments: []string{
+				"cannot create syncer for bidder bidder1 with key a. default is set to redirect but no redirect endpoint is configured\n",
+				"cannot create syncer for bidder bidder2 with key b. at least one endpoint (iframe and/or redirect) is required\n",
+			},
 		},
 	}
 
 	for _, test := range testCases {
 		result, err := BuildSyncers(hostConfig, test.givenBidderInfos)
 
-		if test.expectedError == "" {
+		if test.expectedErrorHeader == "" {
 			assert.NoError(t, err, test.description+":err")
 			resultRenderedIFrameURLS := map[string]string{}
 			for k, v := range result {
@@ -102,7 +117,11 @@ func TestBuildSyncers(t *testing.T) {
 			}
 			assert.Equal(t, test.expectedIFramesURLs, resultRenderedIFrameURLS, test.description+":result")
 		} else {
-			assert.EqualError(t, err, test.expectedError, test.description+":err")
+			errMessage := err.Error()
+			assert.True(t, strings.HasPrefix(errMessage, test.expectedErrorHeader), test.description+":err")
+			for _, s := range test.expectedErrorSegments {
+				assert.Contains(t, errMessage, s, test.description+":err")
+			}
 			assert.Empty(t, result, test.description+":result")
 		}
 	}

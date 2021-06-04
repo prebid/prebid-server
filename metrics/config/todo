@@ -1,6 +1,7 @@
 todo
  - override urls from config in bidder info
  - add new cookiesync metrics to go metrics
+ - rename setuid metrics to match new cookiesync metric names
  - add proper samesite behavior - cookie should just know what to do
 
  [open pr]
