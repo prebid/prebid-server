@@ -1,11 +1,13 @@
 package bmtm
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -13,7 +15,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "https://example.com/api/pbs"})
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
+		assert.NoError(t, buildErr, fmt.Sprintf("Builder returned unexpected error: %s", buildErr.Error()))
 	}
 
 	adapterstest.RunJSONBidderTest(t, "brightmountainmediatest", bidder)

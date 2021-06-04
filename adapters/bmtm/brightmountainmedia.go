@@ -50,14 +50,14 @@ func (a *adapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(ortbImp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "Error unmarshalling ExtImpBidder",
+			Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
 		}
 	}
 
 	var bmtmExt openrtb_ext.ImpExtBmtm
 	if err := json.Unmarshal(bidderExt.Bidder, &bmtmExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "Error unmarshalling ExtImpBmtm",
+			Message: fmt.Sprintf("Error unmarshalling ExtImpBmtm: %s", err.Error()),
 		}
 	}
 
