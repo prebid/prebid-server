@@ -105,7 +105,7 @@ func TestNewSyncer(t *testing.T) {
 	for _, test := range testCases {
 		syncerConfig := config.Syncer{
 			Key:         test.givenKey,
-			SupportCORS: supportCORS,
+			SupportCORS: &supportCORS,
 			Default:     test.givenDefault,
 			IFrame:      test.givenIFrameConfig,
 			Redirect:    test.givenRedirectConfig,

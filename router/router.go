@@ -234,7 +234,12 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatal(err)
 	}
 
-	// override bidderInfos user sync with default (iframe? redirect? both? -  no, not both. error if both are defined.)
+	// apply adapter overrides to bidder info
+	for bidderName, bidderInfo := range bidderInfos {
+		if adapterCfg, exists := cfg.Adapters[bidderName]; exists {
+			bidderInfo.Syncer = adapterCfg.Syncer.ApplyTo(bidderInfo.Syncer)
+		}
+	}
 
 	activeBidders := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)

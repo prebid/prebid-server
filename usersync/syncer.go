@@ -75,7 +75,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 
 	syncer := standardSyncer{
 		key:         syncerConfig.Key,
-		supportCORS: syncerConfig.SupportCORS,
+		supportCORS: syncerConfig.SupportCORS != nil && *syncerConfig.SupportCORS,
 	}
 
 	if defaultSyncType, err := resolveDefaultSyncType(syncerConfig); err != nil {
@@ -158,10 +158,10 @@ func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncer
 		externalURL = hostConfig.ExternalURL
 	}
 
-	redirectURL := macroRegexExternalHost.ReplaceAllLiteralString(redirectTemplate, externalURL)
-	redirectURL = macroRegexSyncerKey.ReplaceAllLiteralString(redirectURL, key)
+	redirectURL := macroRegexSyncerKey.ReplaceAllLiteralString(redirectTemplate, key)
 	redirectURL = macroRegexSyncType.ReplaceAllLiteralString(redirectURL, syncTypeValue)
 	redirectURL = macroRegexUserMacro.ReplaceAllLiteralString(redirectURL, syncerEndpoint.UserMacro)
+	redirectURL = macroRegexExternalHost.ReplaceAllLiteralString(redirectURL, externalURL)
 	redirectURL = escapeTemplate(redirectURL)
 
 	url := macroRegexRedirect.ReplaceAllString(syncerEndpoint.URL, redirectURL)
