@@ -902,18 +902,33 @@ func migrateConfig(v *viper.Viper) {
 	}
 }
 
+var nilBoolean *bool
+
 func setBidderDefaults(v *viper.Viper, bidder string) {
-	adapterCfgPrefix := "adapters."
-	v.SetDefault(adapterCfgPrefix+bidder+".endpoint", "")
-	v.SetDefault(adapterCfgPrefix+bidder+".usersync_url", "")
-	v.SetDefault(adapterCfgPrefix+bidder+".platform_id", "")
-	v.SetDefault(adapterCfgPrefix+bidder+".app_secret", "")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.username", "")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.password", "")
-	v.SetDefault(adapterCfgPrefix+bidder+".xapi.tracker", "")
-	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
-	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
-	v.SetDefault(adapterCfgPrefix+bidder+".extra_info", "")
+	adapterCfgPrefix := "adapters." + bidder
+	v.SetDefault(adapterCfgPrefix+".endpoint", "")
+	v.SetDefault(adapterCfgPrefix+".usersync_url", "")
+	v.SetDefault(adapterCfgPrefix+".platform_id", "")
+	v.SetDefault(adapterCfgPrefix+".app_secret", "")
+	v.SetDefault(adapterCfgPrefix+".xapi.username", "")
+	v.SetDefault(adapterCfgPrefix+".xapi.password", "")
+	v.SetDefault(adapterCfgPrefix+".xapi.tracker", "")
+	v.SetDefault(adapterCfgPrefix+".disabled", false)
+	v.SetDefault(adapterCfgPrefix+".partner_id", "")
+	v.SetDefault(adapterCfgPrefix+".extra_info", "")
+
+	// user sync
+	v.SetDefault(adapterCfgPrefix+".usersync.key", "")
+	v.SetDefault(adapterCfgPrefix+".usersync.default", "")
+	v.SetDefault(adapterCfgPrefix+".usersync.iframe.url", "")
+	v.SetDefault(adapterCfgPrefix+".usersync.iframe.redirect_url", "")
+	v.SetDefault(adapterCfgPrefix+".usersync.iframe.external_url", "")
+	v.SetDefault(adapterCfgPrefix+".usersync.iframe.user_macro", "")
+	v.SetDefault(adapterCfgPrefix+".usersync.redirect.url", "")
+	v.SetDefault(adapterCfgPrefix+".usersync.redirect.redirect_url", "")
+	v.SetDefault(adapterCfgPrefix+".usersync.redirect.external_url", "")
+	v.SetDefault(adapterCfgPrefix+".usersync.redirect.user_macro", "")
+	v.SetDefault(adapterCfgPrefix+".usersync.redirect.support_cors", nilBoolean)
 }
 
 func isValidCookieSize(maxCookieSize int) error {

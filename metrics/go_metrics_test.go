@@ -10,9 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// todo: add tests for new sync metrics
+
 func TestNewMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, nil)
 
 	ensureContains(t, registry, "app_requests", m.AppRequestMeter)
 	ensureContains(t, registry, "no_cookie_requests", m.NoCookieMeter)
@@ -21,8 +23,6 @@ func TestNewMetrics(t *testing.T) {
 	ensureContainsAdapterMetrics(t, registry, "adapter.appnexus", m.AdapterMetrics["appnexus"])
 	ensureContainsAdapterMetrics(t, registry, "adapter.rubicon", m.AdapterMetrics["rubicon"])
 	ensureContains(t, registry, "cookie_sync_requests", m.CookieSyncMeter)
-	ensureContains(t, registry, "cookie_sync.appnexus.gen", m.CookieSyncGen["appnexus"])
-	ensureContains(t, registry, "cookie_sync.appnexus.gdpr_prevent", m.CookieSyncGDPRPrevent["appnexus"])
 	ensureContains(t, registry, "usersync.appnexus.gdpr_prevent", m.userSyncGDPRPrevent["appnexus"])
 	ensureContains(t, registry, "usersync.rubicon.gdpr_prevent", m.userSyncGDPRPrevent["rubicon"])
 	ensureContains(t, registry, "usersync.unknown.gdpr_prevent", m.userSyncGDPRPrevent["unknown"])
@@ -67,7 +67,7 @@ func TestNewMetrics(t *testing.T) {
 
 func TestRecordBidType(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil)
 
 	m.RecordAdapterBidReceived(AdapterLabels{
 		Adapter: openrtb_ext.BidderAppnexus,
@@ -84,7 +84,7 @@ func TestRecordBidType(t *testing.T) {
 
 func TestRecordGDPRRejection(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil)
 	m.RecordUserIDSet(UserLabels{
 		Action: RequestActionGDPR,
 		Bidder: openrtb_ext.BidderAppnexus,
@@ -165,7 +165,7 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.DisabledMetrics)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.DisabledMetrics, nil)
 
 		m.RecordAdapterBidReceived(AdapterLabels{
 			Adapter: openrtb_ext.BidderAppnexus,
@@ -201,7 +201,7 @@ func TestRecordDNSTime(t *testing.T) {
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
 
 		m.RecordDNSTime(test.inDnsLookupDuration)
 
@@ -228,7 +228,7 @@ func TestRecordTLSHandshakeTime(t *testing.T) {
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
 
 		m.RecordTLSHandshakeTime(test.tLSHandshakeDuration)
 
@@ -333,7 +333,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 
 	for i, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterConnectionMetrics: test.in.connMetricsDisabled})
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterConnectionMetrics: test.in.connMetricsDisabled}, nil)
 
 		m.RecordAdapterConnections(test.in.adapterName, test.in.connWasReused, test.in.connWait)
 
@@ -345,14 +345,14 @@ func TestRecordAdapterConnections(t *testing.T) {
 
 func TestNewMetricsWithDisabledConfig(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
 
 	assert.True(t, m.MetricsDisabled.AccountAdapterDetails, "Accound adapter metrics should be disabled")
 }
 
 func TestRecordPrebidCacheRequestTimeWithSuccess(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
 
 	m.RecordPrebidCacheRequestTime(true, 42)
 
@@ -362,7 +362,7 @@ func TestRecordPrebidCacheRequestTimeWithSuccess(t *testing.T) {
 
 func TestRecordPrebidCacheRequestTimeWithNotSuccess(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
 
 	m.RecordPrebidCacheRequestTime(false, 42)
 
@@ -430,7 +430,7 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 
 	for _, tt := range tests {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
 		m.RecordStoredDataFetchTime(StoredDataLabels{
 			DataType:      tt.dataType,
 			DataFetchType: tt.fetchType,
@@ -504,7 +504,7 @@ func TestRecordStoredDataError(t *testing.T) {
 
 	for _, tt := range tests {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
 		m.RecordStoredDataError(StoredDataLabels{
 			DataType: tt.dataType,
 			Error:    tt.errorType,
@@ -517,7 +517,7 @@ func TestRecordStoredDataError(t *testing.T) {
 
 func TestRecordRequestPrivacy(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
 
 	// CCPA
 	m.RecordRequestPrivacy(PrivacyLabels{

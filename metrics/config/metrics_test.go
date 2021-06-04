@@ -7,6 +7,7 @@ import (
 	mainConfig "github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+
 	gometrics "github.com/rcrowley/go-metrics"
 )
 
@@ -39,7 +40,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := openrtb_ext.CoreBidderNames()
-	goEngine := metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{})
+	goEngine := metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{}, nil)
 	engineList := make(MultiMetricsEngine, 2)
 	engineList[0] = goEngine
 	engineList[1] = &DummyMetricsEngine{}

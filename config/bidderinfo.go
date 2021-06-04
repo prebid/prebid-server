@@ -65,7 +65,7 @@ type Syncer struct {
 	Redirect *SyncerEndpoint `yaml:"redirect" mapstructure:"redirect"`
 
 	// SupportCORS identifies if CORS is supported for user syncing.
-	SupportCORS *bool `yaml:"supportcors" mapstructure:"supportcors"`
+	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
 }
 
 func (s *Syncer) ApplyTo(v *Syncer) *Syncer {

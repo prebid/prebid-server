@@ -38,8 +38,8 @@ type Metrics struct {
 	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
 	AmpNoCookieMeter      metrics.Meter
 	CookieSyncMeter       metrics.Meter
-	CookieSyncGen         map[openrtb_ext.BidderName]metrics.Meter
-	CookieSyncGDPRPrevent map[openrtb_ext.BidderName]metrics.Meter
+	CookieSyncStatusMeter map[CookieSyncStatus]metrics.Meter
+	SyncerRequestsMeter   map[string]map[SyncerStatus]metrics.Meter
 	userSyncOptout        metrics.Meter
 	userSyncBadRequest    metrics.Meter
 	userSyncSet           map[openrtb_ext.BidderName]metrics.Meter
@@ -66,7 +66,6 @@ type Metrics struct {
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
 	accountMetrics        map[string]*accountMetrics
 	accountMetricsRWMutex sync.RWMutex
-	userSyncRwMutex       sync.RWMutex
 
 	exchanges []openrtb_ext.BidderName
 	// Will hold boolean values to help us disable metric collection if needed
@@ -139,8 +138,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		AccountCacheMeter:              make(map[CacheResult]metrics.Meter),
 		AmpNoCookieMeter:               blankMeter,
 		CookieSyncMeter:                blankMeter,
-		CookieSyncGen:                  make(map[openrtb_ext.BidderName]metrics.Meter),
-		CookieSyncGDPRPrevent:          make(map[openrtb_ext.BidderName]metrics.Meter),
+		CookieSyncStatusMeter:          make(map[CookieSyncStatus]metrics.Meter),
+		SyncerRequestsMeter:            make(map[string]map[SyncerStatus]metrics.Meter),
 		userSyncOptout:                 blankMeter,
 		userSyncBadRequest:             blankMeter,
 		userSyncSet:                    make(map[openrtb_ext.BidderName]metrics.Meter),
@@ -212,7 +211,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 // metrics object to contain only the metrics we are interested in. This would allow for debug
 // mode metrics. The code would allways try to record the metrics, but effectively noop if we are
 // using a blank meter/timer.
-func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics config.DisabledMetrics) *Metrics {
+func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics config.DisabledMetrics, syncerKeys []string) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges, disableAccountMetrics)
 	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
@@ -245,16 +244,28 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	}
 
 	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
-	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
+
+	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry) // total count
+
+	for _, s := range CookieSyncStatuses() {
+		newMetrics.CookieSyncStatusMeter[s] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync_requests.%s", s), registry)
+	}
+
+	for _, syncerKey := range syncerKeys {
+		newMetrics.SyncerRequestsMeter[syncerKey] = make(map[SyncerStatus]metrics.Meter)
+		for _, status := range SyncerStatuses() {
+			newMetrics.SyncerRequestsMeter[syncerKey][status] = metrics.GetOrRegisterMeter(fmt.Sprintf("syncer_requests.%s.%s", syncerKey, status), registry)
+		}
+	}
+
 	newMetrics.userSyncBadRequest = metrics.GetOrRegisterMeter("usersync.bad_requests", registry)
 	newMetrics.userSyncOptout = metrics.GetOrRegisterMeter("usersync.opt_outs", registry)
 	for _, a := range exchanges {
-		newMetrics.CookieSyncGen[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gen", string(a)), registry)
-		newMetrics.CookieSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gdpr_prevent", string(a)), registry)
 		newMetrics.userSyncSet[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.sets", string(a)), registry)
 		newMetrics.userSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.gdpr_prevent", string(a)), registry)
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
 	}
+
 	for typ, statusMap := range newMetrics.RequestStatuses {
 		for stat := range statusMap {
 			statusMap[stat] = metrics.GetOrRegisterMeter("requests."+string(stat)+"."+string(typ), registry)
@@ -574,7 +585,6 @@ func (me *Metrics) RecordAdapterBidReceived(labels AdapterLabels, bidType openrt
 	} else {
 		glog.Errorf("bid/adm metrics map entry does not exist for type %s. This is a bug, and should be reported.", bidType)
 	}
-	return
 }
 
 // RecordAdapterPrice implements a part of the MetricsEngine interface. Generates a histogram of winning bid prices
@@ -609,16 +619,20 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 
 // RecordCookieSync implements a part of the MetricsEngine interface. Records a cookie sync request
 func (me *Metrics) RecordCookieSync(status CookieSyncStatus) {
-	// TODO: add influx db metrics
 	me.CookieSyncMeter.Mark(1)
+
+	if meter, exists := me.CookieSyncStatusMeter[status]; exists {
+		meter.Mark(1)
+	}
 }
 
 // RecordSyncerRequest implements a part of the MetricsEngine interface. Records a cookie sync syncer request and status
 func (me *Metrics) RecordSyncerRequest(key string, status SyncerStatus) {
-	// me.CookieSyncGen[adapter].Mark(1)
-	// if blockedByPrivacy {
-	// 	me.CookieSyncGDPRPrevent[adapter].Mark(1)
-	// }
+	if keyMeter, exists := me.SyncerRequestsMeter[key]; exists {
+		if statusMeter, exists := keyMeter[status]; exists {
+			statusMeter.Mark(1)
+		}
+	}
 }
 
 // RecordUserIDSet implements a part of the MetricsEngine interface. Records a cookie setuid request
@@ -676,7 +690,6 @@ func (me *Metrics) RecordTimeoutNotice(success bool) {
 	} else {
 		me.TimeoutNotificationFailure.Mark(1)
 	}
-	return
 }
 
 func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
@@ -702,7 +715,6 @@ func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
 	if privacy.LMTEnforced {
 		me.PrivacyLMTRequest.Mark(1)
 	}
-	return
 }
 
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {

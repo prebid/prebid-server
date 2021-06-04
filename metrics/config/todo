@@ -1,7 +1,13 @@
 todo
- - override bidder info tests
- - add new cookiesync metrics to go metrics
  - rename setuid metrics to match new cookiesync metric names
+  - GoMetrics
+  - prometheus
+
+ - add metric tests
+  - GoMetrics
+  - prometheus
+  
+ - override bidder info tests
 
  [open pr]
 
