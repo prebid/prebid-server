@@ -92,7 +92,7 @@ func getImpAlgoriXExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAlgorix, error) {
 
 func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpAlgorix) (string, error) {
 	endPointParams := macros.EndpointTemplateParams{
-		SourceId: url.PathEscape(ext.Sid),
+		SourceId:  url.PathEscape(ext.Sid),
 		AccountID: url.PathEscape(ext.Token),
 	}
 	return macros.ResolveMacros(a.EndpointTemplate, endPointParams)
