@@ -2,6 +2,7 @@ package usersync
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/prebid/prebid-server/config"
@@ -75,12 +76,14 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 	}
 
 	if len(bidderNamesWithEndpoints) == 0 {
+		sort.Strings(bidderNames)
 		bidders := strings.Join(bidderNames, ", ")
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s share the same syncer key, but none define endpoints (iframe and/or redirect)", bidders)
 	}
 
 	if len(bidderNamesWithEndpoints) > 1 {
-		bidders := strings.Join(bidderNames, ", ")
+		sort.Strings(bidderNamesWithEndpoints)
+		bidders := strings.Join(bidderNamesWithEndpoints, ", ")
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", bidders)
 	}
 

@@ -62,7 +62,6 @@ type exchange struct {
 	UsersyncIfAmbiguous bool
 	privacyConfig       config.Privacy
 	categoriesFetcher   stored_requests.CategoryFetcher
-	// should add a map of bidder to syncer key, then can eliminate the family names hack
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread

@@ -15,12 +15,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/usersync"
-
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
@@ -29,6 +27,7 @@ import (
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
+	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
@@ -1770,7 +1769,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 
 	return &exchange{
 		adapterMap:          bidderAdapters,
-		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), []string{}),
+		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil),
 		cache:               &wellBehavedCache{},
 		cacheTime:           0,
 		gDPR:                gdpr.AlwaysFail{},

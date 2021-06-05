@@ -31,7 +31,7 @@ type Configuration struct {
 	CacheURL          Cache           `mapstructure:"cache"`
 	ExtCacheURL       ExternalCache   `mapstructure:"external_cache"`
 	RecaptchaSecret   string          `mapstructure:"recaptcha_secret"`
-	HostCookie        HostCookie      `mapstructure:"host_cookie"` // to do - move to usersync
+	HostCookie        HostCookie      `mapstructure:"host_cookie"`
 	Metrics           Metrics         `mapstructure:"metrics"`
 	DataCache         DataCache       `mapstructure:"datacache"`
 	StoredRequests    StoredRequests  `mapstructure:"stored_requests"`
@@ -928,7 +928,7 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+".usersync.redirect.redirect_url", "")
 	v.SetDefault(adapterCfgPrefix+".usersync.redirect.external_url", "")
 	v.SetDefault(adapterCfgPrefix+".usersync.redirect.user_macro", "")
-	v.SetDefault(adapterCfgPrefix+".usersync.redirect.support_cors", nilBoolean)
+	//v.SetDefault(adapterCfgPrefix+".usersync.support_cors", nilBoolean)
 }
 
 func isValidCookieSize(maxCookieSize int) error {

@@ -442,7 +442,6 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 			applyCOPPA:       false,
 			consentedVendors: map[string]bool{"appnexus": true, "brightroll": true},
 		},
-		// identity with user syncs
 	}
 
 	privacyConfig := config.Privacy{

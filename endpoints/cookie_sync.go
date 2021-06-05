@@ -29,12 +29,6 @@ var (
 	errCookieSyncInvalidBiddersType                = errors.New("invalid bidders type. must either be a string '*' or a string array of bidders")
 )
 
-var emptyUserSyncRequest = usersync.Request{}
-var emptyPrivacyPolicies = privacy.Policies{}
-var emptySyncTypeFilter = usersync.SyncTypeFilter{}
-var emptySyncBidderFilter = usersync.BidderFilter{}
-var emptySyncersChosen = []usersync.SyncerChoice{}
-
 var cookieSyncBidderFilterAllowAll = usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude)
 
 func NewCookieSyncEndpoint(
@@ -91,7 +85,7 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 		c.handleError(w, errCookieSyncOptOut, http.StatusUnauthorized)
 	case usersync.StatusBlockedByGDPR:
 		c.metrics.RecordCookieSync(metrics.CookieSyncGDPRHostCookieBlocked)
-		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, emptySyncersChosen)
+		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyPolicies, nil)
 	case usersync.StatusOK:
 		c.metrics.RecordCookieSync(metrics.CookieSyncOK)
 		c.writeBidderMetrics(result.BiddersEvaluated)
@@ -103,26 +97,26 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return emptyUserSyncRequest, emptyPrivacyPolicies, errCookieSyncBody
+		return usersync.Request{}, privacy.Policies{}, errCookieSyncBody
 	}
 
 	request := cookieSyncRequest{}
 	if err := json.Unmarshal(body, &request); err != nil {
-		return emptyUserSyncRequest, emptyPrivacyPolicies, fmt.Errorf("JSON parsing failed: %s", err.Error())
+		return usersync.Request{}, privacy.Policies{}, fmt.Errorf("JSON parsing failed: %s", err.Error())
 	}
 
 	gdprSignal, err := gdpr.SignalParse(request.GDPR)
 	if err != nil {
-		return emptyUserSyncRequest, emptyPrivacyPolicies, err
+		return usersync.Request{}, privacy.Policies{}, err
 	}
 
 	if request.GDPRConsent == "" {
 		if gdprSignal == gdpr.SignalYes {
-			return emptyUserSyncRequest, emptyPrivacyPolicies, errCookieSyncGDPRConsentMissing
+			return usersync.Request{}, privacy.Policies{}, errCookieSyncGDPRConsentMissing
 		}
 
 		if gdprSignal == gdpr.SignalAmbiguous && gdpr.SignalNormalize(gdprSignal, c.privacyConfig.gdprConfig) == gdpr.SignalYes {
-			return emptyUserSyncRequest, emptyPrivacyPolicies, errCookieSyncGDPRConsentMissingSignalAmbiguous
+			return usersync.Request{}, privacy.Policies{}, errCookieSyncGDPRConsentMissingSignalAmbiguous
 		}
 	}
 
@@ -149,7 +143,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 
 	syncTypeFilter, err := parseTypeFilter(request.FilterSettings)
 	if err != nil {
-		return emptyUserSyncRequest, emptyPrivacyPolicies, err
+		return usersync.Request{}, privacy.Policies{}, err
 	}
 
 	rx := usersync.Request{
@@ -180,13 +174,13 @@ func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTyp
 		if filter, err := parseBidderFilter(request.IFrame); err == nil {
 			syncTypeFilter.IFrame = filter
 		} else {
-			return emptySyncTypeFilter, fmt.Errorf("error parsing filtersettings.iframe: %v", err)
+			return usersync.SyncTypeFilter{}, fmt.Errorf("error parsing filtersettings.iframe: %v", err)
 		}
 
 		if filter, err := parseBidderFilter(request.Redirect); err == nil {
 			syncTypeFilter.Redirect = filter
 		} else {
-			return emptySyncTypeFilter, fmt.Errorf("error parsing filtersettings.image: %v", err)
+			return usersync.SyncTypeFilter{}, fmt.Errorf("error parsing filtersettings.image: %v", err)
 		}
 	}
 
@@ -205,7 +199,7 @@ func parseBidderFilter(filter *cookieSyncRequestFilter) (usersync.BidderFilter, 
 	case "exclude":
 		mode = usersync.BidderFilterModeExclude
 	default:
-		return emptySyncBidderFilter, fmt.Errorf("invalid filter value '%s'. must be either 'include' or 'exclude'", filter.Mode)
+		return usersync.BidderFilter{}, fmt.Errorf("invalid filter value '%s'. must be either 'include' or 'exclude'", filter.Mode)
 	}
 
 	switch v := filter.Bidders.(type) {
@@ -213,19 +207,19 @@ func parseBidderFilter(filter *cookieSyncRequestFilter) (usersync.BidderFilter, 
 		if v == "*" {
 			return usersync.NewBidderFilterForAll(mode), nil
 		}
-		return emptySyncBidderFilter, fmt.Errorf("invalid bidders value `%s`. must either be '*' or a string array", v)
+		return usersync.BidderFilter{}, fmt.Errorf("invalid bidders value `%s`. must either be '*' or a string array", v)
 	case []interface{}:
 		bidders := make([]string, len(v))
 		for i, x := range v {
 			if bidder, ok := x.(string); ok {
 				bidders[i] = bidder
 			} else {
-				return emptySyncBidderFilter, errCookieSyncInvalidBiddersType
+				return usersync.BidderFilter{}, errCookieSyncInvalidBiddersType
 			}
 		}
 		return usersync.NewBidderFilter(bidders, mode), nil
 	default:
-		return emptySyncBidderFilter, errCookieSyncInvalidBiddersType
+		return usersync.BidderFilter{}, errCookieSyncInvalidBiddersType
 	}
 }
 

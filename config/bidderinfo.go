@@ -64,7 +64,7 @@ type Syncer struct {
 	// endpoint in the Prebid.js project.
 	Redirect *SyncerEndpoint `yaml:"redirect" mapstructure:"redirect"`
 
-	// SupportCORS identifies if CORS is supported for user syncing.
+	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
 }
 

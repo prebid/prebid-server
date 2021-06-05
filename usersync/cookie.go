@@ -12,8 +12,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// todo: add "useSameSite" into the cookie itself, read from the request via user agent headers
-
 const uidCookieName = "uids"
 
 // uidTTL is the default amount of time a uid stored within a cookie is considered valid. This is
@@ -39,7 +37,6 @@ type uidWithExpiry struct {
 	Expires time.Time `json:"expires"`
 }
 
-// todo: add samesite if cookie is already same site or detect by browser version
 // ParseCookieFromRequest parses the UserSyncMap from an HTTP Request.
 func ParseCookieFromRequest(r *http.Request, cookie *config.HostCookie) *Cookie {
 	if cookie.OptOutCookie.Name != "" {

@@ -9,6 +9,6 @@ todo
   
  - override bidder info tests
 
- [open pr]
-
  - migrate all adapter user sync configs
+
+ - remove todo file

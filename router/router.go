@@ -212,8 +212,28 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	legacyBidderList := openrtb_ext.CoreBidderNames()
 	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
 
+	p, _ := filepath.Abs(infoDirectory)
+	bidderInfos, err := config.LoadBidderInfoFromDisk(p, cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	if err != nil {
+		glog.Fatal(err)
+	}
+
+	syncers, err := usersync.BuildSyncers(cfg.UserSync, bidderInfos)
+	if err != nil {
+		glog.Fatal(err)
+	}
+
+	syncerKeys := make([]string, 0, len(syncers))
+	syncerKeysHashSet := map[string]struct{}{}
+	for _, syncer := range syncers {
+		syncerKeysHashSet[syncer.Key()] = struct{}{}
+	}
+	for syncerKey := range syncerKeysHashSet {
+		syncerKeys = append(syncerKeys, syncerKey)
+	}
+
 	// Metrics engine
-	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList, nil) // todo: write up syncers
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList, syncerKeys)
 	db, shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
@@ -228,12 +248,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	p, _ := filepath.Abs(infoDirectory)
-	bidderInfos, err := config.LoadBidderInfoFromDisk(p, cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
-	if err != nil {
-		glog.Fatal(err)
-	}
-
 	// apply adapter overrides to bidder info
 	for bidderName, bidderInfo := range bidderInfos {
 		if adapterCfg, exists := cfg.Adapters[bidderName]; exists {
@@ -246,11 +260,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 	if err := validateDefaultAliases(defaultAliases); err != nil {
-		glog.Fatal(err)
-	}
-
-	syncers, err := usersync.BuildSyncers(cfg.UserSync, bidderInfos)
-	if err != nil {
 		glog.Fatal(err)
 	}
 
