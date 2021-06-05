@@ -68,7 +68,7 @@ type Syncer struct {
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
 }
 
-func (s *Syncer) ApplyTo(v *Syncer) *Syncer {
+func (s *Syncer) Override(v *Syncer) *Syncer {
 	if s.Empty() {
 		return v
 	}
@@ -85,9 +85,9 @@ func (s *Syncer) ApplyTo(v *Syncer) *Syncer {
 		v.Key = s.Default
 	}
 
-	v.IFrame = s.IFrame.ApplyTo(v.IFrame)
+	v.IFrame = s.IFrame.Override(v.IFrame)
 
-	v.Redirect = s.IFrame.ApplyTo(v.Redirect)
+	v.Redirect = s.IFrame.Override(v.Redirect)
 
 	if s.SupportCORS != nil {
 		v.SupportCORS = s.SupportCORS
@@ -158,7 +158,7 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
-func (s *SyncerEndpoint) ApplyTo(v *SyncerEndpoint) *SyncerEndpoint {
+func (s *SyncerEndpoint) Override(v *SyncerEndpoint) *SyncerEndpoint {
 	if s.Empty() {
 		return v
 	}

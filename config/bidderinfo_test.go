@@ -10,24 +10,15 @@ import (
 )
 
 const testInfoFilesPath = "./test/bidder-info"
-const testYAML = `
+const testSimpleYAML = `
 maintainer:
   email: "some-email@domain.com"
 gvlVendorID: 42
-capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - native
-  site:
-    mediaTypes:
-      - banner
-      - video
-      - native
 `
 
 func TestLoadBidderInfoFromDisk(t *testing.T) {
 	bidder := "someBidder"
+	trueValue := true
 
 	adapterConfigs := make(map[string]Adapter)
 	adapterConfigs[strings.ToLower(bidder)] = Adapter{}
@@ -52,6 +43,23 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
 				},
 			},
+			Syncer: &Syncer{
+				Key:     "foo",
+				Default: "iframe",
+				IFrame: &SyncerEndpoint{
+					URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
+					RedirectURL: "{{.ExternalURL}}/setuid/iframe",
+					ExternalURL: "https://iframe.host",
+					UserMacro:   "%UID",
+				},
+				Redirect: &SyncerEndpoint{
+					URL:         "https://foo.com/sync?mode=redirect&r={{.RedirectURL}}",
+					RedirectURL: "{{.ExternalURL}}/setuid/redirect",
+					ExternalURL: "https://redirect.host",
+					UserMacro:   "#UID",
+				},
+				SupportCORS: &trueValue,
+			},
 		},
 	}
 	assert.Equal(t, expected, infos)
@@ -71,7 +79,7 @@ func TestLoadBidderInfo(t *testing.T) {
 		{
 			description:  "Enabled",
 			givenConfigs: map[string]Adapter{strings.ToLower(bidder): {}},
-			givenContent: testYAML,
+			givenContent: testSimpleYAML,
 			expectedInfo: map[string]BidderInfo{
 				bidder: {
 					Enabled: true,
@@ -79,21 +87,13 @@ func TestLoadBidderInfo(t *testing.T) {
 						Email: "some-email@domain.com",
 					},
 					GVLVendorID: 42,
-					Capabilities: &CapabilitiesInfo{
-						App: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
-						},
-						Site: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
-						},
-					},
 				},
 			},
 		},
 		{
 			description:  "Disabled - Bidder Not Configured",
 			givenConfigs: map[string]Adapter{},
-			givenContent: testYAML,
+			givenContent: testSimpleYAML,
 			expectedInfo: map[string]BidderInfo{
 				bidder: {
 					Enabled: false,
@@ -101,21 +101,13 @@ func TestLoadBidderInfo(t *testing.T) {
 						Email: "some-email@domain.com",
 					},
 					GVLVendorID: 42,
-					Capabilities: &CapabilitiesInfo{
-						App: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
-						},
-						Site: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
-						},
-					},
 				},
 			},
 		},
 		{
 			description:  "Disabled - Bidder Wrong Case",
 			givenConfigs: map[string]Adapter{bidder: {}},
-			givenContent: testYAML,
+			givenContent: testSimpleYAML,
 			expectedInfo: map[string]BidderInfo{
 				bidder: {
 					Enabled: false,
@@ -123,21 +115,13 @@ func TestLoadBidderInfo(t *testing.T) {
 						Email: "some-email@domain.com",
 					},
 					GVLVendorID: 42,
-					Capabilities: &CapabilitiesInfo{
-						App: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
-						},
-						Site: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
-						},
-					},
 				},
 			},
 		},
 		{
 			description:  "Disabled - Explicitly Configured",
 			givenConfigs: map[string]Adapter{strings.ToLower(bidder): {Disabled: false}},
-			givenContent: testYAML,
+			givenContent: testSimpleYAML,
 			expectedInfo: map[string]BidderInfo{
 				bidder: {
 					Enabled: true,
@@ -145,14 +129,6 @@ func TestLoadBidderInfo(t *testing.T) {
 						Email: "some-email@domain.com",
 					},
 					GVLVendorID: 42,
-					Capabilities: &CapabilitiesInfo{
-						App: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
-						},
-						Site: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
-						},
-					},
 				},
 			},
 		},

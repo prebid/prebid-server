@@ -237,7 +237,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	// apply adapter overrides to bidder info
 	for bidderName, bidderInfo := range bidderInfos {
 		if adapterCfg, exists := cfg.Adapters[bidderName]; exists {
-			bidderInfo.Syncer = adapterCfg.Syncer.ApplyTo(bidderInfo.Syncer)
+			bidderInfo.Syncer = adapterCfg.Syncer.Override(bidderInfo.Syncer)
 		}
 	}
 
