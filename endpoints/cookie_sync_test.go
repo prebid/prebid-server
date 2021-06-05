@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"testing/iotest"
 	"time"
 
 	"github.com/prebid/prebid-server/analytics"
@@ -642,7 +641,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		},
 		{
 			description:      "HTTP Read Error",
-			givenBody:        iotest.ErrReader(errors.New("anyError")),
+			givenBody:        ErrReader(errors.New("anyError")),
 			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
 			givenCCPAEnabled: true,
 			expectedError:    "Failed to read request body",
@@ -1314,4 +1313,18 @@ func (m *MockGDPRPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ex
 func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (allowBidReq bool, passGeo bool, passID bool, err error) {
 	args := m.Called(ctx, bidder, PublisherID, gdprSignal, consent, weakVendorEnforcement)
 	return args.Bool(0), args.Bool(1), args.Bool(2), args.Error(3)
+}
+
+// ErrReader returns an io.Reader that returns 0, err from all Read calls. This is added in
+// Go 1.16. Copied here for now until we switch over.
+func ErrReader(err error) io.Reader {
+	return &errReader{err: err}
+}
+
+type errReader struct {
+	err error
+}
+
+func (r *errReader) Read(p []byte) (int, error) {
+	return 0, r.err
 }
