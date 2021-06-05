@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,7 +16,7 @@ type LogicadAdapter struct {
 	endpoint string
 }
 
-func (adapter *LogicadAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *LogicadAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{Message: "No impression in the bid request"}}
 	}
@@ -38,10 +38,10 @@ func (adapter *LogicadAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 	return result, errs
 }
 
-func getImpressionsInfo(imps []openrtb.Imp) (map[openrtb_ext.ExtImpLogicad][]openrtb.Imp, []openrtb.Imp, []error) {
+func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpLogicad][]openrtb2.Imp, []openrtb2.Imp, []error) {
 	errors := make([]error, 0, len(imps))
-	resImps := make([]openrtb.Imp, 0, len(imps))
-	res := make(map[openrtb_ext.ExtImpLogicad][]openrtb.Imp)
+	resImps := make([]openrtb2.Imp, 0, len(imps))
+	res := make(map[openrtb_ext.ExtImpLogicad][]openrtb2.Imp)
 
 	for _, imp := range imps {
 		impExt, err := getImpressionExt(&imp)
@@ -55,7 +55,7 @@ func getImpressionsInfo(imps []openrtb.Imp) (map[openrtb_ext.ExtImpLogicad][]ope
 		}
 
 		if res[impExt] == nil {
-			res[impExt] = make([]openrtb.Imp, 0)
+			res[impExt] = make([]openrtb2.Imp, 0)
 		}
 		res[impExt] = append(res[impExt], imp)
 		resImps = append(resImps, imp)
@@ -70,7 +70,7 @@ func validateImpression(impExt *openrtb_ext.ExtImpLogicad) error {
 	return nil
 }
 
-func getImpressionExt(imp *openrtb.Imp) (openrtb_ext.ExtImpLogicad, error) {
+func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpLogicad, error) {
 	var bidderExt adapters.ExtImpBidder
 	var logicadExt openrtb_ext.ExtImpLogicad
 
@@ -87,7 +87,7 @@ func getImpressionExt(imp *openrtb.Imp) (openrtb_ext.ExtImpLogicad, error) {
 	return logicadExt, nil
 }
 
-func (adapter *LogicadAdapter) buildAdapterRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpLogicad, imps []openrtb.Imp) (*adapters.RequestData, error) {
+func (adapter *LogicadAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpLogicad, imps []openrtb2.Imp) (*adapters.RequestData, error) {
 	newBidRequest := createBidRequest(prebidBidRequest, params, imps)
 	reqJSON, err := json.Marshal(newBidRequest)
 	if err != nil {
@@ -105,7 +105,7 @@ func (adapter *LogicadAdapter) buildAdapterRequest(prebidBidRequest *openrtb.Bid
 		Headers: headers}, nil
 }
 
-func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpLogicad, imps []openrtb.Imp) *openrtb.BidRequest {
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpLogicad, imps []openrtb2.Imp) *openrtb2.BidRequest {
 	bidRequest := *prebidBidRequest
 	bidRequest.Imp = imps
 	for idx := range bidRequest.Imp {
@@ -117,7 +117,7 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 }
 
 //MakeBids translates Logicad bid response to prebid-server specific format
-func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -126,7 +126,7 @@ func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb.BidRequest, ext
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 
 	}
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		msg := fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}

@@ -244,6 +244,13 @@ func (me *MultiMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels
 	}
 }
 
+// RecordAdapterGDPRRequestBlocked across all engines
+func (me *MultiMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterGDPRRequestBlocked(adapter)
+	}
+}
+
 // DummyMetricsEngine is a Noop metrics engine in case no metrics are configured. (may also be useful for tests)
 type DummyMetricsEngine struct{}
 
@@ -349,4 +356,8 @@ func (me *DummyMetricsEngine) RecordTimeoutNotice(success bool) {
 
 // RecordRequestPrivacy as a noop
 func (me *DummyMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
+}
+
+// RecordAdapterGDPRRequestBlocked as a noop
+func (me *DummyMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
 }

@@ -17,6 +17,8 @@ For more information, see:
 - [Prebid Server Overview](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
 - [Current Bidders](http://prebid.org/dev-docs/pbs-bidders.html)
 
+Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to get on the mailing list for updates, etc.
+
 ## Installation
 
 First install [Go](https://golang.org/doc/install) version 1.14 or newer.
@@ -48,6 +50,11 @@ go build .
 Load the landing page in your browser at `http://localhost:8000/`.
 For the full API reference, see [the endpoint documentation](https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html)
 
+## Go Modules
+
+The packages within this repository are intended to be used as part of the Prebid Server compiled binary. If you
+choose to import Prebid Server packages in other projects, please understand we make no promises on the stability
+of exported types.
 
 ## Contributing
 
@@ -57,7 +64,7 @@ Report bugs, request features, and suggest improvements [on Github](https://gith
 
 Or better yet, [open a pull request](https://github.com/prebid/prebid-server/compare) with the changes you'd like to see.
 
-## IDE Setup for PBS-Go development
+## IDE Recommendations
 
-The quickest way to start developing PBS-Go in a reproducible environment isolated from your host OS
-is by using this [VScode Remote Container Setup](devcontainer.md)
+The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS
+is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -24,13 +24,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func (a *UnrulyAdapter) ReplaceImp(imp openrtb.Imp, request *openrtb.BidRequest) *openrtb.BidRequest {
+func (a *UnrulyAdapter) ReplaceImp(imp openrtb2.Imp, request *openrtb2.BidRequest) *openrtb2.BidRequest {
 	reqCopy := *request
-	reqCopy.Imp = append(make([]openrtb.Imp, 0, 1), imp)
+	reqCopy.Imp = append(make([]openrtb2.Imp, 0, 1), imp)
 	return &reqCopy
 }
 
-func (a *UnrulyAdapter) BuildRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *UnrulyAdapter) BuildRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
@@ -52,7 +52,7 @@ func AddHeadersToRequest() http.Header {
 	return headers
 }
 
-func (a *UnrulyAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *UnrulyAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 	for _, imp := range request.Imp {
@@ -71,7 +71,7 @@ func (a *UnrulyAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	return adapterRequests, errs
 }
 
-func getMediaTypeForImpWithId(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImpWithId(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			return openrtb_ext.BidTypeVideo, nil
@@ -91,9 +91,9 @@ func CheckResponse(response *adapters.ResponseData) error {
 	return nil
 }
 
-func convertToAdapterBidResponse(response *adapters.ResponseData, internalRequest *openrtb.BidRequest) (*adapters.BidderResponse, []error) {
+func convertToAdapterBidResponse(response *adapters.ResponseData, internalRequest *openrtb2.BidRequest) (*adapters.BidderResponse, []error) {
 	var errs []error
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -115,7 +115,7 @@ func convertToAdapterBidResponse(response *adapters.ResponseData, internalReques
 	return bidResponse, errs
 }
 
-func convertBidderNameInExt(imp *openrtb.Imp) (*openrtb.Imp, error) {
+func convertBidderNameInExt(imp *openrtb2.Imp) (*openrtb2.Imp, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ func convertBidderNameInExt(imp *openrtb.Imp) (*openrtb.Imp, error) {
 	return imp, nil
 }
 
-func (a *UnrulyAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *UnrulyAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if err := CheckResponse(response); err != nil {
 		return nil, []error{err}
 	}

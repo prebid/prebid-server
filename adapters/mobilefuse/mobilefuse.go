@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -32,7 +32,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func (adapter *MobileFuseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *MobileFuseAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var adapterRequests []*adapters.RequestData
 
 	adapterRequest, errs := adapter.makeRequest(request)
@@ -44,7 +44,7 @@ func (adapter *MobileFuseAdapter) MakeRequests(request *openrtb.BidRequest, reqI
 	return adapterRequests, errs
 }
 
-func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb.BidRequest, outgoingRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb2.BidRequest, outgoingRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -61,7 +61,7 @@ func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb.BidRequest, 
 		}}
 	}
 
-	var incomingBidResponse openrtb.BidResponse
+	var incomingBidResponse openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &incomingBidResponse); err != nil {
 		return nil, []error{err}
@@ -81,7 +81,7 @@ func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb.BidRequest, 
 	return outgoingBidResponse, nil
 }
 
-func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
 	mobileFuseExtension, errs := adapter.getFirstMobileFuseExtension(bidRequest)
@@ -124,7 +124,7 @@ func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb.BidRequest) (*
 	}, errs
 }
 
-func (adapter *MobileFuseAdapter) getFirstMobileFuseExtension(request *openrtb.BidRequest) (*openrtb_ext.ExtImpMobileFuse, []error) {
+func (adapter *MobileFuseAdapter) getFirstMobileFuseExtension(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpMobileFuse, []error) {
 	var mobileFuseImpExtension openrtb_ext.ExtImpMobileFuse
 	var errs []error
 
@@ -167,8 +167,8 @@ func (adapter *MobileFuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobileFuse)
 	return url, nil
 }
 
-func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb.BidRequest, ext *openrtb_ext.ExtImpMobileFuse) []openrtb.Imp {
-	var validImps []openrtb.Imp
+func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobileFuse) []openrtb2.Imp {
+	var validImps []openrtb2.Imp
 
 	for _, imp := range bidRequest.Imp {
 		if imp.Banner != nil || imp.Video != nil {
@@ -187,7 +187,7 @@ func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb.BidRequest, e
 	return validImps
 }
 
-func (adapter *MobileFuseAdapter) getBidType(imp_id string, imps []openrtb.Imp) openrtb_ext.BidType {
+func (adapter *MobileFuseAdapter) getBidType(imp_id string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	if imps[0].Video != nil {
 		return openrtb_ext.BidTypeVideo
 	}

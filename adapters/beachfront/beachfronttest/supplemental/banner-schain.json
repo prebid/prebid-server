@@ -1,0 +1,126 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "site": {
+      "page": "https://some.domain.us/some/page.html"
+    },
+    "imp": [
+      {
+        "bidfloor": 0.02,
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 0.02,
+            "appId": "bannerAppId1"
+          }
+        }
+      }
+    ],
+    "source": {
+      "fd": 1,
+      "ext": {
+        "schain": {
+          "complete": 1,
+          "ver": "1.0",
+          "nodes": [
+            {
+              "asi": "somenode.com",
+              "sid": "some-sid",
+              "rid": "some-rid",
+              "hp": 1
+            }
+          ]
+        }
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/prebid_display",
+        "body": {
+          "slots": [
+            {
+              "slot": "",
+              "id": "bannerAppId1",
+              "bidfloor": 0.02,
+              "sizes": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ],
+          "domain": "some.domain.us",
+          "page": "https://some.domain.us/some/page.html",
+          "real204": true,
+          "referrer": "",
+          "search": "",
+          "secure": 1,
+          "requestId": "some_test_ad",
+          "isMobile": 0,
+          "ip": "",
+          "deviceModel": "",
+          "deviceOs": "",
+          "dnt": 0,
+          "ua": "",
+          "adapterName": "BF_PREBID_S2S",
+          "adapterVersion": "0.9.2",
+          "user": {},
+          "schain": {
+            "complete": 1,
+            "ver": "1.0",
+            "nodes": [
+              {
+                  "asi": "somenode.com",
+                  "sid": "some-sid",
+                  "rid": "some-rid",
+                  "hp": 1
+              }
+            ]
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "crid": "crid_1",
+            "price": 2.942808,
+            "w": 300,
+            "h": 250,
+            "slot": "div-gpt-ad-1460505748561-0",
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "div-gpt-ad-1460505748561-0Banner",
+            "impid": "div-gpt-ad-1460505748561-0",
+            "price": 2.942808,
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>",
+            "crid": "crid_1",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

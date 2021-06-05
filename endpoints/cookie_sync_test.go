@@ -1311,7 +1311,7 @@ func (m *MockGDPRPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ex
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockGDPRPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string) (bool, bool, bool, error) {
-	args := m.Called(ctx, bidder, PublisherID, gdprSignal, consent)
+func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (allowBidReq bool, passGeo bool, passID bool, err error) {
+	args := m.Called(ctx, bidder, PublisherID, gdprSignal, consent, weakVendorEnforcement)
 	return args.Bool(0), args.Bool(1), args.Bool(2), args.Error(3)
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,9 +16,16 @@ type adapter struct {
 	Endpoint string
 }
 
+type NetworkIDs struct {
+	AppID       string `json:"appid,omitempty"`
+	PlacementID string `json:"placementid,omitempty"`
+}
+
 type wrappedExtImpBidder struct {
 	*adapters.ExtImpBidder
-	AdType int `json:"adtype,omitempty"`
+	AdType     int         `json:"adtype,omitempty"`
+	IsPrebid   bool        `json:"is_prebid,omitempty"`
+	NetworkIDs *NetworkIDs `json:"networkids,omitempty"`
 }
 
 type pangleBidExt struct {
@@ -41,7 +48,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 
 /* MakeRequests */
 
-func getAdType(imp openrtb.Imp, parsedImpExt *wrappedExtImpBidder) int {
+func getAdType(imp openrtb2.Imp, parsedImpExt *wrappedExtImpBidder) int {
 	// video
 	if imp.Video != nil {
 		if parsedImpExt != nil && parsedImpExt.Prebid != nil && parsedImpExt.Prebid.IsRewardedInventory == 1 {
@@ -67,7 +74,7 @@ func getAdType(imp openrtb.Imp, parsedImpExt *wrappedExtImpBidder) int {
 	return -1
 }
 
-func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errs []error
 
@@ -78,27 +85,38 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 			errs = append(errs, fmt.Errorf("failed unmarshalling imp ext (err)%s", err.Error()))
 			continue
 		}
-		// detect and fill adtype
-		if adType := getAdType(imp, &impExt); adType == -1 {
-			errs = append(errs, &errortypes.BadInput{Message: "not a supported adtype"})
-			continue
-		} else {
-			impExt.AdType = adType
-			if newImpExt, err := json.Marshal(impExt); err == nil {
-				imp.Ext = newImpExt
-			} else {
-				errs = append(errs, fmt.Errorf("failed re-marshalling imp ext with adtype"))
-				continue
-			}
-		}
-		// for setting token
+		// get token & networkIDs
 		var bidderImpExt openrtb_ext.ImpExtPangle
 		if err := json.Unmarshal(impExt.Bidder, &bidderImpExt); err != nil {
 			errs = append(errs, fmt.Errorf("failed unmarshalling bidder imp ext (err)%s", err.Error()))
 			continue
 		}
+		// detect and fill adtype
+		adType := getAdType(imp, &impExt)
+		if adType == -1 {
+			errs = append(errs, &errortypes.BadInput{Message: "not a supported adtype"})
+			continue
+		}
+		// remarshal imp.ext
+		impExt.AdType = adType
+		impExt.IsPrebid = true
+		if len(bidderImpExt.AppID) > 0 && len(bidderImpExt.PlacementID) > 0 {
+			impExt.NetworkIDs = &NetworkIDs{
+				AppID:       bidderImpExt.AppID,
+				PlacementID: bidderImpExt.PlacementID,
+			}
+		} else if len(bidderImpExt.AppID) > 0 || len(bidderImpExt.PlacementID) > 0 {
+			errs = append(errs, &errortypes.BadInput{Message: "only one of appid or placementid is provided"})
+			continue
+		}
+		if newImpExt, err := json.Marshal(impExt); err == nil {
+			imp.Ext = newImpExt
+		} else {
+			errs = append(errs, fmt.Errorf("failed re-marshalling imp ext"))
+			continue
+		}
 
-		requestCopy.Imp = []openrtb.Imp{imp}
+		requestCopy.Imp = []openrtb2.Imp{imp}
 		requestJSON, err := json.Marshal(requestCopy)
 		if err != nil {
 			errs = append(errs, err)
@@ -122,7 +140,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 
 /* MakeBids */
 
-func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid == nil {
 		return "", fmt.Errorf("the bid request object is nil")
 	}
@@ -150,7 +168,7 @@ func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
 	return "", fmt.Errorf("unrecognized adtype in response")
 }
 
-func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -169,7 +187,7 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.Re
 		return nil, []error{err}
 	}
 
-	var response openrtb.BidResponse
+	var response openrtb2.BidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}

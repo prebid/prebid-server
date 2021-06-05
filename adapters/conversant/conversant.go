@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,7 +16,7 @@ type ConversantAdapter struct {
 	URI string
 }
 
-func (c ConversantAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (c ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	for i := 0; i < len(request.Imp); i++ {
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(request.Imp[i].Ext, &bidderExt); err != nil {
@@ -71,20 +71,26 @@ func (c ConversantAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 	}}, nil
 }
 
-func parseCnvrParams(imp *openrtb.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
+func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
 	imp.DisplayManager = "prebid-s2s"
 	imp.DisplayManagerVer = "2.0.0"
-	imp.BidFloor = cnvrExt.BidFloor
-	imp.TagID = cnvrExt.TagID
+
+	if imp.BidFloor <= 0 && cnvrExt.BidFloor > 0 {
+		imp.BidFloor = cnvrExt.BidFloor
+	}
+
+	if len(cnvrExt.TagID) > 0 {
+		imp.TagID = cnvrExt.TagID
+	}
 
 	// Take care not to override the global secure flag
 	if (imp.Secure == nil || *imp.Secure == 0) && cnvrExt.Secure != nil {
 		imp.Secure = cnvrExt.Secure
 	}
 
-	var position *openrtb.AdPosition
+	var position *openrtb2.AdPosition
 	if cnvrExt.Position != nil {
-		position = openrtb.AdPosition(*cnvrExt.Position).Ptr()
+		position = openrtb2.AdPosition(*cnvrExt.Position).Ptr()
 	}
 	if imp.Banner != nil {
 		tmpBanner := *imp.Banner
@@ -97,9 +103,9 @@ func parseCnvrParams(imp *openrtb.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
 		imp.Video.Pos = position
 
 		if len(cnvrExt.API) > 0 {
-			imp.Video.API = make([]openrtb.APIFramework, 0, len(cnvrExt.API))
+			imp.Video.API = make([]openrtb2.APIFramework, 0, len(cnvrExt.API))
 			for _, api := range cnvrExt.API {
-				imp.Video.API = append(imp.Video.API, openrtb.APIFramework(api))
+				imp.Video.API = append(imp.Video.API, openrtb2.APIFramework(api))
 			}
 		}
 
@@ -108,9 +114,9 @@ func parseCnvrParams(imp *openrtb.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
 		// but are overridden if the custom params object also contains them.
 
 		if len(cnvrExt.Protocols) > 0 {
-			imp.Video.Protocols = make([]openrtb.Protocol, 0, len(cnvrExt.Protocols))
+			imp.Video.Protocols = make([]openrtb2.Protocol, 0, len(cnvrExt.Protocols))
 			for _, protocol := range cnvrExt.Protocols {
-				imp.Video.Protocols = append(imp.Video.Protocols, openrtb.Protocol(protocol))
+				imp.Video.Protocols = append(imp.Video.Protocols, openrtb2.Protocol(protocol))
 			}
 		}
 
@@ -125,7 +131,7 @@ func parseCnvrParams(imp *openrtb.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
 	}
 }
 
-func (c ConversantAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (c ConversantAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil // no bid response
 	}
@@ -136,7 +142,7 @@ func (c ConversantAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 		}}
 	}
 
-	var resp openrtb.BidResponse
+	var resp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &resp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %d. ", err),
@@ -160,7 +166,7 @@ func (c ConversantAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 	return bidResponse, nil
 }
 
-func getBidType(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	bidType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {

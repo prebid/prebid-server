@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
@@ -371,7 +371,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 
 type fakeAdaptedBidder struct{}
 
-func (fakeAdaptedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+func (fakeAdaptedBidder) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	return nil, nil
 }
 
@@ -379,11 +379,11 @@ type fakeBidder struct {
 	name string
 }
 
-func (fakeBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (fakeBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	return nil, nil
 }
 
-func (fakeBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (fakeBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	return nil, nil
 }
 

@@ -61,7 +61,7 @@
                 "w": 300
             },
                 "ext": {
-                    "pmZoneID": "Zone1,Zone2",
+                    "pmZoneId": "Zone1,Zone2",
                     "preference": "sports,movies"
                 }
               }

@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 )
@@ -18,7 +18,7 @@ type EngageBDRAdapter struct {
 	URI string
 }
 
-func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	errors := make([]error, 0, len(request.Imp))
 
@@ -30,7 +30,7 @@ func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 	}
 
 	// EngageBDR uses different sspid parameters for banner and video.
-	sspidImps := make(map[string][]openrtb.Imp)
+	sspidImps := make(map[string][]openrtb2.Imp)
 	for _, imp := range request.Imp {
 
 		if imp.Audio != nil {
@@ -92,7 +92,7 @@ func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 	return adapterRequests, errors
 }
 
-func (adapter *EngageBDRAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *EngageBDRAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -109,7 +109,7 @@ func (adapter *EngageBDRAdapter) MakeBids(internalRequest *openrtb.BidRequest, e
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -127,7 +127,7 @@ func (adapter *EngageBDRAdapter) MakeBids(internalRequest *openrtb.BidRequest, e
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -31,7 +31,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	pubID := ""
 	for idx, imp := range request.Imp {
 		onetagExt, err := getImpressionExt(imp)
@@ -73,7 +73,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func getImpressionExt(imp openrtb.Imp) (*openrtb_ext.ExtImpOnetag, error) {
+func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpOnetag, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -96,7 +96,7 @@ func (a *adapter) buildEndpointURL(pubID string) (string, error) {
 	return macros.ResolveMacros(a.endpointTemplate, endpointParams)
 }
 
-func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -108,7 +108,7 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.Re
 		return nil, []error{err}
 	}
 
-	var response openrtb.BidResponse
+	var response openrtb2.BidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
@@ -131,7 +131,7 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.Re
 	return bidResponse, nil
 }
 
-func getMediaTypeForBid(impressions []openrtb.Imp, bid openrtb.Bid) (openrtb_ext.BidType, error) {
+func getMediaTypeForBid(impressions []openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	for _, impression := range impressions {
 		if impression.ID == bid.ImpID {
 			if impression.Banner != nil {

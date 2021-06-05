@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
@@ -38,7 +38,7 @@ func TestJsonSamples(t *testing.T) {
 
 // ----------------------------------------------------------------------------
 // Code below this line tests the legacy, non-openrtb code flow. It can be deleted after we
-// clean up the existing code and make everything openrtb.
+// clean up the existing code and make everything openrtb2.
 
 var testSovrnUserId = "SovrnUser123"
 var testUserAgent = "user-agent-test"
@@ -144,12 +144,12 @@ func checkHttpRequest(req http.Request, t *testing.T) {
 
 func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	dnt := int8(0)
-	device := openrtb.Device{
+	device := openrtb2.Device{
 		Language: "murican",
 		DNT:      &dnt,
 	}
 
-	user := openrtb.User{
+	user := openrtb2.User{
 		ID: testSovrnUserId,
 	}
 
@@ -165,7 +165,7 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	for i := 0; i < numberOfImpressions; i++ {
 		req.AdUnits[i] = pbs.AdUnit{
 			Code: fmt.Sprintf("div-adunit-%d", i+1),
-			Sizes: []openrtb.Format{
+			Sizes: []openrtb2.Format{
 				{
 					W: 728,
 					H: 90,
@@ -251,7 +251,7 @@ func TestNotFoundResponse(t *testing.T) {
 
 func CreateSovrnService(tagsToBid map[string]bool) adapterstest.OrtbMockService {
 	service := adapterstest.OrtbMockService{}
-	var lastBidRequest openrtb.BidRequest
+	var lastBidRequest openrtb2.BidRequest
 	var lastHttpReq http.Request
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -262,23 +262,23 @@ func CreateSovrnService(tagsToBid map[string]bool) adapterstest.OrtbMockService 
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		var breq openrtb.BidRequest
+		var breq openrtb2.BidRequest
 		err = json.Unmarshal(body, &breq)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		lastBidRequest = breq
-		var bids []openrtb.Bid
+		var bids []openrtb2.Bid
 		for i, imp := range breq.Imp {
 			if tagsToBid[imp.TagID] {
 				bids = append(bids, adapterstest.SampleBid(imp.Banner.W, imp.Banner.H, imp.ID, i+1))
 			}
 		}
 
-		// serialize the bids to openrtb.BidResponse
-		js, _ := json.Marshal(openrtb.BidResponse{
-			SeatBid: []openrtb.SeatBid{
+		// serialize the bids to openrtb2.BidResponse
+		js, _ := json.Marshal(openrtb2.BidResponse{
+			SeatBid: []openrtb2.SeatBid{
 				{
 					Bid: bids,
 				},

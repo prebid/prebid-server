@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 )
@@ -25,7 +25,7 @@ type adapter struct {
 }
 
 func (a *adapter) MakeRequests(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
 	requestsToBidder []*adapters.RequestData,
@@ -35,7 +35,7 @@ func (a *adapter) MakeRequests(
 	var tagID string
 
 	reqCopy := *openRTBRequest
-	reqCopy.Imp = []openrtb.Imp{}
+	reqCopy.Imp = []openrtb2.Imp{}
 	for ind, imp := range openRTBRequest.Imp {
 		reqCopy.Imp = append(reqCopy.Imp, imp)
 
@@ -77,7 +77,7 @@ const unexpectedStatusCodeFormat = "" +
 	"Unexpected status code: %d. Run with request.debug = 1 for more info"
 
 func (a *adapter) MakeBids(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
 ) (
@@ -101,7 +101,7 @@ func (a *adapter) MakeBids(
 		return nil, []error{err}
 	}
 
-	var openRTBBidderResponse openrtb.BidResponse
+	var openRTBBidderResponse openrtb2.BidResponse
 	if err := json.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
 		return nil, []error{err}
 	}
@@ -121,7 +121,7 @@ func (a *adapter) MakeBids(
 }
 
 // getMediaTypeForBid determines which type of bid.
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {

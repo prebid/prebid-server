@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
 	"golang.org/x/text/currency"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -36,7 +36,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
-func (a *YieldlabAdapter) makeEndpointURL(req *openrtb.BidRequest, params *openrtb_ext.ExtImpYieldlab) (string, error) {
+func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *openrtb_ext.ExtImpYieldlab) (string, error) {
 	uri, err := url.Parse(a.endpoint)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse yieldlab endpoint: %v", err)
@@ -86,7 +86,7 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb.BidRequest, params *openr
 	return uri.String(), nil
 }
 
-func (a *YieldlabAdapter) getGDPR(request *openrtb.BidRequest) (string, string, error) {
+func (a *YieldlabAdapter) getGDPR(request *openrtb2.BidRequest) (string, string, error) {
 	gdpr := ""
 	var extRegs openrtb_ext.ExtRegs
 	if request.Regs != nil {
@@ -118,7 +118,7 @@ func (a *YieldlabAdapter) makeTargetingValues(params *openrtb_ext.ExtImpYieldlab
 	return values.Encode()
 }
 
-func (a *YieldlabAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *YieldlabAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{fmt.Errorf("invalid request %+v, no Impressions given", request)}
 	}
@@ -149,7 +149,7 @@ func (a *YieldlabAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.
 }
 
 // parseRequest extracts the Yieldlab request information from the request
-func (a *YieldlabAdapter) parseRequest(request *openrtb.BidRequest) []*openrtb_ext.ExtImpYieldlab {
+func (a *YieldlabAdapter) parseRequest(request *openrtb2.BidRequest) []*openrtb_ext.ExtImpYieldlab {
 	params := make([]*openrtb_ext.ExtImpYieldlab, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
@@ -187,7 +187,7 @@ func (a *YieldlabAdapter) mergeParams(params []*openrtb_ext.ExtImpYieldlab) *ope
 }
 
 // MakeBids make the bids for the bid response.
-func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode != 200 {
 		return nil, []error{
 			&errortypes.BadServerResponse{
@@ -226,14 +226,14 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 		}
 
 		var bidType openrtb_ext.BidType
-		responseBid := &openrtb.Bid{
+		responseBid := &openrtb2.Bid{
 			ID:     strconv.FormatUint(bid.ID, 10),
 			Price:  float64(bid.Price) / 100,
 			ImpID:  internalRequest.Imp[i].ID,
 			CrID:   a.makeCreativeID(req, bid),
 			DealID: strconv.FormatUint(bid.Pid, 10),
-			W:      width,
-			H:      height,
+			W:      int64(width),
+			H:      int64(height),
 		}
 
 		if internalRequest.Imp[i].Video != nil {
@@ -268,11 +268,11 @@ func (a *YieldlabAdapter) findBidReq(adslotID uint64, params []*openrtb_ext.ExtI
 	return nil
 }
 
-func (a *YieldlabAdapter) makeBannerAdSource(req *openrtb.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {
+func (a *YieldlabAdapter) makeBannerAdSource(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {
 	return fmt.Sprintf(adSourceBanner, a.makeAdSourceURL(req, ext, res))
 }
 
-func (a *YieldlabAdapter) makeAdSourceURL(req *openrtb.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {
+func (a *YieldlabAdapter) makeAdSourceURL(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {
 	val := url.Values{}
 	val.Set("ts", a.cacheBuster())
 	val.Set("id", ext.ExtId)

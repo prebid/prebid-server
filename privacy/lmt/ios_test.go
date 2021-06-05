@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/util/iosutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,24 +13,24 @@ import (
 func TestModifyForIOS(t *testing.T) {
 	testCases := []struct {
 		description  string
-		givenRequest *openrtb.BidRequest
+		givenRequest *openrtb2.BidRequest
 		expectedLMT  *int8
 	}{
 		{
 			description: "13.0",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
-				Device: &openrtb.Device{OS: "iOS", OSV: "13.0", IFA: "", Lmt: nil},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: "iOS", OSV: "13.0", IFA: "", Lmt: nil},
 			},
 			expectedLMT: nil,
 		},
 		{
 			description: "14.0",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
-				Device: &openrtb.Device{OS: "iOS", OSV: "14.0", IFA: "", Lmt: nil},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: "iOS", OSV: "14.0", IFA: "", Lmt: nil},
 			},
-			expectedLMT: openrtb.Int8Ptr(1),
+			expectedLMT: openrtb2.Int8Ptr(1),
 		},
 	}
 
@@ -43,50 +43,50 @@ func TestModifyForIOS(t *testing.T) {
 func TestModifyForIOSHelper(t *testing.T) {
 	testCases := []struct {
 		description               string
-		givenRequest              *openrtb.BidRequest
+		givenRequest              *openrtb2.BidRequest
 		expectedModifier140Called bool
 		expectedModifier142Called bool
 	}{
 		{
 			description: "Valid 14.0",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
-				Device: &openrtb.Device{OS: "iOS", OSV: "14.0"},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: "iOS", OSV: "14.0"},
 			},
 			expectedModifier140Called: true,
 			expectedModifier142Called: false,
 		},
 		{
 			description: "Valid 14.2 Or Greater",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
-				Device: &openrtb.Device{OS: "iOS", OSV: "14.2"},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: "iOS", OSV: "14.2"},
 			},
 			expectedModifier140Called: false,
 			expectedModifier142Called: true,
 		},
 		{
 			description: "Invalid Version",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
-				Device: &openrtb.Device{OS: "iOS", OSV: "invalid"},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: "iOS", OSV: "invalid"},
 			},
 			expectedModifier140Called: false,
 			expectedModifier142Called: false,
 		},
 		{
 			description: "Invalid OS",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
-				Device: &openrtb.Device{OS: "invalid", OSV: "14.0"},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: "invalid", OSV: "14.0"},
 			},
 			expectedModifier140Called: false,
 			expectedModifier142Called: false,
 		},
 		{
 			description: "Invalid Nil Device",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
 				Device: nil,
 			},
 			expectedModifier140Called: false,
@@ -96,10 +96,10 @@ func TestModifyForIOSHelper(t *testing.T) {
 
 	for _, test := range testCases {
 		modifierIOS140Called := false
-		modifierIOS140 := func(req *openrtb.BidRequest) { modifierIOS140Called = true }
+		modifierIOS140 := func(req *openrtb2.BidRequest) { modifierIOS140Called = true }
 
 		modifierIOS142Called := false
-		modifierIOS142 := func(req *openrtb.BidRequest) { modifierIOS142Called = true }
+		modifierIOS142 := func(req *openrtb2.BidRequest) { modifierIOS142Called = true }
 
 		modifiers := map[iosutil.VersionClassification]modifier{
 			iosutil.Version140:          modifierIOS140,
@@ -116,22 +116,22 @@ func TestModifyForIOSHelper(t *testing.T) {
 func TestIsRequestForIOS(t *testing.T) {
 	testCases := []struct {
 		description  string
-		givenRequest *openrtb.BidRequest
+		givenRequest *openrtb2.BidRequest
 		expected     bool
 	}{
 		{
 			description: "Valid",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
-				Device: &openrtb.Device{OS: "iOS"},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: "iOS"},
 			},
 			expected: true,
 		},
 		{
 			description: "Valid - OS Case Insensitive",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
-				Device: &openrtb.Device{OS: "IOS"},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: "IOS"},
 			},
 			expected: true,
 		},
@@ -142,33 +142,33 @@ func TestIsRequestForIOS(t *testing.T) {
 		},
 		{
 			description: "Invalid - Nil App",
-			givenRequest: &openrtb.BidRequest{
+			givenRequest: &openrtb2.BidRequest{
 				App:    nil,
-				Device: &openrtb.Device{OS: "iOS"},
+				Device: &openrtb2.Device{OS: "iOS"},
 			},
 			expected: false,
 		},
 		{
 			description: "Invalid - Nil Device",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
 				Device: nil,
 			},
 			expected: false,
 		},
 		{
 			description: "Invalid - Empty OS",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
-				Device: &openrtb.Device{OS: ""},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: ""},
 			},
 			expected: false,
 		},
 		{
 			description: "Invalid - Wrong OS",
-			givenRequest: &openrtb.BidRequest{
-				App:    &openrtb.App{},
-				Device: &openrtb.Device{OS: "Android"},
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: "Android"},
 			},
 			expected: false,
 		},
@@ -183,33 +183,33 @@ func TestIsRequestForIOS(t *testing.T) {
 func TestModifyForIOS14X(t *testing.T) {
 	testCases := []struct {
 		description string
-		givenDevice openrtb.Device
+		givenDevice openrtb2.Device
 		expectedLMT *int8
 	}{
 		{
 			description: "IFA Empty",
-			givenDevice: openrtb.Device{IFA: "", Lmt: nil},
-			expectedLMT: openrtb.Int8Ptr(1),
+			givenDevice: openrtb2.Device{IFA: "", Lmt: nil},
+			expectedLMT: openrtb2.Int8Ptr(1),
 		},
 		{
 			description: "IFA Zero UUID",
-			givenDevice: openrtb.Device{IFA: "00000000-0000-0000-0000-000000000000", Lmt: nil},
-			expectedLMT: openrtb.Int8Ptr(1),
+			givenDevice: openrtb2.Device{IFA: "00000000-0000-0000-0000-000000000000", Lmt: nil},
+			expectedLMT: openrtb2.Int8Ptr(1),
 		},
 		{
 			description: "IFA Populated",
-			givenDevice: openrtb.Device{IFA: "any-real-value", Lmt: nil},
-			expectedLMT: openrtb.Int8Ptr(0),
+			givenDevice: openrtb2.Device{IFA: "any-real-value", Lmt: nil},
+			expectedLMT: openrtb2.Int8Ptr(0),
 		},
 		{
 			description: "Overwrites Existing",
-			givenDevice: openrtb.Device{IFA: "", Lmt: openrtb.Int8Ptr(0)},
-			expectedLMT: openrtb.Int8Ptr(1),
+			givenDevice: openrtb2.Device{IFA: "", Lmt: openrtb2.Int8Ptr(0)},
+			expectedLMT: openrtb2.Int8Ptr(1),
 		},
 	}
 
 	for _, test := range testCases {
-		request := &openrtb.BidRequest{Device: &test.givenDevice}
+		request := &openrtb2.BidRequest{Device: &test.givenDevice}
 		modifyForIOS14X(request)
 		assert.Equal(t, test.expectedLMT, request.Device.Lmt, test.description)
 	}
@@ -218,58 +218,58 @@ func TestModifyForIOS14X(t *testing.T) {
 func TestModifyForIOS142OrGreater(t *testing.T) {
 	testCases := []struct {
 		description string
-		givenDevice openrtb.Device
+		givenDevice openrtb2.Device
 		expectedLMT *int8
 	}{
 		{
 			description: "Not Determined",
-			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":0}`), Lmt: nil},
-			expectedLMT: openrtb.Int8Ptr(0),
+			givenDevice: openrtb2.Device{Ext: json.RawMessage(`{"atts":0}`), Lmt: nil},
+			expectedLMT: openrtb2.Int8Ptr(0),
 		},
 		{
 			description: "Restricted",
-			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":1}`), Lmt: nil},
-			expectedLMT: openrtb.Int8Ptr(1),
+			givenDevice: openrtb2.Device{Ext: json.RawMessage(`{"atts":1}`), Lmt: nil},
+			expectedLMT: openrtb2.Int8Ptr(1),
 		},
 		{
 			description: "Denied",
-			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":2}`), Lmt: nil},
-			expectedLMT: openrtb.Int8Ptr(1),
+			givenDevice: openrtb2.Device{Ext: json.RawMessage(`{"atts":2}`), Lmt: nil},
+			expectedLMT: openrtb2.Int8Ptr(1),
 		},
 		{
 			description: "Authorized",
-			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":3}`), Lmt: nil},
-			expectedLMT: openrtb.Int8Ptr(0),
+			givenDevice: openrtb2.Device{Ext: json.RawMessage(`{"atts":3}`), Lmt: nil},
+			expectedLMT: openrtb2.Int8Ptr(0),
 		},
 		{
 			description: "Overwrites Existing",
-			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":3}`), Lmt: openrtb.Int8Ptr(1)},
-			expectedLMT: openrtb.Int8Ptr(0),
+			givenDevice: openrtb2.Device{Ext: json.RawMessage(`{"atts":3}`), Lmt: openrtb2.Int8Ptr(1)},
+			expectedLMT: openrtb2.Int8Ptr(0),
 		},
 		{
 			description: "Invalid Value - Unknown",
-			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":4}`), Lmt: nil},
+			givenDevice: openrtb2.Device{Ext: json.RawMessage(`{"atts":4}`), Lmt: nil},
 			expectedLMT: nil,
 		},
 		{
 			description: "Invalid Value - Unknown - Does Not Overwrite Existing",
-			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":4}`), Lmt: openrtb.Int8Ptr(1)},
-			expectedLMT: openrtb.Int8Ptr(1),
+			givenDevice: openrtb2.Device{Ext: json.RawMessage(`{"atts":4}`), Lmt: openrtb2.Int8Ptr(1)},
+			expectedLMT: openrtb2.Int8Ptr(1),
 		},
 		{
 			description: "Invalid Value - Missing",
-			givenDevice: openrtb.Device{Ext: json.RawMessage(`{}`), Lmt: nil},
+			givenDevice: openrtb2.Device{Ext: json.RawMessage(`{}`), Lmt: nil},
 			expectedLMT: nil,
 		},
 		{
 			description: "Invalid Value - Wrong Type",
-			givenDevice: openrtb.Device{Ext: json.RawMessage(`{"atts":"wrong type"}`), Lmt: nil},
+			givenDevice: openrtb2.Device{Ext: json.RawMessage(`{"atts":"wrong type"}`), Lmt: nil},
 			expectedLMT: nil,
 		},
 	}
 
 	for _, test := range testCases {
-		request := &openrtb.BidRequest{Device: &test.givenDevice}
+		request := &openrtb2.BidRequest{Device: &test.givenDevice}
 		modifyForIOS142OrGreater(request)
 		assert.Equal(t, test.expectedLMT, request.Device.Lmt, test.description)
 	}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -51,7 +51,7 @@ type bidTtxExt struct {
 }
 
 // MakeRequests create the object for TTX Reqeust.
-func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *TtxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
@@ -77,14 +77,14 @@ func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters
 	return adapterRequests, errs
 }
 
-func (a *TtxAdapter) makeRequest(request openrtb.BidRequest, imp openrtb.Imp) (*adapters.RequestData, error) {
+func (a *TtxAdapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
 	impCopy, err := makeImps(imp)
 
 	if err != nil {
 		return nil, err
 	}
 
-	request.Imp = []openrtb.Imp{*impCopy}
+	request.Imp = []openrtb2.Imp{*impCopy}
 
 	// Last Step
 	reqJSON, err := json.Marshal(request)
@@ -103,7 +103,7 @@ func (a *TtxAdapter) makeRequest(request openrtb.BidRequest, imp openrtb.Imp) (*
 	}, nil
 }
 
-func makeImps(imp openrtb.Imp) (*openrtb.Imp, error) {
+func makeImps(imp openrtb2.Imp) (*openrtb2.Imp, error) {
 	if imp.Banner == nil && imp.Video == nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Imp ID %s must have at least one of [Banner, Video] defined", imp.ID),
@@ -158,7 +158,7 @@ func makeImps(imp openrtb.Imp) (*openrtb.Imp, error) {
 	return &imp, nil
 }
 
-func makeReqExt(request *openrtb.BidRequest) ([]byte, error) {
+func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {
 	var reqExt reqExt
 
 	if len(request.Ext) > 0 {
@@ -181,7 +181,7 @@ func makeReqExt(request *openrtb.BidRequest) ([]byte, error) {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *TtxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -198,7 +198,7 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -227,8 +227,8 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 
 }
 
-func validateVideoParams(video *openrtb.Video, prod string) (*openrtb.Video, error) {
-	videoCopy := video
+func validateVideoParams(video *openrtb2.Video, prod string) (*openrtb2.Video, error) {
+	videoCopy := *video
 	if videoCopy.W == 0 ||
 		videoCopy.H == 0 ||
 		videoCopy.Protocols == nil ||
@@ -248,11 +248,11 @@ func validateVideoParams(video *openrtb.Video, prod string) (*openrtb.Video, err
 		videoCopy.Placement = 1
 
 		if videoCopy.StartDelay == nil {
-			videoCopy.StartDelay = openrtb.StartDelay.Ptr(0)
+			videoCopy.StartDelay = openrtb2.StartDelay.Ptr(0)
 		}
 	}
 
-	return videoCopy, nil
+	return &videoCopy, nil
 }
 
 func getBidType(ext bidExt) openrtb_ext.BidType {

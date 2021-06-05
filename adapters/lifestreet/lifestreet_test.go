@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
 
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 )
@@ -53,7 +53,7 @@ func DummyLifestreetServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var breq openrtb.BidRequest
+	var breq openrtb2.BidRequest
 	err = json.Unmarshal(body, &breq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -84,7 +84,7 @@ func DummyLifestreetServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Model '%s' doesn't match '%s", breq.Device.Model, lsdata.deviceModel), http.StatusInternalServerError)
 		return
 	}
-	if *breq.Device.ConnectionType != openrtb.ConnectionType(lsdata.deviceConnectiontype) {
+	if *breq.Device.ConnectionType != openrtb2.ConnectionType(lsdata.deviceConnectiontype) {
 		http.Error(w, fmt.Sprintf("Connectiontype '%d' doesn't match '%d", breq.Device.ConnectionType, lsdata.deviceConnectiontype), http.StatusInternalServerError)
 		return
 	}
@@ -96,24 +96,24 @@ func DummyLifestreetServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Wrong number of imp objects sent: %d", len(breq.Imp)), http.StatusInternalServerError)
 		return
 	}
-	var bid *openrtb.Bid
+	var bid *openrtb2.Bid
 	for _, tag := range lsdata.tags {
 		if breq.Imp[0].Banner == nil {
 			http.Error(w, fmt.Sprintf("No banner object sent"), http.StatusInternalServerError)
 			return
 		}
-		if *breq.Imp[0].Banner.W != lsdata.width || *breq.Imp[0].Banner.H != lsdata.height {
+		if *breq.Imp[0].Banner.W != int64(lsdata.width) || *breq.Imp[0].Banner.H != int64(lsdata.height) {
 			http.Error(w, fmt.Sprintf("Size '%dx%d' doesn't match '%dx%d", breq.Imp[0].Banner.W, breq.Imp[0].Banner.H, lsdata.width, lsdata.height), http.StatusInternalServerError)
 			return
 		}
 		if breq.Imp[0].TagID == tag.slotTag {
-			bid = &openrtb.Bid{
+			bid = &openrtb2.Bid{
 				ID:    "random-id",
 				ImpID: breq.Imp[0].ID,
 				Price: tag.bid,
 				AdM:   tag.content,
-				W:     lsdata.width,
-				H:     lsdata.height,
+				W:     int64(lsdata.width),
+				H:     int64(lsdata.height),
 			}
 		}
 	}
@@ -122,14 +122,14 @@ func DummyLifestreetServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := openrtb.BidResponse{
+	resp := openrtb2.BidResponse{
 		ID:    "2345676337",
 		BidID: "975537589956",
 		Cur:   "USD",
-		SeatBid: []openrtb.SeatBid{
+		SeatBid: []openrtb2.SeatBid{
 			{
 				Seat: "LSM",
-				Bid:  []openrtb.Bid{*bid},
+				Bid:  []openrtb2.Bid{*bid},
 			},
 		},
 	}
@@ -181,25 +181,25 @@ func TestLifestreetBasicResponse(t *testing.T) {
 
 	pbin := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 2),
-		App: &openrtb.App{
+		App: &openrtb2.App{
 			Bundle: lsdata.appBundle,
 		},
-		Device: &openrtb.Device{
+		Device: &openrtb2.Device{
 			UA:             lsdata.deviceUA,
 			IP:             lsdata.deviceIP,
 			Make:           lsdata.deviceMake,
 			Model:          lsdata.deviceModel,
-			ConnectionType: openrtb.ConnectionType(lsdata.deviceConnectiontype).Ptr(),
+			ConnectionType: openrtb2.ConnectionType(lsdata.deviceConnectiontype).Ptr(),
 			IFA:            lsdata.deviceIfa,
 		},
 	}
 	for i, tag := range lsdata.tags {
 		pbin.AdUnits[i] = pbs.AdUnit{
 			Code: tag.code,
-			Sizes: []openrtb.Format{
+			Sizes: []openrtb2.Format{
 				{
-					W: lsdata.width,
-					H: lsdata.height,
+					W: int64(lsdata.width),
+					H: int64(lsdata.height),
 				},
 			},
 			Bids: []pbs.Bids{
@@ -266,7 +266,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 				if bid.Price != tag.bid {
 					t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bid.Price, tag.bid)
 				}
-				if bid.Width != lsdata.width || bid.Height != lsdata.height {
+				if bid.Width != int64(lsdata.width) || bid.Height != int64(lsdata.height) {
 					t.Errorf("Incorrect bid size %dx%d, expected %dx%d", bid.Width, bid.Height, lsdata.width, lsdata.height)
 				}
 				if bid.Adm != tag.content {

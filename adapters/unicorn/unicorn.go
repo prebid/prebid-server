@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -42,7 +42,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var extRegs openrtb_ext.ExtRegs
 	if request.Regs != nil {
 		if request.Regs.COPPA == 1 {
@@ -69,11 +69,11 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 		return nil, []error{err}
 	}
 
-	var modifiableSource openrtb.Source
+	var modifiableSource openrtb2.Source
 	if request.Source != nil {
 		modifiableSource = *request.Source
 	} else {
-		modifiableSource = openrtb.Source{}
+		modifiableSource = openrtb2.Source{}
 	}
 	modifiableSource.Ext = setSourceExt()
 	request.Source = &modifiableSource
@@ -98,7 +98,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapter
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func getHeaders(request *openrtb.BidRequest) http.Header {
+func getHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -121,7 +121,7 @@ func getHeaders(request *openrtb.BidRequest) http.Header {
 	return headers
 }
 
-func modifyImps(request *openrtb.BidRequest) error {
+func modifyImps(request *openrtb2.BidRequest) error {
 	for i := 0; i < len(request.Imp); i++ {
 		imp := &request.Imp[i]
 
@@ -157,7 +157,7 @@ func modifyImps(request *openrtb.BidRequest) error {
 	return nil
 }
 
-func getStoredRequestImpID(imp *openrtb.Imp) (string, error) {
+func getStoredRequestImpID(imp *openrtb2.Imp) (string, error) {
 	v, err := jsonparser.GetString(imp.Ext, "prebid", "storedrequest", "id")
 
 	if err != nil {
@@ -171,7 +171,7 @@ func setSourceExt() json.RawMessage {
 	return json.RawMessage(`{"stype": "prebid_server_uncn", "bidder": "unicorn"}`)
 }
 
-func setExt(request *openrtb.BidRequest) (json.RawMessage, error) {
+func setExt(request *openrtb2.BidRequest) (json.RawMessage, error) {
 	accountID, err := jsonparser.GetInt(request.Imp[0].Ext, "bidder", "accountId")
 	if err != nil {
 		accountID = 0
@@ -195,7 +195,7 @@ func setExt(request *openrtb.BidRequest) (json.RawMessage, error) {
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -215,7 +215,7 @@ func (a *adapter) MakeBids(request *openrtb.BidRequest, requestData *adapters.Re
 		return nil, []error{err}
 	}
 
-	var response openrtb.BidResponse
+	var response openrtb2.BidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}

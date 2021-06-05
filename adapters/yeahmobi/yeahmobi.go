@@ -8,7 +8,7 @@ import (
 	"text/template"
 
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -33,7 +33,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func (adapter *YeahmobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *YeahmobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var adapterRequests []*adapters.RequestData
 
 	adapterRequest, errs := adapter.makeRequest(request)
@@ -44,7 +44,7 @@ func (adapter *YeahmobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInf
 	return adapterRequests, errs
 }
 
-func (adapter *YeahmobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (adapter *YeahmobiAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
 	yeahmobiExt, errs := getYeahmobiExt(request)
@@ -75,7 +75,7 @@ func (adapter *YeahmobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapt
 	}, errs
 }
 
-func transform(request *openrtb.BidRequest) {
+func transform(request *openrtb2.BidRequest) {
 	for i, imp := range request.Imp {
 		if imp.Native != nil {
 			var nativeRequest map[string]interface{}
@@ -95,13 +95,15 @@ func transform(request *openrtb.BidRequest) {
 					continue
 				}
 
-				request.Imp[i].Native.Request = string(nativeReqByte)
+				nativeCopy := *request.Imp[i].Native
+				nativeCopy.Request = string(nativeReqByte)
+				request.Imp[i].Native = &nativeCopy
 			}
 		}
 	}
 }
 
-func getYeahmobiExt(request *openrtb.BidRequest) (*openrtb_ext.ExtImpYeahmobi, []error) {
+func getYeahmobiExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpYeahmobi, []error) {
 	var extImpYeahmobi openrtb_ext.ExtImpYeahmobi
 	var errs []error
 
@@ -129,7 +131,7 @@ func (adapter *YeahmobiAdapter) getEndpoint(ext *openrtb_ext.ExtImpYeahmobi) (st
 }
 
 // MakeBids make the bids for the bid response.
-func (a *YeahmobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *YeahmobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -146,7 +148,7 @@ func (a *YeahmobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -167,7 +169,7 @@ func (a *YeahmobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 
 }
 
-func getBidType(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	bidType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {

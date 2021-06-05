@@ -3,7 +3,7 @@ package adapters
 import (
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -32,7 +32,7 @@ func BuildInfoAwareBidder(bidder Bidder, info config.BidderInfo) Bidder {
 	}
 }
 
-func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
+func (i *InfoAwareBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
 	var allowedMediaTypes parsedSupports
 
 	if request.Site != nil {
@@ -72,7 +72,7 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *Ext
 
 // pruneImps trims invalid media types from each imp, and returns true if any of the
 // Imps have _no_ valid Media Types left.
-func pruneImps(imps []openrtb.Imp, allowedTypes parsedSupports) (int, []error) {
+func pruneImps(imps []openrtb2.Imp, allowedTypes parsedSupports) (int, []error) {
 	numToFilter := 0
 	var errs []error
 	for i := 0; i < len(imps); i++ {
@@ -115,12 +115,12 @@ func parseAllowedTypes(allowedTypes []openrtb_ext.BidType) (allowBanner bool, al
 	return
 }
 
-func hasAnyTypes(imp *openrtb.Imp) bool {
+func hasAnyTypes(imp *openrtb2.Imp) bool {
 	return imp.Banner != nil || imp.Video != nil || imp.Audio != nil || imp.Native != nil
 }
 
-func filterImps(imps []openrtb.Imp, numToFilter int) ([]openrtb.Imp, []error) {
-	newImps := make([]openrtb.Imp, 0, len(imps)-numToFilter)
+func filterImps(imps []openrtb2.Imp, numToFilter int) ([]openrtb2.Imp, []error) {
+	newImps := make([]openrtb2.Imp, 0, len(imps)-numToFilter)
 	errs := make([]error, 0, numToFilter)
 	for i := 0; i < len(imps); i++ {
 		if hasAnyTypes(&imps[i]) {

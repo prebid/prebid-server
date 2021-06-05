@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
@@ -497,12 +497,12 @@ func TestConversantVideoRequestWithParams(t *testing.T) {
 	assertEqual(t, len(imp.Video.MIMEs), 1, "Request video MIMEs entries")
 	assertEqual(t, imp.Video.MIMEs[0], "video/x-ms-wmv", "Requst video MIMEs type")
 	assertEqual(t, len(imp.Video.Protocols), 2, "Request video protocols")
-	assertEqual(t, imp.Video.Protocols[0], openrtb.Protocol(1), "Request video protocols 1")
-	assertEqual(t, imp.Video.Protocols[1], openrtb.Protocol(2), "Request video protocols 2")
+	assertEqual(t, imp.Video.Protocols[0], openrtb2.Protocol(1), "Request video protocols 1")
+	assertEqual(t, imp.Video.Protocols[1], openrtb2.Protocol(2), "Request video protocols 2")
 	assertEqual(t, imp.Video.MaxDuration, int64(90), "Request video 0 max duration")
 	assertEqual(t, len(imp.Video.API), 2, "Request video api should be nil")
-	assertEqual(t, imp.Video.API[0], openrtb.APIFramework(1), "Request video api 1")
-	assertEqual(t, imp.Video.API[1], openrtb.APIFramework(2), "Request video api 2")
+	assertEqual(t, imp.Video.API[0], openrtb2.APIFramework(1), "Request video api 1")
+	assertEqual(t, imp.Video.API[1], openrtb2.APIFramework(2), "Request video api 2")
 }
 
 // Test video request with parameters in the video object
@@ -557,8 +557,8 @@ func TestConversantVideoRequestWithParams2(t *testing.T) {
 	assertEqual(t, len(imp.Video.MIMEs), 1, "Request video MIMEs entries")
 	assertEqual(t, imp.Video.MIMEs[0], "video/x-ms-wmv", "Requst video MIMEs type")
 	assertEqual(t, len(imp.Video.Protocols), 2, "Request video protocols")
-	assertEqual(t, imp.Video.Protocols[0], openrtb.Protocol(1), "Request video protocols 1")
-	assertEqual(t, imp.Video.Protocols[1], openrtb.Protocol(2), "Request video protocols 2")
+	assertEqual(t, imp.Video.Protocols[0], openrtb2.Protocol(1), "Request video protocols 1")
+	assertEqual(t, imp.Video.Protocols[1], openrtb2.Protocol(2), "Request video protocols 2")
 	assertEqual(t, imp.Video.MaxDuration, int64(90), "Request video 0 max duration")
 }
 
@@ -628,7 +628,7 @@ func CreateRequest(params ...string) *pbs.PBSRequest {
 	for i := 0; i < num; i++ {
 		req.AdUnits[i] = pbs.AdUnit{
 			Code: fmt.Sprintf("au-%03d", i),
-			Sizes: []openrtb.Format{
+			Sizes: []openrtb2.Format{
 				{
 					W: 300,
 					H: 250,
@@ -672,7 +672,7 @@ func ConvertToVideoRequest(req *pbs.PBSRequest, videoParams ...string) (*pbs.PBS
 
 // Convert a request to an app request by adding required properties
 func ConvertToAppRequest(req *pbs.PBSRequest, appParams string) (*pbs.PBSRequest, error) {
-	app := new(openrtb.App)
+	app := new(openrtb2.App)
 	err := json.Unmarshal([]byte(appParams), &app)
 	if err == nil {
 		req.App = app
@@ -728,8 +728,8 @@ func CreateVideoRequest(params ...string) (*pbs.PBSRequest, error) {
 
 // Helper to create a test http server that receives and generate openrtb requests and responses
 
-func CreateServer(prices ...float64) (*httptest.Server, *openrtb.BidRequest) {
-	var lastBidRequest openrtb.BidRequest
+func CreateServer(prices ...float64) (*httptest.Server, *openrtb2.BidRequest) {
+	var lastBidRequest openrtb2.BidRequest
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		body, err := ioutil.ReadAll(r.Body)
@@ -738,10 +738,10 @@ func CreateServer(prices ...float64) (*httptest.Server, *openrtb.BidRequest) {
 			return
 		}
 
-		var bidReq openrtb.BidRequest
+		var bidReq openrtb2.BidRequest
 		var price float64
-		var bids []openrtb.Bid
-		var bid openrtb.Bid
+		var bids []openrtb2.Bid
+		var bid openrtb2.Bid
 
 		err = json.Unmarshal(body, &bidReq)
 		if err != nil {
@@ -758,7 +758,7 @@ func CreateServer(prices ...float64) (*httptest.Server, *openrtb.BidRequest) {
 			}
 
 			if price > 0 {
-				bid = openrtb.Bid{
+				bid = openrtb2.Bid{
 					ID:    imp.ID,
 					ImpID: imp.ID,
 					Price: price,
@@ -775,7 +775,7 @@ func CreateServer(prices ...float64) (*httptest.Server, *openrtb.BidRequest) {
 					bid.H = imp.Video.H
 				}
 			} else {
-				bid = openrtb.Bid{
+				bid = openrtb2.Bid{
 					ID:    imp.ID,
 					ImpID: imp.ID,
 					Price: 0,
@@ -788,9 +788,9 @@ func CreateServer(prices ...float64) (*httptest.Server, *openrtb.BidRequest) {
 		if len(bids) == 0 {
 			w.WriteHeader(http.StatusNoContent)
 		} else {
-			js, _ := json.Marshal(openrtb.BidResponse{
+			js, _ := json.Marshal(openrtb2.BidResponse{
 				ID: bidReq.ID,
-				SeatBid: []openrtb.SeatBid{
+				SeatBid: []openrtb2.SeatBid{
 					{
 						Bid: bids,
 					},
@@ -808,9 +808,9 @@ func CreateServer(prices ...float64) (*httptest.Server, *openrtb.BidRequest) {
 
 // Helper to remove impressions with $0 bids
 
-func FilterZeroPrices(prices []float64, imps []openrtb.Imp) ([]float64, []openrtb.Imp) {
+func FilterZeroPrices(prices []float64, imps []openrtb2.Imp) ([]float64, []openrtb2.Imp) {
 	prices2 := make([]float64, 0)
-	imps2 := make([]openrtb.Imp, 0)
+	imps2 := make([]openrtb2.Imp, 0)
 
 	for i := range prices {
 		if prices[i] > 0 {

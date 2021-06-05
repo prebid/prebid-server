@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -51,32 +51,33 @@ type beachfrontRequests struct {
 // ---------------------------------------------------
 
 type beachfrontVideoRequest struct {
-	AppId             string             `json:"appId"`
-	VideoResponseType string             `json:"videoResponseType"`
-	Request           openrtb.BidRequest `json:"request"`
+	AppId             string              `json:"appId"`
+	VideoResponseType string              `json:"videoResponseType"`
+	Request           openrtb2.BidRequest `json:"request"`
 }
 
 // ---------------------------------------------------
 //              Banner
 // ---------------------------------------------------
 type beachfrontBannerRequest struct {
-	Slots          []beachfrontSlot `json:"slots"`
-	Domain         string           `json:"domain"`
-	Page           string           `json:"page"`
-	Referrer       string           `json:"referrer"`
-	Search         string           `json:"search"`
-	Secure         int8             `json:"secure"`
-	DeviceOs       string           `json:"deviceOs"`
-	DeviceModel    string           `json:"deviceModel"`
-	IsMobile       int8             `json:"isMobile"`
-	UA             string           `json:"ua"`
-	Dnt            int8             `json:"dnt"`
-	User           openrtb.User     `json:"user"`
-	AdapterName    string           `json:"adapterName"`
-	AdapterVersion string           `json:"adapterVersion"`
-	IP             string           `json:"ip"`
-	RequestID      string           `json:"requestId"`
-	Real204        bool             `json:"real204"`
+	Slots          []beachfrontSlot                         `json:"slots"`
+	Domain         string                                   `json:"domain"`
+	Page           string                                   `json:"page"`
+	Referrer       string                                   `json:"referrer"`
+	Search         string                                   `json:"search"`
+	Secure         int8                                     `json:"secure"`
+	DeviceOs       string                                   `json:"deviceOs"`
+	DeviceModel    string                                   `json:"deviceModel"`
+	IsMobile       int8                                     `json:"isMobile"`
+	UA             string                                   `json:"ua"`
+	Dnt            int8                                     `json:"dnt"`
+	User           openrtb2.User                            `json:"user"`
+	AdapterName    string                                   `json:"adapterName"`
+	AdapterVersion string                                   `json:"adapterVersion"`
+	IP             string                                   `json:"ip"`
+	RequestID      string                                   `json:"requestId"`
+	Real204        bool                                     `json:"real204"`
+	SChain         openrtb_ext.ExtRequestPrebidSChainSChain `json:"schain,omitempty"`
 }
 
 type beachfrontSlot struct {
@@ -108,7 +109,7 @@ type beachfrontVideoBidExtension struct {
 	Duration int `json:"duration"`
 }
 
-func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *BeachfrontAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	beachfrontRequests, errs := preprocess(request)
 
 	headers := http.Header{}
@@ -198,9 +199,9 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	return reqs, errs
 }
 
-func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests, errs []error) {
-	var videoImps = make([]openrtb.Imp, 0)
-	var bannerImps = make([]openrtb.Imp, 0)
+func preprocess(request *openrtb2.BidRequest) (beachfrontReqs beachfrontRequests, errs []error) {
+	var videoImps = make([]openrtb2.Imp, 0)
+	var bannerImps = make([]openrtb2.Imp, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil && request.Imp[i].Banner.Format != nil &&
@@ -263,11 +264,16 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 	return appid, error
 }
 
+func getSchain(request *openrtb2.BidRequest) (openrtb_ext.ExtRequestPrebidSChain, error) {
+	var schain openrtb_ext.ExtRequestPrebidSChain
+	return schain, json.Unmarshal(request.Source.Ext, &schain)
+}
+
 /*
 getBannerRequest, singular. A "Slot" is an "imp," and each Slot can have an AppId, so just one
 request to the beachfront banner endpoint gets all banner Imps.
 */
-func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []error) {
+func getBannerRequest(request *openrtb2.BidRequest) (beachfrontBannerRequest, []error) {
 	var bfr beachfrontBannerRequest
 	var errs = make([]error, 0, len(request.Imp))
 
@@ -301,8 +307,8 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
 
 			slot.Sizes = append(slot.Sizes, beachfrontSize{
-				H: request.Imp[i].Banner.Format[j].H,
-				W: request.Imp[i].Banner.Format[j].W,
+				H: uint64(request.Imp[i].Banner.Format[j].H),
+				W: uint64(request.Imp[i].Banner.Format[j].W),
 			})
 		}
 
@@ -327,7 +333,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 
 	var t = fallBackDeviceType(request)
 
-	if t == openrtb.DeviceTypeMobileTablet {
+	if t == openrtb2.DeviceTypeMobileTablet {
 		bfr.Page = request.App.Bundle
 		if request.App.Domain == "" {
 			bfr.Domain = getDomain(request.App.Domain)
@@ -336,7 +342,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 		}
 
 		bfr.IsMobile = 1
-	} else if t == openrtb.DeviceTypePersonalComputer {
+	} else if t == openrtb2.DeviceTypePersonalComputer {
 		bfr.Page = request.Site.Page
 		if request.Site.Domain == "" {
 			bfr.Domain = getDomain(request.Site.Page)
@@ -370,18 +376,25 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	}
 	bfr.Real204 = true
 
+	if request.Source != nil && request.Source.Ext != nil {
+		schain, err := getSchain(request)
+		if err == nil {
+			bfr.SChain = schain.SChain
+		}
+	}
+
 	return bfr, errs
 }
 
-func fallBackDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
+func fallBackDeviceType(request *openrtb2.BidRequest) openrtb2.DeviceType {
 	if request.Site != nil {
-		return openrtb.DeviceTypePersonalComputer
+		return openrtb2.DeviceTypePersonalComputer
 	}
 
-	return openrtb.DeviceTypeMobileTablet
+	return openrtb2.DeviceTypeMobileTablet
 }
 
-func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []error) {
+func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, []error) {
 	var bfReqs = make([]beachfrontVideoRequest, len(request.Imp))
 	var errs = make([]error, 0, len(request.Imp))
 	var failedRequestIndicies = make([]int, 0)
@@ -409,8 +422,11 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		bfReqs[i].Request = *request
 		var secure int8
 
+		var deviceCopy openrtb2.Device
 		if bfReqs[i].Request.Device == nil {
-			bfReqs[i].Request.Device = &openrtb.Device{}
+			deviceCopy = openrtb2.Device{}
+		} else {
+			deviceCopy = *bfReqs[i].Request.Device
 		}
 
 		if beachfrontExt.VideoResponseType == "nurl" {
@@ -418,13 +434,15 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		} else {
 			bfReqs[i].VideoResponseType = "adm"
 
-			if bfReqs[i].Request.Device.IP == "" {
-				bfReqs[i].Request.Device.IP = fakeIP
+			if deviceCopy.IP == "" {
+				deviceCopy.IP = fakeIP
 			}
 		}
 
 		if bfReqs[i].Request.Site != nil && bfReqs[i].Request.Site.Domain == "" && bfReqs[i].Request.Site.Page != "" {
-			bfReqs[i].Request.Site.Domain = getDomain(bfReqs[i].Request.Site.Page)
+			siteCopy := *bfReqs[i].Request.Site
+			siteCopy.Domain = getDomain(bfReqs[i].Request.Site.Page)
+			bfReqs[i].Request.Site = &siteCopy
 			secure = isSecure(bfReqs[i].Request.Site.Page)
 		}
 
@@ -439,10 +457,11 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			}
 		}
 
-		if bfReqs[i].Request.Device != nil && bfReqs[i].Request.Device.DeviceType == 0 {
+		if deviceCopy.DeviceType == 0 {
 			// More fine graned deviceType methods will be added in the future
-			bfReqs[i].Request.Device.DeviceType = fallBackDeviceType(request)
+			deviceCopy.DeviceType = fallBackDeviceType(request)
 		}
+		bfReqs[i].Request.Device = &deviceCopy
 
 		imp := request.Imp[i]
 
@@ -467,7 +486,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		}
 
 		bfReqs[i].Request.Imp = nil
-		bfReqs[i].Request.Imp = make([]openrtb.Imp, 1)
+		bfReqs[i].Request.Imp = make([]openrtb2.Imp, 1)
 		bfReqs[i].Request.Imp[0] = imp
 
 	}
@@ -482,7 +501,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 	return bfReqs, errs
 }
 
-func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -503,17 +522,17 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		return nil, []error{fmt.Errorf("unexpected status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri)}
 	}
 
-	var bids []openrtb.Bid
+	var bids []openrtb2.Bid
 	var errs = make([]error, 0)
-	var xtrnal openrtb.BidRequest
+	var xtrnal openrtb2.BidRequest
 
 	// For video, which uses RTB for the external request, this will unmarshal as expected. For banner, it will
 	// only get the User struct and everything else will be nil
 	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
 		errs = append(errs, err)
+	} else {
+		bids, errs = postprocess(response, xtrnal, externalRequest.Uri, internalRequest.ID)
 	}
-
-	bids, errs = postprocess(response, xtrnal, externalRequest.Uri, internalRequest.ID)
 
 	if len(errs) != 0 {
 		return nil, errs
@@ -554,16 +573,16 @@ func (a *BeachfrontAdapter) getBidType(externalRequest *adapters.RequestData) op
 	return openrtb_ext.BidTypeBanner
 }
 
-func postprocess(response *adapters.ResponseData, xtrnal openrtb.BidRequest, uri string, id string) ([]openrtb.Bid, []error) {
+func postprocess(response *adapters.ResponseData, xtrnal openrtb2.BidRequest, uri string, id string) ([]openrtb2.Bid, []error) {
 	var beachfrontResp []beachfrontResponseSlot
 
-	var openrtbResp openrtb.BidResponse
+	var openrtbResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &openrtbResp); err != nil || len(openrtbResp.SeatBid) == 0 {
 
 		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
 			return nil, []error{&errortypes.BadServerResponse{
-				Message: fmt.Sprint("server response failed to unmarshal as valid rtb. Run with request.debug = 1 for more info"),
+				Message: "server response failed to unmarshal as valid rtb. Run with request.debug = 1 for more info",
 			}}
 		} else {
 			return postprocessBanner(beachfrontResp, id)
@@ -573,27 +592,27 @@ func postprocess(response *adapters.ResponseData, xtrnal openrtb.BidRequest, uri
 	return postprocessVideo(openrtbResp.SeatBid[0].Bid, xtrnal, uri, id)
 }
 
-func postprocessBanner(beachfrontResp []beachfrontResponseSlot, id string) ([]openrtb.Bid, []error) {
+func postprocessBanner(beachfrontResp []beachfrontResponseSlot, id string) ([]openrtb2.Bid, []error) {
 
-	var bids = make([]openrtb.Bid, len(beachfrontResp))
+	var bids = make([]openrtb2.Bid, len(beachfrontResp))
 	var errs = make([]error, 0)
 
 	for i := 0; i < len(beachfrontResp); i++ {
-		bids[i] = openrtb.Bid{
+		bids[i] = openrtb2.Bid{
 			CrID:  beachfrontResp[i].CrID,
 			ImpID: beachfrontResp[i].Slot,
 			Price: beachfrontResp[i].Price,
 			ID:    fmt.Sprintf("%sBanner", beachfrontResp[i].Slot),
 			AdM:   beachfrontResp[i].Adm,
-			H:     beachfrontResp[i].H,
-			W:     beachfrontResp[i].W,
+			H:     int64(beachfrontResp[i].H),
+			W:     int64(beachfrontResp[i].W),
 		}
 	}
 
 	return bids, errs
 }
 
-func postprocessVideo(bids []openrtb.Bid, xtrnal openrtb.BidRequest, uri string, id string) ([]openrtb.Bid, []error) {
+func postprocessVideo(bids []openrtb2.Bid, xtrnal openrtb2.BidRequest, uri string, id string) ([]openrtb2.Bid, []error) {
 
 	var errs = make([]error, 0)
 
@@ -627,7 +646,7 @@ func extractNurlVideoCrid(nurl string) string {
 	return ""
 }
 
-func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, error) {
+func getBeachfrontExtension(imp openrtb2.Imp) (openrtb_ext.ExtImpBeachfront, error) {
 	var err error
 	var bidderExt adapters.ExtImpBidder
 	var beachfrontExt openrtb_ext.ExtImpBeachfront

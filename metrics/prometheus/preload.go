@@ -184,6 +184,12 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 		sourceLabel:  sourceValues,
 		versionLabel: tcfVersionsAsString(),
 	})
+
+	if !m.metricsDisabled.AdapterGDPRRequestBlocked {
+		preloadLabelValuesForCounter(m.adapterGDPRBlockedRequests, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+	}
 }
 
 func preloadLabelValuesForCounter(counter *prometheus.CounterVec, labelsWithValues map[string][]string) {

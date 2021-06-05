@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -32,7 +32,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs = make([]error, 0)
 
 	data, err := json.Marshal(request)
@@ -80,7 +80,7 @@ func getBidType(bidAdm string) openrtb_ext.BidType {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		// no bid response
@@ -99,7 +99,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{

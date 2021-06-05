@@ -1,8 +1,6 @@
 package privacy
 
-import (
-	"github.com/mxmCherry/openrtb"
-)
+import "github.com/mxmCherry/openrtb/v15/openrtb2"
 
 // Enforcement represents the privacy policies to enforce for an OpenRTB bid request.
 type Enforcement struct {
@@ -19,11 +17,11 @@ func (e Enforcement) Any() bool {
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
-func (e Enforcement) Apply(bidRequest *openrtb.BidRequest) {
+func (e Enforcement) Apply(bidRequest *openrtb2.BidRequest) {
 	e.apply(bidRequest, NewScrubber())
 }
 
-func (e Enforcement) apply(bidRequest *openrtb.BidRequest, scrubber Scrubber) {
+func (e Enforcement) apply(bidRequest *openrtb2.BidRequest, scrubber Scrubber) {
 	if bidRequest != nil && e.Any() {
 		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getDeviceIDScrubStrategy(), e.getIPv4ScrubStrategy(), e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
 		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(), e.getGeoScrubStrategy())
