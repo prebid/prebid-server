@@ -111,7 +111,7 @@ func TestCCPA(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		gdpr := config.GDPR{DefaultValue: true}
+		gdpr := config.GDPR{DefaultValue: "0"}
 		ccpa := config.CCPA{Enforce: test.enforceCCPA}
 		rr := doConfigurablePost(test.requestBody, nil, true, syncersForTest(), gdpr, ccpa)
 		assert.Equal(t, http.StatusOK, rr.Code, test.description+":httpResponseCode")
@@ -150,7 +150,7 @@ func TestCookieSyncNoBidders(t *testing.T) {
 }
 
 func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
-	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{}, config.GDPR{DefaultValue: true}, config.CCPA{})
+	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{}, config.GDPR{DefaultValue: "0"}, config.CCPA{})
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork"}, parseSyncs(t, rr.Body.Bytes()))

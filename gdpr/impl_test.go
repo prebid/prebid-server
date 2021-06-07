@@ -19,7 +19,7 @@ func TestDisallowOnEmptyConsent(t *testing.T) {
 	perms := permissionsImpl{
 		cfg: config.GDPR{
 			HostVendorID: 3,
-			DefaultValue: true,
+			DefaultValue: "0",
 		},
 		vendorIDs: nil,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
@@ -178,7 +178,7 @@ func TestAllowActivities(t *testing.T) {
 		description           string
 		bidderName            openrtb_ext.BidderName
 		publisherID           string
-		gdprDefaultValue      bool
+		gdprDefaultValue      string
 		gdpr                  Signal
 		consent               string
 		passID                bool
@@ -188,7 +188,7 @@ func TestAllowActivities(t *testing.T) {
 			description:      "Allow PI - Non standard publisher",
 			bidderName:       bidderBlockedByConsent,
 			publisherID:      "appNexusAppID",
-			gdprDefaultValue: false,
+			gdprDefaultValue: "1",
 			gdpr:             SignalYes,
 			consent:          consent,
 			passID:           true,
@@ -196,7 +196,7 @@ func TestAllowActivities(t *testing.T) {
 		{
 			description:      "Allow PI - known vendor with No GDPR",
 			bidderName:       bidderBlockedByConsent,
-			gdprDefaultValue: false,
+			gdprDefaultValue: "1",
 			gdpr:             SignalNo,
 			consent:          consent,
 			passID:           true,
@@ -204,39 +204,39 @@ func TestAllowActivities(t *testing.T) {
 		{
 			description:      "Allow PI - known vendor with Yes GDPR",
 			bidderName:       bidderAllowedByConsent,
-			gdprDefaultValue: false,
+			gdprDefaultValue: "1",
 			gdpr:             SignalYes,
 			consent:          consent,
 			passID:           true,
 		},
 		{
-			description:      "PI allowed according to host setting gdprDefaultValue true - known vendor with ambiguous GDPR and empty consent",
+			description:      "PI allowed according to host setting gdprDefaultValue 0 - known vendor with ambiguous GDPR and empty consent",
 			bidderName:       bidderAllowedByConsent,
-			gdprDefaultValue: true,
+			gdprDefaultValue: "0",
 			gdpr:             SignalAmbiguous,
 			consent:          "",
 			passID:           true,
 		},
 		{
-			description:      "PI allowed according to host setting gdprDefaultValue true - known vendor with ambiguous GDPR and non-empty consent",
+			description:      "PI allowed according to host setting gdprDefaultValue 0 - known vendor with ambiguous GDPR and non-empty consent",
 			bidderName:       bidderAllowedByConsent,
-			gdprDefaultValue: true,
+			gdprDefaultValue: "0",
 			gdpr:             SignalAmbiguous,
 			consent:          consent,
 			passID:           true,
 		},
 		{
-			description:      "PI allowed according to host setting gdprDefaultValue false - known vendor with ambiguous GDPR and empty consent",
+			description:      "PI allowed according to host setting gdprDefaultValue 1 - known vendor with ambiguous GDPR and empty consent",
 			bidderName:       bidderAllowedByConsent,
-			gdprDefaultValue: false,
+			gdprDefaultValue: "1",
 			gdpr:             SignalAmbiguous,
 			consent:          "",
 			passID:           false,
 		},
 		{
-			description:      "PI allowed according to host setting gdprDefaultValue false - known vendor with ambiguous GDPR and non-empty consent",
+			description:      "PI allowed according to host setting gdprDefaultValue 1 - known vendor with ambiguous GDPR and non-empty consent",
 			bidderName:       bidderAllowedByConsent,
-			gdprDefaultValue: false,
+			gdprDefaultValue: "1",
 			gdpr:             SignalAmbiguous,
 			consent:          consent,
 			passID:           true,
@@ -244,7 +244,7 @@ func TestAllowActivities(t *testing.T) {
 		{
 			description:      "Don't allow PI - known vendor with Yes GDPR and empty consent",
 			bidderName:       bidderAllowedByConsent,
-			gdprDefaultValue: false,
+			gdprDefaultValue: "1",
 			gdpr:             SignalYes,
 			consent:          "",
 			passID:           false,
@@ -252,7 +252,7 @@ func TestAllowActivities(t *testing.T) {
 		{
 			description:      "Don't allow PI - default vendor with Yes GDPR and non-empty consent",
 			bidderName:       bidderBlockedByConsent,
-			gdprDefaultValue: false,
+			gdprDefaultValue: "1",
 			gdpr:             SignalYes,
 			consent:          consent,
 			passID:           false,
@@ -658,43 +658,43 @@ func assertStringsEqual(t *testing.T, expected string, actual string) {
 func TestNormalizeGDPR(t *testing.T) {
 	tests := []struct {
 		description      string
-		gdprDefaultValue bool
+		gdprDefaultValue string
 		giveSignal       Signal
 		wantSignal       Signal
 	}{
 		{
-			description:      "Don't normalize - Signal No and gdprDefaultValue false",
-			gdprDefaultValue: false,
+			description:      "Don't normalize - Signal No and gdprDefaultValue 1",
+			gdprDefaultValue: "1",
 			giveSignal:       SignalNo,
 			wantSignal:       SignalNo,
 		},
 		{
-			description:      "Don't normalize - Signal No and gdprDefaultValue true",
-			gdprDefaultValue: true,
+			description:      "Don't normalize - Signal No and gdprDefaultValue 0",
+			gdprDefaultValue: "0",
 			giveSignal:       SignalNo,
 			wantSignal:       SignalNo,
 		},
 		{
-			description:      "Don't normalize - Signal Yes and gdprDefaultValue false",
-			gdprDefaultValue: false,
+			description:      "Don't normalize - Signal Yes and gdprDefaultValue 1",
+			gdprDefaultValue: "1",
 			giveSignal:       SignalYes,
 			wantSignal:       SignalYes,
 		},
 		{
-			description:      "Don't normalize - Signal Yes and gdprDefaultValue true",
-			gdprDefaultValue: true,
+			description:      "Don't normalize - Signal Yes and gdprDefaultValue 0",
+			gdprDefaultValue: "0",
 			giveSignal:       SignalYes,
 			wantSignal:       SignalYes,
 		},
 		{
-			description:      "Normalize - Signal Ambiguous and gdprDefaultValue false",
-			gdprDefaultValue: false,
+			description:      "Normalize - Signal Ambiguous and gdprDefaultValue 1",
+			gdprDefaultValue: "1",
 			giveSignal:       SignalAmbiguous,
 			wantSignal:       SignalYes,
 		},
 		{
-			description:      "Normalize - Signal Ambiguous and gdprDefaultValue true",
-			gdprDefaultValue: true,
+			description:      "Normalize - Signal Ambiguous and gdprDefaultValue 0",
+			gdprDefaultValue: "0",
 			giveSignal:       SignalAmbiguous,
 			wantSignal:       SignalNo,
 		},

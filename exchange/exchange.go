@@ -59,7 +59,7 @@ type exchange struct {
 	gDPR              gdpr.Permissions
 	currencyConverter *currency.RateConverter
 	externalURL       string
-	GDPRDefaultValue  bool
+	GDPRDefaultValue  string
 	privacyConfig     config.Privacy
 	categoriesFetcher stored_requests.CategoryFetcher
 	bidIDGenerator    BidIDGenerator
@@ -291,7 +291,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, errs)
 }
 
-func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) bool {
+func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) string {
 	gdprDefaultValue := e.GDPRDefaultValue
 	var geo *openrtb2.Geo = nil
 
@@ -304,10 +304,10 @@ func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) bool {
 		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
 		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
 		if _, found := e.privacyConfig.GDPR.EEACountriesMap[strings.ToUpper(geo.Country)]; found {
-			gdprDefaultValue = false
+			gdprDefaultValue = "1"
 		} else if len(geo.Country) == 3 {
 			// The country field is formatted properly as a three character country code
-			gdprDefaultValue = true
+			gdprDefaultValue = "0"
 		}
 	}
 

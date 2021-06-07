@@ -181,7 +181,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	enc.Encode(csResp)
 }
 
-func parseRequest(parsedReq *cookieSyncRequest, bodyBytes []byte, gdprDefaultValue bool) error {
+func parseRequest(parsedReq *cookieSyncRequest, bodyBytes []byte, gdprDefaultValue string) error {
 	if err := json.Unmarshal(bodyBytes, parsedReq); err != nil {
 		return fmt.Errorf("JSON parsing failed: %s", err.Error())
 	}
@@ -193,7 +193,7 @@ func parseRequest(parsedReq *cookieSyncRequest, bodyBytes []byte, gdprDefaultVal
 	if parsedReq.GDPR == nil {
 		var gdpr = new(int)
 		*gdpr = 1
-		if gdprDefaultValue {
+		if gdprDefaultValue == "0" {
 			*gdpr = 0
 		}
 		parsedReq.GDPR = gdpr

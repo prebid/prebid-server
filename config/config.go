@@ -193,7 +193,7 @@ type Privacy struct {
 type GDPR struct {
 	Enabled                 bool         `mapstructure:"enabled"`
 	HostVendorID            int          `mapstructure:"host_vendor_id"`
-	DefaultValue            bool         `mapstructure:"default_value"`
+	DefaultValue            string       `mapstructure:"default_value"`
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
 	NonStandardPublisherMap map[string]struct{}
@@ -209,6 +209,9 @@ type GDPR struct {
 }
 
 func (cfg *GDPR) validate(errs []error) []error {
+	if cfg.DefaultValue != "0" && cfg.DefaultValue != "1" {
+		errs = append(errs, fmt.Errorf("gdpr.default_value must be 0 or 1"))
+	}
 	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
 		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
 	}
@@ -943,7 +946,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.SetDefault("gdpr.enabled", true)
 	v.SetDefault("gdpr.host_vendor_id", 0)
-	v.SetDefault("gdpr.default_value", false)
+	v.SetDefault("gdpr.default_value", "1")
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})

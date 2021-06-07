@@ -94,7 +94,7 @@ func (p *permissionsImpl) normalizeGDPR(gdprSignal Signal) Signal {
 		return gdprSignal
 	}
 
-	if p.cfg.DefaultValue {
+	if p.cfg.DefaultValue == "0" {
 		return SignalNo
 	}
 

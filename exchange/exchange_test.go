@@ -1614,6 +1614,13 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		eeac[c] = s
 	}
 
+	var gdprDefaultValue string
+	if spec.AssumeGDPRApplies {
+		gdprDefaultValue = "1"
+	} else {
+		gdprDefaultValue = "0"
+	}
+
 	privacyConfig := config.Privacy{
 		CCPA: config.CCPA{
 			Enforce: spec.EnforceCCPA,
@@ -1623,7 +1630,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		},
 		GDPR: config.GDPR{
 			Enabled:         spec.GDPREnabled,
-			DefaultValue:    !spec.AssumeGDPRApplies,
+			DefaultValue:    gdprDefaultValue,
 			EEACountriesMap: eeac,
 		},
 	}
