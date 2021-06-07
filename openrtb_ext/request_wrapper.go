@@ -10,6 +10,26 @@ import (
 
 // RequestWrapper wraps the OpenRTB request to provide a storage location for unmarshalled ext fields, so they
 // will not need to be unmarshalled multiple times.
+//
+// To start with, the wrapper can be created for a request 'req' via:
+// reqWrapper := openrtb_ext.RequestWrapper{Request: req}
+//
+// Before accessing an object's ext field, initialize it via:
+// reqWrapper.ExtractUserExt()
+// or other Extract method as appropriate. Always do this unless you are absolutely sure it has already been done,
+// the Extract methods have logic to check if they have already been extracted and then return immediately.
+//
+// To read or write values, use the Ext objects Get and Set methods. If you need to write a field that has its own Set
+// method, use that to set the value rather than using SetExt() with that change done in the map; when rewritting the
+// ext JSON the code will overwrite the the values in the map with the values stored in the seperate fields.
+//
+// userPrebid := userExt.GetPrebid()
+// userExt.SetConsent(consentString)
+//
+// The GetExt() and SetExt() should only be used to access fields that have not already been resolved in the object.
+// Using SetExt() at all is a strong hint that the ext object should be extended to support the new fields being set
+// in the map.
+
 type RequestWrapper struct {
 	// json json.RawMessage
 	Request *openrtb2.BidRequest
