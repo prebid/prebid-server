@@ -18,20 +18,6 @@ type adapter struct {
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: "ext.bidder not provided",
-		}}
-	}
-
-	var smilewantedExt openrtb_ext.ExtImpSmileWanted
-	if err := json.Unmarshal(bidderExt.Bidder, &smilewantedExt); err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: "ext.bidder.zoneId not provided",
-		}}
-	}
-
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
 			bannerCopy := *request.Imp[i].Banner
@@ -75,21 +61,26 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	if response.StatusCode == http.StatusBadRequest {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. ", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d.", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", response.StatusCode),
 		}}
 	}
 
 	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Bad server response: %d. ", err),
+			Message: fmt.Sprintf("Bad server response: %s.", err),
 		}}
+	}
+
+	var bidReq openrtb2.BidRequest
+	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
+		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
