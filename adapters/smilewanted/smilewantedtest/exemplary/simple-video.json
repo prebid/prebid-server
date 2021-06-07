@@ -22,7 +22,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://prebid-server.smilewanted.com",
+        "uri": "http://example.com",
         "body": {
           "id": "test-request-id",
           "at": 1,

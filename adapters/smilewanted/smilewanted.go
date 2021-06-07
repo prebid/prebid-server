@@ -12,19 +12,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type SmileWantedAdapter struct {
+type adapter struct {
 	URI string
 }
 
-func (a *SmileWantedAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
-	request := *requestIn
-
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "No impression in the bid request",
-		}}
-	}
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
@@ -40,37 +32,16 @@ func (a *SmileWantedAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInf
 		}}
 	}
 
-	if smilewantedExt.ZoneID == "" {
-		return nil, []error{&errortypes.BadInput{
-			Message: "ZoneId is empty",
-		}}
-	}
-
-	validImpExists := false
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
-			bannerCopy := *requestIn.Imp[i].Banner
+			bannerCopy := *request.Imp[i].Banner
 			if len(bannerCopy.Format) > 0 {
 				firstFormat := bannerCopy.Format[0]
 				bannerCopy.W = &(firstFormat.W)
 				bannerCopy.H = &(firstFormat.H)
 				request.Imp[i].Banner = &bannerCopy
-				validImpExists = true
-			} else if bannerCopy.W != nil && bannerCopy.H != nil {
-				validImpExists = true
-			} else {
-				return nil, []error{&errortypes.BadInput{
-					Message: "No valid banner format in the bid request",
-				}}
 			}
-		} else if request.Imp[i].Video != nil {
-			validImpExists = true
 		}
-	}
-	if !validImpExists {
-		return nil, []error{&errortypes.BadInput{
-			Message: "No valid impression in the bid request",
-		}}
 	}
 
 	request.AT = 1 //Defaulting to first price auction for all prebid requests
@@ -96,7 +67,7 @@ func (a *SmileWantedAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInf
 	}}, []error{}
 }
 
-func (a *SmileWantedAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -133,12 +104,6 @@ func (a *SmileWantedAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exte
 	return bidResponse, nil
 }
 
-func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
-	if len(headerValue) > 0 {
-		headers.Add(headerName, headerValue)
-	}
-}
-
 // getMediaTypeForImp figures out which media type this bid is for.
 func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner //default type
@@ -155,7 +120,7 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 
 // Builder builds a new instance of the SmileWanted adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &SmileWantedAdapter{
+	bidder := &adapter{
 		URI: config.Endpoint,
 	}
 	return bidder, nil

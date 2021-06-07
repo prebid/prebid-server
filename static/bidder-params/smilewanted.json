@@ -6,7 +6,8 @@
   "properties": {
     "zoneId": {
       "type": "string",
-      "description": "An ID which identifies the SmileWanted zone code"
+      "description": "An ID which identifies the SmileWanted zone code",
+      "minLength": 1
     }
   },
   "required": ["zoneId"]
