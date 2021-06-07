@@ -16,7 +16,7 @@ type adapter struct {
 }
 
 type bidExt struct {
-	MediaType openrtb_ext.BidType `json:mediaType,omitempty`
+	MediaType openrtb_ext.BidType `json:"mediaType,omitempty"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
@@ -83,7 +83,7 @@ func (a *adapter) MakeBids(
 	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: "Bad Server Response",
+			Message: fmt.Sprintf("Bad response, %s", err),
 		}}
 	}
 

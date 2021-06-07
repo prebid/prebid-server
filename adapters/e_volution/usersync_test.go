@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewEvolutionSyncer(t *testing.T) {
-	syncURL := "https://sync.e-volution.ai/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}"
+	syncURL := "https://sync.test.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}"
 	syncURLTemplate := template.Must(
 		template.New("sync-template").Parse(syncURL),
 	)
@@ -27,7 +27,7 @@ func TestNewEvolutionSyncer(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, "https://sync.e-volution.ai/pbserver?gdpr=0&gdpr_consent=allGdpr&ccpa=1---", syncInfo.URL)
+	assert.Equal(t, "https://sync.test.com/pbserver?gdpr=0&gdpr_consent=allGdpr&ccpa=1---", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

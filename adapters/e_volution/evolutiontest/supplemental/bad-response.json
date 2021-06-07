@@ -149,7 +149,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Bad Server Response",
+      "value": "Bad response, json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
       "comparison": "literal"
     }
   ]
