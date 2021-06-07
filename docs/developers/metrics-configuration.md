@@ -8,15 +8,15 @@ If PBS_METRICS_PROMETHEUS_PORT is null, your [Prebid server](https://docs.prebid
   
 - PBS_METRICS_PROMETHEUS_NAMESPACE=prebid - default is empty.
   
-PBS_METRICS_PROMETHEUS_NAMESPACE - for your unique metrics
+PBS_METRICS_PROMETHEUS_NAMESPACE - this is responsable for the primary prefix added to your metrics to ensure uniqueness within your cluster.
   
 - PBS_METRICS_PROMETHEUS_SUBSYSTEM=server - default is empty.
-  
-PBS_METRICS_PROMETHEUS_NAMESPACE - for your deep unique metrics
+
+PBS_METRICS_PROMETHEUS_SUBSYSTEM - this is a secondary prefix added to metrics to ensure uniqueness.
   
 - PBS_METRICS_DISABLED_METRICS_ADAPTER_CONNECTIONS_METRICS=false - default is true.
 
-If PBS_METRICS_DISABLED_METRICS_ADAPTER_CONNECTIONS_METRICS is true your [Prebid server](https://docs.prebid.org/prebid-server/versions/pbs-versions-go.html) won't collect any adapter metrics
+PBS_METRICS_DISABLED_METRICS_ADAPTER_CONNECTIONS_METRICS - If this flag is set to true you won't get any bidder http connection adapter metrics (e.g. number of new vs reused connections) but you'll still get other adapter metrics.
 
 #### If you're going to get metrics though [Prometheus](https://prometheus.io/) and [Prometheus](https://prometheus.io/) stack has been already installed, you have several options, please chose one:
 
