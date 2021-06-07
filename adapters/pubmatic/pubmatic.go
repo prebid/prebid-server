@@ -70,6 +70,8 @@ const (
 	dctrKeyName        = "key_val"
 	pmZoneIDKeyName    = "pmZoneId"
 	pmZoneIDKeyNameOld = "pmZoneID"
+	ImpExtAdUnitKey    = "dfp_ad_unit_code"
+	AdServerGAM        = "gam"
 )
 
 func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...interface{}) string {
@@ -499,6 +501,11 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) er
 	}
 	if pubmaticExt.PmZoneID != "" {
 		extMap[pmZoneIDKeyName] = pubmaticExt.PmZoneID
+	}
+
+	if bidderExt.Data != nil && bidderExt.Data.AdServer != nil &&
+		bidderExt.Data.AdServer.Name == AdServerGAM && bidderExt.Data.AdServer.AdSlot != "" {
+		extMap[ImpExtAdUnitKey] = bidderExt.Data.AdServer.AdSlot
 	}
 
 	imp.Ext = nil
