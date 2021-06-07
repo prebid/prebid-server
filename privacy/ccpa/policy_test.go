@@ -286,7 +286,7 @@ func TestBuildRegs(t *testing.T) {
 			err = regsExt.Unmarshal(json.RawMessage{})
 		}
 		if err == nil {
-			buildRegs(test.consent, regsExt)
+			regsExt.SetUSPrivacy(test.consent)
 			var regsExtJson json.RawMessage
 			regsExtJson, err = regsExt.Marshal()
 			if test.regs == nil && len(regsExtJson) > 0 {
@@ -355,7 +355,7 @@ func TestBuildRegsClear(t *testing.T) {
 			err = regsExt.Unmarshal(json.RawMessage{})
 		}
 		if err == nil {
-			buildRegsClear(regsExt)
+			regsExt.SetUSPrivacy("")
 			var regsExtJson json.RawMessage
 			regsExtJson, err = regsExt.Marshal()
 			if test.regs != nil || len(regsExtJson) > 0 {
@@ -435,7 +435,7 @@ func TestBuildRegsWrite(t *testing.T) {
 			err = regsExt.Unmarshal(json.RawMessage{})
 		}
 		if err == nil {
-			buildRegsWrite(test.consent, regsExt)
+			regsExt.SetUSPrivacy(test.consent)
 			var regsExtJson json.RawMessage
 			regsExtJson, err = regsExt.Marshal()
 			if test.regs == nil && len(regsExtJson) > 0 {

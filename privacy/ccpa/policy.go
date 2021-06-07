@@ -52,7 +52,7 @@ func (p Policy) Write(req *openrtb_ext.RequestWrapper) error {
 	if err != nil {
 		return err
 	}
-	buildRegs(p.Consent, req.RegExt)
+	req.RegExt.SetUSPrivacy(p.Consent)
 
 	err = req.ExtractRequestExt()
 	if err != nil {
@@ -60,33 +60,6 @@ func (p Policy) Write(req *openrtb_ext.RequestWrapper) error {
 	}
 	buildExt(p.NoSaleBidders, req.RequestExt)
 	return nil
-}
-
-// START HERE
-// was regs == *openrtb.Regs
-// No need to return RegExt as the containing struct should still exist. I don't
-// think there was a need to make a new Regs.Ext when the Ext was modified.
-func buildRegs(consent string, regs *openrtb_ext.RegExt) {
-	if consent == "" {
-		buildRegsClear(regs)
-	} else {
-		buildRegsWrite(consent, regs)
-	}
-}
-
-func buildRegsClear(regs *openrtb_ext.RegExt) {
-	if regs == nil {
-		return
-	}
-
-	if len(regs.GetUSPrivacy()) > 0 {
-		regs.SetUSPrivacy("")
-	}
-}
-
-// buildRegsWrite becomes an almost a one liner
-func buildRegsWrite(consent string, regs *openrtb_ext.RegExt) {
-	regs.SetUSPrivacy(consent)
 }
 
 func buildExt(noSaleBidders []string, ext *openrtb_ext.RequestExt) {

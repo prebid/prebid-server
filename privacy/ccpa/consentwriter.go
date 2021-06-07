@@ -15,7 +15,7 @@ func (c ConsentWriter) Write(req *openrtb_ext.RequestWrapper) {
 	if req == nil || req.Request == nil {
 		return
 	}
-	buildRegs(c.Consent, req.RegExt)
+	req.RegExt.SetUSPrivacy(c.Consent)
 }
 
 // ConsentWriterLegacy implements the old PolicyWriter interface for CCPA.
@@ -31,7 +31,7 @@ func (c ConsentWriterLegacy) Write(req *openrtb2.BidRequest) error {
 	}
 	reqWrap := &openrtb_ext.RequestWrapper{Request: req}
 	if err := reqWrap.ExtractRegExt(); err == nil {
-		buildRegs(c.Consent, reqWrap.RegExt)
+		reqWrap.RegExt.SetUSPrivacy(c.Consent)
 	} else {
 		return err
 	}
