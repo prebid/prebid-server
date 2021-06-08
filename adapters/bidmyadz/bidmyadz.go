@@ -3,7 +3,7 @@ package bidmyadz
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,7 +16,7 @@ type adapter struct {
 }
 
 type bidExt struct {
-	MediaType string `json:mediaType,omitempty`
+	MediaType string `json:"mediaType,omitempty"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
@@ -124,7 +124,7 @@ func (a *adapter) MakeBids(
 
 	if len(bids) == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Empty SeatBid.Bid"),
+			Message: fmt.Sprintf("Empty SeatBid.Bids"),
 		}}
 	}
 

@@ -1,6 +1,7 @@
 package bidmyadz
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
@@ -15,6 +16,6 @@ func TestJsonSamples(t *testing.T) {
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
-
+	assert.NoError(t, buildErr)
 	adapterstest.RunJSONBidderTest(t, "bidmyadztest", bidder)
 }
