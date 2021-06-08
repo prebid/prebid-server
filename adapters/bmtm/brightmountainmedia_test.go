@@ -11,12 +11,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderBmtm, config.Adapter{
-		Endpoint: "https://example.com/api/pbs"})
-
-	if buildErr != nil {
-		assert.NoError(t, buildErr, fmt.Sprintf("Builder returned unexpected error: %s", buildErr.Error()))
-	}
-
+	bidder, buildErr := Builder(openrtb_ext.BidderBmtm, config.Adapter{Endpoint: "https://example.com/api/pbs"})
+	assert.NoError(t, buildErr, fmt.Sprintf("Builder returned unexpected error: %s", buildErr.Error()))
 	adapterstest.RunJSONBidderTest(t, "brightmountainmediatest", bidder)
 }
