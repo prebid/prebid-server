@@ -1779,7 +1779,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		cacheTime:         0,
 		gDPR:              &permissionsMock{allowAllBidders: true},
 		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
-		GDPRDefaultValue:  privacyConfig.GDPR.DefaultValue,
+		gdprDefaultValue:  privacyConfig.GDPR.DefaultValue,
 		privacyConfig:     privacyConfig,
 		categoriesFetcher: categoriesFetcher,
 		bidderInfo:        bidderInfos,

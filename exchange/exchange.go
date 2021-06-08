@@ -59,7 +59,7 @@ type exchange struct {
 	gDPR              gdpr.Permissions
 	currencyConverter *currency.RateConverter
 	externalURL       string
-	GDPRDefaultValue  string
+	gdprDefaultValue  string
 	privacyConfig     config.Privacy
 	categoriesFetcher stored_requests.CategoryFetcher
 	bidIDGenerator    BidIDGenerator
@@ -110,7 +110,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 		externalURL:       cfg.ExternalURL,
 		gDPR:              gDPR,
 		me:                metricsEngine,
-		GDPRDefaultValue:  cfg.GDPR.DefaultValue,
+		gdprDefaultValue:  cfg.GDPR.DefaultValue,
 		privacyConfig: config.Privacy{
 			CCPA: cfg.CCPA,
 			GDPR: cfg.GDPR,
@@ -292,7 +292,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 }
 
 func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) string {
-	gdprDefaultValue := e.GDPRDefaultValue
+	gdprDefaultValue := e.gdprDefaultValue
 	var geo *openrtb2.Geo = nil
 
 	if bidRequest.User != nil && bidRequest.User.Geo != nil {
