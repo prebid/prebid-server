@@ -81,9 +81,9 @@ func TestGroupedGetRate(t *testing.T) {
 			// Verify:
 			assert.Equal(t, tc.expectedRate, rate, "conversion rate doesn't match the expected rate: %s\n", tc.desc)
 			if group.expectedError != nil {
-				assert.Error(t, group.expectedError, err, "error doesn't match expected: %s\n", tc.desc)
+				assert.Error(t, err, "error doesn't match expected: %s\n", tc.desc)
 			} else {
-				assert.NoError(t, group.expectedError, err, "err should be nil: %s\n", tc.desc)
+				assert.NoError(t, err, "err should be nil: %s\n", tc.desc)
 			}
 		}
 	}

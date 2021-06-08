@@ -1239,7 +1239,7 @@ func TestValidateCustomRates(t *testing.T) {
 					},
 				},
 			},
-			outCurrencyError: &errortypes.BadInput{Message: "Three-digit code FOO is not a recognized currency code or is malformed"},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
 		},
 		{
 			desc: "UsePBSRates set to false, bidExt fromCurrency is invalid, expect bad input error",
@@ -1253,7 +1253,7 @@ func TestValidateCustomRates(t *testing.T) {
 				},
 				UsePBSRates: &boolFalse,
 			},
-			outCurrencyError: &errortypes.BadInput{Message: "Three-digit code FOO is not a recognized currency code or is malformed"},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
 		},
 		{
 			desc: "UsePBSRates set to false, some of the bidExt 'to' Currencies are invalid, expect bad input error when parsing the first invalid currency code",
@@ -1267,7 +1267,7 @@ func TestValidateCustomRates(t *testing.T) {
 				},
 				UsePBSRates: &boolFalse,
 			},
-			outCurrencyError: &errortypes.BadInput{Message: "Three-digit code FOO is not a recognized currency code or is malformed"},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
 		},
 		{
 			desc: "UsePBSRates set to false, some of the bidExt 'from' and 'to' currencies are invalid, expect bad input error when parsing the first invalid currency code",
@@ -1294,7 +1294,7 @@ func TestValidateCustomRates(t *testing.T) {
 				},
 				UsePBSRates: &boolFalse,
 			},
-			outCurrencyError: &errortypes.BadInput{Message: "Three-digit code FOO is not a recognized currency code or is malformed"},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
 		},
 		{
 			desc: "All 3-digit currency codes exist, expect no error",
@@ -1316,12 +1316,7 @@ func TestValidateCustomRates(t *testing.T) {
 	for _, tc := range testCases {
 		actualErr := validateCustomRates(tc.inBidReqCurrencies)
 
-		// Assertions
-		if tc.outCurrencyError == nil {
-			assert.NoError(t, actualErr, tc.desc)
-		} else {
-			assert.Error(t, actualErr, tc.desc)
-		}
+		assert.Equal(t, tc.outCurrencyError, actualErr, tc.desc)
 	}
 }
 
