@@ -99,6 +99,16 @@ func (big *bidIDGenerator) New() (string, error) {
 	return rawUuid.String(), err
 }
 
+type deduplicateChanceGenerator interface {
+	Generate() bool
+}
+
+type randomDeduplicateBidBooleanGenerator struct{}
+
+func (randomDeduplicateBidBooleanGenerator) Generate() bool {
+	return rand.Intn(100) < 50
+}
+
 func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
 	return &exchange{
 		adapterMap:          adapters,
@@ -123,12 +133,13 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 // AuctionRequest holds the bid request for the auction
 // and all other information needed to process that request
 type AuctionRequest struct {
-	BidRequest  *openrtb2.BidRequest
-	Account     config.Account
-	UserSyncs   IdFetcher
-	RequestType metrics.RequestType
-	StartTime   time.Time
-	Warnings    []error
+	BidRequest                 *openrtb2.BidRequest
+	Account                    config.Account
+	UserSyncs                  IdFetcher
+	RequestType                metrics.RequestType
+	StartTime                  time.Time
+	Warnings                   []error
+	GlobalPrivacyControlHeader string
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -178,7 +189,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	usersyncIfAmbiguous := e.parseUsersyncIfAmbiguous(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.gDPR, usersyncIfAmbiguous, e.privacyConfig, &r.Account)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.gDPR, e.me, usersyncIfAmbiguous, e.privacyConfig, &r.Account)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -193,7 +204,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.currencyConverter.Rates()
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader)
 
 	var auc *auction
 	var cacheErrs []error
@@ -204,7 +215,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
 			var rejections []string
-			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, requestExt, adapterBids, e.categoriesFetcher, targData)
+			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, requestExt, adapterBids, e.categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{})
 			if err != nil {
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 			}
@@ -402,7 +413,8 @@ func (e *exchange) getAllBids(
 	bidderRequests []BidderRequest,
 	bidAdjustments map[string]float64,
 	conversions currency.Conversions,
-	accountDebugAllowed bool) (
+	accountDebugAllowed bool,
+	globalPrivacyControlHeader string) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -433,6 +445,7 @@ func (e *exchange) getAllBids(
 			}
 			var reqInfo adapters.ExtraRequestInfo
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
+			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed)
 
 			// Add in time reporting
@@ -609,7 +622,7 @@ func encodeBidResponseExt(bidResponseExt *openrtb_ext.ExtBidResponse) ([]byte, e
 	return buffer.Bytes(), err
 }
 
-func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
+func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateChanceGenerator) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -738,7 +751,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 					currBidPrice = 0
 				}
 				if dupeBidPrice == currBidPrice {
-					if rand.Intn(100) < 50 {
+					if booleanGenerator.Generate() {
 						dupeBidPrice = -1
 					} else {
 						currBidPrice = -1
@@ -753,11 +766,16 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 					} else {
 						// An older bid from a different seatBid we've already finished with
 						oldSeatBid := (seatBids)[dupe.bidderName]
+						rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						if len(oldSeatBid.bids) == 1 {
 							seatBidsToRemove = append(seatBidsToRemove, dupe.bidderName)
-							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						} else {
-							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
+							// This is a very rare, but still possible case where bid needs to be removed from already processed bidder
+							// This happens when current processing bidder has a bid that has same deduplication key as a bid from already processed bidder
+							// and already processed bid was selected to be removed
+							// See example of input data in unit test `TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice`
+							// Need to remove bid by name, not index in this case
+							removeBidById(oldSeatBid, dupe.bidID)
 						}
 					}
 					delete(res, dupe.bidID)
@@ -793,6 +811,24 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 	}
 
 	return res, seatBids, rejections, nil
+}
+
+func removeBidById(seatBid *pbsOrtbSeatBid, bidID string) {
+	//Find index of bid to remove
+	dupeBidIndex := -1
+	for i, bid := range seatBid.bids {
+		if bid.bid.ID == bidID {
+			dupeBidIndex = i
+			break
+		}
+	}
+	if dupeBidIndex != -1 {
+		if dupeBidIndex < len(seatBid.bids)-1 {
+			seatBid.bids = append(seatBid.bids[:dupeBidIndex], seatBid.bids[dupeBidIndex+1:]...)
+		} else if dupeBidIndex == len(seatBid.bids)-1 {
+			seatBid.bids = seatBid.bids[:len(seatBid.bids)-1]
+		}
+	}
 }
 
 func updateRejections(rejections []string, bidID string, reason string) []string {

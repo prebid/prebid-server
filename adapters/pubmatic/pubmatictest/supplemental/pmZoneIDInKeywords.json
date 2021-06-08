@@ -16,6 +16,7 @@
           "bidder": {
             "adSlot": "AdTag_Div1@300x250",
             "publisherId": "  999  ",
+            "dctr": "key1=V1,V2,V3|key2=v1|key3=v3,v5",
             "keywords": [
               {
                 "key": "pmZoneID",
@@ -71,6 +72,7 @@
                 "w": 300
               },
               "ext": {
+                "key_val": "key1=V1,V2,V3|key2=v1|key3=v3,v5",
                 "pmZoneId": "Zone1,Zone2",
                 "preference": "sports,movies"
               }
