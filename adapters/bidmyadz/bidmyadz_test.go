@@ -13,9 +13,6 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBidmyadz, config.Adapter{
 		Endpoint: "http://endpoint.bidmyadz.com/c0f68227d14ed938c6c49f3967cbe9bc"})
 
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
 	assert.NoError(t, buildErr)
 	adapterstest.RunJSONBidderTest(t, "bidmyadztest", bidder)
 }
