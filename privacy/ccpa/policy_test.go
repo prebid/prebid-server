@@ -213,9 +213,9 @@ func TestWrite(t *testing.T) {
 	for _, test := range testCases {
 		reqWrapper := &openrtb_ext.RequestWrapper{Request: test.request}
 		var err error
-		err = reqWrapper.ExtractRegExt()
+		_, err = reqWrapper.GetRegExt()
 		if err == nil {
-			err = reqWrapper.ExtractRequestExt()
+			_, err = reqWrapper.GetRequestExt()
 			if err == nil {
 				err = test.policy.Write(reqWrapper)
 				if err == nil && reqWrapper.Request != nil {

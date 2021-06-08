@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// RegExt.SetUSPrivacy() is the new ConsentWriter
 func TestConsentWriter(t *testing.T) {
 	consent := "anyConsent"
 	testCases := []struct {
@@ -42,13 +43,12 @@ func TestConsentWriter(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		writer := ConsentWriter{consent}
 
 		reqWrapper := &openrtb_ext.RequestWrapper{Request: test.request}
 		var err error
-		err1 := reqWrapper.ExtractRegExt()
+		regsExt, err1 := reqWrapper.GetRegExt()
 		if err1 == nil {
-			writer.Write(reqWrapper)
+			regsExt.SetUSPrivacy(consent)
 			if reqWrapper.Request != nil {
 				err = reqWrapper.Sync()
 			}

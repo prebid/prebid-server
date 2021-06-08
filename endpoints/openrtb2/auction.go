@@ -328,10 +328,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 	}
 
 	var aliases map[string]string
-	if err := req.ExtractRequestExt(); err != nil {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
 		return []error{fmt.Errorf("request.ext is invalid: %v", err)}
 	}
-	reqPrebid := req.RequestExt.GetPrebid()
+	reqPrebid := reqExt.GetPrebid()
 	if err := deps.parseBidExt(req); err != nil {
 		return []error{err}
 	} else if reqPrebid != nil {
@@ -385,8 +386,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 			errL = append(errL, &errortypes.Warning{
 				Message:     fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err),
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
-			consentWriter := ccpa.ConsentWriter{Consent: ""}
-			consentWriter.Write(req)
+			regsExt, err := req.GetRegExt()
+			if err != nil {
+				return append(errL, err)
+			}
+			regsExt.SetUSPrivacy("")
 		} else {
 			return append(errL, err)
 		}
@@ -1024,7 +1028,7 @@ func isBidderToValidate(bidder string) bool {
 }
 
 func (deps *endpointDeps) parseBidExt(req *openrtb_ext.RequestWrapper) error {
-	err := req.ExtractRequestExt()
+	_, err := req.GetRequestExt()
 	if err != nil {
 		return fmt.Errorf("request.ext is invalid: %v", err)
 	}
@@ -1056,12 +1060,12 @@ func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
 	if req.Request.Site.ID == "" && req.Request.Site.Page == "" {
 		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
 	}
-	err := req.ExtractSiteExt()
+	siteExt, err := req.GetSiteExt()
 	if err != nil {
 		return err
 	}
-	_, hasAmp := req.SiteExt.Ext["amp"]
-	if hasAmp && (req.SiteExt.Amp < 0 || req.SiteExt.Amp > 1) {
+	siteAmp := siteExt.GetAmp()
+	if siteAmp < 0 || siteAmp > 1 {
 		return errors.New(`request.site.ext.amp must be either 1, 0, or undefined`)
 	}
 
@@ -1080,7 +1084,7 @@ func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 		}
 	}
 
-	err := req.ExtractAppExt()
+	_, err := req.GetAppExt()
 	if err != nil {
 		return err
 	}
@@ -1095,19 +1099,19 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 		return errors.New("request.user.geo.accuracy must be a positive number")
 	}
 
-	err := req.ExtractUserExt()
+	userExt, err := req.GetUserExt()
 	if err != nil {
 		// Return error.
 		return fmt.Errorf("request.user.ext object is not valid: %v", err)
 	}
 	// DigiTrust support
-	digiTrust := req.UserExt.GetDigiTrust()
+	digiTrust := userExt.GetDigiTrust()
 	if digiTrust != nil && digiTrust.Pref != 0 {
 		// DigiTrust is not valid. Return error.
 		return errors.New("request.user contains a digitrust object that is not valid.")
 	}
 	// Check if the buyeruids are valid
-	prebid := req.UserExt.GetPrebid()
+	prebid := userExt.GetPrebid()
 	if prebid != nil {
 		if len(prebid.BuyerUIDs) < 1 {
 			return errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)
@@ -1121,8 +1125,8 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 		}
 	}
 	// Check Universal User ID
-	_, hasEIDs := req.UserExt.GetExt()["eids"]
-	eids := req.UserExt.GetEid()
+	_, hasEIDs := userExt.GetExt()["eids"]
+	eids := userExt.GetEid()
 	if hasEIDs && len(*eids) == 0 {
 		return fmt.Errorf("request.user.ext.eids must contain at least one element or be undefined")
 	}
@@ -1157,11 +1161,11 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 }
 
 func validateRegs(req *openrtb_ext.RequestWrapper) error {
-	err := req.ExtractRegExt()
+	regsExt, err := req.GetRegExt()
 	if err != nil {
 		return fmt.Errorf("request.regs.ext is invalid: %v", err)
 	}
-	regExt := req.RegExt.GetExt()
+	regExt := regsExt.GetExt()
 	gdprJSON, hasGDPR := regExt["gdpr"]
 	if hasGDPR && (string(gdprJSON) != "0" && string(gdprJSON) != "1") {
 		return errors.New("request.regs.ext.gdpr must be either 0 or 1.")

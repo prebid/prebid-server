@@ -22,19 +22,19 @@ func ReadFromRequest(req *openrtb_ext.RequestWrapper) (Policy, error) {
 	}
 
 	// Read consent from request.regs.ext
-	err := req.ExtractRegExt()
+	regsExt, err := req.GetRegExt()
 	if err != nil {
 		return Policy{}, fmt.Errorf("error reading request.regs.ext: %s", err)
 	}
-	if req.RegExt != nil {
-		consent = req.RegExt.GetUSPrivacy()
+	if regsExt != nil {
+		consent = regsExt.GetUSPrivacy()
 	}
 	// Read no sale bidders from request.ext.prebid
-	err = req.ExtractRequestExt()
+	reqExt, err := req.GetRequestExt()
 	if err != nil {
 		return Policy{}, fmt.Errorf("error reading request.ext: %s", err)
 	}
-	reqPrebid := req.RequestExt.GetPrebid()
+	reqPrebid := reqExt.GetPrebid()
 	if reqPrebid != nil {
 		noSaleBidders = reqPrebid.NoSale
 	}
@@ -48,17 +48,18 @@ func (p Policy) Write(req *openrtb_ext.RequestWrapper) error {
 		return nil
 	}
 
-	err := req.ExtractRegExt()
+	regsExt, err := req.GetRegExt()
 	if err != nil {
 		return err
 	}
-	req.RegExt.SetUSPrivacy(p.Consent)
 
-	err = req.ExtractRequestExt()
+	reqExt, err := req.GetRequestExt()
 	if err != nil {
 		return err
 	}
-	buildExt(p.NoSaleBidders, req.RequestExt)
+
+	regsExt.SetUSPrivacy(p.Consent)
+	buildExt(p.NoSaleBidders, reqExt)
 	return nil
 }
 
