@@ -33,6 +33,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/between"
 	"github.com/prebid/prebid-server/adapters/bidmachine"
 	"github.com/prebid/prebid-server/adapters/bidscube"
+	"github.com/prebid/prebid-server/adapters/bmtm"
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/colossus"
 	"github.com/prebid/prebid-server/adapters/connectad"
@@ -150,6 +151,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBetween:           between.Builder,
 		openrtb_ext.BidderBidmachine:        bidmachine.Builder,
 		openrtb_ext.BidderBidsCube:          bidscube.Builder,
+		openrtb_ext.BidderBmtm:              bmtm.Builder,
 		openrtb_ext.BidderBrightroll:        brightroll.Builder,
 		openrtb_ext.BidderColossus:          colossus.Builder,
 		openrtb_ext.BidderConnectAd:         connectad.Builder,
