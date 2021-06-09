@@ -20,6 +20,9 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-  "ext.bidder not provided"
-]
+    {
+      "value": "ext.bidder not provided",
+      "comparison": "literal"
+    }
+  ]
 }

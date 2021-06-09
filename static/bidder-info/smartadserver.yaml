@@ -1,0 +1,12 @@
+maintainer:
+  email: "support@smartadserver.com"
+gvlVendorID: 45
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

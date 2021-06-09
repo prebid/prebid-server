@@ -9,7 +9,7 @@
         },
         "ext": {
           "bidder": {
-            "placementId": 10433394
+            "placementId": 1
           }
         }
       }
@@ -17,6 +17,9 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "ignoring imp id=unsupported-audio-imp, Adtelligent supports only Video and Banner"
+    {
+      "value": "ignoring imp id=unsupported-audio-imp, Adtelligent supports only Video and Banner",
+      "comparison": "literal"
+    }
   ]
 }

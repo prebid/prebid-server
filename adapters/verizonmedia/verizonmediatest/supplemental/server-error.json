@@ -64,5 +64,10 @@
     }
   ],
 
-  "expectedMakeBidsErrors": ["Unexpected status code: 500."]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500.",
+      "comparison": "literal"
+    }
+  ]
 }

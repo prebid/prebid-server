@@ -24,8 +24,11 @@
   },
 
   "expectedMakeRequestsErrors": [
-  "ignoring imp id=empty-extbid-test, error while decoding impExt, err: unexpected end of JSON input"
+    {
+      "value": "ignoring imp id=empty-extbid-test, error while decoding impExt, err: unexpected end of JSON input",
+      "comparison": "literal"
+    }
   ]
 
-
+  
 }

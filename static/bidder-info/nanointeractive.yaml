@@ -1,0 +1,10 @@
+maintainer:
+  email: "development@nanointeractive.com"
+gvlVendorID: 72
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

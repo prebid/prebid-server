@@ -8,5 +8,5 @@ import (
 )
 
 func NewVrtcalSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("vrtcal", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("vrtcal", temp, adapters.SyncTypeRedirect)
 }

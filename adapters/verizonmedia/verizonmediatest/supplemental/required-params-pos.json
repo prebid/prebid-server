@@ -17,5 +17,10 @@
     "site": {}
   },
 
-  "expectedMakeRequestsErrors": ["Missing param pos"]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp #0: missing param pos",
+      "comparison": "literal"
+    }
+  ]
 }

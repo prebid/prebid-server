@@ -1,8 +1,13 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "RTB House Adapter Params",
-  "description": "A schema which validates params accepted by the RTB House adapter",
-  "type": "object",
-  "properties": {},
-  "required": []
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "RTB House Adapter Params",
+    "description": "A schema which validates params accepted by the RTB House adapter",
+    "type": "object",
+    "properties": {
+        "publisherId": {
+            "type": "string",
+            "description": "The publisher’s ID provided by RTB House"
+        }
+    },
+    "required": ["publisherId"]
 }

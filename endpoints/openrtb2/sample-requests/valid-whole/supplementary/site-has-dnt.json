@@ -1,0 +1,53 @@
+{
+  "description": "Request that comes with a valid device and dnt fields",
+  "mockBidRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "device": {
+          "dnt": 1
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 600
+              }
+            ]
+          },
+          "pmp": {
+            "deals": [
+              {
+                "id": "some-deal-id"
+              }
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 12883451
+            }
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+          "targeting": {
+            "pricegranularity": "low"
+          },
+          "cache": {
+            "bids": {}
+          }
+        }
+      }
+    },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "nbr":0
+  },
+  "expectedReturnCode": 200
+  }

@@ -1,0 +1,12 @@
+maintainer:
+  email: "solutions@yieldlab.de"
+gvlVendorID: 70
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video

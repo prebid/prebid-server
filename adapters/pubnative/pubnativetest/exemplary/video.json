@@ -1,0 +1,170 @@
+{
+  "mockBidRequest": {
+    "id": "test-video-request",
+    "imp": [
+      {
+        "id": "test-video-imp",
+        "video": {
+          "w": 640,
+          "h": 480,
+          "mimes": [
+            "video/mp4",
+            "video/x-flv"
+          ],
+          "minduration": 5,
+          "maxduration": 30,
+          "startdelay": 5,
+          "playbackmethod": [
+            1,
+            3
+          ],
+          "api": [
+            1,
+            2
+          ],
+          "protocols": [
+            2,
+            3
+          ],
+          "battr": [
+            13,
+            14
+          ],
+          "linearity": 1,
+          "placement": 2,
+          "minbitrate": 10,
+          "maxbitrate": 10
+        },
+        "ext": {
+          "bidder": {
+            "zone_id": 1,
+            "app_auth_token": "4fd53a12b78af4b39835de9e449c3082"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
+      "os": "android"
+    },
+    "site": {
+      "id": "siteID",
+      "publisher": {
+        "id": "1234"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/prebid?apptoken=4fd53a12b78af4b39835de9e449c3082&zoneid=1",
+        "body": {
+          "id": "test-video-request",
+          "imp": [
+            {
+              "id": "test-video-imp",
+              "video": {
+                "w": 640,
+                "h": 480,
+                "mimes": [
+                  "video/mp4",
+                  "video/x-flv"
+                ],
+                "minduration": 5,
+                "maxduration": 30,
+                "startdelay": 5,
+                "playbackmethod": [
+                  1,
+                  3
+                ],
+                "api": [
+                  1,
+                  2
+                ],
+                "protocols": [
+                  2,
+                  3
+                ],
+                "battr": [
+                  13,
+                  14
+                ],
+                "linearity": 1,
+                "placement": 2,
+                "minbitrate": 10,
+                "maxbitrate": 10
+              },
+              "ext": {
+                "bidder": {
+                  "zone_id": 1,
+                  "app_auth_token": "4fd53a12b78af4b39835de9e449c3082"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
+            "os": "android"
+          },
+          "site": {
+            "id": "siteID",
+            "publisher": {
+              "id": "1234"
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-video-request",
+          "seatbid": [
+            {
+              "seat": "958",
+              "bid": [
+                {
+                  "id": "7706636740145184841",
+                  "impid": "test-video-imp",
+                  "price": 0.5,
+                  "adid": "29681110",
+                  "adm": "some-test-ad",
+                  "adomain": [
+                    "example.com"
+                  ],
+                  "crid": "29681110",
+                  "h": 250,
+                  "w": 300
+                }
+              ]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "7706636740145184841",
+            "impid": "test-video-imp",
+            "price": 0.5,
+            "adid": "29681110",
+            "adm": "some-test-ad",
+            "adomain": [
+              "example.com"
+            ],
+            "crid": "29681110",
+            "w": 300,
+            "h": 250
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "description": "Native request listing elements with duplicate ids in the assets array the imp.native.request field",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":1,\"img\":{\"wmin\":30}},{\"id\":1,\"title\":{\"len\":20}}]}"
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
+}

@@ -1,0 +1,76 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "127.0.0.1",
+            "publisher_id": "1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "prebid.org"
+    },
+    "device": {
+      "ip": "8.8.8.8"
+    },
+    "at": 1,
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://127.0.0.1/1",
+        "body": {
+          "id": "some-request-id",
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "secure": 0,
+              "ext": {
+                "bidder": {
+                  "host": "127.0.0.1",
+                  "publisher_id": "1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "prebid.org"
+          },
+          "device": {
+            "ip": "8.8.8.8"
+          },
+          "at": 1,
+          "tmax": 500
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "foobar"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unable to unpackage bid response. Error json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+      "comparison": "literal"
+    }
+  ]
+}

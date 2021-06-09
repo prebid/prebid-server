@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.imp[0] missing required field: \"id\"\n",
-  "requestPayload": {
+  "description": "Bid request's sole imp element is empty",
+  "mockBidRequest": {
     "id": "req-id",
     "imp": [
       { }
@@ -8,5 +8,7 @@
     "app": {
       "id": "app_001"
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0] missing required field: \"id\"\n"
 }

@@ -5,5 +5,10 @@
     ]
   },
 
-  "expectedMakeRequestsErrors": ["No impression in the bid request"]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No impression in the bid request",
+      "comparison": "literal"
+    }
+  ]
 }

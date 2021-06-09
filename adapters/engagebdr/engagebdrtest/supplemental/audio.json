@@ -16,7 +16,10 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Ignoring imp id=test-imp-id, invalid MediaType. EngageBDR only supports Banner, Video and Native."
+    {
+      "value": "Ignoring imp id=test-imp-id, invalid MediaType. EngageBDR only supports Banner, Video and Native.",
+      "comparison": "literal"
+    }
   ]
 }
 

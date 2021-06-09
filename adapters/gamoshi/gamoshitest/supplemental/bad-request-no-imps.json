@@ -3,5 +3,10 @@
     "id": "test-request-id",
     "imp": []
   },
-  "expectedMakeRequestsErrors": ["No impressions in the bid request"]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No impressions in the bid request",
+      "comparison": "literal"
+    }
+  ]
 }

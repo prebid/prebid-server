@@ -4,18 +4,20 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
+	"net/http"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type RhythmoneAdapter struct {
 	endPoint string
 }
 
-func (a *RhythmoneAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *RhythmoneAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var uri string
@@ -41,7 +43,7 @@ func (a *RhythmoneAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 	return nil, errs
 }
 
-func (a *RhythmoneAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *RhythmoneAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -57,7 +59,7 @@ func (a *RhythmoneAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %d. ", err),
@@ -78,7 +80,7 @@ func (a *RhythmoneAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 	return bidResponse, errs
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
@@ -93,13 +95,15 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewRhythmoneBidder(endpoint string) *RhythmoneAdapter {
-	return &RhythmoneAdapter{
-		endPoint: endpoint,
+// Builder builds a new instance of the Rythomone adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &RhythmoneAdapter{
+		endPoint: config.Endpoint,
 	}
+	return bidder, nil
 }
 
-func (a *RhythmoneAdapter) preProcess(req *openrtb.BidRequest, errors []error) (*openrtb.BidRequest, string, []error) {
+func (a *RhythmoneAdapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb2.BidRequest, string, []error) {
 	numRequests := len(req.Imp)
 	var uri string = ""
 	for i := 0; i < numRequests; i++ {
@@ -128,9 +132,9 @@ func (a *RhythmoneAdapter) preProcess(req *openrtb.BidRequest, errors []error) (
 			errors = append(errors, err)
 			return nil, "", errors
 		}
-		bidderExtCopy := openrtb_ext.ExtBid{
-			Bidder: rhythmoneExtCopy,
-		}
+		bidderExtCopy := struct {
+			Bidder json.RawMessage `json:"bidder,omitempty"`
+		}{rhythmoneExtCopy}
 		impExtCopy, err := json.Marshal(&bidderExtCopy)
 		if err != nil {
 			errors = append(errors, err)

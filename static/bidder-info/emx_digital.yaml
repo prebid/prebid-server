@@ -1,6 +1,12 @@
 maintainer:
   email: "adops@emxdigital.com"
+gvlVendorID: 183
 capabilities:
   site:
     mediaTypes:
       - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video

@@ -1,0 +1,157 @@
+{
+    "mockBidRequest":{
+        "id": "some-request-id",
+        "site": {
+            "page": "http://example.com/test.html"
+        },
+        "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+        },
+        "imp": [
+            {
+                "id": "some-impression-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "id": "58278"
+                    }
+                }
+            }
+        ],
+        "tmax": 500
+    },
+    "httpCalls": [
+        {
+            "internalRequest": {
+                "id": "some-request-id",
+                "site": {
+                    "page": "http://example.com/test.html"
+                },
+                "imp": [
+                    {
+                        "id": "some-impression-id",
+                        "banner": {
+                            "format": [
+                                {
+                                    "w": 300,
+                                    "h": 250
+                                }
+                            ]
+                        },
+                        "ext": {
+                            "bidder": {
+                                "id": "58278"
+                            }
+                        }
+                    }
+                ],
+                "tmax": 500
+            },
+            "expectedRequest":{
+                "uri": "https://d.socdm.com/adsv/v1?adapterver=1.0.2&currency=JPY&hb=true&id=58278&posall=SSPLOC&sdkname=prebidserver&sdktype=0&sizes=300x250&t=json3&tp=http%3A%2F%2Fexample.com%2Ftest.html",
+                "headers": {
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Content-Type": [
+                        "application/json;charset=utf-8"
+                    ],
+                    "User-Agent": [
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+                    ]
+                }
+            },
+            "mockResponse":{
+                "status": 200,
+                "body": {
+                    "ad": "<!DOCTYPE html>\n  <head>\n    <meta charset=\"UTF-8\">\n    <script src=\"https:\/\/i.socdm.com\/sdk\/js\/adg-script-base.js\" type=\"text\/javascript\"><\/script>\n    <script type=\"text\/javascript\">\n      adsettings = {\n        locationid  : 58278,\n        rotation    : 0,\n        displaytype : 1,\n        sdktype     : \"0\",\n        scheduleid  : 512601\n      };\n    <\/script>\n    <style>\n      body {\n        margin:0;\n        padding:0;\n      }\n    <\/style>\n  <\/head>\n  <body>\n    <div id=\"medibasspContainer\">\n      <iframe src=\"https:\/\/s3-ap-northeast-1.amazonaws.com\/sdk-temp\/adg-sample-ad\/300x250.html?prc=-Cuepak&rd=https%3A%2F%2Ftg.socdm.com%2Frd%2Fv1%2Fz%2FhKFj2gDXY2hzbT0xOTgsZmJkZGMyNWEvNTgyNzgvU1NQTE9DLzUxMjYwMS83MjExNS43Njg1NS41MTI2MDEvMTA5MzkyNi82NDkxOS81ODI3ODpTU1BMT0M6Ki9jdD0xNTg1MjEyMDg1Nzg5O3NyPWh0dHBzO2RzcGlkPTMwMTtwcj16RGFfYVY0O3ByYj15UTtwcm89eVE7cHJvYz1KUFk7Y3JkMnk9MTA5LjQzMDAwMDAwMDAwMDAxO2NyeTJkPTAuMDA5MTM4MjYxOTAyNTg2MTI3MztpZHg9MDulc2VxaWTaACQ0NzFhM2JlNS1lYTQzLWRhZjAtYjhjZi1mNjJkNTA1N2Y5ZWOnc2VxdGltZa0xNTg1MjEyMDg1Nzg5pHh1aWS4WE52SVNNQ281bUlBQU1hN2dOUUFBQUFB%2Fp%2Fctsv%3Dm-ad226%3Bseqid%3D471a3be5-ea43-daf0-b8cf-f62d5057f9ec%3B%2Fg%2FU%3A%3Furl%3D\" style=\"border: 0px;\" width=\"300\" height=\"250\" frameborder=\"0\" scrolling=\"no\"><\/iframe>\n    <\/div>\n  <\/body>\n",
+                    "beacon": "<img src=\"https://tg.socdm.com/bc/v3?b=beaconID&amp;xuid=XUID&amp;ctsv=CTSV&amp;seqid=SeqID&amp;seqtime=SeqTime&amp;seqctx=SeqCtx&amp;t=.gif\" width=\"1\" height=\"1\" style=\"display:none;border:none;padding:0;margin:0;width:1px;height:1px\"/>",
+                    "beaconurl": "https://tg.socdm.com/bc/v3?b=beaconID&t=.gif",
+                    "cpm": 46.6,
+                    "creativeid": "Dummy_supership.jp",
+                    "displaytype": "1",
+                    "h": 250,
+                    "ids": {
+                        "anid": "",
+                        "diid": "",
+                        "idfa": "",
+                        "soc": "Soc"
+                    },
+                    "location_params": null,
+                    "locationid": "58278",
+                    "results": [
+                        {
+                            "ad": "<!DOCTYPE html>\n  <head>\n    <meta charset=\"UTF-8\">\n    <script src=\"https:\/\/i.socdm.com\/sdk\/js\/adg-script-base.js\" type=\"text\/javascript\"><\/script>\n    <script type=\"text\/javascript\">\n      adsettings = {\n        locationid  : 58278,\n        rotation    : 0,\n        displaytype : 1,\n        sdktype     : \"0\",\n        scheduleid  : 512601\n      };\n    <\/script>\n    <style>\n      body {\n        margin:0;\n        padding:0;\n      }\n    <\/style>\n  <\/head>\n  <body>\n    <div id=\"medibasspContainer\">\n      <iframe src=\"https:\/\/s3-ap-northeast-1.amazonaws.com\/sdk-temp\/adg-sample-ad\/300x250.html?prc=-Cuepak&rd=https%3A%2F%2Ftg.socdm.com%2Frd%2Fv1%2Fz%2FhKFj2gDXY2hzbT0xOTgsZmJkZGMyNWEvNTgyNzgvU1NQTE9DLzUxMjYwMS83MjExNS43Njg1NS41MTI2MDEvMTA5MzkyNi82NDkxOS81ODI3ODpTU1BMT0M6Ki9jdD0xNTg1MjEyMDg1Nzg5O3NyPWh0dHBzO2RzcGlkPTMwMTtwcj16RGFfYVY0O3ByYj15UTtwcm89eVE7cHJvYz1KUFk7Y3JkMnk9MTA5LjQzMDAwMDAwMDAwMDAxO2NyeTJkPTAuMDA5MTM4MjYxOTAyNTg2MTI3MztpZHg9MDulc2VxaWTaACQ0NzFhM2JlNS1lYTQzLWRhZjAtYjhjZi1mNjJkNTA1N2Y5ZWOnc2VxdGltZa0xNTg1MjEyMDg1Nzg5pHh1aWS4WE52SVNNQ281bUlBQU1hN2dOUUFBQUFB%2Fp%2Fctsv%3Dm-ad226%3Bseqid%3D471a3be5-ea43-daf0-b8cf-f62d5057f9ec%3B%2Fg%2FU%3A%3Furl%3D\" style=\"border: 0px;\" width=\"300\" height=\"250\" frameborder=\"0\" scrolling=\"no\"><\/iframe>\n    <\/div>\n  <\/body>\n",
+                            "beacon": "<img src=\"https://tg.socdm.com/bc/v3?b=beaconID&amp;xuid=XUID&amp;ctsv=CTSV&amp;seqid=SeqID&amp;seqtime=SeqTime&amp;seqctx=SeqCtx&amp;t=.gif\" width=\"1\" height=\"1\" style=\"display:none;border:none;padding:0;margin:0;width:1px;height:1px\"/>",
+                            "beaconurl": "https://tg.socdm.com/bc/v3?b=beaconID&t=.gif",
+                            "cpm": 46.6,
+                            "creativeid": "Dummy_supership.jp",
+                            "h": 250,
+                            "landing_url": "",
+                            "scheduleid": "512601",
+                            "trackers": {
+                                "imp": [
+                                    "https://tg.socdm.com/bc/v3?b=beaconID&t=.gif"
+                                ],
+                                "viewable_imp": [
+                                    "https://tg.socdm.com/aux/inview?creative_id=1093926&ctsv=CTSC&extra_field=ExtraField&family_id=512601&id=58278&loglocation_id=64919&lookupname=58278%3ASSPLOC%3A*&pos=SSPLOC&schedule_id=72115.76855.512601&seqid=SeqID&seqtime=SeqTime&xuid=XUID"
+                                ],
+                                "viewable_measured": [
+                                    "https://tg.socdm.com/aux/measured?creative_id=1093926&ctsv=CTSC&extra_field=ExtraField&family_id=512601&id=58278&loglocation_id=64919&lookupname=58278%3ASSPLOC%3A*&pos=SSPLOC&schedule_id=72115.76855.512601&seqid=SeqID&seqtime=SeqTime&xuid=XUID"
+                                ]
+                            },
+                            "ttl": 10,
+                            "w": 300,
+                            "weight": 1
+                        }
+                    ],
+                    "dealid": "test-deal-id",
+                    "rotation": "0",
+                    "scheduleid": "512601",
+                    "sdktype": "0",
+                    "trackers": {
+                        "imp": [
+                            "https://tg.socdm.com/bc/v3?b=beaconID&t=.gif"
+                        ],
+                        "viewable_imp": [
+                            "https://tg.socdm.com/aux/inview?creative_id=1093926&ctsv=CTSC&extra_field=ExtraField&family_id=512601&id=58278&loglocation_id=64919&lookupname=58278%3ASSPLOC%3A*&pos=SSPLOC&schedule_id=72115.76855.512601&seqid=SeqID&seqtime=SeqTime&xuid=XUID"
+                        ],
+                        "viewable_measured": [
+                            "https://tg.socdm.com/aux/measured?creative_id=1093926&ctsv=CTSC&extra_field=ExtraField&family_id=512601&id=58278&loglocation_id=64919&lookupname=58278%3ASSPLOC%3A*&pos=SSPLOC&schedule_id=72115.76855.512601&seqid=SeqID&seqtime=SeqTime&xuid=XUID"
+                        ]
+                    },
+                    "ttl": 10,
+                    "w": 300
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+          "currency": "JPY",
+          "bids": [
+            {
+              "bid": {
+                "id": "58278",
+                "impid": "some-impression-id",
+                "price": 46.6,
+                "adm": "<div id=\"medibasspContainer\">\n      <iframe src=\"https:\/\/s3-ap-northeast-1.amazonaws.com\/sdk-temp\/adg-sample-ad\/300x250.html?prc=-Cuepak&rd=https%3A%2F%2Ftg.socdm.com%2Frd%2Fv1%2Fz%2FhKFj2gDXY2hzbT0xOTgsZmJkZGMyNWEvNTgyNzgvU1NQTE9DLzUxMjYwMS83MjExNS43Njg1NS41MTI2MDEvMTA5MzkyNi82NDkxOS81ODI3ODpTU1BMT0M6Ki9jdD0xNTg1MjEyMDg1Nzg5O3NyPWh0dHBzO2RzcGlkPTMwMTtwcj16RGFfYVY0O3ByYj15UTtwcm89eVE7cHJvYz1KUFk7Y3JkMnk9MTA5LjQzMDAwMDAwMDAwMDAxO2NyeTJkPTAuMDA5MTM4MjYxOTAyNTg2MTI3MztpZHg9MDulc2VxaWTaACQ0NzFhM2JlNS1lYTQzLWRhZjAtYjhjZi1mNjJkNTA1N2Y5ZWOnc2VxdGltZa0xNTg1MjEyMDg1Nzg5pHh1aWS4WE52SVNNQ281bUlBQU1hN2dOUUFBQUFB%2Fp%2Fctsv%3Dm-ad226%3Bseqid%3D471a3be5-ea43-daf0-b8cf-f62d5057f9ec%3B%2Fg%2FU%3A%3Furl%3D\" style=\"border: 0px;\" width=\"300\" height=\"250\" frameborder=\"0\" scrolling=\"no\"><\/iframe>\n    <\/div>\n  <img src=\"https://tg.socdm.com/bc/v3?b=beaconID&amp;xuid=XUID&amp;ctsv=CTSV&amp;seqid=SeqID&amp;seqtime=SeqTime&amp;seqctx=SeqCtx&amp;t=.gif\" width=\"1\" height=\"1\" style=\"display:none;border:none;padding:0;margin:0;width:1px;height:1px\"/>",
+                "crid": "Dummy_supership.jp",
+                "w": 300,
+                "h": 250,
+                "dealid": "test-deal-id"
+              },
+              "type": "banner"
+            }
+          ]
+        }
+      ]
+}
+

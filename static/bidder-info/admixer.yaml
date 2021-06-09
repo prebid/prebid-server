@@ -1,0 +1,16 @@
+maintainer:
+  email: "prebid@admixer.net"
+gvlVendorID: 511
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio

@@ -23,6 +23,9 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-       "ext.bidder.publisher not provided"
+    {
+      "value": "ext.bidder.publisher not provided",
+      "comparison": "literal"
+    }
   ]
 }

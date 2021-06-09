@@ -15,6 +15,10 @@
 		"endpoint": {
 			"type": "string",
 			"description": "Endpoint provided to publisher"
+		},
+		"bidfloor": {
+			"type": "number",
+			"description": "Minimum bid for this impression expressed in CPM (USD)"
 		}
 	},
 	"required": ["host","tappxkey","endpoint"]

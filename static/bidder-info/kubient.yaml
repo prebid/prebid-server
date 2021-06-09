@@ -1,0 +1,12 @@
+maintainer:
+  email: "prebid@kubient.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+

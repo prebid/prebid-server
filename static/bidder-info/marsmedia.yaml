@@ -1,0 +1,12 @@
+maintainer:
+  email: "prebid@mars.media"
+gvlVendorID: 776
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

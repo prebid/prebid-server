@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Invibes Adapter Params",
+  "description": "A schema which validates params accepted by the Invibes adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An ID which identifies the site selling the impression"
+    },
+    "domainId": {
+      "type": "integer",
+      "description": "Ad domain id"
+    },
+    "debug": {
+      "type": "object",
+      "properties": {
+        "testBvid": {
+          "type": "string"
+        },
+        "testLog": {
+          "type": "boolean"
+        }
+      },
+      "description": "Parameters used for debugging purposes"
+    }
+  },
+  "required": ["placementId"]
+}

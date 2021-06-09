@@ -1,0 +1,136 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "adslotId": "12345",
+            "supplyId": "123456789",
+            "adSize": "728x90",
+            "targeting": {
+              "key1": "value1",
+              "key2": "value2"
+            },
+            "extId": "abc"
+          }
+        },
+        "video": {
+          "context": "instream",
+          "mimes": [
+            "video/mp4"
+          ],
+          "playerSize": [
+            [
+              400,
+              600
+            ]
+          ],
+          "minduration": 1,
+          "maxduration": 2,
+          "protocols": [
+            1,
+            2
+          ],
+          "w": 1,
+          "h": 2,
+          "startdelay": 1,
+          "placement": 1,
+          "playbackmethod": [
+            2
+          ]
+        }
+      }
+    ],
+    "user": {
+      "buyeruid": "34a53e82-0dc3-4815-8b7e-b725ede0361c"
+    },
+    "app": {
+      "publisher": {
+        "id": "123456789"
+      },
+      "cat": [],
+      "bundle": "com.app.awesome",
+      "name": "Awesome App",
+      "domain": "awesomeapp.com",
+      "id": "123456789"
+    },
+    "device": {
+      "ifa": "hello-ads",
+      "devicetype": 4,
+      "connectiontype": 6,
+      "geo": {
+        "lat": 51.499488,
+        "lon": -0.128953
+      },
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36",
+      "ip": "169.254.13.37",
+      "h": 1098,
+      "w": 814
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Cookie": [
+            "id=34a53e82-0dc3-4815-8b7e-b725ede0361c"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
+          ],
+          "X-Forwarded-For": [
+            "169.254.13.37"
+          ]
+        },
+        "uri": "https://ad.yieldlab.net/testing/12345?content=json&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pubappname=Awesome+App&pubbundlename=com.app.awesome&pvid=true&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads"
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "id": 12345,
+            "price": 201,
+            "advertiser": "yieldlab",
+            "adsize": "728x90",
+            "pid": 1234,
+            "did": 5678,
+            "pvid": "40cb3251-1e1e-4cfd-8edc-7d32dc1a21e5"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "crid": "12345123433",
+            "dealid": "1234",
+            "id": "12345",
+            "impid": "test-imp-id",
+            "nurl": "https://ad.yieldlab.net/d/12345/123456789/728x90?id=abc&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&pvid=40cb3251-1e1e-4cfd-8edc-7d32dc1a21e5&ts=testing",
+            "price": 2.01,
+            "w": 728,
+            "h": 90
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

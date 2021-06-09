@@ -100,6 +100,15 @@ func NewPBSCookie() *PBSCookie {
 	}
 }
 
+// NewPBSCookie returns an empty PBSCookie with optOut enabled
+func NewPBSCookieWithOptOut() *PBSCookie {
+	return &PBSCookie{
+		uids:     make(map[string]uidWithExpiry),
+		optOut:   true,
+		birthday: timestamp(),
+	}
+}
+
 // AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
 func (cookie *PBSCookie) AllowSyncs() bool {
 	return cookie != nil && !cookie.optOut
@@ -193,19 +202,24 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCooki
 		currSize = len([]byte(httpCookie.String()))
 	}
 
-	uidsCookieStr := httpCookie.String()
+	var uidsCookieStr string
 	var sameSiteCookie *http.Cookie
 	if setSiteCookie {
+		httpCookie.Secure = true
+		uidsCookieStr = httpCookie.String()
 		uidsCookieStr += SameSiteAttribute
 		sameSiteCookie = &http.Cookie{
 			Name:    SameSiteCookieName,
 			Value:   SameSiteCookieValue,
 			Expires: time.Now().Add(ttl),
 			Path:    "/",
+			Secure:  true,
 		}
 		sameSiteCookieStr := sameSiteCookie.String()
 		sameSiteCookieStr += SameSiteAttribute
 		w.Header().Add("Set-Cookie", sameSiteCookieStr)
+	} else {
+		uidsCookieStr = httpCookie.String()
 	}
 	w.Header().Add("Set-Cookie", uidsCookieStr)
 }
@@ -243,7 +257,7 @@ func (cookie *PBSCookie) TrySync(familyName string, uid string) error {
 
 	// At the moment, Facebook calls /setuid with a UID of 0 if the user isn't logged into Facebook.
 	// They shouldn't be sending us a sentinel value... but since they are, we're refusing to save that ID.
-	if familyName == string(openrtb_ext.BidderFacebook) && uid == "0" {
+	if familyName == string(openrtb_ext.BidderAudienceNetwork) && uid == "0" {
 		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
 	}
 
@@ -315,8 +329,8 @@ func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 			//
 			// Since users may log into facebook later, this is a bad strategy.
 			// Since "0" is a fake ID for this bidder, we'll just treat it like it doesn't exist.
-			if id, ok := cookie.uids[string(openrtb_ext.BidderFacebook)]; ok && id.UID == "0" {
-				delete(cookie.uids, string(openrtb_ext.BidderFacebook))
+			if id, ok := cookie.uids[string(openrtb_ext.BidderAudienceNetwork)]; ok && id.UID == "0" {
+				delete(cookie.uids, string(openrtb_ext.BidderAudienceNetwork))
 			}
 		}
 	}

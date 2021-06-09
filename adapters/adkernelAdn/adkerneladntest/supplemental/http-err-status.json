@@ -49,5 +49,10 @@
     }
   ],
 
-  "expectedMakeBidsErrors": ["Unexpected http status code: 404"]
+  "expectedMakeBidsErrors": [ 
+    {
+      "value": "Unexpected http status code: 404",
+      "comparison": "literal" 
+    }
+  ]
 }

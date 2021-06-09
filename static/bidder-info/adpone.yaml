@@ -1,0 +1,10 @@
+maintainer:
+  email: "tech@adpone.com"
+gvlVendorID: 799
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

@@ -1,0 +1,93 @@
+{
+  "mockBidRequest": {
+    "id": "test-video-request-id",
+    "imp": [
+      {
+        "id": "test-imp-video-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "zoneid": "9010"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://127.0.0.1:5000/bid",
+        "body": {
+          "id": "test-video-request-id",
+          "imp": [
+            {
+              "id": "test-imp-video-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 1024,
+                "h": 576
+              },
+              "ext": {
+                "bidder": {
+                  "zoneid": "9010"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "ssp-response-id",
+          "seatbid": [
+            {
+              "seat": "83",
+              "bid": [{
+                "id": "7706636740145184841",
+                "impid": "test-imp-video-id",
+                "price": 0.500000,
+                "adid": "29681110",
+                "adm": "some-video-ad",
+                "adomain": ["advertsite.com"],
+                "cid": "958",
+                "crid": "29681110",
+                "h": 576,
+                "w": 1024
+              }]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "bids": [{
+        "bid": {
+          "id": "7706636740145184841",
+          "impid": "test-imp-video-id",
+          "price": 0.5,
+          "adm": "some-video-ad",
+          "adid": "29681110",
+          "adomain": ["advertsite.com"],
+          "cid": "958",
+          "crid": "29681110",
+          "w": 1024,
+          "h": 576
+        },
+        "type": "video"
+      }]
+    }
+  ]
+
+}

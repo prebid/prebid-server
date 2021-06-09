@@ -1,0 +1,10 @@
+maintainer:
+  email: "prebid@triplelift.com"
+gvlVendorID: 28
+capabilities:
+  app:
+    mediaTypes:
+      - native
+  site:
+    mediaTypes:
+      - native

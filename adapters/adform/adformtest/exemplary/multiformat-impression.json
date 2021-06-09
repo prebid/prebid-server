@@ -1,0 +1,99 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "banner-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "mid": 12345
+            }
+          }
+        },
+        {
+            "id": "video-imp-id",
+            "video": {
+              "w": 640,
+              "h": 480
+            },
+            "ext": {
+              "bidder": {
+                "mid": 54321
+              }
+            }
+          }
+      ]
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://adx.adform.net/adx?CC=1&fd=1&gdpr=&gdpr_consent=&ip=&rp=4&stid=&bWlkPTEyMzQ1JnJjdXI9VVNE&bWlkPTU0MzIxJnJjdXI9VVNE"
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": [
+            {
+              "response": "banner",
+              "banner": "<adm>",
+              "win_bid": 0.5,
+              "win_cur": "USD",
+              "width": 300,
+              "height": 250,
+              "deal_id": null,
+              "win_crid": "20078830"
+            },
+            {
+                "response": "vast_content",
+                "vast_content": "<vast>",
+                "win_bid": 0.7,
+                "win_cur": "USD",
+                "width": 640,
+                "height": 480,
+                "deal_id": "DID-123-22",
+                "win_crid": "20078831"
+              }
+          ]
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "banner-imp-id",
+              "impid": "banner-imp-id",
+              "price": 0.5,
+              "adm": "<adm>",
+              "crid": "20078830",
+              "w": 300,
+              "h": 250
+            },
+            "type": "banner"
+          },
+          {
+            "bid": {
+              "id": "video-imp-id",
+              "impid": "video-imp-id",
+              "price": 0.7,
+              "adm": "<vast>",
+              "crid": "20078831",
+              "dealid": "DID-123-22",
+              "w": 640,
+              "h": 480
+            },
+            "type": "video"
+          }
+        ]
+      }
+    ]
+  }

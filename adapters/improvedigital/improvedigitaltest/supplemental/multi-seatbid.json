@@ -55,6 +55,9 @@
     }],
 
     "expectedMakeBidsErrors": [
-        "Unexpected SeatBid! Must be only one but have: 2"
+        {
+            "value":  "Unexpected SeatBid! Must be only one but have: 2",
+            "comparison": "literal"
+        }
     ]
 }

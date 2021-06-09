@@ -2,7 +2,7 @@
   "mockBidRequest": {
     "id": "test-request-id",
     "app":{
-    	"id":"test-app-id",	
+    	"id":"test-app-id",
     	"name":"test-app-name",
     	"bundle":"test-app-bundle"
     },
@@ -48,6 +48,9 @@
     }
   ],
   "expectedMakeBidsErrors": [
-    "Unexpected status code: 400. Run with request.debug = 1 for more info"
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
   ]
 }

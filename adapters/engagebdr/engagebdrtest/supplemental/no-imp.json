@@ -6,7 +6,10 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Invalid BidRequest. No valid imp."
+    {
+      "value": "Invalid BidRequest. No valid imp.",
+      "comparison": "literal"
+    }
   ]
 }
 

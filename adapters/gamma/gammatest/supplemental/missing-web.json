@@ -27,6 +27,9 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-    "WebID is empty"
+    {
+      "value": "WebID is empty",
+      "comparison": "literal"
+    }
   ]
 }

@@ -1,0 +1,93 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 320,
+                            "h": 50
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "placement_id": 123456,
+                        "pub_id": 1234
+                    }
+                }
+            }
+        ]
+    },
+
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://mfx.mobilefuse.com/openrtb?pub_id=1234",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 320,
+                                        "h": 50
+                                    }
+                                ]
+                            },
+                            "tagid": "123456"
+                        }
+                    ]
+                }
+            },
+
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "mobilefuse",
+                            "bid": [
+                                {
+                                    "id": "test-bid-id",
+                                    "impid": "1",
+                                    "price": 1.50,
+                                    "adm": "some-test-ad",
+                                    "crid": "test-crid",
+                                    "h": 50,
+                                    "w": 320
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test-bid-id",
+                        "impid": "1",
+                        "price": 1.50,
+                        "adm": "some-test-ad",
+                        "crid": "test-crid",
+                        "w": 320,
+                        "h": 50
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

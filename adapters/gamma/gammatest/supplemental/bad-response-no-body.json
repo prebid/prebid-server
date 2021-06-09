@@ -38,6 +38,9 @@
     }
   ],
   "expectedMakeBidsErrors": [
-    "bad server response: &{%!d(string=unexpected end of JSON input) 0}. "
+    {
+      "value": "bad server response: &{%!d(string=unexpected end of JSON input) 0}. ",
+      "comparison": "literal"
+    }
   ]
 }

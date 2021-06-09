@@ -1,0 +1,47 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+            "format": [
+                {
+                    "w": 300,
+                    "h": 250
+                },
+                {
+                    "w": 300,
+                    "h": 600
+                }
+            ],
+            "w": 300,
+            "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "plmt1",
+            "publisherid": "pub1"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app-abc",
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ip": "152.193.6.74"
+    },
+    "user": {
+      "id": "db089de9-a62e-4861-a881-0ff15e052516"
+    },
+    "tmax": 500
+  },
+  "expectedMakeRequestsErrors": [
+      {
+          "value": "Missing bidder token in 'user.buyeruid'",
+          "comparison": "literal"
+      }
+  ]
+}

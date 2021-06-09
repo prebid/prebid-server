@@ -18,6 +18,14 @@
       "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
     }
   },
-  "expectedMakeRequestsErrors": ["Need at least one size to build request",
-"Error in preprocess of Imp, err: [Need at least one size to build request]"]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Need at least one size to build request",
+      "comparison": "literal"
+    },
+    {
+      "value": "Error in preprocess of Imp, err: [Need at least one size to build request]",
+      "comparison": "literal"
+    }
+  ]
 }

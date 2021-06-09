@@ -1,0 +1,10 @@
+maintainer:
+  email: "prebid@criteo.com"
+gvlVendorID: 91
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

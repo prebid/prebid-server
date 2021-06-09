@@ -10,12 +10,16 @@ type EndpointTemplateParams struct {
 	Host        string
 	PublisherID string
 	ZoneID      string
+	SourceId    string
+	AccountID   string
+	AdUnit      string
 }
 
 // UserSyncTemplateParams specifies params for an user sync URL template
 type UserSyncTemplateParams struct {
 	GDPR        string
 	GDPRConsent string
+	USPrivacy   string
 }
 
 // ResolveMacros resolves macros in the given template with the provided params
