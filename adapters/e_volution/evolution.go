@@ -16,7 +16,7 @@ type adapter struct {
 }
 
 type bidExt struct {
-	MediaType openrtb_ext.BidType `json:"mediaType,omitempty"`
+	MediaType openrtb_ext.BidType `json:"mediaType"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {

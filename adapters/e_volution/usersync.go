@@ -8,5 +8,5 @@ import (
 )
 
 func NewEvolutionSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("evolution", temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("e_volution", temp, adapters.SyncTypeRedirect)
 }
