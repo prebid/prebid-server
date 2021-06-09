@@ -35,7 +35,7 @@ var request = &openrtb2.BidRequest{
 
 func TestInterstitial(t *testing.T) {
 	myRequest := request
-	if err := processInterstitials(&openrtb_ext.RequestWrapper{Request: myRequest}); err != nil {
+	if err := processInterstitials(&openrtb_ext.RequestWrapper{BidRequest: myRequest}); err != nil {
 		t.Fatalf("Error processing interstitials: %v", err)
 	}
 	targetFormat := []openrtb2.Format{

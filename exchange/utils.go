@@ -179,7 +179,7 @@ func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestT
 
 func extractCCPA(orig *openrtb2.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.IntegrationType) (privacy.PolicyEnforcer, error) {
 	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
-	ccpaPolicy, err := ccpa.ReadFromRequest(&openrtb_ext.RequestWrapper{Request: orig})
+	ccpaPolicy, err := ccpa.ReadFromRequest(&openrtb_ext.RequestWrapper{BidRequest: orig})
 	if err != nil {
 		return privacy.NilPolicyEnforcer{}, err
 	}

@@ -16,7 +16,7 @@ func (c ConsentWriterLegacy) Write(req *openrtb2.BidRequest) error {
 	if req == nil {
 		return nil
 	}
-	reqWrap := &openrtb_ext.RequestWrapper{Request: req}
+	reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
 	if regsExt, err := reqWrap.GetRegExt(); err == nil {
 		regsExt.SetUSPrivacy(c.Consent)
 	} else {

@@ -44,17 +44,17 @@ func TestConsentWriter(t *testing.T) {
 
 	for _, test := range testCases {
 
-		reqWrapper := &openrtb_ext.RequestWrapper{Request: test.request}
+		reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
 		var err error
 		regsExt, err1 := reqWrapper.GetRegExt()
 		if err1 == nil {
 			regsExt.SetUSPrivacy(consent)
-			if reqWrapper.Request != nil {
+			if reqWrapper.BidRequest != nil {
 				err = reqWrapper.Sync()
 			}
 		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, reqWrapper.Request, test.description)
+		assert.Equal(t, test.expected, reqWrapper.BidRequest, test.description)
 	}
 }
 

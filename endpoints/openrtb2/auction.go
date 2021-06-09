@@ -143,7 +143,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	ctx := context.Background()
 
-	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.Request.TMax) * time.Millisecond)
+	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
@@ -151,10 +151,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if req.Request.App != nil {
+	if req.App != nil {
 		labels.Source = metrics.DemandApp
 		labels.RType = metrics.ReqTypeORTB2App
-		labels.PubID = getAccountID(req.Request.App.Publisher)
+		labels.PubID = getAccountID(req.BidRequest.App.Publisher)
 	} else { //req.Site != nil
 		labels.Source = metrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -162,7 +162,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		} else {
 			labels.CookieFlag = metrics.CookieFlagYes
 		}
-		labels.PubID = getAccountID(req.Request.Site.Publisher)
+		labels.PubID = getAccountID(req.BidRequest.Site.Publisher)
 	}
 
 	// Look up account now that we have resolved the pubID value
@@ -183,7 +183,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	secGPC := r.Header.Get("Sec-GPC")
 
 	auctionRequest := exchange.AuctionRequest{
-		BidRequest:                 req.Request,
+		BidRequest:                 req.BidRequest,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,
 		RequestType:                labels.RType,
@@ -194,7 +194,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
-	ao.Request = req.Request
+	ao.Request = req.BidRequest
 	ao.Response = response
 	ao.Account = account
 	if err != nil {
@@ -235,7 +235,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // If the errors list has at least one element, then no guarantees are made about the returned request.
 func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
-	req.Request = &openrtb2.BidRequest{}
+	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
 
 	// Pull the request body into a buffer, so we have it for later usage.
@@ -265,20 +265,20 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		return
 	}
 
-	if err := json.Unmarshal(requestJson, req.Request); err != nil {
+	if err := json.Unmarshal(requestJson, req.BidRequest); err != nil {
 		errs = []error{err}
 		return
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req.Request)
+	deps.setFieldsImplicitly(httpRequest, req.BidRequest)
 
 	if err := processInterstitials(req); err != nil {
 		errs = []error{err}
 		return
 	}
 
-	lmt.ModifyForIOS(req.Request)
+	lmt.ModifyForIOS(req.BidRequest)
 
 	errL := deps.validateRequest(req)
 	if len(errL) > 0 {
@@ -305,27 +305,27 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 
 func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []error {
 	errL := []error{}
-	if req.Request.ID == "" {
+	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
 	}
 
-	if req.Request.TMax < 0 {
-		return []error{fmt.Errorf("request.tmax must be nonnegative. Got %d", req.Request.TMax)}
+	if req.TMax < 0 {
+		return []error{fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)}
 	}
 
-	if len(req.Request.Imp) < 1 {
+	if len(req.Imp) < 1 {
 		return []error{errors.New("request.imp must contain at least one element.")}
 	}
 
-	if len(req.Request.Cur) > 1 {
-		req.Request.Cur = req.Request.Cur[0:1]
-		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("A prebid request can only process one currency. Taking the first currency in the list, %s, as the active currency", req.Request.Cur[0])})
+	if len(req.Cur) > 1 {
+		req.Cur = req.Cur[0:1]
+		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("A prebid request can only process one currency. Taking the first currency in the list, %s, as the active currency", req.Cur[0])})
 	}
 
 	// If automatically filling source TID is enabled then validate that
 	// source.TID exists and If it doesn't, fill it with a randomly generated UUID
 	if deps.cfg.AutoGenSourceTID {
-		if err := validateAndFillSourceTID(req.Request); err != nil {
+		if err := validateAndFillSourceTID(req.BidRequest); err != nil {
 			return []error{err}
 		}
 	}
@@ -358,7 +358,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		}
 	}
 
-	if (req.Request.Site == nil && req.Request.App == nil) || (req.Request.Site != nil && req.Request.App != nil) {
+	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
 		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
@@ -378,7 +378,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		return append(errL, err)
 	}
 
-	if err := validateDevice(req.Request.Device); err != nil {
+	if err := validateDevice(req.Device); err != nil {
 		return append(errL, err)
 	}
 
@@ -399,9 +399,9 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		}
 	}
 
-	impIDs := make(map[string]int, len(req.Request.Imp))
-	for index := range req.Request.Imp {
-		imp := &req.Request.Imp[index]
+	impIDs := make(map[string]int, len(req.Imp))
+	for index := range req.Imp {
+		imp := &req.Imp[index]
 		if firstIndex, ok := impIDs[imp.ID]; ok {
 			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
 		}
@@ -1056,11 +1056,11 @@ func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 }
 
 func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
-	if req.Request.Site == nil {
+	if req.Site == nil {
 		return nil
 	}
 
-	if req.Request.Site.ID == "" && req.Request.Site.Page == "" {
+	if req.Site.ID == "" && req.Site.Page == "" {
 		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
 	}
 	siteExt, err := req.GetSiteExt()
@@ -1077,13 +1077,13 @@ func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
 
 func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 
-	if req.Request.App == nil {
+	if req.App == nil {
 		return nil
 	}
 
-	if req.Request.App.ID != "" {
-		if _, found := deps.cfg.BlacklistedAppMap[req.Request.App.ID]; found {
-			return &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.Request.App.ID)}
+	if req.App.ID != "" {
+		if _, found := deps.cfg.BlacklistedAppMap[req.App.ID]; found {
+			return &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}
 		}
 	}
 
@@ -1098,7 +1098,7 @@ func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases map[string]string) error {
 	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
-	if req != nil && req.Request != nil && req.Request.User != nil && req.Request.User.Geo != nil && req.Request.User.Geo.Accuracy < 0 {
+	if req != nil && req.BidRequest != nil && req.User != nil && req.User.Geo != nil && req.User.Geo.Accuracy < 0 {
 		return errors.New("request.user.geo.accuracy must be a positive number")
 	}
 

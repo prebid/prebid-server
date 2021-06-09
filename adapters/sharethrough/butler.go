@@ -98,7 +98,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb2.Imp, request *open
 	}
 
 	usPolicySignal := ""
-	if usPolicy, err := ccpa.ReadFromRequest(&openrtb_ext.RequestWrapper{Request: request}); err == nil {
+	if usPolicy, err := ccpa.ReadFromRequest(&openrtb_ext.RequestWrapper{BidRequest: request}); err == nil {
 		usPolicySignal = usPolicy.Consent
 	}
 

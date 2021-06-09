@@ -138,7 +138,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 
 	gdpr := bidGdpr{}
 
-	ccpaPolicy, err := ccpa.ReadFromRequest(&openrtb_ext.RequestWrapper{Request: request})
+	ccpaPolicy, err := ccpa.ReadFromRequest(&openrtb_ext.RequestWrapper{BidRequest: request})
 	if err == nil {
 		body.CCPA = ccpaPolicy.Consent
 	}

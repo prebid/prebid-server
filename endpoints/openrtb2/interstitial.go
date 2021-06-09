@@ -11,11 +11,11 @@ import (
 
 func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 	unmarshalled := true
-	for i := range req.Request.Imp {
-		if req.Request.Imp[i].Instl == 1 {
+	for i := range req.Imp {
+		if req.Imp[i].Instl == 1 {
 			var prebid *openrtb_ext.ExtDevicePrebid
 			if unmarshalled {
-				if req.Request.Device.Ext == nil {
+				if req.Device.Ext == nil {
 					// No special interstitial support requested, so bail as there is nothing to do
 					return nil
 				}
@@ -29,7 +29,7 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 					return nil
 				}
 			}
-			err := processInterstitialsForImp(&req.Request.Imp[i], prebid, req.Request.Device)
+			err := processInterstitialsForImp(&req.Imp[i], prebid, req.Device)
 			if err != nil {
 				return err
 			}

@@ -156,7 +156,7 @@ func TestReadFromRequest(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqWrapper := &openrtb_ext.RequestWrapper{Request: test.request}
+		reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
 		result, err := ReadFromRequest(reqWrapper)
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expectedPolicy, result, test.description)
@@ -211,20 +211,20 @@ func TestWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqWrapper := &openrtb_ext.RequestWrapper{Request: test.request}
+		reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
 		var err error
 		_, err = reqWrapper.GetRegExt()
 		if err == nil {
 			_, err = reqWrapper.GetRequestExt()
 			if err == nil {
 				err = test.policy.Write(reqWrapper)
-				if err == nil && reqWrapper.Request != nil {
+				if err == nil && reqWrapper.BidRequest != nil {
 					err = reqWrapper.Sync()
 				}
 			}
 		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, reqWrapper.Request, test.description)
+		assert.Equal(t, test.expected, reqWrapper.BidRequest, test.description)
 	}
 }
 

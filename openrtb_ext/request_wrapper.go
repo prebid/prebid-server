@@ -12,7 +12,7 @@ import (
 // will not need to be unmarshalled multiple times.
 //
 // To start with, the wrapper can be created for a request 'req' via:
-// reqWrapper := openrtb_ext.RequestWrapper{Request: req}
+// reqWrapper := openrtb_ext.RequestWrapper{BidRequest: req}
 //
 // Before accessing an object's ext field, initialize it via:
 // reqWrapper.ExtractUserExt()
@@ -32,7 +32,7 @@ import (
 
 type RequestWrapper struct {
 	// json json.RawMessage
-	Request *openrtb2.BidRequest
+	*openrtb2.BidRequest
 	// Dirty bool // Probably don't care
 	userExt    *UserExt
 	deviceExt  *DeviceExt
@@ -47,11 +47,11 @@ func (rw *RequestWrapper) GetUserExt() (*UserExt, error) {
 		return rw.userExt, nil
 	}
 	rw.userExt = &UserExt{}
-	if rw.Request == nil || rw.Request.User == nil || rw.Request.User.Ext == nil {
+	if rw.BidRequest == nil || rw.User == nil || rw.User.Ext == nil {
 		return rw.userExt, rw.userExt.Unmarshal(json.RawMessage{})
 	}
 
-	return rw.userExt, rw.userExt.Unmarshal(rw.Request.User.Ext)
+	return rw.userExt, rw.userExt.Unmarshal(rw.User.Ext)
 }
 
 func (rw *RequestWrapper) GetDeviceExt() (*DeviceExt, error) {
@@ -59,10 +59,10 @@ func (rw *RequestWrapper) GetDeviceExt() (*DeviceExt, error) {
 		return rw.deviceExt, nil
 	}
 	rw.deviceExt = &DeviceExt{}
-	if rw.Request == nil || rw.Request.Device == nil || rw.Request.Device.Ext == nil {
+	if rw.BidRequest == nil || rw.Device == nil || rw.Device.Ext == nil {
 		return rw.deviceExt, rw.deviceExt.Unmarshal(json.RawMessage{})
 	}
-	return rw.deviceExt, rw.deviceExt.Unmarshal(rw.Request.Device.Ext)
+	return rw.deviceExt, rw.deviceExt.Unmarshal(rw.Device.Ext)
 }
 
 func (rw *RequestWrapper) GetRequestExt() (*RequestExt, error) {
@@ -70,10 +70,10 @@ func (rw *RequestWrapper) GetRequestExt() (*RequestExt, error) {
 		return rw.requestExt, nil
 	}
 	rw.requestExt = &RequestExt{}
-	if rw.Request == nil || rw.Request.Ext == nil {
+	if rw.BidRequest == nil || rw.Ext == nil {
 		return rw.requestExt, rw.requestExt.Unmarshal(json.RawMessage{})
 	}
-	return rw.requestExt, rw.requestExt.Unmarshal(rw.Request.Ext)
+	return rw.requestExt, rw.requestExt.Unmarshal(rw.Ext)
 }
 
 func (rw *RequestWrapper) GetAppExt() (*AppExt, error) {
@@ -81,10 +81,10 @@ func (rw *RequestWrapper) GetAppExt() (*AppExt, error) {
 		return rw.appExt, nil
 	}
 	rw.appExt = &AppExt{}
-	if rw.Request == nil || rw.Request.App == nil || rw.Request.App.Ext == nil {
+	if rw.BidRequest == nil || rw.App == nil || rw.App.Ext == nil {
 		return rw.appExt, rw.appExt.Unmarshal(json.RawMessage{})
 	}
-	return rw.appExt, rw.appExt.Unmarshal(rw.Request.App.Ext)
+	return rw.appExt, rw.appExt.Unmarshal(rw.App.Ext)
 }
 
 func (rw *RequestWrapper) GetRegExt() (*RegExt, error) {
@@ -92,10 +92,10 @@ func (rw *RequestWrapper) GetRegExt() (*RegExt, error) {
 		return rw.regExt, nil
 	}
 	rw.regExt = &RegExt{}
-	if rw.Request == nil || rw.Request.Regs == nil || rw.Request.Regs.Ext == nil {
+	if rw.BidRequest == nil || rw.Regs == nil || rw.Regs.Ext == nil {
 		return rw.regExt, rw.regExt.Unmarshal(json.RawMessage{})
 	}
-	return rw.regExt, rw.regExt.Unmarshal(rw.Request.Regs.Ext)
+	return rw.regExt, rw.regExt.Unmarshal(rw.Regs.Ext)
 }
 
 func (rw *RequestWrapper) GetSiteExt() (*SiteExt, error) {
@@ -103,14 +103,14 @@ func (rw *RequestWrapper) GetSiteExt() (*SiteExt, error) {
 		return rw.siteExt, nil
 	}
 	rw.siteExt = &SiteExt{}
-	if rw.Request == nil || rw.Request.Site == nil || rw.Request.Site.Ext == nil {
+	if rw.BidRequest == nil || rw.Site == nil || rw.Site.Ext == nil {
 		return rw.siteExt, rw.siteExt.Unmarshal(json.RawMessage{})
 	}
-	return rw.siteExt, rw.siteExt.Unmarshal(rw.Request.Site.Ext)
+	return rw.siteExt, rw.siteExt.Unmarshal(rw.Site.Ext)
 }
 
 func (rw *RequestWrapper) Sync() error {
-	if rw.Request == nil {
+	if rw.BidRequest == nil {
 		return fmt.Errorf("Requestwrapper Sync called on a nil Request")
 	}
 
@@ -139,29 +139,29 @@ func (rw *RequestWrapper) Sync() error {
 }
 
 func (rw *RequestWrapper) syncUserExt() error {
-	if rw.Request.User == nil && rw.userExt != nil && rw.userExt.Dirty() {
-		rw.Request.User = &openrtb2.User{}
+	if rw.BidRequest.User == nil && rw.userExt != nil && rw.userExt.Dirty() {
+		rw.User = &openrtb2.User{}
 	}
 	if rw.userExt != nil && rw.userExt.Dirty() {
 		userJson, err := rw.userExt.Marshal()
 		if err != nil {
 			return err
 		}
-		rw.Request.User.Ext = userJson
+		rw.User.Ext = userJson
 	}
 	return nil
 }
 
 func (rw *RequestWrapper) syncDeviceExt() error {
-	if rw.Request.Device == nil && rw.deviceExt != nil && rw.deviceExt.Dirty() {
-		rw.Request.Device = &openrtb2.Device{}
+	if rw.Device == nil && rw.deviceExt != nil && rw.deviceExt.Dirty() {
+		rw.Device = &openrtb2.Device{}
 	}
 	if rw.deviceExt != nil && rw.deviceExt.Dirty() {
 		deviceJson, err := rw.deviceExt.Marshal()
 		if err != nil {
 			return err
 		}
-		rw.Request.Device.Ext = deviceJson
+		rw.Device.Ext = deviceJson
 	}
 	return nil
 }
@@ -172,49 +172,49 @@ func (rw *RequestWrapper) syncRequestExt() error {
 		if err != nil {
 			return err
 		}
-		rw.Request.Ext = requestJson
+		rw.Ext = requestJson
 	}
 	return nil
 }
 
 func (rw *RequestWrapper) syncAppExt() error {
-	if rw.Request.App == nil && rw.appExt != nil && rw.appExt.Dirty() {
-		rw.Request.App = &openrtb2.App{}
+	if rw.App == nil && rw.appExt != nil && rw.appExt.Dirty() {
+		rw.App = &openrtb2.App{}
 	}
 	if rw.appExt != nil && rw.appExt.Dirty() {
 		appJson, err := rw.appExt.Marshal()
 		if err != nil {
 			return err
 		}
-		rw.Request.App.Ext = appJson
+		rw.App.Ext = appJson
 	}
 	return nil
 }
 
 func (rw *RequestWrapper) syncRegExt() error {
-	if rw.Request.Regs == nil && rw.regExt != nil && rw.regExt.Dirty() {
-		rw.Request.Regs = &openrtb2.Regs{}
+	if rw.Regs == nil && rw.regExt != nil && rw.regExt.Dirty() {
+		rw.Regs = &openrtb2.Regs{}
 	}
 	if rw.regExt != nil && rw.regExt.Dirty() {
 		regsJson, err := rw.regExt.Marshal()
 		if err != nil {
 			return err
 		}
-		rw.Request.Regs.Ext = regsJson
+		rw.Regs.Ext = regsJson
 	}
 	return nil
 }
 
 func (rw *RequestWrapper) syncSiteExt() error {
-	if rw.Request.Site == nil && rw.siteExt != nil && rw.siteExt.Dirty() {
-		rw.Request.Site = &openrtb2.Site{}
+	if rw.Site == nil && rw.siteExt != nil && rw.siteExt.Dirty() {
+		rw.Site = &openrtb2.Site{}
 	}
 	if rw.siteExt != nil && rw.siteExt.Dirty() {
 		siteJson, err := rw.siteExt.Marshal()
 		if err != nil {
 			return err
 		}
-		rw.Request.Regs.Ext = siteJson
+		rw.Regs.Ext = siteJson
 	}
 	return nil
 }
