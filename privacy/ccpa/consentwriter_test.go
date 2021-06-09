@@ -50,7 +50,7 @@ func TestConsentWriter(t *testing.T) {
 		if err1 == nil {
 			regsExt.SetUSPrivacy(consent)
 			if reqWrapper.BidRequest != nil {
-				err = reqWrapper.Sync()
+				err = reqWrapper.RebuildRequest()
 			}
 		}
 		assertError(t, test.expectedError, err, test.description)

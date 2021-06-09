@@ -109,36 +109,36 @@ func (rw *RequestWrapper) GetSiteExt() (*SiteExt, error) {
 	return rw.siteExt, rw.siteExt.Unmarshal(rw.Site.Ext)
 }
 
-func (rw *RequestWrapper) Sync() error {
+func (rw *RequestWrapper) RebuildRequest() error {
 	if rw.BidRequest == nil {
 		return fmt.Errorf("Requestwrapper Sync called on a nil Request")
 	}
 
-	if err := rw.syncUserExt(); err != nil {
+	if err := rw.rebuildUserExt(); err != nil {
 		return err
 	}
 
-	if err := rw.syncDeviceExt(); err != nil {
+	if err := rw.rebuildDeviceExt(); err != nil {
 		return err
 	}
 
-	if err := rw.syncRequestExt(); err != nil {
+	if err := rw.rebuildRequestExt(); err != nil {
 		return err
 	}
-	if err := rw.syncAppExt(); err != nil {
+	if err := rw.rebuildAppExt(); err != nil {
 		return err
 	}
-	if err := rw.syncRegExt(); err != nil {
+	if err := rw.rebuildRegExt(); err != nil {
 		return err
 	}
-	if err := rw.syncSiteExt(); err != nil {
+	if err := rw.rebuildSiteExt(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (rw *RequestWrapper) syncUserExt() error {
+func (rw *RequestWrapper) rebuildUserExt() error {
 	if rw.BidRequest.User == nil && rw.userExt != nil && rw.userExt.Dirty() {
 		rw.User = &openrtb2.User{}
 	}
@@ -152,7 +152,7 @@ func (rw *RequestWrapper) syncUserExt() error {
 	return nil
 }
 
-func (rw *RequestWrapper) syncDeviceExt() error {
+func (rw *RequestWrapper) rebuildDeviceExt() error {
 	if rw.Device == nil && rw.deviceExt != nil && rw.deviceExt.Dirty() {
 		rw.Device = &openrtb2.Device{}
 	}
@@ -166,7 +166,7 @@ func (rw *RequestWrapper) syncDeviceExt() error {
 	return nil
 }
 
-func (rw *RequestWrapper) syncRequestExt() error {
+func (rw *RequestWrapper) rebuildRequestExt() error {
 	if rw.requestExt != nil && rw.requestExt.Dirty() {
 		requestJson, err := rw.requestExt.Marshal()
 		if err != nil {
@@ -177,7 +177,7 @@ func (rw *RequestWrapper) syncRequestExt() error {
 	return nil
 }
 
-func (rw *RequestWrapper) syncAppExt() error {
+func (rw *RequestWrapper) rebuildAppExt() error {
 	if rw.App == nil && rw.appExt != nil && rw.appExt.Dirty() {
 		rw.App = &openrtb2.App{}
 	}
@@ -191,7 +191,7 @@ func (rw *RequestWrapper) syncAppExt() error {
 	return nil
 }
 
-func (rw *RequestWrapper) syncRegExt() error {
+func (rw *RequestWrapper) rebuildRegExt() error {
 	if rw.Regs == nil && rw.regExt != nil && rw.regExt.Dirty() {
 		rw.Regs = &openrtb2.Regs{}
 	}
@@ -205,7 +205,7 @@ func (rw *RequestWrapper) syncRegExt() error {
 	return nil
 }
 
-func (rw *RequestWrapper) syncSiteExt() error {
+func (rw *RequestWrapper) rebuildSiteExt() error {
 	if rw.Site == nil && rw.siteExt != nil && rw.siteExt.Dirty() {
 		rw.Site = &openrtb2.Site{}
 	}
@@ -245,15 +245,14 @@ func (ue *UserExt) Unmarshal(extJson json.RawMessage) error {
 	if len(extJson) == 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &ue.ext)
-	if err != nil {
+
+	if err := json.Unmarshal(extJson, &ue.ext); err != nil {
 		return err
 	}
 
 	consentJson, hasConsent := ue.ext["consent"]
 	if hasConsent {
-		err = json.Unmarshal(consentJson, &ue.consent)
-		if err != nil {
+		if err := json.Unmarshal(consentJson, &ue.consent); err != nil {
 			return err
 		}
 	}
@@ -261,8 +260,7 @@ func (ue *UserExt) Unmarshal(extJson json.RawMessage) error {
 	prebidJson, hasPrebid := ue.ext["prebid"]
 	if hasPrebid {
 		ue.prebid = &ExtUserPrebid{}
-		err = json.Unmarshal(prebidJson, ue.prebid)
-		if err != nil {
+		if err := json.Unmarshal(prebidJson, ue.prebid); err != nil {
 			return err
 		}
 	}
@@ -270,21 +268,19 @@ func (ue *UserExt) Unmarshal(extJson json.RawMessage) error {
 	digiTrustJson, hasDigiTrust := ue.ext["digitrust"]
 	if hasDigiTrust {
 		ue.digiTrust = &ExtUserDigiTrust{}
-		err = json.Unmarshal(digiTrustJson, ue.digiTrust)
-		if err != nil {
+		if err := json.Unmarshal(digiTrustJson, ue.digiTrust); err != nil {
 			return err
 		}
 	}
 
 	eidsJson, hasEids := ue.ext["eids"]
 	if hasEids {
-		err = json.Unmarshal(eidsJson, ue.eids)
-		if err != nil {
+		if err := json.Unmarshal(eidsJson, ue.eids); err != nil {
 			return err
 		}
 	}
 
-	return err
+	return nil
 }
 
 func (ue *UserExt) Marshal() (json.RawMessage, error) {

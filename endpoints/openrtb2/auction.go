@@ -174,7 +174,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	// rebuild/resync the request in the request wrapper.
-	if err := req.Sync(); err != nil {
+	if err := req.RebuildRequest(); err != nil {
 		errL = append(errL, err)
 		writeError(errL, w, &labels)
 		return

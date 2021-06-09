@@ -219,7 +219,7 @@ func TestWrite(t *testing.T) {
 			if err == nil {
 				err = test.policy.Write(reqWrapper)
 				if err == nil && reqWrapper.BidRequest != nil {
-					err = reqWrapper.Sync()
+					err = reqWrapper.RebuildRequest()
 				}
 			}
 		}
@@ -493,7 +493,7 @@ func TestBuildExt(t *testing.T) {
 		err := reqExt.Unmarshal(test.ext)
 		var result json.RawMessage
 		if err == nil {
-			buildExt(test.noSaleBidders, reqExt)
+			setPrebidNoSale(test.noSaleBidders, reqExt)
 			result, err = reqExt.Marshal()
 		}
 		assertError(t, test.expectedError, err, test.description)
@@ -540,13 +540,13 @@ func TestBuildExtClear(t *testing.T) {
 		},
 		{
 			description: "Leaves Other Ext.Prebid Values",
-			ext:         json.RawMessage(`{"prebid":{"nosale":["a","b"],"aliases":{"a":"b"},"supportdeals":true}}`),
-			expected:    json.RawMessage(`{"prebid":{"aliases":{"a":"b"},"supportdeals":true}}`),
+			ext:         json.RawMessage(`{"prebid":{"nosale":["a","b"],"aliases":{"a":"b"}}}`),
+			expected:    json.RawMessage(`{"prebid":{"aliases":{"a":"b"}}}`),
 		},
 		{
 			description: "Leaves All Other Values",
-			ext:         json.RawMessage(`{"other":"ABC","prebid":{"nosale":["a","b"],"aliases":{"a":"b"},"supportdeals":true}}`),
-			expected:    json.RawMessage(`{"other":"ABC","prebid":{"aliases":{"a":"b"},"supportdeals":true}}`),
+			ext:         json.RawMessage(`{"other":"ABC","prebid":{"nosale":["a","b"],"supportdeals":true}}`),
+			expected:    json.RawMessage(`{"other":"ABC","prebid":{"supportdeals":true}}`),
 		},
 		{
 			description:   "Malformed Ext",
@@ -570,7 +570,7 @@ func TestBuildExtClear(t *testing.T) {
 		err := reqExt.Unmarshal(test.ext)
 		var result json.RawMessage
 		if err == nil {
-			buildExtClear(reqExt)
+			setPrebidNoSaleClear(reqExt)
 			result, err = reqExt.Marshal()
 		}
 		assertError(t, test.expectedError, err, test.description)
@@ -625,14 +625,14 @@ func TestBuildExtWrite(t *testing.T) {
 		{
 			description:   "Leaves Other Ext.Prebid Values",
 			noSaleBidders: []string{"a", "b"},
-			ext:           json.RawMessage(`{"prebid":{"aliases":{"a":"b"},"supportdeals":true}}`),
-			expected:      json.RawMessage(`{"prebid":{"aliases":{"a":"b"},"supportdeals":true,"nosale":["a","b"]}}`),
+			ext:           json.RawMessage(`{"prebid":{"supportdeals":true}}`),
+			expected:      json.RawMessage(`{"prebid":{"supportdeals":true,"nosale":["a","b"]}}`),
 		},
 		{
 			description:   "Leaves All Other Values",
 			noSaleBidders: []string{"a", "b"},
-			ext:           json.RawMessage(`{"other":"ABC","prebid":{"aliases":{"a":"b"},"supportdeals":true}}`),
-			expected:      json.RawMessage(`{"other":"ABC","prebid":{"aliases":{"a":"b"},"supportdeals":true,"nosale":["a","b"]}}`),
+			ext:           json.RawMessage(`{"other":"ABC","prebid":{"aliases":{"a":"b"}}}`),
+			expected:      json.RawMessage(`{"other":"ABC","prebid":{"aliases":{"a":"b"},"nosale":["a","b"]}}`),
 		},
 		{
 			description:   "Invalid Ext.Prebid No Sale Type - Still Overrides",
@@ -669,7 +669,7 @@ func TestBuildExtWrite(t *testing.T) {
 		err := reqExt.Unmarshal(test.ext)
 		var result json.RawMessage
 		if err == nil {
-			buildExtWrite(test.noSaleBidders, reqExt)
+			setPrebidNoSaleWrite(test.noSaleBidders, reqExt)
 			result, err = reqExt.Marshal()
 		} else {
 			result = test.ext

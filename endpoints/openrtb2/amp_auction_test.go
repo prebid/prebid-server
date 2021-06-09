@@ -67,7 +67,7 @@ func TestGoodAmpRequests(t *testing.T) {
 
 		var response AmpResponse
 		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
-			t.Errorf("%s", recorder.Body.Bytes())
+			t.Errorf("AMP response was: %s", recorder.Body.Bytes())
 			t.Fatalf("Error unmarshalling response: %s", err.Error())
 		}
 

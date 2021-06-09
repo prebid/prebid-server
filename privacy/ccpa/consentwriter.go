@@ -22,5 +22,5 @@ func (c ConsentWriterLegacy) Write(req *openrtb2.BidRequest) error {
 	} else {
 		return err
 	}
-	return reqWrap.Sync()
+	return reqWrap.RebuildRequest()
 }

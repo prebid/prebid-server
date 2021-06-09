@@ -59,19 +59,19 @@ func (p Policy) Write(req *openrtb_ext.RequestWrapper) error {
 	}
 
 	regsExt.SetUSPrivacy(p.Consent)
-	buildExt(p.NoSaleBidders, reqExt)
+	setPrebidNoSale(p.NoSaleBidders, reqExt)
 	return nil
 }
 
-func buildExt(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
+func setPrebidNoSale(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
 	if len(noSaleBidders) == 0 {
-		buildExtClear(ext)
+		setPrebidNoSaleClear(ext)
 	} else {
-		buildExtWrite(noSaleBidders, ext)
+		setPrebidNoSaleWrite(noSaleBidders, ext)
 	}
 }
 
-func buildExtClear(ext *openrtb_ext.RequestExt) {
+func setPrebidNoSaleClear(ext *openrtb_ext.RequestExt) {
 	prebid := ext.GetPrebid()
 	if prebid == nil {
 		return
@@ -82,7 +82,7 @@ func buildExtClear(ext *openrtb_ext.RequestExt) {
 	ext.SetPrebid(prebid)
 }
 
-func buildExtWrite(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
+func setPrebidNoSaleWrite(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
 	if ext == nil {
 		// This should hopefully not be possible. The only caller insures that this has been initialized
 		return
