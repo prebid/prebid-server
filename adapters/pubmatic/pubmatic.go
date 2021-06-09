@@ -503,9 +503,12 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) er
 		extMap[pmZoneIDKeyName] = pubmaticExt.PmZoneID
 	}
 
-	if bidderExt.Data != nil && bidderExt.Data.AdServer != nil &&
-		bidderExt.Data.AdServer.Name == AdServerGAM && bidderExt.Data.AdServer.AdSlot != "" {
-		extMap[ImpExtAdUnitKey] = bidderExt.Data.AdServer.AdSlot
+	if bidderExt.Data != nil {
+		if bidderExt.Data.AdServer != nil && bidderExt.Data.AdServer.Name == AdServerGAM && bidderExt.Data.AdServer.AdSlot != "" {
+			extMap[ImpExtAdUnitKey] = bidderExt.Data.AdServer.AdSlot
+		} else if bidderExt.Data.PBAdSlot != "" {
+			extMap[ImpExtAdUnitKey] = bidderExt.Data.PBAdSlot
+		}
 	}
 
 	imp.Ext = nil

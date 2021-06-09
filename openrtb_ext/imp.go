@@ -23,6 +23,7 @@ type ExtStoredRequest struct {
 
 type ExtData struct {
 	AdServer *ExtAdServer `json:"adserver"`
+	PBAdSlot string       `json:"pbadslot"`
 }
 
 type ExtAdServer struct {
