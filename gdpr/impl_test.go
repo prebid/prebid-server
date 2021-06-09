@@ -21,7 +21,8 @@ func TestDisallowOnEmptyConsent(t *testing.T) {
 			HostVendorID: 3,
 			DefaultValue: "0",
 		},
-		vendorIDs: nil,
+		gdprDefaultValue: SignalNo,
+		vendorIDs:        nil,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
 			tcf2SpecVersion: failedListFetcher,
 		},
@@ -303,6 +304,11 @@ func TestAllowActivities(t *testing.T) {
 
 	for _, tt := range tests {
 		perms.cfg.DefaultValue = tt.gdprDefaultValue
+		if tt.gdprDefaultValue == "0" {
+			perms.gdprDefaultValue = SignalNo
+		} else {
+			perms.gdprDefaultValue = SignalYes
+		}
 
 		_, _, passID, err := perms.AuctionActivitiesAllowed(context.Background(), tt.bidderName, tt.publisherID, tt.gdpr, tt.consent, tt.weakVendorEnforcement)
 
@@ -717,6 +723,12 @@ func TestNormalizeGDPR(t *testing.T) {
 			cfg: config.GDPR{
 				DefaultValue: tt.gdprDefaultValue,
 			},
+		}
+
+		if tt.gdprDefaultValue == "0" {
+			perms.gdprDefaultValue = SignalNo
+		} else {
+			perms.gdprDefaultValue = SignalYes
 		}
 
 		normalizedSignal := perms.normalizeGDPR(tt.giveSignal)
