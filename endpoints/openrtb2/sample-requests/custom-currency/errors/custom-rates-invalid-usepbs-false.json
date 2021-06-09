@@ -40,8 +40,7 @@
         "currency": {
           "rates": {
             "USD": {
-              "FOO": 10.0,
-              "BAR": 10.95
+              "FOO": 10.0
             }
           },
           "usepbsrates": false

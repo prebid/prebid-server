@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/prebid/prebid-server/errortypes"
 	"golang.org/x/text/currency"
 )
 
@@ -71,7 +70,7 @@ func (r *Rates) GetRate(from string, to string) (float64, error) {
 			// In case we have an entry TO -> FROM
 			return 1 / conversion, nil
 		}
-		return 0, errortypes.NewNoConversionRateError(fromUnit.String(), toUnit.String())
+		return 0, ConversionRateNotFound{fromUnit.String(), toUnit.String()}
 	}
 	return 0, errors.New("rates are nil")
 }

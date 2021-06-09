@@ -1,7 +1,5 @@
 package currency
 
-import "github.com/prebid/prebid-server/errortypes"
-
 // AggregateConversions contains both the request-defined currency rate
 // map found in request.ext.prebid.currency and the currencies conversion
 // rates fetched with the RateConverter object defined in rate_converter.go
@@ -25,7 +23,7 @@ func (re *AggregateConversions) GetRate(from string, to string) (float64, error)
 	rate, err := re.customRates.GetRate(from, to)
 	if err == nil {
 		return rate, nil
-	} else if _, isMissingRateErr := err.(*errortypes.NoConversionRate); !isMissingRateErr {
+	} else if _, isMissingRateErr := err.(ConversionRateNotFound); !isMissingRateErr {
 		// other error, return the error
 		return 0, err
 	}

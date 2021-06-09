@@ -1,7 +1,5 @@
 package errortypes
 
-import "fmt"
-
 // Timeout should be used to flag that a bidder failed to return a response because the PBS timeout timer
 // expired before a result was received.
 //
@@ -164,31 +162,6 @@ func (err *BidderTemporarilyDisabled) Code() int {
 }
 
 func (err *BidderTemporarilyDisabled) Severity() Severity {
-	return SeverityWarning
-}
-
-// NoConversionRate is thrown by the currency.Conversions GetRate(from string, to string) method
-// when the conversion rate between the two currencies, nor its reciprocal, can be found.
-type NoConversionRate struct {
-	fromCur, toCur string
-}
-
-func NewNoConversionRateError(fromCur, toCur string) *NoConversionRate {
-	return &NoConversionRate{
-		fromCur: fromCur,
-		toCur:   toCur,
-	}
-}
-
-func (err *NoConversionRate) Error() string {
-	return fmt.Sprintf("Currency conversion rate not found: '%s' => '%s'", err.fromCur, err.toCur)
-}
-
-func (err *NoConversionRate) Code() int {
-	return NoConversionRateErrorCode
-}
-
-func (err *NoConversionRate) Severity() Severity {
 	return SeverityWarning
 }
 

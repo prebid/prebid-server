@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -66,7 +65,7 @@ func TestGroupedGetRate(t *testing.T) {
 			},
 		},
 		{
-			expectedError: errortypes.NewNoConversionRateError("GBP", "EUR"),
+			expectedError: ConversionRateNotFound{"GBP", "EUR"},
 			testCases: []aTest{
 				{"Valid three-digit currency codes, but conversion rate not found", "GBP", "EUR", 0},
 			},

@@ -1274,7 +1274,7 @@ func TestValidateCustomRates(t *testing.T) {
 				ConversionRates: map[string]map[string]float64{
 					"FOO": {
 						"MXN": 0.05,
-						"CAN": 0.95,
+						"CAD": 0.95,
 					},
 				},
 				UsePBSRates: &boolFalse,
