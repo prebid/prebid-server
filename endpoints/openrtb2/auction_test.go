@@ -1262,7 +1262,6 @@ func TestValidateCustomRates(t *testing.T) {
 					"USD": {
 						"FOO": 10.0,
 						"MXN": 0.05,
-						"BAR": 10.95,
 					},
 				},
 				UsePBSRates: &boolFalse,
@@ -1276,20 +1275,6 @@ func TestValidateCustomRates(t *testing.T) {
 					"FOO": {
 						"MXN": 0.05,
 						"CAN": 0.95,
-					},
-					"BAR": {
-						"JPY": 0.10,
-						"USD": 0.10,
-						"MXN": 0.02,
-					},
-					"USD": {
-						"FOO": 10.0,
-						"MXN": 0.05,
-						"BAR": 10.95,
-					},
-					"JPY": {
-						"FOO": 10.0,
-						"BAR": 10.95,
 					},
 				},
 				UsePBSRates: &boolFalse,
@@ -2744,15 +2729,19 @@ func newMockBidExchange(bidder mockBidExchangeBidder, mockCurrencyConversionRate
 // getAuctionCurrencyRates copies the logic of the exchange package for testing purposes
 func (e *mockBidExchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
 	if customRates == nil {
+		// The timestamp is required for the function signature, but is not used and its
+		// value has no significance in the tests
 		return currency.NewRates(time.Now(), e.pbsRates)
 	}
 
-	var usePbsRates bool = true
+	usePbsRates := true
 	if customRates.UsePBSRates != nil {
 		usePbsRates = *customRates.UsePBSRates
 	}
 
 	if !usePbsRates {
+		// The timestamp is required for the function signature, but is not used and its
+		// value has no significance in the tests
 		return currency.NewRates(time.Now(), customRates.ConversionRates)
 	}
 

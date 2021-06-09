@@ -189,7 +189,7 @@ func (err *NoConversionRate) Code() int {
 }
 
 func (err *NoConversionRate) Severity() Severity {
-	return SeverityUnknown
+	return SeverityWarning
 }
 
 // Warning is a generic non-fatal error.
