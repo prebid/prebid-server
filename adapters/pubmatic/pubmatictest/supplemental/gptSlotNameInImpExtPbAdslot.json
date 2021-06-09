@@ -38,10 +38,6 @@
             }
           },
           "data": {
-            "adserver": {
-              "name": "gam",
-              "adslot": "/1111/home"
-            },
             "pbadslot": "/2222/home"
           }
         }
@@ -80,7 +76,7 @@
               "ext": {
                 "pmZoneId": "Zone1,Zone2",
                 "preference": "sports,movies",
-                "dfp_ad_unit_code": "/1111/home"
+                "dfp_ad_unit_code": "/2222/home"
               }
             }
           ],
