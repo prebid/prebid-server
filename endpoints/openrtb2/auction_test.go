@@ -109,12 +109,20 @@ func TestJsonSampleRequests(t *testing.T) {
 			"first-party-data",
 		},
 		{
+			"Assert we correctly use the server conversion rates when needed",
+			"currency-conversion/server-rates/valid",
+		},
+		{
+			"Assert we correctly throw an error when no conversion rate was found in the server conversions map",
+			"currency-conversion/server-rates/errors",
+		},
+		{
 			"Assert we correctly use request-defined custom currency rates when present in root.ext",
-			"custom-currency/valid",
+			"currency-conversion/custom-rates/valid",
 		},
 		{
 			"Assert we correctly validate request-defined custom currency rates when present in root.ext",
-			"custom-currency/errors",
+			"currency-conversion/custom-rates/errors",
 		},
 	}
 	for _, test := range testSuites {
