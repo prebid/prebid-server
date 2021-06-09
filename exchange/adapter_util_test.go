@@ -236,24 +236,32 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 		{
 			description: "None",
 			bidderInfos: map[string]config.BidderInfo{},
-			expected:    map[string]string{},
+			expected: map[string]string{
+				"lifestreet": `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
+			},
 		},
 		{
 			description: "Enabled",
 			bidderInfos: map[string]config.BidderInfo{"appnexus": infoEnabled},
-			expected:    map[string]string{},
+			expected: map[string]string{
+				"lifestreet": `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
+			},
 		},
 		{
 			description: "Disabled",
 			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled},
 			expected: map[string]string{
-				"appnexus": `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
+				"lifestreet": `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
+				"appnexus":   `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
 			},
 		},
 		{
 			description: "Mixed",
 			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled, "openx": infoEnabled},
-			expected:    map[string]string{"appnexus": `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`},
+			expected: map[string]string{
+				"lifestreet": `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
+				"appnexus":   `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
+			},
 		},
 	}
 
