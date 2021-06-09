@@ -2,30 +2,34 @@ package bmtm
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
-	assert.NoError(t, err, fmt.Sprintf("Failed to fetch the json-schemas: %s", err.Error()))
+	if err != nil {
+		t.Fatalf("Failed to fetch the json schema. %v", err)
+	}
 
 	for _, validParam := range validParams {
-		err := validator.Validate(openrtb_ext.BidderBmtm, json.RawMessage(validParam))
-		assert.NoError(t, err, fmt.Sprintf("Schema rejected brightMountainMedia params: %s", validParam))
+		if err := validator.Validate(openrtb_ext.BidderBmtm, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected valid params: %s", validParam)
+		}
 	}
 }
 
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
-	assert.NoError(t, err, fmt.Sprintf("Failed to fetch the json-schemas: %s", err.Error()))
+	if err != nil {
+		t.Fatalf("Failed to fetch the json schema. %v", err)
+	}
 
 	for _, invalidParam := range invalidParams {
-		err := validator.Validate(openrtb_ext.BidderBmtm, json.RawMessage(invalidParam))
-		assert.Error(t, err, fmt.Sprintf("Schema allowed unexpected params: %s", invalidParam))
+		if err := validator.Validate(openrtb_ext.BidderBmtm, json.RawMessage(invalidParam)); err == nil {
+			t.Errorf("Schema allowed invalid params: %s", invalidParam)
+		}
 	}
 }
 
