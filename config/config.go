@@ -966,6 +966,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.crossinstall.endpoint", "https://tapjoy-east.crossinstallbidder00.com/bid_request/tapjoy")
 	v.SetDefault("adapters.datablocks.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
 	v.SetDefault("adapters.dmx.endpoint", "https://dmx-direct.districtm.io/b/v2")
+	v.SetDefault("adapters.dv360.disabled", true)
+	v.SetDefault("adapters.dv360.endpoint", "https://bid.g.doubleclick.net/xbbe/bid/tapjoy")
 	v.SetDefault("adapters.emx_digital.endpoint", "https://hb.emxdgt.com")
 	v.SetDefault("adapters.engagebdr.endpoint", "http://dsp.bnmla.com/hb")
 	v.SetDefault("adapters.eplanning.endpoint", "http://rtb.e-planning.net/pbs/1")
