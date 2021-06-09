@@ -59,7 +59,7 @@ type exchange struct {
 	gDPR              gdpr.Permissions
 	currencyConverter *currency.RateConverter
 	externalURL       string
-	gdprDefaultValue  string
+	gdprDefaultValue  gdpr.Signal
 	privacyConfig     config.Privacy
 	categoriesFetcher stored_requests.CategoryFetcher
 	bidIDGenerator    BidIDGenerator
@@ -110,6 +110,11 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 }
 
 func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+	gdprDefaultValue := gdpr.SignalYes
+	if cfg.GDPR.DefaultValue == "0" {
+		gdprDefaultValue = gdpr.SignalNo
+	}
+
 	return &exchange{
 		adapterMap:        adapters,
 		bidderInfo:        infos,
@@ -120,7 +125,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 		externalURL:       cfg.ExternalURL,
 		gDPR:              gDPR,
 		me:                metricsEngine,
-		gdprDefaultValue:  cfg.GDPR.DefaultValue,
+		gdprDefaultValue:  gdprDefaultValue,
 		privacyConfig: config.Privacy{
 			CCPA: cfg.CCPA,
 			GDPR: cfg.GDPR,
@@ -301,7 +306,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, errs)
 }
 
-func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) string {
+func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) gdpr.Signal {
 	gdprDefaultValue := e.gdprDefaultValue
 	var geo *openrtb2.Geo = nil
 
@@ -314,10 +319,10 @@ func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) string
 		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
 		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
 		if _, found := e.privacyConfig.GDPR.EEACountriesMap[strings.ToUpper(geo.Country)]; found {
-			gdprDefaultValue = "1"
+			gdprDefaultValue = gdpr.SignalYes
 		} else if len(geo.Country) == 3 {
 			// The country field is formatted properly as a three character country code
-			gdprDefaultValue = "0"
+			gdprDefaultValue = gdpr.SignalNo
 		}
 	}
 
