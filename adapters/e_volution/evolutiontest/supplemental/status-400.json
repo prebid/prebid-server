@@ -127,5 +127,7 @@
       "value": "Bad Request. \"The Key has a different ad format\"",
       "comparison": "literal"
     }
-  ]
+  ],
+
+  "expectedBidResponses": []
 }

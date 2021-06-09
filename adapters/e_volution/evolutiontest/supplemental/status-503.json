@@ -119,5 +119,7 @@
         "status": 503
       }
     }
-  ]
+  ],
+
+  "expectedBidResponses": []
 }

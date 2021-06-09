@@ -143,5 +143,7 @@
       "value": "Empty seatbid",
       "comparison": "literal"
     }
-  ]
+  ],
+
+  "expectedBidResponses": []
 }

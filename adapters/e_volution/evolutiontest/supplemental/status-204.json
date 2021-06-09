@@ -120,5 +120,7 @@
         "body": {}
       }
     }
-  ]
+  ],
+
+  "expectedBidResponses": []
 }

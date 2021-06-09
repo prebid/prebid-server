@@ -126,5 +126,7 @@
       "value": "Something went wrong, please contact your Account Manager. Status Code: [ 401 ] ",
       "comparison": "literal"
     }
-  ]
+  ],
+
+  "expectedBidResponses": []
 }
