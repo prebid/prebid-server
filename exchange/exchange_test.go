@@ -2623,26 +2623,42 @@ func TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice(t *testing.T) 
 
 	totalNumberOfbids := 0
 
+	//due to random map order we need to identify what bidder was first
+	firstBidderIndicator := true
+
 	if bidsFromFirstBidder.bids != nil {
 		totalNumberOfbids += len(bidsFromFirstBidder.bids)
 	}
 
 	if bidsFromSecondBidder.bids != nil {
+		firstBidderIndicator = false
 		totalNumberOfbids += len(bidsFromSecondBidder.bids)
 	}
 
 	assert.Equal(t, 2, totalNumberOfbids, "2 bids total should be returned")
-
-	assert.Len(t, adapterBids[bidderNameApn1].bids, 0)
-	assert.Len(t, adapterBids[bidderNameApn2].bids, 2)
-
-	assert.Equal(t, "bid_idApn2_1", adapterBids[bidderNameApn2].bids[0].bid.ID, "Incorrect expected bid 1 id")
-	assert.Equal(t, "bid_idApn2_2", adapterBids[bidderNameApn2].bids[1].bid.ID, "Incorrect expected bid 2 id")
-
 	assert.Len(t, rejections, 2, "2 bids should be de-duplicated")
-	assert.Equal(t, "bid rejected [bid ID: bid_idApn1_1] reason: Bid was deduplicated", rejections[0], "Incorrect rejected bid 1")
-	assert.Equal(t, "bid rejected [bid ID: bid_idApn1_2] reason: Bid was deduplicated", rejections[1], "Incorrect rejected bid 2")
 
+	if firstBidderIndicator {
+		assert.Len(t, adapterBids[bidderNameApn1].bids, 2)
+		assert.Len(t, adapterBids[bidderNameApn2].bids, 0)
+
+		assert.Equal(t, "bid_idApn1_1", adapterBids[bidderNameApn1].bids[0].bid.ID, "Incorrect expected bid 1 id")
+		assert.Equal(t, "bid_idApn1_2", adapterBids[bidderNameApn1].bids[1].bid.ID, "Incorrect expected bid 2 id")
+
+		assert.Equal(t, "bid rejected [bid ID: bid_idApn2_1] reason: Bid was deduplicated", rejections[0], "Incorrect rejected bid 1")
+		assert.Equal(t, "bid rejected [bid ID: bid_idApn2_2] reason: Bid was deduplicated", rejections[1], "Incorrect rejected bid 2")
+
+	} else {
+		assert.Len(t, adapterBids[bidderNameApn1].bids, 0)
+		assert.Len(t, adapterBids[bidderNameApn2].bids, 2)
+
+		assert.Equal(t, "bid_idApn2_1", adapterBids[bidderNameApn2].bids[0].bid.ID, "Incorrect expected bid 1 id")
+		assert.Equal(t, "bid_idApn2_2", adapterBids[bidderNameApn2].bids[1].bid.ID, "Incorrect expected bid 2 id")
+
+		assert.Equal(t, "bid rejected [bid ID: bid_idApn1_1] reason: Bid was deduplicated", rejections[0], "Incorrect rejected bid 1")
+		assert.Equal(t, "bid rejected [bid ID: bid_idApn1_2] reason: Bid was deduplicated", rejections[1], "Incorrect rejected bid 2")
+
+	}
 }
 
 func TestRemoveBidById(t *testing.T) {
