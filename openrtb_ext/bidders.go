@@ -94,6 +94,7 @@ const (
 	BidderAdxcg             BidderName = "adxcg"
 	BidderAdyoulike         BidderName = "adyoulike"
 	BidderAJA               BidderName = "aja"
+	BidderAlgorix           BidderName = "algorix"
 	BidderAMX               BidderName = "amx"
 	BidderApplogy           BidderName = "applogy"
 	BidderAppnexus          BidderName = "appnexus"
@@ -104,6 +105,7 @@ const (
 	BidderBetween           BidderName = "between"
 	BidderBidmachine        BidderName = "bidmachine"
 	BidderBidsCube          BidderName = "bidscube"
+	BidderBmtm              BidderName = "bmtm"
 	BidderBrightroll        BidderName = "brightroll"
 	BidderColossus          BidderName = "colossus"
 	BidderConnectAd         BidderName = "connectad"
@@ -212,6 +214,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdxcg,
 		BidderAdyoulike,
 		BidderAJA,
+		BidderAlgorix,
 		BidderAMX,
 		BidderApplogy,
 		BidderAppnexus,
@@ -222,6 +225,7 @@ func CoreBidderNames() []BidderName {
 		BidderBetween,
 		BidderBidmachine,
 		BidderBidsCube,
+		BidderBmtm,
 		BidderBrightroll,
 		BidderColossus,
 		BidderConnectAd,
