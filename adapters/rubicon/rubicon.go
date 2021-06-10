@@ -18,6 +18,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/cache/skanidlist"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -739,11 +740,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		}
 
 		if rubiconExt.SKADNSupported {
-			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, rubiconSKADNetIDs)
+			skanIDList := skanidlist.Get(openrtb_ext.BidderRubicon)
+
+			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, skanIDList)
+
 			// only add if present
 			if len(skadn.SKADNetIDs) > 0 {
-				skanSent = true
 				impExt.SKADN = &skadn
+				skanSent = true
 			}
 		}
 
