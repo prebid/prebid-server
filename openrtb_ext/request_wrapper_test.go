@@ -11,7 +11,7 @@ import (
 func TestUserExt(t *testing.T) {
 	userExt := &UserExt{}
 
-	userExt.Unmarshal(nil)
+	userExt.unmarshal(nil)
 	assert.Equal(t, false, userExt.Dirty(), "New UserExt should not be dirty.")
 	assert.Nil(t, userExt.GetConsent(), "Empty UserExt should have nil consent")
 

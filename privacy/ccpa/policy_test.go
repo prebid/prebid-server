@@ -277,25 +277,14 @@ func TestBuildRegs(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		regsExt := &openrtb_ext.RegExt{}
-		regsExt.Unmarshal(nil)
-		var err error
-		if test.regs != nil {
-			err = regsExt.Unmarshal(test.regs.Ext)
-		} else {
-			err = regsExt.Unmarshal(json.RawMessage{})
-		}
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: test.regs}}
+		regsExt, err := request.GetRegExt()
 		if err == nil {
 			regsExt.SetUSPrivacy(test.consent)
-			var regsExtJson json.RawMessage
-			regsExtJson, err = regsExt.Marshal()
-			if test.regs == nil && len(regsExtJson) > 0 {
-				test.regs = &openrtb2.Regs{}
-			}
-			test.regs.Ext = regsExtJson
+			request.RebuildRequest()
 		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, test.regs, test.description)
+		assert.Equal(t, test.expected, request.Regs, test.description)
 	}
 }
 
@@ -309,7 +298,7 @@ func TestBuildRegsClear(t *testing.T) {
 		{
 			description: "Nil Regs",
 			regs:        nil,
-			expected:    nil,
+			expected:    &openrtb2.Regs{Ext: nil},
 		},
 		{
 			description: "Nil Regs.Ext",
@@ -346,28 +335,14 @@ func TestBuildRegsClear(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		regsExt := &openrtb_ext.RegExt{}
-		regsExt.Unmarshal(nil)
-		var err error
-		if test.regs != nil {
-			err = regsExt.Unmarshal(test.regs.Ext)
-		} else {
-			err = regsExt.Unmarshal(json.RawMessage{})
-		}
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: test.regs}}
+		regsExt, err := request.GetRegExt()
 		if err == nil {
 			regsExt.SetUSPrivacy("")
-			var regsExtJson json.RawMessage
-			regsExtJson, err = regsExt.Marshal()
-			if test.regs != nil || len(regsExtJson) > 0 {
-				if test.regs == nil {
-					test.regs = &openrtb2.Regs{}
-				}
-				test.regs.Ext = regsExtJson
-			}
-
+			request.RebuildRequest()
 		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, test.regs, test.description)
+		assert.Equal(t, test.expected, request.Regs, test.description)
 	}
 }
 
@@ -426,25 +401,14 @@ func TestBuildRegsWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		regsExt := &openrtb_ext.RegExt{}
-		regsExt.Unmarshal(nil)
-		var err error
-		if test.regs != nil {
-			err = regsExt.Unmarshal(test.regs.Ext)
-		} else {
-			err = regsExt.Unmarshal(json.RawMessage{})
-		}
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: test.regs}}
+		regsExt, err := request.GetRegExt()
 		if err == nil {
 			regsExt.SetUSPrivacy(test.consent)
-			var regsExtJson json.RawMessage
-			regsExtJson, err = regsExt.Marshal()
-			if test.regs == nil && len(regsExtJson) > 0 {
-				test.regs = &openrtb2.Regs{}
-			}
-			test.regs.Ext = regsExtJson
+			request.RebuildRequest()
 		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, test.regs, test.description)
+		assert.Equal(t, test.expected, request.Regs, test.description)
 	}
 }
 
@@ -489,12 +453,13 @@ func TestBuildExt(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqExt := &openrtb_ext.RequestExt{}
-		err := reqExt.Unmarshal(test.ext)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.ext}}
+		reqExt, err := request.GetRequestExt()
 		var result json.RawMessage
 		if err == nil {
 			setPrebidNoSale(test.noSaleBidders, reqExt)
-			result, err = reqExt.Marshal()
+			err = request.RebuildRequest()
+			result = request.Ext
 		}
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, result, test.description)
@@ -511,12 +476,12 @@ func TestBuildExtClear(t *testing.T) {
 		{
 			description: "Nil Ext",
 			ext:         nil,
-			expected:    json.RawMessage(`{}`),
+			expected:    nil,
 		},
 		{
 			description: "Empty Ext",
 			ext:         json.RawMessage(``),
-			expected:    json.RawMessage(`{}`),
+			expected:    json.RawMessage(``),
 		},
 		{
 			description: "Empty Ext Object",
@@ -566,12 +531,13 @@ func TestBuildExtClear(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqExt := &openrtb_ext.RequestExt{}
-		err := reqExt.Unmarshal(test.ext)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.ext}}
+		reqExt, err := request.GetRequestExt()
 		var result json.RawMessage
 		if err == nil {
 			setPrebidNoSaleClear(reqExt)
-			result, err = reqExt.Marshal()
+			err = request.RebuildRequest()
+			result = request.Ext
 		}
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, result, test.description)
@@ -665,12 +631,13 @@ func TestBuildExtWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		reqExt := &openrtb_ext.RequestExt{}
-		err := reqExt.Unmarshal(test.ext)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.ext}}
+		reqExt, err := request.GetRequestExt()
 		var result json.RawMessage
 		if err == nil {
 			setPrebidNoSaleWrite(test.noSaleBidders, reqExt)
-			result, err = reqExt.Marshal()
+			err = request.RebuildRequest()
+			result = request.Ext
 		} else {
 			result = test.ext
 		}
