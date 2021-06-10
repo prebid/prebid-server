@@ -146,6 +146,8 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 
 			go bidderRunner(bidder, blabels)
 
+		} else if bidder.BidderCode == "lifestreet" {
+			bidder.Error = "Bidder is no longer available"
 		} else {
 			bidder.Error = "Unsupported bidder"
 		}
