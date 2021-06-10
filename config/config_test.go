@@ -421,6 +421,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[0], "1111::/16")
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
+	cmpStrings(t, "debug.override_token", cfg.Debug.OverrideToken, "")
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {

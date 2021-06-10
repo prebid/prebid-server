@@ -1041,8 +1041,10 @@ func TestHandleErrorDebugLog(t *testing.T) {
 			Headers:  "test headers string",
 			Response: "test response string",
 		},
-		TTL:    int64(3600),
-		Regexp: regexp.MustCompile(`[<>]`),
+		TTL:                      int64(3600),
+		Regexp:                   regexp.MustCompile(`[<>]`),
+		DebugOverride:            false,
+		DebugEnabledOrOverridden: true,
 	}
 	handleError(&labels, recorder, []error{err1, err2}, &vo, &debugLog)
 

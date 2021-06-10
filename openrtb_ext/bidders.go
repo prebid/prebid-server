@@ -121,6 +121,7 @@ const (
 	BidderEngageBDR         BidderName = "engagebdr"
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
+	BidderEVolution         BidderName = "e_volution"
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGrid              BidderName = "grid"
@@ -135,7 +136,6 @@ const (
 	BidderKidoz             BidderName = "kidoz"
 	BidderKrushmedia        BidderName = "krushmedia"
 	BidderKubient           BidderName = "kubient"
-	BidderLifestreet        BidderName = "lifestreet"
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogicad           BidderName = "logicad"
 	BidderLunaMedia         BidderName = "lunamedia"
@@ -241,6 +241,7 @@ func CoreBidderNames() []BidderName {
 		BidderEngageBDR,
 		BidderEPlanning,
 		BidderEpom,
+		BidderEVolution,
 		BidderGamma,
 		BidderGamoshi,
 		BidderGrid,
@@ -255,7 +256,6 @@ func CoreBidderNames() []BidderName {
 		BidderKidoz,
 		BidderKrushmedia,
 		BidderKubient,
-		BidderLifestreet,
 		BidderLockerDome,
 		BidderLogicad,
 		BidderLunaMedia,
