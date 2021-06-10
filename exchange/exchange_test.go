@@ -176,8 +176,9 @@ func TestDebugBehaviour(t *testing.T) {
 	}
 
 	type debugData struct {
-		bidderLevelDebugAllowed  bool
-		accountLevelDebugAllowed bool
+		bidderLevelDebugAllowed    bool
+		accountLevelDebugAllowed   bool
+		headerOverrideDebugAllowed bool
 	}
 
 	type aTest struct {
@@ -192,57 +193,78 @@ func TestDebugBehaviour(t *testing.T) {
 			desc:             "test flag equals zero, ext debug flag false, no debug info expected",
 			in:               inTest{test: 0, debug: false},
 			out:              outTest{debugInfoIncluded: false},
-			debugData:        debugData{true, true},
+			debugData:        debugData{true, true, false},
 			generateWarnings: false,
 		},
 		{
 			desc:             "test flag equals zero, ext debug flag true, debug info expected",
 			in:               inTest{test: 0, debug: true},
 			out:              outTest{debugInfoIncluded: true},
-			debugData:        debugData{true, true},
+			debugData:        debugData{true, true, false},
 			generateWarnings: false,
 		},
 		{
 			desc:             "test flag equals 1, ext debug flag false, debug info expected",
 			in:               inTest{test: 1, debug: false},
 			out:              outTest{debugInfoIncluded: true},
-			debugData:        debugData{true, true},
+			debugData:        debugData{true, true, false},
 			generateWarnings: false,
 		},
 		{
 			desc:             "test flag equals 1, ext debug flag true, debug info expected",
 			in:               inTest{test: 1, debug: true},
 			out:              outTest{debugInfoIncluded: true},
-			debugData:        debugData{true, true},
+			debugData:        debugData{true, true, false},
 			generateWarnings: false,
 		},
 		{
 			desc:             "test flag not equal to 0 nor 1, ext debug flag false, no debug info expected",
 			in:               inTest{test: 2, debug: false},
 			out:              outTest{debugInfoIncluded: false},
-			debugData:        debugData{true, true},
+			debugData:        debugData{true, true, false},
 			generateWarnings: false,
 		},
 		{
 			desc:             "test flag not equal to 0 nor 1, ext debug flag true, debug info expected",
 			in:               inTest{test: -1, debug: true},
 			out:              outTest{debugInfoIncluded: true},
-			debugData:        debugData{true, true},
+			debugData:        debugData{true, true, false},
 			generateWarnings: true,
 		},
 		{
 			desc:             "test account level debug disabled",
 			in:               inTest{test: -1, debug: true},
 			out:              outTest{debugInfoIncluded: false},
-			debugData:        debugData{true, false},
+			debugData:        debugData{true, false, false},
 			generateWarnings: true,
 		},
 		{
-			desc:             "test bidder level debug disabled",
+			desc:             "test header override enabled when all other debug options are disabled",
+			in:               inTest{test: -1, debug: false},
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{false, false, true},
+			generateWarnings: false,
+		},
+		{
+			desc:             "test header override and url debug options are enabled when all other debug options are disabled",
 			in:               inTest{test: -1, debug: true},
-			out:              outTest{debugInfoIncluded: false},
-			debugData:        debugData{false, true},
-			generateWarnings: true,
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{false, false, true},
+			generateWarnings: false,
+		},
+		{
+			desc:             "test header override and url and bidder debug options are enabled when account debug option is disabled",
+			in:               inTest{test: -1, debug: true},
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{true, false, true},
+			generateWarnings: false,
+		},
+		{
+			desc:             "test all debug options are enabled",
+			in:               inTest{test: -1, debug: true},
+			out:              outTest{debugInfoIncluded: true},
+			debugData:        debugData{true, true, true},
+			generateWarnings: false,
 		},
 	}
 
@@ -322,9 +344,12 @@ func TestDebugBehaviour(t *testing.T) {
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 			auctionRequest.Warnings = errL
 		}
-
+		debugLog := &DebugLog{}
+		if test.debugData.headerOverrideDebugAllowed {
+			debugLog = &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
+		}
 		// Run test
-		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, nil)
+		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, debugLog)
 
 		// Assert no HoldAuction error
 		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
@@ -337,6 +362,11 @@ func TestDebugBehaviour(t *testing.T) {
 		assert.NotEmpty(t, actualExt.Prebid, "%s. ext.prebid should not be empty")
 		assert.NotEmpty(t, actualExt.Prebid.AuctionTimestamp, "%s. ext.prebid.auctiontimestamp should not be empty when AuctionRequest.StartTime is set")
 		assert.Equal(t, auctionRequest.StartTime.UnixNano()/1e+6, actualExt.Prebid.AuctionTimestamp, "%s. ext.prebid.auctiontimestamp has incorrect value")
+
+		if test.debugData.headerOverrideDebugAllowed {
+			assert.Empty(t, actualExt.Warnings, "warnings should be empty")
+			assert.Empty(t, actualExt.Errors, "errors should be empty")
+		}
 
 		if test.out.debugInfoIncluded {
 			assert.NotNilf(t, actualExt, "%s. ext.debug field is expected to be included in this outBidResponse.Ext and not be nil.  outBidResponse.Ext.Debug = %v \n", test.desc, actualExt.Debug)
@@ -357,13 +387,13 @@ func TestDebugBehaviour(t *testing.T) {
 			assert.Nil(t, actualExt.Debug, "%s. ext.debug.httpcalls array should not be empty", "With bidder level debug disable option http calls should be empty")
 		}
 
-		if test.out.debugInfoIncluded && !test.debugData.accountLevelDebugAllowed {
+		if test.out.debugInfoIncluded && !test.debugData.accountLevelDebugAllowed && !test.debugData.headerOverrideDebugAllowed {
 			assert.Len(t, actualExt.Warnings, 1, "warnings should have one warning")
 			assert.NotNil(t, actualExt.Warnings["general"], "general warning should be present")
 			assert.Equal(t, "debug turned off for account", actualExt.Warnings["general"][0].Message, "account debug disabled message should be present")
 		}
 
-		if !test.out.debugInfoIncluded && test.in.debug && test.debugData.accountLevelDebugAllowed {
+		if !test.out.debugInfoIncluded && test.in.debug && test.debugData.accountLevelDebugAllowed && !test.debugData.headerOverrideDebugAllowed {
 			if test.generateWarnings {
 				assert.Len(t, actualExt.Warnings, 2, "warnings should have one warning")
 			} else {
@@ -3411,7 +3441,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBid *pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(name)]; ok {
 		if expectedRequest != nil {
 			if expectedRequest.BidAdjustment != bidAdjustment {
@@ -3590,7 +3620,7 @@ func (e *mockUsersync) LiveSyncCount() int {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (posb *pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (posb *pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 
