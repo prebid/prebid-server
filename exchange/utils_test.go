@@ -1447,8 +1447,7 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 	}
 }
 
-func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
-	tcf1Consent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 	tcf2Consent := "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA"
 	trueValue, falseValue := true, false
 
@@ -1478,20 +1477,7 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 			},
 		},
 		{
-			description:        "Enforce - TCF 1",
-			gdprAccountEnabled: &trueValue,
-			gdprHostEnabled:    true,
-			gdpr:               "1",
-			gdprConsent:        tcf1Consent,
-			gdprScrub:          true,
-			gdprDefaultValue:   "1",
-			expectPrivacyLabels: metrics.PrivacyLabels{
-				GDPREnforced:   true,
-				GDPRTCFVersion: metrics.TCFVersionV1,
-			},
-		},
-		{
-			description:        "Enforce - TCF 2",
+			description:        "Enforce",
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
@@ -1504,11 +1490,11 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 			},
 		},
 		{
-			description:        "Not Enforce - TCF 1",
+			description:        "Not Enforce",
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "0",
-			gdprConsent:        tcf1Consent,
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          false,
 			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
@@ -1517,38 +1503,38 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 			},
 		},
 		{
-			description:        "Enforce - TCF 1; GDPR signal extraction error",
+			description:        "Enforce; GDPR signal extraction error",
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    true,
 			gdpr:               "0{",
-			gdprConsent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
 			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
-				GDPRTCFVersion: metrics.TCFVersionV1,
+				GDPRTCFVersion: metrics.TCFVersionV2,
 			},
 			expectError: true,
 		},
 		{
-			description:        "Enforce - TCF 1; account GDPR enabled, host GDPR setting disregarded",
+			description:        "Enforce; account GDPR enabled, host GDPR setting disregarded",
 			gdprAccountEnabled: &trueValue,
 			gdprHostEnabled:    false,
 			gdpr:               "1",
-			gdprConsent:        tcf1Consent,
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
 			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
-				GDPRTCFVersion: metrics.TCFVersionV1,
+				GDPRTCFVersion: metrics.TCFVersionV2,
 			},
 		},
 		{
-			description:        "Not Enforce - TCF 1; account GDPR disabled, host GDPR setting disregarded",
+			description:        "Not Enforce; account GDPR disabled, host GDPR setting disregarded",
 			gdprAccountEnabled: &falseValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        tcf1Consent,
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          false,
 			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
@@ -1557,24 +1543,24 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 			},
 		},
 		{
-			description:        "Enforce - TCF 1; account GDPR not specified, host GDPR enabled",
+			description:        "Enforce; account GDPR not specified, host GDPR enabled",
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        tcf1Consent,
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
 			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
-				GDPRTCFVersion: metrics.TCFVersionV1,
+				GDPRTCFVersion: metrics.TCFVersionV2,
 			},
 		},
 		{
-			description:        "Not Enforce - TCF 1; account GDPR not specified, host GDPR disabled",
+			description:        "Not Enforce; account GDPR not specified, host GDPR disabled",
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    false,
 			gdpr:               "1",
-			gdprConsent:        tcf1Consent,
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          false,
 			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
@@ -1587,12 +1573,12 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    true,
 			gdpr:               "null",
-			gdprConsent:        tcf1Consent,
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
 			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
-				GDPRTCFVersion: metrics.TCFVersionV1,
+				GDPRTCFVersion: metrics.TCFVersionV2,
 			},
 		},
 		{
@@ -1600,7 +1586,7 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    true,
 			gdpr:               "null",
-			gdprConsent:        tcf1Consent,
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          false,
 			gdprDefaultValue:   "0",
 			expectPrivacyLabels: metrics.PrivacyLabels{
@@ -1613,13 +1599,13 @@ func TestCleanOpenRTBRequestsGDPRScrub(t *testing.T) {
 			gdprAccountEnabled: nil,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
-			gdprConsent:        tcf1Consent,
+			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
 			permissionsError:   errors.New("Some error"),
 			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
-				GDPRTCFVersion: metrics.TCFVersionV1,
+				GDPRTCFVersion: metrics.TCFVersionV2,
 			},
 		},
 	}

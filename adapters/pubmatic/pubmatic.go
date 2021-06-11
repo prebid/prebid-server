@@ -66,6 +66,10 @@ const (
 	INVALID_HEIGHT    = "Invalid Height"
 	INVALID_MEDIATYPE = "Invalid MediaType"
 	INVALID_ADSLOT    = "Invalid AdSlot"
+
+	dctrKeyName        = "key_val"
+	pmZoneIDKeyName    = "pmZoneId"
+	pmZoneIDKeyNameOld = "pmZoneID"
 )
 
 func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...interface{}) string {
@@ -485,30 +489,43 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) er
 		imp.Banner = bannerCopy
 	}
 
+	extMap := make(map[string]interface{}, 0)
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
-		kvstr := makeKeywordStr(pubmaticExt.Keywords)
-		imp.Ext = json.RawMessage([]byte(kvstr))
-	} else {
-		imp.Ext = nil
+		addKeywordsToExt(pubmaticExt.Keywords, extMap)
+	}
+	//Give preference to direct values of 'dctr' & 'pmZoneId' params in extension
+	if pubmaticExt.Dctr != "" {
+		extMap[dctrKeyName] = pubmaticExt.Dctr
+	}
+	if pubmaticExt.PmZoneID != "" {
+		extMap[pmZoneIDKeyName] = pubmaticExt.PmZoneID
+	}
+
+	imp.Ext = nil
+	if len(extMap) > 0 {
+		ext, err := json.Marshal(extMap)
+		if err == nil {
+			imp.Ext = ext
+		}
 	}
 
 	return nil
 
 }
 
-func makeKeywordStr(keywords []*openrtb_ext.ExtImpPubmaticKeyVal) string {
-	eachKv := make([]string, 0, len(keywords))
+func addKeywordsToExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, extMap map[string]interface{}) {
 	for _, keyVal := range keywords {
 		if len(keyVal.Values) == 0 {
 			logf("No values present for key = %s", keyVal.Key)
 			continue
 		} else {
-			eachKv = append(eachKv, fmt.Sprintf("\"%s\":\"%s\"", keyVal.Key, strings.Join(keyVal.Values[:], ",")))
+			key := keyVal.Key
+			if keyVal.Key == pmZoneIDKeyNameOld {
+				key = pmZoneIDKeyName
+			}
+			extMap[key] = strings.Join(keyVal.Values[:], ",")
 		}
 	}
-
-	kvStr := "{" + strings.Join(eachKv, ",") + "}"
-	return kvStr
 }
 
 func prepareImpressionExt(keywords map[string]string) string {
