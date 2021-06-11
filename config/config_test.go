@@ -141,6 +141,8 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
+	cmpBools(t, "gdpr.tcf2.purpose_one_treatment.enabled", true, cfg.GDPR.TCF2.PurposeOneTreatment.Enabled)
+	cmpBools(t, "gdpr.tcf2.purpose_one_treatment.access_allowed", true, cfg.GDPR.TCF2.PurposeOneTreatment.AccessAllowed)
 }
 
 var fullConfig = []byte(`
@@ -510,6 +512,79 @@ func TestMigrateConfigFromEnv(t *testing.T) {
 	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 }
 
+func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
+	oldPurposeOneTreatmentConfig := []byte(`
+      gdpr:
+        tcf2:
+          purpose_one_treatement:
+            enabled: true
+            access_allowed: true
+    `)
+	newPurposeOneTreatmentConfig := []byte(`
+      gdpr:
+        tcf2:
+          purpose_one_treatment:
+            enabled: true
+            access_allowed: true
+    `)
+	oldAndNewPurposeOneTreatmentConfig := []byte(`
+      gdpr:
+        tcf2:
+          purpose_one_treatement:
+            enabled: false
+            access_allowed: true
+          purpose_one_treatment:
+            enabled: true
+            access_allowed: false
+    `)
+
+	tests := []struct {
+		description                        string
+		config                             []byte
+		wantPurpose1TreatmentEnabled       bool
+		wantPurpose1TreatmentAccessAllowed bool
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description:                        "New config not set, old config set",
+			config:                             oldPurposeOneTreatmentConfig,
+			wantPurpose1TreatmentEnabled:       true,
+			wantPurpose1TreatmentAccessAllowed: true,
+		},
+		{
+			description:                        "New config set, old config not set",
+			config:                             newPurposeOneTreatmentConfig,
+			wantPurpose1TreatmentEnabled:       true,
+			wantPurpose1TreatmentAccessAllowed: true,
+		},
+		{
+			description:                        "New config and old config set",
+			config:                             oldAndNewPurposeOneTreatmentConfig,
+			wantPurpose1TreatmentEnabled:       true,
+			wantPurpose1TreatmentAccessAllowed: false,
+		},
+	}
+
+	for _, tt := range tests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigPurposeOneTreatment(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.wantPurpose1TreatmentEnabled, v.Get("gdpr.tcf2.purpose_one_treatment.enabled").(bool), tt.description)
+			assert.Equal(t, tt.wantPurpose1TreatmentAccessAllowed, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed").(bool), tt.description)
+		} else {
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed"), tt.description)
+		}
+	}
+}
+
 func TestInvalidAdapterEndpointConfig(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
@@ -567,12 +642,6 @@ func TestInvalidHostVendorID(t *testing.T) {
 		assert.Equal(t, 1, len(errs), tt.description)
 		assert.EqualError(t, errs[0], tt.wantErrorMsg, tt.description)
 	}
-}
-
-func TestInvalidFetchGVL(t *testing.T) {
-	cfg := newDefaultConfig(t)
-	cfg.GDPR.TCF1.FetchGVL = true
-	assertOneError(t, cfg.validate(), "gdpr.tcf1.fetch_gvl has been discontinued and must be removed from your config. TCF1 will always use the fallback GVL going forward")
 }
 
 func TestInvalidAMPException(t *testing.T) {

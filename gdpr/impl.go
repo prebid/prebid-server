@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/prebid/go-gdpr/api"
-	tcf1constants "github.com/prebid/go-gdpr/consentconstants"
-	consentconstants "github.com/prebid/go-gdpr/consentconstants/tcf2"
+	"github.com/prebid/go-gdpr/consentconstants"
+	tcf2ConsentConstants "github.com/prebid/go-gdpr/consentconstants/tcf2"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
 	"github.com/prebid/go-gdpr/vendorlist"
@@ -116,23 +116,15 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 		return false, nil
 	}
 
-	// InfoStorageAccess is the same across TCF 1 and TCF 2
-	if parsedConsent.Version() == 2 {
-		if !p.cfg.TCF2.Purpose1.Enabled {
-			// We are not enforcing purpose 1
-			return true, nil
-		}
-		consent, ok := parsedConsent.(tcf2.ConsentMetadata)
-		if !ok {
-			err := fmt.Errorf("Unable to access TCF2 parsed consent")
-			return false, err
-		}
-		return p.checkPurpose(consent, vendor, vendorID, consentconstants.InfoStorageAccess, false), nil
-	}
-	if vendor.Purpose(consentconstants.InfoStorageAccess) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && parsedConsent.VendorConsent(vendorID) {
+	if !p.cfg.TCF2.Purpose1.Enabled {
 		return true, nil
 	}
-	return false, nil
+	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
+	if !ok {
+		err := fmt.Errorf("Unable to access TCF2 parsed consent")
+		return false, err
+	}
+	return p.checkPurpose(consentMeta, vendor, vendorID, tcf2ConsentConstants.InfoStorageAccess, false), nil
 }
 
 func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
@@ -141,44 +133,33 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 		return false, false, false, err
 	}
 
+	// vendor will be nil if not a valid TCF2 consent string
 	if vendor == nil {
 		return false, false, false, nil
 	}
 
-	if parsedConsent.Version() == 2 {
-		if p.cfg.TCF2.Enabled {
-			return p.allowActivitiesTCF2(parsedConsent, vendor, vendorID, weakVendorEnforcement)
-		}
-		if (vendor.Purpose(consentconstants.InfoStorageAccess) || vendor.LegitimateInterest(consentconstants.InfoStorageAccess) || weakVendorEnforcement) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && (vendor.Purpose(consentconstants.PersonalizationProfile) || vendor.LegitimateInterest(consentconstants.PersonalizationProfile) || weakVendorEnforcement) && parsedConsent.PurposeAllowed(consentconstants.PersonalizationProfile) && (parsedConsent.VendorConsent(vendorID) || weakVendorEnforcement) {
-			return true, true, true, nil
-		}
-	} else {
-		if (vendor.Purpose(tcf1constants.InfoStorageAccess) || vendor.LegitimateInterest(tcf1constants.InfoStorageAccess)) && parsedConsent.PurposeAllowed(tcf1constants.InfoStorageAccess) && (vendor.Purpose(tcf1constants.AdSelectionDeliveryReporting) || vendor.LegitimateInterest(tcf1constants.AdSelectionDeliveryReporting)) && parsedConsent.PurposeAllowed(tcf1constants.AdSelectionDeliveryReporting) && parsedConsent.VendorConsent(vendorID) {
-			return true, true, true, nil
-		}
+	if !p.cfg.TCF2.Enabled {
+		return true, false, false, nil
 	}
-	return true, false, false, nil
-}
 
-func (p *permissionsImpl) allowActivitiesTCF2(parsedConsent api.VendorConsents, vendor api.Vendor, vendorID uint16, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
-	consent, ok := parsedConsent.(tcf2.ConsentMetadata)
+	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
 	if !ok {
 		err = fmt.Errorf("Unable to access TCF2 parsed consent")
 		return
 	}
 
 	if p.cfg.TCF2.SpecialPurpose1.Enabled {
-		passGeo = consent.SpecialFeatureOptIn(1) && (vendor.SpecialPurpose(1) || weakVendorEnforcement)
+		passGeo = consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialPurpose(1) || weakVendorEnforcement)
 	} else {
 		passGeo = true
 	}
 	if p.cfg.TCF2.Purpose2.Enabled {
-		allowBidRequest = p.checkPurpose(consent, vendor, vendorID, tcf1constants.Purpose(2), weakVendorEnforcement)
+		allowBidRequest = p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(2), weakVendorEnforcement)
 	} else {
 		allowBidRequest = true
 	}
 	for i := 2; i <= 10; i++ {
-		if p.checkPurpose(consent, vendor, vendorID, tcf1constants.Purpose(i), weakVendorEnforcement) {
+		if p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(i), weakVendorEnforcement) {
 			passID = true
 			break
 		}
@@ -191,8 +172,8 @@ const pubRestrictNotAllowed = 0
 const pubRestrictRequireConsent = 1
 const pubRestrictRequireLegitInterest = 2
 
-func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose tcf1constants.Purpose, weakVendorEnforcement bool) bool {
-	if purpose == consentconstants.InfoStorageAccess && p.cfg.TCF2.PurposeOneTreatment.Enabled && consent.PurposeOneTreatment() {
+func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, weakVendorEnforcement bool) bool {
+	if purpose == tcf2ConsentConstants.InfoStorageAccess && p.cfg.TCF2.PurposeOneTreatment.Enabled && consent.PurposeOneTreatment() {
 		return p.cfg.TCF2.PurposeOneTreatment.AccessAllowed
 	}
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictNotAllowed, vendorID) {
@@ -224,7 +205,7 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 	}
 
 	version := parsedConsent.Version()
-	if version < 1 || version > 2 {
+	if version != 2 {
 		return
 	}
 	vendorList, err := p.fetchVendorList[version](ctx, parsedConsent.VendorListVersion())

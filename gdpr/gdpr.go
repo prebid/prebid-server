@@ -30,7 +30,6 @@ type Permissions interface {
 
 // Versions of the GDPR TCF technical specification.
 const (
-	tcf1SpecVersion uint8 = 1
 	tcf2SpecVersion uint8 = 2
 )
 
@@ -44,8 +43,7 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 		cfg:       cfg,
 		vendorIDs: vendorIDs,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
-			tcf1SpecVersion: newVendorListFetcherTCF1(cfg),
-			tcf2SpecVersion: newVendorListFetcherTCF2(ctx, cfg, client, vendorListURLMaker)},
+			tcf2SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker)},
 	}
 
 	if cfg.HostVendorID == 0 {
