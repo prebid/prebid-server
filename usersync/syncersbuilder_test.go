@@ -13,12 +13,13 @@ func TestBuildSyncers(t *testing.T) {
 	var (
 		hostConfig              = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/{{.SyncerKey}}/host"}
 		iframeConfig            = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{.RedirectURL}}"}
-		infoKeyAPopulated       = config.BidderInfo{Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
-		infoKeyAEmpty           = config.BidderInfo{Syncer: &config.Syncer{Key: "a"}}
-		infoKeyAError           = config.BidderInfo{Syncer: &config.Syncer{Key: "a", Default: "redirect", IFrame: iframeConfig}} // Error caused by invalid default sync type
-		infoKeyBPopulated       = config.BidderInfo{Syncer: &config.Syncer{Key: "b", IFrame: iframeConfig}}
-		infoKeyBEmpty           = config.BidderInfo{Syncer: &config.Syncer{Key: "b"}}
-		infoKeyMissingPopulated = config.BidderInfo{Syncer: &config.Syncer{IFrame: iframeConfig}}
+		infoKeyAPopulated       = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
+		infoKeyADisabled        = config.BidderInfo{Enabled: false, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
+		infoKeyAEmpty           = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "a"}}
+		infoKeyAError           = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "a", Default: "redirect", IFrame: iframeConfig}} // Error caused by invalid default sync type
+		infoKeyBPopulated       = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "b", IFrame: iframeConfig}}
+		infoKeyBEmpty           = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "b"}}
+		infoKeyMissingPopulated = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{IFrame: iframeConfig}}
 	)
 
 	// NOTE: The hostConfig includes the syncer key in the RedirectURL to distinguish between the syncer keys
@@ -88,6 +89,13 @@ func TestBuildSyncers(t *testing.T) {
 		{
 			description:      "Many - Empty Syncers Ignored",
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": {}, "bidder2": infoKeyBPopulated},
+			expectedIFramesURLs: map[string]string{
+				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
+			},
+		},
+		{
+			description:      "Many - Disabled Syncers Ignored",
+			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyADisabled, "bidder2": infoKeyBPopulated},
 			expectedIFramesURLs: map[string]string{
 				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
 			},

@@ -18,7 +18,7 @@ func BuildSyncers(hostConfig config.UserSync, bidderInfos config.BidderInfos) (m
 	// map syncer config by bidder
 	cfgByBidder := make(map[string]config.Syncer, len(bidderInfos))
 	for bidder, cfg := range bidderInfos {
-		if cfg.Syncer != nil {
+		if cfg.Enabled && cfg.Syncer != nil {
 			cfgByBidder[bidder] = *cfg.Syncer
 		}
 	}
