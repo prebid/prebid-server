@@ -39,7 +39,7 @@ func main() {
 
 	err = serve(Rev, cfg)
 	if err != nil {
-		glog.Errorf("prebid-server failed: %v", err)
+		glog.Fatalf("prebid-server failed: %v", err)
 	}
 }
 

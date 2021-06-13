@@ -213,12 +213,16 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	p, _ := filepath.Abs(infoDirectory)
 	bidderInfos, err := config.LoadBidderInfoFromDisk(p, cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
 	if err != nil {
-		glog.Fatal(err)
+		return nil, err
+	}
+
+	if err := applyBidderInfoConfigOverrides(bidderInfos, cfg.Adapters); err != nil {
+		return nil, err
 	}
 
 	syncers, err := usersync.BuildSyncers(cfg.UserSync, bidderInfos)
 	if err != nil {
-		glog.Fatal(err)
+		return nil, err
 	}
 
 	syncerKeys := make([]string, 0, len(syncers))
@@ -246,19 +250,12 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	// apply adapter overrides to bidder info
-	for bidderName, bidderInfo := range bidderInfos {
-		if adapterCfg, exists := cfg.Adapters[bidderName]; exists {
-			bidderInfo.Syncer = adapterCfg.Syncer.Override(bidderInfo.Syncer)
-		}
-	}
-
 	activeBidders := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 	if err := validateDefaultAliases(defaultAliases); err != nil {
-		glog.Fatal(err)
+		return nil, err
 	}
 
 	gvlVendorIDs := bidderInfos.ToGVLVendorIDMap()
@@ -270,7 +267,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	adapters, adaptersErrs := exchange.BuildAdapters(generalHttpClient, cfg, bidderInfos, r.MetricsEngine)
 	if len(adaptersErrs) > 0 {
 		errs := errortypes.NewAggregateError("Failed to initialize adapters", adaptersErrs)
-		glog.Fatalf("%v", errs)
+		return nil, errs
 	}
 
 	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncers, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor, categoriesFetcher)
@@ -331,6 +328,42 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.GET("/optout", userSyncDeps.OptOut)
 
 	return r, nil
+}
+
+func applyBidderInfoConfigOverrides(bidderInfos config.BidderInfos, adaptersCfg map[string]config.Adapter) error {
+	for bidderName, bidderInfo := range bidderInfos {
+		if adapterCfg, exists := adaptersCfg[bidderName]; exists {
+			bidderInfo.Syncer = adapterCfg.Syncer.Override(bidderInfo.Syncer)
+
+			// comptability with legacy settings (if possible unambiguously)
+			if adapterCfg.UserSyncURL != "" {
+				if bidderInfo.Syncer == nil {
+					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder does not define a user sync", bidderName)
+				}
+
+				endpointsCount := 0
+				if bidderInfo.Syncer.IFrame != nil {
+					bidderInfo.Syncer.IFrame.URL = adapterCfg.UserSyncURL
+					endpointsCount++
+				}
+				if bidderInfo.Syncer.Redirect != nil {
+					bidderInfo.Syncer.Redirect.URL = adapterCfg.UserSyncURL
+					endpointsCount++
+				}
+
+				if endpointsCount == 0 {
+					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder does not define user sync endpoints", bidderName)
+				}
+
+				if endpointsCount > 1 {
+					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder defines multiple user sync endpoints", bidderName)
+				}
+			}
+
+			bidderInfos[bidderName] = bidderInfo
+		}
+	}
+	return nil
 }
 
 // Fixes #648
