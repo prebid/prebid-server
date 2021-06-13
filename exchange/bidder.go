@@ -49,7 +49,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -126,7 +126,7 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -176,19 +176,25 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		httpInfo := <-responseChannel
 		// If this is a test bid, capture debugging info from the requests.
 		// Write debug data to ext in case if:
+		// - headerDebugAllowed (debug override header specified correct) - it overrides all other debug restrictions
 		// - debugContextKey (url param) in true
 		// - account debug is allowed
 		// - bidder debug is allowed
-		if debugInfo := ctx.Value(DebugContextKey); debugInfo != nil && debugInfo.(bool) {
-			if accountDebugAllowed {
-				if bidder.config.DebugInfo.Allow {
-					seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
-				} else {
-					debugDisabledWarning := errortypes.Warning{
-						WarningCode: errortypes.BidderLevelDebugDisabledWarningCode,
-						Message:     "debug turned off for bidder",
+		if headerDebugAllowed {
+			seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+		} else {
+			debugInfo := ctx.Value(DebugContextKey)
+			if debugInfo != nil && debugInfo.(bool) {
+				if accountDebugAllowed {
+					if bidder.config.DebugInfo.Allow {
+						seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+					} else {
+						debugDisabledWarning := errortypes.Warning{
+							WarningCode: errortypes.BidderLevelDebugDisabledWarningCode,
+							Message:     "debug turned off for bidder",
+						}
+						errs = append(errs, &debugDisabledWarning)
 					}
-					errs = append(errs, &debugDisabledWarning)
 				}
 			}
 		}

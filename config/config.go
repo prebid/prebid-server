@@ -198,7 +198,6 @@ type GDPR struct {
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
 	NonStandardPublisherMap map[string]struct{}
-	TCF1                    TCF1 `mapstructure:"tcf1"`
 	TCF2                    TCF2 `mapstructure:"tcf2"`
 	AMPException            bool `mapstructure:"amp_exception"` // Deprecated: Use account-level GDPR settings (gdpr.integration_enabled.amp) instead
 	// EEACountries (EEA = European Economic Area) are a list of countries where we should assume GDPR applies.
@@ -219,9 +218,6 @@ func (cfg *GDPR) validate(errs []error) []error {
 	if cfg.AMPException == true {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
 	}
-	if cfg.TCF1.FetchGVL == true {
-		errs = append(errs, fmt.Errorf("gdpr.tcf1.fetch_gvl has been discontinued and must be removed from your config. TCF1 will always use the fallback GVL going forward"))
-	}
 	return errs
 }
 
@@ -238,20 +234,14 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
 }
 
-// TCF1 defines the TCF1 specific configurations for GDPR
-type TCF1 struct {
-	FetchGVL        bool   `mapstructure:"fetch_gvl"` // Deprecated: In a future version TCF1 will always use the fallback GVL
-	FallbackGVLPath string `mapstructure:"fallback_gvl_path"`
-}
-
 // TCF2 defines the TCF2 specific configurations for GDPR
 type TCF2 struct {
-	Enabled             bool                 `mapstructure:"enabled"`
-	Purpose1            PurposeDetail        `mapstructure:"purpose1"`
-	Purpose2            PurposeDetail        `mapstructure:"purpose2"`
-	Purpose7            PurposeDetail        `mapstructure:"purpose7"`
-	SpecialPurpose1     PurposeDetail        `mapstructure:"special_purpose1"`
-	PurposeOneTreatment PurposeOneTreatement `mapstructure:"purpose_one_treatement"`
+	Enabled             bool                `mapstructure:"enabled"`
+	Purpose1            PurposeDetail       `mapstructure:"purpose1"`
+	Purpose2            PurposeDetail       `mapstructure:"purpose2"`
+	Purpose7            PurposeDetail       `mapstructure:"purpose7"`
+	SpecialPurpose1     PurposeDetail       `mapstructure:"special_purpose1"`
+	PurposeOneTreatment PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
 }
 
 // Making a purpose struct so purpose specific details can be added later.
@@ -259,7 +249,7 @@ type PurposeDetail struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-type PurposeOneTreatement struct {
+type PurposeOneTreatment struct {
 	Enabled       bool `mapstructure:"enabled"`
 	AccessAllowed bool `mapstructure:"access_allowed"`
 }
@@ -450,6 +440,7 @@ type DefReqFiles struct {
 
 type Debug struct {
 	TimeoutNotification TimeoutNotification `mapstructure:"timeout_notification"`
+	OverrideToken       string              `mapstructure:"override_token"`
 }
 
 func (cfg *Debug) validate(errs []error) []error {
@@ -725,6 +716,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adxcg.disabled", true)
 	v.SetDefault("adapters.adyoulike.endpoint", "https://broker.omnitagjs.com/broker/bid?partnerId=19340f4f097d16f41f34fc0274981ca4")
 	v.SetDefault("adapters.aja.endpoint", "https://ad.as.amanad.adtdp.com/v1/bid/4")
+	v.SetDefault("adapters.algorix.endpoint", "https://xyz.svr-algorix.com/rtb/sa?sid={{.SourceId}}&token={{.AccountID}}")
 	v.SetDefault("adapters.amx.endpoint", "http://pbs.amxrtb.com/auction/openrtb")
 	v.SetDefault("adapters.applogy.endpoint", "http://rtb.applogy.com/v1/prebid")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
@@ -738,6 +730,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.between.endpoint", "http://{{.Host}}.betweendigital.com/openrtb_bid?sspId={{.PublisherID}}")
 	v.SetDefault("adapters.bidmachine.endpoint", "https://{{.Host}}.bidmachine.io")
 	v.SetDefault("adapters.bidscube.endpoint", "http://supply.bidscube.com/?c=o&m=rtb")
+	v.SetDefault("adapters.bmtm.endpoint", "https://one.elitebidder.com/api/pbs")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.colossus.endpoint", "http://colossusssp.com/?c=o&m=rtb")
 	v.SetDefault("adapters.connectad.endpoint", "http://bidder.connectad.io/API?src=pbs")
@@ -754,6 +747,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.eplanning.endpoint", "http://rtb.e-planning.net/pbs/1")
 	v.SetDefault("adapters.epom.endpoint", "https://an.epom.com/ortb")
 	v.SetDefault("adapters.epom.disabled", true)
+	v.SetDefault("adapters.e_volution.endpoint", "http://service.e-volution.ai/pbserver")
 	v.SetDefault("adapters.gamma.endpoint", "https://hb.gammaplatform.com/adx/request/")
 	v.SetDefault("adapters.gamoshi.endpoint", "https://rtb.gamoshi.io")
 	v.SetDefault("adapters.grid.endpoint", "https://grid.bidswitch.net/sp_bid?sp=prebid")
@@ -768,7 +762,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.invibes.endpoint", "https://{{.Host}}/bid/ServerBidAdContent")
 	v.SetDefault("adapters.kidoz.endpoint", "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server")
 	v.SetDefault("adapters.kubient.endpoint", "https://kssp.kbntx.ch/prebid")
-	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
 	v.SetDefault("adapters.lockerdome.endpoint", "https://lockerdome.com/ladbid/prebidserver/openrtb2")
 	v.SetDefault("adapters.logicad.endpoint", "https://pbs.ladsp.com/adrequest/prebidserver")
 	v.SetDefault("adapters.lunamedia.endpoint", "http://api.lunamedia.io/xp/get?pubid={{.PublisherID}}")
@@ -841,16 +834,12 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
-	v.SetDefault("gdpr.tcf1.fetch_gvl", false)
-	v.SetDefault("gdpr.tcf1.fallback_gvl_path", "./static/tcf1/fallback_gvl.json")
 	v.SetDefault("gdpr.tcf2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose1.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose4.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose7.enabled", true)
 	v.SetDefault("gdpr.tcf2.special_purpose1.enabled", true)
-	v.SetDefault("gdpr.tcf2.purpose_one_treatement.enabled", true)
-	v.SetDefault("gdpr.tcf2.purpose_one_treatement.access_allowed", true)
 	v.SetDefault("gdpr.amp_exception", false)
 	v.SetDefault("gdpr.eea_countries", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
@@ -879,6 +868,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("debug.timeout_notification.log", false)
 	v.SetDefault("debug.timeout_notification.sampling_rate", 0.0)
 	v.SetDefault("debug.timeout_notification.fail_only", false)
+	v.SetDefault("debug.override_token", "")
 
 	/* IPv4
 	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
@@ -904,6 +894,10 @@ func SetupViper(v *viper.Viper, filename string) {
 
 	// Migrate config settings to maintain compatibility with old configs
 	migrateConfig(v)
+	migrateConfigPurposeOneTreatment(v)
+
+	v.SetDefault("gdpr.tcf2.purpose_one_treatment.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
 }
 
 func migrateConfig(v *viper.Viper) {
@@ -916,6 +910,18 @@ func migrateConfig(v *viper.Viper) {
 		m["enabled"] = v.GetBool("stored_requests.filesystem")
 		m["directorypath"] = v.GetString("stored_requests.directorypath")
 		v.Set("stored_requests.filesystem", m)
+	}
+}
+
+func migrateConfigPurposeOneTreatment(v *viper.Viper) {
+	if oldConfig, ok := v.Get("gdpr.tcf2.purpose_one_treatement").(map[string]interface{}); ok {
+		if v.IsSet("gdpr.tcf2.purpose_one_treatment") {
+			glog.Warning("using gdpr.tcf2.purpose_one_treatment and ignoring deprecated gdpr.tcf2.purpose_one_treatement")
+		} else {
+			glog.Warning("gdpr.tcf2.purpose_one_treatement.enabled should be changed to gdpr.tcf2.purpose_one_treatment.enabled")
+			glog.Warning("gdpr.tcf2.purpose_one_treatement.access_allowed should be changed to gdpr.tcf2.purpose_one_treatment.access_allowed")
+			v.Set("gdpr.tcf2.purpose_one_treatment", oldConfig)
+		}
 	}
 }
 

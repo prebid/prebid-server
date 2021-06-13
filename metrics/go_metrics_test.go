@@ -60,7 +60,6 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "privacy.request.ccpa.opt-out", m.PrivacyCCPARequestOptOut)
 	ensureContains(t, registry, "privacy.request.coppa", m.PrivacyCOPPARequest)
 	ensureContains(t, registry, "privacy.request.lmt", m.PrivacyLMTRequest)
-	ensureContains(t, registry, "privacy.request.tcf.v1", m.PrivacyTCFRequestVersion[TCFVersionV1])
 	ensureContains(t, registry, "privacy.request.tcf.v2", m.PrivacyTCFRequestVersion[TCFVersionV2])
 	ensureContains(t, registry, "privacy.request.tcf.err", m.PrivacyTCFRequestVersion[TCFVersionErr])
 }
@@ -550,15 +549,7 @@ func TestRecordRequestPrivacy(t *testing.T) {
 	})
 	m.RecordRequestPrivacy(PrivacyLabels{
 		GDPREnforced:   true,
-		GDPRTCFVersion: TCFVersionV1,
-	})
-	m.RecordRequestPrivacy(PrivacyLabels{
-		GDPREnforced:   true,
 		GDPRTCFVersion: TCFVersionV2,
-	})
-	m.RecordRequestPrivacy(PrivacyLabels{
-		GDPREnforced:   true,
-		GDPRTCFVersion: TCFVersionV1,
 	})
 
 	assert.Equal(t, m.PrivacyCCPARequest.Count(), int64(2), "CCPA")
@@ -566,7 +557,6 @@ func TestRecordRequestPrivacy(t *testing.T) {
 	assert.Equal(t, m.PrivacyCOPPARequest.Count(), int64(1), "COPPA")
 	assert.Equal(t, m.PrivacyLMTRequest.Count(), int64(1), "LMT")
 	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionErr].Count(), int64(1), "TCF Err")
-	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionV1].Count(), int64(2), "TCF V1")
 	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionV2].Count(), int64(1), "TCF V2")
 }
 

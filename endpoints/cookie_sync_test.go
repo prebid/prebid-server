@@ -10,7 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/audienceNetwork"
+	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
@@ -19,6 +23,9 @@ import (
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync"
+
+	"github.com/buger/jsonparser"
+	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -846,6 +853,16 @@ func TestCookieSyncHandleError(t *testing.T) {
 		Errors:       []error{err},
 		BidderStatus: []*analytics.CookieSyncBidder{},
 	})
+}
+
+func TestGDPRPreventsBidders(t *testing.T) {
+	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic"],"gdpr_consent":"BOONs2HOONs2HABABBENAGgAAAAPrABACGA"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{
+		openrtb_ext.BidderPubmatic: pubmatic.NewPubmaticSyncer(template.Must(template.New("sync").Parse("someurl.com"))),
+	})
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.ElementsMatch(t, []string{"pubmatic"}, parseSyncs(t, rr.Body.Bytes()))
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
 func TestCookieSyncWriteBidderMetrics(t *testing.T) {

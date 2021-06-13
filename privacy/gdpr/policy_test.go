@@ -18,11 +18,6 @@ func TestValidateConsent(t *testing.T) {
 			expected:    false,
 		},
 		{
-			description: "TCF1 Valid",
-			consent:     "BONV8oqONXwgmADACHENAO7pqzAAppY",
-			expected:    true,
-		},
-		{
 			description: "TCF2 Valid",
 			consent:     "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
 			expected:    true,
