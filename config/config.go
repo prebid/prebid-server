@@ -919,8 +919,6 @@ func migrateConfig(v *viper.Viper) {
 	}
 }
 
-var nilBoolean *bool
-
 func setBidderDefaults(v *viper.Viper, bidder string) {
 	adapterCfgPrefix := "adapters." + bidder
 	v.SetDefault(adapterCfgPrefix+".endpoint", "")
@@ -934,18 +932,17 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+".partner_id", "")
 	v.SetDefault(adapterCfgPrefix+".extra_info", "")
 
-	// user sync
-	v.SetDefault(adapterCfgPrefix+".usersync.key", "")
-	v.SetDefault(adapterCfgPrefix+".usersync.default", "")
-	v.SetDefault(adapterCfgPrefix+".usersync.iframe.url", "")
-	v.SetDefault(adapterCfgPrefix+".usersync.iframe.redirect_url", "")
-	v.SetDefault(adapterCfgPrefix+".usersync.iframe.external_url", "")
-	v.SetDefault(adapterCfgPrefix+".usersync.iframe.user_macro", "")
-	v.SetDefault(adapterCfgPrefix+".usersync.redirect.url", "")
-	v.SetDefault(adapterCfgPrefix+".usersync.redirect.redirect_url", "")
-	v.SetDefault(adapterCfgPrefix+".usersync.redirect.external_url", "")
-	v.SetDefault(adapterCfgPrefix+".usersync.redirect.user_macro", "")
-	//v.SetDefault(adapterCfgPrefix+".usersync.support_cors", nilBoolean)
+	v.BindEnv(adapterCfgPrefix + ".usersync.key")
+	v.BindEnv(adapterCfgPrefix + ".usersync.default")
+	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.redirect_url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.external_url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.user_macro")
+	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.redirect_url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.external_url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.user_macro")
+	v.BindEnv(adapterCfgPrefix + ".usersync.support_cors")
 }
 
 func isValidCookieSize(maxCookieSize int) error {

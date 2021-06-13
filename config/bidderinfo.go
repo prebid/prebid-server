@@ -65,42 +65,48 @@ type Syncer struct {
 	Redirect *SyncerEndpoint `yaml:"redirect" mapstructure:"redirect"`
 
 	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
-	SupportCORS *bool `yaml:"supportCors" mapstructure:"supportcors"`
+	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
 }
 
-func (s *Syncer) Override(v *Syncer) *Syncer {
-	if s.Empty() {
-		return v
+func (s *Syncer) Override(original *Syncer) *Syncer {
+	if s == nil && original == nil {
+		return nil
 	}
 
-	if v == nil {
-		v = &Syncer{}
+	var copy Syncer
+	if original != nil {
+		copy = *original
+	}
+
+	if s == nil {
+		return &copy
 	}
 
 	if s.Key != "" {
-		v.Key = s.Key
+		copy.Key = s.Key
 	}
 
 	if s.Default != "" {
-		v.Key = s.Default
+		copy.Default = s.Default
 	}
 
-	v.IFrame = s.IFrame.Override(v.IFrame)
+	if original == nil {
+		copy.IFrame = s.IFrame.Override(nil)
+	} else {
+		copy.IFrame = s.IFrame.Override(original.IFrame)
+	}
 
-	v.Redirect = s.IFrame.Override(v.Redirect)
+	if original == nil {
+		copy.Redirect = s.Redirect.Override(nil)
+	} else {
+		copy.Redirect = s.Redirect.Override(original.Redirect)
+	}
 
 	if s.SupportCORS != nil {
-		v.SupportCORS = s.SupportCORS
+		copy.SupportCORS = s.SupportCORS
 	}
 
-	return v
-}
-
-func (s *Syncer) Empty() bool {
-	if s == nil {
-		return true
-	}
-	return s.Key == "" && s.Default == "" && s.IFrame.Empty() && s.Redirect.Empty() && s.SupportCORS == nil
+	return &copy
 }
 
 // SyncerEndpoint specifies the configuration of the URL returned by the /cookie_sync endpoint
@@ -158,39 +164,38 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
-func (s *SyncerEndpoint) Override(v *SyncerEndpoint) *SyncerEndpoint {
-	if s.Empty() {
-		return v
+// Override returns a new SyncerEndpoint with original values overridden by non empty values.
+func (s *SyncerEndpoint) Override(original *SyncerEndpoint) *SyncerEndpoint {
+	if s == nil && original == nil {
+		return nil
 	}
 
-	if v == nil {
-		v = &SyncerEndpoint{}
+	var copy SyncerEndpoint
+	if original != nil {
+		copy = *original
+	}
+
+	if s == nil {
+		return &copy
 	}
 
 	if s.URL != "" {
-		v.URL = s.URL
+		copy.URL = s.URL
 	}
 
 	if s.RedirectURL != "" {
-		v.RedirectURL = s.RedirectURL
+		copy.RedirectURL = s.RedirectURL
 	}
 
 	if s.ExternalURL != "" {
-		v.ExternalURL = s.ExternalURL
+		copy.ExternalURL = s.ExternalURL
 	}
 
 	if s.UserMacro != "" {
-		v.UserMacro = s.UserMacro
+		copy.UserMacro = s.UserMacro
 	}
 
-	return v
-}
-
-func (s *SyncerEndpoint) Empty() bool {
-	if s == nil {
-		return true
-	}
-	return s.URL == "" && s.RedirectURL == "" && s.ExternalURL == "" && s.UserMacro == ""
+	return &copy
 }
 
 // LoadBidderInfoFromDisk parses all static/bidder-info/{bidder}.yaml files from the file system.
