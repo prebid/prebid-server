@@ -243,7 +243,7 @@ func TestModifyBidVAST(t *testing.T) {
 			ev.modifyBidVAST(&pbsOrtbBid{
 				bid:     tc.args.bid,
 				bidType: openrtb_ext.BidTypeVideo,
-			}, "somebidder", tc.args.bidReq, "http://company.tracker.com?e=[EVENT_ID]")
+			}, "somebidder", "coreBidder", tc.args.bidReq, "http://company.tracker.com?e=[EVENT_ID]")
 			validator(t, tc.args.bid, tc.want.tags)
 		})
 	}

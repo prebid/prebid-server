@@ -85,6 +85,8 @@ type pbsOrtbSeatBid struct {
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
 	httpCalls []*openrtb_ext.ExtHttpCall
+	// bidderCoreName represents the core bidder id.
+	bidderCoreName openrtb_ext.BidderName
 }
 
 // adaptBidder converts an adapters.Bidder into an exchange.adaptedBidder.
