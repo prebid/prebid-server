@@ -18,18 +18,6 @@ type adapter struct {
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-	for i := 0; i < len(request.Imp); i++ {
-		if request.Imp[i].Banner != nil {
-			bannerCopy := *request.Imp[i].Banner
-			if len(bannerCopy.Format) > 0 {
-				firstFormat := bannerCopy.Format[0]
-				bannerCopy.W = &(firstFormat.W)
-				bannerCopy.H = &(firstFormat.H)
-				request.Imp[i].Banner = &bannerCopy
-			}
-		}
-	}
-
 	request.AT = 1 //Defaulting to first price auction for all prebid requests
 
 	reqJSON, err := json.Marshal(request)
