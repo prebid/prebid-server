@@ -3445,34 +3445,33 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 
 func TestParseStoredImp(t *testing.T) {
 
-	bidderRequest := []BidderRequest{
-		{
-			BidderName: "bidder1",
-			BidRequest: &openrtb2.BidRequest{
-				ID: "b-1",
-				Imp: []openrtb2.Imp{
-					{
-						ID: "1-0",
-						Ext: json.RawMessage(`{
+	bidderRequest := BidderRequest{
+
+		BidderName: "bidder1",
+		BidRequest: &openrtb2.BidRequest{
+			ID: "b-1",
+			Imp: []openrtb2.Imp{
+				{
+					ID: "1-0",
+					Ext: json.RawMessage(`{
                             "prebid": {
                                 "storedrequestattributes":{"h":480,"mimes":["video/mp4"]}
                             }
                         }`),
-					},
-					{
-						ID: "1-1",
-						Ext: json.RawMessage(`{
+				},
+				{
+					ID: "1-1",
+					Ext: json.RawMessage(`{
                             "prebid": {
                                 "video":{"mimes":["video/mp4"]}
                             }
                         }`),
-					},
 				},
 			},
 		},
 	}
 
-	found, res, err := parseStoredImp(bidderRequest)
+	found, res, err := parseStoredImp(*bidderRequest.BidRequest)
 
 	expectedData := []byte(`{"h":480,"mimes":["video/mp4"]}`)
 

@@ -457,7 +457,7 @@ func (e *exchange) getAllBids(
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 
 			//map imp to stored request data if exists
-			hasStoredReq, impsToStoredReq, parseErr := parseStoredImp(bidderRequests)
+			hasStoredReq, impsToStoredReq, parseErr := parseStoredImp(*bidderRequest.BidRequest)
 			err := make([]error, 0, 0)
 			if parseErr != nil {
 				err = append(err, parseErr)
@@ -521,22 +521,22 @@ func (e *exchange) getAllBids(
 	return adapterBids, adapterExtra, bidsFound
 }
 
-func parseStoredImp(requests []BidderRequest) (bool, map[string][]byte, error) {
+func parseStoredImp(request openrtb2.BidRequest) (bool, map[string][]byte, error) {
 	impToStoredReq := make(map[string][]byte)
 	hasStoredRequest := false
-	for _, br := range requests {
-		for _, imp := range br.BidRequest.Imp {
-			impExt := imp.Ext
-			found, elem, err := jsonutil.FindElement(impExt, StoredRequestAttributes)
-			if err != nil {
-				return false, nil, nil
-			}
-			hasStoredRequest = hasStoredRequest || found
-			if found {
-				impToStoredReq[imp.ID] = elem
-			}
+
+	for _, imp := range request.Imp {
+		impExt := imp.Ext
+		found, elem, err := jsonutil.FindElement(impExt, StoredRequestAttributes)
+		if err != nil {
+			return false, nil, nil
+		}
+		hasStoredRequest = hasStoredRequest || found
+		if found {
+			impToStoredReq[imp.ID] = elem
 		}
 	}
+
 	return hasStoredRequest, impToStoredReq, nil
 }
 
