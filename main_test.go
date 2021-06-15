@@ -41,7 +41,6 @@ func forceEnv(t *testing.T, key string, val string) func() {
 func TestViperInit(t *testing.T) {
 	v := viper.New()
 	config.SetupViper(v, "")
-	v.Set("gdpr.default_value", false)
 	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", v.Get("external_url").(string))
 	compareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", v.Get("adapters.pulsepoint.endpoint").(string))
 }
@@ -49,7 +48,6 @@ func TestViperInit(t *testing.T) {
 func TestViperEnv(t *testing.T) {
 	v := viper.New()
 	config.SetupViper(v, "")
-	v.Set("gdpr.default_value", false)
 	port := forceEnv(t, "PBS_PORT", "7777")
 	defer port()
 
