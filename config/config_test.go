@@ -116,11 +116,7 @@ func TestExternalCacheURLValidate(t *testing.T) {
 }
 
 func TestDefaults(t *testing.T) {
-	v := viper.New()
-	SetupViper(v, "")
-	v.Set("gdpr.default_value", "0")
-	cfg, err := New(v)
-	assert.NoError(t, err, "Setting up config should work but it doesn't")
+	cfg, _ := newDefaultConfig(t)
 
 	cmpInts(t, "port", cfg.Port, 8000)
 	cmpInts(t, "admin_port", cfg.AdminPort, 6060)
@@ -514,11 +510,7 @@ func TestMigrateConfigFromEnv(t *testing.T) {
 		defer os.Unsetenv("PBS_STORED_REQUESTS_FILESYSTEM")
 	}
 	os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", "true")
-	v := viper.New()
-	SetupViper(v, "")
-	v.Set("gdpr.default_value", "0")
-	cfg, err := New(v)
-	assert.NoError(t, err, "Setting up config should work but it doesn't")
+	cfg, _ := newDefaultConfig(t)
 	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 }
 
@@ -797,7 +789,7 @@ func newDefaultConfig(t *testing.T) (*Configuration, *viper.Viper) {
 	v.Set("gdpr.default_value", "0")
 	v.SetConfigType("yaml")
 	cfg, err := New(v)
-	assert.NoError(t, err)
+	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	return cfg, v
 }
 
