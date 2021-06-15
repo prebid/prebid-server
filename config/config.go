@@ -193,7 +193,7 @@ type Privacy struct {
 type GDPR struct {
 	Enabled                 bool         `mapstructure:"enabled"`
 	HostVendorID            int          `mapstructure:"host_vendor_id"`
-	UsersyncIfAmbiguous     bool         `mapstructure:"usersync_if_ambiguous"`
+	DefaultValue            string       `mapstructure:"default_value"`
 	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
 	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
 	NonStandardPublisherMap map[string]struct{}
@@ -202,12 +202,15 @@ type GDPR struct {
 	// EEACountries (EEA = European Economic Area) are a list of countries where we should assume GDPR applies.
 	// If the gdpr flag is unset in a request, but geo.country is set, we will assume GDPR applies if and only
 	// if the country matches one on this list. If both the GDPR flag and country are not set, we default
-	// to UsersyncIfAmbiguous
+	// to DefaultValue
 	EEACountries    []string `mapstructure:"eea_countries"`
 	EEACountriesMap map[string]struct{}
 }
 
 func (cfg *GDPR) validate(errs []error) []error {
+	if cfg.DefaultValue != "0" && cfg.DefaultValue != "1" {
+		errs = append(errs, fmt.Errorf("gdpr.default_value must be 0 or 1"))
+	}
 	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
 		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
 	}
@@ -937,7 +940,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.SetDefault("gdpr.enabled", true)
 	v.SetDefault("gdpr.host_vendor_id", 0)
-	v.SetDefault("gdpr.usersync_if_ambiguous", false)
+	v.SetDefault("gdpr.default_value", "1")
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})

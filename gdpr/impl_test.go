@@ -18,8 +18,8 @@ import (
 func TestDisallowOnEmptyConsent(t *testing.T) {
 	perms := permissionsImpl{
 		cfg: config.GDPR{
-			HostVendorID:        3,
-			UsersyncIfAmbiguous: true,
+			HostVendorID: 3,
+			DefaultValue: "0",
 		},
 		vendorIDs: nil,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
@@ -190,84 +190,84 @@ func TestAllowActivities(t *testing.T) {
 		description           string
 		bidderName            openrtb_ext.BidderName
 		publisherID           string
-		userSyncIfAmbiguous   bool
+		gdprDefaultValue      string
 		gdpr                  Signal
 		consent               string
 		passID                bool
 		weakVendorEnforcement bool
 	}{
 		{
-			description:         "Allow PI - Non standard publisher",
-			bidderName:          bidderBlockedByConsent,
-			publisherID:         "appNexusAppID",
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalYes,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              true,
+			description:      "Allow PI - Non standard publisher",
+			bidderName:       bidderBlockedByConsent,
+			publisherID:      "appNexusAppID",
+			gdprDefaultValue: "1",
+			gdpr:             SignalYes,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           true,
 		},
 		{
-			description:         "Allow PI - known vendor with No GDPR",
-			bidderName:          bidderBlockedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalNo,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              true,
+			description:      "Allow PI - known vendor with No GDPR",
+			bidderName:       bidderBlockedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalNo,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           true,
 		},
 		{
-			description:         "Allow PI - known vendor with Yes GDPR",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalYes,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              true,
+			description:      "Allow PI - known vendor with Yes GDPR",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalYes,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           true,
 		},
 		{
-			description:         "PI allowed according to host setting UserSyncIfAmbiguous true - known vendor with ambiguous GDPR and empty consent",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: true,
-			gdpr:                SignalAmbiguous,
-			consent:             "",
-			passID:              true,
+			description:      "PI allowed according to host setting gdprDefaultValue 0 - known vendor with ambiguous GDPR and empty consent",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "0",
+			gdpr:             SignalAmbiguous,
+			consent:          "",
+			passID:           true,
 		},
 		{
-			description:         "PI allowed according to host setting UserSyncIfAmbiguous true - known vendor with ambiguous GDPR and non-empty consent",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: true,
-			gdpr:                SignalAmbiguous,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              true,
+			description:      "PI allowed according to host setting gdprDefaultValue 0 - known vendor with ambiguous GDPR and non-empty consent",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "0",
+			gdpr:             SignalAmbiguous,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           true,
 		},
 		{
-			description:         "PI allowed according to host setting UserSyncIfAmbiguous false - known vendor with ambiguous GDPR and empty consent",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalAmbiguous,
-			consent:             "",
-			passID:              false,
+			description:      "PI allowed according to host setting gdprDefaultValue 1 - known vendor with ambiguous GDPR and empty consent",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalAmbiguous,
+			consent:          "",
+			passID:           false,
 		},
 		{
-			description:         "PI allowed according to host setting UserSyncIfAmbiguous false - known vendor with ambiguous GDPR and non-empty consent",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalAmbiguous,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              true,
+			description:      "PI allowed according to host setting gdprDefaultValue 1 - known vendor with ambiguous GDPR and non-empty consent",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalAmbiguous,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           true,
 		},
 		{
-			description:         "Don't allow PI - known vendor with Yes GDPR and empty consent",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalYes,
-			consent:             "",
-			passID:              false,
+			description:      "Don't allow PI - known vendor with Yes GDPR and empty consent",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalYes,
+			consent:          "",
+			passID:           false,
 		},
 		{
-			description:         "Don't allow PI - default vendor with Yes GDPR and non-empty consent",
-			bidderName:          bidderBlockedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalYes,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              false,
+			description:      "Don't allow PI - default vendor with Yes GDPR and non-empty consent",
+			bidderName:       bidderBlockedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalYes,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           false,
 		},
 	}
 	vendorListData := MarshalVendorList(vendorList{
@@ -302,7 +302,7 @@ func TestAllowActivities(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		perms.cfg.UsersyncIfAmbiguous = tt.userSyncIfAmbiguous
+		perms.cfg.DefaultValue = tt.gdprDefaultValue
 
 		_, _, passID, err := perms.AuctionActivitiesAllowed(context.Background(), tt.bidderName, tt.publisherID, tt.gdpr, tt.consent, tt.weakVendorEnforcement)
 
@@ -669,53 +669,53 @@ func assertStringsEqual(t *testing.T, expected string, actual string) {
 
 func TestNormalizeGDPR(t *testing.T) {
 	tests := []struct {
-		description         string
-		userSyncIfAmbiguous bool
-		giveSignal          Signal
-		wantSignal          Signal
+		description      string
+		gdprDefaultValue string
+		giveSignal       Signal
+		wantSignal       Signal
 	}{
 		{
-			description:         "Don't normalize - Signal No and userSyncIfAmbiguous false",
-			userSyncIfAmbiguous: false,
-			giveSignal:          SignalNo,
-			wantSignal:          SignalNo,
+			description:      "Don't normalize - Signal No and gdprDefaultValue 1",
+			gdprDefaultValue: "1",
+			giveSignal:       SignalNo,
+			wantSignal:       SignalNo,
 		},
 		{
-			description:         "Don't normalize - Signal No and userSyncIfAmbiguous true",
-			userSyncIfAmbiguous: true,
-			giveSignal:          SignalNo,
-			wantSignal:          SignalNo,
+			description:      "Don't normalize - Signal No and gdprDefaultValue 0",
+			gdprDefaultValue: "0",
+			giveSignal:       SignalNo,
+			wantSignal:       SignalNo,
 		},
 		{
-			description:         "Don't normalize - Signal Yes and userSyncIfAmbiguous false",
-			userSyncIfAmbiguous: false,
-			giveSignal:          SignalYes,
-			wantSignal:          SignalYes,
+			description:      "Don't normalize - Signal Yes and gdprDefaultValue 1",
+			gdprDefaultValue: "1",
+			giveSignal:       SignalYes,
+			wantSignal:       SignalYes,
 		},
 		{
-			description:         "Don't normalize - Signal Yes and userSyncIfAmbiguous true",
-			userSyncIfAmbiguous: true,
-			giveSignal:          SignalYes,
-			wantSignal:          SignalYes,
+			description:      "Don't normalize - Signal Yes and gdprDefaultValue 0",
+			gdprDefaultValue: "0",
+			giveSignal:       SignalYes,
+			wantSignal:       SignalYes,
 		},
 		{
-			description:         "Normalize - Signal Ambiguous and userSyncIfAmbiguous false",
-			userSyncIfAmbiguous: false,
-			giveSignal:          SignalAmbiguous,
-			wantSignal:          SignalYes,
+			description:      "Normalize - Signal Ambiguous and gdprDefaultValue 1",
+			gdprDefaultValue: "1",
+			giveSignal:       SignalAmbiguous,
+			wantSignal:       SignalYes,
 		},
 		{
-			description:         "Normalize - Signal Ambiguous and userSyncIfAmbiguous true",
-			userSyncIfAmbiguous: true,
-			giveSignal:          SignalAmbiguous,
-			wantSignal:          SignalNo,
+			description:      "Normalize - Signal Ambiguous and gdprDefaultValue 0",
+			gdprDefaultValue: "0",
+			giveSignal:       SignalAmbiguous,
+			wantSignal:       SignalNo,
 		},
 	}
 
 	for _, tt := range tests {
 		perms := permissionsImpl{
 			cfg: config.GDPR{
-				UsersyncIfAmbiguous: tt.userSyncIfAmbiguous,
+				DefaultValue: tt.gdprDefaultValue,
 			},
 		}
 

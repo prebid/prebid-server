@@ -57,7 +57,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	requestExt *openrtb_ext.ExtRequest,
 	gDPR gdpr.Permissions,
 	metricsEngine metrics.MetricsEngine,
-	usersyncIfAmbiguous bool,
+	gdprDefaultValue string,
 	privacyConfig config.Privacy,
 	account *config.Account) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
@@ -87,7 +87,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	if err != nil {
 		errs = append(errs, err)
 	}
-	gdprEnforced := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && !usersyncIfAmbiguous)
+	gdprEnforced := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == "1")
 
 	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &req.Account, aliases, integrationTypeMap[req.LegacyLabels.RType])
 	if err != nil {

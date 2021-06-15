@@ -148,7 +148,7 @@ func TestDefaults(t *testing.T) {
 var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
-  usersync_if_ambiguous: true
+  default_value: "0"
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
 ccpa:
   enforce: true
@@ -352,7 +352,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.max_idle_connections_per_host", cfg.CacheClient.MaxIdleConnsPerHost, 2)
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
-	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
+	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "0")
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[0], "siteID")
@@ -460,6 +460,9 @@ func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
+		GDPR: GDPR{
+			DefaultValue: "1",
+		},
 		StoredRequests: StoredRequests{
 			Files: FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{
@@ -648,6 +651,12 @@ func TestInvalidAMPException(t *testing.T) {
 	cfg := newDefaultConfig(t)
 	cfg.GDPR.AMPException = true
 	assertOneError(t, cfg.validate(), "gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)")
+}
+
+func TestInvalidGDPRDefaultValue(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.GDPR.DefaultValue = "2"
+	assertOneError(t, cfg.validate(), "gdpr.default_value must be 0 or 1")
 }
 
 func TestNegativeCurrencyConverterFetchInterval(t *testing.T) {

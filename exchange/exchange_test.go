@@ -2004,6 +2004,13 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		eeac[c] = s
 	}
 
+	var gdprDefaultValue string
+	if spec.AssumeGDPRApplies {
+		gdprDefaultValue = "1"
+	} else {
+		gdprDefaultValue = "0"
+	}
+
 	privacyConfig := config.Privacy{
 		CCPA: config.CCPA{
 			Enforce: spec.EnforceCCPA,
@@ -2012,9 +2019,9 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			Enforce: spec.EnforceLMT,
 		},
 		GDPR: config.GDPR{
-			Enabled:             spec.GDPREnabled,
-			UsersyncIfAmbiguous: !spec.AssumeGDPRApplies,
-			EEACountriesMap:     eeac,
+			Enabled:         spec.GDPREnabled,
+			DefaultValue:    gdprDefaultValue,
+			EEACountriesMap: eeac,
 		},
 	}
 	bidIdGenerator := &mockBidIDGenerator{}
@@ -2156,18 +2163,18 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 	}
 
 	return &exchange{
-		adapterMap:          bidderAdapters,
-		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames()),
-		cache:               &wellBehavedCache{},
-		cacheTime:           0,
-		gDPR:                &permissionsMock{allowAllBidders: true},
-		currencyConverter:   currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
-		UsersyncIfAmbiguous: privacyConfig.GDPR.UsersyncIfAmbiguous,
-		privacyConfig:       privacyConfig,
-		categoriesFetcher:   categoriesFetcher,
-		bidderInfo:          bidderInfos,
-		externalURL:         "http://localhost",
-		bidIDGenerator:      bidIDGenerator,
+		adapterMap:        bidderAdapters,
+		me:                metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames()),
+		cache:             &wellBehavedCache{},
+		cacheTime:         0,
+		gDPR:              &permissionsMock{allowAllBidders: true},
+		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		gdprDefaultValue:  privacyConfig.GDPR.DefaultValue,
+		privacyConfig:     privacyConfig,
+		categoriesFetcher: categoriesFetcher,
+		bidderInfo:        bidderInfos,
+		externalURL:       "http://localhost",
+		bidIDGenerator:    bidIDGenerator,
 	}
 }
 
