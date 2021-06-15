@@ -3065,22 +3065,77 @@ var testFinalRequests = []string{
 		"id": "ThisID",
 		"imp": [
 			{
-				"id": "adUnit1",
-				"ext": {
-					"appnexus": {
-						"placementId": "abc",
-						"position": "above",
-						"reserve": 0.35
+				"ext":{
+					"appnexus":{
+						"placementId":"abc",
+						"position":"above",
+						"reserve":0.35
 					},
-					"rubicon": {
-						"accountId": "abc"
-					},
-					"prebid": {
-						"storedrequest": {
-							"id": "1"
+					"prebid":{
+						"storedrequest":{
+							"id":"1"
+						},
+					"storedrequestattributes":{
+						"id":"adUnit1",
+						"ext":{
+							"appnexus":{
+								"placementId":"abc",
+								"position":"above",
+								"reserve":0.35
+							},
+							"rubicon":{
+								"accountId":"abc"
+							}
 						}
 					}
+				},
+				"rubicon":{
+					"accountId":"abc"
 				}
+			},
+			"id":"adUnit1"
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+			}
+		}
+}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"ext":{
+					"appnexus":{
+						"placementId":"def",
+						"position":"above",
+						"trafficSourceCode":"mysite.com"
+					},
+					"prebid":{
+						"storedrequest":{
+							"id":"1"
+						},
+						"storedrequestattributes":{
+							"id":"adUnit1",
+							"ext":{
+								"appnexus":{
+									"placementId":"abc",
+									"position":"above",
+									"reserve":0.35
+								},
+								"rubicon":{
+									"accountId":"abc"
+								}
+							}
+						}
+					}
+				},
+				"id":"adUnit2"
 			}
 		],
 		"ext": {
@@ -3094,101 +3149,101 @@ var testFinalRequests = []string{
 		}
 	}`,
 	`{
-		"id": "ThisID",
-		"imp": [
-			{
-				"id": "adUnit2",
-				"ext": {
-					"prebid": {
-						"storedrequest": {
-							"id": "1"
-						}
-					},
-					"appnexus": {
-						"placementId": "def",
-						"position": "above",
-						"trafficSourceCode": "mysite.com"
-					}
-				}
-			}
-		],
-		"ext": {
-			"prebid": {
-				"cache": {
-					"markup": 1
-				},
-				"targeting": {
-				}
-			}
-		}
-	}`,
-	`{
-		"id": "ThisID",
-		"imp": [
-			{
-				"id": "adUnit1",
-				"ext": {
-					"appnexus": {
-						"placementId": "abc",
-						"position": "above",
-						"reserve": 0.35
-					},
-					"rubicon": {
-						"accountId": "abc"
-					},
-					"prebid": {
-						"storedrequest": {
-							"id": "1"
-						}
-					}
-				}
-			}
-		],
-		"tmax": 500,
-		"ext": {
-			"prebid": {
-				"targeting": {
-					"pricegranularity": "low"
-				},
-				"storedrequest": {
-					"id": "2"
-				}
-			}
-		}
-	}`,
+  		"ext": {
+  		  "prebid": {
+  		    "storedrequest": {
+  		      "id": "2"
+  		    },
+  		    "targeting": {
+  		      "pricegranularity": "low"
+  		    }
+  		  }
+  		},
+  		"id": "ThisID",
+  		"imp": [
+  		  {
+  		    "ext": {
+  		      "appnexus": {
+  		        "placementId": "abc",
+  		        "position": "above",
+  		        "reserve": 0.35
+  		      },
+  		      "prebid": {
+  		        "storedrequest": {
+  		          "id": "1"
+  		        },
+  		        "storedrequestattributes": {
+  		          "id": "adUnit1",
+  		          "ext": {
+  		            "appnexus": {
+  		              "placementId": "abc",
+  		              "position": "above",
+  		              "reserve": 0.35
+  		            },
+  		            "rubicon": {
+  		              "accountId": "abc"
+  		            }
+  		          }
+  		        }
+  		      },
+  		      "rubicon": {
+  		        "accountId": "abc"
+  		      }
+  		    },
+  		    "id": "adUnit1"
+  		  }
+  		],
+  		"tmax": 500
+	}
+`,
 	`{
 	"id": "ThisID",
 	"imp": [
 		{
-			"id": "some-static-imp",
-			"video":{
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": {
-					"placementId": "abc",
-					"position": "below"
-				}
-			}
-		},
-		{
-			"id": "adUnit1",
-			"ext": {
-				"appnexus": {
-					"placementId": "abc",
-					"position": "above",
-					"reserve": 0.35
-				},
-				"rubicon": {
-					"accountId": "abc"
-				},
-				"prebid": {
-					"storedrequest": {
-						"id": "1"
-					}
-				}
-			}
-		}
+    		"id": "some-static-imp",
+    		"video": {
+    		  "mimes": [
+    		    "video/mp4"
+    		  ]
+    		},
+    		"ext": {
+    		  "appnexus": {
+    		    "placementId": "abc",
+    		    "position": "below"
+    		  }
+    		}
+  		},
+  		{
+  		  "ext": {
+  		    "appnexus": {
+  		      "placementId": "abc",
+  		      "position": "above",
+  		      "reserve": 0.35
+  		    },
+  		    "prebid": {
+  		      "storedrequest": {
+  		        "id": "1"
+  		      },
+  		      "storedrequestattributes": {
+  		        "id": "adUnit1",
+  		        "ext": {
+  		          "appnexus": {
+  		            "placementId": "abc",
+  		            "position": "above",
+  		            "reserve": 0.35
+  		          },
+  		          "rubicon": {
+  		            "accountId": "abc"
+  		          }
+  		        }
+  		      }
+  		    },
+  		    "rubicon": {
+  		      "accountId": "abc"
+  		    }
+  		  },
+  		  "id": "adUnit1"
+  		}
 	],
 	"ext": {
 		"prebid": {

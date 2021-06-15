@@ -14,8 +14,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/util/jsonutil"
 
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
@@ -32,6 +34,7 @@ import (
 type ContextKey string
 
 const DebugContextKey = ContextKey("debugInfo")
+const StoredRequestAttributes = "storedrequestattributes"
 
 type extCacheInstructions struct {
 	cacheBids, cacheVAST, returnCreative bool
@@ -452,7 +455,17 @@ func (e *exchange) getAllBids(
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
+
+			//map imp to stored request data if exists
+			hasStoredReq, impsToStoredReq, parseErr := parseStoredImp(bidderRequests)
+			err := make([]error, 0, 0)
+			if parseErr != nil {
+				err = append(err, parseErr)
+			}
+
+			bids, bidderErrs := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
+
+			err = append(err, bidderErrs...)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -479,6 +492,12 @@ func (e *exchange) getAllBids(
 					e.me.RecordAdapterBidReceived(bidderRequest.BidderLabels, bid.bidType, bid.bid.AdM != "")
 				}
 			}
+
+			//put stored req data back to bid.ext, map by bid.imp_id
+			if hasStoredReq {
+				insertStoredImpData(impsToStoredReq, bids)
+			}
+
 			chBids <- brw
 		}, chBids)
 		go bidderRunner(bidder, conversions)
@@ -500,6 +519,34 @@ func (e *exchange) getAllBids(
 	}
 
 	return adapterBids, adapterExtra, bidsFound
+}
+
+func parseStoredImp(requests []BidderRequest) (bool, map[string][]byte, error) {
+	impToStoredReq := make(map[string][]byte)
+	hasStoredRequest := false
+	for _, br := range requests {
+		for _, imp := range br.BidRequest.Imp {
+			impExt := imp.Ext
+			found, elem, err := jsonutil.FindElement(impExt, StoredRequestAttributes)
+			if err != nil {
+				return false, nil, nil
+			}
+			hasStoredRequest = hasStoredRequest || found
+			if found {
+				impToStoredReq[imp.ID] = elem
+			}
+		}
+	}
+	return hasStoredRequest, impToStoredReq, nil
+}
+
+func insertStoredImpData(impsToStoredRequest map[string][]byte, bids *pbsOrtbSeatBid) {
+	for _, bid := range bids.bids {
+		if val, ok := impsToStoredRequest[bid.bid.ImpID]; ok {
+			result, _ := jsonparser.Set(bid.bid.Ext, val, StoredRequestAttributes)
+			bid.bid.Ext = result
+		}
+	}
 }
 
 func (e *exchange) recoverSafely(bidderRequests []BidderRequest,

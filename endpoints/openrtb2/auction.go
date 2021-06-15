@@ -1379,6 +1379,8 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// assume that the request.imp data did not change when applying the Stored BidRequest.
 	for i := 0; i < len(impIds); i++ {
 		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
+		//writing stored imp data back to imp.ext
+		resolvedImp, err = jsonparser.Set(resolvedImp, storedImps[impIds[i]], "ext", "prebid", exchange.StoredRequestAttributes)
 		if err != nil {
 			hasErr, Err := getJsonSyntaxError(imps[idIndices[i]])
 			if hasErr {

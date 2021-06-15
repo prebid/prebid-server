@@ -3443,6 +3443,71 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 	}
 }
 
+func TestParseStoredImp(t *testing.T) {
+
+	bidderRequest := []BidderRequest{
+		{
+			BidderName: "bidder1",
+			BidRequest: &openrtb2.BidRequest{
+				ID: "b-1",
+				Imp: []openrtb2.Imp{
+					{
+						ID: "1-0",
+						Ext: json.RawMessage(`{
+                            "prebid": {
+                                "storedrequestattributes":{"h":480,"mimes":["video/mp4"]}
+                            }
+                        }`),
+					},
+					{
+						ID: "1-1",
+						Ext: json.RawMessage(`{
+                            "prebid": {
+                                "video":{"mimes":["video/mp4"]}
+                            }
+                        }`),
+					},
+				},
+			},
+		},
+	}
+
+	found, res, err := parseStoredImp(bidderRequest)
+
+	expectedData := []byte(`{"h":480,"mimes":["video/mp4"]}`)
+
+	assert.True(t, found, "Impression with stored request should be found")
+	assert.NotNil(t, res, "Impression to stored request map should not be nil")
+	assert.NotNil(t, res["1-0"], "Impression 1-0 data should exists in stored request map")
+	assert.Equal(t, res["1-0"], expectedData, "Stored request data is incorrect")
+	assert.Nil(t, res["1-1"], "Impression 1-0 data should exists in stored request map")
+	assert.NoError(t, err, "Error should ne nil")
+}
+
+func TestInsertStoredImpData(t *testing.T) {
+	impsToStoredRequest := make(map[string][]byte)
+	impsToStoredRequest["imp_idApn1_1"] = []byte(`{"h":480,"mimes":["video/mp4"]}`)
+
+	cats1 := []string{"IAB1-3"}
+	bidApn1_1 := openrtb2.Bid{ID: "bid_idApn1_1", ImpID: "imp_idApn1_1", Price: 10.0000, Cat: cats1, W: 1, H: 1, Ext: json.RawMessage(`{"prebid": {"video":{"mimes":["video/mp4"]}}`)}
+	bidApn1_2 := openrtb2.Bid{ID: "bid_idApn1_2", ImpID: "imp_idApn1_2", Price: 10.0000, Cat: cats1, W: 1, H: 1, Ext: nil}
+	bid1_Apn1_1 := pbsOrtbBid{&bidApn1_1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn1_2 := pbsOrtbBid{&bidApn1_2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	innerBidsApn1 := []*pbsOrtbBid{
+		&bid1_Apn1_1,
+		&bid1_Apn1_2,
+	}
+	bids := &pbsOrtbSeatBid{bids: innerBidsApn1}
+
+	insertStoredImpData(impsToStoredRequest, bids)
+
+	expectedData := json.RawMessage(`{"prebid": {"video":{"mimes":["video/mp4"]},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`)
+
+	assert.Len(t, bids.bids, 2, "Incorrect amount of returned bids")
+	assert.Equal(t, bids.bids[0].bid.Ext, expectedData, "Incorrect bid bid_idApn1_1 extension")
+	assert.Nil(t, bids.bids[1].bid.Ext, "Incorrect bid bid_idApn1_2 extension")
+}
+
 type exchangeSpec struct {
 	GDPREnabled       bool                   `json:"gdpr_enabled"`
 	IncomingRequest   exchangeRequest        `json:"incomingRequest"`

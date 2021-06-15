@@ -7,8 +7,10 @@ import (
 )
 
 var comma = []byte(",")[0]
+var colon = []byte(":")[0]
 
-func DropElement(extension []byte, elementName string) ([]byte, error) {
+func findElementIndexes(extension []byte, elementName string) (bool, int64, int64, error) {
+	found := false
 	buf := bytes.NewBuffer(extension)
 	dec := json.NewDecoder(buf)
 	var startIndex int64
@@ -20,14 +22,15 @@ func DropElement(extension []byte, elementName string) ([]byte, error) {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return false, -1, -1, err
 		}
 
 		if token == elementName {
 			err := dec.Decode(&i)
 			if err != nil {
-				return nil, err
+				return false, -1, -1, err
 			}
+			found = true
 			endIndex := dec.InputOffset()
 
 			if dec.More() {
@@ -45,13 +48,43 @@ func DropElement(extension []byte, elementName string) ([]byte, error) {
 					endIndex++
 				}
 			}
-
-			extension = append(extension[:startIndex], extension[endIndex:]...)
-			break
+			return found, startIndex, endIndex, nil
 		} else {
 			startIndex = dec.InputOffset()
 		}
 
 	}
-	return extension, nil
+
+	return false, -1, -1, nil
+}
+
+func DropElement(extension []byte, elementName string) ([]byte, error) {
+	found, startIndex, endIndex, err := findElementIndexes(extension, elementName)
+	if found {
+		extension = append(extension[:startIndex], extension[endIndex:]...)
+	}
+	return extension, err
+}
+
+func FindElement(extension []byte, elementName string) (bool, []byte, error) {
+
+	found, startIndex, endIndex, err := findElementIndexes(extension, elementName)
+
+	if found && err == nil {
+		element := extension[startIndex:endIndex]
+		index := 0
+		for {
+			if index < len(element) && element[index] != colon {
+				index++
+			} else {
+				index++
+				break
+			}
+		}
+		element = element[index:]
+		return found, element, err
+	}
+
+	return found, nil, err
+
 }
