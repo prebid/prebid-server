@@ -2162,6 +2162,11 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		t.Fatalf("Failed to create a category Fetcher: %v", error)
 	}
 
+	gdprDefaultValue := gdpr.SignalYes
+	if privacyConfig.GDPR.DefaultValue == "0" {
+		gdprDefaultValue = gdpr.SignalNo
+	}
+
 	return &exchange{
 		adapterMap:        bidderAdapters,
 		me:                metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames()),
@@ -2169,7 +2174,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		cacheTime:         0,
 		gDPR:              &permissionsMock{allowAllBidders: true},
 		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
-		gdprDefaultValue:  privacyConfig.GDPR.DefaultValue,
+		gdprDefaultValue:  gdprDefaultValue,
 		privacyConfig:     privacyConfig,
 		categoriesFetcher: categoriesFetcher,
 		bidderInfo:        bidderInfos,

@@ -39,9 +39,15 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 		return &AlwaysAllow{}
 	}
 
+	gdprDefaultValue := SignalYes
+	if cfg.DefaultValue == "0" {
+		gdprDefaultValue = SignalNo
+	}
+
 	permissionsImpl := &permissionsImpl{
-		cfg:       cfg,
-		vendorIDs: vendorIDs,
+		cfg:              cfg,
+		gdprDefaultValue: gdprDefaultValue,
+		vendorIDs:        vendorIDs,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
 			tcf2SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker)},
 	}

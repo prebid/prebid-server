@@ -28,9 +28,10 @@ const (
 )
 
 type permissionsImpl struct {
-	cfg             config.GDPR
-	vendorIDs       map[openrtb_ext.BidderName]uint16
-	fetchVendorList map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
+	cfg              config.GDPR
+	gdprDefaultValue Signal
+	vendorIDs        map[openrtb_ext.BidderName]uint16
+	fetchVendorList  map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
 }
 
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
@@ -94,7 +95,7 @@ func (p *permissionsImpl) normalizeGDPR(gdprSignal Signal) Signal {
 		return gdprSignal
 	}
 
-	if p.cfg.DefaultValue == "0" {
+	if p.gdprDefaultValue == SignalNo {
 		return SignalNo
 	}
 
