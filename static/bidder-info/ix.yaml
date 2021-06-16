@@ -14,3 +14,7 @@ capabilities:
       - video
       - native
       - audio
+userSync:
+  redirect:
+    url: "https://ssum.casalemedia.com/usermatchredir?s=194962&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    userMacro: ""

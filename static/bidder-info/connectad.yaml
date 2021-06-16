@@ -8,3 +8,7 @@ capabilities:
   site:
     mediaTypes:
     - banner
+userSync:
+  iframe:
+    url: "https://cdn.connectad.io/connectmyusers.php?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    userMacro: ""

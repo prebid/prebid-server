@@ -8,3 +8,7 @@ capabilities:
   site:
     mediaTypes:
     - banner
+userSync:
+  redirect:
+    url: "https://e.serverbid.com/udb/9969/match?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: ""

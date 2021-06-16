@@ -6,3 +6,7 @@ capabilities:
     mediaTypes:
     - banner
     - video
+userSync:
+  iframe:
+    url: "https://rtb.gumgum.com/usync/prbds2s?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
+    userMacro: ""
