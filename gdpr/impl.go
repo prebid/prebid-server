@@ -107,7 +107,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 		return false, nil
 	}
 
-	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent, false)
+	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
 		return false, err
 	}
@@ -128,7 +128,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 }
 
 func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
-	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent, weakVendorEnforcement)
+	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
 		return false, false, false, err
 	}
@@ -198,7 +198,7 @@ func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.
 	return purposeAllowed || legitInterest
 }
 
-func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string, weakVendorEnforcement bool) (parsedConsent api.VendorConsents, vendor api.Vendor, err error) {
+func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string) (parsedConsent api.VendorConsents, vendor api.Vendor, err error) {
 	parsedConsent, err = vendorconsent.ParseString(consent)
 	if err != nil {
 		err = &ErrorMalformedConsent{
