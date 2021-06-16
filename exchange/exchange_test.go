@@ -3443,46 +3443,6 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 	}
 }
 
-func TestParseStoredImp(t *testing.T) {
-
-	bidderRequest := BidderRequest{
-
-		BidderName: "bidder1",
-		BidRequest: &openrtb2.BidRequest{
-			ID: "b-1",
-			Imp: []openrtb2.Imp{
-				{
-					ID: "1-0",
-					Ext: json.RawMessage(`{
-                            "prebid": {
-                                "storedrequestattributes":{"h":480,"mimes":["video/mp4"]}
-                            }
-                        }`),
-				},
-				{
-					ID: "1-1",
-					Ext: json.RawMessage(`{
-                            "prebid": {
-                                "video":{"mimes":["video/mp4"]}
-                            }
-                        }`),
-				},
-			},
-		},
-	}
-
-	found, res, err := parseStoredImp(*bidderRequest.BidRequest)
-
-	expectedData := []byte(`{"h":480,"mimes":["video/mp4"]}`)
-
-	assert.True(t, found, "Impression with stored request should be found")
-	assert.NotNil(t, res, "Impression to stored request map should not be nil")
-	assert.NotNil(t, res["1-0"], "Impression 1-0 data should exists in stored request map")
-	assert.Equal(t, res["1-0"], expectedData, "Stored request data is incorrect")
-	assert.Nil(t, res["1-1"], "Impression 1-0 data should exists in stored request map")
-	assert.NoError(t, err, "Error should ne nil")
-}
-
 func TestInsertStoredImpData(t *testing.T) {
 	impsToStoredRequest := make(map[string][]byte)
 	impsToStoredRequest["imp_idApn1_1"] = []byte(`{"h":480,"mimes":["video/mp4"]}`)

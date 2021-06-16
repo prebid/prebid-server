@@ -1021,7 +1021,7 @@ func TestStoredRequests(t *testing.T) {
 	}
 
 	for i, requestData := range testStoredRequests {
-		newRequest, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
+		newRequest, impToStoredReq, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
@@ -1035,6 +1035,12 @@ func TestStoredRequests(t *testing.T) {
 		if !jsonpatch.Equal(newRequest, expectJson) {
 			t.Errorf("Error in processStoredRequests, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(newRequest), string(expectJson))
 		}
+		expectedImp := testStoredImpIds[i]
+		expectedStoredReq := json.RawMessage(testStoredImps[i])
+		if !jsonpatch.Equal(impToStoredReq[expectedImp], expectedStoredReq) {
+			t.Errorf("Error in processStoredRequests, test %d failed on compare stored request\nFound:\n%s\nExpected:\n%s", i, string(impToStoredReq[expectedImp]), string(expectedStoredReq))
+		}
+
 	}
 }
 
@@ -3255,6 +3261,53 @@ var testFinalRequests = []string{
 		}
 	}
 }`,
+}
+
+var testStoredImpIds = []string{
+	"adUnit1", "adUnit2", "adUnit1", "some-static-imp",
+}
+
+var testStoredImps = []string{
+	`{
+						"id":"adUnit1",
+						"ext":{
+							"appnexus":{
+								"placementId":"abc",
+								"position":"above",
+								"reserve":0.35
+							},
+							"rubicon":{
+								"accountId":"abc"
+							}
+						}
+					}`,
+	`{
+							"id":"adUnit1",
+							"ext":{
+								"appnexus":{
+									"placementId":"abc",
+									"position":"above",
+									"reserve":0.35
+								},
+								"rubicon":{
+									"accountId":"abc"
+								}
+							}
+						}`,
+	`{
+  		          "id": "adUnit1",
+  		          "ext": {
+  		            "appnexus": {
+  		              "placementId": "abc",
+  		              "position": "above",
+  		              "reserve": 0.35
+  		            },
+  		            "rubicon": {
+  		              "accountId": "abc"
+  		            }
+  		          }
+  		        }`,
+	``,
 }
 
 type mockStoredReqFetcher struct {

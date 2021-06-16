@@ -15,12 +15,9 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/util/jsonutil"
-
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -29,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/stored_requests"
 )
 
 type ContextKey string
@@ -148,6 +146,7 @@ type AuctionRequest struct {
 	StartTime                  time.Time
 	Warnings                   []error
 	GlobalPrivacyControlHeader string
+	ImpToStoredReq             map[string][]byte
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -212,7 +211,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, r.ImpToStoredReq)
 
 	var auc *auction
 	var cacheErrs []error
@@ -423,7 +422,8 @@ func (e *exchange) getAllBids(
 	conversions currency.Conversions,
 	accountDebugAllowed bool,
 	globalPrivacyControlHeader string,
-	headerDebugAllowed bool) (
+	headerDebugAllowed bool,
+	impToStoredReq map[string][]byte) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -456,16 +456,7 @@ func (e *exchange) getAllBids(
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 
-			//map imp to stored request data if exists
-			hasStoredReq, impsToStoredReq, parseErr := parseStoredImp(*bidderRequest.BidRequest)
-			err := make([]error, 0, 0)
-			if parseErr != nil {
-				err = append(err, parseErr)
-			}
-
-			bids, bidderErrs := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
-
-			err = append(err, bidderErrs...)
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -494,8 +485,8 @@ func (e *exchange) getAllBids(
 			}
 
 			//put stored req data back to bid.ext, map by bid.imp_id
-			if hasStoredReq {
-				insertStoredImpData(impsToStoredReq, bids)
+			if len(impToStoredReq) != 0 {
+				insertStoredImpData(impToStoredReq, bids)
 			}
 
 			chBids <- brw
@@ -519,25 +510,6 @@ func (e *exchange) getAllBids(
 	}
 
 	return adapterBids, adapterExtra, bidsFound
-}
-
-func parseStoredImp(request openrtb2.BidRequest) (bool, map[string][]byte, error) {
-	impToStoredReq := make(map[string][]byte)
-	hasStoredRequest := false
-
-	for _, imp := range request.Imp {
-		impExt := imp.Ext
-		found, elem, err := jsonutil.FindElement(impExt, StoredRequestAttributes)
-		if err != nil {
-			return false, nil, nil
-		}
-		hasStoredRequest = hasStoredRequest || found
-		if found {
-			impToStoredReq[imp.ID] = elem
-		}
-	}
-
-	return hasStoredRequest, impToStoredReq, nil
 }
 
 func insertStoredImpData(impsToStoredRequest map[string][]byte, bids *pbsOrtbSeatBid) {
