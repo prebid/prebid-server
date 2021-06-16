@@ -225,11 +225,8 @@ func scrubUserExtIDs(userExt json.RawMessage) json.RawMessage {
 	}
 
 	_, hasEids := userExtParsed["eids"]
-	_, hasDigitrust := userExtParsed["digitrust"]
-	if hasEids || hasDigitrust {
+	if hasEids {
 		delete(userExtParsed, "eids")
-		delete(userExtParsed, "digitrust")
-
 		result, err := json.Marshal(userExtParsed)
 		if err == nil {
 			return result
