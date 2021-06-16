@@ -135,7 +135,7 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 
 	// vendor will be nil if not a valid TCF2 consent string
 	if vendor == nil {
-		if weakVendorEnforcement {
+		if weakVendorEnforcement && parsedConsent.Version() == 2 {
 			vendor = vendorTrue{}
 		} else {
 			return false, false, false, nil
@@ -247,7 +247,7 @@ func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidder openrt
 	return true, true, true, nil
 }
 
-// Mock Vendor claims everything.
+// vendorTrue claims everything.
 type vendorTrue struct{}
 
 func (v vendorTrue) Purpose(purposeID consentconstants.Purpose) bool {
