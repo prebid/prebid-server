@@ -97,13 +97,18 @@ func (me *MetricsEngineMock) RecordCookieSync(status CookieSyncStatus) {
 }
 
 // RecordSyncerRequest mock
-func (me *MetricsEngineMock) RecordSyncerRequest(key string, status SyncerStatus) {
+func (me *MetricsEngineMock) RecordSyncerRequest(key string, status SyncerCookieSyncStatus) {
 	me.Called(key, status)
 }
 
-// RecordUserIDSet mock
-func (me *MetricsEngineMock) RecordUserIDSet(userLabels UserLabels) {
-	me.Called(userLabels)
+// RecordSetUid mock
+func (me *MetricsEngineMock) RecordSetUid(status SetUidStatus) {
+	me.Called(status)
+}
+
+// RecordSyncerSet mock
+func (me *MetricsEngineMock) RecordSyncerSet(key string, status SyncerSetUidStatus) {
+	me.Called(key, status)
 }
 
 // RecordStoredReqCacheResult mock

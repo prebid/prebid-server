@@ -181,6 +181,27 @@ func (me *MultiMetricsEngine) RecordCookieSync(status metrics.CookieSyncStatus) 
 	}
 }
 
+// RecordSyncerRequest across all engines
+func (me *MultiMetricsEngine) RecordSyncerRequest(key string, status metrics.SyncerCookieSyncStatus) {
+	for _, thisME := range *me {
+		thisME.RecordSyncerRequest(key, status)
+	}
+}
+
+// RecordSetUid across all engines
+func (me *MultiMetricsEngine) RecordSetUid(status metrics.SetUidStatus) {
+	for _, thisME := range *me {
+		thisME.RecordSetUid(status)
+	}
+}
+
+// RecordSyncerSet across all engines
+func (me *MultiMetricsEngine) RecordSyncerSet(key string, status metrics.SyncerSetUidStatus) {
+	for _, thisME := range *me {
+		thisME.RecordSyncerSet(key, status)
+	}
+}
+
 // RecordStoredReqCacheResult across all engines
 func (me *MultiMetricsEngine) RecordStoredReqCacheResult(cacheResult metrics.CacheResult, inc int) {
 	for _, thisME := range *me {
@@ -199,20 +220,6 @@ func (me *MultiMetricsEngine) RecordStoredImpCacheResult(cacheResult metrics.Cac
 func (me *MultiMetricsEngine) RecordAccountCacheResult(cacheResult metrics.CacheResult, inc int) {
 	for _, thisME := range *me {
 		thisME.RecordAccountCacheResult(cacheResult, inc)
-	}
-}
-
-// RecordSyncerRequest across all engines
-func (me *MultiMetricsEngine) RecordSyncerRequest(key string, status metrics.SyncerStatus) {
-	for _, thisME := range *me {
-		thisME.RecordSyncerRequest(key, status)
-	}
-}
-
-// RecordUserIDSet across all engines
-func (me *MultiMetricsEngine) RecordUserIDSet(userLabels metrics.UserLabels) {
-	for _, thisME := range *me {
-		thisME.RecordUserIDSet(userLabels)
 	}
 }
 
@@ -322,12 +329,16 @@ func (me *DummyMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, le
 func (me *DummyMetricsEngine) RecordCookieSync(status metrics.CookieSyncStatus) {
 }
 
-// RecordSyncerCRecordSyncerRequestookieSync as a noop
-func (me *DummyMetricsEngine) RecordSyncerRequest(key string, status metrics.SyncerStatus) {
+// RecordSyncerRequest as a noop
+func (me *DummyMetricsEngine) RecordSyncerRequest(key string, status metrics.SyncerCookieSyncStatus) {
 }
 
-// RecordUserIDSet as a noop
-func (me *DummyMetricsEngine) RecordUserIDSet(userLabels metrics.UserLabels) {
+// RecordSetUid as a noop
+func (me *DummyMetricsEngine) RecordSetUid(status metrics.SetUidStatus) {
+}
+
+// RecordSyncerSet as a noop
+func (me *DummyMetricsEngine) RecordSyncerSet(key string, status metrics.SyncerSetUidStatus) {
 }
 
 // RecordStoredReqCacheResult as a noop

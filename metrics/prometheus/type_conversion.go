@@ -7,15 +7,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func actionsAsString() []string {
-	values := metrics.RequestActions()
-	valuesAsString := make([]string, len(values))
-	for i, v := range values {
-		valuesAsString[i] = string(v)
-	}
-	return valuesAsString
-}
-
 func adaptersAsString() []string {
 	values := openrtb_ext.CoreBidderNames()
 	valuesAsString := make([]string, len(values))
@@ -41,6 +32,15 @@ func boolValuesAsString() []string {
 	}
 }
 
+func cacheResultsAsString() []string {
+	values := metrics.CacheResults()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
+
 func cookieTypesAsString() []string {
 	values := metrics.CookieTypes()
 	valuesAsString := make([]string, len(values))
@@ -59,24 +59,6 @@ func cookieSyncStatusesAsString() []string {
 	return valuesAsString
 }
 
-func syncerStatusesAsString() []string {
-	values := metrics.SyncerStatuses()
-	valuesAsString := make([]string, len(values))
-	for i, v := range values {
-		valuesAsString[i] = string(v)
-	}
-	return valuesAsString
-}
-
-func cacheResultsAsString() []string {
-	values := metrics.CacheResults()
-	valuesAsString := make([]string, len(values))
-	for i, v := range values {
-		valuesAsString[i] = string(v)
-	}
-	return valuesAsString
-}
-
 func requestStatusesAsString() []string {
 	values := metrics.RequestStatuses()
 	valuesAsString := make([]string, len(values))
@@ -86,8 +68,35 @@ func requestStatusesAsString() []string {
 	return valuesAsString
 }
 
+func syncerRequestStatusesAsString() []string {
+	values := metrics.SyncerRequestStatuses()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
+
+func syncerSetStatusesAsString() []string {
+	values := metrics.SyncerSetUidStatuses()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
+
 func requestTypesAsString() []string {
 	values := metrics.RequestTypes()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
+
+func setUidStatusesAsString() []string {
+	values := metrics.SetUidStatuses()
 	valuesAsString := make([]string, len(values))
 	for i, v := range values {
 		valuesAsString[i] = string(v)

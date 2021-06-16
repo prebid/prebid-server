@@ -14,7 +14,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
 )
@@ -41,9 +40,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 		pc := usersync.ParseCookieFromRequest(r, &cfg)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
-			metricsEngine.RecordUserIDSet(metrics.UserLabels{
-				Action: metrics.RequestActionOptOut,
-			})
+			metricsEngine.RecordSetUid(metrics.SetUidOptOut)
 			so.Status = http.StatusUnauthorized
 			return
 		}
@@ -54,21 +51,30 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
-			metricsEngine.RecordUserIDSet(metrics.UserLabels{
-				Action: metrics.RequestActionErr,
-			})
+			metricsEngine.RecordSetUid(metrics.SetUidSyncerUnknown)
 			so.Status = http.StatusBadRequest
 			return
 		}
 		so.Bidder = syncerKey
 
+		responseFormat, err := getResponseFormat(query, syncers[syncerKey])
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			so.Status = http.StatusBadRequest
+			return
+		}
+
 		if shouldReturn, status, body := preventSyncsGDPR(query.Get("gdpr"), query.Get("gdpr_consent"), perms); shouldReturn {
 			w.WriteHeader(status)
 			w.Write([]byte(body))
-			metricsEngine.RecordUserIDSet(metrics.UserLabels{
-				Action: metrics.RequestActionGDPR,
-				Bidder: openrtb_ext.BidderName(syncerKey),
-			})
+			switch status {
+			case http.StatusBadRequest:
+				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			case http.StatusUnavailableForLegalReasons:
+				metricsEngine.RecordSetUid(metrics.SetUidGDPRHostCookieBlocked)
+			}
 			so.Status = status
 			return
 		}
@@ -78,32 +84,19 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 
 		if uid == "" {
 			pc.Unsync(syncerKey)
-		} else {
-			err = pc.TrySync(syncerKey, uid)
-		}
-
-		if err == nil {
-			labels := metrics.UserLabels{
-				Action: metrics.RequestActionSet,
-				Bidder: openrtb_ext.BidderName(syncerKey),
-			}
-			metricsEngine.RecordUserIDSet(labels)
+			metricsEngine.RecordSetUid(metrics.SetUidOK)
+			metricsEngine.RecordSyncerSet(syncerKey, metrics.SyncerSetUidCleared)
 			so.Success = true
+		} else {
+			if err = pc.TrySync(syncerKey, uid); err == nil {
+				metricsEngine.RecordSetUid(metrics.SetUidOK)
+				metricsEngine.RecordSyncerSet(syncerKey, metrics.SyncerSetUidOK)
+				so.Success = true
+			}
 		}
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 		pc.SetCookieOnResponse(w, setSiteCookie, &cfg, cookieTTL)
-
-		responseFormat, err := getResponseFormat(query, syncers[syncerKey])
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			metricsEngine.RecordUserIDSet(metrics.UserLabels{
-				Action: metrics.RequestActionErr,
-			})
-			so.Status = http.StatusBadRequest
-			return
-		}
 
 		switch responseFormat {
 		case "i":

@@ -217,7 +217,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 			syncers:               []string{"pubmatic"},
 			existingSyncs:         nil,
 			gdprAllowsHostCookies: true,
-			expectedSyncs:         map[string]string{"pubmatic": "123"},
+			expectedSyncs:         nil,
 			expectedStatusCode:    http.StatusBadRequest,
 			expectedBody:          `"f" query param is invalid. must be "b" or "i"`,
 			description:           "Set uid for valid bidder with invalid format",
@@ -259,72 +259,98 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 	cookieWithOptOut.SetOptOut(true)
 
 	testCases := []struct {
+		description           string
 		uri                   string
 		cookies               []*usersync.Cookie
 		syncers               []string
 		gdprAllowsHostCookies bool
-		expectedMetricAction  metrics.RequestAction
-		expectedMetricBidder  openrtb_ext.BidderName
 		expectedResponseCode  int
-		description           string
+		expectedMetrics       func(*metrics.MetricsEngineMock)
 	}{
 		{
+			description:           "Success - Sync",
 			uri:                   "/setuid?bidder=pubmatic&uid=123",
 			cookies:               []*usersync.Cookie{},
 			syncers:               []string{"pubmatic"},
 			gdprAllowsHostCookies: true,
-			expectedMetricAction:  metrics.RequestActionSet,
-			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
 			expectedResponseCode:  200,
-			description:           "Success - Sync",
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidOK).Once()
+				m.On("RecordSyncerSet", "pubmatic", metrics.SyncerSetUidOK).Once()
+			},
 		},
 		{
+			description:           "Success - Unsync",
 			uri:                   "/setuid?bidder=pubmatic&uid=",
 			cookies:               []*usersync.Cookie{},
 			syncers:               []string{"pubmatic"},
 			gdprAllowsHostCookies: true,
-			expectedMetricAction:  metrics.RequestActionSet,
-			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
 			expectedResponseCode:  200,
-			description:           "Success - Unsync",
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidOK).Once()
+				m.On("RecordSyncerSet", "pubmatic", metrics.SyncerSetUidCleared).Once()
+			},
 		},
 		{
+			description:           "Cookie Opted Out",
 			uri:                   "/setuid?bidder=pubmatic&uid=123",
 			cookies:               []*usersync.Cookie{cookieWithOptOut},
 			syncers:               []string{"pubmatic"},
 			gdprAllowsHostCookies: true,
-			expectedMetricAction:  metrics.RequestActionOptOut,
 			expectedResponseCode:  401,
-			description:           "Cookie Opted Out",
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidOptOut).Once()
+			},
 		},
 		{
+			description:           "Unknown Syncer Key",
 			uri:                   "/setuid?bidder=pubmatic&uid=123",
 			cookies:               []*usersync.Cookie{},
 			syncers:               []string{},
 			gdprAllowsHostCookies: true,
-			expectedMetricAction:  metrics.RequestActionErr,
 			expectedResponseCode:  400,
-			description:           "Unsupported Cookie Name",
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidSyncerUnknown).Once()
+			},
 		},
 		{
+			description:           "Unknown Format",
+			uri:                   "/setuid?bidder=pubmatic&uid=123&f=z",
+			cookies:               []*usersync.Cookie{},
+			syncers:               []string{"pubmatic"},
+			gdprAllowsHostCookies: true,
+			expectedResponseCode:  400,
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
+			},
+		},
+		{
+			description:           "Prevented By GDPR - Invalid Consent String",
 			uri:                   "/setuid?bidder=pubmatic&uid=123&gdpr=1",
 			cookies:               []*usersync.Cookie{},
 			syncers:               []string{"pubmatic"},
-			gdprAllowsHostCookies: false,
-			expectedMetricAction:  metrics.RequestActionGDPR,
-			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
+			gdprAllowsHostCookies: true,
 			expectedResponseCode:  400,
-			description:           "Prevented By GDPR",
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
+			},
+		},
+		{
+			description:           "Prevented By GDPR - Permission Denied By Consent String",
+			uri:                   "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=any",
+			cookies:               []*usersync.Cookie{},
+			syncers:               []string{"pubmatic"},
+			gdprAllowsHostCookies: false,
+			expectedResponseCode:  451,
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidGDPRHostCookieBlocked).Once()
+			},
 		},
 	}
 
 	for _, test := range testCases {
 		metricsEngine := &metrics.MetricsEngineMock{}
-		expectedLabels := metrics.UserLabels{
-			Action: test.expectedMetricAction,
-			Bidder: test.expectedMetricBidder,
-		}
-		metricsEngine.On("RecordUserIDSet", expectedLabels).Once()
+		test.expectedMetrics(metricsEngine)
 
 		req := httptest.NewRequest("GET", test.uri, nil)
 		for _, v := range test.cookies {

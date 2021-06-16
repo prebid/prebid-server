@@ -7,7 +7,7 @@ import (
 
 func preloadLabelValues(m *Metrics, syncerKeys []string) {
 	var (
-		actionValues              = actionsAsString()
+		setUidStatusValues        = setUidStatusesAsString()
 		adapterErrorValues        = adapterErrorsAsString()
 		adapterValues             = adaptersAsString()
 		bidTypeValues             = []string{markupDeliveryAdm, markupDeliveryNurl}
@@ -16,11 +16,12 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 		connectionErrorValues     = []string{connectionAcceptError, connectionCloseError}
 		cookieValues              = cookieTypesAsString()
 		cookieSyncStatusValues    = cookieSyncStatusesAsString()
-		requestStatusValues       = requestStatusesAsString()
 		requestTypeValues         = requestTypesAsString()
+		requestStatusValues       = requestStatusesAsString()
 		storedDataFetchTypeValues = storedDataFetchTypesAsString()
 		storedDataErrorValues     = storedDataErrorsAsString()
-		syncerStatusValues        = syncerStatusesAsString()
+		syncerRequestStatusValues = syncerRequestStatusesAsString()
+		syncerSetsStatusValues    = syncerSetStatusesAsString()
 		sourceValues              = []string{sourceRequest}
 	)
 
@@ -29,7 +30,11 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 	})
 
 	preloadLabelValuesForCounter(m.cookieSync, map[string][]string{
-		cookiesyncStatusLabel: cookieSyncStatusValues,
+		statusLabel: cookieSyncStatusValues,
+	})
+
+	preloadLabelValuesForCounter(m.setUid, map[string][]string{
+		statusLabel: setUidStatusValues,
 	})
 
 	preloadLabelValuesForCounter(m.impressions, map[string][]string{
@@ -150,14 +155,14 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 		adapterLabel: adapterValues,
 	})
 
-	preloadLabelValuesForCounter(m.adapterUserSync, map[string][]string{
-		adapterLabel: adapterValues,
-		actionLabel:  actionValues,
+	preloadLabelValuesForCounter(m.syncerRequests, map[string][]string{
+		syncerLabel: syncerKeys,
+		statusLabel: syncerRequestStatusValues,
 	})
 
-	preloadLabelValuesForCounter(m.syncerRequests, map[string][]string{
-		syncerLabel:       syncerKeys,
-		syncerStatusLabel: syncerStatusValues,
+	preloadLabelValuesForCounter(m.syncerSets, map[string][]string{
+		syncerLabel: syncerKeys,
+		statusLabel: syncerSetsStatusValues,
 	})
 
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only

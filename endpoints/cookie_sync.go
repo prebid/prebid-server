@@ -236,15 +236,15 @@ func (c *cookieSyncEndpoint) writeBidderMetrics(biddersEvaluated []usersync.Bidd
 	for _, bidder := range biddersEvaluated {
 		switch bidder.Status {
 		case usersync.StatusOK:
-			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerOK)
+			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerCookieSyncOK)
 		case usersync.StatusBlockedByGDPR:
-			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerPrivacyBlocked)
+			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerCookieSyncPrivacyBlocked)
 		case usersync.StatusBlockedByCCPA:
-			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerPrivacyBlocked)
+			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerCookieSyncPrivacyBlocked)
 		case usersync.StatusAlreadySynced:
-			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerAlreadySynced)
+			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerCookieSyncAlreadySynced)
 		case usersync.StatusTypeNotSupported:
-			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerTypeNotSupported)
+			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerCookieSyncTypeNotSupported)
 		}
 	}
 }

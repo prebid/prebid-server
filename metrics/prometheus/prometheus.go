@@ -19,6 +19,7 @@ type Metrics struct {
 	connectionsError             *prometheus.CounterVec
 	connectionsOpened            prometheus.Counter
 	cookieSync                   *prometheus.CounterVec
+	setUid                       *prometheus.CounterVec
 	impressions                  *prometheus.CounterVec
 	impressionsLegacy            prometheus.Counter
 	prebidCacheWriteTimer        *prometheus.HistogramVec
@@ -54,7 +55,6 @@ type Metrics struct {
 	adapterPrices              *prometheus.HistogramVec
 	adapterRequests            *prometheus.CounterVec
 	adapterRequestsTimer       *prometheus.HistogramVec
-	adapterUserSync            *prometheus.CounterVec
 	adapterReusedConnections   *prometheus.CounterVec
 	adapterCreatedConnections  *prometheus.CounterVec
 	adapterConnectionWaitTime  *prometheus.HistogramVec
@@ -62,6 +62,7 @@ type Metrics struct {
 
 	// Syncer Metrics
 	syncerRequests *prometheus.CounterVec
+	syncerSets     *prometheus.CounterVec
 
 	// Account Metrics
 	accountRequests *prometheus.CounterVec
@@ -70,29 +71,28 @@ type Metrics struct {
 }
 
 const (
-	accountLabel          = "account"
-	actionLabel           = "action"
-	adapterErrorLabel     = "adapter_error"
-	adapterLabel          = "adapter"
-	bidTypeLabel          = "bid_type"
-	cacheResultLabel      = "cache_result"
-	connectionErrorLabel  = "connection_error"
-	cookieLabel           = "cookie"
-	cookiesyncStatusLabel = "status"
-	hasBidsLabel          = "has_bids"
-	isAudioLabel          = "audio"
-	isBannerLabel         = "banner"
-	isNativeLabel         = "native"
-	isVideoLabel          = "video"
-	markupDeliveryLabel   = "delivery"
-	optOutLabel           = "opt_out"
-	privacyBlockedLabel   = "privacy_blocked"
-	requestStatusLabel    = "request_status"
-	requestTypeLabel      = "request_type"
-	successLabel          = "success"
-	syncerLabel           = "syncer"
-	syncerStatusLabel     = "status"
-	versionLabel          = "version"
+	accountLabel         = "account"
+	actionLabel          = "action"
+	adapterErrorLabel    = "adapter_error"
+	adapterLabel         = "adapter"
+	bidTypeLabel         = "bid_type"
+	cacheResultLabel     = "cache_result"
+	connectionErrorLabel = "connection_error"
+	cookieLabel          = "cookie"
+	hasBidsLabel         = "has_bids"
+	isAudioLabel         = "audio"
+	isBannerLabel        = "banner"
+	isNativeLabel        = "native"
+	isVideoLabel         = "video"
+	markupDeliveryLabel  = "delivery"
+	optOutLabel          = "opt_out"
+	privacyBlockedLabel  = "privacy_blocked"
+	requestStatusLabel   = "request_status"
+	requestTypeLabel     = "request_type"
+	statusLabel          = "status"
+	successLabel         = "success"
+	syncerLabel          = "syncer"
+	versionLabel         = "version"
 )
 
 const (
@@ -152,7 +152,12 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.cookieSync = newCounter(cfg, metrics.Registry,
 		"cookie_sync_requests",
 		"Count of cookie sync requests to Prebid Server.",
-		[]string{cookiesyncStatusLabel})
+		[]string{statusLabel})
+
+	metrics.setUid = newCounter(cfg, metrics.Registry,
+		"setuid_requests",
+		"Count of set uid requests to Prebid Server.",
+		[]string{statusLabel})
 
 	metrics.impressions = newCounter(cfg, metrics.Registry,
 		"impressions_requests",
@@ -347,15 +352,15 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		[]string{adapterLabel},
 		standardTimeBuckets)
 
-	metrics.adapterUserSync = newCounter(cfg, metrics.Registry,
-		"adapter_user_sync",
-		"Count of user ID sync requests received labeled by adapter and action.",
-		[]string{adapterLabel, actionLabel})
-
 	metrics.syncerRequests = newCounter(cfg, metrics.Registry,
 		"syncer_requests",
-		"Count of cookie sync requests received labeled by syncer key and status.",
-		[]string{syncerLabel, syncerStatusLabel})
+		"Count of cookie sync requests where a syncer is a candidate to be synced labeled by syncer key and status.",
+		[]string{syncerLabel, statusLabel})
+
+	metrics.syncerSets = newCounter(cfg, metrics.Registry,
+		"syncer_sets",
+		"Count of setuid set requests for a syncer labeled by syncer key and status.",
+		[]string{syncerLabel, statusLabel})
 
 	metrics.accountRequests = newCounter(cfg, metrics.Registry,
 		"account_requests",
@@ -612,25 +617,28 @@ func (m *Metrics) RecordAdapterTime(labels metrics.AdapterLabels, length time.Du
 
 func (m *Metrics) RecordCookieSync(status metrics.CookieSyncStatus) {
 	m.cookieSync.With(prometheus.Labels{
-		cookiesyncStatusLabel: string(status),
+		statusLabel: string(status),
 	}).Inc()
 }
 
-func (m *Metrics) RecordSyncerRequest(key string, status metrics.SyncerStatus) {
+func (m *Metrics) RecordSyncerRequest(key string, status metrics.SyncerCookieSyncStatus) {
 	m.syncerRequests.With(prometheus.Labels{
-		syncerLabel:       key,
-		syncerStatusLabel: string(status),
+		syncerLabel: key,
+		statusLabel: string(status),
 	}).Inc()
 }
 
-func (m *Metrics) RecordUserIDSet(labels metrics.UserLabels) {
-	adapter := string(labels.Bidder)
-	if adapter != "" {
-		m.adapterUserSync.With(prometheus.Labels{
-			adapterLabel: adapter,
-			actionLabel:  string(labels.Action),
-		}).Inc()
-	}
+func (m *Metrics) RecordSetUid(status metrics.SetUidStatus) {
+	m.setUid.With(prometheus.Labels{
+		statusLabel: string(status),
+	}).Inc()
+}
+
+func (m *Metrics) RecordSyncerSet(key string, status metrics.SyncerSetUidStatus) {
+	m.syncerSets.With(prometheus.Labels{
+		syncerLabel: key,
+		statusLabel: string(status),
+	}).Inc()
 }
 
 func (m *Metrics) RecordStoredReqCacheResult(cacheResult metrics.CacheResult, inc int) {

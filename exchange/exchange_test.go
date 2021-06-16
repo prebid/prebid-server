@@ -3613,19 +3613,6 @@ func (e *emptyUsersync) HasAnyLiveSyncs() bool {
 	return false
 }
 
-type mockUsersync struct {
-	syncs map[string]string
-}
-
-func (e *mockUsersync) GetId(bidder openrtb_ext.BidderName) (id string, exists bool) {
-	id, exists = e.syncs[string(bidder)]
-	return
-}
-
-func (e *mockUsersync) HasAnyLiveSyncs() bool {
-	return len(e.syncs) > 0
-}
-
 type panicingAdapter struct{}
 
 func (panicingAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (posb *pbsOrtbSeatBid, errs []error) {

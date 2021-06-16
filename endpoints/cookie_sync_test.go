@@ -103,7 +103,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				`]}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
-				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerOK).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
 			},
 			setAnalyticsExpectations: func(a *MockAnalytics) {
 				expected := analytics.CookieSyncObject{
@@ -135,7 +135,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				`]}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
-				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerOK).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
 			},
 			setAnalyticsExpectations: func(a *MockAnalytics) {
 				expected := analytics.CookieSyncObject{
@@ -865,35 +865,35 @@ func TestCookieSyncWriteBidderMetrics(t *testing.T) {
 			description: "One - OK",
 			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusOK}},
 			setExpectations: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerOK).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
 			},
 		},
 		{
 			description: "One - Blocked By GDPR",
 			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusBlockedByGDPR}},
 			setExpectations: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerPrivacyBlocked).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncPrivacyBlocked).Once()
 			},
 		},
 		{
 			description: "One - Blocked By CCPA",
 			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusBlockedByCCPA}},
 			setExpectations: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerPrivacyBlocked).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncPrivacyBlocked).Once()
 			},
 		},
 		{
 			description: "One - Already Synced",
 			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusAlreadySynced}},
 			setExpectations: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerAlreadySynced).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncAlreadySynced).Once()
 			},
 		},
 		{
 			description: "One - Type Not Supported",
 			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusTypeNotSupported}},
 			setExpectations: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerTypeNotSupported).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncTypeNotSupported).Once()
 			},
 		},
 		{
@@ -903,8 +903,8 @@ func TestCookieSyncWriteBidderMetrics(t *testing.T) {
 				{Bidder: "b", SyncerKey: "bSyncer", Status: usersync.StatusAlreadySynced},
 			},
 			setExpectations: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerOK).Once()
-				m.On("RecordSyncerRequest", "bSyncer", metrics.SyncerAlreadySynced).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
+				m.On("RecordSyncerRequest", "bSyncer", metrics.SyncerCookieSyncAlreadySynced).Once()
 			},
 		},
 	}
