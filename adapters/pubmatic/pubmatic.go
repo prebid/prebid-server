@@ -56,6 +56,21 @@ type pubmaticBidExt struct {
 	VideoCreativeInfo *pubmaticBidExtVideo `json:"video,omitempty"`
 }
 
+type ExtImpBidderPubmatic struct {
+	adapters.ExtImpBidder
+	Data *ExtData `json:"data,omitempty"`
+}
+
+type ExtData struct {
+	AdServer *ExtAdServer `json:"adserver"`
+	PBAdSlot string       `json:"pbadslot"`
+}
+
+type ExtAdServer struct {
+	Name   string `json:"name"`
+	AdSlot string `json:"adslot"`
+}
+
 const (
 	INVALID_PARAMS    = "Invalid BidParam"
 	MISSING_PUBID     = "Missing PubID"
@@ -455,7 +470,7 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) er
 		imp.Audio = nil
 	}
 
-	var bidderExt adapters.ExtImpBidder
+	var bidderExt ExtImpBidderPubmatic
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return err
 	}
