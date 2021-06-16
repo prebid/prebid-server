@@ -77,7 +77,6 @@ func (p *permissionsImpl) defaultVendorPermissions() (allowBidRequest bool, pass
 }
 
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string) (bool, error) {
-
 	if consent == "" {
 		return false, nil
 	}

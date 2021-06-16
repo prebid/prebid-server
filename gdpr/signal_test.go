@@ -61,52 +61,52 @@ func TestSignalParse(t *testing.T) {
 
 func TestSignalNormalize(t *testing.T) {
 	tests := []struct {
-		description         string
-		userSyncIfAmbiguous bool
-		giveSignal          Signal
-		wantSignal          Signal
+		description  string
+		defaultValue string
+		giveSignal   Signal
+		wantSignal   Signal
 	}{
 		{
-			description:         "Don't normalize - Signal No and userSyncIfAmbiguous false",
-			userSyncIfAmbiguous: false,
-			giveSignal:          SignalNo,
-			wantSignal:          SignalNo,
+			description:  "Don't normalize - Signal No and Default Value 1",
+			defaultValue: "1",
+			giveSignal:   SignalNo,
+			wantSignal:   SignalNo,
 		},
 		{
-			description:         "Don't normalize - Signal No and userSyncIfAmbiguous true",
-			userSyncIfAmbiguous: true,
-			giveSignal:          SignalNo,
-			wantSignal:          SignalNo,
+			description:  "Don't normalize - Signal No and Default Value 0",
+			defaultValue: "0",
+			giveSignal:   SignalNo,
+			wantSignal:   SignalNo,
 		},
 		{
-			description:         "Don't normalize - Signal Yes and userSyncIfAmbiguous false",
-			userSyncIfAmbiguous: false,
-			giveSignal:          SignalYes,
-			wantSignal:          SignalYes,
+			description:  "Don't normalize - Signal Yes and Default Value 1",
+			defaultValue: "1",
+			giveSignal:   SignalYes,
+			wantSignal:   SignalYes,
 		},
 		{
-			description:         "Don't normalize - Signal Yes and userSyncIfAmbiguous true",
-			userSyncIfAmbiguous: true,
-			giveSignal:          SignalYes,
-			wantSignal:          SignalYes,
+			description:  "Don't normalize - Signal Yes and Default Value 0",
+			defaultValue: "0",
+			giveSignal:   SignalYes,
+			wantSignal:   SignalYes,
 		},
 		{
-			description:         "Normalize - Signal Ambiguous and userSyncIfAmbiguous false",
-			userSyncIfAmbiguous: false,
-			giveSignal:          SignalAmbiguous,
-			wantSignal:          SignalYes,
+			description:  "Normalize - Signal Ambiguous and Default Value 1",
+			defaultValue: "1",
+			giveSignal:   SignalAmbiguous,
+			wantSignal:   SignalYes,
 		},
 		{
-			description:         "Normalize - Signal Ambiguous and userSyncIfAmbiguous true",
-			userSyncIfAmbiguous: true,
-			giveSignal:          SignalAmbiguous,
-			wantSignal:          SignalNo,
+			description:  "Normalize - Signal Ambiguous and Default Value 0",
+			defaultValue: "0",
+			giveSignal:   SignalAmbiguous,
+			wantSignal:   SignalNo,
 		},
 	}
 
 	for _, test := range tests {
 		config := config.GDPR{
-			UsersyncIfAmbiguous: test.userSyncIfAmbiguous,
+			DefaultValue: test.defaultValue,
 		}
 
 		normalizedSignal := SignalNormalize(test.giveSignal, config)

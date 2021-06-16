@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -18,8 +17,8 @@ import (
 func TestDisallowOnEmptyConsent(t *testing.T) {
 	perms := permissionsImpl{
 		cfg: config.GDPR{
-			HostVendorID:        3,
-			UsersyncIfAmbiguous: true,
+			HostVendorID: 3,
+			DefaultValue: "0",
 		},
 		vendorIDs: nil,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
@@ -190,84 +189,84 @@ func TestAllowActivities(t *testing.T) {
 		description           string
 		bidderName            openrtb_ext.BidderName
 		publisherID           string
-		userSyncIfAmbiguous   bool
+		gdprDefaultValue      string
 		gdpr                  Signal
 		consent               string
 		passID                bool
 		weakVendorEnforcement bool
 	}{
 		{
-			description:         "Allow PI - Non standard publisher",
-			bidderName:          bidderBlockedByConsent,
-			publisherID:         "appNexusAppID",
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalYes,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              true,
+			description:      "Allow PI - Non standard publisher",
+			bidderName:       bidderBlockedByConsent,
+			publisherID:      "appNexusAppID",
+			gdprDefaultValue: "1",
+			gdpr:             SignalYes,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           true,
 		},
 		{
-			description:         "Allow PI - known vendor with No GDPR",
-			bidderName:          bidderBlockedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalNo,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              true,
+			description:      "Allow PI - known vendor with No GDPR",
+			bidderName:       bidderBlockedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalNo,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           true,
 		},
 		{
-			description:         "Allow PI - known vendor with Yes GDPR",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalYes,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              true,
+			description:      "Allow PI - known vendor with Yes GDPR",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalYes,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           true,
 		},
 		{
-			description:         "PI allowed according to host setting UserSyncIfAmbiguous true - known vendor with ambiguous GDPR and empty consent",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: true,
-			gdpr:                SignalAmbiguous,
-			consent:             "",
-			passID:              true,
+			description:      "PI allowed according to host setting gdprDefaultValue 0 - known vendor with ambiguous GDPR and empty consent",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "0",
+			gdpr:             SignalAmbiguous,
+			consent:          "",
+			passID:           true,
 		},
 		{
-			description:         "PI allowed according to host setting UserSyncIfAmbiguous true - known vendor with ambiguous GDPR and non-empty consent",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: true,
-			gdpr:                SignalAmbiguous,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              true,
+			description:      "PI allowed according to host setting gdprDefaultValue 0 - known vendor with ambiguous GDPR and non-empty consent",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "0",
+			gdpr:             SignalAmbiguous,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           true,
 		},
 		{
-			description:         "PI allowed according to host setting UserSyncIfAmbiguous false - known vendor with ambiguous GDPR and empty consent",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalAmbiguous,
-			consent:             "",
-			passID:              false,
+			description:      "PI allowed according to host setting gdprDefaultValue 1 - known vendor with ambiguous GDPR and empty consent",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalAmbiguous,
+			consent:          "",
+			passID:           false,
 		},
 		{
-			description:         "PI allowed according to host setting UserSyncIfAmbiguous false - known vendor with ambiguous GDPR and non-empty consent",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalAmbiguous,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              true,
+			description:      "PI allowed according to host setting gdprDefaultValue 1 - known vendor with ambiguous GDPR and non-empty consent",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalAmbiguous,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           true,
 		},
 		{
-			description:         "Don't allow PI - known vendor with Yes GDPR and empty consent",
-			bidderName:          bidderAllowedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalYes,
-			consent:             "",
-			passID:              false,
+			description:      "Don't allow PI - known vendor with Yes GDPR and empty consent",
+			bidderName:       bidderAllowedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalYes,
+			consent:          "",
+			passID:           false,
 		},
 		{
-			description:         "Don't allow PI - default vendor with Yes GDPR and non-empty consent",
-			bidderName:          bidderBlockedByConsent,
-			userSyncIfAmbiguous: false,
-			gdpr:                SignalYes,
-			consent:             vendor2AndPurpose2Consent,
-			passID:              false,
+			description:      "Don't allow PI - default vendor with Yes GDPR and non-empty consent",
+			bidderName:       bidderBlockedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalYes,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           false,
 		},
 	}
 	vendorListData := MarshalVendorList(vendorList{
@@ -302,7 +301,7 @@ func TestAllowActivities(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		perms.cfg.UsersyncIfAmbiguous = tt.userSyncIfAmbiguous
+		perms.cfg.DefaultValue = tt.gdprDefaultValue
 
 		_, _, passID, err := perms.AuctionActivitiesAllowed(context.Background(), tt.bidderName, tt.publisherID, tt.gdpr, tt.consent, tt.weakVendorEnforcement)
 

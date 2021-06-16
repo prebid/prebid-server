@@ -14,12 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/usersync"
-
-	"github.com/gofrs/uuid"
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -28,6 +22,12 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/usersync"
+
+	"github.com/gofrs/uuid"
+	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 type ContextKey string
@@ -51,19 +51,19 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap          map[openrtb_ext.BidderName]adaptedBidder
-	bidderInfo          config.BidderInfos
-	bidderToSyncerKey   map[string]string
-	me                  metrics.MetricsEngine
-	cache               prebid_cache_client.Client
-	cacheTime           time.Duration
-	gDPR                gdpr.Permissions
-	currencyConverter   *currency.RateConverter
-	externalURL         string
-	UsersyncIfAmbiguous bool
-	privacyConfig       config.Privacy
-	categoriesFetcher   stored_requests.CategoryFetcher
-	bidIDGenerator      BidIDGenerator
+	adapterMap        map[openrtb_ext.BidderName]adaptedBidder
+	bidderInfo        config.BidderInfos
+	bidderToSyncerKey map[string]string
+	me                metrics.MetricsEngine
+	cache             prebid_cache_client.Client
+	cacheTime         time.Duration
+	gDPR              gdpr.Permissions
+	currencyConverter *currency.RateConverter
+	externalURL       string
+	gdprDefaultValue  string
+	privacyConfig     config.Privacy
+	categoriesFetcher stored_requests.CategoryFetcher
+	bidIDGenerator    BidIDGenerator
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -117,17 +117,17 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 	}
 
 	return &exchange{
-		adapterMap:          adapters,
-		bidderInfo:          infos,
-		bidderToSyncerKey:   bidderToSyncerKey,
-		cache:               cache,
-		cacheTime:           time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
-		categoriesFetcher:   categoriesFetcher,
-		currencyConverter:   currencyConverter,
-		externalURL:         cfg.ExternalURL,
-		gDPR:                gDPR,
-		me:                  metricsEngine,
-		UsersyncIfAmbiguous: cfg.GDPR.UsersyncIfAmbiguous,
+		adapterMap:        adapters,
+		bidderInfo:        infos,
+		bidderToSyncerKey: bidderToSyncerKey,
+		cache:             cache,
+		cacheTime:         time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
+		categoriesFetcher: categoriesFetcher,
+		currencyConverter: currencyConverter,
+		externalURL:       cfg.ExternalURL,
+		gDPR:              gDPR,
+		me:                metricsEngine,
+		gdprDefaultValue:  cfg.GDPR.DefaultValue,
 		privacyConfig: config.Privacy{
 			CCPA: cfg.CCPA,
 			GDPR: cfg.GDPR,
@@ -193,10 +193,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	recordImpMetrics(r.BidRequest, e.me)
 
 	// Make our best guess if GDPR applies
-	usersyncIfAmbiguous := e.parseUsersyncIfAmbiguous(r.BidRequest)
+	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.gDPR, e.me, usersyncIfAmbiguous, e.privacyConfig, &r.Account)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.gDPR, e.me, gdprDefaultValue, e.privacyConfig, &r.Account)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -308,8 +308,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, errs)
 }
 
-func (e *exchange) parseUsersyncIfAmbiguous(bidRequest *openrtb2.BidRequest) bool {
-	usersyncIfAmbiguous := e.UsersyncIfAmbiguous
+func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) string {
+	gdprDefaultValue := e.gdprDefaultValue
 	var geo *openrtb2.Geo = nil
 
 	if bidRequest.User != nil && bidRequest.User.Geo != nil {
@@ -321,14 +321,14 @@ func (e *exchange) parseUsersyncIfAmbiguous(bidRequest *openrtb2.BidRequest) boo
 		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
 		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
 		if _, found := e.privacyConfig.GDPR.EEACountriesMap[strings.ToUpper(geo.Country)]; found {
-			usersyncIfAmbiguous = false
+			gdprDefaultValue = "1"
 		} else if len(geo.Country) == 3 {
 			// The country field is formatted properly as a three character country code
-			usersyncIfAmbiguous = true
+			gdprDefaultValue = "0"
 		}
 	}
 
-	return usersyncIfAmbiguous
+	return gdprDefaultValue
 }
 
 func recordImpMetrics(bidRequest *openrtb2.BidRequest, metricsEngine metrics.MetricsEngine) {

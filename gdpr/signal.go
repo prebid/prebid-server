@@ -38,7 +38,7 @@ func SignalNormalize(signal Signal, config config.GDPR) Signal {
 		return signal
 	}
 
-	if config.UsersyncIfAmbiguous {
+	if config.DefaultValue == "0" {
 		return SignalNo
 	}
 

@@ -242,8 +242,8 @@ func TestCookieSyncHandle(t *testing.T) {
 			hostCookieConfig: &config.HostCookie{},
 			privacyConfig: usersyncPrivacyConfig{
 				gdprConfig: config.GDPR{
-					Enabled:             true,
-					UsersyncIfAmbiguous: true,
+					Enabled:      true,
+					DefaultValue: "0",
 				},
 				ccpaEnforce: true,
 			},
@@ -283,7 +283,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				`"coopSync":true,` +
 				`"filterSettings":{"iframe":{"bidders":"*","filter":"include"}, "image":{"bidders":["b"],"filter":"exclude"}}` +
 				`}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
 				Cooperative: config.UserSyncCooperative{
@@ -327,7 +327,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				`"us_privacy":"1NYN",` +
 				`"limit":42` +
 				`}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
 				Cooperative: config.UserSyncCooperative{
@@ -365,7 +365,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "Empty Request",
 			givenBody:        strings.NewReader(`{}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedPrivacy:  privacy.Policies{},
 			expectedRequest: usersync.Request{
@@ -381,7 +381,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "Cooperative Unspecified - Default True",
 			givenBody:        strings.NewReader(`{}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
 				Cooperative: config.UserSyncCooperative{
@@ -407,7 +407,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "Cooperative Unspecified - Default False",
 			givenBody:        strings.NewReader(`{}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
 				Cooperative: config.UserSyncCooperative{
@@ -433,7 +433,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "Cooperative False - Default True",
 			givenBody:        strings.NewReader(`{"coopSync":false}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
 				Cooperative: config.UserSyncCooperative{
@@ -459,7 +459,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "Cooperative False - Default False",
 			givenBody:        strings.NewReader(`{"coopSync":false}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
 				Cooperative: config.UserSyncCooperative{
@@ -485,7 +485,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "Cooperative True - Default True",
 			givenBody:        strings.NewReader(`{"coopSync":true}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
 				Cooperative: config.UserSyncCooperative{
@@ -511,7 +511,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "Cooperative True - Default False",
 			givenBody:        strings.NewReader(`{"coopSync":true}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
 				Cooperative: config.UserSyncCooperative{
@@ -537,7 +537,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "CCPA Consent Invalid",
 			givenBody:        strings.NewReader(`{"us_privacy":"invalid"}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedPrivacy:  privacy.Policies{},
 			expectedRequest: usersync.Request{
@@ -553,7 +553,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "CCPA Disabled",
 			givenBody:        strings.NewReader(`{"us_privacy":"1NYN"}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: false,
 			expectedPrivacy: privacy.Policies{
 				CCPA: ccpa.Policy{
@@ -572,28 +572,28 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "Invalid JSON",
 			givenBody:        strings.NewReader(`malformed`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedError:    "JSON parsing failed: invalid character 'm' looking for beginning of value",
 		},
 		{
 			description:      "Invalid Type Filter",
 			givenBody:        strings.NewReader(`{"filterSettings":{"iframe":{"bidders":"invalid","filter":"exclude"}}}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedError:    "error parsing filtersettings.iframe: invalid bidders value `invalid`. must either be '*' or a string array",
 		},
 		{
 			description:      "Invalid GDPR Signal",
 			givenBody:        strings.NewReader(`{"gdpr":"invalid"}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedError:    "GDPR signal should be integer 0 or 1",
 		},
 		{
 			description:      "Missing GDPR Consent - Explicit Signal 0",
 			givenBody:        strings.NewReader(`{"gdpr":"0"}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedPrivacy: privacy.Policies{
 				GDPR: gdprPrivacy.Policy{Signal: "0"},
@@ -611,14 +611,14 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "Missing GDPR Consent - Explicit Signal 1",
 			givenBody:        strings.NewReader(`{"gdpr":"1"}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedError:    "gdpr_consent is required if gdpr=1",
 		},
 		{
 			description:      "Missing GDPR Consent - Ambiguous Signal - Default Value 0",
 			givenBody:        strings.NewReader(`{}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedPrivacy: privacy.Policies{
 				GDPR: gdprPrivacy.Policy{Signal: ""},
@@ -636,14 +636,14 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		{
 			description:      "Missing GDPR Consent - Ambiguous Signal - Default Value 1",
 			givenBody:        strings.NewReader(`{}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: false},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "1"},
 			givenCCPAEnabled: true,
 			expectedError:    "gdpr_consent is required. gdpr is not specified and is assumed to be 1 by the server. set gdpr=0 to exempt this request",
 		},
 		{
 			description:      "HTTP Read Error",
 			givenBody:        ErrReader(errors.New("anyError")),
-			givenGDPRConfig:  config.GDPR{Enabled: true, UsersyncIfAmbiguous: true},
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedError:    "Failed to read request body",
 		},

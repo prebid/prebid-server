@@ -480,7 +480,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &permissions, &metricsMock, true, privacyConfig, nil)
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &permissions, &metricsMock, "0", privacyConfig, nil)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -639,7 +639,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			bidderToSyncerKey,
 			&permissionsMock{allowAllBidders: true, passGeo: true, passID: true},
 			&metrics.MetricsEngineMock{},
-			true,
+			"0",
 			privacyConfig,
 			nil)
 		result := bidderRequests[0]
@@ -702,7 +702,7 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
 		metrics := metrics.MetricsEngineMock{}
-		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &permissions, &metrics, true, privacyConfig, nil)
+		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &permissions, &metrics, "0", privacyConfig, nil)
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
@@ -745,7 +745,7 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &permissions, &metrics, true, config.Privacy{}, nil)
+		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &permissions, &metrics, "0", config.Privacy{}, nil)
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -855,7 +855,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &permissions, &metrics, true, config.Privacy{}, nil)
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &permissions, &metrics, "0", config.Privacy{}, nil)
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -1439,7 +1439,7 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
 		metrics := metrics.MetricsEngineMock{}
-		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &permissions, &metrics, true, privacyConfig, nil)
+		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &permissions, &metrics, "0", privacyConfig, nil)
 		result := results[0]
 
 		assert.Nil(t, errs)
@@ -1466,7 +1466,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		gdprConsent         string
 		gdprScrub           bool
 		permissionsError    error
-		userSyncIfAmbiguous bool
+		gdprDefaultValue    string
 		expectPrivacyLabels metrics.PrivacyLabels
 		expectError         bool
 	}{
@@ -1477,6 +1477,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdpr:               "1",
 			gdprConsent:        "malformed",
 			gdprScrub:          false,
+			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
 				GDPRTCFVersion: "",
@@ -1489,6 +1490,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdpr:               "1",
 			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
+			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
 				GDPRTCFVersion: metrics.TCFVersionV2,
@@ -1501,6 +1503,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdpr:               "0",
 			gdprConsent:        tcf2Consent,
 			gdprScrub:          false,
+			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
 				GDPRTCFVersion: "",
@@ -1513,6 +1516,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdpr:               "0{",
 			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
+			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
 				GDPRTCFVersion: metrics.TCFVersionV2,
@@ -1526,6 +1530,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdpr:               "1",
 			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
+			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
 				GDPRTCFVersion: metrics.TCFVersionV2,
@@ -1538,6 +1543,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdpr:               "1",
 			gdprConsent:        tcf2Consent,
 			gdprScrub:          false,
+			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
 				GDPRTCFVersion: "",
@@ -1550,6 +1556,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdpr:               "1",
 			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
+			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
 				GDPRTCFVersion: metrics.TCFVersionV2,
@@ -1562,32 +1569,33 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdpr:               "1",
 			gdprConsent:        tcf2Consent,
 			gdprScrub:          false,
+			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
 				GDPRTCFVersion: "",
 			},
 		},
 		{
-			description:         "Enforce - Ambiguous signal, don't sync user if ambiguous",
-			gdprAccountEnabled:  nil,
-			gdprHostEnabled:     true,
-			gdpr:                "null",
-			gdprConsent:         tcf2Consent,
-			gdprScrub:           true,
-			userSyncIfAmbiguous: false,
+			description:        "Enforce - Ambiguous signal, don't sync user if ambiguous",
+			gdprAccountEnabled: nil,
+			gdprHostEnabled:    true,
+			gdpr:               "null",
+			gdprConsent:        tcf2Consent,
+			gdprScrub:          true,
+			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
 				GDPRTCFVersion: metrics.TCFVersionV2,
 			},
 		},
 		{
-			description:         "Not Enforce - Ambiguous signal, sync user if ambiguous",
-			gdprAccountEnabled:  nil,
-			gdprHostEnabled:     true,
-			gdpr:                "null",
-			gdprConsent:         tcf2Consent,
-			gdprScrub:           false,
-			userSyncIfAmbiguous: true,
+			description:        "Not Enforce - Ambiguous signal, sync user if ambiguous",
+			gdprAccountEnabled: nil,
+			gdprHostEnabled:    true,
+			gdpr:               "null",
+			gdprConsent:        tcf2Consent,
+			gdprScrub:          false,
+			gdprDefaultValue:   "0",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   false,
 				GDPRTCFVersion: "",
@@ -1601,6 +1609,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprConsent:        tcf2Consent,
 			gdprScrub:          true,
 			permissionsError:   errors.New("Some error"),
+			gdprDefaultValue:   "1",
 			expectPrivacyLabels: metrics.PrivacyLabels{
 				GDPREnforced:   true,
 				GDPRTCFVersion: metrics.TCFVersionV2,
@@ -1617,8 +1626,8 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 
 		privacyConfig := config.Privacy{
 			GDPR: config.GDPR{
-				Enabled:             test.gdprHostEnabled,
-				UsersyncIfAmbiguous: test.userSyncIfAmbiguous,
+				Enabled:      test.gdprHostEnabled,
+				DefaultValue: test.gdprDefaultValue,
 				TCF2: config.TCF2{
 					Enabled: true,
 				},
@@ -1645,7 +1654,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			bidderToSyncerKey,
 			&permissionsMock{allowAllBidders: true, passGeo: !test.gdprScrub, passID: !test.gdprScrub, activitiesError: test.permissionsError},
 			&metrics.MetricsEngineMock{},
-			test.userSyncIfAmbiguous,
+			test.gdprDefaultValue,
 			privacyConfig,
 			nil)
 		result := results[0]
@@ -1707,8 +1716,8 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 
 		privacyConfig := config.Privacy{
 			GDPR: config.GDPR{
-				Enabled:             test.gdprEnforced,
-				UsersyncIfAmbiguous: true,
+				Enabled:      test.gdprEnforced,
+				DefaultValue: "0",
 				TCF2: config.TCF2{
 					Enabled: true,
 				},
@@ -1738,7 +1747,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			bidderToSyncerKey,
 			&permissionsMock{allowedBidders: test.gdprAllowedBidders, passGeo: true, passID: true, activitiesError: nil},
 			&metricsMock,
-			true,
+			"0",
 			privacyConfig,
 			nil)
 
