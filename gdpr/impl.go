@@ -107,7 +107,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 		return false, nil
 	}
 
-	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
+	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent, false)
 	if err != nil {
 		return false, err
 	}
@@ -128,14 +128,18 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 }
 
 func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
-	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
+	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent, weakVendorEnforcement)
 	if err != nil {
 		return false, false, false, err
 	}
 
 	// vendor will be nil if not a valid TCF2 consent string
 	if vendor == nil {
-		return false, false, false, nil
+		if weakVendorEnforcement {
+			vendor = vendorTrue{}
+		} else {
+			return false, false, false, nil
+		}
 	}
 
 	if !p.cfg.TCF2.Enabled {
@@ -194,7 +198,7 @@ func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.
 	return purposeAllowed || legitInterest
 }
 
-func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string) (parsedConsent api.VendorConsents, vendor api.Vendor, err error) {
+func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string, weakVendorEnforcement bool) (parsedConsent api.VendorConsents, vendor api.Vendor, err error) {
 	parsedConsent, err = vendorconsent.ParseString(consent)
 	if err != nil {
 		err = &ErrorMalformedConsent{
@@ -208,6 +212,7 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 	if version != 2 {
 		return
 	}
+
 	vendorList, err := p.fetchVendorList[version](ctx, parsedConsent.VendorListVersion())
 	if err != nil {
 		return
@@ -240,4 +245,23 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 
 func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
 	return true, true, true, nil
+}
+
+// Mock Vendor claims everything.
+type vendorTrue struct{}
+
+func (v vendorTrue) Purpose(purposeID consentconstants.Purpose) bool {
+	return true
+}
+func (v vendorTrue) PurposeStrict(purposeID consentconstants.Purpose) bool {
+	return true
+}
+func (v vendorTrue) LegitimateInterest(purposeID consentconstants.Purpose) bool {
+	return true
+}
+func (v vendorTrue) LegitimateInterestStrict(purposeID consentconstants.Purpose) bool {
+	return true
+}
+func (v vendorTrue) SpecialPurpose(purposeID consentconstants.Purpose) (hasSpecialPurpose bool) {
+	return true
 }
