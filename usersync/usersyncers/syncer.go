@@ -73,6 +73,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/smartadserver"
 	"github.com/prebid/prebid-server/adapters/smartrtb"
 	"github.com/prebid/prebid-server/adapters/smartyads"
+	"github.com/prebid/prebid-server/adapters/smilewanted"
 	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/adapters/sovrn"
@@ -174,6 +175,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartAdserver, smartadserver.NewSmartadserverSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartRTB, smartrtb.NewSmartRTBSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartyAds, smartyads.NewSmartyAdsSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmileWanted, smilewanted.NewSmileWantedSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSynacormedia, synacormedia.NewSynacorMediaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTappx, tappx.NewTappxSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTelaria, telaria.NewTelariaSyncer)
