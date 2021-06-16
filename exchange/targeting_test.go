@@ -87,15 +87,15 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	}
 
 	ex := &exchange{
-		adapterMap:          buildAdapterMap(mockBids, server.URL, server.Client()),
-		me:                  &metricsConf.DummyMetricsEngine{},
-		cache:               &wellBehavedCache{},
-		cacheTime:           time.Duration(0),
-		gDPR:                gdpr.AlwaysAllow{},
-		currencyConverter:   currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
-		UsersyncIfAmbiguous: false,
-		categoriesFetcher:   categoriesFetcher,
-		bidIDGenerator:      &mockBidIDGenerator{false, false},
+		adapterMap:        buildAdapterMap(mockBids, server.URL, server.Client()),
+		me:                &metricsConf.DummyMetricsEngine{},
+		cache:             &wellBehavedCache{},
+		cacheTime:         time.Duration(0),
+		gDPR:              gdpr.AlwaysAllow{},
+		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		gdprDefaultValue:  "1",
+		categoriesFetcher: categoriesFetcher,
+		bidIDGenerator:    &mockBidIDGenerator{false, false},
 	}
 
 	imps := buildImps(t, mockBids)

@@ -141,12 +141,14 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
+	cmpBools(t, "gdpr.tcf2.purpose_one_treatment.enabled", true, cfg.GDPR.TCF2.PurposeOneTreatment.Enabled)
+	cmpBools(t, "gdpr.tcf2.purpose_one_treatment.access_allowed", true, cfg.GDPR.TCF2.PurposeOneTreatment.AccessAllowed)
 }
 
 var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
-  usersync_if_ambiguous: true
+  default_value: "0"
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
 ccpa:
   enforce: true
@@ -350,7 +352,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.max_idle_connections_per_host", cfg.CacheClient.MaxIdleConnsPerHost, 2)
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
-	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
+	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "0")
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[0], "siteID")
@@ -421,6 +423,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[0], "1111::/16")
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
+	cmpStrings(t, "debug.override_token", cfg.Debug.OverrideToken, "")
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
@@ -457,6 +460,9 @@ func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
+		GDPR: GDPR{
+			DefaultValue: "1",
+		},
 		StoredRequests: StoredRequests{
 			Files: FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{
@@ -507,6 +513,79 @@ func TestMigrateConfigFromEnv(t *testing.T) {
 	cfg, err := New(v)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
+}
+
+func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
+	oldPurposeOneTreatmentConfig := []byte(`
+      gdpr:
+        tcf2:
+          purpose_one_treatement:
+            enabled: true
+            access_allowed: true
+    `)
+	newPurposeOneTreatmentConfig := []byte(`
+      gdpr:
+        tcf2:
+          purpose_one_treatment:
+            enabled: true
+            access_allowed: true
+    `)
+	oldAndNewPurposeOneTreatmentConfig := []byte(`
+      gdpr:
+        tcf2:
+          purpose_one_treatement:
+            enabled: false
+            access_allowed: true
+          purpose_one_treatment:
+            enabled: true
+            access_allowed: false
+    `)
+
+	tests := []struct {
+		description                        string
+		config                             []byte
+		wantPurpose1TreatmentEnabled       bool
+		wantPurpose1TreatmentAccessAllowed bool
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description:                        "New config not set, old config set",
+			config:                             oldPurposeOneTreatmentConfig,
+			wantPurpose1TreatmentEnabled:       true,
+			wantPurpose1TreatmentAccessAllowed: true,
+		},
+		{
+			description:                        "New config set, old config not set",
+			config:                             newPurposeOneTreatmentConfig,
+			wantPurpose1TreatmentEnabled:       true,
+			wantPurpose1TreatmentAccessAllowed: true,
+		},
+		{
+			description:                        "New config and old config set",
+			config:                             oldAndNewPurposeOneTreatmentConfig,
+			wantPurpose1TreatmentEnabled:       true,
+			wantPurpose1TreatmentAccessAllowed: false,
+		},
+	}
+
+	for _, tt := range tests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigPurposeOneTreatment(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.wantPurpose1TreatmentEnabled, v.Get("gdpr.tcf2.purpose_one_treatment.enabled").(bool), tt.description)
+			assert.Equal(t, tt.wantPurpose1TreatmentAccessAllowed, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed").(bool), tt.description)
+		} else {
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed"), tt.description)
+		}
+	}
 }
 
 func TestInvalidAdapterEndpointConfig(t *testing.T) {
@@ -568,16 +647,16 @@ func TestInvalidHostVendorID(t *testing.T) {
 	}
 }
 
-func TestInvalidFetchGVL(t *testing.T) {
-	cfg := newDefaultConfig(t)
-	cfg.GDPR.TCF1.FetchGVL = true
-	assertOneError(t, cfg.validate(), "gdpr.tcf1.fetch_gvl has been discontinued and must be removed from your config. TCF1 will always use the fallback GVL going forward")
-}
-
 func TestInvalidAMPException(t *testing.T) {
 	cfg := newDefaultConfig(t)
 	cfg.GDPR.AMPException = true
 	assertOneError(t, cfg.validate(), "gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)")
+}
+
+func TestInvalidGDPRDefaultValue(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.GDPR.DefaultValue = "2"
+	assertOneError(t, cfg.validate(), "gdpr.default_value must be 0 or 1")
 }
 
 func TestNegativeCurrencyConverterFetchInterval(t *testing.T) {

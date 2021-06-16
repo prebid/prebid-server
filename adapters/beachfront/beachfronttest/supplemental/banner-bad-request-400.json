@@ -34,7 +34,7 @@
             {
               "slot": "",
               "id": "dudAppId",
-              "bidfloor": 5.02,
+              "bidfloor": 0.02,
               "sizes": [
                 {
                   "w": 300,

@@ -22,6 +22,7 @@
         "id": "req-id",
         "bidid": "test bid id",
         "nbr": 0,
+        "cur": "USD",
         "seatbid": [{
             "bid": [{
                 "id": "appnexus-bid",

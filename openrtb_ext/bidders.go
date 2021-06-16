@@ -94,6 +94,7 @@ const (
 	BidderAdxcg             BidderName = "adxcg"
 	BidderAdyoulike         BidderName = "adyoulike"
 	BidderAJA               BidderName = "aja"
+	BidderAlgorix           BidderName = "algorix"
 	BidderAMX               BidderName = "amx"
 	BidderApplogy           BidderName = "applogy"
 	BidderAppnexus          BidderName = "appnexus"
@@ -104,6 +105,7 @@ const (
 	BidderBetween           BidderName = "between"
 	BidderBidmachine        BidderName = "bidmachine"
 	BidderBidsCube          BidderName = "bidscube"
+	BidderBmtm              BidderName = "bmtm"
 	BidderBrightroll        BidderName = "brightroll"
 	BidderColossus          BidderName = "colossus"
 	BidderConnectAd         BidderName = "connectad"
@@ -119,6 +121,7 @@ const (
 	BidderEngageBDR         BidderName = "engagebdr"
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
+	BidderEVolution         BidderName = "e_volution"
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGrid              BidderName = "grid"
@@ -133,7 +136,6 @@ const (
 	BidderKidoz             BidderName = "kidoz"
 	BidderKrushmedia        BidderName = "krushmedia"
 	BidderKubient           BidderName = "kubient"
-	BidderLifestreet        BidderName = "lifestreet"
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogicad           BidderName = "logicad"
 	BidderLunaMedia         BidderName = "lunamedia"
@@ -212,6 +214,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdxcg,
 		BidderAdyoulike,
 		BidderAJA,
+		BidderAlgorix,
 		BidderAMX,
 		BidderApplogy,
 		BidderAppnexus,
@@ -222,6 +225,7 @@ func CoreBidderNames() []BidderName {
 		BidderBetween,
 		BidderBidmachine,
 		BidderBidsCube,
+		BidderBmtm,
 		BidderBrightroll,
 		BidderColossus,
 		BidderConnectAd,
@@ -237,6 +241,7 @@ func CoreBidderNames() []BidderName {
 		BidderEngageBDR,
 		BidderEPlanning,
 		BidderEpom,
+		BidderEVolution,
 		BidderGamma,
 		BidderGamoshi,
 		BidderGrid,
@@ -251,7 +256,6 @@ func CoreBidderNames() []BidderName {
 		BidderKidoz,
 		BidderKrushmedia,
 		BidderKubient,
-		BidderLifestreet,
 		BidderLockerDome,
 		BidderLogicad,
 		BidderLunaMedia,
