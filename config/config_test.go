@@ -147,6 +147,29 @@ gdpr:
   host_vendor_id: 15
   default_value: "1"
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
+  tcf2:
+    purpose1:
+      vendor_exceptions: ["appnexus"]
+    purpose2:
+      vendor_exceptions: ["openx"]
+    purpose3:
+      vendor_exceptions: ["pubmatic"]
+    purpose4:
+      vendor_exceptions: ["rubicon"]
+    purpose5:
+      vendor_exceptions: ["appnexus", "openx", "pubmatic", "rubicon"]
+    purpose6:
+      vendor_exceptions: ["appnexus"]
+    purpose7:
+      vendor_exceptions: ["openx"]
+    purpose8:
+      vendor_exceptions: ["pubmatic"]
+    purpose9:
+      vendor_exceptions: ["rubicon"]
+    purpose10:
+      vendor_exceptions: ["appnexus", "openx", "pubmatic", "rubicon"]
+    special_purpose1:
+      vendor_exceptions: ["appnexus"]
 ccpa:
   enforce: true
 lmt:
@@ -377,6 +400,36 @@ func TestFullConfig(t *testing.T) {
 	for i := 0; i < len(cfg.BlacklistedApps); i++ {
 		cmpBools(t, "cfg.BlacklistedAppMap", cfg.BlacklistedAppMap[cfg.BlacklistedApps[i]], true)
 	}
+
+	//Assert purpose VendorExceptionMap hash tables were built correctly
+	cmpInts(t, "cfg.GDPR.TCF2.Purpose1.VendorExceptionMap", 1, len(cfg.GDPR.TCF2.Purpose1.VendorExceptionMap))
+	cmpInts(t, "cfg.GDPR.TCF2.Purpose2.VendorExceptionMap", 1, len(cfg.GDPR.TCF2.Purpose2.VendorExceptionMap))
+	cmpInts(t, "cfg.GDPR.TCF2.Purpose3.VendorExceptionMap", 1, len(cfg.GDPR.TCF2.Purpose3.VendorExceptionMap))
+	cmpInts(t, "cfg.GDPR.TCF2.Purpose4.VendorExceptionMap", 1, len(cfg.GDPR.TCF2.Purpose4.VendorExceptionMap))
+	cmpInts(t, "cfg.GDPR.TCF2.Purpose5.VendorExceptionMap", 4, len(cfg.GDPR.TCF2.Purpose5.VendorExceptionMap))
+	cmpInts(t, "cfg.GDPR.TCF2.Purpose6.VendorExceptionMap", 1, len(cfg.GDPR.TCF2.Purpose6.VendorExceptionMap))
+	cmpInts(t, "cfg.GDPR.TCF2.Purpose7.VendorExceptionMap", 1, len(cfg.GDPR.TCF2.Purpose7.VendorExceptionMap))
+	cmpInts(t, "cfg.GDPR.TCF2.Purpose8.VendorExceptionMap", 1, len(cfg.GDPR.TCF2.Purpose8.VendorExceptionMap))
+	cmpInts(t, "cfg.GDPR.TCF2.Purpose9.VendorExceptionMap", 1, len(cfg.GDPR.TCF2.Purpose9.VendorExceptionMap))
+	cmpInts(t, "cfg.GDPR.TCF2.Purpose10.VendorExceptionMap", 4, len(cfg.GDPR.TCF2.Purpose10.VendorExceptionMap))
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose1.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose1.VendorExceptionMap["appnexus"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose2.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose2.VendorExceptionMap["openx"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose3.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose3.VendorExceptionMap["pubmatic"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose4.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose4.VendorExceptionMap["rubicon"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose5.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose5.VendorExceptionMap["appnexus"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose5.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose5.VendorExceptionMap["openx"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose5.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose5.VendorExceptionMap["pubmatic"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose5.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose5.VendorExceptionMap["rubicon"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose6.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose6.VendorExceptionMap["appnexus"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose7.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose7.VendorExceptionMap["openx"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose8.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose8.VendorExceptionMap["pubmatic"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose9.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose9.VendorExceptionMap["rubicon"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose10.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose10.VendorExceptionMap["appnexus"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose10.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose10.VendorExceptionMap["openx"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose10.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose10.VendorExceptionMap["pubmatic"])
+	cmpBools(t, "cfg.GDPR.TCF2.Purpose10.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose10.VendorExceptionMap["rubicon"])
+	cmpInts(t, "cfg.GDPR.TCF2.SpecialPurpose1.VendorExceptionMap", 1, len(cfg.GDPR.TCF2.SpecialPurpose1.VendorExceptionMap))
+	cmpBools(t, "cfg.GDPR.TCF2.SpecialPurpose1.VendorExceptionMap", true, cfg.GDPR.TCF2.Purpose10.VendorExceptionMap["appnexus"])
 
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://currency.prebid.org")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
