@@ -118,6 +118,56 @@ func TestCacheJSON(t *testing.T) {
 	}
 }
 
+func TestIsDebugOverrideEnabled(t *testing.T) {
+	type inTest struct {
+		debugHeader string
+		configToken string
+	}
+	type aTest struct {
+		desc   string
+		in     inTest
+		result bool
+	}
+	testCases := []aTest{
+		{
+			desc:   "test debug header is empty, config token is empty",
+			in:     inTest{debugHeader: "", configToken: ""},
+			result: false,
+		},
+		{
+			desc:   "test debug header is present, config token is empty",
+			in:     inTest{debugHeader: "TestToken", configToken: ""},
+			result: false,
+		},
+		{
+			desc:   "test debug header is empty, config token is present",
+			in:     inTest{debugHeader: "", configToken: "TestToken"},
+			result: false,
+		},
+		{
+			desc:   "test debug header is present, config token is present, not equal",
+			in:     inTest{debugHeader: "TestToken123", configToken: "TestToken"},
+			result: false,
+		},
+		{
+			desc:   "test debug header is present, config token is present, equal",
+			in:     inTest{debugHeader: "TestToken", configToken: "TestToken"},
+			result: true,
+		},
+		{
+			desc:   "test debug header is present, config token is present, not case equal",
+			in:     inTest{debugHeader: "TestTokeN", configToken: "TestToken"},
+			result: false,
+		},
+	}
+
+	for _, test := range testCases {
+		result := IsDebugOverrideEnabled(test.in.debugHeader, test.in.configToken)
+		assert.Equal(t, test.result, result, test.desc)
+	}
+
+}
+
 // LoadCacheSpec reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadCacheSpec(filename string) (*cacheSpec, error) {
 	specData, err := ioutil.ReadFile(filename)

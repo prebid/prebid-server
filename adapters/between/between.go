@@ -20,10 +20,6 @@ type BetweenAdapter struct {
 	EndpointTemplate template.Template
 }
 
-// BetweenSSP requires bidfloor > 0.
-// If BidFloor of openrtb_ext.ExtImpBetween is zero, set it to defaultBidFloor value, see addImpProps
-const defaultBidfloor = 0.00001
-
 func (a *BetweenAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 	if len(request.Imp) == 0 {
@@ -129,14 +125,6 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 // Add Between required properties to Imp object
 func addImpProps(imp *openrtb2.Imp, secure *int8, betweenExt *openrtb_ext.ExtImpBetween) {
 	imp.Secure = secure
-	if betweenExt.BidFloor <= 0 {
-		imp.BidFloor = defaultBidfloor
-	} else {
-		imp.BidFloor = betweenExt.BidFloor
-	}
-	if betweenExt.BidFloorCur != "" {
-		imp.BidFloorCur = betweenExt.BidFloorCur
-	}
 }
 
 // Adding header fields to request header

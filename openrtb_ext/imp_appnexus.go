@@ -17,6 +17,7 @@ type ExtImpAppnexus struct {
 	UsePmtRule              *bool                   `json:"use_pmt_rule"`
 	// At this time we do no processing on the private sizes, so just leaving it as a JSON blob.
 	PrivateSizes json.RawMessage `json:"private_sizes"`
+	AdPodId      bool            `json:"generate_ad_pod_id"`
 }
 
 // ExtImpAppnexusKeyVal defines the contract for bidrequest.imp[i].ext.appnexus.keywords[i]

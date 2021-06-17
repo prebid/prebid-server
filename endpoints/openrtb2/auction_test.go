@@ -24,6 +24,7 @@ import (
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/metrics"
@@ -45,11 +46,13 @@ type testCase struct {
 }
 
 type testConfigValues struct {
-	AccountRequired     bool     `json:"accountRequired"`
-	AliasJSON           string   `json:"aliases"`
-	BlacklistedAccounts []string `json:"blacklistedAccts"`
-	BlacklistedApps     []string `json:"blacklistedApps"`
-	DisabledAdapters    []string `json:"disabledAdapters"`
+	AccountRequired     bool                          `json:"accountRequired"`
+	AliasJSON           string                        `json:"aliases"`
+	BlacklistedAccounts []string                      `json:"blacklistedAccts"`
+	BlacklistedApps     []string                      `json:"blacklistedApps"`
+	DisabledAdapters    []string                      `json:"disabledAdapters"`
+	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
+	MockBidder          mockBidExchangeBidder         `json:"mockBidder"`
 }
 
 func TestJsonSampleRequests(t *testing.T) {
@@ -104,6 +107,22 @@ func TestJsonSampleRequests(t *testing.T) {
 		{
 			"Requests with first party data context info found in imp[i].ext.prebid.bidder,context",
 			"first-party-data",
+		},
+		{
+			"Assert we correctly use the server conversion rates when needed",
+			"currency-conversion/server-rates/valid",
+		},
+		{
+			"Assert we correctly throw an error when no conversion rate was found in the server conversions map",
+			"currency-conversion/server-rates/errors",
+		},
+		{
+			"Assert we correctly use request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/valid",
+		},
+		{
+			"Assert we correctly validate request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/errors",
 		},
 	}
 	for _, test := range testSuites {
@@ -248,6 +267,7 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 	assert.Equalf(t, expectedBidResponse.ID, actualBidResponse.ID, "BidResponse.ID doesn't match expected. Test: %s\n", testFile)
 	assert.Equalf(t, expectedBidResponse.BidID, actualBidResponse.BidID, "BidResponse.BidID doesn't match expected. Test: %s\n", testFile)
 	assert.Equalf(t, expectedBidResponse.NBR, actualBidResponse.NBR, "BidResponse.NBR doesn't match expected. Test: %s\n", testFile)
+	assert.Equalf(t, expectedBidResponse.Cur, actualBidResponse.Cur, "BidResponse.Cur doesn't match expected. Test: %s\n", testFile)
 
 	//Assert []SeatBid and their Bid elements independently of their order
 	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
@@ -441,8 +461,10 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
+	mockExchange := newMockBidExchange(test.Config.MockBidder, test.Config.CurrencyRates)
+
 	endpoint, _ := NewEndpoint(
-		&mockBidExchange{},
+		mockExchange,
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1181,6 +1203,113 @@ func TestContentType(t *testing.T) {
 
 	if recorder.Header().Get("Content-Type") != "application/json" {
 		t.Errorf("Content-Type should be application/json. Got %s", recorder.Header().Get("Content-Type"))
+	}
+}
+
+func TestValidateCustomRates(t *testing.T) {
+	boolTrue := true
+	boolFalse := false
+
+	testCases := []struct {
+		desc               string
+		inBidReqCurrencies *openrtb_ext.ExtRequestCurrency
+		outCurrencyError   error
+	}{
+		{
+			desc:               "nil input, no errors expected",
+			inBidReqCurrencies: nil,
+			outCurrencyError:   nil,
+		},
+		{
+			desc: "empty custom currency rates but UsePBSRates is set to false, we don't return error nor warning",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{},
+				UsePBSRates:     &boolFalse,
+			},
+			outCurrencyError: nil,
+		},
+		{
+			desc: "empty custom currency rates but UsePBSRates is set to true, no need to return error because we can use PBS rates",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{},
+				UsePBSRates:     &boolTrue,
+			},
+			outCurrencyError: nil,
+		},
+		{
+			desc: "UsePBSRates is nil and defaults to true, bidExt fromCurrency is invalid, expect bad input error",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"FOO": {
+						"GBP": 1.2,
+						"MXN": 0.05,
+						"JPY": 0.95,
+					},
+				},
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "UsePBSRates set to false, bidExt fromCurrency is invalid, expect bad input error",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"FOO": {
+						"GBP": 1.2,
+						"MXN": 0.05,
+						"JPY": 0.95,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "UsePBSRates set to false, some of the bidExt 'to' Currencies are invalid, expect bad input error when parsing the first invalid currency code",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"USD": {
+						"FOO": 10.0,
+						"MXN": 0.05,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "UsePBSRates set to false, some of the bidExt 'from' and 'to' currencies are invalid, expect bad input error when parsing the first invalid currency code",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"FOO": {
+						"MXN": 0.05,
+						"CAD": 0.95,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "All 3-digit currency codes exist, expect no error",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"USD": {
+						"MXN": 0.05,
+					},
+					"MXN": {
+						"JPY": 10.0,
+						"EUR": 10.95,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		actualErr := validateCustomRates(tc.inBidReqCurrencies)
+
+		assert.Equal(t, tc.outCurrencyError, actualErr, tc.desc)
 	}
 }
 
@@ -2590,7 +2719,49 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReque
 }
 
 type mockBidExchange struct {
-	gotRequest *openrtb2.BidRequest
+	mockBidder mockBidExchangeBidder
+	pbsRates   map[string]map[string]float64
+}
+
+func newMockBidExchange(bidder mockBidExchangeBidder, mockCurrencyConversionRates map[string]map[string]float64) *mockBidExchange {
+	if bidder.BidCurrency == "" {
+		bidder.BidCurrency = "USD"
+	}
+
+	return &mockBidExchange{
+		mockBidder: bidder,
+		pbsRates:   mockCurrencyConversionRates,
+	}
+}
+
+// getAuctionCurrencyRates copies the logic of the exchange package for testing purposes
+func (e *mockBidExchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
+	if customRates == nil {
+		// The timestamp is required for the function signature, but is not used and its
+		// value has no significance in the tests
+		return currency.NewRates(time.Now(), e.pbsRates)
+	}
+
+	usePbsRates := true
+	if customRates.UsePBSRates != nil {
+		usePbsRates = *customRates.UsePBSRates
+	}
+
+	if !usePbsRates {
+		// The timestamp is required for the function signature, but is not used and its
+		// value has no significance in the tests
+		return currency.NewRates(time.Now(), customRates.ConversionRates)
+	}
+
+	// Both PBS and custom rates can be used, check if ConversionRates is not empty
+	if len(customRates.ConversionRates) == 0 {
+		// Custom rates map is empty, use PBS rates only
+		return currency.NewRates(time.Now(), e.pbsRates)
+	}
+
+	// Return an AggregateConversions object that includes both custom and PBS currency rates but will
+	// prioritize custom rates over PBS rates whenever a currency rate is found in both
+	return currency.NewAggregateConversions(currency.NewRates(time.Time{}, customRates.ConversionRates), currency.NewRates(time.Now(), e.pbsRates))
 }
 
 // mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext
@@ -2601,6 +2772,36 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 		BidID: "test bid id",
 		NBR:   openrtb2.NoBidReasonCodeUnknownError.Ptr(),
 	}
+
+	// Use currencies inside r.BidRequest.Cur, if any, and convert currencies if needed
+	if len(r.BidRequest.Cur) == 0 {
+		r.BidRequest.Cur = []string{"USD"}
+	}
+
+	var currencyFrom string = e.mockBidder.getBidCurrency()
+	var conversionRate float64 = 0.00
+	var err error
+
+	var requestExt openrtb_ext.ExtRequest
+	if len(r.BidRequest.Ext) > 0 {
+		if err := json.Unmarshal(r.BidRequest.Ext, &requestExt); err != nil {
+			return nil, fmt.Errorf("request.ext is invalid: %v", err)
+		}
+	}
+
+	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
+	for _, bidReqCur := range r.BidRequest.Cur {
+		if conversionRate, err = conversions.GetRate(currencyFrom, bidReqCur); err == nil {
+			bidResponse.Cur = bidReqCur
+			break
+		}
+	}
+
+	if conversionRate == 0 {
+		// Can't have bids if there's not even a 1 USD to 1 USD conversion rate
+		return nil, errors.New("Can't produce bid with no valid currency to use or currency conversion to convert to.")
+	}
+
 	if len(r.BidRequest.Imp) > 0 {
 		var SeatBidMap = make(map[string]openrtb2.SeatBid, 0)
 		for _, imp := range r.BidRequest.Imp {
@@ -2625,9 +2826,17 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 			for bidderNameOrAlias := range bidderExts {
 				if isBidderToValidate(bidderNameOrAlias) {
 					if val, ok := SeatBidMap[bidderNameOrAlias]; ok {
-						val.Bid = append(val.Bid, openrtb2.Bid{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)})
+						val.Bid = append(val.Bid, openrtb2.Bid{ID: e.mockBidder.getBidId(bidderNameOrAlias)})
 					} else {
-						SeatBidMap[bidderNameOrAlias] = openrtb2.SeatBid{Seat: fmt.Sprintf("%s-bids", bidderNameOrAlias), Bid: []openrtb2.Bid{{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)}}}
+						SeatBidMap[bidderNameOrAlias] = openrtb2.SeatBid{
+							Seat: e.mockBidder.getSeatName(bidderNameOrAlias),
+							Bid: []openrtb2.Bid{
+								{
+									ID:    e.mockBidder.getBidId(bidderNameOrAlias),
+									Price: e.mockBidder.getBidPrice() * conversionRate,
+								},
+							},
+						}
 					}
 				}
 			}
@@ -2638,6 +2847,24 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 	}
 
 	return bidResponse, nil
+}
+
+type mockBidExchangeBidder struct {
+	BidCurrency string  `json:"currency"`
+	BidPrice    float64 `json:"price"`
+}
+
+func (bidder mockBidExchangeBidder) getBidCurrency() string {
+	return bidder.BidCurrency
+}
+func (bidder mockBidExchangeBidder) getBidPrice() float64 {
+	return bidder.BidPrice
+}
+func (bidder mockBidExchangeBidder) getSeatName(bidderNameOrAlias string) string {
+	return fmt.Sprintf("%s-bids", bidderNameOrAlias)
+}
+func (bidder mockBidExchangeBidder) getBidId(bidderNameOrAlias string) string {
+	return fmt.Sprintf("%s-bid", bidderNameOrAlias)
 }
 
 type brokenExchange struct{}

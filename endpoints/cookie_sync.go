@@ -97,7 +97,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	parsedReq := &cookieSyncRequest{}
-	if err := parseRequest(parsedReq, bodyBytes, deps.gDPR.UsersyncIfAmbiguous); err != nil {
+	if err := parseRequest(parsedReq, bodyBytes, deps.gDPR.DefaultValue); err != nil {
 		co.Status = http.StatusBadRequest
 		co.Errors = append(co.Errors, err)
 		http.Error(w, co.Errors[len(co.Errors)-1].Error(), co.Status)
@@ -181,7 +181,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	enc.Encode(csResp)
 }
 
-func parseRequest(parsedReq *cookieSyncRequest, bodyBytes []byte, usersyncIfAmbiguous bool) error {
+func parseRequest(parsedReq *cookieSyncRequest, bodyBytes []byte, gdprDefaultValue string) error {
 	if err := json.Unmarshal(bodyBytes, parsedReq); err != nil {
 		return fmt.Errorf("JSON parsing failed: %s", err.Error())
 	}
@@ -193,7 +193,7 @@ func parseRequest(parsedReq *cookieSyncRequest, bodyBytes []byte, usersyncIfAmbi
 	if parsedReq.GDPR == nil {
 		var gdpr = new(int)
 		*gdpr = 1
-		if usersyncIfAmbiguous {
+		if gdprDefaultValue == "0" {
 			*gdpr = 0
 		}
 		parsedReq.GDPR = gdpr
