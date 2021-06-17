@@ -382,10 +382,11 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 	perms := permissionsImpl{
 		cfg: gdprConfig,
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
-			openrtb_ext.BidderAppnexus: 2,
-			openrtb_ext.BidderPubmatic: 6,
-			openrtb_ext.BidderRubicon:  8,
-			openrtb_ext.BidderOpenx:    20,
+			openrtb_ext.BidderAppnexus:        2,
+			openrtb_ext.BidderPubmatic:        6,
+			openrtb_ext.BidderRubicon:         8,
+			openrtb_ext.BidderOpenx:           20,
+			openrtb_ext.BidderAudienceNetwork: 55,
 		},
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
 			tcf2SpecVersion: listFetcher(map[uint16]vendorlist.VendorList{
@@ -408,6 +409,15 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 		{
 			description:           "Appnexus vendor test, insufficient purposes claimed, basic enforcement",
 			bidder:                openrtb_ext.BidderAppnexus,
+			consent:               "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			allowBid:              true,
+			passGeo:               true,
+			passID:                true,
+			weakVendorEnforcement: true,
+		},
+		{
+			description:           "Unknown vendor test, insufficient purposes claimed, basic enforcement",
+			bidder:                openrtb_ext.BidderAudienceNetwork,
 			consent:               "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
 			allowBid:              true,
 			passGeo:               true,
