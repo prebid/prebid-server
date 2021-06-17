@@ -56,6 +56,21 @@ type pubmaticBidExt struct {
 	VideoCreativeInfo *pubmaticBidExtVideo `json:"video,omitempty"`
 }
 
+type ExtImpBidderPubmatic struct {
+	adapters.ExtImpBidder
+	Data *ExtData `json:"data,omitempty"`
+}
+
+type ExtData struct {
+	AdServer *ExtAdServer `json:"adserver"`
+	PBAdSlot string       `json:"pbadslot"`
+}
+
+type ExtAdServer struct {
+	Name   string `json:"name"`
+	AdSlot string `json:"adslot"`
+}
+
 const (
 	INVALID_PARAMS    = "Invalid BidParam"
 	MISSING_PUBID     = "Missing PubID"
@@ -70,6 +85,8 @@ const (
 	dctrKeyName        = "key_val"
 	pmZoneIDKeyName    = "pmZoneId"
 	pmZoneIDKeyNameOld = "pmZoneID"
+	ImpExtAdUnitKey    = "dfp_ad_unit_code"
+	AdServerGAM        = "gam"
 )
 
 func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...interface{}) string {
@@ -453,7 +470,7 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) er
 		imp.Audio = nil
 	}
 
-	var bidderExt adapters.ExtImpBidder
+	var bidderExt ExtImpBidderPubmatic
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return err
 	}
@@ -499,6 +516,14 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) er
 	}
 	if pubmaticExt.PmZoneID != "" {
 		extMap[pmZoneIDKeyName] = pubmaticExt.PmZoneID
+	}
+
+	if bidderExt.Data != nil {
+		if bidderExt.Data.AdServer != nil && bidderExt.Data.AdServer.Name == AdServerGAM && bidderExt.Data.AdServer.AdSlot != "" {
+			extMap[ImpExtAdUnitKey] = bidderExt.Data.AdServer.AdSlot
+		} else if bidderExt.Data.PBAdSlot != "" {
+			extMap[ImpExtAdUnitKey] = bidderExt.Data.PBAdSlot
+		}
 	}
 
 	imp.Ext = nil
