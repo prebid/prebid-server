@@ -23,30 +23,21 @@ type richmedia struct {
 }
 
 func extractAdmRichMedia(adapterResponseAdm string) (string, error) {
-	var richMediaMarkup string
-	var err error
-
 	var richMediaAd richMediaAd
-	err = json.Unmarshal([]byte(adapterResponseAdm), &richMediaAd)
-	var richMedia = richMediaAd.RichMedia
-
-	if err == nil {
-		var clickEvent strings.Builder
-		var impressionTracker strings.Builder
-
-		for _, clicktracker := range richMedia.Clicktrackers {
-			clickEvent.WriteString("fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'), " +
-				"{cache: 'no-cache'});")
-		}
-		for _, impression := range richMedia.Impressiontrackers {
-
-			impressionTracker.WriteString(fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression))
-		}
-
-		richMediaMarkup = fmt.Sprintf(`<div onclick="%s">%s%s</div>`,
-			&clickEvent,
-			richMedia.MediaData.Content,
-			&impressionTracker)
+	if err := json.Unmarshal([]byte(adapterResponseAdm), &richMediaAd); err != nil {
+		return "", err
 	}
-	return richMediaMarkup, err
+
+	var clickEvent strings.Builder
+	var impressionTracker strings.Builder
+
+	for _, clicktracker := range richMediaAd.RichMedia.Clicktrackers {
+		clickEvent.WriteString("fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'), " +
+			"{cache: 'no-cache'});")
+	}
+	for _, impression := range richMediaAd.RichMedia.Impressiontrackers {
+		impressionTracker.WriteString(fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression))
+	}
+
+	return fmt.Sprintf(`<div onclick="%s">%s%s</div>`, &clickEvent, richMediaAd.RichMedia.MediaData.Content, &impressionTracker), nil
 }
