@@ -346,6 +346,7 @@ func TestCacheVideoOnly(t *testing.T) {
 	ctx := context.TODO()
 	v := viper.New()
 	config.SetupViper(v, "")
+	v.Set("gdpr.default_value", "0")
 	cfg, err := config.New(v)
 	if err != nil {
 		t.Fatal(err.Error())

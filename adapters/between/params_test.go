@@ -41,16 +41,15 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"host":"lbs-eu1.ads", "publisher_id": "1"}`,
-	`{"host":"lbs-eu1.ads", "publisher_id": "1", "bid_floor": 5.5}`,
-	`{"host":"lbs-eu1.ads", "publisher_id": "1", "bid_floor": 1, "bid_floor_cur": "RUB"}`,
+	`{"host":"lbs-ru1.ads", "publisher_id": "2"}`,
+	`{"host":"lbs-us-east1.ads", "publisher_id": "3"}`,
+	`{"host":"lbs-asia1.ads", "publisher_id": "4"}`,
 }
 
 var invalidParams = []string{
 	`{"host":"badhost.ads", "publisher_id": "1"}`,
 	`{"host":"lbs-eu1.ads", "publisher_id": 1}`,
-	`{"host":"lbs-eu1.ads", "publisher_id": "1"", "bid_floor": 5.5}`,
-	`{"host":"lbs-eu1.ads", "publisher_id": "1", "bid_floor": "5.5"}`,
-	`{"host":"lbs-eu1.ads", "publisher_id": "1", "bid_floor": 5.5, "bid_floor_cur": "cur"}`,
+	`{"host":"lbs-eu1.ads", "publisher_id": "1""}`,
 	``,
 	`null`,
 	`true`,

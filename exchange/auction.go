@@ -17,14 +17,21 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
+const (
+	DebugOverrideHeader string = "x-pbs-debug-override"
+)
+
 type DebugLog struct {
-	Enabled     bool
-	CacheType   prebid_cache_client.PayloadType
-	Data        DebugData
-	TTL         int64
-	CacheKey    string
-	CacheString string
-	Regexp      *regexp.Regexp
+	Enabled       bool
+	CacheType     prebid_cache_client.PayloadType
+	Data          DebugData
+	TTL           int64
+	CacheKey      string
+	CacheString   string
+	Regexp        *regexp.Regexp
+	DebugOverride bool
+	//little optimization, it stores value of debugLog.Enabled || debugLog.DebugOverride
+	DebugEnabledOrOverridden bool
 }
 
 type DebugData struct {
@@ -45,6 +52,10 @@ func (d *DebugLog) BuildCacheString() {
 	d.Data.Response = fmt.Sprintf("<Response>%s</Response>", d.Data.Response)
 
 	d.CacheString = fmt.Sprintf("%s<Log>%s%s%s</Log>", xml.Header, d.Data.Request, d.Data.Headers, d.Data.Response)
+}
+
+func IsDebugOverrideEnabled(debugHeader, configOverrideToken string) bool {
+	return configOverrideToken != "" && debugHeader == configOverrideToken
 }
 
 func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, timeout int, errors []error) error {
@@ -238,7 +249,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 
-	if len(toCache) > 0 && debugLog != nil && debugLog.Enabled {
+	if len(toCache) > 0 && debugLog != nil && debugLog.DebugEnabledOrOverridden {
 		debugLog.CacheKey = hbCacheID
 		debugLog.BuildCacheString()
 		if jsonBytes, err := json.Marshal(debugLog.CacheString); err == nil {

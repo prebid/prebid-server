@@ -1,0 +1,149 @@
+{
+  "mockBidRequest": {
+    "id": "a1580f2f-be6d-11eb-a150-d094662c1c35",
+    "tmax": 500,
+    "at": 1,
+    "device": {
+      "dnt": 0,
+      "devicetype": 2,
+      "js": 1,
+      "ip": "79.26.58.249",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
+      "os": "Mac OS",
+      "language": "en",
+      "geo": {
+        "country": "ITA"
+      }
+    },
+    "user": {
+      "id": "l1eHS1lZE41a",
+      "ext": {
+        "consent": "CPCfkEbPCfkEbERACAENBbCsAP_AAH_AAAAAHetf_X_fb39j-_59_9t0eY1f9_7_v-wzjhfds-8NyPvX_L8X42M7PF36pq4KuR4Eu3LBIQFlHOHUTUmw6okVrTPsak2Mr7NKJ7LEinMbe2dYGHtfn91TuZKYr_7s_9fz__-v_v__79f3r-3_3_vp9X---_e_V399xKB3QBJhqXwAWYljgSTRpVCiBCFYSHQCgAooBhaJrCAhYFOyuAj1BAwAQGoCMCIEGIKMWAQAAAQBIREBIAeCARAEQCAAEAKkBCAAiYBBYAWBgEAAoBoWIEUAQgSEGRwVHKYEBEi0UE8lYAlF3sYYQhlFgBQKP6KjARKEAAAA.YAAAAAAAAAAA"
+      }
+    },
+    "site": {
+      "id": "57078628",
+      "domain": "www.affaritaliani.it",
+      "page": "https://www.affaritaliani.it/cronache/gestione-covid-proteste-di-imprenditori-sanitari-ma-ignorate-da-ogni-media-742138.html",
+      "ref": "https://www.affaritaliani.it/cronache/gestione-covid-proteste-di-imprenditori-sanitari-ma-ignorate-da-ogni-media-742138.html?refresh_ce",
+      "name": "www.affaritaliani.it",
+      "publisher": {
+        "id": "439696",
+        "name": "www.affaritaliani.it"
+      },
+      "cat": [
+        "IAB12"
+      ]
+    },
+    "publisher": {},
+    "cur": [
+      "USD"
+    ],
+    "bcat": [
+      "IAB12-2",
+      "IAB9-7"
+    ],
+    "imp": [{
+      "id": "1",
+      "bidfloor": 0.1,
+      "bidfloorcur": "USD",
+      "instl": 0,
+      "secure": 1,
+      "native": {
+        "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":492,\"hmin\":328,\"type\":3,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"required\":0,\"data\":{\"type\":6}},{\"id\":5,\"required\":0,\"data\":{\"type\":7}},{\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
+        "ver": "1.1"
+      },
+      "ext": {
+        "bidder": {
+          "key": "test_native"
+        }
+      }
+    }],
+    "regs": {
+      "ext": {
+        "gdpr": 1
+      }
+    }
+  },
+
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://service.e-volution.ai/pbserver",
+      "body": {
+        "id": "a1580f2f-be6d-11eb-a150-d094662c1c35",
+        "imp": [{
+          "id": "1",
+          "native": {
+            "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":492,\"hmin\":328,\"type\":3,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"required\":0,\"data\":{\"type\":6}},{\"id\":5,\"required\":0,\"data\":{\"type\":7}},{\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
+            "ver": "1.1"
+          },
+          "bidfloor": 0.1,
+          "bidfloorcur": "USD",
+          "secure": 1,
+          "ext": {
+            "bidder": {
+              "key": "test_native"
+            }
+          }
+        }],
+        "site": {
+          "id": "57078628",
+          "name": "www.affaritaliani.it",
+          "domain": "www.affaritaliani.it",
+          "cat": ["IAB12"],
+          "page": "https://www.affaritaliani.it/cronache/gestione-covid-proteste-di-imprenditori-sanitari-ma-ignorate-da-ogni-media-742138.html",
+          "ref": "https://www.affaritaliani.it/cronache/gestione-covid-proteste-di-imprenditori-sanitari-ma-ignorate-da-ogni-media-742138.html?refresh_ce",
+          "publisher": {
+            "id": "439696",
+            "name": "www.affaritaliani.it"
+          }
+        },
+        "device": {
+          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
+          "geo": {
+            "country": "ITA"
+          },
+          "dnt": 0,
+          "ip": "79.26.58.249",
+          "devicetype": 2,
+          "os": "Mac OS",
+          "js": 1,
+          "language": "en"
+        },
+        "user": {
+          "id": "l1eHS1lZE41a",
+          "ext": {
+            "consent": "CPCfkEbPCfkEbERACAENBbCsAP_AAH_AAAAAHetf_X_fb39j-_59_9t0eY1f9_7_v-wzjhfds-8NyPvX_L8X42M7PF36pq4KuR4Eu3LBIQFlHOHUTUmw6okVrTPsak2Mr7NKJ7LEinMbe2dYGHtfn91TuZKYr_7s_9fz__-v_v__79f3r-3_3_vp9X---_e_V399xKB3QBJhqXwAWYljgSTRpVCiBCFYSHQCgAooBhaJrCAhYFOyuAj1BAwAQGoCMCIEGIKMWAQAAAQBIREBIAeCARAEQCAAEAKkBCAAiYBBYAWBgEAAoBoWIEUAQgSEGRwVHKYEBEi0UE8lYAlF3sYYQhlFgBQKP6KjARKEAAAA.YAAAAAAAAAAA"
+          }
+        },
+        "at": 1,
+        "tmax": 500,
+        "cur": ["USD"],
+        "bcat": ["IAB12-2", "IAB9-7"],
+        "regs": {
+          "ext": {
+            "gdpr": 1
+          }
+        }
+      }
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "a1580f2f-be6d-11eb-a150-d094662c1c35",
+        "bidid": "359da97d0384d8a14767029c18fd840d",
+        "seatbid": [],
+        "cur": "USD"
+      }
+    }
+  }],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Empty seatbid",
+      "comparison": "literal"
+    }
+  ],
+
+  "expectedBidResponses": []
+}
