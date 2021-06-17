@@ -1382,9 +1382,6 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	for i := 0; i < len(impIds); i++ {
 		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
 
-		impId, err := jsonparser.GetString(resolvedImp, "id")
-		impToStoredReq[impId] = storedImps[impIds[i]]
-
 		if err != nil {
 			hasErr, Err := getJsonSyntaxError(imps[idIndices[i]])
 			if hasErr {
@@ -1398,6 +1395,21 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 			return nil, impToStoredReq, []error{err}
 		}
 		imps[idIndices[i]] = resolvedImp
+
+		includeStoredImps, err := jsonparser.GetBoolean(resolvedImp, "ext", "prebid", "options", "echovideoattrs")
+		if err == jsonparser.KeyPathNotFoundError {
+			err = nil
+		}
+		if err != nil {
+			return nil, nil, []error{err}
+		}
+		if includeStoredImps {
+			impId, err := jsonparser.GetString(resolvedImp, "id")
+			if err != nil {
+				return nil, nil, []error{err}
+			}
+			impToStoredReq[impId] = storedImps[impIds[i]]
+		}
 	}
 	if len(impIds) > 0 {
 		newImpJson, err := json.Marshal(imps)

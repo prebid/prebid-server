@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -468,6 +467,14 @@ func (e *exchange) getAllBids(
 				ae.HttpCalls = bids.httpCalls
 			}
 
+			//put stored req data back to bid.ext, map by bid.imp_id
+			if len(impToStoredReq) != 0 {
+				storedImpErr := insertStoredImpData(impToStoredReq, bids)
+				if storedImpErr != nil {
+					err = append(err, storedImpErr)
+				}
+			}
+
 			// Timing statistics
 			e.me.RecordAdapterTime(bidderRequest.BidderLabels, time.Since(start))
 			bidderRequest.BidderLabels.AdapterBids = bidsToMetric(brw.adapterBids)
@@ -483,12 +490,6 @@ func (e *exchange) getAllBids(
 					e.me.RecordAdapterBidReceived(bidderRequest.BidderLabels, bid.bidType, bid.bid.AdM != "")
 				}
 			}
-
-			//put stored req data back to bid.ext, map by bid.imp_id
-			if len(impToStoredReq) != 0 {
-				insertStoredImpData(impToStoredReq, bids)
-			}
-
 			chBids <- brw
 		}, chBids)
 		go bidderRunner(bidder, conversions)
@@ -512,13 +513,28 @@ func (e *exchange) getAllBids(
 	return adapterBids, adapterExtra, bidsFound
 }
 
-func insertStoredImpData(impsToStoredRequest map[string][]byte, bids *pbsOrtbSeatBid) {
+func insertStoredImpData(impsToStoredRequest map[string][]byte, bids *pbsOrtbSeatBid) error {
 	for _, bid := range bids.bids {
 		if val, ok := impsToStoredRequest[bid.bid.ImpID]; ok {
-			result, _ := jsonparser.Set(bid.bid.Ext, val, StoredRequestAttributes)
+			bidExtData := make(map[string]interface{})
+			storedImpVal := make(map[string]interface{})
+			err := json.Unmarshal(bid.bid.Ext, &bidExtData)
+			if err != nil {
+				return err
+			}
+			err = json.Unmarshal(val, &storedImpVal)
+			if err != nil {
+				return err
+			}
+			bidExtData[StoredRequestAttributes] = storedImpVal
+			result, err := json.Marshal(bidExtData)
+			if err != nil {
+				return err
+			}
 			bid.bid.Ext = result
 		}
 	}
+	return nil
 }
 
 func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
