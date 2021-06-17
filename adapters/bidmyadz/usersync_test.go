@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewBidmyadzSyncer(t *testing.T) {
-	syncURL := "https://cookie-sync.bidmyadz.com/c0f68227d14ed938c6c49f3967cbe9bc?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}"
+	syncURL := "https://test.com/c0f68227d14ed938c6c49f3967cbe9bc?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}"
 	syncURLTemplate := template.Must(
 		template.New("sync-template").Parse(syncURL),
 	)
@@ -27,7 +27,7 @@ func TestNewBidmyadzSyncer(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, "https://cookie-sync.bidmyadz.com/c0f68227d14ed938c6c49f3967cbe9bc?gdpr=0&gdpr_consent=allGdpr&ccpa=1---", syncInfo.URL)
+	assert.Equal(t, "https://test.com/c0f68227d14ed938c6c49f3967cbe9bc?gdpr=0&gdpr_consent=allGdpr&ccpa=1---", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

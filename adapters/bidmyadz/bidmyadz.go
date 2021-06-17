@@ -16,7 +16,7 @@ type adapter struct {
 }
 
 type bidExt struct {
-	MediaType string `json:"mediaType,omitempty"`
+	MediaType string `json:"mediaType"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
@@ -96,7 +96,7 @@ func (a *adapter) MakeBids(
 
 	if bidderRawResponse.StatusCode == http.StatusServiceUnavailable {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Bidder unavailable."),
+			Message: fmt.Sprintf("Bidder is unavailable. Please contact your account manager."),
 		}}
 	}
 

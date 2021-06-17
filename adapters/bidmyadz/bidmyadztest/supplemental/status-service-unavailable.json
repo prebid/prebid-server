@@ -93,7 +93,7 @@
 
   "expectedMakeBidsErrors": [
     {
-      "value": "Bidder unavailable.",
+      "value": "Bidder is unavailable. Please contact your account manager.",
       "comparison": "literal"
     }
   ]
