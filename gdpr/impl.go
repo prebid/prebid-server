@@ -81,6 +81,8 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context,
 
 	if id, ok := p.vendorIDs[bidder]; ok {
 		return p.allowActivities(ctx, id, consent, weakVendorEnforcement)
+	} else if weakVendorEnforcement {
+		return p.allowActivities(ctx, 0, consent, weakVendorEnforcement)
 	}
 
 	return p.defaultVendorPermissions()
