@@ -43,8 +43,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, err)
 			continue
 		}
-		imp.TagID = outbrainExt.TagId
-		reqCopy.Imp[i] = imp
+		if outbrainExt.TagId != "" {
+			imp.TagID = outbrainExt.TagId
+			reqCopy.Imp[i] = imp
+		}
 	}
 
 	publisher := &openrtb2.Publisher{
