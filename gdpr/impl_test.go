@@ -855,14 +855,13 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		passID                bool
 	}{
 		{
-			description:           "Bid/ID blocked by publisher - p2 enabled with p2 vendor exception, pub restricts p2 for vendor",
-			p2VendorExceptionMap:  map[openrtb_ext.BidderName]bool{openrtb_ext.BidderAppnexus: true},
-			sp1VendorExceptionMap: map[openrtb_ext.BidderName]bool{},
-			bidder:                openrtb_ext.BidderAppnexus,
-			consent:               noPurposeOrVendorConsentAndPubRestrictsP2,
-			allowBid:              false,
-			passGeo:               false,
-			passID:                false,
+			description:          "Bid/ID blocked by publisher - p2 enabled with p2 vendor exception, pub restricts p2 for vendor",
+			p2VendorExceptionMap: map[openrtb_ext.BidderName]bool{openrtb_ext.BidderAppnexus: true},
+			bidder:               openrtb_ext.BidderAppnexus,
+			consent:              noPurposeOrVendorConsentAndPubRestrictsP2,
+			allowBid:             false,
+			passGeo:              false,
+			passID:               false,
 		},
 		{
 			description:           "Bid/ID allowed by vendor exception - p2 enabled with p2 vendor exception, pub restricts none",
@@ -926,5 +925,68 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		assert.EqualValuesf(t, td.allowBid, allowBid, "AllowBid failure on %s", td.description)
 		assert.EqualValuesf(t, td.passGeo, passGeo, "PassGeo failure on %s", td.description)
 		assert.EqualValuesf(t, td.passID, passID, "PassID failure on %s", td.description)
+	}
+}
+
+func TestBidderSyncAllowedVendorException(t *testing.T) {
+	noPurposeOrVendorConsentAndPubRestrictsP1 := "CPF_61ePF_61eFxAAAENAiCAAAAAAAAAAAAAAQAAAAAAAAAAIIACACA"
+	noPurposeOrVendorConsentAndPubRestrictsNone := "CPF_61ePF_61eFxAAAENAiCAAAAAAAAAAAAAACEAAAAA"
+
+	testDefs := []struct {
+		description          string
+		p1VendorExceptionMap map[openrtb_ext.BidderName]bool
+		bidder               openrtb_ext.BidderName
+		consent              string
+		allowSync            bool
+	}{
+		{
+			description:          "Sync blocked by no consent - p1 enabled, no p1 vendor exception, pub restricts none",
+			p1VendorExceptionMap: map[openrtb_ext.BidderName]bool{},
+			bidder:               openrtb_ext.BidderAppnexus,
+			consent:              noPurposeOrVendorConsentAndPubRestrictsNone,
+			allowSync:            false,
+		},
+		{
+			description:          "Sync blocked by publisher - p1 enabled with p1 vendor exception, pub restricts p1 for vendor",
+			p1VendorExceptionMap: map[openrtb_ext.BidderName]bool{openrtb_ext.BidderAppnexus: true},
+			bidder:               openrtb_ext.BidderAppnexus,
+			consent:              noPurposeOrVendorConsentAndPubRestrictsP1,
+			allowSync:            false,
+		},
+		{
+			description:          "Sync allowed by vendor exception - p1 enabled with p1 vendor exception, pub restricts none",
+			p1VendorExceptionMap: map[openrtb_ext.BidderName]bool{openrtb_ext.BidderAppnexus: true},
+			bidder:               openrtb_ext.BidderAppnexus,
+			consent:              noPurposeOrVendorConsentAndPubRestrictsNone,
+			allowSync:            true,
+		},
+	}
+
+	for _, td := range testDefs {
+		vendorListData := MarshalVendorList(buildVendorList34())
+		perms := permissionsImpl{
+			cfg: config.GDPR{
+				HostVendorID: 2,
+				TCF2: config.TCF2{
+					Enabled:  true,
+					Purpose1: config.Purpose{Enabled: true, VendorExceptionMap: td.p1VendorExceptionMap},
+				},
+			},
+			vendorIDs: map[openrtb_ext.BidderName]uint16{
+				openrtb_ext.BidderAppnexus: 32,
+			},
+			fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+				tcf2SpecVersion: listFetcher(map[uint16]vendorlist.VendorList{
+					34: parseVendorListDataV2(t, vendorListData),
+				}),
+			},
+		}
+		perms.purposeConfigs = map[consentconstants.Purpose]config.Purpose{
+			consentconstants.Purpose(1): perms.cfg.TCF2.Purpose1,
+		}
+
+		allowSync, err := perms.BidderSyncAllowed(context.Background(), td.bidder, SignalYes, td.consent)
+		assert.NoErrorf(t, err, "Error processing BidderSyncAllowed for %s", td.description)
+		assert.EqualValuesf(t, td.allowSync, allowSync, "AllowSync failure on %s", td.description)
 	}
 }
