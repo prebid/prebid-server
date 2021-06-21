@@ -382,11 +382,10 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 	perms := permissionsImpl{
 		cfg: gdprConfig,
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
-			openrtb_ext.BidderAppnexus:        2,
-			openrtb_ext.BidderPubmatic:        6,
-			openrtb_ext.BidderRubicon:         8,
-			openrtb_ext.BidderOpenx:           20,
-			openrtb_ext.BidderAudienceNetwork: 55,
+			openrtb_ext.BidderAppnexus: 2,
+			openrtb_ext.BidderPubmatic: 6,
+			openrtb_ext.BidderRubicon:  8,
+			openrtb_ext.BidderOpenx:    20,
 		},
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
 			tcf2SpecVersion: listFetcher(map[uint16]vendorlist.VendorList{
