@@ -5,15 +5,20 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 )
 
-func NewAdponeBidder(endpoint string) *adponeAdapter {
-	return &adponeAdapter{endpoint: endpoint}
+// Builder builds a new instance of the Adpone adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &adponeAdapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }
 
 type adponeAdapter struct {
@@ -21,7 +26,7 @@ type adponeAdapter struct {
 }
 
 func (adapter *adponeAdapter) MakeRequests(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
 	requestsToBidder []*adapters.RequestData,
@@ -70,7 +75,7 @@ const unexpectedStatusCodeFormat = "" +
 	"Unexpected status code: %d. Run with request.debug = 1 for more info"
 
 func (adapter *adponeAdapter) MakeBids(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
 ) (
@@ -94,7 +99,7 @@ func (adapter *adponeAdapter) MakeBids(
 		return nil, []error{err}
 	}
 
-	var openRTBBidderResponse openrtb.BidResponse
+	var openRTBBidderResponse openrtb2.BidResponse
 	if err := json.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
 		return nil, []error{err}
 	}

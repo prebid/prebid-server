@@ -1,0 +1,120 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_auction",
+    "imp": [{
+      "id": "some_test_ad_id",
+      "banner": {
+        "format": [{
+          "w": 300,
+          "h": 250
+        }],
+        "w": 300,
+        "h": 250
+      },
+      "ext": {
+        "bidder": {
+          "tagid": "25251"
+        }
+      }
+    }],
+    "device": {
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+      "ip": "123.123.123.123",
+      "dnt": 1
+    },
+    "app": {
+      "domain": "www.publisher.com",
+      "storeurl": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+    }
+  },
+
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://hb.emxdgt.com?t=1000&ts=2060541160",
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/json;charset=utf-8"
+        ],
+        "X-Forwarded-For": [
+          "123.123.123.123"
+        ],
+        "Dnt": [
+          "1"
+        ],
+        "User-Agent": [
+          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36"
+        ]
+      },
+      "body": {
+        "id": "some_test_auction",
+        "imp": [{
+          "id": "some_test_ad_id",
+          "banner": {
+            "format": [{
+              "w": 300,
+              "h": 250
+            }],
+            "w": 300,
+            "h": 250
+          },
+          "ext": {
+            "bidder": {
+              "tagid": "25251"
+            }
+          },
+          "tagid": "25251",
+          "secure": 0
+        }],
+        "app": {
+          "domain": "www.publisher.com",
+          "storeurl": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+        },
+        "device": {
+          "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+          "ip": "123.123.123.123",
+          "dnt": 1
+        }
+      }
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "some_test_auction",
+        "seatbid": [{
+            "seat": "12356",
+            "bid": [{
+              "adm": "<div id=\"123456789_ad\"><script>!function(){console.log\"Hello, world.\";}();<\/script><\/div>",
+              "id": "some_test_ad_id",
+              "impid": "some_test_ad_id",
+              "ttl": 300,
+              "crid": "94395500",
+              "w": 300,
+              "price": 2.942808,
+              "adid": "94395500",
+              "h": 250
+            }]
+        }],
+        "cur": "USD"
+    }
+    }
+  }],
+
+  "expectedBidResponses": [{
+    "bids": [{
+      "bid": {
+        "adm": "<div id=\"123456789_ad\"><script>!function(){console.log\"Hello, world.\";}();<\/script><\/div>",
+        "id": "some_test_ad_id",
+        "impid": "some_test_ad_id",
+        "crid": "94395500",
+        "w": 300,
+        "price": 2.942808,
+        "adid": "94395500",
+        "h": 250
+      },
+      "type": "banner"
+    }]
+  }]
+}

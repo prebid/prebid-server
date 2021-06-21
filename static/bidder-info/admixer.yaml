@@ -1,5 +1,6 @@
 maintainer:
   email: "prebid@admixer.net"
+gvlVendorID: 511
 capabilities:
   app:
     mediaTypes:

@@ -7,8 +7,9 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -21,13 +22,15 @@ type connectadImpExt struct {
 	ConnectAd openrtb_ext.ExtImpConnectAd `json:"connectad"`
 }
 
-func NewConnectAdBidder(endpoint string) *ConnectAdAdapter {
-	return &ConnectAdAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the ConnectAd adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &ConnectAdAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }
 
-func (a *ConnectAdAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *ConnectAdAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	var errs []error
 
@@ -70,7 +73,7 @@ func (a *ConnectAdAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 	}}, errs
 }
 
-func (a *ConnectAdAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *ConnectAdAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -82,7 +85,7 @@ func (a *ConnectAdAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -104,10 +107,10 @@ func (a *ConnectAdAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters
 	return bidResponse, nil
 }
 
-func preprocess(request *openrtb.BidRequest) []error {
+func preprocess(request *openrtb2.BidRequest) []error {
 	impsCount := len(request.Imp)
 	errors := make([]error, 0, impsCount)
-	resImps := make([]openrtb.Imp, 0, impsCount)
+	resImps := make([]openrtb2.Imp, 0, impsCount)
 	secure := int8(0)
 
 	if request.Site != nil && request.Site.Page != "" {
@@ -138,7 +141,7 @@ func preprocess(request *openrtb.BidRequest) []error {
 	return errors
 }
 
-func addImpInfo(imp *openrtb.Imp, secure *int8, cadExt *openrtb_ext.ExtImpConnectAd) {
+func addImpInfo(imp *openrtb2.Imp, secure *int8, cadExt *openrtb_ext.ExtImpConnectAd) {
 	imp.TagID = strconv.Itoa(cadExt.SiteID)
 	imp.Secure = secure
 
@@ -156,7 +159,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpConnectAd, error) {
+func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpConnectAd, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -180,7 +183,7 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpConnectAd, error) {
 	return &cadExt, nil
 }
 
-func buildImpBanner(imp *openrtb.Imp) error {
+func buildImpBanner(imp *openrtb2.Imp) error {
 	imp.Ext = nil
 
 	if imp.Banner == nil {

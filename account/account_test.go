@@ -8,7 +8,7 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,7 +29,7 @@ func (af mockAccountFetcher) FetchAccount(ctx context.Context, accountID string)
 }
 
 func TestGetAccount(t *testing.T) {
-	unknown := pbsmetrics.PublisherUnknown
+	unknown := metrics.PublisherUnknown
 	testCases := []struct {
 		accountID string
 		// account_required

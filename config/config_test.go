@@ -109,8 +109,7 @@ func TestExternalCacheURLValidate(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		var errs configErrors
-		errs = test.data.validate(errs)
+		errs := test.data.validate([]error{})
 
 		assert.Equal(t, test.expErrors, len(errs), "Test case threw unexpected number of errors. Desc: %s errMsg = %v \n", test.desc, errs)
 	}
@@ -136,10 +135,12 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
+	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, false)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
 	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
+	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
 }
 
 var fullConfig = []byte(`
@@ -197,6 +198,7 @@ metrics:
   disabled_metrics:
     account_adapter_details: true
     adapter_connections_metrics: true
+    adapter_gdpr_request_blocked: true
 datacache:
   type: postgres
   filename: /usr/db/db.db
@@ -231,6 +233,7 @@ certificates_file: /etc/ssl/cert.pem
 request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
     ipv6_private_networks: ["1111::/16", "2222::/16"]
+generate_bid_id: true
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -392,10 +395,10 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
 	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, "http://ib.adnxs.com/some/endpoint")
 	cmpStrings(t, "adapters.appnexus.extra_info", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "{\"native\":\"http://www.native.org/endpoint\",\"video\":\"http://www.video.org/endpoint\"}")
-	cmpStrings(t, "adapters.audiencenetwork.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].Endpoint, "http://facebook.com/pbs")
-	cmpStrings(t, "adapters.audiencenetwork.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
-	cmpStrings(t, "adapters.audiencenetwork.platform_id", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID, "abcdefgh1234")
-	cmpStrings(t, "adapters.audiencenetwork.app_secret", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].AppSecret, "987abc")
+	cmpStrings(t, "adapters.audiencenetwork.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].Endpoint, "http://facebook.com/pbs")
+	cmpStrings(t, "adapters.audiencenetwork.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
+	cmpStrings(t, "adapters.audiencenetwork.platform_id", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].PlatformID, "abcdefgh1234")
+	cmpStrings(t, "adapters.audiencenetwork.app_secret", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].AppSecret, "987abc")
 	cmpStrings(t, "adapters.beachfront.endpoint", cfg.Adapters[string(openrtb_ext.BidderBeachfront)].Endpoint, "https://display.bfmio.com/prebid_display")
 	cmpStrings(t, "adapters.beachfront.extra_info", cfg.Adapters[string(openrtb_ext.BidderBeachfront)].ExtraAdapterInfo, "{\"video_endpoint\":\"https://reachms.bfmio.com/bid.json?exchange_id\"}")
 	cmpStrings(t, "adapters.ix.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint, "http://ixtest.com/api")
@@ -412,10 +415,12 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, false)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
+	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
 	cmpStrings(t, "request_validation.ipv4_private_networks", cfg.RequestValidation.IPv4PrivateNetworks[0], "1.1.1.0/24")
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[0], "1111::/16")
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
+	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
@@ -528,12 +533,6 @@ func TestNegativeRequestSize(t *testing.T) {
 	assertOneError(t, cfg.validate(), "cfg.max_request_size must be >= 0. Got -1")
 }
 
-func TestNegativeVendorID(t *testing.T) {
-	cfg := newDefaultConfig(t)
-	cfg.GDPR.HostVendorID = -1
-	assertOneError(t, cfg.validate(), "gdpr.host_vendor_id must be in the range [0, 65535]. Got -1")
-}
-
 func TestNegativePrometheusTimeout(t *testing.T) {
 	cfg := newDefaultConfig(t)
 	cfg.Metrics.Prometheus.Port = 8001
@@ -541,10 +540,44 @@ func TestNegativePrometheusTimeout(t *testing.T) {
 	assertOneError(t, cfg.validate(), "metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got timeout=0 and port=8001")
 }
 
-func TestOverflowedVendorID(t *testing.T) {
+func TestInvalidHostVendorID(t *testing.T) {
+	tests := []struct {
+		description  string
+		vendorID     int
+		wantErrorMsg string
+	}{
+		{
+			description:  "Negative GDPR.HostVendorID",
+			vendorID:     -1,
+			wantErrorMsg: "gdpr.host_vendor_id must be in the range [0, 65535]. Got -1",
+		},
+		{
+			description:  "Overflowed GDPR.HostVendorID",
+			vendorID:     (0xffff) + 1,
+			wantErrorMsg: "gdpr.host_vendor_id must be in the range [0, 65535]. Got 65536",
+		},
+	}
+
+	for _, tt := range tests {
+		cfg := newDefaultConfig(t)
+		cfg.GDPR.HostVendorID = tt.vendorID
+		errs := cfg.validate()
+
+		assert.Equal(t, 1, len(errs), tt.description)
+		assert.EqualError(t, errs[0], tt.wantErrorMsg, tt.description)
+	}
+}
+
+func TestInvalidFetchGVL(t *testing.T) {
 	cfg := newDefaultConfig(t)
-	cfg.GDPR.HostVendorID = (0xffff) + 1
-	assertOneError(t, cfg.validate(), "gdpr.host_vendor_id must be in the range [0, 65535]. Got 65536")
+	cfg.GDPR.TCF1.FetchGVL = true
+	assertOneError(t, cfg.validate(), "gdpr.tcf1.fetch_gvl has been discontinued and must be removed from your config. TCF1 will always use the fallback GVL going forward")
+}
+
+func TestInvalidAMPException(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.GDPR.AMPException = true
+	assertOneError(t, cfg.validate(), "gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)")
 }
 
 func TestNegativeCurrencyConverterFetchInterval(t *testing.T) {
@@ -652,8 +685,7 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 	cfg.Accounts.Postgres.ConnectionInfo.Database = "accounts"
 
 	errs := cfg.validate()
-	assert.Len(t, errs, 2)
-	assert.Contains(t, errs, errors.New("accounts.http: retrieving accounts via http not available, use accounts.files"))
+	assert.Len(t, errs, 1)
 	assert.Contains(t, errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
 }
 
@@ -666,7 +698,7 @@ func newDefaultConfig(t *testing.T) *Configuration {
 	return cfg
 }
 
-func assertOneError(t *testing.T, errs configErrors, message string) {
+func assertOneError(t *testing.T, errs []error, message string) {
 	if !assert.Len(t, errs, 1) {
 		return
 	}

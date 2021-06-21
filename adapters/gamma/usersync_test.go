@@ -25,6 +25,5 @@ func TestGammaSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "//hb.gammaplatform.com/sync?gdpr=0&gdpr_consent=&redirectUri=http%3A%2F%2Flocalhost%2F%2Fsetuid%3Fbidder%3Dgamma%26gdpr%3D0%26gdpr_consent%3D%26uid%3D%24UID", syncInfo.URL)
 	assert.Equal(t, "iframe", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.False(t, syncInfo.SupportCORS)
 }

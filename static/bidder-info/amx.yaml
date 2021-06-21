@@ -1,0 +1,12 @@
+maintainer:
+  email: "prebid@amxrtb.com"
+gvlVendorID: 737
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video

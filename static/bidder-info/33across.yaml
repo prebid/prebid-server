@@ -1,9 +1,8 @@
 maintainer:
   email: "headerbidding@33across.com"
+gvlVendorID: 58
 capabilities:
-  app:
-    mediaTypes:
-    - banner
   site:
     mediaTypes:
     - banner
+    - video

@@ -3,7 +3,7 @@ package ccpa
 import (
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -385,7 +385,7 @@ type mockPolicWriter struct {
 	mock.Mock
 }
 
-func (m *mockPolicWriter) Write(req *openrtb.BidRequest) error {
+func (m *mockPolicWriter) Write(req *openrtb2.BidRequest) error {
 	args := m.Called(req)
 	return args.Error(0)
 }

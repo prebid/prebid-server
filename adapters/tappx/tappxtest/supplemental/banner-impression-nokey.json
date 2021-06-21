@@ -10,8 +10,8 @@
         },
         "ext": {
           "bidder": {
-            "endpoint": "PREBIDTEMPLATE",
-            "host": "test.tappx.com"
+            "endpoint": "ZZ123456PS",
+            "host": "testing.ssp.tappx.com/rtb/v2/"
           }
         }
       }

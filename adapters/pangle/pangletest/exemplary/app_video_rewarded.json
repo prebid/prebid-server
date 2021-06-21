@@ -76,7 +76,16 @@
                 }
               },
               "ext": {
-                "adtype": 7
+                "adtype": 7,
+                "prebid": {
+                  "bidder": null,
+                  "is_rewarded_inventory": 1,
+                  "storedrequest": null
+                },
+                "is_prebid": true,
+                "bidder": {
+                  "token": "123"
+                }
               }
             }
           ]

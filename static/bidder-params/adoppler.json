@@ -7,6 +7,10 @@
       "adunit": {
         "type": "string",
         "description": "AdUnit to bid against to."
+      },
+      "client": {
+        "type": "string",
+        "description": "Client name."
       }
   },
   "required": ["adunit"]

@@ -6,19 +6,19 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/metrics"
 )
 
 // monitorableListener tracks any opened connections in the metrics.
 type monitorableListener struct {
 	net.Listener
-	metrics pbsmetrics.MetricsEngine
+	metrics metrics.MetricsEngine
 }
 
 // monitorableConnection tracks any closed connections in the metrics.
 type monitorableConnection struct {
 	net.Conn
-	metrics pbsmetrics.MetricsEngine
+	metrics metrics.MetricsEngine
 }
 
 func (l *monitorableConnection) Close() error {

@@ -13,9 +13,10 @@ type ExtImpRubicon struct {
 	Visitor            json.RawMessage    `json:"visitor,omitempty"`
 	Video              rubiconVideoParams `json:"video"`
 	Debug              impExtRubiconDebug `json:"debug,omitempty"`
+
 	Region             string             `json:"region"`
 	ViewabilityVendors []string           `json:"viewabilityvendors"`
-	SKADNSupported     bool               `json:"skadn_supported"` // enable skadn ext parameters
+	SKADNSupported     bool               `json:"skadn_supported"`
 	MRAIDSupported     bool               `json:"mraid_supported"`
 }
 

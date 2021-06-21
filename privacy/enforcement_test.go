@@ -3,7 +3,7 @@ package privacy
 import (
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -59,7 +59,6 @@ func TestApply(t *testing.T) {
 	testCases := []struct {
 		description        string
 		enforcement        Enforcement
-		ampGDPRException   bool
 		expectedDeviceID   ScrubStrategyDeviceID
 		expectedDeviceIPv4 ScrubStrategyIPV4
 		expectedDeviceIPv6 ScrubStrategyIPV6
@@ -124,29 +123,11 @@ func TestApply(t *testing.T) {
 				GDPRID:  true,
 				LMT:     false,
 			},
-			ampGDPRException:   false,
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
 			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
 			expectedUser:       ScrubStrategyUserID,
-			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
-		},
-		{
-			description: "GDPR Only - Full - AMP Exception",
-			enforcement: Enforcement{
-				CCPA:    false,
-				COPPA:   false,
-				GDPRGeo: true,
-				GDPRID:  true,
-				LMT:     false,
-			},
-			ampGDPRException:   true,
-			expectedDeviceID:   ScrubStrategyDeviceIDAll,
-			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
-			expectedDeviceGeo:  ScrubStrategyGeoReducedPrecision,
-			expectedUser:       ScrubStrategyUserNone,
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 		{
@@ -158,29 +139,11 @@ func TestApply(t *testing.T) {
 				GDPRID:  true,
 				LMT:     false,
 			},
-			ampGDPRException:   false,
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4None,
 			expectedDeviceIPv6: ScrubStrategyIPV6None,
 			expectedDeviceGeo:  ScrubStrategyGeoNone,
 			expectedUser:       ScrubStrategyUserID,
-			expectedUserGeo:    ScrubStrategyGeoNone,
-		},
-		{
-			description: "GDPR Only - ID Only - AMP Exception",
-			enforcement: Enforcement{
-				CCPA:    false,
-				COPPA:   false,
-				GDPRGeo: false,
-				GDPRID:  true,
-				LMT:     false,
-			},
-			ampGDPRException:   true,
-			expectedDeviceID:   ScrubStrategyDeviceIDAll,
-			expectedDeviceIPv4: ScrubStrategyIPV4None,
-			expectedDeviceIPv6: ScrubStrategyIPV6None,
-			expectedDeviceGeo:  ScrubStrategyGeoNone,
-			expectedUser:       ScrubStrategyUserNone,
 			expectedUserGeo:    ScrubStrategyGeoNone,
 		},
 		{
@@ -192,7 +155,6 @@ func TestApply(t *testing.T) {
 				GDPRID:  false,
 				LMT:     false,
 			},
-			ampGDPRException:   false,
 			expectedDeviceID:   ScrubStrategyDeviceIDNone,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest16,
@@ -217,24 +179,7 @@ func TestApply(t *testing.T) {
 			expectedUserGeo:    ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "Interactions: COPPA Only + AMP Exception",
-			enforcement: Enforcement{
-				CCPA:    false,
-				COPPA:   true,
-				GDPRGeo: false,
-				GDPRID:  false,
-				LMT:     false,
-			},
-			ampGDPRException:   true,
-			expectedDeviceID:   ScrubStrategyDeviceIDAll,
-			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
-			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
-			expectedDeviceGeo:  ScrubStrategyGeoFull,
-			expectedUser:       ScrubStrategyUserIDAndDemographic,
-			expectedUserGeo:    ScrubStrategyGeoFull,
-		},
-		{
-			description: "Interactions: COPPA + GDPR Full + AMP Exception",
+			description: "Interactions: COPPA + GDPR Full",
 			enforcement: Enforcement{
 				CCPA:    false,
 				COPPA:   true,
@@ -242,7 +187,6 @@ func TestApply(t *testing.T) {
 				GDPRID:  true,
 				LMT:     false,
 			},
-			ampGDPRException:   true,
 			expectedDeviceID:   ScrubStrategyDeviceIDAll,
 			expectedDeviceIPv4: ScrubStrategyIPV4Lowest8,
 			expectedDeviceIPv6: ScrubStrategyIPV6Lowest32,
@@ -253,18 +197,18 @@ func TestApply(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		req := &openrtb.BidRequest{
-			Device: &openrtb.Device{},
-			User:   &openrtb.User{},
+		req := &openrtb2.BidRequest{
+			Device: &openrtb2.Device{},
+			User:   &openrtb2.User{},
 		}
-		replacedDevice := &openrtb.Device{}
-		replacedUser := &openrtb.User{}
+		replacedDevice := &openrtb2.Device{}
+		replacedUser := &openrtb2.User{}
 
 		m := &mockScrubber{}
 		m.On("ScrubDevice", req.Device, test.expectedDeviceID, test.expectedDeviceIPv4, test.expectedDeviceIPv6, test.expectedDeviceGeo).Return(replacedDevice).Once()
 		m.On("ScrubUser", req.User, test.expectedUser, test.expectedUserGeo).Return(replacedUser).Once()
 
-		test.enforcement.apply(req, test.ampGDPRException, m)
+		test.enforcement.apply(req, m)
 
 		m.AssertExpectations(t)
 		assert.Same(t, replacedDevice, req.Device, "Device")
@@ -273,7 +217,7 @@ func TestApply(t *testing.T) {
 }
 
 func TestApplyNoneApplicable(t *testing.T) {
-	req := &openrtb.BidRequest{}
+	req := &openrtb2.BidRequest{}
 
 	m := &mockScrubber{}
 
@@ -284,7 +228,7 @@ func TestApplyNoneApplicable(t *testing.T) {
 		GDPRID:  false,
 		LMT:     false,
 	}
-	enforcement.apply(req, false, m)
+	enforcement.apply(req, m)
 
 	m.AssertNotCalled(t, "ScrubDevice")
 	m.AssertNotCalled(t, "ScrubUser")
@@ -294,7 +238,7 @@ func TestApplyNil(t *testing.T) {
 	m := &mockScrubber{}
 
 	enforcement := Enforcement{}
-	enforcement.apply(nil, false, m)
+	enforcement.apply(nil, m)
 
 	m.AssertNotCalled(t, "ScrubDevice")
 	m.AssertNotCalled(t, "ScrubUser")
@@ -304,12 +248,12 @@ type mockScrubber struct {
 	mock.Mock
 }
 
-func (m *mockScrubber) ScrubDevice(device *openrtb.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
+func (m *mockScrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {
 	args := m.Called(device, id, ipv4, ipv6, geo)
-	return args.Get(0).(*openrtb.Device)
+	return args.Get(0).(*openrtb2.Device)
 }
 
-func (m *mockScrubber) ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb.User {
+func (m *mockScrubber) ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb2.User {
 	args := m.Called(user, strategy, geo)
-	return args.Get(0).(*openrtb.User)
+	return args.Get(0).(*openrtb2.User)
 }

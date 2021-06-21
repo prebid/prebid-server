@@ -1,16 +1,33 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Unicorn Adapter Params",
-  "description": "A schema which validates params accepted by the Unicorn adapter",
-  "type": "object",
-  "properties": {
-    "reward": {
-      "type": "integer",
-      "description": "An integer defining the reward (skip) from Unicorn"
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "UNICORN Adapter Params",
+    "description": "A schema which validates params accepted by the UNICORN adapter",
+    "type": "object",
+    "properties": {
+      "placementId": {
+        "type": "string",
+        "description": "In Application, if placementId is empty, prebid server configuration id will be used as placementId."
+      },
+      "publisherId": {
+        "type": "integer",
+        "description": "Account specific publisher id"
+      },
+      "mediaId": {
+        "type": "string",
+        "description": "Publisher specific media id"
+      },
+      "accountId": {
+        "type": "integer",
+        "description": "Account ID for charge request"
+      },
+      "reward": {
+        "type": "integer",
+        "description": "An integer defining the reward (skip) from Unicorn"
+      },
+      "region": {
+        "type": "string",
+        "description": "A string defining region for choosing the closest Unicorn endpoint"
+      }
     },
-    "region": {
-      "type": "string",
-      "description": "A string defining region for choosing the closest Unicorn endpoint"
-    }
+    "required" : ["mediaId", "accountId", "reward", "region"]
   }
-}
