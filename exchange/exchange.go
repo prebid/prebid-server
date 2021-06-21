@@ -516,17 +516,12 @@ func (e *exchange) getAllBids(
 func insertStoredImpData(impsToStoredRequest map[string][]byte, bids *pbsOrtbSeatBid) error {
 	for _, bid := range bids.bids {
 		if val, ok := impsToStoredRequest[bid.bid.ImpID]; ok {
-			bidExtData := make(map[string]interface{})
-			storedImpVal := make(map[string]interface{})
+			bidExtData := make(map[string]json.RawMessage)
 			err := json.Unmarshal(bid.bid.Ext, &bidExtData)
 			if err != nil {
 				return err
 			}
-			err = json.Unmarshal(val, &storedImpVal)
-			if err != nil {
-				return err
-			}
-			bidExtData[StoredRequestAttributes] = storedImpVal
+			bidExtData[StoredRequestAttributes] = val
 			result, err := json.Marshal(bidExtData)
 			if err != nil {
 				return err
