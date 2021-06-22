@@ -157,7 +157,7 @@ func TestReadFromRequest(t *testing.T) {
 
 	for _, test := range testCases {
 		reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
-		result, err := ReadFromRequest(reqWrapper)
+		result, err := ReadFromRequestWrapper(reqWrapper)
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expectedPolicy, result, test.description)
 	}

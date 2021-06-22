@@ -387,7 +387,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		return append(errL, err)
 	}
 
-	if ccpaPolicy, err := ccpa.ReadFromRequest(req); err != nil {
+	if ccpaPolicy, err := ccpa.ReadFromRequestWrapper(req); err != nil {
 		return append(errL, err)
 	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
 		if _, invalidConsent := err.(*errortypes.Warning); invalidConsent {

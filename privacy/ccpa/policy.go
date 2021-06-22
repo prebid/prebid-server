@@ -3,6 +3,7 @@ package ccpa
 import (
 	"fmt"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -12,8 +13,8 @@ type Policy struct {
 	NoSaleBidders []string
 }
 
-// ReadFromRequest extracts the CCPA regulatory information from an OpenRTB bid request.
-func ReadFromRequest(req *openrtb_ext.RequestWrapper) (Policy, error) {
+// ReadFromRequestWrapper extracts the CCPA regulatory information from an OpenRTB bid request.
+func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper) (Policy, error) {
 	var consent string
 	var noSaleBidders []string
 
@@ -40,6 +41,10 @@ func ReadFromRequest(req *openrtb_ext.RequestWrapper) (Policy, error) {
 	}
 
 	return Policy{consent, noSaleBidders}, nil
+}
+
+func ReadFromRequest(req *openrtb2.BidRequest) (Policy, error) {
+	return ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: req})
 }
 
 // Write mutates an OpenRTB bid request with the CCPA regulatory information.
