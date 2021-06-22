@@ -159,7 +159,7 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_0.2"
+            "client": "prebid_server_0.3"
           }
         }
       },
@@ -264,7 +264,7 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_0.2"
+            "client": "prebid_server_0.3"
           }
         }
       },

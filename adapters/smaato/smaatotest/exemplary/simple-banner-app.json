@@ -160,7 +160,7 @@
             "keywords": "keywords"
           },
           "ext": {
-            "client": "prebid_server_0.2"
+            "client": "prebid_server_0.3"
           }
         }
       },
