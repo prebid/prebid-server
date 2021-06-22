@@ -750,6 +750,15 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
+		bidFloor := thisImp.BidFloor
+		bidFloorCur := thisImp.BidFloorCur
+		if bidFloor != 0 {
+			if strings.Contains(strings.ToUpper(bidFloorCur), "EUR") {
+				thisImp.BidFloorCur = "USD"
+				thisImp.BidFloor = bidFloor * 1.2
+			}
+		}
+
 		if request.User != nil {
 			userCopy := *request.User
 			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
