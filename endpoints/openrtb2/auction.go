@@ -350,11 +350,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 			return []error{err}
 		}
 
-		if err := validateSChains(reqPrebid); err != nil {
+		if err := validateSChains(reqPrebid.SChains); err != nil {
 			return []error{err}
 		}
 
-		if err := deps.validateEidPermissions(reqPrebid, aliases); err != nil {
+		if err := deps.validateEidPermissions(reqPrebid.Data, aliases); err != nil {
 			return []error{err}
 		}
 
@@ -451,8 +451,8 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 	return nil
 }
 
-func validateSChains(prebid *openrtb_ext.ExtRequestPrebid) error {
-	_, err := exchange.BidderToPrebidSChains(prebid)
+func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
+	_, err := exchange.BidderToPrebidSChains(sChains)
 	return err
 }
 
@@ -480,13 +480,13 @@ func validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) er
 	return nil
 }
 
-func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebid, aliases map[string]string) error {
-	if prebid == nil || prebid.Data == nil {
+func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, aliases map[string]string) error {
+	if prebid == nil {
 		return nil
 	}
 
-	uniqueSources := make(map[string]struct{}, len(prebid.Data.EidPermissions))
-	for i, eid := range prebid.Data.EidPermissions {
+	uniqueSources := make(map[string]struct{}, len(prebid.EidPermissions))
+	for i, eid := range prebid.EidPermissions {
 		if len(eid.Source) == 0 {
 			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i)
 		}
@@ -1060,8 +1060,7 @@ func isBidderToValidate(bidder string) bool {
 }
 
 func (deps *endpointDeps) parseBidExt(req *openrtb_ext.RequestWrapper) error {
-	_, err := req.GetRequestExt()
-	if err != nil {
+	if _, err := req.GetRequestExt(); err != nil {
 		return fmt.Errorf("request.ext is invalid: %v", err)
 	}
 	return nil

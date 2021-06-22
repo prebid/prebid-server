@@ -28,18 +28,16 @@ var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
 
 const unknownBidder string = ""
 
-func BidderToPrebidSChains(prebid *openrtb_ext.ExtRequestPrebid) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
+func BidderToPrebidSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
-	if prebid != nil {
-		for _, schainWrapper := range prebid.SChains {
-			for _, bidder := range schainWrapper.Bidders {
-				if _, present := bidderToSChains[bidder]; present {
-					return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
-						"it must contain no more than one per bidder.", bidder)
-				} else {
-					bidderToSChains[bidder] = &schainWrapper.SChain
-				}
+	for _, schainWrapper := range sChains {
+		for _, bidder := range schainWrapper.Bidders {
+			if _, present := bidderToSChains[bidder]; present {
+				return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
+					"it must contain no more than one per bidder.", bidder)
+			} else {
+				bidderToSChains[bidder] = &schainWrapper.SChain
 			}
 		}
 	}
@@ -220,7 +218,7 @@ func getAuctionBidderRequests(req AuctionRequest,
 
 	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
 	if requestExt != nil {
-		sChainsByBidder, err = BidderToPrebidSChains(&requestExt.Prebid)
+		sChainsByBidder, err = BidderToPrebidSChains(requestExt.Prebid.SChains)
 		if err != nil {
 			return nil, []error{err}
 		}

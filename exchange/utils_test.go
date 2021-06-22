@@ -1907,7 +1907,7 @@ func TestBidderToPrebidChains(t *testing.T) {
 		},
 	}
 
-	output, err := BidderToPrebidSChains(&input.Prebid)
+	output, err := BidderToPrebidSChains(input.Prebid.SChains)
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(output), 4)
@@ -1933,7 +1933,7 @@ func TestBidderToPrebidChainsDiscardMultipleChainsForBidder(t *testing.T) {
 		},
 	}
 
-	output, err := BidderToPrebidSChains(&input.Prebid)
+	output, err := BidderToPrebidSChains(input.Prebid.SChains)
 
 	assert.NotNil(t, err)
 	assert.Nil(t, output)
@@ -1946,7 +1946,7 @@ func TestBidderToPrebidChainsNilSChains(t *testing.T) {
 		},
 	}
 
-	output, err := BidderToPrebidSChains(&input.Prebid)
+	output, err := BidderToPrebidSChains(input.Prebid.SChains)
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(output), 0)
@@ -1959,7 +1959,7 @@ func TestBidderToPrebidChainsZeroLengthSChains(t *testing.T) {
 		},
 	}
 
-	output, err := BidderToPrebidSChains(&input.Prebid)
+	output, err := BidderToPrebidSChains(input.Prebid.SChains)
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(output), 0)

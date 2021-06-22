@@ -2089,7 +2089,7 @@ func TestValidateEidPermissions(t *testing.T) {
 
 	endpoint := &endpointDeps{bidderMap: knownBidders}
 	for _, test := range testCases {
-		result := endpoint.validateEidPermissions(&test.request.Prebid, knownAliases)
+		result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
 	}
 }
