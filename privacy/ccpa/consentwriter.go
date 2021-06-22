@@ -5,14 +5,14 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// ConsentWriterLegacy implements the old PolicyWriter interface for CCPA.
+// ConsentWriter implements the old PolicyWriter interface for CCPA.
 // This is used where we have not converted to RequestWrapper yet
-type ConsentWriterLegacy struct {
+type ConsentWriter struct {
 	Consent string
 }
 
 // Write mutates an OpenRTB bid request with the CCPA consent string.
-func (c ConsentWriterLegacy) Write(req *openrtb2.BidRequest) error {
+func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 	if req == nil {
 		return nil
 	}

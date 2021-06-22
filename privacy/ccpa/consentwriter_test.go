@@ -91,7 +91,7 @@ func TestConsentWriterLegacy(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		writer := ConsentWriterLegacy{consent}
+		writer := ConsentWriter{consent}
 
 		err := writer.Write(test.request)
 

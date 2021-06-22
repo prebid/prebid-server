@@ -531,7 +531,7 @@ func readPolicy(consent string) (privacy.PolicyWriter, error) {
 	}
 
 	if ccpa.ValidateConsent(consent) {
-		return ccpa.ConsentWriterLegacy{consent}, nil
+		return ccpa.ConsentWriter{consent}, nil
 	}
 
 	return privacy.NilPolicyWriter{}, &errortypes.Warning{
