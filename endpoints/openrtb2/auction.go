@@ -155,7 +155,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if req.App != nil {
 		labels.Source = metrics.DemandApp
 		labels.RType = metrics.ReqTypeORTB2App
-		labels.PubID = getAccountID(req.BidRequest.App.Publisher)
+		labels.PubID = getAccountID(req.App.Publisher)
 	} else { //req.Site != nil
 		labels.Source = metrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -163,7 +163,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		} else {
 			labels.CookieFlag = metrics.CookieFlagYes
 		}
-		labels.PubID = getAccountID(req.BidRequest.Site.Publisher)
+		labels.PubID = getAccountID(req.Site.Publisher)
 	}
 
 	// Look up account now that we have resolved the pubID value
