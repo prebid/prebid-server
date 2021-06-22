@@ -750,6 +750,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
+		// Will be replaced after https://github.com/prebid/prebid-server/issues/1482 resolution
 		bidFloor := thisImp.BidFloor
 		bidFloorCur := thisImp.BidFloorCur
 		if bidFloor != 0 {
