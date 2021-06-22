@@ -753,7 +753,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		bidFloor := thisImp.BidFloor
 		bidFloorCur := thisImp.BidFloorCur
 		if bidFloor != 0 {
-			if strings.Contains(strings.ToUpper(bidFloorCur), "EUR") {
+			if strings.ToUpper(bidFloorCur) == "EUR" {
 				thisImp.BidFloorCur = "USD"
 				thisImp.BidFloor = bidFloor * 1.2
 			}
