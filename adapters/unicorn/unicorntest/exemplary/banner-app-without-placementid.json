@@ -23,7 +23,9 @@
           "bidder": {
             "accountId": 199578,
             "publisherId": 123456,
-            "mediaId": "test_media"
+            "mediaId": "test_media",
+            "placementId": "test_unicorn",
+            "mraid_supported": true
           }
         }
       }
@@ -117,7 +119,8 @@
               "is_rewarded_inventory": 0,
               "storedrequest": {
                 "id": "test"
-              }
+              },
+              "skadn": {}
             },
             "accountId": 199578
           },
@@ -131,7 +134,11 @@
                     "h": 250,
                     "w": 300
                   }
-                ]
+                ],
+                "ext": {
+                  "allowscustomclosebutton": false,
+                  "rewarded": 0
+                }
               },
               "ext": {
                 "bidder": {
@@ -141,7 +148,6 @@
                   "placementId": "test_unicorn"
                 }
               },
-              "tagid": "test_unicorn",
               "id": "29D2F33E-F865-40DA-9320-16EF77935254",
               "secure": 1
             }

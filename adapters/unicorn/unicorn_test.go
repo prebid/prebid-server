@@ -9,9 +9,11 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	// adapterstest.RunJSONBidderTest(t, testsDir, NewUnicornBidder(http.DefaultClient, "https://jp.unicorn.com/tapjoy", "https://jp.unicorn.com/tapjoy"))
 	bidder, buildErr := Builder(openrtb_ext.BidderUnicorn, config.Adapter{
-		Endpoint: "https://ds.uncn.jp"})
+		Endpoint: "https://ds.uncn.jp",
+		XAPI: config.AdapterXAPI{
+			EndpointJP: "https://ds.uncn.jp",
+		}})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

@@ -26,7 +26,7 @@ var unicornExtSKADNetIDs = map[string]bool{
 }
 
 type adapter struct {
-	endpoint string
+	endpoint         string
 	SupportedRegions map[Region]string
 }
 
@@ -56,37 +56,15 @@ type unicornVideoExt struct {
 	Rewarded int `json:"rewarded"`
 }
 
-// UnicornAdapter ...
-type UnicornAdapter struct {
-	http             *adapters.HTTPAdapter
-	URI              string
-	SupportedRegions map[Region]string
-}
-
 // Builder builds a new instance of the UNICORN adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
-	}
-	return bidder, nil
-}
-
-// NewUnicornAdapter ...
-func NewUnicornAdapter(config *adapters.HTTPAdapterConfig, uri, jp string) *UnicornAdapter {
-	return NewUnicornBidder(adapters.NewHTTPAdapter(config).Client, uri, jp)
-}
-
-// NewUnicornBidder ...
-func NewUnicornBidder(client *http.Client, uri, jp string) *UnicornAdapter {
-	adapter := &adapters.HTTPAdapter{Client: client}
-
-	return &UnicornAdapter{
-		http: adapter,
-		URI:  uri,
 		SupportedRegions: map[Region]string{
-			JP: jp,
+			JP: config.XAPI.EndpointJP,
 		},
 	}
+	return bidder, nil
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
@@ -138,7 +116,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		var bidderExt adapters.ExtImpBidder
 		if err = json.Unmarshal(thisImp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
-				Message: err.Error(),
+				Message: fmt.Sprintf("Error while decoding imp[%d].ext: %s", i, err),
 			})
 			continue
 		}
@@ -199,6 +177,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			}
 		}
 
+		impExt.Bidder = openrtb_ext.ExtImpUnicorn{
+			PlacementID: unicornExt.PlacementID,
+			PublisherID: unicornExt.PublisherID,
+			MediaID:     unicornExt.MediaID,
+			AccountID:   unicornExt.AccountID,
+		}
+
 		thisImp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
 			errs = append(errs, err)
@@ -206,7 +191,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		// reinit the values in the request object
-		request.Imp = []openrtb.Imp{thisImp}
+		request.Imp = []openrtb2.Imp{thisImp}
+
+		var modifiableSource openrtb2.Source
+		if request.Source != nil {
+			modifiableSource = *request.Source
+		} else {
+			modifiableSource = openrtb2.Source{}
+		}
+		modifiableSource.Ext = setSourceExt()
+		request.Source = &modifiableSource
+
+		request.Ext, err = setExt(request)
+		if err != nil {
+			return nil, []error{err}
+		}
 
 		// json marshal the request
 		reqJSON, err := json.Marshal(request)
@@ -216,10 +215,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		// assign the default uri
-		uri := a.URI
+		uri := a.endpoint
 
 		// assign a region based uri if it exists
-		if endpoint, ok := adapter.SupportedRegions[Region(unicornExt.Region)]; ok {
+		if endpoint, ok := a.SupportedRegions[Region(unicornExt.Region)]; ok {
 			uri = endpoint
 		}
 
@@ -237,7 +236,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			Headers: headers,
 
 			TapjoyData: adapters.TapjoyData{
-				Bidder:        adapter.Name(),
+				Bidder:        "unicorn",
 				PlacementType: placementType,
 				Region:        unicornExt.Region,
 				SKAN: adapters.SKAN{

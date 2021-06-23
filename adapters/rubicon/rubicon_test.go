@@ -572,6 +572,52 @@ func TestResolveVideoSizeId(t *testing.T) {
 	}
 }
 
+func TestResolveBidFloorAttributes(t *testing.T) {
+	testScenarios := []struct {
+		bidFloor            float64
+		bidFloorCur         string
+		expectedBidFloor    float64
+		expectedBidFloorCur string
+	}{
+		{
+			bidFloor:            1,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    1.2,
+			expectedBidFloorCur: "USD",
+		},
+		{
+			bidFloor:            1,
+			bidFloorCur:         "Eur",
+			expectedBidFloor:    1.2,
+			expectedBidFloorCur: "USD",
+		},
+		{
+			bidFloor:            0,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    0,
+			expectedBidFloorCur: "EUR",
+		},
+		{
+			bidFloor:            -1,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    -1,
+			expectedBidFloorCur: "EUR",
+		},
+		{
+			bidFloor:            1,
+			bidFloorCur:         "USD",
+			expectedBidFloor:    1,
+			expectedBidFloorCur: "USD",
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		bidFloor, bidFloorCur := resolveBidFloorAttributes(scenario.bidFloor, scenario.bidFloorCur)
+		assert.Equal(t, scenario.expectedBidFloor, bidFloor)
+		assert.Equal(t, scenario.expectedBidFloorCur, bidFloorCur)
+	}
+}
+
 func TestNoContentResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
@@ -1126,7 +1172,7 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 
 	assert.Equal(t, 1, len(rubiconReq.Imp), "Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
 
-	assert.NotNil(t, rubiconReq.Imp[0].Video, "Video object must be in request impression")
+	assert.Nil(t, rubiconReq.Imp[0].Video, "Unexpected video object in request impression")
 
 	assert.NotNil(t, rubiconReq.Imp[0].Banner, "Banner object must be in request impression")
 }
@@ -1552,7 +1598,7 @@ func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
 				"siteId": 68780,
 				"zoneId": 327642,
 				"debug": {
-					"cpmoverride" : 20
+					"cpmoverride" : 20 
 				}
 			}}`),
 		}},
@@ -1608,7 +1654,6 @@ func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
 }
 
 func TestJsonSamples(t *testing.T) {
-	// adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker", "", "", "", ""))
 	bidder, buildErr := Builder(openrtb_ext.BidderRubicon, config.Adapter{
 		Endpoint: "uri",
 		XAPI: config.AdapterXAPI{

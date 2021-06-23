@@ -57,6 +57,21 @@ type pubmaticBidExt struct {
 	VideoCreativeInfo *pubmaticBidExtVideo `json:"video,omitempty"`
 }
 
+type ExtImpBidderPubmatic struct {
+	adapters.ExtImpBidder
+	Data *ExtData `json:"data,omitempty"`
+}
+
+type ExtData struct {
+	AdServer *ExtAdServer `json:"adserver"`
+	PBAdSlot string       `json:"pbadslot"`
+}
+
+type ExtAdServer struct {
+	Name   string `json:"name"`
+	AdSlot string `json:"adslot"`
+}
+
 const (
 	INVALID_PARAMS    = "Invalid BidParam"
 	MISSING_PUBID     = "Missing PubID"
@@ -71,6 +86,8 @@ const (
 	dctrKeyName        = "key_val"
 	pmZoneIDKeyName    = "pmZoneId"
 	pmZoneIDKeyNameOld = "pmZoneID"
+	ImpExtAdUnitKey    = "dfp_ad_unit_code"
+	AdServerGAM        = "gam"
 )
 
 type pubmaticImpExt struct {
@@ -485,7 +502,7 @@ func assignBannerWidthAndHeight(banner *openrtb2.Banner, w, h int64) *openrtb2.B
 
 // Tapjoy type for returning useful data from
 type pubmaticImpData struct {
-	bidder   adapters.ExtImpBidder
+	bidder   ExtImpBidderPubmatic
 	pubmatic openrtb_ext.ExtImpPubmatic
 }
 
@@ -502,7 +519,7 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) (p
 		imp.Audio = nil
 	}
 
-	var bidderExt adapters.ExtImpBidder
+	var bidderExt ExtImpBidderPubmatic
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return pubImpData, err
 	}
@@ -535,7 +552,7 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) (p
 	if pubmaticExt.MRAIDSupported && imp.Banner != nil {
 		bannerCopy, err := assignBannerSize(imp.Banner)
 		if err != nil {
-			return err
+			return pubImpData, err
 		}
 		imp.Banner = bannerCopy
 	} else {
@@ -554,16 +571,26 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) (p
 		extMap[pmZoneIDKeyName] = pubmaticExt.PmZoneID
 	}
 
-	imp.Ext = nil
-	if len(extMap) > 0 {
-		ext, err := json.Marshal(extMap)
-		if err == nil {
-			imp.Ext = ext
+	if bidderExt.Data != nil {
+		if bidderExt.Data.AdServer != nil && bidderExt.Data.AdServer.Name == AdServerGAM && bidderExt.Data.AdServer.AdSlot != "" {
+			extMap[ImpExtAdUnitKey] = bidderExt.Data.AdServer.AdSlot
+		} else if bidderExt.Data.PBAdSlot != "" {
+			extMap[ImpExtAdUnitKey] = bidderExt.Data.PBAdSlot
 		}
 	}
 
-	return pubImpData
+	if err := populateExtensionMap(extMap, bidderExt, pubmaticExt); err != nil {
+		return pubImpData, err
+	}
 
+	ext, err := json.Marshal(extMap)
+	if err == nil {
+		imp.Ext = ext
+	} else {
+		imp.Ext = nil
+	}
+
+	return pubImpData, nil
 }
 
 func addKeywordsToExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, extMap map[string]interface{}) {
@@ -691,13 +718,9 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func populateImpressionExtensionObject(imp *openrtb.Imp, bidderExt adapters.ExtImpBidder, pubmaticExt openrtb_ext.ExtImpPubmatic) error {
-	var err error
-
-	impExt := pubmaticImpExt{}
-
+func populateExtensionMap(imp map[string]interface{}, bidderExt ExtImpBidderPubmatic, pubmaticExt openrtb_ext.ExtImpPubmatic) error {
 	if pubmaticExt.Reward == 1 {
-		impExt.Reward = 1
+		imp["reward"] = pubmaticExt.Reward
 	}
 
 	if pubmaticExt.SKADNSupported {
@@ -707,13 +730,8 @@ func populateImpressionExtensionObject(imp *openrtb.Imp, bidderExt adapters.ExtI
 
 		// only add if present
 		if len(skadn.SKADNetIDs) > 0 {
-			impExt.SKADN = &skadn
+			imp["skadn"] = &skadn
 		}
-	}
-
-	imp.Ext, err = json.Marshal(&impExt)
-	if err != nil {
-		return err
 	}
 
 	return nil

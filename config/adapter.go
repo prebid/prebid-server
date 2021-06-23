@@ -41,6 +41,13 @@ type AdapterXAPI struct {
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 	Tracker  string `mapstructure:"tracker"`
+
+	EndpointUSEast string `mapstructure:"endpoint_us_east"`
+	EndpointUSWest string `mapstructure:"endpoint_us_west"`
+	EndpointEU     string `mapstructure:"endpoint_eu"`
+	EndpointAPAC   string `mapstructure:"endpoint_apac"`
+	EndpointJP     string `mapstructure:"endpoint_jp"`
+	EndpointSG     string `mapstructure:"endpoint_sg"`
 }
 
 // validateAdapters validates adapter's endpoint and user sync URL

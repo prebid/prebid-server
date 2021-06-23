@@ -109,6 +109,7 @@
                                 "maxbitrate": 10
                             },
                             "ext": {
+                                "pmZoneId": "Zone1,Zone2",
                                 "reward": 1
                             }
                         }

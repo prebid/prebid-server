@@ -116,10 +116,7 @@ func TestExternalCacheURLValidate(t *testing.T) {
 }
 
 func TestDefaults(t *testing.T) {
-	v := viper.New()
-	SetupViper(v, "")
-	cfg, err := New(v)
-	assert.NoError(t, err, "Setting up config should work but it doesn't")
+	cfg, _ := newDefaultConfig(t)
 
 	cmpInts(t, "port", cfg.Port, 8000)
 	cmpInts(t, "admin_port", cfg.AdminPort, 6060)
@@ -141,12 +138,14 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
+	cmpBools(t, "gdpr.tcf2.purpose_one_treatment.enabled", true, cfg.GDPR.TCF2.PurposeOneTreatment.Enabled)
+	cmpBools(t, "gdpr.tcf2.purpose_one_treatment.access_allowed", true, cfg.GDPR.TCF2.PurposeOneTreatment.AccessAllowed)
 }
 
 var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
-  usersync_if_ambiguous: true
+  default_value: "1"
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
 ccpa:
   enforce: true
@@ -350,7 +349,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.max_idle_connections_per_host", cfg.CacheClient.MaxIdleConnsPerHost, 2)
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
-	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
+	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[0], "siteID")
@@ -421,11 +420,13 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[0], "1111::/16")
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
+	cmpStrings(t, "debug.override_token", cfg.Debug.OverrideToken, "")
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", "0")
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(adapterExtraInfoConfig))
 	cfg, err := New(v)
@@ -457,6 +458,9 @@ func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
+		GDPR: GDPR{
+			DefaultValue: "1",
+		},
 		StoredRequests: StoredRequests{
 			Files: FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{
@@ -478,14 +482,18 @@ func TestValidConfig(t *testing.T) {
 		},
 	}
 
+	v := viper.New()
+	v.Set("gdpr.default_value", "0")
+
 	resolvedStoredRequestsConfig(&cfg)
-	err := cfg.validate()
+	err := cfg.validate(v)
 	assert.Nil(t, err, "OpenRTB filesystem config should work. %v", err)
 }
 
 func TestMigrateConfig(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", "0")
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(oldStoredRequestsConfig))
 	migrateConfig(v)
@@ -502,16 +510,87 @@ func TestMigrateConfigFromEnv(t *testing.T) {
 		defer os.Unsetenv("PBS_STORED_REQUESTS_FILESYSTEM")
 	}
 	os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", "true")
-	v := viper.New()
-	SetupViper(v, "")
-	cfg, err := New(v)
-	assert.NoError(t, err, "Setting up config should work but it doesn't")
+	cfg, _ := newDefaultConfig(t)
 	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
+}
+
+func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
+	oldPurposeOneTreatmentConfig := []byte(`
+      gdpr:
+        tcf2:
+          purpose_one_treatement:
+            enabled: true
+            access_allowed: true
+    `)
+	newPurposeOneTreatmentConfig := []byte(`
+      gdpr:
+        tcf2:
+          purpose_one_treatment:
+            enabled: true
+            access_allowed: true
+    `)
+	oldAndNewPurposeOneTreatmentConfig := []byte(`
+      gdpr:
+        tcf2:
+          purpose_one_treatement:
+            enabled: false
+            access_allowed: true
+          purpose_one_treatment:
+            enabled: true
+            access_allowed: false
+    `)
+
+	tests := []struct {
+		description                        string
+		config                             []byte
+		wantPurpose1TreatmentEnabled       bool
+		wantPurpose1TreatmentAccessAllowed bool
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description:                        "New config not set, old config set",
+			config:                             oldPurposeOneTreatmentConfig,
+			wantPurpose1TreatmentEnabled:       true,
+			wantPurpose1TreatmentAccessAllowed: true,
+		},
+		{
+			description:                        "New config set, old config not set",
+			config:                             newPurposeOneTreatmentConfig,
+			wantPurpose1TreatmentEnabled:       true,
+			wantPurpose1TreatmentAccessAllowed: true,
+		},
+		{
+			description:                        "New config and old config set",
+			config:                             oldAndNewPurposeOneTreatmentConfig,
+			wantPurpose1TreatmentEnabled:       true,
+			wantPurpose1TreatmentAccessAllowed: false,
+		},
+	}
+
+	for _, tt := range tests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigPurposeOneTreatment(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.wantPurpose1TreatmentEnabled, v.Get("gdpr.tcf2.purpose_one_treatment.enabled").(bool), tt.description)
+			assert.Equal(t, tt.wantPurpose1TreatmentAccessAllowed, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed").(bool), tt.description)
+		} else {
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed"), tt.description)
+		}
+	}
 }
 
 func TestInvalidAdapterEndpointConfig(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", "0")
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(invalidAdapterEndpointConfig))
 	_, err := New(v)
@@ -521,6 +600,7 @@ func TestInvalidAdapterEndpointConfig(t *testing.T) {
 func TestInvalidAdapterUserSyncURLConfig(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", "0")
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(invalidUserSyncURLConfig))
 	_, err := New(v)
@@ -528,16 +608,16 @@ func TestInvalidAdapterUserSyncURLConfig(t *testing.T) {
 }
 
 func TestNegativeRequestSize(t *testing.T) {
-	cfg := newDefaultConfig(t)
+	cfg, v := newDefaultConfig(t)
 	cfg.MaxRequestSize = -1
-	assertOneError(t, cfg.validate(), "cfg.max_request_size must be >= 0. Got -1")
+	assertOneError(t, cfg.validate(v), "cfg.max_request_size must be >= 0. Got -1")
 }
 
 func TestNegativePrometheusTimeout(t *testing.T) {
-	cfg := newDefaultConfig(t)
+	cfg, v := newDefaultConfig(t)
 	cfg.Metrics.Prometheus.Port = 8001
 	cfg.Metrics.Prometheus.TimeoutMillisRaw = 0
-	assertOneError(t, cfg.validate(), "metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got timeout=0 and port=8001")
+	assertOneError(t, cfg.validate(v), "metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got timeout=0 and port=8001")
 }
 
 func TestInvalidHostVendorID(t *testing.T) {
@@ -559,44 +639,57 @@ func TestInvalidHostVendorID(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		cfg := newDefaultConfig(t)
+		cfg, v := newDefaultConfig(t)
 		cfg.GDPR.HostVendorID = tt.vendorID
-		errs := cfg.validate()
+		errs := cfg.validate(v)
 
 		assert.Equal(t, 1, len(errs), tt.description)
 		assert.EqualError(t, errs[0], tt.wantErrorMsg, tt.description)
 	}
 }
 
-func TestInvalidFetchGVL(t *testing.T) {
-	cfg := newDefaultConfig(t)
-	cfg.GDPR.TCF1.FetchGVL = true
-	assertOneError(t, cfg.validate(), "gdpr.tcf1.fetch_gvl has been discontinued and must be removed from your config. TCF1 will always use the fallback GVL going forward")
+func TestInvalidAMPException(t *testing.T) {
+	cfg, v := newDefaultConfig(t)
+	cfg.GDPR.AMPException = true
+	assertOneError(t, cfg.validate(v), "gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)")
 }
 
-func TestInvalidAMPException(t *testing.T) {
-	cfg := newDefaultConfig(t)
-	cfg.GDPR.AMPException = true
-	assertOneError(t, cfg.validate(), "gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)")
+func TestInvalidGDPRDefaultValue(t *testing.T) {
+	cfg, v := newDefaultConfig(t)
+	cfg.GDPR.DefaultValue = "2"
+	assertOneError(t, cfg.validate(v), "gdpr.default_value must be 0 or 1")
+}
+
+func TestMissingGDPRDefaultValue(t *testing.T) {
+	v := viper.New()
+
+	cfg, _ := newDefaultConfig(t)
+	assertOneError(t, cfg.validate(v), "gdpr.default_value is required and must be specified")
 }
 
 func TestNegativeCurrencyConverterFetchInterval(t *testing.T) {
+	v := viper.New()
+	v.Set("gdpr.default_value", "0")
+
 	cfg := Configuration{
 		CurrencyConverter: CurrencyConverter{
 			FetchIntervalSeconds: -1,
 		},
 	}
-	err := cfg.validate()
+	err := cfg.validate(v)
 	assert.NotNil(t, err, "cfg.currency_converter.fetch_interval_seconds should prevent negative values, but it doesn't")
 }
 
 func TestOverflowedCurrencyConverterFetchInterval(t *testing.T) {
+	v := viper.New()
+	v.Set("gdpr.default_value", "0")
+
 	cfg := Configuration{
 		CurrencyConverter: CurrencyConverter{
 			FetchIntervalSeconds: (0xffff) + 1,
 		},
 	}
-	err := cfg.validate()
+	err := cfg.validate(v)
 	assert.NotNil(t, err, "cfg.currency_converter.fetch_interval_seconds prevent values over %d, but it doesn't", 0xffff)
 }
 
@@ -654,6 +747,7 @@ func TestNewCallsRequestValidation(t *testing.T) {
 	for _, test := range testCases {
 		v := viper.New()
 		SetupViper(v, "")
+		v.Set("gdpr.default_value", "0")
 		v.SetConfigType("yaml")
 		v.ReadConfig(bytes.NewBuffer([]byte(
 			`request_validation:
@@ -671,31 +765,32 @@ func TestNewCallsRequestValidation(t *testing.T) {
 }
 
 func TestValidateDebug(t *testing.T) {
-	cfg := newDefaultConfig(t)
+	cfg, v := newDefaultConfig(t)
 	cfg.Debug.TimeoutNotification.SamplingRate = 1.1
 
-	err := cfg.validate()
+	err := cfg.validate(v)
 	assert.NotNil(t, err, "cfg.debug.timeout_notification.sampling_rate should not be allowed to be greater than 1.0, but it was allowed")
 }
 
 func TestValidateAccountsConfigRestrictions(t *testing.T) {
-	cfg := newDefaultConfig(t)
+	cfg, v := newDefaultConfig(t)
 	cfg.Accounts.Files.Enabled = true
 	cfg.Accounts.HTTP.Endpoint = "http://localhost"
 	cfg.Accounts.Postgres.ConnectionInfo.Database = "accounts"
 
-	errs := cfg.validate()
+	errs := cfg.validate(v)
 	assert.Len(t, errs, 1)
 	assert.Contains(t, errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
 }
 
-func newDefaultConfig(t *testing.T) *Configuration {
+func newDefaultConfig(t *testing.T) (*Configuration, *viper.Viper) {
 	v := viper.New()
 	SetupViper(v, "")
+	v.Set("gdpr.default_value", "0")
 	v.SetConfigType("yaml")
 	cfg, err := New(v)
-	assert.NoError(t, err)
-	return cfg
+	assert.NoError(t, err, "Setting up config should work but it doesn't")
+	return cfg, v
 }
 
 func assertOneError(t *testing.T, errs []error, message string) {

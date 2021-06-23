@@ -118,8 +118,3 @@ func TestIsBidderNameReserved(t *testing.T) {
 		assert.Equal(t, test.expected, result, test.bidder)
 	}
 }
-
-func TestBidderListDoesNotDefineContext(t *testing.T) {
-	bidders := BidderList()
-	assert.NotContains(t, bidders, BidderNameContext)
-}

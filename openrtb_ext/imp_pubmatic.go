@@ -16,9 +16,9 @@ type ExtImpPubmatic struct {
 	WrapExt     json.RawMessage         `json:"wrapper,omitempty"`
 	Keywords    []*ExtImpPubmaticKeyVal `json:"keywords,omitempty"`
 
-	Reward         int                     `json:"reward"`
-	SKADNSupported bool                    `json:"skadn_supported"`
-	MRAIDSupported bool                    `json:"mraid_supported"`
+	Reward         int  `json:"reward"`
+	SKADNSupported bool `json:"skadn_supported"`
+	MRAIDSupported bool `json:"mraid_supported"`
 }
 
 // ExtImpPubmaticKeyVal defines the contract for bidrequest.imp[i].ext.pubmatic.keywords[i]

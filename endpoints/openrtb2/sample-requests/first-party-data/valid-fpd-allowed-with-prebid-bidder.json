@@ -47,6 +47,7 @@
       "seat": "appnexus-bids"
     }],
     "bidid": "test bid id",
+    "cur": "USD",
     "nbr": 0
   },
   "expectedReturnCode": 200

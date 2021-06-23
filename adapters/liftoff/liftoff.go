@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 
 	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -36,20 +37,17 @@ var liftoffSKADNetIDs = map[string]bool{
 	"7ug5zh24hu.skadnetwork": true,
 }
 
-// LiftoffAdapter ...
-type LiftoffAdapter struct {
+type adapter struct {
 	http             *adapters.HTTPAdapter
-	URI              string
+	endpoint         string
 	SupportedRegions map[Region]string
 }
 
-// Name is used for cookies and such
-func (a *LiftoffAdapter) Name() string {
+func (a *adapter) Name() string {
 	return "liftoff"
 }
 
-// SkipNoCookies ...
-func (a *LiftoffAdapter) SkipNoCookies() bool {
+func (a *adapter) SkipNoCookies() bool {
 	return false
 }
 
@@ -79,23 +77,30 @@ type callOneObject struct {
 	mediaType   pbs.MediaType
 }
 
-// Call is legacy, and added only to support LiftoffAdapter interface
-func (a *LiftoffAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+func (a *adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	return pbs.PBSBidSlice{}, nil
 }
 
-// NewLiftoffAdapter ...
-func NewLiftoffAdapter(config *adapters.HTTPAdapterConfig, uri string, useast string, eu string, apac string) *LiftoffAdapter {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &adapter{
+		endpoint: config.Endpoint,
+		SupportedRegions: map[Region]string{
+			USEast: config.XAPI.EndpointUSEast,
+			EU:     config.XAPI.EndpointEU,
+			APAC:   config.XAPI.EndpointAPAC,
+		},
+	}
+	return bidder, nil
+}
+
+func NewLiftoffLegacyAdapter(config *adapters.HTTPAdapterConfig, uri string, useast string, eu string, apac string) *adapter {
 	return NewLiftoffBidder(adapters.NewHTTPAdapter(config).Client, uri, useast, eu, apac)
 }
 
-// NewLiftoffBidder ...
-func NewLiftoffBidder(client *http.Client, uri string, useast string, eu string, apac string) *LiftoffAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
-
-	return &LiftoffAdapter{
-		http: a,
-		URI:  uri,
+func NewLiftoffBidder(client *http.Client, uri string, useast string, eu string, apac string) *adapter {
+	return &adapter{
+		http:     &adapters.HTTPAdapter{Client: client},
+		endpoint: uri,
 		SupportedRegions: map[Region]string{
 			USEast: useast,
 			EU:     eu,
@@ -105,7 +110,7 @@ func NewLiftoffBidder(client *http.Client, uri string, useast string, eu string,
 }
 
 // MakeRequests ...
-func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 
 	requestData := make([]*adapters.RequestData, 0, numRequests)
@@ -228,7 +233,8 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			continue
 		}
 
-		uri := a.URI
+		uri := a.endpoint
+
 		if endpoint, ok := a.SupportedRegions[Region(liftoffExt.Region)]; ok {
 			uri = endpoint
 		}
@@ -260,7 +266,7 @@ func (a *LiftoffAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 }
 
 // MakeBids ...
-func (a *LiftoffAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

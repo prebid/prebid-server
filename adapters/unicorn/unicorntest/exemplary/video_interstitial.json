@@ -44,12 +44,17 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://jp.unicorn.com/tapjoy",
+        "uri": "https://ds.uncn.jp",
         "body": {
           "id": "test-request-id",
           "imp": [
             {
-              "ext": {},
+              "ext": {
+                "bidder": {
+                  "accountId": 0,
+                  "mediaId": ""
+                }
+              },
               "id": "test-imp-id",
               "video": {
                 "mimes": [
@@ -83,7 +88,14 @@
                 }
               }
             }
-          ]
+          ],
+          "ext": {},
+          "source": {
+            "ext": {
+              "bidder": "unicorn",
+              "stype": "prebid_server_uncn"
+            }
+          }
         }
       },
       "mockResponse": {

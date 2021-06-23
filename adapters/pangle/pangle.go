@@ -28,14 +28,16 @@ type NetworkIDs struct {
 
 type wrappedExtImpBidder struct {
 	*adapters.ExtImpBidder
-	AdType     int         `json:"adtype,omitempty"`
-	IsPrebid   bool        `json:"is_prebid,omitempty"`
-	NetworkIDs *NetworkIDs `json:"networkids,omitempty"`
+	AdType     int                `json:"adtype,omitempty"`
+	IsPrebid   bool               `json:"is_prebid,omitempty"`
+	NetworkIDs *NetworkIDs        `json:"networkids,omitempty"`
+	SKADN      *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
-type pangleImpExt struct {
-	AdType int                `json:"adtype,omitempty"`
-	SKADN  *openrtb_ext.SKADN `json:"skadn,omitempty"`
+type pangleImpExtBidder struct {
+	AppID       string `json:"appid,omitempty"`
+	Token       string `json:"token,omitempty"`
+	PlacementID string `json:"placementid,omitempty"`
 }
 
 type pangleBidExt struct {
@@ -110,8 +112,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		var pangleImpExt pangleImpExt
-
 		if imp.Banner != nil && bidderImpExt.MRAIDSupported == false {
 			imp.Banner = nil
 		}
@@ -120,7 +120,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			skadn := adapters.FilterPrebidSKADNExt(impExt.Prebid, pangleExtSKADNetIDs)
 			// only add if present
 			if len(skadn.SKADNetIDs) > 0 {
-				pangleImpExt.SKADN = &skadn
+				impExt.SKADN = &skadn
 				skanSent = true
 			}
 		}
@@ -131,9 +131,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, &errortypes.BadInput{Message: "not a supported adtype"})
 			continue
 		}
+
 		// remarshal imp.ext
 		impExt.AdType = adType
 		impExt.IsPrebid = true
+
 		if len(bidderImpExt.AppID) > 0 && len(bidderImpExt.PlacementID) > 0 {
 			impExt.NetworkIDs = &NetworkIDs{
 				AppID:       bidderImpExt.AppID,
@@ -143,6 +145,22 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, &errortypes.BadInput{Message: "only one of appid or placementid is provided"})
 			continue
 		}
+
+		pangleImpExtBidder := pangleImpExtBidder{
+			AppID:       bidderImpExt.AppID,
+			Token:       bidderImpExt.Token,
+			PlacementID: bidderImpExt.PlacementID,
+		}
+
+		impExt.Prebid = nil
+
+		if newImpExtBidder, err := json.Marshal(pangleImpExtBidder); err == nil {
+			impExt.Bidder = newImpExtBidder
+		} else {
+			errs = append(errs, fmt.Errorf("failed re-marshalling imp ext bidder"))
+			continue
+		}
+
 		if newImpExt, err := json.Marshal(impExt); err == nil {
 			imp.Ext = newImpExt
 		} else {
@@ -173,7 +191,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			},
 
 			TapjoyData: adapters.TapjoyData{
-				Bidder:        a.Name(),
+				Bidder:        "pangle",
 				PlacementType: placementType,
 				Region:        "apac",
 				SKAN: adapters.SKAN{
@@ -271,7 +289,7 @@ func getTjAdType(imp openrtb2.Imp, parsedImpExt *wrappedExtImpBidder) (int, erro
 	// for setting token
 	var bidderImpExt openrtb_ext.ImpExtPangle
 	if err := json.Unmarshal(parsedImpExt.Bidder, &bidderImpExt); err != nil {
-		return 0, err
+		return -1, err
 	}
 
 	// video
@@ -290,5 +308,5 @@ func getTjAdType(imp openrtb2.Imp, parsedImpExt *wrappedExtImpBidder) (int, erro
 		}
 	}
 
-	return 0, fmt.Errorf("unable to find a tapjoy adtype")
+	return -1, fmt.Errorf("unable to find a tapjoy adtype")
 }

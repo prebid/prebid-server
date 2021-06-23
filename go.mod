@@ -1,6 +1,6 @@
 module github.com/prebid/prebid-server
 
-go 1.14
+go 1.16
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.3.0
@@ -22,7 +22,6 @@ require (
 	github.com/influxdata/influxdb v1.6.1
 	github.com/jinzhu/copier v0.2.8
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/lib/pq v1.0.0
 	github.com/magiconair/properties v1.8.0
 	github.com/mattn/go-colorable v0.1.2 // indirect
@@ -66,6 +65,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.20.0
 	go.opentelemetry.io/otel/trace v0.20.0
 	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb
-	golang.org/x/text v0.3.3
+	golang.org/x/text v0.3.6
 	gopkg.in/yaml.v2 v2.4.0
 )

@@ -124,7 +124,8 @@
                                     "skadnetids": [
                                         "k674qkevps.skadnetwork"
                                     ]
-                                }
+                                },
+                                "pmZoneId": "Zone1,Zone2"
                             }
                         }
                     ],

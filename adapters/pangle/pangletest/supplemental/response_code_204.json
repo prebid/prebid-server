@@ -1,83 +1,83 @@
 {
-    "mockBidRequest": {
-      "id": "test-request-id",
-      "app": {
-        "bundle": "com.prebid"
-      },
-      "device": {
-        "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
-      },
-      "imp": [
-        {
-          "id": "test-imp-id",
-          "banner": {
-            "format": [
-              {
-                "w": 300,
-                "h": 250
-              }
-            ]
-          },
-          "ext": {
-            "bidder": {
-              "token": "123",
-              "reward": 0,
-              "mraid_supported": true,
-              "skadn_supported": false
-            }
-          }
-        }
-      ]
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
     },
-    "httpCalls": [
+    "device": {
+      "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+    },
+    "imp": [
       {
-        "expectedRequest": {
-          "uri": "https://pangle.io/api/get_ads",
-          "headers": {
-            "Content-Type": [
-              "application/json"
-            ],
-            "TOKEN": [
-              "123"
-            ]
-          },
-          "body": {
-            "id": "test-request-id",
-            "app": {
-              "bundle": "com.prebid"
-            },
-            "device": {
-              "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
-            },
-            "imp": [
-              {
-                "id": "test-imp-id",
-                "banner": {
-                  "format": [
-                    {
-                      "w": 300,
-                      "h": 250
-                    }
-                  ]
-                },
-                "ext": {
-                  "adtype": 1,
-                  "bidder": {
-                    "token": "123"
-                  },
-                  "is_prebid": true,
-                  "prebid": null
-                }
-              }
-            ]
-          }
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
         },
-        "mockResponse": {
-          "status": 204,
-          "body": {}
+        "ext": {
+          "bidder": {
+            "token": "123",
+            "reward": 0,
+            "mraid_supported": true,
+            "skadn_supported": false
+          }
         }
       }
-    ],
-    "expectedBidResponses": [],
-    "expectedMakeBidsErrors": []
-  }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pangle.io/api/get_ads",
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "TOKEN": [
+            "123"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "adtype": 1,
+                "bidder": {
+                  "token": "123"
+                },
+                "is_prebid": true,
+                "prebid": null
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": []
+}

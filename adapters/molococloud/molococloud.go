@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 
 	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -40,40 +41,46 @@ type molocoCloudImpExt struct {
 	SKADN *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
-// MolocoCloudAdapter ...
-type MolocoCloudAdapter struct {
+type adapter struct {
 	http             *adapters.HTTPAdapter
-	URI              string
+	endpoint         string
 	SupportedRegions map[Region]string
 }
 
-// Name is used for cookies and such
-func (adapter *MolocoCloudAdapter) Name() string {
+func (adapter *adapter) Name() string {
 	return "molococloud"
 }
 
-// SkipNoCookies ...
-func (adapter *MolocoCloudAdapter) SkipNoCookies() bool {
+func (adapter *adapter) SkipNoCookies() bool {
 	return false
 }
 
-// Call is legacy, and added only to support MolocoCloudAdapter interface
-func (adapter *MolocoCloudAdapter) Call(_ context.Context, _ *pbs.PBSRequest, _ *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+func (adapter *adapter) Call(_ context.Context, _ *pbs.PBSRequest, _ *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	return pbs.PBSBidSlice{}, nil
 }
 
-// NewMolocoCloudAdapter ...
-func NewMolocoCloudAdapter(config *adapters.HTTPAdapterConfig, uri, useast, eu, apac string) *MolocoCloudAdapter {
-	return NewMolocoCloudBidder(adapters.NewHTTPAdapter(config).Client, uri, useast, eu, apac)
+func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &adapter{
+		endpoint: config.Endpoint,
+		SupportedRegions: map[Region]string{
+			USEast: config.XAPI.EndpointUSEast,
+			EU:     config.XAPI.EndpointEU,
+			APAC:   config.XAPI.EndpointAPAC,
+		},
+	}
+	return bidder, nil
+}
+
+// NewMolocoCloudLegacyAdapter ...
+func NewMolocoCloudLegacyAdapter(config *adapters.HTTPAdapterConfig, endpoint, useast, eu, apac string) *adapter {
+	return NewMolocoCloudBidder(adapters.NewHTTPAdapter(config).Client, endpoint, useast, eu, apac)
 }
 
 // NewMolocoCloudBidder ...
-func NewMolocoCloudBidder(client *http.Client, uri, useast, eu, apac string) *MolocoCloudAdapter {
-	adapter := &adapters.HTTPAdapter{Client: client}
-
-	return &MolocoCloudAdapter{
-		http: adapter,
-		URI:  uri,
+func NewMolocoCloudBidder(client *http.Client, endpoint, useast, eu, apac string) *adapter {
+	return &adapter{
+		http:     &adapters.HTTPAdapter{Client: client},
+		endpoint: endpoint,
 		SupportedRegions: map[Region]string{
 			USEast: useast,
 			EU:     eu,
@@ -83,7 +90,7 @@ func NewMolocoCloudBidder(client *http.Client, uri, useast, eu, apac string) *Mo
 }
 
 // MakeRequests ...
-func (adapter *MolocoCloudAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 
 	requestData := make([]*adapters.RequestData, 0, numRequests)
@@ -101,8 +108,6 @@ func (adapter *MolocoCloudAdapter) MakeRequests(request *openrtb.BidRequest, _ *
 	var err error
 
 	for i := 0; i < numRequests; i++ {
-		skanSent := false
-
 		// clone current imp
 		thisImp := requestImpCopy[i]
 
@@ -200,7 +205,7 @@ func (adapter *MolocoCloudAdapter) MakeRequests(request *openrtb.BidRequest, _ *
 		}
 
 		// assign the default uri
-		uri := adapter.URI
+		uri := adapter.endpoint
 
 		// assign a region based uri if it exists
 		if endpoint, ok := adapter.SupportedRegions[Region(molocoCloudExt.Region)]; ok {
@@ -220,7 +225,7 @@ func (adapter *MolocoCloudAdapter) MakeRequests(request *openrtb.BidRequest, _ *
 				Region:        molocoCloudExt.Region,
 				SKAN: adapters.SKAN{
 					Supported: molocoCloudExt.SKADNSupported,
-					Sent:      skanSent,
+					Sent:      false,
 				},
 				MRAID: adapters.MRAID{
 					Supported: molocoCloudExt.MRAIDSupported,
@@ -236,7 +241,7 @@ func (adapter *MolocoCloudAdapter) MakeRequests(request *openrtb.BidRequest, _ *
 }
 
 // MakeBids ...
-func (adapter *MolocoCloudAdapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

@@ -41,6 +41,13 @@ type ExtRequestPrebid struct {
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
 	// The array may contain a single sstar ('*') entry to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
+
+	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
+}
+
+type ExtRequestCurrency struct {
+	ConversionRates map[string]map[string]float64 `json:"rates"`
+	UsePBSRates     *bool                         `json:"usepbsrates"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains

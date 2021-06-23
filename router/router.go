@@ -14,8 +14,8 @@ import (
 
 	"github.com/newrelic/go-agent/v3/integrations/nrhttprouter"
 	nr "github.com/newrelic/go-agent/v3/newrelic"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"github.com/prebid/prebid-server/monitoring/newrelic"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/endpoints/events"
@@ -33,13 +33,11 @@ import (
 	"github.com/prebid/prebid-server/adapters/liftoff"
 	"github.com/prebid/prebid-server/adapters/moloco"
 	"github.com/prebid/prebid-server/adapters/molococloud"
-	"github.com/prebid/prebid-server/adapters/pangle"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/adapters/taurusx"
-	"github.com/prebid/prebid-server/adapters/unicorn"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
@@ -165,15 +163,15 @@ func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
 	return map[string]adapters.Adapter{
-		"appnexus":   appnexus.NewAppNexusLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
+		"appnexus": appnexus.NewAppNexusLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
 		"crossinstall": crossinstall.NewCrossInstallLegacyAdapter(
 			adapters.DefaultHTTPAdapterConfig,
 			cfg.Adapters[string(openrtb_ext.BidderCrossInstall)].Endpoint,
 			cfg.Adapters[string(openrtb_ext.BidderCrossInstall)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderCrossInstall)].XAPI.EndpointUSWest),
-		"districtm":  appnexus.NewAppNexusLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
+		"districtm": appnexus.NewAppNexusLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
 		"dv360":     dv360.NewDV360LegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderDV360)].Endpoint),
-		"ix":         ix.NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
+		"ix":        ix.NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
 		"liftoff": liftoff.NewLiftoffLegacyAdapter(
 			adapters.DefaultHTTPAdapterConfig,
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].Endpoint,
@@ -186,13 +184,12 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointAPAC),
-		"molococloud": molococloud.NewMolocoCloudAdapter(
+		"molococloud": molococloud.NewMolocoCloudLegacyAdapter(
 			adapters.DefaultHTTPAdapterConfig,
 			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].Endpoint,
 			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointAPAC),
-		"pangle":     pangle.NewPangleLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPangle)].Endpoint),
 		"pubmatic":   pubmatic.NewPubmaticLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
 		"pulsepoint": pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
 		"rubicon": rubicon.NewRubiconLegacyAdapter(
@@ -214,10 +211,6 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			cfg.Adapters[string(openrtb_ext.BidderTaurusX)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderTaurusX)].XAPI.EndpointJP,
 			cfg.Adapters[string(openrtb_ext.BidderTaurusX)].XAPI.EndpointSG),
-		"unicorn": unicorn.NewUnicornLegacyAdapter(
-			adapters.DefaultHTTPAdapterConfig,
-			cfg.Adapters[string(openrtb_ext.BidderUnicorn)].Endpoint,
-			cfg.Adapters[string(openrtb_ext.BidderUnicorn)].XAPI.EndpointJP),
 	}
 }
 

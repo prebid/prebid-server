@@ -108,7 +108,9 @@
                                 "minbitrate": 10,
                                 "maxbitrate": 10
                             },
-                            "ext": {}
+                            "ext": {
+                                "pmZoneId": "Zone1,Zone2"
+                            }
                         }
                     ],
                     "device": {

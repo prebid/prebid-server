@@ -123,6 +123,7 @@ const (
 	BidderEngageBDR         BidderName = "engagebdr"
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
+	BidderEVolution         BidderName = "e_volution"
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGrid              BidderName = "grid"
@@ -170,6 +171,7 @@ const (
 	BidderSmartAdserver     BidderName = "smartadserver"
 	BidderSmartRTB          BidderName = "smartrtb"
 	BidderSmartyAds         BidderName = "smartyads"
+	BidderSmileWanted       BidderName = "smilewanted"
 	BidderSomoaudience      BidderName = "somoaudience"
 	BidderSonobi            BidderName = "sonobi"
 	BidderSovrn             BidderName = "sovrn"
@@ -248,6 +250,7 @@ func CoreBidderNames() []BidderName {
 		BidderEngageBDR,
 		BidderEPlanning,
 		BidderEpom,
+		BidderEVolution,
 		BidderGamma,
 		BidderGamoshi,
 		BidderGrid,
@@ -295,6 +298,7 @@ func CoreBidderNames() []BidderName {
 		BidderSmartAdserver,
 		BidderSmartRTB,
 		BidderSmartyAds,
+		BidderSmileWanted,
 		BidderSomoaudience,
 		BidderSonobi,
 		BidderSovrn,

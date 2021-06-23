@@ -55,7 +55,7 @@ func TestBidderUniquenessGatekeeping(t *testing.T) {
 		}
 	}
 
-	currentThreshold := 6
+	currentThreshold := 7
 	measuredThreshold := minUniquePrefixLength(bidders)
 
 	assert.NotZero(t, measuredThreshold, "BidderMap contains duplicate bidder name values.")

@@ -40,6 +40,7 @@ import (
 	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/iputil"
 	"golang.org/x/net/publicsuffix"
+	"golang.org/x/text/currency"
 )
 
 const storedRequestTimeoutMillis = 50
@@ -118,10 +119,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// to compute the auction timeout.
 	start := time.Now()
 
-	// shahbaz / umut / eric / samson look at this
-	// do we have r.Context or context.Background()
-	// as per below???
-	// ctx := r.Context()
+	ctx := r.Context()
 
 	ao := analytics.AuctionObject{
 		Status:    http.StatusOK,
@@ -159,8 +157,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 	warnings := errortypes.WarningOnly(errL)
-
-	ctx := context.Background()
 
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
@@ -362,6 +358,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb2.BidRequest) []error {
 		if err := deps.validateEidPermissions(bidExt, aliases); err != nil {
 			return []error{err}
 		}
+
+		if err := validateCustomRates(bidExt.Prebid.CurrencyConversions); err != nil {
+			return []error{err}
+		}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -454,6 +454,30 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 func validateSChains(req *openrtb_ext.ExtRequest) error {
 	_, err := exchange.BidderToPrebidSChains(req)
 	return err
+}
+
+// validateCustomRates throws a bad input error if any of the 3-digit currency codes found in
+// the bidRequest.ext.prebid.currency field is invalid, malfomed or does not represent any actual
+// currency. No error is thrown if bidRequest.ext.prebid.currency is invalid or empty.
+func validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) error {
+	if bidReqCurrencyRates == nil {
+		return nil
+	}
+
+	for fromCurrency, rates := range bidReqCurrencyRates.ConversionRates {
+		// Check if fromCurrency is a valid 3-letter currency code
+		if _, err := currency.ParseISO(fromCurrency); err != nil {
+			return &errortypes.BadInput{Message: fmt.Sprintf("currency code %s is not recognized or malformed", fromCurrency)}
+		}
+
+		// Check if currencies mapped to fromCurrency are valid 3-letter currency codes
+		for toCurrency := range rates {
+			if _, err := currency.ParseISO(toCurrency); err != nil {
+				return &errortypes.BadInput{Message: fmt.Sprintf("currency code %s is not recognized or malformed", toCurrency)}
+			}
+		}
+	}
+	return nil
 }
 
 func (deps *endpointDeps) validateEidPermissions(req *openrtb_ext.ExtRequest, aliases map[string]string) error {
