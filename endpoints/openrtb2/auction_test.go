@@ -2908,7 +2908,24 @@ var testStoredRequestData = map[string]json.RawMessage{
 // third below has valid JSON and matches schema
 var testStoredImpData = map[string]json.RawMessage{
 	"1": json.RawMessage(`{
-"id": "adUnit1",
+			"id": "adUnit1",
+			"ext": {
+				"appnexus": {
+					"placementId": "abc",
+					"position": "above",
+					"reserve": 0.35
+				},
+				"rubicon": {
+					"accountId": "abc"
+				}
+			},
+			"video":{
+				"w":200,
+				"h":300
+			}
+		}`),
+	"2": json.RawMessage(`{
+			"id": "adUnit1",
 			"ext": {
 				"appnexus": {
 					"placementId": "abc",
@@ -2921,7 +2938,7 @@ var testStoredImpData = map[string]json.RawMessage{
 			}
 		}`),
 	"7": json.RawMessage(`{
-"id": "adUnit1",
+			"id": "adUnit1",
 			"ext": {
 				"appnexus": {
 					"placementId": 12345678,
@@ -2958,6 +2975,10 @@ var testStoredRequests = []string{
 		"id": "ThisID",
 		"imp": [
 			{
+				"video":{
+					"h":300,
+					"w":200
+				},
 				"ext": {
 					"prebid": {
 						"storedrequest": {
@@ -3020,7 +3041,7 @@ var testStoredRequests = []string{
 				"ext": {
 					"prebid": {
 						"storedrequest": {
-							"id": "1"
+							"id": "2"
 						},
 						"options": {
 							"echovideoattrs": false
@@ -3080,6 +3101,10 @@ var testFinalRequests = []string{
 		"id": "ThisID",
 		"imp": [
 			{
+				"video":{
+					"h":300,
+					"w":200
+				},
 				"ext":{
 					"appnexus":{
 						"placementId":"abc",
@@ -3115,6 +3140,10 @@ var testFinalRequests = []string{
 		"id": "ThisID",
 		"imp": [
 			{
+				"video":{
+					"w":200,
+					"h":300
+				},
 				"ext":{
 					"appnexus":{
 						"placementId":"def",
@@ -3165,7 +3194,7 @@ var testFinalRequests = []string{
   		      },
   		      "prebid": {
   		        "storedrequest": {
-  		          "id": "1"
+  		          "id": "2"
   		        },
   		        "options":{
 					"echovideoattrs":false
@@ -3175,7 +3204,11 @@ var testFinalRequests = []string{
   		        "accountId": "abc"
   		      }
   		    },
-  		    "id": "adUnit1"
+  		    "id": "adUnit1",
+			"video":{
+				"w":200,
+				"h":300
+			}
   		  }
   		],
   		"tmax": 500
@@ -3214,7 +3247,11 @@ var testFinalRequests = []string{
   		      "accountId": "abc"
   		    }
   		  },
-  		  "id": "adUnit1"
+  		  "id": "adUnit1",
+		  "video":{
+				"w":200,
+				"h":300
+          }
   		}
 	],
 	"ext": {
@@ -3235,31 +3272,13 @@ var testStoredImpIds = []string{
 
 var testStoredImps = []string{
 	`{
-						"id":"adUnit1",
-						"ext":{
-							"appnexus":{
-								"placementId":"abc",
-								"position":"above",
-								"reserve":0.35
-							},
-							"rubicon":{
-								"accountId":"abc"
-							}
-						}
-					}`,
+        				"w":200,
+        				"h":300
+        			}`,
 	`{
-							"id":"adUnit1",
-							"ext":{
-								"appnexus":{
-									"placementId":"abc",
-									"position":"above",
-									"reserve":0.35
-								},
-								"rubicon":{
-									"accountId":"abc"
-								}
-							}
-						}`,
+					"w":200,
+					"h":300
+				}`,
 	``,
 	``,
 }
