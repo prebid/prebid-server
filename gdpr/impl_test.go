@@ -846,8 +846,8 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 
 	testDefs := []struct {
 		description           string
-		p2VendorExceptionMap  map[openrtb_ext.BidderName]bool
-		sp1VendorExceptionMap map[openrtb_ext.BidderName]bool
+		p2VendorExceptionMap  map[openrtb_ext.BidderName]struct{}
+		sp1VendorExceptionMap map[openrtb_ext.BidderName]struct{}
 		bidder                openrtb_ext.BidderName
 		consent               string
 		allowBid              bool
@@ -856,7 +856,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 	}{
 		{
 			description:          "Bid/ID blocked by publisher - p2 enabled with p2 vendor exception, pub restricts p2 for vendor",
-			p2VendorExceptionMap: map[openrtb_ext.BidderName]bool{openrtb_ext.BidderAppnexus: true},
+			p2VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
 			bidder:               openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsP2,
 			allowBid:             false,
@@ -865,8 +865,8 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		},
 		{
 			description:           "Bid/ID allowed by vendor exception - p2 enabled with p2 vendor exception, pub restricts none",
-			p2VendorExceptionMap:  map[openrtb_ext.BidderName]bool{openrtb_ext.BidderAppnexus: true},
-			sp1VendorExceptionMap: map[openrtb_ext.BidderName]bool{},
+			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			sp1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			bidder:                openrtb_ext.BidderAppnexus,
 			consent:               noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowBid:              true,
@@ -875,8 +875,8 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		},
 		{
 			description:           "Geo blocked - sp1 enabled but no consent",
-			p2VendorExceptionMap:  map[openrtb_ext.BidderName]bool{},
-			sp1VendorExceptionMap: map[openrtb_ext.BidderName]bool{},
+			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{},
+			sp1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			bidder:                openrtb_ext.BidderAppnexus,
 			consent:               noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowBid:              false,
@@ -885,8 +885,8 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		},
 		{
 			description:           "Geo allowed by vendor exception - sp1 enabled with sp1 vendor exception",
-			p2VendorExceptionMap:  map[openrtb_ext.BidderName]bool{},
-			sp1VendorExceptionMap: map[openrtb_ext.BidderName]bool{openrtb_ext.BidderAppnexus: true},
+			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{},
+			sp1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
 			bidder:                openrtb_ext.BidderAppnexus,
 			consent:               noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowBid:              false,
@@ -934,28 +934,28 @@ func TestBidderSyncAllowedVendorException(t *testing.T) {
 
 	testDefs := []struct {
 		description          string
-		p1VendorExceptionMap map[openrtb_ext.BidderName]bool
+		p1VendorExceptionMap map[openrtb_ext.BidderName]struct{}
 		bidder               openrtb_ext.BidderName
 		consent              string
 		allowSync            bool
 	}{
 		{
 			description:          "Sync blocked by no consent - p1 enabled, no p1 vendor exception, pub restricts none",
-			p1VendorExceptionMap: map[openrtb_ext.BidderName]bool{},
+			p1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			bidder:               openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowSync:            false,
 		},
 		{
 			description:          "Sync blocked by publisher - p1 enabled with p1 vendor exception, pub restricts p1 for vendor",
-			p1VendorExceptionMap: map[openrtb_ext.BidderName]bool{openrtb_ext.BidderAppnexus: true},
+			p1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
 			bidder:               openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsP1,
 			allowSync:            false,
 		},
 		{
 			description:          "Sync allowed by vendor exception - p1 enabled with p1 vendor exception, pub restricts none",
-			p1VendorExceptionMap: map[openrtb_ext.BidderName]bool{openrtb_ext.BidderAppnexus: true},
+			p1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
 			bidder:               openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowSync:            true,

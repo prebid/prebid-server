@@ -260,7 +260,7 @@ type Purpose struct {
 	Enabled bool `mapstructure:"enabled"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
-	VendorExceptionMap map[openrtb_ext.BidderName]bool
+	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
 }
 
 type PurposeOneTreatment struct {
@@ -529,11 +529,11 @@ func New(v *viper.Viper) (*Configuration, error) {
 		&c.GDPR.TCF2.SpecialPurpose1,
 	}
 	for c := 0; c < len(purposeConfigs); c++ {
-		purposeConfigs[c].VendorExceptionMap = make(map[openrtb_ext.BidderName]bool)
+		purposeConfigs[c].VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
 
 		for v := 0; v < len(purposeConfigs[c].VendorExceptions); v++ {
 			bidderName := purposeConfigs[c].VendorExceptions[v]
-			purposeConfigs[c].VendorExceptionMap[bidderName] = true
+			purposeConfigs[c].VendorExceptionMap[bidderName] = struct{}{}
 		}
 	}
 
