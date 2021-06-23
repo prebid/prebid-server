@@ -12,7 +12,7 @@
             }
           ]
         },
-        "tagid": "should-be-overwritten",
+        "tagid": "should-be-overwritten-tagid",
         "ext": {
           "bidder": {
             "publisher": {
@@ -27,8 +27,8 @@
         }
       }
     ],
-    "bcat": ["should-be-overwritten"],
-    "badv": ["should-be-overwritten"],
+    "bcat": ["should-be-overwritten-bcat"],
+    "badv": ["should-be-overwritten-badv"],
     "site": {
       "page": "http://example.com"
     },
