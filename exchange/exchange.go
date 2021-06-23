@@ -449,7 +449,7 @@ func (e *exchange) getAllBids(
 			if givenAdjustment, ok := bidAdjustments[string(bidderRequest.BidderName)]; ok {
 				adjustmentFactor = givenAdjustment
 			}
-			var reqInfo adapters.ExtraRequestInfo
+			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
