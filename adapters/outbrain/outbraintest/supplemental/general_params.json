@@ -12,23 +12,18 @@
             }
           ]
         },
-        "tagid": "should-be-overwritten-tagid",
+        "tagid": "tag-id",
         "ext": {
           "bidder": {
             "publisher": {
-              "id": "publisher-id",
-              "name": "publisher-name",
-              "domain": "publisher-domain.com"
-            },
-            "tagid": "tag-id",
-            "bcat": ["bad-category"],
-            "badv": ["bad-advertiser"]
+              "id": "publisher-id"
+            }
           }
         }
       }
     ],
-    "bcat": ["should-be-overwritten-bcat"],
-    "badv": ["should-be-overwritten-badv"],
+    "bcat": ["bad-category"],
+    "badv": ["bad-advertiser"],
     "site": {
       "page": "http://example.com"
     },
@@ -59,13 +54,8 @@
               "ext": {
                 "bidder": {
                   "publisher": {
-                    "id": "publisher-id",
-                    "name": "publisher-name",
-                    "domain": "publisher-domain.com"
-                  },
-                  "tagid": "tag-id",
-                  "bcat": ["bad-category"],
-                  "badv": ["bad-advertiser"]
+                    "id": "publisher-id"
+                  }
                 }
               }
             }
@@ -75,9 +65,7 @@
           "site": {
             "page": "http://example.com",
             "publisher": {
-              "id": "publisher-id",
-              "name": "publisher-name",
-              "domain": "publisher-domain.com"
+              "id": "publisher-id"
             }
           },
           "device": {
