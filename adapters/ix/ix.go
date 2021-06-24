@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 
 	"github.com/mxmCherry/openrtb/v15/native1"
 	native1response "github.com/mxmCherry/openrtb/v15/native1/response"
@@ -419,30 +420,22 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 				}
 			}
 
-			var bidNative *native1response.Response
+			var bidNative1_1 *Native11Wrapper
 			if bidType == openrtb_ext.BidTypeNative {
-				unmarshalExtErr := json.Unmarshal([]byte(bid.AdM), &bidNative)
-				if unmarshalExtErr == nil && bidNative.EventTrackers != nil && len(bidNative.EventTrackers) > 0 {
+				unmarshalExtErr := json.Unmarshal([]byte(bid.AdM), &bidNative1_1)
+				if unmarshalExtErr == nil && bidNative1_1.Native.EventTrackers != nil && len(bidNative1_1.Native.EventTrackers) > 0 {
+					mergeNativeImpTrackers(&bidNative1_1.Native)
+					json, _ := json.Marshal(bidNative1_1)
+					bid.AdM = string(json)
+				}
+			}
 
-					// create unique list of imp pixels urls from `imptrackers` and `eventtrackers`
-					uniqueImpPixels := map[string]bool{}
-					for _, v := range bidNative.ImpTrackers {
-						uniqueImpPixels[v] = true
-					}
-
-					for _, v := range bidNative.EventTrackers {
-						if v.Event == native1.EventTypeImpression && v.Method == native1.EventTrackingMethodImage {
-							uniqueImpPixels[v.URL] = true
-						}
-					}
-
-					// rewrite `imptrackers` with new deduped list of imp pixels
-					bidNative.ImpTrackers = make([]string, len(uniqueImpPixels))
-					for k := range uniqueImpPixels {
-						bidNative.ImpTrackers = append(bidNative.ImpTrackers, k)
-					}
-
-					json, _ := json.Marshal(bidNative)
+			var bidNative1_2 *native1response.Response
+			if bidType == openrtb_ext.BidTypeNative {
+				unmarshalExtErr := json.Unmarshal([]byte(bid.AdM), &bidNative1_2)
+				if unmarshalExtErr == nil && bidNative1_2.EventTrackers != nil && len(bidNative1_2.EventTrackers) > 0 {
+					mergeNativeImpTrackers(bidNative1_2)
+					json, _ := json.Marshal(bidNative1_2)
 					bid.AdM = string(json)
 				}
 			}
@@ -473,4 +466,34 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		maxRequests: 20,
 	}
 	return bidder, nil
+}
+
+// native 1.2 to 1.1 tracker compatibility handling
+
+type Native11Wrapper struct {
+	Native native1response.Response `json:"native,omitempty"`
+}
+
+func mergeNativeImpTrackers(bidNative *native1response.Response) {
+
+	// create unique list of imp pixels urls from `imptrackers` and `eventtrackers`
+	uniqueImpPixels := map[string]bool{}
+	for _, v := range bidNative.ImpTrackers {
+		uniqueImpPixels[v] = true
+	}
+
+	for _, v := range bidNative.EventTrackers {
+		if v.Event == native1.EventTypeImpression && v.Method == native1.EventTrackingMethodImage {
+			uniqueImpPixels[v.URL] = true
+		}
+	}
+
+	// rewrite `imptrackers` with new deduped list of imp pixels
+	bidNative.ImpTrackers = make([]string, 0)
+	for k := range uniqueImpPixels {
+		bidNative.ImpTrackers = append(bidNative.ImpTrackers, k)
+	}
+
+	// sort so tests pass correctly
+	sort.Strings(bidNative.ImpTrackers)
 }
