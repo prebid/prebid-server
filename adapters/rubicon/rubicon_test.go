@@ -572,6 +572,52 @@ func TestResolveVideoSizeId(t *testing.T) {
 	}
 }
 
+func TestResolveBidFloorAttributes(t *testing.T) {
+	testScenarios := []struct {
+		bidFloor            float64
+		bidFloorCur         string
+		expectedBidFloor    float64
+		expectedBidFloorCur string
+	}{
+		{
+			bidFloor:            1,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    1.2,
+			expectedBidFloorCur: "USD",
+		},
+		{
+			bidFloor:            1,
+			bidFloorCur:         "Eur",
+			expectedBidFloor:    1.2,
+			expectedBidFloorCur: "USD",
+		},
+		{
+			bidFloor:            0,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    0,
+			expectedBidFloorCur: "EUR",
+		},
+		{
+			bidFloor:            -1,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    -1,
+			expectedBidFloorCur: "EUR",
+		},
+		{
+			bidFloor:            1,
+			bidFloorCur:         "USD",
+			expectedBidFloor:    1,
+			expectedBidFloorCur: "USD",
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		bidFloor, bidFloorCur := resolveBidFloorAttributes(scenario.bidFloor, scenario.bidFloorCur)
+		assert.Equal(t, scenario.expectedBidFloor, bidFloor)
+		assert.Equal(t, scenario.expectedBidFloorCur, bidFloorCur)
+	}
+}
+
 func TestNoContentResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)

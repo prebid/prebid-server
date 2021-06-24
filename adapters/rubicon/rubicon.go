@@ -750,15 +750,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		// Will be replaced after https://github.com/prebid/prebid-server/issues/1482 resolution
-		bidFloor := thisImp.BidFloor
-		bidFloorCur := thisImp.BidFloorCur
-		if bidFloor != 0 {
-			if strings.ToUpper(bidFloorCur) == "EUR" {
-				thisImp.BidFloorCur = "USD"
-				thisImp.BidFloor = bidFloor * 1.2
-			}
-		}
+		resolvedBidFloor, resolvedBidFloorCur := resolveBidFloorAttributes(thisImp.BidFloor, thisImp.BidFloorCur)
+		thisImp.BidFloorCur = resolvedBidFloorCur
+		thisImp.BidFloor = resolvedBidFloor
 
 		if request.User != nil {
 			userCopy := *request.User
@@ -901,6 +895,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	}
 
 	return requestData, errs
+}
+
+// Will be replaced after https://github.com/prebid/prebid-server/issues/1482 resolution
+func resolveBidFloorAttributes(bidFloor float64, bidFloorCur string) (float64, string) {
+	if bidFloor > 0 {
+		if strings.ToUpper(bidFloorCur) == "EUR" {
+			return bidFloor * 1.2, "USD"
+		}
+	}
+
+	return bidFloor, bidFloorCur
 }
 
 func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Data) error {
