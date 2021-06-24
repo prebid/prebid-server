@@ -457,7 +457,8 @@
                         "cat": ["IAB1"],
                         "ext": {
                             "duration": 5
-                        }
+                        },
+                        "exp": 300
                     },
                     "type": "video"
 
@@ -480,7 +481,8 @@
                         "cat": ["IAB2"],
                         "ext": {
                             "duration": 30
-                        }
+                        },
+                        "exp": 300
                     },
                     "type": "video"
                 }
@@ -507,7 +509,8 @@
                         "cat": ["IAB1"],
                         "ext": {
                             "duration": 5
-                        }
+                        },
+                        "exp": 300
                     },
                     "type": "video"
                 },
@@ -529,7 +532,8 @@
                         "cat": ["IAB2"],
                         "ext": {
                             "duration": 30
-                        }
+                        },
+                        "exp": 300
                     },
                     "type": "video"
                 }

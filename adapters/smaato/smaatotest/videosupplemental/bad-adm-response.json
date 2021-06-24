@@ -259,7 +259,8 @@
             "cat": ["IAB1"],
             "ext": {
               "duration": 5
-            }
+            },
+            "exp": 300
           },
           "type": "video"
         }

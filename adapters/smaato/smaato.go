@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/prebid/prebid-server/metrics"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -136,6 +138,8 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 				continue
 			}
 
+			bid.Exp = getTTLFromHeaderOrDefault(response)
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &bid,
 				BidType:  bidType,
@@ -234,6 +238,17 @@ func getAdMarkupType(response *adapters.ResponseData, adMarkup string) (adMarkup
 			Message: fmt.Sprintf("Invalid ad markup %s.", adMarkup),
 		}
 	}
+}
+
+func getTTLFromHeaderOrDefault(response *adapters.ResponseData) int64 {
+	ttl := int64(300)
+
+	if expiresAtMillis, err := strconv.ParseInt(response.Headers.Get("X-SMT-Expires"), 10, 64); err == nil {
+		nowMillis := time.Now().UnixNano() / 1000000
+		ttl = (expiresAtMillis - nowMillis) / 1000
+	}
+
+	return ttl
 }
 
 func renderAdMarkup(adMarkupType adMarkupType, adMarkup string) (string, error) {

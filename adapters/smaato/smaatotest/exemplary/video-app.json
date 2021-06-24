@@ -220,7 +220,8 @@
                         "nurl": "https://nurl",
                         "price": 0.01,
                         "w": 1024,
-                        "h": 768
+                        "h": 768,
+                        "exp": 300
                     },
                     "type": "video"
                 }
