@@ -31,10 +31,11 @@ var invalidParams = []string{
 	`null`,
 	`true`,
 	`5`,
-	`4.2`,
 	`[]`,
 	`{}`,
 	`{ "anyparam": "anyvalue" }`,
+	`{ "type": "network" }`,
+	`{ "key": "asddsfd", "type": "any"}`,
 }
 
 func TestInvalidParams(t *testing.T) {

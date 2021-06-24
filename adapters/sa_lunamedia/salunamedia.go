@@ -71,7 +71,7 @@ func (a *adapter) MakeBids(
 
 	if bidderRawResponse.StatusCode == http.StatusServiceUnavailable {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Bidder unavailable."),
+			Message: fmt.Sprintf("Bidder unavailable. Please contact the bidder support."),
 		}}
 	}
 
