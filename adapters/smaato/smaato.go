@@ -62,6 +62,11 @@ type bidExt struct {
 	Duration int `json:"duration"`
 }
 
+// videoExt defines Video.Ext object for Smaato
+type videoExt struct {
+	Context string `json:"context,omitempty"`
+}
+
 // Builder builds a new instance of the Smaato adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &SmaatoAdapter{
@@ -447,7 +452,10 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 		imps[i].Ext = nil
 
 		videoCopy := *(imps[i].Video)
+
 		videoCopy.Sequence = int8(i + 1)
+		videoCopy.Ext, _ = json.Marshal(&videoExt{Context: "adpod"})
+
 		imps[i].Video = &videoCopy
 	}
 
