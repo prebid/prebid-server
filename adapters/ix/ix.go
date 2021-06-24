@@ -431,7 +431,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 					}
 
 					for _, v := range bidNative.EventTrackers {
-						if v.Event == native1.EventTypeImpression {
+						if v.Event == native1.EventTypeImpression && v.Method == native1.EventTrackingMethodImage {
 							uniqueImpPixels[v.URL] = true
 						}
 					}
