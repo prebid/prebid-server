@@ -83,7 +83,7 @@
     },
     "expectedMakeRequestsErrors": [
         {
-            "value": "Key path not found",
+            "value": "Missing publisherId parameter.",
             "comparison": "literal"
         }
     ]

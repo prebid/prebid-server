@@ -29,7 +29,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal number into Go value of type map[string]json.RawMessage",
+      "value": "Invalid user.ext.",
       "comparison": "literal"
     }
   ]

@@ -3,6 +3,7 @@ package smaato
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/errortypes"
 	"net/url"
 	"strings"
 )
@@ -25,7 +26,9 @@ type img struct {
 func extractAdmImage(adMarkup string) (string, error) {
 	var imageAd imageAd
 	if err := json.Unmarshal([]byte(adMarkup), &imageAd); err != nil {
-		return "", err
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Invalid ad markup %s.", adMarkup),
+		}
 	}
 
 	var clickEvent strings.Builder

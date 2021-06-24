@@ -2,7 +2,19 @@
   "mockBidRequest": {
     "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
     "site": {
-      "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder"
+      "publisher": {
+        "id": "1100042525"
+      },
+      "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
+      "ext": {
+        "data": {
+          "keywords": "power tools",
+          "search": "drill",
+          "content": {
+            "userrating": 4
+          }
+        }
+      }
     },
     "imp": [
       {
@@ -21,8 +33,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherId": "1100042525",
-            "adspaceId": "130563103"
+            "publisherId": "1100042525"
           }
         }
       }
@@ -35,8 +46,14 @@
     },
     "user": {
       "ext": {
+        "consent": "gdprConsentString",
         "data": {
-          "yob": ""
+          "keywords": "a,b",
+          "gender": "M",
+          "yob": 1984,
+          "geo": {
+            "country": "ca"
+          }
         }
       }
     },
@@ -50,7 +67,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Invalid user.ext.data.",
+      "value": "Missing adspaceId parameter.",
       "comparison": "literal"
     }
   ]

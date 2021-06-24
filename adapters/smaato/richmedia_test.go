@@ -28,7 +28,7 @@ func TestExtractAdmRichMedia(t *testing.T) {
 		{"invalid adMarkup",
 			args{"{"},
 			"",
-			"unexpected end of JSON input",
+			"Invalid ad markup {.",
 		},
 	}
 

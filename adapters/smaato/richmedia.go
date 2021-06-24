@@ -3,6 +3,7 @@ package smaato
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/errortypes"
 	"net/url"
 	"strings"
 )
@@ -22,10 +23,12 @@ type richmedia struct {
 	Clicktrackers      []string  `json:"clicktrackers"`
 }
 
-func extractAdmRichMedia(adapterResponseAdm string) (string, error) {
+func extractAdmRichMedia(adMarkup string) (string, error) {
 	var richMediaAd richMediaAd
-	if err := json.Unmarshal([]byte(adapterResponseAdm), &richMediaAd); err != nil {
-		return "", err
+	if err := json.Unmarshal([]byte(adMarkup), &richMediaAd); err != nil {
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Invalid ad markup %s.", adMarkup),
+		}
 	}
 
 	var clickEvent strings.Builder

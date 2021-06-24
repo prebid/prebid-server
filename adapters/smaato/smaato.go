@@ -322,10 +322,10 @@ func setUser(request *openrtb2.BidRequest) error {
 		var userExtRaw map[string]json.RawMessage
 
 		if err = json.Unmarshal(request.User.Ext, &userExtRaw); err != nil {
-			return err
+			return &errortypes.BadInput{Message: "Invalid user.ext."}
 		}
 		if err = json.Unmarshal(request.User.Ext, &userExt); err != nil {
-			return err
+			return &errortypes.BadInput{Message: "Invalid user.ext.data."}
 		}
 
 		userCopy := *request.User
@@ -372,7 +372,7 @@ func setSite(request *openrtb2.BidRequest) error {
 			var siteExt siteExt
 
 			if err := json.Unmarshal(request.Site.Ext, &siteExt); err != nil {
-				return err
+				return &errortypes.BadInput{Message: "Invalid site.ext."}
 			}
 
 			siteCopy.Keywords = siteExt.Data.Keywords
@@ -394,7 +394,7 @@ func setApp(request *openrtb2.BidRequest) {
 func setPublisherId(request *openrtb2.BidRequest, imp *openrtb2.Imp) error {
 	publisherID, err := jsonparser.GetString(imp.Ext, "bidder", "publisherId")
 	if err != nil {
-		return err
+		return &errortypes.BadInput{Message: "Missing publisherId parameter."}
 	}
 
 	if request.Site != nil {
@@ -413,7 +413,7 @@ func setPublisherId(request *openrtb2.BidRequest, imp *openrtb2.Imp) error {
 func setImpForAdspace(imp *openrtb2.Imp) error {
 	adSpaceID, err := jsonparser.GetString(imp.Ext, "bidder", "adspaceId")
 	if err != nil {
-		return err
+		return &errortypes.BadInput{Message: "Missing adspaceId parameter."}
 	}
 
 	if imp.Banner != nil {
@@ -439,7 +439,7 @@ func setImpForAdspace(imp *openrtb2.Imp) error {
 func setImpForAdBreak(imps []openrtb2.Imp) error {
 	adBreakID, err := jsonparser.GetString(imps[0].Ext, "bidder", "adbreakId")
 	if err != nil {
-		return err
+		return &errortypes.BadInput{Message: "Missing adbreakId parameter."}
 	}
 
 	for i := range imps {
@@ -513,7 +513,7 @@ func buildBidVideo(bid *openrtb2.Bid, bidType openrtb_ext.BidType) (*openrtb_ext
 
 	var bidExt bidExt
 	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
-		return nil, err
+		return nil, &errortypes.BadServerResponse{Message: "Invalid bid.ext."}
 	}
 
 	return &openrtb_ext.ExtBidPrebidVideo{
