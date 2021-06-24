@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/mxmCherry/openrtb/v15/native1"
+	native1response "github.com/mxmCherry/openrtb/v15/native1/response"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -414,6 +416,34 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 					if len(bid.Cat) == 0 {
 						bid.Cat = []string{bidExt.Prebid.Video.PrimaryCategory}
 					}
+				}
+			}
+
+			var bidNative *native1response.Response
+			if bidType == openrtb_ext.BidTypeNative {
+				unmarshalExtErr := json.Unmarshal([]byte(bid.AdM), &bidNative)
+				if unmarshalExtErr == nil && bidNative.EventTrackers != nil && len(bidNative.EventTrackers) > 0 {
+
+					// create unique list of imp pixels urls from `imptrackers` and `eventtrackers`
+					uniqueImpPixels := map[string]bool{}
+					for _, v := range bidNative.ImpTrackers {
+						uniqueImpPixels[v] = true
+					}
+
+					for _, v := range bidNative.EventTrackers {
+						if v.Event == native1.EventTypeImpression {
+							uniqueImpPixels[v.URL] = true
+						}
+					}
+
+					// rewrite `imptrackers` with new deduped list of imp pixels
+					bidNative.ImpTrackers = make([]string, len(uniqueImpPixels))
+					for k := range uniqueImpPixels {
+						bidNative.ImpTrackers = append(bidNative.ImpTrackers, k)
+					}
+
+					json, _ := json.Marshal(bidNative)
+					bid.AdM = string(json)
 				}
 			}
 
