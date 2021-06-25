@@ -76,7 +76,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *SmaatoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *SmaatoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{Message: "No impressions in bid request."}}
 	}
@@ -89,14 +89,14 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	isVideoEntryPoint := reqInfo.PbsEntryPoint == metrics.ReqTypeVideo
 
 	if isVideoEntryPoint {
-		return a.makePodRequests(request)
+		return adapter.makePodRequests(request)
 	} else {
-		return a.makeIndividualRequests(request)
+		return adapter.makeIndividualRequests(request)
 	}
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *SmaatoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -143,7 +143,7 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 				continue
 			}
 
-			bid.Exp = a.getTTLFromHeaderOrDefault(response)
+			bid.Exp = adapter.getTTLFromHeaderOrDefault(response)
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &bid,
@@ -155,7 +155,7 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	return bidResponse, errors
 }
 
-func (a *SmaatoAdapter) makeIndividualRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
+func (adapter *SmaatoAdapter) makeIndividualRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	imps := request.Imp
 
 	requests := make([]*adapters.RequestData, 0, len(imps))
@@ -168,7 +168,7 @@ func (a *SmaatoAdapter) makeIndividualRequests(request *openrtb2.BidRequest) ([]
 			continue
 		}
 
-		requestData, err := a.makeRequest(request)
+		requestData, err := adapter.makeRequest(request)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -180,7 +180,7 @@ func (a *SmaatoAdapter) makeIndividualRequests(request *openrtb2.BidRequest) ([]
 	return requests, errors
 }
 
-func (a *SmaatoAdapter) makePodRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
+func (adapter *SmaatoAdapter) makePodRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	pods, orderedKeys := groupImpressionsByPod(request.Imp)
 	requests := make([]*adapters.RequestData, 0, len(pods))
 	errors := make([]error, 0, len(request.Imp))
@@ -198,7 +198,7 @@ func (a *SmaatoAdapter) makePodRequests(request *openrtb2.BidRequest) ([]*adapte
 				continue
 			}
 
-			requestData, err := a.makeRequest(request)
+			requestData, err := adapter.makeRequest(request)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -211,7 +211,7 @@ func (a *SmaatoAdapter) makePodRequests(request *openrtb2.BidRequest) ([]*adapte
 	return requests, errors
 }
 
-func (a *SmaatoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
+func (adapter *SmaatoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func (a *SmaatoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Req
 
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     a.endpoint,
+		Uri:     adapter.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
 	}, nil
@@ -245,11 +245,11 @@ func getAdMarkupType(response *adapters.ResponseData, adMarkup string) (adMarkup
 	}
 }
 
-func (a *SmaatoAdapter) getTTLFromHeaderOrDefault(response *adapters.ResponseData) int64 {
+func (adapter *SmaatoAdapter) getTTLFromHeaderOrDefault(response *adapters.ResponseData) int64 {
 	ttl := int64(300)
 
 	if expiresAtMillis, err := strconv.ParseInt(response.Headers.Get("X-Smt-Expires"), 10, 64); err == nil {
-		nowMillis := a.clock.Now().UnixNano() / 1000000
+		nowMillis := adapter.clock.Now().UnixNano() / 1000000
 		ttl = (expiresAtMillis - nowMillis) / 1000
 		if ttl < 0 {
 			ttl = 0
