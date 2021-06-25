@@ -3,18 +3,16 @@ package smaato
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/metrics"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/http"
+	"strconv"
+	"strings"
 )
 
 const clientVersion = "prebid_server_0.3"
@@ -29,6 +27,7 @@ const (
 
 // SmaatoAdapter describes a Smaato prebid server adapter.
 type SmaatoAdapter struct {
+	clock    clock
 	endpoint string
 }
 
@@ -70,6 +69,7 @@ type videoExt struct {
 // Builder builds a new instance of the Smaato adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &SmaatoAdapter{
+		clock:    realClock{},
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
@@ -143,7 +143,7 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 				continue
 			}
 
-			bid.Exp = getTTLFromHeaderOrDefault(response)
+			bid.Exp = a.getTTLFromHeaderOrDefault(response)
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &bid,
@@ -230,7 +230,7 @@ func (a *SmaatoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Req
 }
 
 func getAdMarkupType(response *adapters.ResponseData, adMarkup string) (adMarkupType, error) {
-	if admType := adMarkupType(response.Headers.Get("X-SMT-ADTYPE")); admType != "" {
+	if admType := adMarkupType(response.Headers.Get("X-Smt-Adtype")); admType != "" {
 		return admType, nil
 	} else if strings.HasPrefix(adMarkup, `{"image":`) {
 		return smtAdTypeImg, nil
@@ -245,12 +245,15 @@ func getAdMarkupType(response *adapters.ResponseData, adMarkup string) (adMarkup
 	}
 }
 
-func getTTLFromHeaderOrDefault(response *adapters.ResponseData) int64 {
+func (a *SmaatoAdapter) getTTLFromHeaderOrDefault(response *adapters.ResponseData) int64 {
 	ttl := int64(300)
 
-	if expiresAtMillis, err := strconv.ParseInt(response.Headers.Get("X-SMT-Expires"), 10, 64); err == nil {
-		nowMillis := time.Now().UnixNano() / 1000000
+	if expiresAtMillis, err := strconv.ParseInt(response.Headers.Get("X-Smt-Expires"), 10, 64); err == nil {
+		nowMillis := a.clock.Now().UnixNano() / 1000000
 		ttl = (expiresAtMillis - nowMillis) / 1000
+		if ttl < 0 {
+			ttl = 0
+		}
 	}
 
 	return ttl

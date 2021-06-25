@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -18,6 +20,10 @@ func TestJsonSamples(t *testing.T) {
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
+
+	smaatoAdapter, _ := bidder.(*SmaatoAdapter)
+	assert.NotNil(t, smaatoAdapter.clock)
+	smaatoAdapter.clock = mockClock(time.Date(2021, 6, 25, 10, 00, 0, 0, time.UTC))
 
 	adapterstest.RunJSONBidderTest(t, "smaatotest", bidder)
 }
