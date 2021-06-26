@@ -95,8 +95,8 @@ func (a *adapter) MakeBids(
 	}
 
 	if bidderRawResponse.StatusCode == http.StatusServiceUnavailable {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Bidder is unavailable. Please contact your account manager."),
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "Bidder is unavailable. Please contact your account manager.",
 		}}
 	}
 
@@ -114,7 +114,7 @@ func (a *adapter) MakeBids(
 
 	if len(bidResp.SeatBid) == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Empty SeatBid"),
+			Message: "Empty SeatBid",
 		}}
 	}
 
@@ -124,7 +124,7 @@ func (a *adapter) MakeBids(
 
 	if len(bids) == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Empty SeatBid.Bids"),
+			Message: "Empty SeatBid.Bids",
 		}}
 	}
 
@@ -135,7 +135,7 @@ func (a *adapter) MakeBids(
 
 	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Missing BidExt"),
+			Message: fmt.Sprintf("BidExt parsing error. %s", err.Error()),
 		}}
 	}
 

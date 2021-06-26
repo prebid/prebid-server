@@ -115,7 +115,7 @@
 
   "expectedMakeBidsErrors": [
     {
-      "value": "Missing BidExt",
+      "value": "BidExt parsing error. unexpected end of JSON input",
       "comparison": "literal"
     }
   ]
