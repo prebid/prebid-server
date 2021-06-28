@@ -751,7 +751,7 @@ func TestAdapterCurrency(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "some-request-id", response.ID, "Response ID")
 	assert.Empty(t, response.SeatBid, "Response Bids")
-	assert.Equal(t, `{"errors":{"foo":[{"code":5,"message":"The adapter failed to generate any bid requests, but also failed to generate an error explaining why"}]},"responsetimemillis":{"foo":0}}`+"\n", string(response.Ext), "Response Ext")
+	assert.Contains(t, string(response.Ext), `"errors":{"foo":[{"code":5,"message":"The adapter failed to generate any bid requests, but also failed to generate an error explaining why"}]}`, "Response Ext")
 
 	// Test Currency Converter Properly Passed To Adapter
 	if assert.NotNil(t, mockBidder.lastExtraRequestInfo, "Currency Conversion Argument") {
@@ -3741,6 +3741,7 @@ type mockBidder struct {
 
 func (m *mockBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	m.lastExtraRequestInfo = reqInfo
+
 	args := m.Called(request, reqInfo)
 	return args.Get(0).([]*adapters.RequestData), args.Get(1).([]error)
 }
