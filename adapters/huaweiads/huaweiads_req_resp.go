@@ -118,6 +118,7 @@ type Content struct {
 
 type MetaData struct {
 	Title             string      `json:"title"`
+	Description       string      `json:"description"`
 	ImageInfo         []ImageInfo `json:"imageInfo"`
 	Icon              []Icon      `json:"icon"`
 	ClickUrl          string      `json:"clickUrl"`

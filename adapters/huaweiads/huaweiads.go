@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mxmCherry/openrtb/v15/native1"
 	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
 	nativeResponse "github.com/mxmCherry/openrtb/v15/native1/response"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -631,7 +632,6 @@ func extractAdmNative(adType int32, content *Content, bidType openrtb_ext.BidTyp
 	if openrtb2Imp.Native == nil {
 		return "", 0, 0, fmt.Errorf("extractAdmNative: imp.Native is nil")
 	}
-
 	if openrtb2Imp.Native.Request == "" {
 		return "", 0, 0, fmt.Errorf("extractAdmNative: imp.Native.Request is empty")
 	}
@@ -649,17 +649,13 @@ func extractAdmNative(adType int32, content *Content, bidType openrtb_ext.BidTyp
 	}
 
 	nativeResult.Assets = make([]nativeResponse.Asset, 0, len(nativePayload.Assets))
-	var ImgIndex = 0
+	var imgIndex = 0
+	var iconIndex = 0
 	for _, asset := range nativePayload.Assets {
 		var responseAsset nativeResponse.Asset
 		if asset.Title != nil {
 			var titleObject nativeResponse.Title
-			titleObject.Text = ""
-			if content.MetaData.Title != "" {
-				if decodeTitle, err := url.QueryUnescape(content.MetaData.Title); err == nil {
-					titleObject.Text = decodeTitle
-				}
-			}
+			titleObject.Text, _ = getDecodeValue(content.MetaData.Title)
 			responseAsset.Title = &titleObject
 		} else if asset.Video != nil {
 			var vastXml string
@@ -672,21 +668,35 @@ func extractAdmNative(adType int32, content *Content, bidType openrtb_ext.BidTyp
 			responseAsset.Video = &videoObject
 		} else if asset.Img != nil {
 			var imgObject nativeResponse.Image
-			if len(content.MetaData.ImageInfo) > ImgIndex {
-				imgObject.URL = content.MetaData.ImageInfo[ImgIndex].Url
-				imgObject.W = content.MetaData.ImageInfo[ImgIndex].Width
-				imgObject.H = content.MetaData.ImageInfo[ImgIndex].Height
+			if asset.Img.Type == native1.ImageAssetTypeIcon {
+				if len(content.MetaData.Icon) > iconIndex {
+					imgObject.URL = content.MetaData.Icon[iconIndex].Url
+					imgObject.W = content.MetaData.Icon[iconIndex].Width
+					imgObject.H = content.MetaData.Icon[iconIndex].Height
+					imgObject.Type = asset.Img.Type
+					iconIndex++
+				}
+			} else if asset.Img.Type == native1.ImageAssetTypeMain {
+				if len(content.MetaData.ImageInfo) > imgIndex {
+					imgObject.URL = content.MetaData.ImageInfo[imgIndex].Url
+					imgObject.W = content.MetaData.ImageInfo[imgIndex].Width
+					imgObject.H = content.MetaData.ImageInfo[imgIndex].Height
+					imgObject.Type = asset.Img.Type
+					imgIndex++
+				}
 			} else {
 				imgObject.URL = ""
-				imgObject.W = 0
-				imgObject.H = 0
+				imgObject.Type = asset.Img.Type
 			}
-			ImgIndex++
 			responseAsset.Img = &imgObject
 		} else if asset.Data != nil {
 			var dataObject nativeResponse.Data
 			dataObject.Label = ""
 			dataObject.Value = ""
+			if asset.Data.Type == native1.DataAssetTypeDesc || asset.Data.Type == native1.DataAssetTypeDesc2 {
+				dataObject.Label = "desc"
+				dataObject.Value, _ = getDecodeValue(content.MetaData.Description)
+			}
 			responseAsset.Data = &dataObject
 		}
 		var id = asset.ID
@@ -712,6 +722,7 @@ func extractAdmNative(adType int32, content *Content, bidType openrtb_ext.BidTyp
 			}
 		}
 	}
+
 	nativeResult.Ver = "1.1"
 	if nativePayload.Ver != "" {
 		nativeResult.Ver = nativePayload.Ver
@@ -722,6 +733,17 @@ func extractAdmNative(adType int32, content *Content, bidType openrtb_ext.BidTyp
 		return "", 0, 0, err
 	}
 	return strings.Replace(string(result), "\n", "", -1), adWidth, adHeight, nil
+}
+
+func getDecodeValue(str string) (decodeValue string, err error) {
+	if str == "" {
+		return "", nil
+	}
+	if decodeValue, err = url.QueryUnescape(str); err == nil {
+		return decodeValue, nil
+	} else {
+		return "", err
+	}
 }
 
 // JSON custom
@@ -805,7 +827,6 @@ func extractAdmPicture(content *Content) (adm string, adWidth int64, adHeight in
 		"<img src=\"" + imageInfoUrl + "\" width=\"" + strconv.Itoa(int(width)) + "\" height=\"" + strconv.Itoa(int(height)) + "\" alt=\"\"/>" +
 		"</a></div>" +
 		"</body>"
-
 	return adm, adWidth, adHeight, nil
 }
 
