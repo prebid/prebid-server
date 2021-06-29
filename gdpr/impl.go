@@ -210,8 +210,8 @@ func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.
 		return true
 	}
 
-	purposeAllowed := consent.PurposeAllowed(purpose) && (weakVendorEnforcement || (vendor.Purpose(purpose) && consent.VendorConsent(vendorID)))
-	legitInterest := consent.PurposeLITransparency(purpose) && (weakVendorEnforcement || (vendor.LegitimateInterest(purpose) && consent.VendorLegitInterest(vendorID)))
+	purposeAllowed := p.consentEstablished(consent, vendor, vendorID, purpose, weakVendorEnforcement)
+	legitInterest := p.legitInterestEstablished(consent, vendor, vendorID, purpose, weakVendorEnforcement)
 
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictRequireConsent, vendorID) {
 		return purposeAllowed
@@ -222,6 +222,38 @@ func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.
 	}
 
 	return purposeAllowed || legitInterest
+}
+
+func (p *permissionsImpl) consentEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, weakVendorEnforcement bool) bool {
+	if !consent.PurposeAllowed(purpose) {
+		return false
+	}
+	if weakVendorEnforcement {
+		return true
+	}
+	if !p.purposeConfigs[purpose].EnforceVendors {
+		return true
+	}
+	if vendor.Purpose(purpose) && consent.VendorConsent(vendorID) {
+		return true
+	}
+	return false
+}
+
+func (p *permissionsImpl) legitInterestEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, weakVendorEnforcement bool) bool {
+	if !consent.PurposeLITransparency(purpose) {
+		return false
+	}
+	if weakVendorEnforcement {
+		return true
+	}
+	if !p.purposeConfigs[purpose].EnforceVendors {
+		return true
+	}
+	if vendor.LegitimateInterest(purpose) && consent.VendorLegitInterest(vendorID) {
+		return true
+	}
+	return false
 }
 
 func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string) (parsedConsent api.VendorConsents, vendor api.Vendor, err error) {

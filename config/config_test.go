@@ -140,6 +140,16 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
 	cmpBools(t, "gdpr.tcf2.purpose_one_treatment.enabled", true, cfg.GDPR.TCF2.PurposeOneTreatment.Enabled)
 	cmpBools(t, "gdpr.tcf2.purpose_one_treatment.access_allowed", true, cfg.GDPR.TCF2.PurposeOneTreatment.AccessAllowed)
+	cmpBools(t, "gdpr.tcf2.purpose1.enforce_vendors", cfg.GDPR.TCF2.Purpose1.EnforceVendors, true)
+	cmpBools(t, "gdpr.tcf2.purpose2.enforce_vendors", cfg.GDPR.TCF2.Purpose2.EnforceVendors, true)
+	cmpBools(t, "gdpr.tcf2.purpose3.enforce_vendors", cfg.GDPR.TCF2.Purpose3.EnforceVendors, true)
+	cmpBools(t, "gdpr.tcf2.purpose4.enforce_vendors", cfg.GDPR.TCF2.Purpose4.EnforceVendors, true)
+	cmpBools(t, "gdpr.tcf2.purpose5.enforce_vendors", cfg.GDPR.TCF2.Purpose5.EnforceVendors, true)
+	cmpBools(t, "gdpr.tcf2.purpose6.enforce_vendors", cfg.GDPR.TCF2.Purpose6.EnforceVendors, true)
+	cmpBools(t, "gdpr.tcf2.purpose7.enforce_vendors", cfg.GDPR.TCF2.Purpose7.EnforceVendors, true)
+	cmpBools(t, "gdpr.tcf2.purpose8.enforce_vendors", cfg.GDPR.TCF2.Purpose8.EnforceVendors, true)
+	cmpBools(t, "gdpr.tcf2.purpose9.enforce_vendors", cfg.GDPR.TCF2.Purpose9.EnforceVendors, true)
+	cmpBools(t, "gdpr.tcf2.purpose10.enforce_vendors", cfg.GDPR.TCF2.Purpose10.EnforceVendors, true)
 }
 
 var fullConfig = []byte(`
@@ -149,25 +159,35 @@ gdpr:
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
   tcf2:
     purpose1:
+      enforce_vendors: false
       vendor_exceptions: ["foo1a", "foo1b"]
     purpose2:
       enabled: false
+      enforce_vendors: false
       vendor_exceptions: ["foo2"]
     purpose3:
+      enforce_vendors: false
       vendor_exceptions: ["foo3"]
     purpose4:
+      enforce_vendors: false
       vendor_exceptions: ["foo4"]
     purpose5:
+      enforce_vendors: false
       vendor_exceptions: ["foo5"]
     purpose6:
+      enforce_vendors: false
       vendor_exceptions: ["foo6"]
     purpose7:
+      enforce_vendors: false
       vendor_exceptions: ["foo7"]
     purpose8:
+      enforce_vendors: false
       vendor_exceptions: ["foo8"]
     purpose9:
+      enforce_vendors: false
       vendor_exceptions: ["foo9"]
     purpose10:
+      enforce_vendors: false
       vendor_exceptions: ["foo10"]
     special_purpose1:
       vendor_exceptions: ["fooSP1"]
@@ -407,51 +427,61 @@ func TestFullConfig(t *testing.T) {
 		Enabled: true,
 		Purpose1: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo1a"), openrtb_ext.BidderName("foo1b")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo1a"): {}, openrtb_ext.BidderName("foo1b"): {}},
 		},
 		Purpose2: TCF2Purpose{
 			Enabled:            false,
+			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo2")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo2"): {}},
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo3"): {}},
 		},
 		Purpose4: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo4")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo4"): {}},
 		},
 		Purpose5: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo5")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo5"): {}},
 		},
 		Purpose6: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo6")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo6"): {}},
 		},
 		Purpose7: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo7")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo7"): {}},
 		},
 		Purpose8: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo8")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo8"): {}},
 		},
 		Purpose9: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo9")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo9"): {}},
 		},
 		Purpose10: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo10"): {}},
 		},
