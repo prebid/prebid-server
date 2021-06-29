@@ -91,7 +91,7 @@ type rubiconExtUserTpID struct {
 	UID    string `json:"uid"`
 }
 
-type rubiconUserDataExt struct {
+type rubiconDataExt struct {
 	Segtax int `json:"segtax"`
 }
 
@@ -921,22 +921,8 @@ func resolveBidFloorAttributes(bidFloor float64, bidFloorCur string) (float64, s
 }
 
 func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Data) error {
-	var segmentIdsToCopy = make([]string, 0)
-
-	for _, dataRecord := range data {
-		if dataRecord.Ext != nil {
-			var dataExtObject rubiconUserDataExt
-			err := json.Unmarshal(dataRecord.Ext, &dataExtObject)
-			if err != nil {
-				continue
-			}
-			if dataExtObject.Segtax == 4 {
-				for _, segment := range dataRecord.Segment {
-					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
-				}
-			}
-		}
-	}
+	userSegtaxes := []int{4}
+	var segmentIdsToCopy = getSegmentIdsToCopy(data, userSegtaxes)
 
 	userExtRPTarget := make(map[string]interface{})
 
@@ -958,40 +944,55 @@ func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Da
 }
 
 func updateSiteExtWithIabAttribute(siteExtRP *rubiconSiteExt, data []openrtb2.Data) error {
-	var segmentIdsToCopy = make([]string, 0)
+	siteSegtaxes := []int{1, 2}
+	var segmentIdsToCopy = getSegmentIdsToCopy(data, siteSegtaxes)
 
-	for _, dataRecord := range data {
-		if dataRecord.Ext != nil {
-			var dataExtObject rubiconUserDataExt
-			err := json.Unmarshal(dataRecord.Ext, &dataExtObject)
-			if err != nil {
-				continue
-			}
-			if dataExtObject.Segtax == 1 || dataExtObject.Segtax == 2 {
-				for _, segment := range dataRecord.Segment {
-					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
-				}
-			}
-		}
-	}
-
-	userExtRPTarget := make(map[string]interface{})
+	siteExtRPTarget := make(map[string]interface{})
 
 	if siteExtRP.RP.Target != nil {
-		if err := json.Unmarshal(siteExtRP.RP.Target, &userExtRPTarget); err != nil {
+		if err := json.Unmarshal(siteExtRP.RP.Target, &siteExtRPTarget); err != nil {
 			return &errortypes.BadInput{Message: err.Error()}
 		}
 	}
 
-	userExtRPTarget["iab"] = segmentIdsToCopy
+	siteExtRPTarget["iab"] = segmentIdsToCopy
 
-	if target, err := json.Marshal(&userExtRPTarget); err != nil {
+	if target, err := json.Marshal(&siteExtRPTarget); err != nil {
 		return &errortypes.BadInput{Message: err.Error()}
 	} else {
 		siteExtRP.RP.Target = target
 	}
 
 	return nil
+}
+
+func getSegmentIdsToCopy(data []openrtb2.Data, segtaxValues []int) []string {
+	var segmentIdsToCopy = make([]string, 0)
+
+	for _, dataRecord := range data {
+		if dataRecord.Ext != nil {
+			var dataExtObject rubiconDataExt
+			err := json.Unmarshal(dataRecord.Ext, &dataExtObject)
+			if err != nil {
+				continue
+			}
+			if contains(segtaxValues, dataExtObject.Segtax) {
+				for _, segment := range dataRecord.Segment {
+					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
+				}
+			}
+		}
+	}
+	return segmentIdsToCopy
+}
+
+func contains(s []int, e int) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) (mappedRubiconUidsParam, []error) {
