@@ -19,17 +19,19 @@ func TestExtraRequestInfoConvertCurrency(t *testing.T) {
 		description   string
 		setMock       func(m *mock.Mock)
 		expectedValue float64
-		expectedError string
+		expectedError error
 	}{
 		{
 			description:   "Success",
 			setMock:       func(m *mock.Mock) { m.On("GetRate", "AAA", "BBB").Return(2.5, nil) },
 			expectedValue: 5,
+			expectedError: nil,
 		},
 		{
 			description:   "Error",
 			setMock:       func(m *mock.Mock) { m.On("GetRate", "AAA", "BBB").Return(2.5, errors.New("some error")) },
-			expectedError: "some error",
+			expectedValue: 0,
+			expectedError: errors.New("some error"),
 		},
 	}
 
@@ -41,13 +43,8 @@ func TestExtraRequestInfoConvertCurrency(t *testing.T) {
 		result, err := extraRequestInfo.ConvertCurrency(givenValue, givenFrom, givenTo)
 
 		mockConversions.AssertExpectations(t)
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description+":err")
-			assert.Equal(t, test.expectedValue, result, test.description+":result")
-		} else {
-			assert.Error(t, err, test.description+":err")
-			assert.Empty(t, result, test.description+":result")
-		}
+		assert.Equal(t, test.expectedValue, result, test.description+":result")
+		assert.Equal(t, test.expectedError, err, test.description+":err")
 	}
 }
 
