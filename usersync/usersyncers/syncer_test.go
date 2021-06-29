@@ -117,6 +117,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderBidmachine:        true,
 		openrtb_ext.BidderBidsCube:          true,
 		openrtb_ext.BidderEpom:              true,
+		openrtb_ext.BidderHuaweiAds:         true,
 		openrtb_ext.BidderDecenterAds:       true,
 		openrtb_ext.BidderInMobi:            true,
 		openrtb_ext.BidderInteractiveoffers: true,
