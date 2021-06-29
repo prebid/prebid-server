@@ -403,7 +403,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 		for _, bid := range seatBid.Bid {
 			bidType, ok := impMediaType[bid.ImpID]
 			if !ok {
-				errs = append(errs, fmt.Errorf("Unmatched impression id: %s.", bid.ImpID))
+				errs = append(errs, fmt.Errorf("unmatched impression id: %s", bid.ImpID))
 			}
 
 			var bidExtVideo *openrtb_ext.ExtBidPrebidVideo
