@@ -425,8 +425,9 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 				unmarshalExtErr := json.Unmarshal([]byte(bid.AdM), &bidNative1_1)
 				if unmarshalExtErr == nil && bidNative1_1.Native.EventTrackers != nil && len(bidNative1_1.Native.EventTrackers) > 0 {
 					mergeNativeImpTrackers(&bidNative1_1.Native)
-					json, _ := json.Marshal(bidNative1_1)
-					bid.AdM = string(json)
+					if json, marshalErr := json.Marshal(bidNative1_1); marshalErr == nil {
+						bid.AdM = string(json)
+					}
 				}
 			}
 
@@ -435,8 +436,9 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 				unmarshalExtErr := json.Unmarshal([]byte(bid.AdM), &bidNative1_2)
 				if unmarshalExtErr == nil && bidNative1_2.EventTrackers != nil && len(bidNative1_2.EventTrackers) > 0 {
 					mergeNativeImpTrackers(bidNative1_2)
-					json, _ := json.Marshal(bidNative1_2)
-					bid.AdM = string(json)
+					if json, marshalErr := json.Marshal(bidNative1_2); marshalErr == nil {
+						bid.AdM = string(json)
+					}
 				}
 			}
 
