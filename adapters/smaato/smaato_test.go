@@ -23,7 +23,7 @@ func TestJsonSamples(t *testing.T) {
 
 	smaatoAdapter, _ := bidder.(*SmaatoAdapter)
 	assert.NotNil(t, smaatoAdapter.clock)
-	smaatoAdapter.clock = mockClock(time.Date(2021, 6, 25, 10, 00, 0, 0, time.UTC))
+	smaatoAdapter.clock = &mockTime{time: time.Date(2021, 6, 25, 10, 00, 0, 0, time.UTC)}
 
 	adapterstest.RunJSONBidderTest(t, "smaatotest", bidder)
 }
@@ -99,4 +99,12 @@ func TestVideoWithCategoryAndDuration(t *testing.T) {
 	if len(errors) != expectedErrorCount {
 		t.Errorf("should not have any errors, errors=%v", errors)
 	}
+}
+
+type mockTime struct {
+	time time.Time
+}
+
+func (mt *mockTime) Now() time.Time {
+	return mt.time
 }
