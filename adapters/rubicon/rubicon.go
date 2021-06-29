@@ -92,7 +92,7 @@ type rubiconExtUserTpID struct {
 }
 
 type rubiconUserDataExt struct {
-	TaxonomyName string `json:"taxonomyname"`
+	Segtax int `json:"segtax"`
 }
 
 type rubiconUserExt struct {
@@ -105,7 +105,8 @@ type rubiconUserExt struct {
 }
 
 type rubiconSiteExtRP struct {
-	SiteID int `json:"site_id"`
+	SiteID int             `json:"site_id"`
+	Target json.RawMessage `json:"target,omitempty"`
 }
 
 type rubiconSiteExt struct {
@@ -849,19 +850,30 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			thisImp.Video = nil
 		}
 
-		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
 
 		if request.Site != nil {
 			siteCopy := *request.Site
-			siteCopy.Ext, err = json.Marshal(&siteExt)
+			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
+			if err := updateSiteExtWithIabAttribute(&siteExtRP, siteCopy.Content.Data); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			siteCopy.Ext, err = json.Marshal(&siteExtRP)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
 			siteCopy.Publisher = &openrtb2.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiconRequest.Site = &siteCopy
 		}
+
 		if request.App != nil {
 			appCopy := *request.App
-			appCopy.Ext, err = json.Marshal(&siteExt)
+			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}})
 			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiconRequest.App = &appCopy
@@ -918,7 +930,7 @@ func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Da
 			if err != nil {
 				continue
 			}
-			if strings.EqualFold(dataExtObject.TaxonomyName, "iab") {
+			if dataExtObject.Segtax == 4 {
 				for _, segment := range dataRecord.Segment {
 					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
 				}
@@ -940,6 +952,43 @@ func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Da
 		return &errortypes.BadInput{Message: err.Error()}
 	} else {
 		userExtRP.RP.Target = target
+	}
+
+	return nil
+}
+
+func updateSiteExtWithIabAttribute(siteExtRP *rubiconSiteExt, data []openrtb2.Data) error {
+	var segmentIdsToCopy = make([]string, 0)
+
+	for _, dataRecord := range data {
+		if dataRecord.Ext != nil {
+			var dataExtObject rubiconUserDataExt
+			err := json.Unmarshal(dataRecord.Ext, &dataExtObject)
+			if err != nil {
+				continue
+			}
+			if dataExtObject.Segtax == 1 || dataExtObject.Segtax == 2 {
+				for _, segment := range dataRecord.Segment {
+					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
+				}
+			}
+		}
+	}
+
+	userExtRPTarget := make(map[string]interface{})
+
+	if siteExtRP.RP.Target != nil {
+		if err := json.Unmarshal(siteExtRP.RP.Target, &userExtRPTarget); err != nil {
+			return &errortypes.BadInput{Message: err.Error()}
+		}
+	}
+
+	userExtRPTarget["iab"] = segmentIdsToCopy
+
+	if target, err := json.Marshal(&userExtRPTarget); err != nil {
+		return &errortypes.BadInput{Message: err.Error()}
+	} else {
+		siteExtRP.RP.Target = target
 	}
 
 	return nil
