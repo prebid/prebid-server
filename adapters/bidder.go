@@ -150,7 +150,7 @@ func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {
 
 // ConvertCurrency converts a given amount from one currency to another, or returns:
 //  - Error if the `from` or `to` arguments are malformed or unknown ISO-4217 codes.
-//  - ConversionRateNotFoundError if the conversion mapping is unknown to Prebid Server
+//  - ConversionNotFoundError if the conversion mapping is unknown to Prebid Server
 //    and not provided in the bid request.
 func (r ExtraRequestInfo) ConvertCurrency(value float64, from, to string) (float64, error) {
 	if rate, err := r.currencyConversions.GetRate(from, to); err == nil {
