@@ -479,14 +479,14 @@ type Native11Wrapper struct {
 func mergeNativeImpTrackers(bidNative *native1response.Response) {
 
 	// create unique list of imp pixels urls from `imptrackers` and `eventtrackers`
-	uniqueImpPixels := map[string]bool{}
+	uniqueImpPixels := map[string]struct{}{}
 	for _, v := range bidNative.ImpTrackers {
-		uniqueImpPixels[v] = true
+		uniqueImpPixels[v] = struct{}{}
 	}
 
 	for _, v := range bidNative.EventTrackers {
 		if v.Event == native1.EventTypeImpression && v.Method == native1.EventTrackingMethodImage {
-			uniqueImpPixels[v.URL] = true
+			uniqueImpPixels[v.URL] = struct{}{}
 		}
 	}
 
