@@ -140,6 +140,7 @@ const (
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogicad           BidderName = "logicad"
 	BidderLunaMedia         BidderName = "lunamedia"
+	BidderSaLunaMedia       BidderName = "sa_lunamedia"
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
@@ -262,6 +263,7 @@ func CoreBidderNames() []BidderName {
 		BidderLockerDome,
 		BidderLogicad,
 		BidderLunaMedia,
+		BidderSaLunaMedia,
 		BidderMadvertise,
 		BidderMarsmedia,
 		BidderMediafuse,

@@ -70,6 +70,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rhythmone"
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
+	"github.com/prebid/prebid-server/adapters/sa_lunamedia"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
 	"github.com/prebid/prebid-server/adapters/smartadserver"
 	"github.com/prebid/prebid-server/adapters/smartrtb"
@@ -156,6 +157,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLockerDome, lockerdome.NewLockerDomeSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLogicad, logicad.NewLogicadSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderLunaMedia, lunamedia.NewLunaMediaSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderSaLunaMedia, salunamedia.NewSaLunamediaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderMarsmedia, marsmedia.NewMarsmediaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderMediafuse, mediafuse.NewMediafuseSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderMgid, mgid.NewMgidSyncer)
