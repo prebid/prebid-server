@@ -28,6 +28,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/beintoo"
 	"github.com/prebid/prebid-server/adapters/between"
+	"github.com/prebid/prebid-server/adapters/bidmyadz"
 	"github.com/prebid/prebid-server/adapters/bmtm"
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/colossus"
@@ -128,6 +129,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderBeintoo, beintoo.NewBeintooSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderBmtm, bmtm.NewBmtmSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderBrightroll, brightroll.NewBrightrollSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderBidmyadz, bidmyadz.NewBidmyadzSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderColossus, colossus.NewColossusSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderConnectAd, connectad.NewConnectAdSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderConsumable, consumable.NewConsumableSyncer)
