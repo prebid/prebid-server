@@ -1378,7 +1378,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,
 	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
 	// assume that the request.imp data did not change when applying the Stored BidRequest.
-	impToStoredReq := make(map[string][]byte)
+	impToStoredVideoReq := make(map[string][]byte)
 	for i := 0; i < len(impIds); i++ {
 		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
 
@@ -1392,7 +1392,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 					err = fmt.Errorf("imp.ext.prebid.storedrequest.id %s: Stored Imp has Invalid JSON: %s", impIds[i], Err)
 				}
 			}
-			return nil, impToStoredReq, []error{err}
+			return nil, impToStoredVideoReq, []error{err}
 		}
 		imps[idIndices[i]] = resolvedImp
 
@@ -1416,7 +1416,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 				//extract video attributes only
 				videoData, _, _, err := jsonparser.Get(storedImps[impIds[i]], "video")
 				if err == nil {
-					impToStoredReq[impId] = videoData
+					impToStoredVideoReq[impId] = videoData
 				}
 			}
 		}
@@ -1433,7 +1433,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		}
 	}
 
-	return resolvedRequest, impToStoredReq, nil
+	return resolvedRequest, impToStoredVideoReq, nil
 }
 
 // parseImpInfo parses the request JSON and returns several things about the Imps
