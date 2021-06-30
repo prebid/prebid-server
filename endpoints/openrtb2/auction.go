@@ -1396,30 +1396,31 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		}
 		imps[idIndices[i]] = resolvedImp
 
-		includeStoredImps, err := jsonparser.GetBoolean(resolvedImp, "ext", "prebid", "options", "echovideoattrs")
-
+		includeVideoAttributes, err := jsonparser.GetBoolean(resolvedImp, "ext", "prebid", "options", "echovideoattrs")
 		if err != nil && err != jsonparser.KeyPathNotFoundError {
 			return nil, nil, []error{err}
 		}
 
-		//determine if this is video impression
-		_, _, offset, err := jsonparser.Get(resolvedImp, "video")
-		if err != nil && err != jsonparser.KeyPathNotFoundError {
-			return nil, nil, []error{err}
-		}
-
-		if includeStoredImps && offset != -1 {
-			impId, err := jsonparser.GetString(resolvedImp, "id")
-			if err != nil {
+		if includeVideoAttributes {
+			//determine if this is video impression
+			_, _, videoOffset, err := jsonparser.Get(resolvedImp, "video")
+			if err != nil && err != jsonparser.KeyPathNotFoundError {
 				return nil, nil, []error{err}
 			}
-			//extract video attributes only
-			videoData, _, _, err := jsonparser.Get(storedImps[impIds[i]], "video")
-			if err == nil {
-				impToStoredReq[impId] = videoData
-			}
 
+			if videoOffset != -1 {
+				impId, err := jsonparser.GetString(resolvedImp, "id")
+				if err != nil {
+					return nil, nil, []error{err}
+				}
+				//extract video attributes only
+				videoData, _, _, err := jsonparser.Get(storedImps[impIds[i]], "video")
+				if err == nil {
+					impToStoredReq[impId] = videoData
+				}
+			}
 		}
+
 	}
 	if len(impIds) > 0 {
 		newImpJson, err := json.Marshal(imps)

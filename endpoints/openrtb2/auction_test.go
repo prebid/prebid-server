@@ -1044,6 +1044,35 @@ func TestStoredRequests(t *testing.T) {
 	}
 }
 
+func TestStoredRequestsVideoErrors(t *testing.T) {
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		newTestMetrics(),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	for i, requestData := range testStoredRequestsErrors {
+		_, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
+		if len(errList) == 0 {
+			t.Error("processStoredRequests should return error")
+		}
+		err := errList[0]
+		assert.Equal(t, testStoredRequestsErrorsResults[i], err.Error(), "Incorrect error")
+	}
+}
+
 // TestOversizedRequest makes sure we behave properly when the request size exceeds the configured max.
 func TestOversizedRequest(t *testing.T) {
 	reqBody := validRequest(t, "site.json")
@@ -2967,6 +2996,15 @@ var testStoredImpData = map[string]json.RawMessage{
 				}
 			}
 		}`),
+	"10": json.RawMessage(`{
+			"ext": {
+				"appnexus": {
+					"placementId": 12345678,
+					"position": "above",
+					"reserve": 0.35
+				}
+			}
+		}`),
 }
 
 // Incoming requests with stored request IDs
@@ -3093,6 +3131,73 @@ var testStoredRequests = []string{
 			}
 		}
 	}`,
+}
+
+var testStoredRequestsErrors = []string{
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"video":{
+					"h":300,
+					"w":200
+				},
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": 1
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+				}
+			}
+		}
+	}`, `{
+		"id": "ThisID",
+		"imp": [
+			{
+				"video":{
+					"h":300,
+					"w":200
+				},
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "10"
+						},
+						"options": {
+							"echovideoattrs": true
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+				}
+			}
+		}
+	}`,
+}
+
+var testStoredRequestsErrorsResults = []string{
+	"Value is not a boolean: 1",
+	"Key path not found",
 }
 
 // The expected requests after stored request processing
@@ -3272,13 +3377,13 @@ var testStoredImpIds = []string{
 
 var testStoredImps = []string{
 	`{
-        				"w":200,
-        				"h":300
-        			}`,
+		"w":200,
+		"h":300
+	}`,
 	`{
-					"w":200,
-					"h":300
-				}`,
+		"w":200,
+		"h":300
+	}`,
 	``,
 	``,
 }
