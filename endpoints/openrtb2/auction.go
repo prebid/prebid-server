@@ -1396,6 +1396,10 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		}
 		imps[idIndices[i]] = resolvedImp
 
+		// This is substantially faster for reading values from a json blob than the Go json package,
+		// but keep in mind that each jsonparser.GetXXX call re-parses the entire json.
+		// Based on performance measurements, the tipping point of efficiency is around 4 calls.
+		// At that point, please consider switching to EachKey to use a single pass.
 		includeVideoAttributes, err := jsonparser.GetBoolean(resolvedImp, "ext", "prebid", "options", "echovideoattrs")
 		if err != nil && err != jsonparser.KeyPathNotFoundError {
 			return nil, nil, []error{err}
