@@ -31,6 +31,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
 )
@@ -539,7 +540,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 
 func TestOverrideWithCustomCurrency(t *testing.T) {
 
-	mockCurrencyClient := &mockCurrencyRatesClient{
+	mockCurrencyClient := &fakeCurrencyRatesHttpClient{
 		responseBody: `{"dataAsOf":"2018-09-12","conversions":{"USD":{"MXN":10.00}}}`,
 	}
 	mockCurrencyConverter := currency.NewRateConverter(
@@ -691,6 +692,72 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 		} else {
 			assert.Len(t, outBidResponse.SeatBid, 0, "outBidResponse.SeatBid should be empty: %s", test.desc)
 		}
+	}
+}
+
+func TestAdapterCurrency(t *testing.T) {
+	fakeCurrencyClient := &fakeCurrencyRatesHttpClient{
+		responseBody: `{"dataAsOf":"2018-09-12","conversions":{"USD":{"MXN":10.00}}}`,
+	}
+	currencyConverter := currency.NewRateConverter(
+		fakeCurrencyClient,
+		"currency.fake.com",
+		24*time.Hour,
+	)
+	currencyConverter.Run()
+
+	// Initialize Mock Bidder
+	// - Response purposefully causes PBS-Core to stop processing the request, since this test is only
+	//   interested in the call to MakeRequests and nothing after.
+	mockBidder := &mockBidder{}
+	mockBidder.On("MakeRequests", mock.Anything, mock.Anything).Return([]*adapters.RequestData(nil), []error(nil))
+
+	// Initialize Real Exchange
+	e := exchange{
+		cache:             &wellBehavedCache{},
+		me:                &metricsConf.DummyMetricsEngine{},
+		gDPR:              gdpr.AlwaysAllow{},
+		currencyConverter: currencyConverter,
+		categoriesFetcher: nilCategoryFetcher{},
+		bidIDGenerator:    &mockBidIDGenerator{false, false},
+		adapterMap: map[openrtb_ext.BidderName]adaptedBidder{
+			openrtb_ext.BidderName("foo"): adaptBidder(mockBidder, nil, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderName("foo"), nil),
+		},
+	}
+
+	// Define Bid Request
+	request := &openrtb2.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb2.Imp{{
+			ID:     "some-impression-id",
+			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext:    json.RawMessage(`{"foo": {"placementId": 1}}`),
+		}},
+		Site: &openrtb2.Site{
+			Page: "prebid.org",
+			Ext:  json.RawMessage(`{"amp":0}`),
+		},
+		Cur: []string{"USD"},
+		Ext: json.RawMessage(`{"prebid": {"currency": {"rates": {"USD": {"MXN": 20.00}}}}}`),
+	}
+
+	// Run Auction
+	auctionRequest := AuctionRequest{
+		BidRequest: request,
+		Account:    config.Account{},
+		UserSyncs:  &emptyUsersync{},
+	}
+	response, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+	assert.NoError(t, err)
+	assert.Equal(t, "some-request-id", response.ID, "Response ID")
+	assert.Empty(t, response.SeatBid, "Response Bids")
+	assert.Contains(t, string(response.Ext), `"errors":{"foo":[{"code":5,"message":"The adapter failed to generate any bid requests, but also failed to generate an error explaining why"}]}`, "Response Ext")
+
+	// Test Currency Converter Properly Passed To Adapter
+	if assert.NotNil(t, mockBidder.lastExtraRequestInfo, "Currency Conversion Argument") {
+		converted, err := mockBidder.lastExtraRequestInfo.ConvertCurrency(2.0, "USD", "MXN")
+		assert.NoError(t, err, "Currency Conversion Error")
+		assert.Equal(t, 40.0, converted, "Currency Conversion Response")
 	}
 }
 
@@ -859,7 +926,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 		}
 
 		// Init mock currency conversion service
-		mockCurrencyClient := &mockCurrencyRatesClient{
+		mockCurrencyClient := &fakeCurrencyRatesHttpClient{
 			responseBody: `{"dataAsOf":"2018-09-12","conversions":` + string(jsonPbsRates) + `}`,
 		}
 		mockCurrencyConverter := currency.NewRateConverter(
@@ -3654,15 +3721,32 @@ func (nilCategoryFetcher) FetchCategories(ctx context.Context, primaryAdServer, 
 	return "", nil
 }
 
-// mockCurrencyRatesClient is a simple http client mock returning a constant response body
-type mockCurrencyRatesClient struct {
+// fakeCurrencyRatesHttpClient is a simple http client mock returning a constant response body
+type fakeCurrencyRatesHttpClient struct {
 	responseBody string
 }
 
-func (m *mockCurrencyRatesClient) Do(req *http.Request) (*http.Response, error) {
+func (m *fakeCurrencyRatesHttpClient) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		Status:     "200 OK",
 		StatusCode: http.StatusOK,
 		Body:       ioutil.NopCloser(strings.NewReader(m.responseBody)),
 	}, nil
+}
+
+type mockBidder struct {
+	mock.Mock
+	lastExtraRequestInfo *adapters.ExtraRequestInfo
+}
+
+func (m *mockBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	m.lastExtraRequestInfo = reqInfo
+
+	args := m.Called(request, reqInfo)
+	return args.Get(0).([]*adapters.RequestData), args.Get(1).([]error)
+}
+
+func (m *mockBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	args := m.Called(internalRequest, externalRequest, response)
+	return args.Get(0).(*adapters.BidderResponse), args.Get(1).([]error)
 }

@@ -65,7 +65,7 @@ func TestGroupedGetRate(t *testing.T) {
 			},
 		},
 		{
-			expectedError: ConversionRateNotFound{"GBP", "EUR"},
+			expectedError: ConversionNotFoundError{FromCur: "GBP", ToCur: "EUR"},
 			testCases: []aTest{
 				{"Valid three-digit currency codes, but conversion rate not found", "GBP", "EUR", 0},
 			},
