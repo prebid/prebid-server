@@ -420,23 +420,23 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 				}
 			}
 
-			var bidNative1_1 *Native11Wrapper
+			var bidNative1v1 *Native11Wrapper
 			if bidType == openrtb_ext.BidTypeNative {
-				unmarshalExtErr := json.Unmarshal([]byte(bid.AdM), &bidNative1_1)
-				if unmarshalExtErr == nil && len(bidNative1_1.Native.EventTrackers) > 0 {
-					mergeNativeImpTrackers(&bidNative1_1.Native)
-					if json, marshalErr := json.Marshal(bidNative1_1); marshalErr == nil {
+				err := json.Unmarshal([]byte(bid.AdM), &bidNative1v1)
+				if err == nil && len(bidNative1v1.Native.EventTrackers) > 0 {
+					mergeNativeImpTrackers(&bidNative1v1.Native)
+					if json, err := json.Marshal(bidNative1v1); err == nil {
 						bid.AdM = string(json)
 					}
 				}
 			}
 
-			var bidNative1_2 *native1response.Response
+			var bidNative1v2 *native1response.Response
 			if bidType == openrtb_ext.BidTypeNative {
-				unmarshalExtErr := json.Unmarshal([]byte(bid.AdM), &bidNative1_2)
-				if unmarshalExtErr == nil && len(bidNative1_2.EventTrackers) > 0 {
-					mergeNativeImpTrackers(bidNative1_2)
-					if json, marshalErr := json.Marshal(bidNative1_2); marshalErr == nil {
+				err := json.Unmarshal([]byte(bid.AdM), &bidNative1v2)
+				if err == nil && len(bidNative1v2.EventTrackers) > 0 {
+					mergeNativeImpTrackers(bidNative1v2)
+					if json, err := json.Marshal(bidNative1v2); err == nil {
 						bid.AdM = string(json)
 					}
 				}
