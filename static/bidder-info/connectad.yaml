@@ -12,3 +12,4 @@ userSync:
   iframe:
     url: "https://cdn.connectad.io/connectmyusers.php?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
     userMacro: ""
+    # connectad appends the user id to end of the redirect url and does not utilize a macro

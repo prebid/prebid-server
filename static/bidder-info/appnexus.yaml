@@ -14,6 +14,6 @@ capabilities:
       - native
 userSync:
   key: "adnxs"
-    redirect:
-      url: "https://ib.adnxs.com/getuid?{{.RedirectURL}}"
-      userMacro: "$UID"
+  redirect:
+    url: "https://ib.adnxs.com/getuid?{{.RedirectURL}}"
+    userMacro: "$UID"
