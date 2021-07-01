@@ -221,6 +221,7 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 		// to the request object
 		request.Imp = []openrtb.Imp{impCopy}
 
+		// overwrite publisher id with Tapjoy's apps-ads.txt id
 		var requestAppCopy openrtb.App
 		var requestAppPublisherCopy openrtb.Publisher
 
