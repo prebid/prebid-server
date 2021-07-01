@@ -276,18 +276,6 @@
           },
           "app": {
             "id": "1",
-            "ext": {
-              "rp": {
-                "site_id": 113932
-              }
-            },
-            "publisher": {
-              "ext": {
-                "rp": {
-                  "account_id": 1001
-                }
-              }
-            },
             "bundle": "com.wls.testwlsapplication"
           },
           "imp": [
