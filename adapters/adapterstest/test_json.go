@@ -57,6 +57,7 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 	runTests(t, fmt.Sprintf("%s/supplemental", rootDir), bidder, true, false, false)
 	runTests(t, fmt.Sprintf("%s/amp", rootDir), bidder, true, true, false)
 	runTests(t, fmt.Sprintf("%s/video", rootDir), bidder, false, false, true)
+	runTests(t, fmt.Sprintf("%s/videosupplemental", rootDir), bidder, true, false, true)
 }
 
 // runTests runs all the *.json files in a directory. If allowErrors is false, and one of the test files

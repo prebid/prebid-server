@@ -26,33 +26,7 @@ type saveVendors func(uint16, api.VendorList)
 //
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
-func newVendorListFetcherTCF1(cfg config.GDPR) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
-	if len(cfg.TCF1.FallbackGVLPath) == 0 {
-		return func(_ context.Context, vendorListVersion uint16) (vendorlist.VendorList, error) {
-			return nil, makeVendorListNotFoundError(vendorListVersion)
-		}
-	}
-
-	fallback := loadFallbackGVLForTCF1(cfg.TCF1.FallbackGVLPath)
-	return func(_ context.Context, _ uint16) (vendorlist.VendorList, error) {
-		return fallback, nil
-	}
-}
-
-func loadFallbackGVLForTCF1(fallbackGVLPath string) vendorlist.VendorList {
-	fallbackContents, err := ioutil.ReadFile(fallbackGVLPath)
-	if err != nil {
-		glog.Fatalf("Error reading from file %s: %v", fallbackGVLPath, err)
-	}
-
-	fallback, err := vendorlist.ParseEagerly(fallbackContents)
-	if err != nil {
-		glog.Fatalf("Error processing default GVL from %s: %v", fallbackGVLPath, err)
-	}
-	return fallback
-}
-
-func newVendorListFetcherTCF2(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16) string) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16) string) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
 	cacheSave, cacheLoad := newVendorListCache()
 
 	preloadContext, cancel := context.WithTimeout(initCtx, cfg.Timeouts.InitTimeout())

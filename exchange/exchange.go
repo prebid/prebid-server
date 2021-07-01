@@ -51,18 +51,18 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap          map[openrtb_ext.BidderName]adaptedBidder
-	bidderInfo          config.BidderInfos
-	me                  metrics.MetricsEngine
-	cache               prebid_cache_client.Client
-	cacheTime           time.Duration
-	gDPR                gdpr.Permissions
-	currencyConverter   *currency.RateConverter
-	externalURL         string
-	UsersyncIfAmbiguous bool
-	privacyConfig       config.Privacy
-	categoriesFetcher   stored_requests.CategoryFetcher
-	bidIDGenerator      BidIDGenerator
+	adapterMap        map[openrtb_ext.BidderName]adaptedBidder
+	bidderInfo        config.BidderInfos
+	me                metrics.MetricsEngine
+	cache             prebid_cache_client.Client
+	cacheTime         time.Duration
+	gDPR              gdpr.Permissions
+	currencyConverter *currency.RateConverter
+	externalURL       string
+	gdprDefaultValue  gdpr.Signal
+	privacyConfig     config.Privacy
+	categoriesFetcher stored_requests.CategoryFetcher
+	bidIDGenerator    BidIDGenerator
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -99,18 +99,33 @@ func (big *bidIDGenerator) New() (string, error) {
 	return rawUuid.String(), err
 }
 
+type deduplicateChanceGenerator interface {
+	Generate() bool
+}
+
+type randomDeduplicateBidBooleanGenerator struct{}
+
+func (randomDeduplicateBidBooleanGenerator) Generate() bool {
+	return rand.Intn(100) < 50
+}
+
 func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+	gdprDefaultValue := gdpr.SignalYes
+	if cfg.GDPR.DefaultValue == "0" {
+		gdprDefaultValue = gdpr.SignalNo
+	}
+
 	return &exchange{
-		adapterMap:          adapters,
-		bidderInfo:          infos,
-		cache:               cache,
-		cacheTime:           time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
-		categoriesFetcher:   categoriesFetcher,
-		currencyConverter:   currencyConverter,
-		externalURL:         cfg.ExternalURL,
-		gDPR:                gDPR,
-		me:                  metricsEngine,
-		UsersyncIfAmbiguous: cfg.GDPR.UsersyncIfAmbiguous,
+		adapterMap:        adapters,
+		bidderInfo:        infos,
+		cache:             cache,
+		cacheTime:         time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
+		categoriesFetcher: categoriesFetcher,
+		currencyConverter: currencyConverter,
+		externalURL:       cfg.ExternalURL,
+		gDPR:              gDPR,
+		me:                metricsEngine,
+		gdprDefaultValue:  gdprDefaultValue,
 		privacyConfig: config.Privacy{
 			CCPA: cfg.CCPA,
 			GDPR: cfg.GDPR,
@@ -159,13 +174,13 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	}
 
 	if debugLog == nil {
-		debugLog = &DebugLog{Enabled: false}
+		debugLog = &DebugLog{Enabled: false, DebugEnabledOrOverridden: false}
 	}
 
 	requestDebugInfo := getDebugInfo(r.BidRequest, requestExt)
 
-	debugInfo := requestDebugInfo && r.Account.DebugAllow
-	debugLog.Enabled = debugLog.Enabled && r.Account.DebugAllow
+	debugInfo := debugLog.DebugEnabledOrOverridden || (requestDebugInfo && r.Account.DebugAllow)
+	debugLog.Enabled = debugLog.DebugEnabledOrOverridden || r.Account.DebugAllow
 
 	if debugInfo {
 		ctx = e.makeDebugContext(ctx, debugInfo)
@@ -176,10 +191,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	recordImpMetrics(r.BidRequest, e.me)
 
 	// Make our best guess if GDPR applies
-	usersyncIfAmbiguous := e.parseUsersyncIfAmbiguous(r.BidRequest)
+	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.gDPR, e.me, usersyncIfAmbiguous, e.privacyConfig, &r.Account)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.gDPR, e.me, gdprDefaultValue, e.privacyConfig, &r.Account)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -192,9 +207,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	defer cancel()
 
 	// Get currency rates conversions for the auction
-	conversions := e.currencyConverter.Rates()
+	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
 
 	var auc *auction
 	var cacheErrs []error
@@ -205,7 +220,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
 			var rejections []string
-			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, requestExt, adapterBids, e.categoriesFetcher, targData)
+			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, requestExt, adapterBids, e.categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{})
 			if err != nil {
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 			}
@@ -239,7 +254,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			}
 
 			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
-			if debugLog.Enabled {
+			if debugLog.DebugEnabledOrOverridden {
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)
 				} else {
@@ -260,7 +275,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	} else {
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
 
-		if debugLog.Enabled {
+		if debugLog.DebugEnabledOrOverridden {
 
 			if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 				debugLog.Data.Response = string(bidRespExtBytes)
@@ -271,7 +286,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 	}
 
-	if !r.Account.DebugAllow && requestDebugInfo {
+	if !r.Account.DebugAllow && requestDebugInfo && !debugLog.DebugOverride {
 		accountDebugDisabledWarning := openrtb_ext.ExtBidderMessage{
 			Code:    errortypes.AccountLevelDebugDisabledWarningCode,
 			Message: "debug turned off for account",
@@ -291,8 +306,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, errs)
 }
 
-func (e *exchange) parseUsersyncIfAmbiguous(bidRequest *openrtb2.BidRequest) bool {
-	usersyncIfAmbiguous := e.UsersyncIfAmbiguous
+func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) gdpr.Signal {
+	gdprDefaultValue := e.gdprDefaultValue
 	var geo *openrtb2.Geo = nil
 
 	if bidRequest.User != nil && bidRequest.User.Geo != nil {
@@ -304,14 +319,14 @@ func (e *exchange) parseUsersyncIfAmbiguous(bidRequest *openrtb2.BidRequest) boo
 		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
 		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
 		if _, found := e.privacyConfig.GDPR.EEACountriesMap[strings.ToUpper(geo.Country)]; found {
-			usersyncIfAmbiguous = false
+			gdprDefaultValue = gdpr.SignalYes
 		} else if len(geo.Country) == 3 {
 			// The country field is formatted properly as a three character country code
-			usersyncIfAmbiguous = true
+			gdprDefaultValue = gdpr.SignalNo
 		}
 	}
 
-	return usersyncIfAmbiguous
+	return gdprDefaultValue
 }
 
 func recordImpMetrics(bidRequest *openrtb2.BidRequest, metricsEngine metrics.MetricsEngine) {
@@ -404,7 +419,8 @@ func (e *exchange) getAllBids(
 	bidAdjustments map[string]float64,
 	conversions currency.Conversions,
 	accountDebugAllowed bool,
-	globalPrivacyControlHeader string) (
+	globalPrivacyControlHeader string,
+	headerDebugAllowed bool) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -433,10 +449,10 @@ func (e *exchange) getAllBids(
 			if givenAdjustment, ok := bidAdjustments[string(bidderRequest.BidderName)]; ok {
 				adjustmentFactor = givenAdjustment
 			}
-			var reqInfo adapters.ExtraRequestInfo
+			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed)
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -612,7 +628,7 @@ func encodeBidResponseExt(bidResponseExt *openrtb_ext.ExtBidResponse) ([]byte, e
 	return buffer.Bytes(), err
 }
 
-func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
+func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateChanceGenerator) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -741,7 +757,7 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 					currBidPrice = 0
 				}
 				if dupeBidPrice == currBidPrice {
-					if rand.Intn(100) < 50 {
+					if booleanGenerator.Generate() {
 						dupeBidPrice = -1
 					} else {
 						currBidPrice = -1
@@ -756,11 +772,16 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 					} else {
 						// An older bid from a different seatBid we've already finished with
 						oldSeatBid := (seatBids)[dupe.bidderName]
+						rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						if len(oldSeatBid.bids) == 1 {
 							seatBidsToRemove = append(seatBidsToRemove, dupe.bidderName)
-							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						} else {
-							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
+							// This is a very rare, but still possible case where bid needs to be removed from already processed bidder
+							// This happens when current processing bidder has a bid that has same deduplication key as a bid from already processed bidder
+							// and already processed bid was selected to be removed
+							// See example of input data in unit test `TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice`
+							// Need to remove bid by name, not index in this case
+							removeBidById(oldSeatBid, dupe.bidID)
 						}
 					}
 					delete(res, dupe.bidID)
@@ -796,6 +817,24 @@ func applyCategoryMapping(ctx context.Context, requestExt *openrtb_ext.ExtReques
 	}
 
 	return res, seatBids, rejections, nil
+}
+
+func removeBidById(seatBid *pbsOrtbSeatBid, bidID string) {
+	//Find index of bid to remove
+	dupeBidIndex := -1
+	for i, bid := range seatBid.bids {
+		if bid.bid.ID == bidID {
+			dupeBidIndex = i
+			break
+		}
+	}
+	if dupeBidIndex != -1 {
+		if dupeBidIndex < len(seatBid.bids)-1 {
+			seatBid.bids = append(seatBid.bids[:dupeBidIndex], seatBid.bids[dupeBidIndex+1:]...)
+		} else if dupeBidIndex == len(seatBid.bids)-1 {
+			seatBid.bids = seatBid.bids[:len(seatBid.bids)-1]
+		}
+	}
 }
 
 func updateRejections(rejections []string, bidID string, reason string) []string {
@@ -937,6 +976,34 @@ func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auction *auction) (cacheInfo
 	}
 
 	return
+}
+
+func (e *exchange) getAuctionCurrencyRates(requestRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
+	if requestRates == nil {
+		// No bidRequest.ext.currency field was found, use PBS rates as usual
+		return e.currencyConverter.Rates()
+	}
+
+	// If bidRequest.ext.currency.usepbsrates is nil, we understand its value as true. It will be false
+	// only if it's explicitly set to false
+	usePbsRates := requestRates.UsePBSRates == nil || *requestRates.UsePBSRates
+
+	if !usePbsRates {
+		// At this point, we can safely assume the ConversionRates map is not empty because
+		// validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) would have
+		// thrown an error under such conditions.
+		return currency.NewRates(time.Time{}, requestRates.ConversionRates)
+	}
+
+	// Both PBS and custom rates can be used, check if ConversionRates is not empty
+	if len(requestRates.ConversionRates) == 0 {
+		// Custom rates map is empty, use PBS rates only
+		return e.currencyConverter.Rates()
+	}
+
+	// Return an AggregateConversions object that includes both custom and PBS currency rates but will
+	// prioritize custom rates over PBS rates whenever a currency rate is found in both
+	return currency.NewAggregateConversions(currency.NewRates(time.Time{}, requestRates.ConversionRates), e.currencyConverter.Rates())
 }
 
 func findCacheID(bid *pbsOrtbBid, auction *auction) (string, bool) {

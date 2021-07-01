@@ -1,0 +1,8 @@
+maintainer:
+  email: "xunyunbo@algorix.co"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
