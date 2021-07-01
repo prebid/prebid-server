@@ -71,12 +71,11 @@ func (a *AxonixAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 
 	thisURI := a.URI
 	if len(thisURI) == 0 {
-		thisURI = "https://openrtb-us-east-1.axonix.com/supply/2.1/bid/" + axonixExt.SupplyId
+		thisURI = "https://openrtb-us-east-1.axonix.com/supply/prebid-server/" + axonixExt.SupplyId
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
-	headers.Add("x-axonix-request-type", "prebid-server")
 
 	requestData := &adapters.RequestData{
 		Method:  "POST",
