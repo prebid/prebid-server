@@ -33,6 +33,11 @@ type ExtImp struct {
 	Gpid   string                    `json:"gpid,omitempty"`
 }
 
+type ReqExt struct {
+    Prebid   json.RawMessage `json:"prebid,omitempty"`
+    Keywords json.RawMessage `json:"keywords,omitempty"`
+}
+
 func processImp(imp *openrtb2.Imp) error {
 	// get the grid extension
 	var ext adapters.ExtImpBidder
@@ -69,16 +74,38 @@ func setImpExtData(imp openrtb2.Imp) openrtb2.Imp {
 	return imp
 }
 
+func setImpExtKeywords(imp openrtb2.Imp, request *openrtb2.BidRequest) error {
+	var ext adapters.ExtImpBidder
+    var gridExt openrtb_ext.ExtImpGrid
+    var reqExt ReqExt
+    if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+        return err
+    }
+    if err := json.Unmarshal(ext.Bidder, &gridExt); err != nil {
+        return err
+    }
+    if (gridExt.Keywords != nil) {
+        if err := json.Unmarshal(request.Ext, &reqExt); err != nil {
+            return err
+        }
+        reqExt.Keywords = gridExt.Keywords
+        extJSON, err := json.Marshal(reqExt);
+        if err != nil {
+            return err
+        }
+        request.Ext = extJSON
+    }
+	return nil
+}
+
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
 func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors = make([]error, 0)
 
-	// copy the request, because we are going to mutate it
-	requestCopy := *request
 	// this will contain all the valid impressions
 	var validImps []openrtb2.Imp
 	// pre-process the imps
-	for _, imp := range requestCopy.Imp {
+	for _, imp := range request.Imp {
 		if err := processImp(&imp); err == nil {
 			validImps = append(validImps, setImpExtData(imp))
 		} else {
@@ -92,9 +119,15 @@ func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 		errors = append(errors, err)
 		return nil, errors
 	}
-	requestCopy.Imp = validImps
 
-	reqJSON, err := json.Marshal(requestCopy)
+	err := setImpExtKeywords(validImps[0], request)
+	if err != nil {
+        errors = append(errors, err)
+    }
+
+    request.Imp = validImps
+
+	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
