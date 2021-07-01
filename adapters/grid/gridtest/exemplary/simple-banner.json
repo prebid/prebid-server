@@ -14,7 +14,17 @@
             },
             "ext": {
                 "bidder": {
-                    "uid": 1
+                    "uid": 1,
+                    "keywords": {
+                        "site": {
+                            "somePublisher": [
+                                {
+                                    "name": "someName",
+                                    "topic": ["stress", "fear"]
+                                }
+                            ]
+                        }
+                    }
                 }
             }
         }]
@@ -24,6 +34,18 @@
         "expectedRequest": {
             "uri": "http://localhost/prebid",
             "body": {
+                "ext": {
+                    "keywords": {
+                        "site": {
+                            "somePublisher": [
+                                {
+                                    "name": "someName",
+                                    "topic": ["stress", "fear"]
+                                }
+                            ]
+                        }
+                    }
+                },
                 "id": "test-request-id",
                 "site": {
                     "page": "https://good.site/url"
@@ -38,7 +60,17 @@
                     },
                     "ext": {
                         "bidder": {
-                            "uid": 1
+                            "uid": 1,
+                            "keywords": {
+                                "site": {
+                                    "somePublisher": [
+                                        {
+                                            "name": "someName",
+                                            "topic": ["stress", "fear"]
+                                        }
+                                    ]
+                                }
+                            }
                         }
                     }
                 }]
