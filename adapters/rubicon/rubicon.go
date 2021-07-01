@@ -96,12 +96,11 @@ type rubiconUserDataExt struct {
 }
 
 type rubiconUserExt struct {
-	Consent     string                        `json:"consent,omitempty"`
-	DigiTrust   *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
-	Eids        []openrtb_ext.ExtUserEid      `json:"eids,omitempty"`
-	TpID        []rubiconExtUserTpID          `json:"tpid,omitempty"`
-	RP          rubiconUserExtRP              `json:"rp"`
-	LiverampIdl string                        `json:"liveramp_idl,omitempty"`
+	Consent     string                   `json:"consent,omitempty"`
+	Eids        []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
+	TpID        []rubiconExtUserTpID     `json:"tpid,omitempty"`
+	RP          rubiconUserExtRP         `json:"rp"`
+	LiverampIdl string                   `json:"liveramp_idl,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -772,9 +771,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 					continue
 				}
 				userExtRP.Consent = userExt.Consent
-				if userExt.DigiTrust != nil {
-					userExtRP.DigiTrust = userExt.DigiTrust
-				}
 				userExtRP.Eids = userExt.Eids
 
 				// set user.ext.tpid
