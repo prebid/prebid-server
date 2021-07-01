@@ -681,42 +681,50 @@ func TestUsersEids(t *testing.T) {
                         "rtiPartner": "TDID"
                     }
                 }]
-            },{
+            },
+			{
                 "source": "pubcid.org",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "id5-sync.com",
                 "uids": [{
                     "id": "ID5-12345"
                 }]
-            },            {
+            },            
+			{
                 "source": "parrable.com",
                 "uids": [{
                     "id": "01.1563917337.test-eid"
                 }]
-            },{
+            },
+			{
                 "source": "identityLink",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "criteo",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "britepool.com",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "liveintent.com",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "netid.de",
                 "uids": [{
                     "id": "11111111"
