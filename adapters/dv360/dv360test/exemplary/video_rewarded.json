@@ -1,8 +1,13 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
-    "device":{
+    "device": {
       "ip_address": "1.2.3"
+    },
+    "app": {
+      "publisher": {
+        "id": "publisher123"
+      }
     },
     "imp": [
       {
@@ -96,6 +101,11 @@
               "ifa_type": "dpid",
               "ip_less": 0,
               "truncated_ip": 0
+            }
+          },
+          "app": {
+            "publisher": {
+              "id": "1011b04a93164a6db3a0158461c82433"
             }
           }
         }

@@ -106,6 +106,11 @@
               "ip_less": 0,
               "truncated_ip": 0
             }
+          },
+          "app": {
+            "publisher": {
+              "id": "1011b04a93164a6db3a0158461c82433"
+            }
           }
         }
       },

@@ -221,6 +221,27 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 		// to the request object
 		request.Imp = []openrtb.Imp{impCopy}
 
+		var requestAppCopy openrtb.App
+		var requestAppPublisherCopy openrtb.Publisher
+
+		if request.App != nil {
+			requestAppCopy = *request.App
+		} else {
+			requestAppCopy = openrtb.App{}
+		}
+
+		if requestAppCopy.Publisher != nil {
+			requestAppPublisherCopy = *requestAppCopy.Publisher
+		} else {
+			requestAppPublisherCopy = openrtb.Publisher{}
+		}
+
+		requestAppPublisherCopy.ID = "1011b04a93164a6db3a0158461c82433"
+
+		requestAppCopy.Publisher = &requestAppPublisherCopy
+
+		request.App = &requestAppCopy
+
 		// json marshal the request
 		body, err := json.Marshal(request)
 		if err != nil {
