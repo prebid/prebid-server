@@ -41,12 +41,42 @@ func isMemoryCacheType(cache stored_requests.CacheJSON) bool {
 }
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher := newFetcher(&config.StoredRequests{}, nil, nil)
-	if fetcher == nil {
-		t.Errorf("The fetcher should be non-nil, even with an empty config.")
+
+	type testCase struct {
+		config  *config.StoredRequests
+		message string
 	}
-	if _, ok := fetcher.(empty_fetcher.EmptyFetcher); !ok {
-		t.Errorf("If the config is empty, and EmptyFetcher should be returned")
+	testCases := []testCase{
+		{
+			config:  &config.StoredRequests{},
+			message: "If the config is empty, and EmptyFetcher should be returned",
+		},
+		{
+			config: &config.StoredRequests{
+				Postgres: config.PostgresConfig{
+					CacheInitialization: config.PostgresCacheInitializer{
+						Query: "test query",
+					},
+					PollUpdates: config.PostgresUpdatePolling{
+						Query: "test poll query",
+					},
+					FetcherQueries: config.PostgresFetcherQueries{
+						QueryTemplate: "",
+					},
+				},
+			},
+			message: "If Postgres fetcher query is not defined, but Postgres Cache init query and Postgres update polling query are defined EmptyFetcher should be returned",
+		},
+	}
+
+	for _, test := range testCases {
+		fetcher := newFetcher(test.config, nil, nil)
+		if fetcher == nil {
+			t.Errorf("The fetcher should be non-nil.")
+		}
+		if _, ok := fetcher.(empty_fetcher.EmptyFetcher); !ok {
+			t.Errorf(test.message)
+		}
 	}
 }
 

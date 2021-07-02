@@ -166,6 +166,9 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fe
 	if cfg.Postgres.FetcherQueries.QueryTemplate != "" {
 		glog.Infof("Loading Stored %s data via Postgres.\nQuery: %s", cfg.DataType(), cfg.Postgres.FetcherQueries.QueryTemplate)
 		idList = append(idList, db_fetcher.NewFetcher(db, cfg.Postgres.FetcherQueries.MakeQuery))
+	} else if cfg.Postgres.CacheInitialization.Query != "" && cfg.Postgres.PollUpdates.Query != "" {
+		//in this case data will be loaded to cache via poll for updates event
+		idList = append(idList, empty_fetcher.EmptyFetcher{})
 	}
 	if cfg.HTTP.Endpoint != "" {
 		glog.Infof("Loading Stored %s data via HTTP. endpoint=%s", cfg.DataType(), cfg.HTTP.Endpoint)
