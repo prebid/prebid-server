@@ -1,4 +1,5 @@
 package openrtb_ext
+
 import "encoding/json"
 
 // ExtImpGrid defines the contract for bidrequest.imp[i].ext.grid
