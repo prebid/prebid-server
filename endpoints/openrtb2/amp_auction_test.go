@@ -32,7 +32,6 @@ func TestGoodAmpRequests(t *testing.T) {
 	goodRequests := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "aliased-buyeruids.json")),
 		"2": json.RawMessage(validRequest(t, "aliases.json")),
-		"4": json.RawMessage(validRequest(t, "digitrust.json")),
 		"5": json.RawMessage(validRequest(t, "gdpr-no-consentstring.json")),
 		"6": json.RawMessage(validRequest(t, "gdpr.json")),
 		"7": json.RawMessage(validRequest(t, "site.json")),
@@ -122,11 +121,6 @@ func TestAMPPageInfo(t *testing.T) {
 func TestGDPRConsent(t *testing.T) {
 	consent := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
 	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
-	digitrust := &openrtb_ext.ExtUserDigiTrust{
-		ID:   "anyDigitrustID",
-		KeyV: 1,
-		Pref: 0,
-	}
 
 	testCases := []struct {
 		description     string
@@ -165,12 +159,10 @@ func TestGDPRConsent(t *testing.T) {
 			description: "Overrides Existing Consent - With Sibling Data",
 			consent:     consent,
 			userExt: &openrtb_ext.ExtUser{
-				Consent:   existingConsent,
-				DigiTrust: digitrust,
+				Consent: existingConsent,
 			},
 			expectedUserExt: openrtb_ext.ExtUser{
-				Consent:   consent,
-				DigiTrust: digitrust,
+				Consent: consent,
 			},
 		},
 		{
