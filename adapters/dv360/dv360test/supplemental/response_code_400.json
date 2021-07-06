@@ -49,7 +49,6 @@
           "app": {
             "bundle": "com.prebid",
             "publisher": {
-              "id": "1011b04a93164a6db3a0158461c82433"
             }
           },
           "device": {

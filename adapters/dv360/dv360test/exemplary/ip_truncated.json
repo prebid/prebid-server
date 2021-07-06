@@ -53,7 +53,6 @@
           "id": "test-request-id",
           "app": {
             "publisher": {
-              "id": "1011b04a93164a6db3a0158461c82433"
             }
           },
           "imp": [
@@ -104,7 +103,6 @@
           },
           "app": {
             "publisher": {
-              "id": "1011b04a93164a6db3a0158461c82433"
             }
           }
         }

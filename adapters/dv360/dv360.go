@@ -237,7 +237,7 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 			requestAppPublisherCopy = openrtb.Publisher{}
 		}
 
-		requestAppPublisherCopy.ID = "1011b04a93164a6db3a0158461c82433"
+		requestAppPublisherCopy.ID = dv360Ext.PubID
 
 		requestAppCopy.Publisher = &requestAppPublisherCopy
 
