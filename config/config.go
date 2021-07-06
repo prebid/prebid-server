@@ -88,10 +88,14 @@ type Configuration struct {
 const MIN_COOKIE_SIZE_BYTES = 500
 
 type HTTPClient struct {
-	MaxConnsPerHost     int `mapstructure:"max_connections_per_host"`
-	MaxIdleConns        int `mapstructure:"max_idle_connections"`
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_connections_per_host"`
-	IdleConnTimeout     int `mapstructure:"idle_connection_timeout_seconds"`
+	MaxConnsPerHost       int `mapstructure:"max_connections_per_host"`
+	MaxIdleConns          int `mapstructure:"max_idle_connections"`
+	MaxIdleConnsPerHost   int `mapstructure:"max_idle_connections_per_host"`
+	IdleConnTimeout       int `mapstructure:"idle_connection_timeout_seconds"`
+	TLSHandshakeTimeout   int `mapstructure:"tls_handshake_timeout"`
+	ResponseHeaderTimeout int `mapstructure:"response_header_timeout"`
+	DialTimeout           int `mapstructure:"dial_timeout"`
+	DialKeepAlive         int `mapstructure:"dial_keepalive"`
 }
 
 func (cfg *Configuration) validate() []error {
@@ -709,6 +713,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
 	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)
+	v.SetDefault("http_client.tls_handshake_timeout", 0)          //no timeout
+	v.SetDefault("http_client.response_header_timeout", 0)        //unlimited
+	v.SetDefault("http_client.dial_timeout", 0)                   //no timeout
+	v.SetDefault("http_client.dial_keepalive", 0)                 //no restriction
 	v.SetDefault("http_client_cache.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client_cache.max_idle_connections", 10)
 	v.SetDefault("http_client_cache.max_idle_connections_per_host", 2)
